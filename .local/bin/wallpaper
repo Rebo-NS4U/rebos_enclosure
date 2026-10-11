@@ -1,0 +1,105 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+import subprocess
+import argparse
+from pathlib import Path
+
+
+def print_help():
+    print(
+        """Usage: wallpaper <options> [image_path]
+Options:
+  -h,  --help: Show this help message
+  -c,  --crop: Crop the image to fit the screen
+  -f,  --fit: Resize the image to fit the screen
+  -s,  --stretch: Stretch the image to fit the screen
+  -wa, --wal-args: Pass additional arguments to wallust
+  -S,  --scheme: prints the current colorscheme"""
+    )
+    sys.exit(0)
+
+
+def restore():
+    file_path = os.path.expanduser("~/.cache/wallpaper")
+    if os.path.exists(file_path):
+        with open(file_path, "r") as file:
+            wallpaper = file.read().strip()
+            return wallpaper
+    return ""
+
+
+def no_stdout(cmd):
+    return subprocess.run(cmd, stdout=subprocess.DEVNULL, check=True)
+
+
+def use_quickshell(img_path, resize):
+    result = subprocess.run(
+        ["qs", "ipc", "call", "rebos_shell", "wallpaper", img_path, resize],
+        capture_output=True, text=True,
+    )
+    if result.returncode != 0 or result.stdout.strip().lower() != "true":
+        detail = result.stderr.strip() or result.stdout.strip() or "wallpaper manager unavailable"
+        raise RuntimeError(f"QuickShell could not accept the wallpaper: {detail}")
+    # A dotfile sync may have reapplied static app themes since the last export.
+    subprocess.run(["qs", "ipc", "call", "theme", "sync"], check=True)
+
+
+
+def main():
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument("-h", "--help", action="store_true")
+    parser.add_argument("-c", "--crop", action="store_true")
+    parser.add_argument("-f", "--fit", action="store_true")
+    parser.add_argument("-s", "--stretch", action="store_true")
+    parser.add_argument("-wa", "--wal-args", nargs=1)
+    parser.add_argument("-S", "--scheme", action="store_true")
+    parser.add_argument("image_path", nargs="?")
+    args = parser.parse_args()
+
+    if args.help:
+        print_help()
+
+    resize = "crop"
+    if args.fit:
+        resize = "fit"
+    elif args.stretch:
+        resize = "stretch"
+
+    img_path = args.image_path or restore()
+    if not img_path:
+        print("No wallpaper selected; pass an image or video path.", file=sys.stderr)
+        sys.exit(1)
+    img_path = os.path.realpath(img_path)
+
+    if args.scheme:
+        subprocess.run(["colorscheme", img_path], check=True)
+        sys.exit(0)
+
+    if not Path(img_path).is_file():
+        print(f"File not found: {img_path}")
+        sys.exit(1)
+
+    file_type = subprocess.check_output(
+        ["file", "-b", "--mime-type", img_path], text=True
+    ).strip()
+
+    if not file_type.startswith(("image/", "video/")):
+        print(f"Unsupported file type: {file_type}")
+        sys.exit(1)
+
+    use_quickshell(img_path, resize)
+
+    cache_path = Path.home() / ".cache/wallpaper"
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+    with cache_path.open("w") as file:
+        file.write(img_path)
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except (OSError, RuntimeError, subprocess.CalledProcessError) as error:
+        print(f"Wallpaper apply failed: {error}", file=sys.stderr)
+        sys.exit(1)

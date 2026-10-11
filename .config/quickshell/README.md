@@ -1,0 +1,69 @@
+# <img src="./assets/rebos_shell/rebos_shell-logo-color.svg" alt="" width="40" height="40"> rebos_shell
+
+**rebos_shell** is a Niri-first Wayland desktop shell built with
+[Quickshell](https://quickshell.org).
+
+## Hard fork
+
+This project is a **hard fork** of
+[Ambxst](https://github.com/Axenide/Ambxst) by
+[Axenide](https://github.com/Axenide).
+
+It is not Ambxst, does not track Ambxst as an upstream merge target for
+day-to-day work, and ships under its own name, branding, config paths, and
+release process. The fork keeps a lean runtime focus:
+
+- wallpaper
+- one unified bar
+- floating run menu
+- lockscreen
+- reactive JSON configuration
+
+Multi-monitor support uses Quickshell `Variants` on `Quickshell.screens`.
+
+## Features
+
+- Runs directly on [Niri](https://github.com/YaLTeR/niri) via its JSON event stream
+- Normalized monitor, workspace, and window state for multi-monitor setups
+- Unified bar with workspaces/taskbar, clock, system status, and systray
+- Floating run menu and power menu
+- Wallpaper picker and secure `WlSessionLock` session lock
+- Isolated `rebos_shell` config, state, cache, data, and IPC paths
+
+## Direct commands
+
+The shell exposes lightweight commands through its IPC runner. For example,
+`rebos_shell run wallpapers` opens the wallpaper picker on the focused monitor
+and toggles it closed when invoked again. This can be bound from Niri with:
+
+```kdl
+Mod+Shift+W hotkey-overlay-title="Open Wallpapers" { spawn "rebos_shell" "run" "wallpapers"; }
+```
+
+## Run the development tree
+
+Install Quickshell and the runtime tools needed by the shell. Install fonts once,
+then run from a checkout:
+
+```bash
+./scripts/install-fonts.sh
+qs -p /path/to/rebos_shell
+```
+
+Or use the CLI wrapper:
+
+```bash
+./cli.sh
+```
+
+The installer and Nix package are still inherited scaffolding and may need
+adjustment for this fork.
+
+## Attribution and license
+
+rebos_shell is a personal rebrand of [Nonchalant Shell](https://github.com/jR4dh3y/nonchalant-shell), derived from Ambxst by Axenide. Full copyright and
+contributor history from that lineage is preserved in this repository’s Git
+history.
+
+This project is licensed under the GNU Affero General Public License v3.0 or
+later. See [LICENSE](./LICENSE).

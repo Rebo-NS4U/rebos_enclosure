@@ -1,0 +1,7 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Claude
+Exec=/home/rebo/.config/scripts/browser-app https://claude.ai/
+Icon=/home/rebo/.local/share/applications/icons/claude.svg
+StartupWMClass=chrome-claude.ai__-Default

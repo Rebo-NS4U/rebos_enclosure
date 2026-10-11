@@ -1,0 +1,253 @@
+import QtQuick
+import QtQuick.Layouts
+import qs.modules.theme
+import qs.modules.components
+import qs.modules.globals
+import qs.modules.services
+import qs.config
+import "../controls"
+
+StyledRect {
+    id: root
+    variant: "pane"
+    Layout.alignment: Qt.AlignHCenter
+    implicitWidth: internalBgRect.implicitWidth + 8
+    implicitHeight: columnLayout.implicitHeight + 8
+    radius: Styling.radius(4)
+
+    property int expandedPanel: -1 // -1: none, 0: wifi, 1: bluetooth, 2: GPU
+
+    onVisibleChanged: {
+        if (!visible) {
+            root.expandedPanel = -1;
+        } else {
+            NetworkService.update();
+            BluetoothService.initialize();
+        }
+    }
+
+    Behavior on implicitHeight {
+        enabled: Config.animDuration > 0 && root.expandedPanel !== -1
+        NumberAnimation {
+            duration: Config.animDuration
+            easing.type: Easing.OutCubic
+        }
+    }
+
+    ColumnLayout {
+        id: columnLayout
+        anchors.fill: parent
+        anchors.margins: 4
+        spacing: 0
+
+        StyledRect {
+            id: internalBgRect
+            variant: "internalbg"
+            Layout.alignment: Qt.AlignHCenter
+            implicitWidth: buttonRow.implicitWidth + 8
+            implicitHeight: buttonRow.implicitHeight + 8
+            radius: Styling.radius(0)
+
+            RowLayout {
+                id: buttonRow
+                anchors.centerIn: parent
+                spacing: 4
+
+                ControlButton {
+                    Layout.preferredWidth: 48
+                    Layout.preferredHeight: 48
+                    iconName: {
+                        if (!NetworkService.wifiEnabled)
+                            return Icons.wifiOff;
+                        if (NetworkService.vpnConnected)
+                            return Icons.vpnKey;
+                        if (!NetworkService.wifiConnected)
+                            return Icons.wifiHigh;
+                        return NetworkService.wifiIconForStrength(NetworkService.networkStrength);
+                    }
+                    isActive: NetworkService.wifiEnabled || root.expandedPanel === 0
+                    tooltipText: {
+                        if (!NetworkService.wifiEnabled)
+                            return "Wi-Fi: Off";
+                        if (NetworkService.wifiConnected) {
+                            const base = "Wi-Fi: " + (NetworkService.activeSsid || "Connected") + " (" + NetworkService.networkStrength + "%)";
+                            return NetworkService.vpnConnected ? (base + " [VPN: " + (NetworkService.vpnName || "Active") + "]") : base;
+                        }
+                        return NetworkService.vpnConnected ? ("Wi-Fi: On [VPN: " + (NetworkService.vpnName || "Active") + "]") : "Wi-Fi: On";
+                    }
+                    onClicked: NetworkService.toggleWifi()
+                    onRightClicked: root.togglePanel(0)
+                    onLongPressed: root.togglePanel(0)
+                }
+
+                ControlButton {
+                    Layout.preferredWidth: 48
+                    Layout.preferredHeight: 48
+                    iconName: {
+                        if (!BluetoothService.enabled)
+                            return Icons.bluetoothOff;
+                        if (BluetoothService.connected)
+                            return Icons.bluetoothConnected;
+                        return Icons.bluetooth;
+                    }
+                    isActive: BluetoothService.enabled || root.expandedPanel === 1
+                    tooltipText: {
+                        if (!BluetoothService.enabled)
+                            return "Bluetooth: Off";
+                        if (BluetoothService.connected)
+                            return "Bluetooth: " + (BluetoothService.firstConnectedDeviceName || (BluetoothService.connectedDevices + " device" + (BluetoothService.connectedDevices > 1 ? "s" : "")));
+                        return "Bluetooth: On";
+                    }
+                    onClicked: BluetoothService.toggle()
+                    onRightClicked: root.togglePanel(1)
+                    onLongPressed: root.togglePanel(1)
+                }
+
+                CircularControl {
+                    Layout.preferredWidth: 48
+                    Layout.preferredHeight: 48
+                    icon: Icons.nightLight
+                    value: NightLightService.normalizedTemperature
+                    accentColor: Styling.srItem("overprimary")
+                    isToggleable: true
+                    isToggled: NightLightService.active
+                    showMeter: NightLightService.active
+                    tooltipText: NightLightService.active
+                        ? "Night Light: " + NightLightService.temperature + " K"
+                        : "Night Light: Off"
+                    onControlValueChanged: newValue => NightLightService.setTemperatureFromNormalized(newValue)
+                    onToggled: NightLightService.toggle()
+                }
+
+                ControlButton {
+                    Layout.preferredWidth: 48
+                    Layout.preferredHeight: 48
+                    iconName: Icons.wallpapers
+                    isActive: GlobalStates.dashboardCurrentTab === 1
+                    tooltipText: "Wallpapers"
+                    onClicked: GlobalStates.dashboardCurrentTab = 1
+                }
+
+                ControlButton {
+                    Layout.preferredWidth: 48
+                    Layout.preferredHeight: 48
+                    iconName: Notifications.silent ? Icons.bellSlash : Icons.bell
+                    isActive: Notifications.silent
+                    tooltipText: Notifications.silent ? "Do Not Disturb: On" : "Do Not Disturb: Off"
+                    onClicked: Notifications.toggleSilent()
+                }
+
+                ControlButton {
+                    Layout.preferredWidth: 48
+                    Layout.preferredHeight: 48
+                    iconName: Icons.gpu
+                    isActive: GpuService.nvidiaActive
+                    tooltipText: "GPU: " + GpuService.modeLabel + " · Left: switch · Right: menu"
+                    onClicked: GpuService.toggle()
+                    onRightClicked: root.togglePanel(2)
+                    onLongPressed: root.togglePanel(2)
+                }
+            }
+        }
+
+        Item {
+            id: panelArea
+            Layout.fillWidth: true
+            Layout.preferredHeight: root.expandedPanel !== -1 ? root.width - 8 : 0
+            clip: true
+            opacity: root.expandedPanel !== -1 ? 1 : 0
+
+            Behavior on Layout.preferredHeight {
+                enabled: Config.animDuration > 0 && root.expandedPanel !== -1
+                NumberAnimation { duration: Config.animDuration; easing.type: Easing.OutQuart }
+            }
+
+            Behavior on opacity {
+                enabled: Config.animDuration > 0
+                NumberAnimation { duration: Config.animDuration; easing.type: Easing.OutQuart }
+            }
+
+            StyledRect {
+                variant: "internalbg"
+                anchors.fill: parent
+                anchors.margins: 4
+                radius: Styling.radius(0)
+                clip: true
+
+                Item {
+                    id: panelStack
+                    anchors.fill: parent
+                    anchors.margins: 8 // Extra margin for content
+
+                    Loader {
+                        id: wifiLoader
+                        anchors.fill: parent
+                        active: root.expandedPanel === 0
+                        source: "../controls/WifiPanel.qml"
+                        asynchronous: true
+
+                        opacity: root.expandedPanel === 0 ? 1 : 0
+                        x: root.expandedPanel === 0 ? 0 : (root.expandedPanel === 1 ? -width : width)
+
+                        onLoaded: {
+                            if (item) {
+                                item.maxContentWidth = width;
+                            }
+                        }
+
+                        Behavior on opacity { enabled: Config.animDuration > 0; NumberAnimation { duration: Config.animDuration; easing.type: Easing.OutQuart } }
+                        Behavior on x { enabled: Config.animDuration > 0; NumberAnimation { duration: Config.animDuration; easing.type: Easing.OutQuart } }
+                    }
+
+                    Loader {
+                        id: bluetoothLoader
+                        anchors.fill: parent
+                        active: root.expandedPanel === 1
+                        source: "../controls/BluetoothPanel.qml"
+                        asynchronous: true
+
+                        opacity: root.expandedPanel === 1 ? 1 : 0
+                        x: root.expandedPanel === 1 ? 0 : (root.expandedPanel === 0 ? width : -width)
+
+                        onLoaded: {
+                            if (item) {
+                                item.maxContentWidth = width;
+                            }
+                        }
+
+                        Behavior on opacity { enabled: Config.animDuration > 0; NumberAnimation { duration: Config.animDuration; easing.type: Easing.OutQuart } }
+                        Behavior on x { enabled: Config.animDuration > 0; NumberAnimation { duration: Config.animDuration; easing.type: Easing.OutQuart } }
+                    }
+
+                    Loader {
+                        id: gpuLoader
+                        anchors.fill: parent
+                        active: root.expandedPanel === 2
+                        source: "../controls/GpuPanel.qml"
+                        asynchronous: true
+
+                        opacity: root.expandedPanel === 2 ? 1 : 0
+                        x: root.expandedPanel === 2 ? 0 : width
+
+                        onLoaded: {
+                            if (item) {
+                                item.maxContentWidth = width;
+                            }
+                        }
+
+                        Behavior on opacity { enabled: Config.animDuration > 0; NumberAnimation { duration: Config.animDuration; easing.type: Easing.OutQuart } }
+                        Behavior on x { enabled: Config.animDuration > 0; NumberAnimation { duration: Config.animDuration; easing.type: Easing.OutQuart } }
+                    }
+                }
+            }
+        }
+    }
+
+    function togglePanel(index) {
+        if (root.expandedPanel === index) {
+            root.expandedPanel = -1;
+        } else {
+            root.expandedPanel = index;
+        }
+    }
+}

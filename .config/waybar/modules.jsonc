@@ -1,0 +1,259 @@
+{
+   "niri/workspaces": {
+      "format": "{value}"
+   },
+
+   "cffi/niri-taskbar": {
+      "module_path": "/usr/lib/waybar/modules/libniri_taskbar-focused.so",
+      "notifications": {
+         "enabled": false
+      }
+   },
+
+   "clock": {
+      "format": "{:%Y-%m-%d %H:%M}",
+      "tooltip": true,
+      "calendar": {
+         "mode": "month",
+         "on-scroll": 1,
+         "format": {
+            "months": "<span color='#89b4fa'><b>{}</b></span>",
+            "weekdays": "<span color='#cdd6f4'><b>{}</b></span>",
+            "today": "{}"
+         }
+      },
+      "tooltip-format": "<tt><small>{calendar}</small></tt>"
+   },
+
+   "custom/weather": {
+      "exec": "$HOME/.config/scripts/waybar-weather.sh",
+      "return-type": "json",
+      "interval": 1800,
+      "signal": 8,
+      "format": "{}",
+      "on-click": "$HOME/.config/scripts/waybar-weather.sh open",
+      "on-click-right": "$HOME/.config/scripts/waybar-weather.sh set-location"
+   },
+
+   "custom/center-info": {
+      "exec": "$HOME/.config/scripts/waybar-center-info.sh",
+      "return-type": "json",
+      "interval": 60,
+      "format": "{}",
+      "tooltip": true,
+      "on-click": "$HOME/.config/scripts/waybar-center-info.sh open-weather",
+      "on-click-right": "$HOME/.config/scripts/waybar-center-info.sh set-location"
+   },
+
+   "custom/battery": {
+      "exec": "$HOME/.config/scripts/waybar-battery.sh",
+      "return-type": "json",
+      "interval": 5,
+      "format": "{}"
+   },
+
+   "network": {
+      "format-wifi": "󰤨",
+      "format-ethernet": "󰈀",
+      "format-disconnected": "󰤭",
+      "tooltip": true
+   },
+
+   "pulseaudio": {
+      "format": "{icon} {volume}%",
+      "format-muted": "",
+      "format-icons": {
+         "headphones": "",
+         "headset": "",
+         "default": ["","",""]
+      },
+      "tooltip": false
+   },
+
+   "privacy": {
+      "icon-spacing": 4,
+      "icon-size": 15,
+      "transition-duration": 250,
+      "modules": [
+         {
+         "type": "screenshare",
+         "tooltip": false,
+         "tooltip-icon-size": 15
+         },
+         {
+            "type": "audio-out",
+            "tooltip": false,
+            "tooltip-icon-size": 15
+         },
+         {
+         "type": "audio-in",
+         "tooltip": false,
+         "tooltip-icon-size": 15
+         }
+      ]
+   },
+
+   "tray": {
+      "icon-size": 15,
+      "spacing": 8
+   },
+
+   "group/status-group": {
+      "orientation": "inherit",
+      "modules": [
+         "custom/updates",
+         "idle_inhibitor",
+         "custom/notifications",
+         "custom/nightlight",
+         "power-profiles-daemon"
+      ]
+   },
+
+   "group/audio-group": {
+      "orientation": "inherit",
+      "modules": [
+         "backlight",
+         "pulseaudio"
+      ]
+   },
+
+   "custom/cogicon": {
+      "format": "󰒔",
+      "tooltip": false
+   },
+
+   "group/right-group": {
+        "orientation": "inherit",
+        "drawer": {
+            "icon-spacing": 4,
+            "icon-size": 15,
+            "tooltip": false,
+            "format": "󰒻",
+            "click-to-reveal": true,
+            "transition-duration": 400,
+            "transition-left-to-right": true
+        },
+        "modules": [
+            "custom/cogicon",
+            "cpu",
+            "memory",
+            "custom/gpu1",
+            "custom/gpu2",
+            "disk"
+        ]
+    },
+
+   "idle_inhibitor": {
+       "format": "{icon}",
+       "format-icons": {
+           "activated": "",
+           "deactivated": ""
+       },
+      "tooltip": false
+   },
+   "custom/padd": {
+      "return-type": "text",
+      "interval": "once",
+      "format": " ",
+      "tooltip": false
+   },
+   "custom/gpu1": {
+      "exec": "if [ -f /sys/class/drm/card*/device/gpu_busy_percent ]; then usage=$(cat /sys/class/drm/card*/device/gpu_busy_percent 2>/dev/null | head -1); freq=$(cat /sys/class/drm/card*/device/pp_dpm_sclk 2>/dev/null | grep '*' | awk '{print $2}' | sed 's/Mhz//'); temp=$(cat /sys/class/hwmon/hwmon*/temp*_input 2>/dev/null | head -1 | awk '{print int($1/1000)}'); usage=${usage:-0}; printf '{\\\"text\\\":\\\"%s\\\",\\\"tooltip\\\":\\\"GPU Usage: %s%%\\\\nFrequency: %s\\\\nTemperature: %s°C\\\"}' \"$usage\" \"$usage\" \"${freq:-N/A}\" \"${temp:-N/A}\"; else echo '{\\\"text\\\":\\\"N/A\\\",\\\"tooltip\\\":\\\"AMD iGPU not available\\\"}'; fi",
+      "return-type": "json",
+      "interval": 5,
+      "format": "AMD:{text}%",
+      "format-icons": {
+         "default": ["󰢮"]
+      },
+      "tooltip": true
+   },
+   "custom/gpu2": {
+      "exec": "$HOME/.config/scripts/waybar-nvidia.sh",
+      "return-type": "json",
+      "interval": 5,
+      "format": "NVIDIA:{text}",
+      "format-icons": {
+         "default": ["󰢮"]
+      },
+      "tooltip": true
+   },
+   "backlight": {
+      "format": "{icon} {percent}%",
+      "format-icons": {
+         "default": ["󰃞","󰃟", "󰃠"]
+      },
+      "tooltip": false
+   },
+
+   "cpu": {
+      "interval": 5,
+      "format": "CPU:{usage}%",
+      "format-icons": {
+          "default": ["󰍛"]
+      }
+   },
+   "memory": {
+      "interval": 5,
+      "format": "RAM:{used}GB",
+      "format-used": "{used} GB",
+      "format-total": "{total} GB",
+      "format-icons": {
+         "default": ["󰘚"]
+      },
+      "tooltip": true,
+      "tooltip-format": "Used: {used}GB\nAvailable: {avail}GB\nTotal: {total}GB\nPercentage: {percentage}%"
+   },
+   "disk": {
+      "path" : "/",
+      "interval": 5,
+      "format": "DISK:{free}",
+      "format-icons": {
+         "default": ["󰋊"]
+      },
+      "tooltip": true,
+      "tooltip-format": "Used: {used}\nFree: {free}\nTotal: {total}\nPercentage: {percentage_used}%"
+   },
+   "power-profiles-daemon": {
+      "format": "{icon}",
+      "tooltip": false,
+      "format-icons": {
+          "default": "󰓅",
+          "performance": "󰓅",
+          "balanced": "󰾅",
+          "power-saver": "󰾆"
+         }
+   },
+
+   "custom/notifications": {
+      "exec": "$HOME/.config/scripts/waybar-notifications.sh",
+      "return-type": "json",
+      "restart-interval": 2,
+      "on-click": "dunstctl set-paused toggle"
+   },
+
+   "custom/nightlight": {
+      "exec": "$HOME/.config/scripts/waybar-nightlight.sh watch",
+      "return-type": "json",
+      "on-click": "$HOME/.config/scripts/waybar-nightlight.sh toggle",
+      "on-scroll-up": "$HOME/.config/scripts/waybar-nightlight.sh up",
+      "on-scroll-down": "$HOME/.config/scripts/waybar-nightlight.sh down",
+      "tooltip": true
+   },
+
+   "custom/separator": {
+      "return-type": "text",
+      "interval": "once",
+      "format": "",
+      "tooltip": false
+   },
+
+   "custom/updates": {
+      "exec": "$HOME/.config/scripts/waybar-updates.sh",
+      "return-type": "json",
+      "exec-if": "$HOME/.config/scripts/waybar-updates.sh has-updates",
+      "interval": 1800,
+      "format": "󰚰 {text}",
+      "tooltip-format": "Official: {percentage}\nAUR: {alt}\nTotal: {text}",
+      "on-click": "kitty --app-id=sysadmin --title=update paru -Syu && notify-send 'The system has been updated'"
+   }
+}

@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -euo pipefail
+# Keep the registered profile's palette current before starting Zen.
+if [[ -f "$HOME/.cache/rebos_shell/effective-palette.json" ]]; then
+    python3 "$HOME/.config/quickshell/scripts/apply_app_palette.py" || true
+fi
+if [[ -x "$HOME/.local/bin/zen" ]]; then
+    exec "$HOME/.local/bin/zen" "$@"
+elif [[ -x "$HOME/.tarball-installations/zen/zen" ]]; then
+    exec "$HOME/.tarball-installations/zen/zen" "$@"
+fi
+printf 'Zen is not installed. Run: %s\n' "$HOME/code/dots-niri/install/install-themed-apps.sh" >&2
+exit 127

@@ -1,0 +1,12 @@
+// Load the QuickShell profile before Niri creates its initial
+// workspaces. rice prepare updates this state symlink before niri.service
+// starts; the optional form keeps direct/manual launches recoverable.
+include optional=true "~/.local/state/dots-niri/niri-profile.kdl"
+
+// Start QuickShell. The profile itself is already
+// loaded above, so reloading it from spawn-at-startup would add named
+// workspaces after startup and reverse their order.
+spawn-at-startup "sh" "-c" "exec \"$HOME/.local/bin/rice\" start"
+
+// Settings-created rules follow the profile so app overrides take priority.
+include optional=true "~/.config/niri/nonchalant-window-rules.kdl"

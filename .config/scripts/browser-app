@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+
+# Force browser apps onto the display iGPU (AMD) so EGL/WebRTC matches Niri
+export __NV_PRIME_RENDER_OFFLOAD=0
+export __GLX_VENDOR_LIBRARY_NAME=mesa
+export VK_LOADER_DRIVERS_SELECT=*radeon*
+export NODEVICE_SELECT=0
+
+browser=$(xdg-settings get default-web-browser)
+
+case $browser in
+	google-chrome* | brave-* | microsoft-edge* | opera* | vivaldi* | helium-browser*) ;;
+	*) browser="helium.desktop" ;;
+esac
+
+executable=$(
+	sed -n 's/^Exec=\([^ ]*\).*/\1/p' \
+		"$HOME/.local/share/applications/$browser" \
+		"$HOME/.nix-profile/share/applications/$browser" \
+		"/usr/share/applications/$browser" \
+		2>/dev/null |
+		head -1
+)
+
+[[ -n $executable ]] || exit 1
+
+exec "$executable" --app="$1" "${@:2}" >/dev/null 2>&1

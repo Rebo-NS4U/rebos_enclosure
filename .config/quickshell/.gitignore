@@ -1,0 +1,5 @@
+.qmlls.ini
+.ruff_cache/
+__pycache__/
+.sisyphus
+.agents/

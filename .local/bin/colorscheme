@@ -1,0 +1,61 @@
+#!/usr/bin/env python3
+"""Generate the shared desktop palette using Matugen or Wallust."""
+import argparse
+import json
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+import tempfile
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('image_path', type=Path)
+    args = parser.parse_args()
+    image = args.image_path.expanduser().resolve()
+    if not image.is_file():
+        parser.error(f'Wallpaper does not exist: {image}')
+    home = Path.home()
+    shell = home / '.config/quickshell'
+    generator = shell / 'scripts/generate_wallpaper_colors.sh'
+    if not generator.is_file():
+        parser.error('Shared palette generator is missing; sync the QuickShell config first.')
+    config_path = home / '.config/rebos_shell/config/theme.json'
+    config = json.loads(config_path.read_text()) if config_path.exists() else {}
+    wallpaper_config = home / '.cache/rebos_shell/wallpapers.json'
+    wallpaper = json.loads(wallpaper_config.read_text()) if wallpaper_config.exists() else {}
+    scheme = wallpaper.get('matugenScheme') or 'scheme-tonal-spot'
+    mode = 'light' if config.get('lightMode', False) else 'dark'
+    cache = home / '.cache/rebos_shell'
+    cache.mkdir(parents=True, exist_ok=True)
+    mime = subprocess.check_output(['file', '-b', '--mime-type', str(image)], text=True).strip()
+    with tempfile.TemporaryDirectory(prefix='palette-', dir=cache) as folder:
+        source = image
+        if mime.startswith('video/'):
+            if not shutil.which('ffmpeg'):
+                parser.error('ffmpeg is required for video wallpaper colors.')
+            source = Path(folder) / 'frame.png'
+            subprocess.run(['ffmpeg', '-v', 'error', '-i', str(image), '-frames:v', '1',
+                            '-vf', 'scale=512:-1', str(source)], check=True)
+        elif not mime.startswith('image/'):
+            parser.error(f'Unsupported wallpaper type: {mime}')
+        subprocess.run(['bash', str(generator), str(source), scheme, mode,
+                        str(shell / 'assets/matugen/config.toml'),
+                        str(cache / 'colors.json')], check=True)
+    palette = json.loads((cache / 'colors.json').read_text())
+    # Match Colors.qml's effective roles so CLI and shell exports agree.
+    if config.get('oledMode', False):
+        palette.update(background='#000000', surface='#0f0f0f',
+                       surfaceContainerLowest='#000000', surfaceDim='#000000')
+    palette['opacity'] = config.get('srBg', {}).get('opacity', 1)
+    subprocess.run(['python3', str(shell / 'scripts/apply_desktop_palette.py'),
+                    json.dumps(palette)], check=True)
+
+
+if __name__ == '__main__':
+    try:
+        main()
+    except (OSError, ValueError, subprocess.CalledProcessError) as error:
+        print(f'Color generation failed: {error}', file=sys.stderr)
+        sys.exit(1)

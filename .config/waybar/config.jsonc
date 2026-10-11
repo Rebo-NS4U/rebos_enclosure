@@ -1,0 +1,32 @@
+[
+  {
+    "id": "bar-0",
+    "name": "bar-niri",
+    "layer": "top",
+    "mode": "dock",
+    "height": 25,
+    "margin": 4,
+    "spacing": 4,
+    "include": ["$HOME/.config/waybar/modules.jsonc"],
+    "modules-left": [
+      "custom/padd",
+      "cffi/niri-taskbar",
+      "custom/separator",
+      "group/right-group",
+    ],
+    "modules-center": ["custom/center-info"],
+    "modules-right": [
+      "privacy",
+      "custom/separator",
+      "tray",
+      "custom/separator",
+      "group/status-group",
+      "custom/separator",
+      "group/audio-group",
+      "custom/separator",
+      // "custom/bat",
+      "custom/battery",
+      "custom/padd",
+    ],
+  },
+]

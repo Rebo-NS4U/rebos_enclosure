@@ -1,0 +1,13 @@
+@define-color bg_color #000000;
+@define-color fg_color #f1dfda;
+@define-color tray_color #0f0f0f;
+@define-color accent_color #e7bdb3;
+@define-color highlight_color #ffb4a2;
+@define-color invert_color #561f11;
+@define-color caution_color #dec56e;
+@define-color urgent_color #ffb4a5;
+@define-color middle_color #ffb4a2;
+@define-color first_right_color #b7d085;
+@define-color middle_right_color #ffb4a5;
+@define-color last_right_color #dac58d;
+@define-color funny_pastel_color #84d5c4;

@@ -1,0 +1,64 @@
+# Repository-level ignore: fish runtime/user-specific files
+# Ignore fish history and universal variables (user-specific)
+.config/fish/fish_history
+.config/fish/fish_variables*
+.config/fish/functions/
+.config/fish/completions/
+.config/fish/conf.d/*
+!.config/fish/conf.d/rebos_shell.fish
+.config/fish/config.local.fish
+*.local.fish
+
+
+# Runtime / temp files created by fish
+.config/fish/fishd.*
+.config/fish/*.tmp*
+
+# Editor backups / swap
+.config/fish/*~
+.config/fish/*.swp
+
+# If you want to ignore everything in the fish dir except tracked configs,
+# consider uncommenting the next line and adding explicit allow-lists.
+# .config/fish/
+.config/waybar/libniri_taskbar-focused.so
+tools/
+
+# Python bytecode
+**/__pycache__/
+*.py[cod]
+
+# Waybar nightlight temporary state files
+.config/waybar/nightlight-temp
+.config/waybar/nightlight-state
+
+# Locally disabled configurations
+*.disabled
+
+# Credentials, user state, and editor files
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+**/*history*
+**/.uuid
+**/*.swp
+**/*~
+.config/rebos_shell/config/ai.json
+.config/rebos_shell/config/weather.json
+.config/gh/
+.config/discord/
+.config/spotify/
+.config/zen/
+.config/Code/
+.ssh/
+.aws/
+.codex/
+
+# Machine state and local backups
+.config/waybar/weather-location
+.config/niri/.*-backup-*
+.config/systemd/user/dunst.service

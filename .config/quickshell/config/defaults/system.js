@@ -1,0 +1,11 @@
+.pragma library
+
+var data = {
+    "disks": ["/"],
+    "pomodoro": {
+        "workTime": 1500,
+        "restTime": 300,
+        "autoStart": false,
+        "syncSpotify": false
+    }
+}

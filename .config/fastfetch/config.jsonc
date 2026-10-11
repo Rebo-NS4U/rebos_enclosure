@@ -1,0 +1,107 @@
+{
+    "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
+	  "logo": {
+		  "source": "~/.config/fastfetch/logo.png",
+		  "type": "kitty-direct",
+		  "height": 20,
+      "width": 40,
+		  "padding": {
+			  "top": 0
+		  }
+	  },
+    "display": {
+      "separator": "  "
+    },
+    "modules": [
+
+      {
+        "type": "title",
+        "format": "{#1}╭────── User : {#}{user-name-colored}@{host-name-colored}"
+      },
+      {
+        "type": "custom",
+        "format": "{#1}│ {#}System Information"
+      },
+      {
+        "type": "os",
+        "key": "{#separator}│  {#keys}󰍹 OS",
+      },
+      {
+        "type": "kernel",
+        "key": "{#separator}│  {#keys}󰒋 Kernel"
+      },
+      {
+        "type": "uptime",
+        "key": "{#separator}│  {#keys}󰅐 Uptime"
+      },
+      {
+        "type": "packages",
+        "key": "{#separator}│  {#keys}󰏓 Packages"
+      },
+      {
+        "type": "custom",
+        "format": "{#1}│"
+      },
+      // Desktop Environment
+      {
+        "type": "custom",
+        "format": "{#1}│ {#}Desktop Environment"
+      },
+      {
+        "type": "de",
+        "key": "{#separator}│  {#keys}󰧨 DE"
+      },
+      {
+        "type": "wm",
+        "key": "{#separator}│  {#keys}󱂬 WM"
+      },
+      {
+        "type": "wmtheme",
+        "key": "{#separator}│  {#keys}󰉼 Theme"
+      },
+      {
+        "type": "shell",
+        "key": "{#separator}│  {#keys}󰞷 Shell"
+      },
+      {
+        "type": "custom",
+        "format": "{#1}│"
+      },
+      // Hardware Information
+      {
+        "type": "custom",
+        "format": "{#1}│ {#}Hardware Information"
+      },
+      {
+        "type": "cpu",
+        "key": "{#separator}│  {#keys}󰻠 CPU"
+      },
+      {
+        "type": "gpu",
+        "key": "{#separator}│  {#keys}󰢮 GPU"
+      },
+      {
+        "type": "gpu",
+        "key": "{#separator}│  {#keys}󰍹 GPU Driver",
+        "format": "{driver}"
+      },
+      {
+        "type": "memory",
+        "key": "{#separator}│  {#keys}󰍛 Memory"
+      },
+      {
+        "type": "disk",
+        "key": "{#separator}│  {#keys}󰋊 Disk (/)",
+        "folders": "/"
+      },
+      // {
+      //   "type": "custom",
+      //   "format": "{#1}│"
+      // },
+      // Footer
+      {
+        "type": "custom",
+        "format": "{#1}╰───────────────────────────────────────────────────╯"
+      }
+    ]
+  }

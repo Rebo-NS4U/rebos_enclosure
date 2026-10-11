@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=rebos_shell Settings
+Comment=Configure the desktop, wallpaper colors, and shell
+Exec=qs ipc call rebos_shell run settings
+Icon=preferences-system
+Terminal=false
+Categories=Settings;DesktopSettings;
+Keywords=rebos_shell;Settings;Theme;Colors;Matugen;Wallpaper;Bar;

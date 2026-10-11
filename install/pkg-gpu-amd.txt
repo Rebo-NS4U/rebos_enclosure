@@ -1,0 +1,4 @@
+mesa
+vulkan-radeon
+amdsmi
+radeontop
