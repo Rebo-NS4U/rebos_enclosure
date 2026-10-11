@@ -14,7 +14,7 @@ Install the applications you use first. The desktop needs Niri, Quickshell,
 Fish, Kitty, and the dependencies listed in `install/pkg.txt`.
 
 ```bash
-git clone https://github.com/Squ-em/rebos_enclosure.git "$HOME/code/rebos_enclosure"
+git clone https://github.com/Dytox2/rebos_enclosure.git "$HOME/code/rebos_enclosure"
 cd "$HOME/code/rebos_enclosure"
 ./restore.sh --dry-run
 ./restore.sh

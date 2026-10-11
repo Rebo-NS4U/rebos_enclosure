@@ -3,7 +3,7 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-REPO_URL=${REPO_URL:-https://github.com/Squ-em/rebos_enclosure.git}
+REPO_URL=${REPO_URL:-https://github.com/Dytox2/rebos_enclosure.git}
 INSTALL_ROOT=${INSTALL_ROOT:-${HOME}/code}
 CLONE_DIR=${CLONE_DIR:-${INSTALL_ROOT}/rebos_enclosure}
 BRANCH=${BRANCH:-main}
@@ -27,9 +27,9 @@ Environment overrides:
   BRANCH        Branch to clone/update (default: main)
 
 Examples:
-  curl -fsSL https://raw.githubusercontent.com/Squ-em/rebos_enclosure/main/oneline.sh | bash
-  wget -qO- https://raw.githubusercontent.com/Squ-em/rebos_enclosure/main/oneline.sh | bash
-  curl -fsSL https://raw.githubusercontent.com/Squ-em/rebos_enclosure/main/oneline.sh | bash -s -- --sync-only
+  curl -fsSL https://raw.githubusercontent.com/Dytox2/rebos_enclosure/main/oneline.sh | bash
+  wget -qO- https://raw.githubusercontent.com/Dytox2/rebos_enclosure/main/oneline.sh | bash
+  curl -fsSL https://raw.githubusercontent.com/Dytox2/rebos_enclosure/main/oneline.sh | bash -s -- --sync-only
 EOF
 }
 
