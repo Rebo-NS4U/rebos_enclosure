@@ -1,0 +1,15 @@
+# Full profile: applications from the configured official repositories.
+discord
+spotify-launcher
+obs-studio
+obsidian
+imv
+fastfetch
+scrcpy
+nodejs
+npm
+python-pip
+python-pynvim
+tmux
+github-cli
+flatpak

@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=rebos_shell Settings
+Exec=rebos_shell run settings
+Icon=preferences-desktop
+Categories=Settings;

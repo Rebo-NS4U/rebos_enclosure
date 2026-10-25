@@ -1,0 +1,50 @@
+import QtQuick
+import QtQuick.Controls
+import Quickshell.Services.Notifications
+import qs.modules.theme
+import qs.modules.components
+import qs.config
+
+Button {
+    id: root
+    property bool visibleWhen: true
+    property int urgency: NotificationUrgency.Normal
+
+    anchors.fill: parent
+    hoverEnabled: true
+    visible: visibleWhen
+    scale: root.pressed ? 0.92 : 1.0
+
+    Behavior on scale {
+        enabled: (Config.animDuration ?? 0) > 0
+        NumberAnimation {
+            duration: root.pressed
+                ? Math.round((Config.animDuration ?? 300) * 0.27)
+                : Math.round((Config.animDuration ?? 300) * 0.83)
+            easing.type: root.pressed ? Easing.OutQuad : Easing.OutBack
+            easing.overshoot: 1.5
+        }
+    }
+
+    background: StyledRect {
+        id: buttonBg
+        readonly property color iconColor: root.urgency === NotificationUrgency.Critical
+            ? Colors.shadow
+            : (root.pressed ? Colors.overError : Colors.error)
+
+        variant: root.urgency === NotificationUrgency.Critical
+            ? "error"
+            : (root.pressed ? "error" : (root.hovered ? "focus" : "common"))
+        radius: Styling.radius(4)
+    }
+
+    contentItem: Text {
+        text: Icons.cancel
+        textFormat: Text.RichText
+        font.family: Icons.font
+        font.pixelSize: 16
+        color: root.background.iconColor
+        horizontalAlignment: Text.AlignHCenter
+        verticalAlignment: Text.AlignVCenter
+    }
+}

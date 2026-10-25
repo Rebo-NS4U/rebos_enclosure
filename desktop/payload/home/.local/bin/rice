@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+config_home=${XDG_CONFIG_HOME:-$HOME/.config}
+state_dir=${XDG_STATE_HOME:-$HOME/.local/state}/dots-niri
+shell_dir=${REBOS_SHELL_PATH:-$config_home/quickshell}
+
+prepare() {
+    local profile temporary_dir
+    profile=$(readlink -f "$config_home/niri/config-quickshell.kdl")
+    [[ -r "$profile" ]] || { echo "rice: QuickShell Niri profile is missing" >&2; return 1; }
+    mkdir -p "$state_dir"
+    temporary_dir=$(mktemp -d "$state_dir/profile.XXXXXX")
+    ln -s "$profile" "$temporary_dir/profile"
+    mv -Tf "$temporary_dir/profile" "$state_dir/niri-profile.kdl"
+    rmdir "$temporary_dir"
+    printf 'quickshell\n' > "$state_dir/rice"
+}
+
+quickshell_pids() {
+	local pid command_line
+
+	while read -r pid; do
+		[[ -r "/proc/$pid/cmdline" ]] || continue
+		command_line=$(tr '\0' ' ' < "/proc/$pid/cmdline")
+		if [[ "$command_line" == *"qs ipc"* ]]; then
+			continue
+		fi
+		if [[ "$command_line" =~ (^|[[:space:]/])(qs|quickshell)([[:space:]]|$) ]]; then
+			printf '%s\n' "$pid"
+		fi
+	done < <(pgrep -x qs 2>/dev/null || true; pgrep -x quickshell 2>/dev/null || true) | sort -u
+}
+
+quickshell_running() {
+	[[ -n "$(quickshell_pids)" ]]
+}
+
+case "${1:-status}" in
+    prepare) prepare ;;
+    start)
+        [[ -f "$shell_dir/shell.qml" ]] || { echo "rice: QuickShell config is missing" >&2; exit 1; }
+        command -v qs >/dev/null || { echo "rice: qs is missing" >&2; exit 1; }
+        if ! quickshell_running; then
+            mkdir -p "$state_dir/log"
+            setsid -f qs -p "$shell_dir" >> "$state_dir/log/quickshell.log" 2>&1
+        fi
+        ;;
+    status)
+        printf 'Desktop: QuickShell\n'
+        if quickshell_running; then
+            printf 'QuickShell: running\n'
+        else
+            printf 'QuickShell: stopped\n'
+        fi
+        ;;
+    -h|--help|help) printf 'Usage: rice [status|prepare|start]\nQuickShell and Niri reload configuration changes automatically.\n' ;;
+    *) printf 'rice: unknown command: %s\nUsage: rice [status|prepare|start]\n' "$1" >&2; exit 2 ;;
+esac

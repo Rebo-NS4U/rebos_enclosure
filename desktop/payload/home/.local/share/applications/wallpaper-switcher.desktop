@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=Wallpaper Switcher
+Exec=wallpaper-switcher gui
+Icon=preferences-desktop-wallpaper
+Categories=Settings;

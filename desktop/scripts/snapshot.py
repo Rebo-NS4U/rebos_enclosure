@@ -1,0 +1,197 @@
+#!/usr/bin/env python3
+"""Build the portable, explicitly selected desktop payload. Never copy a home wholesale."""
+import argparse
+import hashlib
+import json
+from pathlib import Path
+import shutil
+from datetime import datetime, timezone
+
+ROOT = Path(__file__).resolve().parents[1]
+SKIP = {'.git', '__pycache__', '.ruff_cache', '.qmlls.ini', 'AGENTS.md', '.agents',
+        '.sisyphus', 'fish_variables', 'config.local.fish'}
+
+
+def ignore(directory, names):
+    return [n for n in names if n in SKIP or n.startswith('.') or
+            any(s in n.lower() for s in ('backup', '.bak', '.before-', '.log'))]
+
+
+def build(home):
+    payload = ROOT / 'payload'
+    if payload.exists():
+        raise SystemExit('payload already exists; move it aside before making a fresh snapshot')
+    user = payload / 'home'
+    units = []
+
+    def copy(relative, source=None):
+        source = source or home / relative
+        if not source.exists():
+            raise FileNotFoundError(source)
+        target = user / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if source.is_dir():
+            shutil.copytree(source, target, ignore=ignore)
+        else:
+            shutil.copy2(source, target)
+        units.append(relative)
+
+    def write(relative, content, mode=0o644):
+        target = user / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(content)
+        target.chmod(mode)
+        units.append(relative)
+
+    # Source code and visual settings only; no shell state, histories, AI settings or accounts.
+    for name in ('kitty', 'nvim', 'fuzzel', 'btop', 'qt5ct', 'qt6ct', 'themes'):
+        copy('.config/' + name)
+    for name in ('config.fish', 'conf.d', 'functions', 'completions'):
+        if (home / '.config/fish' / name).exists():
+            copy('.config/fish/' + name)
+    for version in ('3.0', '4.0'):
+        for name in ('settings.ini', 'gtk.css', 'colors.css'):
+            path = f'.config/gtk-{version}/{name}'
+            if (home / path).exists():
+                copy(path)
+    copy('.config/kdeglobals')
+    # Flatten installed symlinks; never ship repository .git files or developer metadata.
+    shell = home / '.config/quickshell'
+    for name in ('assets', 'config', 'modules', 'scripts'):
+        copy('.config/quickshell/' + name)
+    for name in ('shell.qml', 'cli.sh', 'LICENSE', 'README.md'):
+        if (shell / name).exists():
+            copy('.config/quickshell/' + name)
+    for name in ('bar', 'theme', 'performance', 'lockscreen', 'system'):
+        copy(f'.config/rebos_shell/config/{name}.json')
+    write('.config/rebos_shell/config/weather.json', '{"location": "", "unit": "F"}\n')
+    for name in ('rice', 'rebos_shell', 'colorscheme', 'wallpaper', 'wallpaper-switcher',
+                 'terminal-bonsai', 'project-picker', 'emoji-dmenu', 'wayland-screenshot'):
+        copy('.local/bin/' + name)
+    for name in ('cbonsai.c', 'LICENSE', 'README.md', 'INSTALL.md'):
+        copy('.local/share/cbonsai/' + name)
+    copy('.local/share/fonts/rebos_shell')
+    copy('.local/share/fonts/phosphor')
+    copy('.local/share/fonts/terminal-setup', home / 'terminal-setup/files/.local/share/fonts/terminal-setup')
+    copy('.local/share/icons/GoogleDot-Black')
+    copy('.config/spicetify/Themes/rebos_shell')
+    copy('.config/vesktop/themes/rebos_shell.css')
+    for name in ('colors.json', 'effective-palette.json', 'fish.fish', 'fzf.conf',
+                 'kitty.conf', 'niri-colors.kdl'):
+        copy('.cache/rebos_shell/' + name)
+    # 307 prepared wallpapers plus the original rice wallpapers and current selection.
+    copy('.local/share/wallpapers/rebos', home / 'code/dots-niri/assets/wal')
+    copy('.local/share/wallpapers/wallpapers/MAKC-1920x1200')
+    state = json.loads((home / '.cache/rebos_shell/wallpapers.json').read_text())
+    current = Path(state['currentWall'])
+    copy('.local/share/wallpapers/default' + current.suffix, current)
+    state.update(currentWall='@HOME@/.local/share/wallpapers/default' + current.suffix,
+                 wallPath='@HOME@/.local/share/wallpapers', perScreenWallpapers={})
+    write('.cache/rebos_shell/wallpapers.json', json.dumps(state, indent=2) + '\n')
+
+    profile = (home / '.config/niri/config-quickshell.kdl').read_text()
+    # Use native monitor modes and normal power handling on other computers.
+    import re
+    profile = re.sub(r'^output "[^"]+" \{.*?^\}\n', '', profile, flags=re.M | re.S)
+    profile = re.sub(r'^debug \{.*?^\}\n', '', profile, flags=re.M | re.S)
+    profile = profile.replace('    disable-power-key-handling\n', '')
+    # Keep essentials only; optional applications are launched explicitly by the user.
+    profile = '\n'.join(line for line in profile.splitlines() if not line.startswith('spawn-at-startup ')) + '\n'
+    profile = profile.replace('spawn "rsclip" "show"', 'spawn "rebos-clipboard"')
+    profile = profile.replace('spawn "cider"', 'spawn "spotify-launcher"')
+    profile = profile.replace('spawn "project-picker" "zed"', 'spawn "project-picker"')
+    profile = profile.replace('XDG_MENU_PREFIX "arch-"',
+                              'XDG_MENU_PREFIX "arch-"\n    PATH "@HOME@/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/bin"')
+    profile += '\nspawn-at-startup "/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1"\n'
+    profile += 'spawn-at-startup "sh" "-c" "exec udiskie --no-notify"\n'
+    profile += 'spawn-at-startup "sh" "-c" "wl-paste --watch cliphist store"\n'
+    write('.config/niri/config-quickshell.kdl', profile)
+    write('.config/niri/config.kdl', '''// Portable rebos desktop profile.
+include "config-quickshell.kdl"
+spawn-at-startup "sh" "-c" "exec \\"$HOME/.local/bin/rice\\" start"
+cursor {
+    xcursor-theme "GoogleDot-Black"
+    xcursor-size 20
+}
+''')
+    write('.config/environment.d/90-rebos-desktop.conf',
+          'QT_QPA_PLATFORMTHEME=qt6ct\nPATH=${HOME}/.local/bin:${PATH}\n')
+    write('.config/xdg-desktop-portal/niri-portals.conf',
+          '[preferred]\ndefault=gnome;gtk;\norg.freedesktop.impl.portal.FileChooser=gtk\n')
+    write('.local/bin/zen-browser', '''#!/usr/bin/env bash
+set -euo pipefail
+if command -v zen-browser-bin >/dev/null; then exec zen-browser-bin "$@"; fi
+if [[ -x /usr/bin/zen-browser ]]; then exec /usr/bin/zen-browser "$@"; fi
+if [[ -x /usr/bin/zen ]]; then exec /usr/bin/zen "$@"; fi
+exec firefox "$@"
+''', 0o755)
+    write('.config/scripts/browser-app', '''#!/usr/bin/env bash
+set -euo pipefail
+exec xdg-open "${1:?A URL is required}"
+''', 0o755)
+    write('.local/bin/rebos-clipboard', '''#!/usr/bin/env bash
+set -euo pipefail
+selection=$(cliphist list | fuzzel --dmenu --prompt='Clipboard > ')
+[[ -z $selection ]] || printf '%s' "$selection" | cliphist decode | wl-copy
+''', 0o755)
+    for name in ('install.sh', 'install-aur.sh', 'uninstall.sh', 'port-manager.sh',
+                 'copy-latest-screenshot-path.sh', 'scale-adjust.sh'):
+        copy('.config/scripts/' + name)
+    write('.local/share/applications/rebos-shell-settings.desktop', '''[Desktop Entry]
+Type=Application
+Name=rebos_shell Settings
+Exec=rebos_shell run settings
+Icon=preferences-desktop
+Categories=Settings;
+''')
+    write('.local/share/applications/wallpaper-switcher.desktop', '''[Desktop Entry]
+Type=Application
+Name=Wallpaper Switcher
+Exec=wallpaper-switcher gui
+Icon=preferences-desktop-wallpaper
+Categories=Settings;
+''')
+    # Normalize usernames and original source paths in copied text, never in binary assets.
+    text_suffixes = {'.json', '.kdl', '.conf', '.ini', '.css', '.qml', '.js', '.py',
+                     '.sh', '.fish', '.lua', '.md', '.desktop', '.toml', ''}
+    for path in user.rglob('*'):
+        if path.is_file() and path.suffix in text_suffixes:
+            try:
+                content = path.read_text()
+            except UnicodeError:
+                continue
+            content = content.replace(str(home / 'code/dots-niri'), '@HOME@')
+            content = content.replace(str(home), '@HOME@')
+            content = content.replace('gtk-cursor-theme-name=capitaine-cursors', 'gtk-cursor-theme-name=GoogleDot-Black')
+            content = content.replace('font=Gabarito', 'font=JetBrains Mono')
+            path.write_text(content)
+    picker = user / '.local/bin/project-picker'
+    content = picker.read_text().replace("\t\tzed) printf 'zed' ;;", "\t\tzed) printf 'zed' ;;\n\t\tnvim) printf 'nvim' ;;")
+    content = content.replace("\tcommand -v zed >/dev/null 2>&1 && printf 'zed\\n'",
+                              "\tcommand -v zed >/dev/null 2>&1 && printf 'zed\\n'\n\tcommand -v nvim >/dev/null 2>&1 && printf 'nvim\\n'\n\treturn 0")
+    content = content.replace('if command -v code >/dev/null 2>&1; then next=code; else next=zed; fi',
+                              'if command -v code >/dev/null 2>&1; then next=code; else next=nvim; fi')
+    picker.write_text(content)
+    system = payload / 'system/ly'
+    system.mkdir(parents=True)
+    for name in ('config.ini', 'blackhole-smooth-240x67.dur'):
+        shutil.copy2(home / 'code/dots-niri/install/ly' / name, system / name)
+    # Treat each dotfile component as one replacement, including symlinked installations.
+    for component in ('.config/niri', '.config/fish', '.config/quickshell',
+                      '.config/gtk-3.0', '.config/gtk-4.0'):
+        units = [u for u in units if not u.startswith(component + '/')]
+        units.append(component)
+    manifest = {'created': datetime.now(timezone.utc).isoformat(),
+                'description': 'Selected live desktop sources, sanitized portable snapshot',
+                'units': sorted(units)}
+    (payload / 'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
+    hashes = {str(p.relative_to(payload)): hashlib.sha256(p.read_bytes()).hexdigest()
+              for p in sorted(payload.rglob('*')) if p.is_file()}
+    (payload / 'checksums.json').write_text(json.dumps(hashes, indent=2) + '\n')
+    print(f'Captured {len(hashes)} files in {payload}')
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--home', type=Path, default=Path.home())
+    build(parser.parse_args().home.resolve())

@@ -1,0 +1,11 @@
+// Generated from the effective QuickShell palette.
+layout {
+    border {
+        active-color "#4cd9e3"
+        inactive-color "#474747"
+    }
+    focus-ring {
+        active-color "#4cd9e3"
+        inactive-color "#474747"
+    }
+}

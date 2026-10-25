@@ -1,137 +1,42 @@
 #!/usr/bin/env bash
-
+# Optional clone/update helper. Private repositories require existing Git authentication.
 set -euo pipefail
-IFS=$'\n\t'
-
-REPO_URL=${REPO_URL:-https://github.com/Dytox2/rebos_enclosure.git}
-INSTALL_ROOT=${INSTALL_ROOT:-${HOME}/code}
-CLONE_DIR=${CLONE_DIR:-${INSTALL_ROOT}/rebos_enclosure}
-BRANCH=${BRANCH:-main}
-INSTALL_ARGS=()
-
-msg() { printf "\033[1;32m==>\033[0m %s\n" "$*"; }
-warn() { printf "\033[1;33m==>\033[0m %s\n" "$*"; }
-die() { printf "\033[1;31m==>\033[0m %s\n" "$*" >&2; exit 1; }
-
-usage() {
-	cat <<'EOF'
-Usage: oneline.sh [install.sh options]
-
-Bootstrap the dots-niri installer by cloning (or updating) the repo in a
-persistent location, then running install/install.sh.
-
-Environment overrides:
-  REPO_URL      Git repository to clone
-  INSTALL_ROOT  Parent directory for the clone (default: ~/code)
-  CLONE_DIR     Full clone path (default: ~/code/rebos_enclosure)
-  BRANCH        Branch to clone/update (default: main)
-
-Examples:
-  curl -fsSL https://raw.githubusercontent.com/Dytox2/rebos_enclosure/main/oneline.sh | bash
-  wget -qO- https://raw.githubusercontent.com/Dytox2/rebos_enclosure/main/oneline.sh | bash
-  curl -fsSL https://raw.githubusercontent.com/Dytox2/rebos_enclosure/main/oneline.sh | bash -s -- --sync-only
+repo_url=${REPO_URL:-https://github.com/Dytox2/rebos_enclosure.git}
+clone_dir=${CLONE_DIR:-${INSTALL_ROOT:-$HOME/code}/rebos_enclosure}
+branch=${BRANCH:-main}
+die() { printf '%s\n' "$*" >&2; exit 1; }
+if [[ ${1:-} == -h || ${1:-} == --help ]]; then
+    cat <<'EOF'
+Usage: bash oneline.sh [installer options]
+Clone/update rebos_enclosure, then run its root install.sh.
+Overrides: REPO_URL, CLONE_DIR, INSTALL_ROOT, BRANCH.
+The repository is private: authenticate Git before using this helper.
+This bootstrap creates/updates its checkout even when forwarding --dry-run.
+For a completely read-only preview, run bash install.sh --dry-run in an existing clone.
 EOF
-}
-
-ensure_cmd() {
-	command -v "$1" >/dev/null 2>&1 || die "Required command not found: $1"
-}
-
-install_prereqs() {
-	local missing=()
-	command -v git >/dev/null 2>&1 || missing+=(git)
-
-	if ((${#missing[@]} == 0)); then
-		return 0
-	fi
-
-	msg "Installing missing prerequisites: ${missing[*]}"
-	if [[ $EUID -eq 0 ]]; then
-		pacman -Sy --needed --noconfirm "${missing[@]}"
-	else
-		if command -v sudo >/dev/null 2>&1; then
-			sudo pacman -Sy --needed --noconfirm "${missing[@]}"
-		else
-			die "Missing ${missing[*]} is not available. Install them manually: pacman -S ${missing[*]}"
-		fi
-	fi
-}
-
-parse_args() {
-	while (($#)); do
-		case $1 in
-			--)
-				shift
-				while (($#)); do
-					INSTALL_ARGS+=("$1")
-					shift
-				done
-				break
-				;;
-			-h|--help)
-				usage
-				exit 0
-				;;
-			*)
-				INSTALL_ARGS+=("$1")
-				;;
-		esac
-		shift
-	done
-}
-
-clone_or_update_repo() {
-	ensure_cmd git
-	mkdir -p "$INSTALL_ROOT"
-
-	if [[ -d "$CLONE_DIR/.git" ]]; then
-		msg "Using existing checkout at $CLONE_DIR"
-		local origin_url
-		origin_url=$(git -C "$CLONE_DIR" remote get-url origin 2>/dev/null || printf '')
-		if [[ -n $origin_url && $origin_url != "$REPO_URL" ]]; then
-			warn "Existing repo origin is '$origin_url' (expected '$REPO_URL')."
-			warn "Skipping automatic update and continuing with the existing checkout."
-			return 0
-		fi
-
-		if [[ -n $(git -C "$CLONE_DIR" status --porcelain 2>/dev/null) ]]; then
-			warn "Repository has local changes; skipping automatic pull."
-			return 0
-		fi
-
-		msg "Updating repository"
-		git -C "$CLONE_DIR" fetch --tags origin "$BRANCH"
-		git -C "$CLONE_DIR" checkout "$BRANCH"
-		git -C "$CLONE_DIR" pull --ff-only origin "$BRANCH"
-		git -C "$CLONE_DIR" submodule update --init --recursive
-		return 0
-	fi
-
-	if [[ -e "$CLONE_DIR" ]]; then
-		die "Path exists but is not a git checkout: $CLONE_DIR"
-	fi
-
-	msg "Cloning repository into $CLONE_DIR"
-	git clone --branch "$BRANCH" --recurse-submodules "$REPO_URL" "$CLONE_DIR"
-}
-
-run_installer() {
-	local install_script="$CLONE_DIR/install/install.sh"
-	[[ -f "$install_script" ]] || die "Installer not found at $install_script"
-
-	msg "Starting installer from $CLONE_DIR"
-	if [[ -r /dev/tty ]]; then
-		bash "$install_script" "${INSTALL_ARGS[@]}" < /dev/tty
-	else
-		bash "$install_script" "${INSTALL_ARGS[@]}"
-	fi
-}
-
-main() {
-	parse_args "$@"
-	install_prereqs
-	clone_or_update_repo
-	run_installer
-}
-
-main "$@"
+    exit 0
+fi
+((EUID != 0)) || die 'Run this helper as your normal desktop user, without sudo.'
+if ! command -v git >/dev/null; then
+    [[ -f /etc/arch-release ]] || die 'Install Git first.'
+    command -v sudo >/dev/null || die 'Install Git and configure sudo for your normal user first.'
+    sudo pacman -Syu --needed git
+fi
+if [[ -d $clone_dir/.git ]]; then
+    [[ $(git -C "$clone_dir" remote get-url origin) == "$repo_url" ]] || die 'Existing checkout has another origin. Set REPO_URL to match it, or choose a different CLONE_DIR.'
+    [[ -z $(git -C "$clone_dir" status --porcelain) ]] || die 'Existing checkout has local edits. Run its install.sh directly or commit your changes before updating.'
+    [[ $(git -C "$clone_dir" branch --show-current) == "$branch" ]] || die 'Existing checkout is on another branch. Run its install.sh directly or select the intended branch first.'
+    git -C "$clone_dir" fetch origin "$branch"
+    git -C "$clone_dir" merge --ff-only FETCH_HEAD
+else
+    [[ ! -e $clone_dir ]] || die "Destination already exists: $clone_dir"
+    mkdir -p -- "$(dirname -- "$clone_dir")"
+    git clone --depth=1 --branch "$branch" "$repo_url" "$clone_dir"
+fi
+if [[ -t 0 ]]; then
+    exec bash "$clone_dir/install.sh" "$@"
+elif { exec 3</dev/tty; } 2>/dev/null; then
+    exec bash "$clone_dir/install.sh" "$@" <&3
+else
+    exec bash "$clone_dir/install.sh" "$@"
+fi

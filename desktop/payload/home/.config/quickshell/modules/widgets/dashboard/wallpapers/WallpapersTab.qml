@@ -1,0 +1,1034 @@
+import QtQuick
+import QtQuick.Controls
+import QtQuick.Layouts
+import Quickshell.Widgets
+import qs.modules.theme
+import qs.modules.components
+import qs.modules.globals
+import qs.modules.services
+import qs.config
+import "WallpaperFolders.js" as WallpaperFolders
+
+// Componente principal para el selector de fondos de pantalla.
+FocusScope {
+    id: wallpapersTabRoot
+
+    // Propiedades personalizadas para la funcionalidad del componente.
+    property string searchText: ""
+    property string selectedFolder: "*"
+    readonly property list<var> wallpaperFolders: WallpaperFolders.groups(
+        GlobalStates.wallpaperManager?.wallpaperPaths ?? [],
+        GlobalStates.wallpaperManager?.wallpaperDir ?? "")
+
+    onWallpaperFoldersChanged: {
+        if (!wallpaperFolders.some(folder => folder.id === selectedFolder))
+            selectedFolder = "*";
+    }
+    property int selectedIndex: GlobalStates.wallpaperSelectedIndex
+
+    // Función para actualizar el índice seleccionado de forma centralizada
+    function setSelectedIndex(newIndex: int) {
+        GlobalStates.wallpaperSelectedIndex = newIndex;
+        selectedIndex = newIndex;
+    }
+
+    readonly property string currentScreenName: NiriService.focusedMonitor ? NiriService.focusedMonitor.name : ""
+
+    property bool isPerScreen: {
+        if (!GlobalStates.wallpaperManager || currentScreenName === "") return false;
+        let perScreen = GlobalStates.wallpaperManager.perScreenWallpapers || {};
+        return perScreen[currentScreenName] !== undefined;
+    }
+
+    function togglePerScreenMode() {
+        if (!GlobalStates.wallpaperManager || currentScreenName === "") return;
+        
+        if (isPerScreen) {
+            GlobalStates.wallpaperManager.clearPerScreenWallpaper(currentScreenName);
+        } else {
+            // Apply current wallpaper to this screen to toggle it on
+            let currentWall = GlobalStates.wallpaperManager.currentWallpaper;
+            if (currentWall) {
+                GlobalStates.wallpaperManager.setWallpaper(currentWall, currentScreenName);
+            }
+        }
+    }
+
+    // Configuración interna del grid
+    readonly property int gridColumns: 7
+    readonly property int wallpaperMargin: 4
+
+    // Array de elementos focusables para navegación cíclica
+    property var focusableElements: [
+        {
+            id: "perScreenCheckbox",
+            focusFunc: function () {
+                perScreenCheckboxContainer.keyboardNavigationActive = true;
+                perScreenCheckbox.forceActiveFocus();
+            }
+        },
+        {
+            id: "folderSelector",
+            focusFunc: function () {
+                folderSelector.forceActiveFocus();
+            }
+        },
+        {
+            id: "colorSelector",
+            focusFunc: function () { wallpaperColorControls.focusColor(); }
+        },
+        {
+            id: "sortSelector",
+            focusFunc: function () { wallpaperColorControls.focusSort(); }
+        },
+        {
+            id: "wallpaperModeSelector",
+            focusFunc: function () {
+                wallpaperModeSelector.openAndFocus();
+            }
+        },
+        {
+            id: "schemeSelector",
+            focusFunc: function () {
+                schemeSelector.openAndFocus();
+            }
+        }
+    ]
+
+    property int currentFocusIndex: -1
+
+    // Función para enfocar el campo de búsqueda
+    function focusSearch() {
+        currentFocusIndex = -1;
+        if (!visible || !enabled)
+            return;
+
+        wallpaperSearchInput.focusInput();
+        if (!wallpaperSearchInput.inputActiveFocus) {
+            focusRetryTimer.attempts = 0;
+            focusRetryTimer.restart();
+        }
+
+        // Restaurar índice válido si está en -1 y hay wallpapers
+        if (selectedIndex === -1 && filteredWallpapers.length > 0) {
+            const currentIndex = findCurrentWallpaperIndex();
+            setSelectedIndex(currentIndex !== -1 ? currentIndex : 0);
+        }
+    }
+
+    // Alias para compatibilidad con Dashboard
+    function focusSearchInput() {
+        focusSearch();
+    }
+
+    // Función para navegar hacia adelante (Tab)
+    function focusNextElement() {
+        if (currentFocusIndex === -1) {
+            currentFocusIndex = 0;
+            focusableElements[currentFocusIndex].focusFunc();
+        } else if (currentFocusIndex === focusableElements.length - 1) {
+            // Si estamos en el último elemento, volver al search
+            focusSearch();
+        } else {
+            currentFocusIndex++;
+            focusableElements[currentFocusIndex].focusFunc();
+        }
+    }
+
+    // Función para navegar hacia atrás (Shift+Tab)
+    function focusPreviousElement() {
+        if (currentFocusIndex === -1 || currentFocusIndex === 0) {
+            // Si estamos en el search o en el primer elemento focusable, volver al search
+            focusSearch();
+        } else {
+            currentFocusIndex--;
+            focusableElements[currentFocusIndex].focusFunc();
+        }
+    }
+
+    // Función para posicionar el wallpaper actual centrado verticalmente
+    function centerCurrentWallpaper() {
+        const currentIndex = findCurrentWallpaperIndex();
+        if (currentIndex !== -1) {
+            setSelectedIndex(currentIndex);
+
+            // Calcular la fila del wallpaper actual
+            const currentRow = Math.floor(currentIndex / wallpapersTabRoot.gridColumns);
+            // Calcular el índice del primer item de esa fila
+            const rowStartIndex = currentRow * wallpapersTabRoot.gridColumns;
+
+            // Posicionar para que la fila esté centrada verticalmente
+            wallpaperGrid.positionViewAtIndex(rowStartIndex, GridView.Center);
+        }
+    }
+
+    // Función para encontrar el índice del wallpaper actual en la lista filtrada
+    function findCurrentWallpaperIndex() {
+        if (!GlobalStates.wallpaperManager) {
+            return -1;
+        }
+
+        let perScreen = GlobalStates.wallpaperManager.perScreenWallpapers || {};
+        let currentWallpaper = "";
+        
+        if (currentScreenName !== "" && perScreen[currentScreenName] !== undefined) {
+            currentWallpaper = perScreen[currentScreenName];
+        } else {
+            currentWallpaper = GlobalStates.wallpaperManager.currentWallpaper;
+        }
+
+        if (!currentWallpaper) {
+            return -1;
+        }
+
+        return filteredWallpapers.indexOf(currentWallpaper);
+    }
+
+    // Llama a focusSearch una vez que el componente se ha completado.
+    Component.onCompleted: {
+        Qt.callLater(() => {
+            const manager = GlobalStates.wallpaperManager;
+            const current = manager?.perScreenWallpapers?.[currentScreenName] ?? manager?.currentWallpaper ?? "";
+            const directory = WallpaperFolders.parentDirectory(current);
+            if (wallpaperFolders.some(folder => folder.id === directory))
+                selectedFolder = directory;
+            centerTimer.start();
+        });
+    }
+
+    // Actualizar subcarpetas cuando la pestaña se haga visible
+    onVisibleChanged: {
+        if (visible) {
+            if (GlobalStates.wallpaperManager) {
+                console.log("WallpapersTab became visible, updating subfolders");
+                GlobalStates.wallpaperManager.scanSubfolders();
+            }
+            // Reposicionar al wallpaper actual cuando se hace visible
+            centerTimer.restart();
+        }
+    }
+
+    // Timer para asegurar que el centrado ocurre después de que el GridView esté listo
+    Timer {
+        id: centerTimer
+        interval: 50
+        repeat: false
+        onTriggered: {
+            centerCurrentWallpaper();
+            focusSearch();
+        }
+    }
+
+    // Layer-shell keyboard ownership and Loader visibility settle on separate
+    // turns. Retry briefly until the visible field actually owns Qt focus.
+    Timer {
+        id: focusRetryTimer
+        interval: 40
+        repeat: true
+        property int attempts: 0
+
+        onTriggered: {
+            if (!wallpapersTabRoot.visible || !wallpapersTabRoot.enabled
+                    || wallpaperSearchInput.inputActiveFocus
+                    || attempts >= 15) {
+                stop();
+                return;
+            }
+
+            attempts++;
+            wallpaperSearchInput.focusInput();
+        }
+    }
+
+    // Propiedad calculada que filtra los fondos de pantalla según el texto de búsqueda.
+    readonly property list<string> filteredWallpapers: wallpaperColorControls.arrangedPaths
+
+    onFilteredWallpapersChanged: {
+        const current = findCurrentWallpaperIndex();
+        setSelectedIndex(filteredWallpapers.length > 0 ? (current >= 0 ? current : 0) : -1);
+        Qt.callLater(() => {
+            if (selectedIndex >= 0)
+                wallpaperGrid.positionViewAtIndex(selectedIndex, GridView.Contain);
+            else
+                wallpaperGrid.contentY = 0;
+        });
+    }
+
+    ColumnLayout {
+        anchors.fill: parent
+        spacing: 8
+
+        // Header: search / wallpaper mode / scheme. Selector lists render as
+        // overlays, so expanding one does not change the grid layout.
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.preferredHeight: Math.max(48, schemeSelector.implicitHeight, wallpaperModeSelector.implicitHeight)
+            spacing: 8
+            z: 1000
+
+            StyledRect {
+                id: backButton
+                Layout.preferredWidth: 48
+                Layout.preferredHeight: 48
+                Layout.alignment: Qt.AlignVCenter
+                variant: backMouseArea.containsMouse ? "focus" : "common"
+                radius: Styling.radius(4)
+
+                Text {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
+                    anchors.centerIn: parent
+                    text: Icons.arrowLeft
+                    color: backButton.item
+                    font.family: Icons.font
+                    font.pixelSize: 18
+                }
+
+                MouseArea {
+                    id: backMouseArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: GlobalStates.dashboardCurrentTab = 0
+                }
+            }
+
+            // Barra de búsqueda centrada
+            SearchInput {
+                id: wallpaperSearchInput
+                Layout.fillWidth: true
+                Layout.alignment: Qt.AlignVCenter
+                text: searchText
+                placeholderText: "Search wallpapers..."
+                iconText: ""
+                clearOnEscape: false
+                handleTabNavigation: true
+                disableCursorNavigation: true
+                radius: Styling.radius(4)
+
+                // Manejo de eventos de búsqueda y teclado.
+                onSearchTextChanged: text => {
+                    searchText = text;
+                }
+
+                onEscapePressed: {
+                    GlobalStates.dashboardCurrentTab = 0;
+                }
+
+                onTabPressed: {
+                    focusNextElement();
+                }
+
+                onShiftTabPressed: {
+                    focusPreviousElement();
+                }
+
+                onDownPressed: {
+                    if (filteredWallpapers.length > 0) {
+                        if (selectedIndex < filteredWallpapers.length - 1) {
+                            let newIndex = selectedIndex + wallpapersTabRoot.gridColumns;
+                            if (newIndex >= filteredWallpapers.length) {
+                                newIndex = filteredWallpapers.length - 1;
+                            }
+                            setSelectedIndex(newIndex);
+                        } else if (selectedIndex === -1) {
+                            setSelectedIndex(0);
+                        }
+                    }
+                }
+                onUpPressed: {
+                    if (filteredWallpapers.length > 0) {
+                        if (selectedIndex === -1) {
+                            setSelectedIndex(0);
+                        } else if (selectedIndex >= wallpapersTabRoot.gridColumns) {
+                            setSelectedIndex(selectedIndex - wallpapersTabRoot.gridColumns);
+                        }
+                    }
+                }
+                onLeftPressed: {
+                    if (filteredWallpapers.length > 0) {
+                        if (selectedIndex === -1) {
+                            setSelectedIndex(0);
+                        } else if (selectedIndex > 0) {
+                            setSelectedIndex(selectedIndex - 1);
+                        }
+                    }
+                }
+                onRightPressed: {
+                    if (filteredWallpapers.length > 0) {
+                        if (selectedIndex < filteredWallpapers.length - 1) {
+                            setSelectedIndex(selectedIndex + 1);
+                        } else if (selectedIndex === -1) {
+                            setSelectedIndex(0);
+                        }
+                    }
+                }
+                onAccepted: {
+                    if (selectedIndex >= 0 && selectedIndex < filteredWallpapers.length) {
+                        let selectedWallpaper = filteredWallpapers[selectedIndex];
+                        if (selectedWallpaper && GlobalStates.wallpaperManager) {
+                            if (isPerScreen && currentScreenName !== "") {
+                                GlobalStates.wallpaperManager.setWallpaper(selectedWallpaper, currentScreenName);
+                            } else {
+                                GlobalStates.wallpaperManager.setWallpaper(selectedWallpaper);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Per-Screen Monitor toggle
+            Item {
+                id: perScreenCheckboxContainer
+                Layout.preferredWidth: 120 // un poco mas ancho para que quepa el nombre monitor si es largo
+                Layout.preferredHeight: 48
+
+                property bool keyboardNavigationActive: false
+
+                StyledRect {
+                    variant: perScreenCheckboxContainer.keyboardNavigationActive && perScreenCheckbox.activeFocus ? "focus" : "pane"
+                    anchors.fill: parent
+                    radius: Styling.radius(4)
+                    opacity: 1.0
+
+                    Behavior on opacity {
+                        enabled: Config.animDuration > 0
+                        NumberAnimation {
+                            duration: Config.animDuration / 2
+                            easing.type: Easing.OutQuart
+                        }
+                    }
+
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.margins: 4
+                        spacing: 4
+
+                        Rectangle {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            color: Colors.background
+                            radius: Styling.radius(0)
+
+                            Text {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
+                                anchors.fill: parent
+                                text: currentScreenName // Get the monitor name!
+                                color: Colors.overSurface
+                                font.family: Config.theme.font
+                                font.pixelSize: Config.theme.fontSize
+                                font.weight: Font.Medium
+                                verticalAlignment: Text.AlignVCenter
+                                horizontalAlignment: Text.AlignHCenter
+                                elide: Text.ElideRight
+                                
+                                Behavior on color {
+                                    enabled: Config.animDuration > 0
+                                    ColorAnimation {
+                                        duration: Config.animDuration / 2
+                                        easing.type: Easing.OutQuart
+                                    }
+                                }
+                            }
+                        }
+
+                        Item {
+                            id: perScreenCheckbox
+                            Layout.preferredWidth: 40
+                            Layout.preferredHeight: 40
+                            
+                            property bool checked: isPerScreen
+
+                            onActiveFocusChanged: {
+                                if (!activeFocus) {
+                                    perScreenCheckboxContainer.keyboardNavigationActive = false;
+                                }
+                            }
+
+                            Keys.onPressed: event => {
+                                if (event.key === Qt.Key_Tab) {
+                                    perScreenCheckboxContainer.keyboardNavigationActive = false;
+                                    if (event.modifiers & Qt.ShiftModifier) {
+                                        wallpapersTabRoot.focusPreviousElement();
+                                    } else {
+                                        wallpapersTabRoot.focusNextElement();
+                                    }
+                                    event.accepted = true;
+                                } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
+                                    togglePerScreenMode();
+                                    event.accepted = true;
+                                } else if (event.key === Qt.Key_Escape) {
+                                    perScreenCheckboxContainer.keyboardNavigationActive = false;
+                                    focusSearch();
+                                    event.accepted = true;
+                                }
+                            }
+
+                            Item {
+                                anchors.fill: parent
+
+                                Rectangle {
+                                    anchors.fill: parent
+                                    radius: Styling.radius(0)
+                                    color: Colors.background
+                                    visible: !perScreenCheckbox.checked
+                                }
+
+                                StyledRect {
+                                    variant: "primary"
+                                    anchors.fill: parent
+                                    radius: Styling.radius(0)
+                                    visible: perScreenCheckbox.checked
+                                    opacity: perScreenCheckbox.checked ? 1.0 : 0.0
+
+                                    Behavior on opacity {
+                                        enabled: Config.animDuration > 0
+                                        NumberAnimation {
+                                            duration: Config.animDuration / 2
+                                            easing.type: Easing.OutQuart
+                                        }
+                                    }
+
+                                    Text {
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
+                                        anchors.centerIn: parent
+                                        text: Icons.accept
+                                        color: Styling.srItem("primary")
+                                        font.family: Icons.font
+                                        font.pixelSize: 20
+                                        scale: perScreenCheckbox.checked ? 1.0 : 0.0
+
+                                        Behavior on scale {
+                                            enabled: Config.animDuration > 0
+                                            NumberAnimation {
+                                                duration: Config.animDuration / 2
+                                                easing.type: Easing.OutBack
+                                                easing.overshoot: 1.5
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    togglePerScreenMode();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Wallpaper display mode; its options render below as an overlay.
+            WallpaperModeSelector {
+                id: wallpaperModeSelector
+                Layout.preferredWidth: 150
+                Layout.preferredHeight: implicitHeight
+                Layout.alignment: Qt.AlignTop
+                z: 100
+
+                onModeListExpandedChanged: {
+                    if (modeListExpanded) {
+                        schemeSelector.keyboardNavigationActive = false;
+                        schemeSelector.schemeListExpanded = false;
+                    }
+                }
+
+                onModeSelectorClosed: {
+                    wallpapersTabRoot.focusSearch();
+                }
+
+                onEscapePressedOnMode: {
+                    wallpapersTabRoot.focusSearch();
+                }
+
+                onTabPressed: {
+                    wallpapersTabRoot.focusNextElement();
+                }
+
+                onShiftTabPressed: {
+                    wallpapersTabRoot.focusPreviousElement();
+                }
+            }
+
+            // Scheme selector; its options render below as an overlay above
+            // the wallpaper grid.
+            SchemeSelector {
+                id: schemeSelector
+                Layout.preferredWidth: 220
+                Layout.preferredHeight: implicitHeight
+                Layout.alignment: Qt.AlignTop
+                z: 100
+
+                onSchemeListExpandedChanged: {
+                    if (schemeListExpanded) {
+                        wallpaperModeSelector.keyboardNavigationActive = false;
+                        wallpaperModeSelector.modeListExpanded = false;
+                    }
+                }
+
+                onSchemeSelectorClosed: {
+                    wallpapersTabRoot.focusSearch();
+                }
+
+                onEscapePressedOnScheme: {
+                    wallpapersTabRoot.focusSearch();
+                }
+
+                onTabPressed: {
+                    wallpapersTabRoot.focusNextElement();
+                }
+
+                onShiftTabPressed: {
+                    wallpapersTabRoot.focusPreviousElement();
+                }
+            }
+        }
+
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: Styling.fontSize(-3)
+            StyledText {
+                text: "Folder"
+                color: Colors.overSurfaceVariant
+            }
+            WallpaperChoice {
+                id: folderSelector
+                objectName: "wallpaper-folder-selector"
+                Layout.fillWidth: true
+                model: wallpapersTabRoot.wallpaperFolders
+                textRole: "display"
+                valueRole: "id"
+                currentIndex: wallpapersTabRoot.wallpaperFolders.findIndex(folder => folder.id === wallpapersTabRoot.selectedFolder)
+                onActivated: wallpapersTabRoot.selectedFolder = currentValue
+                onActiveFocusChanged: {
+                    if (activeFocus)
+                        wallpapersTabRoot.currentFocusIndex = 1;
+                }
+                Keys.onEscapePressed: event => {
+                    wallpapersTabRoot.focusSearch();
+                    event.accepted = true;
+                }
+                Keys.onTabPressed: event => {
+                    wallpapersTabRoot.focusNextElement();
+                    event.accepted = true;
+                }
+                Keys.onBacktabPressed: event => {
+                    wallpapersTabRoot.focusPreviousElement();
+                    event.accepted = true;
+                }
+                ToolTip.visible: folderHover.hovered
+                ToolTip.text: wallpapersTabRoot.selectedFolder === "*" ? "Browse every folder" : wallpapersTabRoot.selectedFolder
+                HoverHandler { id: folderHover }
+            }
+        }
+        WallpaperColorControls {
+            id: wallpaperColorControls
+            Layout.fillWidth: true
+            directory: GlobalStates.wallpaperManager?.wallpaperDir ?? ""
+            paths: WallpaperFolders.filter(GlobalStates.wallpaperManager?.wallpaperPaths ?? [],
+                                           wallpapersTabRoot.selectedFolder, wallpapersTabRoot.searchText)
+        }
+        StyledText {
+            Layout.fillWidth: true
+            visible: wallpapersTabRoot.filteredWallpapers.length === 0
+            text: wallpaperColorControls.indexing ? "Finding wallpaper colors…" : "No wallpapers match these filters."
+            color: Colors.overSurfaceVariant
+        }
+
+        // Grid de wallpapers
+        ClippingRectangle {
+            id: wallpaperGridContainer
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            color: "transparent"
+            radius: Styling.radius(4)
+            clip: true
+
+            // Calcular tamaño de celda basado en columnas y proporción 1:1
+            // El grid tiene margins negativos, así que el ancho real es width + margin*2
+            readonly property real gridWidth: width + (wallpapersTabRoot.wallpaperMargin * 2)
+            readonly property real cellSize: gridWidth / wallpapersTabRoot.gridColumns
+
+            GridView {
+                id: wallpaperGrid
+                anchors.fill: parent
+                anchors.margins: -wallpapersTabRoot.wallpaperMargin
+                cellWidth: wallpaperGridContainer.cellSize
+                cellHeight: wallpaperGridContainer.cellSize
+                flow: GridView.FlowLeftToRight
+                boundsBehavior: Flickable.StopAtBounds
+                model: filteredWallpapers
+                currentIndex: selectedIndex
+
+                // Propiedad para detectar si está en movimiento (drag o flick)
+                property bool isScrolling: dragging || flicking
+
+                // Deshabilitar highlight durante scroll para evitar glitches
+                highlightFollowsCurrentItem: !isScrolling
+
+                // Optimizaciones de rendimiento
+                cacheBuffer: cellHeight
+                displayMarginBeginning: cellHeight
+                displayMarginEnd: cellHeight
+                reuseItems: true
+
+                // Configuración de scroll optimizada
+                flickDeceleration: 5000
+                maximumFlickVelocity: 8000
+
+                // Sincronizar selectedIndex cuando el GridView cambia su currentIndex
+                onCurrentIndexChanged: {
+                    if (currentIndex !== selectedIndex && currentIndex >= 0) {
+                        setSelectedIndex(currentIndex);
+                    }
+                }
+
+                // Elemento de realce para el wallpaper seleccionado.
+                highlight: Item {
+                    width: wallpaperGrid.cellWidth
+                    height: wallpaperGrid.cellHeight
+                    z: 100
+
+                    // Deshabilitar animaciones durante scroll para evitar saltos
+                    Behavior on x {
+                        enabled: Config.animDuration > 0 && !wallpaperGrid.isScrolling
+                        NumberAnimation {
+                            duration: Config.animDuration / 2
+                            easing.type: Easing.OutQuart
+                        }
+                    }
+
+                    Behavior on y {
+                        enabled: Config.animDuration > 0 && !wallpaperGrid.isScrolling
+                        NumberAnimation {
+                            duration: Config.animDuration / 2
+                            easing.type: Easing.OutQuart
+                        }
+                    }
+
+                    ClippingRectangle {
+                        id: highlightRectangle
+                        anchors.centerIn: parent
+                        width: parent.width - wallpapersTabRoot.wallpaperMargin * 2
+                        height: parent.height - wallpapersTabRoot.wallpaperMargin * 2
+                        color: "transparent"
+                        border.color: Styling.srItem("overprimary")
+                        border.width: 2
+                        visible: selectedIndex >= 0
+                        radius: Styling.radius(4)
+                        z: 10
+
+                        // Borde interior original
+                        Rectangle {
+                            anchors.fill: parent
+                            anchors.topMargin: -20
+                            anchors.bottomMargin: 0
+                            anchors.leftMargin: -20
+                            anchors.rightMargin: -20
+                            color: "transparent"
+                            border.color: Colors.background
+                            border.width: 28
+                            radius: Styling.radius(24)
+                            z: 5
+
+                            // Etiqueta unificada que se anima con el highlight
+                            Rectangle {
+                                anchors.bottom: parent.bottom
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                                anchors.bottomMargin: 0
+                                height: 28
+                                color: "transparent"
+                                z: 6
+                                clip: true
+
+                                property var currentItem: wallpaperGrid.currentItem
+                                property bool isCurrentWallpaper: {
+                                    if (!GlobalStates.wallpaperManager || wallpaperGrid.currentIndex < 0)
+                                        return false;
+                                        
+                                    let perScreen = GlobalStates.wallpaperManager.perScreenWallpapers || {};
+                                    let currentWall = "";
+                                    if (currentScreenName !== "" && perScreen[currentScreenName] !== undefined) {
+                                        currentWall = perScreen[currentScreenName];
+                                    } else {
+                                        currentWall = GlobalStates.wallpaperManager.currentWallpaper;
+                                    }
+                                        
+                                    return currentWall === filteredWallpapers[wallpaperGrid.currentIndex];
+                                }
+                                property bool showHoveredItem: currentItem && currentItem.isHovered && !visible
+
+                                visible: selectedIndex >= 0 || showHoveredItem
+
+                                Rectangle {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    width: wallpaperGrid.cellWidth - 20
+                                    height: parent.height
+                                    color: "transparent"
+                                    clip: true
+
+                                    Text {
+                                        id: labelText
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        anchors.horizontalCenter: needsScroll ? undefined : parent.horizontalCenter
+                                        x: needsScroll ? 4 : undefined
+                                        text: {
+                                            if (parent.parent.isCurrentWallpaper) {
+                                                return "CURRENT";
+                                            } else if (wallpaperGrid.currentIndex >= 0 && wallpaperGrid.currentIndex < filteredWallpapers.length) {
+                                                return filteredWallpapers[wallpaperGrid.currentIndex].split('/').pop();
+                                            }
+                                            return "";
+                                        }
+                                        color: parent.parent.isCurrentWallpaper ? Styling.srItem("overprimary") : Colors.overBackground
+                                        // Small bold filenames are noticeably soft with Qt's
+                                        // distance-field renderer on a light background.
+                                        renderType: Text.NativeRendering
+                                        font.family: Config.theme.font
+                                        font.pixelSize: Config.theme.fontSize
+                                        font.weight: Font.Bold
+                                        font.hintingPreference: Font.PreferFullHinting
+                                        horizontalAlignment: Text.AlignHCenter
+
+                                        readonly property bool needsScroll: contentWidth > parent.width - 8
+
+                                        // Resetear posición cuando cambia el texto o cuando deja de necesitar scroll
+                                        onTextChanged: {
+                                            if (needsScroll) {
+                                                x = 4;
+                                            }
+                                        }
+
+                                        onNeedsScrollChanged: {
+                                            if (needsScroll) {
+                                                x = 4;
+                                                scrollAnimation.restart();
+                                            }
+                                        }
+
+                                        SequentialAnimation {
+                                            id: scrollAnimation
+                                            running: labelText.needsScroll && labelText.parent && labelText.parent.parent.visible && !labelText.parent.parent.isCurrentWallpaper
+                                            loops: Animation.Infinite
+
+                                            PauseAnimation {
+                                                duration: 1000
+                                            }
+                                            NumberAnimation {
+                                                target: labelText
+                                                property: "x"
+                                                to: labelText.parent.width - labelText.contentWidth - 4
+                                                duration: 2000
+                                                easing.type: Easing.InOutQuad
+                                            }
+                                            PauseAnimation {
+                                                duration: 1000
+                                            }
+                                            NumberAnimation {
+                                                target: labelText
+                                                property: "x"
+                                                to: 4
+                                                duration: 2000
+                                                easing.type: Easing.InOutQuad
+                                            }
+                                        }
+                                    }
+
+                                    // Dummy item to fill remaining height and keep items top-aligned
+                                    Item {
+                                        Layout.fillHeight: true
+                                    }
+                                }
+
+                                onVisibleChanged: {
+                                    if (visible) {
+                                        labelText.x = 4;
+                                        if (labelText.needsScroll && !isCurrentWallpaper) {
+                                            scrollAnimation.restart();
+                                        }
+                                    } else {
+                                        scrollAnimation.stop();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Delegado para cada elemento de la cuadrícula con lazy loading optimizado.
+                delegate: Item {
+                    width: wallpaperGrid.cellWidth
+                    height: wallpaperGrid.cellHeight
+
+                    property bool isCurrentWallpaper: {
+                        if (!GlobalStates.wallpaperManager)
+                            return false;
+                            
+                        let perScreen = GlobalStates.wallpaperManager.perScreenWallpapers || {};
+                        let currentWall = "";
+                        if (currentScreenName !== "" && perScreen[currentScreenName] !== undefined) {
+                            currentWall = perScreen[currentScreenName];
+                        } else {
+                            currentWall = GlobalStates.wallpaperManager.currentWallpaper;
+                        }
+                        return currentWall === modelData;
+                    }
+
+                    property bool isHovered: false
+                    property bool isSelected: selectedIndex === index
+
+                    // Calcular si el item está visible en el viewport (con buffer para precarga)
+                    readonly property bool isInViewport: {
+                        var gridTop = wallpaperGrid.contentY;
+                        var gridBottom = gridTop + wallpaperGrid.height;
+                        var itemTop = y;
+                        var itemBottom = itemTop + height;
+
+                        // Buffer de una fila arriba y abajo para precarga suave
+                        var buffer = wallpaperGrid.cellHeight;
+                        return itemBottom + buffer >= gridTop && itemTop - buffer <= gridBottom;
+                    }
+
+                    // Contenedor de imagen optimizado con ClippingRectangle para radius
+                    Item {
+                        anchors.fill: parent
+                        anchors.margins: wallpapersTabRoot.wallpaperMargin
+
+                        ClippingRectangle {
+                            anchors.fill: parent
+                            color: Colors.surface
+                            radius: Styling.radius(4)
+
+                                // Lazy loader que solo carga cuando el item está visible
+                                Loader {
+                                    anchors.fill: parent
+                                    sourceComponent: staticImageComponent
+                                    property string sourceFile: modelData
+                                    active: isInViewport && wallpapersTabRoot.visible && (GlobalStates.dashboardOpen || GlobalStates.islandOpen)
+                                    asynchronous: true
+
+                                // Placeholder mientras carga
+                                Rectangle {
+                                    anchors.fill: parent
+                                    color: Colors.surface
+                                    visible: !parent.active || parent.status !== Loader.Ready
+
+                                    Text {
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
+                                        anchors.centerIn: parent
+                                        text: Icons.circleNotch
+                                        font.family: Icons.font
+                                        font.pixelSize: 24
+                                        color: Colors.overSurfaceVariant
+                                        rotation: 0
+
+                                        NumberAnimation on rotation {
+                                            from: 0
+                                            to: 360
+                                            duration: 1000
+                                            loops: Animation.Infinite
+                                            running: parent.visible
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Manejo de eventos de ratón.
+                    MouseArea {
+                        anchors.fill: parent
+                        hoverEnabled: !wallpaperGrid.isScrolling
+                        cursorShape: Qt.PointingHandCursor
+
+                        onEntered: {
+                            if (wallpaperGrid.isScrolling)
+                                return;
+                            parent.isHovered = true;
+                            setSelectedIndex(index);
+                        }
+                        onExited: {
+                            parent.isHovered = false;
+                        }
+                        onPressed: {
+                            if (!wallpaperGrid.isScrolling)
+                                parent.scale = 0.95;
+                        }
+                        onReleased: parent.scale = 1.0
+
+                        onClicked: {
+                            if (wallpaperGrid.isScrolling)
+                                return;
+                            if (GlobalStates.wallpaperManager) {
+                                if (isPerScreen && currentScreenName !== "") {
+                                    GlobalStates.wallpaperManager.setWallpaper(modelData, currentScreenName);
+                                } else {
+                                    GlobalStates.wallpaperManager.setWallpaper(modelData);
+                                }
+                            }
+                        }
+                    }
+
+                    // Animaciones de escala.
+
+                    Behavior on scale {
+                        enabled: Config.animDuration > 0
+                        NumberAnimation {
+                            duration: Config.animDuration / 3
+                            easing.type: Easing.OutCubic
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Componente optimizado para wallpapers con lazy loading
+    Component {
+        id: wallpaperComponent
+
+        Loader {
+            sourceComponent: staticImageComponent // All thumbnails are now static images
+            property string sourceFile: parent.sourceFile
+        }
+    }
+
+    // Componentes de imagen optimizados y reutilizables
+    Component {
+        id: staticImageComponent
+        Image {
+            mipmap: true
+            source: {
+                if (!parent.sourceFile || !GlobalStates.wallpaperManager)
+                    return "";
+
+                // Usar SOLAMENTE thumbnail, nunca el original (muy pesado)
+                var thumbnailPath = GlobalStates.wallpaperManager.getThumbnailPath(parent.sourceFile);
+                var version = GlobalStates.wallpaperManager.thumbnailsVersion;
+                return "file://" + thumbnailPath + "?v=" + version;
+            }
+            fillMode: Image.PreserveAspectCrop
+            asynchronous: true
+            smooth: true
+            cache: false // Deshabilitar cache para reducir uso de RAM
+            sourceSize.width: wallpaperGridContainer.cellSize
+            sourceSize.height: wallpaperGridContainer.cellSize
+
+            // No hay fallback al original para evitar carga excesiva
+            onStatusChanged: {
+                if (status === Image.Error) {
+                    // console.log("Thumbnail not ready yet for:", parent.sourceFile);
+                }
+            }
+        }
+    }
+}

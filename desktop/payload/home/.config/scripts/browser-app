@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+set -euo pipefail
+exec xdg-open "${1:?A URL is required}"

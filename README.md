@@ -1,61 +1,85 @@
 # rebos_enclosure
 
-My Arch Linux desktop configuration: Niri, a customized rebos_shell Quickshell,
-Fish, Kitty, GTK/Qt themes, and desktop utilities.
+Install my customized Niri/rebos_shell desktop on a bootable minimal **x86_64 Arch Linux** system. Clone this repo, run `install.sh`, then reboot and choose Niri at login.
 
-This is a snapshot of the working configuration on 2026-10-10. Quickshell is
-included directly, so local modifications survive cloning without submodules.
-The active configuration at `~/code/dots-niri` and this snapshot use the
-`rebos_shell` branding.
+## Install
 
-## Restore configuration
-
-Install the applications you use first. The desktop needs Niri, Quickshell,
-Fish, Kitty, and the dependencies listed in `install/pkg.txt`.
+Boot the installed system, connect to the internet and log in as a normal user with a password and sudo access. Install the initial tools:
 
 ```bash
-git clone https://github.com/Dytox2/rebos_enclosure.git "$HOME/code/rebos_enclosure"
-cd "$HOME/code/rebos_enclosure"
-./restore.sh --dry-run
-./restore.sh
+sudo pacman -Syu --needed git python
+git clone --depth=1 https://github.com/Dytox2/rebos_enclosure.git
+cd rebos_enclosure
+bash install.sh --dry-run
+bash install.sh
 ```
 
-The restore script links the included `.config` entries and Bash files, plus
-each file in `.local/bin`, `.local/share/applications`, and `.local/share/fonts`.
-Existing destinations are moved to a timestamped directory under
-`~/.local/state/dotfiles/backups`. It does not install packages or change system
-services. Restart your shell after restoring Bash settings. Niri and Quickshell
-may automatically reload when their config changes.
+**This repository is private.** Git must already be authenticated for an account with access. If using GitHub CLI, `gh repo clone Dytox2/rebos_enclosure` is an alternative after `gh auth login`. An unauthenticated raw-URL/curl command cannot install a private repository. Repository visibility is unchanged.
 
-The configuration targets this desktop; monitor names, keybindings, fonts, and
-application paths may need adjustment on another computer. Wallpapers are
-included in `assets/wal`; the upstream installer copies them into
-`~/.local/share/wallpapers`. `packages-explicit.txt` records explicitly installed
-packages as a reference, not a command to install everything.
+The installer upgrades the system, installs dependencies and applications, uses existing Paru/Yay or builds Paru, backs up existing settings, installs the bundled configuration, creates standard user directories and enables desktop services for the next boot. Run it without `sudo` in front; it uses sudo for system changes. AUR package review remains interactive.
 
-## Keep changes
+This installs the desktop onto an existing Arch installation. It does not partition disks, format filesystems, create an ISO, install a bootloader or replace the kernel. For root-only Arch installations, user and sudo preparation are covered in [the detailed guide](desktop/README.md#install-on-minimal-arch).
 
-After restoration, linked config files are edited directly in this repo.
+## What's included
+
+- Niri with current rebos_shell/Quickshell source: island bar, launcher, dashboard, settings, notifications, lockscreen, media controls and wallpaper gallery.
+- Rounded windows, transparency, dark OLED styling, named workspaces and shortcuts. Applications open on the current workspace. Display modes adapt to the destination hardware.
+- Matugen wallpaper colors across GTK, Qt/KDE, Kitty, Fish, Fuzzel, btop, Neovim and supported apps. Includes Zen/Spotify integration and a Vesktop theme file.
+- Kitty/Fish with the custom prompt, fuzzy searching, navigation helpers and compiled wallpaper-colored bonsai greeting.
+- Custom Neovim IDE configuration, plugin lockfile, bundled fonts, cursor, icons, animated Ly login screen and current wallpaper palette.
+- Original rice wallpapers, 307 prepared 1920×1200 MAKC wallpapers and the current background.
+- NetworkManager, Bluetooth, PipeWire/WirePlumber, power profiles, desktop portals, clipboard history, screenshots and OCR tools.
+- Full-profile apps: Firefox, Thunar, Discord, Spotify Launcher, OBS, Obsidian, imv, scrcpy, Flatpak, development tools and optional AUR software: Zen, VS Code, Spicetify and mpvpaper.
+
+The shell and assets are checked into `desktop/payload/`; no submodules or separate installer archive are required. Packages download from the destination's configured repositories and AUR. Full inventory, exclusions, shortcuts and setup details are in [desktop/README.md](desktop/README.md). Exact package lists: [core](desktop/packages/core.txt), [apps](desktop/packages/apps.txt), [AUR](desktop/packages/aur.txt).
+
+## Choices
 
 ```bash
-git status
-git add <files-you-changed>
-git commit -m "Update desktop config"
-git push
+bash install.sh --profile core    # core desktop, Firefox and Neovim; no extra apps/AUR
+bash install.sh --no-aur          # full official apps, skip optional AUR builds
+bash install.sh --no-login        # keep your current display manager
+bash install.sh --keep-network    # keep your current network service configuration
+bash install.sh --files-only      # user settings only; dependencies must already exist
+bash install.sh --yes             # accept the plan; retain AUR package review
 ```
 
-Account sessions, browser profiles, shell history, AI settings, weather location,
-and credentials were excluded. Review new files before committing to this
-repository; ignore rules cannot detect every secret.
+The old `bash install/install.sh` entry point forwards to the same installer. `bash restore.sh` and `bash install/upgrade.sh` use the current snapshot in files-only mode (both accept `--dry-run`). They no longer link the October 10 legacy configuration into your home. `install/install-themed-apps.sh` forwards to the current post-login integration helper.
 
-## Credits and installer
+## After installation
 
-Based on [jR4dh3y's dots-niri](https://github.com/jR4dh3y/dots-niri) and
-[Nonchalant Shell](https://github.com/jR4dh3y/nonchalant-shell).
-Quickshell retains its AGPL-3.0 license in `.config/quickshell/LICENSE`; its bundled
-source includes local modifications captured on 2026-10-10.
+Reboot, choose **Niri** in Ly and log in. **Super+Return** opens Kitty; **Super+Space** opens the launcher; **Super+Shift+W** opens wallpapers. Set weather location in shell settings (Fahrenheit is the default).
 
-`UPSTREAM.md` preserves the original README for reference. The inherited
-`install/` scripts perform broader Arch setup, including packages and services;
-review them before running. Upstream bootstrap links in that document install
-the upstream project.
+Launch Zen once to create its profile. Open Spotify Launcher, sign in and close it, then run:
+
+```bash
+bash desktop/scripts/finish-apps.sh
+```
+
+Neovim plugins/language tools install through Neovim; see `:IDEHelp`. The assistant needs a separately configured agent. NVIDIA proprietary drivers require hardware/kernel-specific setup. Accounts, histories, credentials, browser profiles, machine-specific hardware fixes and game libraries are excluded.
+
+## Backups and recovery
+
+User backups: `~/.local/state/rebos-desktop/backups/`. Use the exact timestamp printed during installation:
+
+```bash
+python3 desktop/scripts/deploy.py --restore "$HOME/.local/state/rebos-desktop/backups/TIMESTAMP"
+```
+
+Restoration replaces installed entries and reinstates their original files/links; it does not undo package/service changes. Linked parent configuration folders are copied locally with source contents preserved, and original links are restored on rollback. System Ly backups and the prior unit enablement listing are under `/var/backups/rebos-desktop/`. See [recovery details](desktop/README.md#backups-and-recovery).
+
+## Check the installer
+
+```bash
+python3 desktop/scripts/deploy.py --verify
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s desktop/tests -v
+bash install.sh --dry-run
+```
+
+[Validation record](desktop/VALIDATION.md): installation/restoration has been exercised in an isolated home and Niri/Fish checks passed. Fresh-machine boot, hardware, GUI behavior, real package changes and AUR builds still need testing on a spare machine or VM.
+
+## Repository layout and credits
+
+`install.sh` is the supported entry point. `desktop/` contains its implementation, portable payload, editable package lists, tests and detailed guide. `oneline.sh` is an optional authenticated clone/update helper. The older root `.config/`, `.local/`, `assets/`, `packages-explicit.txt`, and archived scripts in `docs/legacy/` remain for historical reference; the new installer uses `desktop/payload/` exclusively.
+
+Based on [jR4dh3y's dots-niri](https://github.com/jR4dh3y/dots-niri) and [Nonchalant Shell](https://github.com/jR4dh3y/nonchalant-shell). Current rebos_shell retains its AGPL-3.0 license in [desktop/payload/home/.config/quickshell/LICENSE](desktop/payload/home/.config/quickshell/LICENSE). cbonsai and bundled components retain their licenses. MAKC wallpaper source metadata is bundled; original collection: <https://github.com/makccr/wallpapers>. `UPSTREAM.md` preserves the upstream README.

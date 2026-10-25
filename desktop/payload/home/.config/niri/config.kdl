@@ -1,0 +1,7 @@
+// Portable rebos desktop profile.
+include "config-quickshell.kdl"
+spawn-at-startup "sh" "-c" "exec \"$HOME/.local/bin/rice\" start"
+cursor {
+    xcursor-theme "GoogleDot-Black"
+    xcursor-size 20
+}

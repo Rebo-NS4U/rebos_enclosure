@@ -1,0 +1,305 @@
+{
+  "repository": "https://github.com/makccr/wallpapers",
+  "commit": "3f10f990939bc51b174936e2e92a20fc247e5b25",
+  "installed": "2026-10-16",
+  "processing": "EXIF orientation; center crop to 16:10; Lanczos resize to 1920x1200. Original colors preserved. Two 1920x1080 images upscaled 11.1%.",
+  "images": [
+    {
+      "source": "space/ian-parker-rWey_wseEcY-unsplash.jpg",
+      "size": [
+        9000,
+        6023
+      ],
+      "brightness": 6.4,
+      "bright_fraction": 0.011,
+      "file": "space--ian-parker-rWey_wseEcY-unsplash.jpg",
+      "sha256": "c99a3cf8f0efb7d514df7445d8f24e7baeae6009dd133b56e7ec635b8893ee86"
+    },
+    {
+      "source": "animals/portrait-of-a-flying-falcon-on-a-black-background-illustration-vector.jpg",
+      "size": [
+        1920,
+        1680
+      ],
+      "brightness": 9.6,
+      "bright_fraction": 0.0,
+      "file": "animals--portrait-of-a-flying-falcon-on-a-black-background-illustration-vector.jpg",
+      "sha256": "e0671bbd58b9327cd7b0ed075992ff793824a47fe2fa0d7f3d64821d33a3e0c7"
+    },
+    {
+      "source": "abstract/sand-1.jpg",
+      "size": [
+        4500,
+        3000
+      ],
+      "brightness": 15.6,
+      "bright_fraction": 0.0,
+      "file": "abstract--sand-1.jpg",
+      "sha256": "a34ce28fe512e48f86ebaa00dd4401179abfb29b5132cdc75f8930414029a7ac"
+    },
+    {
+      "source": "animals/niket-goswami--BnqqHaeFq4-unsplash.jpg",
+      "size": [
+        3660,
+        2928
+      ],
+      "brightness": 17.3,
+      "bright_fraction": 0.011,
+      "file": "animals--niket-goswami--BnqqHaeFq4-unsplash.jpg",
+      "sha256": "a621a7e7125d3ddee14e95c7d1bcf9653e56c325792db30b54d73a03d3f7f871"
+    },
+    {
+      "source": "animals/meditations-raven.png",
+      "size": [
+        1920,
+        1080
+      ],
+      "brightness": 20.7,
+      "bright_fraction": 0.048,
+      "file": "animals--meditations-raven.jpg",
+      "sha256": "dd0dcbb253aa3b6135c50e010c81fcf9b333c82a13853c3bc989fd9bd498b80b"
+    },
+    {
+      "source": "animals/rishi-ragunathan-fs6NPHYMN7o-unsplash.jpg",
+      "size": [
+        5471,
+        3908
+      ],
+      "brightness": 22.8,
+      "bright_fraction": 0.007,
+      "file": "animals--rishi-ragunathan-fs6NPHYMN7o-unsplash.jpg",
+      "sha256": "454cfec23f9d9a1869f3d5e3182db25d57dd8950cd576666096a0ebf0ec61663"
+    },
+    {
+      "source": "psychedelic/susan-wilkinson-UFAscr07OaQ-unsplash.jpg",
+      "size": [
+        6000,
+        4000
+      ],
+      "brightness": 23.4,
+      "bright_fraction": 0.001,
+      "file": "psychedelic--susan-wilkinson-UFAscr07OaQ-unsplash.jpg",
+      "sha256": "07f4621be56a9eb33c40b60ffdb46002ff735bd39d1209e655305dbd8527c608"
+    },
+    {
+      "source": "abstract/lucas-benjamin-R79qkPYvrcM-unsplash.jpg",
+      "size": [
+        5884,
+        4403
+      ],
+      "brightness": 26.2,
+      "bright_fraction": 0.006,
+      "file": "abstract--lucas-benjamin-R79qkPYvrcM-unsplash.jpg",
+      "sha256": "286410f392800d94f4191faea63a746b7a7be3303801c8cc038b077668990d5d"
+    },
+    {
+      "source": "psychedelic/MD2o9m.jpg",
+      "size": [
+        1920,
+        1080
+      ],
+      "brightness": 27.7,
+      "bright_fraction": 0.008,
+      "file": "psychedelic--MD2o9m.jpg",
+      "sha256": "033450a19205eb0e84a8a61372ecde49f1ddab29b9bb80673fc6337382ba6247"
+    },
+    {
+      "source": "poseidon/PLACES-la-jolla-cove.jpg",
+      "size": [
+        3000,
+        2248
+      ],
+      "brightness": 29.5,
+      "bright_fraction": 0.0,
+      "file": "poseidon--PLACES-la-jolla-cove.jpg",
+      "sha256": "830246cb7eefda9e5ce9fcf259690d0a0fafd03ece0be23e79376c02ae7ef839"
+    },
+    {
+      "source": "space/nasa-Yj1M5riCKk4-unsplash.jpg",
+      "size": [
+        5735,
+        5735
+      ],
+      "brightness": 32.7,
+      "bright_fraction": 0.089,
+      "file": "space--nasa-Yj1M5riCKk4-unsplash.jpg",
+      "sha256": "f61f75cccbe7dd30c4b4a753a1beb4acfee937d1da13e4204c94b5b4283fa0a4"
+    },
+    {
+      "source": "art/The Taking of Christ - Caravaggio.jpg",
+      "size": [
+        9893,
+        7666
+      ],
+      "brightness": 34.0,
+      "bright_fraction": 0.035,
+      "file": "art--The Taking of Christ - Caravaggio.jpg",
+      "sha256": "af51749b85b208993ee607f7b8d53cbe46c66416fe419cbe228d6225421f7523"
+    },
+    {
+      "source": "animals/lachlan-dempsey-black-whales.jpg",
+      "size": [
+        3992,
+        2992
+      ],
+      "brightness": 34.4,
+      "bright_fraction": 0.005,
+      "file": "animals--lachlan-dempsey-black-whales.jpg",
+      "sha256": "58c04cd07a38db34604fc47de8574b054c40156f43a364619dafb2e845d4eac9"
+    },
+    {
+      "source": "abstract/acrylic-paint-2.jpg",
+      "size": [
+        5949,
+        3966
+      ],
+      "brightness": 34.8,
+      "bright_fraction": 0.027,
+      "file": "abstract--acrylic-paint-2.jpg",
+      "sha256": "e567d74729750e806e4ba9fc6222027bfee2d1e35fae68c182cd5d56940f8919"
+    },
+    {
+      "source": "poseidon/alex-perez-pontoon-boat-marco-island.jpg",
+      "size": [
+        3992,
+        2992
+      ],
+      "brightness": 37.0,
+      "bright_fraction": 0.022,
+      "file": "poseidon--alex-perez-pontoon-boat-marco-island.jpg",
+      "sha256": "f9bce55f7ca2bcba04172f726dd3be482e3ea3fb109c8ddbb1e88378cc94e72e"
+    },
+    {
+      "source": "animals/joel-filipe-_AjqGGafofE-unsplash.jpg",
+      "size": [
+        4980,
+        3648
+      ],
+      "brightness": 37.1,
+      "bright_fraction": 0.007,
+      "file": "animals--joel-filipe-_AjqGGafofE-unsplash.jpg",
+      "sha256": "d77fef2da909782a29a5b66e65e31f95e6d39d84ed322afe7b6043d5c52df022"
+    },
+    {
+      "source": "abstract/neon-paint.jpg",
+      "size": [
+        3200,
+        2560
+      ],
+      "brightness": 37.7,
+      "bright_fraction": 0.004,
+      "file": "abstract--neon-paint.jpg",
+      "sha256": "0f06c3ae184c85002b463f810532fb06827c7de990fa50d6c4c463da5cff015b"
+    },
+    {
+      "source": "poseidon/alex-perez-wooden-pier-marco-island.jpg",
+      "size": [
+        3992,
+        2992
+      ],
+      "brightness": 39.8,
+      "bright_fraction": 0.003,
+      "file": "poseidon--alex-perez-wooden-pier-marco-island.jpg",
+      "sha256": "7d481230def4bb50b2238a05ef7699cd9f99d815e7c7e357adb27b9f91f11676"
+    },
+    {
+      "source": "space/stsci-01kx6d0xbhsyp7q1em5qtc43rp.jpg",
+      "size": [
+        3505,
+        3505
+      ],
+      "brightness": 40.6,
+      "bright_fraction": 0.04,
+      "file": "space--stsci-01kx6d0xbhsyp7q1em5qtc43rp.jpg",
+      "sha256": "55a9df8e74cdf9c4e03eb8397d47f82dca5f4178e53c54606985e03e47e19ad9"
+    },
+    {
+      "source": "poseidon/alex-perez-marco-island.jpg",
+      "size": [
+        3992,
+        2992
+      ],
+      "brightness": 49.4,
+      "bright_fraction": 0.003,
+      "file": "poseidon--alex-perez-marco-island.jpg",
+      "sha256": "5b0a7aeee3d3571b63ed7d6ec9b184c87f6627662fe31cf6ae659ea28ea35404"
+    },
+    {
+      "source": "poseidon/joao-silveira-ships-docking-in-portugal.jpg",
+      "size": [
+        3992,
+        2992
+      ],
+      "brightness": 50.9,
+      "bright_fraction": 0.038,
+      "file": "poseidon--joao-silveira-ships-docking-in-portugal.jpg",
+      "sha256": "241099c9caa5a53a280c5e58625469bec6d7affa5f85decff04474ecebf01e2b"
+    },
+    {
+      "source": "art/ARTWORK-the-oath-of-horaces.jpg",
+      "size": [
+        2332,
+        1797
+      ],
+      "brightness": 51.8,
+      "bright_fraction": 0.051,
+      "file": "art--ARTWORK-the-oath-of-horaces.jpg",
+      "sha256": "e7316d8a1787b3f6c8aee9c9cf1e83ade9421741559ccbc180ea5d8522256326"
+    },
+    {
+      "source": "abstract/sand-2.jpg",
+      "size": [
+        4500,
+        3000
+      ],
+      "brightness": 56.7,
+      "bright_fraction": 0.002,
+      "file": "abstract--sand-2.jpg",
+      "sha256": "f02ce9e6f3b04378d6df8f2f9d2e8f06b8d835065cdca1686b045454a4a85169"
+    },
+    {
+      "source": "abstract/joel-filipe-QwoNAhbmLLo-unsplash.jpg",
+      "size": [
+        4610,
+        3648
+      ],
+      "brightness": 58.9,
+      "bright_fraction": 0.081,
+      "file": "abstract--joel-filipe-QwoNAhbmLLo-unsplash.jpg",
+      "sha256": "2dea58d04beabba5b4c08ce778d189013490c5191a6a1c57713547dda81e5c91"
+    },
+    {
+      "source": "space/aldebaran-s-qtRF_RxCAo0-unsplash.jpg",
+      "size": [
+        5303,
+        3971
+      ],
+      "brightness": 62.7,
+      "bright_fraction": 0.006,
+      "file": "space--aldebaran-s-qtRF_RxCAo0-unsplash.jpg",
+      "sha256": "7ddbbef3e3252b6171baa1ce1e154cf6a53a5f5af577f580b130df59ec5366f8"
+    },
+    {
+      "source": "art/ARTWORK-the-lady-of-shallot-waterhouse.jpg",
+      "size": [
+        4096,
+        3144
+      ],
+      "brightness": 63.8,
+      "bright_fraction": 0.045,
+      "file": "art--ARTWORK-the-lady-of-shallot-waterhouse.jpg",
+      "sha256": "df11a0842815a88e9a213a413adbe562da379cbbd8f2bf2023cd4cfc29f065e7"
+    },
+    {
+      "source": "space/aldebaran-s-uXchDIKs4qI-unsplash.jpg",
+      "size": [
+        2406,
+        2411
+      ],
+      "brightness": 65.3,
+      "bright_fraction": 0.036,
+      "file": "space--aldebaran-s-uXchDIKs4qI-unsplash.jpg",
+      "sha256": "749eab17143e3c48db47f041fbd950e377dad5b86a51b4c2cae83c17745ffe0f"
+    }
+  ]
+}

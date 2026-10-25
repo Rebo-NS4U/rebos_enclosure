@@ -1,0 +1,54 @@
+#!/usr/bin/env python3
+"""Open the desktop wallpaper gallery or cycle the MAKC 1920×1200 pack."""
+import argparse
+import fcntl
+import json
+import random
+import subprocess
+import sys
+from pathlib import Path
+
+HOME = Path.home()
+PACK = HOME / '.local/share/wallpapers/wallpapers/MAKC-1920x1200'
+STATE = HOME / '.cache/rebos_shell/wallpapers.json'
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('action', nargs='?', default='gui',
+                        choices=['gui', 'next', 'previous', 'random', 'list'])
+    args = parser.parse_args()
+    if args.action == 'gui':
+        subprocess.run(['qs', 'ipc', 'call', 'rebos_shell', 'run', 'wallpapers'], check=True)
+        return
+    paths = sorted(str(p) for p in PACK.rglob('*.jpg'))
+    if not paths:
+        raise RuntimeError(f'Wallpaper pack is empty: {PACK}')
+    if args.action == 'list':
+        print('\n'.join(paths))
+        return
+    lock_path = HOME / '.cache/wallpaper-switcher.lock'
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    with lock_path.open('a') as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return
+        state = json.loads(STATE.read_text()) if STATE.exists() else {}
+        current = state.get('currentWall', '')
+        if args.action == 'random':
+            chosen = random.choice([p for p in paths if p != current] or paths)
+        elif current not in paths:
+            chosen = paths[-1] if args.action == 'previous' else paths[0]
+        else:
+            step = -1 if args.action == 'previous' else 1
+            chosen = paths[(paths.index(current) + step) % len(paths)]
+        subprocess.run([str(HOME / '.local/bin/wallpaper'), '--crop', chosen], check=True)
+
+
+if __name__ == '__main__':
+    try:
+        main()
+    except (OSError, ValueError, RuntimeError, subprocess.CalledProcessError) as error:
+        print(f'Wallpaper switcher: {error}', file=sys.stderr)
+        sys.exit(1)

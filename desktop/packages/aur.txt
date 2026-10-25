@@ -1,0 +1,5 @@
+# Optional full-profile software; reviewed and built as the normal user.
+zen-browser-bin
+spicetify-cli
+visual-studio-code-bin
+mpvpaper

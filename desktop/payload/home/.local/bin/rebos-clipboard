@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+selection=$(cliphist list | fuzzel --dmenu --prompt='Clipboard > ')
+[[ -z $selection ]] || printf '%s' "$selection" | cliphist decode | wl-copy
