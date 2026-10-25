@@ -10,7 +10,7 @@ Boot the installed system, connect to the internet and log in as a normal user w
 sudo pacman -Syu --needed git python
 git clone --depth=1 https://github.com/Dytox2/rebos_enclosure.git
 cd rebos_enclosure
-bash install.sh --dry-run
+bash install.sh --interactive --dry-run
 bash install.sh
 ```
 
@@ -31,12 +31,37 @@ This installs the desktop onto an existing Arch installation. It does not partit
 - NetworkManager, Bluetooth, PipeWire/WirePlumber, power profiles, desktop portals, clipboard history, screenshots and OCR tools.
 - Full-profile apps: Firefox, Thunar, Discord, Spotify Launcher, OBS, Obsidian, imv, scrcpy, Flatpak, development tools and optional AUR software: Zen, VS Code, Spicetify and mpvpaper.
 
-The shell and assets are checked into `desktop/payload/`; no submodules or separate installer archive are required. Packages download from the destination's configured repositories and AUR. Full inventory, exclusions, shortcuts and setup details are in [desktop/README.md](desktop/README.md). Exact package lists: [core](desktop/packages/core.txt), [apps](desktop/packages/apps.txt), [AUR](desktop/packages/aur.txt).
+The shell and assets are checked into `desktop/payload/`; no submodules or separate installer archive are required. Packages download from the destination's configured repositories and AUR. Full inventory, exclusions, shortcuts and setup details are in [desktop/README.md](desktop/README.md). Edit base packages in [core.txt](desktop/packages/core.txt) and optional group definitions in [groups.json](desktop/packages/groups.json). [apps.txt](desktop/packages/apps.txt) and [aur.txt](desktop/packages/aur.txt) retain the full-profile application inventories; graphics packages are added according to the selection.
+
+## Interactive setup
+
+`./install.sh` with no arguments opens a numbered terminal menu. To try every choice without installing anything:
+
+```bash
+./install.sh --interactive --dry-run
+```
+
+The menu covers:
+
+- Core/full profile and optional groups: Zen, Discord, media, notes, recording, development, utilities and video wallpapers.
+- AUR availability, detected CPU microcode and graphics packages: keep existing drivers, Intel, AMD, NVIDIA open DKMS, NVIDIA 580 DKMS, Nouveau or basic Mesa for virtual machines.
+- NVIDIA kernel headers, optional hybrid offload launcher and optional early KMS with mkinitcpio.
+- Each monitor's connector, enabled state, resolution/refresh, scale, rotation and startup focus. Choose automatic, horizontal, vertical or manual logical positioning.
+- Ly versus your current login setup, NetworkManager versus current network services, Bluetooth and power profiles.
+
+The complete plan is shown before installation. Enter `q` at a setup prompt or press Ctrl+C to cancel. `--dry-run` alone keeps the quick noninteractive preview; `--yes` uses defaults/flags and skips the final confirmation, while AUR review remains interactive.
+
+Automatic graphics mode installs detected Intel/AMD userspace packages and leaves NVIDIA driver selection unchanged. NVIDIA branches are explicit choices based on your GPU generation; see [Arch's driver table](https://wiki.archlinux.org/title/NVIDIA). Existing conflicting NVIDIA driver families cause a clear stop, without automatic removal. DKMS selections install headers for detected installed kernels; custom kernels can use `--kernel-headers`. For hybrid NVIDIA, `rebos-prime-run <application>` offloads an app without forcing the whole desktop onto NVIDIA. Early KMS adds NVIDIA modules through a backed-up mkinitcpio drop-in; other initramfs generators are not configured by that option.
+
+Monitor discovery uses Niri IPC when available and DRM connectors on a TTY. Missing monitors can be entered by connector name. Use known supported modes; automatic mode remains available. Horizontal/vertical offsets account for resolution, scaling and rotation. When automatic modes have no detected resolution, choose explicit modes or automatic/manual placement. Generated settings live in `~/.config/niri/monitors.kdl`; the selected plan is saved privately in `~/.local/state/rebos-desktop/installation.json`. Both participate in user-file backup/restore.
 
 ## Choices
 
 ```bash
 bash install.sh --profile core    # core desktop, Firefox and Neovim; no extra apps/AUR
+bash install.sh --groups notes,media --no-aur
+bash install.sh --graphics keep --no-login --keep-network
+bash install.sh --monitors desktop/examples/monitors.json --dry-run
 bash install.sh --no-aur          # full official apps, skip optional AUR builds
 bash install.sh --no-login        # keep your current display manager
 bash install.sh --keep-network    # keep your current network service configuration
@@ -56,7 +81,7 @@ Launch Zen once to create its profile. Open Spotify Launcher, sign in and close 
 bash desktop/scripts/finish-apps.sh
 ```
 
-Neovim plugins/language tools install through Neovim; see `:IDEHelp`. The assistant needs a separately configured agent. NVIDIA proprietary drivers require hardware/kernel-specific setup. Accounts, histories, credentials, browser profiles, machine-specific hardware fixes and game libraries are excluded.
+Neovim plugins/language tools install through Neovim; see `:IDEHelp`. The assistant needs a separately configured agent. NVIDIA branch selection must match your hardware; driver builds and physical graphics behavior still require target-machine testing. Accounts, histories, credentials, browser profiles, machine-specific hardware fixes and game libraries are excluded.
 
 ## Backups and recovery
 

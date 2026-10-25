@@ -4,6 +4,8 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+import subprocess
+import sys
 
 spec = importlib.util.spec_from_file_location('deploy', Path(__file__).resolve().parents[1] / 'scripts/deploy.py')
 deploy = importlib.util.module_from_spec(spec)
@@ -121,6 +123,40 @@ class DeploymentTests(unittest.TestCase):
         self.seal()
         with self.assertRaisesRegex(ValueError, 'Unsafe'):
             deploy.install(self.payload, self.home)
+
+    def test_custom_monitors_plan_and_offload_launcher_restore_together(self):
+        scripts = Path(__file__).resolve().parents[1] / 'scripts'
+        sys.path.insert(0, str(scripts))
+        self.addCleanup(lambda: sys.path.remove(str(scripts)))
+        config = self.payload / 'home/.config/niri'
+        config.mkdir()
+        (config / 'config.kdl').write_text('// installed base\n')
+        (self.payload / 'manifest.json').write_text(json.dumps({'units': ['.config/kitty', '.config/niri']}))
+        self.seal()
+        source = self.root / 'niri-source'
+        source.mkdir()
+        (source / 'config.kdl').write_text('original untouched')
+        (self.home / '.config').mkdir()
+        (self.home / '.config/niri').symlink_to(source)
+        plan = json.loads(subprocess.check_output(['python3', str(scripts / 'setup.py'), 'plan',
+                          '--graphics', 'nvidia-open', '--kernel-headers', 'linux-headers',
+                          '--hybrid', '--groups', 'none', '--files-only'], text=True))
+        plan['monitors'] = {'layout': 'horizontal', 'outputs': [
+            {'name': 'DP-1', 'mode': '3840x2160@144', 'scale': 2},
+            {'name': 'HDMI-A-1', 'mode': '1920x1080@60', 'primary': True}]}
+        backup = deploy.install(self.payload, self.home, settings=plan)
+        installed = self.home / '.config/niri'
+        self.assertIn('include "monitors.kdl"', (installed / 'config.kdl').read_text())
+        self.assertIn('position x=1920 y=0', (installed / 'monitors.kdl').read_text())
+        self.assertEqual((source / 'config.kdl').read_text(), 'original untouched')
+        state = self.home / '.local/state/rebos-desktop/installation.json'
+        self.assertEqual(state.stat().st_mode & 0o777, 0o600)
+        launcher = self.home / '.local/bin/rebos-prime-run'
+        self.assertTrue(launcher.stat().st_mode & 0o111)
+        deploy.restore(backup)
+        self.assertTrue(installed.is_symlink())
+        self.assertFalse(state.exists())
+        self.assertFalse(launcher.exists())
 
 
 if __name__ == '__main__':

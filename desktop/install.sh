@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# Run from the installed Arch system as a regular sudo-capable user.
+# Install into an existing Arch system as the normal desktop user.
 set -Eeuo pipefail
 ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
-profile=full
+export PYTHONDONTWRITEBYTECODE=1
+planner=(python3 "$ROOT/scripts/setup.py")
+plan_args=()
 dry_run=0
-files_only=0
-login=1
-network=1
-aur=1
 assume_yes=0
+interactive=0
+[[ $# != 0 || ! -t 0 ]] || interactive=1
 work_dir=
 trap '[[ -z ${work_dir:-} ]] || rm -rf -- "$work_dir"' EXIT
 trap 'printf "Installer stopped at line %s. See the error above. Dry-run mode does not change files or create backups.\n" "$LINENO" >&2' ERR
@@ -17,23 +17,41 @@ die() { printf '%s\n' "$*" >&2; exit 1; }
 usage() {
     cat <<'EOF'
 Usage: ./install.sh [options]
-  --profile core|full   Core desktop, or desktop plus apps (default: full)
-  --no-aur              Skip optional AUR packages (Firefox remains available)
-  --no-login            Keep current display-manager configuration
-  --keep-network       Keep current network services; still installs NetworkManager
-  --files-only         Deploy user files only; no sudo, packages or services
-  --dry-run            Verify payload and print plan; make no changes
-  --yes                Accept this install plan (AUR review remains interactive)
-  --help               Show this help
+No arguments in a terminal opens the interactive setup menu.
+  --interactive             Show setup choices (also works with --dry-run)
+  --non-interactive          Use defaults/flags without the setup menu
+  --profile core|full       Core desktop or full app selection (default: full)
+  --groups LIST             all, none, or comma-separated app group IDs:
+                            browser,communication,media,notes,recording,
+                            development,utilities,video-wallpapers
+  --graphics DRIVER         auto, keep, amd, intel, nvidia-open, nvidia-580,
+                            nouveau, mesa (default: auto = Intel/AMD detection)
+  --microcode CHOICE        auto, keep, amd, intel
+  --kernel-headers LIST     Override detected DKMS kernel header packages
+  --hybrid / --no-hybrid    Add/skip NVIDIA offload launcher with NVIDIA setup
+  --early-kms               Early NVIDIA modules with mkinitcpio
+  --monitors FILE           Monitor configuration JSON; see README
+  --no-aur                  Skip optional AUR apps; incompatible with nvidia-580
+  --no-login                Keep the current display manager
+  --keep-network            Keep current network services
+  --no-bluetooth            Skip Bluetooth packages/service configuration
+  --no-power                Skip power-profiles-daemon setup
+  --files-only              User files/monitor settings only; no system changes
+  --dry-run                 Show the plan and verify payload; make no changes
+  --yes                     Accept plan; preserve AUR package review
+  --help                    Show this help
 EOF
 }
 while (($#)); do
     case $1 in
-        --profile) (($# >= 2)) || die '--profile needs a value'; profile=$2; shift ;;
-        --no-aur) aur=0 ;;
-        --no-login) login=0 ;;
-        --keep-network) network=0 ;;
-        --files-only) files_only=1 ;;
+        --interactive) interactive=1 ;;
+        --non-interactive) interactive=0 ;;
+        --profile|--groups|--graphics|--microcode|--kernel-headers|--monitors)
+            (($# >= 2)) || die "$1 needs a value"
+            plan_args+=("$1" "$2"); shift ;;
+        --no-login) plan_args+=(--login keep) ;;
+        --keep-network) plan_args+=(--network keep) ;;
+        --no-aur|--files-only|--no-bluetooth|--no-power|--hybrid|--no-hybrid|--early-kms) plan_args+=("$1") ;;
         --dry-run) dry_run=1 ;;
         --yes) assume_yes=1 ;;
         -h|--help) usage; exit 0 ;;
@@ -41,104 +59,86 @@ while (($#)); do
     esac
     shift
 done
-[[ $profile == core || $profile == full ]] || die 'Profile must be core or full'
-[[ ${XDG_CONFIG_HOME:-$HOME/.config} == "$HOME/.config" && ${XDG_DATA_HOME:-$HOME/.local/share} == "$HOME/.local/share" && ${XDG_CACHE_HOME:-$HOME/.cache} == "$HOME/.cache" && ${XDG_STATE_HOME:-$HOME/.local/state} == "$HOME/.local/state" ]] || die 'This snapshot uses standard XDG paths under HOME. Unset custom XDG paths before installation.'
-
-read_packages() { awk '{sub(/#.*/, ""); if (NF) print $1}' "$@" | sort -u; }
-lists=("$ROOT/packages/core.txt")
-[[ $profile != full ]] || lists+=("$ROOT/packages/apps.txt")
-hardware=()
-if [[ -r /proc/cpuinfo ]]; then
-    if grep -q GenuineIntel /proc/cpuinfo; then hardware+=(intel-ucode); fi
-    if grep -q AuthenticAMD /proc/cpuinfo; then hardware+=(amd-ucode); fi
+command -v python3 >/dev/null || die 'Install Python first: sudo pacman -Syu --needed python'
+[[ ${XDG_CONFIG_HOME:-$HOME/.config} == "$HOME/.config" && ${XDG_DATA_HOME:-$HOME/.local/share} == "$HOME/.local/share" && ${XDG_CACHE_HOME:-$HOME/.cache} == "$HOME/.cache" && ${XDG_STATE_HOME:-$HOME/.local/state} == "$HOME/.local/state" ]] || die 'Use standard XDG paths under HOME for this snapshot.'
+if ((interactive)); then
+    [[ -t 0 ]] || die 'Interactive setup needs a terminal. Use flags for unattended previews.'
+    plan_args+=(--interactive)
 fi
-# Kernel-provided drivers and Mesa work across AMD/Intel. NVIDIA drivers are an explicit hardware choice.
-for vendor in /sys/class/drm/card*/device/vendor; do
-    [[ -r $vendor ]] || continue
-    case $(<"$vendor") in
-        0x1002) hardware+=(vulkan-radeon libva-mesa-driver) ;;
-        0x8086) hardware+=(vulkan-intel intel-media-driver) ;;
-        0x10de) printf 'NVIDIA detected: keep/install the driver appropriate to your GPU and kernel; see README.\n' ;;
-    esac
-done
-mapfile -t packages < <(read_packages "${lists[@]}")
-packages+=("${hardware[@]}")
-printf 'rebos desktop installer\nProfile: %s | AUR: %s | Ly: %s | NetworkManager: %s\nDestination: %s\n' "$profile" "$aur" "$login" "$network" "$HOME"
-printf 'Official packages: %s\n' "${packages[*]}"
-if [[ $profile == full && $aur == 1 ]]; then
-    printf 'AUR packages: %s\n' "$(read_packages "$ROOT/packages/aur.txt" | paste -sd ' ')"
-fi
-if ((dry_run)); then
-    command -v python3 >/dev/null || die 'Install python first to verify the payload'
-    python3 "$ROOT/scripts/deploy.py" --dry-run
-    exit 0
-fi
-((EUID != 0)) || die 'Run as the desktop user, without sudo in front of ./install.sh'
+plan_json=$("${planner[@]}" plan "${plan_args[@]}")
+plan() { printf '%s\n' "$plan_json" | "${planner[@]}" "$@"; }
+mapfile -t settings < <(plan get login network bluetooth power graphics early_kms files_only hybrid)
+login=${settings[0]}
+network=${settings[1]}
+bluetooth=${settings[2]}
+power=${settings[3]}
+graphics=${settings[4]}
+early_kms=${settings[5]}
+files_only=${settings[6]}
+hybrid=${settings[7]}
+mapfile -t packages < <(plan get packages)
+mapfile -t aur_packages < <(plan get aur_packages)
+plan summary
+printf 'Destination: %s\n' "$HOME"
+printf '%s\n' "$plan_json" | python3 "$ROOT/scripts/deploy.py" --dry-run --setup-stdin
+if ((!files_only)); then plan check-drivers; fi
+if ((dry_run)); then exit 0; fi
+((EUID != 0)) || die 'Run as your normal desktop user, without sudo in front of ./install.sh'
 if ((!files_only)); then
     [[ -f /etc/arch-release && $(uname -m) == x86_64 ]] || die 'Requires installed x86_64 Arch Linux'
-    [[ ! -d /run/archiso ]] || die 'Boot the installed Arch system first; do not run in the live ISO'
-    command -v sudo >/dev/null || die 'Install sudo and grant your normal user access first (README)'
-    if ((login)) && [[ -L /etc/systemd/system/display-manager.service ]]; then
+    [[ ! -d /run/archiso ]] || die 'Boot the installed system first; do not run inside the live ISO'
+    command -v sudo >/dev/null || die 'Configure sudo for your normal user first'
+    if [[ $login == ly && -L /etc/systemd/system/display-manager.service ]]; then
         active_manager=$(basename "$(readlink -f /etc/systemd/system/display-manager.service)")
-        [[ $active_manager == ly@*.service || $active_manager == ly.service ]] || die "Existing display manager: $active_manager. Rerun with --no-login or disable it explicitly."
+        [[ $active_manager == ly@*.service || $active_manager == ly.service ]] || die "Existing display manager: $active_manager. Choose keep in the menu, or use --no-login."
     fi
 fi
 if ((!assume_yes)); then
-    [[ -t 0 ]] || die 'Use --yes to accept the displayed plan in unattended use'
-    read -r -p 'Install the displayed desktop configuration? [y/N] ' response
+    [[ -t 0 ]] || die 'Use --yes to accept the displayed plan without a terminal'
+    read -r -p 'Install this plan? [y/N] ' response
     [[ $response == y || $response == Y ]] || exit 0
 fi
 if ((!files_only)); then
     sudo -v
-    # Always perform a full upgrade; never create a partial-upgrade installation.
     sudo pacman -Syu --needed --noconfirm python base-devel git curl rsync
-fi
-command -v python3 >/dev/null || die 'python3 is required'
-python3 "$ROOT/scripts/deploy.py" --verify
-python3 "$ROOT/scripts/deploy.py" --dry-run
-if ((!files_only)); then
-    # Fail on removed/renamed repo packages before installing the profile.
     for package in "${packages[@]}"; do
-        pacman -Si "$package" >/dev/null || die "Package unavailable: $package. Update the package list and rerun."
+        pacman -Si "$package" >/dev/null || die "Package unavailable: $package. Update the selection/package list and rerun."
     done
     sudo pacman -S --needed --noconfirm "${packages[@]}"
-    if [[ $profile == full && $aur == 1 ]]; then
-        if command -v paru >/dev/null; then
-            aur_helper=paru
-        elif command -v yay >/dev/null; then
-            aur_helper=yay
+    if ((${#aur_packages[@]})); then
+        if command -v paru >/dev/null; then aur_helper=paru
+        elif command -v yay >/dev/null; then aur_helper=yay
         else
             work_dir=$(mktemp -d)
             git clone https://aur.archlinux.org/paru.git "$work_dir/paru"
             printf 'Review paru PKGBUILD before building:\n'
             cat "$work_dir/paru/PKGBUILD"
             read -r -p 'Build this paru package? [y/N] ' response
-            [[ $response == y || $response == Y ]] || die 'AUR build declined; rerun with --no-aur if desired'
+            [[ $response == y || $response == Y ]] || die 'AUR build declined; rerun with another selection or --no-aur'
             (cd "$work_dir/paru" && makepkg -si)
             rm -rf -- "$work_dir"
             work_dir=
             aur_helper=paru
         fi
-        mapfile -t aur_packages < <(read_packages "$ROOT/packages/aur.txt")
         "$aur_helper" -S --needed "${aur_packages[@]}"
     fi
 fi
-for dependency in cc fish fc-cache; do
-    command -v "$dependency" >/dev/null || die "Missing dependency: $dependency"
-done
+for dependency in cc fish fc-cache; do command -v "$dependency" >/dev/null || die "Missing dependency: $dependency"; done
 work_dir=$(mktemp -d)
 cc -O2 "$ROOT/payload/home/.local/share/cbonsai/cbonsai.c" -lpanelw -lncursesw -o "$work_dir/cbonsai"
-# Check config with the target compositor before replacing any user settings.
-if command -v niri >/dev/null; then
-    python3 - "$ROOT/payload/home/.config/niri/config-quickshell.kdl" "$work_dir/niri.kdl" <<'PY'
+# Validate the exact customized Niri configuration before changing user files.
+python3 - "$ROOT/payload/home/.config/niri" "$work_dir/niri" <<'PY'
 from pathlib import Path
 import os
+import shutil
 import sys
-Path(sys.argv[2]).write_text(Path(sys.argv[1]).read_text().replace('@HOME@', os.environ['HOME']))
+shutil.copytree(sys.argv[1], sys.argv[2])
+for path in Path(sys.argv[2]).rglob('*.kdl'):
+    path.write_text(path.read_text().replace('@HOME@', os.environ['HOME']))
 PY
-    niri validate -c "$work_dir/niri.kdl"
-fi
-python3 "$ROOT/scripts/deploy.py" --cbonsai "$work_dir/cbonsai"
+plan render "$work_dir/niri"
+if command -v niri >/dev/null; then niri validate -c "$work_dir/niri/config.kdl"; fi
+printf '%s\n' "$plan_json" | python3 "$ROOT/scripts/deploy.py" --setup-stdin --cbonsai "$work_dir/cbonsai"
 export PATH="$HOME/.local/bin:$PATH"
 mkdir -p "$HOME/Pictures/Screenshots" "$HOME/code"
 fc-cache -f "$HOME/.local/share/fonts"
@@ -148,19 +148,33 @@ if ((!files_only)); then
     sudo mkdir -p "$system_backup"
     systemctl list-unit-files > "$work_dir/units-before.txt"
     sudo cp "$work_dir/units-before.txt" "$system_backup/units-before.txt"
-    if ((login)); then
+    backup_system_file() {
+        if [[ -e $1 || -L $1 ]]; then sudo cp -a --parents "$1" "$system_backup/"; fi
+    }
+    if [[ $graphics == nvidia-open || $graphics == nvidia-580 ]]; then
+        backup_system_file /etc/modprobe.d/90-rebos-nvidia.conf
+        printf 'options nvidia_drm modeset=1 fbdev=1\n' > "$work_dir/nvidia.conf"
+        sudo install -Dm644 "$work_dir/nvidia.conf" /etc/modprobe.d/90-rebos-nvidia.conf
+        if ((early_kms)); then
+            backup_system_file /etc/mkinitcpio.conf.d/90-rebos-nvidia.conf
+            printf 'MODULES+=(nvidia nvidia_modeset nvidia_uvm nvidia_drm)\n' > "$work_dir/early-kms.conf"
+            sudo install -Dm644 "$work_dir/early-kms.conf" /etc/mkinitcpio.conf.d/90-rebos-nvidia.conf
+        fi
+        if command -v mkinitcpio >/dev/null; then sudo mkinitcpio -P; fi
+    fi
+    if [[ $login == ly ]]; then
         if [[ -d /etc/ly ]]; then sudo cp -a /etc/ly "$system_backup/ly"; fi
         sudo install -Dm644 "$ROOT/payload/system/ly/config.ini" /etc/ly/config.ini
         sudo install -Dm644 "$ROOT/payload/system/ly/blackhole-smooth-240x67.dur" /etc/ly/blackhole-smooth-240x67.dur
         sudo systemctl disable getty@tty2.service
         sudo systemctl enable ly@tty2.service
     fi
-    if ((network)); then
-        # Changes take effect at reboot; do not cut off the current installation connection.
+    if [[ $network == networkmanager ]]; then
         sudo systemctl disable systemd-networkd.service systemd-networkd.socket systemd-networkd-wait-online.service iwd.service dhcpcd.service 2>/dev/null || true
         sudo systemctl enable NetworkManager.service
     fi
-    sudo systemctl enable bluetooth.service power-profiles-daemon.service
+    if ((bluetooth)); then sudo systemctl enable bluetooth.service; fi
+    if ((power)); then sudo systemctl enable power-profiles-daemon.service; fi
     systemctl --user daemon-reload || true
     systemctl --user enable pipewire.socket pipewire-pulse.socket wireplumber.service
     xdg-mime default thunar.desktop inode/directory
@@ -170,6 +184,8 @@ if ((!files_only)); then
     fi
     printf 'System backup: %s\n' "$system_backup"
 fi
-printf '\nDesktop installed. Reboot, select Niri at login, then press Super+Return.\n'
-printf 'Super+Space launcher | Super+Shift+W wallpapers | Super+Alt+L lock\n'
-printf 'For Spotify/Zen integration after first launch: bash "%s/scripts/finish-apps.sh"\n' "$ROOT"
+printf '\nDesktop files installed. Selected plan: ~/.local/state/rebos-desktop/installation.json\n'
+if ((!files_only)); then printf 'Reboot and choose Niri in your selected login setup.\n'; fi
+printf 'Super+Return terminal | Super+Space launcher | Super+Shift+W wallpapers\n'
+if ((hybrid)); then printf 'NVIDIA offload: rebos-prime-run <application>\n'; fi
+printf 'After opening Zen/Spotify once: bash "%s/scripts/finish-apps.sh"\n' "$ROOT"

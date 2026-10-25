@@ -7,6 +7,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -53,8 +54,18 @@ def expand(path, home):
         path.write_text(content.replace('@HOME@', str(home)))
 
 
-def install(payload, home, dry_run=False, cbonsai=None):
+def install(payload, home, dry_run=False, cbonsai=None, settings=None):
     units = verify(payload)
+    generated = {}
+    if settings is not None:
+        from setup import PRIME, validate_plan
+        settings = validate_plan(settings)
+        if '.config/niri' not in units:
+            raise ValueError('Interactive settings require the bundled Niri configuration')
+        generated['.local/state/rebos-desktop/installation.json'] = (json.dumps(settings, indent=2) + '\n', 0o600)
+        if settings['hybrid']:
+            generated['.local/bin/rebos-prime-run'] = (PRIME, 0o755)
+        units += list(generated)
     # Preflight all destination parents before touching any of them.
     for relative in units:
         check_parent(home, relative, allow_config_links=True)
@@ -65,6 +76,8 @@ def install(payload, home, dry_run=False, cbonsai=None):
         print(f'Verified payload; would deploy {len(units)} entries into {home}')
         for parent in linked_parents:
             print(f'Would back up linked folder {home / parent} and install into a local copy; its source stays unchanged')
+        if settings is not None:
+            print('Would write selected monitor settings and save the installation plan with the same backup/restore protection')
         return None
     backup = home / '.local/state/rebos-desktop/backups' / datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S.%fZ')
     check_parent(home, str(backup.relative_to(home)) + '/journal.json')
@@ -101,11 +114,18 @@ def install(payload, home, dry_run=False, cbonsai=None):
         if entry['existed']:
             saved.parent.mkdir(parents=True, exist_ok=True)
             destination.rename(saved)
-        if source.is_dir():
+        if relative in generated:
+            content, mode = generated[relative]
+            destination.write_text(content)
+            destination.chmod(mode)
+        elif source.is_dir():
             shutil.copytree(source, destination)
             for path in destination.rglob('*'):
                 if path.is_file():
                     expand(path, home)
+            if relative == '.config/niri' and settings is not None:
+                from setup import customize_niri
+                customize_niri(destination, settings)
         else:
             shutil.copy2(source, destination)
             expand(destination, home)
@@ -155,6 +175,7 @@ if __name__ == '__main__':
     parser.add_argument('--verify', action='store_true')
     parser.add_argument('--cbonsai', type=Path)
     parser.add_argument('--restore', type=Path)
+    parser.add_argument('--setup-stdin', action='store_true')
     args = parser.parse_args()
     try:
         if args.restore:
@@ -162,6 +183,7 @@ if __name__ == '__main__':
         elif args.verify:
             print(f'Payload checksums OK: {len(verify(args.payload))} install entries')
         else:
-            install(args.payload, args.home.absolute(), args.dry_run, args.cbonsai)
+            settings = json.load(sys.stdin) if args.setup_stdin else None
+            install(args.payload, args.home.absolute(), args.dry_run, args.cbonsai, settings)
     except (OSError, ValueError) as error:
         parser.exit(1, f'Deployment error: {error}\n')

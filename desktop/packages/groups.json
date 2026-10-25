@@ -1,0 +1,10 @@
+{
+  "browser": {"label": "Zen browser", "repo": [], "aur": ["zen-browser-bin"]},
+  "communication": {"label": "Discord", "repo": ["discord"], "aur": []},
+  "media": {"label": "Spotify, Spicetify and image viewer", "repo": ["spotify-launcher", "imv"], "aur": ["spicetify-cli"]},
+  "notes": {"label": "Obsidian", "repo": ["obsidian"], "aur": []},
+  "recording": {"label": "OBS and Android screen mirroring", "repo": ["obs-studio", "scrcpy"], "aur": []},
+  "development": {"label": "VS Code, Node, Python tools, tmux and GitHub CLI", "repo": ["nodejs", "npm", "python-pip", "python-pynvim", "tmux", "github-cli"], "aur": ["visual-studio-code-bin"]},
+  "utilities": {"label": "Fastfetch and Flatpak", "repo": ["fastfetch", "flatpak"], "aur": []},
+  "video-wallpapers": {"label": "Video wallpaper support", "repo": [], "aur": ["mpvpaper"]}
+}

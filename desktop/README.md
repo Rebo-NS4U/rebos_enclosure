@@ -19,7 +19,7 @@ Use an editor installed on your machine in place of `nano` if needed. Log out of
 sudo pacman -Syu --needed git python
 git clone --depth=1 https://github.com/Dytox2/rebos_enclosure.git
 cd rebos_enclosure
-bash install.sh --dry-run
+bash install.sh --interactive --dry-run
 bash install.sh
 ```
 
@@ -37,6 +37,18 @@ bash install.sh --files-only         # copy settings only; dependencies must alr
 
 Reboot after installation. Select **Niri** in Ly, log in and open a terminal with **Super+Return**. A manually started session should use `niri-session` from a TTY. The packaged session exports the environment for portals and session services. See [Niri's session documentation](https://github.com/niri-wm/niri/wiki/Getting-Started). Ly uses tty2, with its corresponding getty disabled per the [Ly service setup](https://wiki.archlinux.org/title/Ly).
 
+## Interactive configuration
+
+Run `./install.sh` without options in a terminal to open setup, or `./install.sh --interactive --dry-run` for a read-only walkthrough. The [root guide](../README.md#interactive-setup) describes each menu choice. `--dry-run` by itself uses defaults/flags without opening the menu.
+
+Applications are selectable by group. CLI alternatives include `--groups notes,media`, `--graphics keep`, `--no-bluetooth`, `--no-power`, `--hybrid`, `--early-kms`, and `--monitors FILE`. Run `./install.sh --help` for all values. The final package list and monitor configuration are shown before confirmation. AUR driver packages still require AUR review.
+
+For a reusable monitor specification, copy [examples/monitors.json](examples/monitors.json) and replace connector names/modes with your hardware. `layout` accepts `auto`, `horizontal`, `vertical` or `manual`. Each output accepts `name`, `enabled`, `mode` (`auto` or `WIDTHxHEIGHT@REFRESH`), `scale`, `transform`, `primary`, and optional `position: {"x": 0, "y": 0}` for manual layout. At least one monitor must remain enabled. Automatic row/column layouts need known dimensions; manual coordinates are logical pixels after scaling and rotation. See [Niri's output configuration](https://github.com/niri-wm/niri/blob/main/resources/default-config.kdl).
+
+Monitor choices are generated into `~/.config/niri/monitors.kdl` with an include in the installed Niri config. The chosen plan is saved as `~/.local/state/rebos-desktop/installation.json` with mode 600. A selected hybrid NVIDIA setup adds `~/.local/bin/rebos-prime-run`. All of these user files restore with the installation backup. Driver module/early KMS files are system settings: their originals, when present, are saved with the system backup, but the user-file restore does not revert them or remove driver packages.
+
+Early KMS is optional and currently supports mkinitcpio. It adds an additive NVIDIA `MODULES` drop-in, preserves existing module lists and rebuilds initramfs. Selected NVIDIA drivers also receive DRM modesetting parameters. The current [Arch NVIDIA table](https://wiki.archlinux.org/title/NVIDIA) documents GPU branch support, and [PRIME documentation](https://wiki.archlinux.org/title/PRIME#PRIME_render_offload) describes the offload environment used by the launcher. The installer does not rewrite the bootloader or force the desktop onto the discrete GPU.
+
 ## Included
 
 - Live rebos_shell QML and scripts: island bar, launcher, dashboard, lockscreen, notifications, settings and wallpaper color/sort controls. No clone of an older upstream shell is needed.
@@ -48,7 +60,7 @@ Reboot after installation. Select **Niri** in Ly, log in and open a terminal wit
 - Animated Ly login configuration, NetworkManager, Bluetooth, PipeWire/WirePlumber, power profiles, authentication agent, portals, screenshots, OCR and clipboard history.
 - Full-profile apps include Discord, Spotify Launcher, OBS, Obsidian, Firefox, image viewer, developer tools, and the optional AUR apps listed above.
 
-Package lists are editable under `packages/`. A full system upgrade precedes package installation. The installer uses configured repositories and does not add Chaotic-AUR, replace the kernel, or copy this computer's GPU driver settings. Intel/AMD microcode and graphics userspace packages are detected from the destination. **NVIDIA:** install the current driver appropriate to your GPU and kernel; proprietary-driver selection and early boot setup are hardware-specific. Consult [Arch's NVIDIA guide](https://wiki.archlinux.org/title/NVIDIA). Existing network service enablement changes take effect on reboot so installation does not disconnect the active link. If using a custom network stack, use `--keep-network`.
+Base packages and optional application groups are editable in `desktop/packages/core.txt` and `desktop/packages/groups.json`. Driver packages are selected by the installer. A full system upgrade precedes package installation. The installer uses configured repositories and does not add Chaotic-AUR, replace the kernel, or copy this computer's GPU driver settings. Intel/AMD microcode and graphics userspace packages are detected from the destination. **NVIDIA:** the setup menu offers open DKMS and legacy 580 DKMS branches, matching kernel headers, hybrid offload and optional mkinitcpio early KMS. Choose the branch appropriate to the GPU; the installer does not guess NVIDIA generations or remove conflicting installed driver families automatically. Consult [Arch's NVIDIA guide](https://wiki.archlinux.org/title/NVIDIA). Existing network service enablement changes take effect on reboot so installation does not disconnect the active link. If using a custom network stack, use `--keep-network`.
 
 The portable clipboard shortcut uses cliphist/Fuzzel. Spotify Launcher replaces the machine-local Cider shortcut. Hardware trays, Tailscale/WARP, Victus-specific fixes, Steam/game libraries, custom AI executables and paid apps are not automatically installed. The shell's assistant needs a separately installed/configured agent. Personal logins, browser profiles, messages, history, notes, weather location, AI credentials, SSH keys and local secret files are excluded. Weather defaults to Fahrenheit with an empty location.
 
