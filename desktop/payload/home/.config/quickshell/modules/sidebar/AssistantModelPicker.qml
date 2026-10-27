@@ -10,10 +10,10 @@ ColumnLayout {
     id: root
     spacing: 8
     property bool expanded: false
-    readonly property bool canSwitch: Ai.sessionReady && !Ai.isBusy && !Ai.switchingSessionModel
+    readonly property bool canSwitch: Ai.activeSession.sessionReady && !Ai.activeSession.isBusy && !Ai.activeSession.switchingSessionModel
     readonly property var filteredModels: {
         const query = search.text.trim().toLowerCase();
-        return Ai.sessionModels.filter(choice => !query ||
+        return Ai.activeSession.sessionModels.filter(choice => !query ||
             ((choice.name || "") + " " + (choice.modelId || "") + " " + (choice.description || "")).toLowerCase().includes(query));
     }
     onVisibleChanged: { if (!visible) expanded = false; }
@@ -24,7 +24,7 @@ ColumnLayout {
         Layout.fillWidth: true
         Layout.preferredHeight: 42
         padding: 10
-        Accessible.name: "Choose AI model: " + Ai.sessionModelName
+        Accessible.name: "Choose AI model: " + Ai.activeSession.sessionModelName
         background: StyledRect {
             variant: toggle.hovered || root.expanded ? "focus" : "internalbg"
             radius: Styling.radius(8)
@@ -41,7 +41,7 @@ ColumnLayout {
             }
             Text {
                 Layout.fillWidth: true
-                text: Ai.switchingSessionModel ? "Switching…" : Ai.sessionModelName
+                text: Ai.activeSession.switchingSessionModel ? "Switching…" : Ai.activeSession.sessionModelName
                 font.family: Config.theme.font
                 font.pixelSize: Styling.fontSize(-1)
                 font.weight: Font.DemiBold
@@ -54,8 +54,10 @@ ColumnLayout {
                 font.pixelSize: Styling.fontSize(2)
             }
         }
-        ToolTip.visible: hovered
-        ToolTip.text: "Choose the model for this conversation"
+        StyledToolTip {
+            show: parent.hovered
+            tooltipText: "Choose the model for this conversation"
+        }
         onClicked: {
             root.expanded = !root.expanded;
             if (root.expanded) search.text = "";
@@ -77,8 +79,8 @@ ColumnLayout {
             spacing: 8
             Text {
                 Layout.fillWidth: true
-                text: Ai.isBusy ? "You can change models after this reply finishes."
-                    : Ai.switchingSessionModel ? "Applying your selection…"
+                text: Ai.activeSession.isBusy ? "You can change models after this reply finishes."
+                    : Ai.activeSession.switchingSessionModel ? "Applying your selection…"
                     : "Choose a model for your next message"
                 wrapMode: Text.WordWrap
                 font.family: Config.theme.font
@@ -89,7 +91,7 @@ ColumnLayout {
                 id: search
                 objectName: "assistantModelSearch"
                 Layout.fillWidth: true
-                visible: Ai.sessionModels.length > 0
+                visible: Ai.activeSession.sessionModels.length > 0
                 placeholderText: "Search models…"
                 color: Colors.overSurface
                 placeholderTextColor: Colors.outline
@@ -120,7 +122,7 @@ ColumnLayout {
                     height: modelTexts.implicitHeight + 20
                     padding: 10
                     enabled: root.canSwitch
-                    readonly property bool selected: modelData.modelId === Ai.currentSessionModelId
+                    readonly property bool selected: modelData.modelId === Ai.activeSession.currentSessionModelId
                     Accessible.name: (modelData.name || modelData.modelId) + (selected ? ", current model" : "")
                     background: StyledRect {
                         variant: modelButton.selected ? "focus" : modelButton.hovered ? "common" : "transparent"
@@ -162,15 +164,15 @@ ColumnLayout {
                     }
                     onClicked: {
                         if (selected) root.expanded = false;
-                        else Ai.setSessionModel(modelData.modelId);
+                        else Ai.activeSession.setSessionModel(modelData.modelId);
                     }
                 }
             }
             Text {
                 Layout.fillWidth: true
                 visible: root.filteredModels.length === 0
-                text: Ai.sessionModels.length > 0 ? "No models match your search."
-                    : !Ai.sessionReady ? "Connect to load your available models."
+                text: Ai.activeSession.sessionModels.length > 0 ? "No models match your search."
+                    : !Ai.activeSession.sessionReady ? "Connect to load your available models."
                     : "This agent does not offer model choices."
                 font.family: Config.theme.font
                 font.pixelSize: Styling.fontSize(-2)
@@ -179,19 +181,19 @@ ColumnLayout {
             }
             Button {
                 Layout.fillWidth: true
-                visible: !Ai.sessionReady
-                enabled: !Ai.isBusy && !Ai.statusText
-                text: Ai.statusText || "Load models"
-                onClicked: Ai.ensureConnection({
-                    kind: Ai.currentSessionId ? "load" : "new",
-                    sessionId: Ai.currentSessionId,
-                    cwd: Ai.currentChatCwd
+                visible: !Ai.activeSession.sessionReady
+                enabled: !Ai.activeSession.isBusy && !Ai.activeSession.statusText
+                text: Ai.activeSession.statusText || "Load models"
+                onClicked: Ai.activeSession.ensureConnection({
+                    kind: Ai.activeSession.currentSessionId ? "load" : "new",
+                    sessionId: Ai.activeSession.currentSessionId,
+                    cwd: Ai.activeSession.currentChatCwd
                 })
             }
             Text {
                 Layout.fillWidth: true
-                visible: Ai.modelSwitchError.length > 0
-                text: Ai.modelSwitchError
+                visible: Ai.activeSession.modelSwitchError.length > 0
+                text: Ai.activeSession.modelSwitchError
                 color: Colors.error
                 font.family: Config.theme.font
                 font.pixelSize: Styling.fontSize(-2)
@@ -200,9 +202,9 @@ ColumnLayout {
         }
     }
     Connections {
-        target: Ai
+        target: Ai.activeSession
         function onSwitchingSessionModelChanged() {
-            if (!Ai.switchingSessionModel && !Ai.modelSwitchError) root.expanded = false;
+            if (!Ai.activeSession.switchingSessionModel && !Ai.activeSession.modelSwitchError) root.expanded = false;
         }
     }
 }

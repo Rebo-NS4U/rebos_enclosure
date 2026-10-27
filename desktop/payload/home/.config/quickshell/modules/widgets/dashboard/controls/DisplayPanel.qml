@@ -13,7 +13,7 @@ import qs.modules.theme
 Item {
     id: root
     objectName: "display-settings-panel"
-    property int maxContentWidth: 480
+    property int maxContentWidth: 760
     property string selectedName: ""
     property string message: ""
     property bool failed: false
@@ -99,39 +99,26 @@ Item {
         function onRawOutputsChanged() { refreshTimer.restart(); }
     }
 
-    component Caption: Text {
+    component Caption: StyledText {
         Layout.fillWidth: true
         wrapMode: Text.WordWrap
         font.family: Config.theme.font
         font.pixelSize: Styling.fontSize(-1)
         color: Colors.overSurfaceVariant
     }
-    component Choice: ComboBox {
+    component Choice: SettingsComboBox {
         Layout.fillWidth: true
-        font.family: Config.theme.font
-        font.pixelSize: Styling.fontSize(-1)
-        palette.button: Colors.surface
-        palette.buttonText: Colors.overSurface
-        palette.base: Colors.surface
-        palette.text: Colors.overSurface
-        palette.highlight: Colors.primary
-        palette.highlightedText: Colors.overPrimary
     }
-    component Input: TextField {
-        Layout.fillWidth: true
-        font.family: Config.theme.font
-        font.pixelSize: Styling.fontSize(0)
-        color: Colors.overSurface
-        selectionColor: Colors.primary
-        selectedTextColor: Colors.overPrimary
-        background: StyledRect { variant: "internalbg" }
-        selectByMouse: true
-    }
+    component Input: SettingsTextField { Layout.fillWidth: true }
     ColumnLayout {
-        anchors.fill: parent
+        width: Math.min(root.width, root.maxContentWidth)
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
         spacing: Styling.fontSize(-3)
         PanelTitlebar {
             title: "Display"
+            description: "Set monitor resolution, scale, rotation and position."
             statusText: reader.running ? "Loading…" : root.outputs.length + " connected"
             actions: [{icon: Icons.sync, tooltip: "Refresh displays", enabled: !reader.running && !writer.running,
                 onClicked: function () { root.refresh(); }}]
@@ -149,7 +136,8 @@ Item {
                 width: parent.width
                 spacing: Styling.fontSize(-3)
                 enabled: !writer.running && !reader.running && root.outputs.length > 0
-                Caption { text: "Monitor" }
+                SettingsGroup {
+                    title: "Monitor"
                 Choice {
                     id: monitorChoice
                     objectName: "display-monitor"
@@ -160,8 +148,9 @@ Item {
                 Caption {
                     text: root.selectedOutput?.current_mode === null ? "This display is disabled. Enable it in your Niri configuration to edit its settings." : "Choose a resolution and refresh rate supported by your monitor."
                 }
-                ColumnLayout {
-                    Layout.fillWidth: true
+                }
+                SettingsGroup {
+                    title: "Size and position"
                     enabled: root.selectedOutput?.current_mode !== null
                     Caption { text: "Resolution & refresh rate" }
                     Choice { id: modeChoice; objectName: "display-mode"; model: root.modes; textRole: "label" }
@@ -182,18 +171,13 @@ Item {
                         Input { id: yInput; objectName: "display-y"; validator: IntValidator { bottom: -100000; top: 100000 } }
                     }
                     Caption { text: "For side-by-side monitors, place the second monitor at the first monitor’s scaled width. Changes are saved for future sessions." }
-                    Button {
+                    SettingsButton {
                         id: applyButton
                         objectName: "display-apply"
                         text: writer.running ? "Applying…" : "Apply display settings"
                         enabled: modeChoice.currentIndex >= 0 && scaleInput.acceptableInput && xInput.acceptableInput && yInput.acceptableInput
-                        background: StyledRect { variant: applyButton.hovered ? "focus" : "common" }
-                        contentItem: Text {
-                            text: applyButton.text
-                            font.family: Config.theme.font
-                            font.pixelSize: Styling.fontSize(-1)
-                            color: Colors.overSurface
-                        }
+
+
                         onClicked: root.apply()
                     }
                 }

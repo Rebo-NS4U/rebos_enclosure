@@ -234,7 +234,7 @@ Singleton {
     }
 
     function pairDevice(address: string): var {
-        return runAction(["bluetoothctl", "--agent", "NoInputNoOutput", "pair", address]);
+        return runAction(["python3", Qt.resolvedUrl("../../scripts/bluetooth_pair.py").toString().replace(/^file:\/\//, ""), address]);
     }
 
     function trustDevice(address: string): var {
@@ -256,7 +256,8 @@ Singleton {
     }
 
     function updateStatus() {
-        updateDebouncer.restart();
+        // Continuous advertisements must not postpone the update indefinitely.
+        if (!updateDebouncer.running) updateDebouncer.start();
     }
 
     function updateDevices() {
@@ -282,7 +283,7 @@ Singleton {
         stdout: SplitParser {
             onRead: (data) => {
                 if (data && (data.includes("Connected") || data.includes("Powered") || data.includes("PropertiesChanged") || data.includes("InterfacesAdded") || data.includes("InterfacesRemoved"))) {
-                    updateDebouncer.restart();
+                    root.updateStatus();
                 }
             }
         }

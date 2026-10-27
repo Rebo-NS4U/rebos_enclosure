@@ -19,7 +19,7 @@ QtObject {
         const selectionForeground = fmt(Colors.overPrimary);
         const selectionBackground = fmt(Colors.primary);
         const urlColor = fmt(Colors.primary);
-        const backgroundOpacity = Config.theme.srBg.opacity;
+        const backgroundOpacity = Colors.opacity;
 
         // black
         const color0 = fmt(Colors.surfaceContainerLow);

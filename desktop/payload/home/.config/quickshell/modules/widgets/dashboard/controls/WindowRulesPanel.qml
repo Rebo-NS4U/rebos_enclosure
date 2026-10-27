@@ -13,7 +13,7 @@ import qs.modules.globals
 Item {
     id: root
     objectName: "window-rules-panel"
-    property int maxContentWidth: 480
+    property int maxContentWidth: 760
     property list<var> rules: []
     property string fingerprint: ""
     property string filePath: ""
@@ -116,38 +116,35 @@ Item {
         onTriggered: { if (!root.busy) reader.running = true; else restart(); }
     }
 
-    component Caption: Text {
+    component Caption: StyledText {
         Layout.fillWidth: true
         wrapMode: Text.WordWrap
         color: Colors.overSurfaceVariant
         font.family: Config.theme.font
         font.pixelSize: Styling.fontSize(-1)
     }
-    component Action: Button {
-        id: button
-        background: StyledRect { variant: button.hovered ? "focus" : "common" }
-        contentItem: Text {
-            text: button.text
-            color: Colors.overSurface
-            font.family: Config.theme.font
-            font.pixelSize: Styling.fontSize(-1)
-            horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignVCenter
-        }
-    }
+    component Action: SettingsButton {}
 
     ColumnLayout {
-        anchors.fill: parent
+        width: Math.min(root.width, root.maxContentWidth)
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
         spacing: Styling.fontSize(-3)
         PanelTitlebar {
-            title: "Window Rules"
-            statusText: root.busy ? "Loading…" : root.rules.length + " rules"
+            title: "Window rules"
+            description: "Set how windows open and appear."
+            statusText: root.busy ? "Loading…" : root.rules.length + (root.rules.length === 1 ? " rule" : " rules")
             actions: [{icon: Icons.sync, tooltip: "Refresh rules", enabled: !root.busy,
                 onClicked: function () { reader.running = true; }}]
         }
-        Caption { text: "Create rules for the app you focused before opening Settings. Custom rules take priority over the desktop defaults." }
-        Action { Layout.fillWidth: true; text: "New rule for focused window"; enabled: !root.busy; onClicked: root.newRule() }
+        SettingsGroup {
+            title: "Find or add a rule"
+        Caption { text: "Add rules for the last app you used. These rules override the defaults." }
+        Action { Layout.fillWidth: true; text: "Add window rule"; enabled: !root.busy; onClicked: root.newRule() }
         SearchInput { Layout.fillWidth: true; placeholderText: "Search rules…"; onSearchTextChanged: text => root.searchText = text }
+        }
+
         Caption { visible: !!root.message; text: root.message; color: root.failed ? Colors.error : Colors.primary }
         ListView {
             id: ruleList
@@ -155,7 +152,7 @@ Item {
             Layout.fillHeight: true
             model: root.filteredRules
             clip: true
-            spacing: Styling.fontSize(-4)
+            spacing: 12
             reuseItems: true
             ScrollBar.vertical: ScrollBar {}
             delegate: StyledRect {
@@ -164,6 +161,8 @@ Item {
                 width: ruleList.width
                 implicitHeight: rowLayout.implicitHeight + Styling.fontSize(0) * 2
                 variant: "pane"
+                border.width: 1
+                border.color: Qt.alpha(Colors.outline, 0.3)
                 ColumnLayout {
                     id: rowLayout
                     anchors.fill: parent
@@ -171,7 +170,7 @@ Item {
                     Caption { text: row.modelData.name; color: Colors.overSurface; font.bold: true }
                     Caption { text: row.modelData.managed ? (row.modelData.appId || row.modelData.title) : "Existing config rule"; elide: Text.ElideRight; maximumLineCount: 2 }
                     RowLayout {
-                        CheckBox {
+                        StyledSwitch {
                             visible: row.modelData.managed
                             text: "Enabled"
                             checked: row.modelData.enabled

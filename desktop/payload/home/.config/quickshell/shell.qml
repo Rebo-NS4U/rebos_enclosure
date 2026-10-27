@@ -18,6 +18,8 @@ import qs.config
 ShellRoot {
     id: root
 
+    AnimeMenu {}
+
     // Keep the inherited wallpaper owner: it also provides the wallpaper
     // manager used by the lockscreen.
     Variants {
@@ -58,16 +60,13 @@ ShellRoot {
                 barOuterMargin: unifiedPanel.barOuterMargin
                 barPosition: Config.bar?.position ?? "top"
 
-
-                sidebarEnabled: GlobalStates.assistantAvailable
-                    && GlobalStates.assistantVisible
-                    && screenShellContainer.modelData.name === GlobalStates.assistantScreenName
-                sidebarPinned: GlobalStates.assistantPinned
-                sidebarWidth: GlobalStates.assistantWidth
-                sidebarPosition: GlobalStates.assistantPosition
             }
 
             // Volume / mic / brightness OSD for keyboard media keys (standard bar only; island bar embeds its own OSD)
+            LockKeyOSD {
+                targetScreen: screenShellContainer.modelData
+            }
+
             Loader {
                 active: Config.barReady ? (Config.bar?.style ?? "default") !== "island" : false
                 sourceComponent: OSD {

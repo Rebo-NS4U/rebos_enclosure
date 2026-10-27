@@ -113,6 +113,10 @@ def apply(p, home):
           f'        active-color "{accent}"\n'
           f'        inactive-color "{p["outlineVariant"]}"\n'
           '    }\n'
+          '}\n'
+          'window-rule {\n'
+          '    match app-id=r#"^(Spotify|spotify|com\\.spotify\\.Client|org\\.kde\\.dolphin|thunar)$"#\n'
+          f'    opacity {float(max(0, min(1, float(p.get("opacity", 1)))))}\n'
           '}\n')
     alpha = max(0, min(1, float(p.get('opacity', 1))))
     argb = lambda c: '#ff' + c[1:]
@@ -132,9 +136,13 @@ def apply(p, home):
     for version in (5, 6):
         directory = cfg / f'qt{version}ct'
         target = directory / 'colors/rebos_shell.conf'
-        write(target, palette)
-        update_ini(directory / f'qt{version}ct.conf', {'Appearance': {
+        palette_changed = write(target, palette)
+        settings_path = directory / f'qt{version}ct.conf'
+        settings_changed = update_ini(settings_path, {'Appearance': {
             'color_scheme_path': target, 'custom_palette': 'true'}})
+        # qtct watches its settings file; the palette path itself stays fixed.
+        if palette_changed and not settings_changed:
+            settings_path.touch()
 
     rgb = lambda c: ','.join(str(int(c[i:i+2], 16)) for i in (1, 3, 5))
     kde = {}
@@ -191,6 +199,23 @@ def apply(p, home):
     else:
         text = text.rstrip() + '\n' + line + '\n'
     write(btop_config, text)
+
+    sioyek = cfg / 'sioyek/prefs_user.config'
+    if sioyek.exists():
+        text = sioyek.read_text()
+        pdf_roles = {'background_color': 'background', 'dark_mode_background_color': 'background',
+                     'custom_background_color': 'background', 'custom_text_color': 'overSurface',
+                     'page_separator_color': 'background', 'text_highlight_color': 'primary',
+                     'search_highlight_color': 'tertiary', 'link_highlight_color': 'primary',
+                     'synctex_highlight_color': 'secondary'}
+        for key, role in pdf_roles.items():
+            value = ' '.join(f'{int(p[role][i:i+2], 16) / 255:.3f}' for i in (1, 3, 5))
+            pattern = r'^' + re.escape(key) + r'\s+[^\n]*$'
+            if re.search(pattern, text, re.M):
+                text = re.sub(pattern, lambda _, k=key, v=value: k + ' ' + v, text, flags=re.M)
+            else:
+                text = text.rstrip() + '\n' + key + ' ' + value + '\n'
+        write(sioyek, text)
 
     from apply_app_palette import apply as apply_apps
     apply_apps(p, home)

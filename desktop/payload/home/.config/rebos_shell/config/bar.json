@@ -1,9 +1,11 @@
 {
-    "enableFirefoxPlayer": false,
-    "pinned": true,
-    "position": "top",
-    "screenList": [
-    ],
-    "style": "island",
-    "use12hFormat": true
+  "position": "top",
+  "style": "island",
+  "screenList": [],
+  "enableFirefoxPlayer": false,
+  "use12hFormat": true,
+  "pinned": true,
+  "islandAppearance": "glass",
+  "islandOpacity": 80,
+  "islandAccent": 55
 }

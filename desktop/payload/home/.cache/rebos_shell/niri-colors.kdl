@@ -1,11 +1,15 @@
 // Generated from the effective QuickShell palette.
 layout {
     border {
-        active-color "#4cd9e3"
-        inactive-color "#474747"
+        active-color "#aaccd5"
+        inactive-color "#465256"
     }
     focus-ring {
-        active-color "#4cd9e3"
-        inactive-color "#474747"
+        active-color "#aaccd5"
+        inactive-color "#465256"
     }
+}
+window-rule {
+    match app-id=r#"^(Spotify|spotify|com\.spotify\.Client|org\.kde\.dolphin|thunar)$"#
+    opacity 1.0
 }

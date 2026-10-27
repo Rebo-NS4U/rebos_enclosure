@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
+import Quickshell.Wayland._BackgroundEffect
 import Quickshell.Wayland
 import Quickshell.Widgets
 import qs.modules.theme
@@ -346,6 +347,11 @@ Item {
 
     PopupWindow {
         id: schemeListPopup
+        BackgroundEffect.blurRegion: Region {
+            width: schemeListPopup.width
+            height: schemeListPopup.height
+            radius: Styling.radius(-12)
+        }
         anchor.item: schemeButton
         anchor.rect.x: 0
         anchor.rect.y: schemeButton.height + 4

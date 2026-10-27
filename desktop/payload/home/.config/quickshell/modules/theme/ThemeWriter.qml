@@ -5,6 +5,8 @@ import Quickshell.Io
 QtObject {
     id: root
     property list<string> pendingCommand: []
+    readonly property bool busy: process.running || pendingCommand.length > 0
+    property bool succeeded: true
 
     function submit(command: list<string>): void {
         pendingCommand = command;
@@ -23,6 +25,7 @@ QtObject {
     property Process process: Process {
         id: process
         onExited: (exitCode, exitStatus) => {
+            root.succeeded = exitCode === 0;
             if (exitCode !== 0)
                 console.warn("Theme writer failed:", exitCode);
             Qt.callLater(root.startNext);

@@ -181,7 +181,7 @@ Item {
 
                         Behavior on width {
                             enabled: Config.animDuration > 0
-                            NumberAnimation { duration: 250 }
+                            NumberAnimation { duration: Motion.feedback }
                         }
                     }
                 }

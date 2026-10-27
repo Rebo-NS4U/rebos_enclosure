@@ -1,6 +1,6 @@
 # rebos desktop installer
 
-Recreates the current rebos Niri/Quickshell desktop on an **already installed, bootable x86_64 Arch Linux system**. This is a desktop installer, with no partitioning, formatting, bootloader installation, or ISO creation. Snapshot date: 2026-10-24 (local time).
+Recreates the current rebos Niri/Quickshell desktop on an **already installed, bootable x86_64 Arch Linux system**. This is a desktop installer, with no partitioning, formatting, bootloader installation, or ISO creation. Snapshot date: 2026-10-27 (local time).
 
 ## Install on minimal Arch
 
@@ -56,7 +56,7 @@ Early KMS is optional and currently supports mkinitcpio. It adds an additive NVI
 - Dark OLED theme with wallpaper-driven GTK, Qt, KDE, Kitty, Fish, Fuzzel, btop, Neovim and supported app palettes; a current palette snapshot is provided for the first login.
 - Kitty/Fish prompt and shortcuts, wallpaper-colored bonsai greeting, cbonsai source and license, bundled terminal/shell fonts, GoogleDot cursor and Papirus icons.
 - Custom Neovim IDE configuration and plugin lockfile. Plugins and language servers download separately through Neovim on first use; open `:IDEHelp` for instructions.
-- Original rice wallpapers, 307 prepared MAKC 1920×1200 wallpapers, and the current background. This avoids bundling the entire 4.3 GB original wallpaper checkout. Source metadata is retained in the wallpaper folders; MAKC originals: <https://github.com/makccr/wallpapers>.
+- Original rice wallpapers, 129 prepared 1920×1200 Urban/Nature wallpapers, and the current background. Source metadata is retained in the wallpaper folders; the collection is from <https://github.com/dharmx/walls>.
 - Animated Ly login configuration, NetworkManager, Bluetooth, PipeWire/WirePlumber, power profiles, authentication agent, portals, screenshots, OCR and clipboard history.
 - Full-profile apps include Discord, Spotify Launcher, OBS, Obsidian, Firefox, image viewer, developer tools, and the optional AUR apps listed above.
 

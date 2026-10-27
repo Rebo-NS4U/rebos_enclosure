@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Open the desktop wallpaper gallery or cycle the MAKC 1920×1200 pack."""
+"""Open the desktop wallpaper gallery or cycle the Urban & Nature 1920×1200 pack."""
 import argparse
 import fcntl
 import json
@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 HOME = Path.home()
-PACK = HOME / '.local/share/wallpapers/wallpapers/MAKC-1920x1200'
+PACK = HOME / '.local/share/wallpapers'
 STATE = HOME / '.cache/rebos_shell/wallpapers.json'
 
 

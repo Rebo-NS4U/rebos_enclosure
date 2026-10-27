@@ -4,6 +4,7 @@ import Quickshell.Wayland
 import Quickshell.Io
 import qs.modules.globals
 import qs.modules.theme
+import qs.modules.services
 import qs.config
 import "MpvShaderGenerator.js" as ShaderGenerator
 
@@ -47,6 +48,36 @@ PanelWindow {
     }
     property var perScreenWallpapers: wallpaperConfig.adapter.perScreenWallpapers || {}
     property string effectiveWallpaper: perScreenWallpapers[currentScreenName] || currentWallpaper
+    readonly property string renderedWallpaper: DitheredWallpapers.source(effectiveWallpaper)
+
+    function requestDitheredWallpapers(): void {
+        DitheredWallpapers.request(effectiveWallpaper);
+        if (GlobalStates.wallpaperManager === wallpaper)
+            DitheredWallpapers.request(currentWallpaper);
+    }
+
+    Connections {
+        target: DitheredWallpapers
+        function onActiveChanged() {
+            wallpaper.requestDitheredWallpapers();
+            if (GlobalStates.wallpaperManager === wallpaper)
+                wallpaper.runMatugenForCurrentWallpaper();
+        }
+        function onPaletteChanged() {
+            wallpaper.requestDitheredWallpapers();
+            if (GlobalStates.wallpaperManager === wallpaper)
+                wallpaper.runMatugenForCurrentWallpaper();
+        }
+        function onStrengthChanged() {
+            wallpaper.requestDitheredWallpapers();
+            if (GlobalStates.wallpaperManager === wallpaper)
+                wallpaper.runMatugenForCurrentWallpaper();
+        }
+        function onFinished(path: string) {
+            if (DitheredWallpapers.active && path === wallpaper.currentWallpaper && GlobalStates.wallpaperManager === wallpaper)
+                wallpaper.runMatugenForCurrentWallpaper();
+        }
+    }
     property string currentScreenName: wallpaper.screen ? wallpaper.screen.name : ""
     property alias tintEnabled: wallpaperAdapter.tintEnabled
     property alias wallpaperMode: wallpaperAdapter.wallpaperMode
@@ -326,8 +357,8 @@ PanelWindow {
             return getThumbnailPath(filePath);
         }
 
-        // Imágenes y GIFs usan el archivo original para colores
-        return filePath;
+        // Static images use the same converted source as the desktop.
+        return DitheredWallpapers.source(filePath);
     }
 
     function getLockscreenFramePath(filePath) {
@@ -339,7 +370,7 @@ PanelWindow {
 
         // Para imágenes estáticas, usar el archivo original
         if (fileType === 'image') {
-            return filePath;
+            return DitheredWallpapers.source(filePath);
         }
 
         // Para videos y GIFs, usar el frame cacheado
@@ -422,9 +453,7 @@ PanelWindow {
             delayedThumbnailGen.start();
     }
 
-    onCurrentWallpaperChanged:
-    // Matugen se ejecuta manualmente en las funciones de cambio
-    {}
+    onCurrentWallpaperChanged: requestDitheredWallpapers()
 
     function setWallpaper(path, targetScreen = null) {
         if (GlobalStates.wallpaperManager && GlobalStates.wallpaperManager !== wallpaper) {
@@ -585,6 +614,10 @@ PanelWindow {
     }
 
     function runMatugenForCurrentWallpaper() {
+        if (DitheredWallpapers.waiting(currentWallpaper)) {
+            DitheredWallpapers.request(currentWallpaper);
+            return;
+        }
         // Prefer the adapter value — the bound property can lag one tick after
         // clearing a preset when switching back to a matugen scheme.
         var preset = wallpaperConfig.adapter.activeColorPreset || "";
@@ -832,6 +865,7 @@ PanelWindow {
     }
 
     onEffectiveWallpaperChanged: {
+        requestDitheredWallpapers();
         if (getFileType(effectiveWallpaper) === "video") {
             shaderUpdateDebounce.restart();
         }
@@ -1012,6 +1046,8 @@ PanelWindow {
 
         onExited: (exitCode, exitStatus) => {
             wallpaper.paletteError = exitCode === 0 ? "" : "Could not generate wallpaper colors. Check Matugen and the selected image.";
+            if (exitCode === 0)
+                Colors.refreshApps();
             console.log("Matugen with config finished");
         }
     }
@@ -1423,7 +1459,7 @@ PanelWindow {
         WallpaperImage {
             id: wallImage
             anchors.fill: parent
-            source: wallpaper.effectiveWallpaper
+            source: wallpaper.renderedWallpaper
         }
     }
 
@@ -1566,7 +1602,7 @@ PanelWindow {
                     source: parent.sourceFile ? "file://" + parent.sourceFile : ""
                     fillMode: wallpaper.wallpaperFillMode
                     asynchronous: true
-                    smooth: true
+                    smooth: !DitheredWallpapers.active
                     sourceSize.width: wallpaper.wallpaperMode === "center" ? 0 : wallpaper.width
                     sourceSize.height: wallpaper.wallpaperMode === "center" ? 0 : wallpaper.height
                     layer.enabled: parent.tint

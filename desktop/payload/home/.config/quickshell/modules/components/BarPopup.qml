@@ -3,6 +3,7 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Effects
 import Quickshell
+import Quickshell.Wayland._BackgroundEffect
 import Quickshell.Wayland
 import qs.modules.services
 import qs.modules.theme
@@ -42,7 +43,7 @@ PopupWindow {
     // boundary keeps the content stationary and sharp.
     property real revealProgress: 0
     // Mutable duration so sibling switches can use a snappier close/open.
-    property int transitionMs: Config.animDuration > 0 ? Config.animDuration : 0
+    property int transitionMs: Motion.enter
 
     // Total size including shadow margin
     readonly property int totalWidth: contentWidth + shadowMargin * 2
@@ -57,15 +58,15 @@ PopupWindow {
     Behavior on contentWidth {
         enabled: root.transitionMs > 0 && root.visible
         NumberAnimation {
-            duration: Math.max(root.transitionMs / 2, 80)
-            easing.type: Easing.OutCubic
+            duration: Motion.resize
+            easing.type: Motion.enterCurve
         }
     }
     Behavior on contentHeight {
         enabled: root.transitionMs > 0 && root.visible
         NumberAnimation {
-            duration: Math.max(root.transitionMs / 2, 80)
-            easing.type: Easing.OutCubic
+            duration: Motion.resize
+            easing.type: Motion.enterCurve
         }
     }
 
@@ -82,8 +83,14 @@ PopupWindow {
 
     color: "transparent"
     visible: keepMapped
+
+    BackgroundEffect.blurRegion: BlurRegion {
+        target: revealViewport
+        radius: popupContainer.radius
+    }
+
     mask: Region {
-        item: root.visible ? revealViewport : null
+        item: root.isOpen ? revealViewport : null
     }
 
     property bool focusActive: false
@@ -106,7 +113,7 @@ PopupWindow {
         enabled: root.transitionMs > 0
         NumberAnimation {
             duration: root.transitionMs
-            easing.type: root.isOpen ? Easing.OutCubic : Easing.InCubic
+            easing.type: root.isOpen ? Motion.enterCurve : Motion.exitCurve
         }
     }
 
@@ -147,7 +154,7 @@ PopupWindow {
         resetTransitionTimer.stop();
 
         // Snappy full-duration open for a clean settle.
-        transitionMs = Config.animDuration > 0 ? Config.animDuration : 0;
+        transitionMs = Motion.enter;
 
         // One bar popup at a time; a replaced sibling uses a quicker collapse.
         Visibilities.claimBarPopup(root);
@@ -185,8 +192,7 @@ PopupWindow {
         focusActive = false;
         Visibilities.releaseBarPopup(root);
 
-        const base = Config.animDuration > 0 ? Config.animDuration : 0;
-        transitionMs = quick ? Math.max(Math.round(base / 2), 80) : base;
+        transitionMs = quick ? Motion.feedback : Motion.exit;
 
         revealProgress = 0;
 
@@ -218,7 +224,7 @@ PopupWindow {
         id: resetTransitionTimer
         interval: 50
         onTriggered: {
-            root.transitionMs = Config.animDuration > 0 ? Config.animDuration : 0;
+            root.transitionMs = Motion.enter;
         }
     }
 }

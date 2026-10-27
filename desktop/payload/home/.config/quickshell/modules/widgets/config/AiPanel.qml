@@ -5,11 +5,12 @@ import qs.modules.theme
 import qs.modules.components
 import qs.modules.services
 import qs.config
+import qs.modules.widgets.dashboard.controls
 
 Item {
     id: root
 
-    property int maxContentWidth: 560
+    property int maxContentWidth: 760
     readonly property int contentWidth: Math.min(width, maxContentWidth)
     readonly property real sideMargin: Math.max(0, (width - contentWidth) / 2)
 
@@ -23,23 +24,18 @@ Item {
             id: contentColumn
             width: root.contentWidth
             x: root.sideMargin
-            y: 20
-            spacing: 20
+            spacing: 12
 
-            Text {
-                Layout.fillWidth: true
-                text: "Codex"
-                font.family: Config.theme.font
-                font.pixelSize: 24
-                font.weight: Font.Bold
-                color: Colors.overSurface
+            PanelTitlebar {
+                title: "Assistant"
+                description: "Connection, working folder and current session."
             }
 
-            Text {
+            StyledText {
                 Layout.fillWidth: true
-                text: "The assistant connects to Codex using your existing Codex login. Codex manages the models, tools, and permissions."
+                text: "Uses your existing Codex login."
                 font.family: Config.theme.font
-                font.pixelSize: 13
+                font.pixelSize: Styling.fontSize(-1)
                 color: Colors.outline
                 wrapMode: Text.Wrap
             }
@@ -47,8 +43,10 @@ Item {
             StyledRect {
                 Layout.fillWidth: true
                 implicitHeight: 64
-                variant: "surface"
-                radius: Styling.radius(8)
+                variant: "common"
+                radius: Styling.radius(-2)
+                border.width: 1
+                border.color: Qt.alpha(Colors.outline, 0.3)
 
                 RowLayout {
                     anchors.fill: parent
@@ -59,37 +57,40 @@ Item {
                         Layout.fillWidth: true
                         spacing: 2
 
-                        Text {
-                            text: "Enable AI"
+                        StyledText {
+                            text: "Enable assistant"
                             font.family: Config.theme.font
-                            font.pixelSize: 15
+                            font.pixelSize: Styling.fontSize(1)
                             font.weight: Font.Bold
                             color: Colors.overSurface
                         }
 
-                        Text {
+                        StyledText {
                             Layout.fillWidth: true
-                            text: "Allow Codex to provide assistant features."
+                            text: "Start the assistant when needed."
                             font.family: Config.theme.font
-                            font.pixelSize: 12
+                            font.pixelSize: Styling.fontSize(-2)
                             color: Colors.outline
                             wrapMode: Text.Wrap
                         }
                     }
 
-                    Switch {
+                    StyledSwitch {
+                        id: aiEnabledSwitch
                         checked: Config.ai.enabled ?? true
                         onToggled: Config.ai.enabled = checked
+
+
                     }
                 }
             }
 
-            Text {
+            StyledText {
                 Layout.fillWidth: true
                 visible: !(Config.ai.enabled ?? true)
                 text: "AI is disabled. Codex will not start."
                 font.family: Config.theme.font
-                font.pixelSize: 13
+                font.pixelSize: Styling.fontSize(-1)
                 color: Colors.outline
                 wrapMode: Text.Wrap
             }
@@ -97,8 +98,10 @@ Item {
             StyledRect {
                 Layout.fillWidth: true
                 implicitHeight: workingDirectoryColumn.implicitHeight + 32
-                variant: "surface"
-                radius: Styling.radius(8)
+                variant: "common"
+                radius: Styling.radius(-2)
+                border.width: 1
+                border.color: Qt.alpha(Colors.outline, 0.3)
                 enabled: Config.ai.enabled ?? true
                 opacity: enabled ? 1 : 0.5
 
@@ -108,24 +111,24 @@ Item {
                     anchors.margins: 16
                     spacing: 8
 
-                    Text {
-                        text: "Working directory"
+                    StyledText {
+                        text: "Working folder"
                         font.family: Config.theme.font
-                        font.pixelSize: 15
+                        font.pixelSize: Styling.fontSize(1)
                         font.weight: Font.Bold
                         color: Colors.overSurface
                     }
 
-                    Text {
+                    StyledText {
                         Layout.fillWidth: true
-                        text: "New ACP sessions start here. Leave empty to use your home directory."
+                        text: "New chats start in this folder. Leave empty to use your home folder."
                         font.family: Config.theme.font
-                        font.pixelSize: 12
+                        font.pixelSize: Styling.fontSize(-2)
                         color: Colors.outline
                         wrapMode: Text.Wrap
                     }
 
-                    TextField {
+                    SettingsTextField {
                         id: workingDirectoryInput
                         Layout.fillWidth: true
                         text: Config.ai && Config.ai.workingDirectory ? Config.ai.workingDirectory : ""
@@ -137,36 +140,33 @@ Item {
                                 Config.setAiWorkingDirectory(text);
                         }
 
-                        background: StyledRect {
-                            variant: "internalbg"
-                            radius: Styling.radius(4)
-                            border.width: workingDirectoryInput.activeFocus ? 2 : 0
-                            border.color: Styling.srItem("primary")
-                        }
+
                     }
                 }
             }
 
-            Text {
+            StyledText {
                 Layout.fillWidth: true
                 text: "Connection"
                 visible: Config.ai.enabled ?? true
                 font.family: Config.theme.font
-                font.pixelSize: 18
+                font.pixelSize: Styling.fontSize(4)
                 font.weight: Font.Bold
                 color: Colors.overSurface
             }
 
             Repeater {
-                model: (Config.ai.enabled ?? true) ? Ai.models : []
+                model: (Config.ai.enabled ?? true) ? Ai.activeSession.models : []
 
                 delegate: StyledRect {
                     id: agentCard
                     required property var modelData
                     Layout.fillWidth: true
                     implicitHeight: agentColumn.implicitHeight + 32
-                    variant: Ai.currentAgentId === modelData.id ? "focus" : "surface"
-                    radius: Styling.radius(8)
+                    variant: Ai.activeSession.currentAgentId === modelData.id ? "focus" : "surface"
+                    radius: Styling.radius(-2)
+                border.width: 1
+                border.color: Qt.alpha(Colors.outline, 0.3)
 
                     ColumnLayout {
                         id: agentColumn
@@ -190,31 +190,31 @@ Item {
                                 Layout.fillWidth: true
                                 spacing: 1
 
-                                Text {
+                                StyledText {
                                     Layout.fillWidth: true
                                     text: modelData.name
                                     font.family: Config.theme.font
-                                    font.pixelSize: 16
+                                    font.pixelSize: Styling.fontSize(2)
                                     font.weight: Font.Bold
                                     color: Colors.overSurface
                                 }
 
-                                Text {
+                                StyledText {
                                     Layout.fillWidth: true
                                     text: modelData.description || ""
                                     font.family: Config.theme.font
-                                    font.pixelSize: 12
+                                    font.pixelSize: Styling.fontSize(-2)
                                     color: Colors.outline
                                     wrapMode: Text.Wrap
                                 }
                             }
 
-                            Text {
-                                text: Ai.currentAgentId === modelData.id
-                                    ? (Ai.sessionReady ? "Connected" : "Selected") : ""
+                            StyledText {
+                                text: Ai.activeSession.currentAgentId === modelData.id
+                                    ? (Ai.activeSession.sessionReady ? "Connected" : "Selected") : ""
                                 font.family: Config.theme.font
-                                font.pixelSize: 12
-                                color: Ai.sessionReady && Ai.currentAgentId === modelData.id
+                                font.pixelSize: Styling.fontSize(-2)
+                                color: Ai.activeSession.sessionReady && Ai.activeSession.currentAgentId === modelData.id
                                     ? Colors.success : Styling.srItem("overprimary")
                             }
                         }
@@ -225,23 +225,23 @@ Item {
                             variant: "internalbg"
                             radius: Styling.radius(4)
 
-                            Text {
+                            StyledText {
                                 id: commandText
                                 anchors.fill: parent
                                 anchors.margins: 8
                                 text: modelData.command.join(" ")
                                 font.family: "Monospace"
-                                font.pixelSize: 12
+                                font.pixelSize: Styling.fontSize(-2)
                                 color: Colors.outline
                                 wrapMode: Text.WrapAnywhere
                             }
                         }
 
-                        Text {
+                        StyledText {
                             Layout.fillWidth: true
                             text: modelData.installHint || ""
                             font.family: Config.theme.font
-                            font.pixelSize: 12
+                            font.pixelSize: Styling.fontSize(-2)
                             color: Colors.outline
                             wrapMode: Text.Wrap
                         }
@@ -250,18 +250,18 @@ Item {
                             Layout.alignment: Qt.AlignRight
                             spacing: 8
 
-                            Button {
-                                visible: Ai.currentAgentId === modelData.id
+                            SettingsButton {
+                                visible: Ai.activeSession.currentAgentId === modelData.id
                                 text: "Reconnect"
                                 flat: true
-                                onClicked: Ai.reconnectAgent()
+                                onClicked: Ai.activeSession.reconnectAgent()
 
                                 background: StyledRect {
                                     variant: parent.hovered ? "focus" : "pane"
                                     radius: Styling.radius(4)
                                 }
 
-                                contentItem: Text {
+                                contentItem: StyledText {
                                     text: parent.text
                                     color: Colors.overSurface
                                     font.family: Config.theme.font
@@ -270,11 +270,11 @@ Item {
                                 }
                             }
 
-                            Button {
-                                text: Ai.currentAgentId === modelData.id ? "Active" : "Use agent"
-                                enabled: Ai.currentAgentId !== modelData.id
+                            SettingsButton {
+                                text: Ai.activeSession.currentAgentId === modelData.id ? "Active" : "Connect"
+                                enabled: Ai.activeSession.currentAgentId !== modelData.id
                                 flat: true
-                                onClicked: Ai.setModel(modelData.id)
+                                onClicked: Ai.activeSession.setModel(modelData.id)
 
                                 background: StyledRect {
                                     variant: parent.enabled ? "primary" : "pane"
@@ -282,7 +282,7 @@ Item {
                                     opacity: parent.enabled ? 1 : 0.6
                                 }
 
-                                contentItem: Text {
+                                contentItem: StyledText {
                                     text: parent.text
                                     color: parent.enabled ? Colors.overPrimary : Colors.outline
                                     font.family: Config.theme.font
@@ -297,10 +297,12 @@ Item {
 
             StyledRect {
                 Layout.fillWidth: true
-                visible: (Config.ai.enabled ?? true) && Ai.currentSessionModelId.length > 0
+                visible: (Config.ai.enabled ?? true) && Ai.activeSession.currentSessionModelId.length > 0
                 implicitHeight: activeSessionColumn.implicitHeight + 32
-                variant: "surface"
-                radius: Styling.radius(8)
+                variant: "common"
+                radius: Styling.radius(-2)
+                border.width: 1
+                border.color: Qt.alpha(Colors.outline, 0.3)
 
                 ColumnLayout {
                     id: activeSessionColumn
@@ -308,20 +310,20 @@ Item {
                     anchors.margins: 16
                     spacing: 6
 
-                    Text {
-                        text: "Active ACP session"
+                    StyledText {
+                        text: "Current session"
                         font.family: Config.theme.font
-                        font.pixelSize: 15
+                        font.pixelSize: Styling.fontSize(1)
                         font.weight: Font.Bold
                         color: Colors.overSurface
                     }
 
-                    Text {
+                    StyledText {
                         Layout.fillWidth: true
-                        text: "Model: " + (Ai.currentSessionModelId || "agent default")
-                            + (Ai.currentModeId ? "\nMode: " + Ai.currentModeId : "")
+                        text: "Model: " + (Ai.activeSession.currentSessionModelId || "agent default")
+                            + (Ai.activeSession.currentModeId ? "\nMode: " + Ai.activeSession.currentModeId : "")
                         font.family: "Monospace"
-                        font.pixelSize: 12
+                        font.pixelSize: Styling.fontSize(-2)
                         color: Colors.outline
                         wrapMode: Text.WrapAnywhere
                     }

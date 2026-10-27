@@ -1,11 +1,13 @@
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
+import Quickshell.Wayland._BackgroundEffect
 import qs.modules.bar
 import qs.modules.services
 import qs.modules.globals
 import qs.modules.components
 import qs.modules.widgets.launcher
+import qs.modules.widgets.fileshelf
 import qs.modules.widgets.notes
 import qs.modules.widgets.powermenu
 import qs.modules.notifications
@@ -37,9 +39,10 @@ PanelWindow {
         // Request compositor ownership before focusing the assistant input.
         // Requiring activeFocus here is circular: the field cannot gain focus
         // while keyboard events still belong to the client underneath.
-        if (assistantSidebar && assistantSidebar.active
+        if (!GlobalStates.assistantPinned && assistantSidebar && assistantSidebar.active
                 && assistantSidebar.wantsFocus)
-            return Ai.isBusy ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.Exclusive;
+            return Ai.activeSession.isBusy ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.Exclusive;
+        if (fileShelf.open) return WlrKeyboardFocus.OnDemand;
         return WlrKeyboardFocus.None;
     }
     WlrLayershell.namespace: "rebos_shell"
@@ -71,6 +74,24 @@ PanelWindow {
         Visibilities.unregisterBarPanel(screen.name);
     }
 
+    // Only the painted panels request blur; outside-click input stays separate.
+    // Strength is shared with application windows through Niri's global blur.
+    BackgroundEffect.blurRegion: Region {
+        regions: [
+            barContent.backgroundBlur,
+            assistantBlur,
+            launcherBlur,
+            notesBlur,
+            shelfBlur,
+            toastStack.backgroundBlur
+        ]
+    }
+
+    BlurRegion { id: assistantBlur; target: GlobalStates.assistantPinned ? null : (unifiedPanel.assistantSidebar?.blurTarget ?? null) }
+    BlurRegion { id: launcherBlur; target: runMenu.blurTarget }
+    BlurRegion { id: notesBlur; target: notesPopup.blurTarget }
+    BlurRegion { id: shelfBlur; target: fileShelf.blurTarget }
+
     // Full-screen mask item (used when modules/popups are open)
     Item {
         id: fullScreenMask
@@ -84,6 +105,8 @@ PanelWindow {
         // Full-screen capture when any module/popup is open
         item: unifiedPanel.needsFullScreenInput ? fullScreenMask : null
         regions: [
+            Region { item: fileShelf.handleHitbox },
+            Region { item: fileShelf.shelfHitbox },
             Region {
                 item: barContent.visible ? barContent.barHitbox : null
             },
@@ -97,12 +120,12 @@ PanelWindow {
                 item: toastStack.hitbox
             },
             Region {
-                item: assistantSidebar
+                item: !GlobalStates.assistantPinned && assistantSidebar
                     && (assistantSidebar.active || assistantSidebar.hitbox.visible)
                     ? assistantSidebar.hitbox : null
             },
             Region {
-                item: assistantSidebar && assistantSidebar.active
+                item: !GlobalStates.assistantPinned && assistantSidebar && assistantSidebar.active
                     ? assistantSidebar.resizeHitbox : null
             }
         ]
@@ -121,35 +144,43 @@ PanelWindow {
         }
     }
 
-    MouseArea {
-        id: backdropArea
-        anchors.fill: parent
-        visible: unifiedPanel.needsFullScreenInput
-        z: -1
-
-        onClicked: {
-            if (notesPopup.open)
-                QuickNotes.close();
-            FocusGrabManager.clearTopGrab();
-            if (runMenu.open)
-                Visibilities.setActiveModule("");
-            if (barContent.dashboardInputActive)
-                Visibilities.closeActiveBarPopup();
-            if (barContent.islandActive)
-                barContent.collapseIsland();
-            if (assistantSidebar && assistantSidebar.active && assistantSidebar.wantsFocus) {
-                assistantSidebar.wantsFocus = false;
-                // Defocus the text field so keyboard returns to the session.
-                if (assistantSidebar.hasActiveFocus)
-                    unifiedPanel.forceActiveFocus();
-            }
-        }
-
+    AssistantWindow {
+        id: assistantWindow
+        targetScreen: unifiedPanel.targetScreen
     }
 
     Item {
         id: visualContent
         anchors.fill: parent
+
+        MouseArea {
+            id: backdropArea
+            anchors.fill: parent
+            visible: unifiedPanel.needsFullScreenInput
+            // Above the assistant, below the bar and floating menus. Outside
+            // clicks must dismiss the open surface even when the sidebar is open.
+            z: 50
+            acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
+
+            onClicked: {
+                if (notesPopup.open)
+                    QuickNotes.close();
+                FocusGrabManager.clearTopGrab();
+                if (runMenu.open)
+                    Visibilities.setActiveModule("");
+                if (barContent.dashboardInputActive)
+                    Visibilities.closeActiveBarPopup();
+                if (barContent.islandActive)
+                    barContent.collapseIsland();
+                if (!GlobalStates.assistantPinned && assistantSidebar && assistantSidebar.active && assistantSidebar.wantsFocus) {
+                    assistantSidebar.wantsFocus = false;
+                    // Defocus the text field so keyboard returns to the session.
+                    if (assistantSidebar.hasActiveFocus)
+                        unifiedPanel.forceActiveFocus();
+                }
+            }
+
+        }
 
         BarContent {
             id: barContent
@@ -181,6 +212,13 @@ PanelWindow {
             z: 200
         }
 
+        FileShelfPanel {
+            id: fileShelf
+            anchors.fill: parent
+            screen: unifiedPanel.targetScreen
+            z: 250
+        }
+
         NotesPopup {
             id: notesPopup
             anchors.fill: parent
@@ -197,12 +235,16 @@ PanelWindow {
             sourceComponent: Component {
                 AssistantSidebar {
                     targetScreen: unifiedPanel.targetScreen
+                    tiled: GlobalStates.assistantPinned
+                    windowFocused: !tiled || assistantWindow.compositorFocused
+                    // Move the existing chat view, retaining drafts, scroll and questions.
+                    parent: tiled ? assistantWindow.contentItem : assistantSidebarLoader
 
-                    anchors.topMargin: unifiedPanel.barEnabled
+                    anchors.topMargin: !tiled && unifiedPanel.barEnabled
                         && unifiedPanel.barPosition === "top"
                         ? unifiedPanel.barTargetHeight + unifiedPanel.barOuterMargin
                         : 0
-                    anchors.bottomMargin: unifiedPanel.barEnabled
+                    anchors.bottomMargin: !tiled && unifiedPanel.barEnabled
                         && unifiedPanel.barPosition === "bottom"
                         ? unifiedPanel.barTargetHeight + unifiedPanel.barOuterMargin
                         : 0

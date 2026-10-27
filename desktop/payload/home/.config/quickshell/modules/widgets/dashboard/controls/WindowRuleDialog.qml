@@ -58,53 +58,25 @@ Dialog {
             width: widthInput.text});
     }
 
-    component Caption: Text {
+    component Caption: StyledText {
         Layout.fillWidth: true
         wrapMode: Text.WordWrap
         color: Colors.overSurfaceVariant
         font.family: Config.theme.font
         font.pixelSize: Styling.fontSize(-1)
     }
-    component Field: TextField {
-        Layout.fillWidth: true
-        color: Colors.overSurface
-        placeholderTextColor: Colors.overSurfaceVariant
-        selectionColor: Colors.primary
-        selectedTextColor: Colors.overPrimary
-        font.family: Config.theme.font
-        font.pixelSize: Styling.fontSize(0)
-        background: StyledRect { variant: "internalbg" }
-    }
-    component Choice: ComboBox {
+    component Field: SettingsTextField { Layout.fillWidth: true }
+    component Choice: SettingsComboBox {
         Layout.fillWidth: true
         model: ["Inherit", "Yes", "No"]
-        font.family: Config.theme.font
-        font.pixelSize: Styling.fontSize(-1)
-        palette.button: Colors.surface
-        palette.buttonText: Colors.overSurface
-        palette.base: Colors.surface
-        palette.text: Colors.overSurface
-        palette.highlight: Colors.primary
-        palette.highlightedText: Colors.overPrimary
     }
-    component Check: CheckBox {
+    component Check: StyledSwitch {
         palette.windowText: Colors.overSurface
         palette.highlight: Colors.primary
         font.family: Config.theme.font
         font.pixelSize: Styling.fontSize(-1)
     }
-    component Action: Button {
-        id: button
-        background: StyledRect { variant: button.hovered ? "focus" : "common" }
-        contentItem: Text {
-            text: button.text
-            color: Colors.overSurface
-            font.family: Config.theme.font
-            font.pixelSize: Styling.fontSize(0)
-            horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignVCenter
-        }
-    }
+    component Action: SettingsButton {}
 
     contentItem: ColumnLayout {
         spacing: Styling.fontSize(-3)

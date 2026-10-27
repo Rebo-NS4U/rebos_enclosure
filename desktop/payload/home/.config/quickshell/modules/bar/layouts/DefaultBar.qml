@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
+import qs.modules.components
 import qs.config
 import qs.modules.bar.clock
 import qs.modules.bar.systray
@@ -29,6 +30,12 @@ Item {
     // tiled windows do not touch the pills.
     readonly property int baseOuterMargin: barBg.outerMargin * 2
     readonly property bool shadowsEnabled: false
+
+    readonly property Region backgroundBlur: BlurRegion {
+        target: barBg
+        enabled: barBg.backgroundVisible
+        radius: root.outerRadius
+    }
 
     property alias barHitbox: hitbox
     readonly property alias timerInputActive: clock.timeToolsOpen

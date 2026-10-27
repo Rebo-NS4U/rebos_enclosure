@@ -11,9 +11,8 @@ import qs.config
 import qs.modules.globals
 import "SettingsCrawler.js" as SettingsCrawler
 
-Rectangle {
+Item {
     id: root
-    color: "transparent"
     implicitWidth: 400
     implicitHeight: 300
     // 0: Network, 1: Bluetooth, 2: Mixer, 3: AI, 4: Theme, 5: System, 6: Shell, 7: Keybindings
@@ -222,19 +221,19 @@ Rectangle {
         },
         {
             icon: Icons.faders,
-            label: "Mixer",
+            label: "Sound",
             section: 2,
             isIcon: true
         },
         {
             icon: Icons.robot,
-            label: "AI",
+            label: "Assistant",
             section: 3,
             isIcon: true
         },
         {
             icon: Icons.paintBrush,
-            label: "Theme",
+            label: "Appearance",
             section: 4,
             isIcon: true
         },
@@ -252,13 +251,13 @@ Rectangle {
         },
         {
             icon: Icons.keyboard,
-            label: "Keybindings",
+            label: "Keyboard shortcuts",
             section: 7,
             isIcon: true
         },
         {
             icon: Icons.layout,
-            label: "Window Rules",
+            label: "Window rules",
             section: 8,
             isIcon: true
         },
@@ -305,20 +304,31 @@ Rectangle {
 
     RowLayout {
         anchors.fill: parent
-        spacing: 8
+        spacing: 24
 
         // Sidebar area: search + list
         ColumnLayout {
-            Layout.preferredWidth: 200
-            Layout.maximumWidth: 200
+            Layout.preferredWidth: 220
+            Layout.maximumWidth: 220
             Layout.fillHeight: true
             spacing: 4
 
+            StyledText {
+                text: "Settings"
+                font.pixelSize: Styling.fontSize(14)
+                font.bold: true
+                Layout.topMargin: 12
+            }
+            StyledText {
+                text: "System and app settings"
+                color: Colors.overSurfaceVariant
+                Layout.bottomMargin: 18
+            }
             // Search input (separate from panel list)
             SearchInput {
                 id: searchInput
                 Layout.fillWidth: true
-                placeholderText: "Search..."
+                placeholderText: "Find a setting…"
                 clearOnEscape: true
 
                 onSearchTextChanged: text => {
@@ -375,7 +385,7 @@ Rectangle {
                     Behavior on contentY {
                         enabled: Config.animDuration > 0 && !sidebarFlickable.moving
                         NumberAnimation {
-                            duration: Config.animDuration / 2
+                            duration: Motion.feedback
                             easing.type: Easing.OutCubic
                         }
                     }
@@ -402,7 +412,7 @@ Rectangle {
                         Behavior on y {
                             enabled: Config.animDuration > 0
                             NumberAnimation {
-                                duration: Config.animDuration / 2
+                                duration: Motion.feedback
                                 easing.type: Easing.OutCubic
                             }
                         }
@@ -429,21 +439,19 @@ Rectangle {
 
                                 property bool isActive: index === root.selectedIndex
 
-                                background: Rectangle {
-                                    color: "transparent"
-                                }
+                                background: Item {}
 
                                 contentItem: Row {
                                     spacing: 8
 
                                     // Icon on the left (font icon)
-                                    Text {
+                                    StyledText {
                                         renderType: Text.NativeRendering
                                         font.hintingPreference: Font.PreferFullHinting
                                         id: iconText
                                         text: sidebarButton.modelData.isIcon ? sidebarButton.modelData.icon : ""
                                         font.family: Icons.font
-                                        font.pixelSize: 20
+                                        font.pixelSize: Styling.fontSize(6)
                                         color: sidebarButton.isActive ? Styling.srItem("overprimary") : Styling.srItem("common")
                                         anchors.verticalCenter: parent.verticalCenter
                                         leftPadding: 10
@@ -489,7 +497,7 @@ Rectangle {
                                     Column {
                                         anchors.verticalCenter: parent.verticalCenter
 
-                                        Text {
+                                        StyledText {
                                             renderType: Text.NativeRendering
                                             font.hintingPreference: Font.PreferFullHinting
                                             text: sidebarButton.modelData.label
@@ -507,7 +515,7 @@ Rectangle {
                                             }
                                         }
 
-                                        Text {
+                                        StyledText {
                                             renderType: Text.NativeRendering
                                             font.hintingPreference: Font.PreferFullHinting
                                             visible: !!sidebarButton.modelData.subLabel
@@ -552,7 +560,7 @@ Rectangle {
             clip: true
 
             property int previousSection: 0
-            readonly property int maxContentWidth: 480
+            readonly property int maxContentWidth: Math.min(760, width - 24)
 
             // Track section changes for animation direction
             onVisibleChanged: {
@@ -615,6 +623,7 @@ Rectangle {
             // Lazy-loaded panel using Loader
             Loader {
                 id: panelLoader
+                objectName: "settings-panel-loader"
                 anchors.fill: parent
                 asynchronous: true
                 source: contentArea.panelComponents[root.currentSection]?.component ?? ""

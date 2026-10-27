@@ -72,16 +72,16 @@ def build(home):
         copy('.local/share/cbonsai/' + name)
     copy('.local/share/fonts/rebos_shell')
     copy('.local/share/fonts/phosphor')
-    copy('.local/share/fonts/terminal-setup', home / 'terminal-setup/files/.local/share/fonts/terminal-setup')
     copy('.local/share/icons/GoogleDot-Black')
     copy('.config/spicetify/Themes/rebos_shell')
     copy('.config/vesktop/themes/rebos_shell.css')
     for name in ('colors.json', 'effective-palette.json', 'fish.fish', 'fzf.conf',
                  'kitty.conf', 'niri-colors.kdl'):
         copy('.cache/rebos_shell/' + name)
-    # 307 prepared wallpapers plus the original rice wallpapers and current selection.
+    # Original rice wallpapers, the current Urban/Nature collection and selection.
     copy('.local/share/wallpapers/rebos', home / 'code/dots-niri/assets/wal')
-    copy('.local/share/wallpapers/wallpapers/MAKC-1920x1200')
+    for name in ('Urban', 'Nature'):
+        copy('.local/share/wallpapers/' + name)
     state = json.loads((home / '.cache/rebos_shell/wallpapers.json').read_text())
     current = Path(state['currentWall'])
     copy('.local/share/wallpapers/default' + current.suffix, current)

@@ -27,7 +27,7 @@ This installs the desktop onto an existing Arch installation. It does not partit
 - Matugen wallpaper colors across GTK, Qt/KDE, Kitty, Fish, Fuzzel, btop, Neovim and supported apps. Includes Zen/Spotify integration and a Vesktop theme file.
 - Kitty/Fish with the custom prompt, fuzzy searching, navigation helpers and compiled wallpaper-colored bonsai greeting.
 - Custom Neovim IDE configuration, plugin lockfile, bundled fonts, cursor, icons, animated Ly login screen and current wallpaper palette.
-- Original rice wallpapers, 307 prepared 1920×1200 MAKC wallpapers and the current background.
+- Original rice wallpapers, 129 prepared 1920×1200 Urban/Nature wallpapers and the current background.
 - NetworkManager, Bluetooth, PipeWire/WirePlumber, power profiles, desktop portals, clipboard history, screenshots and OCR tools.
 - Full-profile apps: Firefox, Thunar, Discord, Spotify Launcher, OBS, Obsidian, imv, scrcpy, Flatpak, development tools and optional AUR software: Zen, VS Code, Spicetify and mpvpaper.
 

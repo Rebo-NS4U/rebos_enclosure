@@ -6,7 +6,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Use environment variables if set by flake, otherwise fall back to PATH
-QS_BIN="${REBOS_SHELL_QS:-qs}"
+QS_BIN="${REBOS_SHELL_QS:-${SCRIPT_DIR}/scripts/qs-screen-guard}"
 NIXGL_BIN="${REBOS_SHELL_NIXGL:-}"
 
 # If QML2_IMPORT_PATH is set (by wrapper or dev shell), ensure QML_IMPORT_PATH matches

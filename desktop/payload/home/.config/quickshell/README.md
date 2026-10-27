@@ -29,6 +29,7 @@ Multi-monitor support uses Quickshell `Variants` on `Quickshell.screens`.
 - Floating run menu and power menu
 - Wallpaper picker and secure `WlSessionLock` session lock
 - Isolated `rebos_shell` config, state, cache, data, and IPC paths
+- [Persistent assistant](scripts/ai_bridge.md) that keeps working across shell reloads
 
 ## Direct commands
 

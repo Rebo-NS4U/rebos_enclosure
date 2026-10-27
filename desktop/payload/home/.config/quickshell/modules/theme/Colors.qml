@@ -3,6 +3,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import qs.config
+import "ShellStyles.js" as ShellStyles
 
 FileView {
     id: colors
@@ -14,7 +15,13 @@ FileView {
         reload();
     }
     // Generate only after the new palette has finished loading.
-    onLoaded: generationTimer.restart()
+    onLoaded: {
+        if (forceExport) {
+            generatedPalette = "";
+            forceExport = false;
+        }
+        generationTimer.restart();
+    }
     onLoadFailed: generationTimer.restart()
 
     property Connections oledWatcher: Connections {
@@ -58,10 +65,22 @@ FileView {
     }
 
     property string generatedPalette: ""
+    property bool forceExport: false
+    property bool refreshPending: false
+    readonly property bool writersBusy: qtCtGenerator.writer.busy || gtkGenerator.writerProcess.busy
+        || pywalGenerator.writerProcess.busy || kittyGenerator.writerProcess.busy
+        || nvChadGenerator.writerProcess.busy || discordGenerator.writerProcess.busy
+    readonly property bool writersSucceeded: qtCtGenerator.writer.succeeded && gtkGenerator.writerProcess.succeeded
+        && pywalGenerator.writerProcess.succeeded && kittyGenerator.writerProcess.succeeded
+        && nvChadGenerator.writerProcess.succeeded && discordGenerator.writerProcess.succeeded
+    readonly property string appStyle: Config.theme?.shellStyle ?? "glass"
+    readonly property real appOpacity: Config.theme?.srBg?.opacity ?? 1
+    onAppStyleChanged: generationTimer.restart()
+    onAppOpacityChanged: generationTimer.restart()
 
     function refreshApps(): void {
-        generatedPalette = "";
-        generationTimer.restart();
+        forceExport = true;
+        reload();
     }
 
     property IpcHandler themeIpc: IpcHandler {
@@ -76,17 +95,63 @@ FileView {
         interval: 100
         repeat: false
         onTriggered: {
-            const palette = colors.availableColorNames.map(name => colors[name].toString());
-            const signature = JSON.stringify([palette, Config.theme.srBg.opacity]);
+            const raw = {};
+            for (const name of colors.availableColorNames) raw[name] = colors[name];
+            const palette = ShellStyles.appPalette(colors.appStyle, raw, colors.appOpacity);
+            for (const name of colors.availableColorNames) palette[name] = Qt.color(palette[name]);
+            palette.availableColorNames = colors.availableColorNames;
+            const signature = JSON.stringify(palette);
             if (signature === colors.generatedPalette)
                 return;
-            qtCtGenerator.generate(colors);
-            gtkGenerator.generate(colors);
-            pywalGenerator.generate(colors);
-            kittyGenerator.generate(colors);
-            nvChadGenerator.generate(colors);
-            discordGenerator.generate(colors);
+            qtCtGenerator.generate(palette);
+            gtkGenerator.generate(palette);
+            pywalGenerator.generate(palette);
+            kittyGenerator.generate(palette);
+            nvChadGenerator.generate(palette);
+            discordGenerator.generate(palette);
             colors.generatedPalette = signature;
+            colors.refreshPending = true;
+            appRefreshTimer.restart();
+        }
+    }
+
+    // Wait for every serialized exporter, including Spicetify, before notifying apps.
+    // A burst of selections shares one refresh using the latest completed files.
+    property Timer appRefreshTimer: Timer {
+        id: appRefreshTimer
+        interval: 500
+        repeat: false
+        onTriggered: {
+            if (colors.writersBusy || generationTimer.running || appRefresher.running) {
+                restart();
+                return;
+            }
+            if (!colors.refreshPending)
+                return;
+            colors.refreshPending = false;
+            if (!colors.writersSucceeded) {
+                console.warn("App refresh skipped because a color export failed");
+                colors.generatedPalette = "";
+                return;
+            }
+            appRefresher.running = true;
+        }
+    }
+
+    property Process appRefresher: Process {
+        id: appRefresher
+        command: ["python3", Quickshell.shellPath("scripts/reload_theme_apps.py")]
+        onExited: (exitCode, exitStatus) => {
+            if (exitCode !== 0)
+                console.warn("App color refresh failed:", exitCode);
+            if (colors.refreshPending)
+                appRefreshTimer.restart();
+        }
+        stderr: StdioCollector {
+            onStreamFinished: {
+                if (text.trim())
+                    console.warn("App color refresh:", text.trim());
+            }
         }
     }
 

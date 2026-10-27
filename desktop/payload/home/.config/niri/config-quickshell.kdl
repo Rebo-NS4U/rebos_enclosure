@@ -78,12 +78,6 @@ layout {
     }
 }
 
-// Named workspaces for app placement
-workspace "web"
-workspace "dev"
-workspace "chat"
-workspace "media"
-// workspace "vm"
 
 environment {
     XDG_MENU_PREFIX "arch-"
@@ -107,12 +101,24 @@ environment {
 // Delay kded6 so QuickShell can claim the StatusNotifierWatcher D-Bus name first;
 // otherwise kded6 claims it but doesn't export the object path, breaking the tray.
 
+// One medium glass blur for app windows and client-shaped shell surfaces.
+blur {
+    passes 3
+    offset 3.0
+    noise 0.02
+    saturation 1.0
+}
+
 prefer-no-csd
 
 screenshot-path "~/Pictures/Screenshots/Screenshot from %Y-%m-%d %H-%M-%S.png"
 
 animations {
     slowdown 0.7
+    // Gentler glide when focus-follows-mouse brings another column into view.
+    horizontal-view-movement {
+        spring damping-ratio=1.0 stiffness=350 epsilon=0.00001
+    }
 }
 
 window-rule {
@@ -166,7 +172,7 @@ window-rule {
     draw-border-with-background false
     background-effect {
         blur true
-        xray true
+        xray false
     }
 }
 
@@ -181,13 +187,11 @@ window-rule {
 
 
 window-rule {
-    exclude app-id="zen-browser"
-    exclude app-id="zen"
-    exclude app-id="cider"
     draw-border-with-background false
     geometry-corner-radius 12
     background-effect {
         blur true
+        xray false
     }
     popups {
         geometry-corner-radius 12
@@ -200,21 +204,18 @@ window-rule {
 
 layer-rule {
     match namespace="wayland-pet"
-    match layer="overlay"
     background-effect {
         blur false
     }
 }
 
-// rebos_shell currently uses full-screen transparent layer surfaces to host its
-// bar, menus, and input regions. Blurring those surfaces blurs the whole
-// desktop, so keep the shell clear until its panels use separate surfaces.
-// Existing Wayland surfaces can retain their original namespace across QML
-// hot reloads. Exempt both names so a live rebrand never blurs the desktop.
+// The shell supplies rounded ext-background-effect regions for visible panels.
+// Leave blur unset: forcing it would replace those shapes with the whole surface.
+// Both namespaces can survive QML hot reloads from an earlier shell version.
 layer-rule {
     match namespace=r#"^(rebos_shell|nonchalant)(?::.*)?$"#
     background-effect {
-        blur false
+        xray false
     }
 }
 
@@ -253,7 +254,7 @@ layer-rule {
     }
 }
 
-// Bottom/background layers (wallpaper etc) keep efficient xray blur.
+// Other bottom/background clients use the same background sampling policy.
 layer-rule {
     match layer="bottom"
     match layer="background"
@@ -262,6 +263,7 @@ layer-rule {
     exclude namespace=r#"(?i)^sttd(?::.*)?$"#
     background-effect {
         blur true
+        xray false
     }
 }
 
@@ -399,6 +401,7 @@ binds {
     // Keys consist of modifiers separated by + signs, followed by an XKB key name
 
     // rebos_shell QuickShell actions.
+    Mod+Alt+F hotkey-overlay-title="File Shelf" { spawn "qs" "ipc" "call" "rebos_shell" "run" "file-shelf"; }
     Mod+Space hotkey-overlay-title="Open App Launcher" { spawn "qs" "ipc" "call" "rebos_shell" "run" "launcher"; }
     Mod+Alt+N hotkey-overlay-title="Quick Notes" { spawn "qs" "ipc" "call" "rebos_shell" "run" "notes"; }
     Mod+N hotkey-overlay-title="Open Dashboard" { spawn "qs" "ipc" "call" "rebos_shell" "run" "system-monitor"; }
@@ -407,6 +410,7 @@ binds {
     Mod+C hotkey-overlay-title="Open Project" { spawn "qs" "ipc" "call" "rebos_shell" "run" "projects"; }
     Mod+Shift+C hotkey-overlay-title="Open Zed Project" { spawn "project-picker"; }
     Mod+A hotkey-overlay-title="Open AI Assistant" { spawn "qs" "ipc" "call" "rebos_shell" "run" "assistant"; }
+    Mod+Shift+A repeat=false hotkey-overlay-title="Open Anime Streamer" { spawn "@HOME@/.local/bin/anime-streamer"; }
 
     Mod+Shift+Slash { show-hotkey-overlay; }
 
@@ -498,17 +502,17 @@ binds {
     Mod+Ctrl+Shift+WheelScrollDown { move-column-right; }
     Mod+Ctrl+Shift+WheelScrollUp   { move-column-left; }
 
-    // Switch to named workspaces directly with Mod+Number.
-    Mod+1 { focus-workspace "web"; }
-    Mod+2 { focus-workspace "dev"; }
-    Mod+3 { focus-workspace "chat"; }
-    Mod+4 { focus-workspace "media"; }
-    // Mod+5 { focus-workspace "vm"; }
-    Mod+Shift+1 { move-column-to-workspace "web"; }
-    Mod+Shift+2 { move-column-to-workspace "dev"; }
-    Mod+Shift+3 { move-column-to-workspace "chat"; }
-    Mod+Shift+4 { move-column-to-workspace "media"; }
-    // Mod+Shift+5 { move-column-to-workspace "vm"; }
+    // Switch to numbered workspaces directly with Mod+Number.
+    Mod+1 { focus-workspace 1; }
+    Mod+2 { focus-workspace 2; }
+    Mod+3 { focus-workspace 3; }
+    Mod+4 { focus-workspace 4; }
+    // Mod+5 { focus-workspace 5; }
+    Mod+Shift+1 { move-column-to-workspace 1; }
+    Mod+Shift+2 { move-column-to-workspace 2; }
+    Mod+Shift+3 { move-column-to-workspace 3; }
+    Mod+Shift+4 { move-column-to-workspace 4; }
+    // Mod+Shift+5 { move-column-to-workspace 5; }
 
     Mod+BracketLeft  { consume-or-expel-window-left; }
     Mod+BracketRight { consume-or-expel-window-right; }
@@ -551,6 +555,12 @@ binds {
 
 // Follow the wallpaper palette without changing layout or restarting Niri.
 include optional=true "~/.cache/rebos_shell/niri-colors.kdl"
+
+// The pinned assistant is a normal tiled client, scoped by its own title.
+window-rule {
+    match app-id=r#"^(org\.quickshell|quickshell)([.:].*)?$"# title="^rebos_shell Assistant$"
+    open-floating false
+}
 
 spawn-at-startup "/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1"
 spawn-at-startup "sh" "-c" "exec udiskie --no-notify"

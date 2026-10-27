@@ -7,6 +7,7 @@ import qs.modules.globals
 import qs.modules.services
 import qs.config
 import Quickshell.Io
+import "../theme/ShellStyles.js" as ShellStyles
 
 Singleton {
     id: root
@@ -35,6 +36,10 @@ Singleton {
         if (command !== "notes" && QuickNotes.visible)
             QuickNotes.close();
         switch (command) {
+            case "file-shelf":
+            case "shelf":
+                FileShelf.toggle("");
+                break;
             case "notes":
                 if (!QuickNotes.visible)
                     Visibilities.clearAll();
@@ -100,6 +105,11 @@ Singleton {
             case "dashboard-controls":
                 toggleSettings();
                 break;
+            case "appearance":
+                if (!GlobalStates.settingsWindowVisible)
+                    toggleSettings();
+                GlobalStates.settingsCurrentTab = 4;
+                break;
             case "new-window-rule":
                 if (!GlobalStates.settingsWindowVisible)
                     toggleSettings();
@@ -124,6 +134,36 @@ Singleton {
             manager.setWallpaperMode(mode);
             manager.setWallpaper(path);
             return true;
+        }
+
+        function themeStyle(style: string): bool {
+            if (!ShellStyles.styles.some(entry => entry.id === style)) return false;
+            Config.theme.shellStyle = style;
+            return true;
+        }
+
+        function borderStyle(style: string): bool {
+            if (["band", "dotted", "double"].indexOf(style) === -1) return false;
+            Config.theme.ditherBorder = style;
+            return true;
+        }
+
+        function wallpaperDitherStrength(strength: string): bool {
+            if (["normal", "strong", "intense"].indexOf(strength) === -1) return false;
+            Config.theme.wallpaperDitherStrength = strength;
+            return true;
+        }
+
+        function themeStatus(): string {
+            const manager = GlobalStates.wallpaperManager;
+            return JSON.stringify({style: Config.theme.shellStyle,
+                ditherPalette: Config.theme.ditherPalette,
+                border: Config.theme.ditherBorder,
+                wallpaperStrength: Config.theme.wallpaperDitherStrength,
+                wallpaper: manager?.currentWallpaper ?? "",
+                renderedWallpaper: manager?.renderedWallpaper ?? "",
+                converting: DitheredWallpapers.busy,
+                error: DitheredWallpapers.error});
         }
     }
 

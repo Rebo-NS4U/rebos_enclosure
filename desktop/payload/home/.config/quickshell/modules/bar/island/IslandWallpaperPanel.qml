@@ -429,7 +429,7 @@ Item {
 
                         scale: delegateItem.isHovered ? 0.96 : 1.0
                         Behavior on scale {
-                            NumberAnimation { duration: 120; easing.type: Easing.OutCubic }
+                            NumberAnimation { duration: Motion.feedback; easing.type: Easing.OutCubic }
                         }
 
                         // Thumbnail image

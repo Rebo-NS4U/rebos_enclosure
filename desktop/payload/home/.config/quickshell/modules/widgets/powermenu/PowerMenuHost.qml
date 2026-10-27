@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
+import Quickshell.Wayland._BackgroundEffect
 import Quickshell.Wayland
 import qs.modules.components
 import qs.modules.theme
@@ -99,6 +100,9 @@ Item {
         anchors.left: true
         anchors.right: true
         WlrLayershell.margins.bottom: 0
+
+
+        BackgroundEffect.blurRegion: BlurRegion { target: powerWrapper }
 
         color: "transparent"
         implicitHeight: 80 + root.bottomOffset

@@ -22,6 +22,7 @@ Item {
     property string icon: ""
     property color progressColor: Styling.srItem("overprimary")
     property string tooltipText: ""
+    property string tooltipDescription: ""
     property bool clickEnabled: true
     property bool isHovered: false
 
@@ -58,11 +59,11 @@ Item {
             anchors.fill: parent
             color: Styling.srItem("overprimary")
             opacity: root.isHovered ? (root.flat ? 0.12 : 0.2) : 0
-            radius: root.flat ? (width / 2) : parent.topLeftRadius
-            topLeftRadius: root.flat ? (width / 2) : parent.topLeftRadius
-            topRightRadius: root.flat ? (width / 2) : parent.topRightRadius
-            bottomLeftRadius: root.flat ? (width / 2) : parent.bottomLeftRadius
-            bottomRightRadius: root.flat ? (width / 2) : parent.bottomRightRadius
+            radius: root.flat ? (width / 2) : buttonBg.topLeftRadius
+            topLeftRadius: root.flat ? (width / 2) : buttonBg.topLeftRadius
+            topRightRadius: root.flat ? (width / 2) : buttonBg.topRightRadius
+            bottomLeftRadius: root.flat ? (width / 2) : buttonBg.bottomLeftRadius
+            bottomRightRadius: root.flat ? (width / 2) : buttonBg.bottomRightRadius
 
             Behavior on opacity {
                 enabled: Config.animDuration > 0
@@ -125,15 +126,13 @@ Item {
             Behavior on angle {
                 enabled: Config.animDuration > 0
                 NumberAnimation {
-                    duration: 240
+                    duration: Math.min(Config.animDuration, 160)
                     easing.type: Easing.OutCubic
                 }
             }
         }
 
-        Text {
-            renderType: Text.NativeRendering
-            font.hintingPreference: Font.PreferFullHinting
+        StyledText {
             anchors.centerIn: parent
             text: root.icon
             font.family: Icons.font
@@ -152,18 +151,17 @@ Item {
                     root.activated();
                 }
             }
-            onWheel: wheel => {
-                const direction = wheel.angleDelta.y !== 0 ? wheel.angleDelta.y : wheel.angleDelta.x;
-                if (direction === 0)
-                    return;
-                root.adjusted(Math.max(0, Math.min(1, root.normalizedValue + (direction > 0 ? 0.05 : -0.05))));
-                wheel.accepted = true;
-            }
+
+        }
+
+        ScrollStepHandler {
+            onStepped: steps => root.adjusted(Math.max(0, Math.min(1, root.normalizedValue + steps * 0.05)))
         }
 
         StyledToolTip {
             show: root.isHovered
             tooltipText: root.tooltipText
+            description: root.tooltipDescription
         }
     }
 }

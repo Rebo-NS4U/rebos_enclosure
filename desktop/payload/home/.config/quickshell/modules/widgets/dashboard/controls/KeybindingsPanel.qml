@@ -11,7 +11,7 @@ import qs.modules.components
 
 Item {
     id: root
-    property int maxContentWidth: 480
+    property int maxContentWidth: 760
     readonly property real layoutSpacing: Styling.fontSize(-3)
     property list<var> bindings: []
     property list<string> watchedFiles: []
@@ -133,7 +133,7 @@ Item {
         }
     }
 
-    component Caption: Text {
+    component Caption: StyledText {
         Layout.fillWidth: true
         wrapMode: Text.WordWrap
         font.family: Config.theme.font
@@ -141,28 +141,20 @@ Item {
         color: Colors.overSurfaceVariant
     }
 
-    component Action: Button {
-        id: button
-        implicitHeight: Styling.fontSize(0) * 2.5
-        background: StyledRect { variant: button.hovered ? "focus" : "common" }
-        contentItem: Text {
-            text: button.text
-            color: button.enabled ? Colors.overSurface : Colors.overSurfaceVariant
-            font.family: Config.theme.font
-            font.pixelSize: Styling.fontSize(-1)
-            horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignVCenter
-        }
-    }
+    component Action: SettingsButton {}
 
     ColumnLayout {
-        anchors.fill: parent
+        width: Math.min(root.width, root.maxContentWidth)
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
         spacing: root.layoutSpacing
 
         PanelTitlebar {
             Layout.fillWidth: true
-            title: "Keybindings"
-            statusText: reader.running ? "Loading…" : root.bindings.length + " shortcuts"
+            title: "Keyboard shortcuts"
+            description: "Find and change keyboard shortcuts."
+            statusText: reader.running ? "Loading…" : root.bindings.length + (root.bindings.length === 1 ? " shortcut" : " shortcuts")
             actions: [{
                 icon: Icons.sync,
                 tooltip: "Refresh shortcuts",
@@ -170,17 +162,21 @@ Item {
                 onClicked: function () { root.refresh(); }
             }]
         }
+        SettingsGroup {
+            title: "Find a shortcut"
         Caption {
-            text: "Super is the Windows / logo key. Desktop shortcuts work throughout Niri; terminal shortcuts work in Kitty."
+            text: "Super is the Windows key. Desktop shortcuts work everywhere; terminal shortcuts work in Kitty."
         }
         Caption {
-            text: "Select Edit to change a shortcut while keeping its action. Changes are validated and backed up before saving. Kitty shows your configured mappings."
+            text: "Select Edit to change a shortcut. Its action stays the same."
         }
         SearchInput {
             Layout.fillWidth: true
             placeholderText: "Find an action or shortcut…"
             onSearchTextChanged: text => root.searchQuery = text
         }
+        }
+
         StyledRect {
             Layout.fillWidth: true
             implicitHeight: editorLayout.implicitHeight + root.layoutSpacing * 2
@@ -197,7 +193,7 @@ Item {
                     font.bold: true
                 }
                 RowLayout {
-                    TextField {
+                    SettingsTextField {
                         id: shortcutInput
                         objectName: "shortcut-editor-input"
                         Layout.fillWidth: true
@@ -209,7 +205,7 @@ Item {
                         placeholderTextColor: Colors.overSurfaceVariant
                         selectionColor: Colors.primary
                         selectedTextColor: Colors.overPrimary
-                        background: StyledRect { variant: "internalbg" }
+
                         onAccepted: root.saveEdit()
                     }
                     Action {
@@ -250,7 +246,7 @@ Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
             clip: true
-            spacing: root.layoutSpacing / 2
+            spacing: 12
             model: root.filteredBindings
             boundsBehavior: Flickable.StopAtBounds
             reuseItems: true
@@ -260,19 +256,21 @@ Item {
                 id: row
                 required property var modelData
                 width: shortcutList.width
-                implicitHeight: rowLayout.implicitHeight + root.layoutSpacing * 2
+                implicitHeight: rowLayout.implicitHeight + 32
                 variant: hover.hovered ? "focus" : "pane"
+                border.width: 1
+                border.color: Qt.alpha(Colors.outline, 0.3)
                 radius: Styling.radius(-2)
 
                 RowLayout {
                     id: rowLayout
                     anchors.fill: parent
-                    anchors.margins: root.layoutSpacing
-                    spacing: root.layoutSpacing
+                    anchors.margins: 16
+                    spacing: 12
                     ColumnLayout {
                         Layout.fillWidth: true
                         spacing: root.layoutSpacing / 4
-                        Text {
+                        StyledText {
                             Layout.fillWidth: true
                             text: row.modelData.action
                             wrapMode: Text.WordWrap
@@ -285,7 +283,7 @@ Item {
                             font.pixelSize: Styling.fontSize(-2)
                         }
                     }
-                    Text {
+                    StyledText {
                         Layout.maximumWidth: shortcutList.width * 0.4
                         text: row.modelData.key
                         wrapMode: Text.WrapAnywhere

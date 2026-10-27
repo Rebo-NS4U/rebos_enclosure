@@ -11,8 +11,8 @@ FloatingWindow {
     id: settingsWindow
 
     // Window properties
-    implicitWidth: 900
-    implicitHeight: 650
+    implicitWidth: 1100
+    implicitHeight: 760
     title: "rebos_shell Settings"
     visible: GlobalStates.settingsWindowVisible
 

@@ -55,7 +55,7 @@ StyledRect {
             blur: 0.75
         }
         opacity: root.hasArtwork ? 1.0 : (root.wallpaperUrl !== "" ? 0.35 : 0.0)
-        Behavior on opacity { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
+        Behavior on opacity { NumberAnimation { duration: Motion.feedback; easing.type: Easing.OutCubic } }
     }
 
     // Gradient overlay for contrast
@@ -193,9 +193,8 @@ StyledRect {
 
                     Behavior on scale {
                         NumberAnimation {
-                            duration: prevMouse.pressed ? 80 : 250
-                            easing.type: prevMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                            easing.overshoot: 1.5
+                            duration: prevMouse.pressed ? Motion.press : Motion.feedback
+                            easing.type: Motion.feedbackCurve
                         }
                     }
 
@@ -229,9 +228,8 @@ StyledRect {
 
                     Behavior on scale {
                         NumberAnimation {
-                            duration: playMouse.pressed ? 80 : 250
-                            easing.type: playMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                            easing.overshoot: 1.5
+                            duration: playMouse.pressed ? Motion.press : Motion.feedback
+                            easing.type: Motion.feedbackCurve
                         }
                     }
 
@@ -264,9 +262,8 @@ StyledRect {
 
                     Behavior on scale {
                         NumberAnimation {
-                            duration: nextMouse.pressed ? 80 : 250
-                            easing.type: nextMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                            easing.overshoot: 1.5
+                            duration: nextMouse.pressed ? Motion.press : Motion.feedback
+                            easing.type: Motion.feedbackCurve
                         }
                     }
 

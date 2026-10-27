@@ -68,10 +68,17 @@ Singleton {
     // ============================================
     // THEME MODULE
     // ============================================
+    Timer {
+        id: themeSaveTimer
+        interval: 100
+        onTriggered: themeLoader.writeAdapter()
+    }
+
     FileView {
         id: themeLoader
         path: root.configDirReady ? root.configDir + "/theme.json" : ""
         atomicWrites: true
+        blockWrites: true
         watchChanges: true
         onLoaded: {
             if (!root.themeReady) {
@@ -87,14 +94,21 @@ Singleton {
                 });
             }
         }
-        onFileChanged: reload()
+        onFileChanged: {
+            if (!themeSaveTimer.running) reload();
+        }
         onAdapterUpdated: {
             if (root.themeReady) {
-                themeLoader.writeAdapter();
+                themeSaveTimer.restart();
             }
         }
 
         adapter: JsonAdapter {
+            property string shellStyle: "glass"
+            property string ditherPalette: "original"
+            property string ditherBorder: "band"
+            property string wallpaperDitherStrength: "strong"
+            property int ditherStrength: 20
             property bool oledMode: false
             property bool lightMode: false
             property int roundness: 16
@@ -456,11 +470,20 @@ Singleton {
 
     // ============================================
     // BAR MODULE
+    // Coalesce slider/reset updates before writing so earlier snapshots cannot
+    // reload over newer edits. Small local config writes finish before watching resumes.
+    Timer {
+        id: barSaveTimer
+        interval: 100
+        onTriggered: barLoader.writeAdapter()
+    }
+
     // ============================================
     FileView {
         id: barLoader
         path: root.configDirReady ? root.configDir + "/bar.json" : ""
         atomicWrites: true
+        blockWrites: true
         watchChanges: true
         onLoaded: {
             if (!root.barReady) {
@@ -476,10 +499,12 @@ Singleton {
                 });
             }
         }
-        onFileChanged: reload()
+        onFileChanged: {
+            if (!barSaveTimer.running) reload();
+        }
         onAdapterUpdated: {
             if (root.barReady) {
-                barLoader.writeAdapter();
+                barSaveTimer.restart();
             }
         }
 
@@ -490,6 +515,9 @@ Singleton {
             property bool enableFirefoxPlayer: false
             property bool use12hFormat: false
             property bool pinned: false
+            property string islandAppearance: "glass"
+            property int islandOpacity: 80
+            property int islandAccent: 55
         }
     }
 

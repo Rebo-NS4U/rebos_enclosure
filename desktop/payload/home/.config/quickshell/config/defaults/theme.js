@@ -2,6 +2,11 @@
 
 var data = {
     "oledMode": false,
+    "shellStyle": "glass",
+    "ditherPalette": "original",
+    "ditherBorder": "band",
+    "wallpaperDitherStrength": "strong",
+    "ditherStrength": 20,
     "lightMode": false,
     "roundness": 16,
     "font": "JetBrains Mono",

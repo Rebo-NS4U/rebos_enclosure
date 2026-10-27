@@ -25,7 +25,7 @@ QtObject {
 
         const primary = fmt(Colors.primary)
         const onPrimary = fmt(Colors.overPrimary)
-        const background = toRgba(Colors.background, Config.theme.srBg.opacity)
+        const background = toRgba(Colors.background, Colors.opacity)
         const onBackground = fmt(Colors.overBackground)
         const surface = fmt(Colors.surface)
         const onSurface = fmt(Colors.overSurface)

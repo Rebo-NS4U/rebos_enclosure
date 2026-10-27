@@ -42,8 +42,7 @@ def use_quickshell(img_path, resize):
     if result.returncode != 0 or result.stdout.strip().lower() != "true":
         detail = result.stderr.strip() or result.stdout.strip() or "wallpaper manager unavailable"
         raise RuntimeError(f"QuickShell could not accept the wallpaper: {detail}")
-    # A dotfile sync may have reapplied static app themes since the last export.
-    subprocess.run(["qs", "ipc", "call", "theme", "sync"], check=True)
+    # The wallpaper manager exports and refreshes apps after Matugen completes.
 
 
 

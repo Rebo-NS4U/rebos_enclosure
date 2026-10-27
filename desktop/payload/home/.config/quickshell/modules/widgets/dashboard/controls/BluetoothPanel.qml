@@ -13,7 +13,7 @@ import qs.config
 Item {
     id: root
 
-    property int maxContentWidth: 480
+    property int maxContentWidth: 760
     readonly property int contentWidth: Math.min(width, maxContentWidth)
     readonly property real sideMargin: (width - contentWidth) / 2
 
@@ -41,7 +41,7 @@ Item {
         id: deviceList
         anchors.fill: parent
         clip: true
-        spacing: 4
+        spacing: 12
         cacheBuffer: 1000
         reuseItems: true
 
@@ -70,6 +70,7 @@ Item {
                 width: root.contentWidth
                 anchors.horizontalCenter: parent.horizontalCenter
                 title: "Bluetooth"
+            description: "Pair devices and manage Bluetooth connections."
                 showToggle: true
                 toggleChecked: BluetoothService.enabled
 
@@ -112,7 +113,7 @@ Item {
         }
 
         // Empty state
-        Text {
+        StyledText {
             renderType: Text.NativeRendering
             font.hintingPreference: Font.PreferFullHinting
             anchors.centerIn: parent

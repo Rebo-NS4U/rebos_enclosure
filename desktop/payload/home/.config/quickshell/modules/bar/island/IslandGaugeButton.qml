@@ -27,9 +27,8 @@ StyledRect {
     Behavior on scale {
         enabled: (Config.animDuration ?? 0) > 0
         NumberAnimation {
-            duration: mouseArea.pressed ? 80 : 250
-            easing.type: mouseArea.pressed ? Easing.OutQuad : Easing.OutBack
-            easing.overshoot: 1.5
+            duration: mouseArea.pressed ? Motion.press : Motion.feedback
+            easing.type: Motion.feedbackCurve
         }
     }
 
@@ -40,6 +39,7 @@ StyledRect {
     property bool showArc: false
     property bool isMuted: false
     property string tooltipText: ""
+    property string tooltipDescription: ""
 
     signal clicked(var mouse)
     signal wheelScrolled(int delta)
@@ -60,7 +60,7 @@ StyledRect {
         Behavior on currentAngleDeg {
             enabled: Config.animDuration > 0
             NumberAnimation {
-                duration: 240
+                duration: Motion.feedback
                 easing.type: Easing.OutCubic
             }
         }
@@ -143,5 +143,6 @@ StyledRect {
     StyledToolTip {
         show: mouseArea.containsMouse && root.tooltipText !== ""
         tooltipText: root.tooltipText
+        description: root.tooltipDescription
     }
 }
