@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
+import QtQuick.Dialogs
 import QtQuick.Controls
 import QtQuick.Layouts
 import qs.config
@@ -186,11 +187,54 @@ ColumnLayout {
                 objectName: "dither-palette"
                 Layout.fillWidth: true
                 model: [ {label: "Keep photo colors", value: "original"},
-                         {label: "Teal and orange", value: "teal-orange"} ]
+                         {label: "Teal and orange", value: "teal-orange"},
+                         {label: "Main color", value: "tint"} ]
                 textRole: "label"
                 valueRole: "value"
-                currentIndex: Config.theme.ditherPalette === "teal-orange" ? 1 : 0
+                currentIndex: Config.theme.ditherPalette === "tint" ? 2
+                    : Config.theme.ditherPalette === "teal-orange" ? 1 : 0
                 onActivated: Config.theme.ditherPalette = currentValue
+            }
+            WallpaperTintSwatches {
+                visible: Config.theme.ditherPalette === "tint"
+                Layout.fillWidth: true
+            }
+            RowLayout {
+                visible: Config.theme.ditherPalette === "tint"
+                Layout.fillWidth: true
+                SettingsButton {
+                    objectName: "dither-tint-picker"
+                    text: "Choose main color"
+                    onClicked: {
+                        tintDialog.selectedColor = Config.theme.ditherTintColor;
+                        tintDialog.open();
+                    }
+                    icon.name: "color-picker"
+                }
+                StyledRect {
+                    variant: "common"
+                    implicitWidth: Styling.fontSize(0) * 2
+                    implicitHeight: implicitWidth
+                    objectName: "dither-tint-preview"
+                    fillColor: Config.theme.ditherTintColor
+                    backgroundOpacity: 1
+                }
+                SettingsTextField {
+                    objectName: "dither-tint-hex"
+                    Layout.fillWidth: true
+                    text: Config.theme.ditherTintColor
+                    placeholderText: "#RRGGBB"
+                    validator: RegularExpressionValidator { regularExpression: /#[0-9a-fA-F]{6}/ }
+                    onEditingFinished: {
+                        if (acceptableInput) Config.theme.ditherTintColor = text.toLowerCase();
+                        else text = Config.theme.ditherTintColor;
+                    }
+                }
+            }
+            ColorDialog {
+                id: tintDialog
+                title: "Wallpaper main color"
+                onAccepted: Config.theme.ditherTintColor = selectedColor.toString().toLowerCase()
             }
             StyledText {
                 Layout.fillWidth: true

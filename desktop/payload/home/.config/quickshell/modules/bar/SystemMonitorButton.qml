@@ -32,6 +32,8 @@ ToggleButton {
 
     BarPopup {
         id: monitorPopup
+        closeOnFocusLost: !SystemResources.keepMonitorOpen
+        grabFocus: !SystemResources.keepMonitorOpen
         anchorItem: root
         variant: "transparent"
         popupPadding: 0

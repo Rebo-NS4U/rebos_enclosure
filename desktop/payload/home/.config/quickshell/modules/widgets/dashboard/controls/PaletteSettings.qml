@@ -119,14 +119,19 @@ ColumnLayout {
     RowLayout {
         Repeater {
             model: ["background", "surface", "primary", "secondary", "tertiary", "overSurface"]
-            delegate: Rectangle {
+            delegate: StyledRect {
+                id: paletteSwatch
+                variant: "common"
                 required property string modelData
                 Layout.fillWidth: true
                 implicitHeight: 36
                 radius: Styling.radius(-4)
-                color: Colors[modelData]
-                ToolTip.visible: hover.hovered
-                ToolTip.text: modelData + ": " + color
+                fillColor: Colors[modelData]
+                backgroundOpacity: 1
+                StyledToolTip {
+                    show: hover.hovered
+                    tooltipText: paletteSwatch.modelData + ": " + paletteSwatch.fillColor
+                }
                 HoverHandler { id: hover }
             }
         }

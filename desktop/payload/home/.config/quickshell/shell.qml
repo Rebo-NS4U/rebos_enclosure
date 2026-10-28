@@ -108,15 +108,14 @@ ShellRoot {
                 _ = LockscreenService.prepActive;
                 // Keep compositor + OSD services hot for overview hide and media keys.
                 _ = NiriService.overviewOpen;
+                _ = DesktopBlur.appliedMode;
                 _ = Audio.value;
                 _ = AudioFormat.connected;
                 _ = Brightness.monitors;
                 // Own org.freedesktop.Notifications and load history early.
                 _ = Notifications.appNameList;
                 _ = StateService.initialized;
-                // ACP agents remain entirely idle when the AI feature is off.
-                if (Config.ai?.enabled ?? true)
-                    _ = Ai.models;
+                // Assistant sessions belong to the separate assistant application.
             });
         }
 

@@ -56,25 +56,21 @@ PanelWindow {
             DitheredWallpapers.request(currentWallpaper);
     }
 
+    function refreshDitheredTheme(): void {
+        requestDitheredWallpapers();
+        if (GlobalStates.wallpaperManager === wallpaper)
+            runMatugenForCurrentWallpaper();
+    }
+
     Connections {
         target: DitheredWallpapers
-        function onActiveChanged() {
-            wallpaper.requestDitheredWallpapers();
-            if (GlobalStates.wallpaperManager === wallpaper)
-                wallpaper.runMatugenForCurrentWallpaper();
-        }
-        function onPaletteChanged() {
-            wallpaper.requestDitheredWallpapers();
-            if (GlobalStates.wallpaperManager === wallpaper)
-                wallpaper.runMatugenForCurrentWallpaper();
-        }
-        function onStrengthChanged() {
-            wallpaper.requestDitheredWallpapers();
-            if (GlobalStates.wallpaperManager === wallpaper)
-                wallpaper.runMatugenForCurrentWallpaper();
-        }
+        function onActiveChanged() { wallpaper.refreshDitheredTheme(); }
+        function onPaletteChanged() { wallpaper.refreshDitheredTheme(); }
+        function onTintChanged() { wallpaper.refreshDitheredTheme(); }
+        function onStrengthChanged() { wallpaper.refreshDitheredTheme(); }
         function onFinished(path: string) {
-            if (DitheredWallpapers.active && path === wallpaper.currentWallpaper && GlobalStates.wallpaperManager === wallpaper)
+            if (path === wallpaper.currentWallpaper && GlobalStates.wallpaperManager === wallpaper
+                    && !DitheredWallpapers.waiting(path))
                 wallpaper.runMatugenForCurrentWallpaper();
         }
     }
@@ -357,7 +353,7 @@ PanelWindow {
             return getThumbnailPath(filePath);
         }
 
-        // Static images use the same converted source as the desktop.
+        // Match the displayed dither/tint; other styles return the original.
         return DitheredWallpapers.source(filePath);
     }
 
@@ -614,6 +610,7 @@ PanelWindow {
     }
 
     function runMatugenForCurrentWallpaper() {
+        // Wait for the current tint, including when a prior conversion finishes late.
         if (DitheredWallpapers.waiting(currentWallpaper)) {
             DitheredWallpapers.request(currentWallpaper);
             return;

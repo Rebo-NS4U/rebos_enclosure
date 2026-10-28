@@ -883,58 +883,102 @@ Scope {
         return text.length > 240 ? text.slice(0, 237).trim() + "…" : text;
     }
 
+    // Public progress belongs in the panel; never use private thought chunks.
+    readonly property string activityProgress: {
+        let lastUser = -1;
+        for (let i = currentChat.length - 1; i >= 0; i--) {
+            if (currentChat[i].role === "user") { lastUser = i; break; }
+        }
+        let opening = currentChat.findIndex((message, index) => index > lastUser
+            && message.role === "assistant" && !message.functionCall && message.content);
+        for (let i = currentChat.length - 1; i > opening && i > lastUser; i--) {
+            let message = currentChat[i];
+            if (message.role === "user") break;
+            if (message.role !== "assistant" || message.functionCall || !message.content) continue;
+            let paragraph = String(message.content).trim().split(/\n\s*\n/)[0];
+            if (!/[.!?](?:\s|$)/.test(paragraph)) continue;
+            let text = paragraph.replace(/[*`#]/g, "").replace(/\s+/g, " ").trim();
+            if (text === activityTask) return "";
+            return text.length > 600 ? text.slice(0, 597).trim() + "…" : text;
+        }
+        return "";
+    }
+
+    function activityText(text) {
+        return String(text || "")
+            .replace(/(?:[~.\w-]+\/)*([.\w-]+)\.(?:qml|js|ts|tsx|jsx|py|md|json|toml|yaml|yml|kdl|css|sh|conf|ini)\b/g, function(path, name) {
+                let known = {AssistantActivity: "the activity panel", AiSession: "the assistant session",
+                    AssistantSidebar: "the assistant sidebar", test_ai_questions: "the assistant question checks"};
+                if (known[name]) return known[name];
+                let words = name.replace(/^test[_-]/, "").replace(/([a-z])([A-Z])/g, "$1 $2")
+                    .replace(/[_-]+/g, " ").toLowerCase();
+                return "the " + words + (/^test[_-]/.test(name) ? " checks" : " file");
+            })
+            .replace(/QML syntax validation|syntax validation/gi, "a check for writing mistakes")
+            .replace(/syntax errors/gi, "writing mistakes")
+            .replace(/current implementation/gi, "current behavior")
+            .replace(/automated tests/gi, "automatic checks")
+            .replace(/\s+/g, " ").trim();
+    }
+
     function activitySentence(entry) {
         let title = String(entry.content || "").replace(/\s+/g, " ").trim();
-        let lower = title.toLowerCase();
+        let message = currentChat.find(item => item.functionCall && item.functionCall.id === entry.id);
+        let args = entry.rawInput || message?.functionCall?.args || {};
+        let command = args.command || args.cmd || "";
+        command = Array.isArray(command) ? command.join(" ") : String(command);
+        let source = command || title;
+        // Preserve descriptive titles, including those naming files or test suites.
+        let technical = /^(?:mcp__|functions\.|tools\.|[\w]+\.[\w]+\s*\(|(?:rg|cat|sed|grep|python\d*|pytest|qmllint|git|bash|sh)\s)|[{}\n]/;
+        let descriptive = title.split(" ").length >= 4 && !technical.test(title)
+            && !/^(?:Run a command for this task|Search for the information needed|Check that the changes work correctly|Read the relevant files and settings)/i.test(title);
+        if (descriptive)
+            return activityText(title.charAt(0).toUpperCase() + title.slice(1) + (/[.!?…]$/.test(title) ? "" : "."));
+
+        let paths = [args.file_path, args.path, ...(Array.isArray(args.paths) ? args.paths : [])]
+            .filter(value => typeof value === "string");
+        // Extract only file/directory targets, never arbitrary arguments or output.
+        let matches = source.match(/(?:[~.\w-]+\/)*[.\w-]+\.(?:qml|js|ts|tsx|jsx|py|md|json|toml|yaml|yml|kdl|css|sh|conf|ini)\b|(?:[~.\w-]+\/)+[.\w-]+/g) || [];
+        let patch = String(args.patch || args.input || "");
+        let patchPaths = /\*\*\* (?:Update|Add|Delete) File: ([^\n]+)/g;
+        let match;
+        while ((match = patchPaths.exec(patch)) !== null)
+            paths.push(match[1]);
+        let targets = [...new Set(paths.concat(matches).map(path => path.split("/").filter(Boolean).pop()).filter(Boolean))];
+        let target = targets.slice(0, 3).join(", ") + (targets.length > 3 ? " and " + (targets.length - 3) + " more files" : "");
         let kind = entry.kind || "";
-        if (title && !/^[A-Za-z_]+(?:\.[A-Za-z_]+)+\b|^mcp__|[{}]|\b(?:rg|cat|sed|grep|pytest|qmllint|exec_command|apply_patch)\b|[/\\]/.test(title)
-                && title.split(" ").length >= 4)
-            return title.charAt(0).toUpperCase() + title.slice(1) + (/[.!?…]$/.test(title) ? "" : ".");
-        if (/\b(qmllint|pytest|unittest|test|tests|lint|check|verify|validate)\b/.test(lower))
-            return "Check that the changes work correctly.";
-        if (/\b(rg|grep|find|search)\b/.test(lower) || kind === "search")
-            return "Search for the information needed for this task.";
-        if (/\b(cat|sed|head|tail|read_file|read|inspect|review)\b/.test(lower) || kind === "read")
-            return "Read the relevant files and settings.";
-        if (/\b(apply_patch|write_file|edit_file|update|change|edit|write)\b/.test(lower) || kind === "edit")
-            return "Update the files needed for your request.";
-        if (kind === "fetch")
-            return "Look up information online.";
-        if (kind === "execute" || /exec_command|functions\.exec|shell|terminal/.test(lower))
-            return "Run a command for this task.";
-        if (!title || /[{}_]|\w+\.\w+\(|^mcp__/.test(title))
-            return "Work on the next part of your request.";
-        return title.charAt(0).toUpperCase() + title.slice(1) + (/[.!?…]$/.test(title) ? "" : ".");
+        let action;
+        if (/\b(?:qmllint|pytest|unittest|ctest|eslint)\b|\b(?:npm|pnpm|cargo)\s+(?:run\s+)?test\b/.test(source))
+            action = "Check " + (target || "the affected behavior") + " for errors using "
+                + (/qmllint/.test(source) ? "QML syntax validation" : "the automated tests");
+        else if (/\b(?:rg|grep|find)\s/.test(source) || kind === "search")
+            action = "Search " + (target || "the project files") + " for matching code and settings";
+        else if (/\b(?:cat|sed|head|tail|read_file)\s/.test(source) || kind === "read")
+            action = "Inspect " + (target || "the relevant configuration") + " to understand its current implementation";
+        else if (/apply_patch|write_file|edit_file/.test(source) || kind === "edit" || patch.includes("*** Begin Patch"))
+            action = "Update " + (target || "the affected files") + " with the requested changes";
+        else if (kind === "fetch")
+            action = "Retrieve " + (args.url ? "information from " + String(args.url).split("/")[2] : "online reference information");
+        else
+            action = "Run a local operation" + (target ? " involving " + target : " for the current step");
+        let purpose = String(entry.planStep || entry.purpose || entry.task || activityTask || "").replace(/[*`#]/g, "").replace(/\s+/g, " ").trim();
+        let purposeSentence = purpose.match(/^(.+?[.!?])(?:\s|$)/);
+        if (purposeSentence) purpose = purposeSentence[1];
+        if (purpose && purpose.toLowerCase() !== action.toLowerCase())
+            action += ". " + purpose.slice(0, 360);
+        return activityText(action + (/[.!?…]$/.test(action) ? "" : "."));
     }
 
     function activityExplanation(entry, isPlan) {
         if (!entry)
             return "";
-        let status = ({
-            completed: "This step has finished.",
-            in_progress: "This step is being worked on now. Its details may update as work continues.",
-            pending: "This step is waiting to start.",
-            failed: "This action reported a problem. Read the details below for any available error message.",
-            stopped: "Work on this step was stopped before it finished."
-        })[entry.status] || "Waiting for an update on this step.";
-        let summary = activitySentence(entry);
-        let explanation = ({
-            "Check that the changes work correctly.": "Run checks to look for errors and see whether the changes behave as expected. The result below shows what the checks reported.",
-            "Search for the information needed for this task.": "Look for matching files or text to find the parts relevant to your request. The matches help identify what to inspect next.",
-            "Read the relevant files and settings.": "Inspect existing files or settings to understand how things currently work before making or checking changes.",
-            "Update the files needed for your request.": "Apply changes to the relevant files. Any available change details are shown below.",
-            "Look up information online.": "Retrieve information from an online source to help with your request.",
-            "Run a command for this task.": "Run a local command as part of your request. The command and any available output are shown below."
-        })[summary] || "This is an action taken while working on your request. The available details are shown below.";
         if (isPlan) {
             let actions = activityLog.filter(action => action.planStep === entry.content);
-            let details = actions.map(action => activitySentence(action) + "\n\n" + activityExplanation(action, false));
-            return [entry.content, explanation, status,
-                details.length ? details.join("\n\n────────\n\n") : "No changes or command output have been reported for this step yet."].join("\n\n");
+            let details = actions.map(action => activityExplanation(action, false));
+            return details.length ? details.join("\n\n────────\n\n")
+                : "No changes or command output have been reported for this step yet.";
         }
-        let parts = [explanation, status];
-        if (entry.content)
-            parts.push("Action: " + entry.content);
+        let parts = [];
         let message = currentChat.find(item => item.functionCall && item.functionCall.id === entry.id);
         if (message) {
             let args = message.functionCall.args || {};
@@ -949,7 +993,7 @@ Scope {
                 parts.push("Reported details:\n" + output.slice(0, 12000)
                     + (output.length > 12000 ? "\n\nMore output is available in the chat's tool card." : ""));
         }
-        return parts.join("\n\n");
+        return parts.length ? parts.join("\n\n") : "No changes or command output have been reported for this action yet.";
     }
 
     Timer {
@@ -974,6 +1018,9 @@ Scope {
         let previous = index >= 0 ? entries[index] : {};
         let entry = {id: id, content: update.title || previous.content || update.kind || "Tool",
             kind: update.kind || previous.kind || "",
+            rawInput: update.rawInput || previous.rawInput || {},
+            purpose: previous.purpose !== undefined ? previous.purpose : activityProgress,
+            task: previous.task !== undefined ? previous.task : activityTask,
             planStep: previous.planStep !== undefined ? previous.planStep
                 : (taskPlan.find(step => step.status === "in_progress")?.content || ""),
             status: update.status || previous.status || "pending"};
@@ -1735,7 +1782,7 @@ Scope {
                 text: queued.text
             });
 
-        prompt.push({type: "text", text: "Shell activity preference: Begin with one concise, descriptive sentence stating the overall task you are working on. For multi-step work, keep the plan in plain English with specific steps describing the intended result. Use descriptive tool titles where supported; actual commands and changes are available in expandable details."});
+        prompt.push({type: "text", text: "Shell activity preference: Begin with one concise, descriptive sentence stating the overall task you are working on. For multi-step work, keep the plan in plain English with specific steps describing the intended result. Give concise public progress updates explaining what you found, what you are doing next, and why it helps the request. Use everyday English in visible activity rows: describe the feature, action and purpose rather than filenames, command names or technical jargon. For example, say Check that activity rows explain the work clearly. Put filenames and technical identifiers in expandable details. Use specific descriptive tool titles where supported, avoiding vague labels such as Running a command or Reading files. Keep code, patches, commands and relevant output in expandable details; the visible activity should explain the purpose and progress of the work."});
         prompt.push({type: "text", text: "Shell assistant interaction preference: Use the assistant_questions ask_user_question tool to ask a focused, answerable question early when a meaningful preference, scope choice, or missing detail could change the result. Offer 2–3 clear choices when useful, with the recommendation first. Ask more actively instead of silently choosing subjective details. Wait for the answer before dependent changes. Continue routine authorized work without extra permission questions. Do not repeat answered questions or ask unnecessary questions for clear, simple tasks. If the tool is unavailable, ask a concise question in chat."});
 
         let supportsImages = agentCapabilities && agentCapabilities.promptCapabilities

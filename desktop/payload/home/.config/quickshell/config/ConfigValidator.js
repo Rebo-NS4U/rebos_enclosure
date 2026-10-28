@@ -35,7 +35,9 @@ function validate(current, defaults, keyName) {
     if (keyName === "shellStyle" && ["glass", "quiet", "colorful", "dithered", "custom"].indexOf(current) === -1) {
         return defaults;
     }
-    if (keyName === "ditherPalette" && ["original", "teal-orange"].indexOf(current) === -1) return defaults;
+    if (keyName === "desktopBlur" && ["medium", "light", "shell", "off"].indexOf(current) === -1) return defaults;
+    if (keyName === "ditherPalette" && ["original", "teal-orange", "tint"].indexOf(current) === -1) return defaults;
+    if (keyName === "ditherTintColor") return /^#[0-9a-f]{6}$/i.test(current) ? current.toLowerCase() : defaults;
     if (keyName === "ditherBorder" && ["band", "dotted", "double"].indexOf(current) === -1) return defaults;
     if (keyName === "wallpaperDitherStrength" && ["normal", "strong", "intense"].indexOf(current) === -1) return defaults;
     if (keyName === "ditherStrength") {

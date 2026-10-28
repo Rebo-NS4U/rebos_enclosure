@@ -300,8 +300,10 @@ Item {
                     }
                 }
                 HoverHandler { id: hover }
-                ToolTip.visible: hover.hovered
-                ToolTip.text: row.modelData.source
+                StyledToolTip {
+                    show: hover.hovered
+                    tooltipText: row.modelData.source ?? ""
+                }
             }
         }
     }

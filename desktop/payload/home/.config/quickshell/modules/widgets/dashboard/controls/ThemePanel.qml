@@ -134,7 +134,7 @@ Item {
                     id: titlebar
                     width: root.contentWidth
                     anchors.horizontalCenter: parent.horizontalCenter
-                    title: ({style: "Theme style", general: "Fonts and corners", motion: "Motion", shadow: "Shadows", colors: "Wallpaper colors", variants: "Backgrounds and borders"})[root.currentSection] || "Appearance"
+                    title: ({style: "Theme style", general: "Fonts and corners", motion: "Motion", blur: "Blur", shadow: "Shadows", colors: "Wallpaper colors", variants: "Backgrounds and borders"})[root.currentSection] || "Appearance"
                     description: root.currentSection === "" ? "Theme style, colors, fonts and backgrounds." : ""
 
                     actions: {
@@ -177,6 +177,12 @@ Item {
                         rowSpacing: 12
                         ShellStyleSettings { Layout.fillWidth: true; Layout.columnSpan: parent.columns }
                         SectionButton {
+                            sectionId: "blur"
+                            text: "Blur"
+                            description: "Glass strength, shell-only blur and GPU use."
+                            glyph: Icons.drop
+                        }
+                        SectionButton {
                             sectionId: "motion"
                             text: "Motion"
                             description: "Panel transitions, selection and button feedback."
@@ -211,6 +217,11 @@ Item {
                     MotionSettings {
                         Layout.fillWidth: true
                         visible: root.currentSection === "motion"
+                    }
+
+                    BlurSettings {
+                        Layout.fillWidth: true
+                        visible: root.currentSection === "blur"
                     }
 
                     ShellStyleSettings {

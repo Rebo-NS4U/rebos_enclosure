@@ -8,12 +8,14 @@ Singleton {
     id: root
     readonly property bool active: Config.theme.shellStyle === "dithered"
     readonly property string palette: Config.theme.ditherPalette
+    readonly property string tint: palette === "tint" ? Config.theme.ditherTintColor.toLowerCase() : ""
     readonly property string strength: Config.theme.wallpaperDitherStrength
     readonly property bool busy: worker.running || pending.length > 0
     property string error: ""
     property list<string> pending: []
     property string processing: ""
     property string processingPalette: ""
+    property string processingTint: ""
     property string processingStrength: ""
     // Dictionaries keyed by palette + strength + original path; originals remain saved
     // in the gallery, so changing styles always restores the original.
@@ -21,7 +23,7 @@ Singleton {
     property var failures: ({})
     signal finished(string path)
 
-    function key(path: string): string { return palette + ":" + strength + ":" + path; }
+    function key(path: string): string { return palette + ":" + strength + ":" + tint + ":" + path; }
     function source(path: string): string {
         return active ? (outputs[key(path)] ?? path) : path;
     }
@@ -33,7 +35,7 @@ Singleton {
     }
     function request(path: string): void {
         if (!active || !supported(path) || pending.indexOf(path) !== -1 ||
-                (processing === path && processingPalette === palette && processingStrength === strength)) return;
+                (processing === path && processingPalette === palette && processingStrength === strength && processingTint === tint)) return;
         pending = pending.concat([path]);
         Qt.callLater(startNext);
     }
@@ -43,11 +45,13 @@ Singleton {
         processing = pending[0];
         processingPalette = palette;
         processingStrength = strength;
+        processingTint = tint;
         pending = pending.slice(1);
         error = "";
         worker.command = ["python3", decodeURIComponent(Qt.resolvedUrl(
             "../../scripts/dither_wallpaper.py").toString().replace("file://", "")),
-            processing, "--palette", processingPalette, "--strength", processingStrength];
+            processing, "--palette", processingPalette, "--strength", processingStrength,
+            "--tint", processingTint || Config.theme.ditherTintColor];
         worker.running = true;
     }
 
@@ -57,7 +61,7 @@ Singleton {
         stderr: StdioCollector {}
         onExited: (code, status) => {
             const path = root.processing;
-            const cacheKey = root.processingPalette + ":" + root.processingStrength + ":" + path;
+            const cacheKey = root.processingPalette + ":" + root.processingStrength + ":" + root.processingTint + ":" + path;
             let result = {};
             try { result = JSON.parse(response.text); } catch (_) {}
             if (code === 0 && result.path) {

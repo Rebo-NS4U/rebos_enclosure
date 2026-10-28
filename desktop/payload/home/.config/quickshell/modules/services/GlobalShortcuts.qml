@@ -33,6 +33,15 @@ Singleton {
 
     function run(command) {
         console.log("IPC run command received:", command);
+        const barAccentPrefix = "bar-accent ";
+        if (command.startsWith(barAccentPrefix)) {
+            const strength = Number(command.slice(barAccentPrefix.length));
+            if (Config.barReady && Number.isInteger(strength) && strength >= 0 && strength <= 100)
+                Config.bar.islandAccent = strength;
+            else
+                console.warn("Ignoring invalid bar accent strength:", command);
+            return;
+        }
         if (command !== "notes" && QuickNotes.visible)
             QuickNotes.close();
         switch (command) {
@@ -162,6 +171,7 @@ Singleton {
                 wallpaperStrength: Config.theme.wallpaperDitherStrength,
                 wallpaper: manager?.currentWallpaper ?? "",
                 renderedWallpaper: manager?.renderedWallpaper ?? "",
+                themeColorSource: manager ? manager.getColorSource(manager.currentWallpaper) : "",
                 converting: DitheredWallpapers.busy,
                 error: DitheredWallpapers.error});
         }

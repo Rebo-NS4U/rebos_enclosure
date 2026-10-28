@@ -115,19 +115,9 @@ Item {
         function onAssistantFocusRequested(wasAlreadyOpen) {
             if (targetScreen.name === GlobalStates.assistantScreenName) {
                 Qt.callLater(() => {
-                    if (wasAlreadyOpen) {
-                        // It was already open. If it currently has focus, close it. Otherwise, regain focus.
-                        if (root.active && root.windowFocused && root.wantsFocus && root.hasActiveFocus) {
-                            GlobalStates.hideAssistant();
-                        } else {
-                            root.wantsFocus = true;
-                            focusSearchInput();
-                        }
-                    } else {
-                        // It just opened. Just ensure it has focus.
-                        root.wantsFocus = true;
-                        focusSearchInput();
-                    }
+                    if (!root.active) return;
+                    root.wantsFocus = true;
+                    focusSearchInput();
                 });
             }
         }
@@ -1373,10 +1363,12 @@ Item {
 
                                                                         TextEdit {
                                                                             id: toolResultText
+                                                                            objectName: "toolResultText"
                                                                             width: toolResultScroll.width
                                                                             renderType: Text.NativeRendering
                                                                             font.hintingPreference: Font.PreferFullHinting
-                                                                            text: modelData.content || ""
+                                                                            text: messageDelegate.isToolResult && messageDelegate.toolExpanded
+                                                                                ? (modelData.content || "") : ""
                                                                             textFormat: Text.PlainText
                                                                             color: Colors.outline
                                                                             font.family: "Monospace"
@@ -1392,12 +1384,16 @@ Item {
                                                             // ── Normal message body (not tool results) ──
                                                             ColumnLayout {
                                                                 id: messageBody
+                                                                objectName: "messageBody"
                                                                 Layout.fillWidth: true
                                                                 visible: !messageDelegate.isToolResult && !messageDelegate.isEditing && !bubbleContentText.visible
                                                                 spacing: 8
 
                                                                 readonly property bool streaming: mainChatArea.session.isBusy && mainChatArea.session.activeAssistantIndex === messageDelegate.index
                                                                 readonly property list<var> segments: {
+                                                                    // Hidden tool output has its own on-demand plain-text view.
+                                                                    if (messageDelegate.isToolResult || messageDelegate.isEditing)
+                                                                        return [];
                                                                     let txt = messageDelegate.modelData.content || "";
                                                                     if (streaming)
                                                                         return [{type: "text", content: txt, language: ""}];
@@ -1474,8 +1470,10 @@ Item {
                                                                 renderType: Text.NativeRendering
                                                                 font.hintingPreference: Font.PreferFullHinting
                                                                 id: bubbleContentText
+                                                                objectName: "bubbleContentText"
                                                                 Layout.fillWidth: true
-                                                                text: modelData.content || ""
+                                                                text: messageDelegate.isEditing && !messageDelegate.isToolResult
+                                                                    ? (modelData.content || "") : ""
                                                                 textFormat: Text.PlainText
                                                                 color: bubble.contentColor
                                                                 font.family: Config.theme.font
@@ -1939,6 +1937,17 @@ Item {
                                             id: inputField
                                             focus: true
                                             activeFocusOnTab: true
+
+                                            // TextArea accepts the press before the background
+                                            // MouseArea can request keyboard ownership.
+                                            TapHandler {
+                                                onPressedChanged: {
+                                                    if (pressed) {
+                                                        root.wantsFocus = true;
+                                                        inputField.forceActiveFocus();
+                                                    }
+                                                }
+                                            }
                                             placeholderText: mainChatArea.isWelcome ? "Ask AI or type /help..." : "Message AI..."
                                             placeholderTextColor: Colors.outline
                                             font.pixelSize: Styling.fontSize(0)

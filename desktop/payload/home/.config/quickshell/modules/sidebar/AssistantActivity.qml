@@ -116,13 +116,28 @@ StyledRect {
             Layout.fillWidth: true
             Layout.leftMargin: 4
             Layout.rightMargin: 4
-            text: root.session.activityTask
+            text: root.session.activityText(root.session.activityTask)
             textFormat: Text.PlainText
             wrapMode: Text.WordWrap
             color: Colors.overSurface
             font.family: Config.theme.font
             font.pixelSize: Styling.fontSize(0)
             font.weight: Font.DemiBold
+            lineHeight: 1.2
+        }
+
+        Text {
+            objectName: "assistantActivityProgress"
+            Layout.fillWidth: true
+            Layout.leftMargin: 4
+            Layout.rightMargin: 4
+            visible: text.length > 0
+            text: root.session.activityText(root.session.activityProgress)
+            textFormat: Text.PlainText
+            wrapMode: Text.WordWrap
+            color: Colors.overSurface
+            font.family: Config.theme.font
+            font.pixelSize: Styling.fontSize(-1)
             lineHeight: 1.2
         }
 
@@ -160,7 +175,7 @@ StyledRect {
                             Layout.fillWidth: true
                             padding: 5
                             hoverEnabled: true
-                            Accessible.name: (!modelData.id ? modelData.content : root.session.activitySentence(modelData)) + (selected ? ". Hide details" : ". Show details")
+                            Accessible.name: (!modelData.id ? root.session.activityText(modelData.content) : root.session.activitySentence(modelData)) + (selected ? ". Hide details" : ". Show details")
                             onClicked: root.selectedKey = selected ? "" : entryKey
                             background: StyledRect {
                                 variant: "internalbg"
@@ -181,7 +196,7 @@ StyledRect {
                                 Text {
                                     Layout.fillWidth: true
                                     text: !modelData.id
-                                        ? (modelData.content || "Work on the next step.")
+                                        ? root.session.activityText(modelData.content || "Work on the next step.")
                                         : root.session.activitySentence(modelData)
                                     textFormat: Text.PlainText
                                     wrapMode: Text.WordWrap
@@ -217,7 +232,7 @@ StyledRect {
                                         Layout.fillWidth: true
                                         Text {
                                             Layout.fillWidth: true
-                                            text: "Changes and details"
+                                            text: "Changes, commands and output"
                                             color: Colors.overSurface
                                             font.family: Config.theme.font
                                             font.pixelSize: Styling.fontSize(-1)

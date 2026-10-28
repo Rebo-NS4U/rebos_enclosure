@@ -621,8 +621,10 @@ FocusScope {
                     wallpapersTabRoot.focusPreviousElement();
                     event.accepted = true;
                 }
-                ToolTip.visible: folderHover.hovered
-                ToolTip.text: wallpapersTabRoot.selectedFolder === "*" ? "Browse every folder" : wallpapersTabRoot.selectedFolder
+                StyledToolTip {
+                    show: folderHover.hovered
+                    tooltipText: wallpapersTabRoot.selectedFolder === "*" ? "Browse every folder" : wallpapersTabRoot.selectedFolder
+                }
                 HoverHandler { id: folderHover }
             }
         }

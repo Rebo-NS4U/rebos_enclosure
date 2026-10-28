@@ -409,7 +409,7 @@ binds {
     Mod+Period hotkey-overlay-title="Open App Launcher" { spawn "qs" "ipc" "call" "rebos_shell" "run" "launcher"; }
     Mod+C hotkey-overlay-title="Open Project" { spawn "qs" "ipc" "call" "rebos_shell" "run" "projects"; }
     Mod+Shift+C hotkey-overlay-title="Open Zed Project" { spawn "project-picker"; }
-    Mod+A hotkey-overlay-title="Open AI Assistant" { spawn "qs" "ipc" "call" "rebos_shell" "run" "assistant"; }
+    Mod+A repeat=false hotkey-overlay-title="Toggle AI Assistant" { spawn "@HOME@/.local/bin/rebos-assistant"; }
     Mod+Shift+A repeat=false hotkey-overlay-title="Open Anime Streamer" { spawn "@HOME@/.local/bin/anime-streamer"; }
 
     Mod+Shift+Slash { show-hotkey-overlay; }

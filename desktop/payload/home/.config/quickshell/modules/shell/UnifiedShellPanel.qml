@@ -11,7 +11,6 @@ import qs.modules.widgets.fileshelf
 import qs.modules.widgets.notes
 import qs.modules.widgets.powermenu
 import qs.modules.notifications
-import qs.modules.sidebar
 import qs.config
 
 PanelWindow {
@@ -30,18 +29,16 @@ PanelWindow {
     color: "transparent"
 
     WlrLayershell.keyboardFocus: {
-        if (notesPopup.open || runMenu.open || barContent.islandActive)
+        if (notesPopup.open || runMenu.open)
+            return WlrKeyboardFocus.Exclusive;
+        if (SystemResources.keepMonitorOpen)
+            return WlrKeyboardFocus.OnDemand;
+        if (barContent.islandActive)
             return WlrKeyboardFocus.Exclusive;
         // Bar popups are child surfaces of this panel. The parent layer must
         // request keyboard focus or input continues to the client underneath.
         if (barContent.timerInputActive || barContent.dashboardInputActive)
             return WlrKeyboardFocus.Exclusive;
-        // Request compositor ownership before focusing the assistant input.
-        // Requiring activeFocus here is circular: the field cannot gain focus
-        // while keyboard events still belong to the client underneath.
-        if (!GlobalStates.assistantPinned && assistantSidebar && assistantSidebar.active
-                && assistantSidebar.wantsFocus)
-            return Ai.activeSession.isBusy ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.Exclusive;
         if (fileShelf.open) return WlrKeyboardFocus.OnDemand;
         return WlrKeyboardFocus.None;
     }
@@ -49,9 +46,8 @@ PanelWindow {
     WlrLayershell.layer: WlrLayer.Overlay
     exclusionMode: ExclusionMode.Ignore
 
-    // Assistant stays open without eating the whole screen — only its hitbox
-    // receives clicks (see mask regions). Run menu / grabs still go full-screen.
-    readonly property bool needsFullScreenInput: notesPopup.open || runMenu.open || barContent.dashboardInputActive || barContent.islandActive || FocusGrabManager.hasActiveGrab
+    // Menus temporarily receive outside clicks so they can be dismissed.
+    readonly property bool needsFullScreenInput: notesPopup.open || runMenu.open || ((!SystemResources.keepMonitorOpen) && (barContent.dashboardInputActive || barContent.islandActive)) || FocusGrabManager.hasActiveGrab
 
     readonly property bool barEnabled: {
         if (!Config.barReady) return false;
@@ -63,7 +59,6 @@ PanelWindow {
     readonly property alias barOuterMargin: barContent.baseOuterMargin
     readonly property alias totalBarHeight: barContent.totalBarHeight
     readonly property string barPosition: Config.bar?.position ?? "top"
-    readonly property Item assistantSidebar: assistantSidebarLoader.item
 
 
     Component.onCompleted: {
@@ -79,7 +74,6 @@ PanelWindow {
     BackgroundEffect.blurRegion: Region {
         regions: [
             barContent.backgroundBlur,
-            assistantBlur,
             launcherBlur,
             notesBlur,
             shelfBlur,
@@ -87,7 +81,7 @@ PanelWindow {
         ]
     }
 
-    BlurRegion { id: assistantBlur; target: GlobalStates.assistantPinned ? null : (unifiedPanel.assistantSidebar?.blurTarget ?? null) }
+
     BlurRegion { id: launcherBlur; target: runMenu.blurTarget }
     BlurRegion { id: notesBlur; target: notesPopup.blurTarget }
     BlurRegion { id: shelfBlur; target: fileShelf.blurTarget }
@@ -118,15 +112,6 @@ PanelWindow {
             },
             Region {
                 item: toastStack.hitbox
-            },
-            Region {
-                item: !GlobalStates.assistantPinned && assistantSidebar
-                    && (assistantSidebar.active || assistantSidebar.hitbox.visible)
-                    ? assistantSidebar.hitbox : null
-            },
-            Region {
-                item: !GlobalStates.assistantPinned && assistantSidebar && assistantSidebar.active
-                    ? assistantSidebar.resizeHitbox : null
             }
         ]
     }
@@ -144,11 +129,6 @@ PanelWindow {
         }
     }
 
-    AssistantWindow {
-        id: assistantWindow
-        targetScreen: unifiedPanel.targetScreen
-    }
-
     Item {
         id: visualContent
         anchors.fill: parent
@@ -157,8 +137,7 @@ PanelWindow {
             id: backdropArea
             anchors.fill: parent
             visible: unifiedPanel.needsFullScreenInput
-            // Above the assistant, below the bar and floating menus. Outside
-            // clicks must dismiss the open surface even when the sidebar is open.
+            // Outside clicks dismiss the open surface.
             z: 50
             acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
 
@@ -172,12 +151,7 @@ PanelWindow {
                     Visibilities.closeActiveBarPopup();
                 if (barContent.islandActive)
                     barContent.collapseIsland();
-                if (!GlobalStates.assistantPinned && assistantSidebar && assistantSidebar.active && assistantSidebar.wantsFocus) {
-                    assistantSidebar.wantsFocus = false;
-                    // Defocus the text field so keyboard returns to the session.
-                    if (assistantSidebar.hasActiveFocus)
-                        unifiedPanel.forceActiveFocus();
-                }
+
             }
 
         }
@@ -226,30 +200,5 @@ PanelWindow {
             z: 400
         }
 
-        Loader {
-            id: assistantSidebarLoader
-            anchors.fill: parent
-            active: GlobalStates.assistantAvailable
-            z: 1
-
-            sourceComponent: Component {
-                AssistantSidebar {
-                    targetScreen: unifiedPanel.targetScreen
-                    tiled: GlobalStates.assistantPinned
-                    windowFocused: !tiled || assistantWindow.compositorFocused
-                    // Move the existing chat view, retaining drafts, scroll and questions.
-                    parent: tiled ? assistantWindow.contentItem : assistantSidebarLoader
-
-                    anchors.topMargin: !tiled && unifiedPanel.barEnabled
-                        && unifiedPanel.barPosition === "top"
-                        ? unifiedPanel.barTargetHeight + unifiedPanel.barOuterMargin
-                        : 0
-                    anchors.bottomMargin: !tiled && unifiedPanel.barEnabled
-                        && unifiedPanel.barPosition === "bottom"
-                        ? unifiedPanel.barTargetHeight + unifiedPanel.barOuterMargin
-                        : 0
-                }
-            }
-        }
     }
 }

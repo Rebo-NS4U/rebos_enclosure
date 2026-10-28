@@ -17,7 +17,7 @@ Singleton {
         return Styling.shellStyle === "quiet" || Styling.shellStyle === "dithered" ? 1 : (polished ? (expanded ? Math.max(0.94, opacity) : opacity) : 1);
     }
     function panelTint(expanded: bool): color {
-        return Qt.alpha(Colors.primary, polished && Styling.shellStyle !== "quiet" && Styling.shellStyle !== "dithered" ? accent * (Styling.shellStyle === "colorful" ? 1.8 : 1) * (expanded ? 0.045 : 0.1) : 0);
+        return Qt.alpha(Colors.primary, accent * 0.28);
     }
     function panelBorder(expanded: bool): color {
         return Styling.shellStyle === "quiet" || Styling.shellStyle === "dithered" ? Config.resolveColor(Styling.getStyledRectConfig("popup").border[0]) : Qt.alpha(Colors.primary, polished ? accent * (expanded ? 0.33 : 0.44) : 0);

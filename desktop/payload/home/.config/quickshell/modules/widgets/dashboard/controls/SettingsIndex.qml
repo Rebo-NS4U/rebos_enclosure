@@ -15,6 +15,7 @@ QtObject {
         { label: "Theme style", keywords: "theme zen spotify kitty vscode neovim gtk qt apps appearance transparent opaque tinted glass quiet dark colorful preset transparency assistant launcher menus notifications custom", section: 4, subSection: "style", subLabel: "Appearance > Theme style", icon: Icons.paintBrush, isIcon: true },
         { label: "Fonts and corners", keywords: "wallpaper icons font roundness", section: 4, subSection: "general", subLabel: "Appearance > Fonts and corners", icon: Icons.paintBrush, isIcon: true },
         { label: "Motion", keywords: "animation animations movement speed duration smooth quick reduced off transitions", section: 4, subSection: "motion", subLabel: "Appearance > Motion", icon: Icons.lightning, isIcon: true },
+        { label: "Blur", keywords: "gpu graphics performance video glass lighter shell panels off full blur", section: 4, subSection: "blur", subLabel: "Appearance > Blur", icon: Icons.drop, isIcon: true },
         { label: "Shadows", keywords: "opacity blur offset color", section: 4, subSection: "shadow", subLabel: "Appearance > Shadow", icon: Icons.drop, isIcon: true },
         { label: "Colors", keywords: "matugen wallpaper scheme palette oled light dark kitty fish spotify zen vscode opacity refresh", section: 4, subSection: "colors", subLabel: "Appearance > Colors", icon: Icons.palette, isIcon: true },
 

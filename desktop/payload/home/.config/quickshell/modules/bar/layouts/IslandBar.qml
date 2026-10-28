@@ -735,7 +735,10 @@ Item {
 
                         FluidTextProgress {
                             id: fluidContextText
-                            anchors.fill: parent
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                            height: Math.min(implicitHeight, parent.height)
                             text: root.contextLabel
                             fontFamily: Config.theme.font
                             pixelSize: Styling.fontSize(-1)

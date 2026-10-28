@@ -4,6 +4,7 @@ var data = {
     "oledMode": false,
     "shellStyle": "glass",
     "ditherPalette": "original",
+    "ditherTintColor": "#4c9cbd",
     "ditherBorder": "band",
     "wallpaperDitherStrength": "strong",
     "ditherStrength": 20,

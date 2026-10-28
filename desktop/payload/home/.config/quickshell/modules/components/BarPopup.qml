@@ -28,6 +28,7 @@ PopupWindow {
 
     // Behavior configuration
     property bool closeOnFocusLost: true
+    property bool grabFocus: true
     // Large nested surfaces can remain mapped between opens to avoid
     // compositor remap artifacts. Their input is limited by the mask below.
     property bool keepMapped: false
@@ -97,7 +98,7 @@ PopupWindow {
 
     FocusGrab {
         id: focusGrab
-        active: root.visible && root.focusActive
+        active: root.visible && root.focusActive && root.grabFocus
         windows: [root]
 
         onCleared: {
