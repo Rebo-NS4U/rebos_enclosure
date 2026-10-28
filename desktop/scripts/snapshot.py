@@ -17,8 +17,8 @@ def ignore(directory, names):
             any(s in n.lower() for s in ('backup', '.bak', '.before-', '.log'))]
 
 
-def build(home, output=None):
-    payload = output if output is not None else ROOT / 'payload'
+def build(home):
+    payload = ROOT / 'payload'
     if payload.exists():
         raise SystemExit('payload already exists; move it aside before making a fresh snapshot')
     user = payload / 'home'
@@ -194,6 +194,4 @@ Categories=Settings;
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--home', type=Path, default=Path.home())
-    parser.add_argument('--output', type=Path, help='Build a fresh payload here instead of desktop/payload')
-    args = parser.parse_args()
-    build(args.home.resolve(), args.output.resolve() if args.output else None)
+    build(parser.parse_args().home.resolve())

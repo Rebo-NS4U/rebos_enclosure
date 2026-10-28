@@ -108,21 +108,3 @@ bash install.sh --dry-run
 `install.sh` is the supported entry point. `desktop/` contains its implementation, portable payload, editable package lists, tests and detailed guide. `oneline.sh` is an optional authenticated clone/update helper. The older root `.config/`, `.local/`, `assets/`, `packages-explicit.txt`, and archived scripts in `docs/legacy/` remain for historical reference; the new installer uses `desktop/payload/` exclusively.
 
 Based on [jR4dh3y's dots-niri](https://github.com/jR4dh3y/dots-niri), with rebos_shell derived from Ambxst by Axenide and subsequent contributors. Current rebos_shell retains its AGPL-3.0 license in [desktop/payload/home/.config/quickshell/LICENSE](desktop/payload/home/.config/quickshell/LICENSE). cbonsai and bundled components retain their licenses. MAKC wallpaper source metadata is bundled; original collection: <https://github.com/makccr/wallpapers>. `UPSTREAM.md` retains upstream setup documentation with the current shell names.
-
-## Publish the current desktop
-
-From this checkout, preview a fresh portable snapshot:
-
-```bash
-./update-github.sh --dry-run
-```
-
-Publish the latest selected configuration and assets:
-
-```bash
-./update-github.sh
-```
-
-The command builds a fresh payload, sanitizes home paths, verifies checksums and excluded private state, commits only `desktop/payload`, and pushes the current branch to `origin`. It requires a clean checkout whose branch matches GitHub and refuses to reset local work or force-push. Accounts, assistant history/credentials, local AI settings and weather location are excluded. Use `--no-push` to create the snapshot commit locally, or `--home /path/to/home` to choose the source desktop. If pushing fails after committing, retry `git push origin HEAD` before running the updater again.
-
-Edit the snapshot allowlist in `desktop/scripts/snapshot.py` to change what is published. The updater publishes this portable installer payload; it does not install updates onto the running machine.
