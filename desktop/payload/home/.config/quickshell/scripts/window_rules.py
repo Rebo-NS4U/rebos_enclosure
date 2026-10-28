@@ -14,7 +14,7 @@ import uuid
 
 from list_keybindings import collect, token_matches
 
-MARKER = "// nonchalant-rule: "
+MARKER = "// rebos_shell-rule: "
 
 
 def fingerprint(text):
@@ -73,7 +73,7 @@ def read_managed(path):
     for line in text.splitlines():
         if line.startswith(MARKER):
             rules.append(json.loads(line[len(MARKER):]))
-    if text and not text.startswith("// Managed by Nonchalant Settings."):
+    if text and not text.startswith("// Managed by rebos_shell Settings."):
         raise ValueError("The Settings rules file has been edited outside this app. Use a separate include for manual rules.")
     if text and text != serialize(rules):
         raise ValueError("The Settings rules file changed outside this app. Preserve your manual edits before saving here.")
@@ -81,7 +81,7 @@ def read_managed(path):
 
 
 def serialize(rules):
-    pieces = ["// Managed by Nonchalant Settings. Edit these rules in Settings → Window Rules.\n"]
+    pieces = ["// Managed by rebos_shell Settings. Edit these rules in Settings → Window Rules.\n"]
     for rule in rules:
         pieces.append(MARKER + json.dumps(rule, ensure_ascii=False, sort_keys=True))
         if rule.get("enabled", True):
@@ -116,7 +116,7 @@ def existing_rules(config_dir, managed_path):
 
 
 def listing(config_dir):
-    path = config_dir / "niri/nonchalant-window-rules.kdl"
+    path = config_dir / "niri/rebos_shell-window-rules.kdl"
     text, managed = read_managed(path)
     return {"ok": True, "fingerprint": fingerprint(text), "path": str(path),
             "rules": [dict(rule, managed=True, body=render_rule(rule)) for rule in managed]
@@ -150,7 +150,7 @@ def write_validated(path, original, candidate):
 
 def delete_existing(request, config_dir):
     selected = request.get("binding", {})
-    path = config_dir / "niri/nonchalant-window-rules.kdl"
+    path = config_dir / "niri/rebos_shell-window-rules.kdl"
     binding = next((rule for rule in existing_rules(config_dir, path)
                     if rule["source"] == selected.get("source")
                     and rule["start"] == selected.get("start")
@@ -170,7 +170,7 @@ def delete_existing(request, config_dir):
 
 
 def update(request, config_dir):
-    path = config_dir / "niri/nonchalant-window-rules.kdl"
+    path = config_dir / "niri/rebos_shell-window-rules.kdl"
     original, rules = read_managed(path)
     if request.get("fingerprint") != fingerprint(original):
         raise ValueError("The rules changed. Refresh the list before saving.")

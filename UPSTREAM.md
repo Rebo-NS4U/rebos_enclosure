@@ -94,7 +94,7 @@ Kitty and GTK are refreshed live; Fuzzel and btop use the colors on their next
 launch, and some Qt/KDE apps need to be reopened. A missing palette cache uses
 the shell's built-in colors until a wallpaper or preset generates a palette.
 
-In Nonchalant Settings, **Theme → Wallpaper colors** selects the Matugen
+In rebos_shell Settings, **Theme → Wallpaper colors** selects the Matugen
 scheme, light/dark mode, OLED blacks, and supported background opacity. It
 shows the active wallpaper and palette, can regenerate colors without changing
 the wallpaper, and can refresh app themes. **Advanced surface styles** keeps
@@ -119,7 +119,7 @@ QuickShell automatically reload configuration changes. `rice status` shows
 whether QuickShell is running; `Mod+Z` refreshes external app colors.
 
 QuickShell lives in the `.config/quickshell` git submodule. Set
-`NONCHALANT_SHELL_PATH` to use a custom development checkout.
+`REBOS_SHELL_PATH` to use a custom development checkout.
 `Mod+Shift+W` opens the wallpaper picker and `Mod+D` opens the dashboard.
 The four named workspaces are `web`, `dev`, `chat`, and `media`.
 

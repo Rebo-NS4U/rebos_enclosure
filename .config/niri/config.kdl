@@ -9,4 +9,4 @@ include optional=true "~/.local/state/dots-niri/niri-profile.kdl"
 spawn-at-startup "sh" "-c" "exec \"$HOME/.local/bin/rice\" start"
 
 // Settings-created rules follow the profile so app overrides take priority.
-include optional=true "~/.config/niri/nonchalant-window-rules.kdl"
+include optional=true "~/.config/niri/rebos_shell-window-rules.kdl"

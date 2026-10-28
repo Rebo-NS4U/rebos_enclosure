@@ -213,7 +213,7 @@ layer-rule {
 // Leave blur unset: forcing it would replace those shapes with the whole surface.
 // Both namespaces can survive QML hot reloads from an earlier shell version.
 layer-rule {
-    match namespace=r#"^(rebos_shell|nonchalant)(?::.*)?$"#
+    match namespace=r#"^rebos_shell(?::.*)?$"#
     background-effect {
         xray false
     }
@@ -239,7 +239,7 @@ layer-rule {
     match layer="top"
     match layer="overlay"
     exclude namespace="wayland-pet"
-    exclude namespace=r#"^(rebos_shell|nonchalant)(?::.*)?$"#
+    exclude namespace=r#"^rebos_shell(?::.*)?$"#
     exclude namespace=r#"^quickshell(?::.*)?$"#
     exclude namespace=r#"(?i)^sttd(?::.*)?$"#
     background-effect {
@@ -258,7 +258,7 @@ layer-rule {
 layer-rule {
     match layer="bottom"
     match layer="background"
-    exclude namespace=r#"^(rebos_shell|nonchalant)(?::.*)?$"#
+    exclude namespace=r#"^rebos_shell(?::.*)?$"#
     exclude namespace=r#"^quickshell(?::.*)?$"#
     exclude namespace=r#"(?i)^sttd(?::.*)?$"#
     background-effect {

@@ -51,7 +51,7 @@ repository; ignore rules cannot detect every secret.
 ## Credits and installer
 
 Based on [jR4dh3y's dots-niri](https://github.com/jR4dh3y/dots-niri) and
-[Nonchalant Shell](https://github.com/jR4dh3y/nonchalant-shell).
+[rebos_shell](https://github.com/Dytox2/rebos_enclosure).
 Quickshell retains its AGPL-3.0 license in `.config/quickshell/LICENSE`; its bundled
 source includes local modifications captured on 2026-10-10.
 

@@ -12,12 +12,12 @@ from list_keybindings import collect
 
 class KeybindingEdits(unittest.TestCase):
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory(prefix="nonchalant-keybinding-test-")
+        self.temp = tempfile.TemporaryDirectory(prefix="rebos_shell-keybinding-test-")
         self.root = Path(self.temp.name)
         (self.root / "niri").mkdir()
         (self.root / "kitty").mkdir()
         self.profile = self.root / "niri/profile.kdl"
-        self.original = '// Keep comments and actions unchanged.\nbinds {\n    Mod+A hotkey-overlay-title="Launcher" { spawn "qs" "ipc" "call" "nonchalant" "run" "launcher"; }\n    Mod+Shift+F { fullscreen-window; }\n}\n'
+        self.original = '// Keep comments and actions unchanged.\nbinds {\n    Mod+A hotkey-overlay-title="Launcher" { spawn "qs" "ipc" "call" "rebos_shell" "run" "launcher"; }\n    Mod+Shift+F { fullscreen-window; }\n}\n'
         self.profile.write_text(self.original)
         (self.root / "niri/config.kdl").symlink_to(self.profile)
         (self.root / "kitty/kitty.conf").write_text("map ctrl+shift+f search_scrollback\nmap ctrl+shift+c copy_to_clipboard\n")

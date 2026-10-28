@@ -61,7 +61,7 @@ adjustment for this fork.
 
 ## Attribution and license
 
-rebos_shell is a personal rebrand of [Nonchalant Shell](https://github.com/jR4dh3y/nonchalant-shell), derived from Ambxst by Axenide. Full copyright and
+rebos_shell is a customized desktop shell derived from Ambxst by Axenide and contributions by jR4dh3y. Full copyright and
 contributor history from that lineage is preserved in this repository’s Git
 history.
 

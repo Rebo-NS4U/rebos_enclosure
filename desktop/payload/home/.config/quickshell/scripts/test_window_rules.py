@@ -10,7 +10,7 @@ from window_rules import listing, update, render_rule, delete_existing
 
 class WindowRulesTests(unittest.TestCase):
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory(prefix="nonchalant-rule-test-")
+        self.temp = tempfile.TemporaryDirectory(prefix="rebos_shell-rule-test-")
         self.root = Path(self.temp.name)
         (self.root / "niri").mkdir()
         self.original = 'window-rule {\n match app-id="existing"\n opacity 0.8\n}\n'
@@ -31,7 +31,7 @@ class WindowRulesTests(unittest.TestCase):
         edited = self.save(rule)
         self.assertIn("opacity 0.9", edited["rules"][0]["body"])
         self.save(dict(edited["rules"][0], enabled=False))
-        path = self.root / "niri/nonchalant-window-rules.kdl"
+        path = self.root / "niri/rebos_shell-window-rules.kdl"
         self.assertNotIn("window-rule {", path.read_text())
         current = listing(self.root)
         removed = update({"op": "delete", "id": rule["id"], "fingerprint": current["fingerprint"]}, self.root)
@@ -55,7 +55,7 @@ class WindowRulesTests(unittest.TestCase):
     def test_invalid_regex_does_not_create_file(self):
         with self.assertRaisesRegex(ValueError, "Niri rejected"):
             self.save(dict(self.rule, appId="[", regex=True))
-        self.assertFalse((self.root / "niri/nonchalant-window-rules.kdl").exists())
+        self.assertFalse((self.root / "niri/rebos_shell-window-rules.kdl").exists())
 
     def test_no_global_unmatched_rule(self):
         with self.assertRaisesRegex(ValueError, "app ID or a title"):
@@ -70,7 +70,7 @@ class WindowRulesTests(unittest.TestCase):
 
     def test_manual_changes_are_not_overwritten(self):
         self.save()
-        path = self.root / "niri/nonchalant-window-rules.kdl"
+        path = self.root / "niri/rebos_shell-window-rules.kdl"
         path.write_text(path.read_text().replace("geometry-corner-radius 12.0", "geometry-corner-radius 16.0"))
         with self.assertRaisesRegex(ValueError, "changed outside"):
             listing(self.root)

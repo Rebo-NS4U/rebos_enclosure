@@ -845,7 +845,7 @@ Item {
                         ActionButton {
                             text: "About rebos_shell " + Config.version
                             icon: Icons.info
-                            onClicked: Quickshell.execDetached(["xdg-open", "https://github.com/jR4dh3y/nonchalant-shell"])
+                            onClicked: Quickshell.execDetached(["xdg-open", "https://github.com/Dytox2/rebos_enclosure"])
                         }
 
                         ActionButton {

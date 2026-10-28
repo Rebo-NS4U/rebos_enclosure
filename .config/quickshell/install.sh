@@ -204,78 +204,6 @@ install_phosphor_fonts() {
   log_success "Phosphor Icons installed"
 }
 
-# === Migration ===
-migrate_old_paths() {
-  log_info "Checking for old rebos_shell paths..."
-
-  # Source migration (PascalCase -> lowercase)
-  local OLD_SRC="$HOME/Nonchalant"
-  if [[ -d "$OLD_SRC" && ! -d "$INSTALL_PATH" ]]; then
-    log_info "Migrating source: $OLD_SRC -> $INSTALL_PATH"
-    mkdir -p "$(dirname "$INSTALL_PATH")"
-    cp -r "$OLD_SRC" "$INSTALL_PATH"
-  fi
-
-  # Config migration
-  local OLD_CONFIG="$HOME/.config/nonchalant"
-  [[ -d "$OLD_CONFIG" ]] || OLD_CONFIG="$HOME/.config/Nonchalant"
-  local NEW_CONFIG="$HOME/.config/rebos_shell"
-  if [[ -d "$OLD_CONFIG" && ! -d "$NEW_CONFIG" ]]; then
-    log_info "Migrating config: $OLD_CONFIG -> $NEW_CONFIG"
-    mv "$OLD_CONFIG" "$NEW_CONFIG"
-  fi
-
-  # Share migration
-  local OLD_SHARE="$HOME/.local/share/nonchalant"
-  [[ -d "$OLD_SHARE" ]] || OLD_SHARE="$HOME/.local/share/Nonchalant"
-  local NEW_SHARE="$HOME/.local/share/rebos_shell"
-  if [[ -d "$OLD_SHARE" && ! -d "$NEW_SHARE" ]]; then
-    log_info "Migrating share: $OLD_SHARE -> $NEW_SHARE"
-    mv "$OLD_SHARE" "$NEW_SHARE"
-  fi
-
-  # State migration
-  local OLD_STATE="$HOME/.local/state/nonchalant"
-  [[ -d "$OLD_STATE" ]] || OLD_STATE="$HOME/.local/state/Nonchalant"
-  local NEW_STATE="$HOME/.local/state/rebos_shell"
-  if [[ -d "$OLD_STATE" && ! -d "$NEW_STATE" ]]; then
-    log_info "Migrating state: $OLD_STATE -> $NEW_STATE"
-    mv "$OLD_STATE" "$NEW_STATE"
-  fi
-
-  # Cache migration
-  local OLD_CACHE_DIR="$HOME/.cache/nonchalant"
-  [[ -d "$OLD_CACHE_DIR" ]] || OLD_CACHE_DIR="$HOME/.cache/Nonchalant"
-  local NEW_CACHE_DIR="$HOME/.cache/rebos_shell"
-  if [[ -d "$OLD_CACHE_DIR" && ! -d "$NEW_CACHE_DIR" ]]; then
-    log_info "Migrating cache: $OLD_CACHE_DIR -> $NEW_CACHE_DIR"
-    mv "$OLD_CACHE_DIR" "$NEW_CACHE_DIR"
-  fi
-
-  # Legacy share -> cache migration (Wallpapers & Thumbnails)
-  local NEW_CACHE="$HOME/.cache/rebos_shell"
-  if [[ -d "$NEW_SHARE" ]]; then
-    mkdir -p "$NEW_CACHE"
-
-    if [[ -f "$NEW_SHARE/wallpapers.json" && ! -f "$NEW_CACHE/wallpapers.json" ]]; then
-      log_info "Migrating wallpapers.json to cache..."
-      cp "$NEW_SHARE/wallpapers.json" "$NEW_CACHE/wallpapers.json"
-    fi
-
-    if [[ -d "$NEW_SHARE/thumbnails" && ! -d "$NEW_CACHE/thumbnails" ]]; then
-      log_info "Migrating thumbnails to cache..."
-      cp -r "$NEW_SHARE/thumbnails" "$NEW_CACHE/thumbnails"
-    fi
-  fi
-
-  # Config structure warning
-  if [[ -f "$NEW_CONFIG/config.json" && ! -d "$NEW_CONFIG/config" ]]; then
-    log_warn "Old single-file config detected."
-    log_info "rebos_shell now uses a multi-file configuration in $NEW_CONFIG/config/"
-    log_info "Your old config.json remains at $NEW_CONFIG/config.json for reference."
-  fi
-}
-
 # === Repository Setup ===
 setup_repo() {
   [[ "$DISTRO" == "nixos" ]] && return
@@ -439,7 +367,6 @@ setup_launcher() {
 }
 
 # === Main ===
-migrate_old_paths
 install_dependencies "$1"
 setup_repo
 install_quickshell
