@@ -3,6 +3,7 @@
 import argparse
 from datetime import datetime, timezone
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -68,6 +69,11 @@ def install(payload, home, dry_run=False, cbonsai=None, settings=None, preserve_
         # Moving them into the backup would change what relative links resolve to.
         units = [relative for relative in units
                  if not (preference(relative) and exists(home / relative))]
+    # Capture shortcuts before any backup or replacement, including included files.
+    spec = importlib.util.spec_from_file_location('personal_bindings', Path(__file__).with_name('personal_bindings.py'))
+    personal_bindings = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(personal_bindings)
+    personal = personal_bindings.capture(home / '.config', units)
     generated = {}
     if settings is not None:
         from setup import PRIME, validate_plan
@@ -88,6 +94,8 @@ def install(payload, home, dry_run=False, cbonsai=None, settings=None, preserve_
         print(f'Verified payload; would deploy {len(units)} entries into {home}')
         for parent in linked_parents:
             print(f'Would back up linked folder {home / parent} and install into a local copy; its source stays unchanged')
+        if personal:
+            print('Would retain existing Niri and Kitty shortcuts in personal files loaded after defaults')
         if settings is not None:
             print('Would write selected monitor settings and save the installation plan with the same backup/restore protection')
         return None
@@ -141,6 +149,10 @@ def install(payload, home, dry_run=False, cbonsai=None, settings=None, preserve_
             if relative == '.config/niri' and settings is not None:
                 from setup import customize_niri
                 customize_niri(destination, settings)
+            if relative == '.config/niri':
+                personal_bindings.record_defaults(destination)
+            if relative in personal:
+                personal_bindings.apply(destination, *personal[relative])
         else:
             shutil.copy2(source, destination)
             expand(destination, home)

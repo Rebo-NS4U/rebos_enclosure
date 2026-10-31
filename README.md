@@ -104,6 +104,12 @@ including accounts, histories and the saved installation plan, are untouched.
 Custom edits to application source are backed up but replaced. Close desktop
 settings during an update, then log out and back in afterward.
 
+New installations use H/J/K/L for left/down/up/right. Super selects a window,
+Super+Shift repositions it on the screen, Super+Ctrl focuses a monitor, and
+Super+Shift+Ctrl sends the window to another monitor. Personal shortcuts are saved
+separately and retained across reinstalls and updates; see the
+[shortcut defaults and personal files](desktop/README.md).
+
 Each desktop update prints a backup path usable with the recovery command below.
 If deployment is interrupted, use that backup's `journal.json` to restore with
 `deploy.py --restore`. Package changes are separate and cannot be rolled back by

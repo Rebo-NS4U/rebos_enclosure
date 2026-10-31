@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Build the portable, explicitly selected desktop payload. Never copy a home wholesale."""
 import argparse
+import importlib.util
 import hashlib
 import json
 from pathlib import Path
@@ -105,6 +106,37 @@ def build(home):
     write('.cache/rebos_shell/wallpapers.json', json.dumps(state, indent=2) + '\n')
 
     profile = (home / '.config/niri/config-quickshell.kdl').read_text()
+    # Ship versioned defaults rather than the source machine's personal chords.
+    spec = importlib.util.spec_from_file_location('snapshot_binding_reader', shell / 'scripts/list_keybindings.py')
+    binding_reader = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(binding_reader)
+    matches = binding_reader.token_matches(profile)
+    removals = []
+    index = 0
+    while index + 1 < len(matches):
+        if matches[index].group() == 'binds' and matches[index + 1].group() == '{':
+            start, depth = matches[index].start(), 1
+            index += 2
+            while index < len(matches) and depth:
+                depth += (matches[index].group() == '{') - (matches[index].group() == '}')
+                index += 1
+            if depth:
+                raise ValueError('Unclosed shortcut block in source profile')
+            removals.append((start, matches[index - 1].end()))
+        else:
+            index += 1
+    for start, end in reversed(removals):
+        profile = profile[:start] + profile[end:]
+    profile = '\n'.join(line for line in profile.splitlines()
+                        if 'keybindings-personal' not in line and 'keybindings-defaults' not in line) + '\n'
+    for application, extension in [('niri', 'kdl'), ('kitty', 'conf')]:
+        filename = f'keybindings-defaults.{extension}'
+        write(f'.config/{application}/{filename}', (ROOT / 'defaults' / filename).read_text())
+        write(f'.config/{application}/keybindings-personal.{extension}', '// Personal shortcuts.\n' if extension == 'kdl' else '# Personal shortcuts.\n', 0o600)
+    kitty = user / '.config/kitty/kitty.conf'
+    kitty_lines = [line for line in kitty.read_text().splitlines()
+                   if not line.lstrip().startswith('map ') and 'keybindings-personal' not in line and 'keybindings-defaults' not in line]
+    kitty.write_text('\n'.join(kitty_lines).rstrip() + '\n\ninclude keybindings-defaults.conf\ninclude keybindings-personal.conf\n')
     # Use native monitor modes and normal power handling on other computers.
     import re
     profile = re.sub(r'^output "[^"]+" \{.*?^\}\n', '', profile, flags=re.M | re.S)
@@ -124,6 +156,8 @@ def build(home):
     write('.config/niri/config-quickshell.kdl', profile)
     write('.config/niri/config.kdl', '''// Portable rebos desktop profile.
 include "config-quickshell.kdl"
+include "keybindings-defaults.kdl"
+include "keybindings-personal.kdl"
 spawn-at-startup "sh" "-c" "exec \\"$HOME/.local/bin/rice\\" start"
 cursor {
     xcursor-theme "GoogleDot-Black"
@@ -193,10 +227,11 @@ Categories=Settings;
     for name in ('config.ini', 'blackhole-smooth-240x67.dur'):
         shutil.copy2(home / 'code/dots-niri/install/ly' / name, system / name)
     # Treat each dotfile component as one replacement, including symlinked installations.
-    for component in ('.config/niri', '.config/fish', '.config/quickshell',
+    for component in ('.config/kitty', '.config/niri', '.config/fish', '.config/quickshell',
                       '.config/gtk-3.0', '.config/gtk-4.0'):
         units = [u for u in units if not u.startswith(component + '/')]
-        units.append(component)
+        if component not in units:
+            units.append(component)
     manifest = {'created': datetime.now(timezone.utc).isoformat(),
                 'description': 'Selected live desktop sources, sanitized portable snapshot',
                 'shellVersion': (shell / 'version').read_text().strip(),

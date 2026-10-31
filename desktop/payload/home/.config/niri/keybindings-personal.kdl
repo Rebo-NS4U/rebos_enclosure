@@ -1,0 +1,2 @@
+// Personal shortcuts load after the defaults and survive reinstall/update.
+// Add a binds { ... } block here. Settings saves new shortcuts and remaps here.

@@ -5,3 +5,6 @@ cursor {
     xcursor-theme "GoogleDot-Black"
     xcursor-size 20
 }
+
+include "keybindings-defaults.kdl"
+include "keybindings-personal.kdl"

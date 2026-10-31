@@ -62,3 +62,7 @@ id_ed25519*
 .config/waybar/weather-location
 .config/niri/.*-backup-*
 .config/systemd/user/dunst.service
+
+# Personal shortcuts stay local; portable payload templates remain versioned.
+/.config/niri/keybindings-personal.kdl
+/.config/kitty/keybindings-personal.conf

@@ -66,6 +66,32 @@ The portable clipboard shortcut uses cliphist/Fuzzel. Spotify Launcher replaces 
 
 ## First login
 
+New installs use H/J/K/L for **left/down/up/right**:
+
+| Modifier with H/J/K/L | Action |
+| --- | --- |
+| Super | Select the active window on this screen |
+| Super+Shift | Reposition the current window within this screen |
+| Super+Ctrl | Focus the monitor in that direction |
+| Super+Shift+Ctrl | Move the current window to the monitor in that direction |
+
+The defaults are in `~/.config/niri/keybindings-defaults.kdl`. Personal changes go in
+`~/.config/niri/keybindings-personal.kdl`, which loads last. Settings saves added
+shortcuts and remaps there. Kitty uses the equivalent `keybindings-defaults.conf`
+and `keybindings-personal.conf` in `~/.config/kitty/`.
+
+A reinstall saves existing shortcuts, including included profiles and terminal
+mappings, into these personal files before replacing the configuration folders.
+If a user directly edits the default Niri file, the installer detects the change
+and saves those bindings too. Updates keep the installed configuration folders
+in place. Both paths retain personal keys; the deployment backup also keeps the
+original files for restoration. A fresh install starts with empty personal files.
+
+Versioned defaults in `desktop/defaults/` are the source for future snapshots;
+the snapshot builder does not copy the maintainer's personal shortcut files into
+new installer defaults. Niri loads later bindings as overrides, as described in
+its [include documentation](https://niri-wm.github.io/niri/Configuration%3A-Include.html).
+
 | Shortcut | Action |
 | --- | --- |
 | Super+Return | Kitty/Fish with bonsai |
