@@ -251,7 +251,7 @@
   "home/.config/quickshell/modules/notifications/notification_utils.js": "2d16e85725a7642c00517919790528247772dc3a2db3e6a5d92b8157a6e6f776",
   "home/.config/quickshell/modules/services/Ai.qml": "cf2b6874a71ea2e5bd334a8cdb946cc7043f918982b900283c5c23518cfdfe38",
   "home/.config/quickshell/modules/services/AiQuestions.js": "a3cc7e2c78e43281cef6f2b54a0863b360714c5b50cd5273060c1f9e70984d8e",
-  "home/.config/quickshell/modules/services/AiSession.qml": "dd296086c661f836776388823f42a041fbd30f033281dba47fda3cdb623583ad",
+  "home/.config/quickshell/modules/services/AiSession.qml": "f2d3a216ee7d68d3109ce796ae22b5d7895adefb3bba692c29002ceae3a89043",
   "home/.config/quickshell/modules/services/AppSearch.qml": "3517a2abdf9ebb4223cd8a574867e88f14e74b2183da2748a6c7a6b809af33ca",
   "home/.config/quickshell/modules/services/Audio.qml": "53ec1d7a4574739be618ab12bae631689a987bd23ffcdc5473844d440e0efbe7",
   "home/.config/quickshell/modules/services/AudioFormat.qml": "f81e74fbdf902a02f69c7e9c51ded6e55fbd10296a52146114ba5d87ce2aeb6c",
