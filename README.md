@@ -19,10 +19,6 @@ Desktop, themed apps and terminal:
 
 ![Desktop, themed apps and terminal](docs/screenshots/desktop.png)
 
-Shell settings:
-
-![Shell settings](docs/screenshots/settings.png)
-
 ## Install
 
 For a versioned download, use the installer bundle and instructions on the
