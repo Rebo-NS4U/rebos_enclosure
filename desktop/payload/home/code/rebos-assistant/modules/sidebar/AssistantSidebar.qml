@@ -630,7 +630,11 @@ Item {
                                 StyledText {
                                     id: tabTitle
                                     Layout.fillWidth: true
-                                    text: sessionTab.modelData.sessionTitle
+                                    text: {
+                                        const title = sessionTab.modelData.sessionTitle.replace(/\s+/g, " ").trim();
+                                        const shortTitle = title.split(" ").slice(0, 5).join(" ").slice(0, 32).trim();
+                                        return shortTitle + (shortTitle.length < title.length ? "…" : "");
+                                    }
                                     color: sessionTab.needsAnswer ? Colors.overPrimary : sessionTab.selected ? Colors.primary : Colors.overSurface
                                     opacity: sessionTab.needsAnswer || sessionTab.selected ? 1 : 0.75
                                     font.family: Config.theme.font
