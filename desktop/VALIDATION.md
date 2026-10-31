@@ -1,5 +1,18 @@
 # Validation record
 
+## Enclosure v1.0.0 launch — 2026-10-31
+
+- Fresh installs seed bar, theme, performance, lockscreen and system settings from
+  the bundled default preset. Weather location is empty and its unit is Celsius.
+  Existing preferences remain in place during desktop updates.
+- All 40 installer/updater tests passed. Payload verification checked all 95
+  installation units and 992 files. Two consecutive files-only dry runs passed,
+  with payload verification still passing afterward.
+- The shortcut reader now loads source without creating Python cache files inside
+  the checksummed payload. Bash syntax and whitespace checks passed.
+- Real package upgrades, AUR builds, boot/login and target hardware still require
+  validation on an installed Arch system.
+
 ## Preference-preserving updater — 2026-10-30
 
 - All 30 installer/updater tests passed. The updater integration test fetches a local Git repository, previews without deploying, applies twice in a temporary home and retains personal settings.

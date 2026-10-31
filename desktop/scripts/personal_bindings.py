@@ -1,19 +1,21 @@
 """Capture local shortcut declarations before replacing configuration folders."""
 import glob
 import hashlib
-import importlib.util
 import os
 from pathlib import Path
 import shlex
+from types import ModuleType
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 def reader():
     path = ROOT / 'payload/home/.config/quickshell/scripts/list_keybindings.py'
-    spec = importlib.util.spec_from_file_location('rebos_binding_reader', path)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    # Loading source directly keeps Python from writing __pycache__ into the
+    # checksummed payload, which would break verification on the next run.
+    module = ModuleType('rebos_binding_reader')
+    module.__file__ = str(path)
+    exec(compile(path.read_bytes(), str(path), 'exec'), module.__dict__)
     return module
 
 

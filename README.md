@@ -1,5 +1,7 @@
 # rebos_enclosure
 
+**Enclosure release:** v1.0.0. The bundled rebos_shell is version 1.1.6.
+
 Install my customized Niri/rebos_shell desktop on a bootable minimal **x86_64 Arch Linux** system. Clone this repo, run `install.sh`, then reboot and choose Niri at login.
 
 The bundled desktop uses **rebos_shell 1.1.6** from
@@ -119,7 +121,7 @@ restoring user files. A dry run fetches and verifies the snapshot in temporary
 storage without changing installed files or packages. `--repository` and
 `--branch` can select a trusted fork or branch.
 
-Reboot, choose **Niri** in Ly and log in. **Super+Return** opens Kitty; **Super+Space** opens the launcher; **Super+Shift+W** opens wallpapers. Set weather location in shell settings (Fahrenheit is the default).
+Reboot, choose **Niri** in Ly and log in. **Super+Return** opens Kitty; **Super+Space** opens the launcher; **Super+Shift+W** opens wallpapers. Set weather location in shell settings (Celsius is the default).
 
 Launch Zen once to create its profile. Open Spotify Launcher, sign in and close it, then run:
 

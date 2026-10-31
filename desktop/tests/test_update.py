@@ -4,10 +4,41 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 import unittest
+from unittest.mock import patch
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
+import update
 
 SCRIPT = Path(__file__).resolve().parents[2] / 'update.sh'
+
+
+class PackageApprovalTests(unittest.TestCase):
+    def test_package_upgrade_approval_command(self):
+        for helper_exists in (True, False):
+            with self.subTest(helper_exists=helper_exists), tempfile.TemporaryDirectory() as temporary:
+                home = Path(temporary)
+                helper = home / '.local/bin/assistant-sudo'
+                if helper_exists:
+                    helper.parent.mkdir(parents=True)
+                    helper.touch()
+                with patch.object(sys, 'argv', ['update.py', '--no-aur']), \
+                     patch.dict(os.environ, {key: str(home / relative) for key, relative in [
+                         ('XDG_CONFIG_HOME', '.config'), ('XDG_CACHE_HOME', '.cache'),
+                         ('XDG_DATA_HOME', '.local/share'), ('XDG_STATE_HOME', '.local/state')]}), \
+                     patch.object(update.Path, 'home', return_value=home), \
+                     patch.object(update.os, 'geteuid', return_value=1000), \
+                     patch.object(update.Path, 'exists', return_value=True), \
+                     patch.object(update, 'run') as run, \
+                     patch.object(update.subprocess, 'check_output', return_value='test-commit'), \
+                     patch.object(update, 'apply_snapshot'):
+                    update.main()
+                expected = (str(helper), '--reason',
+                            'Upgrade installed system packages before updating the desktop',
+                            '--', 'pacman', '-Syu') if helper_exists else ('sudo', 'pacman', '-Syu')
+                self.assertEqual(run.call_args_list[1].args, expected)
 
 
 @unittest.skipIf(os.geteuid() == 0, 'Updater intentionally refuses root')

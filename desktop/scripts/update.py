@@ -60,7 +60,12 @@ def main():
                     parser.error('Package upgrades require Arch Linux; use --files-only elsewhere')
                 import shutil
                 sudo = home / '.local/bin/assistant-sudo'
-                run(str(sudo) if sudo.is_file() else 'sudo', 'pacman', '-Syu')
+                if sudo.is_file():
+                    run(str(sudo), '--reason',
+                        'Upgrade installed system packages before updating the desktop',
+                        '--', 'pacman', '-Syu')
+                else:
+                    run('sudo', 'pacman', '-Syu')
                 helper = shutil.which('paru') or shutil.which('yay')
                 if helper and not args.no_aur:
                     run(helper, '-Sua')
