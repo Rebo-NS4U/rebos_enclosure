@@ -9,7 +9,7 @@ import tempfile
 
 from deploy import install, verify
 
-REPOSITORY = 'https://github.com/Dytox2/rebos_enclosure.git'
+REPOSITORY = 'https://github.com/Rebo-NS4U/rebos_enclosure.git'
 
 
 def run(*args):

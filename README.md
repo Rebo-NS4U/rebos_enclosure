@@ -151,7 +151,9 @@ are not changed.
 metadata.** The shell updater cannot update that snapshot, the entire desktop, or
 the installer repository. Its `--path` option must point to a shell Git checkout,
 not `rebos_enclosure` or its `desktop/payload/` folder. The files-only installer
-reapplies bundled settings with backups; it is not a preference-preserving updater.
+reapplies bundled settings with backups while retaining personal shortcuts. Use
+this repository’s `./update.sh` (described above) for preference-preserving
+desktop snapshot updates.
 
 ## Backups and recovery
 
