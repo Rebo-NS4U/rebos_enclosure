@@ -50,3 +50,12 @@ Not exercised: real pacman installation or upgrade, AUR downloads/builds, system
 - Refreshed 39 bundled QuickShell and assistant source files from their local source trees and regenerated all 992 payload checksums. Generated Python cache files were excluded.
 - All 40 installer/updater tests passed. The core installer dry run verified 992 payload files and planned deployment of 96 installation entries without changing the current desktop.
 - GitHub remote verification and push could not run because this environment cannot resolve `github.com`.
+
+## Panel stability and blur repair — 2026-10-31
+
+- Panel discovery now uses the exact QuickShell configuration path, including home paths with spaces. The independent assistant cannot suppress panel startup. Shell IPC defaults explicitly select the panel configuration.
+- Added an independent supervised panel service with QML file watching disabled. The media menu retains its surface and releases keyboard/input capture when closed. Niri loads the appearance blur override and explicitly prevents the transparent media surface from blurring the desktop.
+- A Qt 6.12.0 guard builds from source on the destination when development tools/private headers are available. Other Qt versions skip it; library hashes prevent loading an obsolete build. The build replaces libraries atomically and is optional for service startup. No compiled library, source-machine hashes or personal settings are in the payload.
+- All 43 installer tests passed, including another-home installation/restoration, personal shortcut preservation, independent panel/assistant detection, spaces in home paths, and skipping unsupported Qt versions. The payload checksum inventory and Bash syntax checks passed.
+- Built the packaged guard into a temporary data directory, verified its library/source hashes, and ran its native Wayland regression test with stale, null, live and empty output lists. The user service passed systemd verification.
+- Earlier live desktop verification passed menu open/close and launcher checks after repair, and a desktop screenshot confirmed the blur was cleared. Installer verification did not restart the current desktop or assistant. Fresh-machine boot, package downloads and other hardware/Qt versions remain untested.

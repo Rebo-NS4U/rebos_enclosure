@@ -114,6 +114,19 @@ App profile initialization and Spotify authentication cannot be copied from this
 
 ## Update
 
+The panel runs as `rebos-panel.service`, independently of the assistant. It recovers
+from failures and does not automatically reload QML source files, avoiding a Qt
+screen-lifecycle crash. After editing panel code, apply it with
+`systemctl --user restart rebos-panel.service`. Niri still reloads its configuration
+automatically. The media menu stays mapped with no blur or input capture when closed;
+the appearance blur setting is loaded through `niri-blur.kdl`.
+
+On Qt 6.12.0, the service builds a small local screen-pointer guard from the bundled
+source when a compiler and private headers are available. No prebuilt library or
+machine-specific hashes are shipped. Other Qt versions skip the build; a Qt library
+change disables the old guard. Build failure is logged and does not prevent startup.
+The guard is a workaround for the observed Qt crash, not a general Qt fix.
+
 Already installed and just want the latest version? Use this to update your system and desktop while keeping your personal settings.
 
 Run these commands from the installer folder you cloned or extracted:

@@ -71,18 +71,19 @@ PanelWindow {
             easing.type: Easing.InOutCubic
         }
     }
-    visible: presented && !GlobalStates.lockscreenVisible
+    // Preserve the surface while queued Wayland output events are delivered.
+    visible: true
+    mask: Region {
+        item: root.presented && !GlobalStates.lockscreenVisible ? inputArea : null
+    }
     color: "transparent"
     anchors { top: true; bottom: true; left: true; right: true }
     exclusionMode: ExclusionMode.Ignore
     WlrLayershell.namespace: "rebos_shell-anime"
     WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.keyboardFocus: opened ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
-    BackgroundEffect.blurRegion: Region {
-        Region { item: card; radius: card.radius }
-        // Keep the mask nonempty when the sheet is fully off screen.
-        Region { x: -2; y: -2; width: 1; height: 1 }
-    }
+    WlrLayershell.keyboardFocus: active ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+    // This surface stays mapped when closed. Do not request background blur:
+    // an empty/off-screen blur region is treated as full-surface by the compositor.
 
     function toggle(): void {
         if (opened) { opened = false; return; }
@@ -407,9 +408,10 @@ PanelWindow {
     }
     component MenuCombo: SettingsComboBox {}
 
-    MouseArea { anchors.fill: parent; onClicked: root.opened = false }
+    MouseArea { id: inputArea; anchors.fill: parent; enabled: root.active; onClicked: root.opened = false }
     StyledRect {
         id: card
+        visible: root.presented && !GlobalStates.lockscreenVisible
         variant: "popup"
         radius: Styling.radius(20)
         anchors.horizontalCenter: parent.horizontalCenter

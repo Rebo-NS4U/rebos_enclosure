@@ -1,0 +1,17 @@
+[Unit]
+Description=QuickShell desktop panel
+After=graphical-session.target
+PartOf=graphical-session.target
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+Environment=QS_DISABLE_FILE_WATCHER=1
+ExecStartPre=-/usr/bin/bash %h/.config/quickshell/scripts/build_qt_screen_guard.sh
+ExecStart=%h/.config/quickshell/scripts/qs-screen-guard -n -p %h/.config/quickshell
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=graphical-session.target

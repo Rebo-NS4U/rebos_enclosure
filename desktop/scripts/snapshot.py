@@ -63,6 +63,12 @@ def build(home):
     for name in ('shell.qml', 'AnimeMenu.qml', 'cli.sh', 'version', 'LICENSE', 'README.md'):
         if (shell / name).exists():
             copy('.config/quickshell/' + name)
+    # Keep the portable startup workaround versioned, independent of whether
+    # the source desktop has installed the latest helper scripts yet.
+    for name in ('qs-screen-guard', 'build_qt_screen_guard.sh',
+                 'qt_screen_guard.cpp', 'test_qt_screen_guard.cpp'):
+        shutil.copy2(ROOT.parent / '.config/quickshell/scripts' / name,
+                     user / '.config/quickshell/scripts' / name)
     # The shell now launches these independent applications. Ship source only,
     # never account files, chat state, media history, downloaded models or captures.
     assistant = home / 'code/rebos-assistant'
@@ -76,6 +82,8 @@ def build(home):
             if not path.name.startswith(('test_', 'check_')):
                 copy('code/anime-streamer/' + path.name)
     copy('.config/systemd/user/anime-streamer.service')
+    copy('.config/systemd/user/rebos-panel.service',
+         ROOT.parent / '.config/systemd/user/rebos-panel.service')
     copy('.local/share/applications/rebos-assistant.desktop')
     copy('.local/bin/config-browser')
     copy('.local/share/applications/config-browser.desktop')
@@ -88,6 +96,7 @@ def build(home):
                  'terminal-bonsai', 'project-picker', 'emoji-dmenu', 'wayland-screenshot',
                  'rebos-assistant', 'anime-streamer', 'ani-cli'):
         copy('.local/bin/' + name)
+    shutil.copy2(ROOT.parent / '.local/bin/rice', user / '.local/bin/rice')
     for name in ('cbonsai.c', 'LICENSE', 'README.md', 'INSTALL.md'):
         copy('.local/share/cbonsai/' + name)
     copy('.local/share/fonts/rebos_shell')
@@ -171,6 +180,11 @@ hotkey-overlay {
     skip-at-startup
 }
 include "config-quickshell.kdl"
+include optional=true "~/.cache/rebos_shell/niri-blur.kdl"
+layer-rule {
+    match namespace="rebos_shell-anime"
+    background-effect { blur false; }
+}
 include "keybindings-defaults.kdl"
 include "keybindings-personal.kdl"
 spawn-at-startup "sh" "-c" "exec \\"$HOME/.local/bin/rice\\" start"

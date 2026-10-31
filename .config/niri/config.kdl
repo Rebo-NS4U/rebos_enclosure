@@ -21,3 +21,11 @@ gestures {
 hotkey-overlay {
     skip-at-startup
 }
+
+// Load the blur setting written by the shell appearance controls.
+include optional=true "~/.cache/rebos_shell/niri-blur.kdl"
+
+layer-rule {
+    match namespace="rebos_shell-anime"
+    background-effect { blur false; }
+}

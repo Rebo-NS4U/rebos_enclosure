@@ -1,5 +1,5 @@
 {
-  "created": "2026-10-31T04:39:22.715210+00:00",
+  "created": "2026-10-31T23:11:07.964620+00:00",
   "description": "Selected live desktop sources, sanitized portable snapshot",
   "shellVersion": "1.1.6",
   "shellRepository": "https://github.com/Rebo-NS4U/rebos_enclosure",
@@ -42,6 +42,7 @@
     ".config/systemd/user/rebos-assistant-ui.service",
     ".config/systemd/user/rebos-assistant.service",
     ".config/systemd/user/rebos-assistant@.service",
+    ".config/systemd/user/rebos-panel.service",
     ".config/themes",
     ".config/vesktop/themes/rebos_shell.css",
     ".config/xdg-desktop-portal/niri-portals.conf",

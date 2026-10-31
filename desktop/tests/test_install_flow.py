@@ -56,6 +56,15 @@ class InstallFlowTests(unittest.TestCase):
             media_service = (home / '.config/systemd/user/anime-streamer.service').read_text()
             self.assertIn(str(home / 'code/anime-streamer/backend_server.py'), media_service)
             self.assertNotIn('@HOME@', media_service)
+            panel = (home / '.config/systemd/user/rebos-panel.service').read_text()
+            self.assertIn('Environment=QS_DISABLE_FILE_WATCHER=1', panel)
+            self.assertIn('Restart=on-failure', panel)
+            self.assertTrue((home / '.config/quickshell/scripts/qt_screen_guard.cpp').is_file())
+            niri_config = (home / '.config/niri/config.kdl').read_text()
+            self.assertIn('niri-blur.kdl', niri_config)
+            self.assertIn('namespace="rebos_shell-anime"', niri_config)
+            bindings = (home / '.config/niri/keybindings-defaults.kdl').read_text()
+            self.assertIn(f'"ipc" "-p" "{home}/.config/quickshell"', bindings)
             entries = [json.loads(line) for line in log.read_text().splitlines()]
             self.assertTrue(any(e['command'] == 'sudo' and 'nvidia-open-dkms' in e['args'] and
                                 'linux-headers' in e['args'] for e in entries))
@@ -81,6 +90,7 @@ class InstallFlowTests(unittest.TestCase):
             self.assertFalse(launcher.exists())
             self.assertFalse((home / 'code/rebos-assistant/shell.qml').exists())
             self.assertFalse((home / '.config/systemd/user/anime-streamer.service').exists())
+            self.assertFalse((home / '.config/systemd/user/rebos-panel.service').exists())
 
 
 if __name__ == '__main__':

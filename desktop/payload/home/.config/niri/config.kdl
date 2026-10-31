@@ -1,5 +1,6 @@
 // Portable rebos desktop profile.
 include "config-quickshell.kdl"
+include optional=true "~/.cache/rebos_shell/niri-blur.kdl"
 spawn-at-startup "sh" "-c" "exec \"$HOME/.local/bin/rice\" start"
 cursor {
     xcursor-theme "GoogleDot-Black"
@@ -18,4 +19,10 @@ gestures {
 
 hotkey-overlay {
     skip-at-startup
+}
+
+// The media menu keeps a transparent surface mapped between opens.
+layer-rule {
+    match namespace="rebos_shell-anime"
+    background-effect { blur false; }
 }

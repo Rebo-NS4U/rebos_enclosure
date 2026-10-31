@@ -18,18 +18,13 @@ prepare() {
 }
 
 quickshell_pids() {
-	local pid command_line
-
-	while read -r pid; do
-		[[ -r "/proc/$pid/cmdline" ]] || continue
-		command_line=$(tr '\0' ' ' < "/proc/$pid/cmdline")
-		if [[ "$command_line" == *"qs ipc"* ]]; then
-			continue
-		fi
-		if [[ "$command_line" =~ (^|[[:space:]/])(qs|quickshell)([[:space:]]|$) ]]; then
-			printf '%s\n' "$pid"
-		fi
-	done < <(pgrep -x qs 2>/dev/null || true; pgrep -x quickshell 2>/dev/null || true) | sort -u
+	qs list --all 2>/dev/null | awk -v target="$shell_dir/shell.qml" '
+		$1 == "Process" && $2 == "ID:" { pid = $3 }
+		$1 == "Config" && $2 == "path:" {
+			sub(/^[[:space:]]*Config path:[[:space:]]*/, "")
+			if ($0 == target) print pid
+		}
+	'
 }
 
 quickshell_running() {
@@ -43,7 +38,12 @@ case "${1:-status}" in
         command -v qs >/dev/null || { echo "rice: qs is missing" >&2; exit 1; }
         if ! quickshell_running; then
             mkdir -p "$state_dir/log"
-            setsid -f qs -p "$shell_dir" >> "$state_dir/log/quickshell.log" 2>&1
+            if [[ "$shell_dir" == "$config_home/quickshell" ]]; then
+                systemctl --user import-environment WAYLAND_DISPLAY DISPLAY XDG_CURRENT_DESKTOP XDG_CONFIG_HOME XDG_DATA_HOME
+                systemctl --user start rebos-panel.service
+            else
+                setsid -f "$shell_dir/scripts/qs-screen-guard" -p "$shell_dir" >> "$state_dir/log/quickshell.log" 2>&1
+            fi
         fi
         ;;
     status)
@@ -54,6 +54,6 @@ case "${1:-status}" in
             printf 'QuickShell: stopped\n'
         fi
         ;;
-    -h|--help|help) printf 'Usage: rice [status|prepare|start]\nQuickShell and Niri reload configuration changes automatically.\n' ;;
+    -h|--help|help) printf 'Usage: rice [status|prepare|start]\nNiri reloads configuration automatically. After QML code changes, run systemctl --user restart rebos-panel.service.\n' ;;
     *) printf 'rice: unknown command: %s\nUsage: rice [status|prepare|start]\n' "$1" >&2; exit 2 ;;
 esac
