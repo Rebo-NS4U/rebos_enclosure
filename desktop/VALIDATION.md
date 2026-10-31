@@ -18,7 +18,7 @@ Not exercised: real pacman installation or upgrade, AUR downloads/builds, system
 
 ## 1.1.6 snapshot refresh — 2026-10-30
 
-- Bundles rebos_shell 1.1.6 from Dytox2/rebos_shell at b78ac15d, the current portable desktop palette/Niri configuration, 149 prepared wallpapers and the separate assistant/media runtime sources, launchers and user services.
+- Bundles rebos_shell 1.1.6 from Rebo-NS4U/rebos_shell at b78ac15d, the current portable desktop palette/Niri configuration, 149 prepared wallpapers and the separate assistant/media runtime sources, launchers and user services.
 - All 26 installer tests passed, including real temporary-home deployment, Niri validation, compilation, customized monitor setup and restoration. System/package actions in the installation-flow test use recording stubs.
 - The installation-flow test also verifies the shell version, assistant/media files, resolver, expanded service paths and removal of new runtime files on restore.
 - All 988 checksum entries passed. Selected packaged release files match the shell source after home-path normalization. Source-home/private-key/common credential-pattern scanning found no matches. A core dry run succeeded and left its temporary home empty. Added packages resolve in the local official package databases.

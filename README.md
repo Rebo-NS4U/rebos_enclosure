@@ -3,7 +3,7 @@
 Install my customized Niri/rebos_shell desktop on a bootable minimal **x86_64 Arch Linux** system. Clone this repo, run `install.sh`, then reboot and choose Niri at login.
 
 The bundled desktop uses **rebos_shell 1.1.6** from
-[Dytox2/rebos_shell](https://github.com/Dytox2/rebos_shell), with the redesigned
+[Rebo-NS4U/rebos_shell](https://github.com/Rebo-NS4U/rebos_shell), with the redesigned
 clock dashboard, edge window navigation, shortcut creation and adjustable window
 corners. The snapshot also includes the separate assistant and media apps and
 their user services. No account credentials or personal chat/media history are
@@ -17,7 +17,7 @@ Boot the installed system, connect to the internet and log in as a normal user w
 
 ```bash
 sudo pacman -Syu --needed git python
-git clone --depth=1 https://github.com/Dytox2/rebos_enclosure.git
+git clone --depth=1 https://github.com/Rebo-NS4U/rebos_enclosure.git
 cd rebos_enclosure
 bash install.sh --interactive --dry-run
 bash install.sh

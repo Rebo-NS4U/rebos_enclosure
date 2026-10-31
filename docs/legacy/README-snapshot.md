@@ -14,7 +14,7 @@ Install the applications you use first. The desktop needs Niri, Quickshell,
 Fish, Kitty, and the dependencies listed in `install/pkg.txt`.
 
 ```bash
-git clone https://github.com/Dytox2/rebos_enclosure.git "$HOME/code/rebos_enclosure"
+git clone https://github.com/Rebo-NS4U/rebos_enclosure.git "$HOME/code/rebos_enclosure"
 cd "$HOME/code/rebos_enclosure"
 ./restore.sh --dry-run
 ./restore.sh
@@ -51,7 +51,7 @@ repository; ignore rules cannot detect every secret.
 ## Credits and installer
 
 Based on [jR4dh3y's dots-niri](https://github.com/jR4dh3y/dots-niri) and
-[rebos_shell](https://github.com/Dytox2/rebos_enclosure).
+[rebos_shell](https://github.com/Rebo-NS4U/rebos_enclosure).
 Quickshell retains its AGPL-3.0 license in `.config/quickshell/LICENSE`; its bundled
 source includes local modifications captured on 2026-10-10.
 

@@ -17,7 +17,7 @@ Use an editor installed on your machine in place of `nano` if needed. Log out of
 
 ```bash
 sudo pacman -Syu --needed git python
-git clone --depth=1 https://github.com/Dytox2/rebos_enclosure.git
+git clone --depth=1 https://github.com/Rebo-NS4U/rebos_enclosure.git
 cd rebos_enclosure
 bash install.sh --interactive --dry-run
 bash install.sh
