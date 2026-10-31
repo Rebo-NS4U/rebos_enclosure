@@ -235,7 +235,7 @@ Categories=Settings;
     manifest = {'created': datetime.now(timezone.utc).isoformat(),
                 'description': 'Selected live desktop sources, sanitized portable snapshot',
                 'shellVersion': (shell / 'version').read_text().strip(),
-                'shellRepository': 'https://github.com/Dytox2/rebos_shell',
+                'shellRepository': 'https://github.com/Rebo-NS4U/rebos_shell',
                 'units': sorted(units)}
     (payload / 'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
     hashes = {str(p.relative_to(payload)): hashlib.sha256(p.read_bytes()).hexdigest()

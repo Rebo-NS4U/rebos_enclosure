@@ -3,7 +3,7 @@
 Install my customized Niri/rebos_shell desktop on a bootable minimal **x86_64 Arch Linux** system. Clone this repo, run `install.sh`, then reboot and choose Niri at login.
 
 The bundled desktop uses **rebos_shell 1.1.6** from
-[Dytox2/rebos_shell](https://github.com/Dytox2/rebos_shell), with the redesigned
+[Rebo-NS4U/rebos_shell](https://github.com/Rebo-NS4U/rebos_shell), with the redesigned
 clock dashboard, edge window navigation, shortcut creation and adjustable window
 corners. The snapshot also includes the separate assistant and media apps and
 their user services. No account credentials or personal chat/media history are
@@ -17,7 +17,7 @@ Boot the installed system, connect to the internet and log in as a normal user w
 
 ```bash
 sudo pacman -Syu --needed git python
-git clone --depth=1 https://github.com/Dytox2/rebos_enclosure.git
+git clone --depth=1 https://github.com/Rebo-NS4U/rebos_enclosure.git
 cd rebos_enclosure
 bash install.sh --interactive --dry-run
 bash install.sh
@@ -126,6 +126,32 @@ bash desktop/scripts/finish-apps.sh
 ```
 
 Neovim plugins/language tools install through Neovim; see `:IDEHelp`. The assistant needs a separately configured agent. NVIDIA branch selection must match your hardware; driver builds and physical graphics behavior still require target-machine testing. Accounts, histories, credentials, browser profiles, machine-specific hardware fixes and game libraries are excluded.
+
+## Updater
+
+For an existing **rebos_shell Git checkout**, use the shell's separate
+[updater](https://github.com/Rebo-NS4U/rebos_shell#updater) to get new shell
+content while keeping saved preferences:
+
+```bash
+cd /path/to/rebos_shell
+./update.sh --check   # Preview the changes first
+./update.sh           # Apply the update
+```
+
+Run as your normal user with Git and Python 3 installed. The updater follows the
+shell repository's default branch, replaces only changed source files, removes
+obsolete tracked files and backs up affected existing files before changing them.
+It prints the backup location, normally
+`~/.local/state/rebos_shell/backups/update-*`. Saved preferences, personal data,
+wallpaper choices and Niri settings remain in place. Packages and desktop services
+are not changed.
+
+**The desktop installed by this repository is a bundled snapshot without Git
+metadata.** The shell updater cannot update that snapshot, the entire desktop, or
+the installer repository. Its `--path` option must point to a shell Git checkout,
+not `rebos_enclosure` or its `desktop/payload/` folder. The files-only installer
+reapplies bundled settings with backups; it is not a preference-preserving updater.
 
 ## Backups and recovery
 

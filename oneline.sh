@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Optional clone/update helper. Private repositories require existing Git authentication.
 set -euo pipefail
-repo_url=${REPO_URL:-https://github.com/Dytox2/rebos_enclosure.git}
+repo_url=${REPO_URL:-https://github.com/Rebo-NS4U/rebos_enclosure.git}
 clone_dir=${CLONE_DIR:-${INSTALL_ROOT:-$HOME/code}/rebos_enclosure}
 branch=${BRANCH:-main}
 die() { printf '%s\n' "$*" >&2; exit 1; }
