@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Configuration Browser
+Comment=Browse desktop configuration folders
+Exec=config-browser
+Icon=preferences-system
+Categories=Settings;
+Terminal=false

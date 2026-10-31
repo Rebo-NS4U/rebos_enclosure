@@ -77,6 +77,8 @@ def build(home):
                 copy('code/anime-streamer/' + path.name)
     copy('.config/systemd/user/anime-streamer.service')
     copy('.local/share/applications/rebos-assistant.desktop')
+    copy('.local/bin/config-browser')
+    copy('.local/share/applications/config-browser.desktop')
     # Seed fresh installs from the bundled preset, never the source user's live preferences.
     preset = shell / 'assets/presets/rebos_shell Default'
     for name in ('bar', 'theme', 'performance', 'lockscreen', 'system'):
