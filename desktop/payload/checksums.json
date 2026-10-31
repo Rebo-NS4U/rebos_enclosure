@@ -958,7 +958,7 @@
   "home/code/rebos-assistant/modules/globals/GlobalStates.qml": "65293ed189717ae4bd31be9b180b7c6bfed8b50660a9504641331a45cbb7b495",
   "home/code/rebos-assistant/modules/services/Ai.qml": "6d1b4737713154060cd137e34d0834bae007fe4d30477fd1a84be11d7fb0a394",
   "home/code/rebos-assistant/modules/services/AiQuestions.js": "a3cc7e2c78e43281cef6f2b54a0863b360714c5b50cd5273060c1f9e70984d8e",
-  "home/code/rebos-assistant/modules/services/AiSession.qml": "81f5d9f2dd21a33526003cc6379fa45f7a450283999192cdbc209900626e7ca7",
+  "home/code/rebos-assistant/modules/services/AiSession.qml": "25f13502aac6a43f6d26115943375c7dc7d163378799f5bd083f668b23323a6d",
   "home/code/rebos-assistant/modules/services/NiriService.qml": "e03e5648739de31b220b282017adabb884ecdaf70ef05268320c8def10a8555e",
   "home/code/rebos-assistant/modules/services/Notifications.qml": "0599d6dc4642fc0f86f399ddeee011bb296e097c72aa83949d5b4ad085a11d93",
   "home/code/rebos-assistant/modules/services/StateService.qml": "20326df661ecf0896900e539f24f679b031c7b717204f9cc470d4be32ceab073",
@@ -966,7 +966,7 @@
   "home/code/rebos-assistant/modules/sidebar/AssistantModelPicker.qml": "fbc205b2744e96d87069c28e8aeddab145b3415503466831d18865b3908dda8a",
   "home/code/rebos-assistant/modules/sidebar/AssistantPresetPicker.qml": "5962be845e9e571c372369bfbb60ded254a669a1ffe0dc782c4b9e0bccd2f25d",
   "home/code/rebos-assistant/modules/sidebar/AssistantQuestions.qml": "866fefe55724a4d05a19224d2c86a80a53fed27899c02b2dcd8354ce02a257cd",
-  "home/code/rebos-assistant/modules/sidebar/AssistantSidebar.qml": "aef2f7bab5b98f5e50d429b2188c98aba7611b759eed422944032cbb34cc97c6",
+  "home/code/rebos-assistant/modules/sidebar/AssistantSidebar.qml": "c9f9d5241fb6d66adbb54a65f04ac62c35511606900062b523b43038063683a7",
   "home/code/rebos-assistant/modules/sidebar/AssistantWindow.qml": "dbc19b212caa1cf170074976a323246914df7d2e4b5a4c2214bd9186e1835596",
   "home/code/rebos-assistant/modules/sidebar/CodeBlock.qml": "947b288a5f07dd13e4ec9607b89cb0603e5da5b14f5252481258853c732a20ac",
   "home/code/rebos-assistant/modules/sidebar/ModelSelectorPopup.qml": "69221271d7b6d8fb19ff5780cfb40ba5c97fd47cc38acb0a7402b70945edadec",
@@ -988,7 +988,7 @@
   "home/code/rebos-assistant/scripts/ai_questions.py": "1b9aa4da40e02c8e4893bbaee7e5d09d5b1ce3042f65df0a12bdb7aadb96036f",
   "home/code/rebos-assistant/shell.qml": "e6cfc633ab0b0f65de51a940ed200af142099bb7eb462ab6ea628c67d730ba54",
   "home/code/rebos-assistant/version": "1c60df040a80b6d2e3f56442b17d127d8620cd773873e6e1353362f989b1deca",
-  "manifest.json": "5fdada710c10f79c5a78b0e8115f28ea8ac5a5ace9843912e55408b20ccc6f1e",
+  "manifest.json": "b25ca0c166815754866d4636ff2d727bc5137ca9f709d3d08768d2c34335c3ac",
   "system/ly/blackhole-smooth-240x67.dur": "c28dc5ccfb67802b20fdb4520d360742a2a7329e2f63e06d9b5e2f6a42444415",
   "system/ly/config.ini": "8740ae74307ab4205d17f028711c66ec1c8bb6ccce31c4081872385aed398c18"
 }

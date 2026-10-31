@@ -11,7 +11,7 @@ interactive=0
 [[ $# != 0 || ! -t 0 ]] || interactive=1
 work_dir=
 trap '[[ -z ${work_dir:-} ]] || rm -rf -- "$work_dir"' EXIT
-trap 'printf "Installer stopped at line %s. See the error above. Dry-run mode does not change files or create backups.\n" "$LINENO" >&2' ERR
+trap 'printf "Installer stopped at line %s. See the error above.\n" "$LINENO" >&2; if ((dry_run)); then printf "Dry-run mode does not change files or create backups.\n" >&2; fi' ERR
 
 die() { printf '%s\n' "$*" >&2; exit 1; }
 usage() {
@@ -80,9 +80,17 @@ mapfile -t packages < <(plan get packages)
 mapfile -t aur_packages < <(plan get aur_packages)
 plan summary
 printf 'Destination: %s\n' "$HOME"
+if ((dry_run)); then
+    printf 'Dry-run mode: verify and preview only; no changes will be made.\n'
+else
+    printf 'Pre-install check: previewing changes before installation.\n'
+fi
 printf '%s\n' "$plan_json" | python3 "$ROOT/scripts/deploy.py" --dry-run --setup-stdin
 if ((!files_only)); then plan check-drivers; fi
-if ((dry_run)); then exit 0; fi
+if ((dry_run)); then
+    printf 'Dry run complete; no changes made. Run without --dry-run to install.\n'
+    exit 0
+fi
 ((EUID != 0)) || die 'Run as your normal desktop user, without sudo in front of ./install.sh'
 if ((!files_only)); then
     [[ -f /etc/arch-release && $(uname -m) == x86_64 ]] || die 'Requires installed x86_64 Arch Linux'
