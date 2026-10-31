@@ -9,7 +9,6 @@ xdg-desktop-portal-gnome
 xdg-desktop-portal-gtk
 xdg-utils
 xdg-user-dirs
-archlinux-xdg-menu
 polkit-gnome
 gnome-keyring
 networkmanager
@@ -24,7 +23,6 @@ pipewire-alsa
 pipewire-pulse
 wireplumber
 libpulse
-playerctl
 pavucontrol
 kitty
 fish
@@ -49,7 +47,6 @@ cliphist
 grim
 slurp
 satty
-wtype
 brightnessctl
 ddcutil
 matugen
@@ -57,10 +54,7 @@ imagemagick
 python
 python-pillow
 python-gobject
-python-numpy
-python-rich
 gtk4
-libadwaita
 jq
 curl
 wget
@@ -80,8 +74,6 @@ qt6-wayland
 qt6-svg
 qt6-imageformats
 qt6-multimedia-ffmpeg
-qt6-shadertools
-qt5-graphicaleffects
 syntax-highlighting
 mpv
 vlc

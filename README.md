@@ -42,6 +42,8 @@ This installs the desktop onto an existing Arch installation. It does not partit
 
 The shell and assets are checked into `desktop/payload/`; no submodules or separate installer archive are required. Packages download from the destination's configured repositories and AUR. Full inventory, exclusions, shortcuts and setup details are in [desktop/README.md](desktop/README.md). Edit base packages in [core.txt](desktop/packages/core.txt) and optional group definitions in [groups.json](desktop/packages/groups.json). [apps.txt](desktop/packages/apps.txt) and [aur.txt](desktop/packages/aur.txt) retain the full-profile application inventories; graphics packages are added according to the selection.
 
+The package review and reasons for exclusions are recorded in [the package guide](desktop/packages/README.md). For the smallest supported desktop, use `--profile core`; add only the app groups you want with `--groups`. The default full profile still selects all optional groups.
+
 ## Interactive setup
 
 `./install.sh` with no arguments opens a numbered terminal menu. To try every choice without installing anything:
@@ -177,6 +179,6 @@ bash install.sh --dry-run
 
 ## Repository layout and credits
 
-`install.sh` is the supported entry point. `desktop/` contains its implementation, portable payload, editable package lists, tests and detailed guide. `oneline.sh` is an optional authenticated clone/update helper. The older root `.config/`, `.local/`, `assets/`, `packages-explicit.txt`, and archived scripts in `docs/legacy/` remain for historical reference; the new installer uses `desktop/payload/` exclusively.
+`install.sh` is the supported entry point. `desktop/` contains its implementation, portable payload, editable package lists, tests and detailed guide. `oneline.sh` is an optional authenticated clone/update helper. The root `packages-explicit.txt` is a reviewed reference inventory of core and optional packages, with hardware packages selected separately. The older root `.config/`, `.local/`, `assets/`, `install/pkg*.txt`, and archived scripts in `docs/legacy/` remain for historical reference; the new installer uses `desktop/payload/` exclusively.
 
 Based on [jR4dh3y's dots-niri](https://github.com/jR4dh3y/dots-niri), with rebos_shell derived from Ambxst by Axenide and subsequent contributors. Current rebos_shell retains its AGPL-3.0 license in [desktop/payload/home/.config/quickshell/LICENSE](desktop/payload/home/.config/quickshell/LICENSE). cbonsai and bundled components retain their licenses. MAKC wallpaper source metadata is bundled; original collection: <https://github.com/makccr/wallpapers>. `UPSTREAM.md` retains upstream setup documentation with the current shell names.
