@@ -100,40 +100,11 @@ The old `bash install/install.sh` entry point forwards to the same installer. `b
 
 ## After installation
 
-To fetch and apply the newest commit from the GitHub repository's default branch:
-
-```bash
-./update.sh --dry-run
-./update.sh
-```
-
-The updater uses a temporary checkout, leaving your repository and local edits
-alone. It upgrades installed official packages with `pacman -Syu` and installed
-AUR packages through Paru/Yay when available, with their normal review prompts.
-Use `--no-aur` to skip AUR upgrades or `--files-only` to skip all package changes.
-It does not reinstall packages from the full profile or change service selections.
-
-Existing application configurations, shell preferences (including weather and
-theme), monitor layouts, palette caches, wallpapers, and assistant configuration
-are retained. Existing configuration folders keep their entire contents; new
-configuration units are installed only where absent. Quickshell application
-source, launchers and bundled app code are refreshed. Settings outside the payload,
-including accounts, histories and the saved installation plan, are untouched.
-Custom edits to application source are backed up but replaced. Close desktop
-settings during an update, then log out and back in afterward.
-
 New installations use H/J/K/L for left/down/up/right. Super selects a window,
 Super+Shift repositions it on the screen, Super+Ctrl focuses a monitor, and
 Super+Shift+Ctrl sends the window to another monitor. Personal shortcuts are saved
 separately and retained across reinstalls and updates; see the
 [shortcut defaults and personal files](desktop/README.md).
-
-Each desktop update prints a backup path usable with the recovery command below.
-If deployment is interrupted, use that backup's `journal.json` to restore with
-`deploy.py --restore`. Package changes are separate and cannot be rolled back by
-restoring user files. A dry run fetches and verifies the snapshot in temporary
-storage without changing installed files or packages. `--repository` and
-`--branch` can select a trusted fork or branch.
 
 Reboot, choose **Niri** in Ly and log in. **Super+Return** opens Kitty; **Super+Space** opens the launcher; **Super+Shift+W** opens wallpapers. Set weather location in shell settings (Celsius is the default).
 
@@ -145,33 +116,18 @@ bash desktop/scripts/finish-apps.sh
 
 Neovim plugins/language tools install through Neovim; see `:IDEHelp`. The assistant needs a separately configured agent. NVIDIA branch selection must match your hardware; driver builds and physical graphics behavior still require target-machine testing. Accounts, histories, credentials, browser profiles, machine-specific hardware fixes and game libraries are excluded.
 
-## Updater
+## Update
 
-For an existing **rebos_shell Git checkout**, use the shell's separate
-[updater](https://github.com/Rebo-NS4U/rebos_shell#updater) to get new shell
-content while keeping saved preferences:
+Already installed and just want the latest version? Use this to update your system and desktop while keeping your personal settings.
+
+Run these commands from the installer folder you cloned or extracted:
 
 ```bash
-cd /path/to/rebos_shell
-./update.sh --check   # Preview the changes first
-./update.sh           # Apply the update
+./update.sh --dry-run
+./update.sh
 ```
 
-Run as your normal user with Git and Python 3 installed. The updater follows the
-shell repository's default branch, replaces only changed source files, removes
-obsolete tracked files and backs up affected existing files before changing them.
-It prints the backup location, normally
-`~/.local/state/rebos_shell/backups/update-*`. Saved preferences, personal data,
-wallpaper choices and Niri settings remain in place. Packages and desktop services
-are not changed.
-
-**The desktop installed by this repository is a bundled snapshot without Git
-metadata.** The shell updater cannot update that snapshot, the entire desktop, or
-the installer repository. Its `--path` option must point to a shell Git checkout,
-not `rebos_enclosure` or its `desktop/payload/` folder. The files-only installer
-reapplies bundled settings with backups while retaining personal shortcuts. Use
-this repository’s `./update.sh` (described above) for preference-preserving
-desktop snapshot updates.
+The first command previews the update. Log out and back in after applying the update.
 
 ## Backups and recovery
 

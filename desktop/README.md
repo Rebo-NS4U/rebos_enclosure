@@ -112,6 +112,19 @@ bash desktop/scripts/finish-apps.sh
 
 App profile initialization and Spotify authentication cannot be copied from this computer. First-session GUI, lock/unlock, hardware compatibility, screen sharing, AUR builds and app downloads still need validation on the target machine.
 
+## Update
+
+Already installed and just want the latest version? Use this to update your system and desktop while keeping your personal settings.
+
+Run these commands from the installer folder you cloned or extracted:
+
+```bash
+./update.sh --dry-run
+./update.sh
+```
+
+The first command previews the update. Log out and back in after applying the update.
+
 ## Backups and recovery
 
 Each replaced user entry is moved to a unique directory in `~/.local/state/rebos-desktop/backups/`. Existing dotfile component symlinks are backed up as links and replaced locally, so the installer does not write through them into another repository. Linked parent folders inside `.config`, such as `environment.d` and `scripts`, are backed up and copied locally before selected files are installed. Their unrelated contents are preserved, their source directories stay unchanged, and restore reinstates the original links. Dry run lists these planned conversions without changing anything. Broken links, linked top-level containers such as `.config`, and linked parents outside `.config` are refused with a readable error.
