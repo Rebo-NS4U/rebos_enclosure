@@ -10,3 +10,14 @@ spawn-at-startup "sh" "-c" "exec \"$HOME/.local/bin/rice\" start"
 
 // Settings-created rules follow the profile so app overrides take priority.
 include optional=true "~/.config/niri/rebos_shell-window-rules.kdl"
+
+// Keep overview activation explicit and hide the startup shortcut reminder.
+gestures {
+    hot-corners {
+        off
+    }
+}
+
+hotkey-overlay {
+    skip-at-startup
+}

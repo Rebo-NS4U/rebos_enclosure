@@ -159,6 +159,17 @@ def build(home):
     profile += 'spawn-at-startup "sh" "-c" "wl-paste --watch cliphist store"\n'
     write('.config/niri/config-quickshell.kdl', profile)
     write('.config/niri/config.kdl', '''// Portable rebos desktop profile.
+
+// Keep overview activation explicit and hide the startup shortcut reminder.
+gestures {
+    hot-corners {
+        off
+    }
+}
+
+hotkey-overlay {
+    skip-at-startup
+}
 include "config-quickshell.kdl"
 include "keybindings-defaults.kdl"
 include "keybindings-personal.kdl"

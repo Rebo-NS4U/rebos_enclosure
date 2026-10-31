@@ -8,3 +8,14 @@ cursor {
 
 include "keybindings-defaults.kdl"
 include "keybindings-personal.kdl"
+
+// Keep overview activation explicit and hide the startup shortcut reminder.
+gestures {
+    hot-corners {
+        off
+    }
+}
+
+hotkey-overlay {
+    skip-at-startup
+}
