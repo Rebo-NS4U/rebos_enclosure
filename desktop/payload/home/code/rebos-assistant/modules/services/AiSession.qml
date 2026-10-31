@@ -403,6 +403,9 @@ Scope {
     property int activePromptRequestId: -1
     property var pendingSessionAction: null
     property var queuedPrompt: null
+    // Delivery belongs to the backend conversation, not the UI connection.
+    property string instructionSessionId: ""
+    property string instructionModeGuidance: ""
     property string agentStderrTail: ""
     property bool turnFailureHandled: false
 
@@ -554,6 +557,7 @@ Scope {
         "initialized", "authenticated", "sessionReady", "suppressReplay",
         "agentCapabilities", "authMethods", "pendingRpc", "nextRpcId",
         "activePromptRequestId", "pendingSessionAction", "queuedPrompt", "agentStderrTail",
+        "instructionSessionId", "instructionModeGuidance",
         "turnFailureHandled", "taskOutcome", "outcomeVersion", "outcomeFinding", "backendEvidence", "sessionConfigOptions", "sessionModels", "currentSessionModelId",
         "pendingSessionModelId", "modelSwitchError", "availableCommands", "currentModeId",
         "codexPreset", "pendingCodexPreset", "codexPresetError",
@@ -2258,12 +2262,17 @@ Scope {
             });
 
         let mode = !isDistill ? codexPresets.find(item => item.id === codexPreset) : null;
-        if (mode) prompt.push({type: "text", text: mode.guidance});
-        prompt.push({type: "text", text: "Local desktop context: Assistant source: " + Quickshell.env("HOME") + "/code/rebos-assistant; shell config: " + Quickshell.env("HOME") + "/.config/quickshell. Inspect and edit these files for requested panel changes. Establish access with tools. If blocked, request the tool's supported approval; report unavailable or rejected approval and the exact blocked action. Never bypass sandbox or approval. Use ~/.local/bin/assistant-sudo --reason 'reason' -- command for each administrator action. Preserve unrelated work and active backends."});
-        prompt.push({type: "text", text: "Task outcome reporting: End the final reply with one line: Task outcome: Positive — <verification> only if the whole request succeeded; otherwise Task outcome: Negative — <remaining work or blocker>. This is self-reported."});
-        prompt.push({type: "text", text: "Shell preferences: Start with one task sentence. Give brief, useful progress for multi-step work. Activity titles state the action and purpose; put commands and output in details. For a consequential preference or missing detail, discover assistant_questions.ask_user_question, offer 2–3 choices and wait before dependent edits; ask in chat only if unavailable. Continue clear authorized work. Use only relevant skills; read the entrypoint and required references, skip generic explanations, and keep answers concise. Do not delegate unless requested. Do not automatically read or write persistent memory, including Obsidian notes; use saved notes only on explicit request. Verify changes. Keep Token Optimizer enabled."});
-        if (!isDistill)
-            prompt.push({type: "text", text: "RTK: Use ~/.local/bin/rtk for supported noisy searches, git, tests and logs; check rtk <command> --help for syntax. Use raw commands for exact source, patches, structured output or details omitted by compression. Compression never replaces verification."});
+        // A changed mode needs new guidance; shared preferences stay in history.
+        if (mode && (instructionSessionId !== currentSessionId || instructionModeGuidance !== mode.guidance))
+            prompt.push({type: "text", text: mode.guidance});
+        let sendSharedInstructions = instructionSessionId !== currentSessionId;
+        if (sendSharedInstructions) {
+            prompt.push({type: "text", text: "Local desktop context: Assistant source: " + Quickshell.env("HOME") + "/code/rebos-assistant; shell config: " + Quickshell.env("HOME") + "/.config/quickshell. Inspect and edit these files for requested panel changes. Establish access with tools. If blocked, request the tool's supported approval; report unavailable or rejected approval and the exact blocked action. Never bypass sandbox or approval. Use ~/.local/bin/assistant-sudo --reason 'reason' -- command for each administrator action. Preserve unrelated work and active backends."});
+            prompt.push({type: "text", text: "Task outcome reporting: End the final reply with one line: Task outcome: Positive — <verification> only if the whole request succeeded; otherwise Task outcome: Negative — <remaining work or blocker>. This is self-reported."});
+            prompt.push({type: "text", text: "Shell preferences: Start with one task sentence. Give brief, useful progress for multi-step work. Activity titles state the action and purpose; put commands and output in details. For a consequential preference or missing detail, discover assistant_questions.ask_user_question, offer 2–3 choices and wait before dependent edits; ask in chat only if unavailable. Continue clear authorized work. Use only relevant skills; read the entrypoint and required references, skip generic explanations, and keep answers concise. Do not delegate unless requested. Do not automatically read or write persistent memory, including Obsidian notes; use saved notes only on explicit request. Verify changes. Keep Token Optimizer enabled."});
+            if (!isDistill)
+                prompt.push({type: "text", text: "RTK: Use ~/.local/bin/rtk for supported noisy searches, git, tests and logs; check rtk <command> --help for syntax. Use raw commands for exact source, patches, structured output or details omitted by compression. Compression never replaces verification."});
+        }
 
         let supportsImages = agentCapabilities && agentCapabilities.promptCapabilities
             && agentCapabilities.promptCapabilities.image === true;
@@ -2286,6 +2295,14 @@ Scope {
             sessionId: currentSessionId,
             prompt: prompt
         }, "prompt");
+        if (activePromptRequestId < 0) {
+            failActiveTurn("Connection lost before the message could be sent. Try again after reconnecting.");
+            return;
+        }
+        instructionSessionId = currentSessionId;
+        instructionModeGuidance = mode ? mode.guidance : "";
+        saveCurrentChat();
+        bridgeDirty = true;
         turnWatchdog.restart();
         statusText = "Thinking…";
     }
@@ -2354,6 +2371,8 @@ Scope {
 
     function createNewChat() {
         cancelGeneration(false);
+        instructionSessionId = "";
+        instructionModeGuidance = "";
         codexPreset = currentAgentId === "codex" ? "coding" : "";
         currentChat = [];
         taskPlan = [];
@@ -2404,6 +2423,8 @@ Scope {
             protocol: "acp",
             agentId: currentChatAgentId || currentAgentId,
             sessionId: currentSessionId,
+            instructionSessionId: instructionSessionId,
+            instructionModeGuidance: instructionModeGuidance,
             distillPreset: distillPreset,
             codexPreset: codexPreset,
             cwd: currentChatCwd || workingDirectory(),
@@ -2542,6 +2563,8 @@ for path in files:
                 root.currentChat = isLegacy ? payload : (payload.messages || []);
                 root.currentChatId = targetId;
                 root.currentSessionId = isLegacy ? "" : (payload.sessionId || "");
+                root.instructionSessionId = isLegacy ? "" : (payload.instructionSessionId || "");
+                root.instructionModeGuidance = isLegacy ? "" : (payload.instructionModeGuidance || "");
                 root.currentChatCwd = isLegacy ? root.workingDirectory() : (payload.cwd || root.workingDirectory());
                 root.sessionReady = false;
                 root.activeAssistantIndex = -1;

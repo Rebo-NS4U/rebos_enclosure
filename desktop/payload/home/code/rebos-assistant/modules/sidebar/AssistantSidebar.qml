@@ -413,7 +413,7 @@ Item {
                         StyledText {
                             Layout.fillWidth: true
                             Layout.leftMargin: 4
-                            text: "CodeLight"
+                            text: "Dweebo"
                             font.family: Config.theme.font
                             font.pixelSize: Styling.fontSize(0)
                             font.weight: Font.DemiBold
