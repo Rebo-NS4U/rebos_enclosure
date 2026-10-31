@@ -2,7 +2,7 @@
   "created": "2026-10-31T04:39:22.715210+00:00",
   "description": "Selected live desktop sources, sanitized portable snapshot",
   "shellVersion": "1.1.6",
-  "shellRepository": "https://github.com/Rebo-NS4U/rebos_shell",
+  "shellRepository": "https://github.com/Rebo-NS4U/rebos_enclosure",
   "units": [
     ".cache/rebos_shell/colors.json",
     ".cache/rebos_shell/effective-palette.json",
