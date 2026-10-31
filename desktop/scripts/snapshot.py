@@ -77,9 +77,11 @@ def build(home):
                 copy('code/anime-streamer/' + path.name)
     copy('.config/systemd/user/anime-streamer.service')
     copy('.local/share/applications/rebos-assistant.desktop')
+    # Seed fresh installs from the bundled preset, never the source user's live preferences.
+    preset = shell / 'assets/presets/rebos_shell Default'
     for name in ('bar', 'theme', 'performance', 'lockscreen', 'system'):
-        copy(f'.config/rebos_shell/config/{name}.json')
-    write('.config/rebos_shell/config/weather.json', '{"location": "", "unit": "F"}\n')
+        copy(f'.config/rebos_shell/config/{name}.json', preset / f'{name}.json')
+    write('.config/rebos_shell/config/weather.json', '{"location": "", "unit": "C"}\n')
     for name in ('rice', 'rebos_shell', 'colorscheme', 'wallpaper', 'wallpaper-switcher',
                  'terminal-bonsai', 'project-picker', 'emoji-dmenu', 'wayland-screenshot',
                  'rebos-assistant', 'anime-streamer', 'ani-cli'):

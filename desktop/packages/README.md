@@ -50,6 +50,12 @@ OBS/scrcpy, development tools, Fastfetch/Flatpak and video wallpapers.
 Select only the groups you want; assistant backends still require separate setup.
 The default Codex backend uses Node/npm from the development group.
 
+Fresh installs use the shell's bundled default bar, theme, performance,
+lockscreen and system settings, with an empty weather location. The snapshot
+recipe does not copy those preferences from the source user's live desktop.
+The desktop updater preserves preferences already present in the destination
+home; it does not reset them to these fresh-install defaults.
+
 ## Old machine snapshot
 
 The root inventory no longer reproduces the original machine's installed package
