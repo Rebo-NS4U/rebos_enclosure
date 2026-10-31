@@ -92,6 +92,32 @@ bash desktop/scripts/finish-apps.sh
 
 Neovim plugins/language tools install through Neovim; see `:IDEHelp`. The assistant needs a separately configured agent. NVIDIA branch selection must match your hardware; driver builds and physical graphics behavior still require target-machine testing. Accounts, histories, credentials, browser profiles, machine-specific hardware fixes and game libraries are excluded.
 
+## Updater
+
+For an existing **rebos_shell Git checkout**, use the shell's separate
+[updater](https://github.com/Rebo-NS4U/rebos_shell#updater) to get new shell
+content while keeping saved preferences:
+
+```bash
+cd /path/to/rebos_shell
+./update.sh --check   # Preview the changes first
+./update.sh           # Apply the update
+```
+
+Run as your normal user with Git and Python 3 installed. The updater follows the
+shell repository's default branch, replaces only changed source files, removes
+obsolete tracked files and backs up affected existing files before changing them.
+It prints the backup location, normally
+`~/.local/state/rebos_shell/backups/update-*`. Saved preferences, personal data,
+wallpaper choices and Niri settings remain in place. Packages and desktop services
+are not changed.
+
+**The desktop installed by this repository is a bundled snapshot without Git
+metadata.** The shell updater cannot update that snapshot, the entire desktop, or
+the installer repository. Its `--path` option must point to a shell Git checkout,
+not `rebos_enclosure` or its `desktop/payload/` folder. The files-only installer
+reapplies bundled settings with backups; it is not a preference-preserving updater.
+
 ## Backups and recovery
 
 User backups: `~/.local/state/rebos-desktop/backups/`. Use the exact timestamp printed during installation:
