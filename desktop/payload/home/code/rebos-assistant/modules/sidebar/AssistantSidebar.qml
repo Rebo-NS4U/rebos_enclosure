@@ -296,8 +296,7 @@ Item {
             anchors.rightMargin: GlobalStates.assistantPosition === "right" ? root.sidebarMargin : 0
             variant: "bg"
             radius: Styling.radius(16)
-            border.color: Styling.unifiedStyle ? Config.resolveColor(Styling.getStyledRectConfig("bg").border[0]) : Qt.alpha(Colors.primary, 0.28)
-            border.width: 1
+
             ColumnLayout {
                 anchors.fill: parent
                 anchors.topMargin: 8
@@ -414,7 +413,7 @@ Item {
                         StyledText {
                             Layout.fillWidth: true
                             Layout.leftMargin: 4
-                            text: "Assistant"
+                            text: "CodeLight"
                             font.family: Config.theme.font
                             font.pixelSize: Styling.fontSize(0)
                             font.weight: Font.DemiBold
@@ -569,7 +568,6 @@ Item {
                         Math.floor((width + spacing) / (180 + spacing))))
                     Layout.leftMargin: 12
                     Layout.rightMargin: 12
-                    Layout.topMargin: 12
                     visible: Ai.sessions.length > 0
                     Repeater {
                         id: sessionRepeater
@@ -612,15 +610,10 @@ Item {
                             rightPadding: closable ? 30 : 12
                             onClicked: Ai.selectSession(modelData)
                             background: StyledRect {
-                                variant: "internalbg"
+                                variant: sessionTab.needsAnswer ? "primary" : sessionTab.selected || sessionTab.hovered ? "focus" : "internalbg"
                                 radius: Styling.radius(0)
-                                border.width: 1
-                                border.color: sessionTab.needsAnswer ? Colors.primary : Qt.alpha(Colors.primary, sessionTab.selected ? 0.35 : sessionTab.hovered ? 0.16 : 0.06)
                                 fillColor: sessionTab.needsAnswer ? Colors.primary : "transparent"
                                 backgroundOpacity: sessionTab.needsAnswer ? 1 : -1
-                                color: sessionTab.needsAnswer ? Colors.primary : Qt.alpha(Colors.primary, sessionTab.selected ? 0.12 : sessionTab.hovered ? 0.06 : 0.02)
-                                Behavior on color { enabled: !sessionTab.needsAnswer; ColorAnimation { duration: Config.animDuration / 4 } }
-                                Behavior on border.color { enabled: !sessionTab.needsAnswer; ColorAnimation { duration: Config.animDuration / 4 } }
                             }
                             contentItem: RowLayout {
                                 spacing: 7
@@ -716,8 +709,6 @@ Item {
                     background: StyledRect {
                         variant: parent.hovered ? "focus" : "internalbg"
                         radius: Styling.radius(8)
-                        border.color: Qt.alpha(Colors.primary, 0.16)
-                        border.width: 1
                     }
                     contentItem: StyledText {
                         text: Ai.activeSession.checkingPlanUsage ? "Checking plan usage…" : Ai.activeSession.planUsageSummary
@@ -1949,8 +1940,10 @@ Item {
                             visible: chatView.visible && chatView.contentY < Math.max(0, chatView.contentHeight - chatView.height) - 40
                             flat: true
                             padding: 0
-                            ToolTip.visible: hovered
-                            ToolTip.text: "Jump to bottom"
+                            StyledToolTip {
+                                show: parent.hovered
+                                tooltipText: "Jump to bottom"
+                            }
                             Accessible.name: "Jump to bottom"
                             contentItem: StyledText {
                                 text: Icons.arrowDown
@@ -1992,10 +1985,8 @@ Item {
                             StyledRect {
                                 id: inputStyledRect
                                 anchors.fill: parent
-                                variant: "pane"
+                                variant: inputField.activeFocus ? "focus" : "pane"
                                 radius: Styling.radius(16)
-                                border.color: Qt.alpha(Colors.primary, inputField.activeFocus ? 0.6 : 0.22)
-                                border.width: 1
                                 enableShadow: true
 
                                 DropArea {

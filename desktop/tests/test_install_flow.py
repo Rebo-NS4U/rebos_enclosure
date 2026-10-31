@@ -47,7 +47,8 @@ class InstallFlowTests(unittest.TestCase):
                     str(ROOT / 'desktop/examples/monitors.json')]
             result = subprocess.run(args, env=env, text=True, capture_output=True, timeout=60)
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-            self.assertEqual((home / '.config/quickshell/version').read_text().strip(), '1.1.6')
+            self.assertEqual((home / '.config/quickshell/version').read_text().strip(),
+                             (ROOT / 'desktop/payload/home/.config/quickshell/version').read_text().strip())
             for relative in ('code/rebos-assistant/shell.qml', 'code/anime-streamer/menu_client.py',
                              '.config/quickshell/AnimeMenu.qml', '.local/bin/ani-cli',
                              '.local/bin/rebos-assistant', '.local/bin/anime-streamer'):

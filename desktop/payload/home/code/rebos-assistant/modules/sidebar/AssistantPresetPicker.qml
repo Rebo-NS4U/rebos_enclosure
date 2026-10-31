@@ -25,12 +25,10 @@ ColumnLayout {
         Layout.fillWidth: true
         Layout.preferredHeight: 38
         padding: 10
-        Accessible.name: "Choose Codex or a Distill preset"
+        Accessible.name: "Choose an efficient Assistant mode"
         background: StyledRect {
             variant: toggle.hovered || root.expanded ? "focus" : "internalbg"
             radius: Styling.radius(8)
-            border.width: 1
-            border.color: Qt.alpha(Colors.primary, 0.25)
         }
         contentItem: RowLayout {
             spacing: 8
@@ -41,7 +39,7 @@ ColumnLayout {
             }
             StyledText {
                 Layout.fillWidth: true
-                text: !root.session.isDistill ? "Codex + token saving" : root.session.switchingDistillPreset ? "Applying…" : root.session.distillPresetName
+                text: !root.session.isDistill ? (root.session.switchingCodexPreset ? "Applying…" : root.session.codexPresetName) : root.session.switchingDistillPreset ? "Applying…" : root.session.distillPresetName
                 elide: Text.ElideRight
                 color: Colors.overSurface
                 font.pixelSize: Styling.fontSize(-1)
@@ -54,7 +52,7 @@ ColumnLayout {
         }
         StyledToolTip {
             show: toggle.hovered
-            tooltipText: "Use Codex directly or choose a Distill preset"
+            tooltipText: "Choose dweebo-Do, dweebo-Light, dweebo-Quick or dweebo-Know"
         }
         onClicked: root.expanded = !root.expanded
     }
@@ -79,13 +77,14 @@ ColumnLayout {
                 spacing: 5
                 StyledText {
                     Layout.fillWidth: true
-                    text: !root.session.isDistill ? "Codex uses RTK for compact command output and your existing Token Optimizer. Distill presets are optional." : root.session.isBusy ? "Change the preset after this reply finishes." : root.session.switchingDistillPreset ? "Waiting for Distill to confirm…" : "Saved separately for this chat."
+                    text: !root.session.isDistill ? "Choose a mode for this chat. Model and reasoning changes are confirmed before sending. RTK and Token Optimizer stay enabled." : root.session.isBusy ? "Change the preset after this reply finishes." : root.session.switchingDistillPreset ? "Waiting for Distill to confirm…" : "Saved separately for this chat."
                     wrapMode: Text.WordWrap
                     color: Colors.outline
                     font.pixelSize: Styling.fontSize(-2)
                 }
                 Button {
                     objectName: "assistantPreset_codex"
+                    visible: root.session.isDistill
                     Layout.fillWidth: true
                     enabled: !root.session.isBusy && !root.session.switchingSessionModel && !root.session.switchingDistillPreset
                     text: "Codex + token saving" + (!root.session.isDistill ? "  ✓" : "")
@@ -103,6 +102,36 @@ ColumnLayout {
                         root.expanded = false;
                     }
                 }
+                Repeater {
+                    model: root.session.isDistill ? [] : root.session.codexPresets
+                    delegate: Button {
+                        required property var modelData
+                        objectName: "assistantCodexMode_" + modelData.id
+                        Layout.fillWidth: true
+                        enabled: !root.session.isBusy && !root.session.switchingSessionModel && !root.session.switchingDistillPreset
+                        text: modelData.name + (root.session.codexPreset === modelData.id ? "  ✓" : "") + "\n" + modelData.description
+                        Accessible.name: text
+                        contentItem: StyledText {
+                            text: parent.text
+                            color: Colors.overSurface
+                            wrapMode: Text.WordWrap
+                            font.pixelSize: Styling.fontSize(-2)
+                        }
+                        background: StyledRect {
+                            variant: root.session.codexPreset === modelData.id ? "focus" : "common"
+                            radius: Styling.radius(4)
+                        }
+                        onClicked: root.session.setCodexPreset(modelData.id)
+                    }
+                }
+                StyledText {
+                    Layout.fillWidth: true
+                    visible: !root.session.isDistill && root.session.codexPresetError.length > 0
+                    text: root.session.codexPresetError
+                    color: Colors.overSurface
+                    wrapMode: Text.WordWrap
+                    font.pixelSize: Styling.fontSize(-2)
+                }
                 StyledText {
                     Layout.fillWidth: true
                     text: "Changing between Codex and Distill opens a new chat. Your current chat stays available."
@@ -111,7 +140,7 @@ ColumnLayout {
                     font.pixelSize: Styling.fontSize(-2)
                 }
                 Repeater {
-                    model: root.session.distillPresets
+                    model: root.session.isDistill ? root.session.distillPresets : []
                     delegate: Button {
                         id: choice
                         required property var modelData
@@ -125,8 +154,6 @@ ColumnLayout {
                         background: StyledRect {
                             variant: choice.selected ? "focus" : choice.hovered ? "common" : "transparent"
                             radius: Styling.radius(4)
-                            border.width: choice.selected ? 1 : 0
-                            border.color: Qt.alpha(Colors.primary, 0.4)
                         }
                         contentItem: ColumnLayout {
                             id: labels

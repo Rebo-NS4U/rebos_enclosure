@@ -48,8 +48,6 @@ StyledRect {
     implicitHeight: content.implicitHeight + 16
     variant: "internalbg"
     radius: Styling.radius(8)
-    border.width: 1
-    border.color: Qt.alpha(Colors.primary, 0.18)
 
     ColumnLayout {
         id: content
@@ -153,11 +151,8 @@ StyledRect {
                             Accessible.name: (!modelData.id ? root.session.activityText(modelData.content) : root.session.activitySentence(modelData)) + (selected ? ". Hide details" : ". Show details")
                             onClicked: root.selectedKey = selected ? "" : entryKey
                             background: StyledRect {
-                                variant: "internalbg"
+                                variant: activityButton.selected || activityButton.hovered || activityButton.activeFocus ? "focus" : "internalbg"
                                 radius: Styling.radius(6)
-                                color: Qt.alpha(Colors.primary, activityButton.selected ? 0.13 : activityButton.hovered ? 0.07 : 0)
-                                border.width: activityButton.activeFocus ? 1 : 0
-                                border.color: Colors.primary
                             }
                             contentItem: RowLayout {
                                 spacing: 8

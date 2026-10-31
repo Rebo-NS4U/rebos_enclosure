@@ -87,7 +87,10 @@ AiSession {
     function newSession(agentId) {
         let channel = "chat-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
         let session = addSession(channel, agentId || "codex");
-        if (session) selectSession(session);
+        if (session) {
+            if ((agentId || "codex") === "codex") session.codexPreset = "coding";
+            selectSession(session);
+        }
         rememberSessions();
     }
 

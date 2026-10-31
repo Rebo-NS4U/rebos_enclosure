@@ -65,6 +65,45 @@ Or use the CLI wrapper:
 ./cli.sh
 ```
 
+## Updater
+
+Use [update.sh](update.sh) to pull the latest shell content from
+[Rebo-NS4U/rebos_shell](https://github.com/Rebo-NS4U/rebos_shell) while keeping
+your saved preferences. Run it from your existing shell Git checkout:
+
+```bash
+cd /path/to/rebos_shell
+./update.sh --check   # Preview the changes first
+./update.sh           # Apply the update
+```
+
+The updater follows GitHub's default branch and prints its backup location before
+applying changes. Git and Python 3 are required; run it as your normal user.
+To update a checkout from another directory or select a branch:
+
+```bash
+/path/to/rebos_shell/update.sh --path /path/to/rebos_shell --check
+./update.sh --branch rebos-shell-refresh
+```
+
+It updates shell source only, without installing packages or restarting desktop
+services. For a Nix-managed installation, update through Nix instead. The bundled
+desktop installer snapshot has no Git metadata and cannot be updated with this
+script; `--path` must point to a shell Git checkout.
+
+Only changed source files are replaced. Obsolete tracked files are removed;
+unrelated untracked files remain. Local code edits and files that collide with new
+source files are backed up before replacement. Each backup contains only affected
+existing files, a Git index copy, and a manifest listing the old/new commits and
+added/removed paths. Its location is printed during the update, normally under
+`~/.local/state/rebos_shell/backups/update-*`. Directory conflicts stop the update
+before any source files are changed.
+
+Saved preferences under `~/.config/rebos_shell`, personal state/data/cache,
+wallpapers, and Niri settings are left in place (including custom XDG locations).
+New settings continue to use the shell's normal defaults. Source changes are
+picked up by Quickshell's normal hot reload.
+
 The installer and Nix package are still inherited scaffolding and may need
 adjustment for this fork.
 

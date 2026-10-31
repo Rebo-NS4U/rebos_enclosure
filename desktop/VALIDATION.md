@@ -44,3 +44,9 @@ Not exercised: real pacman installation or upgrade, AUR downloads/builds, system
 - All 988 checksum entries passed. Selected packaged release files match the shell source after home-path normalization. Source-home/private-key/common credential-pattern scanning found no matches. A core dry run succeeded and left its temporary home empty. Added packages resolve in the local official package databases.
 - Shell release checks: 31 backend tests and 10 isolated real-QML integration tests passed. Qt 6 lint found no syntax/fatal errors in 16 changed QML files; virtual qs import warnings remain.
 - Fresh-machine package installation, AUR builds, boot/login, assistant authentication, provider-dependent playback, optional Whisper models and the optional VLC pause-click plugin were not exercised. Node/npm remain in the optional development group for the default assistant adapter. No live desktop reinstall or service restart was performed.
+
+## Current local payload refresh — 2026-10-31
+
+- Refreshed 39 bundled QuickShell and assistant source files from their local source trees and regenerated all 992 payload checksums. Generated Python cache files were excluded.
+- All 40 installer/updater tests passed. The core installer dry run verified 992 payload files and planned deployment of 96 installation entries without changing the current desktop.
+- GitHub remote verification and push could not run because this environment cannot resolve `github.com`.

@@ -42,8 +42,6 @@ Column {
             implicitHeight: form.implicitHeight + 24
             variant: "internalbg"
             radius: Styling.radius(8)
-            border.width: 1
-            border.color: Qt.alpha(Colors.primary, 0.4)
 
             ColumnLayout {
                 id: form
@@ -124,8 +122,6 @@ Column {
                                 background: StyledRect {
                                     variant: choice.selected ? "focus" : choice.hovered ? "common" : "pane"
                                     radius: Styling.radius(4)
-                                    border.width: choice.selected ? 1 : 0
-                                    border.color: Qt.alpha(Colors.primary, 0.6)
                                 }
                                 contentItem: ColumnLayout {
                                     spacing: 3
@@ -179,10 +175,8 @@ Column {
                             font.pixelSize: Styling.fontSize(-1)
                             onTextEdited: root.session.setQuestionAnswer(card.request.requestId, field.modelData.key, text)
                             background: StyledRect {
-                                variant: "common"
+                                variant: answer.activeFocus ? "focus" : "common"
                                 radius: Styling.radius(4)
-                                border.width: 1
-                                border.color: Qt.alpha(Colors.primary, answer.activeFocus ? 0.6 : 0.2)
                             }
                         }
                     }

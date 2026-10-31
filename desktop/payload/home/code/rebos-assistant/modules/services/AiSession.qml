@@ -23,6 +23,112 @@ Scope {
         {id: "ultrafast", name: "UltraFast", description: "Starts work directly with less planning."},
         {id: "ultracode", name: "UltraCode", description: "Can share suitable work with parallel agents."}
     ]
+    // Explicit per-chat modes; older chats keep their current model as Custom.
+    readonly property var codexPresets: [
+        {id: "coding", name: "dweebo-Do", model: "gpt-6.1-sol", effort: "medium",
+            description: "Sol · medium reasoning. Implement, debug and verify code efficiently.",
+            guidance: "Coding mode: Make focused changes, inspect only relevant context, and run checks that verify the requested behavior. Keep explanations concise. Do not delegate unless requested."},
+        {id: "light_coding", name: "dweebo-Light", model: "gpt-6-luna", effort: "low",
+            description: "Luna · low reasoning. Linux configs, terminal tasks and small scripts.",
+            guidance: "Light coding mode: Edit requested app source, desktop UI, Linux configs and scripts. Linux specialization is guidance, not a restriction. Check the distro, shell and relevant tool version. Distinguish user and system services. Back up configs; preserve unrelated edits, permissions and symlink targets. Validate syntax and behavior; reload only what is needed. Suggest Coding for complex debugging; never switch models silently or delegate unless requested."},
+        {id: "quick", name: "dweebo-Quick", model: "gpt-6-luna", effort: "low",
+            description: "Luna · low reasoning. Short, direct answers with minimal overhead.",
+            guidance: "Quick question mode: Answer directly, usually in 1–3 sentences. Avoid plans, repository scans, memory reads and tools unless needed to answer accurately or explicitly requested. Verify current or uncertain facts when needed. Ask only essential clarifying questions. Do not change files unless explicitly asked."},
+        {id: "knowledge", name: "dweebo-Know", model: "gpt-6-luna", effort: "low",
+            description: "Luna · low reasoning. Clear explanations and useful factual context.",
+            guidance: "General knowledge mode: Give a clear, concise explanation with enough context to understand it. Use examples when helpful. Search for current or uncertain facts and cite sources; avoid unnecessary local inspection. Do not change files unless explicitly asked. If the question needs deeper reasoning, explain the limitation rather than silently claiming certainty."}
+    ]
+    property string codexPreset: ""
+    property var pendingCodexPreset: null
+    property string codexPresetError: ""
+    readonly property bool switchingCodexPreset: pendingCodexPreset !== null
+    readonly property string codexPresetName: {
+        let preset = codexPresets.find(item => item.id === codexPreset);
+        return preset ? preset.name : "Custom Codex";
+    }
+
+    function codexOption(id) {
+        return sessionConfigOptions.find(option => option.id === id);
+    }
+
+    function codexPresetMatches(preset) {
+        let model = codexOption("model");
+        let effort = codexOption("reasoning_effort");
+        return model && effort && model.currentValue === preset.model && effort.currentValue === preset.effort;
+    }
+
+    function setCodexPreset(value, duringSetup) {
+        let preset = codexPresets.find(item => item.id === value);
+        if (currentAgentId !== "codex" || !preset || switchingCodexPreset
+            || switchingSessionModel || switchingDistillPreset || (isBusy && !duringSetup)) return;
+        codexPresetError = "";
+        if (!sessionReady) {
+            codexPreset = value;
+            saveCurrentChat();
+            bridgeDirty = true;
+            return;
+        }
+        pendingCodexPreset = preset;
+        continueCodexPreset();
+    }
+
+    function continueCodexPreset() {
+        let preset = pendingCodexPreset;
+        if (!preset) return;
+        for (let setting of [{id: "model", value: preset.model}, {id: "reasoning_effort", value: preset.effort}]) {
+            let option = codexOption(setting.id);
+            if (!option || !Array.isArray(option.options) || !option.options.some(choice => choice.value === setting.value)) {
+                failCodexPreset("This Codex connection does not offer " + setting.value + ". Use the model picker or refresh the connection.");
+                return;
+            }
+            if (option.currentValue !== setting.value) {
+                let request = sendRequest("session/set_config_option", {
+                    sessionId: currentSessionId, configId: setting.id, value: setting.value
+                }, "codex_preset", {configId: setting.id, value: setting.value});
+                if (request < 0) failCodexPreset("Connection lost. Choose the mode again after reconnecting.");
+                return;
+            }
+        }
+        codexPreset = preset.id;
+        pendingCodexPreset = null;
+        codexPresetError = "";
+        saveCurrentChat();
+        bridgeDirty = true;
+        if (queuedPrompt) dispatchQueuedPrompt();
+    }
+
+    function failCodexPreset(message) {
+        let pending = Object.assign({}, pendingRpc);
+        for (let id of Object.keys(pending)) {
+            if (pending[id].kind === "codex_preset") delete pending[id];
+        }
+        pendingRpc = pending;
+        pendingCodexPreset = null;
+        // A model change may have succeeded before an effort change failed.
+        let previous = codexPresets.find(item => item.id === codexPreset);
+        if (previous && !codexPresetMatches(previous)) codexPreset = "";
+        codexPresetError = message;
+        if (queuedPrompt) {
+            queuedPrompt = null;
+            turnWatchdog.stop();
+            turnFailureHandled = true;
+            taskOutcome = "Negative";
+            outcomeFinding = "The message was not sent because the Codex mode could not be confirmed.";
+            isLoading = false;
+            agentTurnActive = false;
+            statusText = "";
+            pushSystemMessage(outcomeFinding + " " + message);
+        }
+        saveCurrentChat();
+        bridgeDirty = true;
+    }
+
+    Timer {
+        interval: 15000
+        running: root.switchingCodexPreset
+        onTriggered: root.failCodexPreset("Codex did not confirm the mode in time. Choose it again to retry.")
+    }
+
     property string distillPreset: "auto"
     property string pendingDistillPreset: ""
     property string distillPresetError: ""
@@ -119,7 +225,7 @@ Scope {
             name: "Codex",
             description: "OpenAI Codex coding agent through the official ACP adapter",
             icon: Qt.resolvedUrl("../../assets/aiproviders/openai.svg"),
-            command: ["sh", "-lc", "CODEX_PATH=\"$(command -v codex)\" exec npx -y @agentclientprotocol/codex-acp"],
+            command: ["sh", "-lc", "INITIAL_AGENT_MODE=workspace-write CODEX_CONFIG='{\"features\":{\"memories\":false},\"memories\":{\"generate_memories\":false,\"use_memories\":false}}' CODEX_PATH=\"$(command -v codex)\" exec npx -y @agentclientprotocol/codex-acp"],
             authMethod: "chat-gpt",
             installHint: "Install Codex and Node.js; the ACP adapter reuses your Codex login",
             provider: "acp",
@@ -305,7 +411,7 @@ Scope {
     property string currentSessionModelId: ""
     property string pendingSessionModelId: ""
     property string modelSwitchError: ""
-    readonly property bool switchingSessionModel: pendingSessionModelId.length > 0
+    readonly property bool switchingSessionModel: pendingSessionModelId.length > 0 || switchingCodexPreset
     readonly property string sessionModelName: {
         for (let i = 0; i < sessionModels.length; i++) {
             if (sessionModels[i].modelId === currentSessionModelId)
@@ -450,6 +556,7 @@ Scope {
         "activePromptRequestId", "pendingSessionAction", "queuedPrompt", "agentStderrTail",
         "turnFailureHandled", "taskOutcome", "outcomeVersion", "outcomeFinding", "backendEvidence", "sessionConfigOptions", "sessionModels", "currentSessionModelId",
         "pendingSessionModelId", "modelSwitchError", "availableCommands", "currentModeId",
+        "codexPreset", "pendingCodexPreset", "codexPresetError",
         "distillPreset", "pendingDistillPreset", "distillPresetError", "distillPresetReady", "distillNeedsChatGPT",
         "contextUsed", "contextSize", "sessionCost", "sessionCostCurrency",
         "activeAssistantMessageId", "activeAssistantIndex", "pendingPermissions", "isLoading",
@@ -589,6 +696,7 @@ Scope {
         } else if (event.bridge === "stderr") {
             handleAgentStderr(event.text);
         } else if (event.bridge === "exit") {
+            if (switchingCodexPreset) failCodexPreset("Codex exited before the mode was confirmed.");
             flushAssistantText();
             turnWatchdog.stop();
             if (agentTurnActive) {
@@ -629,6 +737,8 @@ Scope {
         sessionModels = [];
         currentSessionModelId = "";
         pendingSessionModelId = "";
+        pendingCodexPreset = null;
+        codexPresetError = "";
         pendingDistillPreset = "";
         distillPresetReady = false;
         distillPresetError = "";
@@ -853,6 +963,8 @@ Scope {
                 return;
             }
             setDistillPreset(distillPreset, true);
+        } else if (codexPreset) {
+            setCodexPreset(codexPreset, true);
         } else if (queuedPrompt) {
             dispatchQueuedPrompt();
         }
@@ -914,6 +1026,8 @@ Scope {
             modelSwitchError = "This model is no longer available. Reopen the model list.";
             return;
         }
+        codexPreset = ""; // A manual model choice leaves the named mode.
+        codexPresetError = "";
         modelSwitchError = "";
         pendingSessionModelId = modelId;
         for (let i = 0; i < sessionConfigOptions.length; i++) {
@@ -961,6 +1075,10 @@ Scope {
     function handleRpcError(entry, error) {
         let message = formatRpcError(error);
         console.warn("ACP " + (entry ? entry.method : "request") + " failed: " + message);
+        if (entry && entry.kind === "codex_preset") {
+            failCodexPreset("Could not apply mode: " + message);
+            return;
+        }
         if (entry && entry.kind === "distill_preset") {
             failDistillPreset("Could not apply preset: " + message);
             return;
@@ -1072,6 +1190,16 @@ Scope {
             activeAssistantMessageId = "";
             saveCurrentChat();
             break;
+        case "codex_preset": {
+            updateSessionConfiguration(result);
+            let option = codexOption(entry.context.configId);
+            if (!option || option.currentValue !== entry.context.value) {
+                failCodexPreset("Codex did not confirm the requested setting. Choose the mode again to retry.");
+                break;
+            }
+            continueCodexPreset();
+            break;
+        }
         case "distill_preset": {
             let confirmed = result.choice || result.mode;
             if (confirmed !== entry.context.preset) {
@@ -2112,6 +2240,14 @@ Scope {
             setDistillPreset(distillPreset, true);
             return;
         }
+        if (currentAgentId === "codex") {
+            if (switchingCodexPreset) return;
+            let preset = codexPresets.find(item => item.id === codexPreset);
+            if (preset && !codexPresetMatches(preset)) {
+                setCodexPreset(codexPreset, true);
+                return;
+            }
+        }
         let queued = queuedPrompt;
         queuedPrompt = null;
         let prompt = [];
@@ -2121,12 +2257,13 @@ Scope {
                 text: queued.text
             });
 
-        prompt.push({type: "text", text: "Task outcome reporting: End your final reply with exactly one plain-text line: Task outcome: Positive — followed by a brief verification summary, only when the user's requested task is fully complete and successful. If failed, blocked or incomplete, use Task outcome: Negative — followed by the remaining work or reason. Finishing a model turn is not task success. Never report Positive merely for stopping or sending an answer. This is a self-report, not independent verification."});
-        prompt.push({type: "text", text: "Shell activity preference: Begin with one concise, descriptive sentence stating the overall task you are working on. For multi-step work, keep the plan in plain English with specific steps describing the intended result. Give concise public progress updates explaining what you found, what you are doing next, and why it helps the request. Use everyday English in visible activity rows: describe the feature, action and purpose rather than filenames, command names or technical jargon. For example, say Check that activity rows explain the work clearly. Put filenames and technical identifiers in expandable details. Use specific descriptive tool titles where supported, avoiding vague labels such as Running a command or Reading files. Keep code, patches, commands and relevant output in expandable details; the visible activity should explain the purpose and progress of the work."});
-        prompt.push({type: "text", text: "Shell assistant interaction preference: For preference questions, call assistant_questions.ask_user_question instead of listing choices or asking for a reply in prose. Discover the tool with search_tool first if needed; do not treat an undiscovered tool as unavailable. Use the tool to ask a focused, answerable question early when a meaningful preference, scope choice, or missing detail could change the result. Offer 2–3 clear choices when useful, with the recommendation first. Ask more actively instead of silently choosing subjective details. Wait for the answer before dependent changes. Continue routine authorized work without extra permission questions. Keep approval for risky actions and administrator access; use ~/.local/bin/assistant-sudo for necessary administrator commands, retain sandbox restrictions, and never bypass rejected approvals. Do not repeat answered questions or ask unnecessary questions for clear, simple tasks. If the tool is unavailable, ask a concise question in chat."});
-
+        let mode = !isDistill ? codexPresets.find(item => item.id === codexPreset) : null;
+        if (mode) prompt.push({type: "text", text: mode.guidance});
+        prompt.push({type: "text", text: "Local desktop context: Assistant source: " + Quickshell.env("HOME") + "/code/rebos-assistant; shell config: " + Quickshell.env("HOME") + "/.config/quickshell. Inspect and edit these files for requested panel changes. Establish access with tools. If blocked, request the tool's supported approval; report unavailable or rejected approval and the exact blocked action. Never bypass sandbox or approval. Use ~/.local/bin/assistant-sudo --reason 'reason' -- command for each administrator action. Preserve unrelated work and active backends."});
+        prompt.push({type: "text", text: "Task outcome reporting: End the final reply with one line: Task outcome: Positive — <verification> only if the whole request succeeded; otherwise Task outcome: Negative — <remaining work or blocker>. This is self-reported."});
+        prompt.push({type: "text", text: "Shell preferences: Start with one task sentence. Give brief, useful progress for multi-step work. Activity titles state the action and purpose; put commands and output in details. For a consequential preference or missing detail, discover assistant_questions.ask_user_question, offer 2–3 choices and wait before dependent edits; ask in chat only if unavailable. Continue clear authorized work. Use only relevant skills; read the entrypoint and required references, skip generic explanations, and keep answers concise. Do not delegate unless requested. Do not automatically read or write persistent memory, including Obsidian notes; use saved notes only on explicit request. Verify changes. Keep Token Optimizer enabled."});
         if (!isDistill)
-            prompt.push({type: "text", text: "Token saving: Use ~/.local/bin/rtk explicitly for supported noisy shell commands (git status/diff/log, rg, test runners, logs). Check rtk <command> --help if needed. Use normal commands for exact source, patches, structured data, or when compressed output omits needed details. Keep question cards, activity updates, memory, approvals and verification intact. Existing Token Optimizer remains enabled."});
+            prompt.push({type: "text", text: "RTK: Use ~/.local/bin/rtk for supported noisy searches, git, tests and logs; check rtk <command> --help for syntax. Use raw commands for exact source, patches, structured output or details omitted by compression. Compression never replaces verification."});
 
         let supportsImages = agentCapabilities && agentCapabilities.promptCapabilities
             && agentCapabilities.promptCapabilities.image === true;
@@ -2186,6 +2323,12 @@ Scope {
         }
         pendingPermissions = {};
         activePromptRequestId = -1;
+        pendingCodexPreset = null;
+        let remainingRpc = Object.assign({}, pendingRpc);
+        for (let id of Object.keys(remainingRpc)) {
+            if (remainingRpc[id].kind === "codex_preset") delete remainingRpc[id];
+        }
+        pendingRpc = remainingRpc;
         queuedPrompt = null;
         isLoading = false;
         agentTurnActive = false;
@@ -2211,6 +2354,7 @@ Scope {
 
     function createNewChat() {
         cancelGeneration(false);
+        codexPreset = currentAgentId === "codex" ? "coding" : "";
         currentChat = [];
         taskPlan = [];
         taskPlanMarkdown = "";
@@ -2261,6 +2405,7 @@ Scope {
             agentId: currentChatAgentId || currentAgentId,
             sessionId: currentSessionId,
             distillPreset: distillPreset,
+            codexPreset: codexPreset,
             cwd: currentChatCwd || workingDirectory(),
             taskPlan: taskPlan,
             taskPlanMarkdown: taskPlanMarkdown,
@@ -2393,6 +2538,7 @@ for path in files:
                 root.currentChatAgentId = agent.id;
                 root.distillPreset = root.distillPresets.some(item => item.id === payload.distillPreset) ? payload.distillPreset : "auto";
                 root.distillPresetReady = false;
+                root.codexPreset = root.codexPresets.some(item => item.id === payload.codexPreset) ? payload.codexPreset : "";
                 root.currentChat = isLegacy ? payload : (payload.messages || []);
                 root.currentChatId = targetId;
                 root.currentSessionId = isLegacy ? "" : (payload.sessionId || "");
