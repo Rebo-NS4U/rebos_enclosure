@@ -54,8 +54,20 @@ def expand(path, home):
         path.write_text(content.replace('@HOME@', str(home)))
 
 
-def install(payload, home, dry_run=False, cbonsai=None, settings=None):
+def install(payload, home, dry_run=False, cbonsai=None, settings=None, preserve_preferences=False):
     units = verify(payload)
+    if preserve_preferences and settings is not None:
+        raise ValueError('Preference-preserving updates cannot replace the installation plan')
+    if preserve_preferences:
+        def preference(relative):
+            return ((relative.startswith(('.config/', '.cache/')) and
+                     relative != '.config/quickshell') or
+                    relative == 'code/rebos-assistant/config' or
+                    relative.startswith('.local/share/wallpapers/'))
+        # Keep existing preferences in place, including relative and broken links.
+        # Moving them into the backup would change what relative links resolve to.
+        units = [relative for relative in units
+                 if not (preference(relative) and exists(home / relative))]
     generated = {}
     if settings is not None:
         from setup import PRIME, validate_plan
@@ -82,9 +94,12 @@ def install(payload, home, dry_run=False, cbonsai=None, settings=None):
     backup = home / '.local/state/rebos-desktop/backups' / datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S.%fZ')
     check_parent(home, str(backup.relative_to(home)) + '/journal.json')
     backup.mkdir(parents=True)
+    print(f'Desktop recovery backup: {backup}', flush=True)
     journal = {'home': str(home), 'entries': []}
     def save_journal():
         (backup / 'journal.json').write_text(json.dumps(journal, indent=2))
+
+    save_journal()
 
     def detach_parents(relative):
         current = home

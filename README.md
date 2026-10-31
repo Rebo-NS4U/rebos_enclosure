@@ -82,6 +82,35 @@ The old `bash install/install.sh` entry point forwards to the same installer. `b
 
 ## After installation
 
+To fetch and apply the newest commit from the GitHub repository's default branch:
+
+```bash
+./update.sh --dry-run
+./update.sh
+```
+
+The updater uses a temporary checkout, leaving your repository and local edits
+alone. It upgrades installed official packages with `pacman -Syu` and installed
+AUR packages through Paru/Yay when available, with their normal review prompts.
+Use `--no-aur` to skip AUR upgrades or `--files-only` to skip all package changes.
+It does not reinstall packages from the full profile or change service selections.
+
+Existing application configurations, shell preferences (including weather and
+theme), monitor layouts, palette caches, wallpapers, and assistant configuration
+are retained. Existing configuration folders keep their entire contents; new
+configuration units are installed only where absent. Quickshell application
+source, launchers and bundled app code are refreshed. Settings outside the payload,
+including accounts, histories and the saved installation plan, are untouched.
+Custom edits to application source are backed up but replaced. Close desktop
+settings during an update, then log out and back in afterward.
+
+Each desktop update prints a backup path usable with the recovery command below.
+If deployment is interrupted, use that backup's `journal.json` to restore with
+`deploy.py --restore`. Package changes are separate and cannot be rolled back by
+restoring user files. A dry run fetches and verifies the snapshot in temporary
+storage without changing installed files or packages. `--repository` and
+`--branch` can select a trusted fork or branch.
+
 Reboot, choose **Niri** in Ly and log in. **Super+Return** opens Kitty; **Super+Space** opens the launcher; **Super+Shift+W** opens wallpapers. Set weather location in shell settings (Fahrenheit is the default).
 
 Launch Zen once to create its profile. Open Spotify Launcher, sign in and close it, then run:

@@ -1,5 +1,12 @@
 # Validation record
 
+## Preference-preserving updater — 2026-10-30
+
+- All 30 installer/updater tests passed. The updater integration test fetches a local Git repository, previews without deploying, applies twice in a temporary home and retains personal settings.
+- Deployment tests cover refreshed application source, retained configuration contents, relative and broken preference links, repeat backups and restoration after a simulated interrupted copy. Existing preferences remain in place; even an update with no changed units creates a recoverable journal.
+- The bundled payload passed checksum verification for all 95 installation units. The update entry point passed Bash syntax checking and the working changes passed whitespace checking.
+- No live desktop update, network fetch from GitHub, real package upgrade or AUR build was performed. Package-manager execution remains unverified here.
+
 2026-10-24 local time, on the source Arch desktop:
 
 - Seven deployment tests passed: checksum failure before writes, unexpected payload files, traversal refusal, parent symlink refusal, read-only dry runs, repeat installs/restores, and preserving original symlink targets/unrelated files.

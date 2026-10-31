@@ -6,6 +6,7 @@ import tempfile
 import unittest
 import subprocess
 import sys
+from unittest.mock import patch
 
 spec = importlib.util.spec_from_file_location('deploy', Path(__file__).resolve().parents[1] / 'scripts/deploy.py')
 deploy = importlib.util.module_from_spec(spec)
@@ -78,6 +79,65 @@ class DeploymentTests(unittest.TestCase):
     def test_dry_run_is_read_only(self):
         deploy.install(self.payload, self.home, dry_run=True)
         self.assertEqual(list(self.home.iterdir()), [])
+
+    def test_update_preserves_preferences_and_refreshes_source_with_recovery(self):
+        config = self.home / '.config/kitty'
+        config.mkdir(parents=True)
+        (config / 'kitty.conf').write_text('personal preferences')
+        (config / 'extra.conf').write_text('local addition')
+        shell = self.payload / 'home/.config/quickshell'
+        shell.mkdir()
+        (shell / 'shell.qml').write_text('new application')
+        installed = self.home / '.config/quickshell'
+        installed.mkdir()
+        (installed / 'shell.qml').write_text('old application')
+        (self.payload / 'manifest.json').write_text(json.dumps({'units': ['.config/kitty', '.config/quickshell']}))
+        self.seal()
+        backup = deploy.install(self.payload, self.home, preserve_preferences=True)
+        self.assertEqual((config / 'kitty.conf').read_text(), 'personal preferences')
+        self.assertEqual((config / 'extra.conf').read_text(), 'local addition')
+        self.assertEqual((installed / 'shell.qml').read_text(), 'new application')
+        deploy.restore(backup)
+        self.assertEqual((installed / 'shell.qml').read_text(), 'old application')
+        self.assertEqual((config / 'kitty.conf').read_text(), 'personal preferences')
+
+    def test_update_keeps_relative_and_broken_preference_links(self):
+        config = self.home / '.config'
+        config.mkdir()
+        target = self.home / 'personal-kitty'
+        target.mkdir()
+        (target / 'kitty.conf').write_text('personal')
+        link = config / 'kitty'
+        for destination in ['../personal-kitty', '../missing-kitty']:
+            with self.subTest(destination=destination):
+                link.symlink_to(destination)
+                backup = deploy.install(self.payload, self.home, preserve_preferences=True)
+                self.assertEqual(str(link.readlink()), destination)
+                self.assertEqual(json.loads((backup / 'journal.json').read_text())['entries'], [])
+                deploy.restore(backup)
+                self.assertEqual(str(link.readlink()), destination)
+                link.unlink()
+        self.assertEqual((target / 'kitty.conf').read_text(), 'personal')
+
+    def test_failed_update_can_restore_source_without_touching_preferences(self):
+        config = self.home / '.config/kitty'
+        config.mkdir(parents=True)
+        (config / 'kitty.conf').write_text('personal')
+        shell = self.payload / 'home/.config/quickshell'
+        shell.mkdir()
+        (shell / 'shell.qml').write_text('new')
+        installed = self.home / '.config/quickshell'
+        installed.mkdir()
+        (installed / 'shell.qml').write_text('old')
+        (self.payload / 'manifest.json').write_text(json.dumps({'units': ['.config/kitty', '.config/quickshell']}))
+        self.seal()
+        with patch.object(deploy.shutil, 'copytree', side_effect=OSError('interrupted')):
+            with self.assertRaisesRegex(OSError, 'interrupted'):
+                deploy.install(self.payload, self.home, preserve_preferences=True)
+        backup, = (self.home / '.local/state/rebos-desktop/backups').iterdir()
+        deploy.restore(backup)
+        self.assertEqual((installed / 'shell.qml').read_text(), 'old')
+        self.assertEqual((config / 'kitty.conf').read_text(), 'personal')
 
     def test_linked_config_parent_is_copied_and_restored_without_source_changes(self):
         source = self.root / 'dotfiles/environment.d'

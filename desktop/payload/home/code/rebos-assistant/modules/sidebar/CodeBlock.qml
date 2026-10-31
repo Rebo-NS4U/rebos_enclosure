@@ -134,9 +134,11 @@ ColumnLayout {
                         import QtQuick
                         import org.kde.syntaxhighlighting
                         SyntaxHighlighter {
-                            textEdit: parent
+                            // Bind the editor explicitly: SyntaxHighlighter is not a visual child.
+                            // Its parent binding can become null during creation or teardown.
+                            textEdit: codeText
                             repository: Repository
-                            definition: Repository.definitionForName(parent.highlightLanguage)
+                            definition: Repository.definitionForName(codeText.highlightLanguage)
                             theme: Repository.theme("Breeze Dark")
                         }
                     `, codeText, "OptionalCodeHighlighter");
