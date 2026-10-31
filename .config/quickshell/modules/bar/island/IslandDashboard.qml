@@ -646,7 +646,7 @@ Item {
                 arcColor: Battery.statusColor()
                 icon: Battery.isPluggedIn ? Icons.plug : Battery.getBatteryIcon()
                 iconColor: Battery.isPluggedIn ? Colors.primary : (Battery.percentage <= 20 ? Colors.error : Colors.overBackground)
-                tooltipText: Battery.available ? `${Battery.percentage}%${Battery.isPluggedIn ? " (Charging)" : ""}` : "No Battery"
+                tooltipText: Battery.available ? `${Math.round(Battery.percentage)}%${Battery.isPluggedIn ? " (Charging)" : ""}` : "No Battery"
                 onClicked: (mouse) => root.openBattery()
             }
 

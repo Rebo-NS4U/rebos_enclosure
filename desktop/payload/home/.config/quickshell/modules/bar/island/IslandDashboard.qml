@@ -889,7 +889,7 @@ Item {
                         arcColor: Battery.statusColor()
                         icon: Battery.isPluggedIn ? Icons.plug : Battery.getBatteryIcon()
                         iconColor: Battery.isPluggedIn ? Colors.primary : (Battery.percentage <= 20 ? Colors.error : Colors.overBackground)
-                        tooltipText: Battery.available ? `${Battery.percentage}%${Battery.isPluggedIn ? " (Charging)" : ""}` : "No Battery"
+                        tooltipText: Battery.available ? `${Math.round(Battery.percentage)}%${Battery.isPluggedIn ? " (Charging)" : ""}` : "No Battery"
                         onClicked: (mouse) => root.openBattery()
                     }
                     StyledText {
@@ -904,7 +904,7 @@ Item {
                     StyledText {
                         Layout.fillWidth: true
                         Layout.minimumWidth: 0
-                        text: Battery.available ? Battery.percentage + "%" + (Battery.isPluggedIn ? " · Charging" : "") : "Unavailable"
+                        text: Battery.available ? Math.round(Battery.percentage) + "%" + (Battery.isPluggedIn ? " · Charging" : "") : "Unavailable"
                         horizontalAlignment: Text.AlignHCenter
                         elide: Text.ElideRight
                         font.pixelSize: Styling.fontSize(-3)
