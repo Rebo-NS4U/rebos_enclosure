@@ -13,7 +13,21 @@ included. Install and sign into your chosen assistant backend after installation
 (the default Codex adapter also needs Node/npm from the development group);
 local Whisper captions additionally need their optional model and runtime.
 
+## Screenshots
+
+Desktop, themed apps and terminal:
+
+![Desktop, themed apps and terminal](docs/screenshots/desktop.png)
+
+Shell settings:
+
+![Shell settings](docs/screenshots/settings.png)
+
 ## Install
+
+For a versioned download, use the installer bundle and instructions on the
+[latest release](https://github.com/Rebo-NS4U/rebos_enclosure/releases/latest).
+The clone instructions below install the latest changes from `main`.
 
 Boot the installed system, connect to the internet and log in as a normal user with a password and sudo access. Install the initial tools:
 
