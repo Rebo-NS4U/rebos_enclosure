@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Assistant
+Comment=Chat with your assistant
+Exec=@HOME@/.local/bin/rebos-assistant
+Icon=dialog-information
+Terminal=false
+Categories=Utility;
+StartupNotify=false

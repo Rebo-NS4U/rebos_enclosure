@@ -1,0 +1,13 @@
+[Unit]
+Description=Anime Streamer playback and local caption service
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python -u @HOME@/code/anime-streamer/backend_server.py
+WorkingDirectory=@HOME@/code/anime-streamer
+Restart=on-failure
+RestartSec=2
+TimeoutStopSec=5
+KillMode=control-group

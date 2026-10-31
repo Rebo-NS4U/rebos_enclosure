@@ -1,0 +1,2 @@
+#!/bin/sh
+exec qs ipc -p @HOME@/.config/quickshell call anime toggle

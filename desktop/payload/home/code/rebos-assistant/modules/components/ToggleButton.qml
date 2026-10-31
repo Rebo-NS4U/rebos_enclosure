@@ -1,0 +1,121 @@
+import QtQuick
+import QtQuick.Controls
+import QtQuick.Effects
+import Quickshell
+import qs.modules.services
+import qs.modules.theme
+import qs.modules.globals
+import qs.config
+
+Button {
+    id: root
+
+    required property string buttonIcon
+    required property string tooltipText
+    required property var onToggle
+    property bool iconTint: false
+    property bool iconFullTint: false
+    property int iconSize: 18
+    property color iconColor: Styling.srItem("overprimary") || Colors.foreground
+    property bool enableShadow: false
+    // Radius handling
+    property real radius: 0
+    // We will let parent set start/end radius directly or use radius as fallback
+    property real startRadius: radius
+    property real endRadius: radius
+
+    implicitWidth: 36
+    implicitHeight: 36
+
+    scale: root.pressed ? 0.93 : 1.0
+
+    Behavior on scale {
+        enabled: (Config.animDuration ?? 0) > 0
+        NumberAnimation {
+            duration: root.pressed ? Motion.press : Motion.feedback
+            easing.type: Motion.feedbackCurve
+        }
+    }
+
+    // Check if buttonIcon is a single character (icon font) or a file path
+    readonly property bool isIconPath: buttonIcon.length > 1
+
+    background: StyledRect {
+        id: bg
+        variant: "bg"
+        enableShadow: root.enableShadow && Config.showBackground
+
+        topLeftRadius: root.startRadius
+        topRightRadius: root.endRadius
+        bottomLeftRadius: root.startRadius
+        bottomRightRadius: root.endRadius
+
+        Rectangle {
+            anchors.fill: parent
+            color: parent.item || "transparent"
+            opacity: root.pressed ? 0.5 : (root.hovered ? 0.25 : 0)
+            topLeftRadius: parent.topLeftRadius
+            topRightRadius: parent.topRightRadius
+            bottomLeftRadius: parent.bottomLeftRadius
+            bottomRightRadius: parent.bottomRightRadius
+
+            Behavior on opacity {
+                enabled: (Config.animDuration ?? 0) > 0
+                NumberAnimation {
+                    duration: Motion.feedback
+                }
+            }
+        }
+    }
+
+
+    contentItem: Item {
+        // Text icon (single character)
+        Text {
+            renderType: Text.NativeRendering
+            font.hintingPreference: Font.PreferFullHinting
+            visible: !root.isIconPath
+            anchors.fill: parent
+            text: root.buttonIcon
+            textFormat: Text.RichText
+            font.family: Icons.font
+            font.pixelSize: 18
+            color: root.pressed ? Colors.background : root.iconColor
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+        }
+
+        // Image icon (SVG/PNG)
+        Item {
+            id: iconImageContainer
+            visible: root.isIconPath
+            anchors.centerIn: parent
+            width: root.iconSize
+            height: root.iconSize
+
+            Image {
+                id: iconImage
+                anchors.fill: parent
+                source: root.isIconPath ? root.buttonIcon : ""
+                sourceSize: Qt.size(width * 2, height * 2)
+                fillMode: Image.PreserveAspectFit
+                smooth: true
+                asynchronous: true
+            }
+
+            Tinted {
+                anchors.fill: parent
+                sourceItem: iconImage
+                active: root.iconTint || root.iconFullTint
+                fullTint: root.iconFullTint
+            }
+        }
+    }
+
+    onClicked: root.onToggle()
+
+    StyledToolTip {
+        show: root.hovered
+        tooltipText: root.tooltipText
+    }
+}

@@ -15,3 +15,12 @@
 - Payload checksums passed for 927 selected files. No payload symlinks, hardcoded `/home/rebo` strings, or matches for the scanned private-key and common API credential patterns were found. The snapshot uses an explicit selection list, with no account/history/AI configuration copied.
 
 Not exercised: real pacman installation or upgrade, AUR downloads/builds, system service changes, boot/login, live shell UI, lock/unlock, screen sharing, Spotify patching and target GPU behavior. Those need a fresh Arch VM or spare computer. No active desktop config, installed package or system service on the source computer was changed by these checks.
+
+## 1.1.6 snapshot refresh — 2026-10-30
+
+- Bundles rebos_shell 1.1.6 from Dytox2/rebos_shell at b78ac15d, the current portable desktop palette/Niri configuration, 149 prepared wallpapers and the separate assistant/media runtime sources, launchers and user services.
+- All 26 installer tests passed, including real temporary-home deployment, Niri validation, compilation, customized monitor setup and restoration. System/package actions in the installation-flow test use recording stubs.
+- The installation-flow test also verifies the shell version, assistant/media files, resolver, expanded service paths and removal of new runtime files on restore.
+- All 988 checksum entries passed. Selected packaged release files match the shell source after home-path normalization. Source-home/private-key/common credential-pattern scanning found no matches. A core dry run succeeded and left its temporary home empty. Added packages resolve in the local official package databases.
+- Shell release checks: 31 backend tests and 10 isolated real-QML integration tests passed. Qt 6 lint found no syntax/fatal errors in 16 changed QML files; virtual qs import warnings remain.
+- Fresh-machine package installation, AUR builds, boot/login, assistant authentication, provider-dependent playback, optional Whisper models and the optional VLC pause-click plugin were not exercised. Node/npm remain in the optional development group for the default assistant adapter. No live desktop reinstall or service restart was performed.

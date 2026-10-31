@@ -47,6 +47,14 @@ class InstallFlowTests(unittest.TestCase):
                     str(ROOT / 'desktop/examples/monitors.json')]
             result = subprocess.run(args, env=env, text=True, capture_output=True, timeout=60)
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertEqual((home / '.config/quickshell/version').read_text().strip(), '1.1.6')
+            for relative in ('code/rebos-assistant/shell.qml', 'code/anime-streamer/menu_client.py',
+                             '.config/quickshell/AnimeMenu.qml', '.local/bin/ani-cli',
+                             '.local/bin/rebos-assistant', '.local/bin/anime-streamer'):
+                self.assertTrue((home / relative).is_file(), relative)
+            media_service = (home / '.config/systemd/user/anime-streamer.service').read_text()
+            self.assertIn(str(home / 'code/anime-streamer/backend_server.py'), media_service)
+            self.assertNotIn('@HOME@', media_service)
             entries = [json.loads(line) for line in log.read_text().splitlines()]
             self.assertTrue(any(e['command'] == 'sudo' and 'nvidia-open-dkms' in e['args'] and
                                 'linux-headers' in e['args'] for e in entries))
@@ -70,6 +78,8 @@ class InstallFlowTests(unittest.TestCase):
             self.assertEqual(restored.returncode, 0, restored.stderr)
             self.assertFalse((home / '.config/niri').exists())
             self.assertFalse(launcher.exists())
+            self.assertFalse((home / 'code/rebos-assistant/shell.qml').exists())
+            self.assertFalse((home / '.config/systemd/user/anime-streamer.service').exists())
 
 
 if __name__ == '__main__':

@@ -59,14 +59,29 @@ def build(home):
     shell = home / '.config/quickshell'
     for name in ('assets', 'config', 'modules', 'scripts'):
         copy('.config/quickshell/' + name)
-    for name in ('shell.qml', 'cli.sh', 'LICENSE', 'README.md'):
+    for name in ('shell.qml', 'AnimeMenu.qml', 'cli.sh', 'version', 'LICENSE', 'README.md'):
         if (shell / name).exists():
             copy('.config/quickshell/' + name)
+    # The shell now launches these independent applications. Ship source only,
+    # never account files, chat state, media history, downloaded models or captures.
+    assistant = home / 'code/rebos-assistant'
+    for name in ('assets', 'config', 'modules', 'scripts', 'shell.qml', 'version'):
+        copy('code/rebos-assistant/' + name)
+    for path in sorted((assistant / 'systemd').glob('*.service')):
+        copy('.config/systemd/user/' + path.name, path)
+    media = home / 'code/anime-streamer'
+    for path in sorted(media.iterdir()):
+        if path.is_file() and (path.suffix in {'.py', '.lua', '.cjs'} or path.name == 'filter_options.json'):
+            if not path.name.startswith(('test_', 'check_')):
+                copy('code/anime-streamer/' + path.name)
+    copy('.config/systemd/user/anime-streamer.service')
+    copy('.local/share/applications/rebos-assistant.desktop')
     for name in ('bar', 'theme', 'performance', 'lockscreen', 'system'):
         copy(f'.config/rebos_shell/config/{name}.json')
     write('.config/rebos_shell/config/weather.json', '{"location": "", "unit": "F"}\n')
     for name in ('rice', 'rebos_shell', 'colorscheme', 'wallpaper', 'wallpaper-switcher',
-                 'terminal-bonsai', 'project-picker', 'emoji-dmenu', 'wayland-screenshot'):
+                 'terminal-bonsai', 'project-picker', 'emoji-dmenu', 'wayland-screenshot',
+                 'rebos-assistant', 'anime-streamer', 'ani-cli'):
         copy('.local/bin/' + name)
     for name in ('cbonsai.c', 'LICENSE', 'README.md', 'INSTALL.md'):
         copy('.local/share/cbonsai/' + name)
@@ -99,6 +114,7 @@ def build(home):
     profile = '\n'.join(line for line in profile.splitlines() if not line.startswith('spawn-at-startup ')) + '\n'
     profile = profile.replace('spawn "rsclip" "show"', 'spawn "rebos-clipboard"')
     profile = profile.replace('spawn "cider"', 'spawn "spotify-launcher"')
+    profile = profile.replace('spawn "nautilus"', 'spawn "thunar"')
     profile = profile.replace('spawn "project-picker" "zed"', 'spawn "project-picker"')
     profile = profile.replace('XDG_MENU_PREFIX "arch-"',
                               'XDG_MENU_PREFIX "arch-"\n    PATH "@HOME@/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/bin"')
@@ -153,7 +169,7 @@ Categories=Settings;
 ''')
     # Normalize usernames and original source paths in copied text, never in binary assets.
     text_suffixes = {'.json', '.kdl', '.conf', '.ini', '.css', '.qml', '.js', '.py',
-                     '.sh', '.fish', '.lua', '.md', '.desktop', '.toml', ''}
+                     '.sh', '.fish', '.lua', '.md', '.desktop', '.toml', '.service', '.cjs', ''}
     for path in user.rglob('*'):
         if path.is_file() and path.suffix in text_suffixes:
             try:
@@ -183,6 +199,8 @@ Categories=Settings;
         units.append(component)
     manifest = {'created': datetime.now(timezone.utc).isoformat(),
                 'description': 'Selected live desktop sources, sanitized portable snapshot',
+                'shellVersion': (shell / 'version').read_text().strip(),
+                'shellRepository': 'https://github.com/Dytox2/rebos_shell',
                 'units': sorted(units)}
     (payload / 'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
     hashes = {str(p.relative_to(payload)): hashlib.sha256(p.read_bytes()).hexdigest()

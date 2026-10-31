@@ -1,0 +1,127 @@
+pragma Singleton
+import QtQuick
+import Quickshell
+import qs.config
+import qs.modules.theme
+import "ShellStyles.js" as ShellStyles
+
+Singleton {
+    id: root
+    readonly property string defaultFont: Config.defaultFont
+
+    // Pipeline defaults for crisp UI text. QtRendering (distance-field) gives
+    // small/bold glyphs a soft halo; NativeRendering + full hinting is preferred
+    // for static shell labels. See StyledText.qml.
+    readonly property int textRenderType: Text.NativeRendering
+    readonly property int textHinting: Font.PreferFullHinting
+
+    function withOpacity(value: color, opacity: real): color {
+        return Qt.rgba(value.r, value.g, value.b, opacity);
+    }
+
+    readonly property string shellStyle: Config.theme?.shellStyle ?? "glass"
+    readonly property bool unifiedStyle: shellStyle !== "custom"
+    readonly property real ditherCellSize: ShellStyles.ditherCellSize(Config.theme.ditherStrength)
+    readonly property real ditherEdgeWidth: Math.max(1, Math.round(ditherCellSize * 1.5))
+
+    function radius(offset: real): real {
+        const adjustment = unifiedStyle ? Math.max(-6, Math.min(6, offset * 0.35)) : offset;
+        return Config.roundness > 0 ? Math.max(Config.roundness + adjustment, 0) : 0;
+    }
+
+    function fontSize(offset: real): real {
+        return Math.max(Config.theme.fontSize + offset, 8);
+    }
+
+    function monoFontSize(offset: real): real {
+        return Math.max(Config.theme.monoFontSize + offset, 8);
+    }
+
+
+    function getStyledRectConfig(variant: string): var {
+        return styleConfig(shellStyle, variant);
+    }
+
+    function styleConfig(style: string, variant: string): var {
+        if (style === "custom") return customRectConfig(variant);
+        return ShellStyles.surface(style, variant, {
+            background: Colors.background.toString(), foreground: Colors.overBackground.toString(),
+            primary: Colors.primary.toString(), onPrimary: Colors.overPrimary.toString(),
+            secondary: Colors.secondary.toString(), onSecondary: Colors.overSecondary.toString(),
+            tertiary: Colors.tertiary.toString(), onTertiary: Colors.overTertiary.toString(),
+            error: Colors.error.toString(), onError: Colors.overError.toString()
+        }, Config.theme.ditherStrength);
+    }
+
+    function customRectConfig(variant: string): var {
+        switch (variant) {
+        case "transparent":
+            // Internal variant: uses bg config but with opacity, border and radius forced to 0
+            const bgConfig = Config.theme.srBg;
+            return {
+                gradient: bgConfig.gradient,
+                gradientType: bgConfig.gradientType,
+                gradientAngle: bgConfig.gradientAngle,
+                gradientCenterX: bgConfig.gradientCenterX,
+                gradientCenterY: bgConfig.gradientCenterY,
+                halftoneDotMin: bgConfig.halftoneDotMin,
+                halftoneDotMax: bgConfig.halftoneDotMax,
+                halftoneStart: bgConfig.halftoneStart,
+                halftoneEnd: bgConfig.halftoneEnd,
+                halftoneDotColor: bgConfig.halftoneDotColor,
+                halftoneBackgroundColor: bgConfig.halftoneBackgroundColor,
+                itemColor: bgConfig.itemColor,
+                opacity: 0,
+                border: [bgConfig.border[0], 0],
+                radius: 0
+            };
+        case "bg":
+            return Config.theme.srBg;
+        case "popup":
+            return Config.theme.srPopup;
+        case "internalbg":
+            return Config.theme.srInternalBg;
+        case "surface":
+        case "surfaceContainer":
+        case "pane":
+            return Config.theme.srPane;
+        case "common":
+            return Config.theme.srCommon;
+        case "surfaceVariant":
+        case "focus":
+            return Config.theme.srFocus;
+        case "primary":
+            return Config.theme.srPrimary;
+        case "primaryfocus":
+            return Config.theme.srPrimaryFocus;
+        case "overprimary":
+            return Config.theme.srOverPrimary;
+        case "secondary":
+            return Config.theme.srSecondary;
+        case "secondaryfocus":
+            return Config.theme.srSecondaryFocus;
+        case "oversecondary":
+            return Config.theme.srOverSecondary;
+        case "tertiary":
+            return Config.theme.srTertiary;
+        case "tertiaryfocus":
+            return Config.theme.srTertiaryFocus;
+        case "overtertiary":
+            return Config.theme.srOverTertiary;
+        case "error":
+            return Config.theme.srError;
+        case "errorfocus":
+            return Config.theme.srErrorFocus;
+        case "overerror":
+            return Config.theme.srOverError;
+        case "barbg":
+            return Config.theme.srBarBg;
+        default:
+            return Config.theme.srCommon;
+        }
+    }
+
+    function srItem(variant: string): color {
+        return Config.resolveColor(getStyledRectConfig(variant).itemColor);
+    }
+}

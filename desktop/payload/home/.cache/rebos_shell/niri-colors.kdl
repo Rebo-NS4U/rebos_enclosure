@@ -1,12 +1,12 @@
 // Generated from the effective QuickShell palette.
 layout {
     border {
-        active-color "#86d6bf"
-        inactive-color "#38564e"
+        active-color "#94cdf7"
+        inactive-color "#3d5363"
     }
     focus-ring {
-        active-color "#86d6bf"
-        inactive-color "#38564e"
+        active-color "#94cdf7"
+        inactive-color "#3d5363"
     }
 }
 window-rule {

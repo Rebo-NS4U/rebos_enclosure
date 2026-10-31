@@ -59,6 +59,8 @@ python-pillow
 python-gobject
 python-numpy
 python-rich
+gtk4
+libadwaita
 jq
 curl
 wget
@@ -82,6 +84,11 @@ qt6-shadertools
 qt5-graphicaleffects
 syntax-highlighting
 mpv
+vlc
+vlc-plugin-ffmpeg
+vlc-plugin-lua
+lua-socket
+yt-dlp
 ffmpeg
 libnotify
 zenity

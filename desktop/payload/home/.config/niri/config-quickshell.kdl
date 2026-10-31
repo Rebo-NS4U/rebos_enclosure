@@ -39,7 +39,7 @@ input {
     }
 
     //warp-mouse-to-focus
-    focus-follows-mouse
+    // Click to focus; hovering must not switch windows or tabs.
 }
 
 
@@ -61,7 +61,7 @@ layout {
     }
     border {
         on
-        width 1
+        width 3
     }
     shadow {
         on
@@ -96,6 +96,7 @@ environment {
 // spawn-at-startup "sh" "-c" "sleep 1 && pgrep -xa tailscale | grep -q ' systray$' || exec tailscale systray"
 // warp-taskbar is owned by its packaged user service. Starting it directly
 // here makes it spin when the warp-svc daemon has not started yet.
+// Discord starts on demand to avoid keeping a hidden browser engine in memory.
 // KDE daemon -- required for Dolphin's "Open With" dialog, MIME associations,
 // and other KIO services. Without it, Dolphin can't discover installed apps.
 // Delay kded6 so QuickShell can claim the StatusNotifierWatcher D-Bus name first;
@@ -122,16 +123,22 @@ animations {
 }
 
 window-rule {
-    geometry-corner-radius 12
+    geometry-corner-radius 16
     clip-to-geometry true
     popups {
-        geometry-corner-radius 12
+        geometry-corner-radius 16
     }
 }
 
 window-rule {
     match app-id=r#"^(code|Code|VSCodium|zen|google-chrome|chromium|firefox|discord|steam|dev.zed.Zed|helium|t3code)$"#
     default-column-width { proportion 1.0; }
+}
+
+window-rule {
+    match app-id="vlc"
+    default-column-width { proportion 1.0; }
+    default-window-height { proportion 1.0; }
 }
 
 window-rule {
@@ -556,11 +563,29 @@ binds {
 // Follow the wallpaper palette without changing layout or restarting Niri.
 include optional=true "~/.cache/rebos_shell/niri-colors.kdl"
 
+// Settings uses its own surface and control borders.
+window-rule {
+    match app-id=r#"^(org\.quickshell|quickshell)([.:].*)?$"# title="^rebos_shell Settings$"
+    border {
+        off
+    }
+}
+
 // The pinned assistant is a normal tiled client, scoped by its own title.
 window-rule {
     match app-id=r#"^(org\.quickshell|quickshell)([.:].*)?$"# title="^rebos_shell Assistant$"
     open-floating false
 }
+
+// Ghost uses a full-width tiled workspace.
+window-rule {
+    match app-id="org.ghostlocation.desktop"
+    open-floating false
+    default-column-width { proportion 1.0; }
+    geometry-corner-radius 16
+    clip-to-geometry true
+}
+
 
 spawn-at-startup "/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1"
 spawn-at-startup "sh" "-c" "exec udiskie --no-notify"

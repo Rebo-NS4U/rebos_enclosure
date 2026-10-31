@@ -2,6 +2,15 @@
 
 Install my customized Niri/rebos_shell desktop on a bootable minimal **x86_64 Arch Linux** system. Clone this repo, run `install.sh`, then reboot and choose Niri at login.
 
+The bundled desktop uses **rebos_shell 1.1.6** from
+[Dytox2/rebos_shell](https://github.com/Dytox2/rebos_shell), with the redesigned
+clock dashboard, edge window navigation, shortcut creation and adjustable window
+corners. The snapshot also includes the separate assistant and media apps and
+their user services. No account credentials or personal chat/media history are
+included. Install and sign into your chosen assistant backend after installation
+(the default Codex adapter also needs Node/npm from the development group);
+local Whisper captions additionally need their optional model and runtime.
+
 ## Install
 
 Boot the installed system, connect to the internet and log in as a normal user with a password and sudo access. Install the initial tools:
@@ -27,7 +36,7 @@ This installs the desktop onto an existing Arch installation. It does not partit
 - Matugen wallpaper colors across GTK, Qt/KDE, Kitty, Fish, Fuzzel, btop, Neovim and supported apps. Includes Zen/Spotify integration and a Vesktop theme file.
 - Kitty/Fish with the custom prompt, fuzzy searching, navigation helpers and compiled wallpaper-colored bonsai greeting.
 - Custom Neovim IDE configuration, plugin lockfile, bundled fonts, cursor, icons, animated Ly login screen and current wallpaper palette.
-- Original rice wallpapers, 129 prepared 1920×1200 Urban/Nature wallpapers and the current background.
+- Original rice wallpapers, 149 prepared 1920×1200 Urban/Nature wallpapers and the current background.
 - NetworkManager, Bluetooth, PipeWire/WirePlumber, power profiles, desktop portals, clipboard history, screenshots and OCR tools.
 - Full-profile apps: Firefox, Thunar, Discord, Spotify Launcher, OBS, Obsidian, imv, scrcpy, Flatpak, development tools and optional AUR software: Zen, VS Code, Spicetify and mpvpaper.
 

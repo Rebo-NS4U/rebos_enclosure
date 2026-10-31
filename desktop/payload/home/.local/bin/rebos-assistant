@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -euo pipefail
+app_dir="$HOME/code/rebos-assistant"
+action="${1:-toggle}"
+case "$action" in toggle|show|hide|status) ;; *) echo "Usage: rebos-assistant [toggle|show|hide|status]" >&2; exit 2 ;; esac
+case "$action" in show) action=reveal ;; hide) action=dismiss ;; esac
+systemctl --user start rebos-assistant-ui.service
+for attempt in {1..60}; do
+    if qs ipc -p "$app_dir" call assistant "$action" 2>/dev/null; then exit 0; fi
+    sleep 0.1
+done
+echo 'The assistant window did not become ready. Check rebos-assistant-ui.service.' >&2
+exit 1
