@@ -60,7 +60,7 @@ def build(home):
     shell = home / '.config/quickshell'
     for name in ('assets', 'config', 'modules', 'scripts'):
         copy('.config/quickshell/' + name)
-    for name in ('shell.qml', 'AnimeMenu.qml', 'cli.sh', 'version', 'LICENSE', 'README.md'):
+    for name in ('shell.qml', 'AnimeMenu.qml', 'FanShell.qml', 'cli.sh', 'version', 'LICENSE', 'README.md'):
         if (shell / name).exists():
             copy('.config/quickshell/' + name)
     # Keep the portable startup workaround versioned, independent of whether
@@ -85,6 +85,9 @@ def build(home):
     copy('.config/systemd/user/rebos-panel.service',
          ROOT.parent / '.config/systemd/user/rebos-panel.service')
     copy('.local/share/applications/rebos-assistant.desktop')
+    copy('.local/bin/thinkpad-fan-control')
+    copy('.local/share/applications/thinkpad-fan-control.desktop')
+    write('.local/bin/assistant-sudo', '#!/bin/sh\nexec /usr/bin/python3 "$HOME/.config/quickshell/scripts/assistant_sudo.py" "$@"\n', 0o755)
     copy('.local/bin/config-browser')
     copy('.local/share/applications/config-browser.desktop')
     # Seed fresh installs from the bundled preset, never the source user's live preferences.
