@@ -226,7 +226,7 @@ selection=$(cliphist list | fuzzel --dmenu --prompt='Clipboard > ')
 Type=Application
 Name=rebos_shell Settings
 Exec=rebos_shell run settings
-Icon=preferences-desktop
+Icon=@HOME@/.config/quickshell/assets/rebos_shell/settings.svg
 Categories=Settings;
 ''')
     write('.local/share/applications/wallpaper-switcher.desktop', '''[Desktop Entry]
