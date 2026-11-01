@@ -5,10 +5,8 @@ assert(tonumber(settings.port) and type(settings.password) == "string", "Missing
 local http = vlc.httpd("127.0.0.1", tonumber(settings.port))
 local marker = ""
 local channel = nil
-local anchor = nil
-local prior_subtitles = {}
-local prior_description = ""
 local fullscreen_pending = false
+local whisper_only = true
 
 local function input_value(name, default)
     local input = vlc.object.input()
@@ -26,6 +24,10 @@ local function status()
     local audio_tracks = {}
     local input = vlc.object.input()
     if input then
+        if whisper_only then
+            if input_value("spu-es", -1) ~= -1 then vlc.var.set(input, "spu-es", -1) end
+            pcall(vlc.var.set, input, "secondary-spu-es", -1)
+        end
         local values, labels = vlc.var.get_list(input, "spu-es")
         for i, id in ipairs(values or {}) do
             table.insert(subtitles, {id=id, name=(labels or {})[i] or tostring(id)})
@@ -37,7 +39,7 @@ local function status()
         eof=marker ~= "" and name == marker, time=input_value("time", 0) / 1000000,
         duration=input_value("length", 0) / 1000000, sid=input_value("spu-es", -1),
         input_state=input_value("state", 0), subtitles=subtitles,
-        audio=input_value("audio-es", -1), audio_tracks=audio_tracks, anchor=anchor}
+        audio=input_value("audio-es", -1), audio_tracks=audio_tracks}
 end
 
 local function handle(_, query)
@@ -51,10 +53,10 @@ local function handle(_, query)
     local ok, error_text = pcall(function()
         if command == "load" then
             local data = json.decode(args.data or "{}")
+            whisper_only = data.whisper_only ~= false
             fullscreen_pending = settings.fullscreen == true
             if channel then pcall(vlc.osd.channel_clear, channel) end
-            channel, anchor = nil, nil
-            prior_subtitles = {}
+            channel = nil
             marker = "Media Browser EOF " .. tostring(data.generation)
             vlc.playlist.stop()
             vlc.playlist.clear()
@@ -74,22 +76,9 @@ local function handle(_, query)
             vlc.volume.set(math.floor(math.max(0, math.min(100, tonumber(args.value) or 80)) * 256 / 100))
         elseif command == "subtitle" then
             local input = vlc.object.input()
-            if input then vlc.var.set(input, "spu-es", tonumber(args.value)) end
+            if input and not whisper_only then vlc.var.set(input, "spu-es", tonumber(args.value)) end
         elseif command == "addsubtitle" then
             vlc.input.add_subtitle(args.value, args.select == "true")
-        elseif command == "caption-register" then
-            if not anchor then
-                local input = vlc.object.input()
-                if input then
-                    local values = vlc.var.get_list(input, "spu-es")
-                    for _, id in ipairs(values or {}) do prior_subtitles[id] = true end
-                    prior_description = input_value("sub-description", "")
-                    vlc.var.create(input, "sub-description", "Live English · local Whisper")
-                end
-                vlc.input.add_subtitle(args.value, true)
-                -- Capture the added track ID after VLC completes registration.
-                anchor = -2
-            end
         elseif command == "caption" then
             if vlc.object.vout() then
                 if args.value and args.value ~= "" then
@@ -106,16 +95,6 @@ local function handle(_, query)
         end
     end)
     local data = status()
-    if anchor == -2 then
-        for _, track in ipairs(data.subtitles) do
-            if track.id >= 0 and not prior_subtitles[track.id] then
-                anchor = track.id
-                local input = vlc.object.input()
-                if input then vlc.var.set(input, "sub-description", prior_description) end
-            end
-        end
-        data.anchor = anchor
-    end
     data.ok = ok
     if not ok then data.error = "VLC could not apply the player command." end
     local encoded = json.encode(data)

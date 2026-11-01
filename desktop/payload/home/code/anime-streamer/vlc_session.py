@@ -22,6 +22,16 @@ from vlc_theme import vlc_environment
 INPUT_ERROR = re.compile(r'\bmain (?:input|stream) error:(?! INPUT_CONTROL_SET_POSITION 100\.0% failed)')
 
 
+def pause_click_available():
+    """Never pass plugin-only options unless this VLC can parse them."""
+    try:
+        result = subprocess.run(['vlc', '-p', 'pause_click', '--advanced', '--help-verbose'],
+                                capture_output=True, text=True, timeout=5)
+        return result.returncode == 0 and '--pause-click-mouse-button' in result.stdout
+    except (OSError, subprocess.SubprocessError):
+        return False
+
+
 def read_cues(path):
     text = Path(path).read_text()
     result = []
@@ -51,15 +61,14 @@ class VlcSession:
         self.cues = []
         self.cue_starts = []
         self.caption_requested = False
+        self.whisper_only = True
         self.caption_registered = False
-        self.anchor_id = None
         self.caption_text = None
         self.last_caption = 0
         self.last_state = {}
         self.start_volume = settings.get('volume', 80)
+        self.audio_normalization = bool(settings.get('audio_normalization', True))
         self.directory = tempfile.TemporaryDirectory(prefix='media-vlc-')
-        self.anchor = Path(self.directory.name) / 'Live English · local Whisper.srt'
-        self.anchor.write_text('1\n00:00:00,000 --> 99:59:59,999\n\u2060\n')
         helper = Path.home() / '.local/share/vlc/lua/intf/media_browser.lua'
         helper.parent.mkdir(parents=True, exist_ok=True)
         script = Path(__file__).with_name('vlc_control.lua').read_bytes()
@@ -81,16 +90,23 @@ class VlcSession:
         self.logpath = Path(logpath)
         self.logpath.parent.mkdir(parents=True, exist_ok=True)
         args = ['vlc', '--ignore-config', '--no-one-instance', '--no-media-library', '--no-loop', '--no-repeat',
-                '--no-save-config', '--qt-continue=0', '--no-qt-video-autoresize',
+                '--qt-continue=0', '--no-qt-video-autoresize',
                 '--no-video-title-show', '--no-qt-privacy-ask', '--no-metadata-network-access', '--verbose=2',
-                '--extraintf=luaintf:pause_click', '--lua-intf=media_browser',
-                '--video-filter=pause_click', '--pause-click-mouse-button=1',
-                '--pause-click-ignore-double-click',
+                '--extraintf=luaintf', '--lua-intf=media_browser',
                 '--http-host=127.0.0.1', '--http-port=' + str(port),
                 '--lua-config=media_browser={port=' + str(port) + ',password="' + password + '",fullscreen=' + str(bool(settings.get('fullscreen'))).lower() + '}',
                 '--audio-language=eng,en', '--sub-language=eng,en', '--freetype-rel-fontsize=24']
         if settings.get('fullscreen'):
             args.append('--fullscreen')
+        if self.audio_normalization:
+            # Strong dialogue leveling: compress above -24 dB, then restore 6 dB.
+            args.extend(['--compressor-threshold=-24', '--compressor-ratio=8',
+                         '--compressor-attack=5', '--compressor-release=250',
+                         '--compressor-knee=6', '--compressor-makeup-gain=6'])
+        if pause_click_available():
+            args[args.index('--extraintf=luaintf')] = '--extraintf=luaintf:pause_click'
+            args.extend(['--video-filter=pause_click', '--pause-click-mouse-button=1',
+                         '--pause-click-ignore-double-click'])
         args.extend(extra_args)
         with self.logpath.open('w') as log:
             self.process = subprocess.Popen(args, stdout=log, stderr=log, env=vlc_environment())
@@ -114,8 +130,8 @@ class VlcSession:
         if not self.closed.is_set():
             self.commands.put(command)
 
-    def load(self, links, title, paused=False):
-        self.command(['load', links, title, paused])
+    def load(self, links, title, paused=False, whisper_only=True):
+        self.command(['load', links, title, paused, whisper_only])
 
     def public_stream(self, url, referer=''):
         if not url or not url.startswith('https://'):
@@ -157,14 +173,18 @@ class VlcSession:
     def apply(self, command):
         action = command[0]
         if action == 'load':
-            links, title, paused = command[1:]
+            links, title, paused, self.whisper_only = command[1:]
             video, referer, subtitle, audio = links
             options = ['no-start-paused', 'input-repeat=0', 'audio-language=eng,en', 'sub-language=eng,en']
+            if self.audio_normalization:
+                options.append('audio-filter=compressor')
             if referer:
                 options.append('http-referrer=' + referer)
             if audio:
                 options.extend(['demux=avformat', 'input-slave=' + self.public_stream(audio, referer)])
-            if subtitle:
+            if self.whisper_only:
+                options.extend(['sub-track=-1', 'sub-track-id=-1', 'no-sub-autodetect-file'])
+            if subtitle and not self.whisper_only:
                 path = self.subtitle_path(subtitle, referer)
                 if path:
                     options.append('sub-file=' + path)
@@ -172,33 +192,28 @@ class VlcSession:
             self.generation += 1
             self.loaded = self.finished = self.input_error = False
             self.caption_registered = self.caption_requested = False
-            self.anchor_id = None
             self.cues, self.cue_starts = [], []
             self.last = {}
             self.requested = True
             self.pause_when_ready = paused
             self.log_offset = self.logpath.stat().st_size
-            self.api('load', data=json.dumps(dict(url=self.public_stream(video, referer), title=title, options=options, generation=self.generation)))
+            self.api('load', data=json.dumps(dict(url=self.public_stream(video, referer), title=title, options=options, generation=self.generation, whisper_only=self.whisper_only)))
         elif action == 'set_property' and command[1] == 'pause':
             self.api('pause', value='true' if command[2] else 'false')
         elif action == 'set_property' and command[1] == 'sid':
-            self.api('subtitle', value=command[2])
+            if not self.whisper_only:
+                self.api('subtitle', value=command[2])
         elif action == 'seek':
             self.api('seek', value=command[1])
         elif action == 'captions-file':
             self.cues = read_cues(command[1])
             self.cue_starts = [cue[0] for cue in self.cues]
         elif action == 'captions-show':
-            self.caption_requested = True
-            self.ensure_caption_track()
-            if self.anchor_id is not None:
-                self.api('subtitle', value=self.anchor_id)
+            self.caption_requested = self.whisper_only
         elif action == 'captions-clear':
             self.cues, self.cue_starts = [], []
             self.caption_requested = False
             self.api('clear-caption')
-            if self.anchor_id is not None and self.last_state.get('sid') == self.anchor_id:
-                self.api('subtitle', value=-1)
         elif action == 'observe_property':
             pass  # The native interface publishes the properties below.
         elif action in ('quit', 'stop'):
@@ -207,11 +222,6 @@ class VlcSession:
                 self.close()
             else:
                 self.api('stop')
-
-    def ensure_caption_track(self):
-        if self.loaded and not self.caption_registered:
-            self.api('caption-register', value=str(self.anchor))
-            self.caption_registered = True
 
     def poll(self, state):
         self.last_state = state
@@ -250,21 +260,18 @@ class VlcSession:
             return
         if state.get('input_state') == 5:
             self.input_error = True
-        anchor = state.get('anchor')
-        if isinstance(anchor, int) and anchor >= 0:
-            self.anchor_id = anchor
+        whisper_active = self.whisper_only and self.caption_requested
         values = {'time-pos':state.get('time',0), 'duration':state.get('duration',0), 'pause':state.get('state') == 'paused',
-                  'sid':state.get('sid',-1) if state.get('sid',-1) >= 0 else False, 'sub-visibility':state.get('sid',-1) >= 0,
-                  'whisper-captions': self.anchor_id is not None and state.get('sid') == self.anchor_id}
+                  'sid': 'whisper' if whisper_active else (False if self.whisper_only else state.get('sid', -1)),
+                  'sub-visibility': whisper_active if self.whisper_only else state.get('sid', -1) >= 0,
+                  'whisper-captions': whisper_active}
         for name, value in values.items():
             if self.last.get(name) != value:
                 self.last[name] = value
                 self.emit({'event':'property-change','name':name,'data':value})
-        if self.caption_requested:
-            self.ensure_caption_track()
         now = time.monotonic()
         text = ''
-        if self.anchor_id is not None and state.get('sid') == self.anchor_id:
+        if whisper_active:
             position = state.get('time',0)
             index = bisect.bisect_right(self.cue_starts, position) - 1
             if 0 <= index < len(self.cues) and position < self.cues[index][1]:

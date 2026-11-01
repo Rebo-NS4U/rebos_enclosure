@@ -27,7 +27,7 @@ class BackendServer:
     def send(self, message):
         payload = (json.dumps(message) + '\n').encode()
         with self.lock:
-            if message.get('event') in ['playback', 'captions', 'paused', 'episode', 'subtitle-state']:
+            if message.get('event') in ['playback', 'captions', 'paused', 'episode', 'subtitle-state', 'next-episode']:
                 self.latest[message['event']] = message
             target = message.get('client')
             clients = [(target, self.clients[target])] if target in self.clients else [] if target else list(self.clients.items())

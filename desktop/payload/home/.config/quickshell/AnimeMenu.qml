@@ -38,6 +38,7 @@ PanelWindow {
     property string message: "Choose a show to see its details"
     property string playback: ""
     property bool playbackPaused: false
+    property bool nextEpisodeAvailable: false
     property string captionStatus: ""
     property bool subtitlesOff: true
     property bool whisperSelected: false
@@ -295,6 +296,8 @@ PanelWindow {
                 playback = data.text;
             } else if (data.event === "playback") {
                 playback = data.text;
+            } else if (data.event === "next-episode") {
+                nextEpisodeAvailable = data.available;
             } else if (data.event === "paused") {
                 playbackPaused = data.value;
             } else if (data.event === "captions") {
@@ -989,7 +992,7 @@ PanelWindow {
                         onToggled: root.updateSetting("live_subtitles", checked)
                     }
                     StyledText {
-                        text: "Whisper captions use speech detection and short, word-timed phrases to follow the dialogue. Use English audio; choose Dub for anime. Look for Live English · local Whisper in VLC’s Subtitle → Sub Track menu. YouTube uses its own captions. Switching to provided subtitles keeps your selection."
+                        text: "Whisper captions use speech detection and short, word-timed phrases to follow the dialogue. Use English audio; choose Dub for anime. Whisper is the only caption source for anime, movies and TV. Native and provided subtitles are disabled. YouTube uses its own captions."
                         Layout.fillWidth: true
                         wrapMode: Text.Wrap
                         color: Colors.overSurfaceVariant
@@ -1008,7 +1011,7 @@ PanelWindow {
                         MenuButton { text: "Reset"; onClicked: root.updateSetting("caption_delay", 0) }
                     }
                     StyledText {
-                        text: "Move right to show Whisper captions later; left shows them earlier. Changes apply immediately and save automatically. Provided subtitles are unaffected."
+                        text: "Move right to show Whisper captions later; left shows them earlier. Changes apply immediately and save automatically. YouTube captions are unaffected."
                         Layout.fillWidth: true
                         wrapMode: Text.Wrap
                         color: Colors.overSurfaceVariant
@@ -1018,6 +1021,12 @@ PanelWindow {
                         palette.windowText: Colors.overSurface
                         checked: root.settings.fullscreen ?? false
                         onToggled: root.updateSetting("fullscreen", checked)
+                    }
+                    CheckBox {
+                        text: "Normalize audio (reduce loud peaks)"
+                        palette.windowText: Colors.overSurface
+                        checked: root.settings.audio_normalization ?? true
+                        onToggled: root.updateSetting("audio_normalization", checked)
                     }
                     RowLayout {
                         StyledText { text: "Quality"; Layout.preferredWidth: root.unit * 10 }
@@ -1048,6 +1057,7 @@ PanelWindow {
                 visible: root.playback.length > 0
                 Layout.fillWidth: true
                 StyledText { text: root.playback; Layout.fillWidth: true; maximumLineCount: 2; wrapMode: Text.Wrap; elide: Text.ElideRight }
+                MenuButton { text: "Next episode"; visible: root.nextEpisodeAvailable; onClicked: root.send({action: "next_episode"}) }
                 MenuButton { text: "Play"; visible: root.playbackPaused; selected: true; onClicked: root.send({action: "resume"}) }
                 MenuButton {
                     text: "Captions"

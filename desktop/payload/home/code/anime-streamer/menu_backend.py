@@ -82,6 +82,36 @@ class Engine(app.Browser):
         self.subtitles_visible = True
         self.whisper_selected = False
         self.last_progress_save = 0
+        self.next_requested = False
+        self.next_episode_paused = False
+        self.episode_ended = False
+        self.last_next_offer = None
+
+    def publish_next_episode(self):
+        available = False
+        if self.session is not None and self.context and not self.next_requested:
+            _, episodes, index, _ = self.context
+            available = self.next_episode_paused or (index + 1 < len(episodes) and (
+                self.episode_ended or (self.file_loaded and self.duration > 0
+                                      and 0 <= self.duration - self.position <= 90)))
+        offer = dict(available=bool(available))
+        if offer != self.last_next_offer:
+            self.last_next_offer = offer
+            send(dict(event='next-episode', **offer))
+
+    def skip_to_next(self):
+        self.publish_next_episode()
+        if not self.last_next_offer['available']:
+            return
+        if self.next_episode_paused:
+            self.next_episode_paused = False
+            self.session.command(['set_property', 'pause', False])
+        else:
+            self.save_progress(force=True)
+            self.next_requested = True
+            show, episodes, index, token = self.context
+            self.start_episode(show, episodes, index + 1, token)
+        self.publish_next_episode()
 
     def resolve(self, key, done, failed):
         cached = self.resolved.get(key)
@@ -120,11 +150,15 @@ class Engine(app.Browser):
                 if automatic and getattr(self.session, 'stop_count', 0) != stop_count:
                     return
                 if automatic and not self.settings['auto_next']:
+                    self.next_requested = False
+                    self.publish_next_episode()
                     self.play_status.set_text('Episode finished. Loading the next episode is off.')
                     return
                 self.launch_player(show, episodes, index, token, links, settings, paused=automatic)
         def failed(message):
             if token == self.play_token:
+                self.next_requested = False
+                self.publish_next_episode()
                 self.play_status.set_text(message)
         self.resolve((show['id'], ep, settings['mode'], settings['quality']), ready, failed)
 
@@ -138,11 +172,15 @@ class Engine(app.Browser):
         self.duration = self.position = 0
         self.prefetch_key = None
         self.paused = paused
+        self.next_episode_paused = paused
+        self.next_requested = False
+        self.episode_ended = False
+        self.publish_next_episode()
         try:
             if self.session is None:
                 self.session = VlcSession(settings, lambda event: self.player_event(event, token), app.STATE / 'vlc.log')
                 self.player = self.session.process
-            self.session.load(links, self.media_title(show, episodes[index]), paused=paused)
+            self.session.load(links, self.media_title(show, episodes[index]), paused=paused, whisper_only=media_sources.kind_of(show) != 'youtube')
             self.stop_button.set_sensitive(True)
         except OSError as error:
             self.error(str(error))
@@ -234,6 +272,8 @@ class Engine(app.Browser):
             self.play_token += 1
             failed = event.get('error') or event.get('code', 0) != 0
             self.play_status.set_text('Player closed unexpectedly. Try playing again.' if failed else 'Playback stopped.')
+            self.next_episode_paused = self.episode_ended = self.next_requested = False
+            self.publish_next_episode()
             send(dict(event='paused', value=False))
             self.stop_button.set_sensitive(False)
             return False
@@ -265,6 +305,8 @@ class Engine(app.Browser):
                 send(dict(event='subtitle-state', off=not self.subtitles_visible or self.subtitle_sid in (False, None, 'no'), whisper=self.whisper_selected and self.subtitles_visible))
             if event.get('name') == 'pause':
                 self.paused = bool(event.get('data'))
+                if not self.paused:
+                    self.next_episode_paused = False
                 send(dict(event='paused', value=self.paused))
                 if self.history.get(show['id'], {}).get('episode') == episodes[index]:
                     self.play_status.set_text(('Paused' if self.paused else 'Playing') + ' · ' + self.media_title(show, episodes[index]))
@@ -277,6 +319,9 @@ class Engine(app.Browser):
             if self.captions is not None:
                 self.captions.update_position(self.position, self.duration)
         elif app.completed_episode(event):
+            if self.episode_ended or self.next_requested:
+                return False
+            self.episode_ended = True
             self.file_loaded = False
             self.close_captions()
             if show['id'] in self.history:
@@ -284,6 +329,7 @@ class Engine(app.Browser):
                 self.history[show['id']]['position'] = 0
                 app.save_json(app.STATE / 'history.json', self.history)
             if self.settings['auto_next'] and index + 1 < len(episodes):
+                self.next_requested = True
                 self.start_episode(show, episodes, index + 1, token, automatic=True)
             else:
                 self.play_status.set_text('Playback finished.' if index + 1 == len(episodes) else 'Episode finished. Loading the next episode is off.')
@@ -291,13 +337,16 @@ class Engine(app.Browser):
             self.save_progress(force=True)
             self.file_loaded = False
             self.close_captions()
+            self.next_requested = self.next_episode_paused = self.episode_ended = False
             self.play_status.set_text('Playback stopped.')
         elif kind == 'end-file' and event.get('reason') == 'error':
             self.file_loaded = False
+            self.next_requested = self.next_episode_paused = self.episode_ended = False
             self.close_captions()
             self.play_status.set_text('Playback failed. Loading the next episode stopped. See ~/.local/state/anime-streamer/vlc.log')
         elif kind in ('command-error', 'connection-error'):
             self.play_status.set_text('Player error: ' + event.get('error', 'Unknown error'))
+        self.publish_next_episode()
         return False
 
     def stop(self, *_):
@@ -312,6 +361,8 @@ class Engine(app.Browser):
         self.player = None
         self.context = None
         self.paused = False
+        self.next_requested = self.next_episode_paused = self.episode_ended = False
+        self.publish_next_episode()
         send(dict(event='paused', value=False))
         self.play_status.set_text('Playback stopped.')
         self.stop_button.set_sensitive(False)
@@ -437,6 +488,9 @@ def dispatch(request):
         elif action == 'stop':
             engine.stop()
             result(True)
+        elif action == 'next_episode':
+            engine.skip_to_next()
+            result(True)
         elif action == 'resume':
             if engine.session is not None:
                 engine.session.command(['set_property', 'pause', False])
@@ -478,7 +532,7 @@ def dispatch(request):
                 engine.background(save_connection, result, fail)
         elif action == 'settings':
             new = request.get('settings', {})
-            for key in ['auto_next', 'fullscreen', 'live_subtitles']:
+            for key in ['auto_next', 'fullscreen', 'live_subtitles', 'audio_normalization']:
                 if key in new:
                     engine.settings[key] = bool(new[key])
             for key, values in [('quality', ['best', '1080p', '720p', '480p', 'worst']), ('mode', ['sub', 'dub'])]:

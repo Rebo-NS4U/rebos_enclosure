@@ -94,6 +94,31 @@ Item {
         currentPage?.input.forceActiveFocus();
     }
 
+    function approvePendingCommand() {
+        const session = Ai.activeSession;
+        if (!session) return false;
+        for (let i = 0; i < session.currentChat.length; i++) {
+            const message = session.currentChat[i];
+            if (message.functionPending === true
+                    && session.pendingPermissions[String(message.permissionRequestId)]) {
+                session.approveCommand(i);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Window-scoped so approval works from the composer or a focused button.
+    Shortcut {
+        sequences: ["Return", "Enter"]
+        context: Qt.WindowShortcut
+        autoRepeat: false
+        enabled: root.active && root.windowFocused
+            && !!Ai.activeSession
+            && Object.keys(Ai.activeSession.pendingPermissions).length > 0
+        onActivated: root.approvePendingCommand()
+    }
+
     function sendCurrentMessage() {
         const mainChatArea = currentPage;
         if (!mainChatArea) return;
@@ -1486,125 +1511,146 @@ Item {
                                                             }
 
                                                             // ── Pending / active tool call on assistant message ──
-                                                            ColumnLayout {
+                                                            Pane {
                                                                 visible: modelData.functionCall !== undefined && !messageDelegate.isToolResult
                                                                 Layout.fillWidth: true
-                                                                spacing: 6
+                                                                padding: 12
+                                                                background: Rectangle {
+                                                                    radius: Styling.radius(8)
+                                                                    color: Qt.alpha(Colors.primary, modelData.functionPending === true ? 0.07 : 0.03)
+                                                                    border.width: 1
+                                                                    border.color: Qt.alpha(Colors.primary, modelData.functionPending === true ? 0.22 : 0.08)
+                                                                }
+                                                                contentItem: ColumnLayout {
+                                                                    id: toolApprovalContent
+                                                                    spacing: 10
 
-                                                                readonly property string toolName: modelData.functionCall ? (modelData.functionCall.name || "") : ""
-                                                                readonly property string toolDetail: {
-                                                                    if (!modelData.functionCall || !modelData.functionCall.args)
-                                                                        return "";
-                                                                    let a = modelData.functionCall.args;
-                                                                    if (a.command)
-                                                                        return a.command;
-                                                                    try {
-                                                                        return JSON.stringify(a);
-                                                                    } catch (e) {
-                                                                        return String(a);
+                                                                    readonly property string toolName: modelData.functionCall ? (modelData.functionCall.name || "") : ""
+                                                                    readonly property string toolDetail: {
+                                                                        if (!modelData.functionCall || !modelData.functionCall.args)
+                                                                            return "";
+                                                                        let a = modelData.functionCall.args;
+                                                                        if (a.command)
+                                                                            return a.command;
+                                                                        try {
+                                                                            return JSON.stringify(a);
+                                                                        } catch (e) {
+                                                                            return String(a);
+                                                                        }
                                                                     }
-                                                                }
-                                                                readonly property string toolTitle: {
-                                                                    if (modelData.functionPending === true)
-                                                                        return "Approve tool?";
-                                                                    if (modelData.functionApproved === true)
-                                                                        return modelData.toolStatus === "completed" ? "Tool completed" : "Tool approved";
-                                                                    if (modelData.functionApproved === false)
-                                                                        return "Tool rejected";
-                                                                    return toolName || "Tool";
-                                                                }
-
-                                                                Rectangle {
-                                                                    Layout.fillWidth: true
-                                                                    height: 1
-                                                                    color: Colors.outline
-                                                                    opacity: 0.2
-                                                                    visible: (modelData.content || "").length > 0
-                                                                }
-
-                                                                RowLayout {
-                                                                    Layout.fillWidth: true
-                                                                    spacing: 8
-
-                                                                    StyledText {
-                                                                        text: Icons.terminal
-                                                                        font.family: Icons.font
-                                                                        font.pixelSize: Styling.fontSize(0)
-                                                                        color: Styling.srItem("overprimary")
+                                                                    readonly property string toolTitle: {
+                                                                        if (modelData.functionPending === true)
+                                                                            return "Approval needed";
+                                                                        if (modelData.functionApproved === true)
+                                                                            return modelData.toolStatus === "completed" ? "Tool completed" : "Tool approved";
+                                                                        if (modelData.functionApproved === false)
+                                                                            return "Tool rejected";
+                                                                        return toolName || "Tool";
                                                                     }
 
-                                                                    ColumnLayout {
+                                                                    Rectangle {
                                                                         Layout.fillWidth: true
-                                                                        spacing: 1
-
-                                                                        StyledText {
-                                                                            renderType: Text.NativeRendering
-                                                                            Layout.fillWidth: true
-                                                                            text: parent.parent.parent.toolTitle
-                                                                            color: Colors.overSurface
-                                                                            font.family: Config.theme.font
-                                                                            font.pixelSize: Styling.fontSize(-1)
-                                                                            font.weight: Font.Medium
-                                                                            elide: Text.ElideRight
-                                                                        }
-
-                                                                        StyledText {
-                                                                            renderType: Text.NativeRendering
-                                                                            Layout.fillWidth: true
-                                                                            visible: parent.parent.parent.toolDetail.length > 0
-                                                                            text: parent.parent.parent.toolDetail
-                                                                            color: Colors.outline
-                                                                            font.family: "Monospace"
-                                                                            font.pixelSize: Styling.fontSize(-3)
-                                                                            elide: Text.ElideRight
-                                                                        }
+                                                                        height: 1
+                                                                        color: Colors.outline
+                                                                        opacity: 0.2
+                                                                        visible: (modelData.content || "").length > 0
                                                                     }
-                                                                }
 
-                                                                RowLayout {
-                                                                    visible: modelData.functionPending === true
-                                                                    Layout.alignment: Qt.AlignRight
-                                                                    spacing: 8
+                                                                    RowLayout {
+                                                                        Layout.fillWidth: true
+                                                                        spacing: 8
 
-                                                                    Button {
-                                                                        text: "Reject"
-                                                                        highlighted: true
-                                                                        flat: true
-                                                                        onClicked: mainChatArea.session.rejectCommand(index)
-
-                                                                        background: StyledRect {
-                                                                            variant: "error"
-                                                                            opacity: parent.hovered ? 0.8 : 0.5
-                                                                            radius: Styling.radius(4)
+                                                                        StyledText {
+                                                                            text: Icons.terminal
+                                                                            font.family: Icons.font
+                                                                            font.pixelSize: Styling.fontSize(0)
+                                                                            color: Colors.primary
                                                                         }
 
-                                                                        contentItem: StyledText {
-                                                                            text: parent.text
-                                                                            color: Colors.overError
-                                                                            font.family: Config.theme.font
-                                                                            horizontalAlignment: Text.AlignHCenter
-                                                                            verticalAlignment: Text.AlignVCenter
+                                                                        ColumnLayout {
+                                                                            Layout.fillWidth: true
+                                                                            spacing: 1
+
+                                                                            StyledText {
+                                                                                renderType: Text.NativeRendering
+                                                                                Layout.fillWidth: true
+                                                                                text: toolApprovalContent.toolTitle
+                                                                                color: Colors.overSurface
+                                                                                font.family: Config.theme.font
+                                                                                font.pixelSize: Styling.fontSize(0)
+                                                                                font.weight: Font.DemiBold
+                                                                                elide: Text.ElideRight
+                                                                            }
+
+                                                                            StyledText {
+                                                                                renderType: Text.NativeRendering
+                                                                                Layout.fillWidth: true
+                                                                                visible: toolApprovalContent.toolDetail.length > 0
+                                                                                text: toolApprovalContent.toolDetail
+                                                                                color: Colors.outline
+                                                                                font.family: "Monospace"
+                                                                                font.pixelSize: Styling.fontSize(-2)
+                                                                                wrapMode: Text.WrapAnywhere
+                                                                                maximumLineCount: 5
+                                                                                elide: Text.ElideRight
+                                                                            }
                                                                         }
                                                                     }
 
-                                                                    Button {
-                                                                        text: "Approve"
-                                                                        highlighted: true
-                                                                        flat: true
-                                                                        onClicked: mainChatArea.session.approveCommand(index)
+                                                                    RowLayout {
+                                                                        visible: modelData.functionPending === true
+                                                                        Layout.alignment: Qt.AlignRight
+                                                                        spacing: 8
 
-                                                                        background: StyledRect {
-                                                                            variant: "primary"
-                                                                            opacity: parent.hovered ? 1 : 0.8
-                                                                            radius: Styling.radius(4)
+                                                                        Button {
+                                                                            text: "Reject"
+                                                                            implicitHeight: 36
+                                                                            leftPadding: 16
+                                                                            rightPadding: 16
+                                                                            highlighted: true
+                                                                            flat: true
+                                                                            onClicked: mainChatArea.session.rejectCommand(index)
+
+                                                                            background: Rectangle {
+                                                                                color: Qt.alpha(Colors.error, parent.down ? 0.18 : parent.hovered ? 0.12 : 0.05)
+                                                                                border.width: 1
+                                                                                border.color: Qt.alpha(Colors.error, 0.22)
+                                                                                radius: Styling.radius(6)
+                                                                            }
+
+                                                                            contentItem: StyledText {
+                                                                                text: parent.text
+                                                                                color: Colors.error
+                                                                                font.family: Config.theme.font
+                                                                                horizontalAlignment: Text.AlignHCenter
+                                                                                verticalAlignment: Text.AlignVCenter
+                                                                            }
                                                                         }
 
-                                                                        contentItem: StyledText {
-                                                                            text: parent.text
-                                                                            color: Colors.overPrimary
-                                                                            font.family: Config.theme.font
-                                                                            horizontalAlignment: Text.AlignHCenter
-                                                                            verticalAlignment: Text.AlignVCenter
+                                                                        Button {
+                                                                            text: "Approve  ↵"
+                                                                            implicitHeight: 36
+                                                                            leftPadding: 18
+                                                                            rightPadding: 18
+                                                                            ToolTip.visible: hovered
+                                                                            ToolTip.text: "Press Enter to approve"
+                                                                            highlighted: true
+                                                                            flat: true
+                                                                            onClicked: mainChatArea.session.approveCommand(index)
+
+                                                                            background: StyledRect {
+                                                                                variant: "primary"
+                                                                                opacity: parent.down ? 0.75 : parent.hovered ? 1 : 0.9
+                                                                                radius: Styling.radius(6)
+                                                                            }
+
+                                                                            contentItem: StyledText {
+                                                                                text: parent.text
+                                                                                color: Colors.overPrimary
+                                                                                font.family: Config.theme.font
+                                                                                horizontalAlignment: Text.AlignHCenter
+                                                                                verticalAlignment: Text.AlignVCenter
+                                                                            }
                                                                         }
                                                                     }
                                                                 }
@@ -1975,7 +2021,21 @@ Item {
 
                                             background: null
 
+                                            Keys.priority: Keys.BeforeItem
+                                            Keys.onShortcutOverride: event => {
+                                                if ((event.key === Qt.Key_Return || event.key === Qt.Key_Enter)
+                                                        && event.modifiers === Qt.NoModifier
+                                                        && Object.keys(mainChatArea.session.pendingPermissions).length > 0)
+                                                    event.accepted = true;
+                                            }
                                             Keys.onPressed: event => {
+                                                if ((event.key === Qt.Key_Return || event.key === Qt.Key_Enter)
+                                                        && event.modifiers === Qt.NoModifier
+                                                        && !event.isAutoRepeat
+                                                        && root.approvePendingCommand()) {
+                                                    event.accepted = true;
+                                                    return;
+                                                }
                                                 if (suggestionsPopup.visible) {
                                                     if (event.key === Qt.Key_Up) {
                                                         suggestionsPopup.selectPrevious();

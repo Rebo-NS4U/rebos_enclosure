@@ -25,7 +25,7 @@ CACHE = ROOT / '.cache/anime-streamer'
 CONFIG = ROOT / '.config/anime-streamer/settings.json'
 POOL = concurrent.futures.ThreadPoolExecutor(max_workers=8)
 BASE = 'https://hianime.at'
-DEFAULTS = dict(auto_next=True, quality='best', mode='sub', fullscreen=False, volume=80, live_subtitles=True, caption_delay=0)
+DEFAULTS = dict(auto_next=True, quality='best', mode='sub', fullscreen=False, volume=80, audio_normalization=True, live_subtitles=True, caption_delay=0)
 
 
 def read_json(path, default):
@@ -398,6 +398,8 @@ class Browser(Gtk.Application):
         sockdir = tempfile.TemporaryDirectory(prefix='anime-mpv-')
         sockpath = sockdir.name + '/ipc'
         args = ['mpv', '--no-terminal', '--idle=no', '--force-window=yes', '--save-position-on-quit=yes', f'--volume={settings["volume"]}', f'--input-ipc-server={sockpath}', f'--title={show["title"]} · Episode {ep}', '--referrer=' + referer]
+        if settings.get('audio_normalization', True):
+            args.append('--af=lavfi=[acompressor=threshold=0.0630957:ratio=8:attack=5:release=250:makeup=1.99526]')
         if settings['fullscreen']:
             args.append('--fullscreen')
         if subtitles:
@@ -496,6 +498,7 @@ class Browser(Gtk.Application):
             box.append(row)
         toggle('Automatically play the next episode', 'auto_next')
         toggle('Start videos fullscreen', 'fullscreen')
+        toggle('Normalize audio (reduce loud peaks)', 'audio_normalization')
         for title, key, values in [('Quality', 'quality', ['best', '1080p', '720p', '480p', 'worst']), ('Audio', 'mode', ['sub', 'dub'])]:
             row = Gtk.Box(spacing=16)
             row.append(Gtk.Label(label=title, hexpand=True, xalign=0))
