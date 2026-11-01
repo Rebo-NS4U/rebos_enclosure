@@ -1,0 +1,25 @@
+skip_selection = true
+
+[background]
+path = "/var/lib/rebos-greeter/theme/background.png"
+fit = "Cover"
+
+[GTK]
+application_prefer_dark_theme = true
+theme_name = "Adwaita"
+icon_theme_name = "Adwaita"
+cursor_theme_name = "GoogleDot-Black"
+font_name = "JetBrains Mono 14"
+
+[appearance]
+greeting_msg = "Welcome back"
+
+[widget.clock]
+format = "<span font_desc='Sans 52' weight='light'>%H:%M</span>\n<span font_desc='Sans 12' alpha='85%%'>%A, %e %B</span>"
+resolution = "1s"
+timezone = "America/Phoenix"
+locale = "en_US"
+
+[commands]
+reboot = ["systemctl", "reboot"]
+poweroff = ["systemctl", "poweroff"]

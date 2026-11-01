@@ -199,7 +199,7 @@ def build_plan(options, hardware):
         if not options.no_aur:
             aur += GROUPS[group]['aur']
     if options.login == 'keep':
-        repo = [p for p in repo if p != 'ly']
+        repo = [p for p in repo if p not in ('greetd', 'greetd-regreet', 'cage')]
     if options.no_bluetooth:
         repo = [p for p in repo if p not in ('bluez', 'bluez-utils', 'blueman')]
     if options.no_power:
@@ -246,7 +246,7 @@ def validate_plan(plan):
     for key in ('hybrid', 'early_kms', 'bluetooth', 'power', 'files_only'):
         if type(plan.get(key)) is not bool:
             raise ValueError(f'Invalid setting: {key}')
-    if plan.get('login') not in ('ly', 'keep') or plan.get('network') not in ('networkmanager', 'keep'):
+    if plan.get('login') not in ('regreet', 'keep') or plan.get('network') not in ('networkmanager', 'keep'):
         raise ValueError('Invalid service choices')
     for key in ('packages', 'aur_packages', 'kernel_headers'):
         if not isinstance(plan.get(key), list) or any(not isinstance(p, str) or not PACKAGE.fullmatch(p) for p in plan[key]):
@@ -401,7 +401,7 @@ def wizard(options, hardware):
                                                ('amd', 'AMD microcode'), ('intel', 'Intel microcode')], options.microcode)
     options.monitor_config = monitor_wizard(hardware)
     if not options.files_only:
-        options.login = choice('Login manager', [('ly', 'Install/configure animated Ly on tty2'), ('keep', 'Keep current login setup')], options.login)
+        options.login = choice('Login manager', [('regreet', 'Install/configure themed ReGreet on tty1'), ('keep', 'Keep current login setup')], options.login)
         options.network = choice('Network setup', [('networkmanager', 'Enable NetworkManager at next boot'), ('keep', 'Keep existing network services')], options.network)
         options.no_bluetooth = not yes('Install/configure Bluetooth?', not options.no_bluetooth)
         options.no_power = not yes('Install/configure power profiles?', not options.no_power)
@@ -429,7 +429,7 @@ def main():
     p.add_argument('--microcode', choices=('auto', 'keep', 'amd', 'intel'), default='auto')
     p.add_argument('--kernel-headers')
     p.add_argument('--monitors', type=Path)
-    p.add_argument('--login', choices=('ly', 'keep'), default='ly')
+    p.add_argument('--login', choices=('regreet', 'keep'), default='regreet')
     p.add_argument('--network', choices=('networkmanager', 'keep'), default='networkmanager')
     p.add_argument('--no-aur', action='store_true')
     p.add_argument('--no-bluetooth', action='store_true')

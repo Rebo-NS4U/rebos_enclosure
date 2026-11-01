@@ -96,9 +96,9 @@ if ((!files_only)); then
     [[ -f /etc/arch-release && $(uname -m) == x86_64 ]] || die 'Requires installed x86_64 Arch Linux'
     [[ ! -d /run/archiso ]] || die 'Boot the installed system first; do not run inside the live ISO'
     command -v sudo >/dev/null || die 'Configure sudo for your normal user first'
-    if [[ $login == ly && -L /etc/systemd/system/display-manager.service ]]; then
+    if [[ $login == regreet && -L /etc/systemd/system/display-manager.service ]]; then
         active_manager=$(basename "$(readlink -f /etc/systemd/system/display-manager.service)")
-        [[ $active_manager == ly@*.service || $active_manager == ly.service ]] || die "Existing display manager: $active_manager. Choose keep in the menu, or use --no-login."
+        [[ $active_manager == greetd.service || $active_manager == ly@*.service || $active_manager == ly.service ]] || die "Existing display manager: $active_manager. Choose keep in the menu, or use --no-login."
     fi
 fi
 if ((!assume_yes)); then
@@ -133,6 +133,10 @@ if ((!files_only)); then
 fi
 for dependency in cc fish fc-cache; do command -v "$dependency" >/dev/null || die "Missing dependency: $dependency"; done
 work_dir=$(mktemp -d)
+if ((!files_only)) && [[ $login == regreet ]]; then
+    cc -O2 -shared -fPIC "$ROOT/payload/system/rebos-greeter/cage-cursor.c" -ldl -o "$work_dir/cage-cursor.so"
+    cc -O2 -shared -fPIC "$ROOT/payload/system/rebos-greeter/layout.c" $(pkg-config --cflags --libs gtk4) -o "$work_dir/layout.so"
+fi
 cc -O2 "$ROOT/payload/home/.local/share/cbonsai/cbonsai.c" -lpanelw -lncursesw -o "$work_dir/cbonsai"
 # Validate the exact customized Niri configuration before changing user files.
 python3 - "$ROOT/payload/home/.config/niri" "$work_dir/niri" <<'PY'
@@ -170,12 +174,31 @@ if ((!files_only)); then
         fi
         if command -v mkinitcpio >/dev/null; then sudo mkinitcpio -P; fi
     fi
-    if [[ $login == ly ]]; then
-        if [[ -d /etc/ly ]]; then sudo cp -a /etc/ly "$system_backup/ly"; fi
-        sudo install -Dm644 "$ROOT/payload/system/ly/config.ini" /etc/ly/config.ini
-        sudo install -Dm644 "$ROOT/payload/system/ly/blackhole-smooth-240x67.dur" /etc/ly/blackhole-smooth-240x67.dur
-        sudo systemctl disable getty@tty2.service
-        sudo systemctl enable ly@tty2.service
+    if [[ $login == regreet ]]; then
+        for path in /etc/greetd /usr/local/lib/rebos-greeter /var/lib/rebos-greeter/theme /usr/share/icons/GoogleDot-Black; do
+            backup_system_file "$path"
+        done
+        for name in config.toml regreet.toml; do
+            sudo install -Dm644 "$ROOT/payload/system/greetd/$name" "/etc/greetd/$name"
+        done
+        for name in layout cage-cursor; do
+            sudo install -Dm644 "$ROOT/payload/system/rebos-greeter/$name.c" "/usr/local/lib/rebos-greeter/$name.c"
+            sudo install -Dm755 "$work_dir/$name.so" "/usr/local/lib/rebos-greeter/$name.so"
+        done
+        sudo install -d -m755 /var/lib/rebos-greeter/theme /usr/share/icons/GoogleDot-Black
+        for name in regreet.css background.png glass-texture.png; do
+            sudo install -m644 "$ROOT/payload/system/rebos-greeter/theme/$name" "/var/lib/rebos-greeter/theme/$name"
+        done
+        sudo cp -r "$ROOT/payload/home/.local/share/icons/GoogleDot-Black/." /usr/share/icons/GoogleDot-Black/
+        sudo chown -R root:root /usr/share/icons/GoogleDot-Black
+        # Change enablement for the next boot; never stop the running login/session.
+        mapfile -t ly_units < <(systemctl list-unit-files 'ly*' --state=enabled --no-legend | awk '{print $1}')
+        for unit in "${ly_units[@]}"; do
+            sudo systemctl disable "$unit"
+            if [[ $unit == ly@tty2.service ]]; then sudo systemctl enable getty@tty2.service; fi
+        done
+        sudo systemctl disable getty@tty1.service
+        sudo systemctl enable greetd.service
     fi
     if [[ $network == networkmanager ]]; then
         sudo systemctl disable systemd-networkd.service systemd-networkd.socket systemd-networkd-wait-online.service iwd.service dhcpcd.service 2>/dev/null || true

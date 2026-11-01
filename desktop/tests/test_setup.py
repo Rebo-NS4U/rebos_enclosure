@@ -24,7 +24,7 @@ def hardware(**kwargs):
 
 def options(**kwargs):
     result = dict(profile='full', groups=None, graphics='auto', microcode='auto', no_aur=False,
-                  no_bluetooth=False, no_power=False, login='ly', network='networkmanager',
+                  no_bluetooth=False, no_power=False, login='regreet', network='networkmanager',
                   kernel_headers=None, early_kms=False, hybrid=None, files_only=False,
                   monitor_config={'layout': 'auto', 'outputs': []})
     result.update(kwargs)
@@ -32,6 +32,13 @@ def options(**kwargs):
 
 
 class SetupTests(unittest.TestCase):
+    def test_default_login_installs_regreet_instead_of_ly(self):
+        plan = setup.build_plan(options(), hardware())
+        self.assertEqual(plan['login'], 'regreet')
+        self.assertTrue({'greetd', 'greetd-regreet', 'cage'} <= set(plan['packages']))
+        self.assertNotIn('ly', plan['packages'])
+        setup.validate_plan(plan)
+
     def test_groups_cover_previous_full_app_selection(self):
         for category, filename in [('repo', 'apps.txt'), ('aur', 'aur.txt')]:
             selected = {p for group in setup.GROUPS.values() for p in group[category]}
@@ -50,7 +57,7 @@ class SetupTests(unittest.TestCase):
     def test_service_and_microcode_choices_change_packages(self):
         plan = setup.build_plan(options(login='keep', no_bluetooth=True, no_power=True,
                                         microcode='keep', graphics='keep'), hardware())
-        self.assertFalse({'ly', 'blueman', 'bluez', 'power-profiles-daemon', 'amd-ucode', 'vulkan-radeon'} & set(plan['packages']))
+        self.assertFalse({'greetd', 'greetd-regreet', 'cage', 'ly', 'blueman', 'bluez', 'power-profiles-daemon', 'amd-ucode', 'vulkan-radeon'} & set(plan['packages']))
         self.assertIn('mesa', plan['packages'])
 
     def test_nvidia_open_includes_headers_for_each_installed_kernel(self):

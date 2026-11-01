@@ -1,0 +1,6 @@
+[terminal]
+vt = 1
+
+[default_session]
+command = "env XCURSOR_THEME=GoogleDot-Black XCURSOR_SIZE=20 GTK_USE_PORTAL=0 GDK_DEBUG=no-portals dbus-run-session env LD_PRELOAD=/usr/local/lib/rebos-greeter/cage-cursor.so cage -s -mlast -d -- env LD_PRELOAD=/usr/local/lib/rebos-greeter/layout.so regreet --style /var/lib/rebos-greeter/theme/regreet.css"
+user = "greeter"

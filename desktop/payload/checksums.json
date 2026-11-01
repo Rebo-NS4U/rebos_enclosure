@@ -1006,6 +1006,11 @@
   "home/code/rebos-assistant/shell.qml": "e6cfc633ab0b0f65de51a940ed200af142099bb7eb462ab6ea628c67d730ba54",
   "home/code/rebos-assistant/version": "1c60df040a80b6d2e3f56442b17d127d8620cd773873e6e1353362f989b1deca",
   "manifest.json": "fbd954b812be89f5efd2fd60a7d663c6508f96caf24ef0623f9ad48d4ca004da",
-  "system/ly/blackhole-smooth-240x67.dur": "c28dc5ccfb67802b20fdb4520d360742a2a7329e2f63e06d9b5e2f6a42444415",
-  "system/ly/config.ini": "8740ae74307ab4205d17f028711c66ec1c8bb6ccce31c4081872385aed398c18"
+  "system/greetd/config.toml": "6390cca0856135f2afaf1fb2754b29be4070b130aee8ea4317710690985d4a91",
+  "system/greetd/regreet.toml": "073115b21712c02c438b238b0db2ec749b81b4fd25b87be556cf5df0f51f16fb",
+  "system/rebos-greeter/cage-cursor.c": "8b8ffd324e065750f3a8ec5726de6551334dfb407d5a6aca92c10a8f2b770ba4",
+  "system/rebos-greeter/layout.c": "e03934c76aa561116eec76ec63d82dc89291e80b41591e1813f7422296c8b986",
+  "system/rebos-greeter/theme/background.png": "744fb3fe3ed6ad6f90eb6fe7a676a4ed393e697b73658d071ff11910359ee447",
+  "system/rebos-greeter/theme/glass-texture.png": "068bd1e571910aa23296c688523b5e5a8c2333a480fb281eb1be732ed76ca7cf",
+  "system/rebos-greeter/theme/regreet.css": "bb38fc2fa51251a3469cb21a1b7d8b0da3ee129ce05695bb30f447803e070ac5"
 }

@@ -14,16 +14,30 @@ name=Path(sys.argv[0]).name
 args=sys.argv[1:]
 entry={'command':name,'args':args}
 if name=='sudo' and args and args[0]=='install':
-    entry['content']=Path(args[-2]).read_text()
+    source=Path(args[-2])
+    if source.is_file():
+        entry['size']=source.stat().st_size
+        try:
+            entry['content']=source.read_text()
+        except UnicodeError:
+            pass
 with open(os.environ['INSTALL_COMMAND_LOG'],'a') as stream:
     stream.write(json.dumps(entry)+'\\n')
 if name=='pacman' and args==['-Qq']:
     print('linux')
+if name=='systemctl' and args==['list-unit-files','ly*','--state=enabled','--no-legend']:
+    print('ly@tty2.service enabled enabled')
 '''
 
 
 class InstallFlowTests(unittest.TestCase):
     def test_nvidia_setup_uses_selected_plan_without_touching_real_system(self):
+        self.run_install(login=False)
+
+    def test_regreet_installs_assets_and_migrates_ly_without_restarting_services(self):
+        self.run_install(login=True)
+
+    def run_install(self, login):
         with tempfile.TemporaryDirectory(prefix='rebos-flow-test-') as tmp:
             base = Path(tmp)
             home = base / 'home'
@@ -42,9 +56,11 @@ class InstallFlowTests(unittest.TestCase):
                 env.pop(key, None)
             args = ['bash', str(ROOT / 'install.sh'), '--yes', '--groups', 'none',
                     '--graphics', 'nvidia-open', '--kernel-headers', 'linux-headers',
-                    '--hybrid', '--early-kms', '--no-login', '--keep-network',
+                    '--hybrid', '--early-kms', '--keep-network',
                     '--no-bluetooth', '--no-power', '--monitors',
                     str(ROOT / 'desktop/examples/monitors.json')]
+            if not login:
+                args.append('--no-login')
             result = subprocess.run(args, env=env, text=True, capture_output=True, timeout=60)
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             self.assertEqual((home / '.config/quickshell/version').read_text().strip(),
@@ -74,7 +90,31 @@ class InstallFlowTests(unittest.TestCase):
             self.assertEqual(copied['/etc/mkinitcpio.conf.d/90-rebos-nvidia.conf'],
                              'MODULES+=(nvidia nvidia_modeset nvidia_uvm nvidia_drm)\n')
             self.assertTrue(any(e['command'] == 'sudo' and e['args'] == ['mkinitcpio', '-P'] for e in entries))
-            self.assertFalse(any(e['command'] == 'sudo' and 'systemctl' in e['args'] for e in entries))
+            service_calls = [e['args'] for e in entries
+                             if e['command'] == 'sudo' and e['args'][0] == 'systemctl']
+            if login:
+                self.assertEqual(service_calls, [
+                    ['systemctl', 'disable', 'ly@tty2.service'],
+                    ['systemctl', 'enable', 'getty@tty2.service'],
+                    ['systemctl', 'disable', 'getty@tty1.service'],
+                    ['systemctl', 'enable', 'greetd.service']])
+                for name in ('config.toml', 'regreet.toml'):
+                    self.assertEqual(copied['/etc/greetd/' + name],
+                                     (ROOT / 'desktop/payload/system/greetd' / name).read_text())
+                for name in ('layout', 'cage-cursor'):
+                    self.assertTrue(any(e['args'] and e['args'][-1] == '/usr/local/lib/rebos-greeter/' + name + '.so'
+                                        and e.get('size', 0) > 0 for e in entries))
+                for name in ('regreet.css', 'background.png', 'glass-texture.png'):
+                    self.assertTrue(any(e['args'] and e['args'][-1] == '/var/lib/rebos-greeter/theme/' + name
+                                        and e.get('size', 0) > 0 for e in entries))
+                package_call = next(e['args'] for e in entries if e['command'] == 'sudo'
+                                    and e['args'][:2] == ['pacman', '-S'])
+                self.assertTrue({'greetd', 'greetd-regreet', 'cage'} <= set(package_call))
+                self.assertNotIn('ly', package_call)
+            else:
+                self.assertEqual(service_calls, [])
+                self.assertFalse(any(e['args'][-1].startswith(('/etc/greetd/', '/usr/local/lib/rebos-greeter/',
+                                                             '/var/lib/rebos-greeter/')) for e in entries if e['args']))
             launcher = home / '.local/bin/rebos-prime-run'
             self.assertTrue(launcher.exists())
             subprocess.run(['bash', '-n', str(launcher)], check=True)

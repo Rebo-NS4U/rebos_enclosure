@@ -35,7 +35,7 @@ bash install.sh --keep-network       # retain your existing network service setu
 bash install.sh --files-only         # copy settings only; dependencies must already exist
 ```
 
-Reboot after installation. Select **Niri** in Ly, log in and open a terminal with **Super+Return**. A manually started session should use `niri-session` from a TTY. The packaged session exports the environment for portals and session services. See [Niri's session documentation](https://github.com/niri-wm/niri/wiki/Getting-Started). Ly uses tty2, with its corresponding getty disabled per the [Ly service setup](https://wiki.archlinux.org/title/Ly).
+Reboot after installation. Select **Niri** in ReGreet, log in and open a terminal with **Super+Return**. A manually started session should use `niri-session` from a TTY. The packaged session exports the environment for portals and session services. See [Niri's session documentation](https://github.com/niri-wm/niri/wiki/Getting-Started). ReGreet runs under Cage through greetd on tty1, with its corresponding getty disabled. Enabled Ly units are disabled for the next boot; no running session is stopped.
 
 ## Interactive configuration
 
@@ -57,7 +57,7 @@ Early KMS is optional and currently supports mkinitcpio. It adds an additive NVI
 - Kitty/Fish prompt and shortcuts, wallpaper-colored bonsai greeting, cbonsai source and license, bundled terminal/shell fonts, GoogleDot cursor and Papirus icons.
 - Custom Neovim IDE configuration and plugin lockfile. Plugins and language servers download separately through Neovim on first use; open `:IDEHelp` for instructions.
 - Original rice wallpapers, 149 prepared 1920×1200 Urban/Nature wallpapers, and the current background. Source metadata is retained in the wallpaper folders; the collection is from <https://github.com/dharmx/walls>.
-- Animated Ly login configuration, NetworkManager, Bluetooth, PipeWire/WirePlumber, power profiles, authentication agent, portals, screenshots, OCR and clipboard history.
+- Themed ReGreet login configuration, background, layout extension and GoogleDot cursor, NetworkManager, Bluetooth, PipeWire/WirePlumber, power profiles, authentication agent, portals, screenshots, OCR and clipboard history.
 - Full-profile apps include Discord, Spotify Launcher, OBS, Obsidian, Firefox, image viewer, developer tools, and the optional AUR apps listed above.
 
 Base packages and optional application groups are editable in `desktop/packages/core.txt` and `desktop/packages/groups.json`. Driver packages are selected by the installer. A full system upgrade precedes package installation. The installer uses configured repositories and does not add Chaotic-AUR, replace the kernel, or copy this computer's GPU driver settings. Intel/AMD microcode and graphics userspace packages are detected from the destination. **NVIDIA:** the setup menu offers open DKMS and legacy 580 DKMS branches, matching kernel headers, hybrid offload and optional mkinitcpio early KMS. Choose the branch appropriate to the GPU; the installer does not guess NVIDIA generations or remove conflicting installed driver families automatically. Consult [Arch's NVIDIA guide](https://wiki.archlinux.org/title/NVIDIA). Existing network service enablement changes take effect on reboot so installation does not disconnect the active link. If using a custom network stack, use `--keep-network`.
@@ -152,7 +152,7 @@ To restore an installation, use the exact backup path printed by the installer:
 python3 desktop/scripts/deploy.py --restore "$HOME/.local/state/rebos-desktop/backups/TIMESTAMP"
 ```
 
-Restoring replaces those installed entries, including edits made to them since installation. It does not uninstall packages or undo system service changes. Original Ly files and a before-install unit enablement listing are saved under `/var/backups/rebos-desktop/TIMESTAMP-PID/`. To return to TTY login, disable `ly@tty2.service` and enable `getty@tty2.service`; use the saved listing to restore your former network service choices. No service is restarted during the installer.
+Restoring replaces those installed entries, including edits made to them since installation. It does not uninstall packages or undo system service changes. Original greetd configuration, greeter assets, system cursor theme and a before-install unit enablement listing are saved under `/var/backups/rebos-desktop/TIMESTAMP-PID/`. To return to TTY login, disable `greetd.service` and enable `getty@tty1.service`; use the saved listing to restore your former network service choices. The bundled GTK layout and Cage cursor extensions are compiled locally; their sources and theme assets are installed with system-readable permissions. No service is restarted during the installer.
 
 ## Maintainer checks
 

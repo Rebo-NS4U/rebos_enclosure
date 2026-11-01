@@ -1,0 +1,163 @@
+/* Generated from the active desktop theme. */
+@define-color theme_bg_color #1c1a21;
+@define-color theme_fg_color #e6e0e9;
+@define-color theme_base_color #1c1a21;
+@define-color theme_text_color #e6e0e9;
+@define-color theme_selected_bg_color #d0bdfe;
+@define-color theme_selected_fg_color #36265d;
+@define-color accent_bg_color #d0bdfe;
+@define-color accent_fg_color #36265d;
+* { font-family: "JetBrains Mono"; font-size: 14px; }
+window { background-color: #1c1a21; color: #e6e0e9; }
+frame.background {
+  background-color: alpha(#201e26, 0.97); color: #e6e0e9;
+  background-image: none; background-repeat: repeat;
+  border: 1px solid alpha(#e6e0e9, 0.14); border-radius: 20px;
+  padding: 28px 32px;
+  box-shadow: 0 24px 64px alpha(black, 0.45), inset 0 1px alpha(#e6e0e9, 0.06);
+}
+frame.background > border { border: none; }
+frame.background > grid { min-width: 460px; }
+frame.background > grid > label { color: alpha(#e6e0e9, 0.65); font-size: 13px; }
+frame.background > grid > label:first-child {
+  color: #e6e0e9; font-size: 28px; font-weight: 700;
+  margin-top: 2px; margin-bottom: 24px;
+}
+frame.background + frame.background {
+  background: transparent; border: none; box-shadow: none;
+  padding: 36px 28px 20px;
+}
+frame.background + frame.background label { color: #e6e0e9; text-shadow: 0 2px 12px alpha(black, 0.8); }
+label { color: #e6e0e9; }
+entry, passwordentry, combobox > box > button {
+  background: alpha(#403b4d, 0.85); color: #e6e0e9;
+  border: 1px solid alpha(#e6e0e9, 0.12); border-radius: 12px;
+  min-height: 38px; padding: 5px 14px; box-shadow: inset 0 1px 2px alpha(black, 0.12);
+}
+combobox button label { font-size: 15px; }
+combobox arrow { color: alpha(#e6e0e9, 0.55); min-width: 14px; }
+passwordentry entry { background: transparent; border: none; padding: 0; min-height: 0; box-shadow: none; }
+entry:focus-within, passwordentry:focus-within, button:focus-visible {
+  outline: 2px solid #d0bdfe; outline-offset: 3px;
+}
+button {
+  background: #403b4d; color: #e6e0e9;
+  border: 1px solid alpha(#e6e0e9, 0.12); border-radius: 12px;
+  min-height: 36px; padding: 6px 18px; box-shadow: none;
+  transition: background-color 140ms ease, border-color 140ms ease;
+}
+button:hover { background: mix(#403b4d, #e6e0e9, 0.07); border-color: alpha(#d0bdfe, 0.6); }
+button:active { background: mix(#403b4d, #d0bdfe, 0.16); }
+frame.background > grid > button.toggle {
+  background: transparent; border-color: transparent;
+  color: alpha(#e6e0e9, 0.55); padding: 6px 10px;
+}
+frame.background > grid > button.toggle:hover,
+frame.background > grid > button.toggle:checked {
+  color: #d0bdfe; background: alpha(#d0bdfe, 0.10); border-color: alpha(#d0bdfe, 0.25);
+}
+button.suggested-action {
+  background: #d0bdfe; color: #36265d; border-color: #d0bdfe;
+  font-weight: 700; min-width: 104px; padding: 6px 24px;
+  box-shadow: 0 4px 14px alpha(black, 0.15);
+}
+button.suggested-action label { color: #36265d; }
+button.suggested-action:hover { background: shade(#d0bdfe, 1.08); }
+button.suggested-action:active { background: shade(#d0bdfe, 0.92); }
+button:disabled { opacity: 0.45; }
+button.destructive-action {
+  color: #e6e0e9; background: alpha(#1c1a21, 0.8);
+  border-color: alpha(#e6e0e9, 0.14); border-radius: 999px;
+  min-height: 30px; padding: 6px 22px; margin-bottom: 15px;
+}
+button.destructive-action label { font-size: 12px; }
+button.destructive-action:hover { background: #201e26; border-color: #ffb4ab; }
+popover contents {
+  background: #201e26; color: #e6e0e9; border: 1px solid #484257;
+  border-radius: 12px; padding: 6px; box-shadow: 0 8px 24px alpha(black, 0.3);
+}
+popover modelbutton { border-radius: 8px; padding: 8px 12px; }
+popover modelbutton:hover { background: alpha(#d0bdfe, 0.14); }
+infobar { background: #201e26; color: #e6e0e9; border-radius: 12px; }
+selection { background: #d0bdfe; color: #36265d; }
+/* Opaque matte edges around softly tinted, textured glass. */
+frame.background.noctalia-login {
+  background-color: alpha(#201e26, 0.70);
+  background-image: url("file:///var/lib/rebos-greeter/theme/glass-texture.png"), linear-gradient(145deg, alpha(#ccc2db, 0.12), alpha(#d0bdfe, 0.04) 48%, alpha(#efb8c8, 0.08));
+  background-repeat: repeat, no-repeat;
+  background-clip: padding-box;
+  border: 2px solid mix(#403b4d, #d0bdfe, 0.45); border-radius: 28px;
+  padding: 25px 27px;
+  box-shadow: 0 24px 72px alpha(black, 0.40), 0 4px 16px alpha(black, 0.16);
+}
+.noctalia-login .card-time {
+  font-family: "Sans"; font-size: 50px; font-weight: 400;
+  color: #ffffff; letter-spacing: 2px;
+  text-shadow: 0 2px 8px alpha(black, 0.20);
+}
+.noctalia-login .card-date {
+  font-size: 11px; color: mix(#ccc2db, #e6e0e9, 0.40);
+  background: alpha(#ccc2db, 0.07); border: 1px solid mix(#403b4d, #ccc2db, 0.30);
+  border-radius: 999px; padding: 7px 12px;
+  margin: 10px 40px 20px;
+}
+.noctalia-login .login-heading {
+  font-size: 17px; font-weight: 600; margin-bottom: 14px;
+  text-shadow: 0 1px 3px alpha(black, 0.20);
+}
+.noctalia-login .field-caption {
+  font-size: 11px; color: mix(#ccc2db, #e6e0e9, 0.40); margin-top: 6px; margin-left: 3px;
+}
+.noctalia-login entry, .noctalia-login passwordentry,
+.noctalia-login combobox > box > button {
+  background-color: alpha(#403b4d, 0.60);
+  background-image: linear-gradient(alpha(#ccc2db, 0.06), alpha(#ccc2db, 0.01));
+  background-clip: padding-box;
+  border: 1px solid mix(#403b4d, #ccc2db, 0.32);
+  border-radius: 14px; min-height: 34px;
+  box-shadow: inset 0 1px 3px alpha(black, 0.10);
+}
+.noctalia-login combobox > box > button:hover {
+  background-color: alpha(#403b4d, 0.82); border-color: mix(#403b4d, #d0bdfe, 0.65);
+}
+.noctalia-login passwordentry entry {
+  background: transparent; border: none; min-height: 0; box-shadow: none;
+}
+.noctalia-login button.toggle {
+  background: alpha(#403b4d, 0.50); border-color: mix(#403b4d, #ccc2db, 0.32);
+  border-radius: 12px; padding: 4px 10px; color: #ccc2db;
+  min-height: 0;
+}
+.noctalia-login button.toggle:hover, .noctalia-login button.toggle:checked {
+  background: alpha(#d0bdfe, 0.12); border-color: mix(#403b4d, #d0bdfe, 0.65); color: #d0bdfe;
+}
+.noctalia-login button.suggested-action {
+  background: mix(#d0bdfe, #ccc2db, 0.20);
+  border: 1px solid mix(#d0bdfe, #ccc2db, 0.20);
+  border-radius: 14px; min-width: 104px;
+  box-shadow: 0 3px 9px alpha(black, 0.16);
+}
+.noctalia-login button.suggested-action:hover {
+  background: mix(#d0bdfe, #e6e0e9, 0.20); border-color: mix(#d0bdfe, #e6e0e9, 0.20);
+}
+.noctalia-login button.suggested-action:active {
+  background: shade(#d0bdfe, 0.92); border-color: shade(#d0bdfe, 0.92);
+  box-shadow: inset 0 2px 5px alpha(black, 0.16);
+}
+.noctalia-hud button.destructive-action {
+  background-color: alpha(#201e26, 0.70);
+  background-image: url("file:///var/lib/rebos-greeter/theme/glass-texture.png"), linear-gradient(alpha(#ccc2db, 0.08), alpha(#efb8c8, 0.03));
+  background-clip: padding-box;
+  border-color: mix(#403b4d, #ccc2db, 0.38); border-radius: 999px;
+  margin-bottom: 0; padding: 7px 22px;
+  box-shadow: 0 4px 16px alpha(black, 0.16);
+}
+.noctalia-hud button.destructive-action:hover {
+  background-color: alpha(#403b4d, 0.90); border-color: #ffb4ab;
+}
+.noctalia-hud button.power-symbol {
+  color: #ffffff; min-width: 32px; min-height: 32px; padding: 7px;
+}
+.noctalia-hud button.power-symbol image { color: #ffffff; }
+.noctalia-hud infobar { background: alpha(#201e26, 0.96); }
+frame.background.noctalia-clock-fallback { background: transparent; border: none; box-shadow: none; }

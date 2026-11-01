@@ -15,7 +15,9 @@ networkmanager
 bluez
 bluez-utils
 blueman
-ly
+greetd
+greetd-regreet
+cage
 power-profiles-daemon
 upower
 pipewire

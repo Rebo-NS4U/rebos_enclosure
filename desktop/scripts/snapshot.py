@@ -257,10 +257,16 @@ Categories=Settings;
     content = content.replace('if command -v code >/dev/null 2>&1; then next=code; else next=zed; fi',
                               'if command -v code >/dev/null 2>&1; then next=code; else next=nvim; fi')
     picker.write_text(content)
-    system = payload / 'system/ly'
+    system = payload / 'system/greetd'
     system.mkdir(parents=True)
-    for name in ('config.ini', 'blackhole-smooth-240x67.dur'):
-        shutil.copy2(home / 'code/dots-niri/install/ly' / name, system / name)
+    for name in ('config.toml', 'regreet.toml'):
+        shutil.copy2(Path('/etc/greetd') / name, system / name)
+    greeter = payload / 'system/rebos-greeter'
+    (greeter / 'theme').mkdir(parents=True)
+    for name in ('layout.c', 'cage-cursor.c'):
+        shutil.copy2(Path('/usr/local/lib/rebos-greeter') / name, greeter / name)
+    for name in ('regreet.css', 'background.png', 'glass-texture.png'):
+        shutil.copy2(Path('/var/lib/rebos-greeter/theme') / name, greeter / 'theme' / name)
     # Treat each dotfile component as one replacement, including symlinked installations.
     for component in ('.config/kitty', '.config/niri', '.config/fish', '.config/quickshell',
                       '.config/gtk-3.0', '.config/gtk-4.0'):
