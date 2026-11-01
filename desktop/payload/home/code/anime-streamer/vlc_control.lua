@@ -22,6 +22,7 @@ local function status()
     local name = item and item.name or ""
     local subtitles = {}
     local audio_tracks = {}
+    local chapter_count = 0
     local input = vlc.object.input()
     if input then
         if whisper_only then
@@ -32,12 +33,15 @@ local function status()
         for i, id in ipairs(values or {}) do
             table.insert(subtitles, {id=id, name=(labels or {})[i] or tostring(id)})
         end
+        local ok, chapters = pcall(vlc.var.get_list, input, "chapter")
+        if ok and type(chapters) == "table" then chapter_count = #chapters end
         local ids, names = vlc.var.get_list(input, "audio-es")
         for i, id in ipairs(ids or {}) do table.insert(audio_tracks, {id=id, name=(names or {})[i] or tostring(id)}) end
     end
     return {state=vlc.playlist.status(), current=current, input=not not input,
         eof=marker ~= "" and name == marker, time=input_value("time", 0) / 1000000,
         duration=input_value("length", 0) / 1000000, sid=input_value("spu-es", -1),
+        chapter=input_value("chapter", -1), chapter_count=chapter_count,
         input_state=input_value("state", 0), subtitles=subtitles,
         audio=input_value("audio-es", -1), audio_tracks=audio_tracks}
 end

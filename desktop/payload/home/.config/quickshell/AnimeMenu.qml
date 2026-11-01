@@ -1054,7 +1054,7 @@ PanelWindow {
                 color: Colors.overSurfaceVariant
             }
             RowLayout {
-                visible: root.playback.length > 0
+                visible: root.playback.length > 0 || root.nextEpisodeAvailable
                 Layout.fillWidth: true
                 StyledText { text: root.playback; Layout.fillWidth: true; maximumLineCount: 2; wrapMode: Text.Wrap; elide: Text.ElideRight }
                 MenuButton { text: "Next episode"; visible: root.nextEpisodeAvailable; onClicked: root.send({action: "next_episode"}) }

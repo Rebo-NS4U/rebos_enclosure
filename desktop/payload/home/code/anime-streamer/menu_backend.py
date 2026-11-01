@@ -72,6 +72,8 @@ class Engine(app.Browser):
         self.resolved = {}
         self.resolving = {}
         self.duration = 0
+        self.chapter = -1
+        self.chapter_count = 0
         self.position = 0
         self.prefetch_key = None
         self.paused = False
@@ -91,9 +93,11 @@ class Engine(app.Browser):
         available = False
         if self.session is not None and self.context and not self.next_requested:
             _, episodes, index, _ = self.context
+            chapters_known = self.chapter_count > 0 and 0 <= self.chapter < self.chapter_count
+            near_end = (self.chapter >= max(0, self.chapter_count - 2) if chapters_known
+                        else self.duration > 0 and 0 <= self.duration - self.position <= 90)
             available = self.next_episode_paused or (index + 1 < len(episodes) and (
-                self.episode_ended or (self.file_loaded and self.duration > 0
-                                      and 0 <= self.duration - self.position <= 90)))
+                self.episode_ended or (self.file_loaded and near_end)))
         offer = dict(available=bool(available))
         if offer != self.last_next_offer:
             self.last_next_offer = offer
@@ -170,6 +174,7 @@ class Engine(app.Browser):
         self.links = links
         self.file_loaded = False
         self.duration = self.position = 0
+        self.chapter, self.chapter_count = -1, 0
         self.prefetch_key = None
         self.paused = paused
         self.next_episode_paused = paused
@@ -312,6 +317,10 @@ class Engine(app.Browser):
                     self.play_status.set_text(('Paused' if self.paused else 'Playing') + ' · ' + self.media_title(show, episodes[index]))
             if event.get('name') == 'duration':
                 self.duration = event.get('data') or 0
+            elif event.get('name') == 'chapter-info':
+                info = event.get('data') or {}
+                self.chapter = info.get('index', -1)
+                self.chapter_count = info.get('count', 0)
             elif event.get('name') == 'time-pos':
                 self.position = event.get('data') or 0
             self.save_progress(force=event.get('name') == 'pause')

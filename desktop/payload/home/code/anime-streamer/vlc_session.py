@@ -264,7 +264,8 @@ class VlcSession:
         values = {'time-pos':state.get('time',0), 'duration':state.get('duration',0), 'pause':state.get('state') == 'paused',
                   'sid': 'whisper' if whisper_active else (False if self.whisper_only else state.get('sid', -1)),
                   'sub-visibility': whisper_active if self.whisper_only else state.get('sid', -1) >= 0,
-                  'whisper-captions': whisper_active}
+                  'whisper-captions': whisper_active,
+                  'chapter-info': {'index': state.get('chapter', -1), 'count': state.get('chapter_count', 0)}}
         for name, value in values.items():
             if self.last.get(name) != value:
                 self.last[name] = value

@@ -17,6 +17,8 @@ class NextEpisodeTests(unittest.TestCase):
         self.engine.next_episode_paused = False
         self.engine.episode_ended = False
         self.engine.file_loaded = True
+        self.engine.chapter = -1
+        self.engine.chapter_count = 0
         self.engine.duration = 1200
         self.engine.position = 100
         self.engine.last_next_offer = None
@@ -35,6 +37,26 @@ class NextEpisodeTests(unittest.TestCase):
         self.assertTrue(self.offered())
         self.engine.position = 800
         self.assertFalse(self.offered())
+
+    def test_final_two_chapters_override_time_fallback(self):
+        self.engine.chapter_count = 6
+        self.engine.chapter = 3
+        self.engine.position = 1190
+        self.assertFalse(self.offered())
+        self.engine.chapter = 4
+        self.engine.position = 800
+        self.assertTrue(self.offered())
+        self.engine.chapter = 5
+        self.assertTrue(self.offered())
+        self.engine.chapter = 2
+        self.assertFalse(self.offered())
+
+    def test_invalid_chapters_fall_back_to_time(self):
+        self.engine.chapter_count = 6
+        self.engine.chapter = -1
+        self.assertFalse(self.offered())
+        self.engine.position = 1110
+        self.assertTrue(self.offered())
 
     def test_end_with_auto_next_disabled(self):
         self.engine.file_loaded = False
@@ -97,6 +119,32 @@ class CompletionTests(unittest.TestCase):
         self.engine.context = ({'id': 'show'}, ['1', '2'], 1, 7)
         self.event('eof')
         self.engine.start_episode.assert_not_called()
+
+
+
+
+
+class ChapterPollingTests(unittest.TestCase):
+    def test_vlc_chapter_updates_reach_backend_as_one_property(self):
+        from vlc_session import VlcSession
+        session = object.__new__(VlcSession)
+        session.requested = session.loaded = True
+        session.finished = session.caption_requested = False
+        session.whisper_only = True
+        session.last = {}
+        session.caption_text = ''
+        session.emit = Mock()
+        state = dict(state='playing', input=True, input_state=3,
+                     time=800, duration=1200, chapter=4, chapter_count=6)
+        session.poll(state)
+        session.emit.assert_any_call({'event': 'property-change', 'name': 'chapter-info',
+                                      'data': {'index': 4, 'count': 6}})
+        session.emit.reset_mock()
+        session.poll(state)
+        session.emit.assert_not_called()
+        session.poll(dict(state, chapter=3))
+        session.emit.assert_any_call({'event': 'property-change', 'name': 'chapter-info',
+                                      'data': {'index': 3, 'count': 6}})
 
 
 if __name__ == '__main__':
