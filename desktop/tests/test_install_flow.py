@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -49,6 +50,16 @@ class InstallFlowTests(unittest.TestCase):
             stub.chmod(0o755)
             for name in ('sudo', 'pacman', 'systemctl', 'mkinitcpio', 'xdg-user-dirs-update', 'xdg-mime', 'xdg-settings'):
                 (commands / name).symlink_to(stub)
+            # Keep the new desktop approval hook inside the same recording boundary.
+            python = commands / 'python3'
+            python.write_text('#!' + sys.executable + '\n' +
+                'import os, sys, json\n' +
+                'if len(sys.argv) > 1 and sys.argv[1].endswith("/greeter_sync.py"):\n' +
+                '    with open(os.environ["INSTALL_COMMAND_LOG"], "a") as f:\n' +
+                '        f.write(json.dumps({"command":"greeter-sync","args":[]}) + "\\n")\n' +
+                'else:\n' +
+                '    os.execv(' + repr(sys.executable) + ', [' + repr(sys.executable) + '] + sys.argv[1:])\n')
+            python.chmod(0o755)
             log = base / 'commands.jsonl'
             env = dict(os.environ, HOME=str(home), PATH=str(commands) + ':' + os.environ['PATH'],
                        INSTALL_COMMAND_LOG=str(log), PYTHONDONTWRITEBYTECODE='1')
@@ -92,6 +103,7 @@ class InstallFlowTests(unittest.TestCase):
             self.assertTrue(any(e['command'] == 'sudo' and e['args'] == ['mkinitcpio', '-P'] for e in entries))
             service_calls = [e['args'] for e in entries
                              if e['command'] == 'sudo' and e['args'][0] == 'systemctl']
+            self.assertEqual(any(e['command'] == 'greeter-sync' for e in entries), login)
             if login:
                 self.assertEqual(service_calls, [
                     ['systemctl', 'disable', 'ly@tty2.service'],

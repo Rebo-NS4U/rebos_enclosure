@@ -229,6 +229,9 @@ if ((!files_only)); then
     fi
     printf 'System backup: %s\n' "$system_backup"
 fi
+if ((!files_only)) && [[ $login == regreet ]]; then
+    python3 "$ROOT/scripts/greeter_sync.py"
+fi
 printf '\nDesktop files installed. Selected plan: ~/.local/state/rebos-desktop/installation.json\n'
 if ((!files_only)); then printf 'Reboot and choose Niri in your selected login setup.\n'; fi
 printf 'Super+Return terminal | Super+Space launcher | Super+Shift+W wallpapers\n'

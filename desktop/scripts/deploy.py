@@ -61,6 +61,8 @@ def install(payload, home, dry_run=False, cbonsai=None, settings=None, preserve_
         raise ValueError('Preference-preserving updates cannot replace the installation plan')
     if preserve_preferences:
         def preference(relative):
+            if relative == '.config/regreet-sync/regreet.css.in' or relative.startswith('.config/systemd/user/regreet-sync.'):
+                return False  # Managed sync code, refreshed on updates.
             return ((relative.startswith(('.config/', '.cache/')) and
                      relative != '.config/quickshell') or
                     relative == 'code/rebos-assistant/config' or

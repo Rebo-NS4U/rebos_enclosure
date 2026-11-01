@@ -1,0 +1,11 @@
+[Unit]
+Description=Sync desktop wallpaper and colors to ReGreet
+
+[Service]
+Type=oneshot
+ExecStartPre=/usr/bin/sleep 1
+ExecStart=/usr/bin/python3 @HOME@/.local/bin/regreet-sync
+TimeoutStartSec=90
+
+[Install]
+WantedBy=default.target

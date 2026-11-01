@@ -70,6 +70,10 @@ def main():
                 if helper and not args.no_aur:
                     run(helper, '-Sua')
             backup = apply_snapshot(snapshot, home)
+            # Use the fetched implementation so this update matches its payload.
+            greeter_setup = snapshot / 'desktop/scripts/greeter_sync.py'
+            if greeter_setup.is_file():
+                run('python3', str(greeter_setup))
             print(f'Applied GitHub commit {commit}. Recovery backup: {backup}')
             print('Log out and back in to load the updated desktop. Package upgrades are not undone by file recovery.')
 

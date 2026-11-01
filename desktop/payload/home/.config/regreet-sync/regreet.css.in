@@ -1,0 +1,163 @@
+/* Generated from the active desktop theme. */
+@define-color theme_bg_color {{background}};
+@define-color theme_fg_color {{overBackground}};
+@define-color theme_base_color {{background}};
+@define-color theme_text_color {{overBackground}};
+@define-color theme_selected_bg_color {{primary}};
+@define-color theme_selected_fg_color {{overPrimary}};
+@define-color accent_bg_color {{primary}};
+@define-color accent_fg_color {{overPrimary}};
+* { font-family: "JetBrains Mono"; font-size: 14px; }
+window { background-color: {{background}}; color: {{overBackground}}; }
+frame.background {
+  background-color: alpha({{surfaceContainer}}, 0.97); color: {{overBackground}};
+  background-image: none; background-repeat: repeat;
+  border: 1px solid alpha({{overBackground}}, 0.14); border-radius: 20px;
+  padding: 28px 32px;
+  box-shadow: 0 24px 64px alpha(black, 0.45), inset 0 1px alpha({{overBackground}}, 0.06);
+}
+frame.background > border { border: none; }
+frame.background > grid { min-width: 460px; }
+frame.background > grid > label { color: alpha({{overBackground}}, 0.65); font-size: 13px; }
+frame.background > grid > label:first-child {
+  color: {{overBackground}}; font-size: 28px; font-weight: 700;
+  margin-top: 2px; margin-bottom: 24px;
+}
+frame.background + frame.background {
+  background: transparent; border: none; box-shadow: none;
+  padding: 36px 28px 20px;
+}
+frame.background + frame.background label { color: {{overBackground}}; text-shadow: 0 2px 12px alpha(black, 0.8); }
+label { color: {{overBackground}}; }
+entry, passwordentry, combobox > box > button {
+  background: alpha({{surfaceBright}}, 0.85); color: {{overBackground}};
+  border: 1px solid alpha({{overBackground}}, 0.12); border-radius: 12px;
+  min-height: 38px; padding: 5px 14px; box-shadow: inset 0 1px 2px alpha(black, 0.12);
+}
+combobox button label { font-size: 15px; }
+combobox arrow { color: alpha({{overBackground}}, 0.55); min-width: 14px; }
+passwordentry entry { background: transparent; border: none; padding: 0; min-height: 0; box-shadow: none; }
+entry:focus-within, passwordentry:focus-within, button:focus-visible {
+  outline: 2px solid {{primary}}; outline-offset: 3px;
+}
+button {
+  background: {{surfaceBright}}; color: {{overBackground}};
+  border: 1px solid alpha({{overBackground}}, 0.12); border-radius: 12px;
+  min-height: 36px; padding: 6px 18px; box-shadow: none;
+  transition: background-color 140ms ease, border-color 140ms ease;
+}
+button:hover { background: mix({{surfaceBright}}, {{overBackground}}, 0.07); border-color: alpha({{primary}}, 0.6); }
+button:active { background: mix({{surfaceBright}}, {{primary}}, 0.16); }
+frame.background > grid > button.toggle {
+  background: transparent; border-color: transparent;
+  color: alpha({{overBackground}}, 0.55); padding: 6px 10px;
+}
+frame.background > grid > button.toggle:hover,
+frame.background > grid > button.toggle:checked {
+  color: {{primary}}; background: alpha({{primary}}, 0.10); border-color: alpha({{primary}}, 0.25);
+}
+button.suggested-action {
+  background: {{primary}}; color: {{overPrimary}}; border-color: {{primary}};
+  font-weight: 700; min-width: 104px; padding: 6px 24px;
+  box-shadow: 0 4px 14px alpha(black, 0.15);
+}
+button.suggested-action label { color: {{overPrimary}}; }
+button.suggested-action:hover { background: shade({{primary}}, 1.08); }
+button.suggested-action:active { background: shade({{primary}}, 0.92); }
+button:disabled { opacity: 0.45; }
+button.destructive-action {
+  color: {{overBackground}}; background: alpha({{background}}, 0.8);
+  border-color: alpha({{overBackground}}, 0.14); border-radius: 999px;
+  min-height: 30px; padding: 6px 22px; margin-bottom: 15px;
+}
+button.destructive-action label { font-size: 12px; }
+button.destructive-action:hover { background: {{surfaceContainer}}; border-color: {{error}}; }
+popover contents {
+  background: {{surfaceContainer}}; color: {{overBackground}}; border: 1px solid {{outlineVariant}};
+  border-radius: 12px; padding: 6px; box-shadow: 0 8px 24px alpha(black, 0.3);
+}
+popover modelbutton { border-radius: 8px; padding: 8px 12px; }
+popover modelbutton:hover { background: alpha({{primary}}, 0.14); }
+infobar { background: {{surfaceContainer}}; color: {{overBackground}}; border-radius: 12px; }
+selection { background: {{primary}}; color: {{overPrimary}}; }
+/* Opaque matte edges around softly tinted, textured glass. */
+frame.background.noctalia-login {
+  background-color: alpha({{surfaceContainer}}, 0.70);
+  background-image: url("file:///var/lib/rebos-greeter/theme/glass-texture.png"), linear-gradient(145deg, alpha({{secondary}}, 0.12), alpha({{primary}}, 0.04) 48%, alpha({{tertiary}}, 0.08));
+  background-repeat: repeat, no-repeat;
+  background-clip: padding-box;
+  border: 2px solid mix({{surfaceBright}}, {{primary}}, 0.45); border-radius: 28px;
+  padding: 25px 27px;
+  box-shadow: 0 24px 72px alpha(black, 0.40), 0 4px 16px alpha(black, 0.16);
+}
+.noctalia-login .card-time {
+  font-family: "Sans"; font-size: 50px; font-weight: 400;
+  color: #ffffff; letter-spacing: 2px;
+  text-shadow: 0 2px 8px alpha(black, 0.20);
+}
+.noctalia-login .card-date {
+  font-size: 11px; color: mix({{secondary}}, {{overBackground}}, 0.40);
+  background: alpha({{secondary}}, 0.07); border: 1px solid mix({{surfaceBright}}, {{secondary}}, 0.30);
+  border-radius: 999px; padding: 7px 12px;
+  margin: 10px 40px 20px;
+}
+.noctalia-login .login-heading {
+  font-size: 17px; font-weight: 600; margin-bottom: 14px;
+  text-shadow: 0 1px 3px alpha(black, 0.20);
+}
+.noctalia-login .field-caption {
+  font-size: 11px; color: mix({{secondary}}, {{overBackground}}, 0.40); margin-top: 6px; margin-left: 3px;
+}
+.noctalia-login entry, .noctalia-login passwordentry,
+.noctalia-login combobox > box > button {
+  background-color: alpha({{surfaceBright}}, 0.60);
+  background-image: linear-gradient(alpha({{secondary}}, 0.06), alpha({{secondary}}, 0.01));
+  background-clip: padding-box;
+  border: 1px solid mix({{surfaceBright}}, {{secondary}}, 0.32);
+  border-radius: 14px; min-height: 34px;
+  box-shadow: inset 0 1px 3px alpha(black, 0.10);
+}
+.noctalia-login combobox > box > button:hover {
+  background-color: alpha({{surfaceBright}}, 0.82); border-color: mix({{surfaceBright}}, {{primary}}, 0.65);
+}
+.noctalia-login passwordentry entry {
+  background: transparent; border: none; min-height: 0; box-shadow: none;
+}
+.noctalia-login button.toggle {
+  background: alpha({{surfaceBright}}, 0.50); border-color: mix({{surfaceBright}}, {{secondary}}, 0.32);
+  border-radius: 12px; padding: 4px 10px; color: {{secondary}};
+  min-height: 0;
+}
+.noctalia-login button.toggle:hover, .noctalia-login button.toggle:checked {
+  background: alpha({{primary}}, 0.12); border-color: mix({{surfaceBright}}, {{primary}}, 0.65); color: {{primary}};
+}
+.noctalia-login button.suggested-action {
+  background: mix({{primary}}, {{secondary}}, 0.20);
+  border: 1px solid mix({{primary}}, {{secondary}}, 0.20);
+  border-radius: 14px; min-width: 104px;
+  box-shadow: 0 3px 9px alpha(black, 0.16);
+}
+.noctalia-login button.suggested-action:hover {
+  background: mix({{primary}}, {{overBackground}}, 0.20); border-color: mix({{primary}}, {{overBackground}}, 0.20);
+}
+.noctalia-login button.suggested-action:active {
+  background: shade({{primary}}, 0.92); border-color: shade({{primary}}, 0.92);
+  box-shadow: inset 0 2px 5px alpha(black, 0.16);
+}
+.noctalia-hud button.destructive-action {
+  background-color: alpha({{surfaceContainer}}, 0.70);
+  background-image: url("file:///var/lib/rebos-greeter/theme/glass-texture.png"), linear-gradient(alpha({{secondary}}, 0.08), alpha({{tertiary}}, 0.03));
+  background-clip: padding-box;
+  border-color: mix({{surfaceBright}}, {{secondary}}, 0.38); border-radius: 999px;
+  margin-bottom: 0; padding: 7px 22px;
+  box-shadow: 0 4px 16px alpha(black, 0.16);
+}
+.noctalia-hud button.destructive-action:hover {
+  background-color: alpha({{surfaceBright}}, 0.90); border-color: {{error}};
+}
+.noctalia-hud button.power-symbol {
+  color: #ffffff; min-width: 32px; min-height: 32px; padding: 7px;
+}
+.noctalia-hud button.power-symbol image { color: #ffffff; }
+.noctalia-hud infobar { background: alpha({{surfaceContainer}}, 0.96); }
+frame.background.noctalia-clock-fallback { background: transparent; border: none; box-shadow: none; }

@@ -178,3 +178,12 @@ bash -n install.sh desktop/install.sh oneline.sh desktop/scripts/finish-apps.sh
 ```
 
 `desktop/scripts/snapshot.py` is the explicit selection recipe for this source desktop. To refresh, first move the existing `desktop/payload/` aside; then run `python3 desktop/scripts/snapshot.py --home /path/to/source/home` on the source machine. Inspect the result before sharing. Snapshot checksums detect corruption and accidental edits; they do not provide publisher authentication. Preserve the bundled component licenses; wallpaper redistribution rights remain with their respective authors. This folder can be moved or deleted after installation because installed settings are copies, with no dependency on its location.
+
+ReGreet follows the current desktop wallpaper and effective color palette through
+`regreet-sync.path`, with a timer to retry failures and detect edits to the image.
+Installation and `update.sh` enable the sync for an existing Enclosure greeter and
+refresh its theme immediately; the next login displays the result. The first
+update may request administrator approval to grant the desktop user ownership of
+`/var/lib/rebos-greeter/theme` only. It does not restart greetd or the desktop.
+The CSS template and sync units are managed code refreshed by updates; wallpaper
+and color preferences remain preserved. Animated wallpapers use a still frame.

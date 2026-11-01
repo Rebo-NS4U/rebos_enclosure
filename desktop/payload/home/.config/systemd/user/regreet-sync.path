@@ -1,0 +1,11 @@
+[Unit]
+Description=Watch desktop wallpaper and palette for ReGreet
+
+[Path]
+PathChanged=@HOME@/.cache/rebos_shell/wallpapers.json
+PathChanged=@HOME@/.cache/rebos_shell/effective-palette.json
+PathChanged=@HOME@/.config/regreet-sync/regreet.css.in
+Unit=regreet-sync.service
+
+[Install]
+WantedBy=default.target

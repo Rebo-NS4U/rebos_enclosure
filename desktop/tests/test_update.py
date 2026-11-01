@@ -59,6 +59,9 @@ class UpdateTests(unittest.TestCase):
             hashes = {str(p.relative_to(payload)): hashlib.sha256(p.read_bytes()).hexdigest()
                       for p in payload.rglob('*') if p.is_file()}
             (payload / 'checksums.json').write_text(json.dumps(hashes))
+            setup = repo / 'desktop/scripts/greeter_sync.py'
+            setup.parent.mkdir(parents=True)
+            setup.write_text("from pathlib import Path\n(Path.home() / 'greeter-refreshed').write_text('yes')\n")
             def git(*args):
                 subprocess.run(['git', '-C', str(repo), *args], check=True, capture_output=True)
             git('init')
@@ -75,9 +78,11 @@ class UpdateTests(unittest.TestCase):
             preview = subprocess.run(command + ['--dry-run'], env=environment, capture_output=True, text=True)
             self.assertEqual(preview.returncode, 0, preview.stderr)
             self.assertFalse((home / '.config/quickshell').exists())
+            self.assertFalse((home / 'greeter-refreshed').exists())
             for _ in range(2):
                 result = subprocess.run(command, env=environment, capture_output=True, text=True)
                 self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual((home / 'greeter-refreshed').read_text(), 'yes')
                 self.assertEqual(existing.read_text(), '{"theme":"personal"}')
                 self.assertEqual((home / '.config/quickshell/shell.qml').read_text(), 'latest source')
             self.assertEqual(len(list((home / '.local/state/rebos-desktop/backups').iterdir())), 2)

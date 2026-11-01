@@ -1,0 +1,10 @@
+[Unit]
+Description=Retry ReGreet sync and detect changes to the wallpaper image
+
+[Timer]
+OnStartupSec=15
+OnUnitInactiveSec=30
+Unit=regreet-sync.service
+
+[Install]
+WantedBy=timers.target

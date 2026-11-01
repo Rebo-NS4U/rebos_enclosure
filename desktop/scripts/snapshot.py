@@ -44,6 +44,9 @@ def build(home):
         target.chmod(mode)
         units.append(relative)
 
+    for relative in ['.local/bin/regreet-sync', '.config/regreet-sync/regreet.css.in', '.config/systemd/user/regreet-sync.service', '.config/systemd/user/regreet-sync.path', '.config/systemd/user/regreet-sync.timer']:
+        copy(relative)
+
     # Source code and visual settings only; no shell state, histories, AI settings or accounts.
     for name in ('kitty', 'nvim', 'fuzzel', 'btop', 'qt5ct', 'qt6ct', 'themes'):
         copy('.config/' + name)
