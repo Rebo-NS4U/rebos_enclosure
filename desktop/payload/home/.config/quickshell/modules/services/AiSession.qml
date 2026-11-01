@@ -172,6 +172,8 @@ Scope {
     property var queuedPrompt: null
     // Delivery belongs to the backend conversation, not the UI connection.
     property string instructionSessionId: ""
+    // Resend desktop guidance once after a UI reload, including restored chats.
+    property string instructionDesktopSessionId: ""
     property string agentStderrTail: ""
     property bool turnFailureHandled: false
 
@@ -1181,8 +1183,15 @@ Scope {
         }
 
         onStarted: {
+            let desktopEnvironment = {};
+            let desktopKeys = ["DISPLAY", "WAYLAND_DISPLAY", "XDG_RUNTIME_DIR", "DBUS_SESSION_BUS_ADDRESS", "XDG_SESSION_TYPE", "XDG_CURRENT_DESKTOP", "NIRI_SOCKET", "PULSE_SERVER"];
+            for (let key of desktopKeys) {
+                let value = Quickshell.env(key);
+                if (value) desktopEnvironment[key] = value;
+            }
             write(JSON.stringify({bridge: "attach", command: root.currentModel.command,
-                cwd: root.workingDirectory(), path: Quickshell.env("PATH")}) + "\n");
+                cwd: root.workingDirectory(), path: Quickshell.env("PATH"),
+                desktopEnvironment: desktopEnvironment}) + "\n");
         }
 
         onExited: (exitCode, exitStatus) => {
@@ -1786,6 +1795,8 @@ Scope {
                 text: queued.text
             });
 
+        if (instructionDesktopSessionId !== currentSessionId)
+            prompt.push({type: "text", text: "Desktop access: Empty ps/pgrep results in a restricted command session do not prove desktop apps are stopped. Check the user service and session connection (systemctl --user, D-Bus, WAYLAND_DISPLAY, XDG_RUNTIME_DIR and NIRI_SOCKET) using available tools. If access is restricted, request the tool's supported approval for the specific desktop check or action and retry after approval; never bypass isolation or a denied approval. If approval is unavailable, state that exact limitation. Never claim a restart succeeded without checking it. Quickshell QML and Niri configuration hot-reload automatically; do not kill or restart them for config edits. Anime Streamer mpv launch changes apply on the next playback launch; they do not require restarting VLC or Quickshell. Preserve active playback and assistant backends unless the user requests a restart."});
         let sendSharedInstructions = instructionSessionId !== currentSessionId;
         if (sendSharedInstructions) {
             prompt.push({type: "text", text: "Shell activity preference: Begin with one concise, descriptive sentence stating the overall task you are working on. For multi-step work, keep the plan in plain English with specific steps describing the intended result. Give concise public progress updates explaining what you found, what you are doing next, and why it helps the request. Use everyday English in visible activity rows: describe the feature, action and purpose rather than filenames, command names or technical jargon. For example, say Check that activity rows explain the work clearly. Put filenames and technical identifiers in expandable details. Use specific descriptive tool titles where supported, avoiding vague labels such as Running a command or Reading files. Keep code, patches, commands and relevant output in expandable details; the visible activity should explain the purpose and progress of the work."});
@@ -1818,6 +1829,7 @@ Scope {
             return;
         }
         instructionSessionId = currentSessionId;
+        instructionDesktopSessionId = currentSessionId;
         saveCurrentChat();
         bridgeDirty = true;
         turnWatchdog.restart();

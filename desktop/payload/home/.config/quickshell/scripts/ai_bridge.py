@@ -92,6 +92,14 @@ class Bridge:
         # Credentials are never transported in this handshake.
         if isinstance(frame.get("path"), str):
             environment["PATH"] = frame["path"]
+        # Forward only desktop connection metadata, never arbitrary client env.
+        desktop = frame.get("desktopEnvironment", {})
+        if not isinstance(desktop, dict):
+            raise ValueError("Invalid desktop environment")
+        for key in ('DISPLAY', 'WAYLAND_DISPLAY', 'XDG_RUNTIME_DIR', 'DBUS_SESSION_BUS_ADDRESS', 'XDG_SESSION_TYPE', 'XDG_CURRENT_DESKTOP', 'NIRI_SOCKET', 'PULSE_SERVER'):
+            value = desktop.get(key)
+            if isinstance(value, str) and value and "\0" not in value:
+                environment[key] = value
         self.launch = frame
         self.process = await asyncio.create_subprocess_exec(
             *command, cwd=cwd, env=environment,
