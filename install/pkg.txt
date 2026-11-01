@@ -35,7 +35,9 @@ iwd
 kitty
 libayatana-appindicator
 lsd
-ly
+greetd
+greetd-regreet
+cage
 mangohud
 mpd
 mpv
