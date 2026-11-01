@@ -91,12 +91,8 @@ ShellRoot {
     // Toasts are hosted inside UnifiedShellPanel (NotificationToastStack) so
     // they receive clicks. NotificationServer still loads via service init.
 
-    // Settings floating window (lazy — only while open).
-    Loader {
-        id: settingsWindowLoader
-        active: GlobalStates.settingsWindowVisible
-        sourceComponent: SettingsWindow {}
-    }
+    // Keep the window object alive so IPC can toggle its visible property.
+    SettingsWindow {}
 
     // Initialize only the services needed by the bar, run menu, and lockscreen.
     QtObject {
