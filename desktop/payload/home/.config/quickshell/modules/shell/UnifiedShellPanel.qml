@@ -28,8 +28,12 @@ PanelWindow {
 
     color: "transparent"
 
+    readonly property bool launcherOpen: runMenu.open || (barContent.islandActive && GlobalStates.islandLauncherOpen)
+
     WlrLayershell.keyboardFocus: {
-        if (notesPopup.open || runMenu.open)
+        if (notesPopup.open)
+            return WlrKeyboardFocus.Exclusive;
+        if (launcherOpen)
             return WlrKeyboardFocus.Exclusive;
         if (SystemResources.keepMonitorOpen)
             return WlrKeyboardFocus.OnDemand;
@@ -47,7 +51,7 @@ PanelWindow {
     exclusionMode: ExclusionMode.Ignore
 
     // Menus temporarily receive outside clicks so they can be dismissed.
-    readonly property bool needsFullScreenInput: notesPopup.open || runMenu.open || ((!SystemResources.keepMonitorOpen) && (barContent.dashboardInputActive || barContent.islandActive)) || FocusGrabManager.hasActiveGrab
+    readonly property bool needsFullScreenInput: notesPopup.open || ((!SystemResources.keepMonitorOpen) && (barContent.dashboardInputActive || (barContent.islandActive && !launcherOpen))) || FocusGrabManager.hasActiveGrab
 
     readonly property bool barEnabled: {
         if (!Config.barReady) return false;
@@ -125,7 +129,7 @@ PanelWindow {
     FocusGrab {
         id: focusGrab
         windows: [unifiedPanel]
-        active: runMenu.open || notesPopup.open
+        active: notesPopup.open
 
         onCleared: {
             if (notesPopup.open)

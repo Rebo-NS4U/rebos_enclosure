@@ -112,7 +112,19 @@ Singleton {
             case "config":
             case "settings":
             case "dashboard-controls":
-                toggleSettings();
+                Visibilities.closeActiveBarPopup();
+                Visibilities.setActiveModule("");
+                GlobalStates.settingsTargetWorkspaceId = NiriService.focusedMonitor?.activeWorkspace?.id || NiriService.focusedWorkspace?.id || 0;
+                GlobalStates.settingsTargetScreenName = NiriService.focusedMonitor?.name || "";
+                GlobalStates.settingsWindowVisible = true;
+                for (const client of NiriService.clients.values || []) {
+                    if (client.title === "rebos_shell Settings") {
+                        if (GlobalStates.settingsTargetWorkspaceId)
+                            NiriService.moveWindowToWorkspace(client.id, GlobalStates.settingsTargetWorkspaceId, false);
+                        NiriService.focusWindow(client.id);
+                        break;
+                    }
+                }
                 break;
             case "appearance":
                 if (!GlobalStates.settingsWindowVisible)

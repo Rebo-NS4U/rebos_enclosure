@@ -178,6 +178,11 @@ Singleton {
     
 
     function launchApp(app) {
+        // Shell settings are internal; avoid stale desktop-entry commands and PATH lookup.
+        if (app.id === "rebos-shell-settings" || app.id === "rebos-shell-settings.desktop") {
+            GlobalShortcuts.run("settings");
+            return;
+        }
         const path = app.fileName || app.path || app.filePath;
         
         if (path && path.toString().endsWith('.desktop')) {
