@@ -14,6 +14,31 @@ Item {
     id: root
     anchors.fill: parent
 
+    readonly property var dweeboPrompts: [
+        "Spill your circuits to Dweebo...",
+        "What’s the mission, human?",
+        "Tell Dweebo what’s on your mind...",
+        "Psst... got a question for me?",
+        "Drop a thought in my robo-brain...",
+        "Ask away, organic lifeform...",
+        "What are we figuring out today?",
+        "Beep boop—your turn to talk...",
+        "Give Dweebo the short version...",
+        "I’m listening. Probably...",
+        "Send a thought into the void (me)...",
+        "Need a hand, or just a robot?"
+    ]
+    property string randomDweeboPrompt: ""
+
+    function chooseRandomDweeboPrompt() {
+        if (dweeboPrompts.length < 2)
+            return;
+        let nextPrompt = randomDweeboPrompt;
+        while (nextPrompt === randomDweeboPrompt)
+            nextPrompt = dweeboPrompts[Math.floor(Math.random() * dweeboPrompts.length)];
+        randomDweeboPrompt = nextPrompt;
+    }
+
     required property ShellScreen targetScreen
     property bool tiled: false
     property bool windowFocused: true
@@ -2151,8 +2176,13 @@ Item {
                                             focus: true
                                             activeFocusOnTab: true
                                             cursorVisible: activeFocus && root.wantsFocus && root.windowFocused
-                                            onActiveFocusChanged: { if (activeFocus) root.requestKeyboardFocus(); }
-
+                                            onActiveFocusChanged: {
+                                                if (activeFocus) {
+                                                    root.requestKeyboardFocus();
+                                                    if (!text)
+                                                        root.chooseRandomDweeboPrompt();
+                                                }
+                                            }
                                             // TextArea accepts the press before the background
                                             // MouseArea can request keyboard ownership.
                                             TapHandler {
@@ -2163,7 +2193,7 @@ Item {
                                                     }
                                                 }
                                             }
-                                            placeholderText: mainChatArea.isWelcome ? "Ask AI or type /help..." : "Message AI..."
+                                            placeholderText: mainChatArea.isWelcome ? "Ask AI or type /help..." : root.randomDweeboPrompt
                                             placeholderTextColor: Colors.outline
                                             font.pixelSize: Styling.fontSize(0)
                                             color: Colors.overBackground
