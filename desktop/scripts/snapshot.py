@@ -90,10 +90,13 @@ def build(home):
     write('.local/bin/assistant-sudo', '#!/bin/sh\nexec /usr/bin/python3 "$HOME/.config/quickshell/scripts/assistant_sudo.py" "$@"\n', 0o755)
     copy('.local/bin/config-browser')
     copy('.local/share/applications/config-browser.desktop')
-    # Seed fresh installs from the bundled preset, never the source user's live preferences.
+    # Versioned install defaults also seed the bundled reset preset.
     preset = shell / 'assets/presets/rebos_shell Default'
     for name in ('bar', 'theme', 'performance', 'lockscreen', 'system'):
-        copy(f'.config/rebos_shell/config/{name}.json', preset / f'{name}.json')
+        source = ROOT / 'defaults' / f'{name}.json' if name in ('bar', 'theme') else preset / f'{name}.json'
+        copy(f'.config/rebos_shell/config/{name}.json', source)
+        if name in ('bar', 'theme'):
+            shutil.copy2(source, user / '.config/quickshell/assets/presets/rebos_shell Default' / f'{name}.json')
     write('.config/rebos_shell/config/weather.json', '{"location": "", "unit": "C"}\n')
     for name in ('rice', 'rebos_shell', 'colorscheme', 'wallpaper', 'wallpaper-switcher',
                  'terminal-bonsai', 'project-picker', 'emoji-dmenu', 'wayland-screenshot',

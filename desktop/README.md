@@ -66,6 +66,8 @@ The portable clipboard shortcut uses cliphist/Fuzzel. Spotify Launcher replaces 
 
 ## First login
 
+Fresh installs use the pinned classic island bar (80% opacity, 55% accent), a 12-hour clock, Firefox media integration, and the Transparent theme. Bar and theme defaults live in `desktop/defaults/` and also seed the reset preset; updates preserve existing preferences.
+
 New installs use H/J/K/L for **left/down/up/right**:
 
 | Modifier with H/J/K/L | Action |

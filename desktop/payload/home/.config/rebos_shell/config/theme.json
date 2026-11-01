@@ -487,5 +487,6 @@
         ],
         "itemColor": "error",
         "opacity": 1
-    }
+    },
+    "shellStyle": "glass"
 }
