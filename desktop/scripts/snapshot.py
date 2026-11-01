@@ -10,7 +10,8 @@ from datetime import datetime, timezone
 
 ROOT = Path(__file__).resolve().parents[1]
 SKIP = {'.git', '__pycache__', '.ruff_cache', '.qmlls.ini', 'AGENTS.md', '.agents',
-        '.sisyphus', 'fish_variables', 'config.local.fish'}
+        '.sisyphus', 'fish_variables', 'config.local.fish',
+        'FanControlWindow.qml', 'thinkpad_fan.py', 'test_thinkpad_fan.py'}
 
 
 def ignore(directory, names):
@@ -63,7 +64,7 @@ def build(home):
     shell = home / '.config/quickshell'
     for name in ('assets', 'config', 'modules', 'scripts'):
         copy('.config/quickshell/' + name)
-    for name in ('shell.qml', 'AnimeMenu.qml', 'FanShell.qml', 'cli.sh', 'version', 'LICENSE', 'README.md'):
+    for name in ('shell.qml', 'AnimeMenu.qml', 'cli.sh', 'version', 'LICENSE', 'README.md'):
         if (shell / name).exists():
             copy('.config/quickshell/' + name)
     # Keep the portable startup workaround versioned, independent of whether
@@ -88,8 +89,6 @@ def build(home):
     copy('.config/systemd/user/rebos-panel.service',
          ROOT.parent / '.config/systemd/user/rebos-panel.service')
     copy('.local/share/applications/rebos-assistant.desktop')
-    copy('.local/bin/thinkpad-fan-control')
-    copy('.local/share/applications/thinkpad-fan-control.desktop')
     write('.local/bin/assistant-sudo', '#!/bin/sh\nexec /usr/bin/python3 "$HOME/.config/quickshell/scripts/assistant_sudo.py" "$@"\n', 0o755)
     copy('.local/bin/config-browser')
     copy('.local/share/applications/config-browser.desktop')
@@ -161,6 +160,9 @@ def build(home):
     kitty.write_text('\n'.join(kitty_lines).rstrip() + '\n\ninclude keybindings-defaults.conf\ninclude keybindings-personal.conf\n')
     # Use native monitor modes and normal power handling on other computers.
     import re
+    # Do not reintroduce the retired fan window rule from a source desktop.
+    profile = re.sub(r'^(?:// Compact fan controls[^\n]*\n)?window-rule \{(?:(?!^\}).)*ThinkPad Fan Control(?:(?!^\}).)*^\}\n',
+                     '', profile, flags=re.M | re.S)
     profile = re.sub(r'^output "[^"]+" \{.*?^\}\n', '', profile, flags=re.M | re.S)
     profile = re.sub(r'^debug \{.*?^\}\n', '', profile, flags=re.M | re.S)
     profile = profile.replace('    disable-power-key-handling\n', '')

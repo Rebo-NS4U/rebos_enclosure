@@ -34,8 +34,8 @@ must be available for private sources. `REPO_URL` and `BRANCH` explicitly overri
 the source and branch. Use `--release TAG` to fetch an exact release tag instead:
 
 ```bash
-bash install.sh --release v1.3.0 --interactive --dry-run
-bash install.sh --release v1.3.0
+bash install.sh --release v1.3.1 --interactive --dry-run
+bash install.sh --release v1.3.1
 ```
 
 The selector works through both installer entry points. A missing tag stops before
@@ -169,8 +169,8 @@ Select a specific release with its exact tag from
 [GitHub releases](https://github.com/Rebo-NS4U/rebos_enclosure/releases):
 
 ```bash
-./update.sh --release v1.3.0 --dry-run
-./update.sh --release v1.3.0
+./update.sh --release v1.3.1 --dry-run
+./update.sh --release v1.3.1
 ```
 
 Omitting `--release` uses the default branch. `--release` and `--branch` are

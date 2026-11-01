@@ -65,3 +65,9 @@ Not exercised: real pacman installation or upgrade, AUR downloads/builds, system
 - All 61 desktop installer/update tests passed, including real local Git fetches of annotated and lightweight release tags, same-name branch isolation, missing-tag refusal, argument forwarding, repeated updates and preference preservation.
 - Installer and updater help expose `--release TAG`. Bash syntax checks, whitespace checks and the complete payload checksum inventory passed (108 installation entries).
 - Release selection was exercised without package upgrades or changes to the active desktop. Live package upgrades, hardware and boot/login remain outside these checks.
+
+## Fan-control removal — v1.3.1
+
+- Removed the fan-control window, helper, launcher, desktop entry and window rules from source and payload. Snapshot filtering prevents the retired files from being copied from a source desktop again.
+- All 61 desktop installer/update tests passed. Payload verification passed for 106 installation entries; shell syntax, whitespace and retired-file inventory checks passed.
+- Existing desktop files and running applications were not changed. This release does not remove old launchers from existing installations or alter cooling settings.

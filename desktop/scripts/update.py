@@ -27,7 +27,7 @@ def main():
     parser.add_argument('--repository', default=REPOSITORY, help='Git source (default: official GitHub repository)')
     source = parser.add_mutually_exclusive_group()
     source.add_argument('--branch', help='Branch override; defaults to remote default branch')
-    source.add_argument('--release', help='Exact release tag, e.g. v1.3.0')
+    source.add_argument('--release', help='Exact release tag, e.g. v1.3.1')
     parser.add_argument('--files-only', action='store_true', help='Skip package upgrades')
     parser.add_argument('--no-aur', action='store_true', help='Skip installed AUR package upgrades')
     parser.add_argument('--dry-run', action='store_true', help='Fetch and verify only; no installed files or packages change')

@@ -437,12 +437,3 @@ window-rule {
 spawn-at-startup "/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1"
 spawn-at-startup "sh" "-c" "exec udiskie --no-notify"
 spawn-at-startup "sh" "-c" "wl-paste --watch cliphist store"
-
-// Compact fan controls share the shell surface and stay above tiled windows.
-window-rule {
-    match app-id=r#"^(org\.quickshell|quickshell)([.:].*)?$"# title="^ThinkPad Fan Control$"
-    open-floating true
-    default-column-width { fixed 480; }
-    default-window-height { fixed 360; }
-    border { off; }
-}

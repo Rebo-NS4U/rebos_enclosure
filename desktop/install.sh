@@ -51,7 +51,7 @@ No arguments in a terminal opens the interactive setup menu.
   --files-only              User files/monitor settings only; no system changes
   --dry-run                 Show the plan and verify payload; make no changes
                             Fetches selected source into temporary storage first
-  --release TAG             Install an exact release tag, e.g. v1.3.0
+  --release TAG             Install an exact release tag, e.g. v1.3.1
                             Cannot combine with --local-snapshot or BRANCH
   --local-snapshot          Explicitly use this checkout without fetching
   --yes                     Accept plan; preserve AUR package review

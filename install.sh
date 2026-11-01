@@ -9,11 +9,11 @@ installer_args=()
 while (($#)); do
     case $1 in
         --release)
-            [[ $# -ge 2 && -n $2 && $2 != -* ]] || { printf '%s\n' '--release needs a tag, e.g. v1.3.0' >&2; exit 1; }
+            [[ $# -ge 2 && -n $2 && $2 != -* ]] || { printf '%s\n' '--release needs a tag, e.g. v1.3.1' >&2; exit 1; }
             release=$2; shift ;;
         --release=*)
             release=${1#*=}
-            [[ -n $release && $release != -* ]] || { printf '%s\n' '--release needs a tag, e.g. v1.3.0' >&2; exit 1; } ;;
+            [[ -n $release && $release != -* ]] || { printf '%s\n' '--release needs a tag, e.g. v1.3.1' >&2; exit 1; } ;;
         --local-snapshot) local_snapshot=1; installer_args+=("$1") ;;
         -h|--help) show_help=1; installer_args+=("$1") ;;
         *) installer_args+=("$1") ;;
