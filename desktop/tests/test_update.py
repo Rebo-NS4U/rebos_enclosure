@@ -44,13 +44,32 @@ class PackageApprovalTests(unittest.TestCase):
 @unittest.skipIf(os.geteuid() == 0, 'Updater intentionally refuses root')
 class UpdateTests(unittest.TestCase):
     def test_fetch_preview_apply_and_repeat(self):
+        self.exercise_update()
+
+    def test_release_preview_apply_and_repeat(self):
+        self.exercise_update('v1.3.0')
+
+    def test_missing_release_does_not_fall_back_to_branch(self):
+        self.exercise_update('v9.9.9')
+
+    def test_invalid_and_conflicting_release_options(self):
+        for options in (['--release'], ['--release='], ['--release', '../bad'],
+                        ['--release', 'v1.3.0', '--branch', 'main']):
+            with self.subTest(options=options):
+                result = subprocess.run(['bash', str(SCRIPT), *options],
+                                        capture_output=True, text=True)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn('error:', result.stderr)
+                self.assertNotIn('Fetching', result.stdout)
+
+    def exercise_update(self, release=None):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             repo = root / 'remote'
             payload = repo / 'desktop/payload'
             source = payload / 'home/.config/quickshell/shell.qml'
             source.parent.mkdir(parents=True)
-            source.write_text('latest source')
+            source.write_text('release source')
             preference = payload / 'home/.config/rebos_shell/config/theme.json'
             preference.parent.mkdir(parents=True)
             preference.write_text('{"theme":"default"}')
@@ -67,6 +86,15 @@ class UpdateTests(unittest.TestCase):
             git('init')
             git('add', '.')
             git('-c', 'user.name=Test', '-c', 'user.email=test@example.com', 'commit', '-m', 'snapshot')
+            git('-c', 'user.name=Test', '-c', 'user.email=test@example.com',
+                'tag', '-a', 'v1.3.0', '-m', 'Release')
+            source.write_text('latest source')
+            hashes[str(source.relative_to(payload))] = hashlib.sha256(source.read_bytes()).hexdigest()
+            (payload / 'checksums.json').write_text(json.dumps(hashes))
+            git('add', '.')
+            git('-c', 'user.name=Test', '-c', 'user.email=test@example.com', 'commit', '-m', 'After release')
+            git('branch', 'v1.3.0')
+            git('branch', 'v9.9.9')
             home = root / 'home'
             existing = home / '.config/rebos_shell/config/theme.json'
             existing.parent.mkdir(parents=True)
@@ -75,7 +103,16 @@ class UpdateTests(unittest.TestCase):
             for key in ['XDG_CONFIG_HOME', 'XDG_DATA_HOME', 'XDG_CACHE_HOME', 'XDG_STATE_HOME']:
                 environment.pop(key, None)
             command = ['bash', str(SCRIPT), '--repository', str(repo), '--files-only']
+            if release:
+                command += ['--release', release]
             preview = subprocess.run(command + ['--dry-run'], env=environment, capture_output=True, text=True)
+            if release == 'v9.9.9':
+                self.assertNotEqual(preview.returncode, 0)
+                self.assertFalse((home / '.config/quickshell').exists())
+                self.assertFalse((home / '.local/state/rebos-desktop').exists())
+                self.assertFalse((home / 'greeter-refreshed').exists())
+                self.assertEqual(existing.read_text(), '{"theme":"personal"}')
+                return
             self.assertEqual(preview.returncode, 0, preview.stderr)
             self.assertFalse((home / '.config/quickshell').exists())
             self.assertFalse((home / 'greeter-refreshed').exists())
@@ -84,5 +121,6 @@ class UpdateTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertEqual((home / 'greeter-refreshed').read_text(), 'yes')
                 self.assertEqual(existing.read_text(), '{"theme":"personal"}')
-                self.assertEqual((home / '.config/quickshell/shell.qml').read_text(), 'latest source')
+                self.assertEqual((home / '.config/quickshell/shell.qml').read_text(),
+                                 'release source' if release else 'latest source')
             self.assertEqual(len(list((home / '.local/state/rebos-desktop/backups').iterdir())), 2)

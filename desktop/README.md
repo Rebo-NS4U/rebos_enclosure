@@ -31,7 +31,17 @@ exact commit being used. A fetch failure stops installation; it never silently
 uses an old checkout. Your checkout and local edits remain untouched. `--dry-run`
 also fetches, but does not change installed files or packages. Git authentication
 must be available for private sources. `REPO_URL` and `BRANCH` explicitly override
-the source and branch. For intentional offline previews or testing local edits,
+the source and branch. Use `--release TAG` to fetch an exact release tag instead:
+
+```bash
+bash install.sh --release v1.3.0 --interactive --dry-run
+bash install.sh --release v1.3.0
+```
+
+The selector works through both installer entry points. A missing tag stops before
+installation; a branch with the same name is never used in its place. `--release`
+cannot be combined with `BRANCH` or `--local-snapshot`.
+For intentional offline previews or testing local edits,
 use `bash install.sh --local-snapshot --dry-run`; `--local-snapshot` deliberately
 bypasses the freshness check. Help is available without network access.
 
@@ -154,6 +164,21 @@ Run these commands from the installer folder you cloned or extracted:
 ```
 
 The first command previews the update. Log out and back in after applying the update.
+
+Select a specific release with its exact tag from
+[GitHub releases](https://github.com/Rebo-NS4U/rebos_enclosure/releases):
+
+```bash
+./update.sh --release v1.3.0 --dry-run
+./update.sh --release v1.3.0
+```
+
+Omitting `--release` uses the default branch. `--release` and `--branch` are
+mutually exclusive; `--repository URL` can still select another source. A missing
+tag stops before changes. Personal settings are retained when selecting a release.
+Release selection pins desktop files, while package upgrades use current Arch/AUR
+repositories. Add `--files-only` to skip package upgrades. Selecting an older
+desktop release does not downgrade packages or reverse system service changes.
 
 ## Backups and recovery
 

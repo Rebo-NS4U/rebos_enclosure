@@ -2,7 +2,7 @@
 
 A complete **Niri + Quickshell desktop for x86_64 Arch Linux**, with matching app themes, Kitty/Fish, Neovim and an interactive installer.
 
-[Download v1.0.0](https://github.com/Rebo-NS4U/rebos_enclosure/releases/latest) · [Installation guide](desktop/README.md) · [Package list](desktop/packages/README.md)
+[Download latest release](https://github.com/Rebo-NS4U/rebos_enclosure/releases/latest) · [Installation guide](desktop/README.md) · [Package list](desktop/packages/README.md)
 
 ## Screenshots
 
@@ -56,6 +56,16 @@ local edits. Use `--local-snapshot` only when deliberately running the local fil
 
 After installation, reboot and choose **Niri**. **Super+Return** opens Kitty, **Super+Space** opens the launcher, and **Super+Shift+W** opens wallpapers. See [first-login setup and shortcuts](desktop/README.md#first-login) for app initialization and personal keybindings.
 
+To install a specific release, use its exact tag:
+
+```bash
+bash install.sh --release v1.3.0 --interactive --dry-run
+bash install.sh --release v1.3.0
+```
+
+The selector also works with `desktop/install.sh`. Missing tags stop installation;
+`--release` cannot be combined with `BRANCH` or `--local-snapshot`.
+
 ## Update
 
 Already installed and just want the latest version? Use this to update your system and desktop while keeping your personal settings.
@@ -68,6 +78,19 @@ Run from the installer folder you cloned or extracted:
 ```
 
 The first command previews the update. Log out and back in after applying it.
+
+To update to a specific release:
+
+```bash
+./update.sh --release v1.3.0 --dry-run
+./update.sh --release v1.3.0
+```
+
+Use the exact tag from [GitHub releases](https://github.com/Rebo-NS4U/rebos_enclosure/releases).
+Without `--release`, both commands fetch the latest default branch. Release selection
+pins desktop files; package upgrades still use current Arch/AUR repositories. Add
+`--files-only` to the update command to skip package upgrades. Updating preserves
+personal preferences; choosing an older release does not roll back packages.
 
 ## Help and recovery
 

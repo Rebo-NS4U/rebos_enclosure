@@ -104,6 +104,46 @@ exit "${INSTALL_EXIT_CODE:-0}"
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(self.captured('revision').read_text(), 'old')
 
+    def test_release_selects_exact_tag_and_strips_selector(self):
+        self.git('-c', 'user.name=Installer Test', '-c', 'user.email=test@example.invalid',
+                 'tag', '-a', 'v1.3.0', 'HEAD~1', '-m', 'Release')
+        # A branch with the same name must not override the release tag.
+        self.git('branch', 'v1.3.0')
+        for selector in (['--release', 'v1.3.0'], ['--release=v1.3.0']):
+            with self.subTest(selector=selector):
+                result = self.run_installer(*selector, '--dry-run', '--profile', 'core')
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(self.captured('revision').read_text(), 'old')
+                self.assertEqual(self.captured('args').read_text().splitlines(),
+                                 ['--dry-run', '--profile', 'core'])
+                self.assertFalse(Path(self.captured('directory').read_text().strip()).exists())
+
+    def test_direct_desktop_release_selection(self):
+        self.git('tag', 'v1.3.0', 'HEAD~1')
+        shutil.copyfile(ROOT / 'desktop/install.sh', self.checkout / 'desktop/install.sh')
+        result = self.run_installer('--release', 'v1.3.0', '--dry-run', desktop=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.captured('revision').read_text(), 'old')
+
+    def test_missing_release_does_not_fall_back_to_branch(self):
+        self.git('branch', 'v9.9.9')
+        result = self.run_installer('--release', 'v9.9.9', '--dry-run')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('No local fallback', result.stderr)
+        self.assertFalse(self.captured('revision').exists())
+
+    def test_invalid_and_conflicting_release_options(self):
+        for args in (['--release'], ['--release='], ['--release', '../bad'],
+                     ['--release', 'v1.3.0', '--local-snapshot']):
+            with self.subTest(args=args):
+                result = self.run_installer(*args)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertFalse(self.captured('revision').exists())
+        self.env['BRANCH'] = 'main'
+        result = self.run_installer('--release', 'v1.3.0')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('cannot be combined', result.stderr)
+
 
 if __name__ == '__main__':
     unittest.main()

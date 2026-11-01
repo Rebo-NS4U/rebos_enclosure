@@ -50,7 +50,9 @@ No arguments in a terminal opens the interactive setup menu.
   --no-power                Skip power-profiles-daemon setup
   --files-only              User files/monitor settings only; no system changes
   --dry-run                 Show the plan and verify payload; make no changes
-                            Fetches latest source into temporary storage first
+                            Fetches selected source into temporary storage first
+  --release TAG             Install an exact release tag, e.g. v1.3.0
+                            Cannot combine with --local-snapshot or BRANCH
   --local-snapshot          Explicitly use this checkout without fetching
   --yes                     Accept plan; preserve AUR package review
   --help                    Show this help

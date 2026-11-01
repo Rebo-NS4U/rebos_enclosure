@@ -59,3 +59,9 @@ Not exercised: real pacman installation or upgrade, AUR downloads/builds, system
 - All 43 installer tests passed, including another-home installation/restoration, personal shortcut preservation, independent panel/assistant detection, spaces in home paths, and skipping unsupported Qt versions. The payload checksum inventory and Bash syntax checks passed.
 - Built the packaged guard into a temporary data directory, verified its library/source hashes, and ran its native Wayland regression test with stale, null, live and empty output lists. The user service passed systemd verification.
 - Earlier live desktop verification passed menu open/close and launcher checks after repair, and a desktop screenshot confirmed the blur was cleared. Installer verification did not restart the current desktop or assistant. Fresh-machine boot, package downloads and other hardware/Qt versions remain untested.
+
+## Release selection — v1.3.0
+
+- All 61 desktop installer/update tests passed, including real local Git fetches of annotated and lightweight release tags, same-name branch isolation, missing-tag refusal, argument forwarding, repeated updates and preference preservation.
+- Installer and updater help expose `--release TAG`. Bash syntax checks, whitespace checks and the complete payload checksum inventory passed (108 installation entries).
+- Release selection was exercised without package upgrades or changes to the active desktop. Live package upgrades, hardware and boot/login remain outside these checks.
