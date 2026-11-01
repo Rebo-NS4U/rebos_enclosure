@@ -12,7 +12,7 @@ Clone/update rebos_enclosure, then run its root install.sh.
 Overrides: REPO_URL, CLONE_DIR, INSTALL_ROOT, BRANCH.
 The repository is private: authenticate Git before using this helper.
 This bootstrap creates/updates its checkout even when forwarding --dry-run.
-For a completely read-only preview, run bash install.sh --dry-run in an existing clone.
+For a preview without fetching, run bash install.sh --local-snapshot --dry-run in an existing clone.
 EOF
     exit 0
 fi

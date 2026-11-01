@@ -48,6 +48,12 @@ Review the preview before installing. Run the installer as your normal user; it 
 
 For a smaller install, use `bash install.sh --profile core`. Add `--no-login` to keep your login manager or `--keep-network` to keep your network setup. See `bash install.sh --help` for all options.
 
+Installs and previews fetch the latest source into a temporary snapshot and print
+its commit. They stop if fetching fails, preserving the original checkout and
+local edits. Use `--local-snapshot` only when deliberately running the local files
+(for example, an offline preview or testing an unpublished change). See the
+[installer guide](desktop/README.md) for source and branch overrides.
+
 After installation, reboot and choose **Niri**. **Super+Return** opens Kitty, **Super+Space** opens the launcher, and **Super+Shift+W** opens wallpapers. See [first-login setup and shortcuts](desktop/README.md#first-login) for app initialization and personal keybindings.
 
 ## Update

@@ -2,6 +2,18 @@
 # Install into an existing Arch system as the normal desktop user.
 set -Eeuo pipefail
 ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+# Direct desktop/ invocations must use the same freshness check as the root entry.
+local_snapshot=0
+installer_args=()
+for argument in "$@"; do
+    if [[ $argument == --local-snapshot ]]; then local_snapshot=1
+    else installer_args+=("$argument")
+    fi
+done
+if ((!local_snapshot)) && [[ ${REBOS_INSTALL_SNAPSHOT:-} != "$ROOT" ]]; then
+    exec bash "$ROOT/../install.sh" "$@"
+fi
+set -- "${installer_args[@]}"
 export PYTHONDONTWRITEBYTECODE=1
 planner=(python3 "$ROOT/scripts/setup.py")
 plan_args=()
@@ -38,6 +50,8 @@ No arguments in a terminal opens the interactive setup menu.
   --no-power                Skip power-profiles-daemon setup
   --files-only              User files/monitor settings only; no system changes
   --dry-run                 Show the plan and verify payload; make no changes
+                            Fetches latest source into temporary storage first
+  --local-snapshot          Explicitly use this checkout without fetching
   --yes                     Accept plan; preserve AUR package review
   --help                    Show this help
 EOF
@@ -219,4 +233,4 @@ printf '\nDesktop files installed. Selected plan: ~/.local/state/rebos-desktop/i
 if ((!files_only)); then printf 'Reboot and choose Niri in your selected login setup.\n'; fi
 printf 'Super+Return terminal | Super+Space launcher | Super+Shift+W wallpapers\n'
 if ((hybrid)); then printf 'NVIDIA offload: rebos-prime-run <application>\n'; fi
-printf 'After opening Zen/Spotify once: bash "%s/scripts/finish-apps.sh"\n' "$ROOT"
+printf 'After opening Zen/Spotify once: run bash desktop/scripts/finish-apps.sh from your Enclosure checkout.\n'

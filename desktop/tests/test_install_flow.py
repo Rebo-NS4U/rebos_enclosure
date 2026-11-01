@@ -54,7 +54,7 @@ class InstallFlowTests(unittest.TestCase):
                        INSTALL_COMMAND_LOG=str(log), PYTHONDONTWRITEBYTECODE='1')
             for key in ('XDG_CONFIG_HOME', 'XDG_DATA_HOME', 'XDG_STATE_HOME', 'XDG_CACHE_HOME'):
                 env.pop(key, None)
-            args = ['bash', str(ROOT / 'install.sh'), '--yes', '--groups', 'none',
+            args = ['bash', str(ROOT / 'install.sh'), '--local-snapshot', '--yes', '--groups', 'none',
                     '--graphics', 'nvidia-open', '--kernel-headers', 'linux-headers',
                     '--hybrid', '--early-kms', '--keep-network',
                     '--no-bluetooth', '--no-power', '--monitors',

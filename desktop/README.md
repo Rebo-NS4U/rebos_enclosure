@@ -25,6 +25,16 @@ bash install.sh
 
 Commands below are run from the repository root. The implementation and payload live in `desktop/`. No separate installer archive or submodules are needed. Existing Paru or Yay is reused; otherwise the installer builds Paru. Standard XDG user folders are initialized during full/core installation.
 
+Both `install.sh` and `desktop/install.sh` fetch a fresh temporary snapshot of the
+official repository's default branch before planning or installing, and print the
+exact commit being used. A fetch failure stops installation; it never silently
+uses an old checkout. Your checkout and local edits remain untouched. `--dry-run`
+also fetches, but does not change installed files or packages. Git authentication
+must be available for private sources. `REPO_URL` and `BRANCH` explicitly override
+the source and branch. For intentional offline previews or testing local edits,
+use `bash install.sh --local-snapshot --dry-run`; `--local-snapshot` deliberately
+bypasses the freshness check. Help is available without network access.
+
 The default **full** profile installs the desktop and applications, then offers normal AUR package review for Zen, Spicetify, VS Code and mpvpaper (video wallpapers). Review package build files as you would for any AUR installation. `--yes` accepts the desktop plan; it does not bypass AUR review. Internet and current Arch mirrors are required; this is a configuration snapshot, not an offline package mirror. Core and `--no-aur` installs support image wallpapers; video wallpapers require mpvpaper separately.
 
 ```bash
