@@ -14,6 +14,8 @@ QtObject {
     property int battery: -1
     property bool batteryAvailable: battery >= 0
     property bool connecting: false
+    property real lastInfoRefresh: 0
+    property bool infoRefreshing: false
 
     signal infoUpdated()
 
@@ -34,7 +36,11 @@ QtObject {
     }
 
     function updateInfo() {
+        if (infoRefreshing) return;
+        infoRefreshing = true;
+        lastInfoRefresh = Date.now();
         return BluetoothService.runAsync(["bluetoothctl", "info", address]).then(text => {
+            infoRefreshing = false;
             Qt.callLater(() => {
                 root.battery = -1;
                 const lines = text.split("\n");
@@ -59,6 +65,7 @@ QtObject {
                 root.infoUpdated();
             });
         }).catch(e => {
+            infoRefreshing = false;
             console.error(`Failed to get info for ${address}: ${e}`);
         });
     }

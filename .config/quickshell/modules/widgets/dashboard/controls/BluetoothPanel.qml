@@ -36,16 +36,24 @@ Item {
         BluetoothService.stopDiscovery();
     }
 
-    // Device list - fills entire width for scroll/drag
+    BluetoothPairingPrompt {
+        id: pairingPrompt
+        anchors.top: parent.top
+        anchors.horizontalCenter: parent.horizontalCenter
+        width: root.contentWidth
+    }
+
+    // Keep the code visible even when the device list is scrolled.
     ListView {
         id: deviceList
         anchors.fill: parent
+        anchors.topMargin: pairingPrompt.visible ? pairingPrompt.implicitHeight + 12 : 0
         clip: true
         spacing: 4
         cacheBuffer: 1000
         reuseItems: true
 
-        model: BluetoothService.friendlyDeviceList
+        model: BluetoothService.deviceModel
 
         header: Item {
             width: deviceList.width
@@ -99,7 +107,8 @@ Item {
         }
 
         delegate: Item {
-            required property var modelData
+            id: delegateRoot
+            required property var device
             width: deviceList.width
             height: deviceItem.height
 
@@ -107,7 +116,7 @@ Item {
                 id: deviceItem
                 width: root.contentWidth
                 anchors.horizontalCenter: parent.horizontalCenter
-                device: parent.modelData
+                device: delegateRoot.device
             }
         }
 

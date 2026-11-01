@@ -4,6 +4,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import qs.modules.globals
 
 Singleton {
     id: root
@@ -18,6 +19,13 @@ Singleton {
     
     // Cached sorted device list - only updates when devices change
     property list<BluetoothDevice> friendlyDeviceList: []
+
+    // Incremental row changes preserve delegates and the ListView viewport.
+    property alias deviceModel: deviceListModel
+    ListModel {
+        id: deviceListModel
+        dynamicRoles: true
+    }
     
     // Queue for batching updateInfo calls
     property list<BluetoothDevice> pendingInfoUpdates: []
@@ -25,6 +33,13 @@ Singleton {
     readonly property bool isUpdating: pendingActions > 0
     property int pendingActions: 0
     property string lastError: ""
+    property string pairingAddress: ""
+    property string pairingCode: ""
+    property int pairingEntered: 0
+    readonly property string pairingDeviceName: {
+        const device = devices.find(item => item.address === pairingAddress);
+        return device ? device.name : "keyboard";
+    }
     property bool wasEnabledBeforeSleep: false
 
     Connections {
@@ -63,7 +78,7 @@ Singleton {
     }
 
     function updateFriendlyList() {
-        friendlyDeviceList = [...devices].sort((a, b) => {
+        const sorted = [...devices].sort((a, b) => {
             // Connected devices first
             if (a.connected && !b.connected) return -1;
             if (!a.connected && b.connected) return 1;
@@ -73,6 +88,28 @@ Singleton {
             // Then by name
             return (a.name || "").localeCompare(b.name || "");
         });
+        if (sorted.length !== friendlyDeviceList.length || sorted.some((item, i) => item !== friendlyDeviceList[i]))
+            friendlyDeviceList = sorted;
+
+        for (let i = deviceListModel.count - 1; i >= 0; i--) {
+            if (sorted.indexOf(deviceListModel.get(i).device) === -1)
+                deviceListModel.remove(i);
+        }
+        for (let i = 0; i < sorted.length; i++) {
+            if (i < deviceListModel.count && deviceListModel.get(i).device === sorted[i])
+                continue;
+            let existingIndex = -1;
+            for (let j = i + 1; j < deviceListModel.count; j++) {
+                if (deviceListModel.get(j).device === sorted[i]) {
+                    existingIndex = j;
+                    break;
+                }
+            }
+            if (existingIndex >= 0)
+                deviceListModel.move(existingIndex, i, 1);
+            else
+                deviceListModel.insert(i, { device: sorted[i] });
+        }
     }
 
     function onDeviceInfoUpdated(): void {
@@ -123,11 +160,15 @@ Singleton {
             id: internalProc
             property var resolve
             property var reject
+            property var onOutput
             property string buffer: ""
             property string errorBuffer: ""
             
             stdout: SplitParser {
-                onRead: data => internalProc.buffer += data + "\n"
+                onRead: data => {
+                    internalProc.buffer += data + "\n";
+                    if (internalProc.onOutput) internalProc.onOutput(data);
+                }
             }
             
             stderr: SplitParser {
@@ -142,22 +183,23 @@ Singleton {
         }
     }
 
-    function runAsync(command, environment = {}) {
+    function runAsync(command, environment = {}, onOutput = null) {
         return new Promise((resolve, reject) => {
             const proc = asyncProcessComp.createObject(root, {
                 command: command,
                 environment: Object.assign({ LANG: "C.UTF-8", LC_ALL: "C.UTF-8" }, environment),
                 resolve: resolve,
-                reject: reject
+                reject: reject,
+                onOutput: onOutput
             });
             proc.running = true;
         });
     }
 
-    function runAction(command): var {
+    function runAction(command, onOutput = null): var {
         pendingActions++;
         lastError = "";
-        return runAsync(command).then(result => {
+        return runAsync(command, {}, onOutput).then(result => {
             pendingActions--;
             updateDevices();
             return result;
@@ -172,7 +214,12 @@ Singleton {
     function setEnabled(value: bool, scanAfterPowerOn: bool): void {
         if (SuspendManager.isSuspending || isUpdating) return;
         if (!value) stopDiscovery();
-        runAction(["bluetoothctl", "power", value ? "on" : "off"]).then(() => {
+        // A software rfkill block must be cleared before BlueZ can power on.
+        // Powering off stays within BlueZ so other radios are unaffected.
+        const unblock = value
+            ? runAction(["rfkill", "unblock", "bluetooth"])
+            : Promise.resolve();
+        unblock.then(() => runAction(["bluetoothctl", "power", value ? "on" : "off"])).then(() => {
             enabled = value;
             if (value && scanAfterPowerOn) startDiscovery();
         }).catch(error => {});
@@ -229,7 +276,33 @@ Singleton {
     }
 
     function pairDevice(address: string): var {
-        return runAction(["bluetoothctl", "--agent", "NoInputNoOutput", "pair", address]);
+        if (pairingAddress) return Promise.reject("Another device is already pairing");
+        pairingAddress = address;
+        pairingCode = "";
+        pairingEntered = 0;
+        return runAction(["python3", Qt.resolvedUrl("../../scripts/bluetooth_pair.py").toString().replace(/^file:\/\//, ""), address], data => {
+            try {
+                const event = JSON.parse(data);
+                if (event.event === "keyboard-code") {
+                    root.pairingCode = String(event.code);
+                    root.pairingEntered = event.entered || 0;
+                } else if (event.event === "clear-code") {
+                    root.pairingCode = "";
+                }
+            } catch (error) { console.warn("Bluetooth pairing output:", data); }
+        }).then(result => {
+            root.clearPairingPrompt();
+            return result;
+        }, error => {
+            root.clearPairingPrompt();
+            throw error;
+        });
+    }
+
+    function clearPairingPrompt() {
+        pairingAddress = "";
+        pairingCode = "";
+        pairingEntered = 0;
     }
 
     function trustDevice(address: string): var {
@@ -251,7 +324,8 @@ Singleton {
     }
 
     function updateStatus() {
-        updateDebouncer.restart();
+        // Continuous advertisements must not postpone the update indefinitely.
+        if (!updateDebouncer.running) updateDebouncer.start();
     }
 
     function updateDevices() {
@@ -277,16 +351,16 @@ Singleton {
         stdout: SplitParser {
             onRead: (data) => {
                 if (data && (data.includes("Connected") || data.includes("Powered") || data.includes("PropertiesChanged") || data.includes("InterfacesAdded") || data.includes("InterfacesRemoved"))) {
-                    updateDebouncer.restart();
+                    root.updateStatus();
                 }
             }
         }
     }
 
-    // Periodic poll every 2 seconds
+    // D-Bus handles changes; retain a slower idle fallback.
     Timer {
         id: updateTimer
-        interval: 2000
+        interval: !dbusMonitorProcess.running || GlobalStates.dashboardOpen || root.discovering || root.isUpdating ? 2500 : 15000
         running: !SuspendManager.isSuspending
         repeat: true
         onTriggered: {
@@ -394,7 +468,7 @@ Singleton {
                         }
                         const connectionChanged = existing.connected !== data.connected;
                         existing.connected = data.connected;
-                        if (connectionChanged || (data.connected && existing.battery < 0)) {
+                        if (connectionChanged || (data.connected && Date.now() - existing.lastInfoRefresh >= 60000)) {
                             root.queueInfoUpdate(existing);
                         }
                     } else {

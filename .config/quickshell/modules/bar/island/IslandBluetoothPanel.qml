@@ -252,6 +252,10 @@ Item {
             }
         }
 
+        BluetoothPairingPrompt {
+            Layout.fillWidth: true
+        }
+
         // Bluetooth device list
         StyledText {
             Layout.fillWidth: true
@@ -272,11 +276,11 @@ Item {
                 anchors.fill: parent
                 clip: true
                 spacing: 6
-                model: BluetoothService.friendlyDeviceList
+                model: BluetoothService.deviceModel
 
                 delegate: Item {
                     id: delegateRoot
-                    required property var modelData
+                    required property var device
                     width: deviceList.width
                     height: deviceItem.implicitHeight
 
@@ -284,7 +288,7 @@ Item {
                         id: deviceItem
                         width: parent.width
                         baseVariant: "internalbg"
-                        device: delegateRoot.modelData
+                        device: delegateRoot.device
                     }
                 }
             }
