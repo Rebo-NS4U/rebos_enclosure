@@ -208,6 +208,7 @@ cursor {
           '[preferred]\ndefault=gnome;gtk;\norg.freedesktop.impl.portal.FileChooser=gtk\n')
     write('.local/bin/zen-browser', '''#!/usr/bin/env bash
 set -euo pipefail
+if [[ -x "$HOME/.tarball-installations/zen/zen" ]]; then exec "$HOME/.tarball-installations/zen/zen" "$@"; fi
 if command -v zen-browser-bin >/dev/null; then exec zen-browser-bin "$@"; fi
 if [[ -x /usr/bin/zen-browser ]]; then exec /usr/bin/zen-browser "$@"; fi
 if [[ -x /usr/bin/zen ]]; then exec /usr/bin/zen "$@"; fi

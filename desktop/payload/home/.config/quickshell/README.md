@@ -27,8 +27,7 @@ Version **1.1.6** adds the redesigned clock dashboard, edge window navigation,
 desktop shortcut creation and adjustable window corners. It also updates shell
 outlines, media handling, blur and idle network resource use.
 
-Published source: [Rebo-NS4U/rebos_shell](https://github.com/Rebo-NS4U/rebos_shell).
-For the complete Arch desktop, use the bundled
+Published source and the complete Arch desktop are maintained in the
 [rebos_enclosure installer](https://github.com/Rebo-NS4U/rebos_enclosure).
 
 - Runs directly on [Niri](https://github.com/YaLTeR/niri) via its JSON event stream
@@ -67,42 +66,22 @@ Or use the CLI wrapper:
 
 ## Updater
 
-Use [update.sh](update.sh) to pull the latest shell content from
-[Rebo-NS4U/rebos_shell](https://github.com/Rebo-NS4U/rebos_shell) while keeping
-your saved preferences. Run it from your existing shell Git checkout:
+Use the [rebos_enclosure updater](https://github.com/Rebo-NS4U/rebos_enclosure/blob/main/update.sh)
+from your enclosure checkout to update the bundled desktop while keeping saved
+preferences:
 
 ```bash
-cd /path/to/rebos_shell
-./update.sh --check   # Preview the changes first
-./update.sh           # Apply the update
+cd /path/to/rebos_enclosure
+./update.sh --dry-run     # Fetch and verify without changing installed files
+./update.sh --files-only  # Apply desktop files without upgrading packages
 ```
 
-The updater follows GitHub's default branch and prints its backup location before
-applying changes. Git and Python 3 are required; run it as your normal user.
-To update a checkout from another directory or select a branch:
-
-```bash
-/path/to/rebos_shell/update.sh --path /path/to/rebos_shell --check
-./update.sh --branch rebos-shell-refresh
-```
-
-It updates shell source only, without installing packages or restarting desktop
-services. For a Nix-managed installation, update through Nix instead. The bundled
-desktop installer snapshot has no Git metadata and cannot be updated with this
-script; `--path` must point to a shell Git checkout.
-
-Only changed source files are replaced. Obsolete tracked files are removed;
-unrelated untracked files remain. Local code edits and files that collide with new
-source files are backed up before replacement. Each backup contains only affected
-existing files, a Git index copy, and a manifest listing the old/new commits and
-added/removed paths. Its location is printed during the update, normally under
-`~/.local/state/rebos_shell/backups/update-*`. Directory conflicts stop the update
-before any source files are changed.
-
-Saved preferences under `~/.config/rebos_shell`, personal state/data/cache,
-wallpapers, and Niri settings are left in place (including custom XDG locations).
-New settings continue to use the shell's normal defaults. Source changes are
-picked up by Quickshell's normal hot reload.
+The updater fetches the remote default branch, verifies the payload, and creates
+a recovery backup under `~/.local/state/rebos-desktop/backups`. Git and Python 3
+are required; run it as your normal user. Standard XDG paths under HOME are required.
+Existing preferences and wallpapers are retained. Without `--files-only`, the
+updater also upgrades installed packages. Log out and back in after applying an
+update to load the updated desktop.
 
 The installer and Nix package are still inherited scaffolding and may need
 adjustment for this fork.
