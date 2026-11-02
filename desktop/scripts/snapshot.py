@@ -270,6 +270,9 @@ Categories=Settings;
     system.mkdir(parents=True)
     for name in ('config.toml', 'regreet.toml'):
         shutil.copy2(Path('/etc/greetd') / name, system / name)
+    pam = payload / 'system/pam.d'
+    pam.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(Path('/etc/pam.d/greetd'), pam / 'greetd')
     greeter = payload / 'system/rebos-greeter'
     (greeter / 'theme').mkdir(parents=True)
     for name in ('layout.c', 'cage-cursor.c'):

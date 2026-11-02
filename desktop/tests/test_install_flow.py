@@ -105,6 +105,15 @@ class InstallFlowTests(unittest.TestCase):
                              if e['command'] == 'sudo' and e['args'][0] == 'systemctl']
             self.assertEqual(any(e['command'] == 'greeter-sync' for e in entries), login)
             if login:
+                self.assertEqual(copied['/etc/pam.d/greetd'],
+                                 (ROOT / 'desktop/payload/system/pam.d/greetd').read_text())
+                pam = copied['/etc/pam.d/greetd']
+                self.assertLess(pam.index('auth       include      system-local-login'),
+                                pam.index('auth       optional     pam_gnome_keyring.so'))
+                self.assertIn('session    optional     pam_gnome_keyring.so auto_start', pam)
+                self.assertTrue(any(e['command'] == 'sudo' and
+                                    '/etc/pam.d/greetd' in e['args'] and 'cp' in e['args']
+                                    for e in entries))
                 self.assertEqual(service_calls, [
                     ['systemctl', 'disable', 'ly@tty2.service'],
                     ['systemctl', 'enable', 'getty@tty2.service'],
@@ -125,7 +134,7 @@ class InstallFlowTests(unittest.TestCase):
                 self.assertNotIn('ly', package_call)
             else:
                 self.assertEqual(service_calls, [])
-                self.assertFalse(any(e['args'][-1].startswith(('/etc/greetd/', '/usr/local/lib/rebos-greeter/',
+                self.assertFalse(any(e['args'][-1].startswith(('/etc/pam.d/greetd', '/etc/greetd/', '/usr/local/lib/rebos-greeter/',
                                                              '/var/lib/rebos-greeter/')) for e in entries if e['args']))
             launcher = home / '.local/bin/rebos-prime-run'
             self.assertTrue(launcher.exists())

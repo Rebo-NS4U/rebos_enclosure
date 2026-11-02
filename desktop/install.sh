@@ -191,6 +191,8 @@ if ((!files_only)); then
         if command -v mkinitcpio >/dev/null; then sudo mkinitcpio -P; fi
     fi
     if [[ $login == regreet ]]; then
+        backup_system_file /etc/pam.d/greetd
+        sudo install -Dm644 "$ROOT/payload/system/pam.d/greetd" /etc/pam.d/greetd
         for path in /etc/greetd /usr/local/lib/rebos-greeter /var/lib/rebos-greeter/theme /usr/share/icons/GoogleDot-Black; do
             backup_system_file "$path"
         done

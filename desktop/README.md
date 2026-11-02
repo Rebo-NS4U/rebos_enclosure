@@ -109,6 +109,11 @@ approval boundaries. The policy is delivered once to each backend conversation,
 including older restored chats, and persists across reconnects. Releases are
 created when requested.
 
+Password login through ReGreet starts and unlocks the login keyring using optional
+GNOME Keyring PAM hooks in `/etc/pam.d/greetd`. The installer backs up the previous
+PAM file. The keyring password must match the login password; automatic login
+cannot supply a password to unlock it. Existing sessions need no restart.
+
 Login packages are `greetd`, `greetd-regreet` and `cage`. The tracked greetd and
 ReGreet configuration lives in `desktop/payload/system/greetd/`; the matching
 layout, cursor extension and theme assets live in `desktop/payload/system/rebos-greeter/`.
