@@ -2515,10 +2515,227 @@ Item {
 
         Menu {
             id: backendMenu
-            MenuItem { text: "Codex"; onTriggered: Ai.activeSession.setModel("codex") }
-            MenuItem { text: "Free Code (OpenRouter)"; onTriggered: Ai.activeSession.setModel("free-code") }
-            MenuItem { text: "Free Nemotron (OpenRouter)"; onTriggered: Ai.activeSession.setModel("free-nemotron") }
-            MenuItem { text: "Distill"; onTriggered: Ai.activeSession.setModel("distill") }
+            width: Math.min(320, sidebarContainer.width - 24)
+            x: Math.max(12, Math.min(backendButton.mapToItem(sidebarContainer, 0, 0).x,
+                sidebarContainer.width - width - 12))
+            y: backendButton.mapToItem(sidebarContainer, 0, backendButton.height).y + 8
+            padding: 8
+            spacing: 4
+            background: StyledRect {
+                variant: "popup"
+                radius: Styling.radius(12)
+                border.width: 1
+                border.color: Qt.alpha(Colors.primary, 0.22)
+            }
+
+            MenuItem {
+                id: choice_codex
+                property string agentId: "codex"
+                property string subtitle: "Your OpenAI account"
+                property bool free: false
+                readonly property bool selected: Ai.activeSession.currentAgentId === agentId
+                text: "Codex"
+                implicitHeight: 66
+                padding: 12
+                Accessible.name: text + (free ? ", free" : "") + (selected ? ", selected" : "")
+                background: StyledRect {
+                    variant: choice_codex.selected ? "focus" : choice_codex.highlighted ? "common" : "transparent"
+                    radius: Styling.radius(8)
+                    border.width: choice_codex.selected ? 1 : 0
+                    border.color: Qt.alpha(Colors.primary, 0.3)
+                }
+                contentItem: ColumnLayout {
+                    spacing: 4
+                    RowLayout {
+                        spacing: 8
+                        StyledText {
+                            Layout.fillWidth: true
+                            text: choice_codex.text
+                            color: Colors.overSurface
+                            font.pixelSize: Styling.fontSize(-1)
+                            font.weight: Font.DemiBold
+                            elide: Text.ElideRight
+                        }
+                        StyledText {
+                            visible: choice_codex.free
+                            text: "FREE"
+                            color: Colors.primary
+                            font.pixelSize: Styling.fontSize(-4)
+                            font.weight: Font.DemiBold
+                        }
+                        StyledText {
+                            visible: choice_codex.selected
+                            text: "✓"
+                            color: Colors.primary
+                            font.pixelSize: Styling.fontSize(0)
+                        }
+                    }
+                    StyledText {
+                        Layout.fillWidth: true
+                        text: choice_codex.subtitle
+                        color: Colors.outline
+                        font.pixelSize: Styling.fontSize(-3)
+                        elide: Text.ElideRight
+                    }
+                }
+                onTriggered: Ai.activeSession.setModel(agentId)
+            }
+            MenuItem {
+                id: choice_free_code
+                property string agentId: "free-code"
+                property string subtitle: "OpenRouter · Cohere coding"
+                property bool free: true
+                readonly property bool selected: Ai.activeSession.currentAgentId === agentId
+                text: "Free Code"
+                implicitHeight: 66
+                padding: 12
+                Accessible.name: text + (free ? ", free" : "") + (selected ? ", selected" : "")
+                background: StyledRect {
+                    variant: choice_free_code.selected ? "focus" : choice_free_code.highlighted ? "common" : "transparent"
+                    radius: Styling.radius(8)
+                    border.width: choice_free_code.selected ? 1 : 0
+                    border.color: Qt.alpha(Colors.primary, 0.3)
+                }
+                contentItem: ColumnLayout {
+                    spacing: 4
+                    RowLayout {
+                        spacing: 8
+                        StyledText {
+                            Layout.fillWidth: true
+                            text: choice_free_code.text
+                            color: Colors.overSurface
+                            font.pixelSize: Styling.fontSize(-1)
+                            font.weight: Font.DemiBold
+                            elide: Text.ElideRight
+                        }
+                        StyledText {
+                            visible: choice_free_code.free
+                            text: "FREE"
+                            color: Colors.primary
+                            font.pixelSize: Styling.fontSize(-4)
+                            font.weight: Font.DemiBold
+                        }
+                        StyledText {
+                            visible: choice_free_code.selected
+                            text: "✓"
+                            color: Colors.primary
+                            font.pixelSize: Styling.fontSize(0)
+                        }
+                    }
+                    StyledText {
+                        Layout.fillWidth: true
+                        text: choice_free_code.subtitle
+                        color: Colors.outline
+                        font.pixelSize: Styling.fontSize(-3)
+                        elide: Text.ElideRight
+                    }
+                }
+                onTriggered: Ai.activeSession.setModel(agentId)
+            }
+            MenuItem {
+                id: choice_free_nemotron
+                property string agentId: "free-nemotron"
+                property string subtitle: "OpenRouter · NVIDIA Nemotron"
+                property bool free: true
+                readonly property bool selected: Ai.activeSession.currentAgentId === agentId
+                text: "Free Nemotron"
+                implicitHeight: 66
+                padding: 12
+                Accessible.name: text + (free ? ", free" : "") + (selected ? ", selected" : "")
+                background: StyledRect {
+                    variant: choice_free_nemotron.selected ? "focus" : choice_free_nemotron.highlighted ? "common" : "transparent"
+                    radius: Styling.radius(8)
+                    border.width: choice_free_nemotron.selected ? 1 : 0
+                    border.color: Qt.alpha(Colors.primary, 0.3)
+                }
+                contentItem: ColumnLayout {
+                    spacing: 4
+                    RowLayout {
+                        spacing: 8
+                        StyledText {
+                            Layout.fillWidth: true
+                            text: choice_free_nemotron.text
+                            color: Colors.overSurface
+                            font.pixelSize: Styling.fontSize(-1)
+                            font.weight: Font.DemiBold
+                            elide: Text.ElideRight
+                        }
+                        StyledText {
+                            visible: choice_free_nemotron.free
+                            text: "FREE"
+                            color: Colors.primary
+                            font.pixelSize: Styling.fontSize(-4)
+                            font.weight: Font.DemiBold
+                        }
+                        StyledText {
+                            visible: choice_free_nemotron.selected
+                            text: "✓"
+                            color: Colors.primary
+                            font.pixelSize: Styling.fontSize(0)
+                        }
+                    }
+                    StyledText {
+                        Layout.fillWidth: true
+                        text: choice_free_nemotron.subtitle
+                        color: Colors.outline
+                        font.pixelSize: Styling.fontSize(-3)
+                        elide: Text.ElideRight
+                    }
+                }
+                onTriggered: Ai.activeSession.setModel(agentId)
+            }
+            MenuItem {
+                id: choice_distill
+                property string agentId: "distill"
+                property string subtitle: "ChatGPT with efficient modes"
+                property bool free: false
+                readonly property bool selected: Ai.activeSession.currentAgentId === agentId
+                text: "Distill"
+                implicitHeight: 66
+                padding: 12
+                Accessible.name: text + (free ? ", free" : "") + (selected ? ", selected" : "")
+                background: StyledRect {
+                    variant: choice_distill.selected ? "focus" : choice_distill.highlighted ? "common" : "transparent"
+                    radius: Styling.radius(8)
+                    border.width: choice_distill.selected ? 1 : 0
+                    border.color: Qt.alpha(Colors.primary, 0.3)
+                }
+                contentItem: ColumnLayout {
+                    spacing: 4
+                    RowLayout {
+                        spacing: 8
+                        StyledText {
+                            Layout.fillWidth: true
+                            text: choice_distill.text
+                            color: Colors.overSurface
+                            font.pixelSize: Styling.fontSize(-1)
+                            font.weight: Font.DemiBold
+                            elide: Text.ElideRight
+                        }
+                        StyledText {
+                            visible: choice_distill.free
+                            text: "FREE"
+                            color: Colors.primary
+                            font.pixelSize: Styling.fontSize(-4)
+                            font.weight: Font.DemiBold
+                        }
+                        StyledText {
+                            visible: choice_distill.selected
+                            text: "✓"
+                            color: Colors.primary
+                            font.pixelSize: Styling.fontSize(0)
+                        }
+                    }
+                    StyledText {
+                        Layout.fillWidth: true
+                        text: choice_distill.subtitle
+                        color: Colors.outline
+                        font.pixelSize: Styling.fontSize(-3)
+                        elide: Text.ElideRight
+                    }
+                }
+                onTriggered: Ai.activeSession.setModel(agentId)
+            }
         }
     }
 }
