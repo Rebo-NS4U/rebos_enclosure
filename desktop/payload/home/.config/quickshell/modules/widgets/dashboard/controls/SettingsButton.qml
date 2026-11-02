@@ -6,6 +6,8 @@ import qs.modules.theme
 
 Button {
     id: root
+    focusPolicy: Qt.StrongFocus
+    Accessible.name: text
     implicitHeight: Math.max(Styling.fontSize(0) * 3, implicitContentHeight + padding * 2)
     padding: 12
     font.family: Config.theme.font

@@ -24,6 +24,18 @@ Item {
     property string saveRequest: ""
     property bool addingBinding: false
 
+    function searchShortcuts(): void {
+        root.searchQuery = shortcutSearch.text;
+        shortcutList.positionViewAtBeginning();
+        shortcutSearch.focusInput();
+    }
+
+    Shortcut {
+        sequence: "Ctrl+F"
+        enabled: root.visible
+        onActivated: shortcutSearch.focusInput()
+    }
+
     function addBinding(): void {
         if (writer.running || !newShortcut.text.trim() || !newCommand.text.trim())
             return;
@@ -160,235 +172,261 @@ Item {
 
     component Action: SettingsButton {}
 
-    ColumnLayout {
-        width: Math.min(root.width, root.maxContentWidth)
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.top: parent.top
-        anchors.bottom: parent.bottom
-        spacing: root.layoutSpacing
+    Flickable {
+        anchors.fill: parent
+        clip: true
+        contentHeight: panelColumn.implicitHeight + 16
+        boundsBehavior: Flickable.StopAtBounds
+        ScrollBar.vertical: ScrollBar {}
 
-        PanelTitlebar {
-            Layout.fillWidth: true
-            title: "Keyboard shortcuts"
-            description: "Add and change keyboard shortcuts."
-            statusText: reader.running ? "Loading…" : root.bindings.length + (root.bindings.length === 1 ? " shortcut" : " shortcuts")
-            actions: [{
-                icon: Icons.sync,
-                tooltip: "Refresh shortcuts",
-                enabled: !reader.running,
-                onClicked: function () { root.refresh(); }
-            }]
-        }
-        SettingsGroup {
-            title: "Find a shortcut"
-        Caption {
-            text: "Super is the Windows key. Desktop shortcuts work everywhere; terminal shortcuts work in Kitty."
-        }
-        Caption {
-            text: "Select Edit to change a shortcut. Its action stays the same."
-        }
-        SearchInput {
-            Layout.fillWidth: true
-            placeholderText: "Find an action or shortcut…"
-            onSearchTextChanged: text => root.searchQuery = text
-        }
-        }
+        ColumnLayout {
+            id: panelColumn
+            width: Math.min(Math.max(0, root.width - 16), root.maxContentWidth)
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.top: parent.top
+            spacing: root.layoutSpacing
 
-        SettingsGroup {
-            title: "Add keybind"
-            description: "Launch an app or run a command with a desktop shortcut."
-            Action {
-                objectName: "shortcut-add-open"
-                visible: !root.addingBinding
-                text: "Add keybind"
-                enabled: !writer.running
-                onClicked: {
-                    root.editingBinding = null;
-                    root.editMessage = "";
-                    root.addingBinding = true;
-                    newShortcut.forceActiveFocus();
-                }
-            }
-            ColumnLayout {
-                visible: root.addingBinding
+            PanelTitlebar {
                 Layout.fillWidth: true
-                spacing: root.layoutSpacing / 2
-                RowLayout {
+                title: "Keyboard shortcuts"
+                description: "Add and change keyboard shortcuts."
+                statusText: reader.running ? "Loading…" : root.bindings.length + (root.bindings.length === 1 ? " shortcut" : " shortcuts")
+                actions: [{
+                    icon: Icons.sync,
+                    tooltip: "Refresh shortcuts",
+                    enabled: !reader.running,
+                    onClicked: function () { root.refresh(); }
+                }]
+            }
+            SettingsGroup {
+                title: "Find a shortcut"
+            Caption {
+                text: "Super is the Windows key. Desktop shortcuts work everywhere; terminal shortcuts work in Kitty."
+            }
+            Caption {
+                text: "Select Edit to change a shortcut. Its action stays the same."
+            }
+            RowLayout {
+                Layout.fillWidth: true
+                SearchInput {
+                    id: shortcutSearch
+                    objectName: "shortcut-search-input"
                     Layout.fillWidth: true
-                    SettingsTextField {
-                        id: newShortcut
-                        objectName: "shortcut-add-key"
-                        Layout.fillWidth: true
-                        enabled: !writer.running
-                        placeholderText: "Shortcut, e.g. Super+Shift+K"
-                        onAccepted: newCommand.forceActiveFocus()
-                    }
-                    SettingsTextField {
-                        id: newName
-                        objectName: "shortcut-add-name"
-                        Layout.fillWidth: true
-                        enabled: !writer.running
-                        placeholderText: "Name (optional)"
-                        maximumLength: 100
-                    }
+                    placeholderText: "Find an action or shortcut…"
+                    onSearchTextChanged: text => root.searchQuery = text
+                    onAccepted: root.searchShortcuts()
                 }
-                SettingsTextField {
-                    id: newCommand
-                    objectName: "shortcut-add-command"
-                    Layout.fillWidth: true
+                Action {
+                    objectName: "shortcut-search-button"
+                    text: "Search"
+                    onClicked: root.searchShortcuts()
+                }
+                Action {
+                    objectName: "shortcut-search-clear"
+                    text: "Clear"
+                    enabled: shortcutSearch.text.length > 0
+                    onClicked: { shortcutSearch.clear(); root.searchShortcuts(); }
+                }
+            }
+            Caption { text: root.filteredBindings.length + " of " + root.bindings.length + " shortcuts" }
+            }
+
+            SettingsGroup {
+                title: "Add keybind"
+                description: "Launch an app or run a command with a desktop shortcut."
+                Action {
+                    objectName: "shortcut-add-open"
+                    visible: !root.addingBinding
+                    text: "Add keybind"
                     enabled: !writer.running
-                    placeholderText: "Command, e.g. kitty or firefox"
-                    maximumLength: 4096
-                    onAccepted: root.addBinding()
-                }
-                Caption { text: "Use + between modifiers and the key, e.g. Super+Shift+K. The command runs when you press the shortcut." }
-                RowLayout {
-                    Action {
-                        objectName: "shortcut-add-save"
-                        text: writer.running ? "Saving…" : "Save keybind"
-                        enabled: !writer.running && !!newShortcut.text.trim() && !!newCommand.text.trim()
-                        onClicked: root.addBinding()
-                    }
-                    Action {
-                        text: "Cancel"
-                        enabled: !writer.running
-                        onClicked: {
-                            root.addingBinding = false;
-                            root.editMessage = "";
-                        }
+                    onClicked: {
+                        root.editingBinding = null;
+                        root.editMessage = "";
+                        root.addingBinding = true;
+                        newShortcut.forceActiveFocus();
                     }
                 }
-            }
-        }
-
-        StyledRect {
-            Layout.fillWidth: true
-            implicitHeight: editorLayout.implicitHeight + root.layoutSpacing * 2
-            visible: root.editingBinding !== null
-            variant: "pane"
-            ColumnLayout {
-                id: editorLayout
-                anchors.fill: parent
-                anchors.margins: root.layoutSpacing
-                spacing: root.layoutSpacing / 2
-                Caption {
-                    text: (root.editingBinding?.action ?? "") + " · " + (root.editingBinding?.group ?? "")
-                    color: Colors.overSurface
-                    font.bold: true
-                }
-                RowLayout {
-                    SettingsTextField {
-                        id: shortcutInput
-                        objectName: "shortcut-editor-input"
+                ColumnLayout {
+                    visible: root.addingBinding
+                    Layout.fillWidth: true
+                    spacing: root.layoutSpacing / 2
+                    RowLayout {
                         Layout.fillWidth: true
-                        enabled: !writer.running
-                        placeholderText: "Super+Shift+A"
-                        font.family: Config.theme.font
-                        font.pixelSize: Styling.fontSize(0)
-                        color: Colors.overSurface
-                        placeholderTextColor: Colors.overSurfaceVariant
-                        selectionColor: Colors.primary
-                        selectedTextColor: Colors.overPrimary
-
-                        onAccepted: root.saveEdit()
-                    }
-                    Action {
-                        objectName: "shortcut-editor-save"
-                        text: writer.running ? "Saving…" : "Save"
-                        enabled: !writer.running && !!shortcutInput.text.trim()
-                        onClicked: root.saveEdit()
-                    }
-                    Action {
-                        text: "Cancel"
-                        enabled: !writer.running
-                        onClicked: {
-                            root.editingBinding = null;
-                            root.editMessage = "";
-                        }
-                    }
-                }
-                Caption { text: "Type modifiers separated by +, then a key name. Examples: Super+Shift+A, Ctrl+Shift+F, Alt+Return. Use 'plus' for the + key." }
-            }
-        }
-        Caption {
-            visible: root.editMessage !== ""
-            text: root.editMessage
-            color: root.editFailed ? Colors.error : Colors.primary
-        }
-        Caption {
-            visible: root.errorMessage !== ""
-            text: root.errorMessage
-            color: Colors.error
-        }
-        Caption {
-            visible: !reader.running && root.filteredBindings.length === 0
-            text: root.bindings.length > 0 ? "No matching shortcuts." : "No configured shortcuts found."
-        }
-
-        ListView {
-            id: shortcutList
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            clip: true
-            spacing: 12
-            model: root.filteredBindings
-            boundsBehavior: Flickable.StopAtBounds
-            reuseItems: true
-            ScrollBar.vertical: ScrollBar {}
-
-            delegate: StyledRect {
-                id: row
-                required property var modelData
-                width: shortcutList.width
-                implicitHeight: rowLayout.implicitHeight + 32
-                variant: hover.hovered ? "focus" : "pane"
-                border.width: 1
-                border.color: Qt.alpha(Colors.outline, 0.3)
-                radius: Styling.radius(-2)
-
-                RowLayout {
-                    id: rowLayout
-                    anchors.fill: parent
-                    anchors.margins: 16
-                    spacing: 12
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        spacing: root.layoutSpacing / 4
-                        StyledText {
+                        SettingsTextField {
+                            id: newShortcut
+                            objectName: "shortcut-add-key"
                             Layout.fillWidth: true
-                            text: row.modelData.action
-                            wrapMode: Text.WordWrap
-                            color: Colors.overSurface
-                            font.family: Config.theme.font
-                            font.pixelSize: Styling.fontSize(0)
+                            enabled: !writer.running
+                            placeholderText: "Shortcut, e.g. Super+Shift+K"
+                            onAccepted: newCommand.forceActiveFocus()
                         }
-                        Caption {
-                            text: row.modelData.group
-                            font.pixelSize: Styling.fontSize(-2)
+                        SettingsTextField {
+                            id: newName
+                            objectName: "shortcut-add-name"
+                            Layout.fillWidth: true
+                            enabled: !writer.running
+                            placeholderText: "Name (optional)"
+                            maximumLength: 100
                         }
                     }
-                    StyledText {
-                        Layout.maximumWidth: shortcutList.width * 0.4
-                        text: row.modelData.key
-                        wrapMode: Text.WrapAnywhere
-                        horizontalAlignment: Text.AlignRight
-                        color: Colors.primary
-                        font.family: Config.theme.font
-                        font.pixelSize: Styling.fontSize(-1)
+                    SettingsTextField {
+                        id: newCommand
+                        objectName: "shortcut-add-command"
+                        Layout.fillWidth: true
+                        enabled: !writer.running
+                        placeholderText: "Command, e.g. kitty or firefox"
+                        maximumLength: 4096
+                        onAccepted: root.addBinding()
+                    }
+                    Caption { text: "Use + between modifiers and the key, e.g. Super+Shift+K. The command runs when you press the shortcut." }
+                    RowLayout {
+                        Action {
+                            objectName: "shortcut-add-save"
+                            text: writer.running ? "Saving…" : "Save keybind"
+                            enabled: !writer.running && !!newShortcut.text.trim() && !!newCommand.text.trim()
+                            onClicked: root.addBinding()
+                        }
+                        Action {
+                            text: "Cancel"
+                            enabled: !writer.running
+                            onClicked: {
+                                root.addingBinding = false;
+                                root.editMessage = "";
+                            }
+                        }
+                    }
+                }
+            }
+
+            StyledRect {
+                Layout.fillWidth: true
+                implicitHeight: editorLayout.implicitHeight + root.layoutSpacing * 2
+                visible: root.editingBinding !== null
+                variant: "pane"
+                ColumnLayout {
+                    id: editorLayout
+                    anchors.fill: parent
+                    anchors.margins: root.layoutSpacing
+                    spacing: root.layoutSpacing / 2
+                    Caption {
+                        text: (root.editingBinding?.action ?? "") + " · " + (root.editingBinding?.group ?? "")
+                        color: Colors.overSurface
                         font.bold: true
                     }
-                    Action {
-                        text: "Edit"
-                        enabled: !writer.running && (row.modelData.editable ?? false)
-                        onClicked: root.beginEdit(row.modelData)
+                    RowLayout {
+                        SettingsTextField {
+                            id: shortcutInput
+                            objectName: "shortcut-editor-input"
+                            Layout.fillWidth: true
+                            enabled: !writer.running
+                            placeholderText: "Super+Shift+A"
+                            font.family: Config.theme.font
+                            font.pixelSize: Styling.fontSize(0)
+                            color: Colors.overSurface
+                            placeholderTextColor: Colors.overSurfaceVariant
+                            selectionColor: Colors.primary
+                            selectedTextColor: Colors.overPrimary
+
+                            onAccepted: root.saveEdit()
+                        }
+                        Action {
+                            objectName: "shortcut-editor-save"
+                            text: writer.running ? "Saving…" : "Save"
+                            enabled: !writer.running && !!shortcutInput.text.trim()
+                            onClicked: root.saveEdit()
+                        }
+                        Action {
+                            text: "Cancel"
+                            enabled: !writer.running
+                            onClicked: {
+                                root.editingBinding = null;
+                                root.editMessage = "";
+                            }
+                        }
                     }
+                    Caption { text: "Type modifiers separated by +, then a key name. Examples: Super+Shift+A, Ctrl+Shift+F, Alt+Return. Use 'plus' for the + key." }
                 }
-                HoverHandler { id: hover }
-                StyledToolTip {
-                    show: hover.hovered
-                    tooltipText: row.modelData.source ?? ""
+            }
+            Caption {
+                visible: root.editMessage !== ""
+                text: root.editMessage
+                color: root.editFailed ? Colors.error : Colors.primary
+            }
+            Caption {
+                visible: root.errorMessage !== ""
+                text: root.errorMessage
+                color: Colors.error
+            }
+            Caption {
+                visible: !reader.running && root.filteredBindings.length === 0
+                text: root.bindings.length > 0 ? "No matching shortcuts." : "No configured shortcuts found."
+            }
+
+            ListView {
+                id: shortcutList
+                Layout.fillWidth: true
+                Layout.preferredHeight: Math.max(280, root.height - 400)
+                clip: true
+                spacing: 12
+                model: root.filteredBindings
+                boundsBehavior: Flickable.StopAtBounds
+                reuseItems: true
+                ScrollBar.vertical: ScrollBar {}
+
+                delegate: StyledRect {
+                    id: row
+                    required property var modelData
+                    width: shortcutList.width
+                    implicitHeight: rowLayout.implicitHeight + 32
+                    variant: hover.hovered ? "focus" : "pane"
+                    border.width: 1
+                    border.color: Qt.alpha(Colors.outline, 0.3)
+                    radius: Styling.radius(-2)
+
+                    RowLayout {
+                        id: rowLayout
+                        anchors.fill: parent
+                        anchors.margins: 16
+                        spacing: 12
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: root.layoutSpacing / 4
+                            StyledText {
+                                Layout.fillWidth: true
+                                text: row.modelData.action
+                                wrapMode: Text.WordWrap
+                                color: Colors.overSurface
+                                font.family: Config.theme.font
+                                font.pixelSize: Styling.fontSize(0)
+                            }
+                            Caption {
+                                text: row.modelData.group
+                                font.pixelSize: Styling.fontSize(-2)
+                            }
+                        }
+                        StyledText {
+                            Layout.maximumWidth: shortcutList.width * 0.4
+                            text: row.modelData.key
+                            wrapMode: Text.WrapAnywhere
+                            horizontalAlignment: Text.AlignRight
+                            color: Colors.primary
+                            font.family: Config.theme.font
+                            font.pixelSize: Styling.fontSize(-1)
+                            font.bold: true
+                        }
+                        Action {
+                            text: "Edit"
+                            enabled: !writer.running && (row.modelData.editable ?? false)
+                            onClicked: root.beginEdit(row.modelData)
+                        }
+                    }
+                    HoverHandler { id: hover }
+                    StyledToolTip {
+                        show: hover.hovered
+                        tooltipText: row.modelData.source ?? ""
+                    }
                 }
             }
         }
-    }
+}
 }

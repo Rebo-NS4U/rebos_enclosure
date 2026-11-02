@@ -355,3 +355,13 @@ The official checkout must be at `~/rebos_enclosure` or `~/code/rebos_enclosure`
 (or linked to the installed shell). Pull current branch updates only the checkout.
 Personal preferences and the updater's recovery backups are retained. Log out
 and back in after success.
+
+### Settings navigation and shortcut search
+
+Keyboard shortcuts has Search and Clear buttons beside its live filter. Enter
+applies the search and Ctrl+F focuses it. Match counts show how many shortcuts
+remain. The page scrolls when adding or editing shortcuts on smaller windows.
+Appearance keeps its style form behind a Theme style card so section buttons
+remain easy to reach. Shared Settings buttons, section cards and titlebar actions
+support keyboard focus and expose names to accessibility tools. Hardware-dependent
+and input-dependent actions retain their normal availability checks.
