@@ -11,6 +11,7 @@ import tempfile
 
 from deploy import SOURCE_ROOTS, install, verify
 from update_health import validate
+from linked_update import prepare
 
 REPOSITORY = 'https://github.com/Rebo-NS4U/rebos_enclosure.git'
 
@@ -46,16 +47,16 @@ def apply_snapshot(snapshot, home, dry_run=False):
     if checkout is not None:
         def git_output(*args):
             return subprocess.check_output(['git', '-C', str(checkout), *args], text=True).strip()
-        if git_output('status', '--porcelain'):
-            raise ValueError(f'Commit or preserve local edits in {checkout} before updating linked sources')
         incoming = subprocess.check_output(['git', '-C', str(snapshot), 'remote', 'get-url', 'origin'], text=True).strip()
         if git_output('remote', 'get-url', 'origin') != incoming:
             raise ValueError('Update repository differs from the linked checkout origin')
-        if dry_run:
-            print(f'Would fast-forward linked source checkout: {checkout}')
-            return install(payload, home, dry_run=True, preserve_preferences=True, link_source=True)
-        run('git', '-C', str(checkout), 'fetch', '--', str(snapshot), 'HEAD')
-        run('git', '-C', str(checkout), 'merge', '--ff-only', 'FETCH_HEAD')
+        with prepare(checkout, snapshot, home) as staged:
+            if dry_run:
+                validate(staged.plan / 'desktop/payload')
+                print(f'Would update linked checkout and preserve local edits: {checkout}')
+                return install(staged.plan / 'desktop/payload', home, dry_run=True,
+                               preserve_preferences=True, link_source=True)
+            staged.apply()
         return install(checkout / 'desktop/payload', home,
                        preserve_preferences=True, link_source=True)
     return install(payload, home, dry_run=dry_run, preserve_preferences=True)
@@ -111,13 +112,22 @@ def main():
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
             parser.error('Another desktop update is running')
-        if not args.allow_local_changes:
+        if not args.allow_local_changes and source_checkout(home) is None:
             check_local_changes(home)
         with tempfile.TemporaryDirectory(prefix='rebos-update-') as temporary:
             snapshot = Path(temporary) / 'snapshot'
-            if args.release:
+            linked = source_checkout(home)
+            if linked is not None:
+                run('git', 'clone', '--shared', '--no-checkout', str(linked), str(snapshot))
+                run('git', '-C', str(snapshot), 'remote', 'set-url', 'origin', args.repository)
+                ref = ('refs/tags/' + args.release if args.release else
+                       'refs/heads/' + args.branch if args.branch else 'HEAD')
+                run('git', '-C', str(snapshot), 'fetch', '--', args.repository, ref)
+                run('git', '-C', str(snapshot), 'checkout', '--quiet', '--detach', 'FETCH_HEAD')
+            elif args.release:
                 print(f'Fetching desktop release: {args.release}', flush=True)
                 run('git', 'init', '--quiet', str(snapshot))
+                run('git', '-C', str(snapshot), 'remote', 'add', 'origin', args.repository)
                 run('git', '-C', str(snapshot), 'fetch', '--depth=1', '--',
                     args.repository, f'refs/tags/{args.release}')
                 run('git', '-C', str(snapshot), 'checkout', '--quiet', '--detach', 'FETCH_HEAD')
@@ -149,7 +159,7 @@ def main():
             if not args.files_only:
                 # Qt upgrades can change which QML properties and types are available.
                 validate(snapshot / "desktop/payload")
-            if not args.allow_local_changes:
+            if not args.allow_local_changes and source_checkout(home) is None:
                 check_local_changes(home)
             backup = apply_snapshot(snapshot, home)
             # Use the fetched implementation so this update matches its payload.

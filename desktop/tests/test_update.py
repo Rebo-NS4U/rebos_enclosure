@@ -28,29 +28,7 @@ class PackageApprovalTests(unittest.TestCase):
             link.parent.mkdir(parents=True)
             link.symlink_to(source)
             self.assertEqual(update.source_checkout(home), checkout)
-            with patch.object(update, 'verify'), \
-                 patch.object(update.subprocess, 'check_output', return_value=' M source'), \
-                 patch.object(update, 'run') as run:
-                with self.assertRaisesRegex(ValueError, 'local edits'):
-                    update.apply_snapshot(root / 'snapshot', home)
-                run.assert_not_called()
             self.assertEqual(link.resolve(), source)
-
-    def test_dirty_source_stops_before_clone_or_package_updates(self):
-        with tempfile.TemporaryDirectory() as temporary:
-            home = Path(temporary)
-            with patch.object(sys, 'argv', ['update.py', '--files-only', '--dry-run']), \
-                 patch.object(update.Path, 'home', return_value=home), \
-                 patch.object(update.os, 'geteuid', return_value=1000), \
-                 patch.dict(os.environ, {key: str(home / relative) for key, relative in [
-                     ('XDG_CONFIG_HOME', '.config'), ('XDG_CACHE_HOME', '.cache'),
-                     ('XDG_DATA_HOME', '.local/share'), ('XDG_STATE_HOME', '.local/state')]}), \
-                 patch.object(update, 'source_checkout', return_value=home / 'checkout'), \
-                 patch.object(update.subprocess, 'check_output', return_value=' M changed'), \
-                 patch.object(update, 'run') as run:
-                with self.assertRaisesRegex(ValueError, 'local edits'):
-                    update.main()
-                run.assert_not_called()
 
     def test_legacy_launcher_uses_verified_installed_updater(self):
         for same_origin in (True, False):
@@ -112,7 +90,8 @@ class PackageApprovalTests(unittest.TestCase):
 
 @unittest.skipIf(os.geteuid() == 0, 'Updater intentionally refuses root')
 class UpdateTests(unittest.TestCase):
-    def test_linked_update_fast_forwards_checkout_and_keeps_single_source(self):
+    @patch.object(update, 'validate')
+    def test_linked_update_fast_forwards_checkout_and_keeps_single_source(self, validate):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             remote = root / 'remote'

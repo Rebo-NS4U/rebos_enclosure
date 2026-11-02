@@ -28,10 +28,20 @@ Local files absent from the portable payload must be preserved separately
 before removing an old installation. The initial consolidation on this desktop
 stores those extras in `~/.local/share/rebos-desktop/local-extras/`.
 
-The normal updater recognizes these links, checks that the checkout is clean and
-has the requested origin, and fast-forwards it before redeploying with links.
-Commit local changes before updating. A divergent or older release cannot be
-fast-forwarded; select its revision manually in the checkout if intended.
+The normal updater recognizes these links and checks the requested origin.
+It previews incoming commits and local edits in an isolated Git worktree before
+changing the installed checkout. Compatible local commits are retained in a
+local merge; staged edits, unstaged edits and untracked files are preserved.
+Conflicting source edits stop the preview with the live checkout untouched.
+Generated payload hashes are rebuilt from the preserved source files.
+
+Before applying, it saves a private recovery archive under
+`~/.local/state/rebos-desktop/local-source-backups/`. Tracked edits also remain
+in a labeled Git stash after successful restoration. Nothing is pushed.
+The live checkout is checked again for edits made during the preview. Linked
+updates reuse its existing Git objects rather than downloading the whole payload
+again. An older release remains a merge target; revision switching/downgrading
+requires an explicit manual checkout.
 File recovery restores installed paths, not Git history; use Git to recover a
 previous source revision. Changes load through the existing application reload
 or restart behavior; deployment does not restart active conversations.
@@ -45,5 +55,5 @@ payload verification, while checksummed source files must still match.
 When invoked from an older checkout, it uses the live checkout's updater only
 when both origins match. This prevents old deployment code from treating the
 assistant or media source symlinks as ordinary destination directories. Local
-edits are checked before downloading a snapshot or upgrading packages; preserve
-or commit those edits first. The updater never silently discards them.
+edits are previewed and preserved before deployment. The updater never silently
+discards them.
