@@ -36,7 +36,7 @@ Item {
 
         exclusiveZone: Config.barReady && root.barEnabled && root.barPosition === "top"
             && ((Config.bar?.style ?? "default") !== "island" || (Config.bar?.pinned ?? false))
-            ? root.barSize + root.barOuterMargin
+            ? Math.max(0, root.barSize - root.barOuterMargin)
             : 0
         exclusionMode: exclusiveZone > 0 ? ExclusionMode.Normal : ExclusionMode.Ignore
 
@@ -61,7 +61,7 @@ Item {
 
         exclusiveZone: Config.barReady && root.barEnabled && root.barPosition === "bottom"
             && ((Config.bar?.style ?? "default") !== "island" || (Config.bar?.pinned ?? false))
-            ? root.barSize + root.barOuterMargin
+            ? Math.max(0, root.barSize - root.barOuterMargin)
             : 0
         exclusionMode: exclusiveZone > 0 ? ExclusionMode.Normal : ExclusionMode.Ignore
 

@@ -176,11 +176,11 @@ class Browser(Gtk.Application):
         if hasattr(self, 'window'):
             self.window.present()
             return
-        self.window = Gtk.ApplicationWindow(application=self, title='Anime Streamer', default_width=1180, default_height=800)
+        self.window = Gtk.ApplicationWindow(application=self, title='rebos-player', default_width=1180, default_height=800)
         self.window.maximize()
         self.theme()
         header = Gtk.HeaderBar()
-        header.set_title_widget(Gtk.Label(label='Anime Streamer', css_classes=['title']))
+        header.set_title_widget(Gtk.Label(label='rebos-player', css_classes=['title']))
         settings = Gtk.Button(icon_name='emblem-system-symbolic', tooltip_text='Playback settings')
         settings.connect('clicked', self.show_settings)
         header.pack_end(settings)

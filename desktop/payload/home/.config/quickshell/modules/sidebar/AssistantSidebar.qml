@@ -1607,7 +1607,7 @@ Item {
                                                                             implicitHeight: 36
                                                                             leftPadding: 16
                                                                             rightPadding: 16
-                                                                            highlighted: true
+                                                                            highlighted: false
                                                                             flat: true
                                                                             onClicked: mainChatArea.session.rejectCommand(index)
 
@@ -1634,7 +1634,7 @@ Item {
                                                                             rightPadding: 18
                                                                             ToolTip.visible: hovered
                                                                             ToolTip.text: "Press Enter to approve"
-                                                                            highlighted: true
+                                                                            highlighted: false
                                                                             flat: true
                                                                             onClicked: mainChatArea.session.approveCommand(index)
 

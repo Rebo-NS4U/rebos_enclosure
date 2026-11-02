@@ -24,6 +24,7 @@ class MpvSession:
         player_config = Path.home() / '.local/share/anime-streamer/player'
         if (player_config / 'mpv.conf').is_file():
             args.append('--config-dir=' + str(player_config))
+        args.extend(['--sub-font=OpenDyslexic', '--sub-font-size=42'])
         if settings['fullscreen']:
             args.append('--fullscreen')
         args.extend(extra_args)
