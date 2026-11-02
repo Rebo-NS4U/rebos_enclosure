@@ -12,6 +12,7 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
+SOURCE_ROOTS = ('.config/quickshell', 'code/rebos-assistant', 'code/anime-streamer')
 
 
 def exists(path):
@@ -35,7 +36,8 @@ def check_parent(home, relative, allow_config_links=False):
 
 def verify(payload):
     hashes = json.loads((payload / 'checksums.json').read_text())
-    actual = {str(p.relative_to(payload)) for p in payload.rglob('*') if p.is_file()}
+    actual = {str(p.relative_to(payload)) for p in payload.rglob('*')
+              if p.is_file() and '__pycache__' not in p.relative_to(payload).parts}
     if actual != set(hashes) | {'checksums.json'}:
         raise ValueError('Payload file inventory has changed; rebuild its snapshot')
     for relative, expected in hashes.items():
@@ -78,7 +80,8 @@ def source_record(payload):
         return None
 
 
-def install(payload, home, dry_run=False, cbonsai=None, settings=None, preserve_preferences=False):
+def install(payload, home, dry_run=False, cbonsai=None, settings=None, preserve_preferences=False,
+            link_source=False):
     units = verify(payload)
     if preserve_preferences and settings is not None:
         raise ValueError('Preference-preserving updates cannot replace the installation plan')
@@ -101,6 +104,30 @@ def install(payload, home, dry_run=False, cbonsai=None, settings=None, preserve_
         if ('.config/fish' not in units and
                 (payload / 'home' / fish_update).is_file()):
             units.append(fish_update)
+    linked = {}
+    if link_source:
+        payload = payload.resolve()
+        checkout = payload.parent.parent
+        if payload.name != 'payload' or payload.parent.name != 'desktop' or not (checkout / '.git').exists():
+            raise ValueError('--link-source requires a persistent Git checkout')
+        for root in SOURCE_ROOTS:
+            selected = [unit for unit in units if unit == root or unit.startswith(root + '/')]
+            if selected:
+                linked[root] = payload / 'home' / root
+                units = [unit for unit in units if unit not in selected] + [root]
+        # Portable commands and service definitions can use the same file too.
+        # Home-expanded templates and personal configuration remain local files.
+        for relative in units:
+            source = payload / 'home' / relative
+            if (relative.startswith(('.local/bin/', '.config/scripts/',
+                                     '.config/systemd/user/', '.local/share/applications/'))
+                    and source.is_file() and b'@HOME@' not in source.read_bytes()):
+                linked[relative] = source
+    else:
+        for root in SOURCE_ROOTS:
+            target = home / root
+            if target.is_symlink() and 'desktop/payload/home' in str(target.resolve()):
+                raise ValueError('Checkout-managed sources require --link-source; refusing to recreate duplicate code')
     # Capture shortcuts before any backup or replacement, including included files.
     spec = importlib.util.spec_from_file_location('personal_bindings', Path(__file__).with_name('personal_bindings.py'))
     personal_bindings = importlib.util.module_from_spec(spec)
@@ -131,6 +158,8 @@ def install(payload, home, dry_run=False, cbonsai=None, settings=None, preserve_
         print(f'Verified payload; would deploy {len(units)} entries into {home}')
         for parent in linked_parents:
             print(f'Would back up linked folder {home / parent} and install into a local copy; its source stays unchanged')
+        for relative, source in linked.items():
+            print(f'Would link {home / relative} to {source}')
         if personal:
             print('Would retain existing Niri and Kitty shortcuts in personal files loaded after defaults')
         if settings is not None:
@@ -175,7 +204,9 @@ def install(payload, home, dry_run=False, cbonsai=None, settings=None, preserve_
             if entry['existed']:
                 saved.parent.mkdir(parents=True, exist_ok=True)
                 destination.rename(saved)
-            if relative in generated:
+            if relative in linked:
+                destination.symlink_to(linked[relative], target_is_directory=linked[relative].is_dir())
+            elif relative in generated:
                 content, mode = generated[relative]
                 destination.write_text(content)
                 destination.chmod(mode)
@@ -265,6 +296,9 @@ if __name__ == '__main__':
     parser.add_argument('--cbonsai', type=Path)
     parser.add_argument('--restore', type=Path)
     parser.add_argument('--setup-stdin', action='store_true')
+    parser.add_argument('--link-source', action='store_true',
+                        help='Link application sources to this persistent checkout instead of copying them')
+    parser.add_argument('--preserve-preferences', action='store_true')
     args = parser.parse_args()
     try:
         if args.restore:
@@ -273,6 +307,7 @@ if __name__ == '__main__':
             print(f'Payload checksums OK: {len(verify(args.payload))} install entries')
         else:
             settings = json.load(sys.stdin) if args.setup_stdin else None
-            install(args.payload, args.home.absolute(), args.dry_run, args.cbonsai, settings)
+            install(args.payload, args.home.absolute(), args.dry_run, args.cbonsai, settings,
+                    preserve_preferences=args.preserve_preferences, link_source=args.link_source)
     except (OSError, ValueError) as error:
         parser.exit(1, f'Deployment error: {error}\n')

@@ -104,7 +104,8 @@ as a launcher entry for opening desktop configuration folders.
 
 The assistant's GitHub workflow applies across projects and backends: edit in the
 owning repository, keep applicable installed and installer files synchronized,
-then commit and push tested task changes. It preserves unrelated work and normal
+then commit tested task changes locally. Push only when explicitly requested or
+initiated with the Push button in GitHub Settings. It preserves unrelated work and normal
 approval boundaries. The policy is delivered once to each backend conversation,
 including older restored chats, and persists across reconnects. Releases are
 created when requested.
@@ -251,6 +252,8 @@ update may request administrator approval to grant the desktop user ownership of
 `/var/lib/rebos-greeter/theme` only. It does not restart greetd or the desktop.
 The CSS template and sync units are managed code refreshed by updates; wallpaper
 and color preferences remain preserved. Animated wallpapers use a still frame.
+Setup disables the legacy `rebos-greeter-sync.path` watcher and stops its service
+before enabling the replacement, so both exporters cannot compete.
 
 ThinkPad Fan Control is available from the app launcher. It shows live fan mode and RPM, with Stop fans and Automatic controls; changes require administrator approval.
 
@@ -281,6 +284,44 @@ No service restart is needed for source updates; choose the agent in a new chat.
 The live model catalog listed Cohere North Mini Code and NVIDIA Nemotron Ultra
 with zero token cost and tool support on 2026-11-02. Availability and rate limits
 can change; no free DeepSeek endpoint was listed. Inference needs an API key.
+
+Provider routing follows the [Codex provider configuration](https://learn.chatgpt.com/docs/config-file/config-advanced) and [OpenRouter Responses API](https://openrouter.ai/docs/api_reference/responses/overview).
+The launcher preserves existing workspace/network and approval settings.
+
+### Dweebo backends
+
+The backend selector offers Codex, Distill, and Google Gemini. Each backend
+manages its own authentication and usage limits.
+
+### Google Gemini backend
+
+Choose Backend → Google Gemini for the pinned native Gemini CLI ACP adapter.
+It starts `gemini-3.5-flash-lite` with `--approval-mode default`, opens a dedicated chat,
+and uses the normal permission prompts. Node.js and npm/npx are already part of
+the assistant package requirements. The native CLI package is
+`@google/gemini-cli@0.66.0` and is downloaded by npx on first launch.
+
+Save the key in `~/.config/dweebo/google-api-key` with mode `600`. Alternatively,
+the launcher accepts `GEMINI_API_KEY`, `GOOGLE_API_KEY`, or `GOOGLE_AI_API_KEY`
+from its own environment. A variable in an existing fish terminal is not
+necessarily inherited by a systemd user service. To copy an exported key safely
+from that terminal, run the following command. It uses a recognized exported
+variable, or asks for the key with input hidden if none is exported:
+
+```fish
+python3 ~/code/rebos-assistant/scripts/google_agent.py --save-key
+```
+
+No key is written to repository files or sent in the ACP handshake. Dweebo's
+Gemini CLI login state is isolated under `~/.local/share/dweebo/google`.
+Google API quotas and billing depend on the key's project; this integration
+does not enable billing or change the project settings.
+
+Dweebo's Google launcher makes one attempt per request and disables automatic
+plan-model routing. Provider overload and quota errors should surface instead of
+being hidden behind Gemini CLI's default ten-attempt retry loop. The lighter
+default model avoids depending on the moving `flash` alias; other available
+models can still be chosen through the model selector.
 
 ### Update validation and local fixes
 

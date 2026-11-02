@@ -18,6 +18,12 @@ def configure(home):
                         '--', '/usr/bin/chown', '-R', f'{os.getuid()}:{os.getgid()}', str(theme)],
                        check=True)
     subprocess.run(['systemctl', '--user', 'daemon-reload'], check=True)
+    # Older desktops used a separate exporter watching the same palette. Leaving
+    # both enabled can race theme writes and exhaust the old unit's start limit.
+    for name in ('rebos-greeter-sync.path', 'rebos-greeter-sync.service'):
+        if (home / '.config/systemd/user' / name).exists():
+            action = ['disable', '--now'] if name.endswith('.path') else ['stop']
+            subprocess.run(['systemctl', '--user', *action, name], check=True)
     subprocess.run(['systemctl', '--user', 'enable', '--now',
                     'regreet-sync.path', 'regreet-sync.timer'], check=True)
     # A fresh update must render even if the cached signatures are unchanged.

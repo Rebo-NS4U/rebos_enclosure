@@ -90,3 +90,7 @@ Not exercised: real pacman installation or upgrade, AUR downloads/builds, system
 - Removed the fan-control window, helper, launcher, desktop entry and window rules from source and payload. Snapshot filtering prevents the retired files from being copied from a source desktop again.
 - All 61 desktop installer/update tests passed. Payload verification passed for 106 installation entries; shell syntax, whitespace and retired-file inventory checks passed.
 - Existing desktop files and running applications were not changed. This release does not remove old launchers from existing installations or alter cooling settings.
+
+## v1.5.0 — 2026-11-02
+
+All 91 desktop tests passed; the four OpenRouter checks passed again after the final network-default adjustment. Payload verification passed for 113 installation entries. See [release notes](../docs/RELEASE-v1.5.0.md) for the system comparison, preserved local state and live-inference/UI/hardware verification limits.

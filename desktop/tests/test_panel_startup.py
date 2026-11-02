@@ -58,6 +58,17 @@ class PanelStartupTests(unittest.TestCase):
                        env=self.env, check=True, capture_output=True)
         self.assertFalse((self.home / '.local/share').exists())
 
+    def test_panel_detected_through_source_link(self):
+        shell = self.home / '.config/quickshell'
+        source = self.home / 'repository/shell'
+        source.parent.mkdir()
+        shell.rename(source)
+        shell.symlink_to(source, target_is_directory=True)
+        instances = f'  Process ID: 31\n  Config path: {source}/shell.qml\n'
+        self.assertIn('running', self.rice('status', instances).stdout)
+        self.rice('start', instances)
+        self.assertFalse(self.log.exists())
+
 
 if __name__ == '__main__':
     unittest.main()

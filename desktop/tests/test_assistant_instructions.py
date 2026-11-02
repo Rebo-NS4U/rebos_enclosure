@@ -29,6 +29,7 @@ ShellRoot {
     Timer {
         interval: 100; running: true
         onTriggered: {
+            check(JSON.stringify(session.builtInAgents.map(agent => agent.id).sort()) === JSON.stringify(["codex", "distill", "google"]), "only Codex, Distill and Gemini are offered");
             let stock = session.builtInAgents.find(item => item.id === "codex");
             let oldCommand = ["sh", "-lc", "CODEX_PATH=\"$(command -v codex)\" exec npx -y @agentclientprotocol/codex-acp"];
             check(JSON.stringify(session.normalizeAgent({command: oldCommand}, stock).command) === JSON.stringify(stock.command), "older stock launch commands adopt the current network settings");
@@ -47,19 +48,22 @@ ShellRoot {
             let initial = send("Edit a GitHub project");
             check(initial[initial.length - 1].text === "Edit a GitHub project", "actual task follows standing context");
             let github = policy(initial);
-            check(github && github.text.includes("all GitHub-related project work") && github.text.includes("automatically committing and pushing tested task-scoped changes"), "policy covers all GitHub projects");
+            check(initial[0].text.startsWith("Standing preferences (context only"), "guidance is explicitly marked as context");
+            check(initial[initial.length - 1].text === "Edit a GitHub project", "user task follows standing preferences");
+            check(github && github.text.includes("all GitHub-related project work") && github.text.includes("automatically committing tested task-scoped changes locally"), "policy covers all GitHub projects");
+            check(github.text.includes("Do not push automatically") && github.text.includes("Push button in GitHub Settings") && !github.text.includes("automatically committing and pushing"), "commits stay local until explicitly published");
             check(github.text.includes("sandbox_permissions=require_escalated") && github.text.includes("Never log out, delete credentials"), "network approval and credential guidance reaches the agent");
             check(github.text.includes("Dweebo enables network access") && github.text.includes("Host or administrator restrictions"), "guidance reflects configured access and managed limits");
             check(github.text.includes("preserve unrelated work") && github.text.includes("Never force-push"), "preserves work and approvals");
             check(send("Follow up").length === 1, "policy is sent only once per conversation");
             let chat = session.chatEnvelope();
             let state = session.bridgeState();
-            check(chat.instructionGithubSessionId === "github-session:network-v3" && state.instructionGithubSessionId === "github-session:network-v3", "delivery persists in chat and bridge state");
-            session.instructionGithubSessionId = "github-session"; // Previous policy version.
+            check(chat.instructionGithubSessionId === "github-session:commit-only-v4" && state.instructionGithubSessionId === "github-session:commit-only-v4", "delivery persists in chat and bridge state");
+            session.instructionGithubSessionId = "github-session:network-v3"; // Previous policy version.
             session.syntheticTransportWorks = false;
             session.queuedPrompt = {text: "Offline", attachments: []};
             session.dispatchQueuedPrompt();
-            check(session.instructionGithubSessionId === "github-session", "failed transport does not consume policy delivery");
+            check(session.instructionGithubSessionId === "github-session:network-v3", "failed transport does not consume policy delivery");
             session.syntheticTransportWorks = true;
             let legacy = send("Continue an older chat");
             check(legacy.length === 2 && policy(legacy), "older chats receive only the new policy");
@@ -74,6 +78,21 @@ ShellRoot {
             session.currentSessionId = "distill-github-session";
             check(policy(send("Other backend")), "policy reaches other assistant backends");
             check(send("Backend follow up").length === 1, "other backends do not repeat policy");
+            session.currentAgentId = "free-code";
+            session.currentSessionId = "free-model-policy-test";
+            let freePrompt = send("Say hello");
+            check(freePrompt.length === 1 && freePrompt[0].text === "Say hello", "free backend answers the user rather than desktop policy");
+            session.authenticated = true;
+            session.pendingSessionAction = {kind: "new", cwd: "/tmp"};
+            session.performSessionAction();
+            let configuration = session.syntheticEnvelope.params;
+            check(configuration.systemPrompt.mode === "append", "free backend receives standing instructions separately");
+            check(policy(configuration.systemPrompt.content), "free system prompt retains GitHub policy");
+            session.currentAgentId = "google";
+            let google = session.findAgent("google");
+            check(google && google.command[2].includes("google_agent.py"), "Google backend is registered");
+            check(session.chooseAuthMethod({authMethods: [{id: "oauth-personal"}, {id: "gemini-api-key"}]}) === "gemini-api-key", "Google authenticates with its API key");
+            check(session.chooseAuthMethod({authMethods: [{id: "oauth-personal"}]}) === "", "Google never falls back to personal OAuth");
             console.log("PASS GitHub policy delivery, restoration, retries and multiple backends");
             Qt.quit();
         }
