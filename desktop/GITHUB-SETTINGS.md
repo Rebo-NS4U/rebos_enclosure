@@ -34,6 +34,8 @@ plus `test_deploy.py` and `test_update.py` for deployment and updater coverage.
 
 The project selector discovers GitHub checkouts directly under `~/code`, includes
 linked Enclosure sources, and remembers folders added with **Add local project**.
+The active Enclosure checkout appears once as **Enclosure**, rather than also
+appearing as a second entry with its folder path.
 Only folders whose `origin` is a GitHub repository can be managed. Saved project
 paths stay in the user's XDG state directory and are never shipped in the payload.
 **Browse my GitHub projects** lists up to 100 repositories owned by the current

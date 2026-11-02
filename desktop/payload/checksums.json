@@ -329,7 +329,7 @@
   "home/.config/quickshell/modules/widgets/dashboard/controls/ColorPickerView.qml": "4e786940ce0da5ceef41182ce2412a7e184315187039f87cc6a00d81d9df0926",
   "home/.config/quickshell/modules/widgets/dashboard/controls/DisplayPanel.qml": "cce43d05694f21155c808c2f1fe91aefc76b236e57ff8727bf43c897fdf0eea2",
   "home/.config/quickshell/modules/widgets/dashboard/controls/GithubPanel.qml": "2d9f92b84359ba7b80f044156e762716583c418ef6726241dd0bb51b270a8f67",
-  "home/.config/quickshell/modules/widgets/dashboard/controls/GithubProjects.qml": "fb13f94a97e3376e3731132feedcc461ae2a1dd6de3dd6112fe0c047b8034c8d",
+  "home/.config/quickshell/modules/widgets/dashboard/controls/GithubProjects.qml": "e9a9771521e59c5756d1d0944948c03e4a9167dd0ae4de4023dd449ae80fea4f",
   "home/.config/quickshell/modules/widgets/dashboard/controls/GpuPanel.qml": "7c5e20ebea1de36ad5e53661b444c9aee18c7bd1739c4dc0b82e05cc2040c100",
   "home/.config/quickshell/modules/widgets/dashboard/controls/GradientStopsEditor.qml": "3f509d5a5a3b65f2bf21c6ba0d0bd8d4669803f5693e214d8fabc09127032024",
   "home/.config/quickshell/modules/widgets/dashboard/controls/KeybindingsPanel.qml": "5ba22326a48db124bd4bf63028fdebffa934733d83f01d6a3a193c5144d35bc1",

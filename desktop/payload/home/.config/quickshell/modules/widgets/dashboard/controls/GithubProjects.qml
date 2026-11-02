@@ -73,8 +73,9 @@ ColumnLayout {
             failed = data.ok === false;
             if (failed) { feedback = data.message || "Project request failed."; return; }
             if (mode === "catalog") {
-                projects = [{ label: "Enclosure desktop", path: "" }].concat(data.projects || []);
                 desktopPath = data.desktop_path || "";
+                projects = [{ label: "Enclosure", path: "" }].concat(
+                    (data.projects || []).filter(p => p.path !== root.desktopPath));
             } else if (mode === "remote") {
                 repositories = data.repositories || [];
                 feedback = repositories.length + " GitHub repositories loaded. Select one or enter owner/repository below.";
