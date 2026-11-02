@@ -179,10 +179,12 @@ def details(show, saved=None):
         data.update(episodes=['movie'], episodeLabels={'movie': 'Movie'})
     else:
         numbers = sorted({int(row['season']) for row in meta.get('videos', []) if row.get('season') is not None})
-        data['seasons'] = [dict(id=str(number), title='Season ' + str(number)) for number in numbers]
+        data['seasons'] = [dict(id=str(number), title='Specials' if number == 0 else 'Season ' + str(number)) for number in numbers]
         if numbers:
             preferred = str(saved or '').split(':')[0]
-            chosen = preferred if preferred in {str(number) for number in numbers} else str(numbers[0])
+            # Specials do not match the S1 E1 cache check and are not the story's start.
+            first = next((number for number in numbers if number > 0), numbers[0])
+            chosen = preferred if preferred in {str(number) for number in numbers} else str(first)
             data.update(season_episodes(show, chosen))
     return data
 

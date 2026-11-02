@@ -246,3 +246,5 @@ The CSS template and sync units are managed code refreshed by updates; wallpaper
 and color preferences remain preserved. Animated wallpapers use a still frame.
 
 ThinkPad Fan Control is available from the app launcher. It shows live fan mode and RPM, with Stop fans and Automatic controls; changes require administrator approval.
+
+TV details open on the first regular season unless a saved season exists. Season 0 is labeled Specials; the catalogue cache badge checks S1 E1, not specials or every episode.
