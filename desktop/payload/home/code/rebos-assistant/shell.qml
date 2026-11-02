@@ -38,6 +38,24 @@ ShellRoot {
         function status(): string {
             return JSON.stringify({visible: GlobalStates.assistantVisible, sessions: Ai.sessions.length, parked: Ai.sessions.filter(session => session.agentParked).length, busySessions: Ai.sessions.filter(session => session.isBusy).length, ready: Ai.sessionsReady, channel: Ai.activeSession.channelId, agent: Ai.activeSession.currentAgentId, model: Ai.activeSession.currentSessionModelId, connected: Ai.activeSession.sessionReady, connectionStatus: Ai.activeSession.statusText, lastError: Ai.activeSession.lastError, busy: Ai.activeSession.isBusy, activityStatus: Ai.activeSession.activityStatus, screen: GlobalStates.assistantScreenName, available: GlobalStates.assistantAvailable, pinned: GlobalStates.assistantPinned, width: GlobalStates.assistantWidth});
         }
+        function repairFreeConnections(): string {
+            let repaired = [];
+            for (let session of Ai.sessions) {
+                if (!session.currentAgentId.startsWith("free-") || session.isBusy
+                    || session.questionRequests.length || Object.keys(session.pendingPermissions).length) continue;
+                if (!/This chat uses dweebo_openrouter, but your current provider is openai/.test(session.agentStderrTail)) continue;
+                session.reconnectAgent();
+                repaired.push(session.channelId);
+            }
+            return JSON.stringify({reconnected: repaired});
+        }
+        function focusChannel(channel: string): bool {
+            let session = Ai.sessions.find(item => item.channelId === channel);
+            if (!session) return false;
+            Ai.selectSession(session);
+            if (!GlobalStates.assistantVisible) GlobalStates.toggleAssistant();
+            return true;
+        }
         function backendErrors(): string {
             return JSON.stringify(Ai.sessions.filter(session => session.currentAgentId.startsWith("free-")).map(session => ({
                 channel: session.channelId, agent: session.currentAgentId, error: session.lastError,
