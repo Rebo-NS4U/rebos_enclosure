@@ -39,6 +39,21 @@ PanelWindow {
     property string playback: ""
     property bool playbackPaused: false
     property bool nextEpisodeAvailable: false
+    property string nextEpisodeLabel: "Next episode"
+    property string nextEpisodeTitle: ""
+    property bool nextEpisodeResumesPlayback: false
+    property string playbackShowId: ""
+    property string playbackEpisodeToken: ""
+    property string playbackWindowTitle: ""
+    readonly property bool playerWindowPresent: NiriService.clients.values.some(value => /^(vlc|org\.videolan\.vlc|mpv)$/i.test(value.appId))
+    readonly property var playbackClient: NiriService.focusedClient
+        ?? NiriService.clients.values.find(value => value.id === NiriService.focusedWorkspace?.activeWindowId) ?? null
+    readonly property bool playbackWindowFocused: /^(vlc|org\.videolan\.vlc|mpv)$/i.test(playbackClient?.appId ?? "")
+        && playbackWindowTitle.length > 0 && (playbackClient?.title ?? "").startsWith(playbackWindowTitle)
+    readonly property bool nextOverlayVisible: ready && nextEpisodeAvailable && playbackWindowFocused
+        && !opened && !GlobalStates.lockscreenVisible && !NiriService.overviewOpen
+    onPlayerWindowPresentChanged: { if (playerWindowPresent) backendStarted = true; }
+    Component.onCompleted: { if (playerWindowPresent) backendStarted = true; }
     property string captionStatus: ""
     property bool subtitlesOff: true
     property bool whisperSelected: false
@@ -238,7 +253,7 @@ PanelWindow {
                 filterOptions = data.filterOptions ?? [];
                 mediaGenres = data.mediaGenres ?? [];
                 youtubeRecommendations = data.youtubeRecommendations ?? [];
-                if (shows.count === 0) load(false);
+                if (opened && shows.count === 0) load(false);
             } else if (data.event === "catalogue" && data.request === requestId) {
                 const existing = new Set();
                 for (let i = 0; i < shows.count; i++) existing.add(shows.get(i).id);
@@ -273,14 +288,14 @@ PanelWindow {
                 details = data.data;
                 selectedShow = Object.assign({}, selectedShow, data.data.show ?? ({}), {episodeLabels: data.data.episodeLabels ?? ({})});
                 episodes = data.data.episodes;
-                selectedEpisode = data.data.resumeIndex;
+                selectedEpisode = playbackShowId === selectedShow.id && episodes.indexOf(playbackEpisodeToken) >= 0 ? episodes.indexOf(playbackEpisodeToken) : data.data.resumeIndex;
                 detailLoading = false;
                 if (pageView === "details") Qt.callLater(() => mediaKind === "movies" || (isYoutube && episodes.length <= 1) ? playSelection.forceActiveFocus() : episodeGrid.forceActiveFocus());
             } else if (data.event === "season" && data.request === detailRequest) {
                 details = Object.assign({}, details, data.data);
                 selectedShow = Object.assign({}, selectedShow, data.data.show ?? ({}), {episodeLabels: data.data.episodeLabels ?? ({})});
                 episodes = data.data.episodes;
-                selectedEpisode = data.data.resumeIndex;
+                selectedEpisode = playbackShowId === selectedShow.id && episodes.indexOf(playbackEpisodeToken) >= 0 ? episodes.indexOf(playbackEpisodeToken) : data.data.resumeIndex;
                 detailLoading = false;
             } else if (["torbox", "torbox_connect", "torbox_check", "torbox_disconnect", "torbox_key"].indexOf(data.event) >= 0) {
                 torbox = data.data;
@@ -296,8 +311,12 @@ PanelWindow {
                 playback = data.text;
             } else if (data.event === "playback") {
                 playback = data.text;
+                if (/^(Playing|Paused) · /.test(data.text)) playbackWindowTitle = data.text.replace(/^(Playing|Paused) · /, "");
             } else if (data.event === "next-episode") {
                 nextEpisodeAvailable = data.available;
+                nextEpisodeLabel = data.label ?? "Next episode";
+                nextEpisodeTitle = data.target ?? "";
+                nextEpisodeResumesPlayback = data.resumes ?? false;
             } else if (data.event === "paused") {
                 playbackPaused = data.value;
             } else if (data.event === "captions") {
@@ -305,8 +324,18 @@ PanelWindow {
             } else if (data.event === "subtitle-state") {
                 subtitlesOff = data.off;
                 whisperSelected = data.whisper ?? !data.off;
-            } else if (data.event === "episode" && data.show === selectedShow.id) {
-                selectedEpisode = data.index;
+            } else if (data.event === "episode") {
+                playbackShowId = data.show;
+                playbackEpisodeToken = data.episode ?? "";
+                if (data.show === selectedShow.id) {
+                    if (!data.episode) selectedEpisode = data.index;
+                    else if (episodes.indexOf(data.episode) >= 0) selectedEpisode = episodes.indexOf(data.episode);
+                    else if (root.mediaKind === "tv") {
+                        const season = data.episode.split(":")[0];
+                        const index = details.seasons?.findIndex(value => value.id === season) ?? -1;
+                        if (index >= 0) chooseSeason(index);
+                    }
+                }
             } else if (data.event === "poster") {
                 for (let i = 0; i < shows.count; i++) {
                     if (shows.get(i).id === data.data.id) shows.setProperty(i, "image", data.data.image);
@@ -354,6 +383,10 @@ PanelWindow {
             return JSON.stringify({open: root.opened, presented: root.presented, slideProgress: root.slideProgress,
                 sheetY: card.y, sheetHeight: card.height, screenHeight: root.height,
                 ready: root.ready, view: root.pageView,
+                nextEpisodeAvailable: root.nextEpisodeAvailable, nextEpisodeLabel: root.nextEpisodeLabel, nextEpisodeTitle: root.nextEpisodeTitle,
+                nextOverlayVisible: root.nextOverlayVisible, playbackWindowFocused: root.playbackWindowFocused,
+                playbackWindowTitle: root.playbackWindowTitle, activeWindowTitle: root.playbackClient?.title ?? "",
+                nextOverlayX: nextOverlay.cardX, nextOverlayY: nextOverlay.cardY,
                 searchText: search.text, searchFocused: search.inputActiveFocus, cardFocused: card.activeFocus, kind: root.mediaKind, category: root.category, hasMore: root.hasMore, title: root.selectedShow.title ?? "", seasonCount: root.details.seasons?.length ?? 0, shows: shows.count, loading: root.loading, detailLoading: root.detailLoading,
                 cast: root.details.cast ?? [], directors: root.details.directors ?? [], genres: root.details.genres ?? [], recommendationGroups: root.youtubeRecommendations.length, episodes: root.episodes.length, metadata: root.details.metadata?.length ?? 0,
                 descriptionLength: root.details.description?.length ?? 0, filters: root.appliedFilters,
@@ -371,11 +404,29 @@ PanelWindow {
         stderr: StdioCollector { onStreamFinished: { if (text.length) console.warn("Anime backend:", text); } }
         onExited: {
             root.ready = false;
+            root.nextEpisodeAvailable = false;
+            root.nextEpisodeResumesPlayback = false;
             root.backendStarted = false;
             root.loading = false;
             root.detailLoading = false;
             root.message = "Playback menu disconnected. Close and reopen it to reconnect.";
         }
+    }
+    Timer {
+        interval: 1000
+        running: (root.opened || root.playerWindowPresent) && !root.backendStarted
+        onTriggered: root.backendStarted = true
+    }
+    PlaybackNextOverlay {
+        id: nextOverlay
+        offered: root.nextOverlayVisible
+        buttonLabel: root.nextEpisodeLabel
+        destination: root.nextEpisodeTitle
+        outputName: root.playbackClient?.monitor ?? ""
+        playerPosition: root.playbackClient?.at ?? [0, 0]
+        playerSize: root.playbackClient?.size ?? [0, 0]
+        fullscreen: NiriService.fullscreenOutputs.includes(outputName)
+        onActivated: root.send({action: "next_episode"})
     }
     ListModel { id: shows }
 
@@ -1063,8 +1114,15 @@ PanelWindow {
                 visible: root.playback.length > 0 || root.nextEpisodeAvailable
                 Layout.fillWidth: true
                 StyledText { text: root.playback; Layout.fillWidth: true; maximumLineCount: 2; wrapMode: Text.Wrap; elide: Text.ElideRight }
-                MenuButton { text: "Next episode"; visible: root.nextEpisodeAvailable; onClicked: root.send({action: "next_episode"}) }
-                MenuButton { text: "Play"; visible: root.playbackPaused; selected: true; onClicked: root.send({action: "resume"}) }
+                MenuButton {
+                    text: root.nextEpisodeLabel
+                    visible: root.nextEpisodeAvailable
+                    Accessible.name: root.nextEpisodeLabel + (root.nextEpisodeTitle ? ": " + root.nextEpisodeTitle : "")
+                    ToolTip.visible: hovered && root.nextEpisodeTitle.length > 0
+                    ToolTip.text: root.nextEpisodeTitle
+                    onClicked: root.send({action: "next_episode"})
+                }
+                MenuButton { text: "Play"; visible: root.playbackPaused && !root.nextEpisodeResumesPlayback; selected: true; onClicked: root.send({action: "resume"}) }
                 MenuButton {
                     text: "Captions"
                     visible: root.mediaKind !== "youtube"
