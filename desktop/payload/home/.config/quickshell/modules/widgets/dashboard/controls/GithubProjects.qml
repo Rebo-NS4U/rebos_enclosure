@@ -36,14 +36,14 @@ ColumnLayout {
         selectedFiles = selectedFiles.filter(p => available.includes(p));
     }
     function start(command) {
-        if (busy) return;
+        if (worker.running || (checking && command !== "catalog")) return;
         mode = command;
         worker.command = ["python3", Quickshell.shellPath("scripts/github_projects.py"), command];
         if (command !== "catalog") feedback = "";
         worker.running = true;
     }
     function initialize() {
-        if (!initialized && visible && width > 0 && !busy) {
+        if (!initialized && visible && width > 0 && !worker.running) {
             initialized = true;
             start("catalog");
         }
@@ -101,6 +101,17 @@ ColumnLayout {
             if (code !== 0) { root.failed = true; root.feedback = "Project process failed. Try again."; }
         }
     }
+    Process {
+        id: updateLauncher
+        stderr: StdioCollector {
+            onStreamFinished: if (text.trim() !== "") root.feedback = text.trim()
+        }
+        onExited: (code, status) => {
+            root.failed = code !== 0;
+            if (code !== 0) root.feedback = "Could not open the update window (exit " + code + "). " + root.feedback;
+            else root.feedback = "Update window closed. Review its results before retrying.";
+        }
+    }
     component Caption: StyledText { Layout.fillWidth: true; wrapMode: Text.Wrap; color: Colors.overSurfaceVariant }
     component Field: SettingsTextField { Layout.fillWidth: true }
 
@@ -132,12 +143,15 @@ ColumnLayout {
         SettingsButton {
             objectName: "github-update-installed-button"
             text: "Preview & update installed desktop…"
-            enabled: !root.busy && root.desktopPath !== ""
+            enabled: !updateLauncher.running && root.desktopPath !== ""
             onClicked: {
                 const command = ["kitty", "--title", "Enclosure desktop update", "python3",
                     Quickshell.shellPath("scripts/github_update.py"), "--path", root.desktopPath];
                 if (updatePackages.checked) command.push("--packages");
-                Quickshell.execDetached(command);
+                updateLauncher.command = command;
+                root.feedback = "Opening the desktop update window…";
+                root.failed = false;
+                updateLauncher.running = true;
             }
         }
         Caption {
