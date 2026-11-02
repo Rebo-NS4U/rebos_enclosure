@@ -404,7 +404,7 @@ PanelWindow {
                 cast: root.details.cast ?? [], directors: root.details.directors ?? [], genres: root.details.genres ?? [], recommendationGroups: root.youtubeRecommendations.length, episodes: root.episodes.length, metadata: root.details.metadata?.length ?? 0,
                 descriptionLength: root.details.description?.length ?? 0, filters: root.appliedFilters,
                 filterFields: root.filterOptions.length, page: root.cataloguePage, message: root.message,
-                liveSubtitles: root.settings.live_subtitles ?? true, captions: root.captionStatus,
+                subtitleFont: root.settings.subtitle_font ?? "OpenDyslexic", liveSubtitles: root.settings.live_subtitles ?? true, captions: root.captionStatus,
                 captionDelay: root.settings.caption_delay ?? 0, subtitlesOff: root.subtitlesOff, captionsEnabled: root.captionsEnabled});
         }
     }
@@ -1057,6 +1057,24 @@ PanelWindow {
                     }
                     StyledText {
                         text: "Whisper detects the language of each speech span and generates English captions locally: English dialogue is transcribed and Spanish dialogue is translated. Very short phrases or language changes within one phrase may be less accurate. YouTube uses its own captions."
+                        Layout.fillWidth: true
+                        wrapMode: Text.Wrap
+                        color: Colors.overSurfaceVariant
+                    }
+                    RowLayout {
+                        Layout.fillWidth: true
+                        StyledText { text: "Subtitle font"; Layout.preferredWidth: root.unit * 10 }
+                        ComboBox {
+                            Layout.fillWidth: true
+                            model: ["OpenDyslexic", "Noto Sans", "Noto Serif", "DejaVu Sans"]
+                            currentIndex: Math.max(0, model.indexOf(root.settings.subtitle_font ?? "OpenDyslexic"))
+                            enabled: root.ready
+                            onActivated: root.updateSetting("subtitle_font", currentText)
+                            Accessible.name: "Subtitle font"
+                        }
+                    }
+                    StyledText {
+                        text: "Font changes save automatically and apply when a new player session starts. OpenDyslexic is included."
                         Layout.fillWidth: true
                         wrapMode: Text.Wrap
                         color: Colors.overSurfaceVariant

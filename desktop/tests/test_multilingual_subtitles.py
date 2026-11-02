@@ -16,6 +16,7 @@ class SpanishCaptionTests(unittest.TestCase):
         import wave
         from live_subtitles import BINARY, SPANISH_MODEL
         calls = []
+        progress = []
         with tempfile.TemporaryDirectory() as folder:
             wav = Path(folder) / 'mixed.wav'
             with wave.open(str(wav), 'wb') as audio:
@@ -33,7 +34,9 @@ class SpanishCaptionTests(unittest.TestCase):
                         'tokens': [{'text': ' Hello', 'offsets': {'from': 500, 'to': 900}},
                                    {'text': ' world.', 'offsets': {'from': 1000, 'to': 1300}}]}]}))
                 return subprocess.CompletedProcess(command, 0, b'', b'')
-            cues = cues_from_whisper(recognize(wav, Path(folder) / 'auto', run=run, language='auto'), 32)
+            cues = cues_from_whisper(recognize(wav, Path(folder) / 'auto', run=run, language='auto',
+                                               on_progress=lambda data: progress.append((len(calls), len(data['transcription'])))), 32)
+            self.assertEqual(progress, [(1, 1), (2, 2)])
             self.assertEqual(cues[0][0], 34.5)  # English keeps word timing.
             self.assertEqual(cues[1], (39, 41, 'Hello world.'))  # Spanish uses speech timing.
             self.assertEqual(len(calls), 2)
@@ -92,3 +95,72 @@ class SpanishCaptionTests(unittest.TestCase):
         with patch('live_subtitles.SPANISH_MODEL', Path('/missing/ggml-base.bin')):
             with self.assertRaisesRegex(RuntimeError, 'ggml-base.bin'):
                 LiveSubtitles(['video', '', '', ''], '/tmp', lambda _: None, lambda _: None, language='es')
+
+
+class CaptionReadinessTests(unittest.TestCase):
+    def test_old_captions_do_not_claim_current_scene_is_ready(self):
+        worker = LiveSubtitles.__new__(LiveSubtitles)
+        worker.position = 32
+        worker.delay = 0
+        worker.language = 'auto'
+        worker.blocks = {0: [(0, 1, 'Old speech')]}
+        worker.last_status = None
+        worker.on_status = Mock()
+        worker.post = lambda callback, value: callback(value)
+        worker.publish_status()
+        worker.on_status.assert_called_once_with('Generating captions for the current scene…')
+        worker.blocks[4] = []
+        worker.publish_status()
+        worker.on_status.assert_called_with('No speech detected in the current scene')
+        worker.blocks[4] = [(32, 35, 'Current speech')]
+        worker.publish_status()
+        worker.on_status.assert_called_with('Auto language → English captions ready')
+        worker.on_status.reset_mock()
+        worker.publish_status()
+        worker.on_status.assert_not_called()
+
+    def test_font_selection_is_saved_and_unknown_font_is_rejected(self):
+        import app
+        engine = Mock(settings=dict(app.DEFAULTS))
+        with patch.object(menu_backend, 'engine', engine), patch.object(app, 'save_json') as save, patch.object(menu_backend, 'send'):
+            menu_backend.dispatch({'action': 'settings', 'settings': {'subtitle_font': 'Noto Sans'}})
+            self.assertEqual(engine.settings['subtitle_font'], 'Noto Sans')
+            save.assert_called_with(app.CONFIG, engine.settings)
+            menu_backend.dispatch({'action': 'settings', 'settings': {'subtitle_font': '--bad-font'}})
+            self.assertEqual(engine.settings['subtitle_font'], 'Noto Sans')
+
+
+class CaptionSchedulingTests(unittest.TestCase):
+    def test_resume_starts_worker_at_playback_position(self):
+        with patch('live_subtitles.threading.Thread') as thread, patch.object(Path, 'is_file', return_value=True), tempfile.TemporaryDirectory() as folder:
+            worker = LiveSubtitles(['video', '', '', ''], folder, Mock(), Mock(),
+                                   position=1234, duration=2400)
+            thread.return_value.start.assert_called_once()
+            self.assertEqual(worker.position, 1234)
+            self.assertEqual(worker.duration, 2400)
+
+    def test_worker_builds_ahead_instead_of_chasing_expired_dialogue(self):
+        import threading
+        from live_subtitles import CHUNK, LOOKAHEAD
+        worker = LiveSubtitles.__new__(LiveSubtitles)
+        worker.cancelled = False
+        worker.language = 'auto'
+        worker.condition = threading.Condition()
+        worker.position = 100
+        worker.duration = 200
+        worker.processing_seconds = 8
+        worker.blocks = {}
+        worker.partial = {}
+        worker.attempts = {}
+        worker.post = Mock()
+        worker.on_status = Mock()
+        worker.publish = Mock()
+        generated = []
+        def transcribe(block):
+            generated.append(block * CHUNK)
+            worker.cancelled = True
+            return []
+        worker.transcribe = transcribe
+        worker.work()
+        self.assertGreater(generated[0], worker.position)
+        self.assertLessEqual(generated[0], worker.position + LOOKAHEAD)

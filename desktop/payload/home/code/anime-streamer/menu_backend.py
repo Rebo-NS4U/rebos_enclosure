@@ -335,7 +335,8 @@ class Engine(app.Browser):
                     send(dict(event='captions', text=text))
             service = LiveSubtitles(self.links, app.CACHE, ready, status,
                                     delay=self.settings.get('caption_delay', 0),
-                                    language=self.settings.get('caption_language', 'auto'))
+                                    language=self.settings.get('caption_language', 'auto'),
+                                    position=self.position, duration=self.duration)
             self.captions = service
             self.session.show_captions()
             service.update_position(self.position, self.duration)
@@ -625,7 +626,7 @@ def dispatch(request):
             for key in ['auto_next', 'fullscreen', 'live_subtitles', 'audio_normalization']:
                 if key in new:
                     engine.settings[key] = bool(new[key])
-            for key, values in [('quality', ['best', '1080p', '720p', '480p', 'worst']), ('mode', ['sub', 'dub']), ('caption_language', ['en', 'es', 'auto'])]:
+            for key, values in [('quality', ['best', '1080p', '720p', '480p', 'worst']), ('mode', ['sub', 'dub']), ('caption_language', ['en', 'es', 'auto']), ('subtitle_font', app.SUBTITLE_FONTS)]:
                 if new.get(key) in values:
                     engine.settings[key] = new[key]
             if 'volume' in new:

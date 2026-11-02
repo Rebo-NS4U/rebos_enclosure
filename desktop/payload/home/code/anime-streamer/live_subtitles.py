@@ -18,7 +18,7 @@ MODEL = DATA / 'models/ggml-base.en.bin'
 SPANISH_MODEL = DATA / 'models/ggml-base.bin'
 VAD_BINARY = BINARY.with_name('whisper-vad-speech-segments')
 VAD_MODEL = DATA / 'models/ggml-silero-v6.2.0.bin'
-CHUNK = 16
+CHUNK = 8
 LOOKAHEAD = 40
 
 
@@ -98,7 +98,7 @@ def write_srt(path, cues):
     temp.replace(path)
 
 
-def recognize(wav, output, run=subprocess.run, language='en'):
+def recognize(wav, output, run=subprocess.run, language='en', on_progress=None):
     if language not in ('en', 'es', 'auto'):
         raise ValueError('Unsupported caption language')
     model = SPANISH_MODEL if language != 'en' else MODEL
@@ -141,12 +141,16 @@ def recognize(wav, output, run=subprocess.run, language='en'):
                     if text:
                         transcription.append({'text': text, 'offsets': {
                             'from': round(start * 1000), 'to': round(end * 1000)}})
+                    if on_progress:
+                        on_progress({'transcription': list(transcription)})
                     continue
                 for segment in data.get('transcription', []):
                     for item in [segment] + segment.get('tokens', []):
                         if 'offsets' in item:
                             item['offsets'] = {key: value + round(start * 1000) for key, value in item['offsets'].items()}
                     transcription.append(segment)
+                if on_progress:
+                    on_progress({'transcription': list(transcription)})
             finally:
                 clip.unlink(missing_ok=True)
                 prefix.with_suffix('.json').unlink(missing_ok=True)
@@ -156,7 +160,7 @@ def recognize(wav, output, run=subprocess.run, language='en'):
 
 
 class LiveSubtitles:
-    def __init__(self, links, cache, on_ready, on_status, delay=0, language='en'):
+    def __init__(self, links, cache, on_ready, on_status, delay=0, language='en', position=0, duration=0):
         if language not in ('en', 'es', 'auto'):
             raise ValueError('Unsupported caption language')
         self.language = language
@@ -176,9 +180,12 @@ class LiveSubtitles:
         self.condition = threading.Condition()
         self.cancelled = False
         self.process = None
-        self.position = 0
-        self.duration = 0
+        self.position = max(0, position)
+        self.duration = max(0, duration)
+        self.processing_seconds = CHUNK
         self.blocks = {}
+        self.partial = {}
+        self.last_status = None
         self.delay = float(delay)
         self.attempts = {}
         self.started = time.monotonic()
@@ -195,6 +202,7 @@ class LiveSubtitles:
         with self.condition:
             self.position = max(0, position)
             self.duration = max(0, duration)
+            self.publish_status()
             self.condition.notify()
 
     def close(self):
@@ -211,17 +219,28 @@ class LiveSubtitles:
             self.delay = seconds
             self.publish()
 
+    def publish_status(self):
+        first = int(max(0, self.position - self.delay) // CHUNK)
+        if first in self.blocks:
+            text = ('Auto language → English captions ready' if self.language == 'auto' else
+                    'Spanish → English captions ready' if self.language == 'es' else 'Local English captions ready')
+            if not self.blocks[first]:
+                text = 'No speech detected in the current scene'
+        else:
+            text = 'Generating captions for the current scene…'
+        if text != self.last_status:
+            self.last_status = text
+            self.post(self.on_status, text)
+
     def publish(self):
         with self.condition:
             cues = [(max(0, start + self.delay), end + self.delay, text)
-                    for batch in self.blocks.values() for start, end, text in batch
+                    for batch in (self.blocks | self.partial).values() for start, end, text in batch
                     if end + self.delay > 0]
             if cues:
                 write_srt(self.path, cues)
                 self.post(self.on_ready, str(self.path))
-                self.post(self.on_status, 'Auto language → English captions ready' if self.language == 'auto' else 'Spanish → English captions ready' if self.language == 'es' else 'Local English captions ready')
-            else:
-                self.post(self.on_status, 'Listening for speech; detecting language…' if self.language == 'auto' else 'Listening for Spanish speech…' if self.language == 'es' else 'Listening for English speech…')
+            self.publish_status()
 
     def run(self, args, timeout, capture_output=False):
         with self.condition:
@@ -270,7 +289,11 @@ class LiveSubtitles:
             rms = math.sqrt(sum(value * value for value in samples) / len(samples))
             if rms < 45:
                 return []
-            data = recognize(wav, output, run=self.run, language=self.language)
+            def progress(data):
+                with self.condition:
+                    self.partial[block] = cues_from_whisper(data, start)
+                    self.publish()
+            data = recognize(wav, output, run=self.run, language=self.language, on_progress=progress)
             return cues_from_whisper(data, start)
         finally:
             wav.unlink(missing_ok=True)
@@ -289,11 +312,18 @@ class LiveSubtitles:
                 if not missing:
                     self.condition.wait(timeout=1)
                     continue
-                block = missing[0]
+                # Work ahead of playback rather than continually finishing
+                # chunks only after their dialogue has already passed.
+                lead = min(LOOKAHEAD - CHUNK, max(CHUNK, self.processing_seconds * 1.5))
+                deadline = self.position + lead
+                block = next((block for block in missing if block * CHUNK >= deadline), missing[0])
+            began = time.monotonic()
             try:
                 cues = self.transcribe(block)
                 with self.condition:
+                    self.processing_seconds = max(.1, time.monotonic() - began)
                     self.blocks[block] = cues
+                    self.partial.pop(block, None)
                     self.publish()
             except InterruptedError:
                 return

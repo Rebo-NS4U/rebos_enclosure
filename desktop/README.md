@@ -254,3 +254,5 @@ Player subtitles and live caption OSD use bundled OpenDyslexic (SIL OFL). The fo
 The playback menu reconnects automatically after service interruptions, clears its connection warning on readiness, and does not replay playback commands. Closing the menu transport never stops playback.
 
 Both transparent media surfaces (the browser and next-episode overlay) are excluded from compositor blur, including while hidden, so they cannot blur the video or desktop underneath.
+
+Playback settings include Subtitle font: OpenDyslexic, Noto Sans, Noto Serif or DejaVu Sans. The preference is saved and used by new VLC/mpv sessions; changing it does not restart active playback. Live caption recognition publishes each completed speech span and uses shorter chunks to reduce the wait for captions. Readiness reflects the current scene, rather than the presence of an older transcript.
