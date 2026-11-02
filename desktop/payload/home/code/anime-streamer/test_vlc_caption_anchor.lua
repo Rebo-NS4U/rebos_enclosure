@@ -25,7 +25,7 @@ vlc = {
             return 0
         end,
         get_list=function(_, name)
-            if name == "chapter" then return chapters, {} end
+            if name == "chapter" then return chapters, {"Intro", "Chapter 1", "Chapter 2", "Chapter 3", "End Credits", "Preview"} end
             if name == "spu-es" then return tracks, labels end
             return {}, {}
         end,
@@ -43,6 +43,7 @@ print("PASS: native subtitles cannot overlap Whisper OSD")
 
 local state = handler(nil, "")
 assert(state.chapter == 4 and state.chapter_count == 6, "Chapter index and count must be reported")
+assert(state.chapter_name == "End Credits", "Chapter labels must reach ending detection")
 chapter, chapters = -1, {}
 state = handler(nil, "")
 assert(state.chapter == -1 and state.chapter_count == 0, "Missing chapters must preserve time fallback")

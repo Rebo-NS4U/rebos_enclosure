@@ -12,7 +12,8 @@ class PlaybackHarness:
 class NextEpisodeTests(unittest.TestCase):
     def setUp(self):
         self.engine = PlaybackHarness()
-        self.engine.context = ({'id': 'show', 'title': 'Show'}, ['1', '2', '3'], 0, 7)
+        self.show = {'id': 'show', 'title': 'Show'}
+        self.engine.context = (self.show, ['1', '2', '3'], 0, 7)
         self.engine.session = Mock()
         self.engine.next_requested = False
         self.engine.next_episode_paused = False
@@ -40,17 +41,47 @@ class NextEpisodeTests(unittest.TestCase):
         self.engine.position = 800
         self.assertFalse(self.offered())
 
-    def test_final_two_chapters_override_time_fallback(self):
+    def test_generic_chapters_never_replace_time_fallback(self):
         self.engine.chapter_count = 6
         self.engine.chapter = 3
         self.engine.position = 1190
-        self.assertFalse(self.offered())
+        self.assertTrue(self.offered())
         self.engine.chapter = 4
         self.engine.position = 800
-        self.assertTrue(self.offered())
+        self.assertFalse(self.offered())
         self.engine.chapter = 5
-        self.assertTrue(self.offered())
+        self.assertFalse(self.offered())
         self.engine.chapter = 2
+        self.assertFalse(self.offered())
+
+    def test_named_credits_match_episode_length_and_never_intro(self):
+        self.engine.chapter_count = 6
+        self.engine.chapter = 5
+        self.engine.chapter_name = 'End Credits'
+        self.engine.position = 1000
+        self.assertTrue(self.offered())
+        self.engine.position = 200
+        self.assertFalse(self.offered())
+        self.engine.chapter_name = 'Opening Credits'
+        self.assertFalse(self.offered())
+
+    def test_short_video_does_not_offer_next_at_the_start(self):
+        self.engine.context = (dict(self.show, kind='youtube'), ['one', 'two'], 0, 7)
+        self.engine.duration = 30
+        self.engine.position = 0
+        self.assertFalse(self.offered())
+        self.engine.position = 28
+        self.assertTrue(self.offered())
+        self.assertEqual(self.engine.last_next_offer['label'], 'Next video')
+
+    def test_movie_never_offers_episode_navigation(self):
+        self.engine.context = (dict(self.show, kind='movies'), ['movie', 'other'], 0, 7)
+        self.engine.position = 1199
+        self.assertFalse(self.offered())
+
+    def test_preloaded_episode_is_not_offered_until_loaded(self):
+        self.engine.next_episode_paused = True
+        self.engine.file_loaded = False
         self.assertFalse(self.offered())
 
     def test_invalid_chapters_fall_back_to_time(self):
@@ -65,22 +96,23 @@ class NextEpisodeTests(unittest.TestCase):
         self.engine.episode_ended = True
         self.assertTrue(self.offered())
         self.engine.skip_to_next()
-        self.engine.start_episode.assert_called_once_with({'id': 'show'}, ['1', '2', '3'], 1, 7)
+        self.engine.start_episode.assert_called_once_with(self.show, ['1', '2', '3'], 1, 7)
         self.engine.skip_to_next()
         self.assertEqual(self.engine.start_episode.call_count, 1)
 
     def test_preloaded_next_resumes_without_skipping(self):
-        self.engine.context = ({'id': 'show'}, ['1', '2', '3'], 2, 7)
+        self.engine.context = (self.show, ['1', '2', '3'], 2, 7)
         self.engine.position = 0
         self.engine.next_episode_paused = True
         self.assertTrue(self.offered())
+        self.assertEqual(self.engine.last_next_offer['label'], 'Start episode')
         self.engine.skip_to_next()
         self.engine.session.command.assert_called_once_with(['set_property', 'pause', False])
         self.engine.start_episode.assert_not_called()
         self.assertFalse(self.offered())
 
     def test_last_episode_and_closed_player_have_no_offer(self):
-        self.engine.context = ({'id': 'show'}, ['1'], 0, 7)
+        self.engine.context = (self.show, ['1'], 0, 7)
         self.engine.episode_ended = True
         self.assertFalse(self.offered())
         self.engine.session = None
@@ -102,7 +134,7 @@ class CompletionTests(unittest.TestCase):
     def event(self, reason):
         menu_backend.Engine.player_event(self.engine, {'event': 'end-file', 'reason': reason}, 7)
 
-    def test_end_waits_for_on_screen_card(self):
+    def test_episode_end_waits_for_on_screen_next_offer(self):
         self.event('eof')
         self.event('eof')
         self.engine.start_episode.assert_not_called()
@@ -139,16 +171,16 @@ class ChapterPollingTests(unittest.TestCase):
         session.caption_text = ''
         session.emit = Mock()
         state = dict(state='playing', input=True, input_state=3,
-                     time=800, duration=1200, chapter=4, chapter_count=6)
+                     time=800, duration=1200, chapter=4, chapter_count=6, chapter_name='Credits')
         session.poll(state)
         session.emit.assert_any_call({'event': 'property-change', 'name': 'chapter-info',
-                                      'data': {'index': 4, 'count': 6}})
+                                      'data': {'index': 4, 'count': 6, 'name': 'Credits'}})
         session.emit.reset_mock()
         session.poll(state)
         session.emit.assert_not_called()
         session.poll(dict(state, chapter=3))
         session.emit.assert_any_call({'event': 'property-change', 'name': 'chapter-info',
-                                      'data': {'index': 3, 'count': 6}})
+                                      'data': {'index': 3, 'count': 6, 'name': 'Credits'}})
 
 
 if __name__ == '__main__':

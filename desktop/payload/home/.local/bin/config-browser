@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+home=${HOME:?HOME is not set}
+config="$home/.config"
+command -v zenity >/dev/null || { printf 'Install zenity to use config-browser.\n' >&2; exit 1; }
+
+declare -a labels=() paths=()
+add() {
+    local label=$1 path=$2
+    [[ -e "$path" ]] || return 0
+    labels+=("$label")
+    paths+=("$path")
+}
+
+add 'Niri — windows, workspaces and keybindings' "$config/niri"
+add 'QuickShell — bar, launcher and shell widgets' "$config/quickshell"
+add 'Rebos shell — theme, bar and desktop preferences' "$config/rebos_shell/config"
+add 'Terminal — Kitty settings' "$config/kitty"
+add 'Launcher — Fuzzel settings' "$config/fuzzel"
+add 'Notifications — Dunst settings' "$config/dunst"
+add 'GTK apps — GTK 3 and GTK 4 themes' "$config/gtk-3.0"
+add 'Qt apps — Qt 5 and Qt 6 themes' "$config/qt5ct"
+add 'KDE — global desktop settings' "$config/kdeglobals"
+add 'Fish — shell settings' "$config/fish"
+add 'Waybar — panel settings' "$config/waybar"
+add 'Systemd user services' "$config/systemd/user"
+add 'Local scripts' "$config/scripts"
+add 'All config — open ~/.config' "$config"
+
+while true; do
+    choice=$(zenity --list --title='Config Browser' --text='Choose a configuration area to open' \
+        --column='Configuration' --width=640 --height=440 "${labels[@]}" 2>/dev/null) || exit 0
+    [[ -n "$choice" ]] || exit 0
+    for i in "${!labels[@]}"; do
+        if [[ ${labels[$i]} == "$choice" ]]; then
+            xdg-open "${paths[$i]}" >/dev/null 2>&1 &
+            exit 0
+        fi
+    done
+done

@@ -438,7 +438,7 @@ end
 fish_add_path $HOME/.grok/bin
 # <<< grok installer <<<
 
-fish_add_path @HOME@/.spicetify
+fish_add_path "$HOME/.spicetify"
 
 # Apply our search bindings after vendor plugins finish configuring theirs.
 if status is-interactive; and functions -q fzf_key_bindings

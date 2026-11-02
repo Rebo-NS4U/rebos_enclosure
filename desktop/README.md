@@ -89,6 +89,17 @@ not bundled. Short-clip checks found correct detection but mixed French/Italian
 translation and poor German/Japanese/Korean translation with the base model;
 do not treat detection success as evidence of translation accuracy.
 
+Series playback queues continue across released seasons, keep specials separate,
+and enforce the selected resolution limit. Next-episode preparation buffers a
+bounded startup prefix; VLC receives chapter names for credits detection and
+uses MP4 demuxing and network buffering options for network playback.
+
+The package shortcuts share one menu for official/AUR installation, removal,
+and updates. Fish `update --dry-run` previews the Arch/AUR, Flatpak and Rust
+update commands. Administrator operations use `assistant-sudo`; package-manager
+review and confirmation remain enabled. Configuration Browser is also included
+as a launcher entry for opening desktop configuration folders.
+
 The assistant's GitHub workflow applies across projects and backends: edit in the
 owning repository, keep applicable installed and installer files synchronized,
 then commit and push tested task changes. It preserves unrelated work and normal

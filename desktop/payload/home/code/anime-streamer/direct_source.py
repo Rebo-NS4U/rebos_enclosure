@@ -1,6 +1,7 @@
 """Stremio HTTP stream client. No torrent engine or browser fallback exists here."""
 from functools import lru_cache
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timezone
 import json
 import math
 import re
@@ -126,6 +127,39 @@ def season_episodes(show, season_id):
     return dict(episodes=episodes, episodeLabels={token: 'Episode ' + str(row['episode']) + ' · ' + (row.get('name') or '') for token, row in zip(episodes, rows)}, seasonId=str(season_id), resumeIndex=0)
 
 
+def playback_selection(show, episodes, index, now=None):
+    """Keep season browsing separate from the ordered series playback queue."""
+    selected = episodes[index]
+    season, number = map(int, selected.split(':'))
+    now = now or datetime.now(timezone.utc)
+    rows = {}
+    videos = metadata(show).get('videos') or [dict(season=token.split(':')[0], episode=token.split(':')[1]) for token in episodes]
+    for row in videos:
+        try:
+            key = (int(row['season']), int(row['episode']))
+            if key[0] < 0 or key[1] <= 0 or (key[0] == 0) != (season == 0):
+                continue  # Specials are a separate queue, never inserted into the story.
+            released = row.get('released')
+            if released:
+                release_time = datetime.fromisoformat(released.replace('Z', '+00:00'))
+                if release_time.tzinfo is None:
+                    release_time = release_time.replace(tzinfo=timezone.utc)
+                if release_time > now:
+                    continue
+        except (KeyError, TypeError, ValueError, AttributeError):
+            continue
+        rows.setdefault(key, row)
+    # A manually chosen episode remains playable even with incomplete metadata.
+    rows.setdefault((season, number), {})
+    ordered = sorted(rows)
+    queue = [f'{s}:{n}' for s, n in ordered]
+    labels = dict(show.get('episodeLabels') or {})
+    for (s, n), row in rows.items():
+        if row.get('name') or f'{s}:{n}' not in labels:
+            labels[f'{s}:{n}'] = f'Season {s} · Episode {n}' + (' · ' + row['name'] if row.get('name') else '')
+    return dict(show, episodeLabels=labels), queue, queue.index(f'{season}:{number}')
+
+
 def details(show, saved=None):
     meta = metadata(show)
     def names(value):
@@ -201,7 +235,7 @@ def verify(stream, expected, quality):
     flags = ['-rw_timeout', '15000000', '-protocol_whitelist', 'http,https,tcp,tls,crypto,data']
     hls_flags = ['-allowed_extensions', 'ALL', '-allowed_segment_extensions', 'ALL', '-extension_picky', '0']
     try:
-        result = subprocess.run(['ffprobe', '-v', 'error', *flags, *hls_flags, '-show_entries', 'format=duration,format_name:stream=index,codec_type:stream_tags=language', '-of', 'json', local], capture_output=True, text=True, timeout=35)
+        result = subprocess.run(['ffprobe', '-v', 'error', *flags, *hls_flags, '-show_entries', 'format=duration,format_name:stream=index,codec_type,height:stream_tags=language:chapter=start_time:chapter_tags=title', '-of', 'json', local], capture_output=True, text=True, timeout=35)
         probe = json.loads(result.stdout)
         duration = float((probe.get('format') or {}).get('duration') or 0)
         if result.returncode or not math.isfinite(duration) or duration < 120:
@@ -210,6 +244,9 @@ def verify(stream, expected, quality):
         tracks = probe.get('streams') or []
         if not any(row.get('codec_type') == 'video' for row in tracks):
             raise InvalidMedia('The source has no video track.')
+        video = next(row for row in tracks if row.get('codec_type') == 'video')
+        if height and int(video.get('height') or 0) > height:
+            raise InvalidMedia('The source exceeds the selected playback quality.')
         audio = [row for row in tracks if row.get('codec_type') == 'audio']
         english = next((row for row in audio if (row.get('tags') or {}).get('language', '').lower() in ('en', 'eng', 'english')), None)
         if english is None and len(audio) == 1 and not (audio[0].get('tags') or {}).get('language'):
@@ -224,6 +261,8 @@ def verify(stream, expected, quality):
         raise InvalidMedia('The HTTPS video could not be verified. Try again later.') from None
     links = metadata_source.PlaybackLinks(local, english['index'])
     links.is_hls = is_hls
+    links.format_name = str((probe.get('format') or {}).get('format_name') or '')
+    links.chapters = probe.get('chapters') or []
     return links
 
 
@@ -247,7 +286,7 @@ def resolve(show_id, episode, quality):
     cap = {'1080p':1080, '720p':720, '480p':480}.get(quality)
     ranked = sorted(rows, key=resolution, reverse=quality != 'worst')
     if cap:
-        ranked = [row for row in ranked if resolution(row) <= cap] + [row for row in ranked if resolution(row) > cap]
+        ranked = [row for row in ranked if resolution(row) <= cap]
     expected = metadata_source.runtime(metadata(show))
     for stream in ranked[:3]:
         try:

@@ -176,6 +176,10 @@ class VlcSession:
             links, title, paused, self.whisper_only = command[1:]
             video, referer, subtitle, audio = links
             options = ['no-start-paused', 'input-repeat=0', 'audio-language=eng,en', 'sub-language=eng,en']
+            if video.startswith(('https://', 'http://')):
+                options.extend(['network-caching=5000', 'prefetch-buffer-size=65536'])
+                if str(getattr(links, 'format_name', '')).startswith('mov,'):
+                    options.append('demux=avformat')
             if self.audio_normalization:
                 options.append('audio-filter=compressor')
             if referer:
@@ -265,7 +269,8 @@ class VlcSession:
                   'sid': 'whisper' if whisper_active else (False if self.whisper_only else state.get('sid', -1)),
                   'sub-visibility': whisper_active if self.whisper_only else state.get('sid', -1) >= 0,
                   'whisper-captions': whisper_active,
-                  'chapter-info': {'index': state.get('chapter', -1), 'count': state.get('chapter_count', 0)}}
+                  'chapter-info': {'index': state.get('chapter', -1), 'count': state.get('chapter_count', 0),
+                                   'name': state.get('chapter_name', '')}}
         for name, value in values.items():
             if self.last.get(name) != value:
                 self.last[name] = value

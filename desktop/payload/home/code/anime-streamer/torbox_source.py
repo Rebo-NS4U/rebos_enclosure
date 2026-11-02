@@ -234,7 +234,7 @@ def candidates_for(media_type, imdb, episode, quality='best'):
     cap = {'1080p':1080, '720p':720, '480p':480}.get(quality)
     candidates.sort(key=lambda value: direct_source.resolution(value[1]), reverse=quality != 'worst')
     if cap:
-        candidates.sort(key=lambda value: direct_source.resolution(value[1]) > cap)
+        candidates = [value for value in candidates if direct_source.resolution(value[1]) <= cap]
     return candidates[:60]
 
 

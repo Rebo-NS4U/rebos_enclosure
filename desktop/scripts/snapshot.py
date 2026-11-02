@@ -90,8 +90,8 @@ def build(home):
          ROOT.parent / '.config/systemd/user/rebos-panel.service')
     copy('.local/share/applications/rebos-assistant.desktop')
     write('.local/bin/assistant-sudo', '#!/bin/sh\nexec /usr/bin/python3 "$HOME/.config/quickshell/scripts/assistant_sudo.py" "$@"\n', 0o755)
-    copy('.local/bin/config-browser')
-    copy('.local/share/applications/config-browser.desktop')
+    copy('.local/bin/config-browser', ROOT.parent / '.local/bin/config-browser')
+    copy('.local/share/applications/config-browser.desktop', ROOT.parent / '.local/share/applications/config-browser.desktop')
     # Versioned install defaults also seed the bundled reset preset.
     preset = shell / 'assets/presets/rebos_shell Default'
     for name in ('bar', 'theme', 'performance', 'lockscreen', 'system'):
@@ -225,7 +225,8 @@ set -euo pipefail
 selection=$(cliphist list | fuzzel --dmenu --prompt='Clipboard > ')
 [[ -z $selection ]] || printf '%s' "$selection" | cliphist decode | wl-copy
 ''', 0o755)
-    for name in ('install.sh', 'install-aur.sh', 'uninstall.sh', 'port-manager.sh',
+    for name in ('install.sh', 'install-aur.sh', 'uninstall.sh', 'package-menu.sh',
+                 'package-admin.sh', 'port-manager.sh',
                  'copy-latest-screenshot-path.sh', 'scale-adjust.sh'):
         copy('.config/scripts/' + name)
     write('.local/share/applications/rebos-shell-settings.desktop', '''[Desktop Entry]

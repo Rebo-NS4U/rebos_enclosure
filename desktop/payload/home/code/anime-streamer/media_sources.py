@@ -91,6 +91,13 @@ def season_episodes(show, season_id):
     return direct_source.season_episodes(direct_source.migrate(show), season_id)
 
 
+def playback_selection(show, episodes, index):
+    if kind_of(show) == 'tv':
+        selected, queue, position = direct_source.playback_selection(direct_source.migrate(show), episodes, index)
+        return dict(show, episodeLabels=selected['episodeLabels']), queue, position
+    return show, episodes, index
+
+
 def resolve_movie(show_id, episode, quality):
     return direct_source.resolve(show_id, episode, quality)
 
