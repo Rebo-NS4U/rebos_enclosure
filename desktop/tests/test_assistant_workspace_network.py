@@ -91,12 +91,14 @@ class AssistantWorkspaceNetworkTest(unittest.TestCase):
         provider = dict(name='OpenRouter', base_url='https://openrouter.ai/api/v1',
                         env_key='OPENROUTER_API_KEY', wire_api='responses', requires_openai_auth=False)
         config = json.loads(self.environment['CODEX_CONFIG'])
-        config.update(model_provider='dweebo_openrouter', model_providers={'dweebo_openrouter': provider})
+        config.update(model_provider='dweebo_openrouter', model_providers={'dweebo_openrouter': provider},
+                      model_catalog_json='/tmp/test-openrouter-catalog.json')
         result = self.run_launcher(args=('app-server', '--show-args'), config=json.dumps(config))
         self.assertEqual(result.returncode, 0, result.stderr)
         args = json.loads(result.stdout)
         values = dict(args[i + 1].split('=', 1) for i in range(2, len(args), 2))
         self.assertEqual(json.loads(values['model_provider']), 'dweebo_openrouter')
+        self.assertEqual(json.loads(values['model_catalog_json']), '/tmp/test-openrouter-catalog.json')
         for key, value in provider.items():
             self.assertEqual(json.loads(values['model_providers.dweebo_openrouter.' + key]), value)
         self.assertNotIn('OPENROUTER_API_KEY=', ' '.join(args))

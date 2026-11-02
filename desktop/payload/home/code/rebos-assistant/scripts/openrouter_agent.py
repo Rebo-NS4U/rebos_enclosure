@@ -32,6 +32,7 @@ def launch_environment(selection, environment=None):
     config.update({
         "model": MODELS[selection],
         "model_provider": "dweebo_openrouter",
+        "model_catalog_json": str(Path(__file__).with_name("openrouter_models.json")),
         "features": {**config.get("features", {}), "memories": False},
         "memories": {**config.get("memories", {}), "generate_memories": False, "use_memories": False},
     })

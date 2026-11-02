@@ -286,3 +286,15 @@ can change; no free DeepSeek endpoint was listed. Inference needs an API key.
 
 Provider routing follows the [Codex provider configuration](https://learn.chatgpt.com/docs/config-file/config-advanced) and [OpenRouter Responses API](https://openrouter.ai/docs/api_reference/responses/overview).
 The launcher preserves existing workspace/network and approval settings.
+
+### Dweebo free models
+
+Choose Backend → Free Code or Free Nemotron to open a dedicated OpenRouter chat.
+Save an OpenRouter key in `~/.config/dweebo/openrouter-api-key` with permissions
+`600`; reselect the backend after replacing it. Preferences are sent as session
+instructions rather than extra user requests. The shipped OpenRouter model
+catalogue supplies model names, context limits and instructions to Codex.
+
+OpenRouter can reject requests with HTTP 429 when its free daily allowance is
+exhausted. Opening additional chats or replacing a key does not fix that account
+limit; wait for the reset reported by OpenRouter.

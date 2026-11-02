@@ -75,7 +75,13 @@ ShellRoot {
             session.currentAgentId = "free-code";
             session.currentSessionId = "free-model-policy-test";
             let freePrompt = send("Say hello");
-            check(freePrompt[freePrompt.length - 1].text.startsWith("Current user request:\nSay hello"), "free backend answers the user rather than desktop policy");
+            check(freePrompt.length === 1 && freePrompt[0].text === "Say hello", "free backend answers the user rather than desktop policy");
+            session.authenticated = true;
+            session.pendingSessionAction = {kind: "new", cwd: "/tmp"};
+            session.performSessionAction();
+            let configuration = session.syntheticEnvelope.params;
+            check(configuration.systemPrompt.mode === "append", "free backend receives standing instructions separately");
+            check(policy(configuration.systemPrompt.content), "free system prompt retains GitHub policy");
             console.log("PASS GitHub policy delivery, restoration, retries and multiple backends");
             Qt.quit();
         }

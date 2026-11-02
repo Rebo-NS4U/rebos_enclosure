@@ -45,6 +45,17 @@ class OpenRouterTest(unittest.TestCase):
             path.chmod(0o600)
             self.assertEqual(agent.launch_environment('free-code', env)['OPENROUTER_API_KEY'], 'test-only')
 
+    def test_catalog_contains_both_free_models_without_openai_defaults(self):
+        env = agent.launch_environment('free-code', {'OPENROUTER_API_KEY': 'test-only'})
+        config = json.loads(env['CODEX_CONFIG'])
+        catalog = json.loads(Path(config['model_catalog_json']).read_text())
+        self.assertEqual({model['slug'] for model in catalog['models']}, set(agent.MODELS.values()))
+        for model in catalog['models']:
+            self.assertEqual(model['input_modalities'], ['text'])
+            self.assertFalse(model['use_responses_lite'])
+            self.assertGreater(model['context_window'], 0)
+            self.assertIn('Respond to greetings naturally', model['model_messages']['instructions_template'])
+
     def test_invalid_configuration(self):
         for config in ('[]', 'null', '{'):
             with self.assertRaises(ValueError):

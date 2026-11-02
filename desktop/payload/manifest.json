@@ -115,6 +115,7 @@
     "code/rebos-assistant/config",
     "code/rebos-assistant/modules",
     "code/rebos-assistant/scripts",
+    "code/rebos-assistant/scripts/openrouter_models.json",
     "code/rebos-assistant/shell.qml",
     "code/rebos-assistant/version"
   ]

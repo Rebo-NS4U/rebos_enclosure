@@ -55,6 +55,8 @@ def main():
     # startup provider on turn/start. Supply the same provider to both layers.
     if arguments and arguments[0] == 'app-server' and config.get('model_provider') == 'dweebo_openrouter':
         overrides = {'model_provider': 'dweebo_openrouter'}
+        if config.get('model_catalog_json'):
+            overrides['model_catalog_json'] = config['model_catalog_json']
         for name, value in config.get('model_providers', {}).get('dweebo_openrouter', {}).items():
             if isinstance(value, (str, bool, int, float)):
                 overrides['model_providers.dweebo_openrouter.' + name] = value
