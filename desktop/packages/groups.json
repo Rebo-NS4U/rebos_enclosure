@@ -6,6 +6,5 @@
   "recording": {"label": "OBS and Android screen mirroring", "repo": ["obs-studio", "scrcpy"], "aur": []},
   "development": {"label": "VS Code, Node, Python tools, tmux and GitHub CLI", "repo": ["nodejs", "npm", "python-pip", "python-pynvim", "tmux", "github-cli"], "aur": ["visual-studio-code-bin"]},
   "utilities": {"label": "Fastfetch and Flatpak", "repo": ["fastfetch", "flatpak"], "aur": []},
-  "video-wallpapers": {"label": "Video wallpaper support", "repo": [], "aur": ["mpvpaper"]},
-  "caption-acceleration": {"label": "Build GPU acceleration for local subtitles", "repo": ["cmake", "make", "gcc", "shaderc", "spirv-headers", "vulkan-headers", "vulkan-icd-loader"], "aur": []}
+  "video-wallpapers": {"label": "Video wallpaper support", "repo": [], "aur": ["mpvpaper"]}
 }

@@ -1032,7 +1032,5 @@
   "system/rebos-greeter/layout.c": "e03934c76aa561116eec76ec63d82dc89291e80b41591e1813f7422296c8b986",
   "system/rebos-greeter/theme/background.png": "744fb3fe3ed6ad6f90eb6fe7a676a4ed393e697b73658d071ff11910359ee447",
   "system/rebos-greeter/theme/glass-texture.png": "068bd1e571910aa23296c688523b5e5a8c2333a480fb281eb1be732ed76ca7cf",
-  "system/rebos-greeter/theme/regreet.css": "bb38fc2fa51251a3469cb21a1b7d8b0da3ee129ce05695bb30f447803e070ac5",
-  "home/code/anime-streamer/whisper_runtime.py": "f214b4731655e4e667b95bcaea95520cfeb2ff5d6137c1e9df356acac16665a5",
-  "home/code/anime-streamer/caption_runtime_setup.py": "02be7ed8b00d0d65f1afb730f6a2b160bc8e5c8f8f76bc6eefd933d31779e600"
+  "system/rebos-greeter/theme/regreet.css": "bb38fc2fa51251a3469cb21a1b7d8b0da3ee129ce05695bb30f447803e070ac5"
 }

@@ -13,12 +13,3 @@ python-pynvim
 tmux
 github-cli
 flatpak
-
-# Optional caption-acceleration build dependencies.
-cmake
-make
-gcc
-shaderc
-spirv-headers
-vulkan-headers
-vulkan-icd-loader

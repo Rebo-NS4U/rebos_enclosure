@@ -66,3 +66,7 @@ id_ed25519*
 # Personal shortcuts stay local; portable payload templates remain versioned.
 /.config/niri/keybindings-personal.kdl
 /.config/kitty/keybindings-personal.conf
+
+# Installed-only caption GPU helpers are excluded from portable snapshots.
+/desktop/payload/home/code/anime-streamer/caption_runtime_setup.py
+/desktop/payload/home/code/anime-streamer/whisper_runtime.py

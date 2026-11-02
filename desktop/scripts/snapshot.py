@@ -80,9 +80,11 @@ def build(home):
     for path in sorted((assistant / 'systemd').glob('*.service')):
         copy('.config/systemd/user/' + path.name, path)
     media = home / 'code/anime-streamer'
+    # Machine-specific GPU setup stays on the installed system.
+    local_runtime = {'caption_runtime_setup.py', 'whisper_runtime.py'}
     for path in sorted(media.iterdir()):
         if path.is_file() and (path.suffix in {'.py', '.lua', '.cjs'} or path.name == 'filter_options.json'):
-            if not path.name.startswith(('test_', 'check_')):
+            if not path.name.startswith(('test_', 'check_')) and path.name not in local_runtime:
                 copy('code/anime-streamer/' + path.name)
     copy('.config/systemd/user/anime-streamer.service')
     copy('.config/systemd/user/rebos-panel.service',
