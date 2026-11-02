@@ -4,6 +4,11 @@ The repository-first, tested automatic commit/push workflow applies to every Git
 
 Work in this repository first and apply the task's changes to installed files for verification. If a live edit is necessary first, bring its focused diff into the repository during the same task. Preserve unrelated changes and portable installer substitutions; do not refresh the entire desktop snapshot for a small edit.
 
+This development desktop links its installed application sources to the payload
+in this checkout. Check `readlink -f` before editing or deploying: both paths may
+already refer to the same file. Preserve these links; do not recreate duplicate
+installed source trees. See `desktop/SOURCE-LINKS.md` for deployment and updates.
+
 Installed paths map to these tracked sources:
 
 | Installed path (relative to the user's home) | Repository source |

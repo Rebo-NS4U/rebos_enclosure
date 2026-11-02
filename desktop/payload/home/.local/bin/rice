@@ -18,11 +18,11 @@ prepare() {
 }
 
 quickshell_pids() {
-	qs list --all 2>/dev/null | awk -v target="$shell_dir/shell.qml" '
+	qs list --all 2>/dev/null | awk -v target="$shell_dir/shell.qml" -v resolved="$(readlink -f "$shell_dir/shell.qml")" '
 		$1 == "Process" && $2 == "ID:" { pid = $3 }
 		$1 == "Config" && $2 == "path:" {
 			sub(/^[[:space:]]*Config path:[[:space:]]*/, "")
-			if ($0 == target) print pid
+			if ($0 == target || $0 == resolved) print pid
 		}
 	'
 }

@@ -80,6 +80,56 @@ class DeploymentTests(unittest.TestCase):
         deploy.install(self.payload, self.home, dry_run=True)
         self.assertEqual(list(self.home.iterdir()), [])
 
+    def test_linked_sources_share_edits_restore_and_refuse_copy_deployment(self):
+        checkout = self.root / 'checkout'
+        (checkout / '.git').mkdir(parents=True)
+        payload = checkout / 'desktop/payload'
+        self.payload.parent.mkdir(exist_ok=True)
+        payload.parent.mkdir()
+        self.payload.rename(payload)
+        self.payload = payload
+        units = ['.config/kitty']
+        commands = payload / 'home/.local/bin'
+        commands.mkdir(parents=True)
+        (commands / 'shared').write_text('#!/bin/sh\nexit 0\n')
+        (commands / 'expanded').write_text('echo @HOME@\n')
+        units += ['.local/bin/shared', '.local/bin/expanded']
+        for relative in deploy.SOURCE_ROOTS:
+            source = payload / 'home' / relative
+            source.mkdir(parents=True)
+            (source / 'entry').write_text('new source')
+            installed = self.home / relative
+            installed.mkdir(parents=True)
+            (installed / 'entry').write_text('old source')
+            # Media/assistant manifests select individual files and subdirectories.
+            units.append(relative if relative.startswith('.config/') else relative + '/entry')
+        (payload / 'manifest.json').write_text(json.dumps({'units': units}))
+        self.seal()
+        deploy.install(payload, self.home, dry_run=True, link_source=True)
+        self.assertFalse((self.home / '.local').exists())
+        backup = deploy.install(payload, self.home, link_source=True)
+        self.assertTrue((self.home / '.local/bin/shared').is_symlink())
+        self.assertFalse((self.home / '.local/bin/expanded').is_symlink())
+        self.assertIn(str(self.home), (self.home / '.local/bin/expanded').read_text())
+        self.assertFalse((self.home / '.config/kitty').is_symlink())
+        for relative in deploy.SOURCE_ROOTS:
+            installed = self.home / relative
+            self.assertTrue(installed.is_symlink())
+            self.assertEqual(installed.resolve(), payload / 'home' / relative)
+            self.assertEqual((installed / 'entry').read_text(), 'new source')
+        with self.assertRaisesRegex(ValueError, 'recreate duplicate'):
+            deploy.install(payload, self.home)
+        deploy.restore(backup)
+        for relative in deploy.SOURCE_ROOTS:
+            self.assertFalse((self.home / relative).is_symlink())
+            self.assertEqual((self.home / relative / 'entry').read_text(), 'old source')
+            self.assertEqual((payload / 'home' / relative / 'entry').read_text(), 'new source')
+
+    def test_source_links_require_persistent_checkout_before_writes(self):
+        with self.assertRaisesRegex(ValueError, 'persistent Git checkout'):
+            deploy.install(self.payload, self.home, link_source=True)
+        self.assertEqual(list(self.home.iterdir()), [])
+
     def test_update_preserves_preferences_and_refreshes_source_with_recovery(self):
         config = self.home / '.config/kitty'
         config.mkdir(parents=True)

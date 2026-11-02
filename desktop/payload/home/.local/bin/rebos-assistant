@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 app_dir="$HOME/code/rebos-assistant"
+if [[ ! -d "$app_dir" ]]; then
+    echo "Enclosure Assistant source not found: $app_dir" >&2
+    exit 1
+fi
 action="${1:-toggle}"
 case "$action" in toggle|show|hide|status) ;; *) echo "Usage: rebos-assistant [toggle|show|hide|status]" >&2; exit 2 ;; esac
 case "$action" in show) action=reveal ;; hide) action=dismiss ;; esac

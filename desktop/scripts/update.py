@@ -7,7 +7,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 
-from deploy import install, verify
+from deploy import SOURCE_ROOTS, install, verify
 
 REPOSITORY = 'https://github.com/Rebo-NS4U/rebos_enclosure.git'
 
@@ -16,9 +16,43 @@ def run(*args):
     subprocess.run(args, check=True)
 
 
+def source_checkout(home):
+    checkouts = set()
+    for relative in SOURCE_ROOTS:
+        path = home / relative
+        if not path.is_symlink():
+            continue
+        target = path.resolve()
+        suffix = Path('desktop/payload/home') / relative
+        if tuple(target.parts[-len(suffix.parts):]) == suffix.parts:
+            checkout = target.parents[len(suffix.parts) - 1]
+            if not (checkout / '.git').exists():
+                raise ValueError(f'Missing source checkout: {checkout}')
+            checkouts.add(checkout)
+    if len(checkouts) > 1:
+        raise ValueError('Application links point to different checkouts')
+    return next(iter(checkouts), None)
+
+
 def apply_snapshot(snapshot, home, dry_run=False):
     payload = snapshot / 'desktop/payload'
     verify(payload)
+    checkout = source_checkout(home)
+    if checkout is not None:
+        def git_output(*args):
+            return subprocess.check_output(['git', '-C', str(checkout), *args], text=True).strip()
+        if git_output('status', '--porcelain'):
+            raise ValueError(f'Commit or preserve local edits in {checkout} before updating linked sources')
+        incoming = subprocess.check_output(['git', '-C', str(snapshot), 'remote', 'get-url', 'origin'], text=True).strip()
+        if git_output('remote', 'get-url', 'origin') != incoming:
+            raise ValueError('Update repository differs from the linked checkout origin')
+        if dry_run:
+            print(f'Would fast-forward linked source checkout: {checkout}')
+            return install(payload, home, dry_run=True, preserve_preferences=True, link_source=True)
+        run('git', '-C', str(checkout), 'fetch', '--', str(snapshot), 'HEAD')
+        run('git', '-C', str(checkout), 'merge', '--ff-only', 'FETCH_HEAD')
+        return install(checkout / 'desktop/payload', home,
+                       preserve_preferences=True, link_source=True)
     return install(payload, home, dry_run=dry_run, preserve_preferences=True)
 
 

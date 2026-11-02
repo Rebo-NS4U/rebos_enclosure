@@ -16,6 +16,26 @@ SCRIPT = Path(__file__).resolve().parents[2] / 'update.sh'
 
 
 class PackageApprovalTests(unittest.TestCase):
+    def test_linked_checkout_discovery_and_dirty_update_preserve_links(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            checkout = root / 'checkout'
+            home = root / 'home'
+            source = checkout / 'desktop/payload/home/.config/quickshell'
+            source.mkdir(parents=True)
+            (checkout / '.git').mkdir()
+            link = home / '.config/quickshell'
+            link.parent.mkdir(parents=True)
+            link.symlink_to(source)
+            self.assertEqual(update.source_checkout(home), checkout)
+            with patch.object(update, 'verify'), \
+                 patch.object(update.subprocess, 'check_output', return_value=' M source'), \
+                 patch.object(update, 'run') as run:
+                with self.assertRaisesRegex(ValueError, 'local edits'):
+                    update.apply_snapshot(root / 'snapshot', home)
+                run.assert_not_called()
+            self.assertEqual(link.resolve(), source)
+
     def test_package_upgrade_approval_command(self):
         for helper_exists in (True, False):
             with self.subTest(helper_exists=helper_exists), tempfile.TemporaryDirectory() as temporary:
@@ -43,6 +63,40 @@ class PackageApprovalTests(unittest.TestCase):
 
 @unittest.skipIf(os.geteuid() == 0, 'Updater intentionally refuses root')
 class UpdateTests(unittest.TestCase):
+    def test_linked_update_fast_forwards_checkout_and_keeps_single_source(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            remote = root / 'remote'
+            payload = remote / 'desktop/payload'
+            source = payload / 'home/.config/quickshell/shell.qml'
+            source.parent.mkdir(parents=True)
+            (payload / 'manifest.json').write_text(json.dumps({'units': ['.config/quickshell']}))
+            def revision(content):
+                source.write_text(content)
+                hashes = {str(p.relative_to(payload)): hashlib.sha256(p.read_bytes()).hexdigest()
+                          for p in payload.rglob('*') if p.is_file() and p.name != 'checksums.json'}
+                (payload / 'checksums.json').write_text(json.dumps(hashes))
+                subprocess.run(['git', '-C', str(remote), 'add', '.'], check=True, capture_output=True)
+                subprocess.run(['git', '-C', str(remote), '-c', 'user.name=Test', '-c',
+                                'user.email=test@example.com', 'commit', '-m', content], check=True, capture_output=True)
+            subprocess.run(['git', 'init', str(remote)], check=True, capture_output=True)
+            revision('old')
+            checkout = root / 'checkout'
+            snapshot = root / 'snapshot'
+            subprocess.run(['git', 'clone', str(remote), str(checkout)], check=True, capture_output=True)
+            home = root / 'home'
+            link = home / '.config/quickshell'
+            link.parent.mkdir(parents=True)
+            link.symlink_to(checkout / 'desktop/payload/home/.config/quickshell')
+            revision('new')
+            subprocess.run(['git', 'clone', str(remote), str(snapshot)], check=True, capture_output=True)
+            update.apply_snapshot(snapshot, home, dry_run=True)
+            self.assertEqual((link / 'shell.qml').read_text(), 'old')
+            update.apply_snapshot(snapshot, home)
+            self.assertTrue(link.is_symlink())
+            self.assertEqual((link / 'shell.qml').read_text(), 'new')
+            self.assertEqual(link.resolve(), checkout / 'desktop/payload/home/.config/quickshell')
+
     def test_fetch_preview_apply_and_repeat(self):
         self.exercise_update()
 

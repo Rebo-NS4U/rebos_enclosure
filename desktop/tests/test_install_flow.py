@@ -76,7 +76,9 @@ class InstallFlowTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             self.assertEqual((home / '.config/quickshell/version').read_text().strip(),
                              (ROOT / 'desktop/payload/home/.config/quickshell/version').read_text().strip())
-            for relative in ('code/rebos-assistant/shell.qml', 'code/anime-streamer/menu_client.py',
+            self.assertTrue((ROOT / 'desktop/payload/home/code/rebos-assistant/shell.qml').is_file())
+            self.assertTrue((home / 'code/rebos-assistant/shell.qml').is_file())
+            for relative in ('code/anime-streamer/menu_client.py',
                              '.config/quickshell/AnimeMenu.qml', '.local/bin/ani-cli',
                              '.local/bin/rebos-assistant', '.local/bin/anime-streamer'):
                 self.assertTrue((home / relative).is_file(), relative)
