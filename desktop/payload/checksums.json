@@ -977,7 +977,7 @@
   "home/code/rebos-assistant/modules/globals/GlobalStates.qml": "65293ed189717ae4bd31be9b180b7c6bfed8b50660a9504641331a45cbb7b495",
   "home/code/rebos-assistant/modules/services/Ai.qml": "6d1b4737713154060cd137e34d0834bae007fe4d30477fd1a84be11d7fb0a394",
   "home/code/rebos-assistant/modules/services/AiQuestions.js": "a3cc7e2c78e43281cef6f2b54a0863b360714c5b50cd5273060c1f9e70984d8e",
-  "home/code/rebos-assistant/modules/services/AiSession.qml": "c2a72ff12495076cd86aa25cf2796c45e3073c9a351486b96789061a94d14e2b",
+  "home/code/rebos-assistant/modules/services/AiSession.qml": "b92d937ab48766f208bcfdfbadacf0fce2216138a6fefbebe7146883bb2f3dbf",
   "home/code/rebos-assistant/modules/services/NiriService.qml": "e03e5648739de31b220b282017adabb884ecdaf70ef05268320c8def10a8555e",
   "home/code/rebos-assistant/modules/services/Notifications.qml": "0599d6dc4642fc0f86f399ddeee011bb296e097c72aa83949d5b4ad085a11d93",
   "home/code/rebos-assistant/modules/services/StateService.qml": "20326df661ecf0896900e539f24f679b031c7b717204f9cc470d4be32ceab073",

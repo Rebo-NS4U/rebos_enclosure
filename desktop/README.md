@@ -89,6 +89,13 @@ not bundled. Short-clip checks found correct detection but mixed French/Italian
 translation and poor German/Japanese/Korean translation with the base model;
 do not treat detection success as evidence of translation accuracy.
 
+The assistant's GitHub workflow applies across projects and backends: edit in the
+owning repository, keep applicable installed and installer files synchronized,
+then commit and push tested task changes. It preserves unrelated work and normal
+approval boundaries. The policy is delivered once to each backend conversation,
+including older restored chats, and persists across reconnects. Releases are
+created when requested.
+
 Login packages are `greetd`, `greetd-regreet` and `cage`. The tracked greetd and
 ReGreet configuration lives in `desktop/payload/system/greetd/`; the matching
 layout, cursor extension and theme assets live in `desktop/payload/system/rebos-greeter/`.

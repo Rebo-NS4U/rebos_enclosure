@@ -405,6 +405,7 @@ Scope {
     property var queuedPrompt: null
     // Delivery belongs to the backend conversation, not the UI connection.
     property string instructionSessionId: ""
+    property string instructionGithubSessionId: ""
     // Resend desktop guidance once after a UI reload, including restored chats.
     property string instructionDesktopSessionId: ""
     property string instructionModeGuidance: ""
@@ -559,7 +560,7 @@ Scope {
         "initialized", "authenticated", "sessionReady", "suppressReplay",
         "agentCapabilities", "authMethods", "pendingRpc", "nextRpcId",
         "activePromptRequestId", "pendingSessionAction", "queuedPrompt", "agentStderrTail",
-        "instructionSessionId", "instructionModeGuidance",
+        "instructionSessionId", "instructionModeGuidance", "instructionGithubSessionId",
         "turnFailureHandled", "taskOutcome", "outcomeVersion", "outcomeFinding", "backendEvidence", "sessionConfigOptions", "sessionModels", "currentSessionModelId",
         "pendingSessionModelId", "modelSwitchError", "availableCommands", "currentModeId",
         "codexPreset", "pendingCodexPreset", "codexPresetError",
@@ -2277,6 +2278,8 @@ Scope {
         if (instructionDesktopSessionId !== currentSessionId)
             prompt.push({type: "text", text: "Desktop access: Empty ps/pgrep results in a restricted command session do not prove desktop apps are stopped. Check the user service and session connection (systemctl --user, D-Bus, WAYLAND_DISPLAY, XDG_RUNTIME_DIR and NIRI_SOCKET) using available tools. If access is restricted, request the tool's supported approval for the specific desktop check or action and retry after approval; never bypass isolation or a denied approval. If approval is unavailable, state that exact limitation. Never claim a restart succeeded without checking it. Quickshell QML and Niri configuration hot-reload automatically; do not kill or restart them for config edits. Anime Streamer mpv launch changes apply on the next playback launch; they do not require restarting VLC or Quickshell. Preserve active playback and assistant backends unless the user requests a restart."});
         let sendSharedInstructions = instructionSessionId !== currentSessionId;
+        if (instructionGithubSessionId !== currentSessionId)
+            prompt.push({type: "text", text: "GitHub workflow: For all GitHub-related project work in this assistant, find the owning Git checkout and verify its remote before editing. Work in the repository first and keep applicable installed files, installer payload, dependencies, documentation and tests synchronized during the task. For Enclosure integrations, read ~/code/rebos_enclosure/AGENTS.md. The user authorizes automatically committing and pushing tested task-scoped changes to the verified existing repository; follow its branch/PR policy and preserve unrelated work. Ask only when a new repository's destination or visibility is unclear. Never force-push, include secrets or personal state, or bypass sandbox approvals. Report verification and the pushed commit or PR link; identify any publishing blocker explicitly. Create releases when requested."});
         if (sendSharedInstructions) {
             prompt.push({type: "text", text: "Local desktop context: Assistant source: " + Quickshell.env("HOME") + "/code/rebos-assistant; shell config: " + Quickshell.env("HOME") + "/.config/quickshell. Inspect and edit these files for requested panel changes. Establish access with tools. If blocked, request the tool's supported approval; report unavailable or rejected approval and the exact blocked action. Never bypass sandbox or approval. Use ~/.local/bin/assistant-sudo --reason 'reason' -- command for each administrator action. Preserve unrelated work and active backends."});
             prompt.push({type: "text", text: "Task outcome reporting: End the final reply with one line: Task outcome: Positive — <verification> only if the whole request succeeded; otherwise Task outcome: Negative — <remaining work or blocker>. This is self-reported."});
@@ -2311,6 +2314,7 @@ Scope {
             return;
         }
         instructionSessionId = currentSessionId;
+        instructionGithubSessionId = currentSessionId;
         instructionDesktopSessionId = currentSessionId;
         instructionModeGuidance = mode ? mode.guidance : "";
         saveCurrentChat();
@@ -2384,6 +2388,7 @@ Scope {
     function createNewChat() {
         cancelGeneration(false);
         instructionSessionId = "";
+        instructionGithubSessionId = "";
         instructionModeGuidance = "";
         codexPreset = currentAgentId === "codex" ? "coding" : "";
         currentChat = [];
@@ -2436,6 +2441,7 @@ Scope {
             agentId: currentChatAgentId || currentAgentId,
             sessionId: currentSessionId,
             instructionSessionId: instructionSessionId,
+            instructionGithubSessionId: instructionGithubSessionId,
             instructionModeGuidance: instructionModeGuidance,
             distillPreset: distillPreset,
             codexPreset: codexPreset,
@@ -2576,6 +2582,7 @@ for path in files:
                 root.currentChatId = targetId;
                 root.currentSessionId = isLegacy ? "" : (payload.sessionId || "");
                 root.instructionSessionId = isLegacy ? "" : (payload.instructionSessionId || "");
+                root.instructionGithubSessionId = isLegacy ? "" : (payload.instructionGithubSessionId || "");
                 root.instructionModeGuidance = isLegacy ? "" : (payload.instructionModeGuidance || "");
                 root.currentChatCwd = isLegacy ? root.workingDirectory() : (payload.cwd || root.workingDirectory());
                 root.sessionReady = false;

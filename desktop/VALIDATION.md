@@ -1,5 +1,24 @@
 # Validation record
 
+## v1.4.0 — multilingual captions and assistant GitHub workflow — 2026-11-01
+
+- All 66 desktop tests passed, including real QML checks for new and older restored
+  conversations, persisted GitHub-policy delivery, failed-send retries, bridge
+  restoration and Codex/Distill backend coverage.
+- Four packaged subtitle regressions cover auto-detection between speech spans,
+  mixed English/translated timing, worker replacement without player restart and
+  missing-model reporting. Earlier live checks in this chat passed 15 caption
+  tests and real English/Spanish mixed speech with leading silence.
+- Two public recordings each in French, German, Japanese, Korean and Italian
+  produced correct detection and valid intervals on all ten samples. Translation
+  reviews found mixed French/Italian and poor German/Japanese/Korean results.
+  Processing took 0.96–1.90 seconds per 3.86–6.53-second recording. This is a small
+  manual sample review, not a representative accuracy benchmark.
+- Payload checksums, QML lint, Bash syntax, whitespace checks and the files-only
+  installer dry run passed. Installed assistant source matches the payload.
+- No live desktop installation, package upgrade, downloaded model packaging or
+  assistant backend restart was performed for this release.
+
 ## Enclosure v1.0.0 launch — 2026-10-31
 
 - Fresh installs seed bar, theme, performance, lockscreen and system settings from

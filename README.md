@@ -4,6 +4,9 @@ A complete **Niri + Quickshell desktop for x86_64 Arch Linux**, with matching ap
 
 [Download latest release](https://github.com/Rebo-NS4U/rebos_enclosure/releases/latest) · [Installation guide](desktop/README.md) · [Package list](desktop/packages/README.md)
 
+[v1.4.0 release notes](docs/releases/v1.4.0.md): automatic multilingual English
+captions and a repository-first GitHub workflow across assistant projects.
+
 ## Screenshots
 
 ![Desktop, themed apps and terminal](docs/screenshots/desktop.png)
@@ -59,8 +62,8 @@ After installation, reboot and choose **Niri**. **Super+Return** opens Kitty, **
 To install a specific release, use its exact tag:
 
 ```bash
-bash install.sh --release v1.3.1 --interactive --dry-run
-bash install.sh --release v1.3.1
+bash install.sh --release v1.4.0 --interactive --dry-run
+bash install.sh --release v1.4.0
 ```
 
 The selector also works with `desktop/install.sh`. Missing tags stop installation;
@@ -82,8 +85,8 @@ The first command previews the update. Log out and back in after applying it.
 To update to a specific release:
 
 ```bash
-./update.sh --release v1.3.1 --dry-run
-./update.sh --release v1.3.1
+./update.sh --release v1.4.0 --dry-run
+./update.sh --release v1.4.0
 ```
 
 Use the exact tag from [GitHub releases](https://github.com/Rebo-NS4U/rebos_enclosure/releases).
