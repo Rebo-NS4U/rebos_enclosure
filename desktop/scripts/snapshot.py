@@ -10,8 +10,7 @@ from datetime import datetime, timezone
 
 ROOT = Path(__file__).resolve().parents[1]
 SKIP = {'.git', '__pycache__', '.ruff_cache', '.qmlls.ini', 'AGENTS.md', '.agents',
-        '.sisyphus', 'fish_variables', 'config.local.fish',
-        'FanControlWindow.qml', 'thinkpad_fan.py', 'test_thinkpad_fan.py'}
+        '.sisyphus', 'fish_variables', 'config.local.fish'}
 
 
 def ignore(directory, names):
@@ -64,7 +63,7 @@ def build(home):
     shell = home / '.config/quickshell'
     for name in ('assets', 'config', 'modules', 'scripts'):
         copy('.config/quickshell/' + name)
-    for name in ('shell.qml', 'AnimeMenu.qml', 'cli.sh', 'version', 'LICENSE', 'README.md'):
+    for name in ('shell.qml', 'AnimeMenu.qml', 'FanShell.qml', 'cli.sh', 'version', 'LICENSE', 'README.md'):
         if (shell / name).exists():
             copy('.config/quickshell/' + name)
     # Keep the portable startup workaround versioned, independent of whether

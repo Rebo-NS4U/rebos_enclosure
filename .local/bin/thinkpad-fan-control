@@ -1,0 +1,4 @@
+#!/bin/sh
+config="$HOME/.config/quickshell/FanShell.qml"
+if quickshell ipc -p "$config" call fans open 2>/dev/null; then exit 0; fi
+exec quickshell -n -d -p "$config"
