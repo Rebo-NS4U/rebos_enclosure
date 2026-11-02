@@ -252,3 +252,5 @@ TV details open on the first regular season unless a saved season exists. Season
 Player subtitles and live caption OSD use bundled OpenDyslexic (SIL OFL). The font is installed offline with the desktop; VLC applies it on the next new player session. Existing playback is preserved. Font source: https://github.com/antijingoist/opendyslexic (compiled OTF files and OFL.txt).
 
 The playback menu reconnects automatically after service interruptions, clears its connection warning on readiness, and does not replay playback commands. Closing the menu transport never stops playback.
+
+Both transparent media surfaces (the browser and next-episode overlay) are excluded from compositor blur, including while hidden, so they cannot blur the video or desktop underneath.

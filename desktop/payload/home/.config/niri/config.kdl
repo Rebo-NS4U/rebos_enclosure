@@ -21,8 +21,9 @@ hotkey-overlay {
     skip-at-startup
 }
 
-// The media menu keeps a transparent surface mapped between opens.
+// Media controls keep transparent surfaces mapped between opens.
 layer-rule {
     match namespace="rebos_shell-anime"
+    match namespace="rebos_shell-playback-next"
     background-effect { blur false; }
 }
