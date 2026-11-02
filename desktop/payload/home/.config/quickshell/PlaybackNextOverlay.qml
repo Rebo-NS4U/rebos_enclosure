@@ -40,8 +40,7 @@ PanelWindow {
         visible: overlay.offered
         width: Math.min(360, overlay.width - 48)
         height: content.implicitHeight + 28
-        x: Math.max(12, Math.min(overlay.width - width - 12,
-            overlay.fullscreen ? 24 : overlay.playerPosition[0] + 24))
+        x: Math.max(12, overlay.width - width - 24)
         y: Math.max(12, Math.min(overlay.height - height - 12,
             overlay.fullscreen ? (overlay.height - height) / 2 : overlay.playerPosition[1] + (overlay.playerSize[1] - height) / 2))
         variant: pointer.containsMouse ? "primary" : "bg"
