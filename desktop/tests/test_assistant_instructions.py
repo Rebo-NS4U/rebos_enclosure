@@ -26,6 +26,7 @@ ShellRoot {
     Timer {
         interval: 100; running: true
         onTriggered: {
+            check(JSON.stringify(session.builtInAgents.map(agent => agent.id).sort()) === JSON.stringify(["codex", "distill", "google"]), "only Codex, Distill and Gemini are offered");
             let stock = session.builtInAgents.find(item => item.id === "codex");
             let oldCommand = ["sh", "-lc", "CODEX_PATH=\"$(command -v codex)\" exec npx -y @agentclientprotocol/codex-acp"];
             check(JSON.stringify(session.normalizeAgent({command: oldCommand}, stock).command) === JSON.stringify(stock.command), "older stock launch commands adopt the current network settings");

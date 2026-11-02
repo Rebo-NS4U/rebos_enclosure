@@ -233,24 +233,6 @@ Scope {
             model: "codex"
         },
         {
-            id: "free-code", name: "Free Code (OpenRouter)",
-            description: "Cohere North Mini Code through the Codex backend",
-            icon: Qt.resolvedUrl("../../assets/aiproviders/openrouter.svg"),
-            command: ["sh", "-lc", "exec python3 \"$HOME/code/rebos-assistant/scripts/openrouter_agent.py\" free-code"],
-            authMethod: "",
-            installHint: "Add your OpenRouter key to ~/.config/dweebo/openrouter-api-key (permissions 600).",
-            provider: "acp", api_format: "ACP", model: "free-code"
-        },
-        {
-            id: "free-nemotron", name: "Free Nemotron (OpenRouter)",
-            description: "NVIDIA Nemotron Ultra through the Codex backend",
-            icon: Qt.resolvedUrl("../../assets/aiproviders/openrouter.svg"),
-            command: ["sh", "-lc", "exec python3 \"$HOME/code/rebos-assistant/scripts/openrouter_agent.py\" free-nemotron"],
-            authMethod: "",
-            installHint: "Add your OpenRouter key to ~/.config/dweebo/openrouter-api-key (permissions 600).",
-            provider: "acp", api_format: "ACP", model: "free-nemotron"
-        },
-        {
             id: "google", name: "Google Gemini",
             description: "Gemini Flash Lite through Google's native ACP agent",
             icon: Qt.resolvedUrl("../../assets/aiproviders/google.svg"),
