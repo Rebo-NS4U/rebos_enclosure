@@ -302,3 +302,15 @@ are excluded from these fingerprints.
 A failed file copy automatically restores the deployment journal. Package
 upgrades remain installed. The recovery backup is retained, and successful
 updates still require logging out and back in to load desktop services.
+
+### Updates from GitHub Settings
+
+In Settings → GitHub, select Enclosure and use **Preview & update installed
+desktop…**. The update window shows a dry run and requires typing `UPDATE` before
+applying. Desktop files only is the default; select the package checkbox to also
+upgrade system and AUR packages. Errors remain visible until the window is closed.
+Locally edited managed files block updates rather than being silently replaced.
+The official checkout must be at `~/rebos_enclosure` or `~/code/rebos_enclosure`
+(or linked to the installed shell). Pull current branch updates only the checkout.
+Personal preferences and the updater's recovery backups are retained. Log out
+and back in after success.

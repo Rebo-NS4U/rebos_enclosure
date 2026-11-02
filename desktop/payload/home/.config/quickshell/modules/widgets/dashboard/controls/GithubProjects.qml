@@ -119,6 +119,34 @@ ColumnLayout {
     }
     ColumnLayout { id: overviewSlot; Layout.fillWidth: true; spacing: 12 }
     SettingsGroup {
+        title: "Update installed desktop"
+        visible: root.selectedPath === "" || root.activePath === root.desktopPath
+        description: "Apply the latest official Enclosure files to this desktop. Pull current branch only updates repository files."
+        Caption { text: "Opens an update window with a preview, confirmation and live results. Personal preferences are preserved; recovery backups are saved before replacing files. Log out and back in after a successful update." }
+        CheckBox {
+            id: updatePackages
+            text: "Also upgrade system and AUR packages (may require administrator approval)"
+            checked: false
+            palette.windowText: Colors.overSurface
+        }
+        SettingsButton {
+            objectName: "github-update-installed-button"
+            text: "Preview & update installed desktop…"
+            enabled: !root.busy && root.desktopPath !== ""
+            onClicked: {
+                const command = ["kitty", "--title", "Enclosure desktop update", "python3",
+                    Quickshell.shellPath("scripts/github_update.py"), "--path", root.desktopPath];
+                if (updatePackages.checked) command.push("--packages");
+                Quickshell.execDetached(command);
+            }
+        }
+        Caption {
+            visible: root.desktopPath === ""
+            text: "An official Enclosure checkout is required at ~/rebos_enclosure or ~/code/rebos_enclosure."
+        }
+    }
+
+    SettingsGroup {
         title: "Push to GitHub"
         description: "The assistant commits tested changes automatically. Push here when you are ready to publish them."
         Caption {
@@ -195,7 +223,7 @@ ColumnLayout {
         title: "Branches & sync"
         summary: "Fetch, pull, create or switch branches."
         description: root.canEdit
-            ? "Actions apply to the selected local project. Pull requires a clean checkout and fast-forwards only. Pull updates the checkout; run ./update.sh from its terminal to apply desktop files."
+            ? "Actions apply to the selected local project. Pull requires a clean checkout and fast-forwards only. Pull updates the checkout. Use Update installed desktop above to apply desktop files."
             : root.busy ? "Checking the project. Git actions will be available when the check finishes."
             : "Select or add a local Git checkout under Project or Add or clone projects to enable Git actions."
         actionsEnabled: root.canEdit
