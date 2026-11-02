@@ -246,8 +246,20 @@ PanelWindow {
         let data;
         try { data = JSON.parse(line); } catch (_) { message = "Could not read the media service response"; return; }
         Qt.callLater(() => {
-            if (data.event === "ready") {
+            if (data.event === "connection-lost") {
+                ready = false;
+                nextEpisodeAvailable = false;
+                nextEpisodeResumesPlayback = false;
+                if (loading && cataloguePage > 1) cataloguePage--;
+                loadFailed = loading;
+                loading = false;
+                detailLoading = false;
+                torboxBusy = false;
+                message = "Reconnecting to playback service…";
+            } else if (data.event === "ready") {
                 ready = true;
+                if (message === "Reconnecting to playback service…" || message.startsWith("Playback menu disconnected"))
+                    message = shows.count > 0 ? shows.count + " results" : "Choose a show to see its details";
                 settings = data.settings;
                 torbox = data.torbox ?? ({connected: false, text: "TorBox is not connected."});
                 torboxBusy = false;
@@ -410,7 +422,7 @@ PanelWindow {
             root.backendStarted = false;
             root.loading = false;
             root.detailLoading = false;
-            root.message = "Playback menu disconnected. Close and reopen it to reconnect.";
+            root.message = "Reconnecting to playback service…";
         }
     }
     Timer {
