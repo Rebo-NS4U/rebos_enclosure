@@ -298,3 +298,27 @@ catalogue supplies model names, context limits and instructions to Codex.
 OpenRouter can reject requests with HTTP 429 when its free daily allowance is
 exhausted. Opening additional chats or replacing a key does not fix that account
 limit; wait for the reset reported by OpenRouter.
+
+### Google Gemini backend
+
+Choose Backend → Google Gemini for the pinned native Gemini CLI ACP adapter.
+It starts Gemini Flash with `--approval-mode default`, opens a dedicated chat,
+and uses the normal permission prompts. Node.js and npm/npx are already part of
+the assistant package requirements. The native CLI package is
+`@google/gemini-cli@0.66.0` and is downloaded by npx on first launch.
+
+Save the key in `~/.config/dweebo/google-api-key` with mode `600`. Alternatively,
+the launcher accepts `GEMINI_API_KEY`, `GOOGLE_API_KEY`, or `GOOGLE_AI_API_KEY`
+from its own environment. A variable in an existing fish terminal is not
+necessarily inherited by a systemd user service. To copy an exported key safely
+from that terminal, run the following command. It uses a recognized exported
+variable, or asks for the key with input hidden if none is exported:
+
+```fish
+python3 ~/code/rebos-assistant/scripts/google_agent.py --save-key
+```
+
+No key is written to repository files or sent in the ACP handshake. Dweebo's
+Gemini CLI login state is isolated under `~/.local/share/dweebo/google`.
+Google API quotas and billing depend on the key's project; this integration
+does not enable billing or change the project settings.

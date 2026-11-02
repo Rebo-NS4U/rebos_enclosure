@@ -2586,7 +2586,61 @@ Item {
                     }
                 }
                 onTriggered: {
-                    if (Ai.activeSession.currentAgentId !== agentId || agentId.startsWith("free-")) Ai.newSession(agentId);
+                    if (Ai.activeSession.currentAgentId !== agentId || agentId.startsWith("free-") || agentId === "google") Ai.newSession(agentId);
+                }
+            }
+            MenuItem {
+                id: choice_google
+                property string agentId: "google"
+                property string subtitle: "Gemini Flash · Google API key"
+                property bool free: false
+                readonly property bool selected: Ai.activeSession.currentAgentId === agentId
+                text: "Google Gemini"
+                implicitHeight: 66
+                padding: 12
+                Accessible.name: text + (free ? ", free" : "") + (selected ? ", selected" : "")
+                background: StyledRect {
+                    variant: choice_google.selected ? "focus" : choice_google.highlighted ? "common" : "transparent"
+                    radius: Styling.radius(8)
+                    border.width: choice_google.selected ? 1 : 0
+                    border.color: Qt.alpha(Colors.primary, 0.3)
+                }
+                contentItem: ColumnLayout {
+                    spacing: 4
+                    RowLayout {
+                        spacing: 8
+                        StyledText {
+                            Layout.fillWidth: true
+                            text: choice_google.text
+                            color: Colors.overSurface
+                            font.pixelSize: Styling.fontSize(-1)
+                            font.weight: Font.DemiBold
+                            elide: Text.ElideRight
+                        }
+                        StyledText {
+                            visible: choice_google.free
+                            text: "FREE"
+                            color: Colors.primary
+                            font.pixelSize: Styling.fontSize(-4)
+                            font.weight: Font.DemiBold
+                        }
+                        StyledText {
+                            visible: choice_google.selected
+                            text: "✓"
+                            color: Colors.primary
+                            font.pixelSize: Styling.fontSize(0)
+                        }
+                    }
+                    StyledText {
+                        Layout.fillWidth: true
+                        text: choice_google.subtitle
+                        color: Colors.outline
+                        font.pixelSize: Styling.fontSize(-3)
+                        elide: Text.ElideRight
+                    }
+                }
+                onTriggered: {
+                    if (Ai.activeSession.currentAgentId !== agentId || agentId.startsWith("free-") || agentId === "google") Ai.newSession(agentId);
                 }
             }
             MenuItem {
@@ -2640,7 +2694,7 @@ Item {
                     }
                 }
                 onTriggered: {
-                    if (Ai.activeSession.currentAgentId !== agentId || agentId.startsWith("free-")) Ai.newSession(agentId);
+                    if (Ai.activeSession.currentAgentId !== agentId || agentId.startsWith("free-") || agentId === "google") Ai.newSession(agentId);
                 }
             }
             MenuItem {
@@ -2694,7 +2748,7 @@ Item {
                     }
                 }
                 onTriggered: {
-                    if (Ai.activeSession.currentAgentId !== agentId || agentId.startsWith("free-")) Ai.newSession(agentId);
+                    if (Ai.activeSession.currentAgentId !== agentId || agentId.startsWith("free-") || agentId === "google") Ai.newSession(agentId);
                 }
             }
             MenuItem {
@@ -2748,7 +2802,7 @@ Item {
                     }
                 }
                 onTriggered: {
-                    if (Ai.activeSession.currentAgentId !== agentId || agentId.startsWith("free-")) Ai.newSession(agentId);
+                    if (Ai.activeSession.currentAgentId !== agentId || agentId.startsWith("free-") || agentId === "google") Ai.newSession(agentId);
                 }
             }
         }

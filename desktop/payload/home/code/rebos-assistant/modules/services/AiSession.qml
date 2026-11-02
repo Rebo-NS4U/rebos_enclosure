@@ -251,6 +251,15 @@ Scope {
             provider: "acp", api_format: "ACP", model: "free-nemotron"
         },
         {
+            id: "google", name: "Google Gemini",
+            description: "Gemini Flash through Google's native ACP agent",
+            icon: Qt.resolvedUrl("../../assets/aiproviders/google.svg"),
+            command: ["sh", "-lc", "exec python3 \"$HOME/code/rebos-assistant/scripts/google_agent.py\""],
+            authMethod: "gemini-api-key",
+            installHint: "Save your Google API key in ~/.config/dweebo/google-api-key (permissions 600).",
+            provider: "acp", api_format: "ACP", model: "google"
+        },
+        {
             id: "distill", name: "Distill",
             description: "Distill with Auto, UltraSave, UltraFast and UltraCode",
             icon: Qt.resolvedUrl("../../assets/aiproviders/openai.svg"),
@@ -916,6 +925,9 @@ Scope {
         let methods = result && Array.isArray(result.authMethods) ? result.authMethods : [];
         if (methods.length === 0)
             return "";
+
+        if (currentAgentId === "google")
+            return methods.some(method => method.id === "gemini-api-key") ? "gemini-api-key" : "";
 
         // The adapter's ChatGPT method is "chat-gpt", not "chatgpt".
         // Never fall back to its first method: that is API-key authentication.

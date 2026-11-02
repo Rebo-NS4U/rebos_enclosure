@@ -82,6 +82,11 @@ ShellRoot {
             let configuration = session.syntheticEnvelope.params;
             check(configuration.systemPrompt.mode === "append", "free backend receives standing instructions separately");
             check(policy(configuration.systemPrompt.content), "free system prompt retains GitHub policy");
+            session.currentAgentId = "google";
+            let google = session.findAgent("google");
+            check(google && google.command[2].includes("google_agent.py"), "Google backend is registered");
+            check(session.chooseAuthMethod({authMethods: [{id: "oauth-personal"}, {id: "gemini-api-key"}]}) === "gemini-api-key", "Google authenticates with its API key");
+            check(session.chooseAuthMethod({authMethods: [{id: "oauth-personal"}]}) === "", "Google never falls back to personal OAuth");
             console.log("PASS GitHub policy delivery, restoration, retries and multiple backends");
             Qt.quit();
         }
