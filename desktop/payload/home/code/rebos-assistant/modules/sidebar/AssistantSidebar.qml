@@ -26,6 +26,13 @@ Item {
             return JSON.stringify({visible: backendMenu.visible, opened: backendMenu.opened,
                 buttonVisible: backendButton.visible, choices: choices});
         }
+        function selectBackend(agentId: string): string {
+            for (let i = 0; i < backendMenu.count; i++) {
+                let choice = backendMenu.itemAt(i);
+                if (choice.agentId === agentId) { choice.triggered(); return agentId; }
+            }
+            return "Unknown backend";
+        }
         function closeMenu(): void { backendMenu.close(); }
     }
 
@@ -2578,7 +2585,9 @@ Item {
                         elide: Text.ElideRight
                     }
                 }
-                onTriggered: Ai.activeSession.setModel(agentId)
+                onTriggered: {
+                    if (Ai.activeSession.currentAgentId !== agentId) Ai.newSession(agentId);
+                }
             }
             MenuItem {
                 id: choice_free_code
@@ -2630,7 +2639,9 @@ Item {
                         elide: Text.ElideRight
                     }
                 }
-                onTriggered: Ai.activeSession.setModel(agentId)
+                onTriggered: {
+                    if (Ai.activeSession.currentAgentId !== agentId) Ai.newSession(agentId);
+                }
             }
             MenuItem {
                 id: choice_free_nemotron
@@ -2682,7 +2693,9 @@ Item {
                         elide: Text.ElideRight
                     }
                 }
-                onTriggered: Ai.activeSession.setModel(agentId)
+                onTriggered: {
+                    if (Ai.activeSession.currentAgentId !== agentId) Ai.newSession(agentId);
+                }
             }
             MenuItem {
                 id: choice_distill
@@ -2734,7 +2747,9 @@ Item {
                         elide: Text.ElideRight
                     }
                 }
-                onTriggered: Ai.activeSession.setModel(agentId)
+                onTriggered: {
+                    if (Ai.activeSession.currentAgentId !== agentId) Ai.newSession(agentId);
+                }
             }
         }
     }
