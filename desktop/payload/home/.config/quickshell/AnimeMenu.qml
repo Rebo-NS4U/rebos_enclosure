@@ -49,7 +49,8 @@ PanelWindow {
     readonly property var playbackClient: NiriService.focusedClient
         ?? NiriService.clients.values.find(value => value.id === NiriService.focusedWorkspace?.activeWindowId) ?? null
     readonly property bool playbackWindowFocused: /^(vlc|org\.videolan\.vlc|mpv)$/i.test(playbackClient?.appId ?? "")
-        && playbackWindowTitle.length > 0 && (playbackClient?.title ?? "").startsWith(playbackWindowTitle)
+        && ((playbackWindowTitle.length > 0 && (playbackClient?.title ?? "").startsWith(playbackWindowTitle))
+            || (nextEpisodeAvailable && /Media Browser EOF/.test(playbackClient?.title ?? "")))
     readonly property bool nextOverlayVisible: ready && nextEpisodeAvailable && playbackWindowFocused
         && !opened && !GlobalStates.lockscreenVisible && !NiriService.overviewOpen
     onPlayerWindowPresentChanged: { if (playerWindowPresent) backendStarted = true; }
