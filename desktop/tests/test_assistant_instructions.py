@@ -33,16 +33,17 @@ ShellRoot {
             let initial = send("Edit a GitHub project");
             let github = policy(initial);
             check(github && github.text.includes("all GitHub-related project work") && github.text.includes("automatically committing and pushing tested task-scoped changes"), "policy covers all GitHub projects");
+            check(github.text.includes("sandbox_permissions=require_escalated") && github.text.includes("Never log out, delete credentials"), "network approval and credential guidance reaches the agent");
             check(github.text.includes("preserve unrelated work") && github.text.includes("Never force-push"), "preserves work and approvals");
             check(send("Follow up").length === 1, "policy is sent only once per conversation");
             let chat = session.chatEnvelope();
             let state = session.bridgeState();
-            check(chat.instructionGithubSessionId === "github-session" && state.instructionGithubSessionId === "github-session", "delivery persists in chat and bridge state");
-            session.instructionGithubSessionId = "";
+            check(chat.instructionGithubSessionId === "github-session:network-v2" && state.instructionGithubSessionId === "github-session:network-v2", "delivery persists in chat and bridge state");
+            session.instructionGithubSessionId = "github-session"; // Previous policy version.
             session.syntheticTransportWorks = false;
             session.queuedPrompt = {text: "Offline", attachments: []};
             session.dispatchQueuedPrompt();
-            check(session.instructionGithubSessionId === "", "failed transport does not consume policy delivery");
+            check(session.instructionGithubSessionId === "github-session", "failed transport does not consume policy delivery");
             session.syntheticTransportWorks = true;
             let legacy = send("Continue an older chat");
             check(legacy.length === 2 && policy(legacy), "older chats receive only the new policy");

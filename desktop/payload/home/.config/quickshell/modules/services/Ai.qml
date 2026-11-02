@@ -13,19 +13,19 @@ AiSession {
     property list<AiSession> sessions: []
     property bool sessionsReady: false
     property bool restoringSessions: false
-    property list<string> notifiedQuestionKeys: []
-    onSessionsChanged: syncQuestionNotifications()
+    property list<string> notifiedRequestKeys: []
+    onSessionsChanged: syncRequestNotifications()
     property Component sessionFactory: Component { AiSession {} }
     property alias sessionModel: viewModel
     ListModel { id: viewModel }
 
-    function syncQuestionNotifications() {
+    function syncRequestNotifications() {
         let pendingKeys = [];
         for (let session of sessions) {
             for (let question of session.questionRequests) {
                 const key = "assistant-question:" + session.channelId + ":" + question.requestId;
                 pendingKeys.push(key);
-                if (notifiedQuestionKeys.includes(key)) continue;
+                if (notifiedRequestKeys.includes(key)) continue;
                 Notifications.notifyInternal({
                     appName: "Assistant",
                     appIcon: "dialog-question",
@@ -42,11 +42,33 @@ AiSession {
                 });
             }
         }
-        const removed = notifiedQuestionKeys.filter(key => !pendingKeys.includes(key));
+        for (let session of sessions) {
+            for (let requestId of Object.keys(session.pendingPermissions)) {
+                const key = "assistant-permission:" + session.channelId + ":" + requestId;
+                pendingKeys.push(key);
+                if (notifiedRequestKeys.includes(key)) continue;
+                Notifications.notifyInternal({
+                    appName: "Assistant",
+                    appIcon: "dialog-question",
+                    summary: "Assistant needs permission",
+                    body: "Open the assistant to review the requested action.",
+                    replaceKey: key,
+                    expireTimeout: 10000,
+                    actions: [{identifier: "review", text: "Review"}],
+                    actionHandlers: {review: function () {
+                        if (!root.sessions.includes(session) || !session.pendingPermissions[requestId]) return;
+                        root.selectSession(session);
+                        if (!GlobalStates.assistantVisible) GlobalStates.toggleAssistant();
+                        else GlobalStates.assistantFocusRequested(true);
+                    }}
+                });
+            }
+        }
+        const removed = notifiedRequestKeys.filter(key => !pendingKeys.includes(key));
         if (removed.length) {
             Notifications.discardNotifications(Notifications.list.filter(notification => removed.includes(notification.replaceKey)).map(notification => notification.id));
         }
-        notifiedQuestionKeys = pendingKeys;
+        notifiedRequestKeys = pendingKeys;
     }
 
     Timer {
@@ -76,7 +98,8 @@ AiSession {
             session = sessionFactory.createObject(root, {channelId: channel});
         }
         if (!session) return null;
-        session.questionRequestsChanged.connect(root.syncQuestionNotifications);
+        session.questionRequestsChanged.connect(root.syncRequestNotifications);
+        session.pendingPermissionsChanged.connect(root.syncRequestNotifications);
         sessions = sessions.concat([session]);
         viewModel.append({sessionObject: session});
         return session;

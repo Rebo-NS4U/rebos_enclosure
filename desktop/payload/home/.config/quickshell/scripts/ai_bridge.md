@@ -55,6 +55,18 @@ button still cancels a turn, Reconnect explicitly replaces the agent, and
 disabling AI explicitly stops the backend. A normal shell reload does none of
 those things.
 
+Questions and permission requests both produce desktop notifications. **Review**
+opens the chat requesting permission; approval still requires its tool card.
+Resolved requests and closed chats remove their notifications.
+
+Codex workspace mode disables network access by default. GitHub commands need
+the execution tool's supported approval when the sandbox blocks them. A DNS
+failure or a failed sandboxed `gh auth status` does not prove credentials are
+invalid: retry the specific command with supported approval before diagnosing
+authentication. Do not log out or replace credentials on that evidence alone.
+If approval is unavailable or rejected, report the blocked command for the user
+to run. This guidance also reaches existing conversations on their next prompt.
+
 This preserves live work across shell restarts, not computer reboots or a crash
 of the assistant service itself. Checkpoints and event journals are in memory;
 ordinary chat-history files remain managed by `Ai.qml`. The initial migration
