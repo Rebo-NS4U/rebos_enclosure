@@ -79,6 +79,7 @@
     ".local/share/cbonsai/LICENSE",
     ".local/share/cbonsai/README.md",
     ".local/share/cbonsai/cbonsai.c",
+    ".local/share/fonts/opendyslexic",
     ".local/share/fonts/phosphor",
     ".local/share/fonts/rebos_shell",
     ".local/share/icons/GoogleDot-Black",

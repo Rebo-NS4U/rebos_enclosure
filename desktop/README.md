@@ -248,3 +248,5 @@ and color preferences remain preserved. Animated wallpapers use a still frame.
 ThinkPad Fan Control is available from the app launcher. It shows live fan mode and RPM, with Stop fans and Automatic controls; changes require administrator approval.
 
 TV details open on the first regular season unless a saved season exists. Season 0 is labeled Specials; the catalogue cache badge checks S1 E1, not specials or every episode.
+
+Player subtitles and live caption OSD use bundled OpenDyslexic (SIL OFL). The font is installed offline with the desktop; VLC applies it on the next new player session. Existing playback is preserved. Font source: https://github.com/antijingoist/opendyslexic (compiled OTF files and OFL.txt).

@@ -108,6 +108,7 @@ def build(home):
         copy('.local/share/cbonsai/' + name)
     copy('.local/share/fonts/rebos_shell')
     copy('.local/share/fonts/phosphor')
+    copy('.local/share/fonts/opendyslexic')
     copy('.local/share/icons/GoogleDot-Black')
     copy('.config/spicetify/Themes/rebos_shell')
     copy('.config/vesktop/themes/rebos_shell.css')

@@ -95,7 +95,7 @@ class VlcSession:
                 '--extraintf=luaintf', '--lua-intf=media_browser',
                 '--http-host=127.0.0.1', '--http-port=' + str(port),
                 '--lua-config=media_browser={port=' + str(port) + ',password="' + password + '",fullscreen=' + str(bool(settings.get('fullscreen'))).lower() + '}',
-                '--audio-language=eng,en', '--sub-language=eng,en', '--freetype-rel-fontsize=24']
+                '--audio-language=eng,en', '--sub-language=eng,en', '--freetype-font=OpenDyslexic', '--freetype-rel-fontsize=24']
         if settings.get('fullscreen'):
             args.append('--fullscreen')
         if self.audio_normalization:
