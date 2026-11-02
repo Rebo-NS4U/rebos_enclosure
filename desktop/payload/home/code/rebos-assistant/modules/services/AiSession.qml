@@ -1138,7 +1138,12 @@ Scope {
         agentTurnActive = false;
         toolRunning = false;
         statusText = "";
-        let hint = currentModel && currentModel.installHint ? "\n\n" + currentModel.installHint : "";
+        // A prompt failure does not imply missing credentials. Keep the actual
+        // backend error instead of attaching unrelated installation guidance.
+        let hint = isAccountAuthenticationError(message) && currentModel && currentModel.installHint
+            ? "\n\n" + currentModel.installHint : "";
+        if (message === "Internal error" && currentAgentId.startsWith("free-"))
+            hint = "\n\nThe OpenRouter request failed. If you recently replaced your API key, choose this backend again to open a fresh chat with the current key.";
         pushSystemMessage(message + hint);
         if (currentAgentId === "codex" && isAccountAuthenticationError(message)) {
             pushSystemMessage("Codex needs its current account connection refreshed. After it reconnects, send your message again. If this continues, choose Preset → Use current Codex login.");

@@ -2586,7 +2586,7 @@ Item {
                     }
                 }
                 onTriggered: {
-                    if (Ai.activeSession.currentAgentId !== agentId) Ai.newSession(agentId);
+                    if (Ai.activeSession.currentAgentId !== agentId || agentId.startsWith("free-")) Ai.newSession(agentId);
                 }
             }
             MenuItem {
@@ -2640,7 +2640,7 @@ Item {
                     }
                 }
                 onTriggered: {
-                    if (Ai.activeSession.currentAgentId !== agentId) Ai.newSession(agentId);
+                    if (Ai.activeSession.currentAgentId !== agentId || agentId.startsWith("free-")) Ai.newSession(agentId);
                 }
             }
             MenuItem {
@@ -2694,7 +2694,7 @@ Item {
                     }
                 }
                 onTriggered: {
-                    if (Ai.activeSession.currentAgentId !== agentId) Ai.newSession(agentId);
+                    if (Ai.activeSession.currentAgentId !== agentId || agentId.startsWith("free-")) Ai.newSession(agentId);
                 }
             }
             MenuItem {
@@ -2748,7 +2748,7 @@ Item {
                     }
                 }
                 onTriggered: {
-                    if (Ai.activeSession.currentAgentId !== agentId) Ai.newSession(agentId);
+                    if (Ai.activeSession.currentAgentId !== agentId || agentId.startsWith("free-")) Ai.newSession(agentId);
                 }
             }
         }
