@@ -59,13 +59,24 @@ Questions and permission requests both produce desktop notifications. **Review**
 opens the chat requesting permission; approval still requires its tool card.
 Resolved requests and closed chats remove their notifications.
 
-Codex workspace mode disables network access by default. GitHub commands need
-the execution tool's supported approval when the sandbox blocks them. A DNS
-failure or a failed sandboxed `gh auth status` does not prove credentials are
-invalid: retry the specific command with supported approval before diagnosing
-authentication. Do not log out or replace credentials on that evidence alone.
-If approval is unavailable or rejected, report the blocked command for the user
-to run. This guidance also reaches existing conversations on their next prompt.
+Dweebo enables network access for Codex workspace mode through the standard
+`sandbox_workspace_write.network_access` setting in its launch configuration.
+`scripts/codex_workspace.py` carries this setting into the per-turn workspace
+policy because the ACP adapter otherwise explicitly disables it on every turn.
+The helper changes only workspace network access: writable roots, read-only
+mode, tool approvals, and administrator approvals retain their existing rules.
+It forwards protocol responses, exit status, and termination signals unchanged.
+Older stock launch commands saved in user settings adopt the current launcher;
+custom agent commands remain user-controlled.
+
+Use a new chat or Reconnect an idle chat to apply launcher changes. Active
+backends are not restarted. A host or managed policy can still restrict network
+access; the helper cannot remove those restrictions. If a command remains
+blocked, request the execution tool's supported approval. A DNS failure or a
+failed sandboxed `gh auth status` does not prove credentials are invalid. Do not
+log out or replace credentials on that evidence alone. If approval is unavailable
+or rejected, report the blocked command for the user to run. Updated guidance
+reaches existing conversations on their next prompt.
 
 This preserves live work across shell restarts, not computer reboots or a crash
 of the assistant service itself. Checkpoints and event journals are in memory;

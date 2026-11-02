@@ -26,6 +26,12 @@ ShellRoot {
     Timer {
         interval: 100; running: true
         onTriggered: {
+            let stock = session.builtInAgents.find(item => item.id === "codex");
+            let oldCommand = ["sh", "-lc", "CODEX_PATH=\"$(command -v codex)\" exec npx -y @agentclientprotocol/codex-acp"];
+            check(JSON.stringify(session.normalizeAgent({command: oldCommand}, stock).command) === JSON.stringify(stock.command), "older stock launch commands adopt the current network settings");
+            check(stock.command[2].includes("codex_workspace.py") && stock.command[2].includes('"network_access":true'), "launcher enables workspace networking through the compatibility helper");
+            let custom = ["/custom/codex-acp", "--custom"];
+            check(JSON.stringify(session.normalizeAgent({command: custom}, stock).command) === JSON.stringify(custom), "custom launch commands are preserved");
             session.sessionReady = true;
             session.currentAgentId = "codex";
             session.codexPreset = "";
@@ -34,11 +40,12 @@ ShellRoot {
             let github = policy(initial);
             check(github && github.text.includes("all GitHub-related project work") && github.text.includes("automatically committing and pushing tested task-scoped changes"), "policy covers all GitHub projects");
             check(github.text.includes("sandbox_permissions=require_escalated") && github.text.includes("Never log out, delete credentials"), "network approval and credential guidance reaches the agent");
+            check(github.text.includes("Dweebo enables network access") && github.text.includes("Host or administrator restrictions"), "guidance reflects configured access and managed limits");
             check(github.text.includes("preserve unrelated work") && github.text.includes("Never force-push"), "preserves work and approvals");
             check(send("Follow up").length === 1, "policy is sent only once per conversation");
             let chat = session.chatEnvelope();
             let state = session.bridgeState();
-            check(chat.instructionGithubSessionId === "github-session:network-v2" && state.instructionGithubSessionId === "github-session:network-v2", "delivery persists in chat and bridge state");
+            check(chat.instructionGithubSessionId === "github-session:network-v3" && state.instructionGithubSessionId === "github-session:network-v3", "delivery persists in chat and bridge state");
             session.instructionGithubSessionId = "github-session"; // Previous policy version.
             session.syntheticTransportWorks = false;
             session.queuedPrompt = {text: "Offline", attachments: []};

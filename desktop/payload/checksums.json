@@ -392,7 +392,7 @@
   "home/.config/quickshell/modules/widgets/powermenu/PowerMenuView.qml": "3fdb97ab887c96bcc05e1177800d3755cc65bd93c1050296817d7f5a51657e73",
   "home/.config/quickshell/modules/widgets/projects/ProjectPickerView.qml": "618d8d9d29c4f94b58d7ee56c4795540ecc356fdee09204e1c0bf882adcf24e7",
   "home/.config/quickshell/modules/widgets/projects/qmldir": "a2c727c29e62597711e08b5e069d61dcb4d4237a195fb00955d865328ab20c06",
-  "home/.config/quickshell/scripts/ai_bridge.md": "d71c229bdb35adf3db7f6cbe8d85e07037053c228f235445586c340e22202e4f",
+  "home/.config/quickshell/scripts/ai_bridge.md": "9cb2b0cbcb8dc133863f22ae40576ce0a1f7b21102b254b05de2c366709dd649",
   "home/.config/quickshell/scripts/ai_bridge.py": "a8676be50a9f89837d8655d700592ea3420ad3d01aaf5a7dba5d774bf2105d57",
   "home/.config/quickshell/scripts/ai_plan_usage.py": "0b7309cbaf6f6be1709dec103d0c0ed80ec5214c2ef40cec94004770a12ae02f",
   "home/.config/quickshell/scripts/ai_questions.py": "1b9aa4da40e02c8e4893bbaee7e5d09d5b1ce3042f65df0a12bdb7aadb96036f",
@@ -977,7 +977,7 @@
   "home/code/rebos-assistant/modules/globals/GlobalStates.qml": "65293ed189717ae4bd31be9b180b7c6bfed8b50660a9504641331a45cbb7b495",
   "home/code/rebos-assistant/modules/services/Ai.qml": "315789e1a7f48860a5d5f9e976ed63f8ada987332d88c588dd24e4d167abc9c9",
   "home/code/rebos-assistant/modules/services/AiQuestions.js": "a3cc7e2c78e43281cef6f2b54a0863b360714c5b50cd5273060c1f9e70984d8e",
-  "home/code/rebos-assistant/modules/services/AiSession.qml": "16483a58e93864a1c231b7b4a4dd7a0922cd562dbac199fa4f0adb8c46c9e687",
+  "home/code/rebos-assistant/modules/services/AiSession.qml": "3dccf8b07d77db25db1f9098e9122986250aa1cb2d829ee03ffda15b9197ffc4",
   "home/code/rebos-assistant/modules/services/NiriService.qml": "e03e5648739de31b220b282017adabb884ecdaf70ef05268320c8def10a8555e",
   "home/code/rebos-assistant/modules/services/Notifications.qml": "0599d6dc4642fc0f86f399ddeee011bb296e097c72aa83949d5b4ad085a11d93",
   "home/code/rebos-assistant/modules/services/StateService.qml": "20326df661ecf0896900e539f24f679b031c7b717204f9cc470d4be32ceab073",
@@ -1016,5 +1016,6 @@
   "system/rebos-greeter/theme/background.png": "744fb3fe3ed6ad6f90eb6fe7a676a4ed393e697b73658d071ff11910359ee447",
   "system/rebos-greeter/theme/glass-texture.png": "068bd1e571910aa23296c688523b5e5a8c2333a480fb281eb1be732ed76ca7cf",
   "system/rebos-greeter/theme/regreet.css": "bb38fc2fa51251a3469cb21a1b7d8b0da3ee129ce05695bb30f447803e070ac5",
-  "home/.config/quickshell/PlaybackNextOverlay.qml": "94e5e5595e0dd3dd3f465d7a56b729b0127d14238c3d3a98a8a4e3a18122de3f"
+  "home/.config/quickshell/PlaybackNextOverlay.qml": "94e5e5595e0dd3dd3f465d7a56b729b0127d14238c3d3a98a8a4e3a18122de3f",
+  "home/code/rebos-assistant/scripts/codex_workspace.py": "367d68e7b0ce72dc73eee17a42da450e968f69af4cd6bc170f714689df7e744f"
 }

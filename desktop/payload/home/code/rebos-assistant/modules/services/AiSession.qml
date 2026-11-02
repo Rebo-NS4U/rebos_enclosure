@@ -225,7 +225,7 @@ Scope {
             name: "Codex",
             description: "OpenAI Codex coding agent through the official ACP adapter",
             icon: Qt.resolvedUrl("../../assets/aiproviders/openai.svg"),
-            command: ["sh", "-lc", "INITIAL_AGENT_MODE=workspace-write CODEX_CONFIG='{\"features\":{\"memories\":false},\"memories\":{\"generate_memories\":false,\"use_memories\":false}}' CODEX_PATH=\"$(command -v codex)\" exec npx -y @agentclientprotocol/codex-acp"],
+            command: ["sh", "-lc", "INITIAL_AGENT_MODE=workspace-write CODEX_CONFIG='{\"sandbox_workspace_write\":{\"network_access\":true},\"features\":{\"memories\":false},\"memories\":{\"generate_memories\":false,\"use_memories\":false}}' REBOS_CODEX_BINARY=\"$(command -v codex)\" CODEX_PATH=\"$HOME/code/rebos-assistant/scripts/codex_workspace.py\" exec npx -y @agentclientprotocol/codex-acp"],
             authMethod: "chat-gpt",
             installHint: "Install Codex and Node.js; the ACP adapter reuses your Codex login",
             provider: "acp",
@@ -251,7 +251,11 @@ Scope {
 
     function normalizeAgent(configured, fallback) {
         let command = configured && Array.isArray(configured.command) ? configured.command : fallback.command;
-        if (!command || command.length === 0)
+        // Older shipped presets stored the stock launch command in user config.
+        // Upgrade that exact default so it cannot mask new launcher settings.
+        const stockCodex = ["sh", "-lc", "CODEX_PATH=\"$(command -v codex)\" exec npx -y @agentclientprotocol/codex-acp"];
+        if (!command || command.length === 0
+            || (fallback.id === "codex" && JSON.stringify(command) === JSON.stringify(stockCodex)))
             command = fallback.command;
         return {
             id: configured && configured.id ? configured.id : fallback.id,
@@ -2278,8 +2282,8 @@ Scope {
         if (instructionDesktopSessionId !== currentSessionId)
             prompt.push({type: "text", text: "Desktop access: Empty ps/pgrep results in a restricted command session do not prove desktop apps are stopped. Check the user service and session connection (systemctl --user, D-Bus, WAYLAND_DISPLAY, XDG_RUNTIME_DIR and NIRI_SOCKET) using available tools. If access is restricted, request the tool's supported approval for the specific desktop check or action and retry after approval; never bypass isolation or a denied approval. If approval is unavailable, state that exact limitation. Never claim a restart succeeded without checking it. Quickshell QML and Niri configuration hot-reload automatically; do not kill or restart them for config edits. Anime Streamer mpv launch changes apply on the next playback launch; they do not require restarting VLC or Quickshell. Preserve active playback and assistant backends unless the user requests a restart."});
         let sendSharedInstructions = instructionSessionId !== currentSessionId;
-        if (instructionGithubSessionId !== currentSessionId + ":network-v2")
-            prompt.push({type: "text", text: "GitHub workflow: For all GitHub-related project work in this assistant, find the owning Git checkout and verify its remote before editing. Work in the repository first and keep applicable installed files, installer payload, dependencies, documentation and tests synchronized during the task. For Enclosure integrations, read ~/code/rebos_enclosure/AGENTS.md. The user authorizes automatically committing and pushing tested task-scoped changes to the verified existing repository; follow its branch/PR policy and preserve unrelated work. Ask only when a new repository's destination or visibility is unclear. Never force-push, include secrets or personal state, or bypass sandbox approvals. Report verification and the pushed commit or PR link; identify any publishing blocker explicitly. Create releases when requested. GitHub network access: Codex workspace commands run with network access disabled. For GitHub DNS failures (Could not resolve host), blocked connections, or a gh auth status failure in that sandbox, request the execution tool's supported network approval for the exact git or gh command and retry after approval. For Codex exec_command use sandbox_permissions=require_escalated with a specific justification when that option is available. Task authorization to push does not replace a tool approval. If approval is unavailable or rejected, report the exact blocker and give the user the command to run. A sandboxed gh auth status failure does not establish an invalid credential. Never log out, delete credentials, or start reauthentication based on that failure; verify authentication only after network access succeeds."});
+        if (instructionGithubSessionId !== currentSessionId + ":network-v3")
+            prompt.push({type: "text", text: "GitHub workflow: For all GitHub-related project work in this assistant, find the owning Git checkout and verify its remote before editing. Work in the repository first and keep applicable installed files, installer payload, dependencies, documentation and tests synchronized during the task. For Enclosure integrations, read ~/code/rebos_enclosure/AGENTS.md. The user authorizes automatically committing and pushing tested task-scoped changes to the verified existing repository; follow its branch/PR policy and preserve unrelated work. Ask only when a new repository's destination or visibility is unclear. Never force-push, include secrets or personal state, or bypass sandbox approvals. Report verification and the pushed commit or PR link; identify any publishing blocker explicitly. Create releases when requested. GitHub network access: Dweebo enables network access in Codex workspace mode while retaining workspace file protections and tool approvals. Try the normal git or gh command first. Host or administrator restrictions can still block access. For GitHub DNS failures (Could not resolve host), blocked connections, or a gh auth status failure in that sandbox, request the execution tool's supported network approval for the exact git or gh command and retry after approval. For Codex exec_command use sandbox_permissions=require_escalated with a specific justification when that option is available. Task authorization to push does not replace a tool approval. If approval is unavailable or rejected, report the exact blocker and give the user the command to run. A sandboxed gh auth status failure does not establish an invalid credential. Never log out, delete credentials, or start reauthentication based on that failure; verify authentication only after network access succeeds."});
         if (sendSharedInstructions) {
             prompt.push({type: "text", text: "Local desktop context: Assistant source: " + Quickshell.env("HOME") + "/code/rebos-assistant; shell config: " + Quickshell.env("HOME") + "/.config/quickshell. Inspect and edit these files for requested panel changes. Establish access with tools. If blocked, request the tool's supported approval; report unavailable or rejected approval and the exact blocked action. Never bypass sandbox or approval. Use ~/.local/bin/assistant-sudo --reason 'reason' -- command for each administrator action. Preserve unrelated work and active backends."});
             prompt.push({type: "text", text: "Task outcome reporting: End the final reply with one line: Task outcome: Positive — <verification> only if the whole request succeeded; otherwise Task outcome: Negative — <remaining work or blocker>. This is self-reported."});
@@ -2314,7 +2318,7 @@ Scope {
             return;
         }
         instructionSessionId = currentSessionId;
-        instructionGithubSessionId = currentSessionId + ":network-v2";
+        instructionGithubSessionId = currentSessionId + ":network-v3";
         instructionDesktopSessionId = currentSessionId;
         instructionModeGuidance = mode ? mode.guidance : "";
         saveCurrentChat();
