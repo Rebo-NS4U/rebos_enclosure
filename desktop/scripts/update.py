@@ -34,15 +34,23 @@ def source_checkout(home):
     return next(iter(checkouts), None)
 
 
+def preflight_checkout(home):
+    """Refuse unsafe linked updates before fetching a large snapshot."""
+    checkout = source_checkout(home)
+    if checkout is not None:
+        dirty = subprocess.check_output(['git', '-C', str(checkout), 'status', '--porcelain'], text=True).strip()
+        if dirty:
+            raise ValueError(f'Commit or preserve local edits in {checkout} before updating linked sources')
+    return checkout
+
+
 def apply_snapshot(snapshot, home, dry_run=False):
     payload = snapshot / 'desktop/payload'
     verify(payload)
-    checkout = source_checkout(home)
+    checkout = preflight_checkout(home)
     if checkout is not None:
         def git_output(*args):
             return subprocess.check_output(['git', '-C', str(checkout), *args], text=True).strip()
-        if git_output('status', '--porcelain'):
-            raise ValueError(f'Commit or preserve local edits in {checkout} before updating linked sources')
         incoming = subprocess.check_output(['git', '-C', str(snapshot), 'remote', 'get-url', 'origin'], text=True).strip()
         if git_output('remote', 'get-url', 'origin') != incoming:
             raise ValueError('Update repository differs from the linked checkout origin')
@@ -78,6 +86,7 @@ def main():
                                ('XDG_DATA_HOME', '.local/share'), ('XDG_STATE_HOME', '.local/state')]:
         if os.environ.get(variable, str(home / relative)) != str(home / relative):
             parser.error('This desktop snapshot requires standard XDG paths under HOME')
+    preflight_checkout(home)
     # Lock outside HOME so previews do not create installation state.
     with open(Path(tempfile.gettempdir()) / f'rebos-update-{os.getuid()}.lock', 'a') as lock:
         try:

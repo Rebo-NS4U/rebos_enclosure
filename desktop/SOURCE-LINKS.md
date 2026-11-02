@@ -40,3 +40,10 @@ Portable installations from temporary release snapshots still copy source into
 their installed paths. The deployer refuses to replace an existing linked
 installation with a second copy. Python bytecode caches are ignored during
 payload verification, while checksummed source files must still match.
+
+`update.sh` resolves the installed source checkout before choosing its updater.
+When invoked from an older checkout, it uses the live checkout's updater only
+when both origins match. This prevents old deployment code from treating the
+assistant or media source symlinks as ordinary destination directories. Local
+edits are checked before downloading a snapshot or upgrading packages; preserve
+or commit those edits first. The updater never silently discards them.

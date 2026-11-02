@@ -36,6 +36,54 @@ class PackageApprovalTests(unittest.TestCase):
                 run.assert_not_called()
             self.assertEqual(link.resolve(), source)
 
+    def test_dirty_source_stops_before_clone_or_package_updates(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary)
+            with patch.object(sys, 'argv', ['update.py', '--files-only', '--dry-run']), \
+                 patch.object(update.Path, 'home', return_value=home), \
+                 patch.object(update.os, 'geteuid', return_value=1000), \
+                 patch.dict(os.environ, {key: str(home / relative) for key, relative in [
+                     ('XDG_CONFIG_HOME', '.config'), ('XDG_CACHE_HOME', '.cache'),
+                     ('XDG_DATA_HOME', '.local/share'), ('XDG_STATE_HOME', '.local/state')]}), \
+                 patch.object(update, 'source_checkout', return_value=home / 'checkout'), \
+                 patch.object(update.subprocess, 'check_output', return_value=' M changed'), \
+                 patch.object(update, 'run') as run:
+                with self.assertRaisesRegex(ValueError, 'local edits'):
+                    update.main()
+                run.assert_not_called()
+
+    def test_legacy_launcher_uses_verified_installed_updater(self):
+        for same_origin in (True, False):
+            with self.subTest(same_origin=same_origin), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                home = root / 'home'
+                legacy = root / 'legacy'
+                current = root / 'current'
+                for repo in (legacy, current):
+                    repo.mkdir()
+                    subprocess.run(['git', '-C', str(repo), 'init', '-q'], check=True)
+                    origin = 'https://github.com/example/desktop.git'
+                    if repo == current and not same_origin:
+                        origin = 'https://github.com/other/desktop.git'
+                    subprocess.run(['git', '-C', str(repo), 'remote', 'add', 'origin', origin], check=True)
+                shell = current / 'desktop/payload/home/code/anime-streamer'
+                shell.mkdir(parents=True)
+                link = home / 'code/anime-streamer'
+                link.parent.mkdir(parents=True)
+                link.symlink_to(shell)
+                script = current / 'desktop/scripts/update.py'
+                script.parent.mkdir(parents=True)
+                script.write_text("import sys\nprint('CURRENT-UPDATER', repr(sys.argv[1:]))\n")
+                (legacy / 'update.sh').write_text(SCRIPT.read_text())
+                result = subprocess.run(['bash', str(legacy / 'update.sh'), '--files-only', '--dry-run'],
+                    env={**os.environ, 'HOME': str(home)}, capture_output=True, text=True)
+                if same_origin:
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertIn("CURRENT-UPDATER ['--files-only', '--dry-run']", result.stdout)
+                else:
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertIn('repository differs', result.stderr)
+
     def test_package_upgrade_approval_command(self):
         for helper_exists in (True, False):
             with self.subTest(helper_exists=helper_exists), tempfile.TemporaryDirectory() as temporary:
@@ -70,9 +118,15 @@ class UpdateTests(unittest.TestCase):
             payload = remote / 'desktop/payload'
             source = payload / 'home/.config/quickshell/shell.qml'
             source.parent.mkdir(parents=True)
-            (payload / 'manifest.json').write_text(json.dumps({'units': ['.config/quickshell']}))
+            app_sources = [payload / 'home/code/anime-streamer/backend_server.py',
+                           payload / 'home/code/rebos-assistant/shell.qml']
+            for app in app_sources:
+                app.parent.mkdir(parents=True)
+            (payload / 'manifest.json').write_text(json.dumps({'units': [
+                '.config/quickshell', 'code/anime-streamer/backend_server.py', 'code/rebos-assistant/shell.qml']}))
             def revision(content):
-                source.write_text(content)
+                for path in [source, *app_sources]:
+                    path.write_text(content)
                 hashes = {str(p.relative_to(payload)): hashlib.sha256(p.read_bytes()).hexdigest()
                           for p in payload.rglob('*') if p.is_file() and p.name != 'checksums.json'}
                 (payload / 'checksums.json').write_text(json.dumps(hashes))
@@ -86,8 +140,10 @@ class UpdateTests(unittest.TestCase):
             subprocess.run(['git', 'clone', str(remote), str(checkout)], check=True, capture_output=True)
             home = root / 'home'
             link = home / '.config/quickshell'
-            link.parent.mkdir(parents=True)
-            link.symlink_to(checkout / 'desktop/payload/home/.config/quickshell')
+            for relative in update.SOURCE_ROOTS:
+                alias = home / relative
+                alias.parent.mkdir(parents=True, exist_ok=True)
+                alias.symlink_to(checkout / 'desktop/payload/home' / relative)
             revision('new')
             subprocess.run(['git', 'clone', str(remote), str(snapshot)], check=True, capture_output=True)
             update.apply_snapshot(snapshot, home, dry_run=True)
@@ -96,6 +152,11 @@ class UpdateTests(unittest.TestCase):
             self.assertTrue(link.is_symlink())
             self.assertEqual((link / 'shell.qml').read_text(), 'new')
             self.assertEqual(link.resolve(), checkout / 'desktop/payload/home/.config/quickshell')
+            for relative in update.SOURCE_ROOTS:
+                self.assertTrue((home / relative).is_symlink())
+                self.assertEqual((home / relative).resolve(), checkout / 'desktop/payload/home' / relative)
+            self.assertEqual((home / 'code/anime-streamer/backend_server.py').read_text(), 'new')
+            self.assertEqual((home / 'code/rebos-assistant/shell.qml').read_text(), 'new')
 
     def test_fetch_preview_apply_and_repeat(self):
         self.exercise_update()
