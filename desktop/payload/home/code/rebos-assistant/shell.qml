@@ -38,6 +38,12 @@ ShellRoot {
         function status(): string {
             return JSON.stringify({visible: GlobalStates.assistantVisible, sessions: Ai.sessions.length, parked: Ai.sessions.filter(session => session.agentParked).length, busySessions: Ai.sessions.filter(session => session.isBusy).length, ready: Ai.sessionsReady, channel: Ai.activeSession.channelId, agent: Ai.activeSession.currentAgentId, model: Ai.activeSession.currentSessionModelId, connected: Ai.activeSession.sessionReady, connectionStatus: Ai.activeSession.statusText, lastError: Ai.activeSession.lastError, busy: Ai.activeSession.isBusy, activityStatus: Ai.activeSession.activityStatus, screen: GlobalStates.assistantScreenName, available: GlobalStates.assistantAvailable, pinned: GlobalStates.assistantPinned, width: GlobalStates.assistantWidth});
         }
+        function backendErrors(): string {
+            return JSON.stringify(Ai.sessions.filter(session => session.currentAgentId.startsWith("free-")).map(session => ({
+                channel: session.channelId, agent: session.currentAgentId, error: session.lastError,
+                stderr: session.agentStderrTail.replace(/sk-[A-Za-z0-9_-]+/g, "[redacted]")
+            })));
+        }
         function releaseIdle(): string {
             let released = 0;
             for (let session of Ai.sessions) {
