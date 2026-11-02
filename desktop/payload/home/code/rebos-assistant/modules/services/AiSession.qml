@@ -2394,7 +2394,7 @@ Scope {
         instructionSessionId = "";
         instructionGithubSessionId = "";
         instructionModeGuidance = "";
-        codexPreset = currentAgentId === "codex" ? "coding" : "";
+        codexPreset = currentAgentId === "codex" ? "light_coding" : "";
         currentChat = [];
         taskPlan = [];
         taskPlanMarkdown = "";

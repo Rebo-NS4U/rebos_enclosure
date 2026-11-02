@@ -258,3 +258,5 @@ Both transparent media surfaces (the browser and next-episode overlay) are exclu
 Playback settings include Subtitle font: OpenDyslexic, Noto Sans, Noto Serif or DejaVu Sans. The preference is saved and used by new VLC/mpv sessions; changing it does not restart active playback. Live caption recognition publishes each completed speech span and uses shorter chunks to reduce the wait for captions. Readiness reflects the current scene, rather than the presence of an older transcript.
 
 Caption refreshes reuse their VLC channel without clearing between heartbeats, and use a long OSD lifetime refreshed before fading. Cue ends still clear immediately. Caption generation fills the nearest missing chunk in order, without jumping over dialogue to meet a moving lookahead target. No mouse or keyboard activity is required.
+
+New Dweebo Codex chats default to **dweebo-Light** (Luna, low reasoning). Saved chats retain their selected preset.

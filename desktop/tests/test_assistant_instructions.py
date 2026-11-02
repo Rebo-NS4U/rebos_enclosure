@@ -34,6 +34,11 @@ ShellRoot {
             check(JSON.stringify(session.normalizeAgent({command: custom}, stock).command) === JSON.stringify(custom), "custom launch commands are preserved");
             session.sessionReady = true;
             session.currentAgentId = "codex";
+            session.createNewChat();
+            check(session.codexPreset === "light_coding", "new chats select dweebo-Light");
+            let defaultMode = session.codexPresets.find(item => item.id === session.codexPreset);
+            check(defaultMode.name === "dweebo-Light" && defaultMode.model === "gpt-6-luna" && defaultMode.effort === "low", "default selects the Light model and effort");
+            session.sessionReady = true;
             session.codexPreset = "";
             session.currentSessionId = "github-session";
             let initial = send("Edit a GitHub project");

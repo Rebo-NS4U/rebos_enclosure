@@ -111,7 +111,7 @@ AiSession {
         let channel = "chat-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
         let session = addSession(channel, agentId || "codex");
         if (session) {
-            if ((agentId || "codex") === "codex") session.codexPreset = "coding";
+            if ((agentId || "codex") === "codex") session.codexPreset = "light_coding";
             selectSession(session);
         }
         rememberSessions();
