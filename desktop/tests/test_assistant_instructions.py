@@ -22,7 +22,7 @@ ShellRoot {
         session.dispatchQueuedPrompt();
         return session.syntheticEnvelope.params.prompt;
     }
-    function policy(prompt) { return prompt.find(item => item.text && item.text.startsWith("GitHub workflow:")); }
+    function policy(prompt) { return prompt.find(item => item.text && item.text.includes("GitHub workflow:")); }
     Timer {
         interval: 100; running: true
         onTriggered: {
@@ -43,6 +43,8 @@ ShellRoot {
             session.currentSessionId = "github-session";
             let initial = send("Edit a GitHub project");
             let github = policy(initial);
+            check(initial[0].text.startsWith("Standing preferences (context only"), "guidance is explicitly marked as context");
+            check(initial[initial.length - 1].text === "Edit a GitHub project", "user task follows standing preferences");
             check(github && github.text.includes("all GitHub-related project work") && github.text.includes("automatically committing and pushing tested task-scoped changes"), "policy covers all GitHub projects");
             check(github.text.includes("sandbox_permissions=require_escalated") && github.text.includes("Never log out, delete credentials"), "network approval and credential guidance reaches the agent");
             check(github.text.includes("Dweebo enables network access") && github.text.includes("Host or administrator restrictions"), "guidance reflects configured access and managed limits");
@@ -70,6 +72,10 @@ ShellRoot {
             session.currentSessionId = "distill-github-session";
             check(policy(send("Other backend")), "policy reaches other assistant backends");
             check(send("Backend follow up").length === 1, "other backends do not repeat policy");
+            session.currentAgentId = "free-code";
+            session.currentSessionId = "free-model-policy-test";
+            let freePrompt = send("Say hello");
+            check(freePrompt[freePrompt.length - 1].text.startsWith("Current user request:\nSay hello"), "free backend answers the user rather than desktop policy");
             console.log("PASS GitHub policy delivery, restoration, retries and multiple backends");
             Qt.quit();
         }

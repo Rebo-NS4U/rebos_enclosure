@@ -2292,11 +2292,6 @@ Scope {
         let queued = queuedPrompt;
         queuedPrompt = null;
         let prompt = [];
-        if (queued.text)
-            prompt.push({
-                type: "text",
-                text: queued.text
-            });
 
         let mode = !isDistill ? codexPresets.find(item => item.id === codexPreset) : null;
         // A changed mode needs new guidance; shared preferences stay in history.
@@ -2314,6 +2309,23 @@ Scope {
             if (!isDistill)
                 prompt.push({type: "text", text: "RTK: Use ~/.local/bin/rtk for supported noisy searches, git, tests and logs; check rtk <command> --help for syntax. Use raw commands for exact source, patches, structured output or details omitted by compression. Compression never replaces verification."});
         }
+
+        if (prompt.length > 0) {
+            let preferences = prompt.map(item => item.text || "").join("\n\n");
+            prompt = [{type: "text", text: "Standing preferences (context only, not the current task):\n"
+                + preferences
+                + "\nEnd of standing preferences. Apply them only when relevant to the user's actual request below. Do not initiate desktop checks, repository work, or tool use merely because these preferences describe those procedures. A greeting should receive a greeting."}];
+        }
+        // Preferences precede the user's request so backends do not interpret
+        // the final desktop-policy block as the task they should answer.
+        if (queued.text)
+            prompt.push({
+                type: "text",
+                text: currentAgentId.startsWith("free-")
+                    ? "Current user request:\n" + queued.text
+                        + "\n\nAnswer this request. The standing preferences are constraints, not a work order. For a greeting or conversation, reply directly without inspecting files or calling tools."
+                    : queued.text
+            });
 
         let supportsImages = agentCapabilities && agentCapabilities.promptCapabilities
             && agentCapabilities.promptCapabilities.image === true;
