@@ -34,9 +34,11 @@ class NextEpisodeTests(unittest.TestCase):
         self.engine.publish_next_episode()
         return self.engine.last_next_offer['available']
 
-    def test_only_final_ninety_seconds(self):
+    def test_offer_starts_during_final_fifth_of_episode(self):
         self.assertFalse(self.offered())
-        self.engine.position = 1110
+        self.engine.position = 959
+        self.assertFalse(self.offered())
+        self.engine.position = 960
         self.assertTrue(self.offered())
         self.engine.position = 800
         self.assertFalse(self.offered())
@@ -70,7 +72,7 @@ class NextEpisodeTests(unittest.TestCase):
         self.engine.duration = 30
         self.engine.position = 0
         self.assertFalse(self.offered())
-        self.engine.position = 28
+        self.engine.position = 24
         self.assertTrue(self.offered())
         self.assertEqual(self.engine.last_next_offer['label'], 'Next video')
 
@@ -145,6 +147,13 @@ class CompletionTests(unittest.TestCase):
         self.event('error')
         self.engine.start_episode.assert_not_called()
         self.assertFalse(self.engine.episode_ended)
+
+    def test_time_updates_refresh_next_episode_offer(self):
+        menu_backend.Engine.player_event(
+            self.engine,
+            {'event': 'property-change', 'name': 'time-pos', 'data': 960},
+            7)
+        self.engine.publish_next_episode.assert_called_once()
 
     def test_disabled_and_final_episode_do_not_advance(self):
         self.engine.settings['auto_next'] = False

@@ -31,7 +31,9 @@ def ending_chapter(name):
 def next_offer_start(duration, chapters=()):
     if duration <= 0:
         return None
-    start = duration - min(90, max(5, duration * .08), duration * .2)
+    # Make the button available during the ending stretch, not only in the
+    # final minute and a half. Keep short videos from showing it immediately.
+    start = duration - min(300, max(5, duration * .20), duration * .30)
     for chapter in chapters:
         try:
             position = float(chapter['start_time'])
