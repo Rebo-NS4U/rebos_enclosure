@@ -14,6 +14,21 @@ Item {
     id: root
     anchors.fill: parent
 
+    IpcHandler {
+        target: "assistant-backend-" + root.targetScreen.name
+        function openMenu(): string {
+            backendButton.clicked();
+            return menuStatus();
+        }
+        function menuStatus(): string {
+            let choices = [];
+            for (let i = 0; i < backendMenu.count; i++) choices.push(backendMenu.itemAt(i).text);
+            return JSON.stringify({visible: backendMenu.visible, opened: backendMenu.opened,
+                buttonVisible: backendButton.visible, choices: choices});
+        }
+        function closeMenu(): void { backendMenu.close(); }
+    }
+
     readonly property var dweeboPrompts: [
         "Spill your circuits to Dweebo...",
         "What’s the mission, human?",
@@ -419,6 +434,31 @@ Item {
                             onClicked: {
                                 Ai.newSession();
                                 root.menuExpanded = false;
+                            }
+                        }
+
+                        Button {
+                            id: backendButton
+                            objectName: "assistantBackendButton"
+                            Layout.preferredWidth: 88
+                            Layout.preferredHeight: 32
+                            flat: true
+                            padding: 4
+                            onClicked: {
+                                backendMenu.open();
+                            }
+                            contentItem: StyledText {
+                                text: "Backend"
+                                color: Colors.overSurface
+                                font.pixelSize: Styling.fontSize(-2)
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                            }
+                            background: StyledRect {
+                                variant: parent.hovered ? "focus" : "common"
+                                radius: Styling.radius(6)
+                                border.color: Qt.alpha(Colors.primary, 0.28)
+                                border.width: 1
                             }
                         }
 
@@ -1985,6 +2025,8 @@ Item {
                         ModelSelectorPopup {
                             id: modelSelector
                             parent: mainChatArea
+                            agentSelection: true
+                            objectName: "assistantModelSelectorPopup"
 
                             onModelSelected: {
                                 if (mainChatArea.retryIndex > -1) {
@@ -2448,7 +2490,10 @@ Item {
                                 anchors.fill: parent
                                 anchors.margins: -4
                                 cursorShape: Qt.PointingHandCursor
-                                onClicked: modelSelector.open()
+                                onClicked: {
+                                    modelSelector.agentSelection = false;
+                                    modelSelector.open();
+                                }
                             }
 
                             visible: mainChatArea.isWelcome
@@ -2466,6 +2511,14 @@ Item {
                     }
                 }
             }
+        }
+
+        Menu {
+            id: backendMenu
+            MenuItem { text: "Codex"; onTriggered: Ai.activeSession.setModel("codex") }
+            MenuItem { text: "Free Code (OpenRouter)"; onTriggered: Ai.activeSession.setModel("free-code") }
+            MenuItem { text: "Free Nemotron (OpenRouter)"; onTriggered: Ai.activeSession.setModel("free-nemotron") }
+            MenuItem { text: "Distill"; onTriggered: Ai.activeSession.setModel("distill") }
         }
     }
 }
