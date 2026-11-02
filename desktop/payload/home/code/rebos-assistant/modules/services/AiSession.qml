@@ -233,6 +233,33 @@ Scope {
             model: "codex"
         },
         {
+            id: "free-code", name: "Free Code (OpenRouter)",
+            description: "Cohere North Mini Code through the Codex backend",
+            icon: Qt.resolvedUrl("../../assets/aiproviders/openrouter.svg"),
+            command: ["sh", "-lc", "exec python3 \"$HOME/code/rebos-assistant/scripts/openrouter_agent.py\" free-code"],
+            authMethod: "",
+            installHint: "Add your OpenRouter key to ~/.config/dweebo/openrouter-api-key (permissions 600).",
+            provider: "acp", api_format: "ACP", model: "free-code"
+        },
+        {
+            id: "free-nemotron", name: "Free Nemotron (OpenRouter)",
+            description: "NVIDIA Nemotron Ultra through the Codex backend",
+            icon: Qt.resolvedUrl("../../assets/aiproviders/openrouter.svg"),
+            command: ["sh", "-lc", "exec python3 \"$HOME/code/rebos-assistant/scripts/openrouter_agent.py\" free-nemotron"],
+            authMethod: "",
+            installHint: "Add your OpenRouter key to ~/.config/dweebo/openrouter-api-key (permissions 600).",
+            provider: "acp", api_format: "ACP", model: "free-nemotron"
+        },
+        {
+            id: "google", name: "Google Gemini",
+            description: "Gemini Flash Lite through Google's native ACP agent",
+            icon: Qt.resolvedUrl("../../assets/aiproviders/google.svg"),
+            command: ["sh", "-lc", "exec python3 \"$HOME/code/rebos-assistant/scripts/google_agent.py\""],
+            authMethod: "gemini-api-key",
+            installHint: "Save your Google API key in ~/.config/dweebo/google-api-key (permissions 600).",
+            provider: "acp", api_format: "ACP", model: "google"
+        },
+        {
             id: "distill", name: "Distill",
             description: "Distill with Auto, UltraSave, UltraFast and UltraCode",
             icon: Qt.resolvedUrl("../../assets/aiproviders/openai.svg"),
@@ -894,10 +921,13 @@ Scope {
     }
 
     function chooseAuthMethod(result) {
-        if (isDistill) return ""; // Distill uses its separate ChatGPT OAuth account.
+        if (isDistill || currentAgentId === "free-code" || currentAgentId === "free-nemotron") return ""; // Provider handles its own credentials.
         let methods = result && Array.isArray(result.authMethods) ? result.authMethods : [];
         if (methods.length === 0)
             return "";
+
+        if (currentAgentId === "google")
+            return methods.some(method => method.id === "gemini-api-key") ? "gemini-api-key" : "";
 
         // The adapter's ChatGPT method is "chat-gpt", not "chatgpt".
         // Never fall back to its first method: that is API-key authentication.
@@ -929,6 +959,12 @@ Scope {
                 env: []
             }]
         };
+
+        if (currentAgentId.startsWith("free-")) {
+            params.systemPrompt = {mode: "append", content: [
+                {type: "text", text: "Apply the following standing preferences only when relevant to the user's request. They are not a task to perform. Reply to greetings and conversation directly; use tools only for tasks that require them."}
+            ].concat(standingInstructions(null, true))};
+        }
 
         // Permission policy is separate from execution mode and never enables bypass.
         if (isDistill)
@@ -1120,7 +1156,12 @@ Scope {
         agentTurnActive = false;
         toolRunning = false;
         statusText = "";
-        let hint = currentModel && currentModel.installHint ? "\n\n" + currentModel.installHint : "";
+        // A prompt failure does not imply missing credentials. Keep the actual
+        // backend error instead of attaching unrelated installation guidance.
+        let hint = isAccountAuthenticationError(message) && currentModel && currentModel.installHint
+            ? "\n\n" + currentModel.installHint : "";
+        if (message === "Internal error" && currentAgentId.startsWith("free-"))
+            hint = "\n\nThe OpenRouter request failed. If you recently replaced your API key, choose this backend again to open a fresh chat with the current key.";
         pushSystemMessage(message + hint);
         if (currentAgentId === "codex" && isAccountAuthenticationError(message)) {
             pushSystemMessage("Codex needs its current account connection refreshed. After it reconnects, send your message again. If this continues, choose Preset → Use current Codex login.");
@@ -2245,6 +2286,27 @@ Scope {
             });
     }
 
+    function standingInstructions(mode, force) {
+        let prompt = [];
+        // A changed mode needs new guidance; shared preferences stay in history.
+        if (mode && (force || instructionSessionId !== currentSessionId || instructionModeGuidance !== mode.guidance))
+            prompt.push({type: "text", text: mode.guidance});
+        if (force || instructionDesktopSessionId !== currentSessionId)
+            prompt.push({type: "text", text: "Desktop access: Empty ps/pgrep results in a restricted command session do not prove desktop apps are stopped. Check the user service and session connection (systemctl --user, D-Bus, WAYLAND_DISPLAY, XDG_RUNTIME_DIR and NIRI_SOCKET) using available tools. If access is restricted, request the tool's supported approval for the specific desktop check or action and retry after approval; never bypass isolation or a denied approval. If approval is unavailable, state that exact limitation. Never claim a restart succeeded without checking it. Quickshell QML and Niri configuration hot-reload automatically; do not kill or restart them for config edits. Anime Streamer mpv launch changes apply on the next playback launch; they do not require restarting VLC or Quickshell. Preserve active playback and assistant backends unless the user requests a restart."});
+        let sendSharedInstructions = force || instructionSessionId !== currentSessionId;
+        if (force || instructionGithubSessionId !== currentSessionId + ":network-v3")
+            prompt.push({type: "text", text: "GitHub workflow: For all GitHub-related project work in this assistant, find the owning Git checkout and verify its remote before editing. Work in the repository first and keep applicable installed files, installer payload, dependencies, documentation and tests synchronized during the task. For Enclosure integrations, read ~/code/rebos_enclosure/AGENTS.md. The user authorizes automatically committing and pushing tested task-scoped changes to the verified existing repository; follow its branch/PR policy and preserve unrelated work. Ask only when a new repository's destination or visibility is unclear. Never force-push, include secrets or personal state, or bypass sandbox approvals. Report verification and the pushed commit or PR link; identify any publishing blocker explicitly. Create releases when requested. GitHub network access: Dweebo enables network access in Codex workspace mode while retaining workspace file protections and tool approvals. Try the normal git or gh command first. Host or administrator restrictions can still block access. For GitHub DNS failures (Could not resolve host), blocked connections, or a gh auth status failure in that sandbox, request the execution tool's supported network approval for the exact git or gh command and retry after approval. For Codex exec_command use sandbox_permissions=require_escalated with a specific justification when that option is available. Task authorization to push does not replace a tool approval. If approval is unavailable or rejected, report the exact blocker and give the user the command to run. A sandboxed gh auth status failure does not establish an invalid credential. Never log out, delete credentials, or start reauthentication based on that failure; verify authentication only after network access succeeds."});
+        if (sendSharedInstructions) {
+            prompt.push({type: "text", text: "Local desktop context: Assistant source: " + Quickshell.env("HOME") + "/code/rebos-assistant; shell config: " + Quickshell.env("HOME") + "/.config/quickshell. Inspect and edit these files for requested panel changes. Establish access with tools. If blocked, request the tool's supported approval; report unavailable or rejected approval and the exact blocked action. Never bypass sandbox or approval. Use ~/.local/bin/assistant-sudo --reason 'reason' -- command for each administrator action. Preserve unrelated work and active backends."});
+            prompt.push({type: "text", text: "Task outcome reporting: End the final reply with one line: Task outcome: Positive — <verification> only if the whole request succeeded; otherwise Task outcome: Negative — <remaining work or blocker>. This is self-reported."});
+            prompt.push({type: "text", text: "Shell preferences: Start with one task sentence. Give brief, useful progress for multi-step work. Activity titles state the action and purpose; put commands and output in details. For a consequential preference or missing detail, discover assistant_questions.ask_user_question, offer 2–3 choices and wait before dependent edits; ask in chat only if unavailable. Continue clear authorized work. Use only relevant skills; read the entrypoint and required references, skip generic explanations, and keep answers concise. Do not delegate unless requested. Do not automatically read or write persistent memory, including Obsidian notes; use saved notes only on explicit request. Verify changes. Keep Token Optimizer enabled."});
+            if (!isDistill)
+                prompt.push({type: "text", text: "RTK: Use ~/.local/bin/rtk for supported noisy searches, git, tests and logs; check rtk <command> --help for syntax. Use raw commands for exact source, patches, structured output or details omitted by compression. Compression never replaces verification."});
+        }
+
+        return prompt;
+    }
+
     function dispatchQueuedPrompt() {
         if (!queuedPrompt || !sessionReady || switchingDistillPreset) return;
         if (isDistill && distillNeedsChatGPT) {
@@ -2269,28 +2331,22 @@ Scope {
         let queued = queuedPrompt;
         queuedPrompt = null;
         let prompt = [];
+
+        let mode = !isDistill ? codexPresets.find(item => item.id === codexPreset) : null;
+        prompt = currentAgentId.startsWith("free-") ? [] : standingInstructions(mode, false);
+        if (prompt.length > 0) {
+            let preferences = prompt.map(item => item.text || "").join("\n\n");
+            prompt = [{type: "text", text: "Standing preferences (context only, not the current task):\n"
+                + preferences
+                + "\nEnd of standing preferences. Apply them only when relevant to the user's actual request below. Do not initiate desktop checks, repository work, or tool use merely because these preferences describe those procedures. A greeting should receive a greeting."}];
+        }
+        // Preferences precede the user's request so backends do not interpret
+        // the final desktop-policy block as the task they should answer.
         if (queued.text)
             prompt.push({
                 type: "text",
                 text: queued.text
             });
-
-        let mode = !isDistill ? codexPresets.find(item => item.id === codexPreset) : null;
-        // A changed mode needs new guidance; shared preferences stay in history.
-        if (mode && (instructionSessionId !== currentSessionId || instructionModeGuidance !== mode.guidance))
-            prompt.push({type: "text", text: mode.guidance});
-        if (instructionDesktopSessionId !== currentSessionId)
-            prompt.push({type: "text", text: "Desktop access: Empty ps/pgrep results in a restricted command session do not prove desktop apps are stopped. Check the user service and session connection (systemctl --user, D-Bus, WAYLAND_DISPLAY, XDG_RUNTIME_DIR and NIRI_SOCKET) using available tools. If access is restricted, request the tool's supported approval for the specific desktop check or action and retry after approval; never bypass isolation or a denied approval. If approval is unavailable, state that exact limitation. Never claim a restart succeeded without checking it. Quickshell QML and Niri configuration hot-reload automatically; do not kill or restart them for config edits. Anime Streamer mpv launch changes apply on the next playback launch; they do not require restarting VLC or Quickshell. Preserve active playback and assistant backends unless the user requests a restart."});
-        let sendSharedInstructions = instructionSessionId !== currentSessionId;
-        if (instructionGithubSessionId !== currentSessionId + ":network-v3")
-            prompt.push({type: "text", text: "GitHub workflow: For all GitHub-related project work in this assistant, find the owning Git checkout and verify its remote before editing. Work in the repository first and keep applicable installed files, installer payload, dependencies, documentation and tests synchronized during the task. For Enclosure integrations, read ~/code/rebos_enclosure/AGENTS.md. The user authorizes automatically committing and pushing tested task-scoped changes to the verified existing repository; follow its branch/PR policy and preserve unrelated work. Ask only when a new repository's destination or visibility is unclear. Never force-push, include secrets or personal state, or bypass sandbox approvals. Report verification and the pushed commit or PR link; identify any publishing blocker explicitly. Create releases when requested. GitHub network access: Dweebo enables network access in Codex workspace mode while retaining workspace file protections and tool approvals. Try the normal git or gh command first. Host or administrator restrictions can still block access. For GitHub DNS failures (Could not resolve host), blocked connections, or a gh auth status failure in that sandbox, request the execution tool's supported network approval for the exact git or gh command and retry after approval. For Codex exec_command use sandbox_permissions=require_escalated with a specific justification when that option is available. Task authorization to push does not replace a tool approval. If approval is unavailable or rejected, report the exact blocker and give the user the command to run. A sandboxed gh auth status failure does not establish an invalid credential. Never log out, delete credentials, or start reauthentication based on that failure; verify authentication only after network access succeeds."});
-        if (sendSharedInstructions) {
-            prompt.push({type: "text", text: "Local desktop context: Assistant source: " + Quickshell.env("HOME") + "/code/rebos-assistant; shell config: " + Quickshell.env("HOME") + "/.config/quickshell. Inspect and edit these files for requested panel changes. Establish access with tools. If blocked, request the tool's supported approval; report unavailable or rejected approval and the exact blocked action. Never bypass sandbox or approval. Use ~/.local/bin/assistant-sudo --reason 'reason' -- command for each administrator action. Preserve unrelated work and active backends."});
-            prompt.push({type: "text", text: "Task outcome reporting: End the final reply with one line: Task outcome: Positive — <verification> only if the whole request succeeded; otherwise Task outcome: Negative — <remaining work or blocker>. This is self-reported."});
-            prompt.push({type: "text", text: "Shell preferences: Start with one task sentence. Give brief, useful progress for multi-step work. Activity titles state the action and purpose; put commands and output in details. For a consequential preference or missing detail, discover assistant_questions.ask_user_question, offer 2–3 choices and wait before dependent edits; ask in chat only if unavailable. Continue clear authorized work. Use only relevant skills; read the entrypoint and required references, skip generic explanations, and keep answers concise. Do not delegate unless requested. Do not automatically read or write persistent memory, including Obsidian notes; use saved notes only on explicit request. Verify changes. Keep Token Optimizer enabled."});
-            if (!isDistill)
-                prompt.push({type: "text", text: "RTK: Use ~/.local/bin/rtk for supported noisy searches, git, tests and logs; check rtk <command> --help for syntax. Use raw commands for exact source, patches, structured output or details omitted by compression. Compression never replaces verification."});
-        }
 
         let supportsImages = agentCapabilities && agentCapabilities.promptCapabilities
             && agentCapabilities.promptCapabilities.image === true;
@@ -2417,7 +2473,39 @@ Scope {
     }
 
     function regenerateResponse(index) {
-        pushSystemMessage("Regeneration is owned by the ACP agent. Ask it to reconsider or regenerate the response.");
+        // ACP agents own their conversation history, so continue the failed
+        // user prompt in the same session instead of regenerating history.
+        if (isBusy || !sessionReady || !currentSessionId || !agentProcess.running) {
+            pushSystemMessage("Reconnect to the assistant before continuing this prompt.");
+            return;
+        }
+        let chat = Array.from(currentChat);
+        let userIndex = Math.min(index, chat.length - 1);
+        while (userIndex >= 0 && chat[userIndex].role !== "user") userIndex--;
+        if (userIndex < 0) {
+            pushSystemMessage("Could not find the prompt to continue.");
+            return;
+        }
+        let original = chat[userIndex];
+        chat.splice(userIndex + 1);
+        currentChat = chat;
+        taskPlan = [];
+        taskPlanMarkdown = "";
+        activityLog = [];
+        thoughtText = "";
+        thoughtMessageId = "";
+        queuedPrompt = { text: original.content || "", attachments: original.attachments || [] };
+        isLoading = true;
+        agentTurnActive = true;
+        turnFailureHandled = false;
+        taskOutcome = "";
+        outcomeFinding = "";
+        backendEvidence = "";
+        lastError = "";
+        statusText = "Continuing…";
+        activeAssistantIndex = -1;
+        activeAssistantMessageId = "";
+        dispatchQueuedPrompt();
     }
 
     function updateMessage(index, newContent) {

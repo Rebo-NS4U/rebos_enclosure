@@ -1,0 +1,102 @@
+{
+  "models": [
+    {
+      "slug": "cohere/north-mini-code:free",
+      "display_name": "Free Code",
+      "description": "OpenRouter free model",
+      "default_reasoning_level": null,
+      "supported_reasoning_levels": [],
+      "shell_type": "unified_exec",
+      "visibility": "list",
+      "supported_in_api": true,
+      "priority": 0,
+      "additional_speed_tiers": [],
+      "service_tiers": [],
+      "available_access_programs": null,
+      "availability_nux": null,
+      "upgrade": null,
+      "model_messages": {
+        "instructions_template": "You are Dweebo, a helpful assistant. Answer the current user request directly. Use tools when needed for an actual task. Respond to greetings naturally without inspecting files or desktop services. Follow applicable standing instructions as constraints, not as tasks to execute. Never invent tool results."
+      },
+      "include_skills_usage_instructions": false,
+      "include_plugin_usage_instructions": false,
+      "include_apps_usage_instructions": false,
+      "default_reasoning_summary": "none",
+      "support_verbosity": false,
+      "default_verbosity": null,
+      "apply_patch_tool_type": null,
+      "web_search_tool_type": "text",
+      "truncation_policy": {
+        "mode": "bytes",
+        "limit": 10000
+      },
+      "supports_image_detail_original": true,
+      "context_window": 256000,
+      "max_context_window": 256000,
+      "comp_hash": null,
+      "effective_context_window_percent": 90,
+      "experimental_supported_tools": [],
+      "input_modalities": [
+        "text"
+      ],
+      "supports_search_tool": false,
+      "supports_experimental_context": false,
+      "use_responses_lite": false,
+      "supports_reasoning_effort_updates": false,
+      "node_repl_auto_review_required": false,
+      "node_repl_disabled": true,
+      "tool_mode": null,
+      "multi_agent_version": null,
+      "multi_agent_reasoning_effort": null
+    },
+    {
+      "slug": "nvidia/nemotron-3-ultra-550b-a55b:free",
+      "display_name": "Free Nemotron",
+      "description": "OpenRouter free model",
+      "default_reasoning_level": null,
+      "supported_reasoning_levels": [],
+      "shell_type": "unified_exec",
+      "visibility": "list",
+      "supported_in_api": true,
+      "priority": 0,
+      "additional_speed_tiers": [],
+      "service_tiers": [],
+      "available_access_programs": null,
+      "availability_nux": null,
+      "upgrade": null,
+      "model_messages": {
+        "instructions_template": "You are Dweebo, a helpful assistant. Answer the current user request directly. Use tools when needed for an actual task. Respond to greetings naturally without inspecting files or desktop services. Follow applicable standing instructions as constraints, not as tasks to execute. Never invent tool results."
+      },
+      "include_skills_usage_instructions": false,
+      "include_plugin_usage_instructions": false,
+      "include_apps_usage_instructions": false,
+      "default_reasoning_summary": "none",
+      "support_verbosity": false,
+      "default_verbosity": null,
+      "apply_patch_tool_type": null,
+      "web_search_tool_type": "text",
+      "truncation_policy": {
+        "mode": "bytes",
+        "limit": 10000
+      },
+      "supports_image_detail_original": true,
+      "context_window": 1000000,
+      "max_context_window": 1000000,
+      "comp_hash": null,
+      "effective_context_window_percent": 90,
+      "experimental_supported_tools": [],
+      "input_modalities": [
+        "text"
+      ],
+      "supports_search_tool": false,
+      "supports_experimental_context": false,
+      "use_responses_lite": false,
+      "supports_reasoning_effort_updates": false,
+      "node_repl_auto_review_required": false,
+      "node_repl_disabled": true,
+      "tool_mode": null,
+      "multi_agent_version": null,
+      "multi_agent_reasoning_effort": null
+    }
+  ]
+}

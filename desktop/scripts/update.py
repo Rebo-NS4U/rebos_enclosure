@@ -2,12 +2,15 @@
 """Update from the remote default branch or a release, retaining preferences."""
 import argparse
 import fcntl
+import hashlib
+import json
 import os
 from pathlib import Path
 import subprocess
 import tempfile
 
 from deploy import install, verify
+from update_health import validate
 
 REPOSITORY = 'https://github.com/Rebo-NS4U/rebos_enclosure.git'
 
@@ -19,7 +22,29 @@ def run(*args):
 def apply_snapshot(snapshot, home, dry_run=False):
     payload = snapshot / 'desktop/payload'
     verify(payload)
+    if dry_run:
+        validate(payload)
     return install(payload, home, dry_run=dry_run, preserve_preferences=True)
+
+
+def check_local_changes(home):
+    record = home / '.local/state/rebos-desktop/source.json'
+    if not record.is_file():
+        return
+    files = json.loads(record.read_text()).get('files', {})
+    changed = []
+    for relative, expected in files.items():
+        path = Path(relative)
+        if path.is_absolute() or '..' in path.parts:
+            raise ValueError('Unsafe path in installed source record')
+        destination = home / path
+        if not destination.is_file() or hashlib.sha256(destination.read_bytes()).hexdigest() != expected:
+            changed.append(relative)
+    if changed:
+        raise ValueError('Installed managed files changed since deployment: '
+                         + ', '.join(changed[:20])
+                         + '. Save these fixes in the repository first. To replace them with the fetched snapshot '
+                         'and retain a recovery backup, explicitly use --allow-local-changes')
 
 
 def main():
@@ -28,6 +53,8 @@ def main():
     source = parser.add_mutually_exclusive_group()
     source.add_argument('--branch', help='Branch override; defaults to remote default branch')
     source.add_argument('--release', help='Exact release tag, e.g. v1.3.1')
+    parser.add_argument('--allow-local-changes', action='store_true',
+                        help='Replace locally edited managed code after saving it in the recovery backup')
     parser.add_argument('--files-only', action='store_true', help='Skip package upgrades')
     parser.add_argument('--no-aur', action='store_true', help='Skip installed AUR package upgrades')
     parser.add_argument('--dry-run', action='store_true', help='Fetch and verify only; no installed files or packages change')
@@ -50,6 +77,8 @@ def main():
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
             parser.error('Another desktop update is running')
+        if not args.allow_local_changes:
+            check_local_changes(home)
         with tempfile.TemporaryDirectory(prefix='rebos-update-') as temporary:
             snapshot = Path(temporary) / 'snapshot'
             if args.release:
@@ -83,6 +112,11 @@ def main():
                 helper = shutil.which('paru') or shutil.which('yay')
                 if helper and not args.no_aur:
                     run(helper, '-Sua')
+            if not args.files_only:
+                # Qt upgrades can change which QML properties and types are available.
+                validate(snapshot / "desktop/payload")
+            if not args.allow_local_changes:
+                check_local_changes(home)
             backup = apply_snapshot(snapshot, home)
             # Use the fetched implementation so this update matches its payload.
             greeter_setup = snapshot / 'desktop/scripts/greeter_sync.py'
@@ -95,5 +129,5 @@ def main():
 if __name__ == '__main__':
     try:
         main()
-    except (OSError, ValueError, subprocess.CalledProcessError) as error:
+    except (OSError, ValueError, SyntaxError, subprocess.SubprocessError) as error:
         raise SystemExit(f'Update stopped: {error}. Any deployment backup contains a recovery journal.')

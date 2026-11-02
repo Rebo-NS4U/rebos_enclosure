@@ -8,6 +8,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -55,6 +56,28 @@ def expand(path, home):
         path.write_text(content.replace('@HOME@', str(home)))
 
 
+def source_record(payload):
+    """Identify the actual payload checkout, never an unrelated parent repository."""
+    payload = payload.resolve()
+    def git(*args):
+        return subprocess.check_output(['git', '-C', str(payload), *args],
+                                       text=True, stderr=subprocess.PIPE, timeout=20).strip()
+    try:
+        checkout = Path(git('rev-parse', '--show-toplevel'))
+        if checkout / 'desktop/payload' != payload:
+            return None
+        origin = git('remote', 'get-url', 'origin')
+        if origin.removesuffix('.git').rstrip('/') not in (
+                'https://github.com/Rebo-NS4U/rebos_enclosure',
+                'git@github.com:Rebo-NS4U/rebos_enclosure'):
+            return None
+        return {'repository': 'https://github.com/Rebo-NS4U/rebos_enclosure',
+                'commit': git('rev-parse', 'HEAD'),
+                'dirty': bool(git('status', '--porcelain', '--', str(payload)))}
+    except (OSError, subprocess.SubprocessError):
+        return None
+
+
 def install(payload, home, dry_run=False, cbonsai=None, settings=None, preserve_preferences=False):
     units = verify(payload)
     if preserve_preferences and settings is not None:
@@ -84,6 +107,11 @@ def install(payload, home, dry_run=False, cbonsai=None, settings=None, preserve_
     spec.loader.exec_module(personal_bindings)
     personal = personal_bindings.capture(home / '.config', units)
     generated = {}
+    provenance = source_record(payload)
+    if provenance is not None:
+        relative = '.local/state/rebos-desktop/source.json'
+        generated[relative] = (json.dumps(provenance, indent=2) + '\n', 0o600)
+        units.append(relative)
     if settings is not None:
         from setup import PRIME, validate_plan
         settings = validate_plan(settings)
@@ -92,7 +120,7 @@ def install(payload, home, dry_run=False, cbonsai=None, settings=None, preserve_
         generated['.local/state/rebos-desktop/installation.json'] = (json.dumps(settings, indent=2) + '\n', 0o600)
         if settings['hybrid']:
             generated['.local/bin/rebos-prime-run'] = (PRIME, 0o755)
-        units += list(generated)
+        units += [relative for relative in generated if relative not in units]
     # Preflight all destination parents before touching any of them.
     for relative in units:
         check_parent(home, relative, allow_config_links=True)
@@ -135,47 +163,72 @@ def install(payload, home, dry_run=False, cbonsai=None, settings=None, preserve_
             current.rename(saved)
             shutil.copytree(origin, current, symlinks=True)
 
-    for relative in units:
-        detach_parents(relative)
-        source, destination, saved = payload / 'home' / relative, home / relative, backup / 'files' / relative
-        entry = {'path': relative, 'existed': exists(destination)}
-        # Journal before each mutation so interrupted deployments remain recoverable.
-        journal['entries'].append(entry)
-        (backup / 'journal.json').write_text(json.dumps(journal, indent=2))
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        if entry['existed']:
-            saved.parent.mkdir(parents=True, exist_ok=True)
-            destination.rename(saved)
-        if relative in generated:
-            content, mode = generated[relative]
-            destination.write_text(content)
-            destination.chmod(mode)
-        elif source.is_dir():
-            shutil.copytree(source, destination)
-            for path in destination.rglob('*'):
-                if path.is_file():
-                    expand(path, home)
-            if relative == '.config/niri' and settings is not None:
-                from setup import customize_niri
-                customize_niri(destination, settings)
-            if relative == '.config/niri':
-                personal_bindings.record_defaults(destination)
-            if relative in personal:
-                personal_bindings.apply(destination, *personal[relative])
-        else:
-            shutil.copy2(source, destination)
-            expand(destination, home)
-    if cbonsai:
-        destination = home / '.local/bin/cbonsai'
-        relative = str(destination.relative_to(home))
-        entry = {'path': relative, 'existed': exists(destination)}
-        journal['entries'].append(entry)
-        (backup / 'journal.json').write_text(json.dumps(journal, indent=2))
-        if entry['existed']:
-            saved = backup / 'files' / relative
-            saved.parent.mkdir(parents=True, exist_ok=True)
-            destination.rename(saved)
-        shutil.copy2(cbonsai, destination)
+    try:
+        for relative in units:
+            detach_parents(relative)
+            source, destination, saved = payload / 'home' / relative, home / relative, backup / 'files' / relative
+            entry = {'path': relative, 'existed': exists(destination)}
+            # Journal before each mutation so interrupted deployments remain recoverable.
+            journal['entries'].append(entry)
+            (backup / 'journal.json').write_text(json.dumps(journal, indent=2))
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            if entry['existed']:
+                saved.parent.mkdir(parents=True, exist_ok=True)
+                destination.rename(saved)
+            if relative in generated:
+                content, mode = generated[relative]
+                destination.write_text(content)
+                destination.chmod(mode)
+            elif source.is_dir():
+                shutil.copytree(source, destination)
+                for path in destination.rglob('*'):
+                    if path.is_file():
+                        expand(path, home)
+                if relative == '.config/niri' and settings is not None:
+                    from setup import customize_niri
+                    customize_niri(destination, settings)
+                if relative == '.config/niri':
+                    personal_bindings.record_defaults(destination)
+                if relative in personal:
+                    personal_bindings.apply(destination, *personal[relative])
+            else:
+                shutil.copy2(source, destination)
+                expand(destination, home)
+        if cbonsai:
+            destination = home / '.local/bin/cbonsai'
+            relative = str(destination.relative_to(home))
+            entry = {'path': relative, 'existed': exists(destination)}
+            journal['entries'].append(entry)
+            (backup / 'journal.json').write_text(json.dumps(journal, indent=2))
+            if entry['existed']:
+                saved = backup / 'files' / relative
+                saved.parent.mkdir(parents=True, exist_ok=True)
+                destination.rename(saved)
+            shutil.copy2(cbonsai, destination)
+        if provenance is not None:
+            # Fingerprint deployed managed code, excluding preserved preferences,
+            # account directories, caches and files not supplied by the payload.
+            fingerprints = {}
+            for relative in units:
+                if not (relative.startswith(('.local/bin/', '.config/scripts/', '.config/quickshell/',
+                                             'code/anime-streamer/')) or
+                        relative == '.config/quickshell' or
+                        (relative.startswith('code/rebos-assistant/') and
+                         not relative.startswith('code/rebos-assistant/config'))):
+                    continue
+                source = payload / 'home' / relative
+                sources = source.rglob('*') if source.is_dir() else [source]
+                for path in sources:
+                    if path.is_file():
+                        name = str(path.relative_to(payload / 'home'))
+                        fingerprints[name] = hashlib.sha256((home / name).read_bytes()).hexdigest()
+            provenance['files'] = fingerprints
+            (home / '.local/state/rebos-desktop/source.json').write_text(json.dumps(provenance, indent=2) + '\n')
+    except BaseException:
+        # The journal is written before each replacement, so even partial copies
+        # can be removed and their original files restored automatically.
+        restore(backup)
+        raise
     print(f'Installed desktop files. Backup: {backup}')
     return backup
 

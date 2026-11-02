@@ -88,27 +88,12 @@ FloatingWindow {
         }
     }
 
-    // Close on visibility change from outside
+    // Screen placement can temporarily unmap the native window. Only an
+    // actual close request should change the state controlling visibility.
+    onClosed: GlobalStates.settingsWindowVisible = false
+
     onVisibleChanged: {
-        if (visible) {
-            preparePlacement();
-        }
-
-        if (!visible) {
-            if (GlobalStates.settingsWindowVisible) {
-                GlobalStates.settingsWindowVisible = false;
-            }
-        }
-    }
-
-    // Sync visibility from GlobalStates
-    Connections {
-        target: GlobalStates
-        function onSettingsWindowVisibleChanged() {
-            if (GlobalStates.settingsWindowVisible) {
-                settingsWindow.preparePlacement();
-            }
-            settingsWindow.visible = GlobalStates.settingsWindowVisible;
-        }
+        if (visible)
+            Qt.callLater(settingsWindow.preparePlacement);
     }
 }

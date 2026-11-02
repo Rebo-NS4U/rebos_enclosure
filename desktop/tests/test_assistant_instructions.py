@@ -22,7 +22,10 @@ ShellRoot {
         session.dispatchQueuedPrompt();
         return session.syntheticEnvelope.params.prompt;
     }
-    function policy(prompt) { return prompt.find(item => item.text && item.text.startsWith("GitHub workflow:")); }
+    function policy(prompt) {
+        let item = prompt.find(item => item.text && item.text.includes("GitHub workflow:"));
+        return item ? {text: item.text.slice(item.text.indexOf("GitHub workflow:"))} : null;
+    }
     Timer {
         interval: 100; running: true
         onTriggered: {
@@ -42,6 +45,7 @@ ShellRoot {
             session.codexPreset = "";
             session.currentSessionId = "github-session";
             let initial = send("Edit a GitHub project");
+            check(initial[initial.length - 1].text === "Edit a GitHub project", "actual task follows standing context");
             let github = policy(initial);
             check(github && github.text.includes("all GitHub-related project work") && github.text.includes("automatically committing and pushing tested task-scoped changes"), "policy covers all GitHub projects");
             check(github.text.includes("sandbox_permissions=require_escalated") && github.text.includes("Never log out, delete credentials"), "network approval and credential guidance reaches the agent");

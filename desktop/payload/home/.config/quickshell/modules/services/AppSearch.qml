@@ -8,6 +8,34 @@ import qs.modules.services
 Singleton {
     id: root
 
+    // Launcher preferences are local; installing or updating the shell keeps them.
+    property var hiddenDesktopIds: []
+    function isHiddenDesktopEntry(value) {
+        const id = String(value || "");
+        // Quickshell IDs omit the final .desktop; preferences accept IDs or filenames.
+        return hiddenDesktopIds.includes(id) || hiddenDesktopIds.includes(id + ".desktop");
+    }
+    FileView {
+        id: launcherPreferences
+        path: (Quickshell.env("XDG_CONFIG_HOME") || Quickshell.env("HOME") + "/.config")
+            + "/rebos_shell/config/launcher.json"
+        watchChanges: true
+        printErrors: false
+        onFileChanged: reload()
+        onLoaded: {
+            try {
+                const saved = JSON.parse(text());
+                root.hiddenDesktopIds = Array.isArray(saved.hiddenApps)
+                    ? saved.hiddenApps.filter(id => typeof id === "string") : [];
+            } catch (error) {
+                console.warn("Could not read launcher visibility preferences:", error);
+            }
+        }
+        onLoadFailed: error => {
+            if (error === FileViewError.FileNotFound) root.hiddenDesktopIds = [];
+        }
+    }
+
     property var iconCache: ({})
     
     function getCachedIcon(str) {
@@ -138,6 +166,7 @@ Singleton {
 
     
     readonly property list<DesktopEntry> list: Array.from(DesktopEntries.applications.values)
+        .filter(app => !root.isHiddenDesktopEntry(app.id))
         .sort((a, b) => a.name.localeCompare(b.name))
     
     // Index structure: [{ name: "lower", command: "lower", keywords: ["lower"], original: appObject }, ...]

@@ -33,7 +33,8 @@ class PackageApprovalTests(unittest.TestCase):
                      patch.object(update.Path, 'exists', return_value=True), \
                      patch.object(update, 'run') as run, \
                      patch.object(update.subprocess, 'check_output', return_value='test-commit'), \
-                     patch.object(update, 'apply_snapshot'):
+                     patch.object(update, 'apply_snapshot'), \
+                     patch.object(update, 'validate'):
                     update.main()
                 expected = (str(helper), '--reason',
                             'Upgrade installed system packages before updating the desktop',

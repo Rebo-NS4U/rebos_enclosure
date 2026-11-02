@@ -14,6 +14,28 @@ Item {
     id: root
     anchors.fill: parent
 
+    IpcHandler {
+        target: "assistant-backend-" + root.targetScreen.name
+        function openMenu(): string {
+            backendButton.clicked();
+            return menuStatus();
+        }
+        function menuStatus(): string {
+            let choices = [];
+            for (let i = 0; i < backendMenu.count; i++) choices.push(backendMenu.itemAt(i).text);
+            return JSON.stringify({visible: backendMenu.visible, opened: backendMenu.opened,
+                buttonVisible: backendButton.visible, choices: choices});
+        }
+        function selectBackend(agentId: string): string {
+            for (let i = 0; i < backendMenu.count; i++) {
+                let choice = backendMenu.itemAt(i);
+                if (choice.agentId === agentId) { choice.triggered(); return agentId; }
+            }
+            return "Unknown backend";
+        }
+        function closeMenu(): void { backendMenu.close(); }
+    }
+
     readonly property var dweeboPrompts: [
         "Spill your circuits to Dweebo...",
         "What’s the mission, human?",
@@ -419,6 +441,31 @@ Item {
                             onClicked: {
                                 Ai.newSession();
                                 root.menuExpanded = false;
+                            }
+                        }
+
+                        Button {
+                            id: backendButton
+                            objectName: "assistantBackendButton"
+                            Layout.preferredWidth: 88
+                            Layout.preferredHeight: 32
+                            flat: true
+                            padding: 4
+                            onClicked: {
+                                backendMenu.open();
+                            }
+                            contentItem: StyledText {
+                                text: "Backend"
+                                color: Colors.overSurface
+                                font.pixelSize: Styling.fontSize(-2)
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                            }
+                            background: StyledRect {
+                                variant: parent.hovered ? "focus" : "common"
+                                radius: Styling.radius(6)
+                                border.color: Qt.alpha(Colors.primary, 0.28)
+                                border.width: 1
                             }
                         }
 
@@ -1416,7 +1463,7 @@ Item {
                                                         }
 
                                                         Button {
-                                                            visible: !isUser && !isSystem && !messageDelegate.isEditing && mainChatArea.session.supportsRegeneration
+                                                            visible: !isUser && !isSystem && !messageDelegate.isEditing && mainChatArea.session.supportsRegeneration && (!mainChatArea.session.isBusy || mainChatArea.session.taskOutcome === "Negative" || mainChatArea.session.taskOutcome === "Hung")
                                                             width: 24
                                                             height: 24
                                                             flat: true
@@ -1985,6 +2032,8 @@ Item {
                         ModelSelectorPopup {
                             id: modelSelector
                             parent: mainChatArea
+                            agentSelection: true
+                            objectName: "assistantModelSelectorPopup"
 
                             onModelSelected: {
                                 if (mainChatArea.retryIndex > -1) {
@@ -2448,7 +2497,10 @@ Item {
                                 anchors.fill: parent
                                 anchors.margins: -4
                                 cursorShape: Qt.PointingHandCursor
-                                onClicked: modelSelector.open()
+                                onClicked: {
+                                    modelSelector.agentSelection = false;
+                                    modelSelector.open();
+                                }
                             }
 
                             visible: mainChatArea.isWelcome
@@ -2464,6 +2516,185 @@ Item {
                     }
                         }
                     }
+                }
+            }
+        }
+
+        Menu {
+            id: backendMenu
+            width: Math.min(320, sidebarContainer.width - 24)
+            x: Math.max(12, Math.min(backendButton.mapToItem(sidebarContainer, 0, 0).x,
+                sidebarContainer.width - width - 12))
+            y: backendButton.mapToItem(sidebarContainer, 0, backendButton.height).y + 8
+            padding: 8
+            spacing: 4
+            background: StyledRect {
+                variant: "popup"
+                radius: Styling.radius(12)
+                border.width: 1
+                border.color: Qt.alpha(Colors.primary, 0.22)
+            }
+
+            MenuItem {
+                id: choice_codex
+                property string agentId: "codex"
+                property string subtitle: "Your OpenAI account"
+                property bool free: false
+                readonly property bool selected: Ai.activeSession.currentAgentId === agentId
+                text: "Codex"
+                implicitHeight: 66
+                padding: 12
+                Accessible.name: text + (free ? ", free" : "") + (selected ? ", selected" : "")
+                background: StyledRect {
+                    variant: choice_codex.selected ? "focus" : choice_codex.highlighted ? "common" : "transparent"
+                    radius: Styling.radius(8)
+                    border.width: choice_codex.selected ? 1 : 0
+                    border.color: Qt.alpha(Colors.primary, 0.3)
+                }
+                contentItem: ColumnLayout {
+                    spacing: 4
+                    RowLayout {
+                        spacing: 8
+                        StyledText {
+                            Layout.fillWidth: true
+                            text: choice_codex.text
+                            color: Colors.overSurface
+                            font.pixelSize: Styling.fontSize(-1)
+                            font.weight: Font.DemiBold
+                            elide: Text.ElideRight
+                        }
+                        StyledText {
+                            visible: choice_codex.free
+                            text: "FREE"
+                            color: Colors.primary
+                            font.pixelSize: Styling.fontSize(-4)
+                            font.weight: Font.DemiBold
+                        }
+                        StyledText {
+                            visible: choice_codex.selected
+                            text: "✓"
+                            color: Colors.primary
+                            font.pixelSize: Styling.fontSize(0)
+                        }
+                    }
+                    StyledText {
+                        Layout.fillWidth: true
+                        text: choice_codex.subtitle
+                        color: Colors.outline
+                        font.pixelSize: Styling.fontSize(-3)
+                        elide: Text.ElideRight
+                    }
+                }
+                onTriggered: {
+                    if (Ai.activeSession.currentAgentId !== agentId || agentId.startsWith("free-") || agentId === "google") Ai.newSession(agentId);
+                }
+            }
+            MenuItem {
+                id: choice_google
+                property string agentId: "google"
+                property string subtitle: "Gemini Flash Lite · Google API key"
+                property bool free: false
+                readonly property bool selected: Ai.activeSession.currentAgentId === agentId
+                text: "Google Gemini"
+                implicitHeight: 66
+                padding: 12
+                Accessible.name: text + (free ? ", free" : "") + (selected ? ", selected" : "")
+                background: StyledRect {
+                    variant: choice_google.selected ? "focus" : choice_google.highlighted ? "common" : "transparent"
+                    radius: Styling.radius(8)
+                    border.width: choice_google.selected ? 1 : 0
+                    border.color: Qt.alpha(Colors.primary, 0.3)
+                }
+                contentItem: ColumnLayout {
+                    spacing: 4
+                    RowLayout {
+                        spacing: 8
+                        StyledText {
+                            Layout.fillWidth: true
+                            text: choice_google.text
+                            color: Colors.overSurface
+                            font.pixelSize: Styling.fontSize(-1)
+                            font.weight: Font.DemiBold
+                            elide: Text.ElideRight
+                        }
+                        StyledText {
+                            visible: choice_google.free
+                            text: "FREE"
+                            color: Colors.primary
+                            font.pixelSize: Styling.fontSize(-4)
+                            font.weight: Font.DemiBold
+                        }
+                        StyledText {
+                            visible: choice_google.selected
+                            text: "✓"
+                            color: Colors.primary
+                            font.pixelSize: Styling.fontSize(0)
+                        }
+                    }
+                    StyledText {
+                        Layout.fillWidth: true
+                        text: choice_google.subtitle
+                        color: Colors.outline
+                        font.pixelSize: Styling.fontSize(-3)
+                        elide: Text.ElideRight
+                    }
+                }
+                onTriggered: {
+                    if (Ai.activeSession.currentAgentId !== agentId || agentId.startsWith("free-") || agentId === "google") Ai.newSession(agentId);
+                }
+            }
+            MenuItem {
+                id: choice_distill
+                property string agentId: "distill"
+                property string subtitle: "ChatGPT with efficient modes"
+                property bool free: false
+                readonly property bool selected: Ai.activeSession.currentAgentId === agentId
+                text: "Distill"
+                implicitHeight: 66
+                padding: 12
+                Accessible.name: text + (free ? ", free" : "") + (selected ? ", selected" : "")
+                background: StyledRect {
+                    variant: choice_distill.selected ? "focus" : choice_distill.highlighted ? "common" : "transparent"
+                    radius: Styling.radius(8)
+                    border.width: choice_distill.selected ? 1 : 0
+                    border.color: Qt.alpha(Colors.primary, 0.3)
+                }
+                contentItem: ColumnLayout {
+                    spacing: 4
+                    RowLayout {
+                        spacing: 8
+                        StyledText {
+                            Layout.fillWidth: true
+                            text: choice_distill.text
+                            color: Colors.overSurface
+                            font.pixelSize: Styling.fontSize(-1)
+                            font.weight: Font.DemiBold
+                            elide: Text.ElideRight
+                        }
+                        StyledText {
+                            visible: choice_distill.free
+                            text: "FREE"
+                            color: Colors.primary
+                            font.pixelSize: Styling.fontSize(-4)
+                            font.weight: Font.DemiBold
+                        }
+                        StyledText {
+                            visible: choice_distill.selected
+                            text: "✓"
+                            color: Colors.primary
+                            font.pixelSize: Styling.fontSize(0)
+                        }
+                    }
+                    StyledText {
+                        Layout.fillWidth: true
+                        text: choice_distill.subtitle
+                        color: Colors.outline
+                        font.pixelSize: Styling.fontSize(-3)
+                        elide: Text.ElideRight
+                    }
+                }
+                onTriggered: {
+                    if (Ai.activeSession.currentAgentId !== agentId || agentId.startsWith("free-") || agentId === "google") Ai.newSession(agentId);
                 }
             }
         }

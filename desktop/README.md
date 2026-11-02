@@ -267,3 +267,38 @@ Playback settings include Subtitle font: OpenDyslexic, Noto Sans, Noto Serif or 
 Caption refreshes reuse their VLC channel without clearing between heartbeats, and use a long OSD lifetime refreshed before fading. Cue ends still clear immediately. Caption generation fills the nearest missing chunk in order, without jumping over dialogue to meet a moving lookahead target. No mouse or keyboard activity is required.
 
 New Dweebo Codex chats default to **dweebo-Light** (Luna, low reasoning). Saved chats retain their selected preset.
+
+### Free models in Dweebo
+
+Choose **Free Code (OpenRouter)** or **Free Nemotron (OpenRouter)** in Dweebo's
+agent picker. They use the existing Codex ACP backend, workspace permissions
+and shared configuration with provider overrides scoped to that Dweebo agent.
+Create an OpenRouter API key at https://openrouter.ai/keys and save it to
+`~/.config/dweebo/openrouter-api-key` with mode `600`. Alternatively supply
+`OPENROUTER_API_KEY` in the assistant backend service's environment.
+Keys are private local state and must never be included in the installer.
+No service restart is needed for source updates; choose the agent in a new chat.
+The live model catalog listed Cohere North Mini Code and NVIDIA Nemotron Ultra
+with zero token cost and tool support on 2026-11-02. Availability and rate limits
+can change; no free DeepSeek endpoint was listed. Inference needs an API key.
+
+### Update validation and local fixes
+
+`./update.sh --dry-run` fetches the selected snapshot, verifies its checksums,
+checks Python and Bash syntax, and compiles the assistant sidebar and panel settings using an
+isolated offscreen Quickshell process. It does not start agents or desktop
+services. Normal updates run these checks before package upgrades and repeat
+the code check after upgrading Qt, before replacing desktop files. Missing
+backend support files or incompatible QML stop the update.
+
+Deployments record hashes of the managed code they install. Later updates
+stop if those files were edited or deleted locally, so a working local fix
+cannot silently disappear. Commit and publish the fix first; use
+`--allow-local-changes` only when intentionally replacing those edits with the
+fetched snapshot. Earlier installations without recorded hashes acquire this
+protection after their next deployment. Personal preferences and credentials
+are excluded from these fingerprints.
+
+A failed file copy automatically restores the deployment journal. Package
+upgrades remain installed. The recovery backup is retained, and successful
+updates still require logging out and back in to load desktop services.

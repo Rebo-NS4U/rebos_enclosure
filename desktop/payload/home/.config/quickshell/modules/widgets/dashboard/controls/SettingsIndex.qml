@@ -5,6 +5,7 @@ QtObject {
     property var dynamicItems: []
 
     readonly property var staticItems: [
+        { label: "GitHub", keywords: "update updates up to date repository repositories version commit check projects project clone stage unstage push pull fetch branch branches pr issues login", section: 10, subSection: "", subLabel: "", icon: Icons.circuitry, isIcon: true },
         { label: "Display", keywords: "monitor screen resolution refresh rate hz scale scaling rotation orientation position layout", section: 9, subSection: "", subLabel: "", icon: Icons.layout, isIcon: true },
         { label: "Network", keywords: "internet wifi connection ethernet ip", section: 0, subSection: "", subLabel: "", icon: Icons.wifiHigh, isIcon: true },
         { label: "Bluetooth", keywords: "devices pairing connect", section: 1, subSection: "", subLabel: "", icon: Icons.bluetooth, isIcon: true },
