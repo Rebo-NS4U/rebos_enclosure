@@ -29,3 +29,42 @@ network failures can prevent a check; retry with the refresh button.
 
 Verification: run `python3 -m unittest discover -s desktop/tests -p test_github_status.py`,
 plus `test_deploy.py` and `test_update.py` for deployment and updater coverage.
+
+## Projects and controls
+
+The project selector discovers GitHub checkouts directly under `~/code`, includes
+linked Enclosure sources, and remembers folders added with **Add local project**.
+Only folders whose `origin` is a GitHub repository can be managed. Saved project
+paths stay in the user's XDG state directory and are never shipped in the payload.
+**Browse my GitHub projects** lists up to 100 repositories owned by the current
+GitHub CLI account. Enter any accessible `owner/repository` directly to access
+collaborator projects. **Clone project** requires a new destination folder.
+Private repositories use the existing `gh` login; **GitHub login in terminal**
+opens the normal GitHub CLI web login. Credentials are handled by `gh`.
+
+For the selected local checkout:
+
+- Fetch origin, pull the current branch with `--ff-only`, or push the current
+  branch to origin. Push also sets its upstream and never force-pushes.
+- Select an existing local branch, or create and switch to a new branch. Pull
+  and branch changes require a clean worktree.
+- Filter and select individual files, review their diff, stage or unstage them,
+  and commit only
+  selected staged files. Unrelated staged work stays in place. Both paths of a
+  rename must be selected for its commit. New unstaged edits require restaging.
+- Create a draft or ready pull request with a title, description and base branch.
+  The branch must already be pushed. The panel never silently pushes for a PR.
+- Open the selected folder, terminal, issues, pull requests or commit pages.
+- Review the eight most recent local commits, even when GitHub is unavailable.
+
+Commit, push and pull request buttons show a review dialog with the destination
+and operation details before execution. Action output and failures appear in the
+panel. Fetch/pull/push use the selected checkout's origin. A different push URL is
+rejected, and file selections are validated against current repository state.
+Switching or pulling linked desktop sources can hot-reload the shell; no service
+restart is performed by this panel.
+
+The GitHub CLI is included in the desktop runtime packages. Without it, public
+status checks and HTTPS clones still work; account browsing and PR creation need
+`gh`. Tests in `desktop/tests/test_github_projects.py` use temporary repositories
+for write operations, with mocked GitHub publishing.

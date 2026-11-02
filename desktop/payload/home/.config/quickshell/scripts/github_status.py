@@ -77,8 +77,8 @@ def changed_files(raw):
     return files
 
 
-def local_details(home, result):
-    checkout = linked_checkout(home)
+def local_details(home, result, checkout=None):
+    checkout = checkout or linked_checkout(home)
     result['installation'] = 'Linked source checkout' if checkout else 'Copied installation'
     if checkout is None:
         return
@@ -93,22 +93,30 @@ def local_details(home, result):
     result['changes'] = changes[:12]
 
 
-def check(home):
+def check(home, checkout=None, repository=REPOSITORY, api_request=None):
     result = {'status': 'unknown', 'message': 'Not checked', 'local': '', 'remote': '', 'dirty': False,
-              'repository': REPOSITORY, 'branch': '', 'default_branch': '',
+              'repository': repository, 'branch': '', 'default_branch': '',
               'installation': '', 'local_commit': {}, 'remote_commit': {},
               'ahead': None, 'behind': None, 'changes': [], 'change_count': None,
               'incoming': [], 'checked_at': datetime.now(timezone.utc).isoformat()}
+    fetch = api_request or request
     try:
-        result['local'], result['dirty'] = installed(home)
+        if checkout is None:
+            result['local'], result['dirty'] = installed(home)
+        else:
+            result['local'] = git(checkout, 'rev-parse', 'HEAD')
+            result['dirty'] = bool(git(checkout, 'status', '--porcelain'))
         try:
-            local_details(home, result)
+            if checkout is None:
+                local_details(home, result)
+            else:
+                local_details(home, result, checkout)
         except (OSError, ValueError, subprocess.SubprocessError) as error:
             result['details_error'] = 'Some local details are unavailable: ' + str(error)
-        repo = request('')
+        repo = fetch('')
         branch = repo['default_branch']
         result['default_branch'] = branch
-        remote_commit = request('/commits/' + quote(branch, safe=''))
+        remote_commit = fetch('/commits/' + quote(branch, safe=''))
         latest = remote_commit['sha']
         result['remote_commit'] = commit_details(remote_commit)
         result['remote'] = latest
@@ -118,16 +126,17 @@ def check(home):
             result.update(status='current', message='Up to date', ahead=0, behind=0)
         else:
             try:
-                comparison = request('/compare/' + result['local'] + '...' + latest)
+                comparison = fetch('/compare/' + result['local'] + '...' + latest)
             except urllib.error.HTTPError as error:
                 if error.code != 404:
                     raise
+                error.close()
                 # Unpublished local commits cannot be compared by GitHub.
-                checkout = linked_checkout(home)
+                local_checkout = checkout or linked_checkout(home)
                 try:
-                    if checkout is None:
+                    if local_checkout is None:
                         raise ValueError('No local Git history')
-                    counts = git(checkout, 'rev-list', '--left-right', '--count',
+                    counts = git(local_checkout, 'rev-list', '--left-right', '--count',
                                  result['local'] + '...' + latest).split()
                     local_count, remote_count = map(int, counts)
                     relation = ('diverged' if local_count and remote_count else
@@ -145,7 +154,7 @@ def check(home):
             if total > 250:
                 try:
                     page = (total + 4) // 5
-                    commits = request('/compare/' + result['local'] + '...' + latest
+                    commits = fetch('/compare/' + result['local'] + '...' + latest
                                       + '?per_page=5&page=' + str(page)).get('commits', [])
                 except (OSError, ValueError, KeyError) as error:
                     commits = []

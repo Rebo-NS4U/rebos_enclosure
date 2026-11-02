@@ -13,21 +13,22 @@ Item {
     property int maxContentWidth: 760
     property var result: ({ message: "Not checked yet", local: "", remote: "", dirty: false })
     property string checkedAt: ""
-    readonly property string repository: "https://github.com/Rebo-NS4U/rebos_enclosure"
+    property string projectPath: ""
+    readonly property string repository: result.repository || "https://github.com/Rebo-NS4U/rebos_enclosure"
     readonly property color statusColor: checker.running ? Colors.primary
         : result.status === "error" ? Colors.error
         : result.status === "current" && !result.dirty ? Colors.success : Colors.warning
     readonly property string explanation: {
         switch (result.status) {
         case "current": return result.dirty
-            ? "Your installed commit matches GitHub. Local edits mean some files differ from that published version."
-            : "Your installed commit matches the latest commit on GitHub’s default branch.";
-        case "behind": return "GitHub has newer commits available for your desktop.";
+            ? "Your local commit matches GitHub. Local edits mean some files differ from that published version."
+            : "Your local commit matches the latest commit on GitHub’s default branch.";
+        case "behind": return "GitHub’s default branch has newer commits available for this project.";
         case "ahead": return "This checkout contains commits that are not yet on GitHub’s default branch.";
         case "diverged": return "This checkout and GitHub both contain unique commits. Reconcile the two histories before updating.";
         case "unpublished": return "GitHub cannot compare this installed revision. It may contain unpublished commits or come from a different history.";
         case "error": return "The latest status could not be verified. Check your connection and try again; GitHub may also limit repeated requests.";
-        default: return "Check your installed desktop against the official GitHub repository.";
+        default: return "Compare this checkout with the selected repository’s default branch.";
         }
     }
 
@@ -47,11 +48,12 @@ Item {
 
     Process {
         id: checker
-        command: ["python3", Quickshell.shellPath("scripts/github_status.py")]
+        command: ["python3", Quickshell.shellPath("scripts/github_projects.py"), "inspect"].concat(root.projectPath ? ["--path", root.projectPath] : [])
         stdout: StdioCollector {
             onStreamFinished: {
                 try {
-                    root.result = JSON.parse(text);
+                    const data = JSON.parse(text);
+                    root.result = data.ok === false ? {status: "error", message: data.message} : data;
                     root.checkedAt = new Date().toLocaleString();
                 } catch (e) {
                     root.result = { status: "error", message: "Could not read update status", local: "", remote: "", dirty: false };
@@ -84,69 +86,81 @@ Item {
             spacing: 12
             PanelTitlebar {
                 title: "GitHub"
-                description: "Version history and desktop updates from the official Enclosure repository."
+                description: "Manage GitHub projects, local changes, branches, commits and pull requests."
             }
-            SettingsGroup {
-                title: "Update status"
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: 10
-                    Rectangle {
-                        width: 10; height: 10; radius: 5
-                        color: root.statusColor
-                    }
-                    StyledText {
+            GithubProjects {
+                project: root.result
+                selectedPath: root.projectPath
+                checking: checker.running
+                onProjectSelected: path => {
+                    root.projectPath = path;
+                    root.checkedAt = "";
+                    root.result = {message: "Loading project…"};
+                    root.check();
+                }
+                onRefreshRequested: root.check()
+                SettingsGroup {
+                    title: "Update status"
+                    RowLayout {
                         Layout.fillWidth: true
-                        text: checker.running ? "Checking GitHub…" : root.result.message
-                        color: root.statusColor
-                        font.bold: true
-                        wrapMode: Text.Wrap
+                        spacing: 10
+                        Rectangle {
+                            width: 10; height: 10; radius: 5
+                            color: root.statusColor
+                        }
+                        StyledText {
+                            Layout.fillWidth: true
+                            text: checker.running ? "Checking GitHub…" : root.result.message
+                            color: root.statusColor
+                            font.bold: true
+                            wrapMode: Text.Wrap
+                        }
+                    }
+                    Detail { text: root.explanation }
+                    Detail {
+                        visible: root.result.ahead !== undefined && root.result.ahead !== null
+                            && root.result.behind !== undefined && root.result.behind !== null
+                        text: (root.result.ahead ?? "—") + " local commits ahead   •   "
+                            + (root.result.behind ?? "—") + " commits behind GitHub"
+                    }
+                    Detail {
+                        text: root.checkedAt ? "Last checked: " + root.checkedAt : "No completed check yet"
+                    }
+                    Flow {
+                        Layout.fillWidth: true
+                        spacing: 8
+                        SettingsButton {
+                            text: checker.running ? "Checking…" : "Check for updates"
+                            enabled: !checker.running
+                            onClicked: root.check()
+                        }
+                        SettingsButton {
+                            text: "Open GitHub"
+                            onClicked: Qt.openUrlExternally(root.repository)
+                        }
+                        SettingsButton {
+                            text: "Compare versions"
+                            visible: !!root.result.local && !!root.result.remote && root.result.local !== root.result.remote
+                            enabled: !checker.running
+                            onClicked: Qt.openUrlExternally(root.repository + "/compare/" + root.result.local + "..." + root.result.remote)
+                        }
                     }
                 }
-                Detail { text: root.explanation }
-                Detail {
-                    visible: root.result.ahead !== undefined && root.result.ahead !== null
-                        && root.result.behind !== undefined && root.result.behind !== null
-                    text: (root.result.ahead ?? "—") + " local commits ahead   •   "
-                        + (root.result.behind ?? "—") + " commits behind GitHub"
-                }
-                Detail {
-                    text: root.checkedAt ? "Last checked: " + root.checkedAt : "No completed check yet"
-                }
-                Flow {
-                    Layout.fillWidth: true
-                    spacing: 8
-                    SettingsButton {
-                        text: checker.running ? "Checking…" : "Check for updates"
-                        enabled: !checker.running
-                        onClicked: root.check()
+                SettingsGroup {
+                    title: "Repository & installation"
+                    Detail { text: "Repository: " + root.repository.replace("https://github.com/", "") }
+                    Detail { text: "Installation: " + (root.result.installation || "Not identified") }
+                    Detail { text: "Local branch: " + (root.result.branch || "Not available for this installation") }
+                    Detail { text: "GitHub default branch: " + (root.result.default_branch || "Not verified") }
+                    Detail {
+                        visible: !!root.result.details_error
+                        text: root.result.details_error || ""
                     }
-                    SettingsButton {
-                        text: "Open GitHub"
-                        onClicked: Qt.openUrlExternally(root.repository)
-                    }
-                    SettingsButton {
-                        text: "Compare versions"
-                        visible: !!root.result.local && !!root.result.remote && root.result.local !== root.result.remote
-                        enabled: !checker.running
-                        onClicked: Qt.openUrlExternally(root.repository + "/compare/" + root.result.local + "..." + root.result.remote)
-                    }
-                }
-            }
-            SettingsGroup {
-                title: "Repository & installation"
-                Detail { text: "Repository: Rebo-NS4U/rebos_enclosure" }
-                Detail { text: "Installation: " + (root.result.installation || "Not identified") }
-                Detail { text: "Local branch: " + (root.result.branch || "Not available for this installation") }
-                Detail { text: "GitHub default branch: " + (root.result.default_branch || "Not verified") }
-                Detail {
-                    visible: !!root.result.details_error
-                    text: root.result.details_error || ""
                 }
             }
             Repeater {
                 model: [
-                    { title: "Installed version", sha: root.result.local || "", info: root.result.local_commit || {} },
+                    { title: "Local version", sha: root.result.local || "", info: root.result.local_commit || {} },
                     { title: "Latest on GitHub", sha: root.result.remote || "", info: root.result.remote_commit || {} }
                 ]
                 delegate: SettingsGroup {
@@ -218,6 +232,19 @@ Item {
                             text: "View commit"
                             onClicked: Qt.openUrlExternally(root.repository + "/commit/" + incoming.modelData.sha)
                         }
+                    }
+                }
+            }
+            SettingsGroup {
+                visible: (root.result.history || []).length > 0
+                title: "Local commit history"
+                description: "Eight most recent commits on the selected branch."
+                Repeater {
+                    model: root.result.history || []
+                    delegate: Detail {
+                        required property var modelData
+                        text: modelData.sha.slice(0, 12) + " · " + modelData.title + "\n"
+                            + modelData.author + " · " + root.dateLabel(modelData.date)
                     }
                 }
             }
