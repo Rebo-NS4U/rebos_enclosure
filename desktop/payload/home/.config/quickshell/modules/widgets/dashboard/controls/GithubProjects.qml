@@ -36,14 +36,14 @@ ColumnLayout {
         selectedFiles = selectedFiles.filter(p => available.includes(p));
     }
     function start(command) {
-        if (busy) return;
+        if (worker.running || (checking && command !== "catalog")) return;
         mode = command;
         worker.command = ["python3", Quickshell.shellPath("scripts/github_projects.py"), command];
         if (command !== "catalog") feedback = "";
         worker.running = true;
     }
     function initialize() {
-        if (!initialized && visible && width > 0 && !busy) {
+        if (!initialized && visible && width > 0 && !worker.running) {
             initialized = true;
             start("catalog");
         }
@@ -101,6 +101,17 @@ ColumnLayout {
             if (code !== 0) { root.failed = true; root.feedback = "Project process failed. Try again."; }
         }
     }
+    Process {
+        id: updateLauncher
+        stderr: StdioCollector {
+            onStreamFinished: if (text.trim() !== "") root.feedback = text.trim()
+        }
+        onExited: (code, status) => {
+            root.failed = code !== 0;
+            if (code !== 0) root.feedback = "Could not open the update window (exit " + code + "). " + root.feedback;
+            else root.feedback = "Update window closed. Review its results before retrying.";
+        }
+    }
     component Caption: StyledText { Layout.fillWidth: true; wrapMode: Text.Wrap; color: Colors.overSurfaceVariant }
     component Field: SettingsTextField { Layout.fillWidth: true }
 
@@ -118,6 +129,37 @@ ColumnLayout {
         Caption { text: root.activePath ? "Local folder: " + root.activePath : "Select or add a local checkout to use Git controls." }
     }
     ColumnLayout { id: overviewSlot; Layout.fillWidth: true; spacing: 12 }
+    SettingsGroup {
+        title: "Update installed desktop"
+        visible: root.selectedPath === "" || root.activePath === root.desktopPath
+        description: "Apply the latest official Enclosure files to this desktop. Pull current branch only updates repository files."
+        Caption { text: "Opens an update window with a preview, confirmation and live results. Personal preferences are preserved; recovery backups are saved before replacing files. Log out and back in after a successful update." }
+        CheckBox {
+            id: updatePackages
+            text: "Also upgrade system and AUR packages (may require administrator approval)"
+            checked: false
+            palette.windowText: Colors.overSurface
+        }
+        SettingsButton {
+            objectName: "github-update-installed-button"
+            text: "Preview & update installed desktop…"
+            enabled: !updateLauncher.running && root.desktopPath !== ""
+            onClicked: {
+                const command = ["kitty", "--title", "Enclosure desktop update", "python3",
+                    Quickshell.shellPath("scripts/github_update.py"), "--path", root.desktopPath];
+                if (updatePackages.checked) command.push("--packages");
+                updateLauncher.command = command;
+                root.feedback = "Opening the desktop update window…";
+                root.failed = false;
+                updateLauncher.running = true;
+            }
+        }
+        Caption {
+            visible: root.desktopPath === ""
+            text: "An official Enclosure checkout is required at ~/rebos_enclosure or ~/code/rebos_enclosure."
+        }
+    }
+
     SettingsGroup {
         title: "Push to GitHub"
         description: "The assistant commits tested changes automatically. Push here when you are ready to publish them."
@@ -194,8 +236,11 @@ ColumnLayout {
         objectName: "github-branches-section"
         title: "Branches & sync"
         summary: "Fetch, pull, create or switch branches."
-        description: "Actions apply to the selected local project. Pull requires a clean checkout and fast-forwards only."
-        enabled: root.canEdit
+        description: root.canEdit
+            ? "Actions apply to the selected local project. Pull requires a clean checkout and fast-forwards only. Pull updates the checkout. Use Update installed desktop above to apply desktop files."
+            : root.busy ? "Checking the project. Git actions will be available when the check finishes."
+            : "Select or add a local Git checkout under Project or Add or clone projects to enable Git actions."
+        actionsEnabled: root.canEdit
         Caption { text: "Branch: " + (root.project.branch || "Unknown") + "   •   Tracks: " + (root.project.upstream || "No upstream") }
         Flow {
             Layout.fillWidth: true; spacing: 8
@@ -219,7 +264,7 @@ ColumnLayout {
         title: "Files & commits"
         summary: (root.project.change_count ?? 0) + " changed entries · " + (root.project.staged || []).length + " staged files"
         description: "Select individual files. Commit includes only the selected staged files; other staged work stays in place."
-        enabled: root.canEdit
+        actionsEnabled: root.canEdit
         Caption { text: root.selectedFiles.length + " selected   •   " + (root.project.staged || []).length + " staged" }
         Field { id: fileSearch; placeholderText: "Filter changed files (shows up to 100 matching entries)" }
         // Include staged rename source paths so both sides can be selected.
@@ -256,7 +301,7 @@ ColumnLayout {
         title: "Pull requests"
         summary: "Create a draft or ready pull request for your pushed branch."
         description: "Push your branch first, then create a pull request against the chosen base."
-        enabled: root.canEdit
+        actionsEnabled: root.canEdit
         Field { id: prBase; placeholderText: "Base branch"; text: root.project.default_branch || "" }
         Field { id: prTitle; placeholderText: "Pull request title" }
         ScrollView {

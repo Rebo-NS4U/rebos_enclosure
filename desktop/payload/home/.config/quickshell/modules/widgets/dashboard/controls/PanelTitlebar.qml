@@ -63,6 +63,9 @@ ColumnLayout {
             model: root.actions
             delegate: Button {
                 id: actionButton
+                objectName: "settings-titlebar-action-" + index
+                focusPolicy: Qt.StrongFocus
+                Accessible.name: modelData.tooltip || "Settings action"
                 required property var modelData
                 required property int index
                 readonly property bool isLoading: modelData.loading ?? false

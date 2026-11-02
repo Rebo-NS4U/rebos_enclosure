@@ -2455,7 +2455,39 @@ Scope {
     }
 
     function regenerateResponse(index) {
-        pushSystemMessage("Regeneration is owned by the ACP agent. Ask it to reconsider or regenerate the response.");
+        // ACP agents own their conversation history, so continue the failed
+        // user prompt in the same session instead of regenerating history.
+        if (isBusy || !sessionReady || !currentSessionId || !agentProcess.running) {
+            pushSystemMessage("Reconnect to the assistant before continuing this prompt.");
+            return;
+        }
+        let chat = Array.from(currentChat);
+        let userIndex = Math.min(index, chat.length - 1);
+        while (userIndex >= 0 && chat[userIndex].role !== "user") userIndex--;
+        if (userIndex < 0) {
+            pushSystemMessage("Could not find the prompt to continue.");
+            return;
+        }
+        let original = chat[userIndex];
+        chat.splice(userIndex + 1);
+        currentChat = chat;
+        taskPlan = [];
+        taskPlanMarkdown = "";
+        activityLog = [];
+        thoughtText = "";
+        thoughtMessageId = "";
+        queuedPrompt = { text: original.content || "", attachments: original.attachments || [] };
+        isLoading = true;
+        agentTurnActive = true;
+        turnFailureHandled = false;
+        taskOutcome = "";
+        outcomeFinding = "";
+        backendEvidence = "";
+        lastError = "";
+        statusText = "Continuing…";
+        activeAssistantIndex = -1;
+        activeAssistantMessageId = "";
+        dispatchQueuedPrompt();
     }
 
     function updateMessage(index, newContent) {

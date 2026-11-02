@@ -175,7 +175,12 @@ Item {
                         columns: root.contentWidth < Styling.fontSize(0) * 30 ? 1 : 2
                         columnSpacing: 12
                         rowSpacing: 12
-                        ShellStyleSettings { Layout.fillWidth: true; Layout.columnSpan: parent.columns }
+                        SectionButton {
+                            sectionId: "style"
+                            text: "Theme style"
+                            description: "Choose the shell style and its appearance."
+                            glyph: Icons.palette
+                        }
                         SectionButton {
                             sectionId: "blur"
                             text: "Blur"

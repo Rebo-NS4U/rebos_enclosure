@@ -10,6 +10,7 @@ StyledRect {
     property string summary: ""
     property string description: ""
     property bool expanded: false
+    property bool actionsEnabled: true
     default property alias content: body.data
     Layout.fillWidth: true
     implicitHeight: column.implicitHeight + 24
@@ -45,6 +46,6 @@ StyledRect {
             color: Colors.overSurfaceVariant
             wrapMode: Text.Wrap
         }
-        ColumnLayout { id: body; Layout.fillWidth: true; visible: root.expanded; spacing: 12 }
+        ColumnLayout { id: body; Layout.fillWidth: true; visible: root.expanded; enabled: root.actionsEnabled; spacing: 12 }
     }
 }

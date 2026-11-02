@@ -7,6 +7,8 @@ import qs.modules.theme
 
 Button {
     id: root
+    focusPolicy: Qt.StrongFocus
+    Accessible.name: text
     property string description: ""
     property string glyph: ""
     property bool selected: false

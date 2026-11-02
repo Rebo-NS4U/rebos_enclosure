@@ -322,3 +322,46 @@ plan-model routing. Provider overload and quota errors should surface instead of
 being hidden behind Gemini CLI's default ten-attempt retry loop. The lighter
 default model avoids depending on the moving `flash` alias; other available
 models can still be chosen through the model selector.
+
+### Update validation and local fixes
+
+`./update.sh --dry-run` fetches the selected snapshot, verifies its checksums,
+checks Python and Bash syntax, and compiles the assistant sidebar and panel settings using an
+isolated offscreen Quickshell process. It does not start agents or desktop
+services. Normal updates run these checks before package upgrades and repeat
+the code check after upgrading Qt, before replacing desktop files. Missing
+backend support files or incompatible QML stop the update.
+
+Deployments record hashes of the managed code they install. Later updates
+stop if those files were edited or deleted locally, so a working local fix
+cannot silently disappear. Commit and publish the fix first; use
+`--allow-local-changes` only when intentionally replacing those edits with the
+fetched snapshot. Earlier installations without recorded hashes acquire this
+protection after their next deployment. Personal preferences and credentials
+are excluded from these fingerprints.
+
+A failed file copy automatically restores the deployment journal. Package
+upgrades remain installed. The recovery backup is retained, and successful
+updates still require logging out and back in to load desktop services.
+
+### Updates from GitHub Settings
+
+In Settings → GitHub, select Enclosure and use **Preview & update installed
+desktop…**. The update window shows a dry run and requires typing `UPDATE` before
+applying. Desktop files only is the default; select the package checkbox to also
+upgrade system and AUR packages. Errors remain visible until the window is closed.
+Locally edited managed files block updates rather than being silently replaced.
+The official checkout must be at `~/rebos_enclosure` or `~/code/rebos_enclosure`
+(or linked to the installed shell). Pull current branch updates only the checkout.
+Personal preferences and the updater's recovery backups are retained. Log out
+and back in after success.
+
+### Settings navigation and shortcut search
+
+Keyboard shortcuts has Search and Clear buttons beside its live filter. Enter
+applies the search and Ctrl+F focuses it. Match counts show how many shortcuts
+remain. The page scrolls when adding or editing shortcuts on smaller windows.
+Appearance keeps its style form behind a Theme style card so section buttons
+remain easy to reach. Shared Settings buttons, section cards and titlebar actions
+support keyboard focus and expose names to accessibility tools. Hardware-dependent
+and input-dependent actions retain their normal availability checks.

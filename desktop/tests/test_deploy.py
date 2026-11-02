@@ -32,6 +32,79 @@ class DeploymentTests(unittest.TestCase):
                   for p in self.payload.rglob('*') if p.is_file() and p.name != 'checksums.json'}
         (self.payload / 'checksums.json').write_text(json.dumps(hashes))
 
+    def test_failed_copy_restores_original_automatically(self):
+        original = self.home / '.config/kitty'
+        original.mkdir(parents=True)
+        (original / 'kitty.conf').write_text('personal original')
+        def interrupted_copy(source, destination, *args, **kwargs):
+            destination.mkdir()
+            (destination / 'partial').write_text('incomplete update')
+            raise OSError('simulated disk error')
+        with patch.object(deploy.shutil, 'copytree', side_effect=interrupted_copy):
+            with self.assertRaisesRegex(OSError, 'simulated disk error'):
+                deploy.install(self.payload, self.home)
+        self.assertEqual((original / 'kitty.conf').read_text(), 'personal original')
+        self.assertFalse((original / 'partial').exists())
+        backups = list((self.home / '.local/state/rebos-desktop/backups').iterdir())
+        self.assertEqual(len(backups), 1)
+        self.assertTrue((backups[0] / 'restored-journal.json').exists())
+
+    def checkout_payload(self):
+        checkout = self.root / 'checkout'
+        destination = checkout / 'desktop/payload'
+        destination.parent.mkdir(parents=True)
+        self.payload.rename(destination)
+        self.payload = destination
+        def git(*args):
+            return subprocess.check_output(['git', '-C', str(checkout), *args],
+                                           text=True, stderr=subprocess.PIPE).strip()
+        git('init', '-q')
+        git('remote', 'add', 'origin', 'https://github.com/Rebo-NS4U/rebos_enclosure.git')
+        git('add', '.')
+        git('-c', 'user.name=Test', '-c', 'user.email=test@example.com', 'commit', '-qm', 'Payload')
+        return git
+
+    def test_source_revision_is_recorded_and_restored(self):
+        git = self.checkout_payload()
+        record = self.home / '.local/state/rebos-desktop/source.json'
+        record.parent.mkdir(parents=True)
+        record.write_text('{"previous": true}')
+        backup = deploy.install(self.payload, self.home, preserve_preferences=True)
+        data = json.loads(record.read_text())
+        self.assertEqual(data['commit'], git('rev-parse', 'HEAD'))
+        self.assertFalse(data['dirty'])
+        self.assertEqual(data['repository'], 'https://github.com/Rebo-NS4U/rebos_enclosure')
+        deploy.restore(backup)
+        self.assertEqual(json.loads(record.read_text()), {'previous': True})
+
+    def test_deployed_managed_code_fingerprints_exclude_preferences(self):
+        managed = self.payload / 'home/.config/quickshell'
+        managed.mkdir()
+        (managed / 'shell.qml').write_text('home=@HOME@')
+        (self.payload / 'manifest.json').write_text(json.dumps({'units': [
+            '.config/kitty', '.config/quickshell']}))
+        self.seal()
+        self.checkout_payload()
+        deploy.install(self.payload, self.home)
+        data = json.loads((self.home / '.local/state/rebos-desktop/source.json').read_text())
+        code = self.home / '.config/quickshell/shell.qml'
+        self.assertEqual(data['files'], {
+            '.config/quickshell/shell.qml': hashlib.sha256(code.read_bytes()).hexdigest()})
+        self.assertIn(str(self.home), code.read_text())
+
+    def test_source_revision_preview_and_local_changes(self):
+        self.checkout_payload()
+        (self.payload / 'manifest.json').write_text(json.dumps({'units': ['.config/kitty']}, indent=2))
+        self.seal()
+        self.assertTrue(deploy.source_record(self.payload)['dirty'])
+        deploy.install(self.payload, self.home, dry_run=True)
+        self.assertEqual(list(self.home.iterdir()), [])
+
+    def test_other_repository_does_not_claim_official_revision(self):
+        git = self.checkout_payload()
+        git('remote', 'set-url', 'origin', 'https://example.com/other.git')
+        self.assertIsNone(deploy.source_record(self.payload))
+
     def test_install_and_restore_preserves_source_symlink_and_unrelated_files(self):
         source = self.root / 'original-dotfiles'
         source.mkdir()
@@ -49,19 +122,12 @@ class DeploymentTests(unittest.TestCase):
         self.assertEqual((config / 'unrelated').read_text(), 'keep')
 
     def test_copy_records_source_revision_and_restore_removes_record(self):
-        checkout = self.root / 'checkout'
-        (checkout / '.git').mkdir(parents=True)
-        payload = checkout / 'desktop/payload'
-        payload.parent.mkdir()
-        self.payload.rename(payload)
-        self.payload = payload
-        with patch.object(deploy.subprocess, 'check_output', side_effect=[
-                'abc\n', 'https://github.com/Rebo-NS4U/rebos_enclosure.git\n', ' M file']):
-            backup = deploy.install(payload, self.home)
+        git = self.checkout_payload()
+        backup = deploy.install(self.payload, self.home)
         record = self.home / '.local/state/rebos-desktop/source.json'
         self.assertEqual(json.loads(record.read_text()), {
             'repository': 'https://github.com/Rebo-NS4U/rebos_enclosure',
-            'commit': 'abc', 'dirty': True})
+            'commit': git('rev-parse', 'HEAD'), 'dirty': False, 'files': {}})
         deploy.restore(backup)
         self.assertFalse(record.exists())
 
@@ -235,7 +301,7 @@ class DeploymentTests(unittest.TestCase):
             with self.assertRaisesRegex(OSError, 'interrupted'):
                 deploy.install(self.payload, self.home, preserve_preferences=True)
         backup, = (self.home / '.local/state/rebos-desktop/backups').iterdir()
-        deploy.restore(backup)
+        self.assertTrue((backup / 'restored-journal.json').exists())
         self.assertEqual((installed / 'shell.qml').read_text(), 'old')
         self.assertEqual((config / 'kitty.conf').read_text(), 'personal')
 

@@ -1463,7 +1463,7 @@ Item {
                                                         }
 
                                                         Button {
-                                                            visible: !isUser && !isSystem && !messageDelegate.isEditing && mainChatArea.session.supportsRegeneration
+                                                            visible: !isUser && !isSystem && !messageDelegate.isEditing && mainChatArea.session.supportsRegeneration && (!mainChatArea.session.isBusy || mainChatArea.session.taskOutcome === "Negative" || mainChatArea.session.taskOutcome === "Hung")
                                                             width: 24
                                                             height: 24
                                                             flat: true

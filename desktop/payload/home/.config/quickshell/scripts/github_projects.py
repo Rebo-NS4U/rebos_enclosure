@@ -73,13 +73,28 @@ def remember(path):
     os.replace(temporary.name, target)
 
 
+def desktop_checkout(home):
+    """Resolve copied installations without treating installed files as a checkout."""
+    linked = status.linked_checkout(home)
+    if linked:
+        return linked
+    for candidate in (home / 'code/rebos_enclosure', home / 'rebos_enclosure'):
+        try:
+            path, name = checkout(str(candidate))
+            if name == 'Rebo-NS4U/rebos_enclosure':
+                return path
+        except (OSError, ValueError, subprocess.SubprocessError):
+            continue
+    return None
+
+
 def catalog():
     home = Path.home()
     candidates = saved_paths()
     code = home / 'code'
     if code.is_dir():
         candidates += [str(p) for p in code.iterdir() if (p / '.git').exists()]
-    linked = status.linked_checkout(home)
+    linked = desktop_checkout(home)
     if linked:
         candidates.append(str(linked))
     projects = []
@@ -295,7 +310,7 @@ def main():
             result = {'ok': True, 'repositories': json.loads(run('gh', 'repo', 'list', '--limit', '100',
                 '--json', 'nameWithOwner,isPrivate,url'))}
         elif args.command == 'inspect':
-            path = args.path or status.linked_checkout(Path.home())
+            path = args.path or desktop_checkout(Path.home())
             result = inspect(str(path)) if path else status.check(Path.home())
         else:
             result = action(json.loads(sys.stdin.readline()))

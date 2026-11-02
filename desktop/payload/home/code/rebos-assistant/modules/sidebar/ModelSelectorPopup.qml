@@ -11,7 +11,20 @@ import qs.modules.components
 Popup {
     id: root
 
+    // Older sidebars use this popup for agents; newer ones also pick an ACP model.
+    property bool agentSelection: true
+    readonly property bool selectingSessionModel: !agentSelection && Ai.activeSession.sessionModels.length > 0
+
     signal modelSelected(string agentName)
+
+    function selectModel(model) {
+        if (selectingSessionModel)
+            Ai.activeSession.setSessionModel(model.id);
+        else
+            Ai.activeSession.setModel(model.name);
+        root.modelSelected(model.name);
+        root.close();
+    }
 
     // Keep clear air from the sidebar edges so the popup never sits flush.
     readonly property int edgeMargin: 16
@@ -80,8 +93,13 @@ Popup {
     function updateFilteredModels() {
         let text = searchInput.text.toLowerCase();
         let allModels = [];
-        for (let i = 0; i < Ai.activeSession.models.length; i++) {
-            allModels.push(Ai.activeSession.models[i]);
+        if (selectingSessionModel) {
+            allModels = Ai.activeSession.sessionModels.map(model => ({
+                id: model.modelId, name: model.name || model.modelId,
+                description: model.description || ""
+            }));
+        } else {
+            allModels = Array.from(Ai.activeSession.models);
         }
 
         if (text.trim() === "") {
@@ -153,9 +171,7 @@ Popup {
                 onAccepted: {
                     if (root.filteredModels.length > 0 && root.selectedIndex >= 0) {
                         let m = root.filteredModels[root.selectedIndex];
-                        Ai.activeSession.setModel(m.name);
-                        root.modelSelected(m.name);
-                        root.close();
+                        root.selectModel(m);
                     }
                 }
 
@@ -366,7 +382,9 @@ Popup {
 
                 // Controlled by ListView's currentIndex via root.selectedIndex
                 property bool isSelected: ListView.isCurrentItem
-                property bool isActiveModel: Ai.activeSession.currentModel && Ai.activeSession.currentModel.id === modelData.id
+                property bool isActiveModel: root.selectingSessionModel
+                    ? Ai.activeSession.currentSessionModelId === modelData.id
+                    : Ai.activeSession.currentModel && Ai.activeSession.currentModel.id === modelData.id
 
                 contentItem: RowLayout {
                     anchors.fill: parent
@@ -543,9 +561,7 @@ Popup {
                 Item {}
 
                 onClicked: {
-                    Ai.activeSession.setModel(modelData.name);
-                    root.modelSelected(modelData.name);
-                    root.close();
+                    root.selectModel(modelData);
                 }
 
                 onHoveredChanged: {
