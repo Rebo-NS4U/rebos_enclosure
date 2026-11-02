@@ -41,7 +41,7 @@ PanelWindow {
         width: Math.min(360, overlay.width - 48)
         height: content.implicitHeight + 28
         x: Math.max(12, overlay.width - width - 24)
-        y: Math.max(12, overlay.height - height - 24)
+        y: Math.max(12, overlay.height - height - 48)
         variant: pointer.containsMouse ? "primary" : "bg"
         backgroundOpacity: 0.96
         radius: Styling.radius(12)
