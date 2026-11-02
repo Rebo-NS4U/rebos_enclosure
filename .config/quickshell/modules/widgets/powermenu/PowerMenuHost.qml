@@ -120,6 +120,11 @@ Item {
             anchors.fill: parent
             clip: true
 
+            Keys.onEscapePressed: event => {
+                root.closeMenu();
+                event.accepted = true;
+            }
+
             StyledRect {
                 id: powerWrapper
                 variant: "popup"
@@ -153,13 +158,7 @@ Item {
             }
         }
 
-        // Escape via Keys on the window content
-        Keys.onPressed: event => {
-            if (event.key === Qt.Key_Escape) {
-                root.closeMenu();
-                event.accepted = true;
-            }
-        }
+
     }
 
     Component.onCompleted: {

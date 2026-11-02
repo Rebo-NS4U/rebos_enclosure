@@ -15,6 +15,27 @@ import greeter_sync
 
 
 class GreeterSyncTests(unittest.TestCase):
+    def test_legacy_watchers_stop_before_replacement_starts(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary)
+            units = home / '.config/systemd/user'
+            units.mkdir(parents=True)
+            legacy = ('rebos-greeter-sync.path', 'rebos-greeter-sync.service')
+            for name in legacy:
+                (units / name).touch()
+            with patch.object(greeter_sync.os, 'access', return_value=True), \
+                    patch.object(greeter_sync, 'Path') as path, \
+                    patch.object(greeter_sync.subprocess, 'run') as run:
+                path.return_value.is_dir.return_value = True
+                greeter_sync.configure(home)
+            commands = [call.args[0] for call in run.call_args_list]
+            replacement = commands.index(['systemctl', '--user', 'enable', '--now',
+                                          'regreet-sync.path', 'regreet-sync.timer'])
+            for name in legacy:
+                action = ['disable', '--now'] if name.endswith('.path') else ['stop']
+                self.assertLess(commands.index(['systemctl', '--user', *action, name]),
+                                replacement)
+
     def test_wallpaper_and_color_changes(self):
         script = runpy.run_path(str(ROOT / 'payload/home/.local/bin/regreet-sync'))
         with tempfile.TemporaryDirectory() as temporary:

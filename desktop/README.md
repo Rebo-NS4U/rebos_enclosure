@@ -251,6 +251,8 @@ update may request administrator approval to grant the desktop user ownership of
 `/var/lib/rebos-greeter/theme` only. It does not restart greetd or the desktop.
 The CSS template and sync units are managed code refreshed by updates; wallpaper
 and color preferences remain preserved. Animated wallpapers use a still frame.
+Setup disables the legacy `rebos-greeter-sync.path` watcher and stops its service
+before enabling the replacement, so both exporters cannot compete.
 
 ThinkPad Fan Control is available from the app launcher. It shows live fan mode and RPM, with Stop fans and Automatic controls; changes require administrator approval.
 
