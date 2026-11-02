@@ -302,7 +302,7 @@ limit; wait for the reset reported by OpenRouter.
 ### Google Gemini backend
 
 Choose Backend → Google Gemini for the pinned native Gemini CLI ACP adapter.
-It starts Gemini Flash with `--approval-mode default`, opens a dedicated chat,
+It starts `gemini-3.5-flash-lite` with `--approval-mode default`, opens a dedicated chat,
 and uses the normal permission prompts. Node.js and npm/npx are already part of
 the assistant package requirements. The native CLI package is
 `@google/gemini-cli@0.66.0` and is downloaded by npx on first launch.
@@ -322,3 +322,9 @@ No key is written to repository files or sent in the ACP handshake. Dweebo's
 Gemini CLI login state is isolated under `~/.local/share/dweebo/google`.
 Google API quotas and billing depend on the key's project; this integration
 does not enable billing or change the project settings.
+
+Dweebo's Google launcher makes one attempt per request and disables automatic
+plan-model routing. Provider overload and quota errors should surface instead of
+being hidden behind Gemini CLI's default ten-attempt retry loop. The lighter
+default model avoids depending on the moving `flash` alias; other available
+models can still be chosen through the model selector.

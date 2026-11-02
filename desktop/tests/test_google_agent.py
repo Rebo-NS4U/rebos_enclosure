@@ -23,6 +23,10 @@ class GoogleAgentTest(unittest.TestCase):
                 self.assertEqual(env['GEMINI_API_KEY'], 'test-only')
                 self.assertEqual(env['GEMINI_CLI_HOME'], temporary + '/data/dweebo/google')
                 self.assertEqual(env['GEMINI_TELEMETRY_ENABLED'], 'false')
+                settings = json.loads(Path(env['GEMINI_CLI_SYSTEM_SETTINGS_PATH']).read_text())
+                self.assertEqual(settings['general']['maxAttempts'], 1)
+                self.assertFalse(settings['general']['retryFetchErrors'])
+                self.assertFalse(settings['general']['plan']['modelRouting'])
 
     def test_file_permissions_missing_key_and_rotation(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -68,7 +72,7 @@ class GoogleAgentTest(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             data = json.loads(result.stdout)
             self.assertTrue(data['keyPresent'])
-            self.assertEqual(data['args'], ['-y', agent.GEMINI_PACKAGE, '--acp', '--model', 'flash', '--approval-mode', 'default'])
+            self.assertEqual(data['args'], ['-y', agent.GEMINI_PACKAGE, '--acp', '--model', agent.GOOGLE_MODEL, '--approval-mode', 'default'])
             self.assertNotIn(b'test-only', result.stdout)
             self.assertNotIn('--yolo', data['args'])
 

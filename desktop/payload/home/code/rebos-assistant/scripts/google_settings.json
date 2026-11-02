@@ -1,0 +1,9 @@
+{
+  "general": {
+    "maxAttempts": 1,
+    "retryFetchErrors": false,
+    "plan": {
+      "modelRouting": false
+    }
+  }
+}

@@ -2592,7 +2592,7 @@ Item {
             MenuItem {
                 id: choice_google
                 property string agentId: "google"
-                property string subtitle: "Gemini Flash · Google API key"
+                property string subtitle: "Gemini Flash Lite · Google API key"
                 property bool free: false
                 readonly property bool selected: Ai.activeSession.currentAgentId === agentId
                 text: "Google Gemini"

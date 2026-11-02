@@ -252,7 +252,7 @@ Scope {
         },
         {
             id: "google", name: "Google Gemini",
-            description: "Gemini Flash through Google's native ACP agent",
+            description: "Gemini Flash Lite through Google's native ACP agent",
             icon: Qt.resolvedUrl("../../assets/aiproviders/google.svg"),
             command: ["sh", "-lc", "exec python3 \"$HOME/code/rebos-assistant/scripts/google_agent.py\""],
             authMethod: "gemini-api-key",

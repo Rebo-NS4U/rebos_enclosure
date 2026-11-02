@@ -57,9 +57,12 @@ ShellRoot {
             return true;
         }
         function backendErrors(): string {
-            return JSON.stringify(Ai.sessions.filter(session => session.currentAgentId.startsWith("free-")).map(session => ({
+            return JSON.stringify(Ai.sessions.filter(session => (session.currentAgentId.startsWith("free-") || session.currentAgentId === "google")).map(session => ({
                 channel: session.channelId, agent: session.currentAgentId, error: session.lastError,
-                stderr: session.agentStderrTail.replace(/sk-[A-Za-z0-9_-]+/g, "[redacted]")
+                connected: session.sessionReady, busy: session.isBusy,
+                pendingMethods: Object.values(session.pendingRpc).map(request => request.method),
+                permissions: Object.keys(session.pendingPermissions).length, questions: session.questionRequests.length,
+                stderr: session.agentStderrTail.replace(/(?:sk-[A-Za-z0-9_-]+|AIza[A-Za-z0-9_-]+)/g, "[redacted]")
             })));
         }
         function releaseIdle(): string {
