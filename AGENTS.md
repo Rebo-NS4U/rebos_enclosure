@@ -1,6 +1,6 @@
 # Enclosure development
 
-The repository-first, tested automatic commit/push workflow applies to every GitHub project handled by this assistant, not only Enclosure. The assistant sends this policy to new and restored backend conversations; these instructions add the Enclosure-specific mapping below. Create releases when requested.
+The repository-first, tested automatic local-commit workflow applies to every GitHub project handled by this assistant, not only Enclosure. The assistant sends this policy to new and restored backend conversations; these instructions add the Enclosure-specific mapping below. Create releases when requested.
 
 Work in this repository first and apply the task's changes to installed files for verification. If a live edit is necessary first, bring its focused diff into the repository during the same task. Preserve unrelated changes and portable installer substitutions; do not refresh the entire desktop snapshot for a small edit.
 
@@ -22,4 +22,4 @@ Check `desktop/scripts/snapshot.py` and `desktop/payload/manifest.json` when add
 
 Ship portable source and defaults only. Exclude credentials, account files, personal settings/history, caches, downloaded models and build artifacts. Preserve explicit `@HOME@` substitutions and existing privacy filtering.
 
-Verify both repository behavior and applicable installed behavior. The user authorizes committing and pushing tested task changes automatically to the verified existing remote; use explicit paths/hunks, respect branch policy and never force-push. If the remote advanced, reconcile without overwriting others' work. Report the pushed commit and any verification limits. Do not restart active desktop services without applicable user authorization.
+Verify both repository behavior and applicable installed behavior. The user authorizes committing tested task changes locally automatically; do not push unless explicitly requested by the user or initiated with the Push button in GitHub Settings; use explicit paths/hunks, respect branch policy and never force-push. If the remote advanced, reconcile without overwriting others' work. Report the local commit, whether it remains unpushed, and any verification limits. Do not restart active desktop services without applicable user authorization.

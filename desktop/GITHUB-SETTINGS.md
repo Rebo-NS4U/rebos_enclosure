@@ -70,3 +70,20 @@ The GitHub CLI is included in the desktop runtime packages. Without it, public
 status checks and HTTPS clones still work; account browsing and PR creation need
 `gh`. Tests in `desktop/tests/test_github_projects.py` use temporary repositories
 for write operations, with mocked GitHub publishing.
+
+## Daily workflow
+
+Project selection, sync status and **Push to GitHub** stay visible. Project setup,
+branches, file staging, pull requests, and version/history details are collapsed
+until opened. Action results appear near the Push controls.
+
+The assistant automatically commits tested, task-scoped changes locally. It does
+not push automatically. Publish with the prominent **Push** button, or explicitly
+ask the assistant to push. The button shows the number of outgoing commits when
+the branch has an upstream; its review dialog lists up to eight outgoing commits.
+These counts use the locally cached upstream ref; **Fetch origin** under
+**Branches & sync** refreshes that ref. Pushing never includes uncommitted files.
+
+The commit-only policy is saved in workspace/repository instructions and sent to
+new or resumed assistant conversations. Existing conversations receive the new
+policy version on their next prompt, without restarting a backend.

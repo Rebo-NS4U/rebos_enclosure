@@ -146,6 +146,11 @@ Item {
                         }
                     }
                 }
+            }
+            GithubSection {
+                objectName: "github-history-section"
+                title: "History & version details"
+                summary: "Commit IDs, authors, local changes and incoming updates."
                 SettingsGroup {
                     title: "Repository & installation"
                     Detail { text: "Repository: " + root.repository.replace("https://github.com/", "") }
@@ -157,94 +162,94 @@ Item {
                         text: root.result.details_error || ""
                     }
                 }
-            }
-            Repeater {
-                model: [
-                    { title: "Local version", sha: root.result.local || "", info: root.result.local_commit || {} },
-                    { title: "Latest on GitHub", sha: root.result.remote || "", info: root.result.remote_commit || {} }
-                ]
-                delegate: SettingsGroup {
-                    id: revision
-                    required property var modelData
-                    title: modelData.title
-                    StyledText {
-                        Layout.fillWidth: true
-                        text: revision.modelData.info.title || (revision.modelData.sha ? "Commit details unavailable" : "Version not identified")
-                        font.bold: true
-                        wrapMode: Text.Wrap
-                    }
-                    Detail { text: "Commit: " + (revision.modelData.sha || "Unknown") }
-                    Detail {
-                        visible: !!revision.modelData.info.author || !!revision.modelData.info.date
-                        text: (revision.modelData.info.author || "Author unavailable") + "   •   " + root.dateLabel(revision.modelData.info.date)
-                    }
-                    SettingsButton {
-                        text: "View commit on GitHub"
-                        visible: !!revision.modelData.sha
-                        onClicked: Qt.openUrlExternally(root.repository + "/commit/" + revision.modelData.sha)
-                    }
-                }
-            }
-            SettingsGroup {
-                title: "Local changes"
-                description: root.result.dirty
-                    ? "Local edits are separate from commit sync status. Preserve them before applying an update."
-                    : "Changes made after installing or committing your desktop."
-                Detail {
-                    text: root.result.change_count !== undefined && root.result.change_count !== null
-                        ? root.result.change_count + " changed or untracked entries in this checkout"
-                        : root.result.dirty ? "Local changes were recorded when this copy was installed."
-                        : root.result.local ? "No local changes recorded for this installation." : "Local changes have not been verified."
-                }
                 Repeater {
-                    model: root.result.changes || []
-                    delegate: Detail {
+                    model: [
+                        { title: "Local version", sha: root.result.local || "", info: root.result.local_commit || {} },
+                        { title: "Latest on GitHub", sha: root.result.remote || "", info: root.result.remote_commit || {} }
+                    ]
+                    delegate: SettingsGroup {
+                        id: revision
                         required property var modelData
-                        text: modelData.kind + " · " + modelData.path
-                    }
-                }
-                Detail {
-                    visible: (root.result.change_count || 0) > (root.result.changes || []).length
-                    text: "Showing the first " + (root.result.changes || []).length + " entries."
-                }
-            }
-            SettingsGroup {
-                visible: (root.result.incoming || []).length > 0
-                title: "Recent incoming commits"
-                description: "Up to five recent commits from the GitHub comparison, newest first."
-                Repeater {
-                    model: root.result.incoming || []
-                    delegate: ColumnLayout {
-                        id: incoming
-                        required property var modelData
-                        Layout.fillWidth: true
+                        title: modelData.title
                         StyledText {
                             Layout.fillWidth: true
-                            text: incoming.modelData.title
+                            text: revision.modelData.info.title || (revision.modelData.sha ? "Commit details unavailable" : "Version not identified")
                             font.bold: true
                             wrapMode: Text.Wrap
                         }
+                        Detail { text: "Commit: " + (revision.modelData.sha || "Unknown") }
                         Detail {
-                            text: incoming.modelData.sha.slice(0, 12) + " · " + incoming.modelData.author
-                                + " · " + root.dateLabel(incoming.modelData.date)
+                            visible: !!revision.modelData.info.author || !!revision.modelData.info.date
+                            text: (revision.modelData.info.author || "Author unavailable") + "   •   " + root.dateLabel(revision.modelData.info.date)
                         }
                         SettingsButton {
-                            text: "View commit"
-                            onClicked: Qt.openUrlExternally(root.repository + "/commit/" + incoming.modelData.sha)
+                            text: "View commit on GitHub"
+                            visible: !!revision.modelData.sha
+                            onClicked: Qt.openUrlExternally(root.repository + "/commit/" + revision.modelData.sha)
                         }
                     }
                 }
-            }
-            SettingsGroup {
-                visible: (root.result.history || []).length > 0
-                title: "Local commit history"
-                description: "Eight most recent commits on the selected branch."
-                Repeater {
-                    model: root.result.history || []
-                    delegate: Detail {
-                        required property var modelData
-                        text: modelData.sha.slice(0, 12) + " · " + modelData.title + "\n"
-                            + modelData.author + " · " + root.dateLabel(modelData.date)
+                SettingsGroup {
+                    title: "Local changes"
+                    description: root.result.dirty
+                        ? "Local edits are separate from commit sync status. Preserve them before applying an update."
+                        : "Changes made after installing or committing your desktop."
+                    Detail {
+                        text: root.result.change_count !== undefined && root.result.change_count !== null
+                            ? root.result.change_count + " changed or untracked entries in this checkout"
+                            : root.result.dirty ? "Local changes were recorded when this copy was installed."
+                            : root.result.local ? "No local changes recorded for this installation." : "Local changes have not been verified."
+                    }
+                    Repeater {
+                        model: root.result.changes || []
+                        delegate: Detail {
+                            required property var modelData
+                            text: modelData.kind + " · " + modelData.path
+                        }
+                    }
+                    Detail {
+                        visible: (root.result.change_count || 0) > (root.result.changes || []).length
+                        text: "Showing the first " + (root.result.changes || []).length + " entries."
+                    }
+                }
+                SettingsGroup {
+                    visible: (root.result.incoming || []).length > 0
+                    title: "Recent incoming commits"
+                    description: "Up to five recent commits from the GitHub comparison, newest first."
+                    Repeater {
+                        model: root.result.incoming || []
+                        delegate: ColumnLayout {
+                            id: incoming
+                            required property var modelData
+                            Layout.fillWidth: true
+                            StyledText {
+                                Layout.fillWidth: true
+                                text: incoming.modelData.title
+                                font.bold: true
+                                wrapMode: Text.Wrap
+                            }
+                            Detail {
+                                text: incoming.modelData.sha.slice(0, 12) + " · " + incoming.modelData.author
+                                    + " · " + root.dateLabel(incoming.modelData.date)
+                            }
+                            SettingsButton {
+                                text: "View commit"
+                                onClicked: Qt.openUrlExternally(root.repository + "/commit/" + incoming.modelData.sha)
+                            }
+                        }
+                    }
+                }
+                SettingsGroup {
+                    visible: (root.result.history || []).length > 0
+                    title: "Local commit history"
+                    description: "Eight most recent commits on the selected branch."
+                    Repeater {
+                        model: root.result.history || []
+                        delegate: Detail {
+                            required property var modelData
+                            text: modelData.sha.slice(0, 12) + " · " + modelData.title + "\n"
+                                + modelData.author + " · " + root.dateLabel(modelData.date)
+                        }
                     }
                 }
             }

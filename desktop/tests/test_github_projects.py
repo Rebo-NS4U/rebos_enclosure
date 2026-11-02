@@ -87,6 +87,21 @@ class ProjectTests(unittest.TestCase):
             self.act('pull')
         self.assertEqual((self.repo / 'incoming.txt').read_text(), 'incoming')
 
+    def test_push_summary_uses_tracked_branch_and_lists_unpublished_commits(self):
+        self.prepare_remote()
+        self.git('fetch', 'origin')
+        (self.repo / 'local.txt').write_text('local')
+        self.git('add', 'local.txt')
+        self.git('commit', '-qm', 'Ready to publish')
+        with patch.object(projects, 'checkout', return_value=(self.repo, 'example/project')), \
+             patch.object(projects, 'api', side_effect=OSError('offline')):
+            result = projects.inspect(str(self.repo))
+        self.assertEqual(result['upstream'], 'origin/main')
+        self.assertEqual(result['upstream_ahead'], 1)
+        self.assertEqual(result['upstream_behind'], 1)
+        self.assertEqual(result['outgoing_commits'][0]['title'], 'Ready to publish')
+        self.assertEqual(result['outgoing_commits'][0]['sha'], self.git('rev-parse', 'HEAD'))
+
     def test_divergent_pull_preserves_local_commits(self):
         self.prepare_remote()
         (self.repo / 'local.txt').write_text('local')

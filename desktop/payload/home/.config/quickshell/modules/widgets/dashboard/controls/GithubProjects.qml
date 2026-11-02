@@ -105,8 +105,8 @@ ColumnLayout {
     component Field: SettingsTextField { Layout.fillWidth: true }
 
     SettingsGroup {
-        title: "Projects"
-        description: "Manage local checkouts and access repositories through your GitHub CLI login."
+        title: "Project"
+        description: "Choose the project you want to manage."
         SettingsComboBox {
             Layout.fillWidth: true
             model: root.projects
@@ -116,14 +116,48 @@ ColumnLayout {
             onActivated: root.projectSelected(root.projects[currentIndex].path)
         }
         Caption { text: root.activePath ? "Local folder: " + root.activePath : "Select or add a local checkout to use Git controls." }
+    }
+    ColumnLayout { id: overviewSlot; Layout.fillWidth: true; spacing: 12 }
+    SettingsGroup {
+        title: "Push to GitHub"
+        description: "The assistant commits tested changes automatically. Push here when you are ready to publish them."
+        Caption {
+            text: "Branch: " + (root.project.branch || "Unknown") + "   •   "
+                + (root.project.upstream || "First push will set the upstream")
+        }
+        Caption {
+            text: root.project.upstream_ahead !== undefined && root.project.upstream_ahead !== null
+                ? root.project.upstream_ahead + " commits waiting to push · " + (root.project.upstream_behind || 0) + " commits behind upstream"
+                : "Push publishes the current branch to origin."
+        }
+        Flow {
+            Layout.fillWidth: true; spacing: 8
+            SettingsButton {
+                objectName: "github-push-button"
+                text: root.project.upstream_ahead > 0 ? "Push " + root.project.upstream_ahead + " commit" + (root.project.upstream_ahead === 1 ? "" : "s") + "…" : "Push branch…"
+                enabled: root.canEdit && !!root.project.local && root.project.branch !== "Detached HEAD"
+                onClicked: root.act("push", {}, true)
+            }
+            SettingsButton { text: "Open folder"; enabled: !!root.activePath; onClicked: Qt.openUrlExternally("file://" + root.activePath) }
+            SettingsButton { text: "Open terminal"; enabled: !!root.activePath; onClicked: Quickshell.execDetached(["kitty", "--directory", root.activePath]) }
+        }
+        Caption { visible: !!root.project.dirty; text: "Uncommitted file changes are not included in a push." }
+    }
+    SettingsGroup {
+        visible: worker.running || root.feedback !== ""
+        title: "Action result"
+        Caption { text: worker.running ? "Working on " + root.activePath + "…" : root.feedback; color: root.failed ? Colors.error : Colors.overSurfaceVariant }
+    }
+    GithubSection {
+        objectName: "github-projects-section"
+        title: "Add or clone projects"
+        summary: "Connect another local folder or browse your GitHub repositories."
         Field { id: localPath; placeholderText: "Existing project folder, e.g. ~/code/project"; enabled: !root.busy }
         Flow {
             Layout.fillWidth: true; spacing: 8
             SettingsButton { text: "Add local project"; enabled: !root.busy && localPath.text.trim() !== ""; onClicked: { root.pending = {action: "add"}; root.act("add", {path: localPath.text}, false); } }
             SettingsButton { text: "Refresh projects"; enabled: !root.busy; onClicked: root.start("catalog") }
             SettingsButton { text: "Browse my GitHub projects"; enabled: !root.busy; onClicked: root.start("remote") }
-            SettingsButton { text: "Open folder"; enabled: !!root.activePath; onClicked: Qt.openUrlExternally("file://" + root.activePath) }
-            SettingsButton { text: "Open terminal"; enabled: !!root.activePath; onClicked: Quickshell.execDetached(["kitty", "--directory", root.activePath]) }
         }
         SettingsComboBox {
             Layout.fillWidth: true
@@ -156,9 +190,10 @@ ColumnLayout {
             SettingsButton { text: "GitHub login in terminal"; enabled: !root.busy; onClicked: Quickshell.execDetached(["kitty", "gh", "auth", "login", "--web", "--hostname", "github.com"]) }
         }
     }
-    ColumnLayout { id: overviewSlot; Layout.fillWidth: true; spacing: 12 }
-    SettingsGroup {
-        title: "Git controls"
+    GithubSection {
+        objectName: "github-branches-section"
+        title: "Branches & sync"
+        summary: "Fetch, pull, create or switch branches."
         description: "Actions apply to the selected local project. Pull requires a clean checkout and fast-forwards only."
         enabled: root.canEdit
         Caption { text: "Branch: " + (root.project.branch || "Unknown") + "   •   Tracks: " + (root.project.upstream || "No upstream") }
@@ -166,7 +201,6 @@ ColumnLayout {
             Layout.fillWidth: true; spacing: 8
             SettingsButton { text: "Fetch origin"; onClicked: root.act("fetch", {}, false) }
             SettingsButton { text: "Pull current branch"; onClicked: root.act("pull", {}, false) }
-            SettingsButton { text: "Push current branch"; onClicked: root.act("push", {}, true) }
             SettingsButton { text: "Issues"; onClicked: Qt.openUrlExternally(root.project.repository + "/issues") }
             SettingsButton { text: "Pull requests"; onClicked: Qt.openUrlExternally(root.project.repository + "/pulls") }
         }
@@ -180,8 +214,10 @@ ColumnLayout {
         Field { id: newBranch; placeholderText: "New branch name" }
         SettingsButton { text: "Create and switch branch"; enabled: newBranch.text.trim() !== ""; onClicked: root.act("branch", {branch: newBranch.text}, false) }
     }
-    SettingsGroup {
-        title: "Stage & commit"
+    GithubSection {
+        objectName: "github-files-section"
+        title: "Files & commits"
+        summary: (root.project.change_count ?? 0) + " changed entries · " + (root.project.staged || []).length + " staged files"
         description: "Select individual files. Commit includes only the selected staged files; other staged work stays in place."
         enabled: root.canEdit
         Caption { text: root.selectedFiles.length + " selected   •   " + (root.project.staged || []).length + " staged" }
@@ -215,8 +251,10 @@ ColumnLayout {
         Field { id: commitMessage; placeholderText: "Commit message" }
         SettingsButton { text: "Commit selected staged files…"; enabled: root.selectedFiles.length > 0 && commitMessage.text.trim() !== ""; onClicked: root.act("commit", {files: root.selectedFiles, message: commitMessage.text}, true) }
     }
-    SettingsGroup {
-        title: "Create pull request"
+    GithubSection {
+        objectName: "github-pr-section"
+        title: "Pull requests"
+        summary: "Create a draft or ready pull request for your pushed branch."
         description: "Push your branch first, then create a pull request against the chosen base."
         enabled: root.canEdit
         Field { id: prBase; placeholderText: "Base branch"; text: root.project.default_branch || "" }
@@ -237,13 +275,9 @@ ColumnLayout {
         CheckBox { id: draft; text: "Create as draft"; checked: true; palette.windowText: Colors.overSurface }
         SettingsButton { text: "Create pull request…"; enabled: prTitle.text.trim() !== "" && prBase.text.trim() !== ""; onClicked: root.act("pr", {title: prTitle.text, body: prBody.text, base: prBase.text, draft: draft.checked}, true) }
     }
-    SettingsGroup {
-        visible: worker.running || root.feedback !== ""
-        title: "Action result"
-        Caption { text: worker.running ? "Working on " + root.activePath + "…" : root.feedback; color: root.failed ? Colors.error : Colors.overSurfaceVariant }
-    }
     Dialog {
         id: confirmation
+        objectName: "github-action-confirmation"
         parent: Overlay.overlay
         modal: true
         title: "Review GitHub action"
@@ -256,6 +290,10 @@ ColumnLayout {
             Caption { visible: !!root.pending.message; text: "Commit message: " + (root.pending.message || "") }
             Caption { visible: !!root.pending.files; text: "Files (" + (root.pending.files || []).length + "):\n" + (root.pending.files || []).slice(0, 12).join("\n")
                 + ((root.pending.files || []).length > 12 ? "\n… and " + (root.pending.files.length - 12) + " more selected files" : "") }
+            Caption {
+                visible: root.pending.action === "push" && (root.project.outgoing_commits || []).length > 0
+                text: "Commits waiting to publish:\n" + (root.project.outgoing_commits || []).map(c => c.sha.slice(0, 8) + " · " + c.title).join("\n")
+            }
             Caption { visible: root.pending.action === "push"; text: "Publishes commits on this branch to origin. Uncommitted edits are not included." }
             Caption { visible: root.pending.action === "pr"; text: "Title: " + (root.pending.title || "") + "\nBase: " + (root.pending.base || "") + "\nDraft: " + (root.pending.draft ? "Yes" : "No") + "\n" + (root.pending.body || "") }
             RowLayout {

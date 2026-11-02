@@ -104,7 +104,8 @@ as a launcher entry for opening desktop configuration folders.
 
 The assistant's GitHub workflow applies across projects and backends: edit in the
 owning repository, keep applicable installed and installer files synchronized,
-then commit and push tested task changes. It preserves unrelated work and normal
+then commit tested task changes locally. Push only when explicitly requested or
+initiated with the Push button in GitHub Settings. It preserves unrelated work and normal
 approval boundaries. The policy is delivered once to each backend conversation,
 including older restored chats, and persists across reconnects. Releases are
 created when requested.

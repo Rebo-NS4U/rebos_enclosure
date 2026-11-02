@@ -150,6 +150,17 @@ def inspect(value):
         result['upstream'] = git(path, 'rev-parse', '--abbrev-ref', '@{upstream}')
     except ValueError:
         result['upstream'] = ''
+    result.update(upstream_ahead=None, upstream_behind=None, outgoing_commits=[])
+    if result['upstream']:
+        try:
+            behind, ahead = map(int, git(path, 'rev-list', '--left-right', '--count', '@{upstream}...HEAD').split())
+            result.update(upstream_ahead=ahead, upstream_behind=behind)
+            for line in git(path, 'log', '-8', '--format=%H%x00%s', '@{upstream}..HEAD').splitlines():
+                fields = line.split('\0', 1)
+                if len(fields) == 2:
+                    result['outgoing_commits'].append({'sha': fields[0], 'title': fields[1]})
+        except ValueError:
+            pass  # The branch may have changed while inspecting it.
     result['ok'] = True
     return result
 

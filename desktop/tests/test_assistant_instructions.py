@@ -46,19 +46,20 @@ ShellRoot {
             let github = policy(initial);
             check(initial[0].text.startsWith("Standing preferences (context only"), "guidance is explicitly marked as context");
             check(initial[initial.length - 1].text === "Edit a GitHub project", "user task follows standing preferences");
-            check(github && github.text.includes("all GitHub-related project work") && github.text.includes("automatically committing and pushing tested task-scoped changes"), "policy covers all GitHub projects");
+            check(github && github.text.includes("all GitHub-related project work") && github.text.includes("automatically committing tested task-scoped changes locally"), "policy covers all GitHub projects");
+            check(github.text.includes("Do not push automatically") && github.text.includes("Push button in GitHub Settings") && !github.text.includes("automatically committing and pushing"), "commits stay local until explicitly published");
             check(github.text.includes("sandbox_permissions=require_escalated") && github.text.includes("Never log out, delete credentials"), "network approval and credential guidance reaches the agent");
             check(github.text.includes("Dweebo enables network access") && github.text.includes("Host or administrator restrictions"), "guidance reflects configured access and managed limits");
             check(github.text.includes("preserve unrelated work") && github.text.includes("Never force-push"), "preserves work and approvals");
             check(send("Follow up").length === 1, "policy is sent only once per conversation");
             let chat = session.chatEnvelope();
             let state = session.bridgeState();
-            check(chat.instructionGithubSessionId === "github-session:network-v3" && state.instructionGithubSessionId === "github-session:network-v3", "delivery persists in chat and bridge state");
-            session.instructionGithubSessionId = "github-session"; // Previous policy version.
+            check(chat.instructionGithubSessionId === "github-session:commit-only-v4" && state.instructionGithubSessionId === "github-session:commit-only-v4", "delivery persists in chat and bridge state");
+            session.instructionGithubSessionId = "github-session:network-v3"; // Previous policy version.
             session.syntheticTransportWorks = false;
             session.queuedPrompt = {text: "Offline", attachments: []};
             session.dispatchQueuedPrompt();
-            check(session.instructionGithubSessionId === "github-session", "failed transport does not consume policy delivery");
+            check(session.instructionGithubSessionId === "github-session:network-v3", "failed transport does not consume policy delivery");
             session.syntheticTransportWorks = true;
             let legacy = send("Continue an older chat");
             check(legacy.length === 2 && policy(legacy), "older chats receive only the new policy");
