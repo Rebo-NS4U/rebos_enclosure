@@ -31,18 +31,19 @@ def ending_chapter(name):
 def next_offer_start(duration, chapters=()):
     if duration <= 0:
         return None
-    # Make the button available during the ending stretch, not only in the
-    # final minute and a half. Keep short videos from showing it immediately.
-    start = duration - min(300, max(5, duration * .20), duration * .30)
+    # Prefer a named ending chapter; otherwise use the final three minutes.
+    # Keep short clips from offering the next video immediately.
+    start = duration - min(180, duration * .20)
+    endings = []
     for chapter in chapters:
         try:
             position = float(chapter['start_time'])
             title = chapter.get('title') or (chapter.get('tags') or {}).get('title', '')
             if ending_chapter(title) and 0 <= duration - position <= min(600, duration * .25):
-                start = min(start, position)
+                endings.append(position)
         except (KeyError, TypeError, ValueError):
             continue
-    return start
+    return min(endings) if endings else start
 
 
 def send(message):
@@ -288,7 +289,7 @@ class Engine(app.Browser):
             return
         planned = next_offer_start(self.duration, getattr(self.links, 'chapters', ()))
         # Resolve and validate ahead of the offer, without switching players.
-        if planned is None or self.position < max(0, planned - min(120, self.duration * .1)):
+        if planned is None or self.position < max(0, planned - 30):
             return
         key = (show['id'], episodes[index + 1], self.settings['mode'], self.settings['quality'])
         now = time.monotonic()

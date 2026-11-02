@@ -91,7 +91,9 @@ do not treat detection success as evidence of translation accuracy.
 
 Series playback queues continue across released seasons, keep specials separate,
 and enforce the selected resolution limit. Next-episode preparation buffers a
-bounded startup prefix; VLC receives chapter names for credits detection and
+bounded startup prefix 30 seconds before the next-episode prompt, which appears
+at a named credits chapter or falls back to the final three minutes (the final
+fifth for short clips). VLC receives chapter names for credits detection and
 uses MP4 demuxing and network buffering options for network playback.
 
 The package shortcuts share one menu for official/AUR installation, removal,

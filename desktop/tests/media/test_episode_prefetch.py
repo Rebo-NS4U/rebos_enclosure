@@ -12,7 +12,7 @@ class EpisodePrefetchTests(unittest.TestCase):
         self.engine.file_loaded = True
         self.engine.paused = self.engine.next_episode_paused = self.engine.next_requested = False
         self.engine.duration = 2738.945
-        self.engine.position = 2524.375
+        self.engine.position = 2614.375
         self.engine.links = SimpleNamespace(chapters=[dict(start_time='2644.375', tags={'title': 'Credits'})])
         self.engine.settings = dict(mode='dub', quality='1080p', auto_next=False)
         self.engine.prefetch_key = None
@@ -23,7 +23,7 @@ class EpisodePrefetchTests(unittest.TestCase):
         self.clock = patch.object(menu_backend.time, 'monotonic', return_value=1000).start()
         self.addCleanup(patch.stopall)
 
-    def test_prepares_two_minutes_before_credits_and_foreground_reuses_result(self):
+    def test_prepares_thirty_seconds_before_credits_and_foreground_reuses_result(self):
         self.engine.position -= .01
         self.engine.prefetch_next()
         self.engine.background.assert_not_called()
@@ -102,9 +102,23 @@ class EpisodePrefetchTests(unittest.TestCase):
         self.engine.prefetch_next()
         self.engine.background.assert_not_called()
 
+    def test_fallback_preloads_thirty_seconds_before_final_three_minutes(self):
+        self.engine.links.chapters = []
+        self.engine.duration = 1200
+        self.engine.position = 989.99
+        self.engine.prefetch_next()
+        self.engine.background.assert_not_called()
+        self.engine.position = 990
+        self.engine.prefetch_next()
+        self.engine.background.assert_called_once()
+
+    def test_credits_schedule_takes_precedence_over_fallback(self):
+        self.assertEqual(menu_backend.next_offer_start(1200, [dict(start_time=1100, title='Credits')]), 1100)
+        self.assertEqual(menu_backend.next_offer_start(1200, [dict(start_time=950, title='Ending')]), 950)
+
     def test_intro_and_malformed_chapters_do_not_move_the_offer_earlier(self):
         self.assertEqual(menu_backend.next_offer_start(1200, [dict(start_time=60, title='Opening Credits'),
-                        dict(start_time='bad', title='Credits')]), 1110)
+                        dict(start_time='bad', title='Credits')]), 1020)
 
 
 if __name__ == '__main__':

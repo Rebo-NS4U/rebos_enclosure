@@ -34,11 +34,11 @@ class NextEpisodeTests(unittest.TestCase):
         self.engine.publish_next_episode()
         return self.engine.last_next_offer['available']
 
-    def test_offer_starts_during_final_fifth_of_episode(self):
+    def test_offer_starts_during_final_three_minutes(self):
         self.assertFalse(self.offered())
-        self.engine.position = 959
+        self.engine.position = 1019
         self.assertFalse(self.offered())
-        self.engine.position = 960
+        self.engine.position = 1020
         self.assertTrue(self.offered())
         self.engine.position = 800
         self.assertFalse(self.offered())
