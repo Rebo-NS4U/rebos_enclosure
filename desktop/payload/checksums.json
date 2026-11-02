@@ -993,7 +993,7 @@
   "home/code/rebos-assistant/modules/globals/GlobalStates.qml": "65293ed189717ae4bd31be9b180b7c6bfed8b50660a9504641331a45cbb7b495",
   "home/code/rebos-assistant/modules/services/Ai.qml": "1d61a5304ce028b7572e4e0487d8d9012ae565790abd7e9208988bf30209ff94",
   "home/code/rebos-assistant/modules/services/AiQuestions.js": "a3cc7e2c78e43281cef6f2b54a0863b360714c5b50cd5273060c1f9e70984d8e",
-  "home/code/rebos-assistant/modules/services/AiSession.qml": "f9bbbfa33ce47e81874d06b9ddce8525aa5a08a1798885e01fe2e73063b25b1e",
+  "home/code/rebos-assistant/modules/services/AiSession.qml": "2f4270a54bca180d3ce821090f896a693f90787fa92b53f5ba2d1e24a6497658",
   "home/code/rebos-assistant/modules/services/NiriService.qml": "e03e5648739de31b220b282017adabb884ecdaf70ef05268320c8def10a8555e",
   "home/code/rebos-assistant/modules/services/Notifications.qml": "0599d6dc4642fc0f86f399ddeee011bb296e097c72aa83949d5b4ad085a11d93",
   "home/code/rebos-assistant/modules/services/StateService.qml": "20326df661ecf0896900e539f24f679b031c7b717204f9cc470d4be32ceab073",
@@ -1022,16 +1022,17 @@
   "home/code/rebos-assistant/scripts/ai_plan_usage.py": "0b7309cbaf6f6be1709dec103d0c0ed80ec5214c2ef40cec94004770a12ae02f",
   "home/code/rebos-assistant/scripts/ai_questions.py": "1b9aa4da40e02c8e4893bbaee7e5d09d5b1ce3042f65df0a12bdb7aadb96036f",
   "home/code/rebos-assistant/scripts/codex_workspace.py": "367d68e7b0ce72dc73eee17a42da450e968f69af4cd6bc170f714689df7e744f",
+  "home/code/rebos-assistant/scripts/openrouter_agent.py": "dd5cac35cb4e6c367c8ad8c1681264e98184a6b61be64485947de58c1bcc1652",
   "home/code/rebos-assistant/scripts/test_ai_bridge_environment.py": "367f24cb678c75f9c7874a44c250aa49134a583d04a7360039965219dff2833e",
   "home/code/rebos-assistant/shell.qml": "e6cfc633ab0b0f65de51a940ed200af142099bb7eb462ab6ea628c67d730ba54",
   "home/code/rebos-assistant/version": "1c60df040a80b6d2e3f56442b17d127d8620cd773873e6e1353362f989b1deca",
   "manifest.json": "1034b0e5e8cdffd76d434f9d6813c0d85c275cf5483277dde9ce5ccd5e66bceb",
   "system/greetd/config.toml": "6390cca0856135f2afaf1fb2754b29be4070b130aee8ea4317710690985d4a91",
   "system/greetd/regreet.toml": "073115b21712c02c438b238b0db2ec749b81b4fd25b87be556cf5df0f51f16fb",
+  "system/pam.d/greetd": "5d58e2fc44d6fc98a1fdb0386d2f27750231477fb1763162ca01af6029580a45",
   "system/rebos-greeter/cage-cursor.c": "8b8ffd324e065750f3a8ec5726de6551334dfb407d5a6aca92c10a8f2b770ba4",
   "system/rebos-greeter/layout.c": "e03934c76aa561116eec76ec63d82dc89291e80b41591e1813f7422296c8b986",
   "system/rebos-greeter/theme/background.png": "744fb3fe3ed6ad6f90eb6fe7a676a4ed393e697b73658d071ff11910359ee447",
   "system/rebos-greeter/theme/glass-texture.png": "068bd1e571910aa23296c688523b5e5a8c2333a480fb281eb1be732ed76ca7cf",
-  "system/rebos-greeter/theme/regreet.css": "bb38fc2fa51251a3469cb21a1b7d8b0da3ee129ce05695bb30f447803e070ac5",
-  "system/pam.d/greetd": "5d58e2fc44d6fc98a1fdb0386d2f27750231477fb1763162ca01af6029580a45"
+  "system/rebos-greeter/theme/regreet.css": "bb38fc2fa51251a3469cb21a1b7d8b0da3ee129ce05695bb30f447803e070ac5"
 }

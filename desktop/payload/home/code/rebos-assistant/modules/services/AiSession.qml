@@ -233,6 +233,24 @@ Scope {
             model: "codex"
         },
         {
+            id: "free-code", name: "Free Code (OpenRouter)",
+            description: "Cohere North Mini Code through the Codex backend",
+            icon: Qt.resolvedUrl("../../assets/aiproviders/openrouter.svg"),
+            command: ["sh", "-lc", "exec python3 \"$HOME/code/rebos-assistant/scripts/openrouter_agent.py\" free-code"],
+            authMethod: "",
+            installHint: "Add your OpenRouter key to ~/.config/dweebo/openrouter-api-key (permissions 600).",
+            provider: "acp", api_format: "ACP", model: "free-code"
+        },
+        {
+            id: "free-nemotron", name: "Free Nemotron (OpenRouter)",
+            description: "NVIDIA Nemotron Ultra through the Codex backend",
+            icon: Qt.resolvedUrl("../../assets/aiproviders/openrouter.svg"),
+            command: ["sh", "-lc", "exec python3 \"$HOME/code/rebos-assistant/scripts/openrouter_agent.py\" free-nemotron"],
+            authMethod: "",
+            installHint: "Add your OpenRouter key to ~/.config/dweebo/openrouter-api-key (permissions 600).",
+            provider: "acp", api_format: "ACP", model: "free-nemotron"
+        },
+        {
             id: "distill", name: "Distill",
             description: "Distill with Auto, UltraSave, UltraFast and UltraCode",
             icon: Qt.resolvedUrl("../../assets/aiproviders/openai.svg"),
@@ -894,7 +912,7 @@ Scope {
     }
 
     function chooseAuthMethod(result) {
-        if (isDistill) return ""; // Distill uses its separate ChatGPT OAuth account.
+        if (isDistill || currentAgentId === "free-code" || currentAgentId === "free-nemotron") return ""; // Provider handles its own credentials.
         let methods = result && Array.isArray(result.authMethods) ? result.authMethods : [];
         if (methods.length === 0)
             return "";
