@@ -2,8 +2,20 @@
 
 Settings → GitHub checks the official Enclosure repository's default branch when
 opened. **Check for updates** refreshes the result; **Open GitHub** opens the
-repository. Installed and remote commit IDs and the last check time appear below
-the status. This check does not install updates or change Git refs.
+repository. The panel includes:
+
+- A colored sync status with an explanation and ahead/behind commit counts.
+- Installation type, local branch and GitHub default branch.
+- Full installed and remote commit IDs, titles, authors, dates and commit links.
+- A comparison link when the installed and GitHub revisions differ.
+- A count of changed or untracked entries, with up to 12 paths and change types.
+- Up to five recent incoming commits when GitHub reports a different revision.
+- The date and time of the last completed check.
+
+Local changes describe the whole linked checkout; untracked directories count as
+one entry. For copied installations, the change flag reflects deployment time.
+
+This check does not install updates or change Git refs.
 
 Linked installations read their checkout's revision and report local changes.
 Copied installations record the source revision during deployment. Older copied
