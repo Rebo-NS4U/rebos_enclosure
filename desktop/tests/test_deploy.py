@@ -48,6 +48,23 @@ class DeploymentTests(unittest.TestCase):
         self.assertTrue((config / 'kitty').is_symlink())
         self.assertEqual((config / 'unrelated').read_text(), 'keep')
 
+    def test_copy_records_source_revision_and_restore_removes_record(self):
+        checkout = self.root / 'checkout'
+        (checkout / '.git').mkdir(parents=True)
+        payload = checkout / 'desktop/payload'
+        payload.parent.mkdir()
+        self.payload.rename(payload)
+        self.payload = payload
+        with patch.object(deploy.subprocess, 'check_output', side_effect=[
+                'abc\n', 'https://github.com/Rebo-NS4U/rebos_enclosure.git\n', ' M file']):
+            backup = deploy.install(payload, self.home)
+        record = self.home / '.local/state/rebos-desktop/source.json'
+        self.assertEqual(json.loads(record.read_text()), {
+            'repository': 'https://github.com/Rebo-NS4U/rebos_enclosure',
+            'commit': 'abc', 'dirty': True})
+        deploy.restore(backup)
+        self.assertFalse(record.exists())
+
     def test_fresh_install_restore_and_repeat_backups(self):
         first = deploy.install(self.payload, self.home)
         second = deploy.install(self.payload, self.home)

@@ -8,6 +8,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -111,6 +112,25 @@ def install(payload, home, dry_run=False, cbonsai=None, settings=None, preserve_
     spec.loader.exec_module(personal_bindings)
     personal = personal_bindings.capture(home / '.config', units)
     generated = {}
+    # Copied installations have no .git directory; retain their source revision.
+    checkout = payload.resolve().parent.parent
+    if (checkout / '.git').exists():
+        try:
+            commit = subprocess.check_output(
+                ['git', '-C', str(checkout), 'rev-parse', 'HEAD'],
+                text=True, stderr=subprocess.PIPE, timeout=5).strip()
+            origin = subprocess.check_output(
+                ['git', '-C', str(checkout), 'remote', 'get-url', 'origin'],
+                text=True, stderr=subprocess.PIPE, timeout=5).strip()
+            official = 'https://github.com/Rebo-NS4U/rebos_enclosure'
+            if origin.removesuffix('.git').rstrip('/') in (official, 'git@github.com:Rebo-NS4U/rebos_enclosure'):
+                dirty = bool(subprocess.check_output(
+                    ['git', '-C', str(checkout), 'status', '--porcelain'],
+                    text=True, stderr=subprocess.PIPE, timeout=5).strip())
+                record = {'repository': official, 'commit': commit, 'dirty': dirty}
+                generated['.local/state/rebos-desktop/source.json'] = (json.dumps(record) + '\n', 0o600)
+        except (OSError, subprocess.SubprocessError):
+            pass  # Non-Git payloads remain installable, with an unknown revision.
     if settings is not None:
         from setup import PRIME, validate_plan
         settings = validate_plan(settings)
@@ -119,7 +139,7 @@ def install(payload, home, dry_run=False, cbonsai=None, settings=None, preserve_
         generated['.local/state/rebos-desktop/installation.json'] = (json.dumps(settings, indent=2) + '\n', 0o600)
         if settings['hybrid']:
             generated['.local/bin/rebos-prime-run'] = (PRIME, 0o755)
-        units += list(generated)
+    units += list(generated)
     # Preflight all destination parents before touching any of them.
     for relative in units:
         check_parent(home, relative, allow_config_links=True)

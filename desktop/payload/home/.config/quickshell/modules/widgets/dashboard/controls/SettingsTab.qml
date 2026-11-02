@@ -15,7 +15,7 @@ Item {
     id: root
     implicitWidth: 400
     implicitHeight: 300
-    // 0: Network, 1: Bluetooth, 2: Mixer, 3: AI, 4: Theme, 5: System, 6: Shell, 7: Keybindings
+    // Section IDs stay stable for saved selections and search links, including GitHub (10).
 
     property int currentSection: GlobalStates.settingsCurrentTab
     property int selectedIndex: GlobalStates.settingsCurrentTab
@@ -265,6 +265,12 @@ Item {
             icon: Icons.layout,
             label: "Display",
             section: 9,
+            isIcon: true
+        },
+        {
+            icon: Icons.circuitry,
+            label: "GitHub",
+            section: 10,
             isIcon: true
         }
     ]
@@ -617,6 +623,10 @@ Item {
                 {
                     component: "DisplayPanel.qml",
                     section: 9
+                },
+                {
+                    component: "GithubPanel.qml",
+                    section: 10
                 }
             ]
 
