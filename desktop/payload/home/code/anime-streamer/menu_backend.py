@@ -14,12 +14,33 @@ import app
 import media_sources
 import browser_bridge
 import torbox_source
+import stream_relay
 from PIL import Image
 from gi.repository import GLib
 from vlc_session import VlcSession
 from live_subtitles import LiveSubtitles
 
 OUTPUT_LOCK = threading.Lock()
+ENDING_CHAPTER = re.compile(r'(?:end|ending|closing)(?: credits| titles)?|credits|outro|ed(?: \d+)?')
+
+
+def ending_chapter(name):
+    return bool(ENDING_CHAPTER.fullmatch(re.sub(r'[^a-z0-9]+', ' ', str(name).lower()).strip()))
+
+
+def next_offer_start(duration, chapters=()):
+    if duration <= 0:
+        return None
+    start = duration - min(90, max(5, duration * .08), duration * .2)
+    for chapter in chapters:
+        try:
+            position = float(chapter['start_time'])
+            title = chapter.get('title') or (chapter.get('tags') or {}).get('title', '')
+            if ending_chapter(title) and 0 <= duration - position <= min(600, duration * .25):
+                start = min(start, position)
+        except (KeyError, TypeError, ValueError):
+            continue
+    return start
 
 
 def send(message):
@@ -74,8 +95,10 @@ class Engine(app.Browser):
         self.duration = 0
         self.chapter = -1
         self.chapter_count = 0
+        self.chapter_name = ''
         self.position = 0
         self.prefetch_key = None
+        self.prefetch_retry_at = 0
         self.paused = False
         self.captions = None
         self.links = None
@@ -91,14 +114,28 @@ class Engine(app.Browser):
 
     def publish_next_episode(self):
         available = False
+        label, target = 'Next episode', ''
         if self.session is not None and self.context and not self.next_requested:
-            _, episodes, index, _ = self.context
-            chapters_known = self.chapter_count > 0 and 0 <= self.chapter < self.chapter_count
-            near_end = (self.chapter >= max(0, self.chapter_count - 2) if chapters_known
-                        else self.duration > 0 and 0 <= self.duration - self.position <= 90)
-            available = self.next_episode_paused or (index + 1 < len(episodes) and (
-                self.episode_ended or (self.file_loaded and near_end)))
-        offer = dict(available=bool(available))
+            show, episodes, index, _ = self.context
+            kind = media_sources.kind_of(show)
+            remaining = self.duration - self.position
+            # Generic chapter counts say nothing about where the story ends.
+            planned = next_offer_start(self.duration, getattr(getattr(self, 'links', None), 'chapters', ()))
+            near_end = planned is not None and planned <= self.position <= self.duration
+            if ending_chapter(self.chapter_name) and self.chapter_count > 0 and 0 <= self.chapter < self.chapter_count:
+                near_end |= self.duration > 0 and 0 <= remaining <= min(600, self.duration * .25)
+            available = kind != 'movies' and self.file_loaded and self.next_episode_paused
+            available |= kind != 'movies' and index + 1 < len(episodes) and (
+                self.episode_ended or (self.file_loaded and near_end))
+            if kind == 'youtube':
+                label = 'Play video' if self.next_episode_paused else 'Next video'
+            elif self.next_episode_paused:
+                label = 'Start episode'
+            target_index = index if self.next_episode_paused else index + 1
+            if available:
+                target = self.media_title(show, episodes[target_index])
+        offer = dict(available=bool(available), label=label, target=target,
+                     resumes=bool(available and self.next_episode_paused))
         if offer != self.last_next_offer:
             self.last_next_offer = offer
             send(dict(event='next-episode', **offer))
@@ -117,7 +154,7 @@ class Engine(app.Browser):
             self.start_episode(show, episodes, index + 1, token)
         self.publish_next_episode()
 
-    def resolve(self, key, done, failed):
+    def resolve(self, key, done, failed, preload=False):
         cached = self.resolved.get(key)
         if cached and time.monotonic() - cached[0] < 300:
             done(cached[1])
@@ -136,14 +173,43 @@ class Engine(app.Browser):
         show_id, ep, mode, quality = key
         def resolve_source():
             if show_id.startswith('youtube:'):
-                return media_sources.resolve_youtube(ep, quality)
-            if show_id.startswith(('direct:', 'primewire:', 'moviebox:')):
-                return media_sources.resolve_movie(show_id, ep, quality)
-            return app.ani_bridge('resolve', show_id, ep, mode, quality)
+                links = media_sources.resolve_youtube(ep, quality)
+            elif show_id.startswith(('direct:', 'primewire:', 'moviebox:')):
+                links = media_sources.resolve_movie(show_id, ep, quality)
+            else:
+                links = app.ani_bridge('resolve', show_id, ep, mode, quality)
+            if preload and not getattr(links, 'is_hls', False):
+                for index in (0, 3):  # Video and optional separate audio.
+                    try:
+                        if not links[index]:
+                            continue
+                        if links[index].startswith('https://'):
+                            links[index] = stream_relay.register(links[index], {'Referer': links[1]} if links[1] else {})
+                        stream_relay.preload(links[index])
+                    except (OSError, ValueError, stream_relay.HTTPException):
+                        pass  # A startup buffer is optional; verified links remain usable.
+            return links
         self.background(resolve_source, ready, failure)
 
-    def start_episode(self, show, episodes, index, token, automatic=False):
+    def start_episode(self, show, episodes, index, token, automatic=False, _queue_ready=False):
         if token != self.play_token:
+            return
+        if media_sources.kind_of(show) == 'tv' and not _queue_ready:
+            stop_count = getattr(self.session, 'stop_count', 0)
+            def prepared(selection):
+                if token != self.play_token:
+                    return
+                if automatic and (not self.settings['auto_next'] or getattr(self.session, 'stop_count', 0) != stop_count):
+                    self.next_requested = False
+                    self.publish_next_episode()
+                    return
+                self.start_episode(*selection, token, automatic=automatic, _queue_ready=True)
+            def failed_queue(message):
+                if token == self.play_token:
+                    self.next_requested = False
+                    self.publish_next_episode()
+                    self.play_status.set_text(message)
+            self.background(lambda: media_sources.playback_selection(show, episodes, index), prepared, failed_queue)
             return
         settings = self.settings.copy()
         stop_count = getattr(self.session, 'stop_count', 0)
@@ -175,7 +241,9 @@ class Engine(app.Browser):
         self.file_loaded = False
         self.duration = self.position = 0
         self.chapter, self.chapter_count = -1, 0
+        self.chapter_name = ''
         self.prefetch_key = None
+        self.prefetch_retry_at = 0
         self.paused = paused
         self.next_episode_paused = paused
         self.next_requested = False
@@ -211,17 +279,25 @@ class Engine(app.Browser):
             self.last_progress_save = time.monotonic()
 
     def prefetch_next(self):
-        if not self.context or not self.settings['auto_next']:
+        if not self.context or not self.file_loaded or self.paused or self.next_episode_paused or self.next_requested:
             return
         show, episodes, index, token = self.context
-        if show['id'].startswith(('direct:', 'primewire:', 'moviebox:', 'youtube:')):
-            return  # Resolve fresh HTTPS URLs at EOF, not while still watching.
-        if token != self.play_token or index + 1 >= len(episodes):
+        if media_sources.kind_of(show) == 'movies' or token != self.play_token or index + 1 >= len(episodes):
+            return
+        planned = next_offer_start(self.duration, getattr(self.links, 'chapters', ()))
+        # Resolve and validate ahead of the offer, without switching players.
+        if planned is None or self.position < max(0, planned - min(120, self.duration * .1)):
             return
         key = (show['id'], episodes[index + 1], self.settings['mode'], self.settings['quality'])
-        if key != self.prefetch_key:
-            self.prefetch_key = key
-            self.resolve(key, lambda _: None, lambda _: None)
+        now = time.monotonic()
+        cached = self.resolved.get(key)
+        if (cached and now - cached[0] < 300) or key in self.resolving:
+            return
+        if key == self.prefetch_key and now < self.prefetch_retry_at:
+            return
+        self.prefetch_key = key
+        self.prefetch_retry_at = now + 30
+        self.resolve(key, lambda _: None, lambda _: None, preload=True)
 
     def settings_changed(self):
         if self.captions is not None and self.captions.language != self.settings.get('caption_language', 'auto'):
@@ -233,8 +309,7 @@ class Engine(app.Browser):
             self.start_captions()
         if self.captions is not None:
             self.captions.set_delay(self.settings.get('caption_delay', 0))
-        if self.duration > 0 and 0 < self.duration - self.position <= 90:
-            self.prefetch_next()
+        self.prefetch_next()
 
     def close_captions(self):
         if self.captions is not None:
@@ -301,7 +376,7 @@ class Engine(app.Browser):
             app.save_json(app.STATE / 'history.json', self.history)
             self.play_status.set_text(('Paused' if self.paused else 'Playing') + ' · ' + self.media_title(show, episodes[index]))
             send(dict(event='paused', value=self.paused))
-            send(dict(event='episode', show=show['id'], index=index))
+            send(dict(event='episode', show=show['id'], index=index, episode=episodes[index]))
             self.start_captions()
         elif kind == 'property-change':
             if event.get('name') == 'sid':
@@ -325,6 +400,7 @@ class Engine(app.Browser):
                 info = event.get('data') or {}
                 self.chapter = info.get('index', -1)
                 self.chapter_count = info.get('count', 0)
+                self.chapter_name = info.get('name') or ''
             elif event.get('name') == 'time-pos':
                 self.position = event.get('data') or 0
             self.save_progress(force=event.get('name') == 'pause')
@@ -341,11 +417,12 @@ class Engine(app.Browser):
                 self.history[show['id']]['completed'] = True
                 self.history[show['id']]['position'] = 0
                 app.save_json(app.STATE / 'history.json', self.history)
-            if self.settings['auto_next'] and index + 1 < len(episodes):
-                self.next_requested = True
-                self.start_episode(show, episodes, index + 1, token, automatic=True)
+            if index + 1 < len(episodes):
+                # Keep the player surface alive and wait for the on-screen next card.
+                self.next_episode_paused = False
+                self.play_status.set_text('Episode finished. Choose the next episode to continue.')
             else:
-                self.play_status.set_text('Playback finished.' if index + 1 == len(episodes) else 'Episode finished. Loading the next episode is off.')
+                self.play_status.set_text('Playback finished.')
         elif kind == 'end-file' and event.get('reason') == 'stop':
             self.save_progress(force=True)
             self.file_loaded = False

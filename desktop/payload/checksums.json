@@ -867,7 +867,7 @@
   "home/code/anime-streamer/live_subtitles.py": "ccb7146892bd6e01e7ba63d40e6c59a9e1018158714ce95aef84b161a508ccad",
   "home/code/anime-streamer/media_sources.py": "889e7507ebb189e3c7e6e7e3611572b5bb6580b3af217d51eaf7c8f15243b231",
   "home/code/anime-streamer/media_validation.py": "b8bed9b250d79f1fbb0d64fe73bd19afbae98a8bdbf8ccf2ae50b3b66b71a053",
-  "home/code/anime-streamer/menu_backend.py": "93b6a0467a2c0690a502854a0cb7709f12c366666d04c72c9885a4c97d74e31d",
+  "home/code/anime-streamer/menu_backend.py": "43e8af360d5cf143bf28d70365ec75a5b5c119502479e1c979ee6c1afd4eba4b",
   "home/code/anime-streamer/menu_client.py": "2735ce783ff521c3a7531202ba17db79a4c4fc0a98a0a203564f34f83d3cf226",
   "home/code/anime-streamer/moviebox_source.py": "2ab7937c37fd51b14010b3ed4e919fd670ecbe468f2b127987d8302546c2abcc",
   "home/code/anime-streamer/mpv_session.py": "c0335355b6bf211ed70e93420e7de185158424ba9398263c1f564c488e4c8536",
