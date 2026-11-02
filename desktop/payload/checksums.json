@@ -1004,7 +1004,7 @@
   "home/code/rebos-assistant/modules/sidebar/AssistantSidebar.qml": "874e00ba2d73f41da0552ee5f58fd9d82e71ddbff733d6453f8fa737fa80fe46",
   "home/code/rebos-assistant/modules/sidebar/AssistantWindow.qml": "dbc19b212caa1cf170074976a323246914df7d2e4b5a4c2214bd9186e1835596",
   "home/code/rebos-assistant/modules/sidebar/CodeBlock.qml": "947b288a5f07dd13e4ec9607b89cb0603e5da5b14f5252481258853c732a20ac",
-  "home/code/rebos-assistant/modules/sidebar/ModelSelectorPopup.qml": "69221271d7b6d8fb19ff5780cfb40ba5c97fd47cc38acb0a7402b70945edadec",
+  "home/code/rebos-assistant/modules/sidebar/ModelSelectorPopup.qml": "0b206e6b483e052b6522f9322ed98f210f7c7606fc38a4a4a5571301f56492cd",
   "home/code/rebos-assistant/modules/theme/Colors.qml": "2c17eeded550eb345aba8ea9ddcbe556eeea80fe90c4510ee28d05a470afb9de",
   "home/code/rebos-assistant/modules/theme/DiscordGenerator.qml": "ec09957960919cdd9f978c94b4dd2ce6d47b300cb344bea262c5054cc0212093",
   "home/code/rebos-assistant/modules/theme/GtkGenerator.qml": "cd6a4f3ef49b4d0a38068bf590889f167aeda1557ff44f689dc8e19596d8699a",
