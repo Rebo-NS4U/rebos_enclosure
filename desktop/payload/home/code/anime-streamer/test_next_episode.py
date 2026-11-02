@@ -6,12 +6,13 @@ import menu_backend
 class PlaybackHarness:
     publish_next_episode = menu_backend.Engine.publish_next_episode
     skip_to_next = menu_backend.Engine.skip_to_next
+    media_title = staticmethod(menu_backend.Engine.media_title)
 
 
 class NextEpisodeTests(unittest.TestCase):
     def setUp(self):
         self.engine = PlaybackHarness()
-        self.engine.context = ({'id': 'show'}, ['1', '2', '3'], 0, 7)
+        self.engine.context = ({'id': 'show', 'title': 'Show'}, ['1', '2', '3'], 0, 7)
         self.engine.session = Mock()
         self.engine.next_requested = False
         self.engine.next_episode_paused = False
@@ -19,6 +20,7 @@ class NextEpisodeTests(unittest.TestCase):
         self.engine.file_loaded = True
         self.engine.chapter = -1
         self.engine.chapter_count = 0
+        self.engine.chapter_name = ''
         self.engine.duration = 1200
         self.engine.position = 100
         self.engine.last_next_offer = None
@@ -100,10 +102,12 @@ class CompletionTests(unittest.TestCase):
     def event(self, reason):
         menu_backend.Engine.player_event(self.engine, {'event': 'end-file', 'reason': reason}, 7)
 
-    def test_auto_next_once(self):
+    def test_end_waits_for_on_screen_card(self):
         self.event('eof')
         self.event('eof')
-        self.engine.start_episode.assert_called_once_with({'id': 'show'}, ['1', '2'], 1, 7, automatic=True)
+        self.engine.start_episode.assert_not_called()
+        self.assertTrue(self.engine.episode_ended)
+        self.assertFalse(self.engine.next_requested)
 
     def test_error_does_not_advance(self):
         self.event('error')
