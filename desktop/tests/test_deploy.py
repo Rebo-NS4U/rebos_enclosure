@@ -119,6 +119,39 @@ class DeploymentTests(unittest.TestCase):
                 link.unlink()
         self.assertEqual((target / 'kitty.conf').read_text(), 'personal')
 
+    def test_update_refreshes_managed_commands_and_services_with_recovery(self):
+        managed = ['.config/scripts/package-menu.sh',
+                   '.config/scripts/install.sh',
+                   '.config/systemd/user/rebos-panel.service',
+                   '.config/fish/functions/update.fish']
+        for name in managed:
+            for base, content in [(self.payload / 'home', 'new code'), (self.home, 'old code')]:
+                target = base / name
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text(content)
+        personal = self.home / '.config/fish/config.fish'
+        personal.write_text('personal fish settings')
+        other = self.home / '.config/fish/functions/personal.fish'
+        other.write_text('personal function')
+        (self.payload / 'home/.config/fish/config.fish').write_text('default settings')
+        units = ['.config/kitty', '.config/fish', *managed[:-1]]
+        (self.payload / 'manifest.json').write_text(json.dumps({'units': units}))
+        self.seal()
+        deploy.install(self.payload, self.home, dry_run=True, preserve_preferences=True)
+        self.assertFalse((self.home / '.local').exists())
+        for name in managed:
+            self.assertEqual((self.home / name).read_text(), 'old code')
+        backup = deploy.install(self.payload, self.home, preserve_preferences=True)
+        for name in managed:
+            self.assertEqual((self.home / name).read_text(), 'new code')
+        self.assertEqual(personal.read_text(), 'personal fish settings')
+        self.assertEqual(other.read_text(), 'personal function')
+        deploy.restore(backup)
+        for name in managed:
+            self.assertEqual((self.home / name).read_text(), 'old code')
+        self.assertEqual(personal.read_text(), 'personal fish settings')
+        self.assertEqual(other.read_text(), 'personal function')
+
     def test_failed_update_can_restore_source_without_touching_preferences(self):
         config = self.home / '.config/kitty'
         config.mkdir(parents=True)

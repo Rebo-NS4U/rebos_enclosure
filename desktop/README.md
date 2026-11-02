@@ -192,6 +192,11 @@ Run these commands from the installer folder you cloned or extracted:
 
 The first command previews the update. Log out and back in after applying the update.
 
+Updates replace managed scripts and user service definitions, including the
+package menu and Fish `update` command. Personal Fish configuration, other
+functions, desktop preferences and shortcuts stay in place. The file backup
+also restores the previous managed commands and service definitions.
+
 Select a specific release with its exact tag from
 [GitHub releases](https://github.com/Rebo-NS4U/rebos_enclosure/releases):
 
