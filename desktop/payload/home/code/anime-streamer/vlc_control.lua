@@ -93,8 +93,11 @@ local function handle(_, query)
             if vlc.object.vout() then
                 if args.value and args.value ~= "" then
                     if not channel then channel = vlc.osd.channel_register() end
-                    vlc.osd.channel_clear(channel)
-                    vlc.osd.message(args.value, channel, "bottom", 2000000)
+                    -- Refresh before VLC's OSD fade window begins. The monitor
+                    -- clears this channel explicitly when the timed cue ends.
+                    -- Replacing an ephemeral message on the same channel avoids
+                    -- a clear/display gap on every heartbeat.
+                    vlc.osd.message(args.value, channel, "bottom", 10000000)
                 elseif channel then vlc.osd.channel_clear(channel) end
             end
         elseif command == "clear-caption" then

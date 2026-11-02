@@ -182,7 +182,6 @@ class LiveSubtitles:
         self.process = None
         self.position = max(0, position)
         self.duration = max(0, duration)
-        self.processing_seconds = CHUNK
         self.blocks = {}
         self.partial = {}
         self.last_status = None
@@ -312,16 +311,12 @@ class LiveSubtitles:
                 if not missing:
                     self.condition.wait(timeout=1)
                     continue
-                # Work ahead of playback rather than continually finishing
-                # chunks only after their dialogue has already passed.
-                lead = min(LOOKAHEAD - CHUNK, max(CHUNK, self.processing_seconds * 1.5))
-                deadline = self.position + lead
-                block = next((block for block in missing if block * CHUNK >= deadline), missing[0])
-            began = time.monotonic()
+                # Fill the nearest missing chunk first. Jumping to a moving
+                # lookahead deadline leaves holes in otherwise ready captions.
+                block = missing[0]
             try:
                 cues = self.transcribe(block)
                 with self.condition:
-                    self.processing_seconds = max(.1, time.monotonic() - began)
                     self.blocks[block] = cues
                     self.partial.pop(block, None)
                     self.publish()

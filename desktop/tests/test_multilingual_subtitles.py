@@ -139,16 +139,15 @@ class CaptionSchedulingTests(unittest.TestCase):
             self.assertEqual(worker.position, 1234)
             self.assertEqual(worker.duration, 2400)
 
-    def test_worker_builds_ahead_instead_of_chasing_expired_dialogue(self):
+    def test_worker_does_not_skip_dialogue_as_playback_advances(self):
         import threading
-        from live_subtitles import CHUNK, LOOKAHEAD
+        from live_subtitles import CHUNK
         worker = LiveSubtitles.__new__(LiveSubtitles)
         worker.cancelled = False
         worker.language = 'auto'
         worker.condition = threading.Condition()
-        worker.position = 100
+        worker.position = 10
         worker.duration = 200
-        worker.processing_seconds = 8
         worker.blocks = {}
         worker.partial = {}
         worker.attempts = {}
@@ -158,9 +157,9 @@ class CaptionSchedulingTests(unittest.TestCase):
         generated = []
         def transcribe(block):
             generated.append(block * CHUNK)
-            worker.cancelled = True
+            worker.position += 2
+            worker.cancelled = len(generated) == 3
             return []
         worker.transcribe = transcribe
         worker.work()
-        self.assertGreater(generated[0], worker.position)
-        self.assertLessEqual(generated[0], worker.position + LOOKAHEAD)
+        self.assertEqual(generated, [8, 16, 24])

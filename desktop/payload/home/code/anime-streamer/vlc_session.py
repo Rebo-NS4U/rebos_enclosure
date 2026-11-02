@@ -91,7 +91,7 @@ class VlcSession:
         self.logpath.parent.mkdir(parents=True, exist_ok=True)
         args = ['vlc', '--ignore-config', '--no-one-instance', '--no-media-library', '--no-loop', '--no-repeat',
                 '--qt-continue=0', '--no-qt-video-autoresize',
-                '--no-video-title-show', '--no-qt-privacy-ask', '--no-metadata-network-access', '--verbose=2',
+                '--no-video-title-show', '--osd', '--no-qt-privacy-ask', '--no-metadata-network-access', '--verbose=2',
                 '--extraintf=luaintf', '--lua-intf=media_browser',
                 '--http-host=127.0.0.1', '--http-port=' + str(port),
                 '--lua-config=media_browser={port=' + str(port) + ',password="' + password + '",fullscreen=' + str(bool(settings.get('fullscreen'))).lower() + '}',
