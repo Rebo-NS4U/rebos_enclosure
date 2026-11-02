@@ -15,6 +15,7 @@ from gi.repository import GLib
 DATA = Path.home() / '.local/share/anime-streamer'
 BINARY = DATA / 'vendor/whisper.cpp-1.9.5/build/bin/whisper-cli'
 MODEL = DATA / 'models/ggml-base.en.bin'
+SPANISH_MODEL = DATA / 'models/ggml-base.bin'
 VAD_BINARY = BINARY.with_name('whisper-vad-speech-segments')
 VAD_MODEL = DATA / 'models/ggml-silero-v6.2.0.bin'
 CHUNK = 16
@@ -30,6 +31,12 @@ def srt_time(seconds):
 
 
 def cues_from_whisper(data, offset):
+    segments = data.get('transcription', [])
+    if any(segment.get('tokens') for segment in segments) and any(not segment.get('tokens') for segment in segments):
+        # Auto mode mixes word-timed English with speech-timed translations.
+        # Preserve both kinds instead of dropping segment-only translations.
+        return sorted(cue for segment in segments
+                      for cue in cues_from_whisper({'transcription': [segment]}, offset))
     words = []
     for segment in data.get('transcription', []):
         for token in segment.get('tokens', []):
@@ -91,7 +98,10 @@ def write_srt(path, cues):
     temp.replace(path)
 
 
-def recognize(wav, output, run=subprocess.run):
+def recognize(wav, output, run=subprocess.run, language='en'):
+    if language not in ('en', 'es', 'auto'):
+        raise ValueError('Unsupported caption language')
+    model = SPANISH_MODEL if language != 'en' else MODEL
     # Keep speech spans on the original timeline. Whisper's built-in VAD
     # reports token times on compressed audio, which loses silent gaps.
     result = run([str(VAD_BINARY), '-np', '-vm', str(VAD_MODEL), '-f', str(wav),
@@ -114,13 +124,24 @@ def recognize(wav, output, run=subprocess.run):
                 with wave.open(str(clip), 'wb') as destination:
                     destination.setparams(params)
                     destination.writeframes(pcm)
-                command = [str(BINARY), '-m', str(MODEL), '-f', str(clip), '-l', 'en',
+                command = [str(BINARY), '-m', str(model), '-f', str(clip), '-l', language,
                            '-t', str(min(6, os.cpu_count() or 2)), '-bs', '1', '-bo', '1',
                            '-ng', '-sns', '-np', '-ml', '64', '-sow', '-ojf', '-of', str(prefix)]
+                if language != 'en':
+                    command += ['--translate']
                 result = run(command, timeout=90, capture_output=True)
                 if result.returncode:
                     raise RuntimeError('Local speech recognition failed')
                 data = json.loads(prefix.with_suffix('.json').read_text())
+                if language == 'es' or (language == 'auto' and data.get('result', {}).get('language') != 'en'):
+                    # Translation reorders words. Anchor each translated phrase to
+                    # its original speech span instead of English token times.
+                    text = ' '.join(segment.get('text', '').strip()
+                                    for segment in data.get('transcription', [])).strip()
+                    if text:
+                        transcription.append({'text': text, 'offsets': {
+                            'from': round(start * 1000), 'to': round(end * 1000)}})
+                    continue
                 for segment in data.get('transcription', []):
                     for item in [segment] + segment.get('tokens', []):
                         if 'offsets' in item:
@@ -135,9 +156,13 @@ def recognize(wav, output, run=subprocess.run):
 
 
 class LiveSubtitles:
-    def __init__(self, links, cache, on_ready, on_status, delay=0):
-        if not all(path.is_file() for path in (BINARY, MODEL, VAD_BINARY, VAD_MODEL)):
-            raise RuntimeError('Local English subtitle model is not installed')
+    def __init__(self, links, cache, on_ready, on_status, delay=0, language='en'):
+        if language not in ('en', 'es', 'auto'):
+            raise ValueError('Unsupported caption language')
+        self.language = language
+        model = SPANISH_MODEL if language != 'en' else MODEL
+        if not all(path.is_file() for path in (BINARY, model, VAD_BINARY, VAD_MODEL)):
+            raise RuntimeError(f'Local subtitle model is not installed: {model.name}')
         self.source = links[3] or links[0]
         self.is_hls = getattr(links, 'is_hls', '.m3u8' in self.source.split('?', 1)[0].lower())
         self.audio_map = getattr(links, 'audio_map', '0:a:0')
@@ -194,9 +219,9 @@ class LiveSubtitles:
             if cues:
                 write_srt(self.path, cues)
                 self.post(self.on_ready, str(self.path))
-                self.post(self.on_status, 'Local English captions ready')
+                self.post(self.on_status, 'Auto language → English captions ready' if self.language == 'auto' else 'Spanish → English captions ready' if self.language == 'es' else 'Local English captions ready')
             else:
-                self.post(self.on_status, 'Listening for English speech…')
+                self.post(self.on_status, 'Listening for speech; detecting language…' if self.language == 'auto' else 'Listening for Spanish speech…' if self.language == 'es' else 'Listening for English speech…')
 
     def run(self, args, timeout, capture_output=False):
         with self.condition:
@@ -245,14 +270,14 @@ class LiveSubtitles:
             rms = math.sqrt(sum(value * value for value in samples) / len(samples))
             if rms < 45:
                 return []
-            data = recognize(wav, output, run=self.run)
+            data = recognize(wav, output, run=self.run, language=self.language)
             return cues_from_whisper(data, start)
         finally:
             wav.unlink(missing_ok=True)
             output.with_suffix('.json').unlink(missing_ok=True)
 
     def work(self):
-        self.post(self.on_status, 'Preparing local English captions…')
+        self.post(self.on_status, 'Preparing automatic English captions…' if self.language == 'auto' else 'Preparing Spanish → English captions…' if self.language == 'es' else 'Preparing local English captions…')
         while not self.cancelled:
             with self.condition:
                 first = int(self.position // CHUNK)

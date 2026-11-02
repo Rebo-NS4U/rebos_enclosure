@@ -80,6 +80,15 @@ Early KMS is optional and currently supports mkinitcpio. It adds an additive NVI
 - Themed ReGreet login configuration, background, layout extension and GoogleDot cursor, NetworkManager, Bluetooth, PipeWire/WirePlumber, power profiles, authentication agent, portals, screenshots, OCR and clipboard history.
 - Full-profile apps include Discord, Spotify Launcher, OBS, Obsidian, Firefox, image viewer, developer tools, and the optional AUR apps listed above.
 
+Anime Streamer captions can automatically detect each speech span's language and
+produce English subtitles. English retains word timing; translations retain speech
+timing. Settings → **Auto-detect language and translate to English** selects the
+multilingual `ggml-base.bin` model; turning it off uses `ggml-base.en.bin` for English
+only. Whisper binaries, Silero VAD and models require separate local setup and are
+not bundled. Short-clip checks found correct detection but mixed French/Italian
+translation and poor German/Japanese/Korean translation with the base model;
+do not treat detection success as evidence of translation accuracy.
+
 Login packages are `greetd`, `greetd-regreet` and `cage`. The tracked greetd and
 ReGreet configuration lives in `desktop/payload/system/greetd/`; the matching
 layout, cursor extension and theme assets live in `desktop/payload/system/rebos-greeter/`.

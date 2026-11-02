@@ -992,10 +992,16 @@ PanelWindow {
                         onToggled: root.updateSetting("live_subtitles", checked)
                     }
                     StyledText {
-                        text: "Whisper captions use speech detection and short, word-timed phrases to follow the dialogue. Use English audio; choose Dub for anime. Whisper is the only caption source for anime, movies and TV. Native and provided subtitles are disabled. YouTube uses its own captions."
+                        text: "Whisper detects the language of each speech span and generates English captions locally: English dialogue is transcribed and Spanish dialogue is translated. Very short phrases or language changes within one phrase may be less accurate. YouTube uses its own captions."
                         Layout.fillWidth: true
                         wrapMode: Text.Wrap
                         color: Colors.overSurfaceVariant
+                    }
+                    CheckBox {
+                        text: "Auto-detect language and translate to English"
+                        palette.windowText: Colors.overSurface
+                        checked: (root.settings.caption_language ?? "auto") === "auto"
+                        onToggled: root.updateSetting("caption_language", checked ? "auto" : "en")
                     }
                     RowLayout {
                         Layout.fillWidth: true

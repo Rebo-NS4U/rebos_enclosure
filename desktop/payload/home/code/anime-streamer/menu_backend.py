@@ -224,6 +224,8 @@ class Engine(app.Browser):
             self.resolve(key, lambda _: None, lambda _: None)
 
     def settings_changed(self):
+        if self.captions is not None and self.captions.language != self.settings.get('caption_language', 'auto'):
+            self.close_captions()
         if not self.settings.get('live_subtitles', True):
             if self.captions is not None:
                 self.close_captions()
@@ -256,7 +258,9 @@ class Engine(app.Browser):
             def status(text):
                 if self.captions is service:
                     send(dict(event='captions', text=text))
-            service = LiveSubtitles(self.links, app.CACHE, ready, status, delay=self.settings.get('caption_delay', 0))
+            service = LiveSubtitles(self.links, app.CACHE, ready, status,
+                                    delay=self.settings.get('caption_delay', 0),
+                                    language=self.settings.get('caption_language', 'auto'))
             self.captions = service
             self.session.show_captions()
             service.update_position(self.position, self.duration)
@@ -544,7 +548,7 @@ def dispatch(request):
             for key in ['auto_next', 'fullscreen', 'live_subtitles', 'audio_normalization']:
                 if key in new:
                     engine.settings[key] = bool(new[key])
-            for key, values in [('quality', ['best', '1080p', '720p', '480p', 'worst']), ('mode', ['sub', 'dub'])]:
+            for key, values in [('quality', ['best', '1080p', '720p', '480p', 'worst']), ('mode', ['sub', 'dub']), ('caption_language', ['en', 'es', 'auto'])]:
                 if new.get(key) in values:
                     engine.settings[key] = new[key]
             if 'volume' in new:

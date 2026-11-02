@@ -25,7 +25,7 @@ CACHE = ROOT / '.cache/anime-streamer'
 CONFIG = ROOT / '.config/anime-streamer/settings.json'
 POOL = concurrent.futures.ThreadPoolExecutor(max_workers=8)
 BASE = 'https://hianime.at'
-DEFAULTS = dict(auto_next=True, quality='best', mode='sub', fullscreen=False, volume=80, audio_normalization=True, live_subtitles=True, caption_delay=0)
+DEFAULTS = dict(auto_next=True, quality='best', mode='sub', fullscreen=False, volume=80, audio_normalization=True, live_subtitles=True, caption_delay=0, caption_language='auto')
 
 
 def read_json(path, default):
