@@ -204,9 +204,11 @@ ColumnLayout {
                 + (root.project.upstream || "First push will set the upstream")
         }
         Caption {
+            objectName: "github-push-status"
             text: root.project.upstream_ahead !== undefined && root.project.upstream_ahead !== null
-                ? root.project.upstream_ahead + " commits waiting to push · " + (root.project.upstream_behind || 0) + " commits behind upstream"
-                : "Push publishes the current branch to origin."
+                ? (root.project.upstream_ahead === 0 ? "No commits waiting to push" : root.project.upstream_ahead + " commits waiting to push")
+                    + " to " + root.project.upstream + " · " + (root.project.upstream_behind || 0) + " commits behind"
+                : "Push publishes the current branch to origin. Its difference from the default branch is a separate comparison."
         }
         Flow {
             Layout.fillWidth: true; spacing: 8

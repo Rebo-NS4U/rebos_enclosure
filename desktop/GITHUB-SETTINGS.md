@@ -4,7 +4,7 @@ Settings → GitHub checks the official Enclosure repository's default branch wh
 opened. **Check for updates** refreshes the result; **Open GitHub** opens the
 repository. The panel includes:
 
-- A colored sync status with an explanation and ahead/behind commit counts.
+- A default-branch comparison with the compared branch names and ahead/behind counts.
 - Installation type, local branch and GitHub default branch.
 - Full installed and remote commit IDs, titles, authors, dates and commit links.
 - A comparison link when the installed and GitHub revisions differ.
@@ -87,3 +87,10 @@ These counts use the locally cached upstream ref; **Fetch origin** under
 The commit-only policy is saved in workspace/repository instructions and sent to
 new or resumed assistant conversations. Existing conversations receive the new
 policy version on their next prompt, without restarting a backend.
+
+The **Compare with default branch** section compares the selected branch with
+the repository's default branch (usually `main`). These are history differences,
+not unpublished commits. A branch can be 19 commits ahead of `main` while
+**Push to GitHub** correctly shows **No commits waiting to push to
+origin/linux-desktop** because those commits are already published on that branch.
+The push section uses the tracked branch; **Fetch origin** refreshes its cached refs.

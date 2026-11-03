@@ -29,6 +29,12 @@ ShellRoot {
     PanelTitlebar { id: titlebar; title: "Test"; actions: [{tooltip: "Refresh", onClicked: function() { button.clicked(); }}] }
     GithubSection { id: section; title: "Branches"; actionsEnabled: false; SettingsButton { text: "Blocked action" } }
    }
+   GithubPanel {
+    id: github; visible: false; width: 700; height: 600; checkedAt: "test"
+    result: ({status: "ahead", branch: "linux-desktop", default_branch: "main",
+              ahead: 19, behind: 0, upstream: "origin/linux-desktop",
+              upstream_ahead: 0, upstream_behind: 0})
+   }
    KeybindingsPanel { id: keys; x: 330; width: 700; height: 480 }
    function find(item, name) {
     if (item.objectName === name) return item;
@@ -40,6 +46,14 @@ ShellRoot {
     interval: 1800; running: true
     onTriggered: {
      try {
+      fixture.check(fixture.find(github, "github-default-branch-status").text === "Ahead of main", "Default comparison must name main");
+      let comparison = fixture.find(github, "github-default-branch-counts");
+      fixture.check(comparison.text.includes("linux-desktop vs main: 19 commits ahead"), "Ahead count names both branches");
+      let pushStatus = fixture.find(github, "github-push-status");
+      fixture.check(pushStatus.text.includes("No commits waiting to push to origin/linux-desktop"), "Already published branch must show no pending push");
+      github.result = Object.assign({}, github.result, {upstream_ahead: 2});
+      fixture.check(pushStatus.text.includes("2 commits waiting to push to origin/linux-desktop"), "Push count must use upstream, not default branch");
+      fixture.check(comparison.text.includes("19 commits ahead"), "Default comparison remains separate");
       tester.mouseClick(button); fixture.check(button.parent.parent.clicks === 1, "Settings button click");
       tester.mouseClick(card); fixture.check(button.parent.parent.clicks === 2, "Section card click");
       let action = fixture.find(titlebar, "settings-titlebar-action-0");

@@ -15,8 +15,10 @@ Item {
     property string checkedAt: ""
     property string projectPath: ""
     readonly property string repository: result.repository || "https://github.com/Rebo-NS4U/rebos_enclosure"
+    readonly property string defaultBranch: result.default_branch || "default branch"
     readonly property color statusColor: checker.running ? Colors.primary
         : result.status === "error" ? Colors.error
+        : result.status === "ahead" ? Colors.primary
         : result.status === "current" && !result.dirty ? Colors.success : Colors.warning
     readonly property string explanation: {
         switch (result.status) {
@@ -24,8 +26,8 @@ Item {
             ? "Your local commit matches GitHub. Local edits mean some files differ from that published version."
             : "Your local commit matches the latest commit on GitHub’s default branch.";
         case "behind": return "GitHub’s default branch has newer commits available for this project.";
-        case "ahead": return "This checkout contains commits that are not yet on GitHub’s default branch.";
-        case "diverged": return "This checkout and GitHub both contain unique commits. Reconcile the two histories before updating.";
+        case "ahead": return "These commits are ahead of " + root.defaultBranch + ". They may already be published on your branch. See Push to GitHub for commits waiting to push.";
+        case "diverged": return "Your branch and " + root.defaultBranch + " each contain different commits. This comparison does not indicate whether your branch has been pushed.";
         case "unpublished": return "GitHub cannot compare this installed revision. It may contain unpublished commits or come from a different history.";
         case "error": return "The latest status could not be verified. Check your connection and try again; GitHub may also limit repeated requests.";
         default: return "Compare this checkout with the selected repository’s default branch.";
@@ -112,7 +114,7 @@ Item {
                 }
                 onRefreshRequested: root.check()
                 SettingsGroup {
-                    title: "Update status"
+                    title: "Compare with default branch"
                     RowLayout {
                         Layout.fillWidth: true
                         spacing: 10
@@ -121,8 +123,12 @@ Item {
                             color: root.statusColor
                         }
                         StyledText {
+                            objectName: "github-default-branch-status"
                             Layout.fillWidth: true
-                            text: checker.running ? "Checking GitHub…" : root.result.message
+                            text: checker.running ? "Checking GitHub…"
+                                : root.result.status === "ahead" ? "Ahead of " + root.defaultBranch
+                                : root.result.status === "diverged" ? "Different history from " + root.defaultBranch
+                                : root.result.message
                             color: root.statusColor
                             font.bold: true
                             wrapMode: Text.Wrap
@@ -130,10 +136,12 @@ Item {
                     }
                     Detail { text: root.explanation }
                     Detail {
+                        objectName: "github-default-branch-counts"
                         visible: root.result.ahead !== undefined && root.result.ahead !== null
                             && root.result.behind !== undefined && root.result.behind !== null
-                        text: (root.result.ahead ?? "—") + " local commits ahead   •   "
-                            + (root.result.behind ?? "—") + " commits behind GitHub"
+                        text: (root.result.branch || "Local checkout") + " vs " + root.defaultBranch + ": "
+                            + (root.result.ahead ?? "—") + " commits ahead   •   "
+                            + (root.result.behind ?? "—") + " commits behind"
                     }
                     Detail {
                         text: root.checkedAt ? "Last checked: " + root.checkedAt : "No completed check yet"
@@ -151,7 +159,7 @@ Item {
                             onClicked: Qt.openUrlExternally(root.repository)
                         }
                         SettingsButton {
-                            text: "Compare versions"
+                            text: "Compare with " + root.defaultBranch
                             visible: !!root.result.local && !!root.result.remote && root.result.local !== root.result.remote
                             enabled: !checker.running
                             onClicked: Qt.openUrlExternally(root.repository + "/compare/" + root.result.local + "..." + root.result.remote)
@@ -177,7 +185,7 @@ Item {
                 Repeater {
                     model: [
                         { title: "Local version", sha: root.result.local || "", info: root.result.local_commit || {} },
-                        { title: "Latest on GitHub", sha: root.result.remote || "", info: root.result.remote_commit || {} }
+                        { title: "Latest on " + root.defaultBranch, sha: root.result.remote || "", info: root.result.remote_commit || {} }
                     ]
                     delegate: SettingsGroup {
                         id: revision
@@ -226,7 +234,7 @@ Item {
                 }
                 SettingsGroup {
                     visible: (root.result.incoming || []).length > 0
-                    title: "Recent incoming commits"
+                    title: "Recent commits on " + root.defaultBranch
                     description: "Up to five recent commits from the GitHub comparison, newest first."
                     Repeater {
                         model: root.result.incoming || []
