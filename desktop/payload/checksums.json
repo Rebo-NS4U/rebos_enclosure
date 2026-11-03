@@ -420,7 +420,7 @@
   "home/.config/quickshell/scripts/file_shelf.py": "a82977043396d104fe86b0412e994c3215ad36ac43ae883b5bada7efe00c9a45",
   "home/.config/quickshell/scripts/generate_wallpaper_colors.sh": "0365b80c3026e55d90082f4c3279b2163d6d38722f9d820c024663c13c09cbf0",
   "home/.config/quickshell/scripts/github_connect.py": "44e593aa40a068eaa1e46ab22b21dcac425401cf9db281586ff291eb6c4b2432",
-  "home/.config/quickshell/scripts/github_projects.py": "144745b9b763610ce2a1b48535ba57eeeac141caee35ee56bd3fdbd0d72e98b4",
+  "home/.config/quickshell/scripts/github_projects.py": "a75dbd6b59957814364715811ac5c4edcb182202d0da960c93d652d4741c71cd",
   "home/.config/quickshell/scripts/github_status.py": "79027c599d1bce0161318fbb1e7d354f8703279df88c5ccdd0269f12c03ff283",
   "home/.config/quickshell/scripts/github_update.py": "9e0fcccb4f6e06292c4af6d815771f820592daae32caf6544d492d43996b7ed3",
   "home/.config/quickshell/scripts/install-fonts.sh": "dd3722ec338d5f0bd3b548f9f98b8b57fd09046a10993a6b7b14760f91452e6c",

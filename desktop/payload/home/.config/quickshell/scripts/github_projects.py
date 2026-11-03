@@ -310,7 +310,10 @@ def main():
             result = {'ok': True, 'repositories': json.loads(run('gh', 'repo', 'list', '--limit', '100',
                 '--json', 'nameWithOwner,isPrivate,url'))}
         elif args.command == 'inspect':
-            result = inspect(args.path) if args.path else status.check(Path.home())
+            # Linked installations are the live checkout: include the same
+            # branch and push details as an explicitly selected project.
+            path = args.path or status.linked_checkout(Path.home())
+            result = inspect(str(path)) if path else status.check(Path.home())
         else:
             result = action(json.loads(sys.stdin.readline()))
     except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError) as error:
