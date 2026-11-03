@@ -10,10 +10,13 @@
   checksum verification and staged whitespace checks passed.
 - The destination uses AMD Radeon 890M with amdgpu/Mesa; Vulkan, OpenGL and
   VA-API diagnostics passed after installing its missing Vulkan component.
-- Qt’s startup portal-registration warning remains observable. Portal services
-  are active and a separate Qt settings request succeeds. This does not prove
-  every interactive portal operation, such as screen sharing, works. Portal
-  access and logging were retained; no active desktop service was restarted.
+- Traced the Qt portal-registration warning to Qt6ct’s `standard_dialogs=gtk3`.
+  A minimal Quickshell process reproduced it with GTK and portal dialog themes;
+  `standard_dialogs=default` registered successfully using the installed Qt6ct
+  theme. Updated shipped defaults, installed defaults and the personal dialog
+  preference, preserving all other theme settings and making a recovery backup.
+  A windowless Qt portal settings request succeeded after the change. Existing
+  desktop/assistant processes were preserved; new Qt processes use the fix.
 
 ## v1.6.0 release acceptance — 2026-11-03
 

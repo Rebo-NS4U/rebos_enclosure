@@ -73,3 +73,12 @@ duplicate bars/notification daemons/wallpaper utilities, extra fonts and
 machine-specific kernel/driver choices. The installer selects GPU drivers and
 CPU microcode for the destination; it keeps its existing kernel and bootloader.
 The obsolete hardware-specific installer and package snapshots have been removed.
+
+## Qt dialogs and portal registration
+
+Qt6ct uses its default Qt dialogs while retaining the desktop palette, Breeze
+style and Papirus icons. Loading GTK dialogs as an additional platform theme
+causes duplicate portal registration with Qt 6.12 and Quickshell. Use
+`Appearance → Standard dialogs → Default` in Qt6ct if an older personal config
+still selects GTK dialogs. This takes effect for newly launched Qt applications;
+portal access stays enabled.
