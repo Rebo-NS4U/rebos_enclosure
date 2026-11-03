@@ -15,7 +15,7 @@ font_name = "JetBrains Mono 14"
 greeting_msg = "Welcome back"
 
 [widget.clock]
-format = "<span font_desc='Sans 52' weight='light'>%H:%M</span>\n<span font_desc='Sans 12' alpha='85%%'>%A, %e %B</span>"
+format = "<span font_desc='Sans 52' weight='light'>%l:%M %p</span>\n<span font_desc='Sans 12' alpha='85%%'>%A, %e %B</span>"
 resolution = "1s"
 timezone = "America/Phoenix"
 locale = "en_US"

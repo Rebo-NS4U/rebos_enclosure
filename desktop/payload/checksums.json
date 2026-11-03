@@ -1042,10 +1042,10 @@
   "home/code/rebos-assistant/version": "1c60df040a80b6d2e3f56442b17d127d8620cd773873e6e1353362f989b1deca",
   "manifest.json": "dc6880620a3ad73e8546e32ef67e64ac6e4d9f98d61e76f6f7666b77d35f928d",
   "system/greetd/config.toml": "6390cca0856135f2afaf1fb2754b29be4070b130aee8ea4317710690985d4a91",
-  "system/greetd/regreet.toml": "073115b21712c02c438b238b0db2ec749b81b4fd25b87be556cf5df0f51f16fb",
+  "system/greetd/regreet.toml": "e4239c46492ae396473defd532b2fd4db2ac0a99f12fd8681feaed15263d15b5",
   "system/pam.d/greetd": "5d58e2fc44d6fc98a1fdb0386d2f27750231477fb1763162ca01af6029580a45",
   "system/rebos-greeter/cage-cursor.c": "46c10a355abbd2a377217281d845a824e2ae7ca9450550d6b0fa41c1c3796cbd",
-  "system/rebos-greeter/layout.c": "e03934c76aa561116eec76ec63d82dc89291e80b41591e1813f7422296c8b986",
+  "system/rebos-greeter/layout.c": "aa73e814995146e86e7843cdab92c32acf62c3828ac611caa641b879aa9c9243",
   "system/rebos-greeter/theme/background.png": "744fb3fe3ed6ad6f90eb6fe7a676a4ed393e697b73658d071ff11910359ee447",
   "system/rebos-greeter/theme/glass-texture.png": "068bd1e571910aa23296c688523b5e5a8c2333a480fb281eb1be732ed76ca7cf",
   "system/rebos-greeter/theme/regreet.css": "bb38fc2fa51251a3469cb21a1b7d8b0da3ee129ce05695bb30f447803e070ac5"

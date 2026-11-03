@@ -37,7 +37,7 @@ static gboolean tick(GtkWidget *area, GdkFrameClock *clock, gpointer data) {
     if (second != previous) {
         g_object_set_data(G_OBJECT(area), "last-second", (gpointer)(gintptr)second);
         GDateTime *now = g_date_time_new_now_local();
-        char *time = g_date_time_format(now, "%H:%M");
+        char *time = g_date_time_format(now, "%l:%M %p");
         char *date = g_date_time_format(now, "%A, %B %e");
         gtk_label_set_text(GTK_LABEL(l->time_label), time);
         gtk_label_set_text(GTK_LABEL(l->date_label), date);
