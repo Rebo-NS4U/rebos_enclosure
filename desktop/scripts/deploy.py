@@ -130,7 +130,10 @@ def install(payload, home, dry_run=False, cbonsai=None, settings=None, preserve_
                 if destination.is_symlink() or any((home / p).is_symlink() for p in parents):
                     continue
                 if not exists(destination):
-                    selected.append(name)
+                    # A missing previously shipped file may be an intentional
+                    # personal deletion. Only add genuinely new defaults.
+                    if name not in previous:
+                        selected.append(name)
                 elif destination.is_file():
                     current = hashlib.sha256(destination.read_bytes()).hexdigest()
                     # Older installations have a revision but no defaults record.

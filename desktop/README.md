@@ -200,9 +200,31 @@ Run these commands from the installer folder you cloned or extracted:
 
 The first command previews the update. Log out and back in after applying the update.
 
+The current updater fetches the latest default-branch update engine before it
+applies any payload, even for `--release` or `--branch`. The selected release/branch
+still determines the features installed. An older fetched source without the
+handoff protocol uses the current local engine for compatibility. Unknown future
+protocol versions fail safely and request a launcher refresh. The updater lock
+remains held across handoff; temporary fetched source is removed on success or
+failure. A failed fetch never runs a stale local installer.
+
+For checkouts predating this handoff, run `git pull --ff-only` once before updating.
+If local changes prevent that, preserve/reconcile them first. Old scripts already
+on another machine cannot be upgraded until their launcher is refreshed.
+
+Normal installations keep one active copy at the usual installed paths, with the
+repository separate. Updates do not create a second active application tree or
+switch copied installations into repository links. Recovery backups are inactive.
+Existing optional development links remain supported and are not duplicated.
+
 Updates replace managed scripts and user service definitions, including the
 package menu and Fish `update` command. Personal Fish configuration, other
-functions, desktop preferences and shortcuts stay in place. The file backup
+functions, desktop preferences and shortcuts stay in place. Configuration files
+that match their previous shipped defaults receive upstream changes. Customized
+files, symlinks and intentionally deleted known preferences stay personal; new
+shipped files are added. Overlapping edits in a customized file require manual
+merging and are reported. The first update uses an older defaults record or
+available installed-revision Git history; unknown existing files are kept. The file backup
 also restores the previous managed commands and service definitions.
 
 Select a specific release with its exact tag from

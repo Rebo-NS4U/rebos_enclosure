@@ -67,6 +67,16 @@ class DeploymentTests(unittest.TestCase):
         self.assertFalse((self.home / '.config/kitty/new.conf').exists())
         self.assertIn('include ', (self.home / '.config/kitty/kitty.conf').read_text())
 
+    def test_updates_keep_intentionally_deleted_preferences(self):
+        deploy.install(self.payload, self.home, preserve_preferences=True)
+        destination = self.home / '.config/kitty/kitty.conf'
+        destination.unlink()
+        (self.payload / 'home/.config/kitty/kitty.conf').write_text('updated upstream default')
+        self.seal()
+        for _ in range(2):
+            deploy.install(self.payload, self.home, preserve_preferences=True)
+            self.assertFalse(destination.exists())
+
     def test_install_and_update_preserve_github_login_and_git_settings(self):
         personal = {
             '.gitconfig': '[user]\n name = Private Author\n email = private@example.invalid\n',

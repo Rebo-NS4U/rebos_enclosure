@@ -82,6 +82,24 @@ Run from the installer folder you cloned or extracted:
 
 The first command previews the update. Log out and back in after applying it.
 
+The updater fetches the current update engine before applying changes, including
+when selecting an older release. Apps keep using one installed copy at their
+normal paths; the repository remains separate, and fetched snapshots are removed
+when the command finishes. Recovery backups are inactive restore points.
+
+If your checkout predates this updater handoff, refresh the launcher once from
+its official repository, preserving local work:
+
+```bash
+git pull --ff-only
+./update.sh --files-only --dry-run
+```
+
+If Git reports local changes or diverged history, preserve/reconcile those changes
+first. An unchanged historical script cannot gain new update logic remotely.
+After this one-time refresh, future updates fetch the current engine automatically.
+
+
 To update to a specific release:
 
 ```bash

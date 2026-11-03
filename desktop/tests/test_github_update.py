@@ -12,7 +12,7 @@ import github_update as updater
 class UpdateTests(unittest.TestCase):
     def test_command_defaults_to_files_only(self):
         with patch.object(updater, 'checkout', return_value=(Path('/repo'), 'Rebo-NS4U/rebos_enclosure')), patch.object(Path, 'is_file', return_value=True):
-            self.assertEqual(updater.update_command('/repo')[-1], '--files-only')
+            self.assertEqual(updater.update_command('/repo'), ['bash', '/repo/update.sh', '--files-only'])
             self.assertNotIn('--files-only', updater.update_command('/repo', True))
 
     def test_other_repository_is_rejected(self):

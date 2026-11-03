@@ -1,4 +1,21 @@
-# One application source tree
+# Installed files and optional development links
+
+The normal layout is one active installed copy at `~/.config/quickshell`,
+`~/code/rebos-assistant` and `~/code/anime-streamer`, plus the separate Enclosure
+repository. Launchers and service definitions use those installed paths. Updating
+replaces that copy in place. Temporary fetched snapshots are cleaned up after
+success or failure; recovery backups are inactive and are not application paths.
+Copied installations stay copied. Updates never enable development links by
+accident or install another active copy under a versioned directory.
+
+The updater fetches the default branch's current update engine before applying
+the selected payload. Selecting an older release pins features, not the engine.
+A bootstrap from before this handoff needs one `git pull --ff-only` refresh;
+unchanged old scripts cannot acquire new logic remotely. GitHub Settings uses the
+same `update.sh` entrypoint as the terminal. Legacy fetched sources without the
+handoff protocol use the current local engine; unknown protocols fail safely.
+
+## Optional development layout
 
 On a development desktop, the installed application paths can be symlinks to
 `desktop/payload/home/` in a persistent Enclosure checkout:
@@ -25,8 +42,7 @@ Deployment saves replaced paths in a recovery backup and reports its location.
 Use `deploy.py --restore BACKUP` to restore those paths. Recovery backups can
 contain old source versions; they are not active application installations.
 Local files absent from the portable payload must be preserved separately
-before removing an old installation. The initial consolidation on this desktop
-stores those extras in `~/.local/share/rebos-desktop/local-extras/`.
+before removing an old installation. Keep recovery archives separate from the active application paths.
 
 The normal updater recognizes these links and checks the requested origin.
 It previews incoming commits and local edits in an isolated Git worktree before
@@ -66,8 +82,8 @@ new defaults. Customized files and configuration symlinks are retained. On the
 first update without a defaults record, the updater uses the recorded installed
 revision to recover old defaults from local Git history when available. Otherwise
 existing files are conservatively kept. Each update records the shipped defaults
-for subsequent comparisons. Removed
-configuration files are retained to avoid deleting personal includes. A customized
+for subsequent comparisons. Intentionally deleted known preferences stay deleted.
+Files removed upstream are retained to avoid deleting personal includes. A customized
 file that also changed upstream is reported as kept and requires manual merging.
 The defaults record is backed up and restored with the deployment. The default
 GitHub status shows the installed desktop revision; selecting a project shows

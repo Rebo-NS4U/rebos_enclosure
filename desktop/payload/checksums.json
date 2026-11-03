@@ -422,7 +422,7 @@
   "home/.config/quickshell/scripts/github_connect.py": "44e593aa40a068eaa1e46ab22b21dcac425401cf9db281586ff291eb6c4b2432",
   "home/.config/quickshell/scripts/github_projects.py": "144745b9b763610ce2a1b48535ba57eeeac141caee35ee56bd3fdbd0d72e98b4",
   "home/.config/quickshell/scripts/github_status.py": "79027c599d1bce0161318fbb1e7d354f8703279df88c5ccdd0269f12c03ff283",
-  "home/.config/quickshell/scripts/github_update.py": "314067a0a835e3ede9ebe26cbc444cb1c5715e11730b8e65d07f644b7d857897",
+  "home/.config/quickshell/scripts/github_update.py": "9e0fcccb4f6e06292c4af6d815771f820592daae32caf6544d492d43996b7ed3",
   "home/.config/quickshell/scripts/install-fonts.sh": "dd3722ec338d5f0bd3b548f9f98b8b57fd09046a10993a6b7b14760f91452e6c",
   "home/.config/quickshell/scripts/list_keybindings.py": "8fb5639e087dd58f8c57c6af112f1747dd7ee7daa3a8ab00111df6efd5a74ba2",
   "home/.config/quickshell/scripts/lock_key_monitor.py": "2a2636082610bf73fe676959999a9fd2b3b5001968b168c602832c537a583e50",

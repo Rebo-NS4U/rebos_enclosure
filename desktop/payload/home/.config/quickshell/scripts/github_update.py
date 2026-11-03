@@ -12,10 +12,10 @@ def update_command(path, packages=False):
     root, name = checkout(path)
     if name != 'Rebo-NS4U/rebos_enclosure':
         raise ValueError('Desktop updates require the official Rebos Enclosure checkout.')
-    updater = root / 'desktop/scripts/update.py'
+    updater = root / 'update.sh'
     if not updater.is_file():
         raise ValueError('This checkout has no desktop updater.')
-    return [sys.executable, str(updater)] + ([] if packages else ['--files-only'])
+    return ['bash', str(updater)] + ([] if packages else ['--files-only'])
 
 
 def perform(path, packages=False, run=subprocess.run, ask=input):
