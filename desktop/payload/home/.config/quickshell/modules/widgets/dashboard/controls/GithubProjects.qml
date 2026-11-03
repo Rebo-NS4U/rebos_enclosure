@@ -249,7 +249,12 @@ ColumnLayout {
                     if (/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(name)) Qt.openUrlExternally("https://github.com/" + name);
                 }
             }
-            SettingsButton { text: "GitHub login in terminal"; enabled: !root.busy; onClicked: Quickshell.execDetached(["kitty", "gh", "auth", "login", "--web", "--hostname", "github.com"]) }
+            SettingsButton {
+                text: "Connect / repair GitHub…"
+                enabled: !root.busy && root.activePath !== ""
+                onClicked: Quickshell.execDetached(["kitty", "--title", "Connect GitHub", "python3",
+                    Quickshell.shellPath("scripts/github_connect.py"), "--path", root.activePath, "--login"])
+            }
         }
     }
     GithubSection {

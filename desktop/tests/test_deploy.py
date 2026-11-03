@@ -32,6 +32,29 @@ class DeploymentTests(unittest.TestCase):
                   for p in self.payload.rglob('*') if p.is_file() and p.name != 'checksums.json'}
         (self.payload / 'checksums.json').write_text(json.dumps(hashes))
 
+    def test_install_and_update_preserve_github_login_and_git_settings(self):
+        personal = {
+            '.gitconfig': '[user]\n name = Private Author\n email = private@example.invalid\n',
+            '.config/git/config': '[credential]\n helper = chosen-helper\n',
+            '.config/gh/hosts.yml': 'github.com:\n  user: private-user\n  oauth_token: fake-test-secret\n',
+            '.local/share/keyrings/login.keyring': 'fake-keyring',
+            '.codex/config.toml': 'sandbox_mode = "workspace-write"\n',
+        }
+        for name, content in personal.items():
+            path = self.home / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(content)
+            path.chmod(0o600)
+        for preserve in (False, True, False):
+            backup = deploy.install(self.payload, self.home, preserve_preferences=preserve)
+            for name, content in personal.items():
+                path = self.home / name
+                self.assertEqual(path.read_text(), content)
+                self.assertEqual(path.stat().st_mode & 0o777, 0o600)
+            deploy.restore(backup)
+            for name, content in personal.items():
+                self.assertEqual((self.home / name).read_text(), content)
+
     def test_failed_copy_restores_original_automatically(self):
         original = self.home / '.config/kitty'
         original.mkdir(parents=True)
