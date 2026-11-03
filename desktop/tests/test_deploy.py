@@ -29,7 +29,8 @@ class DeploymentTests(unittest.TestCase):
 
     def seal(self):
         hashes = {str(p.relative_to(self.payload)): hashlib.sha256(p.read_bytes()).hexdigest()
-                  for p in self.payload.rglob('*') if p.is_file() and p.name != 'checksums.json'}
+                  for p in self.payload.rglob('*')
+                  if p.is_file() and p.name not in {'checksums.json', 'manifest.json'}}
         (self.payload / 'checksums.json').write_text(json.dumps(hashes))
 
     def test_older_installation_recovers_default_from_recorded_revision(self):
@@ -218,6 +219,9 @@ class DeploymentTests(unittest.TestCase):
         (self.payload / 'unexpected').write_text('extra')
         with self.assertRaisesRegex(ValueError, 'inventory'):
             deploy.verify(self.payload)
+
+    def test_checksum_manifest_is_not_part_of_its_own_inventory(self):
+        self.assertEqual(deploy.verify(self.payload), ['.config/kitty'])
 
     def test_parent_symlink_refused_before_write(self):
         outside = self.root / 'outside'

@@ -56,10 +56,16 @@ ColumnLayout {
     Component.onCompleted: initialize()
 
     function act(action, fields, confirm) {
-        if (busy) return;
+        if (busy) {
+            feedback = checking ? "Checking repository status… try again when it finishes." : "Another GitHub action is still running.";
+            failed = true;
+            return;
+        }
         const payload = Object.assign({ action: action, path: activePath }, fields || {});
         pending = payload;
         if (confirm) {
+            feedback = "Review the push details and confirm to publish this branch.";
+            failed = false;
             confirmation.open();
         } else {
             requestText = JSON.stringify(payload);
@@ -99,8 +105,18 @@ ColumnLayout {
         stdinEnabled: true
         onStarted: if (root.mode === "action") write(root.requestText + "\n")
         stdout: StdioCollector { onStreamFinished: root.load(text) }
+        stderr: StdioCollector {
+            onStreamFinished: if (text.trim() !== "") {
+                root.feedback = text.trim();
+                root.failed = true;
+            }
+        }
         onExited: (code, status) => {
-            if (code !== 0) { root.failed = true; root.feedback = "Project process failed. Try again."; }
+            if (code !== 0) {
+                root.failed = true;
+                if (root.feedback === "" || root.feedback === "Review the push details and confirm to publish this branch.")
+                    root.feedback = "Project process failed (exit " + code + "). Check the connection and try again.";
+            }
         }
     }
     Process {
@@ -197,7 +213,7 @@ ColumnLayout {
             SettingsButton {
                 objectName: "github-push-button"
                 text: root.project.upstream_ahead > 0 ? "Push " + root.project.upstream_ahead + " commit" + (root.project.upstream_ahead === 1 ? "" : "s") + "…" : "Push branch…"
-                enabled: root.canEdit && !!root.project.local && root.project.branch !== "Detached HEAD"
+                enabled: root.canEdit && !root.checking && !!root.project.local && root.project.branch !== "Detached HEAD"
                 onClicked: root.act("push", {}, true)
             }
             SettingsButton { text: "Open folder"; enabled: !!root.activePath; onClicked: Qt.openUrlExternally("file://" + root.activePath) }

@@ -37,8 +37,9 @@ def check_parent(home, relative, allow_config_links=False):
 def verify(payload):
     hashes = json.loads((payload / 'checksums.json').read_text())
     actual = {str(p.relative_to(payload)) for p in payload.rglob('*')
-              if p.is_file() and '__pycache__' not in p.relative_to(payload).parts}
-    if actual != set(hashes) | {'checksums.json'}:
+              if p.is_file() and p.name not in {'checksums.json', 'manifest.json'}
+              and '__pycache__' not in p.relative_to(payload).parts}
+    if actual != set(hashes) - {'manifest.json'}:
         raise ValueError('Payload file inventory has changed; rebuild its snapshot')
     for relative, expected in hashes.items():
         path = payload / relative
