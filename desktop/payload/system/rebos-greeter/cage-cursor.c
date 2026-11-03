@@ -18,7 +18,7 @@ struct wlr_xcursor_manager *wlr_xcursor_manager_create(const char *name, unsigne
         if (base && strcmp(base, "/cage") == 0) {
             name = "GoogleDot-Black";
             size = 20;
-            fprintf(stderr, "ReGreet Cage cursor: %s size %u\n", name, size);
+            fprintf(stderr, "ReGreet Cage cursor override: %s size %u (exe %s)\n", name, size, executable);
         }
     }
     return original(name, size);
