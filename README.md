@@ -13,8 +13,8 @@ Source is grouped into **`config/`** (shipped defaults) and **`system/`** (manag
 
 [Download latest release](https://github.com/Rebo-NS4U/rebos_enclosure/releases/latest) · [Installation guide](desktop/README.md) · [Package list](desktop/packages/README.md)
 
-[v1.4.1 release notes](docs/releases/v1.4.1.md): reliable managed-file updates,
-media playback fixes, shared package tools and assistant network improvements.
+[v1.6.0 release notes](docs/RELEASE-v1.6.0.md): separated personal settings and
+managed source, recoverable filesystem migration, hardware profiles and new wallpapers.
 
 ## Screenshots
 
@@ -31,7 +31,7 @@ Screenshots show a customized desktop; new installs start with the bundled defau
 | System controls | Wi-Fi, Bluetooth, audio devices and mixer, microphone, brightness, night light, battery, power profiles and system/process monitoring. |
 | Clock and dashboard | Calendar, weather, countdown/Pomodoro timer, quick controls and media playback controls. |
 | Appearance | Theme styles, transparency, OLED mode, fonts, colors, gradients, borders, animation and blur controls. Wallpaper colors theme GTK, Qt, the shell and supported apps. |
-| Wallpapers | Gallery, search, color-based selection, per-screen choices, image/video support and 149 prepared Urban/Nature wallpapers alongside the original collection. Video backgrounds need the optional mpvpaper package. |
+| Wallpapers | Gallery, search, color-based selection, per-screen choices, image/video support and four bundled 1920×1200 wallpapers. Video backgrounds need the optional mpvpaper package. |
 | Everyday tools | File shelf with drag and drop, quick notes, project picker, clipboard history, screenshots, image annotation, OCR and emoji picker. |
 | Media | MPV/VLC, the bundled anime/movie/TV/YouTube media browser, playback controls and optional local Whisper captions. Provider playback and captions may need additional setup. |
 | Assistant | Separate assistant panel with persistent sessions and backend controls. Install and sign into your preferred agent separately; the default Codex adapter needs Node/npm from the development group. |
@@ -71,8 +71,8 @@ After installation, reboot and choose **Niri**. **Super+Return** opens Kitty, **
 To install a specific release, use its exact tag:
 
 ```bash
-bash install.sh --release v1.4.1 --interactive --dry-run
-bash install.sh --release v1.4.1
+bash install.sh --release v1.6.0 --interactive --dry-run
+bash install.sh --release v1.6.0
 ```
 
 The selector also works with `desktop/install.sh`. Missing tags stop installation;
@@ -112,8 +112,8 @@ After this one-time refresh, future updates fetch the current engine automatical
 To update to a specific release:
 
 ```bash
-./update.sh --release v1.4.1 --dry-run
-./update.sh --release v1.4.1
+./update.sh --release v1.6.0 --dry-run
+./update.sh --release v1.6.0
 ```
 
 Use the exact tag from [GitHub releases](https://github.com/Rebo-NS4U/rebos_enclosure/releases).

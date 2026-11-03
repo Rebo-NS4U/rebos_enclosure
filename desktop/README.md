@@ -34,8 +34,8 @@ must be available for private sources. `REPO_URL` and `BRANCH` explicitly overri
 the source and branch. Use `--release TAG` to fetch an exact release tag instead:
 
 ```bash
-bash install.sh --release v1.4.1 --interactive --dry-run
-bash install.sh --release v1.4.1
+bash install.sh --release v1.6.0 --interactive --dry-run
+bash install.sh --release v1.6.0
 ```
 
 The selector works through both installer entry points. A missing tag stops before
@@ -76,7 +76,7 @@ Early KMS is optional and currently supports mkinitcpio. It adds an additive NVI
 - Dark OLED theme with wallpaper-driven GTK, Qt, KDE, Kitty, Fish, Fuzzel, btop, Neovim and supported app palettes; a current palette snapshot is provided for the first login.
 - Kitty/Fish prompt and shortcuts, wallpaper-colored bonsai greeting, cbonsai source and license, bundled terminal/shell fonts, GoogleDot cursor and Papirus icons.
 - Custom Neovim IDE configuration and plugin lockfile. Plugins and language servers download separately through Neovim on first use; open `:IDEHelp` for instructions.
-- Original rice wallpapers, 149 prepared 1920×1200 Urban/Nature wallpapers, and the current background. Source metadata is retained in the wallpaper folders; the collection is from <https://github.com/dharmx/walls>.
+- Four 1920×1200 wallpapers in `New-1920x1200`: Aurora Lake, Bioluminescent Garden, Floating Islands and Neon Alley. Fresh installs select Aurora Lake; existing wallpaper preferences are preserved.
 - Themed ReGreet login configuration, background, layout extension and GoogleDot cursor, NetworkManager, Bluetooth, PipeWire/WirePlumber, power profiles, authentication agent, portals, screenshots, OCR and clipboard history.
 - Full-profile apps include Discord, Spotify Launcher, OBS, Obsidian, Firefox, image viewer, developer tools, and the optional AUR apps listed above.
 
@@ -231,8 +231,8 @@ Select a specific release with its exact tag from
 [GitHub releases](https://github.com/Rebo-NS4U/rebos_enclosure/releases):
 
 ```bash
-./update.sh --release v1.4.1 --dry-run
-./update.sh --release v1.4.1
+./update.sh --release v1.6.0 --dry-run
+./update.sh --release v1.6.0
 ```
 
 Omitting `--release` uses the default branch. `--release` and `--branch` are

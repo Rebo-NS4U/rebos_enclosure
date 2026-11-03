@@ -1,5 +1,20 @@
 # Validation record
 
+## v1.6.0 release acceptance — 2026-11-03
+
+- All 225 desktop tests passed, including nested media checks. Assistant and panel
+  QML compiled offscreen; shipped Python/Bash syntax and native Lua caption/chapter
+  checks passed.
+- A full files-only temporary-home install passed Niri validation, installed four
+  valid 1920×1200 wallpapers and the default path, retained personal edits during
+  an update, and restored both install/update journals. Repeated grouping was a no-op.
+- Payload verification passed for 872 files and 85 installation groups. Focused
+  developer-home/private-key/common-token scans found no matches. Local deployment
+  preserved personal preferences and source links; wallpaper bytes match source.
+- See [v1.6.0 release notes](../docs/RELEASE-v1.6.0.md) for scope and limits. No live
+  service restart, package installation, physical hardware matrix or authenticated
+  provider round trip was performed. Live interactive features remain unverified.
+
 ## Separated source and personal configuration — 2026-11-02
 
 - Removed obsolete root dotfile/font snapshots, duplicate wallpaper assets,

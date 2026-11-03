@@ -85,10 +85,8 @@
     ".local/share/fonts/phosphor",
     ".local/share/fonts/rebos_shell",
     ".local/share/icons/GoogleDot-Black",
-    ".local/share/wallpapers/Nature",
-    ".local/share/wallpapers/Urban",
+    ".local/share/wallpapers/New-1920x1200",
     ".local/share/wallpapers/default.jpg",
-    ".local/share/wallpapers/rebos",
     "code/anime-streamer",
     "code/rebos-assistant"
   ],
@@ -418,20 +416,12 @@
       "source": "system/share/icons/GoogleDot-Black",
       "kind": "managed"
     },
-    ".local/share/wallpapers/Nature": {
-      "source": "system/share/wallpapers/Nature",
-      "kind": "managed"
-    },
-    ".local/share/wallpapers/Urban": {
-      "source": "system/share/wallpapers/Urban",
+    ".local/share/wallpapers/New-1920x1200": {
+      "source": "system/share/wallpapers/New-1920x1200",
       "kind": "managed"
     },
     ".local/share/wallpapers/default.jpg": {
       "source": "system/share/wallpapers/default.jpg",
-      "kind": "managed"
-    },
-    ".local/share/wallpapers/rebos": {
-      "source": "system/share/wallpapers/rebos",
       "kind": "managed"
     },
     "code/anime-streamer": {
