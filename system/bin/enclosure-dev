@@ -12,7 +12,7 @@ if os.environ.get('ENCLOSURE_SOURCE'):
 shell = home / '.config/quickshell'
 if shell.is_symlink():
     candidates.extend(shell.resolve().parents)
-candidates += [home / 'code/rebos_enclosure']
+candidates += [home / 'code/rebos_enclosure', home / 'rebos_enclosure']
 for root in candidates:
     entry = root / 'dev.sh'
     if not entry.is_file() or not (root / '.git').exists():
