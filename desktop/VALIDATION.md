@@ -1,5 +1,25 @@
 # Validation record
 
+## Portable hardware policy and development menu — 2026-11-02
+
+- Hardware discovery is independent of installer/deployment policy. Fixtures cover
+  portable chassis/battery detection, VM/manual overrides, mixed Intel/NVIDIA,
+  custom kernels and arbitrary connected display names. Generated desktop,
+  laptop and VM policies validate with real Niri.
+- The staged source passes all 213 desktop tests in an isolated home. Development
+  tests cover explicit staging, destination checks, single-branch non-forced push,
+  dirty-pull refusal, untracked-payload refusal and exact staged-source commits.
+- Installer previews for all three explicit machine profiles leave temporary homes
+  empty. A real files-only VM-profile install in a temporary home includes the
+  launcher and saved machine policy, validates with Niri and restores its backup.
+- The interactive development menu renders and quits through a PTY. The desktop
+  entry validates, the modified QML passes qmllint, and Bash syntax/whitespace and
+  exported payload checksums pass. New live launcher files point to checked-in
+  sources; the GitHub Settings panel already uses the linked checkout.
+- No package installation, real GitHub push, active service restart or physical
+  boot/suspend/docking/GPU matrix was performed. Destination hardware remains
+  subject to the development guide's acceptance checklist.
+
 ## v1.4.0 — multilingual captions and assistant GitHub workflow — 2026-11-01
 
 - All 66 desktop tests passed, including real QML checks for new and older restored

@@ -88,6 +88,18 @@ Item {
                 title: "GitHub"
                 description: "Manage GitHub projects, local changes, branches, commits and pull requests."
             }
+            GithubSection {
+                objectName: "enclosure-development-section"
+                title: "Enclosure development"
+                summary: "Hardware profiles, tests, local deployment and reviewed Git changes."
+                description: "Open the Enclosure checkout menu to verify changes, commit selected files, push, or update. Deployment keeps preferences and existing source links."
+                SettingsButton {
+                    objectName: "enclosure-development-open"
+                    Layout.fillWidth: true
+                    text: "Open development menu"
+                    onClicked: Quickshell.execDetached(["kitty", "--title", "Enclosure Development", "-e", "enclosure-dev"])
+                }
+            }
             GithubProjects {
                 project: root.result
                 selectedPath: root.projectPath

@@ -2,6 +2,13 @@
 
 A complete **Niri + Quickshell desktop for x86_64 Arch Linux**, with matching app themes, Kitty/Fish, Neovim and an interactive installer.
 
+Desktop, laptop and virtual-machine policies are selected on the destination with
+`--machine auto` (the default), independently of application groups and GPU drivers.
+Use **GitHub Settings → Enclosure development → Open development menu**, the
+**Enclosure Development** launcher entry, or `./dev.sh` in your checkout for
+hardware detection, checks, local deployment, staging, commits, pushes and updates.
+See the [development guide](docs/DEVELOPMENT.md) for the workflow and hardware limits.
+
 [Download latest release](https://github.com/Rebo-NS4U/rebos_enclosure/releases/latest) · [Installation guide](desktop/README.md) · [Package list](desktop/packages/README.md)
 
 [v1.4.1 release notes](docs/releases/v1.4.1.md): reliable managed-file updates,

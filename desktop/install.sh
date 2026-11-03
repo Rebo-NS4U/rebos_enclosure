@@ -33,6 +33,7 @@ No arguments in a terminal opens the interactive setup menu.
   --interactive             Show setup choices (also works with --dry-run)
   --non-interactive          Use defaults/flags without the setup menu
   --profile core|full       Core desktop or full app selection (default: full)
+  --machine PROFILE         auto, desktop, laptop, virtual (default: auto)
   --groups LIST             all, none, or comma-separated app group IDs:
                             browser,communication,media,notes,recording,
                             development,utilities,video-wallpapers
@@ -62,7 +63,7 @@ while (($#)); do
     case $1 in
         --interactive) interactive=1 ;;
         --non-interactive) interactive=0 ;;
-        --profile|--groups|--graphics|--microcode|--kernel-headers|--monitors)
+        --profile|--machine|--groups|--graphics|--microcode|--kernel-headers|--monitors)
             (($# >= 2)) || die "$1 needs a value"
             plan_args+=("$1" "$2"); shift ;;
         --no-login) plan_args+=(--login keep) ;;

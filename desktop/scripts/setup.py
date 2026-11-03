@@ -6,75 +6,18 @@ import math
 import os
 from pathlib import Path
 import re
-import shutil
-import subprocess
 import sys
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from hardware import MODE, PACKAGE, detect, run, machine_policy, render as render_hardware
 
 ROOT = Path(__file__).resolve().parents[1]
 GROUPS = json.loads((ROOT / 'packages/groups.json').read_text())
 GRAPHICS = ('auto', 'keep', 'amd', 'intel', 'nvidia-open', 'nvidia-580', 'nouveau', 'mesa')
 TRANSFORMS = ('normal', '90', '180', '270', 'flipped', 'flipped-90', 'flipped-180', 'flipped-270')
-MODE = re.compile(r'([1-9][0-9]{1,4})x([1-9][0-9]{1,4})(?:@([1-9][0-9]{0,3}(?:\.[0-9]{1,3})?))?')
-PACKAGE = re.compile(r'[a-zA-Z0-9@_+][a-zA-Z0-9@_+.-]*')
 PRIME = '''#!/usr/bin/env bash
 # Launch an application on the NVIDIA GPU; keep the desktop's default GPU unchanged.
 exec env __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia __VK_LAYER_NV_optimus=NVIDIA_only "$@"
 '''
-
-
-def run(args):
-    try:
-        result = subprocess.run(args, text=True, capture_output=True, timeout=3)
-        return result.stdout if result.returncode == 0 else ''
-    except (OSError, subprocess.TimeoutExpired):
-        return ''
-
-
-def detect():
-    cpuinfo = Path('/proc/cpuinfo').read_text() if Path('/proc/cpuinfo').exists() else ''
-    cpu = 'intel' if 'GenuineIntel' in cpuinfo else 'amd' if 'AuthenticAMD' in cpuinfo else 'unknown'
-    vendors = set()
-    for device in Path('/sys/bus/pci/devices').glob('*'):
-        try:
-            if (device / 'class').read_text().strip().startswith('0x03'):
-                vendor = {'0x8086': 'intel', '0x1002': 'amd', '0x10de': 'nvidia'}.get((device / 'vendor').read_text().strip())
-                if vendor:
-                    vendors.add(vendor)
-        except OSError:
-            pass
-    descriptions = [line for line in run(['lspci', '-nn']).splitlines()
-                    if any(kind in line.lower() for kind in ('vga compatible', '3d controller', 'display controller'))]
-    installed = run(['pacman', '-Qq']).splitlines()
-    kernels = sorted(set(installed) & {'linux', 'linux-lts', 'linux-zen', 'linux-hardened'})
-    for pkgbase in Path('/usr/lib/modules').glob('*/pkgbase'):
-        try:
-            kernel = pkgbase.read_text().strip()
-            if PACKAGE.fullmatch(kernel) and kernel not in kernels:
-                kernels.append(kernel)
-        except OSError:
-            pass
-    outputs = []
-    try:
-        data = json.loads(run(['niri', 'msg', '--json', 'outputs']) or '{}')
-        for name, output in data.items():
-            modes = [f'{m["width"]}x{m["height"]}@{m["refresh_rate"]/1000:.3f}' for m in output.get('modes', [])]
-            outputs.append({'name': name, 'modes': list(dict.fromkeys(modes))})
-    except (ValueError, TypeError, KeyError):
-        outputs = []
-    if not outputs:
-        for path in sorted(Path('/sys/class/drm').glob('card*-*')):
-            try:
-                if (path / 'status').read_text().strip() != 'connected':
-                    continue
-                name = re.sub(r'^card[0-9]+-', '', path.name)
-                modes = [m for m in (path / 'modes').read_text().splitlines() if MODE.fullmatch(m)]
-                if name not in {o['name'] for o in outputs}:
-                    outputs.append({'name': name, 'modes': list(dict.fromkeys(modes))})
-            except OSError:
-                pass
-    return {'cpu': cpu, 'gpus': sorted(vendors), 'gpu_descriptions': descriptions,
-            'kernels': sorted(kernels), 'installed': installed, 'outputs': outputs,
-            'mkinitcpio': bool(shutil.which('mkinitcpio'))}
 
 
 def normalize_monitors(config):
@@ -230,6 +173,7 @@ def build_plan(options, hardware):
     if hybrid and graphics not in ('nvidia-open', 'nvidia-580', 'keep', 'auto'):
         raise ValueError('NVIDIA offload requires an NVIDIA driver selection or an existing NVIDIA setup')
     return {'version': 1, 'profile': options.profile, 'groups': groups,
+            'machine': machine_policy(getattr(options, 'machine', 'auto'), hardware.get('capabilities', {})),
             'graphics': graphics, 'microcode': options.microcode,
             'hybrid': hybrid,
             'early_kms': options.early_kms, 'kernel_headers': headers,
@@ -252,6 +196,8 @@ def validate_plan(plan):
         if not isinstance(plan.get(key), list) or any(not isinstance(p, str) or not PACKAGE.fullmatch(p) for p in plan[key]):
             raise ValueError(f'Invalid package list: {key}')
     plan['monitors'] = normalize_monitors(plan.get('monitors', {}))
+    if 'machine' in plan:
+        render_hardware(plan['machine'])
     return plan
 
 
@@ -361,6 +307,9 @@ def wizard(options, hardware):
           '\nKernels: ' + (', '.join(hardware['kernels']) or 'unknown'), file=sys.stderr)
     for line in hardware['gpu_descriptions']:
         print('  ' + line, file=sys.stderr)
+    options.machine = choice('Machine profile', [('auto', 'Detect desktop, laptop or virtual machine'),
+        ('desktop', 'Desktop: enable Num Lock'), ('laptop', 'Laptop: retain keyboard defaults'),
+        ('virtual', 'Virtual machine: disable compositor animations')], options.machine)
     options.profile = choice('Installation profile', [('full', 'Full desktop and optional application groups'),
                                                       ('core', 'Core desktop, Firefox and Neovim')], options.profile)
     print('\nApplication groups (Firefox, Kitty and Neovim are always included):', file=sys.stderr)
@@ -416,6 +365,12 @@ def customize_niri(directory, plan):
     if include not in content:
         config.write_text(content.rstrip() + '\n\n' + include + '\n')
     (directory / 'monitors.kdl').write_text(render_monitors(plan['monitors']))
+    if 'machine' in plan:
+        include = 'include "hardware.kdl"'
+        content = config.read_text()
+        if include not in content:
+            config.write_text(content.rstrip() + '\n' + include + '\n')
+        (directory / 'hardware.kdl').write_text(render_hardware(plan['machine']))
 
 
 def main():
@@ -424,6 +379,7 @@ def main():
     p = sub.add_parser('plan')
     p.add_argument('--interactive', action='store_true')
     p.add_argument('--profile', choices=('core', 'full'), default='full')
+    p.add_argument('--machine', choices=('auto', 'desktop', 'laptop', 'virtual'), default='auto')
     p.add_argument('--groups', help='all, none, or comma-separated group IDs')
     p.add_argument('--graphics', choices=GRAPHICS, default='auto')
     p.add_argument('--microcode', choices=('auto', 'keep', 'amd', 'intel'), default='auto')
@@ -466,6 +422,8 @@ def main():
     else:
         print('\nrebos desktop installation plan')
         print(f'Profile: {plan["profile"]} | Groups: {", ".join(plan["groups"]) or "none"}')
+        if 'machine' in plan:
+            print('Machine: ' + plan['machine']['profile'] + ' | Capabilities: ' + json.dumps(plan['machine']['capabilities'], sort_keys=True))
         print(f'Graphics: {plan["graphics"]} | CPU microcode: {plan["microcode"]} | Hybrid offload: {plan["hybrid"]} | Early KMS: {plan["early_kms"]}')
         print(f'Login: {plan["login"]} | Network: {plan["network"]} | Bluetooth: {plan["bluetooth"]} | Power profiles: {plan["power"]}')
         print('Monitors: ' + (f'{plan["monitors"]["layout"]} — ' + ', '.join(o['name'] for o in plan['monitors']['outputs']) if plan['monitors']['outputs'] else 'automatic modes and placement'))

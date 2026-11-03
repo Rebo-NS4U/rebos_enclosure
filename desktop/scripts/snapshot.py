@@ -93,6 +93,8 @@ def build(home):
     write('.local/bin/assistant-sudo', '#!/bin/sh\nexec /usr/bin/python3 "$HOME/.config/quickshell/scripts/assistant_sudo.py" "$@"\n', 0o755)
     copy('.local/bin/config-browser', ROOT.parent / '.local/bin/config-browser')
     copy('.local/share/applications/config-browser.desktop', ROOT.parent / '.local/share/applications/config-browser.desktop')
+    copy('.local/bin/enclosure-dev', ROOT / 'defaults/enclosure-dev')
+    copy('.local/share/applications/enclosure-development.desktop', ROOT / 'defaults/enclosure-development.desktop')
     # Versioned install defaults also seed the bundled reset preset.
     preset = shell / 'assets/presets/rebos_shell Default'
     for name in ('bar', 'theme', 'performance', 'lockscreen', 'system'):
@@ -168,6 +170,7 @@ def build(home):
     profile = re.sub(r'^output "[^"]+" \{.*?^\}\n', '', profile, flags=re.M | re.S)
     profile = re.sub(r'^debug \{.*?^\}\n', '', profile, flags=re.M | re.S)
     profile = profile.replace('    disable-power-key-handling\n', '')
+    profile = re.sub(r'^\s*numlock\s*$', '', profile, flags=re.M)
     # Keep essentials only; optional applications are launched explicitly by the user.
     profile = '\n'.join(line for line in profile.splitlines() if not line.startswith('spawn-at-startup ')) + '\n'
     profile = profile.replace('spawn "rsclip" "show"', 'spawn "rebos-clipboard"')

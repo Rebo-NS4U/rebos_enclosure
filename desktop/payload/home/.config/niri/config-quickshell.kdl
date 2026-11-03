@@ -1,10 +1,8 @@
 input {
-    // Avoid re-suspending on firmware power-button events during wake.
-    // Paired with /etc/systemd/logind.conf.d/90-lid-wake.conf.
+    // Machine-specific keyboard policy is generated in hardware.kdl.
     keyboard {
         xkb {
         }
-        numlock
     }
     touchpad {
         // off
