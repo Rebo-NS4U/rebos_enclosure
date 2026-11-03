@@ -24,6 +24,8 @@ ColumnLayout {
     property string requestText: ""
     property string feedback: ""
     property bool failed: false
+    property string updateFeedback: ""
+    property bool updateFailed: false
     property var pending: ({})
     readonly property string activePath: selectedPath || desktopPath
     readonly property bool busy: worker.running || checking
@@ -103,13 +105,24 @@ ColumnLayout {
     }
     Process {
         id: updateLauncher
+        property bool started: false
+        onStarted: {
+            started = true;
+            root.updateFeedback = "Update window is open. Switch to the Enclosure desktop update window to continue.";
+        }
+        onRunningChanged: {
+            if (!running && !started) {
+                root.updateFailed = true;
+                root.updateFeedback = "Could not start the update terminal. Check that kitty is installed and available.";
+            }
+        }
         stderr: StdioCollector {
-            onStreamFinished: if (text.trim() !== "") root.feedback = text.trim()
+            onStreamFinished: if (text.trim() !== "") root.updateFeedback = text.trim()
         }
         onExited: (code, status) => {
-            root.failed = code !== 0;
-            if (code !== 0) root.feedback = "Could not open the update window (exit " + code + "). " + root.feedback;
-            else root.feedback = "Update window closed. Review its results before retrying.";
+            root.updateFailed = code !== 0;
+            if (code !== 0) root.updateFeedback = "Could not open the update window (exit " + code + "). " + root.updateFeedback;
+            else root.updateFeedback = "Update window closed. Review its results before retrying.";
         }
     }
     component Caption: StyledText { Layout.fillWidth: true; wrapMode: Text.Wrap; color: Colors.overSurfaceVariant }
@@ -142,17 +155,24 @@ ColumnLayout {
         }
         SettingsButton {
             objectName: "github-update-installed-button"
-            text: "Preview & update installed desktop…"
+            text: updateLauncher.running ? "Update window is open…" : "Preview & update installed desktop…"
             enabled: !updateLauncher.running && root.desktopPath !== ""
             onClicked: {
                 const command = ["kitty", "--title", "Enclosure desktop update", "python3",
                     Quickshell.shellPath("scripts/github_update.py"), "--path", root.desktopPath];
                 if (updatePackages.checked) command.push("--packages");
                 updateLauncher.command = command;
-                root.feedback = "Opening the desktop update window…";
-                root.failed = false;
+                updateLauncher.started = false;
+                root.updateFeedback = "Opening the desktop update window…";
+                root.updateFailed = false;
                 updateLauncher.running = true;
             }
+        }
+        Caption {
+            objectName: "github-update-feedback"
+            visible: root.updateFeedback !== ""
+            text: root.updateFeedback
+            color: root.updateFailed ? Colors.error : Colors.overSurfaceVariant
         }
         Caption {
             visible: root.desktopPath === ""
