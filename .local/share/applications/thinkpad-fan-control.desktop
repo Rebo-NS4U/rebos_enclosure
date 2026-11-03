@@ -1,9 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=ThinkPad Fan Control
-Comment=Stop fans or restore automatic cooling
-Exec=/home/rebo/.local/bin/thinkpad-fan-control
-Icon=preferences-system
-Terminal=false
-Categories=System;Settings;
-Keywords=fan;cooling;thinkpad;

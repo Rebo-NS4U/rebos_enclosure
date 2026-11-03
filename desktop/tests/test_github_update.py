@@ -5,7 +5,7 @@ import sys
 import unittest
 from unittest.mock import patch, Mock
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'payload/home/.config/quickshell/scripts'))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'system/apps/shell/scripts'))
 import github_update as updater
 
 

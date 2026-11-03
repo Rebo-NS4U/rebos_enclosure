@@ -6,7 +6,7 @@ import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
-PAYLOAD = ROOT / 'payload/home'
+PAYLOAD = ROOT.parent / 'system'
 
 
 class PanelStartupTests(unittest.TestCase):
@@ -35,7 +35,7 @@ class PanelStartupTests(unittest.TestCase):
 
     def rice(self, action, instances):
         env = dict(self.env, PANEL_TEST_INSTANCES=instances)
-        return subprocess.run(['bash', str(PAYLOAD / '.local/bin/rice'), action],
+        return subprocess.run(['bash', str(PAYLOAD / 'bin/rice'), action],
                               env=env, check=True, capture_output=True, text=True)
 
     def test_assistant_does_not_suppress_panel_start(self):
@@ -54,7 +54,7 @@ class PanelStartupTests(unittest.TestCase):
         pkg = self.home / 'bin/pkg-config'
         pkg.write_text('#!/bin/sh\nprintf "6.13.0\\n"\n')
         pkg.chmod(0o755)
-        subprocess.run(['bash', str(PAYLOAD / '.config/quickshell/scripts/build_qt_screen_guard.sh')],
+        subprocess.run(['bash', str(PAYLOAD / 'apps/shell/scripts/build_qt_screen_guard.sh')],
                        env=self.env, check=True, capture_output=True)
         self.assertFalse((self.home / '.local/share').exists())
 

@@ -3,8 +3,7 @@
 Reviewed on 2026-10-31 against the bundled Niri, Quickshell, terminal,
 assistant and media application source. `core.txt` is the required desktop
 selection; `groups.json` holds optional applications. `apps.txt` and `aur.txt`
-mirror the union of those groups. The root `packages-explicit.txt` is a combined
-reference inventory, not input to the installer or a command to install everything.
+mirror the union of those groups. The redundant root package inventory has been removed; these files are the installer selection.
 
 Use `./install.sh --profile core` for the core desktop with Firefox, Thunar,
 Kitty/Fish and Neovim. Add groups explicitly, for example
@@ -64,5 +63,4 @@ boot administration tools, debug packages, WARP, Victus-specific software,
 duplicate bars/notification daemons/wallpaper utilities, extra fonts and
 machine-specific kernel/driver choices. The installer selects GPU drivers and
 CPU microcode for the destination; it keeps its existing kernel and bootloader.
-Legacy `install/pkg*.txt` files describe the archived installer and are not read
-by the supported installation entry points.
+The obsolete hardware-specific installer and package snapshots have been removed.

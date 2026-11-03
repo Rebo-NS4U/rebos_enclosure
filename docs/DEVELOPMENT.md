@@ -14,7 +14,7 @@ development → Open development menu**. From a checkout, run:
 ./dev.sh
 ```
 
-The menu offers status/diffs, a hardware plan, tests, explicit file staging,
+The menu offers personal configuration access, grouping previews/migration, status/diffs, a hardware plan, tests, explicit file staging,
 payload checksum regeneration, local deployment previews, deployment, local
 commits, push, fast-forward source pulls, and installed desktop updates.
 Every action also works as a command; `./dev.sh --help` lists options.
@@ -28,7 +28,7 @@ Typical edit cycle:
 
 ```sh
 ./dev.sh status
-# Edit source in desktop/payload/home/, not a copied live installation.
+# Edit config/ defaults or system/ source in this checkout.
 ./dev.sh diff
 ./dev.sh stage path/to/changed-file path/to/new-file
 ./dev.sh hashes
@@ -51,8 +51,7 @@ compiler, ncurses and GTK development files are needed by the existing full suit
 Checksum regeneration reads tracked/staged payload paths only. Review and stage
 new source before hashing; untracked payload files stop regeneration rather than
 silently shipping personal files. New top-level shipped files also need entries
-in `desktop/payload/manifest.json` and the snapshot recipe. The checked-in launcher
-templates in `desktop/defaults/` must match their payload copies.
+in `desktop/payload/manifest.json` and the snapshot recipe. Launcher source is in `system/bin/` and `system/share/applications/`; there is no duplicate template tree.
 
 Local deployment uses `--preserve-preferences`, makes recovery backups and retains
 existing source links to this checkout. `./dev.sh deploy --link-source` explicitly
@@ -64,6 +63,8 @@ Pull updates the repository with `--ff-only` and refuses a dirty checkout.
 Update runs the existing `update.sh --files-only` pipeline, including its preview,
 preference preservation and linked-source reconciliation. Neither action installs
 packages. Use the installer/updater directly when package changes are needed.
+
+See the [filesystem guide](FILESYSTEM.md) for the grouped source and personal settings layout. Packaging exports reviewed committed source; live-home snapshotting has been removed.
 
 ## Machine profiles
 

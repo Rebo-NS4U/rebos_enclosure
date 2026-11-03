@@ -9,6 +9,8 @@ import shlex
 import subprocess
 import sys
 import tempfile
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from layout import inventory, manifest, source as source_path, checkout_for
 
 ROOT = Path(__file__).resolve().parents[2]
 ORIGINS = {'https://github.com/Rebo-NS4U/rebos_enclosure',
@@ -40,22 +42,32 @@ def verify_checkout(root=ROOT):
 def refresh_checksums(root=ROOT):
     """Hash only explicitly tracked payload files; never capture a live home."""
     payload = root / 'desktop/payload'
-    names = git('ls-files', '-z', '--', 'desktop/payload', root=root, capture=True).split('\0')
-    hashes = {}
-    for name in filter(None, names):
-        path = root / name
-        relative = path.relative_to(payload).as_posix()
-        if relative == 'checksums.json':
-            continue
-        if path.is_symlink() or not path.is_file():
-            raise ValueError('Tracked payload file missing or symlinked: ' + relative)
-        hashes[relative] = hashlib.sha256(path.read_bytes()).hexdigest()
-    # Fail before writing if untracked files would invalidate the deployer inventory.
-    actual = {p.relative_to(payload).as_posix() for p in payload.rglob('*')
-              if p.is_file() and p.name != 'checksums.json' and '__pycache__' not in p.parts}
-    if actual != set(hashes):
-        raise ValueError('Payload inventory differs from Git. Review and explicitly stage new/removed files first: ' +
-                         ', '.join(sorted(actual ^ set(hashes))))
+    if manifest(payload).get('layout') == 2:
+        actual = inventory(payload)
+        tracked = set(git('ls-files', '-z', '--', 'config', 'system',
+                          'desktop/payload/manifest.json', root=root, capture=True).split('\0'))
+        names = {name if name != 'manifest.json' else 'desktop/payload/manifest.json' for name in actual}
+        if names != tracked - {''}:
+            raise ValueError('Payload inventory differs from Git. Review and explicitly stage new/removed files first.')
+        hashes = {name: hashlib.sha256(path.read_bytes()).hexdigest() for name, path in actual.items()}
+        if any(path.is_symlink() for path in actual.values()):
+            raise ValueError('Shipped source must not be symlinked.')
+    else:
+        names = git('ls-files', '-z', '--', 'desktop/payload', root=root, capture=True).split('\0')
+        hashes = {}
+        for name in filter(None, names):
+            path = root / name
+            relative = path.relative_to(payload).as_posix()
+            if relative == 'checksums.json':
+                continue
+            if path.is_symlink() or not path.is_file():
+                raise ValueError('Tracked payload file missing or symlinked: ' + relative)
+            hashes[relative] = hashlib.sha256(path.read_bytes()).hexdigest()
+        actual = {p.relative_to(payload).as_posix() for p in payload.rglob('*')
+                  if p.is_file() and p.name != 'checksums.json' and '__pycache__' not in p.parts}
+        if actual != set(hashes):
+            raise ValueError('Payload inventory differs from Git. Review and explicitly stage new/removed files first: ' +
+                             ', '.join(sorted(actual ^ set(hashes))))
     (payload / 'checksums.json').write_text(json.dumps(dict(sorted(hashes.items())), indent=2) + '\n')
     run([sys.executable, 'desktop/scripts/deploy.py', '--verify'], root)
 
@@ -152,8 +164,8 @@ def action(name, args, root=ROOT):
         linked = False
         for relative in ('.config/quickshell', 'code/rebos-assistant', 'code/anime-streamer'):
             installed = Path.home() / relative
-            if installed.is_symlink() and 'desktop/payload/home' in str(installed.resolve()):
-                if installed.resolve() != (root / 'desktop/payload/home' / relative).resolve():
+            if installed.is_symlink() and checkout_for(installed) is not None:
+                if installed.resolve() != source_path(root / 'desktop/payload', relative).resolve():
                     raise ValueError('Installed source links point to another checkout; use its menu.')
                 linked = True
         if args.link_source or linked:
@@ -164,11 +176,18 @@ def action(name, args, root=ROOT):
                     '--profile', 'core', '--groups', 'none'], root, capture=True).stdout
         subprocess.run([sys.executable, 'desktop/scripts/setup.py', 'summary'], input=plan,
                        cwd=root, text=True, check=True, env={**os.environ, 'PYTHONDONTWRITEBYTECODE': '1'})
+    elif name in ('organize-preview', 'organize'):
+        run([sys.executable, 'desktop/scripts/organize.py'] + (['--apply'] if name == 'organize' else []), root)
+    elif name == 'configs':
+        run(['xdg-open', str(Path.home() / '.config/enclosure')], root)
     elif name in ('update-preview', 'update'):
         run(['bash', 'update.sh', '--files-only'] + (['--dry-run'] if name == 'update-preview' else []), root)
 
 
-MENU = [('status', 'Repository status'), ('diff', 'Review changes'),
+MENU = [('configs', 'Open personal configuration folder'),
+        ('organize-preview', 'Preview grouping installed settings and system files'),
+        ('organize', 'Group installed settings and system files'),
+        ('status', 'Repository status'), ('diff', 'Review changes'),
         ('hardware', 'Detect hardware and preview machine plan'),
         ('check', 'Verify payload and run tests'), ('stage', 'Stage selected files'),
         ('hashes', 'Rebuild payload checksums from reviewed Git files'),
@@ -199,9 +218,11 @@ def menu(args):
                 args.message = input('Commit message (empty cancels): ')
                 if not args.message.strip():
                     continue
-            if name in ('push', 'pull', 'deploy', 'update'):
+            if name in ('push', 'pull', 'deploy', 'update', 'organize'):
                 if name == 'push':
                     git('log', '--oneline', '@{upstream}..HEAD')
+                if name == 'organize':
+                    action('organize-preview', args)
                 if name == 'deploy':
                     action('preview', args)
                 if name == 'update':

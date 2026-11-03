@@ -8,7 +8,7 @@ import unittest
 class IdleCaptionTests(unittest.TestCase):
     @unittest.skipUnless(shutil.which('lua5.1'), 'Lua 5.1 is required')
     def test_refresh_does_not_clear_or_fade_caption_and_end_clears_it(self):
-        script = Path(__file__).resolve().parents[1] / 'payload/home/code/anime-streamer/vlc_control.lua'
+        script = Path(__file__).resolve().parents[2] / 'system/apps/media/vlc_control.lua'
         harness = r'''
 local handler
 local registrations, clears, messages = 0, 0, {}

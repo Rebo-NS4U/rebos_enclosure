@@ -68,5 +68,5 @@ id_ed25519*
 /.config/kitty/keybindings-personal.conf
 
 # Installed-only caption GPU helpers are excluded from portable snapshots.
-/desktop/payload/home/code/anime-streamer/caption_runtime_setup.py
-/desktop/payload/home/code/anime-streamer/whisper_runtime.py
+/system/apps/media/caption_runtime_setup.py
+/system/apps/media/whisper_runtime.py

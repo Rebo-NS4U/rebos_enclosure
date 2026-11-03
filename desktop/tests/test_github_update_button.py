@@ -6,7 +6,7 @@ import subprocess
 import tempfile
 import unittest
 
-APP = Path(__file__).resolve().parents[1] / 'payload/home/.config/quickshell'
+APP = Path(__file__).resolve().parents[2] / 'system/apps/shell'
 HARNESS = '''import QtQuick
 import QtTest
 import Quickshell

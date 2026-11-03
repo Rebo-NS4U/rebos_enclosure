@@ -8,7 +8,7 @@ import unittest
 
 class PackageMenuTests(unittest.TestCase):
     def test_update_preview_and_failure_reporting(self):
-        scripts = Path(__file__).resolve().parents[1] / 'payload/home/.config/scripts'
+        scripts = Path(__file__).resolve().parents[2] / 'system/scripts'
         with tempfile.TemporaryDirectory() as folder:
             tools = Path(folder)
             for name in ('paru', 'flatpak', 'rustup'):
@@ -30,7 +30,7 @@ class PackageMenuTests(unittest.TestCase):
             self.assertIn('Rust toolchain update failed', result.stderr)
 
     def test_compatibility_launchers_find_shared_menu(self):
-        scripts = Path(__file__).resolve().parents[1] / 'payload/home/.config/scripts'
+        scripts = Path(__file__).resolve().parents[2] / 'system/scripts'
         for name in ('install.sh', 'install-aur.sh', 'uninstall.sh'):
             result = subprocess.run(['bash', str(scripts / name), '--help'], capture_output=True, text=True)
             self.assertEqual(result.returncode, 0, result.stderr)

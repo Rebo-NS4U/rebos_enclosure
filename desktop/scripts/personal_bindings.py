@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def reader():
-    path = ROOT / 'payload/home/.config/quickshell/scripts/list_keybindings.py'
+    path = ROOT.parent / 'system/apps/shell/scripts/list_keybindings.py'
     # Loading source directly keeps Python from writing __pycache__ into the
     # checksummed payload, which would break verification on the next run.
     module = ModuleType('rebos_binding_reader')

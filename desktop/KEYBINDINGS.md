@@ -16,4 +16,4 @@ target file during validation cancel the save. Successful changes retain a backu
 beside the edited file. Niri reloads automatically; no desktop restart is needed.
 
 Regression coverage: `desktop/tests/test_personal_bindings.py` and
-`desktop/payload/home/.config/quickshell/scripts/test_keybindings.py`.
+`system/apps/shell/scripts/test_keybindings.py`.

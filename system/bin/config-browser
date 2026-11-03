@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+enclosure_home=${HOME:?HOME is not set}
+config="$enclosure_home/.config"
+command -v zenity >/dev/null || { printf 'Install zenity to use config-browser.\n' >&2; exit 1; }
+
+declare -a labels=() paths=()
+add() {
+    local label=$1 path=$2
+    [[ -e "$path" ]] || return 0
+    labels+=("$label")
+    paths+=("$path")
+}
+
+personal="$config/enclosure"
+system="$enclosure_home/.local/share/enclosure/system"
+defaults="$enclosure_home/.local/share/enclosure/defaults"
+shell_source=$(readlink -f "$config/quickshell" 2>/dev/null || true)
+if [[ $shell_source == */system/apps/shell ]]; then
+    system=${shell_source%/apps/shell}
+    if [[ -d ${system%/system}/config ]]; then defaults=${system%/system}/config; fi
+fi
+add 'Personal settings — all applications' "$personal"
+add 'Personal — Niri, workspaces and keybindings' "$personal/niri"
+add 'Personal — desktop theme and bar' "$personal/shell/config"
+add 'Personal — Kitty terminal' "$personal/kitty"
+add 'Personal — Fish shell' "$personal/fish"
+add 'Personal — Neovim editor' "$personal/nvim"
+add 'System — configuration defaults (replaced by updates)' "$defaults"
+add 'System — managed applications and services' "$system"
+add 'Other application configuration' "$config"
+
+while true; do
+    choice=$(zenity --list --title='Config Browser' --text='Edit personal settings; system defaults and source are managed by updates.' \
+        --column='Configuration' --width=640 --height=440 "${labels[@]}" 2>/dev/null) || exit 0
+    [[ -n "$choice" ]] || exit 0
+    for i in "${!labels[@]}"; do
+        if [[ ${labels[$i]} == "$choice" ]]; then
+            xdg-open "${paths[$i]}" >/dev/null 2>&1 &
+            exit 0
+        fi
+    done
+done

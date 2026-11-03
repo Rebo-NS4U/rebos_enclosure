@@ -1,4 +1,0 @@
-nvidia-open-dkms
-nvidia-prime
-nvtop
-envycontrol

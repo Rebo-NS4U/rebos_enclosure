@@ -8,7 +8,7 @@ import sys
 import tempfile
 import unittest
 
-SCRIPT = Path(__file__).resolve().parents[1] / 'payload/home/code/rebos-assistant/scripts/google_agent.py'
+SCRIPT = Path(__file__).resolve().parents[2] / 'system/apps/assistant/scripts/google_agent.py'
 spec = importlib.util.spec_from_file_location('google_agent', SCRIPT)
 agent = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(agent)

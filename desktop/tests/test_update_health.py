@@ -10,7 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
 import update
 import update_health
 
-APP = Path(__file__).resolve().parents[1] / 'payload/home/code/rebos-assistant'
+APP = Path(__file__).resolve().parents[2] / 'system/apps/assistant'
 
 
 class UpdateHealthTests(unittest.TestCase):

@@ -8,7 +8,7 @@ import sys
 import tempfile
 import unittest
 
-CLIENT = Path(__file__).resolve().parents[1] / 'payload/home/code/anime-streamer'
+CLIENT = Path(__file__).resolve().parents[2] / 'system/apps/media'
 
 
 class ReconnectTests(unittest.TestCase):

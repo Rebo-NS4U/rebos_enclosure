@@ -61,9 +61,10 @@ def save_backup(root, home):
 
 
 class PreparedUpdate:
-    def __init__(self, checkout, plan, home, head, status):
+    def __init__(self, checkout, plan, home, head, status, untracked_moves=()):
         self.checkout, self.plan, self.home = checkout, plan, home
         self.head, self.status = head, status
+        self.untracked_moves = untracked_moves
 
     def apply(self):
         root, plan = self.checkout, self.plan
@@ -99,6 +100,15 @@ class PreparedUpdate:
                 git(root, 'apply', '--index', '--binary', '-', input=index_patch)
             if working_patch:
                 git(root, 'apply', '--binary', '-', input=working_patch)
+            from deploy import check_parent
+            for old_name, new_name in self.untracked_moves:
+                check_parent(root, old_name)
+                check_parent(root, new_name)
+                old, new = root / old_name, root / new_name
+                if new.exists() or new.is_symlink():
+                    raise ValueError('Untracked migration destination now exists: ' + new_name)
+                new.parent.mkdir(parents=True, exist_ok=True)
+                old.rename(new)
         except BaseException as error:
             if saved_stash and git(root, 'rev-parse', 'HEAD') == self.head:
                 git(root, 'stash', 'apply', '--index', saved_stash)
@@ -138,8 +148,15 @@ def prepare(checkout, snapshot, home):
             git(plan, 'restore', '--staged', '--source=HEAD', '--', '.')
             if original_index:
                 git(plan, 'apply', '--cached', '--3way', '--binary', '-', input=original_index)
+            untracked_moves = []
             for name in filter(None, git(checkout, 'ls-files', '--others', '--exclude-standard', '-z').split('\0')):
                 destination = plan / name
+                if name.startswith('desktop/payload/home/'):
+                    from layout import manifest, source as source_path
+                    payload = plan / 'desktop/payload'
+                    if manifest(payload).get('layout') == 2:
+                        destination = source_path(payload, name.removeprefix('desktop/payload/home/'))
+                        untracked_moves.append((name, str(destination.relative_to(plan))))
                 if destination.exists() or destination.is_symlink():
                     raise ValueError(f'Untracked file conflicts with incoming source; live files unchanged: {name}')
                 destination.parent.mkdir(parents=True, exist_ok=True)
@@ -151,14 +168,28 @@ def prepare(checkout, snapshot, home):
             incoming_hashes = json.loads(git(plan, 'show', 'HEAD:desktop/payload/checksums.json'))
             names = set(current) | set(incoming_hashes)
             from deploy import check_parent
+            from layout import checksum_path, manifest, source as source_path
+            if manifest(payload).get('layout') == 2:
+                translated = set()
+                for name in names:
+                    if name.startswith('home/'):
+                        path = source_path(payload, name.removeprefix('home/'))
+                        if path.is_relative_to(plan) and path.is_file():
+                            translated.add(str(path.relative_to(plan)))
+                    elif name.startswith('system/') and not (plan / name).exists() and (plan / 'system/etc' / name.removeprefix('system/')).exists():
+                        translated.add('system/etc/' + name.removeprefix('system/'))
+                    else:
+                        translated.add(name)
+                names = translated
             for name in names:
-                check_parent(payload, name)
-                if (payload / name).is_symlink():
+                path = checksum_path(payload, name)
+                check_parent(plan if path.is_relative_to(plan) else payload, str(path.relative_to(plan if path.is_relative_to(plan) else payload)))
+                if path.is_symlink():
                     raise ValueError('Payload checksum path cannot be a symlink: ' + name)
-            hashes = {name: hashlib.sha256((payload / name).read_bytes()).hexdigest()
-                      for name in sorted(names) if (payload / name).is_file()}
+            hashes = {name: hashlib.sha256(checksum_path(payload, name).read_bytes()).hexdigest()
+                      for name in sorted(names) if checksum_path(payload, name).is_file()}
             (payload / 'checksums.json').write_text(json.dumps(hashes, indent=2) + '\n')
             verify(payload)
-            yield PreparedUpdate(checkout, plan, home, head, before)
+            yield PreparedUpdate(checkout, plan, home, head, before, untracked_moves)
         finally:
             git(checkout, 'worktree', 'remove', '--force', str(plan))

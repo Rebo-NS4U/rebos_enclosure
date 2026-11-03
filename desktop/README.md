@@ -116,8 +116,8 @@ PAM file. The keyring password must match the login password; automatic login
 cannot supply a password to unlock it. Existing sessions need no restart.
 
 Login packages are `greetd`, `greetd-regreet` and `cage`. The tracked greetd and
-ReGreet configuration lives in `desktop/payload/system/greetd/`; the matching
-layout, cursor extension and theme assets live in `desktop/payload/system/rebos-greeter/`.
+ReGreet configuration lives in `system/etc/greetd/`; the matching
+layout, cursor extension and theme assets live in `system/etc/rebos-greeter/`.
 The former `install/ly/` configuration and patches have been removed.
 
 Base packages and optional application groups are editable in `desktop/packages/core.txt` and `desktop/packages/groups.json`. Driver packages are selected by the installer. A full system upgrade precedes package installation. The installer uses configured repositories and does not add Chaotic-AUR, replace the kernel, or copy this computer's GPU driver settings. Intel/AMD microcode and graphics userspace packages are detected from the destination. **NVIDIA:** the setup menu offers open DKMS and legacy 580 DKMS branches, matching kernel headers, hybrid offload and optional mkinitcpio early KMS. Choose the branch appropriate to the GPU; the installer does not guess NVIDIA generations or remove conflicting installed driver families automatically. Consult [Arch's NVIDIA guide](https://wiki.archlinux.org/title/NVIDIA). Existing network service enablement changes take effect on reboot so installation does not disconnect the active link. If using a custom network stack, use `--keep-network`.
@@ -126,7 +126,7 @@ The portable clipboard shortcut uses cliphist/Fuzzel. Spotify Launcher replaces 
 
 ## First login
 
-Fresh installs use the pinned classic island bar (80% opacity, 55% accent), a 12-hour clock, Firefox media integration, and the Transparent theme. Bar and theme defaults live in `desktop/defaults/` and also seed the reset preset; updates preserve existing preferences.
+Fresh installs use the pinned classic island bar (80% opacity, 55% accent), a 12-hour clock, Firefox media integration, and the Transparent theme. Bar and theme defaults live in `config/shell/config/` and also seed the reset preset; updates preserve existing preferences.
 
 New installs use H/J/K/L for **left/down/up/right**:
 
@@ -149,7 +149,7 @@ and saves those bindings too. Updates keep the installed configuration folders
 in place. Both paths retain personal keys; the deployment backup also keeps the
 original files for restoration. A fresh install starts with empty personal files.
 
-Versioned defaults in `desktop/defaults/` are the source for future snapshots;
+Versioned defaults under `config/niri/` and `config/kitty/` are the source for future installs;
 the snapshot builder does not copy the maintainer's personal shortcut files into
 new installer defaults. Niri loads later bindings as overrides, as described in
 its [include documentation](https://niri-wm.github.io/niri/Configuration%3A-Include.html).
@@ -264,7 +264,7 @@ PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s desktop/tests -v
 bash -n install.sh desktop/install.sh oneline.sh desktop/scripts/finish-apps.sh
 ```
 
-`desktop/scripts/snapshot.py` is the explicit selection recipe for this source desktop. To refresh, first move the existing `desktop/payload/` aside; then run `python3 desktop/scripts/snapshot.py --home /path/to/source/home` on the source machine. Inspect the result before sharing. Snapshot checksums detect corruption and accidental edits; they do not provide publisher authentication. Preserve the bundled component licenses; wallpaper redistribution rights remain with their respective authors. This folder can be moved or deleted after installation because installed settings are copies, with no dependency on its location.
+`desktop/scripts/snapshot.py --verify` verifies reviewed `config/` and `system/` source. Use `--output /path/to/new.tar.gz` to export committed HEAD. Live-home snapshotting has been removed. Preserve component licenses; artwork rights remain with their authors. See the [filesystem guide](../docs/FILESYSTEM.md) for personal settings, managed defaults, grouping and recovery.
 
 ReGreet follows the current desktop wallpaper and effective color palette through
 `regreet-sync.path`, with a timer to retry failures and detect edits to the image.

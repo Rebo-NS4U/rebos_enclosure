@@ -11,7 +11,7 @@ import unittest
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
-SCRIPTS = ROOT / 'payload/home/.config/quickshell/scripts'
+SCRIPTS = ROOT.parent / 'system/apps/shell/scripts'
 sys.path.insert(0, str(SCRIPTS))
 from list_keybindings import collect
 from edit_keybinding import save, add
@@ -48,8 +48,7 @@ class PersonalBindingTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_standard_movement_matrix_and_unique_chords(self):
-        defaults = ROOT / 'defaults/keybindings-defaults.kdl'
-        self.assertEqual(defaults.read_bytes(), (ROOT / 'payload/home/.config/niri/keybindings-defaults.kdl').read_bytes())
+        defaults = ROOT.parent / 'config/niri/keybindings-defaults.kdl'
         text = defaults.read_text()
         for key, focus, move, direction in [('H','focus-column-left','consume-or-expel-window-left','left'),
                                            ('J','focus-window-down','move-window-down','down'),

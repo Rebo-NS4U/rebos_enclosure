@@ -1,5 +1,31 @@
 # Validation record
 
+## Separated source and personal configuration — 2026-11-02
+
+- Removed obsolete root dotfile/font snapshots, duplicate wallpaper assets,
+  retired installers, the redundant package inventory and copied default templates.
+  All removed legacy wallpaper hashes were present in the retained collection.
+  Source is now grouped under `config/` and `system/`; the manifest describes
+  installation destinations and update policy explicitly.
+- The clean staged source passes all 225 desktop tests, including legacy payloads,
+  grouping/recovery, new-default merging, preserved personal edits, external and
+  internal relative links, and old-to-new linked-source updates retaining local
+  tracked edits and reviewed untracked files. Media regressions now run from the
+  maintainer test tree rather than installed application source.
+- A full files-only install in a temporary home passed Niri validation, created
+  grouped config/system/defaults storage, preserved a personal edit through an
+  update, and successfully restored both recovery journals. Real Lua caption
+  boundary checks, Bash/Python syntax and checksum/whitespace checks passed.
+- On the development desktop, 38 installed paths were grouped without restarting
+  services. Before/after checks matched file contents, inodes and link targets;
+  the second migration was a no-op and local deployment preview passed.
+- Three ignored, local source aliases remain for already-running applications'
+  former resolved paths. They contain no duplicate source and are excluded from
+  exports. Unrelated working edits and untracked development files remain separate.
+- No package installation, privileged service change, GitHub push or release was
+  performed. System-owned destination paths such as `/etc/greetd/` remain standard
+  OS paths; their versioned templates are centralized in `system/etc/`.
+
 ## Portable hardware policy and development menu — 2026-11-02
 
 - Hardware discovery is independent of installer/deployment policy. Fixtures cover

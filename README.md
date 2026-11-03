@@ -9,6 +9,8 @@ Use **GitHub Settings → Enclosure development → Open development menu**, the
 hardware detection, checks, local deployment, staging, commits, pushes and updates.
 See the [development guide](docs/DEVELOPMENT.md) for the workflow and hardware limits.
 
+Source is grouped into **`config/`** (shipped defaults) and **`system/`** (managed code and resources). Personal settings live under **`~/.config/enclosure/`**. See the [filesystem guide](docs/FILESYSTEM.md) for migration, updates and recovery.
+
 [Download latest release](https://github.com/Rebo-NS4U/rebos_enclosure/releases/latest) · [Installation guide](desktop/README.md) · [Package list](desktop/packages/README.md)
 
 [v1.4.1 release notes](docs/releases/v1.4.1.md): reliable managed-file updates,
@@ -130,4 +132,4 @@ Accounts, credentials, browser profiles and personal chat/media history are excl
 
 ## Credits
 
-Based on [jR4dh3y's dots-niri](https://github.com/jR4dh3y/dots-niri), with the bundled rebos_shell derived from Ambxst by Axenide and subsequent contributors. The shell retains its [AGPL-3.0 license](desktop/payload/home/.config/quickshell/LICENSE); bundled components retain their own licenses. Wallpaper metadata includes the [MAKC collection](https://github.com/makccr/wallpapers). See [upstream documentation](UPSTREAM.md).
+Based on [jR4dh3y's dots-niri](https://github.com/jR4dh3y/dots-niri), with the bundled rebos_shell derived from Ambxst by Axenide and subsequent contributors. The shell retains its [AGPL-3.0 license](system/apps/shell/LICENSE); bundled components retain their own licenses. Wallpaper metadata includes the [MAKC collection](https://github.com/makccr/wallpapers). See [upstream documentation](UPSTREAM.md).

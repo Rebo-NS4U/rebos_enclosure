@@ -7,7 +7,7 @@ import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
-APP = ROOT / 'payload/home/.config/quickshell'
+APP = ROOT.parent / 'system/apps/shell'
 
 HARNESS = '''import QtQuick
 import QtQuick.Layouts

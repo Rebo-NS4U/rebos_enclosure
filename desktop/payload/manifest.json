@@ -1,6 +1,6 @@
 {
   "created": "2026-10-31T23:11:07.964620+00:00",
-  "description": "Selected live desktop sources, sanitized portable snapshot",
+  "description": "Managed system source and separate configuration defaults; personal state is never shipped",
   "shellVersion": "1.1.6",
   "shellRepository": "https://github.com/Rebo-NS4U/rebos_enclosure",
   "units": [
@@ -89,38 +89,358 @@
     ".local/share/wallpapers/Urban",
     ".local/share/wallpapers/default.jpg",
     ".local/share/wallpapers/rebos",
-    "code/anime-streamer/app.py",
-    "code/anime-streamer/backend_server.py",
-    "code/anime-streamer/browser_bridge.py",
-    "code/anime-streamer/direct_source.py",
-    "code/anime-streamer/discovery_catalogue.py",
-    "code/anime-streamer/filter_options.json",
-    "code/anime-streamer/live_subtitles.py",
-    "code/anime-streamer/media_sources.py",
-    "code/anime-streamer/media_validation.py",
-    "code/anime-streamer/menu_backend.py",
-    "code/anime-streamer/menu_client.py",
-    "code/anime-streamer/moviebox_source.py",
-    "code/anime-streamer/mpv_session.py",
-    "code/anime-streamer/primewire_browser.cjs",
-    "code/anime-streamer/primewire_source.py",
-    "code/anime-streamer/stream_relay.py",
-    "code/anime-streamer/test_caption_policy.py",
-    "code/anime-streamer/test_next_episode.py",
-    "code/anime-streamer/test_player_startup.py",
-    "code/anime-streamer/test_vlc_caption_anchor.lua",
-    "code/anime-streamer/torbox_source.py",
-    "code/anime-streamer/vlc_control.lua",
-    "code/anime-streamer/vlc_session.py",
-    "code/anime-streamer/vlc_theme.py",
-    "code/rebos-assistant/assets",
-    "code/rebos-assistant/config",
-    "code/rebos-assistant/modules",
-    "code/rebos-assistant/scripts",
-    "code/rebos-assistant/scripts/google_agent.py",
-    "code/rebos-assistant/scripts/google_settings.json",
-    "code/rebos-assistant/scripts/openrouter_models.json",
-    "code/rebos-assistant/shell.qml",
-    "code/rebos-assistant/version"
-  ]
+    "code/anime-streamer",
+    "code/rebos-assistant"
+  ],
+  "layout": 2,
+  "sources": {
+    ".cache/rebos_shell/colors.json": {
+      "source": "system/cache-defaults/rebos_shell/colors.json",
+      "kind": "cache"
+    },
+    ".cache/rebos_shell/effective-palette.json": {
+      "source": "system/cache-defaults/rebos_shell/effective-palette.json",
+      "kind": "cache"
+    },
+    ".cache/rebos_shell/fish.fish": {
+      "source": "system/cache-defaults/rebos_shell/fish.fish",
+      "kind": "cache"
+    },
+    ".cache/rebos_shell/fzf.conf": {
+      "source": "system/cache-defaults/rebos_shell/fzf.conf",
+      "kind": "cache"
+    },
+    ".cache/rebos_shell/kitty.conf": {
+      "source": "system/cache-defaults/rebos_shell/kitty.conf",
+      "kind": "cache"
+    },
+    ".cache/rebos_shell/niri-colors.kdl": {
+      "source": "system/cache-defaults/rebos_shell/niri-colors.kdl",
+      "kind": "cache"
+    },
+    ".cache/rebos_shell/wallpapers.json": {
+      "source": "system/cache-defaults/rebos_shell/wallpapers.json",
+      "kind": "cache"
+    },
+    ".config/btop": {
+      "source": "config/btop",
+      "kind": "personal"
+    },
+    ".config/environment.d/90-rebos-desktop.conf": {
+      "source": "system/environment/90-rebos-desktop.conf",
+      "kind": "managed"
+    },
+    ".config/fish": {
+      "source": "config/fish",
+      "kind": "personal"
+    },
+    ".config/fuzzel": {
+      "source": "config/fuzzel",
+      "kind": "personal"
+    },
+    ".config/gtk-3.0": {
+      "source": "config/gtk-3.0",
+      "kind": "personal"
+    },
+    ".config/gtk-4.0": {
+      "source": "config/gtk-4.0",
+      "kind": "personal"
+    },
+    ".config/kdeglobals": {
+      "source": "config/kdeglobals",
+      "kind": "personal"
+    },
+    ".config/kitty": {
+      "source": "config/kitty",
+      "kind": "personal"
+    },
+    ".config/niri": {
+      "source": "config/niri",
+      "kind": "personal"
+    },
+    ".config/nvim": {
+      "source": "config/nvim",
+      "kind": "personal"
+    },
+    ".config/qt5ct": {
+      "source": "config/qt5ct",
+      "kind": "personal"
+    },
+    ".config/qt6ct": {
+      "source": "config/qt6ct",
+      "kind": "personal"
+    },
+    ".config/quickshell": {
+      "source": "system/apps/shell",
+      "kind": "managed"
+    },
+    ".config/rebos_shell/config/bar.json": {
+      "source": "config/shell/config/bar.json",
+      "kind": "personal"
+    },
+    ".config/rebos_shell/config/lockscreen.json": {
+      "source": "config/shell/config/lockscreen.json",
+      "kind": "personal"
+    },
+    ".config/rebos_shell/config/performance.json": {
+      "source": "config/shell/config/performance.json",
+      "kind": "personal"
+    },
+    ".config/rebos_shell/config/system.json": {
+      "source": "config/shell/config/system.json",
+      "kind": "personal"
+    },
+    ".config/rebos_shell/config/theme.json": {
+      "source": "config/shell/config/theme.json",
+      "kind": "personal"
+    },
+    ".config/rebos_shell/config/weather.json": {
+      "source": "config/shell/config/weather.json",
+      "kind": "personal"
+    },
+    ".config/regreet-sync/regreet.css.in": {
+      "source": "system/greeter/regreet.css.in",
+      "kind": "managed"
+    },
+    ".config/scripts/browser-app": {
+      "source": "system/scripts/browser-app",
+      "kind": "managed"
+    },
+    ".config/scripts/copy-latest-screenshot-path.sh": {
+      "source": "system/scripts/copy-latest-screenshot-path.sh",
+      "kind": "managed"
+    },
+    ".config/scripts/install-aur.sh": {
+      "source": "system/scripts/install-aur.sh",
+      "kind": "managed"
+    },
+    ".config/scripts/install.sh": {
+      "source": "system/scripts/install.sh",
+      "kind": "managed"
+    },
+    ".config/scripts/package-admin.sh": {
+      "source": "system/scripts/package-admin.sh",
+      "kind": "managed"
+    },
+    ".config/scripts/package-menu.sh": {
+      "source": "system/scripts/package-menu.sh",
+      "kind": "managed"
+    },
+    ".config/scripts/port-manager.sh": {
+      "source": "system/scripts/port-manager.sh",
+      "kind": "managed"
+    },
+    ".config/scripts/scale-adjust.sh": {
+      "source": "system/scripts/scale-adjust.sh",
+      "kind": "managed"
+    },
+    ".config/scripts/uninstall.sh": {
+      "source": "system/scripts/uninstall.sh",
+      "kind": "managed"
+    },
+    ".config/spicetify/Themes/rebos_shell": {
+      "source": "config/spicetify/Themes/rebos_shell",
+      "kind": "personal"
+    },
+    ".config/systemd/user/anime-streamer.service": {
+      "source": "system/services/user/anime-streamer.service",
+      "kind": "managed"
+    },
+    ".config/systemd/user/rebos-assistant-ui.service": {
+      "source": "system/services/user/rebos-assistant-ui.service",
+      "kind": "managed"
+    },
+    ".config/systemd/user/rebos-assistant.service": {
+      "source": "system/services/user/rebos-assistant.service",
+      "kind": "managed"
+    },
+    ".config/systemd/user/rebos-assistant@.service": {
+      "source": "system/services/user/rebos-assistant@.service",
+      "kind": "managed"
+    },
+    ".config/systemd/user/rebos-panel.service": {
+      "source": "system/services/user/rebos-panel.service",
+      "kind": "managed"
+    },
+    ".config/systemd/user/regreet-sync.path": {
+      "source": "system/services/user/regreet-sync.path",
+      "kind": "managed"
+    },
+    ".config/systemd/user/regreet-sync.service": {
+      "source": "system/services/user/regreet-sync.service",
+      "kind": "managed"
+    },
+    ".config/systemd/user/regreet-sync.timer": {
+      "source": "system/services/user/regreet-sync.timer",
+      "kind": "managed"
+    },
+    ".config/themes": {
+      "source": "config/themes",
+      "kind": "personal"
+    },
+    ".config/vesktop/themes/rebos_shell.css": {
+      "source": "config/vesktop/themes/rebos_shell.css",
+      "kind": "personal"
+    },
+    ".config/xdg-desktop-portal/niri-portals.conf": {
+      "source": "config/xdg-desktop-portal/niri-portals.conf",
+      "kind": "personal"
+    },
+    ".local/bin/ani-cli": {
+      "source": "system/bin/ani-cli",
+      "kind": "managed"
+    },
+    ".local/bin/anime-streamer": {
+      "source": "system/bin/anime-streamer",
+      "kind": "managed"
+    },
+    ".local/bin/assistant-sudo": {
+      "source": "system/bin/assistant-sudo",
+      "kind": "managed"
+    },
+    ".local/bin/colorscheme": {
+      "source": "system/bin/colorscheme",
+      "kind": "managed"
+    },
+    ".local/bin/config-browser": {
+      "source": "system/bin/config-browser",
+      "kind": "managed"
+    },
+    ".local/bin/emoji-dmenu": {
+      "source": "system/bin/emoji-dmenu",
+      "kind": "managed"
+    },
+    ".local/bin/enclosure-dev": {
+      "source": "system/bin/enclosure-dev",
+      "kind": "managed"
+    },
+    ".local/bin/project-picker": {
+      "source": "system/bin/project-picker",
+      "kind": "managed"
+    },
+    ".local/bin/rebos-assistant": {
+      "source": "system/bin/rebos-assistant",
+      "kind": "managed"
+    },
+    ".local/bin/rebos-clipboard": {
+      "source": "system/bin/rebos-clipboard",
+      "kind": "managed"
+    },
+    ".local/bin/rebos_shell": {
+      "source": "system/bin/rebos_shell",
+      "kind": "managed"
+    },
+    ".local/bin/regreet-sync": {
+      "source": "system/bin/regreet-sync",
+      "kind": "managed"
+    },
+    ".local/bin/rice": {
+      "source": "system/bin/rice",
+      "kind": "managed"
+    },
+    ".local/bin/terminal-bonsai": {
+      "source": "system/bin/terminal-bonsai",
+      "kind": "managed"
+    },
+    ".local/bin/thinkpad-fan-control": {
+      "source": "system/bin/thinkpad-fan-control",
+      "kind": "managed"
+    },
+    ".local/bin/wallpaper": {
+      "source": "system/bin/wallpaper",
+      "kind": "managed"
+    },
+    ".local/bin/wallpaper-switcher": {
+      "source": "system/bin/wallpaper-switcher",
+      "kind": "managed"
+    },
+    ".local/bin/wayland-screenshot": {
+      "source": "system/bin/wayland-screenshot",
+      "kind": "managed"
+    },
+    ".local/bin/zen-browser": {
+      "source": "system/bin/zen-browser",
+      "kind": "managed"
+    },
+    ".local/share/applications/config-browser.desktop": {
+      "source": "system/share/applications/config-browser.desktop",
+      "kind": "managed"
+    },
+    ".local/share/applications/enclosure-development.desktop": {
+      "source": "system/share/applications/enclosure-development.desktop",
+      "kind": "managed"
+    },
+    ".local/share/applications/rebos-assistant.desktop": {
+      "source": "system/share/applications/rebos-assistant.desktop",
+      "kind": "managed"
+    },
+    ".local/share/applications/rebos-shell-settings.desktop": {
+      "source": "system/share/applications/rebos-shell-settings.desktop",
+      "kind": "managed"
+    },
+    ".local/share/applications/thinkpad-fan-control.desktop": {
+      "source": "system/share/applications/thinkpad-fan-control.desktop",
+      "kind": "managed"
+    },
+    ".local/share/applications/wallpaper-switcher.desktop": {
+      "source": "system/share/applications/wallpaper-switcher.desktop",
+      "kind": "managed"
+    },
+    ".local/share/cbonsai/INSTALL.md": {
+      "source": "system/share/cbonsai/INSTALL.md",
+      "kind": "managed"
+    },
+    ".local/share/cbonsai/LICENSE": {
+      "source": "system/share/cbonsai/LICENSE",
+      "kind": "managed"
+    },
+    ".local/share/cbonsai/README.md": {
+      "source": "system/share/cbonsai/README.md",
+      "kind": "managed"
+    },
+    ".local/share/cbonsai/cbonsai.c": {
+      "source": "system/share/cbonsai/cbonsai.c",
+      "kind": "managed"
+    },
+    ".local/share/fonts/opendyslexic": {
+      "source": "system/share/fonts/opendyslexic",
+      "kind": "managed"
+    },
+    ".local/share/fonts/phosphor": {
+      "source": "system/share/fonts/phosphor",
+      "kind": "managed"
+    },
+    ".local/share/fonts/rebos_shell": {
+      "source": "system/share/fonts/rebos_shell",
+      "kind": "managed"
+    },
+    ".local/share/icons/GoogleDot-Black": {
+      "source": "system/share/icons/GoogleDot-Black",
+      "kind": "managed"
+    },
+    ".local/share/wallpapers/Nature": {
+      "source": "system/share/wallpapers/Nature",
+      "kind": "managed"
+    },
+    ".local/share/wallpapers/Urban": {
+      "source": "system/share/wallpapers/Urban",
+      "kind": "managed"
+    },
+    ".local/share/wallpapers/default.jpg": {
+      "source": "system/share/wallpapers/default.jpg",
+      "kind": "managed"
+    },
+    ".local/share/wallpapers/rebos": {
+      "source": "system/share/wallpapers/rebos",
+      "kind": "managed"
+    },
+    "code/anime-streamer": {
+      "source": "system/apps/media",
+      "kind": "managed"
+    },
+    "code/rebos-assistant": {
+      "source": "system/apps/assistant",
+      "kind": "managed"
+    }
+  }
 }

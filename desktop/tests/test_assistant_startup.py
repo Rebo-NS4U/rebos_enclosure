@@ -6,7 +6,7 @@ import subprocess
 import tempfile
 import unittest
 
-APP = Path(__file__).resolve().parents[1] / 'payload/home/code/rebos-assistant'
+APP = Path(__file__).resolve().parents[2] / 'system/apps/assistant'
 HARNESS = '''import QtQuick
 import Quickshell
 import qs.modules.sidebar

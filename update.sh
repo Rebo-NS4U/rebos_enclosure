@@ -12,16 +12,16 @@ home = Path.home()
 checkouts = set()
 for relative in (".config/quickshell", "code/rebos-assistant", "code/anime-streamer"):
     link = home / relative
-    suffix = Path("desktop/payload/home") / relative
     if not link.is_symlink():
         continue
     target = link.resolve()
-    if target.parts[-len(suffix.parts):] != suffix.parts:
-        continue
-    checkout = target.parents[len(suffix.parts) - 1]
-    if not (checkout / ".git").exists():
-        sys.exit(f"Update stopped: Missing source checkout: {checkout}")
-    checkouts.add(checkout)
+    for parent in target.parents:
+        if (parent / ".git").exists() and ((parent / "system") in target.parents or (parent / "desktop/payload/home") in target.parents):
+            checkouts.add(parent)
+            break
+    else:
+        if "desktop/payload/home" in str(target):
+            sys.exit(f"Update stopped: Missing source checkout: {target}")
 if len(checkouts) > 1:
     sys.exit("Update stopped: Application links point to different checkouts")
 checkout = next(iter(checkouts), local)

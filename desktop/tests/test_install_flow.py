@@ -75,8 +75,8 @@ class InstallFlowTests(unittest.TestCase):
             result = subprocess.run(args, env=env, text=True, capture_output=True, timeout=60)
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             self.assertEqual((home / '.config/quickshell/version').read_text().strip(),
-                             (ROOT / 'desktop/payload/home/.config/quickshell/version').read_text().strip())
-            self.assertTrue((ROOT / 'desktop/payload/home/code/rebos-assistant/shell.qml').is_file())
+                             (ROOT / 'system/apps/shell/version').read_text().strip())
+            self.assertTrue((ROOT / 'system/apps/assistant/shell.qml').is_file())
             self.assertTrue((home / 'code/rebos-assistant/shell.qml').is_file())
             for relative in ('code/anime-streamer/menu_client.py',
                              '.config/quickshell/AnimeMenu.qml', '.local/bin/ani-cli',
@@ -108,7 +108,7 @@ class InstallFlowTests(unittest.TestCase):
             self.assertEqual(any(e['command'] == 'greeter-sync' for e in entries), login)
             if login:
                 self.assertEqual(copied['/etc/pam.d/greetd'],
-                                 (ROOT / 'desktop/payload/system/pam.d/greetd').read_text())
+                                 (ROOT / 'system/etc/pam.d/greetd').read_text())
                 pam = copied['/etc/pam.d/greetd']
                 self.assertLess(pam.index('auth       include      system-local-login'),
                                 pam.index('auth       optional     pam_gnome_keyring.so'))
@@ -123,7 +123,7 @@ class InstallFlowTests(unittest.TestCase):
                     ['systemctl', 'enable', 'greetd.service']])
                 for name in ('config.toml', 'regreet.toml'):
                     self.assertEqual(copied['/etc/greetd/' + name],
-                                     (ROOT / 'desktop/payload/system/greetd' / name).read_text())
+                                     (ROOT / 'system/etc/greetd' / name).read_text())
                 for name in ('layout', 'cage-cursor'):
                     self.assertTrue(any(e['args'] and e['args'][-1] == '/usr/local/lib/rebos-greeter/' + name + '.so'
                                         and e.get('size', 0) > 0 for e in entries))

@@ -37,7 +37,7 @@ class GreeterSyncTests(unittest.TestCase):
                                 replacement)
 
     def test_wallpaper_and_color_changes(self):
-        script = runpy.run_path(str(ROOT / 'payload/home/.local/bin/regreet-sync'))
+        script = runpy.run_path(str(ROOT.parent / 'system/bin/regreet-sync'))
         with tempfile.TemporaryDirectory() as temporary:
             home = Path(temporary)
             cache, target = home / 'cache', home / 'theme'

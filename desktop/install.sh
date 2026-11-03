@@ -151,12 +151,12 @@ fi
 for dependency in cc fish fc-cache; do command -v "$dependency" >/dev/null || die "Missing dependency: $dependency"; done
 work_dir=$(mktemp -d)
 if ((!files_only)) && [[ $login == regreet ]]; then
-    cc -O2 -shared -fPIC "$ROOT/payload/system/rebos-greeter/cage-cursor.c" -ldl -o "$work_dir/cage-cursor.so"
-    cc -O2 -shared -fPIC "$ROOT/payload/system/rebos-greeter/layout.c" $(pkg-config --cflags --libs gtk4) -o "$work_dir/layout.so"
+    cc -O2 -shared -fPIC "$ROOT/../system/etc/rebos-greeter/cage-cursor.c" -ldl -o "$work_dir/cage-cursor.so"
+    cc -O2 -shared -fPIC "$ROOT/../system/etc/rebos-greeter/layout.c" $(pkg-config --cflags --libs gtk4) -o "$work_dir/layout.so"
 fi
-cc -O2 "$ROOT/payload/home/.local/share/cbonsai/cbonsai.c" -lpanelw -lncursesw -o "$work_dir/cbonsai"
+cc -O2 "$ROOT/../system/share/cbonsai/cbonsai.c" -lpanelw -lncursesw -o "$work_dir/cbonsai"
 # Validate the exact customized Niri configuration before changing user files.
-python3 - "$ROOT/payload/home/.config/niri" "$work_dir/niri" <<'PY'
+python3 - "$ROOT/../config/niri" "$work_dir/niri" <<'PY'
 from pathlib import Path
 import os
 import shutil
@@ -193,22 +193,22 @@ if ((!files_only)); then
     fi
     if [[ $login == regreet ]]; then
         backup_system_file /etc/pam.d/greetd
-        sudo install -Dm644 "$ROOT/payload/system/pam.d/greetd" /etc/pam.d/greetd
+        sudo install -Dm644 "$ROOT/../system/etc/pam.d/greetd" /etc/pam.d/greetd
         for path in /etc/greetd /usr/local/lib/rebos-greeter /var/lib/rebos-greeter/theme /usr/share/icons/GoogleDot-Black; do
             backup_system_file "$path"
         done
         for name in config.toml regreet.toml; do
-            sudo install -Dm644 "$ROOT/payload/system/greetd/$name" "/etc/greetd/$name"
+            sudo install -Dm644 "$ROOT/../system/etc/greetd/$name" "/etc/greetd/$name"
         done
         for name in layout cage-cursor; do
-            sudo install -Dm644 "$ROOT/payload/system/rebos-greeter/$name.c" "/usr/local/lib/rebos-greeter/$name.c"
+            sudo install -Dm644 "$ROOT/../system/etc/rebos-greeter/$name.c" "/usr/local/lib/rebos-greeter/$name.c"
             sudo install -Dm755 "$work_dir/$name.so" "/usr/local/lib/rebos-greeter/$name.so"
         done
         sudo install -d -m755 /var/lib/rebos-greeter/theme /usr/share/icons/GoogleDot-Black
         for name in regreet.css background.png glass-texture.png; do
-            sudo install -m644 "$ROOT/payload/system/rebos-greeter/theme/$name" "/var/lib/rebos-greeter/theme/$name"
+            sudo install -m644 "$ROOT/../system/etc/rebos-greeter/theme/$name" "/var/lib/rebos-greeter/theme/$name"
         done
-        sudo cp -r "$ROOT/payload/home/.local/share/icons/GoogleDot-Black/." /usr/share/icons/GoogleDot-Black/
+        sudo cp -r "$ROOT/../system/share/icons/GoogleDot-Black/." /usr/share/icons/GoogleDot-Black/
         sudo chown -R root:root /usr/share/icons/GoogleDot-Black
         # Change enablement for the next boot; never stop the running login/session.
         mapfile -t ly_units < <(systemctl list-unit-files 'ly*' --state=enabled --no-legend | awk '{print $1}')

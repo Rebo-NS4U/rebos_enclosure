@@ -10,7 +10,7 @@ class MediaUpdateTests(unittest.TestCase):
     def test_media_regressions(self):
         root = Path(__file__).resolve().parents[1]
         env = dict(os.environ, PYTHONDONTWRITEBYTECODE='1',
-                   PYTHONPATH=str(root / 'payload/home/code/anime-streamer'))
+                   PYTHONPATH=str(root.parent / 'system/apps/media'))
         result = subprocess.run(
             [sys.executable, '-m', 'unittest', 'discover', '-s', str(root / 'tests/media'), '-q'],
             env=env, capture_output=True, text=True, timeout=180)

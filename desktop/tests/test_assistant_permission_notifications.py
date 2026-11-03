@@ -4,7 +4,7 @@ import shutil
 import subprocess
 import unittest
 
-ROOT = Path(__file__).resolve().parents[1] / 'payload/home'
+ROOT = Path(__file__).resolve().parents[2] / 'system'
 
 SCENARIO = r'''
 const assert = require('node:assert/strict');
@@ -68,7 +68,7 @@ console.log('PASS question and permission notification lifecycle');
 @unittest.skipUnless(shutil.which('node'), 'Node.js required')
 class AssistantPermissionNotificationsTest(unittest.TestCase):
     def test_notifications(self):
-        for relative in ('code/rebos-assistant', '.config/quickshell'):
+        for relative in ('apps/assistant', 'apps/shell'):
             with self.subTest(package=relative):
                 result = subprocess.run(
                     ['node', '-e', SCENARIO, str(ROOT / relative / 'modules/services/Ai.qml')],

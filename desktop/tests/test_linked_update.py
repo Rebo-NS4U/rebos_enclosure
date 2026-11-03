@@ -61,6 +61,36 @@ class PreservedUpdateTests(unittest.TestCase):
         self.commit(self.remote, 'Incoming')
         return git(self.remote, 'rev-parse', 'HEAD')
 
+    def test_layout_transition_retains_local_code_edits_and_reviewed_untracked_source(self):
+        extra = self.local / 'desktop/payload/home/.config/quickshell/local.qml'
+        extra.write_text('local source')
+        hashes_path = self.local / 'desktop/payload/checksums.json'
+        hashes = json.loads(hashes_path.read_text())
+        hashes['home/.config/quickshell/local.qml'] = hashlib.sha256(extra.read_bytes()).hexdigest()
+        hashes_path.write_text(json.dumps(hashes))
+        edited = self.local / 'desktop/payload/home/.config/quickshell/extra.qml'
+        edited.write_text('my extra code')
+        # The remote changes only organization, preserving code identity.
+        new = self.remote / 'system/apps/shell'
+        new.parent.mkdir(parents=True)
+        git(self.remote, 'mv', 'desktop/payload/home/.config/quickshell', 'system/apps/shell')
+        (self.remote / 'config').mkdir()
+        data = {'layout': 2, 'units': ['.config/quickshell'], 'sources': {
+            '.config/quickshell': {'source': 'system/apps/shell', 'kind': 'managed'}}}
+        (self.payload / 'manifest.json').write_text(json.dumps(data))
+        from layout import inventory
+        new_hashes = {name: hashlib.sha256(path.read_bytes()).hexdigest() for name, path in inventory(self.payload).items()}
+        (self.payload / 'checksums.json').write_text(json.dumps(new_hashes))
+        self.commit(self.remote, 'Separate system source')
+        with prepare(self.local, self.remote, self.home) as staged:
+            self.assertTrue(extra.exists(), 'Preview must retain the original live path')
+            self.assertEqual((staged.plan / 'system/apps/shell/local.qml').read_text(), 'local source')
+            staged.apply()
+        self.assertFalse(extra.exists())
+        self.assertEqual((self.local / 'system/apps/shell/local.qml').read_text(), 'local source')
+        self.assertEqual((self.local / 'system/apps/shell/extra.qml').read_text(), 'my extra code')
+        verify(self.local / 'desktop/payload')
+
     def test_dirty_preview_then_update_preserves_index_worktree_and_untracked(self):
         incoming = self.incoming()
         (self.local / 'user.txt').write_text('local edit\n')

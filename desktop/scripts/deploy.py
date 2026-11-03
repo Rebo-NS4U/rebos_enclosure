@@ -10,6 +10,9 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from layout import (source as source_path, destination_name, checksum_path,
+                    inventory, manifest, entry as source_entry, checkout_for, safe)
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE_ROOTS = ('.config/quickshell', 'code/rebos-assistant', 'code/anime-streamer')
@@ -36,6 +39,28 @@ def check_parent(home, relative, allow_config_links=False):
 
 def verify(payload):
     hashes = json.loads((payload / 'checksums.json').read_text())
+    if manifest(payload).get('layout') == 2:
+        actual = inventory(payload)
+        if set(actual) != set(hashes):
+            raise ValueError('Payload file inventory has changed; rebuild its snapshot')
+        for name, path in actual.items():
+            root = payload if name == 'manifest.json' else payload.parents[1]
+            check_parent(root, str(path.relative_to(root)))
+            if path.is_symlink() or hashlib.sha256(path.read_bytes()).hexdigest() != hashes[name]:
+                raise ValueError('Payload checksum mismatch: ' + name)
+        sources = manifest(payload)['sources']
+        units = manifest(payload)['units']
+        if set(sources) != set(units):
+            raise ValueError('Each installation unit needs one source mapping')
+        for name in units:
+            safe(name)
+            item = sources[name]
+            if item.get('kind') not in ('managed', 'personal', 'cache') or not source_path(payload, name).exists():
+                raise ValueError('Invalid source mapping: ' + name)
+            expected = 'config' if item['kind'] == 'personal' else 'system'
+            if Path(item['source']).parts[0] != expected:
+                raise ValueError('Source kind does not match its configuration/system directory: ' + name)
+        return units
     actual = {str(p.relative_to(payload)) for p in payload.rglob('*')
               if p.is_file() and p.name not in {'checksums.json', 'manifest.json'}
               and '__pycache__' not in p.relative_to(payload).parts}
@@ -59,6 +84,14 @@ def expand(path, home):
         path.write_text(content.replace('@HOME@', str(home)))
 
 
+def organized_destination(home, relative):
+    path = home / relative
+    resolved = path.resolve()
+    if resolved.is_relative_to(home / '.config/enclosure'):
+        return resolved
+    return path
+
+
 def source_record(payload):
     """Identify the actual payload checkout, never an unrelated parent repository."""
     payload = payload.resolve()
@@ -74,9 +107,12 @@ def source_record(payload):
                 'https://github.com/Rebo-NS4U/rebos_enclosure',
                 'git@github.com:Rebo-NS4U/rebos_enclosure'):
             return None
+        scopes = [str(payload)]
+        if manifest(payload).get('layout') == 2:
+            scopes += [str(checkout / 'config'), str(checkout / 'system')]
         return {'repository': 'https://github.com/Rebo-NS4U/rebos_enclosure',
                 'commit': git('rev-parse', 'HEAD'),
-                'dirty': bool(git('status', '--porcelain', '--', str(payload)))}
+                'dirty': bool(git('status', '--porcelain', '--', *scopes))}
     except (OSError, subprocess.SubprocessError):
         return None
 
@@ -84,10 +120,15 @@ def source_record(payload):
 def install(payload, home, dry_run=False, cbonsai=None, settings=None, preserve_preferences=False,
             link_source=False):
     units = verify(payload)
+    if manifest(payload).get('layout') == 2:
+        from organize import plan as organization_plan
+        organization_plan(home, payload)  # Detect conflicting locations before any writes.
     if preserve_preferences and settings is not None:
         raise ValueError('Preference-preserving updates cannot replace the installation plan')
     if preserve_preferences:
         def preference(relative):
+            if manifest(payload).get('layout') == 2:
+                return source_entry(payload, relative)[1]['kind'] in ('personal', 'cache')
             if (relative == '.config/regreet-sync/regreet.css.in' or
                     relative.startswith(('.config/scripts/', '.config/systemd/user/'))):
                 return False  # Managed application code, refreshed on updates.
@@ -110,7 +151,7 @@ def install(payload, home, dry_run=False, cbonsai=None, settings=None, preserve_
             if not preference(relative):
                 selected.append(relative)
                 continue
-            source = payload / 'home' / relative
+            source = source_path(payload, relative)
             # Generated palettes and wallpaper choices remain personal state.
             if relative.startswith(('.cache/', '.local/share/wallpapers/')):
                 if not exists(home / relative):
@@ -120,7 +161,7 @@ def install(payload, home, dry_run=False, cbonsai=None, settings=None, preserve_
             for path in paths:
                 if not path.is_file():
                     continue
-                name = str(path.relative_to(payload / 'home'))
+                name = destination_name(payload, path)
                 content = path.read_bytes().replace(b'@HOME@', str(home).encode())
                 digest = hashlib.sha256(content).hexdigest()
                 defaults[name] = digest
@@ -128,7 +169,8 @@ def install(payload, home, dry_run=False, cbonsai=None, settings=None, preserve_
                 # Preserve links (including linked parents) and unknown existing
                 # preferences. The first update establishes a safe baseline.
                 parents = destination.relative_to(home).parents
-                if destination.is_symlink() or any((home / p).is_symlink() for p in parents):
+                links = [destination, *(home / p for p in parents)]
+                if any(p.is_symlink() and not p.resolve().is_relative_to(home / '.config/enclosure') for p in links):
                     continue
                 if not exists(destination):
                     # A missing previously shipped file may be an intentional
@@ -140,15 +182,20 @@ def install(payload, home, dry_run=False, cbonsai=None, settings=None, preserve_
                     # Older installations have a revision but no defaults record.
                     # Recover the old shipped default when its Git object exists.
                     if name not in previous and installed_commit:
-                        try:
-                            old = subprocess.check_output(
-                                ['git', '-C', str(ROOT.parent), 'show',
-                                 f'{installed_commit}:desktop/payload/home/{name}'],
-                                stderr=subprocess.PIPE, timeout=10)
-                            old = old.replace(b'@HOME@', str(home).encode())
-                            previous[name] = hashlib.sha256(old).hexdigest()
-                        except (OSError, subprocess.SubprocessError):
-                            pass
+                        candidates = [f'desktop/payload/home/{name}']
+                        if manifest(payload).get('layout') == 2:
+                            candidates.insert(0, str(path.relative_to(payload.parents[1])))
+                        for candidate in candidates:
+                            try:
+                                old = subprocess.check_output(
+                                    ['git', '-C', str(ROOT.parent), 'show',
+                                     f'{installed_commit}:{candidate}'],
+                                    stderr=subprocess.PIPE, timeout=10)
+                                old = old.replace(b'@HOME@', str(home).encode())
+                                previous[name] = hashlib.sha256(old).hexdigest()
+                                break
+                            except (OSError, subprocess.SubprocessError):
+                                pass
                     if current == previous.get(name) and current != digest:
                         selected.append(name)
                     elif current != digest:
@@ -157,8 +204,8 @@ def install(payload, home, dry_run=False, cbonsai=None, settings=None, preserve_
         # Fish contains personal configuration as well as this shipped command.
         # Refresh only the command when preserving an existing Fish directory.
         fish_update = '.config/fish/functions/update.fish'
-        if ('.config/fish' not in units and fish_update not in units and
-                (payload / 'home' / fish_update).is_file()):
+        if (manifest(payload).get('layout') != 2 and '.config/fish' not in units and fish_update not in units and
+                source_path(payload, fish_update).is_file()):
             units.append(fish_update)
     linked = {}
     if link_source:
@@ -169,12 +216,12 @@ def install(payload, home, dry_run=False, cbonsai=None, settings=None, preserve_
         for root in SOURCE_ROOTS:
             selected = [unit for unit in units if unit == root or unit.startswith(root + '/')]
             if selected:
-                linked[root] = payload / 'home' / root
+                linked[root] = source_path(payload, root)
                 units = [unit for unit in units if unit not in selected] + [root]
         # Portable commands and service definitions can use the same file too.
         # Home-expanded templates and personal configuration remain local files.
         for relative in units:
-            source = payload / 'home' / relative
+            source = source_path(payload, relative)
             if (relative.startswith(('.local/bin/', '.config/scripts/',
                                      '.config/systemd/user/', '.local/share/applications/'))
                     and source.is_file() and b'@HOME@' not in source.read_bytes()):
@@ -182,7 +229,7 @@ def install(payload, home, dry_run=False, cbonsai=None, settings=None, preserve_
     else:
         for root in SOURCE_ROOTS:
             target = home / root
-            if target.is_symlink() and 'desktop/payload/home' in str(target.resolve()):
+            if target.is_symlink() and checkout_for(target) is not None:
                 raise ValueError('Checkout-managed sources require --link-source; refusing to recreate duplicate code')
     # Capture shortcuts before any backup or replacement, including included files.
     spec = importlib.util.spec_from_file_location('personal_bindings', Path(__file__).with_name('personal_bindings.py'))
@@ -216,6 +263,12 @@ def install(payload, home, dry_run=False, cbonsai=None, settings=None, preserve_
                              if home in parent.parents and parent.is_symlink()})
     if dry_run:
         print(f'Verified payload; would deploy {len(units)} entries into {home}')
+        if manifest(payload).get('layout') == 2:
+            print(f'Personal settings: {home / ".config/enclosure"}')
+            print(f'Managed files: {home / ".local/share/enclosure/system"}; development source links are retained')
+            print(f'Shipped defaults: {home / ".local/share/enclosure/defaults"}')
+            for old, new in organization_plan(home, payload):
+                print(f'Would group {old} -> {new}')
         for parent in linked_parents:
             print(f'Would back up linked folder {home / parent} and install into a local copy; its source stays unchanged')
         for relative, source in linked.items():
@@ -227,7 +280,7 @@ def install(payload, home, dry_run=False, cbonsai=None, settings=None, preserve_
         return None
     backup = home / '.local/state/rebos-desktop/backups' / datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S.%fZ')
     check_parent(home, str(backup.relative_to(home)) + '/journal.json')
-    backup.mkdir(parents=True)
+    backup.mkdir(parents=True, mode=0o700)
     print(f'Desktop recovery backup: {backup}', flush=True)
     journal = {'home': str(home), 'entries': []}
     def save_journal():
@@ -240,6 +293,8 @@ def install(payload, home, dry_run=False, cbonsai=None, settings=None, preserve_
         for part in Path(relative).parts[:-1]:
             current = current / part
             if not current.is_symlink():
+                continue
+            if current.resolve().is_relative_to(home / '.config/enclosure'):
                 continue
             origin = current.resolve(strict=True)
             # Separate storage prevents a later leaf backup writing through a saved parent link.
@@ -255,8 +310,12 @@ def install(payload, home, dry_run=False, cbonsai=None, settings=None, preserve_
     try:
         for relative in units:
             detach_parents(relative)
-            source, destination, saved = payload / 'home' / relative, home / relative, backup / 'files' / relative
-            entry = {'path': relative, 'existed': exists(destination)}
+            source = source_path(payload, relative)
+            destination = organized_destination(home, relative)
+            destination_relative = str(destination.relative_to(home))
+            check_parent(home, destination_relative)
+            saved = backup / 'files' / destination_relative
+            entry = {'path': destination_relative, 'existed': exists(destination)}
             # Journal before each mutation so interrupted deployments remain recoverable.
             journal['entries'].append(entry)
             (backup / 'journal.json').write_text(json.dumps(journal, indent=2))
@@ -296,6 +355,9 @@ def install(payload, home, dry_run=False, cbonsai=None, settings=None, preserve_
                 saved.parent.mkdir(parents=True, exist_ok=True)
                 destination.rename(saved)
             shutil.copy2(cbonsai, destination)
+        if manifest(payload).get('layout') == 2:
+            from organize import organize
+            organize(home, payload, backup, journal)
         if provenance is not None:
             # Fingerprint deployed managed code, excluding preserved preferences,
             # account directories, caches and files not supplied by the payload.
@@ -307,11 +369,11 @@ def install(payload, home, dry_run=False, cbonsai=None, settings=None, preserve_
                         (relative.startswith('code/rebos-assistant/') and
                          not relative.startswith('code/rebos-assistant/config'))):
                     continue
-                source = payload / 'home' / relative
+                source = source_path(payload, relative)
                 sources = source.rglob('*') if source.is_dir() else [source]
                 for path in sources:
                     if path.is_file():
-                        name = str(path.relative_to(payload / 'home'))
+                        name = destination_name(payload, path)
                         fingerprints[name] = hashlib.sha256((home / name).read_bytes()).hexdigest()
             provenance['files'] = fingerprints
             (home / '.local/state/rebos-desktop/source.json').write_text(json.dumps(provenance, indent=2) + '\n')
@@ -332,6 +394,22 @@ def restore(backup):
         check_parent(home, relative)
         destination = home / relative
         saved = backup / entry.get('saved', 'files/' + relative)
+        if 'moved_to' in entry:
+            moved = home / entry['moved_to']
+            check_parent(home, entry['moved_to'])
+            if not exists(moved) or (exists(destination) and not destination.is_symlink()):
+                continue
+            if destination.is_symlink():
+                destination.unlink()
+            moved.rename(destination)
+            if 'original_link' in entry:
+                destination.unlink()
+                destination.symlink_to(entry['original_link'])
+            for name, target in entry.get('external_links', {}).items():
+                link = destination / name
+                link.unlink()
+                link.symlink_to(target)
+            continue
         # A journal entry with no saved original may have been interrupted before the move.
         if entry['existed'] and not exists(saved):
             continue

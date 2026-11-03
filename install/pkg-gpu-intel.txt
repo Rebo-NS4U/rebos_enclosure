@@ -1,4 +1,0 @@
-mesa
-vulkan-intel
-intel-media-driver
-intel-gpu-tools

@@ -66,6 +66,11 @@ class RelayTests(unittest.TestCase):
         with urlopen(Request(local, headers={'Range': 'bytes=100-199'})) as response:
             self.assertEqual(response.read(), data[100:200])
         self.assertEqual(len(self.origin.ranges), 2)
+        # The handler records the hit after flushing the response. The client can
+        # finish reading before that background thread regains the GIL.
+        deadline = time.monotonic() + 1
+        while self.relay.preload_hits < 2 and time.monotonic() < deadline:
+            time.sleep(0.001)
         self.assertEqual(self.relay.preload_hits, 2)
 
     def test_expired_prefix_and_seeks_outside_prefix_use_normal_upstream(self):

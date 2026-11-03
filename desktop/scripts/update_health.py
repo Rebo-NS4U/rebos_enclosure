@@ -5,6 +5,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import tempfile
+from layout import source as source_path, manifest
 
 ASSISTANT_HARNESS = '''import QtQuick
 import Quickshell
@@ -62,19 +63,20 @@ ShellRoot {
 def validate(payload):
     """Do not run shipped scripts, initialize accounts, or contact desktop services."""
     home = payload / 'home'
-    for source in home.rglob('*.py'):
-        compile(source.read_bytes(), str(source.relative_to(payload)), 'exec')
-    for source in home.rglob('*'):
+    roots = [payload.parents[1] / name for name in ('config', 'system')] if manifest(payload).get('layout') == 2 else [home]
+    for source in (p for base in roots for p in base.rglob('*.py')):
+        compile(source.read_bytes(), str(source), 'exec')
+    for source in (p for base in roots for p in base.rglob('*')):
         if not source.is_file():
             continue
         if source.suffix == '.sh' or source.read_bytes().startswith(b'#!/usr/bin/env bash'):
             result = subprocess.run(['bash', '-n', str(source)], capture_output=True, text=True, timeout=20)
             if result.returncode:
-                raise ValueError(f'Invalid shell script {source.relative_to(payload)}: {result.stderr}')
-    app = home / 'code/rebos-assistant'
+                raise ValueError(f'Invalid shell script {source}: {result.stderr}')
+    app = source_path(payload, 'code/rebos-assistant')
     if (app / 'shell.qml').exists():
         validate_assistant(app)
-    panel = home / '.config/quickshell'
+    panel = source_path(payload, '.config/quickshell')
     if (panel / 'modules/widgets/config/SettingsWindow.qml').exists():
         validate_qml(panel, PANEL_HARNESS, 'Desktop panel')
 

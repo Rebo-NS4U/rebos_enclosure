@@ -8,7 +8,7 @@ import sys
 import tempfile
 import unittest
 
-ROOT = Path(__file__).resolve().parents[1] / 'payload/home/code/rebos-assistant'
+ROOT = Path(__file__).resolve().parents[2] / 'system/apps/assistant'
 
 NATIVE = r'''#!/usr/bin/env python3
 import json, signal, sys

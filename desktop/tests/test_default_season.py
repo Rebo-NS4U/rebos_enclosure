@@ -3,7 +3,7 @@ from pathlib import Path
 import sys
 import unittest
 from unittest.mock import patch
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'payload/home/code/anime-streamer'))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'system/apps/media'))
 import direct_source
 
 class DefaultSeasonTests(unittest.TestCase):

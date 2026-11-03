@@ -13,12 +13,13 @@ Installed paths map to these tracked sources:
 
 | Installed path (relative to the user's home) | Repository source |
 | --- | --- |
-| `.config/quickshell/` | `desktop/payload/home/.config/quickshell/` |
-| `code/rebos-assistant/` | `desktop/payload/home/code/rebos-assistant/` |
-| `code/anime-streamer/` | `desktop/payload/home/code/anime-streamer/` |
-| Other shipped home files | Matching paths under `desktop/payload/home/` |
+| `.config/quickshell/` | `system/apps/shell/` |
+| `code/rebos-assistant/` | `system/apps/assistant/` |
+| `code/anime-streamer/` | `system/apps/media/` |
+| Personal settings | `~/.config/enclosure/` locally; portable defaults under `config/` |
+| Other shipped files | Explicit source mappings in `desktop/payload/manifest.json` |
 
-Check `desktop/scripts/snapshot.py` and `desktop/payload/manifest.json` when adding shipped files. Update required package declarations, services, installer behavior, documentation and tests within the same task. Refresh changed entries in `desktop/payload/checksums.json` and verify the payload with `desktop/scripts/deploy.py` before committing. Put maintainer tests in `desktop/tests/` when they should not be installed; direct Python bytecode caches outside the checksummed payload.
+Use `desktop/payload/manifest.json` to map `config/` defaults and `system/` source when adding shipped files. `snapshot.py` verifies source or exports committed HEAD; never snapshot a live home. Update required package declarations, services, installer behavior, documentation and tests within the same task. Refresh changed entries in `desktop/payload/checksums.json` and verify the payload with `desktop/scripts/deploy.py` before committing. Put maintainer tests in `desktop/tests/` when they should not be installed; direct Python bytecode caches outside the checksummed payload.
 
 Ship portable source and defaults only. Exclude credentials, account files, personal settings/history, caches, downloaded models and build artifacts. Preserve explicit `@HOME@` substitutions and existing privacy filtering.
 

@@ -1,9 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=Enclosure Development
-Comment=Review, test, commit, push and update Enclosure
-Exec=enclosure-dev
-Icon=applications-development
-Terminal=true
-Categories=Development;
-Keywords=enclosure;git;commit;push;update;hardware;

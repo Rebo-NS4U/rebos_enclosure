@@ -12,6 +12,7 @@ import sys
 import tempfile
 
 from deploy import SOURCE_ROOTS, install, verify
+from layout import checkout_for
 from update_health import validate
 from linked_update import prepare
 
@@ -30,13 +31,11 @@ def source_checkout(home):
         path = home / relative
         if not path.is_symlink():
             continue
-        target = path.resolve()
-        suffix = Path('desktop/payload/home') / relative
-        if tuple(target.parts[-len(suffix.parts):]) == suffix.parts:
-            checkout = target.parents[len(suffix.parts) - 1]
-            if not (checkout / '.git').exists():
-                raise ValueError(f'Missing source checkout: {checkout}')
+        checkout = checkout_for(path)
+        if checkout is not None:
             checkouts.add(checkout)
+        elif 'desktop/payload/home' in str(path.resolve()):
+            raise ValueError(f'Missing source checkout: {path.resolve()}')
     if len(checkouts) > 1:
         raise ValueError('Application links point to different checkouts')
     return next(iter(checkouts), None)

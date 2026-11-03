@@ -108,11 +108,6 @@ class DevelopmentMenuTests(unittest.TestCase):
         self.assertEqual((self.root / 'source.py').read_text(), 'unstaged version\n')
         self.assertIn('source.py', self.command('diff', '--name-only'))
 
-    def test_packaged_menu_matches_snapshot_defaults(self):
-        for source, packaged in [('enclosure-dev', '.local/bin/enclosure-dev'),
-                                 ('enclosure-development.desktop', '.local/share/applications/enclosure-development.desktop')]:
-            self.assertEqual((ROOT / 'desktop/defaults' / source).read_bytes(),
-                             (ROOT / 'desktop/payload/home' / packaged).read_bytes())
 
 
 if __name__ == '__main__':
