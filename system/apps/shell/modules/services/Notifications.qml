@@ -180,7 +180,16 @@ Singleton {
         id: notifFileView
         // QUICKSHELL-GIT: path: Quickshell.cachePath("notifications.json")
         path: Quickshell.env("HOME") + "/.cache/rebos_shell/notifications.json"
+        // A fresh install has no history. Report real read/write failures only.
+        printErrors: false
         onLoaded: loadNotifications()
+        onLoadFailed: error => {
+            if (error === FileViewError.FileNotFound)
+                notifFileView.setText("[]");
+            else
+                console.warn("Could not read notification history:", error);
+        }
+        onSaveFailed: error => console.warn("Could not save notification history:", error)
     }
 
     function stringifyList(list) {

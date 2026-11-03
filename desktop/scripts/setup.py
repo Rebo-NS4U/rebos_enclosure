@@ -136,7 +136,7 @@ def build_plan(options, hardware):
     if options.early_kms and not hardware['mkinitcpio']:
         raise ValueError('Early KMS setup currently supports mkinitcpio only; leave it off for other initramfs generators')
     repo = packages_from(ROOT / 'packages/core.txt')
-    aur = []
+    aur = [] if options.no_aur else ['wl-gammarelay-rs']
     for group in groups:
         repo += GROUPS[group]['repo']
         if not options.no_aur:

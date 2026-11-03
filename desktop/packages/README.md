@@ -11,6 +11,13 @@ Kitty/Fish and Neovim. Add groups explicitly, for example
 The default full profile selects every optional group. Package changes here
 affect future installations; they do not uninstall anything from this computer.
 
+## Night Light
+
+The shell needs `wl-gammarelay-rs` from the AUR for Night Light. Both profiles
+select it unless `--no-aur` is used. The session starts it on demand through
+D-Bus and supervises it with a user service; no compositor restart is needed.
+With `--no-aur`, install this backend separately to enable Night Light.
+
 ## Removed from core
 
 | Package | Reason |

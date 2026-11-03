@@ -1,0 +1,4 @@
+[D-BUS Service]
+Name=rs.wl-gammarelay
+Exec=/usr/bin/wl-gammarelay-rs
+SystemdService=wl-gammarelay.service

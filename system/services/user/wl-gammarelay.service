@@ -1,0 +1,12 @@
+[Unit]
+Description=Wayland Night Light gamma control
+PartOf=graphical-session.target
+After=graphical-session.target
+ConditionPathExists=/usr/bin/wl-gammarelay-rs
+
+[Service]
+Type=dbus
+BusName=rs.wl-gammarelay
+ExecStart=/usr/bin/wl-gammarelay-rs
+Restart=on-failure
+RestartSec=3

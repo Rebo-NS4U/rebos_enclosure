@@ -49,6 +49,7 @@
     ".config/systemd/user/regreet-sync.path",
     ".config/systemd/user/regreet-sync.service",
     ".config/systemd/user/regreet-sync.timer",
+    ".config/systemd/user/wl-gammarelay.service",
     ".config/themes",
     ".config/vesktop/themes/rebos_shell.css",
     ".config/xdg-desktop-portal/niri-portals.conf",
@@ -81,6 +82,7 @@
     ".local/share/cbonsai/LICENSE",
     ".local/share/cbonsai/README.md",
     ".local/share/cbonsai/cbonsai.c",
+    ".local/share/dbus-1/services/rs.wl-gammarelay.service",
     ".local/share/fonts/opendyslexic",
     ".local/share/fonts/phosphor",
     ".local/share/fonts/rebos_shell",
@@ -272,6 +274,10 @@
       "source": "system/services/user/regreet-sync.timer",
       "kind": "managed"
     },
+    ".config/systemd/user/wl-gammarelay.service": {
+      "source": "system/services/user/wl-gammarelay.service",
+      "kind": "managed"
+    },
     ".config/themes": {
       "source": "config/themes",
       "kind": "personal"
@@ -398,6 +404,10 @@
     },
     ".local/share/cbonsai/cbonsai.c": {
       "source": "system/share/cbonsai/cbonsai.c",
+      "kind": "managed"
+    },
+    ".local/share/dbus-1/services/rs.wl-gammarelay.service": {
+      "source": "system/share/dbus-1/services/rs.wl-gammarelay.service",
       "kind": "managed"
     },
     ".local/share/fonts/opendyslexic": {

@@ -47,7 +47,7 @@ class SetupTests(unittest.TestCase):
     def test_core_and_custom_groups_do_not_install_unselected_apps(self):
         plan = setup.build_plan(options(profile='core'), hardware())
         self.assertNotIn('discord', plan['packages'])
-        self.assertEqual(plan['aur_packages'], [])
+        self.assertEqual(plan['aur_packages'], ['wl-gammarelay-rs'])
         plan = setup.build_plan(options(groups='notes,communication', no_aur=True), hardware())
         self.assertIn('obsidian', plan['packages'])
         self.assertIn('discord', plan['packages'])
