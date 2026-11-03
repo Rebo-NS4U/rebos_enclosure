@@ -39,6 +39,11 @@ class SetupTests(unittest.TestCase):
         self.assertNotIn('ly', plan['packages'])
         setup.validate_plan(plan)
 
+    def test_core_includes_vlc_subtitle_renderer(self):
+        plan = setup.build_plan(options(profile='core', no_aur=True), hardware())
+        self.assertTrue({'vlc', 'vlc-plugin-lua', 'vlc-plugin-ffmpeg',
+                         'vlc-plugin-freetype'} <= set(plan['packages']))
+
     def test_groups_cover_previous_full_app_selection(self):
         for category, filename in [('repo', 'apps.txt'), ('aur', 'aur.txt')]:
             selected = {p for group in setup.GROUPS.values() for p in group[category]}

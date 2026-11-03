@@ -1,5 +1,20 @@
 # Validation record
 
+## Fresh-install media dependencies — 2026-11-03
+
+- A fresh Arch installation rejected VLC’s `--freetype-font` option because
+  `vlc-plugin-freetype` was absent. Installing it fixed native MP4 playback,
+  seeking and resuming through the stream relay. Both installer profiles now
+  include the plugin explicitly. Existing players were not restarted.
+- All 226 desktop tests passed, including the nested media checks. Payload
+  checksum verification and staged whitespace checks passed.
+- The destination uses AMD Radeon 890M with amdgpu/Mesa; Vulkan, OpenGL and
+  VA-API diagnostics passed after installing its missing Vulkan component.
+- Qt’s startup portal-registration warning remains observable. Portal services
+  are active and a separate Qt settings request succeeds. This does not prove
+  every interactive portal operation, such as screen sharing, works. Portal
+  access and logging were retained; no active desktop service was restarted.
+
 ## v1.6.0 release acceptance — 2026-11-03
 
 - All 225 desktop tests passed, including nested media checks. Assistant and panel
