@@ -1375,7 +1375,6 @@ Item {
                                                     height: Math.max(bubble.height, 32) + (modelIndicator.visible ? modelIndicator.implicitHeight + 4 : 0)
                                                     hoverEnabled: true
                                                     acceptedButtons: Qt.NoButton
-
                                                     // Action rail (edit / copy / regenerate):
                                                     // short bubbles → horizontal row; tall replies → vertical stack.
                                                     Grid {
@@ -1722,9 +1721,8 @@ Item {
                                                                 padding: 12
                                                                 background: Rectangle {
                                                                     radius: Styling.radius(8)
-                                                                    color: Qt.alpha(Colors.primary, modelData.functionPending === true ? 0.07 : 0.03)
-                                                                    border.width: 1
-                                                                    border.color: Qt.alpha(Colors.primary, modelData.functionPending === true ? 0.22 : 0.08)
+                                                                    color: "transparent"
+                                                                    border.width: 0
                                                                 }
                                                                 contentItem: ColumnLayout {
                                                                     id: toolApprovalContent
