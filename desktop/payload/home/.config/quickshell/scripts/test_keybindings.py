@@ -33,7 +33,9 @@ class KeybindingEdits(unittest.TestCase):
         result = self.edit("Super+Shift+A")
         self.assertTrue(result["ok"])
         self.assertTrue((self.root / "niri/config.kdl").is_symlink())
-        self.assertEqual(self.profile.read_text(), self.original.replace("Mod+A", "Shift+Mod+A", 1))
+        self.assertIn('Shift+Mod+A hotkey-overlay-title="Launcher" { spawn "qs" "ipc" "call" "rebos_shell" "run" "launcher"; }', self.profile.read_text())
+        self.assertFalse(any(row['rawKey'] == 'Mod+A' for row in collect(self.root)['bindings']))
+        self.assertTrue(self.profile.read_text().startswith('// Keep comments and actions unchanged.'))
         self.assertEqual(Path(result["backup"]).read_text(), self.original)
 
     def test_reordered_modifiers_conflict(self):

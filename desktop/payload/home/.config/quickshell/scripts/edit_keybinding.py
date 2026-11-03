@@ -10,7 +10,7 @@ import subprocess
 import sys
 import tempfile
 
-from list_keybindings import collect, token_matches
+from list_keybindings import collect, token_matches, unquote
 
 
 MODIFIERS = {"ctrl": "Ctrl", "control": "Ctrl", "shift": "Shift",
@@ -53,6 +53,8 @@ def equivalent(value, group):
 def save(request, config_dir):
     selected = request.get("binding", {})
     data = collect(config_dir)
+    if data["error"]:
+        raise ValueError("Could not check existing shortcuts. Refresh before saving.")
     binding = next((row for row in data["bindings"]
                     if row["source"] == selected.get("source")
                     and row["start"] == selected.get("start")
@@ -73,40 +75,31 @@ def save(request, config_dir):
     original = target.read_text()
     if hashlib.sha256(original.encode()).hexdigest() != binding["fingerprint"]:
         raise ValueError("This configuration changed. Refresh the list before saving.")
+    source_guard = (target, original)
     replacement = json.dumps(new_key) if original[binding["start"]] == '"' else new_key
-    candidate = original[:binding["start"]] + replacement + original[binding["end"]:]
-    if target.name in {"keybindings-defaults.kdl", "keybindings-personal.kdl",
-                       "keybindings-defaults.conf", "keybindings-personal.conf"}:
-        source = target
-        if binding["group"] == "Desktop · Niri":
-            declaration = new_key + original[binding["end"]:binding["declarationEnd"]]
-            target = target.with_name("keybindings-personal.kdl")
-            if source == target:
-                original = target.read_text()
-                disabled = json.dumps(binding["rawKey"]) + ' hotkey-overlay-title=null { spawn "/usr/bin/true"; }'
-                candidate = original[:binding["start"]] + disabled + original[binding["declarationEnd"]:]
-                candidate = insert_niri(candidate, "    " + declaration + "\n")
-            else:
-                original = target.read_text()
-                candidate = insert_niri(original, "    " + json.dumps(binding["rawKey"]) + ' hotkey-overlay-title=null { spawn "/usr/bin/true"; }\n    ' + declaration + "\n")
-        else:
-            start = original.rfind("\n", 0, binding["start"]) + 1
-            end = original.find("\n", binding["end"])
-            if end < 0:
-                end = len(original)
-            declaration = original[start:binding["start"]] + new_key + original[binding["end"]:end]
-            target = target.with_name("keybindings-personal.conf")
-            disabled = "map " + binding["rawKey"] + " no_op\n"
-            if source == target:
-                candidate = original[:start] + disabled + original[end:]
-            else:
-                original = target.read_text()
-                candidate = original.rstrip() + "\n" + disabled
-            candidate = candidate.rstrip() + "\n" + declaration + "\n"
-    return persist(target, original, candidate, binding["group"], new_key)
+    if binding["group"] == "Desktop · Niri":
+        declaration = replacement + original[binding["end"]:binding["declarationEnd"]]
+        if target.name in {"keybindings-defaults.kdl", "keybindings-personal.kdl"}:
+            target = target.with_name("keybindings-personal.kdl").resolve(strict=True)
+            original = target.read_text()
+        disabled = json.dumps(binding["rawKey"]) + ' hotkey-overlay-title=null { spawn "/usr/bin/true"; }'
+        candidate = upsert_niri(original, binding["rawKey"], disabled)
+        candidate = upsert_niri(candidate, new_key, declaration)
+    else:
+        start = original.rfind("\n", 0, binding["start"]) + 1
+        end = original.find("\n", binding["end"])
+        if end < 0:
+            end = len(original)
+        declaration = original[start:binding["start"]] + new_key + original[binding["end"]:end]
+        if target.name in {"keybindings-defaults.conf", "keybindings-personal.conf"}:
+            target = target.with_name("keybindings-personal.conf").resolve(strict=True)
+            original = target.read_text()
+        candidate = upsert_kitty(original, binding["rawKey"], "map " + binding["rawKey"] + " no_op")
+        candidate = upsert_kitty(candidate, new_key, declaration)
+    return persist(target, original, candidate, binding["group"], new_key, source_guard)
 
 
-def persist(target, original, candidate, group, new_key):
+def persist(target, original, candidate, group, new_key, source_guard=None):
     temporary = None
     try:
         with tempfile.NamedTemporaryFile(mode="w", dir=target.parent, prefix=".keybinding-check-", suffix=target.suffix, delete=False) as stream:
@@ -120,6 +113,8 @@ def persist(target, original, candidate, group, new_key):
             checked = subprocess.run(["kitty", "+runpy", code], input=new_key + "\n", text=True, capture_output=True, timeout=15)
         if checked.returncode != 0:
             raise ValueError("That key combination is not valid for " + ("Niri" if group == "Desktop · Niri" else "Kitty") + ". Check the key name and try again.")
+        if source_guard is not None and source_guard[0].read_text() != source_guard[1]:
+            raise ValueError("This configuration changed while saving. Refresh and try again.")
         if target.read_text() != original:
             raise ValueError("This configuration changed while saving. Refresh and try again.")
         with tempfile.NamedTemporaryFile(dir=target.parent, prefix="." + target.name + ".keybindings-backup-", delete=False) as backup:
@@ -161,8 +156,71 @@ def add(request, config_dir):
     original = target.read_text()
     title = " hotkey-overlay-title=" + json.dumps(name, ensure_ascii=False) if name else ""
     line = "    " + json.dumps(key) + title + " { spawn \"sh\" \"-c\" " + json.dumps(command, ensure_ascii=False) + "; }\n"
-    candidate = insert_niri(original, line)
+    candidate = upsert_niri(original, key, line.strip())
     return persist(target, original, candidate, group, key)
+
+
+def niri_declarations(text):
+    """Locate complete bindings without treating braces in strings as syntax."""
+    matches = token_matches(text)
+    i, depth = 0, 0
+    while i < len(matches):
+        token = matches[i].group()
+        if depth == 0 and token == "binds" and i + 1 < len(matches) and matches[i + 1].group() == "{":
+            i += 2
+            while i < len(matches) and matches[i].group() != "}":
+                if matches[i].group() in ("\n", ";"):
+                    i += 1
+                    continue
+                key = matches[i]
+                i += 1
+                while i < len(matches) and matches[i].group() not in ("{", "}"):
+                    i += 1
+                if i == len(matches) or matches[i].group() != "{":
+                    break
+                level = 1
+                i += 1
+                while i < len(matches) and level:
+                    if matches[i].group() == "{": level += 1
+                    elif matches[i].group() == "}": level -= 1
+                    i += 1
+                if level == 0:
+                    yield unquote(key.group()), key.start(), matches[i - 1].end()
+            i += 1
+            continue
+        if token == "{": depth += 1
+        elif token == "}": depth -= 1
+        i += 1
+
+
+def upsert_niri(original, key, declaration):
+    group = "Desktop · Niri"
+    spans = [(start, end) for raw, start, end in niri_declarations(original)
+             if equivalent(raw, group) == equivalent(key, group)]
+    if not spans:
+        return insert_niri(original, "    " + declaration + "\n")
+    # Reuse disabled declarations and remove stale duplicates instead of adding
+    # another node for the same key, which Niri rejects within a binds block.
+    candidate = original
+    for start, end in reversed(spans):
+        candidate = candidate[:start] + (declaration if (start, end) == spans[0] else "") + candidate[end:]
+    return candidate
+
+
+def upsert_kitty(original, key, declaration):
+    lines, replaced = [], False
+    for line in original.splitlines(keepends=True):
+        match = re.match(r"\s*map\s+(\S+)", line)
+        if match and equivalent(match.group(1), "Terminal · Kitty") == equivalent(key, "Terminal · Kitty"):
+            if not replaced:
+                lines.append(declaration.rstrip() + "\n")
+                replaced = True
+        else:
+            lines.append(line)
+    result = "".join(lines)
+    if not replaced:
+        result = result.rstrip() + "\n" + declaration.rstrip() + "\n"
+    return result
 
 
 def insert_niri(original, line):

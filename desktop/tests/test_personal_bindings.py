@@ -77,6 +77,85 @@ class PersonalBindingTests(unittest.TestCase):
         self.assertEqual(self.row('Mod+U')['action'], 'Focus column left')
         self.assertFalse(any(row['rawKey'] in ('Mod+H','Mod+Y') for row in collect(self.config)['bindings']))
 
+    def test_remap_can_return_to_original_key_without_duplicate_declarations(self):
+        save({'binding': self.row('Mod+H'), 'key': 'Super+Y'}, self.config)
+        save({'binding': self.row('Mod+Y'), 'key': 'Super+U'}, self.config)
+        save({'binding': self.row('Mod+U'), 'key': 'Super+H'}, self.config)
+        self.validate()
+        self.assertEqual(self.row('Mod+H')['action'], 'Focus column left')
+        self.assertFalse(any(r['rawKey'] in ('Mod+Y', 'Mod+U') for r in collect(self.config)['bindings']))
+
+    def test_add_can_reuse_a_disabled_personal_key(self):
+        save({'binding': self.row('Mod+H'), 'key': 'Super+Y'}, self.config)
+        add({'key': 'Super+H', 'command': 'kitty', 'name': 'New terminal'}, self.config)
+        self.validate()
+        self.assertEqual(self.row('Mod+H')['action'], 'New terminal')
+        self.assertEqual(self.row('Mod+Y')['action'], 'Focus column left')
+
+    def test_legacy_override_remap_does_not_reactivate_shadowed_action(self):
+        (self.niri / 'config.kdl').write_text('include "keybindings-defaults.kdl"\ninclude "custom.kdl"\n')
+        (self.niri / 'custom.kdl').write_text('binds {\n Mod+H { focus-column-right; }\n}\n')
+        save({'binding': self.row('Mod+H'), 'key': 'Super+Y'}, self.config)
+        self.validate()
+        self.assertEqual(self.row('Mod+Y')['action'], 'Focus column right')
+        self.assertFalse(any(r['rawKey'] == 'Mod+H' for r in collect(self.config)['bindings']))
+
+    def test_legacy_kitty_override_remap_does_not_reactivate_shadowed_action(self):
+        (self.kitty / 'kitty.conf').write_text('include keybindings-defaults.conf\ninclude custom.conf\n')
+        (self.kitty / 'custom.conf').write_text('map ctrl+shift+c paste_from_clipboard\n')
+        with patch('edit_keybinding.subprocess.run', return_value=subprocess.CompletedProcess([], 0)):
+            save({'binding': self.row('ctrl+shift+c'), 'key': 'Ctrl+Shift+Y'}, self.config)
+        self.assertEqual(self.row('Ctrl+Shift+y')['action'], 'Paste from clipboard')
+        self.assertFalse(any(r['rawKey'].lower() == 'ctrl+shift+c' for r in collect(self.config)['bindings']))
+
+    def test_default_action_changes_during_validation_do_not_save_stale_replacement(self):
+        defaults = self.niri / 'keybindings-defaults.kdl'
+        personal = self.niri / 'keybindings-personal.kdl'
+        original = personal.read_text()
+        native_run = subprocess.run
+        def run(args, **kwargs):
+            result = native_run(args, **kwargs)
+            defaults.write_text(defaults.read_text().replace('focus-column-left', 'focus-column-right'))
+            return result
+        with patch('edit_keybinding.subprocess.run', side_effect=run):
+            with self.assertRaisesRegex(ValueError, 'changed while saving'):
+                save({'binding': self.row('Mod+H'), 'key': 'Super+Y'}, self.config)
+        self.assertEqual(personal.read_text(), original)
+        self.assertIn('focus-column-right', defaults.read_text())
+        self.assertFalse(list(self.niri.glob('.*keybindings-backup*')))
+
+    def test_reused_key_keeps_binding_options_and_quoted_command_braces(self):
+        personal = self.niri / 'keybindings-personal.kdl'
+        personal.write_text('binds {\n "Super+Y" hotkey-overlay-title=null { spawn "/usr/bin/true"; }\n}\n')
+        defaults = self.niri / 'keybindings-defaults.kdl'
+        defaults.write_text('binds {\n Mod+H repeat=false hotkey-overlay-title="Braces" { spawn "echo" "{ keep me }"; }\n}\n')
+        save({'binding': self.row('Mod+H'), 'key': 'Super+Y'}, self.config)
+        self.validate()
+        self.assertEqual(self.row('Mod+Y')['action'], 'Braces')
+        self.assertIn('repeat=false', personal.read_text())
+        self.assertIn('"{ keep me }"', personal.read_text())
+
+    def test_personal_kitty_remap_back_reuses_disabled_mapping(self):
+        personal = self.kitty / 'keybindings-personal.conf'
+        with patch('edit_keybinding.subprocess.run', return_value=subprocess.CompletedProcess([], 0)):
+            save({'binding': self.row('ctrl+shift+c'), 'key': 'Ctrl+Shift+Y'}, self.config)
+            save({'binding': self.row('Ctrl+Shift+y'), 'key': 'Ctrl+Shift+C'}, self.config)
+        self.assertEqual(self.row('Ctrl+Shift+c')['action'], 'Copy selection')
+        self.assertFalse(any(r['rawKey'].lower() == 'ctrl+shift+y' for r in collect(self.config)['bindings']))
+        self.assertEqual(sum(line.lower().startswith('map ctrl+shift+c ') for line in personal.read_text().splitlines()), 1)
+
+    def test_default_replacement_preserves_personal_file_symlink(self):
+        personal = self.niri / 'keybindings-personal.kdl'
+        external = self.root / 'my-shortcuts.kdl'
+        external.write_text(personal.read_text())
+        personal.unlink()
+        personal.symlink_to(external)
+        save({'binding': self.row('Mod+H'), 'key': 'Super+Y'}, self.config)
+        self.validate()
+        self.assertTrue(personal.is_symlink())
+        self.assertEqual(self.row('Mod+Y')['action'], 'Focus column left')
+        self.assertIn('focus-column-left', external.read_text())
+
     def test_new_shortcut_saves_to_personal_without_executing_command(self):
         before = (self.niri / 'config.kdl').read_text()
         sentinel = self.root / 'must-not-exist'
