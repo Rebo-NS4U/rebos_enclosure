@@ -365,3 +365,18 @@ Appearance keeps its style form behind a Theme style card so section buttons
 remain easy to reach. Shared Settings buttons, section cards and titlebar actions
 support keyboard focus and expose names to accessibility tools. Hardware-dependent
 and input-dependent actions retain their normal availability checks.
+
+### GitHub connection and reinstalling
+
+In Settings → GitHub, use **Connect / repair GitHub…** for the selected checkout.
+The connection window verifies the signed-in account, configures Git to use the
+GitHub CLI credential helper, and fills missing commit author fields in that
+checkout using the account name and GitHub noreply address. Existing author
+settings are preserved. Signing in alone does not configure a Git author.
+
+Desktop installation, updates and recovery preserve `~/.config/gh/`, your login
+keyring, Git settings and Codex configuration. These personal files are outside
+the portable payload; a new machine or erased home still requires its own login.
+Network failures leave credentials untouched and do not trigger reauthentication.
+An assistant session restricted by its host can still be unable to reach GitHub;
+repairing login does not change that session's network permissions.
