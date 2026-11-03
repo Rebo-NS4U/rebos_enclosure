@@ -2,7 +2,7 @@
 Type=Application
 Name=Configuration Browser
 Comment=Browse desktop configuration folders
-Exec=config-browser
+Exec="@HOME@/.local/bin/config-browser"
 Icon=preferences-system
 Categories=Settings;
 Terminal=false

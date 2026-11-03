@@ -39,7 +39,7 @@ case "${1:-status}" in
         if ! quickshell_running; then
             mkdir -p "$state_dir/log"
             if [[ "$shell_dir" == "$config_home/quickshell" ]]; then
-                systemctl --user import-environment WAYLAND_DISPLAY DISPLAY XDG_CURRENT_DESKTOP XDG_CONFIG_HOME XDG_DATA_HOME
+                systemctl --user import-environment PATH WAYLAND_DISPLAY DISPLAY XDG_CURRENT_DESKTOP XDG_CONFIG_HOME XDG_DATA_HOME
                 systemctl --user start rebos-panel.service
             else
                 setsid -f "$shell_dir/scripts/qs-screen-guard" -p "$shell_dir" >> "$state_dir/log/quickshell.log" 2>&1

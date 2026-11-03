@@ -229,7 +229,8 @@ Singleton {
             }
 
             if (safeArgs.length > 0) {
-                runInActiveWorkspace(safeArgs.join(" "));
+                const command = safeArgs.join(" ");
+                runInActiveWorkspace(app.runInTerminal ? "kitty -- " + command : command);
                 return;
             }
         }
@@ -239,7 +240,7 @@ Singleton {
 
     function runInActiveWorkspace(command) {
         const p = Qt.createQmlObject('import Quickshell.Io; Process { }', root);
-        p.command = ["bash", "-c", "cd ~ && setsid " + command + " < /dev/null > /dev/null 2>&1 &"];
+        p.command = ["bash", "-c", 'export PATH="$HOME/.local/bin:$PATH"; cd ~ && setsid ' + command + " < /dev/null > /dev/null 2>&1 &"];
         p.onExited.connect(() => p.destroy());
         p.running = true;
     }
