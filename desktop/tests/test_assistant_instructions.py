@@ -69,6 +69,8 @@ ShellRoot {
             check(legacy.length === 2 && policy(legacy), "older chats receive only the new policy");
             check(send("Continue").length === 1, "older chat policy does not repeat");
             session.handleBridgeLine(JSON.stringify({bridge: "attached", seq: 1, state: state}));
+            check(session.codexPreset === "light_coding", "custom checkpoints adopt the startup default");
+            session.codexPreset = ""; // Keep policy-only assertions independent of mode changes.
             check(send("After bridge restoration").length === 1, "bridge restoration keeps policy delivery");
             session.currentSessionId = "fresh-github-session";
             check(policy(send("New chat")), "fresh conversations receive policy");

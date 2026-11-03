@@ -23,7 +23,7 @@ Scope {
         {id: "ultrafast", name: "UltraFast", description: "Starts work directly with less planning."},
         {id: "ultracode", name: "UltraCode", description: "Can share suitable work with parallel agents."}
     ]
-    // Explicit per-chat modes; older chats keep their current model as Custom.
+    // Start with Light; named per-chat choices still survive restoration.
     readonly property var codexPresets: [
         {id: "coding", name: "dweebo-Do", model: "gpt-6.1-sol", effort: "medium",
             description: "Sol · medium reasoning. Implement, debug and verify code efficiently.",
@@ -38,7 +38,7 @@ Scope {
             description: "Luna · low reasoning. Clear explanations and useful factual context.",
             guidance: "General knowledge mode: Give a clear, concise explanation with enough context to understand it. Use examples when helpful. Search for current or uncertain facts and cite sources; avoid unnecessary local inspection. Do not change files unless explicitly asked. If the question needs deeper reasoning, explain the limitation rather than silently claiming certainty."}
     ]
-    property string codexPreset: ""
+    property string codexPreset: "light_coding"
     property var pendingCodexPreset: null
     property string codexPresetError: ""
     readonly property bool switchingCodexPreset: pendingCodexPreset !== null
@@ -664,6 +664,11 @@ Scope {
                     if (event.state[key] !== undefined)
                         root[key] = event.state[key];
                 }
+                // Legacy/custom checkpoints must not erase the startup default.
+                // Do not send model RPCs while a restored turn is running; the
+                // next prompt confirms the selected model and effort first.
+                if (currentAgentId === "codex" && !codexPreset && !pendingCodexPreset)
+                    codexPreset = "light_coding";
                 // Older checkpoints marked every end_turn as successful.
                 if (event.state.outcomeVersion !== 1 && taskOutcome === "Positive")
                     taskOutcome = "";
@@ -2651,7 +2656,7 @@ for path in files:
                 root.currentChatAgentId = agent.id;
                 root.distillPreset = root.distillPresets.some(item => item.id === payload.distillPreset) ? payload.distillPreset : "auto";
                 root.distillPresetReady = false;
-                root.codexPreset = root.codexPresets.some(item => item.id === payload.codexPreset) ? payload.codexPreset : "";
+                root.codexPreset = root.codexPresets.some(item => item.id === payload.codexPreset) ? payload.codexPreset : (agent.id === "codex" ? "light_coding" : "");
                 root.currentChat = isLegacy ? payload : (payload.messages || []);
                 root.currentChatId = targetId;
                 root.currentSessionId = isLegacy ? "" : (payload.sessionId || "");
