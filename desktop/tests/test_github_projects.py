@@ -17,6 +17,17 @@ spec.loader.exec_module(projects)
 
 
 class ProjectTests(unittest.TestCase):
+    def test_default_inspection_checks_installed_revision(self):
+        import io
+        with patch.object(sys, 'argv', ['github_projects.py', 'inspect']), \
+                patch.object(projects.status, 'check', return_value={'status': 'current'}) as check, \
+                patch.object(projects, 'inspect') as inspect, \
+                patch.object(sys, 'stdout', new_callable=io.StringIO) as output:
+            projects.main()
+        check.assert_called_once_with(Path.home())
+        inspect.assert_not_called()
+        self.assertEqual(json.loads(output.getvalue())['status'], 'current')
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)

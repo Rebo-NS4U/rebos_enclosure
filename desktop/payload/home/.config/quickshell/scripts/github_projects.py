@@ -310,8 +310,7 @@ def main():
             result = {'ok': True, 'repositories': json.loads(run('gh', 'repo', 'list', '--limit', '100',
                 '--json', 'nameWithOwner,isPrivate,url'))}
         elif args.command == 'inspect':
-            path = args.path or desktop_checkout(Path.home())
-            result = inspect(str(path)) if path else status.check(Path.home())
+            result = inspect(args.path) if args.path else status.check(Path.home())
         else:
             result = action(json.loads(sys.stdin.readline()))
     except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError) as error:

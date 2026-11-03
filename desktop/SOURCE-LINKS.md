@@ -57,3 +57,18 @@ when both origins match. This prevents old deployment code from treating the
 assistant or media source symlinks as ordinary destination directories. Local
 edits are previewed and preserved before deployment. The updater never silently
 discards them.
+
+Updates fetch the remote default branch unless a branch or release is explicitly
+selected. Personal accounts, history, generated palettes and wallpaper choices
+remain local. Configuration directories are updated file by file: new shipped
+files are added, and files still matching their previous shipped default receive
+new defaults. Customized files and configuration symlinks are retained. On the
+first update without a defaults record, the updater uses the recorded installed
+revision to recover old defaults from local Git history when available. Otherwise
+existing files are conservatively kept. Each update records the shipped defaults
+for subsequent comparisons. Removed
+configuration files are retained to avoid deleting personal includes. A customized
+file that also changed upstream is reported as kept and requires manual merging.
+The defaults record is backed up and restored with the deployment. The default
+GitHub status shows the installed desktop revision; selecting a project shows
+that checkout's independent Git status.

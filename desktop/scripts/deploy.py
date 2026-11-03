@@ -94,14 +94,66 @@ def install(payload, home, dry_run=False, cbonsai=None, settings=None, preserve_
                      relative != '.config/quickshell') or
                     relative == 'code/rebos-assistant/config' or
                     relative.startswith('.local/share/wallpapers/'))
-        # Keep existing preferences in place, including relative and broken links.
-        # Moving them into the backup would change what relative links resolve to.
-        units = [relative for relative in units
-                 if not (preference(relative) and exists(home / relative))]
+        # Track shipped defaults, never personal contents. Update individual
+        # unchanged files instead of skipping an entire configuration directory.
+        record = home / '.local/state/rebos-desktop/preference-defaults.json'
+        previous = json.loads(record.read_text()) if record.is_file() else {}
+        installed_record = home / '.local/state/rebos-desktop/source.json'
+        installed_commit = (json.loads(installed_record.read_text()).get('commit', '')
+                            if installed_record.is_file() else '')
+        if len(installed_commit) != 40 or any(c not in '0123456789abcdef' for c in installed_commit):
+            installed_commit = ''
+        defaults = {}
+        selected = []
+        for relative in units:
+            if not preference(relative):
+                selected.append(relative)
+                continue
+            source = payload / 'home' / relative
+            # Generated palettes and wallpaper choices remain personal state.
+            if relative.startswith(('.cache/', '.local/share/wallpapers/')):
+                if not exists(home / relative):
+                    selected.append(relative)
+                continue
+            paths = sorted(source.rglob('*')) if source.is_dir() else [source]
+            for path in paths:
+                if not path.is_file():
+                    continue
+                name = str(path.relative_to(payload / 'home'))
+                content = path.read_bytes().replace(b'@HOME@', str(home).encode())
+                digest = hashlib.sha256(content).hexdigest()
+                defaults[name] = digest
+                destination = home / name
+                # Preserve links (including linked parents) and unknown existing
+                # preferences. The first update establishes a safe baseline.
+                parents = destination.relative_to(home).parents
+                if destination.is_symlink() or any((home / p).is_symlink() for p in parents):
+                    continue
+                if not exists(destination):
+                    selected.append(name)
+                elif destination.is_file():
+                    current = hashlib.sha256(destination.read_bytes()).hexdigest()
+                    # Older installations have a revision but no defaults record.
+                    # Recover the old shipped default when its Git object exists.
+                    if name not in previous and installed_commit:
+                        try:
+                            old = subprocess.check_output(
+                                ['git', '-C', str(ROOT.parent), 'show',
+                                 f'{installed_commit}:desktop/payload/home/{name}'],
+                                stderr=subprocess.PIPE, timeout=10)
+                            old = old.replace(b'@HOME@', str(home).encode())
+                            previous[name] = hashlib.sha256(old).hexdigest()
+                        except (OSError, subprocess.SubprocessError):
+                            pass
+                    if current == previous.get(name) and current != digest:
+                        selected.append(name)
+                    elif current != digest:
+                        print(f'Keeping personal configuration: {name}')
+        units = selected
         # Fish contains personal configuration as well as this shipped command.
         # Refresh only the command when preserving an existing Fish directory.
         fish_update = '.config/fish/functions/update.fish'
-        if ('.config/fish' not in units and
+        if ('.config/fish' not in units and fish_update not in units and
                 (payload / 'home' / fish_update).is_file()):
             units.append(fish_update)
     linked = {}
@@ -134,6 +186,10 @@ def install(payload, home, dry_run=False, cbonsai=None, settings=None, preserve_
     spec.loader.exec_module(personal_bindings)
     personal = personal_bindings.capture(home / '.config', units)
     generated = {}
+    if preserve_preferences:
+        relative = '.local/state/rebos-desktop/preference-defaults.json'
+        generated[relative] = (json.dumps(defaults, indent=2) + '\n', 0o600)
+        units.append(relative)
     provenance = source_record(payload)
     if provenance is not None:
         relative = '.local/state/rebos-desktop/source.json'

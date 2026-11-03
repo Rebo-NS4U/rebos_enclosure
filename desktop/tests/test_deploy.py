@@ -32,6 +32,41 @@ class DeploymentTests(unittest.TestCase):
                   for p in self.payload.rglob('*') if p.is_file() and p.name != 'checksums.json'}
         (self.payload / 'checksums.json').write_text(json.dumps(hashes))
 
+    def test_older_installation_recovers_default_from_recorded_revision(self):
+        destination = self.home / '.config/kitty/kitty.conf'
+        destination.parent.mkdir(parents=True)
+        old = b'old default @HOME@'
+        destination.write_bytes(old.replace(b'@HOME@', str(self.home).encode()))
+        record = self.home / '.local/state/rebos-desktop/source.json'
+        record.parent.mkdir(parents=True)
+        record.write_text(json.dumps({'commit': 'a' * 40}))
+        with patch.object(deploy, 'source_record', return_value=None), \
+                patch.object(deploy.subprocess, 'check_output', return_value=old):
+            deploy.install(self.payload, self.home, preserve_preferences=True)
+        self.assertIn('include ', destination.read_text())
+
+    def test_updates_refresh_defaults_but_keep_personal_files_and_add_new_config(self):
+        config = self.payload / 'home/.config/kitty'
+        (config / 'personal.conf').write_text('shipped personal default')
+        self.seal()
+        deploy.install(self.payload, self.home, preserve_preferences=True)
+        personal = self.home / '.config/kitty/personal.conf'
+        personal.write_text('my font and shortcuts')
+        (config / 'personal.conf').write_text('new shipped personal default')
+        (config / 'kitty.conf').write_text('new upstream feature')
+        (config / 'new.conf').write_text('new config file')
+        self.seal()
+        deploy.install(self.payload, self.home, dry_run=True, preserve_preferences=True)
+        self.assertNotEqual((self.home / '.config/kitty/kitty.conf').read_text(), 'new upstream feature')
+        backup = deploy.install(self.payload, self.home, preserve_preferences=True)
+        self.assertEqual((self.home / '.config/kitty/kitty.conf').read_text(), 'new upstream feature')
+        self.assertEqual(personal.read_text(), 'my font and shortcuts')
+        self.assertEqual((self.home / '.config/kitty/new.conf').read_text(), 'new config file')
+        deploy.restore(backup)
+        self.assertEqual(personal.read_text(), 'my font and shortcuts')
+        self.assertFalse((self.home / '.config/kitty/new.conf').exists())
+        self.assertIn('include ', (self.home / '.config/kitty/kitty.conf').read_text())
+
     def test_install_and_update_preserve_github_login_and_git_settings(self):
         personal = {
             '.gitconfig': '[user]\n name = Private Author\n email = private@example.invalid\n',
@@ -269,7 +304,8 @@ class DeploymentTests(unittest.TestCase):
                 link.symlink_to(destination)
                 backup = deploy.install(self.payload, self.home, preserve_preferences=True)
                 self.assertEqual(str(link.readlink()), destination)
-                self.assertEqual(json.loads((backup / 'journal.json').read_text())['entries'], [])
+                self.assertEqual([entry['path'] for entry in json.loads((backup / 'journal.json').read_text())['entries']],
+                                 ['.local/state/rebos-desktop/preference-defaults.json'])
                 deploy.restore(backup)
                 self.assertEqual(str(link.readlink()), destination)
                 link.unlink()
