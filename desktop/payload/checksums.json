@@ -640,7 +640,7 @@
   "system/cache-defaults/rebos_shell/wallpapers.json": "0d7d8f4e2ebf82953032bc404ac26cedbd30810413efc1f6b00412bcb57b42ae",
   "system/environment/90-rebos-desktop.conf": "b28cab0d07c501286b5bf9880607f9c75e1caadf3fcac7ee8c8154391fcfa119",
   "system/etc/greetd/config.toml": "6390cca0856135f2afaf1fb2754b29be4070b130aee8ea4317710690985d4a91",
-  "system/etc/greetd/regreet.toml": "e4239c46492ae396473defd532b2fd4db2ac0a99f12fd8681feaed15263d15b5",
+  "system/etc/greetd/regreet.toml": "eeca9d7c05971ecbf9177ea42fddb6b54c09c79523bb0de57c4cb3c0a44fda19",
   "system/etc/pam.d/greetd": "5d58e2fc44d6fc98a1fdb0386d2f27750231477fb1763162ca01af6029580a45",
   "system/etc/rebos-greeter/cage-cursor.c": "46c10a355abbd2a377217281d845a824e2ae7ca9450550d6b0fa41c1c3796cbd",
   "system/etc/rebos-greeter/layout.c": "aa73e814995146e86e7843cdab92c32acf62c3828ac611caa641b879aa9c9243",

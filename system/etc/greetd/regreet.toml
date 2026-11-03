@@ -9,6 +9,7 @@ application_prefer_dark_theme = true
 theme_name = "Adwaita"
 icon_theme_name = "Adwaita"
 cursor_theme_name = "GoogleDot-Black"
+cursor_theme_size = 20
 font_name = "JetBrains Mono 14"
 
 [appearance]
