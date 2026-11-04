@@ -263,9 +263,16 @@ Restoring replaces those installed entries, including edits made to them since i
 
 ## Maintainer checks
 
+GitHub Actions runs payload verification, installer Bash syntax checks, the
+desktop suite and the separate media suite on pushes and pull requests. The
+runner installs Pillow for image tests. Quickshell, Niri and Lua checks still
+need their native tools locally; tests with unavailable optional tools are
+skipped on the Ubuntu runner. See [the Blueprint review](../docs/BLUEPRINT-REVIEW.md).
+
 ```bash
 python3 desktop/scripts/deploy.py --verify
 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s desktop/tests -v
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=system/apps/media python3 -m unittest discover -s desktop/tests/media -v
 bash -n install.sh desktop/install.sh oneline.sh desktop/scripts/finish-apps.sh
 ```
 
