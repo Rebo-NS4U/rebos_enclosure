@@ -122,3 +122,15 @@ VM, boot into Niri, check output scaling/input/audio/network, suspend and resume
 where supported, and preview/apply an update retaining personal settings before
 declaring that hardware tested. No release should imply a machine matrix was
 physically tested when only synthetic fixtures were used.
+
+## Graphical maintenance app
+
+Launch **Enclosure Development** from the app launcher or GitHub Settings.
+The Overview, Desktop and Development tabs explain each action. Results stream
+into the window without blocking navigation feedback. Installation, updates,
+organization, commits and publishing require confirmation; previews run first
+where available. Enter explicit repository paths to stage (quote paths containing
+spaces) and a message before committing. Closing is blocked while work runs.
+The app uses the existing core dependencies `python-gobject` and `gtk4`.
+`./dev.sh --gui` also opens the window; `./dev.sh` retains the terminal menu,
+and `enclosure-dev status` and other explicit commands remain available.

@@ -4,8 +4,8 @@ A complete **Niri + Quickshell desktop for x86_64 Arch Linux**, with matching ap
 
 Desktop, laptop and virtual-machine policies are selected on the destination with
 `--machine auto` (the default), independently of application groups and GPU drivers.
-Use **GitHub Settings → Enclosure development → Open development menu**, the
-**Enclosure Development** launcher entry, or `./dev.sh` in your checkout for
+Use **GitHub Settings → Enclosure development → Open development app**, the
+**Enclosure Development** launcher entry, for a graphical maintenance app, or `./dev.sh` in your checkout for the terminal menu covering
 hardware detection, checks, local deployment, staging, commits, pushes and updates.
 See the [development guide](docs/DEVELOPMENT.md) for the workflow and hardware limits.
 

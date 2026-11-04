@@ -94,12 +94,12 @@ Item {
                 objectName: "enclosure-development-section"
                 title: "Enclosure development"
                 summary: "Hardware profiles, tests, local deployment and reviewed Git changes."
-                description: "Open the Enclosure checkout menu to verify changes, commit selected files, push, or update. Deployment keeps preferences and existing source links."
+                description: "Open the Enclosure maintenance app to verify changes, commit selected files, push, or update. Deployment keeps preferences and existing source links."
                 SettingsButton {
                     objectName: "enclosure-development-open"
                     Layout.fillWidth: true
-                    text: "Open development menu"
-                    onClicked: Quickshell.execDetached(["kitty", "--title", "Enclosure Development", "-e", "enclosure-dev"])
+                    text: "Open development app"
+                    onClicked: Quickshell.execDetached(["enclosure-dev"])
                 }
             }
             GithubProjects {

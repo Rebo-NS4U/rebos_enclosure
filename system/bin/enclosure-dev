@@ -23,6 +23,6 @@ for root in candidates:
     if result.returncode == 0 and origin in {
             'https://github.com/Rebo-NS4U/rebos_enclosure',
             'git@github.com:Rebo-NS4U/rebos_enclosure'}:
-        os.execv('/usr/bin/bash', ['bash', str(entry), *sys.argv[1:]])
+        os.execv('/usr/bin/bash', ['bash', str(entry), *(sys.argv[1:] or ['--gui'])])
 sys.exit('Enclosure source not found. Clone the official repository into ~/code/rebos_enclosure, '
          'or set ENCLOSURE_SOURCE to your checkout, then run enclosure-dev again.')
