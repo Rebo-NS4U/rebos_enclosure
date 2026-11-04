@@ -288,6 +288,11 @@ bash -n install.sh desktop/install.sh oneline.sh desktop/scripts/finish-apps.sh
 The native build check compiles cbonsai and both greeter extensions in a
 temporary directory, then removes its output. It never installs or loads them.
 
+Media settings requests validate a candidate settings object and save it before
+updating the playback engine. Invalid values or failed saves leave the previous
+settings in place. Regression tests cover rejected caption timing, save failures
+and successful requests retaining their client/request identifiers.
+
 `desktop/scripts/snapshot.py --verify` verifies reviewed `config/` and `system/` source. Use `--output /path/to/new.tar.gz` to export committed HEAD. Live-home snapshotting has been removed. Preserve component licenses; artwork rights remain with their authors. See the [filesystem guide](../docs/FILESYSTEM.md) for personal settings, managed defaults, grouping and recovery.
 
 ReGreet follows the current desktop wallpaper and effective color palette through

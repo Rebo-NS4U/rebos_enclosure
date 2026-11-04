@@ -186,20 +186,24 @@ def dispatch(request, engine, send):
                 engine.background(save_connection, result, fail)
         elif action == 'settings':
             new = request.get('settings', {})
+            if not isinstance(new, dict):
+                raise ValueError('Settings must be an object')
+            settings = engine.settings.copy()
             for key in ['auto_next', 'fullscreen', 'live_subtitles', 'audio_normalization']:
                 if key in new:
-                    engine.settings[key] = bool(new[key])
+                    settings[key] = bool(new[key])
             for key, values in [('quality', ['best', '1080p', '720p', '480p', 'worst']), ('mode', ['sub', 'dub']), ('caption_language', ['en', 'es', 'auto']), ('subtitle_font', app.SUBTITLE_FONTS)]:
                 if new.get(key) in values:
-                    engine.settings[key] = new[key]
+                    settings[key] = new[key]
             if 'volume' in new:
-                engine.settings['volume'] = max(0, min(100, int(new['volume'])))
+                settings['volume'] = max(0, min(100, int(new['volume'])))
             if 'caption_delay' in new:
                 delay = float(new['caption_delay'])
                 if not math.isfinite(delay):
                     raise ValueError('Caption timing must be a finite number')
-                engine.settings['caption_delay'] = max(-10, min(10, round(delay, 1)))
-            app.save_json(app.CONFIG, engine.settings)
+                settings['caption_delay'] = max(-10, min(10, round(delay, 1)))
+            app.save_json(app.CONFIG, settings)
+            engine.settings.update(settings)
             engine.settings_changed()
             result(engine.settings)
         else:

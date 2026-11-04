@@ -203,7 +203,7 @@
   "system/apps/media/media_validation.py": "b8bed9b250d79f1fbb0d64fe73bd19afbae98a8bdbf8ccf2ae50b3b66b71a053",
   "system/apps/media/menu_backend.py": "e11317ee893a4b9ca43a3365b77e269655e7aad3c60de78091ea1abf6c610e52",
   "system/apps/media/menu_client.py": "3be88a30e0b8547bd7bf2e1697e4d914079f1b7310998af1dfd3b355a39a364d",
-  "system/apps/media/menu_requests.py": "b33cd34d766bf8481381db706436e776013f6a0673f4bf6f71c77d4f1034c555",
+  "system/apps/media/menu_requests.py": "c548cbd6d189485e26958f03ea0dc41bf3ff3ab5fce17b6241d3043e2f4a0c72",
   "system/apps/media/moviebox_source.py": "2ab7937c37fd51b14010b3ed4e919fd670ecbe468f2b127987d8302546c2abcc",
   "system/apps/media/mpv_session.py": "495b7fb065f93064c31119fe89966c9569ee5255f6b685c360bde01d2c8a8469",
   "system/apps/media/primewire_browser.cjs": "b5945b69f52ed7e338276e5b016b90fb0269acd22be0425f11899feb932558d0",
