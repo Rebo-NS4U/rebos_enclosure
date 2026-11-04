@@ -122,9 +122,12 @@ class InstallFlowTests(unittest.TestCase):
                 self.assertLess(pam.index('auth       include      system-local-login'),
                                 pam.index('auth       optional     pam_gnome_keyring.so'))
                 self.assertIn('session    optional     pam_gnome_keyring.so auto_start', pam)
-                self.assertTrue(any(e['command'] == 'sudo' and
-                                    '/etc/pam.d/greetd' in e['args'] and 'cp' in e['args']
-                                    for e in entries))
+                pam_path = Path('/etc/pam.d/greetd')
+                self.assertEqual(any(e['command'] == 'sudo' and
+                                     '/etc/pam.d/greetd' in e['args'] and 'cp' in e['args']
+                                     for e in entries),
+                                 pam_path.exists() or pam_path.is_symlink(),
+                                 'Back up the original PAM file only when one exists')
                 self.assertEqual(service_calls, [
                     ['systemctl', 'disable', 'ly@tty2.service'],
                     ['systemctl', 'enable', 'getty@tty2.service'],
