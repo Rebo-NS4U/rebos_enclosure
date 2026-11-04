@@ -26,5 +26,24 @@ needed to exercise the real installer builds in temporary directories.
 The backup assertion also handles a clean machine without an existing greetd
 PAM file; only an existing original should produce a backup command.
 
-No application payload changed in this review. No installed service reload or
-restart is needed. The workflows become active when these commits are pushed.
+## Follow-up improvements
+
+- `menu_requests.py` now owns catalogue, settings and menu request handling;
+  `menu_backend.py` owns playback and JSON-lines transport. The playback engine
+  and extracted request bodies retain their behavior. Existing helper imports
+  remain available to callers.
+- `tox.ini` provides repeatable lint and test environments. Ruff checks Python
+  runtime mistakes without enforcing formatting changes.
+- `desktop/scripts/build-check.sh` compiles cbonsai and both greeter extensions
+  in temporary storage. CI now runs that build independently of installer tests.
+- Media source and checksum changes are deployed together. Existing Python
+  processes keep their loaded code until the next launch; no playback or
+  desktop services need restarting for this review.
+
+The external scan helper originally omitted `sourceMetrics` despite passing
+source text. Corrected scans now compute those metrics the same way Blueprint's
+directory reader does. Earlier scores therefore were not complete baselines.
+Remaining size findings include third-party cbonsai and a documented recovery
+script; preserve their behavior and provenance rather than splitting them only
+to change the score. Blueprint still misidentifies unittest assertion calls and
+the use of `HOME` as described above.

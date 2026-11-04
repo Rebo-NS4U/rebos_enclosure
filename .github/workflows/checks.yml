@@ -19,7 +19,7 @@ jobs:
       - name: Install native test dependencies
         run: >-
           pacman -Syu --noconfirm --needed
-          git python python-pillow python-gobject gtk4
+          git python python-pillow python-gobject gtk4 ruff
           gcc pkgconf ncurses fish fontconfig
           niri quickshell qt6-multimedia-ffmpeg ttf-dejavu nodejs lua51
           ffmpeg vlc vlc-plugin-ffmpeg vlc-plugin-freetype vlc-plugin-lua
@@ -38,6 +38,10 @@ jobs:
           ffmpeg -version | head -n 1
       - name: Verify installer payload
         run: runuser -u ci -- python desktop/scripts/deploy.py --verify
+      - name: Lint Python for runtime errors
+        run: runuser -u ci -- ruff check --no-cache desktop system
+      - name: Build native helpers
+        run: runuser -u ci -- bash desktop/scripts/build-check.sh
       - name: Check installer shell syntax
         run: runuser -u ci -- bash -n install.sh desktop/install.sh oneline.sh desktop/scripts/finish-apps.sh
       - name: Run desktop tests

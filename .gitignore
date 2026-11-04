@@ -27,6 +27,8 @@ tools/
 # Python bytecode
 **/__pycache__/
 *.py[cod]
+/.tox/
+/.ruff_cache/
 
 # Waybar nightlight temporary state files
 .config/waybar/nightlight-temp

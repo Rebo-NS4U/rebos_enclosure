@@ -270,12 +270,23 @@ Lua and VLC/FFmpeg dependencies. Tests run as an unprivileged user so installer
 and updater checks exercise the normal user path. See
 [the Blueprint review](../docs/BLUEPRINT-REVIEW.md).
 
+For repeatable local runs, install tox in a development environment and use
+`tox -e lint,checks` from the repository root. The checks environment uses system
+Python packages for GTK/Pillow and needs the same native tools as CI. The Ruff
+rules check syntax, invalid control flow, undefined names and unbound locals;
+they do not enforce a new formatting style.
+
 ```bash
 python3 desktop/scripts/deploy.py --verify
+ruff check --no-cache desktop system
+bash desktop/scripts/build-check.sh
 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s desktop/tests -v
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=system/apps/media python3 -m unittest discover -s desktop/tests/media -v
 bash -n install.sh desktop/install.sh oneline.sh desktop/scripts/finish-apps.sh
 ```
+
+The native build check compiles cbonsai and both greeter extensions in a
+temporary directory, then removes its output. It never installs or loads them.
 
 `desktop/scripts/snapshot.py --verify` verifies reviewed `config/` and `system/` source. Use `--output /path/to/new.tar.gz` to export committed HEAD. Live-home snapshotting has been removed. Preserve component licenses; artwork rights remain with their authors. See the [filesystem guide](../docs/FILESYSTEM.md) for personal settings, managed defaults, grouping and recovery.
 
