@@ -43,7 +43,10 @@ PAM file; only an existing original should produce a backup command.
 The external scan helper originally omitted `sourceMetrics` despite passing
 source text. Corrected scans now compute those metrics the same way Blueprint's
 directory reader does. Earlier scores therefore were not complete baselines.
-Remaining size findings include third-party cbonsai and a documented recovery
-script; preserve their behavior and provenance rather than splitting them only
-to change the score. Blueprint still misidentifies unittest assertion calls and
+The recovery script is now separated into hardware validation/preview, generated
+payloads and host-application modules, with the same CLI entry point. Tests check
+original generated payload bytes, syntax and confirmation gates using temporary
+files and stubbed host actions. No recovery changes are applied to the host.
+The remaining size finding is third-party cbonsai; preserve its provenance.
+Blueprint still misidentifies unittest assertion calls and
 the use of `HOME` as described above.

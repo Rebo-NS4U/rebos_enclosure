@@ -8,6 +8,19 @@ The live VM and passthrough configuration were removed later on 2026-07-30.
 Use `docs/restore-windows-vm-passthrough.sh` for a guarded host-side rebuild,
 and use this document for the complete VM and guest-side details.
 
+Keep the entry script with its `docs/windows-vm-passthrough/` helper directory
+when copying it from the checkout. `validation.sh` owns hardware validation and
+the preview, `payloads.sh` renders temporary configuration files and GPU helper
+scripts, and `host.sh` owns package installation and host configuration. The
+entry point and command-line options are unchanged: a normal invocation only
+previews, and applying changes still requires both `--apply` and the typed
+`RESTORE-PASSTHROUGH` confirmation.
+
+Maintainer regression tests render payloads into temporary directories, check
+their original byte hashes and Bash syntax, and exercise dry-run/confirmation
+gates with stubbed host commands. These checks do not apply the recovery plan
+or verify it against physical VM/GPU hardware.
+
 The live machine and live libvirt definition were inspected while writing this
 document. Where older notes disagree with the values below, the live state in
 this document is authoritative.

@@ -43,7 +43,10 @@ jobs:
       - name: Build native helpers
         run: runuser -u ci -- bash desktop/scripts/build-check.sh
       - name: Check installer shell syntax
-        run: runuser -u ci -- bash -n install.sh desktop/install.sh oneline.sh desktop/scripts/finish-apps.sh
+        run: |
+          for script in install.sh desktop/install.sh oneline.sh desktop/scripts/finish-apps.sh docs/restore-windows-vm-passthrough.sh docs/windows-vm-passthrough/*.sh; do
+            runuser -u ci -- bash -n "$script"
+          done
       - name: Run desktop tests
         run: runuser -u ci -- python -m unittest discover -s desktop/tests -v
       - name: Run media tests

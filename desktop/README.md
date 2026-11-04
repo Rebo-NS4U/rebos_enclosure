@@ -282,7 +282,10 @@ ruff check --no-cache desktop system
 bash desktop/scripts/build-check.sh
 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s desktop/tests -v
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=system/apps/media python3 -m unittest discover -s desktop/tests/media -v
-bash -n install.sh desktop/install.sh oneline.sh desktop/scripts/finish-apps.sh
+for script in install.sh desktop/install.sh oneline.sh desktop/scripts/finish-apps.sh \
+              docs/restore-windows-vm-passthrough.sh docs/windows-vm-passthrough/*.sh; do
+    bash -n "$script" || break
+done
 ```
 
 The native build check compiles cbonsai and both greeter extensions in a
