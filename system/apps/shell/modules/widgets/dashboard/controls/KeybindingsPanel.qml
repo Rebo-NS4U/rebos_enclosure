@@ -274,7 +274,7 @@ Item {
                         objectName: "shortcut-add-command"
                         Layout.fillWidth: true
                         enabled: !writer.running
-                        placeholderText: "Command, e.g. kitty or firefox"
+                        placeholderText: "Command, e.g. kitty or zen-browser"
                         maximumLength: 4096
                         onAccepted: root.addBinding()
                     }

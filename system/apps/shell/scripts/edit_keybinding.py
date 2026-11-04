@@ -142,7 +142,7 @@ def add(request, config_dir):
     command = request.get("command", "").strip()
     name = request.get("name", "").strip()
     if not command or len(command) > 4096 or any(c in command for c in "\n\r\0"):
-        raise ValueError("Enter a command on one line, such as kitty or firefox.")
+        raise ValueError("Enter a command on one line, such as kitty or zen-browser.")
     if len(name) > 100 or any(c in name for c in "\n\r\0"):
         raise ValueError("Keep the shortcut name on one line, up to 100 characters.")
     data = collect(config_dir)

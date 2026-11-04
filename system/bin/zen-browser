@@ -4,4 +4,5 @@ if [[ -x "$HOME/.tarball-installations/zen/zen" ]]; then exec "$HOME/.tarball-in
 if command -v zen-browser-bin >/dev/null; then exec zen-browser-bin "$@"; fi
 if [[ -x /usr/bin/zen-browser ]]; then exec /usr/bin/zen-browser "$@"; fi
 if [[ -x /usr/bin/zen ]]; then exec /usr/bin/zen "$@"; fi
-exec firefox "$@"
+printf 'Zen browser is not installed. Install the Zen browser application group.\n' >&2
+exit 127

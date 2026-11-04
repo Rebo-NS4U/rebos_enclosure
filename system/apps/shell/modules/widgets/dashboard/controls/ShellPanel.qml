@@ -700,7 +700,7 @@ Item {
                         }
 
                         ToggleRow {
-                            label: "Firefox media controls"
+                            label: "Browser media controls"
                             checked: Config.bar.enableFirefoxPlayer ?? false
                             onToggled: value => {
                                 if (value !== Config.bar.enableFirefoxPlayer) {

@@ -311,8 +311,8 @@ def wizard(options, hardware):
         ('desktop', 'Desktop: enable Num Lock'), ('laptop', 'Laptop: retain keyboard defaults'),
         ('virtual', 'Virtual machine: disable compositor animations')], options.machine)
     options.profile = choice('Installation profile', [('full', 'Full desktop and optional application groups'),
-                                                      ('core', 'Core desktop, Firefox and Neovim')], options.profile)
-    print('\nApplication groups (Firefox, Kitty and Neovim are always included):', file=sys.stderr)
+                                                      ('core', 'Core desktop and Neovim')], options.profile)
+    print('\nApplication groups (Kitty and Neovim are always included):', file=sys.stderr)
     keys = list(GROUPS)
     for i, key in enumerate(keys, 1):
         print(f'  {i}) {GROUPS[key]["label"]}', file=sys.stderr)

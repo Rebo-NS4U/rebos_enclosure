@@ -228,7 +228,6 @@ if ((!files_only)); then
     systemctl --user daemon-reload || true
     systemctl --user enable pipewire.socket pipewire-pulse.socket wireplumber.service
     xdg-mime default thunar.desktop inode/directory
-    xdg-settings set default-web-browser firefox.desktop
     if command -v zen-browser-bin >/dev/null || [[ -x /usr/bin/zen-browser || -x /usr/bin/zen ]]; then
         xdg-settings set default-web-browser zen-browser.desktop || true
     fi

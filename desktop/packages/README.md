@@ -5,10 +5,11 @@ assistant and media application source. `core.txt` is the required desktop
 selection; `groups.json` holds optional applications. `apps.txt` and `aur.txt`
 mirror the union of those groups. The redundant root package inventory has been removed; these files are the installer selection.
 
-Use `./install.sh --profile core` for the core desktop with Firefox, Thunar,
+Use `./install.sh --profile core` for the core desktop with Thunar,
 Kitty/Fish and Neovim. Add groups explicitly, for example
 `./install.sh --profile core --groups notes,communication`.
-The default full profile selects every optional group. Package changes here
+The default full profile selects every optional group. Core does not install a browser;
+select the browser group for Zen. Firefox is not installed or used as a fallback. Package changes here
 affect future installations; they do not uninstall anything from this computer.
 
 ## Night Light

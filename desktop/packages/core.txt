@@ -36,7 +36,6 @@ fd
 ripgrep
 btop
 neovim
-firefox
 thunar
 tumbler
 gvfs

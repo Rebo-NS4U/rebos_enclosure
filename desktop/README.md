@@ -48,7 +48,7 @@ bypasses the freshness check. Help is available without network access.
 The default **full** profile installs the desktop and applications, then offers normal AUR package review for Zen, Spicetify, VS Code and mpvpaper (video wallpapers). Review package build files as you would for any AUR installation. `--yes` accepts the desktop plan; it does not bypass AUR review. Internet and current Arch mirrors are required; this is a configuration snapshot, not an offline package mirror. Core and `--no-aur` installs support image wallpapers; video wallpapers require mpvpaper separately.
 
 ```bash
-bash install.sh --profile core       # desktop, Firefox and Neovim, without extra apps or AUR
+bash install.sh --profile core       # desktop and Neovim, without extra apps or AUR
 bash install.sh --no-aur             # full official apps, skip the optional AUR apps
 bash install.sh --no-login           # keep your current display manager
 bash install.sh --keep-network       # retain your existing network service setup
@@ -78,7 +78,7 @@ Early KMS is optional and currently supports mkinitcpio. It adds an additive NVI
 - Custom Neovim IDE configuration and plugin lockfile. Plugins and language servers download separately through Neovim on first use; open `:IDEHelp` for instructions.
 - Four 1920×1200 wallpapers in `New-1920x1200`: Aurora Lake, Bioluminescent Garden, Floating Islands and Neon Alley. Fresh installs select Aurora Lake; existing wallpaper preferences are preserved.
 - Themed ReGreet login configuration, background, layout extension and GoogleDot cursor, NetworkManager, Bluetooth, PipeWire/WirePlumber, power profiles, authentication agent, portals, screenshots, OCR and clipboard history.
-- Full-profile apps include Discord, Spotify Launcher, OBS, Obsidian, Firefox, image viewer, developer tools, and the optional AUR apps listed above.
+- Full-profile apps include Discord, Spotify Launcher, OBS, Obsidian, Zen, image viewer, developer tools, and the optional AUR apps listed above.
 
 Anime Streamer captions can automatically detect each speech span's language and
 produce English subtitles. English retains word timing; translations retain speech
@@ -131,7 +131,7 @@ The portable clipboard shortcut uses cliphist/Fuzzel. Spotify Launcher replaces 
 
 ## First login
 
-Fresh installs use the pinned classic island bar (80% opacity, 55% accent), a 12-hour clock, Firefox media integration, and the Transparent theme. Bar and theme defaults live in `config/shell/config/` and also seed the reset preset; updates preserve existing preferences.
+Fresh installs use the pinned classic island bar (80% opacity, 55% accent), a 12-hour clock, browser media integration, and the Transparent theme. Bar and theme defaults live in `config/shell/config/` and also seed the reset preset; updates preserve existing preferences.
 
 New installs use H/J/K/L for **left/down/up/right**:
 
