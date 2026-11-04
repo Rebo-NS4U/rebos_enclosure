@@ -24,3 +24,7 @@ Use `desktop/payload/manifest.json` to map `config/` defaults and `system/` sour
 Ship portable source and defaults only. Exclude credentials, account files, personal settings/history, caches, downloaded models and build artifacts. Preserve explicit `@HOME@` substitutions and existing privacy filtering.
 
 Verify both repository behavior and applicable installed behavior. The user authorizes committing tested task changes locally automatically; do not push unless explicitly requested by the user or initiated with the Push button in GitHub Settings; use explicit paths/hunks, respect branch policy and never force-push. If the remote advanced, reconcile without overwriting others' work. Report the local commit, whether it remains unpushed, and any verification limits. Do not restart active desktop services without applicable user authorization.
+
+## Shared visual theme
+
+For UI work in Enclosure and projects derived from it, use Dweebo’s visual theme. See `system/apps/assistant/design-system/README.md` for the portable CSS kit and existing QML components. Reuse its buttons, text, fields, semantic palette and interaction states; regenerate tokens when changing the source theme.

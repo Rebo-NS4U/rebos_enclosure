@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dweebo component theme</title><link rel="stylesheet" href="components.css">
+<body class="dweebo"><main style="max-width:760px;margin:48px auto;padding:24px">
+<h1>Dweebo</h1><p class="dw-muted">Shared colors, text, buttons and fields for Enclosure projects.</p>
+<section class="dw-panel"><h2>Buttons</h2>
+<button class="dw-primary">Save changes</button> <button>Cancel</button>
+<button class="dw-danger">Delete</button> <button disabled>Unavailable</button>
+<h2>Text fields</h2><label for="name">Project name</label><input class="dw-field" id="name" placeholder="Enter a name">
+<label for="description">Description</label><textarea id="description" placeholder="Add details"></textarea>
+<label for="style">Style</label><select id="style"><option>Tinted</option><option>Opaque</option></select>
+<label for="invalid">Required value</label><input id="invalid" class="dw-field" aria-invalid="true" aria-describedby="error"><p id="error" style="color:var(--dw-error)">Enter a value.</p>
+<label><input type="checkbox"> Enable notifications</label><p><a href="README.md">Theme usage</a></p></section></main></body></html>
