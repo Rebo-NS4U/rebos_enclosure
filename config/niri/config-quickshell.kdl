@@ -408,14 +408,6 @@ window-rule {
 // Follow the wallpaper palette without changing layout or restarting Niri.
 include optional=true "~/.cache/rebos_shell/niri-colors.kdl"
 
-// Settings uses its own surface and control borders.
-window-rule {
-    match app-id=r#"^(org\.quickshell|quickshell)([.:].*)?$"# title="^rebos_shell Settings$"
-    border {
-        off
-    }
-}
-
 // The pinned assistant is a normal tiled client, scoped by its own title.
 window-rule {
     match app-id=r#"^(org\.quickshell|quickshell)([.:].*)?$"# title="^rebos_shell Assistant$"
