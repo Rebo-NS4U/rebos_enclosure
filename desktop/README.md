@@ -84,8 +84,13 @@ Anime Streamer captions can automatically detect each speech span's language and
 produce English subtitles. English retains word timing; translations retain speech
 timing. Settings → **Auto-detect language and translate to English** selects the
 multilingual `ggml-base.bin` model; turning it off uses `ggml-base.en.bin` for English
-only. Whisper binaries, Silero VAD and models require separate local setup and are
-not bundled. Short-clip checks found correct detection but mixed French/Italian
+only. Whisper binaries, Silero VAD and models are not bundled. Run
+`python desktop/scripts/setup-subtitles.py` from the checkout to build Whisper
+1.9.5 and download both base models and Silero VAD into
+`~/.local/share/anime-streamer`. Setup requires CMake, a C++ compiler and ffmpeg;
+it runs as the current user and does not restart playback or desktop services.
+After setup, toggle captions off/on to retry an existing playback.
+Short-clip checks found correct detection but mixed French/Italian
 translation and poor German/Japanese/Korean translation with the base model;
 do not treat detection success as evidence of translation accuracy.
 
