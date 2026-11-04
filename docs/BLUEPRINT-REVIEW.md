@@ -15,8 +15,10 @@ Reviewed with Blueprint Studio 1.1.4 on 2026-11-04.
 
 Blueprint's framework-specific analysis does not cover this desktop stack.
 Treat static findings as review prompts; passing tests and payload verification
-remain the acceptance criteria. CI skips native checks when their optional
-tools are unavailable, so maintainers must still run desktop checks locally.
+remain the acceptance criteria. CI installs native dependencies in an Arch Linux
+container and runs tests as an unprivileged user, including the Quickshell,
+Niri and media checks. This avoids relying on tools present only on a
+maintainer's desktop. Physical hardware verification remains a local check.
 
 No application payload changed in this review. No installed service reload or
 restart is needed. The workflows become active when these commits are pushed.

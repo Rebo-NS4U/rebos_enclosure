@@ -265,9 +265,10 @@ Restoring replaces those installed entries, including edits made to them since i
 
 GitHub Actions runs payload verification, installer Bash syntax checks, the
 desktop suite and the separate media suite on pushes and pull requests. The
-runner installs Pillow for image tests. Quickshell, Niri and Lua checks still
-need their native tools locally; tests with unavailable optional tools are
-skipped on the Ubuntu runner. See [the Blueprint review](../docs/BLUEPRINT-REVIEW.md).
+runner uses an Arch Linux container with Python, Pillow, GTK, Quickshell, Niri,
+Lua and VLC/FFmpeg dependencies. Tests run as an unprivileged user so installer
+and updater checks exercise the normal user path. See
+[the Blueprint review](../docs/BLUEPRINT-REVIEW.md).
 
 ```bash
 python3 desktop/scripts/deploy.py --verify
