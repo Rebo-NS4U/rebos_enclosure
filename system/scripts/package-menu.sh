@@ -105,7 +105,7 @@ select_packages() {
             pacman -Qq > "$work_dir/packages" || return 1
             preview='pacman -Qi {1}' ;;
     esac
-    picker=(fzf --multi --prompt='Packages > ' --header='Tab: select multiple · Enter: continue · Esc: back'
+    picker=(fzf --multi --height=100% --prompt='Packages > ' --header='Tab: select multiple · Enter: continue · Esc: back'
         --preview "$preview" --preview-window 'down:60%:wrap'
         --bind 'alt-p:toggle-preview,alt-j:preview-down,alt-k:preview-up')
     selection=$("${picker[@]}" < "$work_dir/packages") || return 125
