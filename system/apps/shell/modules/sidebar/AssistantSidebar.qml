@@ -277,7 +277,7 @@ Item {
             anchors.leftMargin: GlobalStates.assistantPosition === "left" ? root.sidebarMargin : 0
             anchors.rightMargin: GlobalStates.assistantPosition === "right" ? root.sidebarMargin : 0
             variant: "bg"
-            radius: Styling.radius(16)
+            radius: Config.roundness
             border.color: Styling.unifiedStyle ? Config.resolveColor(Styling.getStyledRectConfig("bg").border[0]) : Qt.alpha(Colors.primary, 0.28)
             border.width: 1
             ColumnLayout {

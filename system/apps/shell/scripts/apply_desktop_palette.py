@@ -83,6 +83,44 @@ def apply_ladybird_palette(p, home):
             write(directory / 'rebos-shell.css', css)
 
 
+def theme_radius(home):
+    """Use the same validated corner metric as the shell and assistant."""
+    try:
+        theme = json.loads((home / '.config/enclosure/shell/config/theme.json').read_text())
+        return max(0, min(40, int(theme.get('roundness', 16))))
+    except (OSError, ValueError, TypeError):
+        return 16
+
+
+def apply_niri_theme(p, home):
+    accent = p['primary']
+    # Niri watches this final shared rule for palette and corner changes.
+    radius = theme_radius(home)
+    write(home / '.cache/rebos_shell/niri-colors.kdl',
+          '// Generated from the effective QuickShell palette and theme geometry.\n'
+          'layout {\n'
+          '    border {\n'
+          f'        active-color "{accent}"\n'
+          f'        inactive-color "{p["secondary"]}99"\n'
+          '    }\n'
+          '    focus-ring {\n'
+          f'        active-color "{accent}"\n'
+          f'        inactive-color "{p["outlineVariant"]}"\n'
+          '    }\n'
+          '}\n'
+          'window-rule {\n'
+          f'    geometry-corner-radius {radius}\n'
+          '    clip-to-geometry true\n'
+          '    popups {\n'
+          f'        geometry-corner-radius {radius}\n'
+          '    }\n'
+          '}\n'
+          'window-rule {\n'
+          '    match app-id=r#"^(Spotify|spotify|com\\.spotify\\.Client|org\\.kde\\.dolphin|thunar)$"#\n'
+          f'    opacity {float(max(0, min(1, float(p.get("opacity", 1)))))}\n'
+          '}\n')
+
+
 def apply(p, home):
     required = ['background', 'surface', 'surfaceBright', 'surfaceContainer',
                 'surfaceContainerHigh', 'surfaceContainerLowest', 'overSurface',
@@ -132,23 +170,7 @@ def apply(p, home):
     write(home / '.cache/rebos_shell/fzf.conf',
           '--height=40%\n--layout=reverse\n--border=rounded\n--info=inline\n'
           '--color=' + ','.join(f'{key}:{value}' for key, value in fzf_roles.items()) + '\n')
-    # Niri watches included files and applies color changes without a restart.
-    write(home / '.cache/rebos_shell/niri-colors.kdl',
-          '// Generated from the effective QuickShell palette.\n'
-          'layout {\n'
-          '    border {\n'
-          f'        active-color "{accent}"\n'
-          f'        inactive-color "{p["secondary"]}99"\n'
-          '    }\n'
-          '    focus-ring {\n'
-          f'        active-color "{accent}"\n'
-          f'        inactive-color "{p["outlineVariant"]}"\n'
-          '    }\n'
-          '}\n'
-          'window-rule {\n'
-          '    match app-id=r#"^(Spotify|spotify|com\\.spotify\\.Client|org\\.kde\\.dolphin|thunar)$"#\n'
-          f'    opacity {float(max(0, min(1, float(p.get("opacity", 1)))))}\n'
-          '}\n')
+    apply_niri_theme(p, home)
     alpha = max(0, min(1, float(p.get('opacity', 1))))
     argb = lambda c: '#ff' + c[1:]
     # QPalette::ColorRole order, including Qt 6 placeholder and accent roles.

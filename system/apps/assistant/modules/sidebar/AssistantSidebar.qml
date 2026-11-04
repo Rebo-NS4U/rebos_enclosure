@@ -367,7 +367,7 @@ Item {
             anchors.leftMargin: GlobalStates.assistantPosition === "left" ? root.sidebarMargin : 0
             anchors.rightMargin: GlobalStates.assistantPosition === "right" ? root.sidebarMargin : 0
             variant: "bg"
-            radius: Styling.radius(16)
+            radius: Config.roundness
 
             ColumnLayout {
                 anchors.fill: parent

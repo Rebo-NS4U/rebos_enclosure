@@ -193,13 +193,11 @@ window-rule {
 
 window-rule {
     draw-border-with-background false
-    geometry-corner-radius 12
     background-effect {
         blur true
         xray false
     }
     popups {
-        geometry-corner-radius 12
         background-effect {
             blur true
             xray false
@@ -279,7 +277,6 @@ window-rule {
     min-height 700
     max-width 800
     max-height 700
-    geometry-corner-radius 12
     clip-to-geometry true
 }
 window-rule {
@@ -289,7 +286,6 @@ window-rule {
     min-height 390
     max-width 500
     max-height 390
-    geometry-corner-radius 12
     clip-to-geometry true
     background-effect {
         blur true
@@ -303,7 +299,6 @@ window-rule {
     min-height 250
     max-width 300
     max-height 250
-    geometry-corner-radius 12
     clip-to-geometry true
 }
 window-rule {
@@ -313,7 +308,6 @@ window-rule {
     min-height 400
     max-width 850
     max-height 400
-    geometry-corner-radius 12
     clip-to-geometry true
 }
 
@@ -324,7 +318,6 @@ window-rule {
     min-height 500
     max-width 700
     max-height 500
-    geometry-corner-radius 12
     clip-to-geometry true
 }
 
@@ -339,7 +332,6 @@ window-rule {
     max-width 1
     max-height 1
     opacity 0.0
-    geometry-corner-radius 12
     clip-to-geometry true
 }
 
@@ -419,7 +411,6 @@ window-rule {
     match app-id="org.ghostlocation.desktop"
     open-floating false
     default-column-width { proportion 1.0; }
-    geometry-corner-radius 16
     clip-to-geometry true
 }
 

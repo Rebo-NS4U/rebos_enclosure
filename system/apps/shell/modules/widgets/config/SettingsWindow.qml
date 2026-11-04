@@ -79,7 +79,7 @@ FloatingWindow {
     StyledRect {
         anchors.fill: parent
         variant: "bg"
-        radius: Styling.radius(-2)
+        radius: Config.roundness
 
         // Settings Tab Content
         SettingsTab {
