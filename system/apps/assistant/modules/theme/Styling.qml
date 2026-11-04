@@ -25,8 +25,8 @@ Singleton {
     readonly property real ditherEdgeWidth: Math.max(1, Math.round(ditherCellSize * 0.75))
 
     function radius(offset: real): real {
-        const adjustment = unifiedStyle ? Math.max(-6, Math.min(6, offset * 0.35)) : offset;
-        return Config.roundness > 0 ? Math.max(Config.roundness + adjustment, 0) : 0;
+        // Keep the argument for existing callers; all corners share one metric.
+        return Math.max(Config.roundness, 0);
     }
 
     function fontSize(offset: real): real {

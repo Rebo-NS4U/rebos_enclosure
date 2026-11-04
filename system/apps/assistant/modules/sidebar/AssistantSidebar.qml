@@ -568,7 +568,7 @@ Item {
                                 }
                                 background: StyledRect {
                                     variant: parent.hovered ? "focus" : "transparent"
-                                    radius: Math.max(0, Config.roundness - 6)
+                                    radius: Math.max(0, Config.roundness)
                                 }
                                 StyledToolTip {
                                     show: parent.hovered
@@ -809,7 +809,7 @@ Item {
                     padding: 8
                     background: StyledRect {
                         variant: parent.hovered ? "focus" : "internalbg"
-                        radius: Math.max(0, Config.roundness - 6)
+                        radius: Math.max(0, Config.roundness)
                     }
                     contentItem: StyledText {
                         text: Ai.activeSession.checkingPlanUsage ? "Checking plan usage…" : Ai.activeSession.planUsageSummary
@@ -1720,7 +1720,7 @@ Item {
                                                                 Layout.fillWidth: true
                                                                 padding: 12
                                                                 background: Rectangle {
-                                                                    radius: Math.max(0, Config.roundness - 6)
+                                                                    radius: Math.max(0, Config.roundness)
                                                                     color: "transparent"
                                                                     border.width: 0
                                                                 }
@@ -2466,7 +2466,7 @@ Item {
 
                                         background: StyledRect {
                                             variant: (suggestionDelegate.highlighted || suggestionDelegate.hovered) ? "focus" : "transparent"
-                                            radius: Math.max(0, Config.roundness - 6)
+                                            radius: Math.max(0, Config.roundness)
                                         }
 
                                         onClicked: {
@@ -2545,7 +2545,7 @@ Item {
                 Accessible.name: text + (free ? ", free" : "") + (selected ? ", selected" : "")
                 background: StyledRect {
                     variant: choice_codex.selected ? "focus" : choice_codex.highlighted ? "common" : "transparent"
-                    radius: Math.max(0, Config.roundness - 6)
+                    radius: Math.max(0, Config.roundness)
                     border.width: choice_codex.selected ? 1 : 0
                     border.color: Qt.alpha(Colors.primary, 0.3)
                 }
@@ -2599,7 +2599,7 @@ Item {
                 Accessible.name: text + (free ? ", free" : "") + (selected ? ", selected" : "")
                 background: StyledRect {
                     variant: choice_google.selected ? "focus" : choice_google.highlighted ? "common" : "transparent"
-                    radius: Math.max(0, Config.roundness - 6)
+                    radius: Math.max(0, Config.roundness)
                     border.width: choice_google.selected ? 1 : 0
                     border.color: Qt.alpha(Colors.primary, 0.3)
                 }
@@ -2653,7 +2653,7 @@ Item {
                 Accessible.name: text + (free ? ", free" : "") + (selected ? ", selected" : "")
                 background: StyledRect {
                     variant: choice_distill.selected ? "focus" : choice_distill.highlighted ? "common" : "transparent"
-                    radius: Math.max(0, Config.roundness - 6)
+                    radius: Math.max(0, Config.roundness)
                     border.width: choice_distill.selected ? 1 : 0
                     border.color: Qt.alpha(Colors.primary, 0.3)
                 }

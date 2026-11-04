@@ -100,7 +100,7 @@ FileView {
             const palette = ShellStyles.appPalette(colors.appStyle, raw, colors.appOpacity);
             for (const name of colors.availableColorNames) palette[name] = Qt.color(palette[name]);
             palette.availableColorNames = colors.availableColorNames;
-            const signature = JSON.stringify(palette);
+            const signature = JSON.stringify([palette, Config.theme.font, Config.theme.fontSize, Config.theme.roundness, Config.theme.animDuration]);
             if (signature === colors.generatedPalette)
                 return;
             qtCtGenerator.generate(palette);

@@ -1,0 +1,25 @@
+/* Enclosure standard — generated; app content remains app-owned. */
+QWidget { font-family: "JetBrains Mono"; font-size: 14px; }
+QMenu, QToolTip { background: #0d0f10; color: #dfe3e8; border: 1px solid #3d5363; border-radius: 16px; padding: 6px; }
+QMenu::item { min-height: 24px; padding: 8px 28px 8px 12px; margin: 1px; border-radius: 16px; }
+QMenu::item:selected { background: #161c20; color: #dfe3e8; }
+QMenu::item:disabled { color: #8b9198; }
+QMenu::separator { height: 1px; background: #3d5363; margin: 4px 8px; }
+QMenuBar { background: #0a0b0c; color: #dfe3e8; }
+QMenuBar::item { padding: 8px 12px; border-radius: 16px; background: transparent; }
+QMenuBar::item:selected { background: #161c20; }
+QPushButton, QToolButton { min-height: 24px; padding: 7px 14px; border-radius: 16px; border: 1px solid #3d5363; background: #0d0f10; color: #dfe3e8; }
+QPushButton:hover, QToolButton:hover { background: #161c20; }
+QPushButton:default, QPushButton:checked, QToolButton:checked { background: #94cdf7; color: #00344d; }
+QPushButton:disabled, QToolButton:disabled { color: #8b9198; background: #0d0f10; }
+QPushButton:focus, QToolButton:focus { border: 2px solid #94cdf7; }
+QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox { min-height: 30px; padding: 8px 12px; border-radius: 16px; border: 1px solid #3d5363; background: #010202; color: #dfe3e8; selection-background-color: #94cdf7; selection-color: #00344d; }
+QLineEdit:focus, QComboBox:focus, QSpinBox:focus { border: 2px solid #94cdf7; }
+QComboBox QAbstractItemView { padding: 6px; background: #0d0f10; color: #dfe3e8; selection-background-color: #161c20; selection-color: #dfe3e8; border: 1px solid #3d5363; }
+QAbstractItemView { background: #010202; color: #dfe3e8; selection-background-color: #94cdf7; selection-color: #00344d; alternate-background-color: #0d0f10; }
+QListView::item, QTreeView::item { min-height: 32px; padding: 4px; }
+QTabBar::tab { padding: 8px 14px; background: #0d0f10; color: #dfe3e8; border-radius: 16px; }
+QTabBar::tab:selected { background: #161c20; color: #94cdf7; }
+QHeaderView::section { padding: 8px; background: #0d0f10; color: #dfe3e8; border: none; }
+QProgressBar { border: 1px solid #3d5363; border-radius: 16px; background: #0d0f10; color: #dfe3e8; text-align: center; }
+QProgressBar::chunk { background: #94cdf7; border-radius: 16px; }

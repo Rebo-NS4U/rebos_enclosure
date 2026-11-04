@@ -10,6 +10,8 @@ APP = Path(__file__).resolve().parents[2] / 'system/apps/shell'
 HARNESS = '''import QtQuick
 import QtTest
 import Quickshell
+import qs.modules.theme
+import qs.config
 import qs.modules.components
 import qs.modules.widgets.dashboard.controls
 import qs.modules.widgets.dashboard.wallpapers
@@ -22,6 +24,10 @@ ShellRoot {
   TestCase { id: tester; when:false }
   Timer { interval:600; running:true; onTriggered: {
    try {
+    for (const offset of [-8, 0, 4, 12])
+     if (Styling.radius(offset) !== Config.roundness) throw Error("Inconsistent shared radius");
+    for (const child of menu.background.children)
+     if (child.radius !== undefined && child.radius !== Config.roundness) throw Error("Menu corner radius");
     combo.popup.open(); tester.wait(80);
     if (!combo.popup.visible || combo.currentValue !== 1) throw Error("Combo popup/value");
     combo.forceActiveFocus(); tester.keyClick(Qt.Key_Down); tester.keyClick(Qt.Key_Return); tester.wait(50);

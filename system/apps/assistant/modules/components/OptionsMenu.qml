@@ -110,7 +110,7 @@ Menu {
                 let item = root.items[root.hoveredIndex];
                 return item && item.highlightColor !== undefined ? item.highlightColor : root.defaultHighlightColor;
             }
-            radius: root.menuRadius > 6 ? root.menuRadius - 6 : 0
+            radius: root.menuRadius
             visible: {
                 if (root.hoveredIndex === -1 || root.hoveredIndex >= root.items.length)
                     return false;
@@ -183,7 +183,7 @@ Menu {
                 anchors.topMargin: isSeparatorItem ? 4 : 0
                 anchors.bottomMargin: isSeparatorItem ? 4 : 0
                 color: isSeparatorItem ? Colors.surface : "transparent"
-                radius: isSeparatorItem ? 0 : (root.menuRadius > 6 ? root.menuRadius - 6 : 0)
+                radius: isSeparatorItem ? 0 : (root.menuRadius)
             }
 
             onHighlightedChanged: {

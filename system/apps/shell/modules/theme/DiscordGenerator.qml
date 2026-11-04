@@ -29,7 +29,7 @@ QtObject {
         const backgroundsecondary = isLight ? toRGB(Qt.darker(bg, 1.1)) : toRGB(Qt.darker(bg, 1.5))
         const backgroundsecondaryalt = isLight ? toRGB(Qt.darker(bg, 1.15)) : toRGB(Qt.darker(bg, 2.0))
         const backgroundtertiary = isLight ? toRGB(Qt.darker(bg, 1.2)) : toRGB(Qt.darker(bg, 3.0))
-        const backgroundfloating = isLight ? toRGB(Qt.darker(bg, 1.05)) : "0,0,0"
+        const backgroundfloating = toRGB(Colors.surface)
 
         // Text derivatives
         const fg = Colors.overBackground
@@ -75,6 +75,10 @@ QtObject {
   --settingsicons: 1;
 }
 
+/* Shared menu geometry from the desktop standard. */
+[role="menu"] { border-radius: ${Config.roundness}px !important; padding: 6px !important; background: rgb(${backgroundfloating}) !important; }
+[role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"] { min-height: 40px; border-radius: ${Config.roundness}px !important; padding: 8px 12px !important; }
+[role="menuitem"]:hover, [role="menuitemcheckbox"]:hover, [role="menuitemradio"]:hover { background: ${Colors.surfaceContainerHigh.toString()} !important; color: ${Colors.overSurface.toString()} !important; }
 /* Any custom CSS below here */ 
 `
 

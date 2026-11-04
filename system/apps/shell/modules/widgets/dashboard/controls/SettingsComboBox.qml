@@ -54,7 +54,7 @@ ComboBox {
                 color: Colors.primary
             }
         }
-        background: StyledRect { variant: option.highlighted || option.hovered ? "focus" : "transparent"; radius: Math.max(0, Config.roundness - 6) }
+        background: StyledRect { variant: option.highlighted || option.hovered ? "focus" : "transparent"; radius: Math.max(0, Config.roundness) }
     }
     popup: Popup {
         y: root.height + 6

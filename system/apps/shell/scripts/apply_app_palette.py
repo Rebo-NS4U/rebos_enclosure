@@ -181,6 +181,11 @@ html, body, #main, .Root {{ background: var(--spice-main) !important; }}
 input:focus-visible, button:focus-visible, a:focus-visible {{
   outline-color: var(--rebos-tertiary) !important;
 }}
+
+/* Standard desktop menu geometry. */
+.main-contextMenu-menu {{ border-radius: 16px !important; padding: 6px !important; border: 1px solid var(--spice-button-disabled); }}
+.main-contextMenu-menuItemButton {{ min-height: 40px; padding: 8px 12px !important; border-radius: 16px !important; }}
+.main-contextMenu-menuItemButton:hover {{ background: var(--spice-selected-row) !important; }}
 '''
 
 

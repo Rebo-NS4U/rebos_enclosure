@@ -57,6 +57,11 @@ QMenu::item:selected {{ background: {rgb(colors[12])}; color: {rgb(colors[13])};
     source.set('Appearance', 'color_scheme_path', str(scheme))
     existing = source.get('Interface', 'stylesheets', fallback='')
     source.set('Interface', 'stylesheets', (existing + ', ' if existing and existing != '@Invalid()' else '') + str(stylesheet))
+    standard = home / '.config/enclosure/theme/widgets.qss'
+    if standard.is_file():
+        sheets = [entry.strip() for entry in source.get('Interface', 'stylesheets').split(',')
+                  if entry.strip() != str(standard)]
+        source.set('Interface', 'stylesheets', ', '.join([*sheets, str(standard)]))
     with (target / 'qt5ct.conf').open('w') as output:
         source.write(output)
     environment = os.environ.copy()

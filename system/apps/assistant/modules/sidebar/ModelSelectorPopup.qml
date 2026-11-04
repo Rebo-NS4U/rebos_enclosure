@@ -280,7 +280,7 @@ Popup {
 
                 background: StyledRect {
                     variant: parent.confirming ? "primary" : (parent.hovered || parent.activeFocus ? "focus" : "pane")
-                    radius: Math.max(0, Config.roundness - 6)
+                    radius: Math.max(0, Config.roundness)
 
                     Behavior on color {
                         enabled: Config.animDuration > 0
@@ -366,7 +366,7 @@ Popup {
                 StyledRect {
                     anchors.fill: parent
                     variant: "primary"
-                    radius: Math.max(0, Config.roundness - 6)
+                    radius: Math.max(0, Config.roundness)
                     visible: modelList.currentIndex >= 0
                 }
             }

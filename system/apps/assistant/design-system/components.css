@@ -96,7 +96,7 @@
     min-block-size: 40px;
     padding: 10px 12px;
     gap: 12px;
-    border-radius: max(4px, calc(var(--dw-radius) - 6px));
+    border-radius: var(--dw-radius);
     cursor: pointer;
   }
   .dweebo select option:is(:hover, :focus-visible) {
@@ -144,7 +144,7 @@
 .dweebo .dw-select-menu [role="option"] {
   display: flex; align-items: center; justify-content: space-between;
   min-height: 40px; padding: 8px 12px; gap: 12px;
-  border-radius: max(4px, calc(var(--dw-radius) - 6px)); cursor: pointer;
+  border-radius: var(--dw-radius); cursor: pointer;
 }
 .dweebo .dw-select-menu [role="option"]:is(:hover, .dw-active) {
   background: var(--dw-focus); outline: 1px solid var(--dw-primary); outline-offset: -1px;

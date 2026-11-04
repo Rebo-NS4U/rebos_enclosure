@@ -1,0 +1,71 @@
+/* Enclosure standard: generated from the active desktop theme. */
+@define-color accent_color #94cdf7;
+@define-color accent_bg_color #94cdf7;
+@define-color accent_fg_color #00344d;
+@define-color theme_selected_bg_color #94cdf7;
+@define-color theme_selected_fg_color #00344d;
+@define-color theme_unfocused_selected_bg_color #94cdf7;
+@define-color theme_unfocused_selected_fg_color #00344d;
+@define-color window_bg_color #0a0b0c;
+@define-color window_fg_color #dfe3e8;
+@define-color headerbar_bg_color #0a0b0c;
+@define-color headerbar_fg_color #dfe3e8;
+@define-color popover_bg_color #0d0f10;
+@define-color popover_fg_color #dfe3e8;
+@define-color view_bg_color #010202;
+@define-color view_fg_color #dfe3e8;
+@define-color card_bg_color #0d0f10;
+@define-color card_fg_color #dfe3e8;
+@define-color sidebar_bg_color #010202;
+@define-color sidebar_fg_color #dfe3e8;
+@define-color sidebar_border_color #3d5363;
+@define-color sidebar_backdrop_color #0d0f10;
+@define-color error_color #ffb4ab;
+@define-color error_bg_color #ffb4ab;
+@define-color error_fg_color #690005;
+
+* { font-family: "JetBrains Mono"; font-size: 14px; }
+window.background { background-color: rgba(10, 11, 12, 1); color: @window_fg_color; }
+menu, .menu, popover > contents {
+  background-color: @popover_bg_color; color: @popover_fg_color;
+  border: 1px solid #3d5363; border-radius: 16px; padding: 6px;
+  box-shadow: 0 8px 24px alpha(black, 0.25);
+}
+menuitem, modelbutton, popover row {
+  min-height: 24px; padding: 8px 12px; border-radius: 16px;
+  color: @window_fg_color;
+}
+menuitem:hover, modelbutton:hover, popover row:hover, row:hover {
+  background-color: #161c20; color: @window_fg_color;
+}
+menuitem:disabled, button:disabled, entry:disabled { opacity: 0.45; }
+button {
+  min-height: 24px; padding: 7px 14px; border-radius: 16px;
+  background-image: none; background-color: #0d0f10;
+  color: @window_fg_color; border: 1px solid #3d5363; box-shadow: none;
+}
+button:hover { background-color: #161c20; }
+button:active, button:checked, button.suggested-action { background-color: @accent_bg_color; color: @accent_fg_color; }
+button.destructive-action { background-color: @error_bg_color; color: @error_fg_color; }
+button.flat { background-color: transparent; border-color: transparent; }
+button.flat:hover { background-color: #161c20; }
+entry, spinbutton, textview.view {
+  min-height: 30px; padding: 8px 12px; border-radius: 16px;
+  background-color: #010202; color: @view_fg_color;
+  border: 1px solid #3d5363; box-shadow: none;
+}
+entry:focus, button:focus, spinbutton:focus { border-color: @accent_color; outline: 1px solid @accent_color; outline-offset: -1px; }
+entry.error { border-color: @error_color; }
+row, treeview.view { color: @view_fg_color; }
+row:selected, treeview.view:selected, iconview:selected { background-color: @accent_bg_color; color: @accent_fg_color; }
+notebook > header { background-color: #010202; }
+notebook > header tab { padding: 8px 14px; border-radius: 16px; }
+notebook > header tab:checked { background-color: #161c20; color: @accent_color; }
+check, radio { min-width: 18px; min-height: 18px; border: 1px solid #8b9198; background-color: #010202; }
+check { border-radius: 16px; } radio { border-radius: 99px; }
+check:checked, radio:checked, switch:checked { background-color: @accent_bg_color; color: @accent_fg_color; }
+switch { border-radius: 99px; background-color: #161c20; }
+scale trough, progressbar trough { background-color: #161c20; border-radius: 99px; }
+scale highlight, progressbar progress { background-color: @accent_color; border-radius: 99px; }
+tooltip, tooltip.background { background-color: @popover_bg_color; color: @popover_fg_color; border: 1px solid #3d5363; border-radius: 16px; }
+separator { background-color: #3d5363; min-height: 1px; }

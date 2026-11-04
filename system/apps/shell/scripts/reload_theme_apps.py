@@ -41,31 +41,6 @@ def processes(proc=Path('/proc')):
             continue
 
 
-def restart(pid, executable, args, browser=False):
-    # A pidfd avoids accidentally signalling a reused PID. Never force-kill an
-    # app that refuses to close, and wait for it to release its profile lock.
-    import select
-    try:
-        fd = os.pidfd_open(pid)
-    except ProcessLookupError:
-        return True
-    try:
-        signal.pidfd_send_signal(fd, signal.SIGTERM)
-        poller = select.poll()
-        poller.register(fd, select.POLLIN)
-        if not poller.poll(10000):
-            print(json.dumps({'error': executable.name + ' did not exit; restart skipped'}), file=sys.stderr)
-            return False
-    finally:
-        os.close(fd)
-    command = [str(executable), *args[1:]]
-    if browser and '--restore-last-session' not in command:
-        command.append('--restore-last-session')
-    subprocess.Popen(command, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
-                     stderr=subprocess.DEVNULL, start_new_session=True)
-    return True
-
-
 def refresh(home):
     cache = home / '.cache/rebos_shell'
     state = cache / 'app-theme-reload.json'
@@ -83,6 +58,7 @@ def refresh(home):
         previous = current  # First run establishes a baseline without closing apps.
     changed = {name for name in current if previous.get(name) != current[name]}
     failed = set()
+    pending_reopen = set()
     if 'qt' in changed:
         try:
             result = subprocess.run(['gdbus', 'emit', '--session', '--object-path', '/KGlobalSettings',
@@ -104,8 +80,8 @@ def refresh(home):
                     signal.pidfd_send_signal(fd, signal.SIGUSR2)
                 finally:
                     os.close(fd)
-            elif not restart(pid, executable, args, browser=group == 'zen'):
-                failed.add(group)
+            else:
+                pending_reopen.add(group)
         except ProcessLookupError:
             pass
         except OSError as error:
@@ -115,7 +91,7 @@ def refresh(home):
         current[group] = previous.get(group, '')
     write(state, json.dumps(current, indent=2) + '\n')
     write(cache / 'app-theme-reload-status.json', json.dumps({
-        'updated_at': time.time(), 'changed': sorted(changed), 'failed': sorted(failed)
+        'updated_at': time.time(), 'changed': sorted(changed), 'failed': sorted(failed), 'pending_reopen': sorted(pending_reopen)
     }) + '\n')
     return not failed
 

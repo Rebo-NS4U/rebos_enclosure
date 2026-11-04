@@ -272,6 +272,8 @@ def apply(p, home):
 
     from apply_app_palette import apply as apply_apps
     apply_apps(p, home)
+    from standard_theme import apply as apply_standard
+    apply_standard(p, home)
 
 
 if __name__ == '__main__':

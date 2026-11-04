@@ -42,7 +42,7 @@ Button {
             if (root.isSeparator) return "transparent"
             return root.hovered || root.activeFocus ? Styling.styleConfig(Styling.shellStyle, "focus").gradient[0][0] : "transparent"
         }
-        radius: Math.max(0, Config.roundness - 6)
+        radius: Math.max(0, Config.roundness)
 
         // Separator line
         Rectangle {

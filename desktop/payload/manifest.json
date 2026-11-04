@@ -90,7 +90,8 @@
     ".local/share/wallpapers/New-1920x1200",
     ".local/share/wallpapers/default.jpg",
     "code/anime-streamer",
-    "code/rebos-assistant"
+    "code/rebos-assistant",
+    ".config/enclosure/theme/widgets.qss"
   ],
   "layout": 2,
   "sources": {
@@ -441,6 +442,10 @@
     "code/rebos-assistant": {
       "source": "system/apps/assistant",
       "kind": "managed"
+    },
+    ".config/enclosure/theme/widgets.qss": {
+      "source": "config/enclosure/theme/widgets.qss",
+      "kind": "personal"
     }
   }
 }
