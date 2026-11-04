@@ -215,7 +215,7 @@
   "system/apps/shell/AnimeMenu.qml": "4fce5c655b223d19df8f2b574479725e264abe883d3be0710875be305fa2e011",
   "system/apps/shell/FanShell.qml": "fc2332e71c718a44f5176ab88c0ce01794d69dd7f80b1e5a3a25a44ba50b9dcd",
   "system/apps/shell/LICENSE": "06486a75fe21ab1eb92d6e070e7b5980d5a5ff88be9ed0ca32eeb3730442acda",
-  "system/apps/shell/PlaybackNextOverlay.qml": "7bd44cbc389be5cf5347f211930ad6d2071b520345ebc1ecac04dffa1a58fb39",
+  "system/apps/shell/PlaybackNextOverlay.qml": "b644723d7b1cfaa3186c324e6ce9bc3a3b5ba8fe1a669d54827b0c4e2fe90ce9",
   "system/apps/shell/README.md": "dc710b8e9dabbebbf60c136bcd83828ca65434f9971019d6e5b81ee45735470b",
   "system/apps/shell/assets/aiproviders/anthropic.svg": "e833fdfa7e7187a86a05b870925067556a506dcd4239089aed73e1e58c9366a3",
   "system/apps/shell/assets/aiproviders/deepseek.svg": "8f9443e351b6dacce71871790201b799d92e8bf96a45ef79aeb5e9bf4db423e2",
