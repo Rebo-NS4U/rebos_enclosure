@@ -14,6 +14,12 @@ development → Open development menu**. From a checkout, run:
 ./dev.sh
 ```
 
+The graphical app starts with three actions: **Check** verifies the project,
+**Apply local changes** installs this checkout, and **Update** gets desktop updates
+from GitHub. Apply and Update run a preview before asking you to continue.
+Git tools, file organization and manual previews are under **Advanced**. Technical
+output stays collapsed until needed and opens automatically on errors or previews.
+
 The menu offers personal configuration access, grouping previews/migration, status/diffs, a hardware plan, tests, explicit file staging,
 payload checksum regeneration, local deployment previews, deployment, local
 commits, push, fast-forward source pulls, and installed desktop updates.

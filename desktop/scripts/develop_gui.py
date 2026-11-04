@@ -12,6 +12,12 @@ gi.require_version('Gtk', '4.0')
 from gi.repository import GLib, Gtk
 import develop
 
+PRIMARY = [
+    ('check', 'Check', 'Check the project for problems. This does not change your desktop.'),
+    ('deploy', 'Apply local changes', 'Install the changes in this checkout. Preview first; keep your preferences.'),
+    ('update', 'Update', 'Get desktop updates from GitHub. Preview first; keep your preferences.'),
+]
+
 SECTIONS = {
     'Overview': [
         ('status', 'Repository status', 'See your branch, changed files and recent commits.'),
@@ -20,13 +26,10 @@ SECTIONS = {
         ('configs', 'Personal settings', 'Open your personal configuration folder.')],
     'Desktop': [
         ('update-preview', 'Preview update', 'See what an update from GitHub would change.'),
-        ('update', 'Update desktop', 'Download and install updates while keeping preferences.'),
         ('preview', 'Preview local installation', 'See what the files in this checkout would install.'),
-        ('deploy', 'Install local changes', 'Install this checkout while keeping personal preferences.'),
         ('organize-preview', 'Preview file organization', 'See how existing files would be grouped.'),
         ('organize', 'Organize files', 'Group installed settings and source using a recovery journal.')],
     'Development': [
-        ('check', 'Check project', 'Verify the payload and run the project tests.'),
         ('stage', 'Stage files', 'Choose explicit repository paths for the next commit.'),
         ('hashes', 'Refresh checksums', 'Update the payload inventory after reviewing source changes.'),
         ('commit', 'Commit staged changes', 'Test the staged source and create a local commit.'),
@@ -49,7 +52,7 @@ PREVIEWS = {'update': 'update-preview', 'deploy': 'preview', 'organize': 'organi
 class DevelopmentWindow(Gtk.ApplicationWindow):
     def __init__(self, app):
         super().__init__(application=app, title='Enclosure Development')
-        self.set_default_size(1020, 760)
+        self.set_default_size(780, 650)
         self.busy = False
         self.connect('close-request', self.close_requested)
         outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
@@ -59,41 +62,57 @@ class DevelopmentWindow(Gtk.ApplicationWindow):
         title = Gtk.Label(label='Enclosure Development', xalign=0)
         title.add_css_class('title-1')
         outer.append(title)
-        outer.append(Gtk.Label(label='Maintain your desktop, review updates and manage Enclosure source.', xalign=0))
+        outer.append(Gtk.Label(label='Check your work, apply local changes, or get updates.', xalign=0))
         branch = develop.verify_checkout()
         location = Gtk.Label(label=f'{branch}  ·  {develop.ROOT}', xalign=0, selectable=True)
         location.add_css_class('dim-label')
         outer.append(location)
         self.controls = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         outer.append(self.controls)
+        for name, label, description in PRIMARY:
+            self.controls.append(self.action_row(name, label, description))
+        advanced = Gtk.Expander(label='Advanced — Git, files and maintenance')
+        self.controls.append(advanced)
+        advanced_scroll = Gtk.ScrolledWindow(min_content_height=240)
+        advanced.set_child(advanced_scroll)
+        advanced_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        advanced_scroll.set_child(advanced_box)
         stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE)
         switcher = Gtk.StackSwitcher(stack=stack, halign=Gtk.Align.START)
-        self.controls.append(switcher)
-        self.controls.append(stack)
+        advanced_box.append(switcher)
+        advanced_box.append(stack)
         for section, actions in SECTIONS.items():
             page = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
             for name, label, description in actions:
-                row = Gtk.Box(spacing=16)
-                button = Gtk.Button(label=label, width_request=235)
-                button.connect('clicked', lambda _button, action=name: self.choose(action))
-                row.append(button)
-                row.append(Gtk.Label(label=description, xalign=0, wrap=True, hexpand=True))
-                page.append(row)
+                page.append(self.action_row(name, label, description))
             stack.add_titled(page, section.lower(), section)
-        inputs = Gtk.Box(spacing=10)
+        inputs = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
         self.paths = Gtk.Entry(placeholder_text='Repository paths to stage, e.g. README.md "path with spaces"', hexpand=True)
         self.message = Gtk.Entry(placeholder_text='Commit message', hexpand=True)
         inputs.append(self.paths)
         inputs.append(self.message)
         page.append(inputs)
-        self.status = Gtk.Label(label='Ready — choose an action above.', xalign=0)
+        self.status = Gtk.Label(label='Ready. Start with Check if you are unsure.', xalign=0)
         outer.append(self.status)
         scroll = Gtk.ScrolledWindow(vexpand=True, min_content_height=180)
         self.output = Gtk.TextView(editable=False, monospace=True, cursor_visible=False)
         self.output.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
         scroll.set_child(self.output)
-        outer.append(scroll)
-        self.choose('status')
+        self.details = Gtk.Expander(label='Technical details', vexpand=True)
+        self.details.set_child(scroll)
+        outer.append(self.details)
+
+    def action_row(self, name, label, description):
+        row = Gtk.Box(spacing=16)
+        button = Gtk.Button(label=label, width_request=200)
+        button.connect('clicked', lambda _button: self.choose(name))
+        row.append(button)
+        row.append(Gtk.Label(label=description, xalign=0, wrap=True, hexpand=True))
+        return row
+
+    def action_label(self, name):
+        actions = PRIMARY + [action for section in SECTIONS.values() for action in section]
+        return next((label for action, label, _ in actions if action == name), name)
 
     def close_requested(self, *_):
         if self.busy:
@@ -129,6 +148,7 @@ class DevelopmentWindow(Gtk.ApplicationWindow):
             def confirm(success=True):
                 if not success:
                     return
+                self.details.set_expanded(True)
                 dialog = Gtk.MessageDialog(transient_for=self, modal=True,
                     message_type=Gtk.MessageType.QUESTION, buttons=Gtk.ButtonsType.OK_CANCEL,
                     text=CONFIRM[name], secondary_text='Review the output below before continuing.')
@@ -148,7 +168,8 @@ class DevelopmentWindow(Gtk.ApplicationWindow):
     def execute(self, name, extra, callback=None):
         self.busy = True
         self.controls.set_sensitive(False)
-        self.status.set_text('Running: ' + name)
+        label = self.action_label(name)
+        self.status.set_text(label + ' — working…')
         self.append('\n── ' + name + ' ──\n')
         def worker():
             success = False
@@ -168,7 +189,10 @@ class DevelopmentWindow(Gtk.ApplicationWindow):
         def finished(success):
             self.busy = False
             self.controls.set_sensitive(True)
-            self.status.set_text(('Completed: ' if success else 'Failed — see output: ') + name)
+            self.status.set_text((label + ' — finished.') if success else
+                                 (label + ' could not finish. See Technical details for the reason.'))
+            if not success:
+                self.details.set_expanded(True)
             if callback:
                 callback(success)
             return False
