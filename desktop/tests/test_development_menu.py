@@ -60,6 +60,48 @@ class DevelopmentMenuTests(unittest.TestCase):
             commands = [call.args[0] for call in runner.call_args_list]
             self.assertIn(['git', 'push', 'origin', 'HEAD:refs/heads/main'], commands)
 
+    def test_outgoing_shows_only_commits_missing_from_push_destination(self):
+        self.command('update-ref', 'refs/remotes/origin/main', 'HEAD')
+        (self.root / 'source.py').write_text('new work\n')
+        self.command('commit', '-am', 'Make the desktop easier to use')
+        report = dev.outgoing(self.root)
+        self.assertIn('origin/main: 1', report)
+        self.assertIn('Make the desktop easier to use', report)
+        self.assertNotIn('initial', report)
+        self.assertIn('last fetched', report)
+        self.command('update-ref', 'refs/remotes/origin/main', 'HEAD')
+        self.assertIn('No local commits waiting', dev.outgoing(self.root))
+
+    def test_outgoing_handles_missing_remote_state_and_divergence(self):
+        self.assertIn('unavailable', dev.outgoing(self.root))
+        self.command('branch', 'remote-work')
+        self.command('checkout', 'remote-work')
+        (self.root / 'remote.txt').write_text('remote work')
+        self.command('add', 'remote.txt')
+        self.command('commit', '-m', 'Remote change')
+        self.command('update-ref', 'refs/remotes/origin/main', 'HEAD')
+        self.command('checkout', 'main')
+        report = dev.outgoing(self.root)
+        self.assertIn('1 commits missing here', report)
+        self.assertIn('No local commits waiting', report)
+
+    def test_health_reports_service_access_failure_without_claiming_healthy(self):
+        real_run = subprocess.run
+        def run(command, **kwargs):
+            if command[0] == 'systemctl':
+                return subprocess.CompletedProcess(command, 1, '', 'No connection')
+            return real_run(command, **kwargs)
+        with patch.object(dev.subprocess, 'run', side_effect=run):
+            report = dev.health_report(self.root)
+        self.assertIn('Storage:', report)
+        self.assertIn('Memory:', report)
+        self.assertIn('could not check; service connection unavailable', report)
+        self.assertNotIn('no failed services', report)
+        self.assertIn('all changes are saved', report)
+        (self.root / 'source.py').write_text('unsaved')
+        with patch.object(dev.subprocess, 'run', side_effect=run):
+            self.assertIn('not all been saved', dev.health_report(self.root))
+
     def test_pull_rejects_dirty_source_without_network(self):
         (self.root / 'source.py').write_text('local edits\n')
         with self.assertRaisesRegex(ValueError, 'local changes'):

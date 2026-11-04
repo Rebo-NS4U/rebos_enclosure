@@ -13,13 +13,14 @@ from gi.repository import GLib, Gtk
 import develop
 
 PRIMARY = [
-    ('check', 'Check', 'Check the project for problems. This does not change your desktop.'),
+    ('check', 'Check', 'See system condition, commits waiting to be pushed, and project test results.'),
     ('deploy', 'Apply local changes', 'Install the changes in this checkout. Preview first; keep your preferences.'),
     ('update', 'Update', 'Get desktop updates from GitHub. Preview first; keep your preferences.'),
 ]
 
 SECTIONS = {
     'Overview': [
+        ('outgoing', 'Commits waiting to be pushed', 'See the commit names and the GitHub branch they will go to.'),
         ('status', 'Repository status', 'See your branch, changed files and recent commits.'),
         ('diff', 'Review changes', 'Read changes before staging or installing them.'),
         ('hardware', 'Hardware information', 'Detect this machine and preview its setup plan.'),
@@ -46,7 +47,7 @@ CONFIRM = {
     'commit': 'Test and commit the currently staged files?',
 }
 PREVIEWS = {'update': 'update-preview', 'deploy': 'preview', 'organize': 'organize-preview',
-            'push': 'status', 'commit': 'diff', 'pull': 'status'}
+            'push': 'outgoing', 'commit': 'diff', 'pull': 'status'}
 
 
 class DevelopmentWindow(Gtk.ApplicationWindow):
@@ -92,6 +93,11 @@ class DevelopmentWindow(Gtk.ApplicationWindow):
         inputs.append(self.paths)
         inputs.append(self.message)
         page.append(inputs)
+        self.report_scroll = Gtk.ScrolledWindow(min_content_height=200, vexpand=True)
+        self.report = Gtk.Label(xalign=0, yalign=0, wrap=True, selectable=True)
+        self.report_scroll.set_child(self.report)
+        self.report_scroll.set_visible(False)
+        outer.append(self.report_scroll)
         self.status = Gtk.Label(label='Ready. Start with Check if you are unsure.', xalign=0)
         outer.append(self.status)
         scroll = Gtk.ScrolledWindow(vexpand=True, min_content_height=180)
@@ -101,6 +107,11 @@ class DevelopmentWindow(Gtk.ApplicationWindow):
         self.details = Gtk.Expander(label='Technical details', vexpand=True)
         self.details.set_child(scroll)
         outer.append(self.details)
+
+    def show_report(self, text):
+        self.report.set_text(text)
+        self.report_scroll.set_visible(True)
+        return False
 
     def action_row(self, name, label, description):
         row = Gtk.Box(spacing=16)
@@ -173,7 +184,14 @@ class DevelopmentWindow(Gtk.ApplicationWindow):
         self.append('\n── ' + name + ' ──\n')
         def worker():
             success = False
+            report = ''
             try:
+                if name == 'check':
+                    try:
+                        report = develop.health_report()
+                    except (OSError, ValueError, subprocess.CalledProcessError) as error:
+                        report = 'System condition could not be fully checked: ' + str(error)
+                    GLib.idle_add(self.show_report, report + '\n\nProject tests: running…')
                 command = [sys.executable, '-u', str(Path(__file__).with_name('develop.py')), name, *extra]
                 with subprocess.Popen(command, cwd=develop.ROOT, stdout=subprocess.PIPE,
                                       stderr=subprocess.STDOUT, text=True, errors='replace',
@@ -185,8 +203,12 @@ class DevelopmentWindow(Gtk.ApplicationWindow):
                     success = process.wait() == 0
             except OSError as error:
                 GLib.idle_add(self.append, str(error) + '\n')
-            GLib.idle_add(finished, success)
-        def finished(success):
+            GLib.idle_add(finished, success, report)
+        def finished(success, report):
+            if name == 'check':
+                self.show_report(report + '\n\nProject tests: ' + (
+                    'passed. The project checks found no problems.' if success else
+                    'did not pass. Open Technical details to see what needs attention.'))
             self.busy = False
             self.controls.set_sensitive(True)
             self.status.set_text((label + ' — finished.') if success else

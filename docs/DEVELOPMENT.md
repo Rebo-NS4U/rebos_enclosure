@@ -17,6 +17,14 @@ development → Open development menu**. From a checkout, run:
 The graphical app starts with three actions: **Check** verifies the project,
 **Apply local changes** installs this checkout, and **Update** gets desktop updates
 from GitHub. Apply and Update run a preview before asking you to continue.
+Check also displays a plain-language snapshot of free storage, available memory,
+failed system/user services and uncommitted files. Unavailable readings are marked
+as unknown, and project test results are reported separately from system condition.
+It lists commit names waiting for the configured push destination; **Advanced →
+Commits waiting to be pushed** and the Push preview show the same comparison.
+This uses the last fetched origin state, without contacting GitHub or pushing.
+Use `./dev.sh health` or `./dev.sh outgoing` for these reports in a terminal.
+
 Git tools, file organization and manual previews are under **Advanced**. Technical
 output stays collapsed until needed and opens automatically on errors or previews.
 

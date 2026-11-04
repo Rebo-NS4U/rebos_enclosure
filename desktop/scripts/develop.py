@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import shlex
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -120,6 +121,64 @@ def commit(message, root=ROOT):
     git('commit', '-m', message, root=root)
 
 
+def outgoing(root=ROOT):
+    """Use the same explicit destination as push, not push.default or another upstream."""
+    branch = verify_checkout(root)
+    try:
+        remote = git('config', '--get', f'branch.{branch}.remote', root=root, capture=True)
+        target = git('config', '--get', f'branch.{branch}.merge', root=root, capture=True)
+        if remote != 'origin' or not target.startswith('refs/heads/'):
+            return 'Push is not set up. Choose an origin branch before publishing.'
+        destination = 'origin/' + target.removeprefix('refs/heads/')
+        reference = 'refs/remotes/' + destination
+        git('rev-parse', '--verify', '--quiet', reference, root=root, capture=True)
+    except subprocess.CalledProcessError:
+        return 'Push comparison unavailable. Set up the origin branch and fetch it first.'
+    commits = git('log', '--reverse', '--format=%h  %s', reference + '..HEAD',
+                  root=root, capture=True).splitlines()
+    behind = int(git('rev-list', '--count', 'HEAD..' + reference, root=root, capture=True))
+    lines = [f'Commits waiting to be pushed to {destination}: {len(commits)}',
+             'Compared with the last fetched GitHub state; GitHub may have changed.']
+    if behind:
+        lines.append(f'GitHub has {behind} commits missing here. Update before pushing.')
+    lines.extend(commits or ['No local commits waiting to be pushed.'])
+    return '\n'.join(lines)
+
+
+def health_report(root=ROOT):
+    lines = ['System condition — read-only snapshot']
+    disk = shutil.disk_usage(root)
+    free = disk.free / 1024**3
+    lines.append(f'Storage: {free:.1f} GB free where the project is stored. ' +
+                 ('Space is running low.' if disk.free / disk.total < .1 or free < 2 else 'Enough free space.'))
+    try:
+        memory = dict(line.split(':', 1) for line in Path('/proc/meminfo').read_text().splitlines())
+        available = int(memory['MemAvailable'].split()[0])
+        total = int(memory['MemTotal'].split()[0])
+        lines.append(f'Memory: {available / 1024**2:.1f} GB available of {total / 1024**2:.1f} GB. ' +
+                     ('Memory is running low.' if available / total < .1 else 'Memory has room.'))
+    except (OSError, KeyError, ValueError):
+        lines.append('Memory: could not read the current usage.')
+    for label, flags in [('System services', []), ('Desktop user services', ['--user'])]:
+        try:
+            result = subprocess.run(['systemctl', *flags, '--failed', '--no-legend', '--plain', '--no-pager'],
+                                    capture_output=True, text=True, timeout=5)
+            if result.returncode:
+                lines.append(label + ': could not check; service connection unavailable.')
+            else:
+                failed = [line.split()[0] for line in result.stdout.splitlines() if line.strip()]
+                lines.append(label + (': failures reported — ' + ', '.join(failed) if failed else
+                                      ': no failed services reported.'))
+        except (OSError, subprocess.TimeoutExpired):
+            lines.append(label + ': could not check right now.')
+    changed = git('status', '--porcelain', '-z', root=root, capture=True)
+    lines.append('Local files: changes have not all been saved in commits.' if changed else
+                 'Local files: all changes are saved in commits.')
+    lines.extend(['', outgoing(root), '',
+                  'Project tests are separate from these live system readings.'])
+    return '\n'.join(lines)
+
+
 def push(root=ROOT):
     branch = verify_checkout(root)
     remote = git('config', '--get', f'branch.{branch}.remote', root=root, capture=True)
@@ -135,6 +194,11 @@ def action(name, args, root=ROOT):
     if name == 'status':
         git('status', '--short', '--branch', root=root)
         git('log', '-5', '--oneline', root=root)
+        print(outgoing(root))
+    elif name == 'outgoing':
+        print(outgoing(root))
+    elif name == 'health':
+        print(health_report(root))
     elif name == 'diff':
         git('--no-pager', 'diff', root=root)
         git('--no-pager', 'diff', '--cached', root=root)
@@ -184,7 +248,8 @@ def action(name, args, root=ROOT):
         run(['bash', 'update.sh', '--files-only'] + (['--dry-run'] if name == 'update-preview' else []), root)
 
 
-MENU = [('configs', 'Open personal configuration folder'),
+MENU = [('health', 'System condition in plain words'),
+        ('outgoing', 'Show commits waiting to be pushed'), ('configs', 'Open personal configuration folder'),
         ('organize-preview', 'Preview grouping installed settings and system files'),
         ('organize', 'Group installed settings and system files'),
         ('status', 'Repository status'), ('diff', 'Review changes'),
@@ -220,7 +285,7 @@ def menu(args):
                     continue
             if name in ('push', 'pull', 'deploy', 'update', 'organize'):
                 if name == 'push':
-                    git('log', '--oneline', '@{upstream}..HEAD')
+                    print(outgoing())
                 if name == 'organize':
                     action('organize-preview', args)
                 if name == 'deploy':
