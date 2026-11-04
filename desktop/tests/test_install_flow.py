@@ -48,7 +48,9 @@ class InstallFlowTests(unittest.TestCase):
             stub = commands / 'record'
             stub.write_text(STUB)
             stub.chmod(0o755)
-            for name in ('sudo', 'pacman', 'systemctl', 'mkinitcpio', 'xdg-user-dirs-update', 'xdg-mime', 'xdg-settings'):
+            # Record the AUR helper too: never depend on a maintainer's installed
+            # helper or let this test clone/build paru from the network.
+            for name in ('sudo', 'pacman', 'paru', 'systemctl', 'mkinitcpio', 'xdg-user-dirs-update', 'xdg-mime', 'xdg-settings'):
                 (commands / name).symlink_to(stub)
             # Keep the new desktop approval hook inside the same recording boundary.
             python = commands / 'python3'
@@ -100,6 +102,8 @@ class InstallFlowTests(unittest.TestCase):
             bindings = (home / '.config/niri/keybindings-defaults.kdl').read_text()
             self.assertIn(f'"ipc" "-p" "{home}/.config/quickshell"', bindings)
             entries = [json.loads(line) for line in log.read_text().splitlines()]
+            self.assertTrue(any(e['command'] == 'paru' and e['args'][:2] == ['-S', '--needed']
+                                for e in entries), 'AUR installation must use the recording stub')
             self.assertTrue(any(e['command'] == 'sudo' and 'nvidia-open-dkms' in e['args'] and
                                 'linux-headers' in e['args'] for e in entries))
             copied = {e['args'][-1]: e['content'] for e in entries if 'content' in e}

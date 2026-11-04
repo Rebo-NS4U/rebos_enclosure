@@ -20,6 +20,7 @@ jobs:
         run: >-
           pacman -Syu --noconfirm --needed
           git python python-pillow python-gobject gtk4
+          gcc pkgconf ncurses fish fontconfig
           niri quickshell qt6-multimedia-ffmpeg ttf-dejavu nodejs lua51
           ffmpeg vlc vlc-plugin-ffmpeg vlc-plugin-freetype vlc-plugin-lua
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4

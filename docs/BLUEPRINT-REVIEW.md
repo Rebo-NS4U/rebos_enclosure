@@ -19,6 +19,10 @@ remain the acceptance criteria. CI installs native dependencies in an Arch Linux
 container and runs tests as an unprivileged user, including the Quickshell,
 Niri and media checks. This avoids relying on tools present only on a
 maintainer's desktop. Physical hardware verification remains a local check.
+Installer tests record the AUR helper alongside system package commands, so
+they cannot accidentally clone or build an AUR helper on a clean runner.
+The container includes the compiler, GTK/ncurses headers, Fish and font tools
+needed to exercise the real installer builds in temporary directories.
 
 No application payload changed in this review. No installed service reload or
 restart is needed. The workflows become active when these commits are pushed.
