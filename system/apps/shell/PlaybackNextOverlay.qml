@@ -22,12 +22,12 @@ PanelWindow {
     screen: Quickshell.screens.find(value => value.name === outputName) ?? Quickshell.screens[0]
     anchors { top: true; bottom: true; left: true; right: true }
     color: "transparent"
-    // Keep the surface mapped, with input restricted to the visible button.
+    // Keep the surface mapped, with pointer input restricted to the visible button.
     visible: true
     exclusionMode: ExclusionMode.Ignore
     WlrLayershell.namespace: "rebos_shell-playback-next"
     WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+    WlrLayershell.keyboardFocus: offered ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     mask: Region { item: overlay.offered ? nextCard : null }
 
     readonly property real cardX: nextCard.x
@@ -38,6 +38,14 @@ PanelWindow {
     StyledRect {
         id: nextCard
         visible: overlay.offered
+        focus: overlay.offered
+        Keys.onPressed: event => {
+            if (overlay.offered && !event.isAutoRepeat
+                    && (event.key === Qt.Key_Return || event.key === Qt.Key_Enter)) {
+                overlay.activated();
+                event.accepted = true;
+            }
+        }
         width: Math.min(360, overlay.width - 48)
         height: content.implicitHeight + 28
         x: Math.max(12, overlay.width - width - 24)
