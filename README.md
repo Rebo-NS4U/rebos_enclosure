@@ -13,12 +13,16 @@ Source is grouped into **`config/`** (shipped defaults) and **`system/`** (manag
 
 [Download latest release](https://github.com/Rebo-NS4U/rebos_enclosure/releases/latest) · [Installation guide](desktop/README.md) · [Package list](desktop/packages/README.md)
 
-[v1.6.0 release notes](docs/RELEASE-v1.6.0.md): separated personal settings and
-managed source, recoverable filesystem migration, hardware profiles and new wallpapers.
+[v1.7.0 release notes](docs/RELEASE-v1.7.0.md): graphical maintenance, Zen-only browser choices,
+and desktop/media reliability improvements, with an illustrated feature guide.
 
 ## Screenshots
 
 ![Desktop, themed apps and terminal](docs/screenshots/desktop.png)
+
+![Enclosure Development maintenance app](docs/screenshots/v1.7.0/maintenance.png)
+
+[See the new maintenance tools and release gallery](docs/RELEASE-v1.7.0.md).
 
 Screenshots show a customized desktop; new installs start with the bundled default preset.
 
@@ -71,8 +75,8 @@ After installation, reboot and choose **Niri**. **Super+Return** opens Kitty, **
 To install a specific release, use its exact tag:
 
 ```bash
-bash install.sh --release v1.6.0 --interactive --dry-run
-bash install.sh --release v1.6.0
+bash install.sh --release v1.7.0 --interactive --dry-run
+bash install.sh --release v1.7.0
 ```
 
 The selector also works with `desktop/install.sh`. Missing tags stop installation;
@@ -112,8 +116,8 @@ After this one-time refresh, future updates fetch the current engine automatical
 To update to a specific release:
 
 ```bash
-./update.sh --release v1.6.0 --dry-run
-./update.sh --release v1.6.0
+./update.sh --release v1.7.0 --dry-run
+./update.sh --release v1.7.0
 ```
 
 Use the exact tag from [GitHub releases](https://github.com/Rebo-NS4U/rebos_enclosure/releases).

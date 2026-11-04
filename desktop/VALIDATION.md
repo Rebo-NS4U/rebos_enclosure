@@ -1,5 +1,20 @@
 # Validation record
 
+## v1.7.0 illustrated release — 2026-11-04
+
+- 231 desktop tests, 45 shell tests, four Bluetooth QML test cases, connectivity
+  service checks, and three assistant environment tests passed. All 87 payload
+  installation entries verified; 58 shipped Python files parsed successfully.
+- Live screenshot capture, English OCR, video encoding/MPV decoding, hardware
+  control queries and desktop D-Bus endpoint checks passed on one AMD laptop.
+  Core and optional package groups were installed; caption engine/model files
+  were present. No fresh-install or authenticated-provider coverage is claimed.
+- Captured and reviewed two maintenance-app screenshots, verified documentation
+  links, preserved the published v1.6.1 playback keyboard fix and unrelated local
+  preferences, and prepared a committed-source archive with SHA-256 checksums.
+- No desktop service, playback session or assistant backend was restarted. See
+  [release notes](../docs/RELEASE-v1.7.0.md) for features and remaining test limits.
+
 ## Fresh-install media dependencies — 2026-11-03
 
 - A fresh Arch installation rejected VLC’s `--freetype-font` option because
