@@ -4,9 +4,9 @@ A complete **Niri + Quickshell desktop for x86_64 Arch Linux**, with matching ap
 
 Desktop, laptop and virtual-machine policies are selected on the destination with
 `--machine auto` (the default), independently of application groups and GPU drivers.
-Use **GitHub Settings → Enclosure development → Open development app**, the
-**Enclosure Development** launcher entry, for a graphical maintenance app, or `./dev.sh` in your checkout for the terminal menu covering
-hardware detection, checks, local deployment, staging, commits, pushes and updates.
+Use **Settings → GitHub** to select a repository, check local files, review pending
+commits, manage branches, and publish changes. Enclosure desktop updates remain
+in that panel. Use `./dev.sh` in this checkout for terminal maintenance tools.
 See the [development guide](docs/DEVELOPMENT.md) for the workflow and hardware limits.
 
 Source is grouped into **`config/`** (shipped defaults) and **`system/`** (managed code and resources). Personal settings live under **`~/.config/enclosure/`**. See the [filesystem guide](docs/FILESYSTEM.md) for migration, updates and recovery.
@@ -20,9 +20,7 @@ and desktop/media reliability improvements, with an illustrated feature guide.
 
 ![Desktop, themed apps and terminal](docs/screenshots/desktop.png)
 
-![Enclosure Development maintenance app](docs/screenshots/v1.7.0/maintenance.png)
-
-[See the new maintenance tools and release gallery](docs/RELEASE-v1.7.0.md).
+![Desktop settings](docs/screenshots/settings.png)
 
 Screenshots show a customized desktop; new installs start with the bundled default preset.
 

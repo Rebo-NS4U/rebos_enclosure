@@ -33,6 +33,7 @@ ColumnLayout {
     signal projectSelected(string path)
     signal refreshRequested()
 
+    onSelectedPathChanged: { feedback = ""; failed = false; selectedFiles = []; }
     onProjectChanged: {
         const available = (project.all_changes || []).map(c => c.path).concat(project.staged || []);
         selectedFiles = selectedFiles.filter(p => available.includes(p));
@@ -78,8 +79,8 @@ ColumnLayout {
     function load(text) {
         try {
             const data = JSON.parse(text);
-            failed = data.ok === false;
-            if (failed) { feedback = data.message || "Project request failed."; return; }
+            failed = data.ok === false || data.issues === true;
+            if (data.ok === false) { feedback = data.message || "Project request failed."; return; }
             if (mode === "catalog") {
                 desktopPath = data.desktop_path || "";
                 projects = [{ label: "Enclosure", path: "" }].concat(
@@ -157,6 +158,22 @@ ColumnLayout {
         }
         Caption { text: root.activePath ? "Local folder: " + root.activePath : "Select or add a local checkout to use Git controls." }
     }
+    SettingsGroup {
+        title: "Repository review"
+        description: "Check the selected repository without fetching, changing files, or running project code."
+        Caption { text: "Checks merge conflicts, staged and unstaged whitespace, local changes, and free storage. Project tests are separate." }
+        SettingsButton {
+            objectName: "github-review-button"
+            text: "Check local repository"
+            enabled: root.canEdit
+            onClicked: root.act("review", {}, false)
+        }
+    }
+    SettingsGroup {
+        visible: worker.running || root.feedback !== ""
+        title: "Action result"
+        Caption { objectName: "github-action-result"; text: worker.running ? "Working on " + root.activePath + "…" : root.feedback; color: root.failed ? Colors.error : Colors.overSurfaceVariant }
+    }
     ColumnLayout { id: overviewSlot; Layout.fillWidth: true; spacing: 12 }
     SettingsGroup {
         title: "Update installed desktop"
@@ -196,6 +213,30 @@ ColumnLayout {
         }
     }
 
+    GithubSection {
+        objectName: "github-outgoing-section"
+        title: "Commits waiting to push"
+        summary: (root.project.outgoing_commits || []).length > 0
+            ? (root.project.upstream_ahead || 0) + " commit" + (root.project.upstream_ahead === 1 ? "" : "s") + " waiting for " + root.project.upstream
+            : "Review pending commits for the selected branch."
+        Caption { text: "Compared with the last fetched Git state; Fetch origin refreshes it. This does not contact GitHub or push commits." }
+        Caption {
+            visible: (root.project.outgoing_commits || []).length === 0
+            text: root.project.upstream_ahead === 0 ? "No commits waiting to push."
+                : root.project.upstream ? "Comparison unavailable. Fetch origin to refresh it." : "Set an upstream branch to compare outgoing commits."
+        }
+        Repeater {
+            model: root.project.outgoing_commits || []
+            delegate: Caption {
+                required property var modelData
+                text: modelData.sha.slice(0, 12) + " · " + modelData.title
+            }
+        }
+        Caption {
+            visible: (root.project.upstream_ahead || 0) > (root.project.outgoing_commits || []).length
+            text: "Showing the newest " + (root.project.outgoing_commits || []).length + " outgoing commits."
+        }
+    }
     SettingsGroup {
         title: "Push to GitHub"
         description: "The assistant commits tested changes automatically. Push here when you are ready to publish them."
@@ -222,11 +263,6 @@ ColumnLayout {
             SettingsButton { text: "Open terminal"; enabled: !!root.activePath; onClicked: Quickshell.execDetached(["kitty", "--directory", root.activePath]) }
         }
         Caption { visible: !!root.project.dirty; text: "Uncommitted file changes are not included in a push." }
-    }
-    SettingsGroup {
-        visible: worker.running || root.feedback !== ""
-        title: "Action result"
-        Caption { text: worker.running ? "Working on " + root.activePath + "…" : root.feedback; color: root.failed ? Colors.error : Colors.overSurfaceVariant }
     }
     GithubSection {
         objectName: "github-projects-section"

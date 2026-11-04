@@ -1,5 +1,20 @@
 # Validation record
 
+## Repository review in GitHub Settings — 2026-11-04
+
+- Removed the standalone graphical maintenance implementation and Settings launch
+  button; retained terminal maintenance tools. The shipped hidden desktop entry
+  retires existing launchers on update; the installed entry is verified hidden.
+- Added selected-repository checks and an outgoing-commit review section alongside
+  existing changed files, local history, branch and publishing controls. Local
+  checks are offline and report conflicts, staged/unstaged whitespace and storage;
+  project tests remain separate. Enclosure updates remain scoped to Enclosure.
+- All 235 desktop tests passed, including temporary-repository preservation,
+  conflicts, detached/unborn branches and QML action routing/feedback tests.
+  Payload verification passed for all 87 entries. Installed changed files match
+  source and the installed read-only repository check passed. No service restart
+  or GitHub push was performed.
+
 ## v1.7.0 illustrated release — 2026-11-04
 
 - 231 desktop tests, 45 shell tests, four Bluetooth QML test cases, connectivity

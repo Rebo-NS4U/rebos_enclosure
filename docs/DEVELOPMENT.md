@@ -5,28 +5,25 @@ Hardware policy, application selection, portable source and personal state are
 separate. A new machine does not need the original developer's home, monitor
 names, GPU environment variables, fan controller or account files.
 
-## One development menu
+## Repository controls in GitHub Settings
 
-Open **Enclosure Development** in the launcher, or **GitHub Settings → Enclosure
-development → Open development menu**. From a checkout, run:
+Open **Settings → GitHub** and select or add a local GitHub repository. Repository
+review checks merge conflicts, staged and unstaged whitespace, local changes and
+free storage. It never runs repository code, fetches, or claims project tests passed.
+Changed files, local history, pending commits, branches, staging, commits, pushes
+and pull requests apply to the selected repository. Pending commits use the last
+fetched Git state; use **Fetch origin** to refresh it. No check pushes changes.
 
-```sh
-./dev.sh
-```
+The standalone graphical development app has been removed. Its old desktop entry
+is shipped as hidden so updates retire an already-installed launcher. Desktop
+installation and update controls remain Enclosure-specific; use **Update installed
+desktop** in GitHub Settings for updates.
 
-The graphical app starts with three actions: **Check** verifies the project,
-**Apply local changes** installs this checkout, and **Update** gets desktop updates
-from GitHub. Apply and Update run a preview before asking you to continue.
-Check also displays a plain-language snapshot of free storage, available memory,
-failed system/user services and uncommitted files. Unavailable readings are marked
-as unknown, and project test results are reported separately from system condition.
-It lists commit names waiting for the configured push destination; **Advanced →
-Commits waiting to be pushed** and the Push preview show the same comparison.
-This uses the last fetched origin state, without contacting GitHub or pushing.
-Use `./dev.sh health` or `./dev.sh outgoing` for these reports in a terminal.
+## Terminal maintenance
 
-Git tools, file organization and manual previews are under **Advanced**. Technical
-output stays collapsed until needed and opens automatically on errors or previews.
+From the Enclosure checkout, run `./dev.sh` for the terminal menu. Use
+`./dev.sh check` for project tests and payload verification, or `./dev.sh health`
+and `./dev.sh outgoing` for read-only reports.
 
 The menu offers personal configuration access, grouping previews/migration, status/diffs, a hardware plan, tests, explicit file staging,
 payload checksum regeneration, local deployment previews, deployment, local
@@ -136,15 +133,3 @@ VM, boot into Niri, check output scaling/input/audio/network, suspend and resume
 where supported, and preview/apply an update retaining personal settings before
 declaring that hardware tested. No release should imply a machine matrix was
 physically tested when only synthetic fixtures were used.
-
-## Graphical maintenance app
-
-Launch **Enclosure Development** from the app launcher or GitHub Settings.
-The Overview, Desktop and Development tabs explain each action. Results stream
-into the window without blocking navigation feedback. Installation, updates,
-organization, commits and publishing require confirmation; previews run first
-where available. Enter explicit repository paths to stage (quote paths containing
-spaces) and a message before committing. Closing is blocked while work runs.
-The app uses the existing core dependencies `python-gobject` and `gtk4`.
-`./dev.sh --gui` also opens the window; `./dev.sh` retains the terminal menu,
-and `enclosure-dev status` and other explicit commands remain available.

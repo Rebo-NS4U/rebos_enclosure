@@ -1,5 +1,6 @@
 """Exercise shared Settings click targets and keybind search in an isolated window."""
 import os
+import json
 from pathlib import Path
 import shutil
 import subprocess
@@ -34,6 +35,12 @@ ShellRoot {
     result: ({status: "ahead", branch: "linux-desktop", default_branch: "main",
               ahead: 19, behind: 0, upstream: "origin/linux-desktop",
               upstream_ahead: 0, upstream_behind: 0})
+   }
+   GithubProjects {
+    id: reviewControls; visible: false; width: 700; initialized: true
+    selectedPath: "/example/selected-repository"
+    project: ({path: "/example/selected-repository", upstream: "origin/main", upstream_ahead: 1,
+               outgoing_commits: [{sha: "1234567890abcdef", title: "Selected repo work"}]})
    }
    KeybindingsPanel { id: keys; x: 330; width: 700; height: 480 }
    function find(item, name) {
@@ -111,6 +118,20 @@ ShellRoot {
        page.destroy();
        tester.wait(20);
       }
+      fixture.check(!fixture.find(github, "enclosure-development-open"), "Standalone development app removed");
+      let review = fixture.find(reviewControls, "github-review-button");
+      fixture.check(review && review.enabled, "Selected repository can be checked");
+      let outgoing = fixture.find(reviewControls, "github-outgoing-section");
+      fixture.check(outgoing.summary.includes("1 commit waiting for origin/main"), "Selected repo pending commits visible");
+      reviewControls.checking = true;
+      fixture.check(!review.enabled, "Review waits for project status");
+      reviewControls.checking = false;
+      review.clicked();
+      tester.wait(350);
+      fixture.check(reviewControls.failed, "Local check issues are highlighted");
+      fixture.check(reviewControls.feedback.includes("staged whitespace"), "Local check report stays visible");
+      reviewControls.selectedPath = "/example/another-repository";
+      fixture.check(reviewControls.feedback === "", "Previous repo report cleared when selection changes");
       console.log("SETTINGS CLICK TESTS PASSED"); Qt.quit();
      } catch (error) { console.error(error); Qt.exit(1); }
     }
@@ -131,6 +152,12 @@ class SettingsClickTests(unittest.TestCase):
             (root / 'scripts').mkdir()
             (root / 'scripts/list_keybindings.py').write_text(
                 'print(\'{"bindings": [], "files": [], "error": ""}\')\n')
+            (root / 'scripts/github_projects.py').write_text(
+                'import sys,json\nfrom pathlib import Path\n'
+                'data=json.loads(sys.stdin.readline())\n'
+                'Path("review-request.json").write_text(json.dumps(data))\n'
+                'print(json.dumps({"ok":True,"issues":True,"message":"Check found issues",'
+                '"output":"staged whitespace", "refresh":False}))\n')
             (root / 'shell.qml').write_text(HARNESS)
             (root / 'runtime').mkdir(mode=0o700)
             env = dict(os.environ, HOME=temporary, XDG_RUNTIME_DIR=str(root / 'runtime'),
@@ -140,10 +167,12 @@ class SettingsClickTests(unittest.TestCase):
             for key in ('XDG_CONFIG_HOME', 'XDG_CACHE_HOME', 'XDG_DATA_HOME', 'XDG_STATE_HOME'):
                 env[key] = str(root / key)
             result = subprocess.run(['qs', '-p', temporary, '--no-color'], env=env,
-                                    capture_output=True, text=True, timeout=25)
+                                    capture_output=True, text=True, timeout=25, cwd=root)
             output = result.stdout + result.stderr
             self.assertEqual(result.returncode, 0, output)
             self.assertIn('SETTINGS CLICK TESTS PASSED', output)
+            self.assertEqual(json.loads((root / 'review-request.json').read_text()),
+                             {'action': 'review', 'path': '/example/selected-repository'})
 
 if __name__ == '__main__':
     unittest.main()

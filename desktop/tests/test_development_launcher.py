@@ -9,6 +9,13 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class DevelopmentLauncherTests(unittest.TestCase):
+    def test_retired_app_is_hidden_and_gui_is_removed(self):
+        entry = (ROOT / 'system/share/applications/enclosure-development.desktop').read_text()
+        self.assertIn('Hidden=true', entry)
+        self.assertIn('NoDisplay=true', entry)
+        self.assertNotIn('Exec=', entry)
+        self.assertFalse((ROOT / 'desktop/scripts/develop_gui.py').exists())
+
     def test_home_checkout_is_discovered_without_source_links(self):
         with tempfile.TemporaryDirectory() as folder:
             home = Path(folder)
@@ -21,9 +28,9 @@ class DevelopmentLauncherTests(unittest.TestCase):
                 run.return_value.stdout = 'https://github.com/Rebo-NS4U/rebos_enclosure.git\n'
                 with self.assertRaisesRegex(RuntimeError, 'launched'):
                     runpy.run_path(str(ROOT / 'system/bin/enclosure-dev'), run_name='__main__')
-                self.assertEqual(execute.call_args.args[1], ['bash', str(checkout / 'dev.sh'), '--gui'])
+                self.assertEqual(execute.call_args.args[1], ['bash', str(checkout / 'dev.sh')])
 
-    def test_explicit_commands_still_bypass_gui(self):
+    def test_explicit_commands_use_terminal_tools(self):
         with tempfile.TemporaryDirectory() as folder:
             home = Path(folder)
             checkout = home / 'rebos_enclosure'

@@ -67,6 +67,45 @@ class ProjectTests(unittest.TestCase):
     def act(self, kind, **kwargs):
         return projects.action({'action': kind, 'path': str(self.repo), **kwargs})
 
+    def test_review_is_offline_and_preserves_staged_and_unstaged_work(self):
+        (self.repo / 'one.txt').write_text('staged trailing whitespace  \n')
+        self.git('add', 'one.txt')
+        (self.repo / 'two.txt').write_text('unstaged trailing whitespace  \n')
+        before = self.git('status', '--porcelain')
+        staged = self.git('diff', '--cached')
+        with patch.object(projects, 'api', side_effect=AssertionError('must stay offline')):
+            result = self.act('review')
+        self.assertTrue(result['ok'])
+        self.assertTrue(result['issues'])
+        self.assertFalse(result['refresh'])
+        self.assertIn('example/project', result['output'])
+        self.assertIn('one.txt', result['output'])
+        self.assertIn('two.txt', result['output'])
+        self.assertIn('Project tests were not run', result['output'])
+        self.assertEqual(self.git('status', '--porcelain'), before)
+        self.assertEqual(self.git('diff', '--cached'), staged)
+
+    def test_review_clean_detached_and_unborn_repositories(self):
+        self.assertFalse(self.act('review')['issues'])
+        self.git('checkout', '--detach', '-q')
+        self.assertIn('Detached HEAD', self.act('review')['output'])
+        self.git('switch', '--orphan', 'empty')
+        self.assertFalse(self.act('review')['issues'])
+
+    def test_review_detects_real_merge_conflicts(self):
+        self.git('switch', '-c', 'other')
+        (self.repo / 'one.txt').write_text('other\n')
+        self.git('commit', '-am', 'Other')
+        self.git('switch', 'main')
+        (self.repo / 'one.txt').write_text('main\n')
+        self.git('commit', '-am', 'Main')
+        with self.assertRaises(ValueError):
+            self.git('merge', 'other')
+        result = self.act('review')
+        self.assertTrue(result['issues'])
+        self.assertIn('resolve unmerged files', result['output'])
+        self.assertTrue(self.git('ls-files', '--unmerged'))
+
     def test_repository_validation_and_root(self):
         for value in ('example/project', 'https://github.com/example/project.git', 'git@github.com:example/project.git'):
             self.assertEqual(projects.repo_name(value), 'example/project')

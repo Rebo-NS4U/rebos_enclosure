@@ -306,12 +306,8 @@ def main():
     parser.add_argument('paths', nargs='*', help='Explicit files for stage')
     parser.add_argument('-m', '--message', help='Commit message')
     parser.add_argument('--machine', choices=('auto', 'desktop', 'laptop', 'virtual'), default='auto')
-    parser.add_argument('--gui', action='store_true', help='Open the graphical maintenance app')
     parser.add_argument('--link-source', action='store_true', help='Opt into source links when deploying')
     args = parser.parse_args()
-    if args.gui:
-        from develop_gui import main as gui_main
-        return gui_main()
     if args.action:
         action(args.action, args)
     elif not sys.stdin.isatty():

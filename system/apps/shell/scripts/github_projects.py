@@ -16,7 +16,7 @@ import github_status as status
 def run(*args, cwd=None, timeout=90, input=None):
     result = subprocess.run(args, cwd=cwd, input=input, capture_output=True, text=True,
                             timeout=timeout, env={**os.environ, 'GIT_TERMINAL_PROMPT': '0',
-                                                  'GIT_LITERAL_PATHSPECS': '1', 'GH_PROMPT_DISABLED': '1'})
+                                                  'GIT_LITERAL_PATHSPECS': '1', 'GH_PROMPT_DISABLED': '1', 'GIT_OPTIONAL_LOCKS': '0'})
     if result.returncode:
         message = (result.stderr or result.stdout).strip()
         raise ValueError(message or f'{args[0]} exited with code {result.returncode}')
@@ -180,6 +180,34 @@ def inspect(value):
     return result
 
 
+def review(value):
+    """Read-only repository checks; never fetch or run project-provided code."""
+    path, name = checkout(value)
+    try:
+        branch = git(path, 'symbolic-ref', '--quiet', '--short', 'HEAD')
+    except ValueError:
+        branch = 'Detached HEAD'
+    entries = changes(path)
+    conflicts = git(path, 'ls-files', '--unmerged')
+    lines = [f'Repository: {name}', f'Folder: {path}', f'Branch: {branch}',
+             f'Local files: {len(entries)} changed entries.',
+             f'Storage: {shutil.disk_usage(path).free / 1024**3:.1f} GB free.']
+    problems = bool(conflicts)
+    lines.append('Merge conflicts: resolve unmerged files.' if conflicts else 'Merge conflicts: none.')
+    for label, flags in [('Unstaged', []), ('Staged', ['--cached'])]:
+        result = subprocess.run(['git', '-C', str(path), 'diff', '--no-ext-diff', '--no-textconv', '--check', *flags],
+                                capture_output=True, text=True, timeout=30)
+        if result.returncode not in (0, 2):
+            raise ValueError(result.stderr.strip() or f'{label} check failed.')
+        problems |= result.returncode != 0
+        lines.append(f'{label} whitespace: ' + (result.stdout.strip() or 'passed.'))
+    lines.extend(['', 'Read-only local checks only. Project tests were not run.',
+                  'Remote comparisons elsewhere use the last fetched Git state. Fetch origin to refresh it.'])
+    return {'ok': True, 'message': 'Repository checks found issues.' if problems else 'Repository checks passed.',
+            'output': '\n'.join(lines), 'path': str(path), 'refresh': False,
+            'issues': problems}
+
+
 def selected_paths(path, data, staged_only=False):
     selected = data.get('files', [])
     if not isinstance(selected, list) or not selected or len(selected) > 500:
@@ -221,6 +249,8 @@ def action(data):
     if kind == 'add':
         remember(path)
         output = 'Project added.'
+    elif kind == 'review':
+        return review(str(path))
     elif kind == 'fetch':
         output = git(path, 'fetch', 'origin', timeout=120)
     elif kind == 'pull':

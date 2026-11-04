@@ -1,9 +1,5 @@
 [Desktop Entry]
 Type=Application
 Name=Enclosure Development
-Comment=Maintain your desktop, preview updates and manage Enclosure source
-Exec="@HOME@/.local/bin/enclosure-dev"
-Icon=applications-development
-Terminal=false
-Categories=Development;
-Keywords=enclosure;git;commit;push;update;hardware;
+Hidden=true
+NoDisplay=true
