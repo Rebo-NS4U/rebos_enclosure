@@ -365,7 +365,7 @@ Item {
         StyledRect {
             anchors.fill: parent
             variant: "popup"
-            radius: Styling.radius(-12)
+            radius: Config.roundness
             opacity: root.schemeListExpanded ? 1 : 0
 
             ClippingRectangle {

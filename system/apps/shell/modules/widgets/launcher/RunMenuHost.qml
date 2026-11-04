@@ -66,7 +66,7 @@ Item {
 
                 variant: "popup"
                 enableShadow: false
-                radius: Styling.radius(8)
+                radius: Config.roundness
                 width: cardReveal.width
                 height: launcherLoader.item
                     ? launcherLoader.item.implicitHeight + root.contentPadding * 2

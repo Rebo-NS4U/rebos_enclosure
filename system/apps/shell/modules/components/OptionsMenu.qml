@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import qs.modules.theme
+import qs.modules.components
 import qs.config
 
 Menu {
@@ -40,17 +41,17 @@ Menu {
         }
         menuWidth = Math.min(Math.max(maxWidth, 120), 300);
     }
-    property int itemHeight: 36
+    property int itemHeight: 40
 
     // Propiedades de estilo del menú
-    property color backgroundColor: Colors.background
-    property color borderColor: Colors.surfaceBright
-    property int borderWidth: 2
+    property color backgroundColor: Styling.styleConfig(Styling.shellStyle, "popup").gradient[0][0]
+    property color borderColor: Colors.outlineVariant
+    property int borderWidth: 1
     property int menuRadius: Config.roundness
 
     // Propiedades de highlight por defecto
-    property color defaultHighlightColor: Styling.srItem("overprimary")
-    property color defaultTextColor: Colors.overPrimary
+    property color defaultHighlightColor: Styling.styleConfig(Styling.shellStyle, "focus").gradient[0][0]
+    property color defaultTextColor: Colors.overBackground
     property color normalTextColor: Colors.overBackground
 
     // Propiedades internas
@@ -72,7 +73,7 @@ Menu {
         id: textMetrics
         font.family: Config.theme.font
         font.pixelSize: Styling.fontSize(0)
-        font.weight: Font.Bold
+        font.weight: Font.Normal
 
         function measureText(text) {
             textMetrics.text = text;
@@ -90,9 +91,9 @@ Menu {
         implicitWidth: root.menuWidth
 
         // Fondo principal
-        Rectangle {
+        StyledRect {
+            variant: "popup"
             anchors.fill: parent
-            color: root.backgroundColor
             radius: root.menuRadius
             border.width: root.borderWidth
             border.color: root.borderColor
@@ -171,9 +172,10 @@ Menu {
             property bool isSeparatorItem: itemData.isSeparator || false
 
             text: itemData.text || ""
-            width: root.menuWidth
+            width: root.availableWidth
             height: isSeparatorItem ? 10 : root.itemHeight // 2px separador + 4px margen arriba + 4px margen abajo
-            enabled: !isSeparatorItem
+            enabled: !isSeparatorItem && itemData.enabled !== false
+            opacity: enabled || isSeparatorItem ? 1 : 0.4
 
             // Fondo - diferente para separadores
             background: Rectangle {
@@ -182,6 +184,13 @@ Menu {
                 anchors.bottomMargin: isSeparatorItem ? 4 : 0
                 color: isSeparatorItem ? Colors.surface : "transparent"
                 radius: isSeparatorItem ? 0 : (root.menuRadius > 6 ? root.menuRadius - 6 : 0)
+            }
+
+            onHighlightedChanged: {
+                if (highlighted && !isSeparatorItem) {
+                    root.previousHoveredIndex = root.hoveredIndex;
+                    root.hoveredIndex = itemIndex;
+                }
             }
 
             // Manejo del hover - desactivado para separadores
@@ -245,7 +254,7 @@ Menu {
                                 }
                                 font.family: Icons.font
                                 font.pixelSize: 14
-                                font.weight: Font.Bold
+                                font.weight: Font.Normal
                                 anchors.centerIn: parent
                                 textFormat: Text.RichText
 
@@ -292,7 +301,7 @@ Menu {
                         }
                         font.family: Config.theme.font
                         font.pixelSize: Styling.fontSize(0)
-                        font.weight: Font.Bold
+                        font.weight: Font.Normal
                         anchors.verticalCenter: parent.verticalCenter
                         elide: Text.ElideRight
                         width: root.menuWidth - 32 - iconLoader.width - (root.hasIcons ? parent.spacing : 0)

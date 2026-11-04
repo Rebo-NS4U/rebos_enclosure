@@ -267,7 +267,7 @@ Item {
         StyledRect {
             id: timeToolsWrapper
             variant: "popup"
-            radius: Styling.radius(8)
+            radius: Config.roundness
             enableShadow: false
             width: 316
             height: pomodoroWidget.implicitHeight + 16
@@ -309,7 +309,7 @@ Item {
             StyledRect {
                 id: popupWrapper
                 variant: "popup"
-                radius: Styling.radius(8)
+                radius: Config.roundness
                 enableShadow: false
                 width: popupContent.width + 16
                 height: popupContent.height + 16
@@ -717,7 +717,7 @@ Item {
                 id: dashboardWrapper
 
                 variant: "popup"
-                radius: Styling.radius(8)
+                radius: Config.roundness
                 enableShadow: false
                 width: cardReveal.width
                 height: dashboardLoader.item

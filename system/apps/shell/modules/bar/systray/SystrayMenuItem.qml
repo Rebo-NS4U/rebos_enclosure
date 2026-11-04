@@ -32,7 +32,7 @@ Button {
     property int checkState: 0
 
     implicitWidth: 200
-    implicitHeight: isSeparator ? 10 : 36
+    implicitHeight: isSeparator ? 10 : 40
     enabled: !isSeparator
 
     // Reset default styling
@@ -40,9 +40,9 @@ Button {
     background: Rectangle {
         color: {
             if (root.isSeparator) return "transparent"
-            return root.hovered ? Styling.srItem("overprimary") : "transparent"
+            return root.hovered || root.activeFocus ? Styling.styleConfig(Styling.shellStyle, "focus").gradient[0][0] : "transparent"
         }
-        radius: Styling.radius(0)
+        radius: Math.max(0, Config.roundness - 6)
 
         // Separator line
         Rectangle {
@@ -129,7 +129,7 @@ Button {
                     text: root.iconSource
                     font.family: Icons.font
                     font.pixelSize: 14
-                    color: root.hovered ? Colors.overPrimary : Colors.overBackground
+                    color: Colors.overBackground
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
@@ -151,7 +151,7 @@ Button {
             font.hintingPreference: Font.PreferFullHinting
             Layout.fillWidth: true
             text: root.cleanText
-            color: root.hovered ? Colors.overPrimary : Colors.overBackground
+            color: Colors.overBackground
             font.family: Config.theme.font
             font.pixelSize: Styling.fontSize(0)
             elide: Text.ElideRight
@@ -164,7 +164,7 @@ Button {
             font.hintingPreference: Font.PreferFullHinting
             visible: root.hasSubmenu
             text: root.expanded ? "\u25BE" : "\u25B8"
-            color: root.hovered ? Colors.overPrimary : Colors.overBackground
+            color: Colors.overBackground
             font.pixelSize: Styling.fontSize(0)
             verticalAlignment: Text.AlignVCenter
         }

@@ -24,7 +24,7 @@ Basic.ToolTip {
     background: StyledRect {
         objectName: "styled-tooltip-background"
         variant: "popup"
-        radius: Styling.radius(-8)
+        radius: Config.roundness
     }
 
     contentItem: ColumnLayout {

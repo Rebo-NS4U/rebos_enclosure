@@ -53,7 +53,7 @@ ToggleButton {
         StyledRect {
             id: monitorWrapper
             variant: "popup"
-            radius: Styling.radius(8)
+            radius: Config.roundness
             enableShadow: false
             width: metricsLoader.item ? metricsLoader.item.implicitWidth + root.contentPadding * 2 : 0
             height: metricsLoader.item ? metricsLoader.item.implicitHeight + root.contentPadding * 2 : 0

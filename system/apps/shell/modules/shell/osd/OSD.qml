@@ -76,7 +76,7 @@ PanelWindow {
             anchors.bottomMargin: root.bottomOffset
             implicitWidth: 220
             implicitHeight: root.cardHeight
-            radius: Styling.radius(16)
+            radius: Config.roundness
             transform: Translate {
                 y: (1 - root.revealProgress)
                     * (osdRect.height + root.bottomOffset)

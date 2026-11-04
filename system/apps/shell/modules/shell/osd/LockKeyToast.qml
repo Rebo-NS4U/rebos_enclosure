@@ -23,7 +23,7 @@ Item {
     StyledRect {
         anchors.fill: parent
         variant: "popup"
-        radius: Styling.radius(20)
+        radius: Config.roundness
         border.width: 1
         border.color: KeyboardLocks.lastEnabled ? Colors.primary : Colors.outline
 

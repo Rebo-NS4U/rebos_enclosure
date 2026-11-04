@@ -107,7 +107,7 @@ Popup {
 
     background: StyledRect {
         variant: "popup"
-        radius: Styling.radius(16)
+        radius: Config.roundness
     }
 
     contentItem: ColumnLayout {
@@ -264,7 +264,7 @@ Popup {
 
                 background: StyledRect {
                     variant: parent.confirming ? "primary" : (parent.hovered || parent.activeFocus ? "focus" : "pane")
-                    radius: Styling.radius(4)
+                    radius: Math.max(0, Config.roundness - 6)
 
                     Behavior on color {
                         enabled: Config.animDuration > 0
@@ -350,7 +350,7 @@ Popup {
                 StyledRect {
                     anchors.fill: parent
                     variant: "primary"
-                    radius: Styling.radius(4)
+                    radius: Math.max(0, Config.roundness - 6)
                     visible: modelList.currentIndex >= 0
                 }
             }

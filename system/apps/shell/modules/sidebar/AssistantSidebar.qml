@@ -2145,7 +2145,7 @@ Item {
                                 visible: inputField.text.startsWith("/") && suggestionsModel.count > 0
                                 z: 20
                                 variant: "popup"
-                                radius: Styling.radius(12)
+                                radius: Config.roundness
                                 enableShadow: false
                                 clip: true
 

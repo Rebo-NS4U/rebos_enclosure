@@ -137,7 +137,7 @@ PopupWindow {
             y: root.bottomBar ? revealViewport.height - height : 0
             variant: root.variant
             enableShadow: false
-            radius: Styling.radius(8)
+            radius: Config.roundness
 
             Item {
                 id: contentContainer

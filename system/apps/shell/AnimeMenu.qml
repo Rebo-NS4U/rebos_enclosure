@@ -1064,7 +1064,7 @@ PanelWindow {
                     RowLayout {
                         Layout.fillWidth: true
                         StyledText { text: "Subtitle font"; Layout.preferredWidth: root.unit * 10 }
-                        ComboBox {
+                        MenuCombo {
                             Layout.fillWidth: true
                             model: ["OpenDyslexic", "Noto Sans", "Noto Serif", "DejaVu Sans"]
                             currentIndex: Math.max(0, model.indexOf(root.settings.subtitle_font ?? "OpenDyslexic"))

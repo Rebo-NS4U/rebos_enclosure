@@ -524,7 +524,7 @@ Item {
                             Layout.maximumWidth: Math.max(48, root.hitbox.width - 260)
                             Layout.preferredHeight: 24
                             variant: "common"
-                            radius: Styling.radius(12)
+                            radius: Config.roundness
 
                             StyledText {
                                 id: statusLabel
@@ -568,7 +568,7 @@ Item {
                                 }
                                 background: StyledRect {
                                     variant: parent.hovered ? "focus" : "transparent"
-                                    radius: Styling.radius(8)
+                                    radius: Math.max(0, Config.roundness - 6)
                                 }
                                 StyledToolTip {
                                     show: parent.hovered
@@ -809,7 +809,7 @@ Item {
                     padding: 8
                     background: StyledRect {
                         variant: parent.hovered ? "focus" : "internalbg"
-                        radius: Styling.radius(8)
+                        radius: Math.max(0, Config.roundness - 6)
                     }
                     contentItem: StyledText {
                         text: Ai.activeSession.checkingPlanUsage ? "Checking plan usage…" : Ai.activeSession.planUsageSummary
@@ -1500,7 +1500,7 @@ Item {
 
                                                         // User = primary; assistant = surface (better contrast than secondary on dark themes)
                                                         variant: isSystem ? "internalbg" : (isUser ? "primary" : "surface")
-                                                        radius: Styling.radius(12)
+                                                        radius: Config.roundness
                                                         border.width: messageDelegate.isEditing ? 2 : 0
                                                         border.color: Styling.srItem("overprimary")
 
@@ -1720,7 +1720,7 @@ Item {
                                                                 Layout.fillWidth: true
                                                                 padding: 12
                                                                 background: Rectangle {
-                                                                    radius: Styling.radius(8)
+                                                                    radius: Math.max(0, Config.roundness - 6)
                                                                     color: "transparent"
                                                                     border.width: 0
                                                                 }
@@ -2390,7 +2390,7 @@ Item {
                                 visible: inputField.text.startsWith("/") && suggestionsModel.count > 0
                                 z: 20
                                 variant: "popup"
-                                radius: Styling.radius(12)
+                                radius: Config.roundness
                                 enableShadow: false
                                 clip: true
 
@@ -2466,7 +2466,7 @@ Item {
 
                                         background: StyledRect {
                                             variant: (suggestionDelegate.highlighted || suggestionDelegate.hovered) ? "focus" : "transparent"
-                                            radius: Styling.radius(8)
+                                            radius: Math.max(0, Config.roundness - 6)
                                         }
 
                                         onClicked: {
@@ -2528,7 +2528,7 @@ Item {
             spacing: 4
             background: StyledRect {
                 variant: "popup"
-                radius: Styling.radius(12)
+                radius: Config.roundness
                 border.width: 1
                 border.color: Qt.alpha(Colors.primary, 0.22)
             }
@@ -2545,7 +2545,7 @@ Item {
                 Accessible.name: text + (free ? ", free" : "") + (selected ? ", selected" : "")
                 background: StyledRect {
                     variant: choice_codex.selected ? "focus" : choice_codex.highlighted ? "common" : "transparent"
-                    radius: Styling.radius(8)
+                    radius: Math.max(0, Config.roundness - 6)
                     border.width: choice_codex.selected ? 1 : 0
                     border.color: Qt.alpha(Colors.primary, 0.3)
                 }
@@ -2599,7 +2599,7 @@ Item {
                 Accessible.name: text + (free ? ", free" : "") + (selected ? ", selected" : "")
                 background: StyledRect {
                     variant: choice_google.selected ? "focus" : choice_google.highlighted ? "common" : "transparent"
-                    radius: Styling.radius(8)
+                    radius: Math.max(0, Config.roundness - 6)
                     border.width: choice_google.selected ? 1 : 0
                     border.color: Qt.alpha(Colors.primary, 0.3)
                 }
@@ -2653,7 +2653,7 @@ Item {
                 Accessible.name: text + (free ? ", free" : "") + (selected ? ", selected" : "")
                 background: StyledRect {
                     variant: choice_distill.selected ? "focus" : choice_distill.highlighted ? "common" : "transparent"
-                    radius: Styling.radius(8)
+                    radius: Math.max(0, Config.roundness - 6)
                     border.width: choice_distill.selected ? 1 : 0
                     border.color: Qt.alpha(Colors.primary, 0.3)
                 }

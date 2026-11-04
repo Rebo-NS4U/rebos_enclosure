@@ -41,7 +41,7 @@ Item {
             variant: "popup"
             border.color: Qt.alpha(Colors.primary, 0.28)
             border.width: 1
-            radius: Styling.radius(4)
+            radius: Config.roundness
 
             ColumnLayout {
                 anchors.fill: parent

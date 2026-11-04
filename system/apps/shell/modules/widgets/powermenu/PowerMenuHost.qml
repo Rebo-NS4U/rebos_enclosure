@@ -132,7 +132,7 @@ Item {
             StyledRect {
                 id: powerWrapper
                 variant: "popup"
-                radius: Styling.radius(16)
+                radius: Config.roundness
                 enableShadow: false
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.bottom: parent.bottom

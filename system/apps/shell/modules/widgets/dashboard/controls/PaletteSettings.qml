@@ -77,7 +77,7 @@ ColumnLayout {
         }
     }
     Caption { text: "Wallpaper scheme" }
-    ComboBox {
+    SettingsComboBox {
         id: schemeSelector
         Layout.fillWidth: true
         enabled: root.manager !== null
