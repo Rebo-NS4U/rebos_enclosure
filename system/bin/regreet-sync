@@ -33,13 +33,39 @@ def main():
     palette = json.loads((CACHE / 'effective-palette.json').read_text())
     template = (HOME / '.config/regreet-sync/regreet.css.in').read_text()
 
-    def color(match):
-        value = palette[match[1]]
+    # The effective palette already contains the shared surface hierarchy.
+    # Read geometry separately so font/corner changes invalidate the CSS stamp.
+    try:
+        theme = json.loads((HOME / '.config/enclosure/shell/config/theme.json').read_text())
+    except (OSError, ValueError):
+        theme = {}
+    def number(key, default, low, high):
+        try:
+            return max(low, min(high, int(theme.get(key, default))))
+        except (TypeError, ValueError):
+            return default
+    font = str(theme.get('font', 'JetBrains Mono'))
+    if not re.fullmatch(r'[\w .+-]{1,80}', font):
+        font = 'JetBrains Mono'
+    radius = number('roundness', 16, 0, 40)
+    try:
+        opacity = max(0, min(1, float(palette.get('opacity', 1))))
+    except (TypeError, ValueError):
+        opacity = 1
+    metrics = {'font': font, 'fontSize': str(number('fontSize', 14, 8, 32)),
+               'radius': str(radius), 'innerRadius': str(max(0, radius - 6)),
+               'opacity': str(opacity)}
+
+    def token(match):
+        key = match[1]
+        if key in metrics:
+            return metrics[key]
+        value = palette[key]
         if not re.fullmatch(r'#[0-9a-fA-F]{6}', value):
-            raise ValueError('Invalid palette color: ' + match[1])
+            raise ValueError('Invalid palette color: ' + key)
         return value
 
-    css = re.sub(r'\{\{(\w+)\}\}', color, template).encode()
+    css = re.sub(r'\{\{(\w+)\}\}', token, template).encode()
     info = wallpaper.stat()
     image_signature = [str(wallpaper), info.st_mtime_ns, info.st_size]
     signature = {'image': image_signature, 'css': hashlib.sha256(css).hexdigest()}

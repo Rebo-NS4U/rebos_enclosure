@@ -66,6 +66,60 @@ class GreeterSyncTests(unittest.TestCase):
             with Image.open(target / 'background.png') as image:
                 self.assertEqual(image.getpixel((0, 0)), (0, 0, 255))
 
+    def test_playground_metrics_and_css(self):
+        script = runpy.run_path(str(ROOT.parent / 'system/bin/regreet-sync'))
+        import subprocess
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary)
+            cache, target = home / 'cache', home / 'theme'
+            cache.mkdir()
+            target.mkdir()
+            config = home / '.config/regreet-sync'
+            config.mkdir(parents=True)
+            (config / 'regreet.css.in').write_text(
+                (ROOT.parent / 'system/greeter/regreet.css.in').read_text())
+            theme = home / '.config/enclosure/shell/config/theme.json'
+            theme.parent.mkdir(parents=True)
+            theme.write_text('{"roundness":16,"font":"JetBrains Mono","fontSize":14}')
+            wall = home / 'wall.png'
+            Image.new('RGB', (16, 16), 'red').save(wall)
+            (cache / 'wallpapers.json').write_text(json.dumps({'currentWall': str(wall)}))
+            roles = ('background', 'overBackground', 'surfaceContainerLowest',
+                     'surfaceContainer', 'surfaceContainerHigh', 'outlineVariant',
+                     'primary', 'overPrimary', 'error')
+            palette = {role: '#112233' for role in roles}
+            palette['opacity'] = 0.82
+            (cache / 'effective-palette.json').write_text(json.dumps(palette))
+            sync = script['main']
+            sync.__globals__.update(HOME=home, CACHE=cache, TARGET=target)
+            sync()
+            css = (target / 'regreet.css').read_text()
+            self.assertIn('border-radius: 16px', css)
+            self.assertIn('border-radius: 10px', css)
+            self.assertIn('font-size: 14px', css)
+            self.assertNotIn('{{', css)
+            self.assertNotIn('glass-texture', css)
+            # GTK parses CSS without mapping a window or connecting to greetd.
+            parser = """import gi, sys
+ gi.require_version('Gtk', '4.0')
+ from gi.repository import Gtk
+ errors = []
+ provider = Gtk.CssProvider()
+ provider.connect('parsing-error', lambda p, section, error: errors.append(str(error)))
+ provider.load_from_path(sys.argv[1])
+ if errors: raise SystemExit('\\n'.join(errors))
+"""
+            parser = '\n'.join(line[1:] if line.startswith(' ') else line for line in parser.splitlines())
+            subprocess.run(['/usr/bin/python3', '-c', parser, str(target / 'regreet.css')], check=True)
+            timestamp = (target / 'background.png').stat().st_mtime_ns
+            theme.write_text('{"roundness":0,"font":"Unsafe; font","fontSize":18}')
+            sync()
+            css = (target / 'regreet.css').read_text()
+            self.assertIn('border-radius: 0px', css)
+            self.assertIn('font-size: 18px', css)
+            self.assertIn('font-family: "JetBrains Mono"', css)
+            self.assertEqual(timestamp, (target / 'background.png').stat().st_mtime_ns)
+
     def test_permission_setup_uses_desktop_approval(self):
         with tempfile.TemporaryDirectory() as temporary:
             home = Path(temporary)
