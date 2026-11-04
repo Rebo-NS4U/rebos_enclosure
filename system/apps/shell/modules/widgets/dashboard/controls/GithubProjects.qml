@@ -51,9 +51,15 @@ ColumnLayout {
             start("catalog");
         }
     }
+    function selectDesktopProject() {
+        // A copied installation's revision check has no editable branch data.
+        // Once both initial requests finish, inspect the verified checkout.
+        if (!busy && selectedPath === "" && desktopPath !== "" && project.path !== desktopPath)
+            root.projectSelected(desktopPath);
+    }
     onVisibleChanged: initialize()
     onWidthChanged: initialize()
-    onBusyChanged: if (!busy) initialize()
+    onBusyChanged: if (!busy) { initialize(); selectDesktopProject(); }
     Component.onCompleted: initialize()
 
     function act(action, fields, confirm) {
@@ -83,7 +89,7 @@ ColumnLayout {
             if (data.ok === false) { feedback = data.message || "Project request failed."; return; }
             if (mode === "catalog") {
                 desktopPath = data.desktop_path || "";
-                projects = [{ label: "Enclosure", path: "" }].concat(
+                projects = [{ label: "Enclosure", path: root.desktopPath }].concat(
                     (data.projects || []).filter(p => p.path !== root.desktopPath));
             } else if (mode === "remote") {
                 repositories = data.repositories || [];

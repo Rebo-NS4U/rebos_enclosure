@@ -397,6 +397,13 @@ updates still require logging out and back in to load desktop services.
 
 ### Updates from GitHub Settings
 
+The default Enclosure project resolves its verified local checkout for branch,
+commit and push controls, including when the installed shell is a separate copy.
+Initial checkout selection waits for the catalogue and status requests to finish.
+With no local checkout available, the page can still compare the installed
+revision, but Git editing controls stay disabled. After updating these controls,
+use **Check for updates** once to refresh an already-open GitHub page.
+
 In Settings → GitHub, select Enclosure and use **Preview & update installed
 desktop…**. The update window shows a dry run and requires typing `UPDATE` before
 applying. Desktop files only is the default; select the package checkbox to also

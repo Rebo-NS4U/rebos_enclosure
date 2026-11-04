@@ -20,7 +20,7 @@ class ProjectTests(unittest.TestCase):
     def test_default_inspection_checks_installed_revision(self):
         import io
         with patch.object(sys, 'argv', ['github_projects.py', 'inspect']), \
-                patch.object(projects.status, 'linked_checkout', return_value=None), \
+                patch.object(projects, 'desktop_checkout', return_value=None), \
                 patch.object(projects.status, 'check', return_value={'status': 'current'}) as check, \
                 patch.object(projects, 'inspect') as inspect, \
                 patch.object(sys, 'stdout', new_callable=io.StringIO) as output:
@@ -28,6 +28,18 @@ class ProjectTests(unittest.TestCase):
         check.assert_called_once_with(Path.home())
         inspect.assert_not_called()
         self.assertEqual(json.loads(output.getvalue())['status'], 'current')
+
+    def test_default_copied_inspection_includes_checkout_branches(self):
+        import io
+        with patch.object(sys, 'argv', ['github_projects.py', 'inspect']), \
+                patch.object(projects, 'desktop_checkout', return_value=self.repo), \
+                patch.object(projects, 'api', side_effect=OSError('offline')), \
+                patch.object(sys, 'stdout', new_callable=io.StringIO) as output:
+            projects.main()
+        result = json.loads(output.getvalue())
+        self.assertEqual(result['path'], str(self.repo))
+        self.assertEqual(result['branch'], 'main')
+        self.assertEqual(result['branches'], ['main'])
 
     def test_default_linked_inspection_includes_push_details(self):
         import io

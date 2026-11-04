@@ -340,9 +340,10 @@ def main():
             result = {'ok': True, 'repositories': json.loads(run('gh', 'repo', 'list', '--limit', '100',
                 '--json', 'nameWithOwner,isPrivate,url'))}
         elif args.command == 'inspect':
-            # Linked installations are the live checkout: include the same
-            # branch and push details as an explicitly selected project.
-            path = args.path or status.linked_checkout(Path.home())
+            # Copied desktops can also have a verified Enclosure checkout.
+            # Inspect it for branch controls, falling back to the installed
+            # revision only when no local checkout is available.
+            path = args.path or desktop_checkout(Path.home())
             result = inspect(str(path)) if path else status.check(Path.home())
         else:
             result = action(json.loads(sys.stdin.readline()))
