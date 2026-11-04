@@ -653,7 +653,7 @@
   "system/scripts/install-aur.sh": "a37452f3477b8b4dcee55dc67fc6a8b0d6c2bfac2ef77fe3e1b7a48439b0d4a5",
   "system/scripts/install.sh": "a37452f3477b8b4dcee55dc67fc6a8b0d6c2bfac2ef77fe3e1b7a48439b0d4a5",
   "system/scripts/package-admin.sh": "0400dc7c708df67a8d4c437b8899668ba9ff2143e0610d29d2abd054cafa5852",
-  "system/scripts/package-menu.sh": "577f54d14fe6a307a4b8f443b1d0198d7c642ff014edc72f6b0caf5bb2b645d5",
+  "system/scripts/package-menu.sh": "be98fcf829524c11c7d2f2b829cfdbdbd07f96c9ade618d3689c141ee41c1bb8",
   "system/scripts/port-manager.sh": "b593af65593659e5aa1d1cd113e5e1ad9bc5e274376f871a166f65221be8a27a",
   "system/scripts/scale-adjust.sh": "e871df067cf834348d773686d8a3c25c0438847412d385ba03a54abf12705a78",
   "system/scripts/uninstall.sh": "a37452f3477b8b4dcee55dc67fc6a8b0d6c2bfac2ef77fe3e1b7a48439b0d4a5",
