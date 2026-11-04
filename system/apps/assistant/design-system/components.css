@@ -1,7 +1,6 @@
 @import url("tokens.css");
 
 .dweebo {
-  color-scheme: dark;
   color: var(--dw-foreground);
   background: var(--dw-bg);
   font: var(--dw-font-size)/1.5 var(--dw-font);
@@ -42,4 +41,9 @@
 @media (prefers-reduced-motion: reduce) {
   .dweebo { --dw-duration: 0ms; }
   .dweebo button:active { transform: none; }
+}
+
+.dweebo :is(.dw-panel, .dw-field, textarea, select, button:not(.dw-primary):not(.dw-danger)) {
+  background-image: var(--dw-texture, none);
+  background-size: var(--dw-texture-size) var(--dw-texture-size);
 }

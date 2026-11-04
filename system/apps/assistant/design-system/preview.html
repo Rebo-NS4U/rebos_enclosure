@@ -3,6 +3,11 @@
 <title>Dweebo component theme</title><link rel="stylesheet" href="components.css">
 <body class="dweebo"><main style="max-width:760px;margin:48px auto;padding:24px">
 <h1>Dweebo</h1><p class="dw-muted">Shared colors, text, buttons and fields for Enclosure projects.</p>
+<label for="palette">Color palette</label>
+<select id="palette"><option value="color">Dweebo colors</option><option value="black">Black / monochrome dark</option><option value="white">White / monochrome light</option></select>
+<label for="surface">Surface style</label>
+<select id="surface"><option value="colorful">Tinted</option><option value="glass">Transparent</option><option value="quiet">Opaque</option><option value="dithered">Dithered</option></select>
+<p id="theme-status" aria-live="polite">Dweebo colors · Tinted</p>
 <section class="dw-panel"><h2>Buttons</h2>
 <button class="dw-primary">Save changes</button> <button>Cancel</button>
 <button class="dw-danger">Delete</button> <button disabled>Unavailable</button>
@@ -10,4 +15,14 @@
 <label for="description">Description</label><textarea id="description" placeholder="Add details"></textarea>
 <label for="style">Style</label><select id="style"><option>Tinted</option><option>Opaque</option></select>
 <label for="invalid">Required value</label><input id="invalid" class="dw-field" aria-invalid="true" aria-describedby="error"><p id="error" style="color:var(--dw-error)">Enter a value.</p>
-<label><input type="checkbox"> Enable notifications</label><p><a href="README.md">Theme usage</a></p></section></main></body></html>
+<label><input type="checkbox"> Enable notifications</label><p><a href="README.md">Theme usage</a></p></section></main><script>
+const palette = document.getElementById('palette');
+const surface = document.getElementById('surface');
+function updateTheme() {
+ document.body.dataset.theme = palette.value;
+ document.body.dataset.style = surface.value;
+ document.getElementById('theme-status').textContent = palette.selectedOptions[0].text + ' · ' + surface.selectedOptions[0].text;
+}
+palette.addEventListener('change', updateTheme);
+surface.addEventListener('change', updateTheme);
+</script></body></html>
