@@ -23,3 +23,9 @@ Set `data-theme="black"` or `data-theme="white"` on the `.dweebo` root for neutr
 Set `data-style="colorful"`, `glass`, `quiet`, or `dithered` for Tinted, Transparent, Opaque, or Dithered surfaces. All twelve combinations are generated using Dweebo's surface function, including surface opacity. The CSS dither is an approximation of the Qt shader. The preview selectors apply variants to every component together. Custom styling can override CSS variables; no fixed custom preset is exported because Dweebo's custom mode depends on saved user settings.
 
 Example: `<body class="dweebo" data-theme="white" data-style="quiet">`.
+
+## Dropdowns
+
+Single-choice selects inherit themed borders, spacing, arrows, hover and keyboard focus. Browsers supporting `appearance: base-select` also receive a rounded menu with padded rows, a selected checkmark and themed selection. Other browsers retain their native option popup. Disabled, invalid and forced color states remain available. Use a visible `<label for="…">` for every select; existing change events work without a JavaScript adapter. The preview includes enabled and disabled dropdowns.
+
+Implementation reference: [Chrome customizable select documentation](https://developer.chrome.com/blog/a-customizable-select).

@@ -47,3 +47,73 @@
   background-image: var(--dw-texture, none);
   background-size: var(--dw-texture-size) var(--dw-texture-size);
 }
+
+/* Single-choice dropdowns: a quiet border, clear arrow, and generous hit area. */
+.dweebo select:not([multiple]):not([size]) {
+  appearance: none;
+  padding-inline: 16px 44px;
+  border-color: color-mix(in srgb, var(--dw-foreground) 22%, transparent);
+  cursor: pointer;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--dw-foreground) 50%),
+    linear-gradient(135deg, var(--dw-foreground) 50%, transparent 50%),
+    var(--dw-texture, none);
+  background-position: right 21px center, right 16px center, 0 0;
+  background-size: 5px 5px, 5px 5px, var(--dw-texture-size) var(--dw-texture-size);
+  background-repeat: no-repeat, no-repeat, repeat;
+}
+.dweebo select:not(:disabled):hover {
+  background-color: var(--dw-focus);
+  border-color: color-mix(in srgb, var(--dw-primary) 65%, transparent);
+}
+.dweebo select:disabled { cursor: default; }
+.dweebo select[aria-invalid="true"] { border-color: var(--dw-error); }
+.dweebo select option {
+  background-color: var(--dw-background);
+  color: var(--dw-foreground);
+}
+
+/* Supported browsers also theme the open menu while retaining native semantics. */
+@supports (appearance: base-select) {
+  .dweebo select:not([multiple]):not([size]),
+  .dweebo select:not([multiple]):not([size])::picker(select) {
+    appearance: base-select;
+  }
+  .dweebo select::picker-icon { display: none; }
+  .dweebo select::picker(select) {
+    margin-block: 8px;
+    padding: 6px;
+    max-block-size: min(320px, 60dvh);
+    overflow: auto;
+    border: 1px solid color-mix(in srgb, var(--dw-foreground) 22%, transparent);
+    border-radius: var(--dw-radius);
+    background: var(--dw-background);
+    color: var(--dw-foreground);
+    font: var(--dw-font-size)/1.5 var(--dw-font);
+    box-shadow: 0 12px 32px #00000030;
+  }
+  .dweebo select option {
+    min-block-size: 40px;
+    padding: 10px 12px;
+    gap: 12px;
+    border-radius: max(4px, calc(var(--dw-radius) - 6px));
+    cursor: pointer;
+  }
+  .dweebo select option:is(:hover, :focus-visible) {
+    background: var(--dw-focus);
+    outline: 2px solid var(--dw-primary);
+    outline-offset: -2px;
+  }
+  .dweebo select option:checked {
+    background: var(--dw-primary);
+    color: var(--dw-onPrimary);
+    font-weight: 600;
+  }
+  .dweebo select option:disabled { opacity: .45; cursor: default; }
+}
+@media (forced-colors: active) {
+  .dweebo select:not([multiple]):not([size]) {
+    appearance: auto;
+    background-image: none;
+  }
+}

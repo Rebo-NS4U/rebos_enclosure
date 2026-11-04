@@ -14,6 +14,7 @@
 <h2>Text fields</h2><label for="name">Project name</label><input class="dw-field" id="name" placeholder="Enter a name">
 <label for="description">Description</label><textarea id="description" placeholder="Add details"></textarea>
 <label for="style">Style</label><select id="style"><option>Tinted</option><option>Opaque</option></select>
+<label for="disabled-style">Disabled dropdown</label><select id="disabled-style" disabled><option>Unavailable</option></select>
 <label for="invalid">Required value</label><input id="invalid" class="dw-field" aria-invalid="true" aria-describedby="error"><p id="error" style="color:var(--dw-error)">Enter a value.</p>
 <label><input type="checkbox"> Enable notifications</label><p><a href="README.md">Theme usage</a></p></section></main><script>
 const palette = document.getElementById('palette');
