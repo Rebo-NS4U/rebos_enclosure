@@ -6,50 +6,59 @@ import os
 import random
 import shutil
 import sys
+from pathlib import Path
+from types import SimpleNamespace
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "share/terminal-rainforest"))
+from pybonsai import draw, tree
 
 RESET = '\033[0m'
 # Standard palette slots follow the terminal theme, including live theme changes.
 COLORS = ('', '\033[36m', '\033[32m', '\033[92m')
 
 
+class ForestCanvas(draw.TerminalWindow):
+    """Collect upstream geometry without printing or taking cursor ownership."""
+    def __init__(self, width, height, options):
+        super().__init__(width, height, options)
+        self.chars = [[(' ', 0) for _ in range(width)] for _ in range(height)]
+
+    def set_char_instant(self, x, y, char, colour, is_screen_coords):
+        if not is_screen_coords:
+            x, y = self.plane_to_screen(x, y)
+        if 0 <= x < self.height and 0 <= y < self.width:
+            # Upstream foliage is green; wood has a nonzero red component.
+            layer = (2 if colour[1] < 160 else 3) if colour[0] == 0 else 1
+            self.chars[x][y] = (char, layer)
+
+
 def forest(width, height, seed=None):
-    """Return single-cell glyphs and depth values; never exceed the viewport."""
-    rng = random.Random(seed)
-    cells = [[(' ', 0) for _ in range(width)] for _ in range(height)]
-    for layer in range(1, 4):
-        spacing = (12, 17, 23)[layer - 1]
-        x = -spacing
-        while x < width + spacing:
-            x += rng.randint(max(3, spacing // 2), spacing)
-            top = rng.uniform(.08, .25) + (layer - 1) * .19
-            radius = rng.uniform(spacing * .5, spacing * .85)
-            crown = top * height
-            depth = max(1.0, height * rng.uniform(.13, .22))
-            # Broad interlocking crowns, with a few irregular leafy edges.
-            for col in range(max(0, int(x-radius)), min(width, int(x+radius)+1)):
-                t = (col-x) / radius
-                edge = crown + depth * (1-math.sqrt(max(0, 1-t*t)))
-                edge += rng.uniform(-.5, .5)
-                start = max(0, min(height-1, int(edge)))
-                for row in range(start, min(height, int(crown+depth)+1)):
-                    cells[row][col] = (('▄' if row == start else '█'), layer)
-            # Tapered trunks visible beneath the canopy, occasional hanging vines.
-            for row in range(max(0, int(crown+depth)), height):
-                col = int(x + math.sin(row*.3+layer)*.5)
-                if 0 <= col < width:
-                    cells[row][col] = ('│', layer)
-            vine = int(x + radius*.65)
-            for row in range(max(0, int(crown+depth)), min(height, int(crown+depth)+2)):
-                if 0 <= vine < width:
-                    cells[row][vine] = ('╵', layer)
-    return cells
+    """Compose Ben Edwards's recursive trees on a bounded, pot-free canvas."""
+    state = random.getstate()
+    random.seed(seed)
+    try:
+        options = SimpleNamespace(initial_len=height*.53, num_layers=7,
+            angle_mean=math.radians(40), leaf_len=max(2, round(height/6)),
+            leaf_chars='&%#@', branch_chars='~;:=', instant=True, fixed_window=True)
+        canvas = ForestCanvas(width, height, options)
+        spacing = max(10, round(height*1.15))
+        for center in range(0, width+spacing, spacing):
+            x = center + random.uniform(-spacing*.15, spacing*.15)
+            options.initial_len = height*random.uniform(.44, .60)
+            specimen = tree.RandomOffsetFibTree(canvas, (x, 2), options)
+            trunk_width, angle = specimen.get_initial_params()
+            specimen.draw_branch(x, 2, 0, 0, options.initial_len,
+                                 max(1, trunk_width), angle)
+        return canvas.chars
+    finally:
+        random.setstate(state)
 
 
 def render(columns, rows, seed=None, plain=False):
     # One spare column avoids automatic wrapping; leave ample prompt space.
     if columns < 24 or rows < 10:
         return ''
-    height = min(12, max(4, rows // 3))
+    height = min(20, max(6, rows // 2))
     lines = []
     for row in forest(columns-1, height, seed):
         line, previous = '', None

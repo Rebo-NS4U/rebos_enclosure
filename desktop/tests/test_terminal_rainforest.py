@@ -19,10 +19,12 @@ class RainforestTests(unittest.TestCase):
             for seed in range(12):
                 picture = rainforest.render(columns, rows, seed, plain=True)
                 lines = picture.splitlines()
-                self.assertLessEqual(len(lines), min(12, rows//3 if rows >= 12 else 4))
+                self.assertLessEqual(len(lines), min(20, max(6, rows//2)))
                 self.assertTrue(all(len(line) < columns for line in lines))
-                self.assertTrue(any('▄' in line for line in lines))
+                self.assertTrue(any(char in picture for char in '&%#@'))
                 self.assertNotIn('\033', picture)
+                self.assertNotIn('█', picture)
+                self.assertNotIn('▄', picture)
 
     def test_seed_and_layers(self):
         self.assertEqual(rainforest.forest(80, 10, 42), rainforest.forest(80, 10, 42))

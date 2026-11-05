@@ -68,6 +68,7 @@
     ".local/bin/rice",
     ".local/bin/terminal-bonsai",
     ".local/bin/terminal-rainforest",
+    ".local/share/terminal-rainforest",
     ".local/bin/thinkpad-fan-control",
     ".local/bin/wallpaper",
     ".local/bin/wallpaper-switcher",
@@ -346,6 +347,10 @@
     },
     ".local/bin/terminal-bonsai": {
       "source": "system/bin/terminal-bonsai",
+      "kind": "managed"
+    },
+    ".local/share/terminal-rainforest": {
+      "source": "system/share/terminal-rainforest",
       "kind": "managed"
     },
     ".local/bin/terminal-rainforest": {
