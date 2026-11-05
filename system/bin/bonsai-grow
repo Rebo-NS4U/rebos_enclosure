@@ -2,6 +2,7 @@
 """A persistent, additive terminal bonsai. No ncurses or background process."""
 import argparse
 import fcntl
+import functools
 import json
 import math
 import os
@@ -251,7 +252,11 @@ def branch_layout(seed):
         born = max((depth-1)/.7, 11 + index*2 + rng.uniform(-1, 1))
         # The renderer applies the crown offset once to every limb.
         result.append((depth, x - (centers[-1]-27)*.6, y, born))
-    result.extend(((12, 36, 3, 17), (14, 25, 2, 19)))
+    for depth in sorted(rng.sample(range(11, 15), rng.randint(1, 3))):
+        direction = side if pattern == 'windswept' else rng.choice((-1, 1))
+        x = centers[depth] + direction * rng.uniform(3, 7)
+        result.append((depth, x - (centers[-1]-27)*.6,
+                       rng.uniform(2, 3.5), max((depth-1)/.7, 17)))
     return result
 
 
@@ -262,18 +267,18 @@ def juvenile_foliage(days, seed):
     cells = []
     # The original pair follows the leader until the first limb attachments
     # establish, then travels outward on those limbs as their tips extend.
-    target_rng = random.Random(seed)
-    crown_shift = (centers[-1] - 27) * .6
-    for cohort, (attachment, tx, ty, branch_born) in enumerate(branch_layout(seed)[:2]):
-        tx += crown_shift + target_rng.uniform(-.6, .6)
-        ty += target_rng.uniform(-.3, .3)
+    primaries = [branch for branch in branch_graph(seed) if branch['parent'] is None]
+    for cohort, branch in enumerate(primaries[:2]):
+        attachment = round(18 - branch['start'][1])
+        tx, ty = branch['end']
+        branch_born = branch['born']
         depth = min(height - 1, attachment)
         born, age = 0, days
         x, y = round(centers[depth]), 18 - depth
         length = math.hypot(tx - x, ty - y)
         progress = min(1, max(2 / length, (days + 1 - branch_born) / (length * .55)))
         tip_x = round(x + (tx - x) * progress)
-        tip_y = round(y + (ty - y) * progress - math.sin(progress * math.pi) * .5)
+        tip_y = round(y + (ty - y) * progress - math.sin(progress * math.pi) * branch['curve'])
         side = 1 if tx >= x else -1
         tone = (cohort + (side > 0)) % 3
         leaves = []
@@ -310,8 +315,105 @@ def juvenile_foliage(days, seed):
     return cells if days < 29 else []
 
 
+def branch_point(branch, t):
+    x, y = branch['start']
+    tx, ty = branch['end']
+    return (x + (tx-x)*t, y + (ty-y)*t - math.sin(t*math.pi)*branch['curve'])
+
+
+@functools.lru_cache(maxsize=64)
+def branch_graph(seed):
+    """A rooted hierarchy: uneven secondary forks inherit their parent's path."""
+    rng = random.Random(f'{seed}:branch-graph')
+    jitter = random.Random(seed)
+    centers = trunk_path(seed)
+    shift = (centers[-1]-27)*.6
+    habit, wind = growth_pattern(seed)
+    branches = []
+    def add(start, end, born, width, parent=None, attachment=0, level=0):
+        # Stagger crown-tip heights instead of clipping every twig to one roof.
+        ceiling = rng.uniform(3.2, 5.2)
+        end = (max(9, min(47, end[0])), max(ceiling, min(14, end[1])))
+        length = math.hypot(end[0]-start[0], end[1]-start[1])
+        branch = dict(start=start, end=end, born=born, width=width,
+                      parent=parent, attachment=attachment, length=length,
+                      curve=rng.uniform(.15, .7), level=level)
+        index = len(branches)
+        branches.append(branch)
+        if level >= 2 or length < 3:
+            return
+        # One stronger continuation and a shorter lateral fork, at unequal nodes.
+        for child, fraction in enumerate((rng.uniform(.7, .95), rng.uniform(.4, .7))):
+            origin = branch_point(branch, fraction)
+            direction = 1 if end[0] >= start[0] else -1
+            if child and habit != 'windswept' and rng.random() < .55:
+                direction *= -1
+            if habit == 'windswept':
+                direction = wind
+            reach = length * rng.uniform(.45, .65) * (1 if child == 0 else .6)
+            target = (origin[0] + direction * reach,
+                      origin[1] - rng.uniform(1.3, 3) * (1 if child == 0 else .65))
+            arrival = born + length * fraction * .55
+            add(origin, target, arrival + rng.uniform(.3, .9),
+                width * (.58 if child == 0 else .38), index, fraction, level+1)
+    for depth, tx, ty, born in branch_layout(seed):
+        tx += shift + jitter.uniform(-.6, .6)
+        ty += jitter.uniform(-.3, .3)
+        add((centers[depth], 18-depth), (tx, ty), born, max(.7, 2.6*(1-depth/19)))
+    return branches
+
+
+def natural_specimen(seed, days):
+    """Render connected tapered wood and leaf sprays at its own terminal tips."""
+    graph = branch_graph(seed)
+    wood = {}
+    for branch in graph:
+        steps = max(1, math.ceil(branch['length']*2))
+        for step in range(steps+1):
+            t = step/steps
+            birth = branch['born'] + branch['length']*t*.55
+            if birth > days+1:
+                continue
+            px, py = branch_point(branch, t)
+            age = max(0, days-birth)
+            radius = min(branch['width'], (1.4 if branch['level'] == 0 else .4)+math.sqrt(age)*.25)*(1-t)**.7
+            vertical_scale = 1.15 if branch['level'] == 0 else 1.8
+            for y in range(math.floor(py-radius), math.ceil(py+radius)+1):
+                for x in range(math.floor(px-radius), math.ceil(px+radius)+1):
+                    if (x-px)**2 + ((y-py)*vertical_scale)**2 <= radius**2:
+                        wood[(x,y)] = min(birth, wood.get((x,y), birth))
+            key = (round(px), round(py))
+            wood[key] = min(birth, wood.get(key, birth))
+    cells = []
+    for (x,y), birth in wood.items():
+        vertical = (x,y-1) in wood and (x,y+1) in wood
+        horizontal = (x-1,y) in wood and (x+1,y) in wood
+        glyph = '▒' if vertical else '─' if horizontal else '╱' if (x+1,y-1) in wood else '╲'
+        cells.append((x,y,birth,glyph,'bark' if vertical else 'wood'))
+    parents = {branch['parent'] for branch in graph if branch['parent'] is not None}
+    for index, branch in enumerate(graph):
+        if index in parents:
+            continue
+        cx, cy = branch['end']
+        rng = random.Random(f'{seed}:terminal:{index}')
+        rx, ry = rng.uniform(3.2,5), rng.uniform(1.6,2.4)
+        arrival = branch['born'] + branch['length']*.55
+        for y in range(max(1,math.floor(cy-ry)), min(18,math.ceil(cy+ry))+1):
+            for x in range(max(8,math.floor(cx-rx)), min(48,math.ceil(cx+rx))+1):
+                distance = ((x-cx)/rx)**2 + ((y-cy)/ry)**2
+                if distance > 1 or rng.random() < (.05 if distance < .7 else .23):
+                    continue
+                birth = arrival + .5 + math.hypot(x-cx,(y-cy)*1.5)*.35
+                glyph = rng.choices(('●','◆','•','·'), (5,2,2,1) if distance < .7 else (1,1,4,3))[0]
+                shade = 2 if y < cy else 1 if y == round(cy) else 0
+                cells.append((x,y,birth,glyph,f'leaf{index%3*3+shade}'))
+    return cells
+
+
 def specimen(seed, days=0, style='informal'):
     """Connected woody limbs supporting a broad, densely filled crown."""
+    if style == 'informal':
+        return natural_specimen(seed, days)
     rng = random.Random(seed)
     centers = trunk_path(seed, style)
     crown_shift = (centers[-1] - 27) * .6

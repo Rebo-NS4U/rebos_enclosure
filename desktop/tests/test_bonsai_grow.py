@@ -25,20 +25,19 @@ class BonsaiGrowTests(unittest.TestCase):
         self.assertNotEqual(image, bonsai.render(30, 43, False, 80, palette))
         self.assertNotEqual(image, bonsai.render(0, 42, False, 80, palette))
 
-    def test_top_clusters_fill_during_growth(self):
+    def test_top_sprays_fill_from_terminal_branches(self):
         for seed in range(24):
-            def upper_leaves(age):
-                return [cell for cell in bonsai.specimen(seed, age)
-                        if cell[4].startswith('leaf') and cell[1] <= 5
-                        and cell[2] <= age + 1]
-            developing = upper_leaves(25)
-            mature = upper_leaves(30)
-            self.assertGreaterEqual(len(developing), 10)
-            self.assertGreaterEqual(len(mature), 60)
-            center = 28 + (bonsai.trunk_path(seed)[-1] - 27) * .6
-            self.assertGreaterEqual(sum(cell[0] < center for cell in mature), 20)
-            self.assertGreaterEqual(sum(cell[0] >= center for cell in mature), 20)
-            self.assertGreater(sum(cell[3] in '◆●' for cell in mature), len(mature) // 2)
+            leaves = [cell for cell in bonsai.specimen(seed, 30)
+                      if cell[4].startswith('leaf') and cell[2] <= 31]
+            upper = [cell for cell in leaves if cell[1] <= 6]
+            self.assertGreaterEqual(len(upper), 25)
+            graph = bonsai.branch_graph(seed)
+            parents = {branch['parent'] for branch in graph}
+            terminals = [branch['end'] for i, branch in enumerate(graph) if i not in parents]
+            for x, y, *_ in leaves:
+                self.assertTrue(any(abs(x-tx) <= 5 and abs(y-ty) <= 2.4
+                                    for tx, ty in terminals))
+            self.assertGreater(len(set((x, y) for x, y, *_ in upper)), 20)
 
     def test_leafy_juvenile_stages_are_attached_and_retire(self):
         for seed in range(24):
@@ -296,6 +295,27 @@ class BonsaiGrowTests(unittest.TestCase):
             opposing |= len(set(directions)) > 1
         self.assertTrue(swept)
         self.assertTrue(opposing)
+
+    def test_branch_hierarchy_has_supported_unequal_tapered_forks(self):
+        for seed in range(48):
+            graph = bonsai.branch_graph(seed)
+            descendants = {}
+            for index, branch in enumerate(graph):
+                parent = branch['parent']
+                if parent is None:
+                    continue
+                self.assertLess(parent, index)
+                source = graph[parent]
+                self.assertEqual(branch['start'], bonsai.branch_point(source, branch['attachment']))
+                arrival = source['born'] + source['length'] * branch['attachment'] * .55
+                self.assertGreaterEqual(branch['born'], arrival)
+                self.assertLess(branch['width'], source['width'])
+                descendants.setdefault(parent, []).append(branch)
+            self.assertTrue(descendants)
+            for children in descendants.values():
+                self.assertEqual(len(children), 2)
+                self.assertNotEqual(children[0]['width'], children[1]['width'])
+                self.assertNotEqual(children[0]['attachment'], children[1]['attachment'])
 
     def test_new_launches_use_fresh_seeds_and_explicit_seed_is_repeatable(self):
         from unittest.mock import patch, Mock
