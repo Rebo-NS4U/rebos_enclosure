@@ -19,7 +19,7 @@ class BonsaiGrowTests(unittest.TestCase):
         palette = ['#85b470', '#b8ce93', '#67bca3']
         image = bonsai.render(30, 42, False, 80, palette)
         self.assertEqual(image, bonsai.render(30, 42, False, 80, palette))
-        self.assertIn('╭─────────────────────╮', image)
+        self.assertIn('╭──────────┴──────────╮', image)
         self.assertLessEqual(len(image.splitlines()), 26)
         self.assertTrue(all(len(row) <= 80 for row in image.splitlines()))
         self.assertNotEqual(image, bonsai.render(30, 43, False, 80, palette))
@@ -223,7 +223,7 @@ class BonsaiGrowTests(unittest.TestCase):
                     self.assertEqual(termios.tcgetattr(slave), original)
                     import re
                     plain = re.sub(rb'\x1b\[[0-9;]*m', b'', output)
-                    self.assertIn('╭─────────────────────╮'.encode(), plain)
+                    self.assertIn('╭──────────┴──────────╮'.encode(), plain)
                     self.assertGreaterEqual(output.count(b'\033[26A'), 2)
                     self.assertIn(b'\033[?25h', output)
                     self.assertNotIn(b'Traceback', output)
@@ -635,6 +635,21 @@ class BonsaiGrowTests(unittest.TestCase):
             self.assertLessEqual(max(branch['level'] for branch in graph),1)
         self.assertGreater(checked,10)
 
+    def test_every_form_is_seated_in_the_soil_and_pot_rim(self):
+        seen = set()
+        for seed in range(80):
+            seen.add(bonsai.growth_pattern(seed)[0])
+            for day in (0,7,14,30):
+                rows = bonsai.render(day,seed,False,59,['#85b470']*3,
+                                    fixed_height=True).splitlines()[1:-1]
+                body = [row[1:-1] for row in rows]
+                self.assertEqual(body[18][27],'│')
+                self.assertEqual(body[19][27],'┴')
+                self.assertEqual((body[18][17],body[18][37]),('╱','╲'))
+                self.assertTrue(all(char != ' ' for char in body[18][18:37]))
+                self.assertEqual((body[19][16],body[19][38]),('╭','╮'))
+        self.assertTrue({'old_oak','twisted_juniper','broom','forked'} <= seen)
+
     def test_new_launches_use_fresh_seeds_and_explicit_seed_is_repeatable(self):
         from unittest.mock import patch, Mock
         with patch('sys.stdout', Mock(isatty=lambda: True)), \
@@ -657,7 +672,7 @@ class BonsaiGrowTests(unittest.TestCase):
             result = subprocess.run([str(SOURCE), '--preview', '30', '--seed', '42', '--plain'],
                 env={**os.environ, 'XDG_STATE_HOME': directory},
                 text=True, capture_output=True, check=True)
-            self.assertIn('╭─────────────────────╮', result.stdout)
+            self.assertIn('╭──────────┴──────────╮', result.stdout)
             self.assertNotIn('\033', result.stdout)
             self.assertEqual(list(Path(directory).iterdir()), [])
 
