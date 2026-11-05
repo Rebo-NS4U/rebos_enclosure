@@ -46,7 +46,10 @@ def refine_trunk(lines):
     for depth, center in enumerate(centers):
         span = round(4 - 3 * depth / (len(path) - 1))
         left = round(center - span / 2)
-        contours.append((left, left + span))
+        right = left + span
+        if depth == 1 and len(path) >= 4:
+            left -= 1  # a weathered shoulder above the root flare
+        contours.append((left, right))
     # Keep the original junction as the anchor into the upper branches.
     contours[-1] = (path[-1][1], path[-1][2] - 1)
 
@@ -66,12 +69,11 @@ def refine_trunk(lines):
                 glyph = "╱" if depth == 0 or above_left > left else "╲" if above_left < left else "│"
             elif x == right:
                 glyph = "╲" if depth == 0 or above_right < right else "╱" if above_right > right else "│"
-            else:
-                # Fine longitudinal fissures follow the bend of the trunk.
-                # Keep their contrast low and leave breaks in the grain.
-                ridge = x - left
-                glyph = ("▏", "╵", " ", "▏", " ")[(depth + ridge * 2) % 5]
-                code = b"barklit" if ridge == 1 else b"barkshade"
+            elif x == left + 1 and right - left >= 3:
+                # One winding fissure follows the taper instead of filling
+                # every cell with a repeating bark pattern.
+                glyph = "╱" if above_left > left or depth == 0 else "╲" if above_left < left else "╵"
+                code = b"woodlight"
             lines[y][x] = (code, glyph.encode("utf-8"))
 
 
@@ -196,13 +198,6 @@ def main():
             if code in (b"wood", b"woodlight") or char in (b"/", b"\\", b"|", b"_", b"~"):
                 glyph = {"/": "╱", "\\": "╲", "_": "─", "~": "─", "|": "│"}.get(glyph, glyph)
                 ink = "\033[38;2;105;79;62m" if code in (b"93", b"woodlight") else "\033[38;2;85;63;49m"
-            if code in (b"barklit", b"barkshade"):
-                # Warm light on the left, a recessed furrow on the right.
-                # A quiet ground color gives the trunk volume between ridges.
-                ink = ("\033[48;2;66;49;38m\033[38;2;101;77;58m" if code == b"barklit"
-                       else "\033[48;2;57;43;34m\033[38;2;77;58;44m")
-            else:
-                ink = "\033[49m" + ink
             if ink != previous:
                 text.append(ink)
                 previous = ink

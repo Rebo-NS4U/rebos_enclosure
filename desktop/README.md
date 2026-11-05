@@ -75,7 +75,7 @@ Early KMS is optional and currently supports mkinitcpio. It adds an additive NVI
 - Portable Niri keybindings, named workspaces, rounded windows, transparency and blur. Applications open on the current workspace. Monitor modes are selected by the destination computer.
 - Locus Linux opens in a full-width tiled column, preserving Niri's border and outer gaps.
 - Dark OLED theme with wallpaper-driven GTK, Qt, KDE, Kitty, Fish, Fuzzel, btop, Neovim and supported app palettes; a current palette snapshot is provided for the first login.
-- Kitty/Fish prompt and shortcuts, wallpaper-colored bonsai greeting with subtly shaded bark grain, cbonsai source and license, bundled terminal/shell fonts, GoogleDot cursor and Papirus icons.
+- Kitty/Fish prompt and shortcuts, wallpaper-colored bonsai greeting with an open, twisting trunk outline and curved bark fissures, cbonsai source and license, bundled terminal/shell fonts, GoogleDot cursor and Papirus icons.
 - Custom Neovim IDE configuration and plugin lockfile. Plugins and language servers download separately through Neovim on first use; open `:IDEHelp` for instructions.
 - Four 1920×1200 wallpapers in `New-1920x1200`: Aurora Lake, Bioluminescent Garden, Floating Islands and Neon Alley. Fresh installs select Aurora Lake; existing wallpaper preferences are preserved.
 - Themed ReGreet login configuration, background, layout extension and GoogleDot cursor, NetworkManager, Bluetooth, PipeWire/WirePlumber, power profiles, authentication agent, portals, screenshots, OCR and clipboard history.
