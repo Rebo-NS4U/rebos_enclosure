@@ -547,9 +547,9 @@ def natural_specimen(seed, days):
                 # Broad trefoil clusters fill sprays; diamond leaves shape the
                 # rim. Small dots belong to opening buds, not mature foliage.
                 patch = random.Random(f'{seed}:leaf-patch:{index}:{x//3}:{y//2}').random()
-                weights = (8,2,0) if distance < .65 and patch < .65 else (5,4,1)
+                weights = (8,2,0) if distance < .65 and patch < .65 else (5,4,0)
                 if distance > .85:
-                    weights = (2,7,1)
+                    weights = (2,7,0)
                 glyph = texture.choices(('♣','◆','●'),weights)[0]
                 # Light falls from the upper left, with a continuous dark underside.
                 light = ny + nx*.22
@@ -572,7 +572,19 @@ def natural_specimen(seed, days):
                     if neighbor in candidates and neighbor not in reached:
                         reached.add(neighbor)
                         pending.append(neighbor)
-    return cells
+    # Fine dots soften only the outside of the combined foliage silhouette.
+    # Test all sprays together so overlapping pads keep solid interiors.
+    foliage = {(x,y) for x,y,birth,glyph,ink in cells if ink.startswith('leaf')}
+    woody = set(wood) | {(x,y) for x,y,*_ in stem(days,seed)}
+    result = []
+    for x,y,birth,glyph,ink in cells:
+        edge = any((x+dx,y+dy) not in foliage for dx,dy in ((-1,0),(1,0),(0,-1),(0,1)))
+        if ink.startswith('leaf') and edge and (x,y) not in woody:
+            texture = random.Random(f'{seed}:leaf-edge:{x}:{y}')
+            if texture.random() < .45:
+                glyph = texture.choice(('•','·'))
+        result.append((x,y,birth,glyph,ink))
+    return result
 
 
 def specimen(seed, days=0, style='informal'):
@@ -810,7 +822,7 @@ def space_bark_shading(canvas, seed):
     for y,row in enumerate(canvas):
         for x,(glyph,ink) in enumerate(row):
             if ink == 'bark' and glyph in '░▒▓' and (x+2*y+phase)%4:
-                row[x] = ('·', ink)
+                row[x] = ('╎', ink)
 
 
 @functools.lru_cache(maxsize=64)
@@ -866,7 +878,7 @@ def add_knurling(canvas, seed, days):
         if days < born or canvas[y][x][1] != 'bark' or canvas[y+1][x][1] != 'bark':
             continue
         # A small knot and raised grain accent, using the existing wood colors.
-        canvas[y][x] = ('◦', 'woodlight')
+        canvas[y][x] = ('╵', 'woodlight')
         canvas[y+1][x] = ('╎', 'bark')
 
 
@@ -907,7 +919,7 @@ def add_trunk_scar(canvas, seed, days):
         # A restrained light edge stays inside existing bark, never the outline.
         for nx in (x+1,x-1):
             if (nx,y) not in occupied and canvas[y][nx][1] == 'bark':
-                canvas[y][nx] = ('·','wood')
+                canvas[y][nx] = ('│','wood')
                 break
 
 
