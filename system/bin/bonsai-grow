@@ -936,6 +936,52 @@ def seat_tree_in_pot(canvas, days):
     canvas[19][27] = ('┴','pot')
 
 
+def reveal_canopy_twigs(canvas, seed, days):
+    """Show at most two short, attached branch glimpses through the foliage."""
+    if days < 14:
+        return
+    branches = list(enumerate(branch_graph(seed)))
+    random.Random(f'{seed}:visible-twigs').shuffle(branches)
+    # Favor fine secondary branches before considering the main limbs.
+    branches.sort(key=lambda item: item[1]['level'] == 0)
+    revealed = []
+    for _, branch in branches:
+        steps = max(1, math.ceil(branch['length']*3))
+        path = []
+        for step in range(steps+1):
+            t = step/steps
+            if branch['born'] + branch['length']*t*.55 > days+1:
+                break
+            px,py = branch_point(branch,t)
+            point = (round(px),round(py))
+            if not path or point != path[-1][0]:
+                dx = branch['end'][0]-branch['start'][0]
+                dy = branch['end'][1]-branch['start'][1] - math.pi*math.cos(t*math.pi)*branch['curve']
+                glyph = '─' if abs(dy) < abs(dx)*.25 else '│' if abs(dx) < abs(dy)*.5 else '╱' if dx*dy < 0 else '╲'
+                path.append((point,glyph))
+        for index, ((x,y),glyph) in enumerate(path):
+            if index == 0 or not (0 <= y < 18 and 0 <= x < len(canvas[y])):
+                continue
+            px,py = path[index-1][0]
+            if not (0 <= py < 19 and 0 <= px < len(canvas[py])):
+                continue
+            if canvas[py][px][1] not in ('wood','bark','woodlight'):
+                continue
+            if not canvas[y][x][1].startswith('leaf'):
+                continue
+            if any(max(abs(x-rx),abs(y-ry)) < 4 for rx,ry in revealed):
+                continue
+            # Reveal only the first two leaf-covered cells of this real branch.
+            for (tx,ty),stroke in path[index:index+2]:
+                if not (0 <= ty < 18 and 0 <= tx < len(canvas[ty])) or not canvas[ty][tx][1].startswith('leaf'):
+                    break
+                canvas[ty][tx] = (stroke,'wood')
+            revealed.append((x,y))
+            break
+        if len(revealed) == 2:
+            break
+
+
 def outline_exposed_wood(canvas):
     """Keep texture inside the wood and solid strokes on its exposed contour."""
     inks = {'wood', 'woodlight', 'bark', 'scar'}
@@ -977,6 +1023,7 @@ def render(days, seed, color=True, columns=80, accents=None, style='informal',
         if born <= days + 1 and 0 <= x < width and 0 <= y < 19:
             canvas[y][x] = (glyph, ink)
     if style == 'informal':
+        reveal_canopy_twigs(canvas, seed, days)
         cover_crown_wood(canvas)
         space_bark_shading(canvas, seed)
         add_trunk_scar(canvas, seed, days)

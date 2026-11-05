@@ -138,4 +138,4 @@ Based on [jR4dh3y's dots-niri](https://github.com/jR4dh3y/dots-niri), with the b
 
 The Fish bonsai greeting grows above an immediately usable prompt. Typing stays in the command line; submitting a command stops painting before command output begins. Small terminals and `REDUCE_MOTION=1` use a still greeting.
 
-Bonsai foliage uses broad trefoil clusters and diamond leaves with scalloped rims, small branch gaps, and upper-left highlights over shaded undersides. Fine dots soften foliage edges; the trunk keeps solid exposed outlines around spaced bark shading, fine dots, and occasional knots. Foliage colors follow the wallpaper palette.
+Bonsai foliage uses broad trefoil clusters and diamond leaves with scalloped rims, small branch gaps, and upper-left highlights over shaded undersides. Up to two short branch glimpses show through the foliage. Fine dots soften foliage edges; the trunk keeps solid exposed outlines around spaced bark shading, fine dots, and occasional knots. Foliage colors follow the wallpaper palette.
