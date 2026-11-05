@@ -756,6 +756,37 @@ def add_blossoms(canvas, seed, days):
             canvas[y][x] = ('✧' if days < born+1 else '✿', 'blossom')
 
 
+@functools.lru_cache(maxsize=64)
+def knurl_sites(seed):
+    """Sparse, stable knots in substantial wood, away from fine tips."""
+    rng = random.Random(f'{seed}:knurling')
+    if rng.random() >= .45:
+        return ()
+    bark = {(x,y) for x,y,born,glyph,ink in stem(30,seed)
+            if ink == 'bark' and 7 <= y <= 17}
+    bark.update((x,y) for x,y,born,glyph,ink in natural_specimen(seed,30)
+                if ink == 'bark' and 7 <= y <= 17)
+    candidates = sorted((x,y) for x,y in bark if (x,y+1) in bark)
+    rng.shuffle(candidates)
+    chosen = []
+    count = rng.randint(1,2)
+    for x,y in candidates:
+        if all(abs(y-py) >= 4 for px,py,born in chosen):
+            chosen.append((x,y,rng.uniform(15,23)))
+        if len(chosen) == count:
+            break
+    return tuple(chosen)
+
+
+def add_knurling(canvas, seed, days):
+    for x,y,born in knurl_sites(seed):
+        if days < born or canvas[y][x][1] != 'bark' or canvas[y+1][x][1] != 'bark':
+            continue
+        # A small knot and raised grain accent, using the existing wood colors.
+        canvas[y][x] = ('◦', 'woodlight')
+        canvas[y+1][x] = ('╎', 'bark')
+
+
 def render(days, seed, color=True, columns=80, accents=None, style='informal',
            fixed_height=False, pot_seed=None):
     width, height = 57, 24
@@ -773,6 +804,7 @@ def render(days, seed, color=True, columns=80, accents=None, style='informal',
     if style == 'informal':
         cover_crown_wood(canvas)
         space_bark_shading(canvas, seed)
+        add_knurling(canvas, seed, days)
         add_blossoms(canvas, seed, days)
     for y, row in enumerate(pot_rows(seed if pot_seed is None else pot_seed), 19):
         for x, char in enumerate(row, 16):

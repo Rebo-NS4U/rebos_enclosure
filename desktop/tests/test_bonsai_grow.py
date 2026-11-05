@@ -460,6 +460,43 @@ class BonsaiGrowTests(unittest.TestCase):
         self.assertGreater(flowering,10)
         self.assertLess(flowering,35)
 
+    def test_occasional_knurling_is_stable_sparse_and_only_on_bark(self):
+        textured = plain = 0
+        for seed in range(64):
+            sites = bonsai.knurl_sites(seed)
+            self.assertEqual(sites,bonsai.knurl_sites(seed))
+            self.assertLessEqual(len(sites),2)
+            textured += bool(sites)
+            plain += not sites
+            canvas = [[(' ', '') for _ in range(57)] for _ in range(24)]
+            for x,y,born in sites:
+                canvas[y][x] = ('░','bark')
+                canvas[y+1][x] = ('·','bark')
+            early = [row.copy() for row in canvas]
+            bonsai.add_knurling(early,seed,10)
+            self.assertEqual(early,canvas)
+            occupied = {(x,y) for y,row in enumerate(canvas) for x,(g,ink) in enumerate(row) if g != ' '}
+            bonsai.add_knurling(canvas,seed,30)
+            self.assertEqual(occupied,{(x,y) for y,row in enumerate(canvas) for x,(g,ink) in enumerate(row) if g != ' '})
+            for x,y,born in sites:
+                self.assertEqual(canvas[y][x],('◦','woodlight'))
+                self.assertEqual(canvas[y+1][x],('╎','bark'))
+            blank = [[('●','leaf1') for _ in range(57)] for _ in range(24)]
+            bonsai.add_knurling(blank,seed,30)
+            self.assertTrue(all(cell == ('●','leaf1') for row in blank for cell in row))
+        self.assertGreater(textured,10)
+        self.assertGreater(plain,20)
+
+    def test_knurling_appears_in_some_mature_renderings_only(self):
+        knotted = 0
+        for seed in range(48):
+            self.assertNotIn('◦',bonsai.render(10,seed,False,80,['#85b470']*3))
+            count = bonsai.render(30,seed,False,80,['#85b470']*3).count('◦')
+            self.assertLessEqual(count,2)
+            knotted += count > 0
+        self.assertGreater(knotted,5)
+        self.assertLess(knotted,35)
+
     def test_new_launches_use_fresh_seeds_and_explicit_seed_is_repeatable(self):
         from unittest.mock import patch, Mock
         with patch('sys.stdout', Mock(isatty=lambda: True)), \
