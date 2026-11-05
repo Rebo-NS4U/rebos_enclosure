@@ -414,10 +414,15 @@ class BonsaiGrowTests(unittest.TestCase):
             self.assertEqual(again, canvas)
 
     def test_small_lower_branches_are_short_and_supported(self):
+        counts = set()
+        single_sides = set()
         for seed in range(48):
             graph = bonsai.branch_graph(seed)
             lower = [branch for branch in graph if branch.get('lower')]
-            self.assertEqual(len(lower), 2)
+            self.assertIn(len(lower), (0,1,2))
+            counts.add(len(lower))
+            if len(lower) == 1:
+                single_sides.add(lower[0]['start'][1])
             for branch in lower:
                 self.assertIsNone(branch['parent'])
                 self.assertGreater(branch['length'], 5)
@@ -427,6 +432,8 @@ class BonsaiGrowTests(unittest.TestCase):
                 depth = round(18-branch['start'][1])
                 self.assertGreaterEqual(branch['born'], (depth-1)/.7)
                 self.assertFalse(any(child['parent'] == graph.index(branch) for child in graph))
+        self.assertEqual(counts, {0,1,2})
+        self.assertEqual(len(single_sides), 2)
 
     def test_new_launches_use_fresh_seeds_and_explicit_seed_is_repeatable(self):
         from unittest.mock import patch, Mock

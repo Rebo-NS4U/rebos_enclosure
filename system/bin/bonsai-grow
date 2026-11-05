@@ -407,7 +407,9 @@ def branch_graph(seed):
         add((centers[11], 7), (centers[-1] + wind*1.2, 2.7),
             17, .85, leader=True)
     low_rng = random.Random(f'{seed}:lower-shoots')
-    for depth, direction in ((3, wind), (5, -wind)):
+    lower_count = low_rng.choice((0, 1, 2))
+    lower_nodes = low_rng.sample(((3, wind), (5, -wind)), lower_count)
+    for depth, direction in lower_nodes:
         origin = (centers[depth], 18-depth)
         target = (origin[0] + direction*low_rng.uniform(5,6.5),
                   origin[1] - low_rng.uniform(1.5,2))
