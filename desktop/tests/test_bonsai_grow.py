@@ -377,7 +377,7 @@ class BonsaiGrowTests(unittest.TestCase):
     def test_shallow_main_branches_cannot_form_long_shelves(self):
         for seed in range(80):
             for branch in bonsai.branch_graph(seed):
-                if branch['parent'] is not None or branch['leader']:
+                if branch['parent'] is not None or branch['leader'] or branch.get('lower'):
                     continue
                 x,y = branch['start']
                 tx,ty = branch['end']
@@ -428,6 +428,8 @@ class BonsaiGrowTests(unittest.TestCase):
                 self.assertGreater(branch['length'], 4)
                 self.assertLess(branch['length'], 5.3)
                 self.assertEqual(branch['width'], .55)
+                self.assertLessEqual(abs(branch['start'][1]-branch['end'][1]), .35+1e-8)
+                self.assertLessEqual(branch['curve'], .15)
                 self.assertGreaterEqual(branch['start'][1], 13)
                 depth = round(18-branch['start'][1])
                 self.assertGreaterEqual(branch['born'], (depth-1)/.7)
