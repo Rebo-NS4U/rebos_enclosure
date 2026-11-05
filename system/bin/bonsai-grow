@@ -909,8 +909,6 @@ def seat_tree_in_pot(canvas, days):
             if 17 < x < 37 and canvas[18][x][0] == ' ':
                 canvas[18][x] = (glyph,'wood')
     # The upward stroke joins the root base to the pot lip without a gap.
-    canvas[18][17] = ('╱','pot')
-    canvas[18][37] = ('╲','pot')
     canvas[18][27] = ('│','wood')
     canvas[19][27] = ('┴','pot')
 
