@@ -646,7 +646,7 @@ class BonsaiGrowTests(unittest.TestCase):
                 self.assertEqual(body[18][27],'│')
                 self.assertEqual(body[19][27],'┴')
                 self.assertEqual((body[18][17],body[18][37]),('╱','╲'))
-                self.assertTrue(all(char != ' ' for char in body[18][18:37]))
+                self.assertTrue(all(char == ' ' for char in body[18][18:22]+body[18][33:37]))
                 self.assertEqual((body[19][16],body[19][38]),('╭','╮'))
         self.assertTrue({'old_oak','twisted_juniper','broom','forked'} <= seen)
 
