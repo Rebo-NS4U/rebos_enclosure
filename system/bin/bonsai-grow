@@ -228,24 +228,27 @@ def juvenile_foliage(days, seed):
     centers = trunk_path(seed, 'informal')
     height = min(len(centers), 2 + int(days * .7))
     cells = []
-    for depth in range(1, height, 4):
-        born = max(0, (depth - 1) / .7)
+    # Keep the original pair with the leader; a second pair follows behind.
+    for cohort, born in enumerate((0, 6)):
+        depth = height - 1 - cohort * 4
+        if days < born or depth < 1:
+            continue
         age = days - born
         x, y = round(centers[depth]), 18 - depth
         for side in (-1, 1):
             # A short shoot extends outward; its leaves follow the terminal bud.
             reach = min(5, 3 + int(age * .4))
             tip_x, tip_y = x + side * (reach - 1), y - 1
-            tone = (depth // 2 + (side > 0)) % 3
+            tone = (cohort + (side > 0)) % 3
             leaves = []
             for index, (dx, dy, delay) in enumerate(((0, -1, 0), (1, 0, 2))):
-                rng = random.Random(f'{seed}:juvenile:{depth}:{side}:{index}')
-                shed = min(29, 20 + depth * .4 + rng.uniform(0, 2))
+                rng = random.Random(f'{seed}:juvenile:{cohort}:{side}:{index}')
+                shed = min(29, 24 + cohort * 1.5 + rng.uniform(0, 2))
                 if age < delay or days >= shed:
                     continue
                 unfold = age - delay
                 glyph = '·' if unfold < .5 else '•' if unfold < 2.5 else '●'
-                tone = (depth // 2 + (side > 0)) % 3
+                tone = (cohort + (side > 0)) % 3
                 shade = 2 if dy < 0 else 1
                 leaves.append((tip_x + side * dx, tip_y + dy, born + delay,
                                glyph, f'leaf{tone * 3 + shade}'))
@@ -403,7 +406,8 @@ def specimen(seed, days=0, style='informal'):
 
 def cover_crown_wood(canvas):
     """Hide twig strokes inside visible leaf sprays without adding more leaves."""
-    covered = []
+    covered = set()
+    exposed = set()
     for y, row in enumerate(canvas):
         for x, (glyph, ink) in enumerate(row):
             if ink not in ('wood', 'woodlight', 'bark'):
@@ -413,8 +417,19 @@ def cover_crown_wood(canvas):
                 for ny in range(max(0, y - 1), min(len(canvas), y + 2))
                 for nx in range(max(0, x - 1), min(len(row), x + 2)))
             if neighbors >= (5 if ink == 'bark' else 2):
-                covered.append((x, y))
-    for x, y in covered:
+                covered.add((x, y))
+            elif glyph.strip():
+                exposed.add((x, y))
+    # Let a visible branch enter a spray for one cell. An isolated stroke
+    # inside the foliage has no exposed supporting segment and stays hidden.
+    anchors = {(x, y) for x, y in exposed
+               if any((x + dx, y + dy) in exposed
+                      for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1)))}
+    junctions = {(x, y) for x, y in covered
+                 if any((x + dx, y + dy) in anchors
+                        for dx in (-1, 0, 1) for dy in (-1, 0, 1)
+                        if dx or dy)}
+    for x, y in covered - junctions:
         canvas[y][x] = (' ', '')
 
 

@@ -138,6 +138,31 @@ class BonsaiGrowTests(unittest.TestCase):
         self.assertEqual(canvas[5][2], ('│', 'wood'))
         self.assertEqual(sum(ink.startswith('leaf') for row in canvas for _, ink in row), 2)
 
+    def test_starting_leaves_rise_with_the_leader(self):
+        for seed in range(24):
+            heights = []
+            for day in (0, 3, 7, 14):
+                cells = bonsai.juvenile_foliage(day, seed)
+                first = next(cell for cell in cells if cell[4].startswith('leaf'))
+                stem_tip = min(cell[1] for cell in bonsai.stem(day, seed))
+                self.assertEqual(first[1], stem_tip - 1)
+                heights.append(first[1])
+                self.assertLessEqual(sum(cell[4].startswith('leaf') for cell in cells), 8)
+            self.assertTrue(all(a > b for a, b in zip(heights, heights[1:])))
+
+    def test_supported_foliage_intersection_stays_visible(self):
+        canvas = [[(' ', '') for _ in range(8)] for _ in range(8)]
+        for y in (2, 3, 4):
+            canvas[y][2] = ('│', 'wood')
+        canvas[1][2] = ('●', 'leaf1')
+        canvas[2][3] = ('◆', 'leaf2')
+        canvas[2][6] = ('╱', 'wood')
+        canvas[1][6] = ('●', 'leaf1')
+        canvas[2][7] = ('◆', 'leaf2')
+        bonsai.cover_crown_wood(canvas)
+        self.assertEqual(canvas[2][2], ('│', 'wood'))
+        self.assertEqual(canvas[2][6], (' ', ''))
+
     def test_preview_does_not_create_growth_state(self):
         with tempfile.TemporaryDirectory() as directory:
             result = subprocess.run([str(SOURCE), '--preview', '30', '--seed', '42', '--plain'],
