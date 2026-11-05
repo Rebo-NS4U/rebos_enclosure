@@ -413,6 +413,20 @@ class BonsaiGrowTests(unittest.TestCase):
             bonsai.space_bark_shading(again, seed)
             self.assertEqual(again, canvas)
 
+    def test_small_lower_branches_are_short_and_supported(self):
+        for seed in range(48):
+            graph = bonsai.branch_graph(seed)
+            lower = [branch for branch in graph if branch.get('lower')]
+            self.assertEqual(len(lower), 2)
+            for branch in lower:
+                self.assertIsNone(branch['parent'])
+                self.assertLess(branch['length'], 5.5)
+                self.assertLessEqual(branch['width'], .55)
+                self.assertGreaterEqual(branch['start'][1], 13)
+                depth = round(18-branch['start'][1])
+                self.assertGreaterEqual(branch['born'], (depth-1)/.7)
+                self.assertFalse(any(child['parent'] == graph.index(branch) for child in graph))
+
     def test_new_launches_use_fresh_seeds_and_explicit_seed_is_repeatable(self):
         from unittest.mock import patch, Mock
         with patch('sys.stdout', Mock(isatty=lambda: True)), \

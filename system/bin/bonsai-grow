@@ -355,10 +355,10 @@ def branch_graph(seed):
     directions = {1 if x + shift >= centers[depth] else -1
                   for depth, x, y, born in layout[:3]}
     one_sided = len(directions) == 1
-    def add(start, end, born, width, parent=None, attachment=0, level=0, leader=False):
+    def add(start, end, born, width, parent=None, attachment=0, level=0, leader=False, lower=False):
         # Stagger crown-tip heights instead of clipping every twig to one roof.
         ceiling = rng.uniform(2.7, 3.1) if leader else rng.uniform(3.2, 5.2)
-        end = (max(9, min(47, end[0])), max(ceiling, min(14, end[1])))
+        end = (max(9, min(47, end[0])), max(ceiling, min(15 if lower else 14, end[1])))
         if level == 0 and not leader:
             # A shallow upper limb must stay short; it cannot become a shelf.
             run_limit = 1.5 + 3*max(0, start[1]-end[1])
@@ -372,10 +372,10 @@ def branch_graph(seed):
         length = math.hypot(end[0]-start[0], end[1]-start[1])
         branch = dict(start=start, end=end, born=born, width=width,
                       parent=parent, attachment=attachment, length=length,
-                      curve=rng.uniform(.15, .7), level=level, leader=leader)
+                      curve=rng.uniform(.15, .7), level=level, leader=leader, lower=lower)
         index = len(branches)
         branches.append(branch)
-        if level >= (1 if one_sided else 2) or length < 3:
+        if lower or level >= (1 if one_sided else 2) or length < 3:
             return
         # One stronger continuation and a shorter lateral fork, at unequal nodes.
         for child, fraction in enumerate((rng.uniform(.7, .95), rng.uniform(.4, .7))):
@@ -406,6 +406,12 @@ def branch_graph(seed):
         # Give the swept lower body a distinct vertical continuation and crown.
         add((centers[11], 7), (centers[-1] + wind*1.2, 2.7),
             17, .85, leader=True)
+    low_rng = random.Random(f'{seed}:lower-shoots')
+    for depth, direction in ((3, wind), (5, -wind)):
+        origin = (centers[depth], 18-depth)
+        target = (origin[0] + direction*low_rng.uniform(3.5,5),
+                  origin[1] - low_rng.uniform(1.2,1.7))
+        add(origin, target, (depth-1)/.7 + .3, .55, lower=True)
     return branches
 
 
@@ -458,6 +464,8 @@ def natural_specimen(seed, days):
         cx, cy = branch['end']
         rng = random.Random(f'{seed}:terminal:{index}')
         rx, ry = (rng.uniform(2.6,3.8), rng.uniform(1.3,1.9)) if compact else (rng.uniform(3.2,5), rng.uniform(1.6,2.4))
+        if branch.get('lower', False):
+            rx, ry = rng.uniform(1.4,2), rng.uniform(.65,.9)
         arrival = branch['born'] + branch['length']*.55
         candidates = {}
         for y in range(max(1,math.floor(cy-ry)), min(18,math.ceil(cy+ry))+1):
