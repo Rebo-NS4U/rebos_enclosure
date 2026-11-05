@@ -411,9 +411,9 @@ def branch_graph(seed):
     lower_nodes = low_rng.sample(((3, wind), (5, -wind)), lower_count)
     for depth, direction in lower_nodes:
         origin = (centers[depth], 18-depth)
-        target = (origin[0] + direction*low_rng.uniform(5,6.5),
-                  origin[1] - low_rng.uniform(1.5,2))
-        add(origin, target, (depth-1)/.7 + .3, .7, lower=True)
+        target = (origin[0] + direction*low_rng.uniform(7.5,9.5),
+                  origin[1] - low_rng.uniform(2.5,3.2))
+        add(origin, target, (depth-1)/.7 + .3, .9, lower=True)
     return branches
 
 
@@ -467,7 +467,7 @@ def natural_specimen(seed, days):
         rng = random.Random(f'{seed}:terminal:{index}')
         rx, ry = (rng.uniform(2.6,3.8), rng.uniform(1.3,1.9)) if compact else (rng.uniform(3.2,5), rng.uniform(1.6,2.4))
         if branch.get('lower', False):
-            rx, ry = rng.uniform(1.4,2), rng.uniform(.65,.9)
+            rx, ry = rng.uniform(2,2.8), rng.uniform(.9,1.25)
         arrival = branch['born'] + branch['length']*.55
         candidates = {}
         for y in range(max(1,math.floor(cy-ry)), min(18,math.ceil(cy+ry))+1):

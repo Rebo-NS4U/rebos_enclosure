@@ -413,7 +413,7 @@ class BonsaiGrowTests(unittest.TestCase):
             bonsai.space_bark_shading(again, seed)
             self.assertEqual(again, canvas)
 
-    def test_small_lower_branches_are_short_and_supported(self):
+    def test_optional_lower_branches_are_substantial_and_supported(self):
         counts = set()
         single_sides = set()
         for seed in range(48):
@@ -425,9 +425,9 @@ class BonsaiGrowTests(unittest.TestCase):
                 single_sides.add(lower[0]['start'][1])
             for branch in lower:
                 self.assertIsNone(branch['parent'])
-                self.assertGreater(branch['length'], 5)
-                self.assertLess(branch['length'], 7)
-                self.assertLessEqual(branch['width'], .7)
+                self.assertGreater(branch['length'], 7.5)
+                self.assertLess(branch['length'], 10.1)
+                self.assertEqual(branch['width'], .9)
                 self.assertGreaterEqual(branch['start'][1], 13)
                 depth = round(18-branch['start'][1])
                 self.assertGreaterEqual(branch['born'], (depth-1)/.7)
