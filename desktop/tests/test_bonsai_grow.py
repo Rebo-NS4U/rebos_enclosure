@@ -126,7 +126,7 @@ class BonsaiGrowTests(unittest.TestCase):
             bend_positions.add(max(range(1, 14), key=lambda i: abs(path[i] - 27)))
         self.assertGreaterEqual(len(silhouettes), 35)
         self.assertEqual({bonsai.growth_pattern(seed)[0] for seed in range(48)},
-                         {'upright', 'slant', 'bowed', 'windswept', 'recurved'})
+                         {'upright', 'slant', 'bowed', 'forked', 'recurved'})
         self.assertGreater(len(bend_positions), 3)
 
     def test_cleanup_removes_detached_sticks_and_leaves(self):
@@ -283,17 +283,13 @@ class BonsaiGrowTests(unittest.TestCase):
             self.assertTrue(all(born >= (depth - 1) / .7 for depth, x, y, born in layout))
         self.assertGreater(len(layouts), 40)
 
-    def test_branch_habits_include_swept_and_opposing_arrangements(self):
-        swept = opposing = False
+    def test_branch_habits_keep_opposing_crown_support(self):
         for seed in range(80):
             trunk = bonsai.trunk_path(seed)
-            shift = (trunk[-1] - 27) * .6
-            directions = [1 if x + shift >= trunk[depth] else -1
-                          for depth, x, y, born in bonsai.branch_layout(seed)[:3]]
-            swept |= len(set(directions)) == 1
-            opposing |= len(set(directions)) > 1
-        self.assertTrue(swept)
-        self.assertTrue(opposing)
+            shift = (trunk[-1]-27)*.6
+            directions = {1 if x+shift >= trunk[depth] else -1
+                          for depth,x,y,born in bonsai.branch_layout(seed)[:3]}
+            self.assertEqual(directions, {-1,1})
 
     def test_branch_hierarchy_has_supported_unequal_tapered_forks(self):
         for seed in range(48):
@@ -316,33 +312,30 @@ class BonsaiGrowTests(unittest.TestCase):
                 self.assertNotEqual(children[0]['width'], children[1]['width'])
                 self.assertNotEqual(children[0]['attachment'], children[1]['attachment'])
 
-    def test_one_sided_trees_keep_a_tall_upper_leader(self):
+    def test_forked_type_replaces_narrow_one_direction_trees(self):
         checked = 0
-        for seed in range(80):
-            trunk = bonsai.trunk_path(seed)
-            shift = (trunk[-1]-27)*.6
-            directions = {1 if x+shift >= trunk[depth] else -1
-                          for depth, x, y, born in bonsai.branch_layout(seed)[:3]}
-            if len(directions) != 1:
+        for seed in range(120):
+            habit, side = bonsai.growth_pattern(seed)
+            self.assertNotEqual(habit, 'windswept')
+            if habit != 'forked':
                 continue
             checked += 1
-            graph = bonsai.branch_graph(seed)
-            leaders = [branch for branch in graph if branch['leader'] and branch['parent'] is None]
-            self.assertEqual(len(leaders), 1)
-            leader = leaders[0]
-            self.assertGreaterEqual(leader['start'][1]-leader['end'][1], 3.8)
-            self.assertLessEqual(abs(leader['end'][0]-trunk[-1]), 1.3)
-            leaves = [cell for cell in bonsai.specimen(seed, 30)
+            trunk = bonsai.trunk_path(seed)
+            shift = (trunk[-1]-27)*.6
+            arms = bonsai.branch_layout(seed)[:2]
+            directions = [1 if x+shift > trunk[depth] else -1 for depth,x,y,born in arms]
+            self.assertEqual(set(directions), {-1, 1})
+            self.assertGreater(abs(arms[0][1]-arms[1][1]), 14)
+            leaves = [cell for cell in bonsai.specimen(seed,30)
                       if cell[4].startswith('leaf') and cell[2] <= 31]
-            self.assertGreaterEqual(sum(cell[1] <= 4 for cell in leaves), 20)
-            self.assertTrue(all(1 < cell[0] < 55 for cell in leaves))
-        self.assertGreaterEqual(checked, 10)
+            self.assertGreater(max(cell[0] for cell in leaves)-min(cell[0] for cell in leaves), 18)
+        self.assertGreater(checked, 10)
 
     def test_directional_trunks_do_not_jitter_backwards(self):
         checked = 0
         for seed in range(120):
             habit, side = bonsai.growth_pattern(seed)
-            if habit not in ('slant', 'windswept'):
+            if habit != 'slant':
                 continue
             checked += 1
             path = bonsai.trunk_path(seed)
@@ -359,26 +352,6 @@ class BonsaiGrowTests(unittest.TestCase):
                 turn = path[min(depth+1,14)]-path[depth]
                 expected = '╱' if turn > .2 else '╲' if turn < -.2 else '╎'
                 self.assertEqual(glyph, expected)
-
-    def test_one_direction_forms_keep_compact_tapered_proportions(self):
-        checked = 0
-        for seed in range(120):
-            habit, side = bonsai.growth_pattern(seed)
-            trunk = bonsai.trunk_path(seed)
-            if habit == 'windswept':
-                self.assertLessEqual(abs(trunk[-1]-27), 5)
-            graph = bonsai.branch_graph(seed)
-            if not any(branch['leader'] for branch in graph):
-                continue
-            checked += 1
-            self.assertLessEqual(max(branch['level'] for branch in graph), 1)
-            for branch in graph:
-                if branch['leader']:
-                    continue
-                x,y = branch['end']
-                center = trunk[min(14, max(0, round(18-y)))]
-                self.assertLessEqual(abs(x-center), 3.5+max(0,y-3)*.4 + 1e-8)
-        self.assertGreater(checked, 10)
 
     def test_final_silhouette_is_connected_throughout_growth(self):
         for seed in range(64):
