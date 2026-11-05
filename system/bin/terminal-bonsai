@@ -66,8 +66,12 @@ def refine_trunk(lines):
                 glyph = "╱" if depth == 0 or above_left > left else "╲" if above_left < left else "│"
             elif x == right:
                 glyph = "╲" if depth == 0 or above_right < right else "╱" if above_right > right else "│"
-            elif right - left >= 3 and x == left + 1:
-                glyph, code = "│", b"woodlight"
+            else:
+                # Fine longitudinal fissures follow the bend of the trunk.
+                # Keep their contrast low and leave breaks in the grain.
+                ridge = x - left
+                glyph = ("▏", "╵", " ", "▏", " ")[(depth + ridge * 2) % 5]
+                code = b"barklit" if ridge == 1 else b"barkshade"
             lines[y][x] = (code, glyph.encode("utf-8"))
 
 
@@ -192,6 +196,13 @@ def main():
             if code in (b"wood", b"woodlight") or char in (b"/", b"\\", b"|", b"_", b"~"):
                 glyph = {"/": "╱", "\\": "╲", "_": "─", "~": "─", "|": "│"}.get(glyph, glyph)
                 ink = "\033[38;2;105;79;62m" if code in (b"93", b"woodlight") else "\033[38;2;85;63;49m"
+            if code in (b"barklit", b"barkshade"):
+                # Warm light on the left, a recessed furrow on the right.
+                # A quiet ground color gives the trunk volume between ridges.
+                ink = ("\033[48;2;66;49;38m\033[38;2;101;77;58m" if code == b"barklit"
+                       else "\033[48;2;57;43;34m\033[38;2;77;58;44m")
+            else:
+                ink = "\033[49m" + ink
             if ink != previous:
                 text.append(ink)
                 previous = ink
