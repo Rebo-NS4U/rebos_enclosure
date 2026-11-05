@@ -126,7 +126,7 @@ class BonsaiGrowTests(unittest.TestCase):
             bend_positions.add(max(range(1, 14), key=lambda i: abs(path[i] - 27)))
         self.assertGreaterEqual(len(silhouettes), 35)
         self.assertEqual({bonsai.growth_pattern(seed)[0] for seed in range(120)},
-                         {'upright', 'slant', 'bowed', 'forked', 'recurved', 'broom'})
+                         {'upright', 'slant', 'bowed', 'forked', 'recurved', 'broom', 'old_oak', 'twisted_juniper'})
         self.assertGreater(len(bend_positions), 3)
 
     def test_cleanup_removes_detached_sticks_and_leaves(self):
@@ -602,6 +602,38 @@ class BonsaiGrowTests(unittest.TestCase):
                 x,y = branch['end']
                 self.assertGreaterEqual(y+1e-8,2.8+(abs(x-trunk[-1])/6)**1.4)
         self.assertGreater(checked,15)
+
+    def test_old_oak_has_a_short_stout_base_and_unequal_main_limbs(self):
+        checked = 0
+        for seed in range(160):
+            if bonsai.growth_pattern(seed)[0] != 'old_oak':
+                continue
+            checked += 1
+            wood = bonsai.stem(30,seed)
+            self.assertEqual(min(cell[1] for cell in wood),11)
+            roots = [branch for branch in bonsai.branch_graph(seed) if branch['parent'] is None]
+            self.assertEqual(len(roots),3)
+            self.assertEqual([branch['width'] for branch in roots],[1.25,1.1,.9])
+            self.assertTrue(all(branch['start'][1] >= 11 for branch in roots))
+        self.assertGreater(checked,10)
+
+    def test_twisted_juniper_has_three_or_four_supported_pad_groups(self):
+        checked = 0
+        for seed in range(160):
+            if bonsai.growth_pattern(seed)[0] != 'twisted_juniper':
+                continue
+            checked += 1
+            path = bonsai.trunk_path(seed)
+            self.assertGreater(max(path)-min(path),3.5)
+            graph = bonsai.branch_graph(seed)
+            parents = {branch['parent'] for branch in graph if branch['parent'] is not None}
+            pads = [branch for i,branch in enumerate(graph) if i not in parents
+                    and (branch['parent'] is None or branch.get('pad_tip'))]
+            roots = [branch for branch in graph if branch['parent'] is None]
+            self.assertIn(len(pads),(3,4))
+            self.assertEqual(len(pads),len(roots))
+            self.assertLessEqual(max(branch['level'] for branch in graph),1)
+        self.assertGreater(checked,10)
 
     def test_new_launches_use_fresh_seeds_and_explicit_seed_is_repeatable(self):
         from unittest.mock import patch, Mock
