@@ -109,10 +109,9 @@ class BonsaiGrowTests(unittest.TestCase):
                 self.assertGreaterEqual(len(base), 2)
                 tip_y = min(cell[1] for cell in wood)
                 self.assertEqual(sum(cell[1] == tip_y for cell in wood), 1)
-            # Main branches have bark-filled thickness soon after emergence.
-            branch = bonsai.specimen(seed, 14)
-            self.assertTrue(any(ink == 'bark' and glyph in '▒╎'
-                                for x, y, born, glyph, ink in branch))
+            # Side branches remain visibly subordinate to the substantial trunk.
+            graph = bonsai.branch_graph(seed)
+            self.assertTrue(all(branch['width'] < 1.3 for branch in graph))
 
     def test_trunks_vary_without_disconnected_rows(self):
         silhouettes = set()
@@ -338,6 +337,28 @@ class BonsaiGrowTests(unittest.TestCase):
             self.assertGreaterEqual(sum(cell[1] <= 4 for cell in leaves), 20)
             self.assertTrue(all(1 < cell[0] < 55 for cell in leaves))
         self.assertGreaterEqual(checked, 10)
+
+    def test_directional_trunks_do_not_jitter_backwards(self):
+        checked = 0
+        for seed in range(120):
+            habit, side = bonsai.growth_pattern(seed)
+            if habit not in ('slant', 'windswept'):
+                continue
+            checked += 1
+            path = bonsai.trunk_path(seed)
+            self.assertTrue(all((b-a)*side >= 0 for a,b in zip(path,path[1:])))
+        self.assertGreater(checked, 20)
+
+    def test_trunk_grain_tracks_its_local_bend(self):
+        for seed in range(48):
+            path = bonsai.trunk_path(seed)
+            for x,y,born,glyph,ink in bonsai.stem(30,seed):
+                if ink != 'bark' or glyph not in '╱╲╎':
+                    continue
+                depth = 18-y
+                turn = path[min(depth+1,14)]-path[depth]
+                expected = '╱' if turn > .2 else '╲' if turn < -.2 else '╎'
+                self.assertEqual(glyph, expected)
 
     def test_new_launches_use_fresh_seeds_and_explicit_seed_is_repeatable(self):
         from unittest.mock import patch, Mock

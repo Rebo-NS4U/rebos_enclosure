@@ -89,8 +89,8 @@ def trunk_path(seed, style='informal'):
             elif pattern == 'windswept':
                 bend = .25*t + .75*t*t
             else:
-                bend = math.sin(t * math.pi * 1.65) * .75
-            x = 27 + side * amplitude * bend + rng.uniform(-.12, .12) * t
+                bend = math.sin(t * math.pi * 1.35) * .7 + .15*t
+            x = 27 + side * amplitude * bend
             path.append(x if not path else max(path[-1]-.95, min(path[-1]+.95, x)))
         return path
     lean = rng.uniform(-5, 5)
@@ -209,7 +209,10 @@ def stem(days, seed=42, style='informal'):
                 ink = 'bark'
                 if style == 'informal':
                     grain = random.Random(f'{seed}:bark:{depth}:{x}')
-                    glyph = grain.choices(('░', '▒', '╎', '╱'), (2, 6, 1, 1))[0]
+                    # Grain follows the trunk tangent instead of random slashes.
+                    turn = centers[min(depth + 1, height - 1)] - centers[depth]
+                    grain_stroke = '╱' if turn > .2 else '╲' if turn < -.2 else '╎'
+                    glyph = grain.choices(('░', '▒', grain_stroke), (3, 6, 1))[0]
             cells.append((x, y, 0, glyph, ink))
     # A small growing tip is visible even during the bare-stem phase.
     tip = '╮' if centers[height - 1] >= centers[max(0, height - 2)] else '╭'
@@ -370,11 +373,11 @@ def branch_graph(seed):
         ty += jitter.uniform(-.3, .3)
         if one_sided and depth >= 11:
             tx = centers[depth] + (tx-centers[depth]) * .55
-        add((centers[depth], 18-depth), (tx, ty), born, max(.7, 2.6*(1-depth/19)))
+        add((centers[depth], 18-depth), (tx, ty), born, max(.55, 1.45*(1-depth/24)))
     if one_sided:
         # Give the swept lower body a distinct vertical continuation and crown.
         add((centers[11], 7), (centers[-1] + wind*1.2, 2.7),
-            17, 1.25, leader=True)
+            17, .85, leader=True)
     return branches
 
 
@@ -392,7 +395,7 @@ def natural_specimen(seed, days):
             px, py = branch_point(branch, t)
             age = max(0, days-birth)
             radius = min(branch['width'], (1.4 if branch['level'] == 0 else .4)+math.sqrt(age)*.25)*(1-t)**.7
-            vertical_scale = 1.15 if branch['level'] == 0 else 1.8
+            vertical_scale = 1.5 if branch['level'] == 0 else 1.8
             for y in range(math.floor(py-radius), math.ceil(py+radius)+1):
                 for x in range(math.floor(px-radius), math.ceil(px+radius)+1):
                     if (x-px)**2 + ((y-py)*vertical_scale)**2 <= radius**2:
