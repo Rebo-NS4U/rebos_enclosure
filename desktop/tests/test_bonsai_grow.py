@@ -46,7 +46,8 @@ class BonsaiGrowTests(unittest.TestCase):
             for day in (0, 3, 7, 14):
                 cells = bonsai.juvenile_foliage(day, seed)
                 leaves = [cell for cell in cells if cell[4].startswith('leaf')]
-                self.assertGreaterEqual(len(leaves), 6)
+                self.assertGreaterEqual(len(leaves), 2)
+                self.assertLessEqual(len(leaves), 16)
                 self.assertGreaterEqual(len(leaves), previous_count)
                 previous_count = len(leaves)
                 stem = bonsai.stem(day, seed)
@@ -58,6 +59,19 @@ class BonsaiGrowTests(unittest.TestCase):
                 image = bonsai.render(day, seed, False, 80, ['#85b470'] * 3)
                 self.assertTrue(any(glyph in image for glyph in '◆●•'))
             self.assertEqual(bonsai.juvenile_foliage(30, seed), [])
+
+    def test_starting_wood_has_body_and_tapers(self):
+        for seed in range(24):
+            for day in (0, 3, 7):
+                wood = bonsai.stem(day, seed)
+                base = {x for x, y, *_ in wood if y == 18}
+                self.assertGreaterEqual(len(base), 2)
+                tip_y = min(cell[1] for cell in wood)
+                self.assertEqual(sum(cell[1] == tip_y for cell in wood), 1)
+            # Main branches have bark-filled thickness soon after emergence.
+            branch = bonsai.specimen(seed, 14)
+            self.assertTrue(any(ink == 'bark' and glyph in '▒╎'
+                                for x, y, born, glyph, ink in branch))
 
     def test_preview_does_not_create_growth_state(self):
         with tempfile.TemporaryDirectory() as directory:

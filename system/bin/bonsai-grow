@@ -174,6 +174,9 @@ def stem(days, seed=42, style='informal'):
         # Older wood thickens first; the growing tip always stays narrow.
         girth = min(6, max(0, int((days - depth * .85) / 5)))
         if style == 'informal':
+            # Give the young stem a visible body below its tapered tip.
+            starter_girth = 2 if depth < height - 2 else 1 if depth < height - 1 else 0
+            girth = max(girth, starter_girth)
             girth = min(girth, max(0, round(6 * (1 - depth / 15)**.9)))
         girth = min(girth, (height - depth - 1) * 2)
         if depth == 0 and days >= 14:
@@ -222,15 +225,14 @@ def juvenile_foliage(days, seed):
     centers = trunk_path(seed, 'informal')
     height = min(len(centers), 2 + int(days * .7))
     cells = []
-    for depth in range(1, height, 2):
+    for depth in range(1, height, 4):
         born = max(0, (depth - 1) / .7)
         age = days - born
         x, y = round(centers[depth]), 18 - depth
         for side in (-1, 1):
             # Short petioles connect every spray to an established stem node.
             cells.append((x + side, y, born, '╱' if side > 0 else '╲', 'woodlight'))
-            offsets = ((1, -1, 0), (2, -1, 0), (2, 0, 0),
-                       (3, -1, 1.5), (3, 0, 2.5))
+            offsets = ((2, -1, 0), (2, 0, 2))
             for dx, dy, delay in offsets:
                 rng = random.Random(f'{seed}:juvenile:{depth}:{side}:{dx}:{dy}')
                 # Individual leaves retire gradually as the permanent pads fill.
@@ -275,7 +277,8 @@ def specimen(seed, days=0, style='informal'):
                 # Annual girth develops after the shoot extends. Older lower
                 # limbs have larger collars; tips and secondary twigs stay fine.
                 wood_age = max(0, days - birth - 3)
-                radius = min(.9 if twig else capacity, .65 * math.sqrt(wood_age)) * (1-t)**.55
+                starter_radius = .35 if twig else 1.25
+                radius = min(.9 if twig else capacity, max(starter_radius, .65 * math.sqrt(wood_age))) * (1-t)**.55
                 # Give main limbs a visible bark-filled body across several
                 # terminal rows; only the fine twigs retain compressed girth.
                 vertical_scale = 1.8 if twig else 1.15
