@@ -86,14 +86,16 @@ class BonsaiTests(unittest.TestCase):
             self.assertLess(time.time() - state['planted'], 5)
 
     def test_live_restores_terminal_on_exit_and_greeting_returns_immediately(self):
-        for live in (False, True):
+        for flags in ([], ['--current'], ['--live']):
+            live = flags == ['--live']
             with tempfile.TemporaryDirectory() as home:
                 master, slave = pty.openpty()
                 proc = None
                 try:
                     env = {**os.environ, 'TERM': 'xterm', 'XDG_STATE_HOME': home,
                            'COLUMNS': '80', 'LINES': '24', 'REDUCE_MOTION': '0'}
-                    proc = subprocess.Popen([str(SOURCE)] + (['--live'] if live else []),
+                    original = bonsai.load_tree(home, now=time.time()-43200, seed=42)
+                    proc = subprocess.Popen([str(SOURCE)] + flags,
                                             stdin=slave, stdout=slave, stderr=slave, env=env)
                     os.write(master, b'queued-command\n')
                     output = b''
@@ -108,6 +110,11 @@ class BonsaiTests(unittest.TestCase):
                             proc.send_signal(signal.SIGTERM)
                             stopped = True
                     self.assertEqual(proc.wait(timeout=1), 0)
+                    saved = json.loads((Path(home) / 'terminal-bonsai/tree.json').read_text())
+                    if not flags:
+                        self.assertGreater(saved['planted'], original['planted'])
+                    else:
+                        self.assertEqual(saved, original)
                     if live:
                         self.assertIn(b'\x1b[?1049h', output)
                         self.assertIn(b'\x1b[?25h\x1b[?1049l', output)

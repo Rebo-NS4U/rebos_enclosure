@@ -233,6 +233,7 @@ def main():
     parser.add_argument('--seed', type=int, help='Preview a reproducible tree (with --new: plant this seed)')
     parser.add_argument('--age', type=float, help='Preview maturity from 0 to 1; requires --seed')
     parser.add_argument('--new', action='store_true', help='Plant a fresh tree and restart its 24-hour growth')
+    parser.add_argument('--current', action='store_true', help='Show saved growth without planting again')
     parser.add_argument('--live', action='store_true', help='Watch saved growth; Ctrl+C returns to the shell')
     parser.add_argument('--no-animation', action='store_true', help='Print the current growth once')
     parser.add_argument('--plain', action='store_true', help='Export the current tree without colors or screen controls')
@@ -251,13 +252,15 @@ def main():
             palette.update(data)
     except (OSError, ValueError):
         pass
-    preview = args.seed is not None and not args.new
+    plant_new = args.new or not (args.live or args.current or args.plain
+                                 or args.no_animation or args.seed is not None)
+    preview = args.seed is not None and not plant_new
     if preview:
         saved = dict(seed=args.seed, planted=0)
     else:
         try:
             saved = load_tree(os.environ.get('XDG_STATE_HOME') or Path.home() / '.local/state',
-                              new=args.new, seed=args.seed)
+                              new=plant_new, seed=args.seed)
         except OSError as error:
             print(f'terminal-bonsai: cannot save growth: {error}', file=sys.stderr)
             return

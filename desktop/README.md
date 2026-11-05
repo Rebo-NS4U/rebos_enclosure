@@ -446,7 +446,8 @@ repairing login does not change that session's network permissions.
 The terminal bonsai greeting uses Python’s standard library. One saved tree grows over 24 real hours from its first planting, including time with terminals closed. New terminals immediately show its current age without delaying the prompt. Curved, tapered wood develops first, followed by staggered twig buds and shaded foliage pads. The specimen retains its shape across terminal sizes and stays mature until explicitly replanted.
 
 - `terminal-bonsai --live`: watch saved growth in a dedicated view, refreshed every 30 seconds; Ctrl+C returns to the shell. Greetings already printed in scrollback remain snapshots.
-- `terminal-bonsai --new`: plant another unique seed and restart the 24-hour clock.
+- `terminal-bonsai` (or `--new`): plant another unique seed and restart the 24-hour clock.
+- `terminal-bonsai --current`: show saved growth once; automatic Fish greetings use this so new terminals do not reset the tree.
 - `terminal-bonsai --seed 42 --age 0.5`: preview a reproducible tree at 12 hours without changing the saved specimen. Omit `--age` for a mature preview; combine `--new --seed 42` to plant it.
 - `terminal-bonsai --plain`: export current growth without colors or terminal controls.
 - `--no-animation` or `REDUCE_MOTION=1`: print once even when `--live` is supplied.
