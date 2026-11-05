@@ -1,0 +1,404 @@
+#!/usr/bin/env python3
+"""A persistent, additive terminal bonsai. No ncurses or background process."""
+import argparse
+import fcntl
+import json
+import math
+import os
+from pathlib import Path
+import random
+import re
+import shutil
+import sys
+import time
+
+
+def valid_palette(value):
+    return (isinstance(value, list) and len(value) == 3 and
+            all(isinstance(c, str) and re.fullmatch(r'#[0-9a-fA-F]{6}', c) for c in value))
+
+
+def wallpaper_palette():
+    """Capture wallpaper accents; saved trees never consult the wallpaper again."""
+    fallback = ['#85b470', '#b8ce93', '#67bca3']
+    cache = Path(os.environ.get('XDG_CACHE_HOME', Path.home() / '.cache'))
+    try:
+        data = json.loads((cache / 'rebos_shell/effective-palette.json').read_text())
+        accents = [data.get(key) for key in ('primary', 'secondary', 'tertiary')]
+        return accents if valid_palette(accents) else fallback
+    except (OSError, ValueError, AttributeError):
+        return fallback
+
+
+def preview_identity(seed):
+    directory = Path(os.environ.get('XDG_STATE_HOME', Path.home() / '.local/state')) / 'bonsai-grow'
+    try:
+        state = json.loads((directory / 'tree.json').read_text())
+        saved_seed, accents = state.get('seed'), state.get('palette')
+        if type(saved_seed) is int and valid_palette(accents):
+            return saved_seed if seed is None else seed, accents
+    except (OSError, ValueError, AttributeError):
+        pass
+    return 42 if seed is None else seed, wallpaper_palette()
+
+
+def age():
+    directory = Path(os.environ.get('XDG_STATE_HOME', Path.home() / '.local/state')) / 'bonsai-grow'
+    directory.mkdir(parents=True, exist_ok=True)
+    with (directory / 'lock').open('a') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        path = directory / 'tree.json'
+        if path.exists():
+            state = json.loads(path.read_text())
+        else:
+            state = {'born': time.time(), 'opens': 0, 'seed': random.SystemRandom().randrange(2**31)}
+        if (type(state.get('born')) not in (float, int) or
+                type(state.get('opens')) is not int or state['opens'] < 0 or
+                type(state.get('seed')) is not int):
+            raise ValueError('Invalid bonsai state')
+        # Older trees have no color snapshot; adopt the current wallpaper once.
+        if 'palette' not in state:
+            state['palette'] = wallpaper_palette()
+        if not valid_palette(state['palette']):
+            raise ValueError('Invalid saved palette')
+        state['opens'] += 1
+        temporary = directory / 'tree.json.tmp'
+        temporary.write_text(json.dumps(state) + '\n')
+        temporary.replace(path)
+    return (max(0, time.time() - state['born']) / 86400 + (state['opens'] - 1) / 12,
+            state['seed'], state['palette'])
+
+
+def trunk_path(seed, style='informal'):
+    """Seeded, smoothly joined bends; age never changes established wood."""
+    rng = random.Random(f'{seed}:trunk')
+    if style == 'informal':
+        # The reference rises left from flared roots, swells right through
+        # the middle, then turns back into the crown. Vary that silhouette.
+        mirror = rng.choice((-1, 1))
+        knots = [(0, 27), (4, 27 - mirror * rng.uniform(2.4, 3.2)),
+                 (8, 27 + mirror * rng.uniform(1.5, 2.5)),
+                 (12, 27 - mirror * rng.uniform(1.5, 2.5)),
+                 (14, 27 - mirror * rng.uniform(.3, 1.3))]
+        path = []
+        for depth in range(15):
+            segment = min(3, next((i for i in range(4) if depth <= knots[i+1][0]), 3))
+            d0, x0 = knots[segment]
+            d1, x1 = knots[segment+1]
+            t = (depth-d0)/(d1-d0)
+            x = x0 + (x1-x0)*t*t*(3-2*t)
+            path.append(x if not path else max(path[-1]-.95, min(path[-1]+.95, x)))
+        return path
+    lean = rng.uniform(-5, 5)
+    if style == 'slant':
+        lean = (-1 if lean < 0 else 1) * rng.uniform(4, 6)
+    depths = [0, *sorted(rng.sample(range(2, 13), rng.randint(2, 4))), 14]
+    knots = [(0, 27)]
+    for depth in depths[1:-1]:
+        if style == 'slant':
+            center = 27 + lean * (depth / 14)**.75 + rng.uniform(-.5, .5)
+        else:
+            center = 27 + lean * depth / 14 + rng.uniform(-3.5, 3.5)
+        knots.append((depth, center))
+    knots.append((14, 27 + lean))
+    path = []
+    segment = 0
+    for depth in range(15):
+        while depth > knots[segment + 1][0]:
+            segment += 1
+        d0, x0 = knots[segment]
+        d1, x1 = knots[segment + 1]
+        t = (depth - d0) / (d1 - d0)
+        center = x0 + (x1 - x0) * t * t * (3 - 2 * t)
+        if path:
+            # Keep neighboring rows connected even on strongly curved trunks.
+            center = max(path[-1] - .9, min(path[-1] + .9, center))
+        path.append(center)
+    return path
+
+
+def cascade_path(seed):
+    """Rise from the pot, curve outward, then descend beyond its rim."""
+    rng = random.Random(f'{seed}:cascade')
+    controls = ((27, 18), (27 + rng.uniform(-1, 1), 7 + rng.uniform(-1, 1)),
+                (42 + rng.uniform(-1, 1), 7 + rng.uniform(-1, 1)), (47, 17))
+    path = []
+    for depth in range(15):
+        t = depth / 14
+        weights = ((1 - t)**3, 3 * (1 - t)**2 * t, 3 * (1 - t) * t*t, t**3)
+        path.append(tuple(sum(p[axis] * w for p, w in zip(controls, weights)) for axis in (0, 1)))
+    return path
+
+
+def cascade_stem(days, seed):
+    path = cascade_path(seed)
+    height = min(len(path), 2 + int(days * .7))
+    wood = set()
+    for depth in range(height - 1):
+        x0, y0 = path[depth]
+        x1, y1 = path[depth + 1]
+        steps = max(1, math.ceil(math.hypot(x1 - x0, y1 - y0) * 3))
+        for step in range(steps + 1):
+            t = step / steps
+            x, y = x0 + (x1 - x0) * t, y0 + (y1 - y0) * t
+            age = max(0, days - (depth + t) * .85)
+            radius = min(1.8, age / 22, (height - 1 - depth - t) * .7)
+            wood.add((round(x), round(y)))
+            for cy in range(math.floor(y - radius), math.ceil(y + radius) + 1):
+                for cx in range(math.floor(x - radius * 1.4), math.ceil(x + radius * 1.4) + 1):
+                    if ((cx - x) / 1.4)**2 + (cy - y)**2 <= radius**2:
+                        wood.add((cx, cy))
+    cells = []
+    for x, y in sorted(wood):
+        interior = all(p in wood for p in ((x-1, y), (x+1, y), (x, y-1), (x, y+1)))
+        if interior:
+            glyph, ink = ('╵' if (x * 3 + y) % 9 == 0 else ' '), 'bark'
+        else:
+            nearest = min(range(height), key=lambda d: (path[d][0]-x)**2 + (path[d][1]-y)**2)
+            before, after = path[max(0, nearest-1)], path[min(height-1, nearest+1)]
+            dx, dy = after[0]-before[0], after[1]-before[1]
+            glyph = '│' if abs(dx) < abs(dy)*.6 else '─' if abs(dy) < abs(dx)*.35 else '╱' if dx*dy < 0 else '╲'
+            ink = 'wood'
+        cells.append((x, y, 0, glyph, ink))
+    return cells
+
+
+def stem(days, seed=42, style='informal'):
+    """A tapered trunk: length, girth, roots and bark develop at different rates."""
+    if style == 'semi-cascade':
+        return cascade_stem(days, seed)
+    centers = trunk_path(seed, style)
+    height = min(len(centers), 2 + int(days * .7))
+    contours = []
+    for depth in range(height):
+        # Older wood thickens first; the growing tip always stays narrow.
+        girth = min(6, max(0, int((days - depth * .85) / 5)))
+        if style == 'informal':
+            girth = min(girth, max(0, round(6 * (1 - depth / 15)**.9)))
+        girth = min(girth, (height - depth - 1) * 2)
+        if depth == 0 and days >= 14:
+            girth += 2
+        left = round(centers[depth] - girth / 2)
+        contours.append((left, left + girth))
+    cells = []
+    for depth, (left, right) in enumerate(contours):
+        upper = contours[min(depth + 1, height - 1)]
+        y = 18 - depth
+        if left == right:
+            below = centers[max(0, depth - 1)]
+            glyph = '╱' if centers[depth] > below + .3 else '╲' if centers[depth] < below - .3 else '│'
+            cells.append((left, y, 0, glyph, 'wood'))
+            continue
+        for x in range(left, right + 1):
+            if x == left:
+                glyph = '╱' if upper[0] > left else '╲' if upper[0] < left else '│'
+                ink = 'wood'
+            elif x == right:
+                glyph = '╲' if upper[1] < right else '╱' if upper[1] > right else '│'
+                ink = 'wood'
+            else:
+                # Quiet vertical grain and a few scars emerge on older bark.
+                glyph = '│' if (x + depth * 3) % 7 == 0 else '╵' if (x * 7 + depth) % 13 == 0 else ' '
+                ink = 'bark'
+                if style == 'informal':
+                    grain = random.Random(f'{seed}:bark:{depth}:{x}')
+                    glyph = grain.choices(('░', '▒', '╎', '╱'), (2, 6, 1, 1))[0]
+            cells.append((x, y, 0, glyph, ink))
+    # A small growing tip is visible even during the bare-stem phase.
+    tip = '╮' if centers[height - 1] >= centers[max(0, height - 2)] else '╭'
+    cells.append((round(centers[height - 1]), 18 - height, 0, tip, 'woodlight'))
+    if style == 'informal' and days >= 18:
+        # Surface roots spread over the soil and anchor the mature silhouette.
+        spread = min(7, 4 + int((days - 18) / 8))
+        for side in (-1, 1):
+            for offset in range(3, spread + 1):
+                glyph = ('╱' if side < 0 else '╲') if offset == spread else '─'
+                cells.append((27 + side * offset, 18, 0, glyph, 'wood'))
+    return cells
+
+
+def specimen(seed, days=0, style='informal'):
+    """Connected woody limbs supporting a broad, densely filled crown."""
+    rng = random.Random(seed)
+    centers = trunk_path(seed, style)
+    crown_shift = (centers[-1] - 27) * .6
+    cascade = cascade_path(seed) if style == 'semi-cascade' else None
+    wood = {}
+    tips = []
+
+    def shoot(x, y, tx, ty, born, twig=False, capacity=2.6):
+        length = math.hypot(tx - x, ty - y)
+        steps = max(1, math.ceil(length * 1.5))
+        path = []
+        for step in range(steps + 1):
+            t = step / steps
+            px = x + (tx - x) * t
+            py = max(2, y + (ty - y) * t - math.sin(t * math.pi) * .5)
+            birth = born + t * length * .55
+            path.append((px, py, birth))
+            if birth > days + 1:
+                continue
+            # Fill one continuous silhouette, rather than duplicating strokes.
+            maturity = min(1, max(0, (days - birth - 5) / 25))
+            radius = (.75 if twig else 1.15) * maturity * (1 - t)**.7
+            vertical_scale = 1
+            if style == 'informal':
+                # Annual girth develops after the shoot extends. Older lower
+                # limbs have larger collars; tips and secondary twigs stay fine.
+                wood_age = max(0, days - birth - 3)
+                radius = min(.9 if twig else capacity, .65 * math.sqrt(wood_age)) * (1-t)**.55
+                # Give main limbs a visible bark-filled body across several
+                # terminal rows; only the fine twigs retain compressed girth.
+                vertical_scale = 1.8 if twig else 1.15
+            for cy in range(math.floor(py - radius / vertical_scale), math.ceil(py + radius / vertical_scale) + 1):
+                for cx in range(math.floor(px - radius), math.ceil(px + radius) + 1):
+                    if (cx - px)**2 + ((cy - py) * vertical_scale)**2 <= radius**2:
+                        wood[(cx, cy)] = min(birth, wood.get((cx, cy), birth))
+            # A rasterized centerline keeps fine new tips fully connected.
+            key = (round(px), round(py))
+            wood[key] = min(birth, wood.get(key, birth))
+        return path
+
+    # Upward-reaching limbs tuck beneath overlapping crown pads.
+    tiers = ((5, 14, 8, 12), (8, 41, 7, 15), (10, 18, 4, 18), (12, 36, 3, 21), (14, 26, 2, 24))
+    if style == 'informal':
+        tiers = ((5, 13, 12, 12), (7, 42, 9, 15), (10, 17, 5, 18), (12, 36, 3, 21), (14, 25, 2, 24))
+    if cascade:
+        tiers = ((5, 27, 8, 12), (8, 38, 8, 15), (10, 44, 10, 18), (12, 49, 13, 21), (14, 50, 16, 24))
+    for depth, tx, ty, born in tiers:
+        tx += (0 if cascade else crown_shift) + rng.uniform(-.6, .6)
+        ty += rng.uniform(-.3, .3)
+        origin_x, origin_y = cascade[depth] if cascade else (centers[depth], 18 - depth)
+        capacity = max(1.2, 4 * (1 - depth / 20))
+        path = shoot(origin_x, origin_y, tx, ty, born, capacity=capacity)
+        tips.append(path[-1])
+        for fraction in (.6, .85):
+            fx, fy, birth = path[round((len(path) - 1) * fraction)]
+            side = -1 if tx < origin_x else 1
+            fork = shoot(fx, fy, fx + side * 2, fy - 1.5, birth + 1, twig=True)
+            tips.append(fork[-1])
+
+    cells = []
+    for (x, y), birth in sorted(wood.items()):
+        above, below = (x, y - 1) in wood, (x, y + 1) in wood
+        left, right = (x - 1, y) in wood, (x + 1, y) in wood
+        if above and below:
+            glyph, ink = ('╵' if (x * 3 + y) % 11 == 0 else ' '), 'bark'
+            if style == 'informal':
+                glyph = '▒' if (x * 3 + y) % 5 else '╎'
+        elif left and right:
+            glyph, ink = '─', 'woodlight' if not above else 'wood'
+        else:
+            rising_right = (x + 1, y - 1) in wood or (x - 1, y + 1) in wood
+            rising_left = (x - 1, y - 1) in wood or (x + 1, y + 1) in wood
+            glyph = '╱' if rising_right else '╲' if rising_left else '─' if left or right else '│'
+            ink = 'wood'
+        cells.append((x, y, birth, glyph, ink))
+
+    # Unequal, overlapping pads keep a full crown while suggesting the rounded
+    # tops and flatter undersides of a trained juniper bonsai.
+    lobes = ((18, 7, 8, 2.6), (24, 3.7, 7, 3.2), (31, 4.2, 8, 3.5),
+             (37, 6, 8, 2.8), (39, 8.2, 6, 2), (24, 8.8, 9, 2.4))
+    if style == 'informal':
+        lobes = ((14, 11, 7, 2.5), (18, 7, 8, 2.6), (24, 4, 7, 2.8),
+                 (31, 3.7, 6, 2.7), (37, 6, 7, 2.8), (43, 8.5, 6, 2.2))
+    if cascade:
+        lobes = ((27, 7.5, 6, 2.6), (36, 7, 6, 2.6), (43, 9, 6, 2.4),
+                 (47, 12, 5, 2.3), (50, 15.5, 4, 2.4))
+    lobes = [(cx + (0 if cascade else crown_shift) + rng.uniform(-.6, .6), cy, rx, ry) for cx, cy, rx, ry in lobes]
+    for y in range(1, 19 if cascade else 14 if style == 'informal' else 12):
+        for x in range(8, 56 if cascade else 49):
+            pad_distances = [((x - cx) / rx)**2 + ((y - cy) / ry)**2 if y <= cy + ry * .6 else math.inf
+                             for cx, cy, rx, ry in lobes]
+            pad = min(range(len(lobes)), key=pad_distances.__getitem__)
+            distance = pad_distances[pad]
+            cx, cy, rx, ry = lobes[pad]
+            leafrng = random.Random(f'{seed}:crown:{x}:{y}')
+            if distance > 1 or leafrng.random() < (.035 if distance < .7 else .16):
+                continue
+            if style == 'informal' and leafrng.random() < (.12 if y < 8 else .23):
+                continue
+            # Small seams below overlapping pads reveal their layered shape.
+            separation = sorted(pad_distances)[1] - distance
+            seam = y > cy + .5 and separation < .10
+            if seam and leafrng.random() < .5:
+                continue
+            # Leaves spread from the nearest connected shoot into the crown.
+            nearest = min(tips, key=lambda tip: math.hypot(x - tip[0], (y - tip[1]) * 1.5))
+            travel = math.hypot(x - nearest[0], (y - nearest[1]) * 1.5)
+            birth = nearest[2] + 3 + travel * .8 + leafrng.uniform(0, 2)
+            tone = pad % 3
+            shade = 2 if y < cy - .5 else 0 if y > cy + .5 else 1
+            # Real bonsai read as foliage sprays grouped into pads. Coherent
+            # patches give a stronger size contrast than independent dots.
+            patch = random.Random(f'{seed}:spray:{pad}:{x // 3}:{y // 2}').random()
+            sizes = random.Random(f'{seed}:leaf-size:{x}:{y}')
+            if distance > .8:
+                weights = (0, 1, 4, 7)
+            elif patch < .35:
+                weights = (0, 1, 4, 6)
+            elif patch < .7:
+                weights = (2, 6, 3, 0)
+            else:
+                weights = (9, 2, 1, 0)
+            glyph = sizes.choices(('♣', '●', '•', '·'), weights)[0]
+            if style == 'informal':
+                glyph = sizes.choices(('◆', '●', '•', '·'), (3, 4, 2, 1) if distance < .75 else (1, 2, 4, 3))[0]
+            cells.append((x, y, birth, glyph, f'leaf{tone * 3 + shade}'))
+    return cells
+
+
+def render(days, seed, color=True, columns=80, accents=None, style='informal'):
+    width, height = 57, 24
+    canvas = [[(' ', '') for _ in range(width)] for _ in range(height)]
+    # Growth starts with a rooted sapling; cells remain as new growth arrives.
+    plan = specimen(seed, days, style)
+    # Leaves cover the upper wood while the exposed lower stem keeps its contour.
+    wood = [cell for cell in plan if not cell[4].startswith('leaf')]
+    leaves = [cell for cell in plan if cell[4].startswith('leaf')]
+    for x, y, born, glyph, ink in wood + stem(days, seed, style) + leaves:
+        if born <= days + 1 and 0 <= x < width and 0 <= y < 19:
+            canvas[y][x] = (glyph, ink)
+    for y, row in enumerate(('╭─────────────────╮', ' ╲_______________╱ ', '   └───────────┘   '), 19):
+        for x, char in enumerate(row, 18):
+            canvas[y][x] = (char, 'pot')
+    occupied = [y for y, row in enumerate(canvas) if any(c != ' ' for c, _ in row)]
+    palette = {'wood': '\033[38;2;174;132;91m', 'leaf': '\033[38;2;133;180;112m',
+               'pot': '\033[38;2;135;155;166m', 'bark': '\033[38;2;126;91;62m',
+               'woodlight': '\033[38;2;198;156;106m', '': '\033[0m'}
+    if style == 'informal':
+        palette.update(wood='\033[38;2;185;158;119m', bark='\033[38;2;151;135;112m',
+                       woodlight='\033[38;2;214;195;155m')
+    accents = accents if valid_palette(accents) else wallpaper_palette()
+    for i, accent in enumerate(accents):
+        for j, brightness in enumerate((.75, .95, 1.12)):
+            rgb = [min(255, round(int(accent[k:k + 2], 16) * brightness)) for k in (1, 3, 5)]
+            palette[f'leaf{i * 3 + j}'] = '\033[38;2;{};{};{}m'.format(*rgb)
+    margin = ' ' * max(0, (min(columns, 90) - width) // 2)
+    output = []
+    for row in canvas[min(occupied):max(occupied) + 1]:
+        text = ''.join((palette[ink] if color else '') + glyph for glyph, ink in row)
+        output.append(margin + text.rstrip() + ('\033[0m' if color else ''))
+    return '\n'.join(output) + '\n'
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--preview', type=float, metavar='DAYS', help='preview an age without changing saved growth')
+    parser.add_argument('--seed', type=int, help='specimen for previews (default: saved tree, or 42)')
+    parser.add_argument('--style', choices=('informal', 'natural', 'slant', 'semi-cascade'), default='informal',
+                        help='trunk style; informal matches the tapered S-shaped reference')
+    parser.add_argument('--plain', action='store_true', help='disable colors')
+    args = parser.parse_args()
+    columns = shutil.get_terminal_size().columns
+    if args.preview is None and (not sys.stdout.isatty() or columns < 57 or os.environ.get('TERM') == 'dumb'):
+        return
+    try:
+        days, seed, accents = age() if args.preview is None else (max(0, args.preview), *preview_identity(args.seed))
+        print(render(days, seed, not args.plain and sys.stdout.isatty(), columns, accents, args.style), end='')
+    except (OSError, ValueError, TypeError, AttributeError):
+        return
+
+
+if __name__ == '__main__':
+    main()

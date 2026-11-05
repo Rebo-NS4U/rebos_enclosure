@@ -66,6 +66,7 @@
     ".local/bin/rebos_shell",
     ".local/bin/regreet-sync",
     ".local/bin/rice",
+    ".local/bin/bonsai-grow",
     ".local/bin/terminal-bonsai",
     ".local/bin/terminal-rainforest",
     ".local/share/terminal-rainforest",
@@ -343,6 +344,10 @@
     },
     ".local/bin/rice": {
       "source": "system/bin/rice",
+      "kind": "managed"
+    },
+    ".local/bin/bonsai-grow": {
+      "source": "system/bin/bonsai-grow",
       "kind": "managed"
     },
     ".local/bin/terminal-bonsai": {

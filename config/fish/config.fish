@@ -1,7 +1,7 @@
-## Wallpaper-colored, procedural bonsai welcome message.
+## Saved S-shaped procedural bonsai welcome message.
 function fish_greeting
-    if status is-interactive; and test -t 1; and command -q terminal-bonsai
-        terminal-bonsai --current
+    if status is-interactive; and test -t 1; and command -q bonsai-grow
+        bonsai-grow
     end
 end
 
