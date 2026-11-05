@@ -6,5 +6,7 @@ Sibling imports were changed to relative imports; trailing whitespace was remove
 
 terminal-rainforest uses RandomOffsetFibTree directly, without the pot or cursor
 animation. A fixed canvas adapter maps its branch and foliage colors to terminal
-palette slots and combines closely spaced trees into a full-width forest.
+palette slots and composes an overhead canopy above tall foreground trunks, distant trees,
+hanging vines and fern-covered roots. Small mushrooms and sparse points of light
+add detail while leaving the clearing open. The composition fills the width.
 Python standard library only; no runtime download or pip install.

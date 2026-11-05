@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""A procedural layered-canopy greeting using the terminal's own ANSI palette."""
+"""A procedural forest-interior greeting using the terminal's own ANSI palette."""
 import argparse
 import math
 import os
@@ -32,27 +32,60 @@ class ForestCanvas(draw.TerminalWindow):
             self.chars[x][y] = (char, layer)
 
 
-def forest(width, height, seed=None):
-    """Compose Ben Edwards's recursive trees on a bounded, pot-free canvas."""
-    state = random.getstate()
-    random.seed(seed)
+def forest(width,height,seed=None):
+    state=random.getstate();random.seed(seed)
     try:
-        options = SimpleNamespace(initial_len=height*.53, num_layers=7,
-            angle_mean=math.radians(40), leaf_len=max(2, round(height/6)),
-            leaf_chars='&%#@', branch_chars='~;:=', instant=True, fixed_window=True)
-        canvas = ForestCanvas(width, height, options)
-        spacing = max(10, round(height*1.15))
-        for center in range(0, width+spacing, spacing):
-            x = center + random.uniform(-spacing*.15, spacing*.15)
-            options.initial_len = height*random.uniform(.44, .60)
-            specimen = tree.RandomOffsetFibTree(canvas, (x, 2), options)
-            trunk_width, angle = specimen.get_initial_params()
-            specimen.draw_branch(x, 2, 0, 0, options.initial_len,
-                                 max(1, trunk_width), angle)
-        return canvas.chars
-    finally:
-        random.setstate(state)
-
+        opts=SimpleNamespace(initial_len=height*.3,num_layers=6,
+            angle_mean=math.radians(48),leaf_len=max(2,round(height/6)),
+            leaf_chars='&%#@',branch_chars=':;',instant=True,fixed_window=True)
+        c=ForestCanvas(width,height,opts)
+        def point(x,y,char,layer):
+            row,col=c.plane_to_screen(x,y)
+            if 0<=row<height and 0<=col<width:c.chars[row][col]=(char,layer)
+        # Distant, slender trees in a higher ground plane.
+        for x in range(3,width,9):
+            x+=random.uniform(-2,2)
+            for y in range(5,height*2):
+                point(x+math.sin(y*.12)*.5,y,':',1)
+        # Tall foreground trunks support a connected ceiling, not isolated crowns.
+        spacing=max(12,round(height*1.15))
+        for center in range(-3,width+spacing,spacing):
+            x=center+random.uniform(-2,2)
+            fork=height*random.uniform(1.25,1.5)
+            lean=random.uniform(-2,2)
+            for y in range(2,math.ceil(fork)+1):
+                pos=x+lean*y/fork
+                point(pos-.5,y,'|',1);point(pos+.5,y,'|',1)
+            point(x-2,2,'/',1);point(x+2,2,'\\',1)
+            point(x-3,1,'_',1);point(x+3,1,'_',1)
+            t=tree.RandomOffsetFibTree(c,(x+lean,fork),opts)
+            for sign in (-1,1):
+                t.draw_branch(x+lean,fork,0,0,height*random.uniform(.22,.34),1,sign*.85)
+        # Hanging lianas stay in the upper half of the clearing.
+        for center in range(6,width,17):
+            length=random.randint(max(2,height//4),max(3,height//2))
+            for row in range(length):
+                col=center+round(math.sin(row*.5))
+                if 0<=col<width and c.chars[row][col][0]==' ':
+                    c.chars[row][col]=(':' if row%3 else '|',2)
+        # Ferns form little fans; retain gaps between plants.
+        for x in range(2,width,7):
+            size=random.choice((2,3))
+            point(x,2,'|',2)
+            for step in range(1,size):
+                point(x-step,2+step*.8,'\\',2)
+                point(x+step,2+step*.8,'/',2)
+            point(x,3,'v',3)
+        # Occasional mushroom pairs and tiny points of light in the clearing.
+        for x in range(9,width,29):
+            point(x,2,'o',3);point(x,1,'|',1)
+            point(x+2,1,'o',2)
+        for _ in range(max(1,width//25)):
+            col=random.randrange(width)
+            row=random.randrange(max(1,height//2),max(height//2+1,height-3))
+            if c.chars[row][col][0]==' ':c.chars[row][col]=('.',3)
+        return c.chars
+    finally:random.setstate(state)
 
 def render(columns, rows, seed=None, plain=False):
     # One spare column avoids automatic wrapping; leave ample prompt space.

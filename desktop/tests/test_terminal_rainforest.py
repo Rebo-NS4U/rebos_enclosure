@@ -32,6 +32,17 @@ class RainforestTests(unittest.TestCase):
         self.assertEqual({layer for row in rainforest.forest(80, 12, 42)
                           for glyph, layer in row}, {0, 1, 2, 3})
 
+    def test_forest_interior_composition(self):
+        cells = rainforest.forest(100, 18, 42)
+        foliage = lambda rows: sum(char in '&%#@' for row in rows for char, _ in row)
+        self.assertGreater(foliage(cells[:9]), foliage(cells[9:]))
+        # Trunks extend through the open clearing rather than ending in low crowns.
+        for row in cells[11:16]:
+            self.assertGreaterEqual(sum(char == '|' for char, _ in row), 4)
+            self.assertGreater(sum(char == ' ' for char, _ in row), 40)
+        self.assertIn('v', ''.join(char for row in cells[-2:] for char, _ in row))
+        self.assertIn('o', ''.join(char for row in cells[-2:] for char, _ in row))
+
     def test_terminal_theme_and_no_cursor_controls(self):
         picture = rainforest.render(80, 24, 42)
         escapes = re.findall(r'\033\[[0-9;]*[A-Za-z]', picture)
