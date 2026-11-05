@@ -533,7 +533,7 @@ class BonsaiGrowTests(unittest.TestCase):
         checked = set()
         for seed in range(80):
             habit, side = bonsai.growth_pattern(seed)
-            if habit not in ('forked','bowed','upright'):
+            if habit not in ('forked','bowed','upright','recurved'):
                 continue
             checked.add(habit)
             center = bonsai.trunk_path(seed)[-1]
@@ -548,7 +548,23 @@ class BonsaiGrowTests(unittest.TestCase):
                 self.assertLessEqual(layout[0][0],6)
             self.assertFalse(any(glyph in '╭╮' and ink == 'woodlight'
                                  for x,y,born,glyph,ink in bonsai.stem(30,seed)))
-        self.assertEqual(checked,{'forked','bowed','upright'})
+        self.assertEqual(checked,{'forked','bowed','upright','recurved'})
+
+    def test_recurved_form_has_a_gentle_return_and_restrained_primary_reach(self):
+        checked = 0
+        for seed in range(120):
+            if bonsai.growth_pattern(seed)[0] != 'recurved':
+                continue
+            checked += 1
+            path = bonsai.trunk_path(seed)
+            self.assertLess(max(abs(x-27) for x in path),5.1)
+            self.assertLess(abs(path[-1]-27),1.8)
+            self.assertTrue(all(abs(c-2*b+a) < .4 for a,b,c in zip(path,path[1:],path[2:])))
+            self.assertLessEqual(bonsai.branch_layout(seed)[0][0],6)
+            shift = (path[-1]-27)*.6
+            for depth,x,y,born in bonsai.branch_layout(seed)[:3]:
+                self.assertLessEqual(abs(x+shift-path[depth]),9)
+        self.assertGreater(checked,10)
 
     def test_new_launches_use_fresh_seeds_and_explicit_seed_is_repeatable(self):
         from unittest.mock import patch, Mock
