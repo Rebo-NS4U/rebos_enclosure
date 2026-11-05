@@ -126,7 +126,7 @@ class BonsaiGrowTests(unittest.TestCase):
             bend_positions.add(max(range(1, 14), key=lambda i: abs(path[i] - 27)))
         self.assertGreaterEqual(len(silhouettes), 35)
         self.assertEqual({bonsai.growth_pattern(seed)[0] for seed in range(48)},
-                         {'upright', 'slant', 'bowed', 'forked', 'recurved'})
+                         {'upright', 'slant', 'bowed', 'forked', 'recurved', 'broom', 'twin_leader'})
         self.assertGreater(len(bend_positions), 3)
 
     def test_cleanup_removes_detached_sticks_and_leaves(self):
@@ -333,7 +333,7 @@ class BonsaiGrowTests(unittest.TestCase):
 
     def test_directional_trunks_do_not_jitter_backwards(self):
         checked = 0
-        for seed in range(120):
+        for seed in range(200):
             habit, side = bonsai.growth_pattern(seed)
             if habit != 'slant':
                 continue
@@ -565,6 +565,27 @@ class BonsaiGrowTests(unittest.TestCase):
             for depth,x,y,born in bonsai.branch_layout(seed)[:3]:
                 self.assertLessEqual(abs(x+shift-path[depth]),9)
         self.assertGreater(checked,10)
+
+    def test_new_broom_and_twin_leader_architectures(self):
+        seen = set()
+        for seed in range(120):
+            habit, side = bonsai.growth_pattern(seed)
+            if habit not in ('broom','twin_leader'):
+                continue
+            seen.add(habit)
+            roots = [branch for branch in bonsai.branch_graph(seed) if branch['parent'] is None]
+            wood = bonsai.stem(30,seed)
+            if habit == 'broom':
+                self.assertEqual(len(roots),3)
+                self.assertEqual(min(cell[1] for cell in wood),12)
+                self.assertTrue(all(branch['start'][1] >= 12 for branch in roots))
+            else:
+                self.assertEqual(len(roots),2)
+                self.assertEqual(roots[0]['start'],roots[1]['start'])
+                self.assertEqual(min(cell[1] for cell in wood),14)
+                self.assertLess(roots[0]['end'][1],roots[1]['end'][1])
+                self.assertLess(roots[1]['width'],roots[0]['width'])
+        self.assertEqual(seen,{'broom','twin_leader'})
 
     def test_new_launches_use_fresh_seeds_and_explicit_seed_is_repeatable(self):
         from unittest.mock import patch, Mock
