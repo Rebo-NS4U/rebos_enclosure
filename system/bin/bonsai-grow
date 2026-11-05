@@ -535,14 +535,24 @@ def natural_specimen(seed, days):
         for y in range(max(1,math.floor(cy-ry)), min(18,math.ceil(cy+ry))+1):
             for x in range(max(2,math.floor(cx-rx)), min(54,math.ceil(cx+rx))+1):
                 distance = ((x-cx)/rx)**2 + ((y-cy)/ry)**2
-                if distance > 1 or rng.random() < (.05 if distance < .7 else .23):
+                # Shared spray shapes make neighboring leaves read as clusters.
+                # A scalloped rim and a small lower cleft leave airy branch gaps.
+                nx, ny = (x-cx)/rx, (y-cy)/ry
+                rim = 1 + .10*math.sin(nx*9 + index) + .06*math.cos(ny*8-index)
+                cleft = ny > .25 and .25 < nx < .65 and distance > .38
+                texture = random.Random(f'{seed}:leaf-cell:{index}:{x}:{y}')
+                if distance > rim or cleft or texture.random() < (.025 if distance < .7 else .14):
                     continue
                 birth = arrival + .5 + math.hypot(x-cx,(y-cy)*1.5)*.35
-                weights = (5,2,2,1) if distance < .7 else (1,1,4,3)
-                if growth_pattern(seed)[0] == 'twisted_juniper':
-                    weights = (8,1,1,0) if distance < .7 else (1,0,6,2)
-                glyph = rng.choices(('●','◆','•','·'),weights)[0]
-                shade = 2 if y < cy else 1 if y == round(cy) else 0
+                # Larger leaves gather inside each spray; fine tips soften its rim.
+                patch = random.Random(f'{seed}:leaf-patch:{index}:{x//3}:{y//2}').random()
+                weights = (7,0,3,0) if distance < .65 and patch < .65 else (2,0,7,1)
+                if distance > .85:
+                    weights = (0,0,6,4)
+                glyph = texture.choices(('●','◆','•','·'),weights)[0]
+                # Light falls from the upper left, with a continuous dark underside.
+                light = ny + nx*.22
+                shade = 2 if light < -.25 else 0 if light > .3 else 1
                 if birth <= days+1:
                     candidates[(x,y)] = (x,y,birth,glyph,f'leaf{index%3*3+shade}')
         # A spray grows out from its actual supporting tip. Random texture
@@ -964,7 +974,7 @@ def render(days, seed, color=True, columns=80, accents=None, style='informal',
             rgb = [round(wood * (1 - blend) + leaf * blend)
                    for wood, leaf in zip((185, 158, 119), rgb_leaf)]
             palette[f'shoot_{name}{i}'] = '\033[38;2;{};{};{}m'.format(*rgb)
-        for j, brightness in enumerate((.75, .95, 1.12)):
+        for j, brightness in enumerate((.58, .88, 1.12)):
             rgb = [min(255, round(int(accent[k:k + 2], 16) * brightness)) for k in (1, 3, 5)]
             palette[f'leaf{i * 3 + j}'] = '\033[38;2;{};{};{}m'.format(*rgb)
     output = []
