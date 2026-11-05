@@ -59,10 +59,33 @@ popover modelbutton {
 popover modelbutton:hover { background: {{surfaceContainerHigh}}; }
 infobar { background: {{surfaceContainer}}; color: {{overBackground}}; border-radius: {{radius}}px; }
 selection { background: {{primary}}; color: {{overPrimary}}; }
-/* Preserve the installed login layout while sharing the playground components. */
-.noctalia-login .card-time { font-size: 46px; font-weight: 500; }
-.noctalia-login .card-date { margin: 7px 0 20px; }
-.noctalia-login .login-heading { font-size: 16px; font-weight: 600; margin-bottom: 14px; }
+/* Clock header: generous time, a quiet date badge, then a clear sign-in boundary. */
+.noctalia-login .card-time {
+  font-size: 56px;
+  font-weight: 400;
+  letter-spacing: -2px;
+  color: {{primary}};
+  margin-top: 4px;
+  text-shadow: 0 2px 12px alpha({{primary}}, 0.12);
+}
+.noctalia-login .card-date {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  color: {{overBackground}};
+  background: alpha({{primary}}, 0.08);
+  border: 1px solid alpha({{primary}}, 0.16);
+  border-radius: {{radius}}px;
+  padding: 8px 12px;
+  margin: 12px 16px 26px;
+}
+.noctalia-login .login-heading {
+  font-size: 16px;
+  font-weight: 600;
+  border-top: 1px solid alpha({{outlineVariant}}, 0.65);
+  padding-top: 22px;
+  margin-bottom: 14px;
+}
 .noctalia-login .field-caption { margin-top: 6px; margin-left: 3px; }
 .noctalia-hud button.destructive-action { margin-bottom: 0; }
 .noctalia-hud button.power-symbol { min-width: 32px; min-height: 32px; padding: 7px; }
