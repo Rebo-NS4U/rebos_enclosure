@@ -52,19 +52,19 @@ class BonsaiGrowTests(unittest.TestCase):
                 previous_count = len(leaves)
                 for x, y, born, glyph, ink in leaves:
                     self.assertLessEqual(born, day)
-                    shoots = [cell for cell in cells if cell[4] == 'shoot']
+                    shoots = [cell for cell in cells if cell[4].startswith('shoot')]
                     self.assertTrue(any(max(abs(x - sx), abs(y - sy)) <= 1
                                         for sx, sy, *_ in shoots))
                     self.assertTrue(0 <= x < 57 and 0 <= y < 19)
                 image = bonsai.render(day, seed, False, 80, ['#85b470'] * 3)
-                self.assertTrue(any(glyph in image for glyph in '◆●•'))
+                self.assertTrue(any(glyph in image for glyph in '◆●•·'))
             self.assertEqual(bonsai.juvenile_foliage(30, seed), [])
 
     def test_early_leaves_follow_connected_shoot_tips(self):
         for seed in range(24):
             for day in (0, 1, 2, 3, 7, 14, 25):
                 cells = bonsai.juvenile_foliage(day, seed)
-                shoots = {(x, y) for x, y, _, _, ink in cells if ink == 'shoot'}
+                shoots = {(x, y) for x, y, _, _, ink in cells if ink.startswith('shoot')}
                 reached = {(x, y) for x, y, *_ in bonsai.stem(day, seed)}
                 pending = set(shoots)
                 while pending:
@@ -81,9 +81,24 @@ class BonsaiGrowTests(unittest.TestCase):
                     neighbors = {(sx, sy) for sx, sy in shoots
                                  if max(abs(sx-x), abs(sy-y)) <= 1}
                     self.assertTrue(neighbors)
-                    self.assertTrue(any(sum(max(abs(sx-ox), abs(sy-oy)) <= 1
-                                            for ox, oy in shoots if (ox, oy) != (sx, sy)) <= 1
-                                        for sx, sy in neighbors))
+                    tips = {(tx, ty) for tx, ty, _, _, tip_ink in cells
+                            if tip_ink.startswith('shoot_tip')}
+                    self.assertTrue(any(abs(x - tx) + abs(y - ty) == 1
+                                        for tx, ty in tips))
+
+    def test_buds_unfold_and_petioles_blend_into_leaf_color(self):
+        glyphs = []
+        for day in (0, .75, 3):
+            cells = bonsai.juvenile_foliage(day, 42)
+            first_leaf = next(cell for cell in cells if cell[4].startswith('leaf'))
+            glyphs.append(first_leaf[3])
+            self.assertTrue(any(cell[3] in '╰╯' for cell in cells))
+        self.assertEqual(glyphs, ['·', '•', '●'])
+        image = bonsai.render(3, 42, True, 80, ['#00ff00'] * 3)
+        # Petioles carry intermediate colors rather than a hard wood/leaf jump.
+        self.assertIn('\033[38;2;120;192;77m', image)
+        self.assertIn('\033[38;2;56;226;36m', image)
+
 
     def test_starting_wood_has_body_and_tapers(self):
         for seed in range(24):

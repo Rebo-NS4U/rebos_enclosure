@@ -234,25 +234,29 @@ def juvenile_foliage(days, seed):
         x, y = round(centers[depth]), 18 - depth
         for side in (-1, 1):
             # A short shoot extends outward; its leaves follow the terminal bud.
-            reach = min(5, 2 + int(age * .5))
-            tip_x, tip_y = x + side * reach, y - 1
+            reach = min(5, 3 + int(age * .4))
+            tip_x, tip_y = x + side * (reach - 1), y - 1
+            tone = (depth // 2 + (side > 0)) % 3
             leaves = []
             for index, (dx, dy, delay) in enumerate(((0, -1, 0), (1, 0, 2))):
                 rng = random.Random(f'{seed}:juvenile:{depth}:{side}:{index}')
                 shed = min(29, 20 + depth * .4 + rng.uniform(0, 2))
                 if age < delay or days >= shed:
                     continue
-                glyph = '•' if age - delay < 1 else rng.choice(('◆', '●'))
+                unfold = age - delay
+                glyph = '·' if unfold < .5 else '•' if unfold < 2.5 else '●'
                 tone = (depth // 2 + (side > 0)) % 3
                 shade = 2 if dy < 0 else 1
                 leaves.append((tip_x + side * dx, tip_y + dy, born + delay,
                                glyph, f'leaf{tone * 3 + shade}'))
             if not leaves:
                 continue
-            for step in range(1, reach + 1):
-                rise = 1 if step == reach else 0
-                glyph = ('╱' if side > 0 else '╲') if rise else '─'
-                cells.append((x + side * step, y - rise, born, glyph, 'shoot'))
+            for step in range(1, reach):
+                elbow = step == reach - 1
+                glyph = ('╯' if side > 0 else '╰') if elbow else '─'
+                ink = f'shoot_mid{tone}' if elbow else 'shoot'
+                cells.append((x + side * step, y, born, glyph, ink))
+            cells.append((tip_x, tip_y, born, '│', f'shoot_tip{tone}'))
             cells.extend(leaves)
     # No temporary woody spurs remain after the juvenile leaves retire.
     return cells if days < 29 else []
@@ -442,6 +446,12 @@ def render(days, seed, color=True, columns=80, accents=None, style='informal'):
     palette['shoot'] = palette['wood']
     accents = accents if valid_palette(accents) else wallpaper_palette()
     for i, accent in enumerate(accents):
+        rgb_leaf = [int(accent[k:k + 2], 16) for k in (1, 3, 5)]
+        # Short petioles fade from warm wood into the leaf's saved accent.
+        for name, blend in (('mid', .35), ('tip', .7)):
+            rgb = [round(wood * (1 - blend) + leaf * blend)
+                   for wood, leaf in zip((185, 158, 119), rgb_leaf)]
+            palette[f'shoot_{name}{i}'] = '\033[38;2;{};{};{}m'.format(*rgb)
         for j, brightness in enumerate((.75, .95, 1.12)):
             rgb = [min(255, round(int(accent[k:k + 2], 16) * brightness)) for k in (1, 3, 5)]
             palette[f'leaf{i * 3 + j}'] = '\033[38;2;{};{};{}m'.format(*rgb)
