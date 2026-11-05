@@ -121,12 +121,17 @@ class BonsaiGrowTests(unittest.TestCase):
             self.assertEqual(path, bonsai.trunk_path(seed))
             self.assertEqual(path[0], 27)
             self.assertEqual(len(path), 15)
-            self.assertTrue(all(abs(a - b) <= .951 for a, b in zip(path, path[1:])))
+            if bonsai.growth_pattern(seed)[0] == 'cascade':
+                import math
+                arc = bonsai.cascade_path(seed)
+                self.assertTrue(all(math.dist(a,b) < 3 for a,b in zip(arc,arc[1:])))
+            else:
+                self.assertTrue(all(abs(a-b) <= .951 for a,b in zip(path,path[1:])))
             silhouettes.add(tuple(round(x) for x in path))
             bend_positions.add(max(range(1, 14), key=lambda i: abs(path[i] - 27)))
         self.assertGreaterEqual(len(silhouettes), 35)
         self.assertEqual({bonsai.growth_pattern(seed)[0] for seed in range(120)},
-                         {'upright', 'slant', 'bowed', 'forked', 'recurved', 'broom'})
+                         {'upright', 'slant', 'bowed', 'forked', 'recurved', 'broom', 'cascade', 'root_over_rock'})
         self.assertGreater(len(bend_positions), 3)
 
     def test_cleanup_removes_detached_sticks_and_leaves(self):
@@ -289,7 +294,10 @@ class BonsaiGrowTests(unittest.TestCase):
             shift = (trunk[-1]-27)*.6
             directions = {1 if x+shift >= trunk[depth] else -1
                           for depth,x,y,born in bonsai.branch_layout(seed)[:3]}
-            self.assertEqual(directions, {-1,1})
+            if bonsai.growth_pattern(seed)[0] == 'cascade':
+                self.assertEqual(len(directions),1)
+            else:
+                self.assertEqual(directions, {-1,1})
 
     def test_branch_hierarchy_has_supported_unequal_tapered_forks(self):
         for seed in range(48):
@@ -344,6 +352,8 @@ class BonsaiGrowTests(unittest.TestCase):
 
     def test_trunk_grain_tracks_its_local_bend(self):
         for seed in range(48):
+            if bonsai.growth_pattern(seed)[0] == 'cascade':
+                continue
             path = bonsai.trunk_path(seed)
             for x,y,born,glyph,ink in bonsai.stem(30,seed):
                 if ink != 'bark' or glyph not in '╱╲╎':
@@ -602,6 +612,45 @@ class BonsaiGrowTests(unittest.TestCase):
                 x,y = branch['end']
                 self.assertGreaterEqual(y+1e-8,2.8+(abs(x-trunk[-1])/6)**1.4)
         self.assertGreater(checked,15)
+
+    def test_cascade_uses_an_arching_trunk_and_leafy_pendant_tips(self):
+        seen_sides = set()
+        checked = 0
+        for seed in range(160):
+            habit,side = bonsai.growth_pattern(seed)
+            if habit != 'cascade':
+                continue
+            checked += 1
+            seen_sides.add(side)
+            path = bonsai.cascade_path(seed)
+            self.assertEqual(path[0],(27,18))
+            self.assertEqual(path[-1][1],17)
+            self.assertGreater(abs(path[-1][0]-27),18)
+            self.assertLess(min(y for x,y in path),11)
+            roots = [branch for branch in bonsai.branch_graph(seed) if branch['parent'] is None]
+            for branch in roots:
+                self.assertEqual(branch['start'],path[branch['trunk_depth']])
+            self.assertTrue(any(branch['end'][1] >= 16 for branch in roots))
+        self.assertGreater(checked,10)
+        self.assertEqual(seen_sides,{-1,1})
+
+    def test_root_over_rock_adds_stone_and_roots_inside_pot_width(self):
+        checked = 0
+        for seed in range(120):
+            if bonsai.growth_pattern(seed)[0] != 'root_over_rock':
+                continue
+            checked += 1
+            canvas = [[(' ', '') for _ in range(57)] for _ in range(24)]
+            canvas[16][27] = ('░','bark')
+            bonsai.add_root_rock(canvas,seed)
+            self.assertEqual(canvas[16][27],('░','bark'))
+            stone = [(x,y) for y,row in enumerate(canvas) for x,(g,ink) in enumerate(row) if ink == 'stone']
+            self.assertTrue(stone)
+            self.assertTrue(all(16 < x < 39 and 14 <= y <= 18 for x,y in stone))
+            self.assertTrue(any(ink == 'wood' for row in canvas for g,ink in row))
+            image = bonsai.render(30,seed,True,80,['#80a090']*3)
+            self.assertIn('\033[38;2;185;158;119m',image)
+        self.assertGreater(checked,5)
 
     def test_new_launches_use_fresh_seeds_and_explicit_seed_is_repeatable(self):
         from unittest.mock import patch, Mock
