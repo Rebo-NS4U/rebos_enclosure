@@ -936,6 +936,32 @@ def seat_tree_in_pot(canvas, days):
     canvas[19][27] = ('┴','pot')
 
 
+def outline_exposed_wood(canvas):
+    """Keep texture inside the wood and solid strokes on its exposed contour."""
+    inks = {'wood', 'woodlight', 'bark', 'scar'}
+    wood = {(x,y) for y,row in enumerate(canvas[:19]) for x,(glyph,ink) in enumerate(row)
+            if ink in inks and glyph.strip()}
+    occupied = {(x,y) for y,row in enumerate(canvas) for x,(glyph,ink) in enumerate(row)
+                if glyph.strip()}
+    for x,y in wood:
+        neighbors = ((x-1,y),(x+1,y),(x,y-1),(x,y+1))
+        if all(point in occupied for point in neighbors):
+            continue
+        if canvas[y][x][0] in '│─╱╲╭╮':
+            continue
+        left_open, right_open = (x-1,y) not in occupied, (x+1,y) not in occupied
+        if left_open or right_open:
+            # Follow the same side of neighboring rows around each bend.
+            side = min if left_open else max
+            above = [px for px in (x-1,x,x+1) if (px,y-1) in wood]
+            below = [px for px in (x-1,x,x+1) if (px,y+1) in wood]
+            turn = (side(above) if above else x) - (side(below) if below else x)
+            glyph = '╱' if turn > 0 else '╲' if turn < 0 else '│'
+        else:
+            glyph = '─'
+        canvas[y][x] = (glyph, 'wood')
+
+
 def render(days, seed, color=True, columns=80, accents=None, style='informal',
            fixed_height=False, pot_seed=None):
     width, height = 57, 24
@@ -963,6 +989,8 @@ def render(days, seed, color=True, columns=80, accents=None, style='informal',
                 ink = 'pot_inlay' if y == 20 or abs(x - 27) <= 2 else 'pot_shadow'
             canvas[y][x] = (char, ink)
     seat_tree_in_pot(canvas, days)
+    if style == 'informal':
+        outline_exposed_wood(canvas)
     occupied = [y for y, row in enumerate(canvas) if any(c != ' ' for c, _ in row)]
     palette = {'wood': '\033[38;2;174;132;91m', 'leaf': '\033[38;2;133;180;112m',
                'pot': '\033[38;2;135;155;166m', 'bark': '\033[38;2;126;91;62m',

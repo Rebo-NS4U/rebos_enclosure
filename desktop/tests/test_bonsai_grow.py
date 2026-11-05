@@ -41,6 +41,45 @@ class BonsaiGrowTests(unittest.TestCase):
                                             for dx,dy in ((-1,0),(1,0),(0,-1),(0,1))))
         self.assertGreater(dots,100)
 
+    def test_exposed_wood_has_solid_edges_and_retains_inner_dots(self):
+        from unittest.mock import patch
+        interior_dots = 0
+        for seed in range(24):
+            for day in (7,14,30):
+                with patch.object(bonsai, 'seat_tree_in_pot', wraps=bonsai.seat_tree_in_pot) as seat:
+                    bonsai.render(day,seed)
+                    canvas = seat.call_args.args[0]
+                occupied = {(x,y) for y,row in enumerate(canvas) for x,(glyph,ink) in enumerate(row)
+                            if glyph.strip()}
+                for y,row in enumerate(canvas[:19]):
+                    for x,(glyph,ink) in enumerate(row):
+                        if ink not in ('bark','wood','woodlight','scar') or not glyph.strip():
+                            continue
+                        exposed = any(point not in occupied for point in
+                                      ((x-1,y),(x+1,y),(x,y-1),(x,y+1)))
+                        if exposed:
+                            self.assertIn(glyph,'│─╱╲╭╮')
+                        else:
+                            interior_dots += glyph in '·◦'
+        self.assertGreater(interior_dots,100)
+
+    def test_outline_preserves_silhouette_and_foliage(self):
+        canvas = [[(' ', '') for _ in range(7)] for _ in range(7)]
+        for y in range(1,6):
+            for x in range(1,6):
+                canvas[y][x] = ('·','bark')
+        canvas[1][3] = ('•','leaf1')
+        before = {(x,y) for y,row in enumerate(canvas) for x,(g,ink) in enumerate(row) if g.strip()}
+        bonsai.outline_exposed_wood(canvas)
+        self.assertEqual(before, {(x,y) for y,row in enumerate(canvas) for x,(g,ink) in enumerate(row) if g.strip()})
+        self.assertEqual(canvas[3][3],('·','bark'))
+        self.assertEqual(canvas[1][3],('•','leaf1'))
+        self.assertEqual(canvas[3][1],('│','wood'))
+        self.assertEqual(canvas[1][2],('─','wood'))
+        again = [row.copy() for row in canvas]
+        bonsai.outline_exposed_wood(again)
+        self.assertEqual(again,canvas)
+
     def test_top_sprays_fill_from_terminal_branches(self):
         for seed in range(24):
             leaves = [cell for cell in bonsai.specimen(seed, 30)
