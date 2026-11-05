@@ -1,150 +1,250 @@
 #!/usr/bin/env python3
-"""Sculpted terminal bonsai, rendered with transparent half-block cells."""
+"""A framed cbonsai greeting using the desktop's current wallpaper palette."""
 import json
-import math
 import os
 from pathlib import Path
-import random
 import re
+import random
 import shutil
+import subprocess
 import sys
 
-RESET = '\033[0m'
-DEFAULT_PALETTE = {'primary': '#ffb4a2', 'secondary': '#e7bdb3', 'tertiary': '#dac58d'}
+RESET = "\033[0m"
 
 
-def rgb(value, fallback):
-    if not isinstance(value, str) or not re.fullmatch(r'#[0-9a-fA-F]{6}', value):
-        value = fallback
-    return tuple(int(value[i:i + 2], 16) for i in (1, 3, 5))
+def refine_trunk(lines):
+    """Trace the exposed root into the existing tree, then taper its contour."""
+    path = []
+    center = 50
+    for y in range(len(lines) - 1, max(-1, len(lines) - 7), -1):
+        row = b"".join(char for _, char in lines[y])
+        runs = list(re.finditer(rb"[/\\|_~]+", row))
+        stem_runs = [run for run in runs if b"~" in run.group()]
+        runs = stem_runs or runs
+        if not runs:
+            break
+        run = min(runs, key=lambda match: abs((match.start() + match.end() - 1) / 2 - center))
+        midpoint = (run.start() + run.end() - 1) / 2
+        # Leave forks and foliage alone; only reshape the exposed main stem.
+        if (abs(midpoint - center) > 4 or (path and run.end() - run.start() > 7)
+                or b"&" in row[max(0, run.start() - 1):run.end() + 1]):
+            break
+        path.append((y, run.start(), run.end(), midpoint))
+        center = midpoint
+    if len(path) < 2:
+        return
 
+    # Blend toward the existing bend instead of following every random step.
+    # The root stays centered over the planter, with a gentle flare at its foot.
+    centers = [50.0]
+    for _, _, _, midpoint in path[1:]:
+        centers.append(centers[-1] + max(-1.25, min(1.25, (midpoint - centers[-1]) * .7)))
+    correction = path[-1][3] - centers[-1]
+    centers = [center + correction * depth / (len(path) - 1)
+               for depth, center in enumerate(centers)]
+    contours = []
+    for depth, center in enumerate(centers):
+        span = round(4 - 3 * depth / (len(path) - 1))
+        left = round(center - span / 2)
+        contours.append((left, left + span))
+    # Keep the original junction as the anchor into the upper branches.
+    contours[-1] = (path[-1][1], path[-1][2] - 1)
 
-def mix(a, b, weight):
-    return tuple(round(x * (1 - weight) + y * weight) for x, y in zip(a, b))
-
-
-def render(columns, rows, seed=0, palette=None):
-    """Return a bounded drawing; no terminal controls other than SGR colors."""
-    if columns < 36 or rows < 18:
-        return ''
-    palette = palette if isinstance(palette, dict) else {}
-    accent = rgb(palette.get('tertiary'), DEFAULT_PALETTE['tertiary'])
-    glaze = rgb(palette.get('secondary'), DEFAULT_PALETTE['secondary'])
-    # Half a character row is approximately one character wide. Work in a
-    # square-pixel model, then sample directly at the terminal's resolution.
-    width = min(72, columns - 4, (rows - 3) * 3)
-    height = min(52, (rows - 3) * 2)
-    pixels = [[None] * width for _ in range(height)]
-    rng = random.Random(seed)
-
-    def paint(shape, shade):
-        for y in range(height):
-            py = (y + .5) * 96 / height
-            for x in range(width):
-                px = (x + .5) * 128 / width
-                if shape(px, py):
-                    pixels[y][x] = shade(px, py)
-
-    def ellipse(cx, cy, rx, ry, shade):
-        # Restrict curve stamps to their bounds so a greeting starts quickly.
-        for y in range(max(0, math.floor((cy - ry) * height / 96)), min(height, math.ceil((cy + ry) * height / 96))):
-            py = (y + .5) * 96 / height
-            for x in range(max(0, math.floor((cx - rx) * width / 128)), min(width, math.ceil((cx + rx) * width / 128))):
-                px = (x + .5) * 128 / width
-                if ((px - cx) / rx) ** 2 + ((py - cy) / ry) ** 2 <= 1:
-                    pixels[y][x] = shade(px, py)
-
-    def bark(x, y):
-        # Long, winding ridges, lit from the upper left. No repeating glyphs.
-        grain = math.sin(x * 1.7 + math.sin(y * .13) * 2.2)
-        light = .43 + .23 * grain + .10 * math.sin(x * .57 + y * .09)
-        return mix((66, 43, 29), (166, 123, 78), max(0, min(1, light)))
-
-    def limb(points, start, end):
-        # Cubic curves keep taper and curvature continuous into each fork.
-        for i in range(121):
-            t = i / 120
-            u = 1 - t
-            x = u**3 * points[0][0] + 3*u*u*t*points[1][0] + 3*u*t*t*points[2][0] + t**3*points[3][0]
-            y = u**3 * points[0][1] + 3*u*u*t*points[1][1] + 3*u*t*t*points[2][1] + t**3*points[3][1]
-            radius = start * u + end * t
-            ellipse(x, y, radius, radius, bark)
-
-    # An asymmetric, S-shaped trunk, with branches supporting each foliage pad.
-    limb(((64, 79), (43, 64), (82, 44), (64, 16)), 7, 1.5)
-    for points, thick in (
-        (((58, 66), (48, 60), (35, 58), (25, 47)), 3.3),
-        (((60, 60), (76, 62), (91, 58), (100, 49)), 3.2),
-        (((66, 46), (52, 45), (37, 40), (32, 31)), 2.8),
-        (((69, 41), (81, 40), (90, 36), (94, 29)), 2.5),
-        (((68, 30), (60, 28), (53, 24), (50, 19)), 2.1),
-    ):
-        limb(points, thick, .7)
-    # Roots spread over a low mound rather than ending at a floating stem.
-    ellipse(64, 80, 22, 3, lambda x, y: (53, 57, 34))
-    for tip in (44, 52, 76, 84):
-        limb(((64, 74), (62, 77), ((tip + 64) / 2, 79), (tip, 81)), 2.6, .6)
-
-    leafbase = mix((76, 111, 61), accent, .22)
-    # Each pad is a union of small lobes, with a shaded underside and fine
-    # leaves. The gaps between pads expose the branch structure.
-    for cx, cy, rx, ry in ((33, 47, 23, 8), (94, 49, 23, 9),
-                           (38, 32, 24, 9), (87, 30, 23, 9),
-                           (58, 18, 24, 9), (67, 9, 14, 6)):
-        lobes = [(cx + rx * offset, cy + rng.uniform(-2, 1), rx * .49, ry * rng.uniform(.73, 1.0))
-                 for offset in (-.59, -.23, .2, .58)]
-        def inside(x, y):
-            return any(((x-a)/c)**2 + ((y-b)/d)**2 <= 1 for a,b,c,d in lobes)
-        def foliage(x, y):
-            depth = max(0, min(1, (y - cy + ry) / (2 * ry)))
-            fleck = ((int(x * 3) * 73 + int(y * 3) * 37 + seed * 19) % 101) / 100
-            tone = mix(mix(leafbase, (158, 174, 96), .48), (29, 57, 39), depth * .85)
-            return mix(tone, (190, 193, 119), .28 if fleck > .79 else 0)
-        paint(inside, foliage)
-
-    # Quiet ceramic bowl: narrow lip, curved shoulders, a shaded base and feet.
-    def ceramic(x, y):
-        light = max(0, 1 - abs(x - 56) / 34)
-        return mix(mix(glaze, (32, 39, 44), .75), mix(glaze, (164, 184, 184), .35), light * .65)
-    paint(lambda x,y: 82 <= y <= 91 and abs(x - 64) <= 22 - (y - 82) * .65, ceramic)
-    ellipse(64, 82, 24, 1.5, lambda x,y: mix(glaze, (129, 152, 151), .55))
-    paint(lambda x,y: 91 < y <= 93 and (49 <= x <= 54 or 74 <= x <= 79), lambda x,y: mix(glaze, (29, 37, 41), .8))
-
-    margin = ' ' * ((columns - width) // 2)
-    output = ['']
-    for y in range(0, height, 2):
-        parts = [margin]
-        previous = None
-        for x in range(width):
-            top = pixels[y][x]
-            bottom = pixels[y + 1][x] if y + 1 < height else None
-            if top is None and bottom is None:
-                ink, glyph = RESET, ' '
-            elif top is None or bottom is None:
-                ink = '\033[49m\033[38;2;{};{};{}m'.format(*(top or bottom))
-                glyph = '▀' if top else '▄'
-            else:
-                ink = '\033[38;2;{};{};{}m\033[48;2;{};{};{}m'.format(*top, *bottom)
-                glyph = '▀'
-            if ink != previous:
-                parts.append(ink)
-                previous = ink
-            parts.append(glyph)
-        output.append(''.join(parts) + RESET)
-    return '\n'.join(output) + '\n\n'
+    for depth, ((y, start, end, _), (left, right)) in enumerate(zip(path, contours)):
+        if depth == len(path) - 1:
+            continue
+        # Erase just the traced stem; nearby branches keep their original shape.
+        for x in range(start, end):
+            lines[y][x] = (b"0", b" ")
+        above_left, above_right = contours[min(depth + 1, len(contours) - 1)]
+        for x in range(left, right + 1):
+            # Never erase a leaf when a smoothed contour meets the canopy.
+            if lines[y][x][1] == b"&":
+                continue
+            glyph, code = " ", b"wood"
+            if x == left:
+                glyph = "╱" if depth == 0 or above_left > left else "╲" if above_left < left else "│"
+            elif x == right:
+                glyph = "╲" if depth == 0 or above_right < right else "╱" if above_right > right else "│"
+            elif right - left >= 3 and x == left + 1:
+                glyph, code = "│", b"woodlight"
+            lines[y][x] = (code, glyph.encode("utf-8"))
 
 
 def main():
-    if not sys.stdout.isatty() or os.environ.get('TERM', 'dumb') == 'dumb':
+    if not sys.stdout.isatty() or os.environ.get("TERM", "dumb") == "dumb":
         return
-    palette = {}
-    try:
-        palette = json.loads((Path.home() / '.cache/rebos_shell/effective-palette.json').read_text())
-    except (OSError, ValueError):
-        pass
     columns, rows = shutil.get_terminal_size()
-    sys.stdout.write(render(columns, rows, random.randrange(4), palette))
+    if columns < 36 or rows < 18:
+        return
+    binary = shutil.which("cbonsai")
+    if not binary:
+        return
+
+    palette = {
+        "primary": "#ffb4a2", "secondary": "#e7bdb3",
+        "tertiary": "#dac58d", "overSurface": "#f1dfda",
+        "outline": "#a08c88",
+    }
+    try:
+        palette.update(json.loads((Path.home() / ".cache/rebos_shell/effective-palette.json").read_text()))
+    except (OSError, ValueError, TypeError):
+        pass
+
+    def color(key, brightness=1):
+        value = palette.get(key)
+        if not isinstance(value, str) or not re.fullmatch(r"#[0-9a-fA-F]{6}", value):
+            return RESET
+        rgb = [round(int(value[i:i + 2], 16) * brightness) for i in (1, 3, 5)]
+        return "\033[38;2;{};{};{}m".format(*rgb)
+
+    # Curated natural silhouettes, rendered on a roomy canvas so branches
+    # never hit a screen edge. Smaller terminals get a shorter specimen.
+    if rows >= 28 and columns >= 54:
+        life, seed = 26, random.choice((27, 10, 76, 62))
+    elif rows >= 24 and columns >= 44:
+        life, seed = 24, random.choice((12, 32, 67))
+    elif rows >= 22 and columns >= 40:
+        life, seed = 22, random.choice((82, 35, 13, 41))
+    else:
+        life, seed = 18, 4
+    width, height = 100, 40
+    # Isolate ncurses in a captured subprocess: no alternate screen or input
+    # handling reaches the user's terminal, even while they start typing.
+    env = {**os.environ, "TERM": "xterm-256color", "LINES": str(height), "COLUMNS": str(width)}
+    try:
+        result = subprocess.run(
+            [binary, "-p", "-b", "2", "-L", str(life), "-s", str(seed), "-k", "1,3,9,11"],
+            stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+            env=env, timeout=2, check=True,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return
+
+    # Print mode emits one reset/bold + color + character per screen cell.
+    # Read only that final matrix, ignoring all ncurses screen controls.
+    printed = result.stdout.rsplit(b"\x1b>", 1)[-1]
+    cells = re.findall(rb"\x1b\[(?:0|1)m\x1b\[([0-9;-]+)m([^\x1b\r\n])", printed)
+    if len(cells) != width * height:
+        return
+    colors = {b"31": color("primary", .78), b"33": color("tertiary", .8),
+              b"91": color("primary"), b"93": color("tertiary"),
+              b"90": color("secondary")}
+    # Replace cbonsai's ASCII planter with a low ceramic pot.
+    lines = [cells[i:i + width] for i in range(0, len(cells) - 3 * width, width)]
+    while lines and all(char == b" " for _, char in lines[0]):
+        lines.pop(0)
+    refine_trunk(lines)
+    occupied = [x for line in lines for x, (_, char) in enumerate(line) if char != b" "]
+    if not occupied:
+        return
+    # Center the full silhouette, including the planter, rather than the
+    # original ncurses canvas or an off-center trunk.
+    available = columns - 6
+    left, right = min(min(occupied), 39), max(max(occupied) + 1, 62)
+    art_width = right - left
+    # Character cells are taller than they are wide: add horizontal breathing
+    # room and keep a consistent frame size for each terminal size.
+    preferred_width = {18: 30, 22: 36, 24: 42, 26: 48}[life]
+    inner_width = min(max(preferred_width, art_width + 8), available)
+    padding = (inner_width - art_width) // 2
+    margin = " " * max(0, (columns - inner_width - 2) // 2)
+    pot = color("secondary", .85)
+
+    def blended(first, second, amount, brightness=1):
+        values = [palette.get(key, "") for key in (first, second)]
+        if not all(isinstance(value, str) and re.fullmatch(r"#[0-9a-fA-F]{6}", value) for value in values):
+            return color("outline", brightness)
+        rgb = [round((int(values[0][i:i + 2], 16) * (1 - amount)
+                      + int(values[1][i:i + 2], 16) * amount) * brightness) for i in (1, 3, 5)]
+        return "\033[38;2;{};{};{}m".format(*rgb)
+
+    def rail(left_corner, right_corner):
+        parts = [margin, color("primary", .9), left_corner]
+        for x in range(inner_width):
+            parts.extend((blended("primary", "tertiary", x / (inner_width - 1), .65), "═"))
+        parts.extend((color("tertiary", .9), right_corner, RESET))
+        return "".join(parts)
+
+    output = ([""] if rows >= 22 else []) + [rail("╔", "╗")]
+    frame_row = 0
+    frame_height = len(lines) + 6
+
+    def framed(text):
+        nonlocal frame_row
+        # Bright corners taper into quiet, differently tinted side rails.
+        position = frame_row / max(1, frame_height - 1)
+        brightness = .38 + .22 * abs(2 * position - 1)
+        frame_row += 1
+        return (margin + blended("primary", "secondary", position, brightness) + "║"
+                + RESET + text + blended("tertiary", "secondary", position, brightness) + "║" + RESET)
+
+    output.append(framed(" " * inner_width))
+    for y, line in enumerate(lines):
+        text = []
+        previous = None
+        for x in range(left, right):
+            code, char = line[x]
+            # Rounded leaves; smaller dots soften the canopy's outer texture.
+            glyph = ("•" if (x * 7 + y * 11) % 5 == 0 else "●") if char == b"&" else char.decode("utf-8")
+            ink = colors.get(code, RESET)
+            # Deep walnut bark, independent of wallpaper accents.
+            if code in (b"wood", b"woodlight") or char in (b"/", b"\\", b"|", b"_", b"~"):
+                glyph = {"/": "╱", "\\": "╲", "_": "─", "~": "─", "|": "│"}.get(glyph, glyph)
+                ink = "\033[38;2;105;79;62m" if code in (b"93", b"woodlight") else "\033[38;2;85;63;49m"
+            if ink != previous:
+                text.append(ink)
+                previous = ink
+            text.append(glyph)
+        output.append(framed(" " * padding + "".join(text) + " " * (inner_width - art_width - padding)))
+
+    pot_x = padding + 50 - left - 11
+    # Tile both rows across the entire curved pot face on one shared grid.
+    upper, lower = random.choice((
+        ("╱─╲", "╲─╱"),          # faceted hexagonal inlays
+        ("╭───╮", "╰╮ ╭╯"),      # overlapping wave crests
+        ("╲ ╱", " ╳ "),          # woven chevrons
+        ("╱◇╲", "╲─╱"),          # diamond-centered medallions
+        ("╭◇╮", "╰─╯"),          # arched jewel tiles
+        ("╭┬╮", "╰┴╯"),          # rounded lattice
+        ("┌┬┐", "└┴┘"),          # square lattice
+        ("╱│╲", "╲│╱"),          # split faceted tiles
+        ("╭─┬─╮", "╰─┴─╯"),      # paneled glaze
+        ("╱╲ ╱╲", "╲╱ ╲╱"),      # paired diamond chain
+        ("╭╮ ╭╮", "╰╯ ╰╯"),      # paired rounded links
+        ("╱─┬─╲", "╲─┴─╱"),      # shield inlays
+        ("┌─◇─┐", "└───┘"),      # framed diamond plaques
+        ("╲│╱", "╱│╲"),          # hourglass weave
+        ("╭◆╮", "╰─╯"),          # dark jewel tiles
+        ("┌◇┐", "└─┘"),          # square jewel tiles
+    ))
+    gap = 1 if len(upper) == 5 else random.choice((1, 2))
+    step = len(upper) + gap
+    bands = []
+    for motif, half_width in ((upper, 10), (lower, 9)):
+        repeat = motif + "─" * gap
+        band = "".join(repeat[(x + len(motif) // 2) % step]
+                       for x in range(-half_width, half_width + 1))
+        # Extend the glaze rule to the pot edges when a motif's negative
+        # space lands at a crop boundary.
+        band = "─" * (len(band) - len(band.lstrip())) + band.strip() + "─" * (len(band) - len(band.rstrip()))
+        bands.append(band)
+    inlay = color(random.choice(("primary", "tertiary")), .88)
+    shadow = color("secondary", .55)
+    patterns = ["".join((inlay if y == 0 or abs(x - len(band) // 2) <= 2 else shadow) + glyph
+                        for x, glyph in enumerate(band)) for y, band in enumerate(bands)]
+    pot_rows = (
+        pot + "╭─────────────────────╮",
+        pot + "╲" + patterns[0] + pot + "╱",
+        pot + " ╲" + patterns[1] + pot + "╱ ",
+        pot + "  ╰─────────────────╯  ",
+    )
+    for shape in pot_rows:
+        output.append(framed(" " * pot_x + shape + " " * (inner_width - pot_x - 23)))
+    output.append(framed(" " * inner_width))
+    output.append(rail("╚", "╝"))
+    sys.stdout.write("\n".join(output) + "\n\n")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

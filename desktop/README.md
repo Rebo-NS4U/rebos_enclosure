@@ -75,7 +75,7 @@ Early KMS is optional and currently supports mkinitcpio. It adds an additive NVI
 - Portable Niri keybindings, named workspaces, rounded windows, transparency and blur. Applications open on the current workspace. Monitor modes are selected by the destination computer.
 - Locus Linux opens in a full-width tiled column, preserving Niri's border and outer gaps.
 - Dark OLED theme with wallpaper-driven GTK, Qt, KDE, Kitty, Fish, Fuzzel, btop, Neovim and supported app palettes; a current palette snapshot is provided for the first login.
-- Kitty/Fish prompt and shortcuts, sculpted half-block bonsai greeting with layered foliage, a tapered trunk, exposed roots and a ceramic pot, cbonsai source and license, bundled terminal/shell fonts, GoogleDot cursor and Papirus icons.
+- Kitty/Fish prompt and shortcuts, wallpaper-colored bonsai greeting, cbonsai source and license, bundled terminal/shell fonts, GoogleDot cursor and Papirus icons.
 - Custom Neovim IDE configuration and plugin lockfile. Plugins and language servers download separately through Neovim on first use; open `:IDEHelp` for instructions.
 - Four 1920×1200 wallpapers in `New-1920x1200`: Aurora Lake, Bioluminescent Garden, Floating Islands and Neon Alley. Fresh installs select Aurora Lake; existing wallpaper preferences are preserved.
 - Themed ReGreet login configuration, background, layout extension and GoogleDot cursor, NetworkManager, Bluetooth, PipeWire/WirePlumber, power profiles, authentication agent, portals, screenshots, OCR and clipboard history.
@@ -442,5 +442,3 @@ the portable payload; a new machine or erased home still requires its own login.
 Network failures leave credentials untouched and do not trigger reauthentication.
 An assistant session restricted by its host can still be unable to reach GitHub;
 repairing login does not change that session's network permissions.
-
-The terminal bonsai greeting is rendered directly in Python with transparent Unicode half-block cells and wallpaper-tinted accents. It adapts to the terminal size, skips piped output and very small terminals, and does not launch cbonsai or use an alternate screen. The standalone cbonsai command remains available.
