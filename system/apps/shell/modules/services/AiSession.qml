@@ -214,7 +214,8 @@ Scope {
         if (geminiPlanUsage) {
             planUsageSummary = "Gemini API quota: check AI Studio";
             planUsageDetails = "Remaining Gemini API quota is unavailable through this API-key connection. View your project's current limits and usage in Google AI Studio.";
-            Qt.openUrlExternally("https://aistudio.google.com/usage?tab=rate-limit");
+            if (showInChat)
+                Qt.callLater(() => root.pushSystemMessage(root.planUsageDetails));
             return;
         }
         usageRequestedInChat = usageRequestedInChat || !!showInChat;

@@ -822,7 +822,12 @@ Item {
                         show: parent.hovered
                         tooltipText: Ai.activeSession.planUsageDetails || (Ai.activeSession.geminiPlanUsage ? "Open Gemini API quota in Google AI Studio" : "Click to check remaining shared Codex allowance")
                     }
-                    onClicked: Ai.activeSession.refreshPlanUsage(true)
+                    onClicked: {
+                        if (Ai.activeSession.geminiPlanUsage)
+                            Qt.openUrlExternally("https://aistudio.google.com/usage?tab=rate-limit");
+                        else
+                            Ai.activeSession.refreshPlanUsage(true);
+                    }
                 }
 
                 Item {

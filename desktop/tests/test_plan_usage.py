@@ -20,6 +20,26 @@ class PlanUsageTests(unittest.TestCase):
             self.assertIn('aistudio.google.com', data['error'])
 
     @unittest.skipUnless(shutil.which('node'), 'Node.js needed to exercise QML JavaScript')
+    def test_refresh_never_opens_browser(self):
+        for app in ('assistant', 'shell'):
+            source = (ROOT / 'system/apps' / app / 'modules/services/AiSession.qml').read_text()
+            start = source.index('    function refreshPlanUsage(showInChat) {')
+            end = source.index('    function applyPlanUsage(data)', start)
+            script = """
+let geminiPlanUsage=true, planUsageSummary='', planUsageDetails='', messages=[];
+const root={pushSystemMessage: message => messages.push(message), get planUsageDetails() {return planUsageDetails;}};
+const Qt={openUrlExternally: () => {throw Error('Unexpected browser launch');}, callLater: fn => fn()};
+""" + source[start:end] + """
+refreshPlanUsage(false);
+refreshPlanUsage(false);
+if(messages.length) throw Error('Automatic refresh posted chat messages');
+refreshPlanUsage(true);
+if(messages.length !== 1) throw Error('Explicit chat request did not report quota status');
+if(!planUsageSummary.includes('Gemini')) throw Error('Wrong backend label');
+"""
+            subprocess.run(['node', '-e', script], check=True)
+
+    @unittest.skipUnless(shutil.which('node'), 'Node.js needed to exercise QML JavaScript')
     def test_remaining_and_stale_response(self):
         for app in ('assistant', 'shell'):
             source = (ROOT / 'system/apps' / app / 'modules/services/AiSession.qml').read_text()
