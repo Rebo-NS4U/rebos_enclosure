@@ -497,6 +497,38 @@ class BonsaiGrowTests(unittest.TestCase):
         self.assertGreater(knotted,5)
         self.assertLess(knotted,35)
 
+    def test_occasional_scar_stays_inside_middle_trunk_and_grows_continuously(self):
+        scarred = plain = 0
+        for seed in range(64):
+            scar = bonsai.trunk_scar(seed)
+            self.assertEqual(scar,bonsai.trunk_scar(seed))
+            scarred += bool(scar)
+            plain += not scar
+            if not scar:
+                continue
+            self.assertTrue(3 <= len(scar) <= 6)
+            bark = {(x,y) for x,y,born,glyph,ink in bonsai.stem(30,seed) if ink == 'bark'}
+            self.assertTrue(all((x,y) in bark and 9 <= y <= 16 for x,y,glyph,born in scar))
+            for a,b in zip(scar,scar[1:]):
+                self.assertLessEqual(abs(a[0]-b[0]),1)
+                self.assertEqual(a[1]-b[1],1)
+                self.assertGreater(b[3],a[3])
+            canvas = [[(' ', '') for _ in range(57)] for _ in range(24)]
+            for x,y in bark:
+                canvas[y][x] = ('░','bark')
+            early = [row.copy() for row in canvas]
+            bonsai.add_trunk_scar(early,seed,10)
+            self.assertEqual(canvas,early)
+            bonsai.add_trunk_scar(canvas,seed,30)
+            self.assertEqual({(x,y) for y,row in enumerate(canvas) for x,(g,ink) in enumerate(row) if g != ' '},bark)
+            for x,y,glyph,born in scar:
+                self.assertEqual(canvas[y][x],(glyph,'scar'))
+            foliage = [[('●','leaf1') for _ in range(57)] for _ in range(24)]
+            bonsai.add_trunk_scar(foliage,seed,30)
+            self.assertTrue(all(cell == ('●','leaf1') for row in foliage for cell in row))
+        self.assertGreater(scarred,10)
+        self.assertGreater(plain,20)
+
     def test_new_launches_use_fresh_seeds_and_explicit_seed_is_repeatable(self):
         from unittest.mock import patch, Mock
         with patch('sys.stdout', Mock(isatty=lambda: True)), \
