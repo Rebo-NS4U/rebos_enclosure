@@ -15,11 +15,18 @@ Singleton {
     property var state: ({})
     property bool initialized: false
 
+    readonly property string stateScript: Qt.resolvedUrl("../../scripts/assistant_state.py").toString().replace(/^file:\/\//, "")
+    property bool savePending: false
+
     signal stateLoaded()
 
     property Process writeProcess: Process {
         running: false
         stdout: SplitParser {}
+        onExited: code => {
+            if (code !== 0) console.warn("StateService: State write failed:", code);
+            if (root.savePending) root.save();
+        }
     }
 
     property Process readProcess: Process {
@@ -89,8 +96,13 @@ Singleton {
         }
 
         try {
+            if (writeProcess.running) {
+                savePending = true;
+                return;
+            }
+            savePending = false;
             const json = JSON.stringify(root.state);
-            writeProcess.command = ["sh", "-c", 'printf "%s" "$1" > "$2"', "sh", json, root.stateFile];
+            writeProcess.command = ["python3", stateScript, "save", root.stateFile, json];
             writeProcess.running = true;
         } catch (e) {
             console.warn("StateService: Failed to save state:", e);
@@ -102,7 +114,7 @@ Singleton {
      * Load state from disk
      */
     function load() {
-        readProcess.command = ["cat", stateFile];
+        readProcess.command = ["python3", stateScript, "load", stateFile];
         readProcess.running = true;
     }
 

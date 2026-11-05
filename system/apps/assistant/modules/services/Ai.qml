@@ -160,6 +160,7 @@ AiSession {
         activeSession = sessions.find(session => session.channelId === active) || sessions[0] || root;
         restoringSessions = false;
         sessionsReady = true;
+        rememberSessions();
     }
 
     Connections {

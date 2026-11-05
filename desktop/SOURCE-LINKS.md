@@ -49,3 +49,12 @@ Recovery archives are inactive restore points, never a second active application
 File recovery uses the journal reported by deployment or organization. It restores
 paths and links, including the prior arrangement before grouping settings.
 Use Git to recover source revisions; file recovery does not change Git history.
+
+## Assistant UI recovery
+
+The assistant keeps its open chat channels in
+`~/.local/state/rebos-assistant/states.json`. Writes create the private directory
+and replace the file atomically. If the registry is missing or damaged after a
+UI crash, startup finds surviving bridge sockets in the current runtime session
+and restores their tabs without restarting the backends. A saved empty tab list
+is respected. The panel and assistant UI are separate Quickshell instances.
