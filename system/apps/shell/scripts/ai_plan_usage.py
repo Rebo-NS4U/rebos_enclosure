@@ -13,6 +13,8 @@ import time
 
 
 def read_usage():
+    if "--provider" in sys.argv and sys.argv[sys.argv.index("--provider") + 1:] == ["gemini"]:
+        return {"error": "Remaining Gemini API quota is unavailable through this API-key connection. Check https://aistudio.google.com/usage?tab=rate-limit", "provider": "gemini"}
     executable = shutil.which("codex")
     if not executable:
         return {"error": "Codex is not installed"}
@@ -120,7 +122,7 @@ def serve_mcp():
                 result = {}
             elif method == "tools/list":
                 result = {"tools": [{"name": "check_plan_usage",
-                    "description": "Check shared Codex plan quota usage percentages and reset times. Includes other Codex clients. Does not run inference.",
+                    "description": "Check the active backend quota. Codex returns shared account usage and reset times; Gemini API quota requires Google AI Studio. Does not run inference.",
                     "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
                     "annotations": {"readOnlyHint": True, "destructiveHint": False}}]}
             elif method == "tools/call" and request.get("params", {}).get("name") == "check_plan_usage":

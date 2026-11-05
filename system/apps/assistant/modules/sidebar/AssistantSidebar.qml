@@ -820,7 +820,7 @@ Item {
                     }
                     StyledToolTip {
                         show: parent.hovered
-                        tooltipText: Ai.activeSession.planUsageDetails || "Click to check shared Codex plan usage"
+                        tooltipText: Ai.activeSession.planUsageDetails || (Ai.activeSession.geminiPlanUsage ? "Open Gemini API quota in Google AI Studio" : "Click to check remaining shared Codex allowance")
                     }
                     onClicked: Ai.activeSession.refreshPlanUsage(true)
                 }

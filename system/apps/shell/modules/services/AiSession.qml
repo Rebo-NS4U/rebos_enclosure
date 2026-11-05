@@ -196,7 +196,14 @@ Scope {
     property int contextSize: 0
     property real sessionCost: 0
     property string sessionCostCurrency: ""
-    property string planUsageSummary: "Plan usage: not checked"
+    readonly property bool geminiPlanUsage: currentAgentId === "google" || currentAgentId === "gemini"
+    onGeminiPlanUsageChanged: {
+        if (planUsageProcess.running) planUsageProcess.running = false;
+        usageRequestedInChat = false;
+        planUsageSummary = geminiPlanUsage ? "Gemini API quota: check AI Studio" : "Codex remaining: not checked";
+        planUsageDetails = "";
+    }
+    property string planUsageSummary: geminiPlanUsage ? "Gemini API quota: check AI Studio" : "Codex remaining: not checked"
     property string planUsageDetails: ""
     property bool usageRequestedInChat: false
     readonly property bool checkingPlanUsage: planUsageProcess.running
@@ -204,6 +211,12 @@ Scope {
     readonly property string questionsScript: Qt.resolvedUrl("../../scripts/ai_questions.py").toString().replace(/^file:\/\//, "")
 
     function refreshPlanUsage(showInChat) {
+        if (geminiPlanUsage) {
+            planUsageSummary = "Gemini API quota: check AI Studio";
+            planUsageDetails = "Remaining Gemini API quota is unavailable through this API-key connection. View your project's current limits and usage in Google AI Studio.";
+            Qt.openUrlExternally("https://aistudio.google.com/usage?tab=rate-limit");
+            return;
+        }
         usageRequestedInChat = usageRequestedInChat || !!showInChat;
         if (!planUsageProcess.running) {
             planUsageProcess.command = ["python3", usageScript];
@@ -212,6 +225,7 @@ Scope {
     }
 
     function applyPlanUsage(data) {
+        if (geminiPlanUsage) return;
         if (data.error) {
             planUsageSummary = "Plan usage unavailable";
             planUsageDetails = data.error;
@@ -224,7 +238,7 @@ Scope {
                     let label = minutes >= 1440 ? (minutes / 1440) + "d"
                         : minutes >= 60 ? (minutes / 60) + "h"
                         : minutes ? minutes + "m" : window.kind;
-                    let text = limit.name + " " + label + ": " + Math.round(window.usedPercent) + "% used";
+                    let text = limit.name + " " + label + ": " + Math.round(Math.max(0, Math.min(100, 100 - window.usedPercent))) + "% left";
                     summaries.push(text);
                     details.push(text + (window.resetsAt ? " · resets " + new Date(window.resetsAt * 1000).toLocaleString() : ""));
                 }
@@ -597,7 +611,7 @@ Scope {
             mcpServers: [{
                 name: "plan_usage",
                 command: "python3",
-                args: [usageScript, "--mcp"],
+                args: [usageScript, "--mcp"].concat(geminiPlanUsage ? ["--provider", "gemini"] : []),
                 env: []
             }, {
                 name: "assistant_questions",
