@@ -1,263 +1,179 @@
 #!/usr/bin/env python3
-"""A framed cbonsai greeting using the desktop's current wallpaper palette."""
+"""Procedural, seed-to-canopy bonsai greeting. Python standard library only."""
+import argparse
 import json
+import math
 import os
 from pathlib import Path
-import re
 import random
+import re
 import shutil
-import subprocess
 import sys
+import time
 
-RESET = "\033[0m"
+RESET = '\033[0m'
+PALETTE = dict(primary='#ffb4a2', secondary='#e7bdb3', tertiary='#dac58d', outline='#a08c88')
 
 
-def refine_trunk(lines):
-    """Trace the exposed root into the existing tree, then taper its contour."""
-    path = []
-    center = 50
-    for y in range(len(lines) - 1, max(-1, len(lines) - 7), -1):
-        row = b"".join(char for _, char in lines[y])
-        runs = list(re.finditer(rb"[/\\|_~]+", row))
-        stem_runs = [run for run in runs if b"~" in run.group()]
-        runs = stem_runs or runs
-        if not runs:
-            break
-        run = min(runs, key=lambda match: abs((match.start() + match.end() - 1) / 2 - center))
-        midpoint = (run.start() + run.end() - 1) / 2
-        # Leave forks and foliage alone; only reshape the exposed main stem.
-        if (abs(midpoint - center) > 4 or (path and run.end() - run.start() > 7)
-                or b"&" in row[max(0, run.start() - 1):run.end() + 1]):
-            break
-        path.append((y, run.start(), run.end(), midpoint))
-        center = midpoint
-    if len(path) < 2:
-        return
+class Tree:
+    """Generate geometry once; age reveals connected growth, never rerolls it."""
+    def __init__(self, width, height, seed=None):
+        self.width, self.height = width, height
+        self.rng = random.Random(seed)
+        self.wood, self.leaves = [], []
+        self.center = width // 2
+        self.lean = self.rng.uniform(-.7, .7)
+        self.phase = self.rng.uniform(0, math.tau)
+        self.branch(self.center, height - 1, -math.pi / 2, height * .86, 0, .04, .53)
 
-    # Blend toward the existing bend instead of following every random step.
-    # The root stays centered over the planter, with a gentle flare at its foot.
-    centers = [50.0]
-    for _, _, _, midpoint in path[1:]:
-        centers.append(centers[-1] + max(-1.25, min(1.25, (midpoint - centers[-1]) * .7)))
-    correction = path[-1][3] - centers[-1]
-    centers = [center + correction * depth / (len(path) - 1)
-               for depth, center in enumerate(centers)]
-    contours = []
-    for depth, center in enumerate(centers):
-        span = round(4 - 3 * depth / (len(path) - 1))
-        left = round(center - span / 2)
-        contours.append((left, left + span))
-    # Keep the original junction as the anchor into the upper branches.
-    contours[-1] = (path[-1][1], path[-1][2] - 1)
+    def branch(self, x, y, angle, length, depth, birth, duration):
+        rng = self.rng
+        steps = max(3, int(length * 3))
+        points = []
+        for i in range(steps + 1):
+            t = i / steps
+            if i:
+                # Horizontal cells are half as wide as vertical cells.
+                angle += rng.uniform(-.10, .10)
+                if depth == 0:
+                    angle = -math.pi / 2 + self.lean + .32 * math.sin(t * 7 + self.phase)
+                else:
+                    angle += (-math.pi / 2 - angle) * .025
+                x += math.cos(angle) * length / steps * 1.8
+                y += math.sin(angle) * length / steps
+            x = max(2, min(self.width - 3, x))
+            y = max(1, min(self.height - 1, y))
+            points.append((x, y, angle))
+            self.wood.append((x, y, angle, birth + duration * t, depth, t))
+        if depth < 3:
+            forks = ( .28, .47, .65, .82) if depth == 0 else (.48, .85)
+            side = rng.choice((-1, 1))
+            for j, t in enumerate(forks):
+                px, py, pa = points[int(t * steps)]
+                direction = side * (-1 if j % 2 else 1)
+                spread = rng.uniform(.65, 1.15)
+                child_length = length * (rng.uniform(.32, .48) if depth == 0 else rng.uniform(.42, .64))
+                self.branch(px, py, pa + direction * spread, child_length, depth + 1,
+                            birth + duration * t, duration * .55)
+        if depth >= 2:
+            # Layered, elliptical foliage pads leave the interior branchwork exposed.
+            for t in (.76, 1):
+                px, py, _ = points[int(t * steps)]
+                radius = rng.uniform(2.0, 3.8) if depth == 2 else rng.uniform(1.5, 2.8)
+                for dy in range(-2, 3):
+                    for dx in range(-4, 5):
+                        distance = (dx / radius) ** 2 + (dy / (radius * .42)) ** 2
+                        if distance < 1 and rng.random() > .15:
+                            tone = 'tertiary' if dy < 0 and rng.random() < .6 else 'primary'
+                            glyph = rng.choice('·˙•') if distance > .65 else rng.choice('•❧✦')
+                            self.leaves.append((round(px + dx), round(py + dy),
+                                                min(.98, birth + duration * t + .10 + rng.random() * .13),
+                                                glyph, tone, .55 if dy > 0 else .95))
 
-    for depth, ((y, start, end, _), (left, right)) in enumerate(zip(path, contours)):
-        if depth == len(path) - 1:
-            continue
-        # Erase just the traced stem; nearby branches keep their original shape.
-        for x in range(start, end):
-            lines[y][x] = (b"0", b" ")
-        above_left, above_right = contours[min(depth + 1, len(contours) - 1)]
-        for x in range(left, right + 1):
-            # Never erase a leaf when a smoothed contour meets the canopy.
-            if lines[y][x][1] == b"&":
+    def cells(self, age):
+        grid = [[(' ', 'outline', 1) for _ in range(self.width)] for _ in range(self.height)]
+        def put(x, y, glyph, tone, shade=1):
+            if 0 <= x < self.width and 0 <= y < self.height:
+                grid[y][x] = (glyph, tone, shade)
+        for x, y, angle, birth, depth, t in self.wood:
+            if birth > age:
                 continue
-            glyph, code = " ", b"wood"
-            if x == left:
-                glyph = "╱" if depth == 0 or above_left > left else "╲" if above_left < left else "│"
-            elif x == right:
-                glyph = "╲" if depth == 0 or above_right < right else "╱" if above_right > right else "│"
-            elif right - left >= 3 and x == left + 1:
-                glyph, code = "│", b"woodlight"
-            lines[y][x] = (code, glyph.encode("utf-8"))
+            x, y = round(x), round(y)
+            dx = math.cos(angle)
+            glyph = '│' if abs(dx) < .22 else '╱' if dx > 0 else '╲'
+            # Old lower wood gains a flared contour while fine twigs stay hairline.
+            thickness = (1 - t) * max(0, age - .25) * 3 if depth == 0 else 0
+            if thickness > .8:
+                half = max(1, round(thickness))
+                put(x - half, y, glyph, 'bark', .85)
+                for offset in range(-half + 1, half):
+                    put(x + offset, y, '│' if (offset + y) % 3 == 0 else '░', 'bark', .65)
+                put(x + half, y, glyph, 'bark', 1.2)
+            else:
+                put(x, y, glyph, 'bark', 1.15 if depth > 1 else .9)
+        for x, y, birth, glyph, tone, shade in self.leaves:
+            if birth <= age:
+                put(x, y, glyph if age - birth > .08 else '·', tone, shade)
+        if age < .18:
+            put(self.center - 1, self.height - 2, '╲', 'primary')
+            put(self.center + 1, self.height - 2, '╱', 'tertiary')
+        return grid
+
+
+def ink(palette, tone, shade):
+    value = '#96704f' if tone == 'bark' else palette.get(tone, PALETTE['outline'])
+    if not isinstance(value, str) or not re.fullmatch(r'#[0-9a-fA-F]{6}', value):
+        value = PALETTE.get(tone, PALETTE['outline'])
+    return '\033[38;2;{};{};{}m'.format(*(max(0, min(255, round(int(value[i:i+2], 16) * shade))) for i in (1, 3, 5)))
+
+
+def render(tree, age, palette, columns, plain=False):
+    width = tree.width
+    margin = ' ' * max(0, (columns - width - 2) // 2)
+    def paint(text, tone='outline', shade=.65):
+        return text if plain else ink(palette, tone, shade) + text + RESET
+    def row(text):
+        return margin + paint('║') + text + paint('║')
+    lines = [margin + paint('╔' + '═' * width + '╗', 'primary')]
+    for cells in tree.cells(age):
+        text, previous = [], None
+        for glyph, tone, shade in cells:
+            if not plain and (tone, shade) != previous:
+                text.append(ink(palette, tone, shade))
+                previous = tone, shade
+            text.append(glyph)
+        lines.append(row(''.join(text) + ('' if plain else RESET)))
+    # Low glazed ceramic planter, centered beneath the root flare.
+    motif = ('─◇─┬' if int(tree.phase * 10) % 2 else '─┬─◇')
+    band = (motif * 5)[:17]
+    for pot in ('╭─────────────────╮', '╲' + band + '╱', ' ╰───────────────╯ '):
+        left = tree.center - len(pot) // 2
+        lines.append(row(' ' * left + paint(pot, 'secondary', .9) + ' ' * (width - left - len(pot))))
+    lines.append(margin + paint('╚' + '═' * width + '╝', 'tertiary'))
+    return '\n'.join(lines)
 
 
 def main():
-    if not sys.stdout.isatty() or os.environ.get("TERM", "dumb") == "dumb":
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--seed', type=int, help='Replay a particular tree')
+    parser.add_argument('--no-animation', action='store_true', help='Show the mature tree immediately')
+    parser.add_argument('--plain', action='store_true', help='Print an uncolored mature tree, including to a pipe')
+    args = parser.parse_args()
+    if not args.plain and (not sys.stdout.isatty() or os.environ.get('TERM', 'dumb') == 'dumb'):
         return
     columns, rows = shutil.get_terminal_size()
     if columns < 36 or rows < 18:
         return
-    binary = shutil.which("cbonsai")
-    if not binary:
-        return
-
-    palette = {
-        "primary": "#ffb4a2", "secondary": "#e7bdb3",
-        "tertiary": "#dac58d", "overSurface": "#f1dfda",
-        "outline": "#a08c88",
-    }
+    palette = PALETTE.copy()
     try:
-        palette.update(json.loads((Path.home() / ".cache/rebos_shell/effective-palette.json").read_text()))
-    except (OSError, ValueError, TypeError):
+        data = json.loads((Path.home() / '.cache/rebos_shell/effective-palette.json').read_text())
+        if isinstance(data, dict):
+            palette.update(data)
+    except (OSError, ValueError):
         pass
-
-    def color(key, brightness=1):
-        value = palette.get(key)
-        if not isinstance(value, str) or not re.fullmatch(r"#[0-9a-fA-F]{6}", value):
-            return RESET
-        rgb = [round(int(value[i:i + 2], 16) * brightness) for i in (1, 3, 5)]
-        return "\033[38;2;{};{};{}m".format(*rgb)
-
-    # Curated natural silhouettes, rendered on a roomy canvas so branches
-    # never hit a screen edge. Smaller terminals get a shorter specimen.
-    if rows >= 28 and columns >= 54:
-        life, seed = 26, random.choice((27, 10, 76, 62))
-    elif rows >= 24 and columns >= 44:
-        life, seed = 24, random.choice((12, 32, 67))
-    elif rows >= 22 and columns >= 40:
-        life, seed = 22, random.choice((82, 35, 13, 41))
-    else:
-        life, seed = 18, 4
-    width, height = 100, 40
-    # Isolate ncurses in a captured subprocess: no alternate screen or input
-    # handling reaches the user's terminal, even while they start typing.
-    env = {**os.environ, "TERM": "xterm-256color", "LINES": str(height), "COLUMNS": str(width)}
+    tree = Tree(min(64, columns - 8), min(22, rows - 9), args.seed)
+    animate = not (args.no_animation or args.plain or os.environ.get('REDUCE_MOTION') == '1')
+    frames = 30 if animate else 1
+    # Reserve normal scrollback rows first; redraw only our own area. Never read
+    # keyboard input or enter an alternate screen, so early typing is preserved.
+    height = tree.height + 5
     try:
-        result = subprocess.run(
-            [binary, "-p", "-b", "2", "-L", str(life), "-s", str(seed), "-k", "1,3,9,11"],
-            stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
-            env=env, timeout=2, check=True,
-        )
-    except (OSError, subprocess.SubprocessError):
-        return
-
-    # Print mode emits one reset/bold + color + character per screen cell.
-    # Read only that final matrix, ignoring all ncurses screen controls.
-    printed = result.stdout.rsplit(b"\x1b>", 1)[-1]
-    cells = re.findall(rb"\x1b\[(?:0|1)m\x1b\[([0-9;-]+)m([^\x1b\r\n])", printed)
-    if len(cells) != width * height:
-        return
-    colors = {b"31": color("primary", .78), b"33": color("tertiary", .8),
-              b"91": color("primary"), b"93": color("tertiary"),
-              b"90": color("secondary")}
-    # Replace cbonsai's ASCII planter with a low ceramic pot.
-    lines = [cells[i:i + width] for i in range(0, len(cells) - 3 * width, width)]
-    while lines and all(char == b" " for _, char in lines[0]):
-        lines.pop(0)
-    refine_trunk(lines)
-    occupied = [x for line in lines for x, (_, char) in enumerate(line) if char != b" "]
-    if not occupied:
-        return
-    # Center the full silhouette, including the planter, rather than the
-    # original ncurses canvas or an off-center trunk.
-    available = columns - 6
-    left, right = min(min(occupied), 39), max(max(occupied) + 1, 62)
-    art_width = right - left
-    # Character cells are taller than they are wide: add horizontal breathing
-    # room and keep a consistent frame size for each terminal size.
-    preferred_width = {18: 30, 22: 36, 24: 42, 26: 48}[life]
-    inner_width = min(max(preferred_width, art_width + 8), available)
-    padding = (inner_width - art_width) // 2
-    margin = " " * max(0, (columns - inner_width - 2) // 2)
-    pot = color("secondary", .85)
-
-    def blended(first, second, amount, brightness=1):
-        values = [palette.get(key, "") for key in (first, second)]
-        if not all(isinstance(value, str) and re.fullmatch(r"#[0-9a-fA-F]{6}", value) for value in values):
-            return color("outline", brightness)
-        rgb = [round((int(values[0][i:i + 2], 16) * (1 - amount)
-                      + int(values[1][i:i + 2], 16) * amount) * brightness) for i in (1, 3, 5)]
-        return "\033[38;2;{};{};{}m".format(*rgb)
-
-    def rail(left_corner, right_corner):
-        parts = [margin, color("primary", .9), left_corner]
-        for x in range(inner_width):
-            parts.extend((blended("primary", "tertiary", x / (inner_width - 1), .65), "═"))
-        parts.extend((color("tertiary", .9), right_corner, RESET))
-        return "".join(parts)
-
-    output = ([""] if rows >= 22 else []) + [rail("╔", "╗")]
-    frame_row = 0
-    frame_height = len(lines) + 6
-
-    def framed(text):
-        nonlocal frame_row
-        # Bright corners taper into quiet, differently tinted side rails.
-        position = frame_row / max(1, frame_height - 1)
-        brightness = .38 + .22 * abs(2 * position - 1)
-        frame_row += 1
-        return (margin + blended("primary", "secondary", position, brightness) + "║"
-                + RESET + text + blended("tertiary", "secondary", position, brightness) + "║" + RESET)
-
-    output.append(framed(" " * inner_width))
-    for y, line in enumerate(lines):
-        text = []
-        previous = None
-        for x in range(left, right):
-            code, char = line[x]
-            # Rounded leaves; smaller dots soften the canopy's outer texture.
-            glyph = ("•" if (x * 7 + y * 11) % 5 == 0 else "●") if char == b"&" else char.decode("utf-8")
-            ink = colors.get(code, RESET)
-            if char == b"&" and code in (b"31", b"33", b"91", b"93"):
-                # Retain the familiar dots; separate shaded clusters from lit tips.
-                covered = sum(0 <= y + dy < len(lines) and 0 <= x + dx < width
-                              and lines[y + dy][x + dx][1] == b"&"
-                              for dx, dy in ((-1, 0), (0, -1), (1, 0)))
-                tone = "primary" if code in (b"31", b"91") else "tertiary"
-                brightness = {b"31": .78, b"33": .8, b"91": 1, b"93": 1}[code]
-                ink = color(tone, brightness * (1.0, .88, .68, .52)[covered])
-            # Deep walnut bark, independent of wallpaper accents.
-            if code in (b"wood", b"woodlight") or char in (b"/", b"\\", b"|", b"_", b"~"):
-                glyph = {"/": "╱", "\\": "╲", "_": "─", "~": "─", "|": "│"}.get(glyph, glyph)
-                base = (150, 111, 76) if code in (b"93", b"woodlight") else (119, 86, 59)
-                # Narrow tonal ridges bend along the wood. Color alone adds
-                # grain without filling spaces or changing a single stroke.
-                ridge = (x + y // 3) % 4
-                brightness = (.66, .92, 1.35, 1.08)[ridge]
-                ink = "\033[38;2;{};{};{}m".format(*(round(value * brightness) for value in base))
-            if ink != previous:
-                text.append(ink)
-                previous = ink
-            text.append(glyph)
-        output.append(framed(" " * padding + "".join(text) + " " * (inner_width - art_width - padding)))
-
-    pot_x = padding + 50 - left - 11
-    # Tile both rows across the entire curved pot face on one shared grid.
-    upper, lower = random.choice((
-        ("╱─╲", "╲─╱"),          # faceted hexagonal inlays
-        ("╭───╮", "╰╮ ╭╯"),      # overlapping wave crests
-        ("╲ ╱", " ╳ "),          # woven chevrons
-        ("╱◇╲", "╲─╱"),          # diamond-centered medallions
-        ("╭◇╮", "╰─╯"),          # arched jewel tiles
-        ("╭┬╮", "╰┴╯"),          # rounded lattice
-        ("┌┬┐", "└┴┘"),          # square lattice
-        ("╱│╲", "╲│╱"),          # split faceted tiles
-        ("╭─┬─╮", "╰─┴─╯"),      # paneled glaze
-        ("╱╲ ╱╲", "╲╱ ╲╱"),      # paired diamond chain
-        ("╭╮ ╭╮", "╰╯ ╰╯"),      # paired rounded links
-        ("╱─┬─╲", "╲─┴─╱"),      # shield inlays
-        ("┌─◇─┐", "└───┘"),      # framed diamond plaques
-        ("╲│╱", "╱│╲"),          # hourglass weave
-        ("╭◆╮", "╰─╯"),          # dark jewel tiles
-        ("┌◇┐", "└─┘"),          # square jewel tiles
-    ))
-    gap = 1 if len(upper) == 5 else random.choice((1, 2))
-    step = len(upper) + gap
-    bands = []
-    for motif, half_width in ((upper, 10), (lower, 9)):
-        repeat = motif + "─" * gap
-        band = "".join(repeat[(x + len(motif) // 2) % step]
-                       for x in range(-half_width, half_width + 1))
-        # Extend the glaze rule to the pot edges when a motif's negative
-        # space lands at a crop boundary.
-        band = "─" * (len(band) - len(band.lstrip())) + band.strip() + "─" * (len(band) - len(band.rstrip()))
-        bands.append(band)
-    inlay = color(random.choice(("primary", "tertiary")), .88)
-    shadow = color("secondary", .55)
-    patterns = ["".join((inlay if y == 0 or abs(x - len(band) // 2) <= 2 else shadow) + glyph
-                        for x, glyph in enumerate(band)) for y, band in enumerate(bands)]
-    pot_rows = (
-        pot + "╭─────────────────────╮",
-        pot + "╲" + patterns[0] + pot + "╱",
-        pot + " ╲" + patterns[1] + pot + "╱ ",
-        pot + "  ╰─────────────────╯  ",
-    )
-    for shape in pot_rows:
-        output.append(framed(" " * pot_x + shape + " " * (inner_width - pot_x - 23)))
-    output.append(framed(" " * inner_width))
-    output.append(rail("╚", "╝"))
-    sys.stdout.write("\n".join(output) + "\n\n")
+        if animate:
+            sys.stdout.write('\n' * height + f'\033[{height}A')
+        for frame in range(frames):
+            age = frame / (frames - 1) if animate else 1
+            sys.stdout.write(render(tree, age, palette, columns, args.plain) + '\n')
+            sys.stdout.flush()
+            if frame < frames - 1:
+                time.sleep(1.8 / (frames - 1))
+                sys.stdout.write(f'\033[{height}A')
+    except KeyboardInterrupt:
+        sys.stdout.write('\n')
+    finally:
+        if not args.plain:
+            sys.stdout.write(RESET)
+        sys.stdout.write('\n')
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

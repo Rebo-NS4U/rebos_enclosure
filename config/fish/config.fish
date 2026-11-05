@@ -1,4 +1,4 @@
-## Wallpaper-colored, framed cbonsai welcome message.
+## Wallpaper-colored, procedural bonsai welcome message.
 function fish_greeting
     if status is-interactive; and test -t 1; and command -q terminal-bonsai
         terminal-bonsai

@@ -75,7 +75,7 @@ Early KMS is optional and currently supports mkinitcpio. It adds an additive NVI
 - Portable Niri keybindings, named workspaces, rounded windows, transparency and blur. Applications open on the current workspace. Monitor modes are selected by the destination computer.
 - Locus Linux opens in a full-width tiled column, preserving Niri's border and outer gaps.
 - Dark OLED theme with wallpaper-driven GTK, Qt, KDE, Kitty, Fish, Fuzzel, btop, Neovim and supported app palettes; a current palette snapshot is provided for the first login.
-- Kitty/Fish prompt and shortcuts, wallpaper-colored bonsai greeting with layered leaf shadows and warm bark grain that preserve the original line art, cbonsai source and license, bundled terminal/shell fonts, GoogleDot cursor and Papirus icons.
+- Kitty/Fish prompt and shortcuts, procedural wallpaper-colored bonsai greeting that grows from a seedling into a unique Unicode tree with layered foliage and a ceramic pot, legacy cbonsai source and license, bundled terminal/shell fonts, GoogleDot cursor and Papirus icons.
 - Custom Neovim IDE configuration and plugin lockfile. Plugins and language servers download separately through Neovim on first use; open `:IDEHelp` for instructions.
 - Four 1920×1200 wallpapers in `New-1920x1200`: Aurora Lake, Bioluminescent Garden, Floating Islands and Neon Alley. Fresh installs select Aurora Lake; existing wallpaper preferences are preserved.
 - Themed ReGreet login configuration, background, layout extension and GoogleDot cursor, NetworkManager, Bluetooth, PipeWire/WirePlumber, power profiles, authentication agent, portals, screenshots, OCR and clipboard history.
@@ -442,3 +442,5 @@ the portable payload; a new machine or erased home still requires its own login.
 Network failures leave credentials untouched and do not trigger reauthentication.
 An assistant session restricted by its host can still be unable to reach GitHub;
 repairing login does not change that session's network permissions.
+
+The terminal bonsai greeting uses Python’s standard library and grows for about two seconds on each new interactive terminal. Every launch generates a fresh tree. Run `terminal-bonsai --seed 42` to replay a tree, `--no-animation` for an instant mature tree, or `--plain` to export uncolored art. `REDUCE_MOTION=1` also skips growth. Small terminals and redirected greetings stay quiet. Growth uses normal scrollback without reading keyboard input or switching screens.
