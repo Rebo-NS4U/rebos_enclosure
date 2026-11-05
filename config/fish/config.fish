@@ -1,7 +1,7 @@
-## Terminal-themed, procedural layered rainforest banner.
+## Wallpaper-colored, procedural bonsai welcome message.
 function fish_greeting
-    if status is-interactive; and test -t 1; and command -q terminal-rainforest
-        terminal-rainforest
+    if status is-interactive; and test -t 1; and command -q terminal-bonsai
+        terminal-bonsai --current
     end
 end
 
