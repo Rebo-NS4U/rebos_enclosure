@@ -67,6 +67,7 @@
     ".local/bin/regreet-sync",
     ".local/bin/rice",
     ".local/bin/terminal-bonsai",
+    ".local/bin/terminal-rainforest",
     ".local/bin/thinkpad-fan-control",
     ".local/bin/wallpaper",
     ".local/bin/wallpaper-switcher",
@@ -345,6 +346,10 @@
     },
     ".local/bin/terminal-bonsai": {
       "source": "system/bin/terminal-bonsai",
+      "kind": "managed"
+    },
+    ".local/bin/terminal-rainforest": {
+      "source": "system/bin/terminal-rainforest",
       "kind": "managed"
     },
     ".local/bin/thinkpad-fan-control": {

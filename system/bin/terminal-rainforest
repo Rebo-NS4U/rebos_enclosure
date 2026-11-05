@@ -1,0 +1,79 @@
+#!/usr/bin/env python3
+"""A procedural layered-canopy greeting using the terminal's own ANSI palette."""
+import argparse
+import math
+import os
+import random
+import shutil
+import sys
+
+RESET = '\033[0m'
+# Standard palette slots follow the terminal theme, including live theme changes.
+COLORS = ('', '\033[36m', '\033[32m', '\033[92m')
+
+
+def forest(width, height, seed=None):
+    """Return single-cell glyphs and depth values; never exceed the viewport."""
+    rng = random.Random(seed)
+    cells = [[(' ', 0) for _ in range(width)] for _ in range(height)]
+    for layer in range(1, 4):
+        spacing = (12, 17, 23)[layer - 1]
+        x = -spacing
+        while x < width + spacing:
+            x += rng.randint(max(3, spacing // 2), spacing)
+            top = rng.uniform(.08, .25) + (layer - 1) * .19
+            radius = rng.uniform(spacing * .5, spacing * .85)
+            crown = top * height
+            depth = max(1.0, height * rng.uniform(.13, .22))
+            # Broad interlocking crowns, with a few irregular leafy edges.
+            for col in range(max(0, int(x-radius)), min(width, int(x+radius)+1)):
+                t = (col-x) / radius
+                edge = crown + depth * (1-math.sqrt(max(0, 1-t*t)))
+                edge += rng.uniform(-.5, .5)
+                start = max(0, min(height-1, int(edge)))
+                for row in range(start, min(height, int(crown+depth)+1)):
+                    cells[row][col] = (('▄' if row == start else '█'), layer)
+            # Tapered trunks visible beneath the canopy, occasional hanging vines.
+            for row in range(max(0, int(crown+depth)), height):
+                col = int(x + math.sin(row*.3+layer)*.5)
+                if 0 <= col < width:
+                    cells[row][col] = ('│', layer)
+            vine = int(x + radius*.65)
+            for row in range(max(0, int(crown+depth)), min(height, int(crown+depth)+2)):
+                if 0 <= vine < width:
+                    cells[row][vine] = ('╵', layer)
+    return cells
+
+
+def render(columns, rows, seed=None, plain=False):
+    # One spare column avoids automatic wrapping; leave ample prompt space.
+    if columns < 24 or rows < 10:
+        return ''
+    height = min(12, max(4, rows // 3))
+    lines = []
+    for row in forest(columns-1, height, seed):
+        line, previous = '', None
+        for glyph, layer in row:
+            if not plain and layer != previous:
+                line += COLORS[layer] or RESET
+            line += glyph
+            previous = layer
+        lines.append(line.rstrip() + ('' if plain else RESET))
+    return '\n'.join(lines)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--seed', type=int, help='Reproduce a particular forest')
+    parser.add_argument('--plain', action='store_true', help='Export without colors, even when redirected')
+    args = parser.parse_args()
+    if not args.plain and (not sys.stdout.isatty() or os.environ.get('TERM', 'dumb') == 'dumb'):
+        return
+    columns, rows = shutil.get_terminal_size()
+    picture = render(columns, rows, args.seed, args.plain or 'NO_COLOR' in os.environ)
+    if picture:
+        print(picture + '\n')
+
+
+if __name__ == '__main__':
+    main()
