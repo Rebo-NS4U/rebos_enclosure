@@ -433,7 +433,28 @@ def cover_crown_wood(canvas):
         canvas[y][x] = (' ', '')
 
 
-def render(days, seed, color=True, columns=80, accents=None, style='informal'):
+# Ceramic inlay designs from the pushed terminal-bonsai greeting.
+POT_MOTIFS = (('╱─╲', '╲─╱'), ('╭───╮', '╰╮ ╭╯'), ('╲ ╱', ' ╳ '), ('╱◇╲', '╲─╱'), ('╭◇╮', '╰─╯'), ('╭┬╮', '╰┴╯'), ('┌┬┐', '└┴┘'), ('╱│╲', '╲│╱'), ('╭─┬─╮', '╰─┴─╯'), ('╱╲ ╱╲', '╲╱ ╲╱'), ('╭╮ ╭╮', '╰╯ ╰╯'), ('╱─┬─╲', '╲─┴─╱'), ('┌─◇─┐', '└───┘'), ('╲│╱', '╱│╲'), ('╭◆╮', '╰─╯'), ('┌◇┐', '└─┘'))
+
+
+def pot_rows(seed):
+    """Keep the selected glaze pattern stable throughout a growth sequence."""
+    rng = random.Random(f'{seed}:pot')
+    upper, lower = rng.choice(POT_MOTIFS)
+    gap = 1 if len(upper) == 5 else rng.choice((1, 2))
+    bands = []
+    for motif, half_width in ((upper, 10), (lower, 9)):
+        repeat = motif + '─' * gap
+        band = ''.join(repeat[(x + len(motif) // 2) % len(repeat)]
+                       for x in range(-half_width, half_width + 1))
+        band = '─' * (len(band) - len(band.lstrip())) + band.strip() + '─' * (len(band) - len(band.rstrip()))
+        bands.append(band)
+    return ('╭─────────────────────╮', '╲' + bands[0] + '╱',
+            ' ╲' + bands[1] + '╱ ', '  ╰─────────────────╯  ')
+
+
+def render(days, seed, color=True, columns=80, accents=None, style='informal',
+           fixed_height=False, pot_seed=None):
     width, height = 57, 24
     canvas = [[(' ', '') for _ in range(width)] for _ in range(height)]
     # Growth starts with a rooted sapling; cells remain as new growth arrives.
@@ -448,9 +469,12 @@ def render(days, seed, color=True, columns=80, accents=None, style='informal'):
             canvas[y][x] = (glyph, ink)
     if style == 'informal':
         cover_crown_wood(canvas)
-    for y, row in enumerate(('╭─────────────────╮', ' ╲_______________╱ ', '   └───────────┘   '), 19):
-        for x, char in enumerate(row, 18):
-            canvas[y][x] = (char, 'pot')
+    for y, row in enumerate(pot_rows(seed if pot_seed is None else pot_seed), 19):
+        for x, char in enumerate(row, 16):
+            ink = 'pot'
+            if y in (20, 21) and char not in ' ╲╱':
+                ink = 'pot_inlay' if y == 20 or abs(x - 27) <= 2 else 'pot_shadow'
+            canvas[y][x] = (char, ink)
     occupied = [y for y, row in enumerate(canvas) if any(c != ' ' for c, _ in row)]
     palette = {'wood': '\033[38;2;174;132;91m', 'leaf': '\033[38;2;133;180;112m',
                'pot': '\033[38;2;135;155;166m', 'bark': '\033[38;2;126;91;62m',
@@ -460,6 +484,10 @@ def render(days, seed, color=True, columns=80, accents=None, style='informal'):
                        woodlight='\033[38;2;214;195;155m')
     palette['shoot'] = palette['wood']
     accents = accents if valid_palette(accents) else wallpaper_palette()
+    for name, accent, brightness in (('pot_inlay', accents[0], .88),
+                                    ('pot_shadow', accents[1], .55)):
+        rgb = [round(int(accent[k:k + 2], 16) * brightness) for k in (1, 3, 5)]
+        palette[name] = '\033[38;2;{};{};{}m'.format(*rgb)
     for i, accent in enumerate(accents):
         rgb_leaf = [int(accent[k:k + 2], 16) for k in (1, 3, 5)]
         # Short petioles fade from warm wood into the leaf's saved accent.
@@ -472,10 +500,72 @@ def render(days, seed, color=True, columns=80, accents=None, style='informal'):
             palette[f'leaf{i * 3 + j}'] = '\033[38;2;{};{};{}m'.format(*rgb)
     margin = ' ' * max(0, (min(columns, 90) - width) // 2)
     output = []
-    for row in canvas[min(occupied):max(occupied) + 1]:
-        text = ''.join((palette[ink] if color else '') + glyph for glyph, ink in row)
-        output.append(margin + text.rstrip() + ('\033[0m' if color else ''))
+    visible = canvas if fixed_height else canvas[min(occupied):max(occupied) + 1]
+    for row in visible:
+        parts, previous = [], None
+        for glyph, ink in row:
+            if color and ink != previous:
+                parts.append(palette[ink])
+            parts.append(glyph)
+            previous = ink
+        output.append(margin + ''.join(parts).rstrip() + ('\033[0m' if color else ''))
     return '\n'.join(output) + '\n'
+
+
+def animate_growth(seed, accents, duration=2.5, style='informal'):
+    """Play a bounded, skippable greeting and leave its final tree in scrollback."""
+    import select
+    import signal
+    import termios
+    import tty
+
+    columns, rows = shutil.get_terminal_size()
+    pot_seed = random.SystemRandom().randrange(2**63)
+    def picture(day, fixed=False):
+        return render(day, seed, True, shutil.get_terminal_size().columns,
+                      accents, style, fixed_height=fixed, pot_seed=pot_seed)
+    if rows < 26 or os.environ.get('REDUCE_MOTION') == '1':
+        print(picture(30), end='')
+        return
+    fd = sys.stdin.fileno()
+    previous = termios.tcgetattr(fd)
+    def stop(signum, frame):
+        raise KeyboardInterrupt
+    old_term = signal.signal(signal.SIGTERM, stop)
+    reserved = False
+    try:
+        tty.setcbreak(fd)
+        sys.stdout.write('\n' * 24 + '\033[?25l')
+        reserved = True
+        began = time.monotonic()
+        while True:
+            current_columns, current_rows = shutil.get_terminal_size()
+            if current_columns < 57 or current_rows < 26:
+                break
+            elapsed = time.monotonic() - began
+            day = min(30, elapsed / duration * 30)
+            sys.stdout.write('\033[?2026h\033[24A\r' + picture(day, True) + '\033[?2026l')
+            sys.stdout.flush()
+            if day >= 30:
+                break
+            if select.select([fd], [], [], max(0, min(1/30, duration-elapsed)))[0]:
+                os.read(fd, 1)
+                break
+    except KeyboardInterrupt:
+        pass
+    finally:
+        try:
+            current_columns, current_rows = shutil.get_terminal_size()
+            if reserved and current_columns >= 57:
+                if current_rows >= 26:
+                    sys.stdout.write('\033[?2026h\033[24A\r' + picture(30, True) + '\033[?2026l')
+                else:
+                    sys.stdout.write('\n' + picture(30))
+            sys.stdout.write('\033[0m\033[?25h\033[?2026l')
+            sys.stdout.flush()
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, previous)
+            signal.signal(signal.SIGTERM, old_term)
 
 
 def main():
@@ -485,9 +575,22 @@ def main():
     parser.add_argument('--style', choices=('informal', 'natural', 'slant', 'semi-cascade'), default='informal',
                         help='trunk style; informal matches the tapered S-shaped reference')
     parser.add_argument('--plain', action='store_true', help='disable colors')
+    parser.add_argument('--animate', action='store_true', help='Play full growth without changing saved age; any key skips')
+    parser.add_argument('--duration', type=float, default=2.5, help='Time-lapse duration in seconds (default: 2.5)')
     args = parser.parse_args()
+    if not math.isfinite(args.duration) or args.duration <= 0:
+        parser.error('--duration must be a positive finite number')
     columns = shutil.get_terminal_size().columns
     if args.preview is None and (not sys.stdout.isatty() or columns < 57 or os.environ.get('TERM') == 'dumb'):
+        return
+    if args.animate:
+        if not sys.stdout.isatty() or not sys.stdin.isatty():
+            return
+        seed, accents = preview_identity(args.seed)
+        if args.plain:
+            print(render(30, seed, False, columns, accents, args.style), end='')
+        else:
+            animate_growth(seed, accents, args.duration, args.style)
         return
     try:
         days, seed, accents = age() if args.preview is None else (max(0, args.preview), *preview_identity(args.seed))

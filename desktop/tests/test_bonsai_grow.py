@@ -19,7 +19,7 @@ class BonsaiGrowTests(unittest.TestCase):
         palette = ['#85b470', '#b8ce93', '#67bca3']
         image = bonsai.render(30, 42, False, 80, palette)
         self.assertEqual(image, bonsai.render(30, 42, False, 80, palette))
-        self.assertIn('╭─────────────────╮', image)
+        self.assertIn('╭─────────────────────╮', image)
         self.assertLessEqual(len(image.splitlines()), 24)
         self.assertTrue(all(len(row) <= 80 for row in image.splitlines()))
         self.assertNotEqual(image, bonsai.render(30, 43, False, 80, palette))
@@ -163,12 +163,75 @@ class BonsaiGrowTests(unittest.TestCase):
         self.assertEqual(canvas[2][2], ('│', 'wood'))
         self.assertEqual(canvas[2][6], (' ', ''))
 
+    def test_pushed_pot_patterns_are_stable_and_fit(self):
+        self.assertEqual(len(bonsai.POT_MOTIFS), 16)
+        designs = set()
+        for seed in range(100):
+            rows = bonsai.pot_rows(seed)
+            self.assertEqual(rows, bonsai.pot_rows(seed))
+            self.assertEqual([len(row) for row in rows], [23] * 4)
+            designs.add(rows)
+        self.assertGreaterEqual(len(designs), 16)
+
+    def test_animation_completes_and_key_skip_restores_terminal(self):
+        import fcntl
+        import pty
+        import select
+        import struct
+        import termios
+        import time
+        for skip in (False, True, "signal"):
+            with tempfile.TemporaryDirectory() as directory:
+                master, slave = pty.openpty()
+                fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack('HHHH', 40, 100, 0, 0))
+                original = termios.tcgetattr(slave)
+                env = {**os.environ, 'TERM': 'xterm-256color', 'XDG_STATE_HOME': directory}
+                env.pop('REDUCE_MOTION', None)
+                process = subprocess.Popen([str(SOURCE), '--animate', '--seed', '42',
+                    '--duration', '10' if skip else '.15'],
+                    stdin=slave, stdout=slave, stderr=slave, env=env)
+                output = b''
+                sent = False
+                began = time.monotonic()
+                try:
+                    while time.monotonic() - began < 4:
+                        if select.select([master], [], [], .05)[0]:
+                            output += os.read(master, 65536)
+                        if skip and not sent and b'\033[24A' in output:
+                            if skip == 'signal':
+                                import signal
+                                process.send_signal(signal.SIGTERM)
+                            else:
+                                os.write(master, b' ')
+                            sent = True
+                        if process.poll() is not None:
+                            while select.select([master], [], [], 0)[0]:
+                                output += os.read(master, 65536)
+                            break
+                    self.assertEqual(process.poll(), 0)
+                    self.assertEqual(termios.tcgetattr(slave), original)
+                    import re
+                    plain = re.sub(rb'\x1b\[[0-9;]*m', b'', output)
+                    self.assertIn('╭─────────────────────╮'.encode(), plain)
+                    self.assertGreaterEqual(output.count(b'\033[24A'), 2)
+                    self.assertIn(b'\033[?25h', output)
+                    self.assertNotIn(b'Traceback', output)
+                    self.assertEqual(list(Path(directory).iterdir()), [])
+                    if skip:
+                        self.assertTrue(sent)
+                finally:
+                    if process.poll() is None:
+                        process.kill()
+                        process.wait()
+                    os.close(master)
+                    os.close(slave)
+
     def test_preview_does_not_create_growth_state(self):
         with tempfile.TemporaryDirectory() as directory:
             result = subprocess.run([str(SOURCE), '--preview', '30', '--seed', '42', '--plain'],
                 env={**os.environ, 'XDG_STATE_HOME': directory},
                 text=True, capture_output=True, check=True)
-            self.assertIn('╭─────────────────╮', result.stdout)
+            self.assertIn('╭─────────────────────╮', result.stdout)
             self.assertNotIn('\033', result.stdout)
             self.assertEqual(list(Path(directory).iterdir()), [])
 

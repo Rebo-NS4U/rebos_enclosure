@@ -1,7 +1,7 @@
-## Saved S-shaped procedural bonsai welcome message.
+## Full bonsai growth time-lapse with patterned ceramic pots.
 function fish_greeting
     if status is-interactive; and test -t 1; and command -q bonsai-grow
-        bonsai-grow
+        bonsai-grow --animate --duration 2.5
     end
 end
 
