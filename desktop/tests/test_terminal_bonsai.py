@@ -41,11 +41,11 @@ class BonsaiTests(unittest.TestCase):
         for seed in range(12):
             tree = bonsai.Tree(72, 26, seed)
             leader = tree.shoots[0]
-            lateral = [shoot for shoot in tree.shoots if shoot['parent'] == 0]
+            lateral = [shoot for shoot in tree.shoots if shoot['parent'] == 0 and shoot['kind'] != 'ramification']
             crown = next(pad for pad in tree.pads if pad['support'] == 0)
             self.assertLess(crown['birth'], min(shoot['birth'] for shoot in lateral))
             for node in tree.leader_nodes:
-                arrival = leader['duration']*node['attachment']
+                arrival = tree.arrival(leader, node['attachment'])
                 self.assertGreaterEqual(node['birth'], arrival)
                 # First leaves open immediately behind a moving apex, rather
                 # than waiting for a full-height bare trunk or lower branches.
@@ -58,13 +58,28 @@ class BonsaiTests(unittest.TestCase):
                 self.assertEqual(tree.cells(age)[y][x][0], '●')
             self.assertGreater(min(shoot['birth'] for shoot in lateral), .25)
 
+    def test_growth_rhythm_varies_speed_without_reversing(self):
+        tree = bonsai.Tree(72, 26, 42)
+        for shoot in tree.shoots:
+            arrivals = [tree.arrival(shoot, i/100) for i in range(101)]
+            self.assertAlmostEqual(arrivals[0], shoot['birth'])
+            self.assertAlmostEqual(arrivals[-1], shoot['birth']+shoot['duration'])
+            differences = [b-a for a, b in zip(arrivals, arrivals[1:])]
+            self.assertGreater(min(differences), 0)
+            self.assertGreater(max(differences), min(differences)*4)
+            self.assertLessEqual(arrivals[-1], 1)
+        forks = [shoot for shoot in tree.shoots if shoot['kind'] == 'ramification']
+        self.assertGreater(len(forks), 20)
+        # The new hook must be visible in a young tree, not just a renamed dot.
+        self.assertTrue(any(cell[0] in ('╭', '╮') for row in tree.cells(.1) for cell in row))
+
     def test_child_shoots_and_buds_wait_for_supporting_wood(self):
         for seed in range(20):
             tree = bonsai.Tree(72, 26, seed)
             for shoot in tree.shoots:
                 if shoot['parent'] is not None:
                     parent = tree.shoots[shoot['parent']]
-                    arrival = parent['birth'] + parent['duration']*shoot['attachment']
+                    arrival = tree.arrival(parent, shoot['attachment'])
                     self.assertGreaterEqual(shoot['birth'], arrival)
             for pad in tree.pads:
                 support = tree.shoots[pad['support']]
@@ -95,7 +110,7 @@ class BonsaiTests(unittest.TestCase):
                     # location never slides or disappears during thickening.
                     self.assertTrue(established <= cells)
                     established = {cell for shoot in tree.shoots for cell, t in shoot['path']
-                                   if shoot['birth']+t*shoot['duration'] <= age}
+                                   if tree.arrival(shoot, t) <= age}
 
     def test_frame_fits_supported_terminal_sizes(self):
         for columns, rows in ((36, 18), (44, 24), (80, 24), (120, 40)):
