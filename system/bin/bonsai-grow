@@ -704,6 +704,15 @@ def frame_rows(rows, columns, accents, color):
     return output
 
 
+def space_bark_shading(canvas, seed):
+    """Use isolated shaded accents; fine grain keeps the limb body intact."""
+    phase = random.Random(f'{seed}:shade-spacing').randrange(4)
+    for y,row in enumerate(canvas):
+        for x,(glyph,ink) in enumerate(row):
+            if ink == 'bark' and glyph in '░▒▓' and (x+2*y+phase)%4:
+                row[x] = ('·', ink)
+
+
 def render(days, seed, color=True, columns=80, accents=None, style='informal',
            fixed_height=False, pot_seed=None):
     width, height = 57, 24
@@ -720,6 +729,7 @@ def render(days, seed, color=True, columns=80, accents=None, style='informal',
             canvas[y][x] = (glyph, ink)
     if style == 'informal':
         cover_crown_wood(canvas)
+        space_bark_shading(canvas, seed)
     for y, row in enumerate(pot_rows(seed if pot_seed is None else pot_seed), 19):
         for x, char in enumerate(row, 16):
             ink = 'pot'

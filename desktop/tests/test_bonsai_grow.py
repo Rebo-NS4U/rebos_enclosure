@@ -424,6 +424,22 @@ class BonsaiGrowTests(unittest.TestCase):
         self.assertTrue(all(sum(xx == x for xx,y in wood) == 1 for x in range(26,30)))
         self.assertLessEqual(max(sum(xx == x for xx,y in wood) for x in range(15,30)), 3)
 
+    def test_shading_is_spaced_without_removing_branch_body(self):
+        for seed in range(16):
+            canvas = [[('▒', 'bark') for _ in range(9)] for _ in range(9)]
+            bonsai.space_bark_shading(canvas, seed)
+            shaded = {(x,y) for y,row in enumerate(canvas)
+                      for x,(glyph,ink) in enumerate(row) if glyph in '░▒▓'}
+            self.assertTrue(shaded)
+            self.assertLessEqual(len(shaded), 23)
+            self.assertTrue(all(glyph.strip() for row in canvas for glyph,ink in row))
+            for x,y in shaded:
+                self.assertFalse(any((x+dx,y+dy) in shaded
+                                     for dx in (-1,0,1) for dy in (-1,0,1) if dx or dy))
+            again = [row.copy() for row in canvas]
+            bonsai.space_bark_shading(again, seed)
+            self.assertEqual(again, canvas)
+
     def test_new_launches_use_fresh_seeds_and_explicit_seed_is_repeatable(self):
         from unittest.mock import patch, Mock
         with patch('sys.stdout', Mock(isatty=lambda: True)), \
