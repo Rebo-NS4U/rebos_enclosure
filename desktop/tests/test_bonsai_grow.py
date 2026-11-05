@@ -317,6 +317,28 @@ class BonsaiGrowTests(unittest.TestCase):
                 self.assertNotEqual(children[0]['width'], children[1]['width'])
                 self.assertNotEqual(children[0]['attachment'], children[1]['attachment'])
 
+    def test_one_sided_trees_keep_a_tall_upper_leader(self):
+        checked = 0
+        for seed in range(80):
+            trunk = bonsai.trunk_path(seed)
+            shift = (trunk[-1]-27)*.6
+            directions = {1 if x+shift >= trunk[depth] else -1
+                          for depth, x, y, born in bonsai.branch_layout(seed)[:3]}
+            if len(directions) != 1:
+                continue
+            checked += 1
+            graph = bonsai.branch_graph(seed)
+            leaders = [branch for branch in graph if branch['leader'] and branch['parent'] is None]
+            self.assertEqual(len(leaders), 1)
+            leader = leaders[0]
+            self.assertGreaterEqual(leader['start'][1]-leader['end'][1], 3.8)
+            self.assertLessEqual(abs(leader['end'][0]-trunk[-1]), 1.3)
+            leaves = [cell for cell in bonsai.specimen(seed, 30)
+                      if cell[4].startswith('leaf') and cell[2] <= 31]
+            self.assertGreaterEqual(sum(cell[1] <= 4 for cell in leaves), 20)
+            self.assertTrue(all(1 < cell[0] < 55 for cell in leaves))
+        self.assertGreaterEqual(checked, 10)
+
     def test_new_launches_use_fresh_seeds_and_explicit_seed_is_repeatable(self):
         from unittest.mock import patch, Mock
         with patch('sys.stdout', Mock(isatty=lambda: True)), \

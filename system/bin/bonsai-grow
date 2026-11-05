@@ -330,14 +330,18 @@ def branch_graph(seed):
     shift = (centers[-1]-27)*.6
     habit, wind = growth_pattern(seed)
     branches = []
-    def add(start, end, born, width, parent=None, attachment=0, level=0):
+    layout = branch_layout(seed)
+    directions = {1 if x + shift >= centers[depth] else -1
+                  for depth, x, y, born in layout[:3]}
+    one_sided = len(directions) == 1
+    def add(start, end, born, width, parent=None, attachment=0, level=0, leader=False):
         # Stagger crown-tip heights instead of clipping every twig to one roof.
-        ceiling = rng.uniform(3.2, 5.2)
+        ceiling = rng.uniform(2.7, 3.1) if leader else rng.uniform(3.2, 5.2)
         end = (max(9, min(47, end[0])), max(ceiling, min(14, end[1])))
         length = math.hypot(end[0]-start[0], end[1]-start[1])
         branch = dict(start=start, end=end, born=born, width=width,
                       parent=parent, attachment=attachment, length=length,
-                      curve=rng.uniform(.15, .7), level=level)
+                      curve=rng.uniform(.15, .7), level=level, leader=leader)
         index = len(branches)
         branches.append(branch)
         if level >= 2 or length < 3:
@@ -351,15 +355,26 @@ def branch_graph(seed):
             if habit == 'windswept':
                 direction = wind
             reach = length * rng.uniform(.45, .65) * (1 if child == 0 else .6)
+            if leader:
+                # The apex keeps reaching upward instead of becoming another
+                # long horizontal, wind-driven limb.
+                direction = wind if child == 0 else -wind
+                reach = rng.uniform(1.2, 2.8)
             target = (origin[0] + direction * reach,
-                      origin[1] - rng.uniform(1.3, 3) * (1 if child == 0 else .65))
+                      origin[1] - rng.uniform(1.8 if leader else 1.3, 3) * (1 if child == 0 else .65))
             arrival = born + length * fraction * .55
             add(origin, target, arrival + rng.uniform(.3, .9),
-                width * (.58 if child == 0 else .38), index, fraction, level+1)
-    for depth, tx, ty, born in branch_layout(seed):
+                width * (.58 if child == 0 else .38), index, fraction, level+1, leader)
+    for depth, tx, ty, born in layout:
         tx += shift + jitter.uniform(-.6, .6)
         ty += jitter.uniform(-.3, .3)
+        if one_sided and depth >= 11:
+            tx = centers[depth] + (tx-centers[depth]) * .55
         add((centers[depth], 18-depth), (tx, ty), born, max(.7, 2.6*(1-depth/19)))
+    if one_sided:
+        # Give the swept lower body a distinct vertical continuation and crown.
+        add((centers[11], 7), (centers[-1] + wind*1.2, 2.7),
+            17, 1.25, leader=True)
     return branches
 
 
@@ -399,7 +414,7 @@ def natural_specimen(seed, days):
         rx, ry = rng.uniform(3.2,5), rng.uniform(1.6,2.4)
         arrival = branch['born'] + branch['length']*.55
         for y in range(max(1,math.floor(cy-ry)), min(18,math.ceil(cy+ry))+1):
-            for x in range(max(8,math.floor(cx-rx)), min(48,math.ceil(cx+rx))+1):
+            for x in range(max(2,math.floor(cx-rx)), min(54,math.ceil(cx+rx))+1):
                 distance = ((x-cx)/rx)**2 + ((y-cy)/ry)**2
                 if distance > 1 or rng.random() < (.05 if distance < .7 else .23):
                     continue
