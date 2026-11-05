@@ -189,21 +189,21 @@ def main():
             glyph = ("•" if (x * 7 + y * 11) % 5 == 0 else "●") if char == b"&" else char.decode("utf-8")
             ink = colors.get(code, RESET)
             if char == b"&" and code in (b"31", b"33", b"91", b"93"):
-                # Retain the familiar dots; softly shade overlapping clusters.
+                # Retain the familiar dots; separate shaded clusters from lit tips.
                 covered = sum(0 <= y + dy < len(lines) and 0 <= x + dx < width
                               and lines[y + dy][x + dx][1] == b"&"
                               for dx, dy in ((-1, 0), (0, -1), (1, 0)))
                 tone = "primary" if code in (b"31", b"91") else "tertiary"
                 brightness = {b"31": .78, b"33": .8, b"91": 1, b"93": 1}[code]
-                ink = color(tone, brightness * (1 - .045 * covered))
+                ink = color(tone, brightness * (1.0, .88, .68, .52)[covered])
             # Deep walnut bark, independent of wallpaper accents.
             if code in (b"wood", b"woodlight") or char in (b"/", b"\\", b"|", b"_", b"~"):
                 glyph = {"/": "╱", "\\": "╲", "_": "─", "~": "─", "|": "│"}.get(glyph, glyph)
-                base = (105, 79, 62) if code in (b"93", b"woodlight") else (85, 63, 49)
+                base = (150, 111, 76) if code in (b"93", b"woodlight") else (119, 86, 59)
                 # Narrow tonal ridges bend along the wood. Color alone adds
                 # grain without filling spaces or changing a single stroke.
                 ridge = (x + y // 3) % 4
-                brightness = (.94, 1.0, 1.10, 1.0)[ridge]
+                brightness = (.66, .92, 1.35, 1.08)[ridge]
                 ink = "\033[38;2;{};{};{}m".format(*(round(value * brightness) for value in base))
             if ink != previous:
                 text.append(ink)
