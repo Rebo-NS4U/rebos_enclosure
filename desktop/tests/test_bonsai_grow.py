@@ -529,6 +529,27 @@ class BonsaiGrowTests(unittest.TestCase):
         self.assertGreater(scarred,10)
         self.assertGreater(plain,20)
 
+    def test_rounded_crown_forms_have_lower_structure_and_no_flat_outer_roof(self):
+        checked = set()
+        for seed in range(80):
+            habit, side = bonsai.growth_pattern(seed)
+            if habit not in ('forked','bowed','upright'):
+                continue
+            checked.add(habit)
+            center = bonsai.trunk_path(seed)[-1]
+            for branch in bonsai.branch_graph(seed):
+                x,y = branch['end']
+                self.assertGreaterEqual(y+1e-8,2.8+(abs(x-center)/6)**1.4)
+            layout = bonsai.branch_layout(seed)
+            if habit == 'forked':
+                self.assertTrue(all(depth <= 7 for depth,x,y,born in layout[:2]))
+                self.assertGreater(layout[1][2]-layout[0][2], .3)
+            if habit == 'upright':
+                self.assertLessEqual(layout[0][0],6)
+            self.assertFalse(any(glyph in '╭╮' and ink == 'woodlight'
+                                 for x,y,born,glyph,ink in bonsai.stem(30,seed)))
+        self.assertEqual(checked,{'forked','bowed','upright'})
+
     def test_new_launches_use_fresh_seeds_and_explicit_seed_is_repeatable(self):
         from unittest.mock import patch, Mock
         with patch('sys.stdout', Mock(isatty=lambda: True)), \

@@ -81,7 +81,7 @@ def trunk_path(seed, style='informal'):
         for depth in range(15):
             t = depth / 14
             if pattern == 'upright':
-                bend = .24 * math.sin(t * math.pi * phase)
+                bend = .3 * math.sin(t * math.pi * phase) + .12*t
             elif pattern == 'slant':
                 bend = t ** .85
             elif pattern == 'bowed':
@@ -216,7 +216,8 @@ def stem(days, seed=42, style='informal'):
             cells.append((x, y, 0, glyph, ink))
     # A small growing tip is visible even during the bare-stem phase.
     tip = '╮' if centers[height - 1] >= centers[max(0, height - 2)] else '╭'
-    cells.append((round(centers[height - 1]), 18 - height, 0, tip, 'woodlight'))
+    if days < 22:
+        cells.append((round(centers[height - 1]), 18 - height, 0, tip, 'woodlight'))
     if style == 'informal' and days >= 18:
         # Surface roots spread over the soil and anchor the mature silhouette.
         spread = min(7, 4 + int((days - 18) / 8))
@@ -243,12 +244,12 @@ def branch_layout(seed):
         shift = (centers[-1]-27)*.6
         result = []
         for index, direction in enumerate((side, -side)):
-            depth = rng.choice((6,7,8))
+            depth = rng.choice((5,6,7))
             reach = rng.uniform(7.5,10.5)
             x = centers[depth] + direction*reach
-            result.append((depth,x-shift,rng.uniform(3.8,5.3),
+            result.append((depth,x-shift,rng.uniform(4.5,5.6) if index == 0 else rng.uniform(6,7.2),
                            max((depth-1)/.7,11+index*.6)))
-        depth = rng.choice((9,10))
+        depth = rng.choice((8,9))
         result.append((depth,centers[depth]-shift+side*rng.uniform(1.5,3),
                        2.8,max((depth-1)/.7,14)))
         return result
@@ -260,12 +261,15 @@ def branch_layout(seed):
     elif pattern == 'bowed':
         sides = (-side, side, side)
     elif pattern == 'upright':
+        attachments = [rng.randint(5,6), rng.randint(8,9), rng.randint(10,11)]
         sides = (side, -side, -side)
     else:
         sides = (side, side, -side) if rng.random() < .5 else (-side, side, -side)
     result = []
     for index, (depth, direction) in enumerate(zip(attachments, sides)):
         reach = rng.uniform(8, 14) if index < 2 else rng.uniform(6, 11)
+        if pattern == 'upright':
+            reach = min(reach, rng.uniform(7,9))
         if pattern == 'windswept':
             reach = min(reach, 8.5 - depth * .35)
         x = max(11, min(44, centers[depth] + direction * reach))
@@ -358,6 +362,10 @@ def branch_graph(seed):
     def add(start, end, born, width, parent=None, attachment=0, level=0, leader=False, lower=False):
         # Stagger crown-tip heights instead of clipping every twig to one roof.
         ceiling = rng.uniform(2.7, 3.1) if leader else rng.uniform(3.2, 5.2)
+        if habit in ('forked', 'bowed', 'upright') and not lower:
+            # Keep the apex highest; outer branch pads sit progressively lower.
+            crown_center = centers[-1]
+            ceiling = max(ceiling, 2.8 + (abs(end[0]-crown_center)/6)**1.4)
         end = (max(9, min(47, end[0])), max(ceiling, min(15 if lower else 14, end[1])))
         if level == 0 and not leader and not lower:
             # A shallow upper limb must stay short; it cannot become a shelf.
@@ -379,14 +387,15 @@ def branch_graph(seed):
         if lower or level >= (1 if one_sided else 2) or length < 3:
             return
         # One stronger continuation and a shorter lateral fork, at unequal nodes.
-        for child, fraction in enumerate((rng.uniform(.7, .95), rng.uniform(.4, .7))):
+        fractions = (rng.uniform(.65, .85), rng.uniform(.4, .65)) if habit in ('forked', 'bowed', 'upright') else (rng.uniform(.7, .95), rng.uniform(.4, .7))
+        for child, fraction in enumerate(fractions):
             origin = branch_point(branch, fraction)
             direction = 1 if end[0] >= start[0] else -1
             if child and habit != 'windswept' and rng.random() < .55:
                 direction *= -1
             if habit == 'windswept':
                 direction = wind
-            reach = length * rng.uniform(.45, .65) * (1 if child == 0 else .6)
+            reach = length * rng.uniform(.3, .48) * (1 if child == 0 else .6) if habit in ('forked', 'bowed', 'upright') else length * rng.uniform(.45, .65) * (1 if child == 0 else .6)
             if leader:
                 # The apex keeps reaching upward instead of becoming another
                 # long horizontal, wind-driven limb.
