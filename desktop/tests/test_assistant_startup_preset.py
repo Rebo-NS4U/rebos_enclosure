@@ -17,34 +17,34 @@ ShellRoot {
     Timer {
         interval: 100; running: true
         onTriggered: {
-            check(session.codexPreset === "light_coding", "fresh startup selects Light");
+            check(session.codexPreset === "coding", "fresh startup selects Do");
             session.handleBridgeLine(JSON.stringify({bridge: "attached", state: {
                 currentAgentId: "codex", codexPreset: "", sessionReady: true,
                 currentSessionId: "startup-test", agentTurnActive: true,
                 sessionConfigOptions: [
-                    {id: "model", currentValue: "gpt-6.1-sol", options: [{value: "gpt-6-luna"}]},
-                    {id: "reasoning_effort", currentValue: "medium", options: [{value: "low"}]}
+                    {id: "model", currentValue: "gpt-6-luna", options: [{value: "gpt-6.1-sol"}]},
+                    {id: "reasoning_effort", currentValue: "low", options: [{value: "medium"}]}
                 ]
             }}));
-            check(session.codexPresetName === "dweebo-Light", "custom checkpoint selects Light");
-            check(session.agentTurnActive && session.currentSessionModelId !== "gpt-6-luna", "restored work is retained");
+            check(session.codexPresetName === "dweebo-Do", "custom checkpoint selects Do");
+            check(session.agentTurnActive && session.currentSessionModelId !== "gpt-6.1-sol", "restored work is retained");
             check(!session.syntheticEnvelope.method && session.syntheticRestarts === 0, "startup sends no model RPC or restart");
             session.agentTurnActive = false;
             session.queuedPrompt = {text: "Next message", attachments: []};
             session.dispatchQueuedPrompt();
             check(session.syntheticEnvelope.method === "session/set_config_option", "model change precedes prompt");
-            check(session.syntheticEnvelope.params.value === "gpt-6-luna" && session.queuedPrompt, "Light model requested and prompt waits");
+            check(session.syntheticEnvelope.params.value === "gpt-6.1-sol" && session.queuedPrompt, "Do model requested and prompt waits");
             let options = JSON.parse(JSON.stringify(session.sessionConfigOptions));
-            options[0].currentValue = "gpt-6-luna";
+            options[0].currentValue = "gpt-6.1-sol";
             session.handleResponse({id: session.syntheticEnvelope.id, result: {configOptions: options}});
-            check(session.syntheticEnvelope.params.value === "low" && session.queuedPrompt, "effort confirmation also precedes prompt");
-            options[1].currentValue = "low";
+            check(session.syntheticEnvelope.params.value === "medium" && session.queuedPrompt, "effort confirmation also precedes prompt");
+            options[1].currentValue = "medium";
             session.handleResponse({id: session.syntheticEnvelope.id, result: {configOptions: options}});
             check(session.syntheticEnvelope.method === "session/prompt" && !session.queuedPrompt, "prompt follows both confirmations");
             session.handleBridgeLine(JSON.stringify({bridge: "attached", state: {
-                currentAgentId: "codex", codexPreset: "coding", agentTurnActive: false
+                currentAgentId: "codex", codexPreset: "light_coding", agentTurnActive: false
             }}));
-            check(session.codexPreset === "coding", "explicit named choice is preserved");
+            check(session.codexPreset === "light_coding", "explicit named choice is preserved");
             session.handleBridgeLine(JSON.stringify({bridge: "attached", state: {
                 currentAgentId: "distill", codexPreset: "", agentTurnActive: false
             }}));

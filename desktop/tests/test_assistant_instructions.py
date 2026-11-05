@@ -39,9 +39,9 @@ ShellRoot {
             session.sessionReady = true;
             session.currentAgentId = "codex";
             session.createNewChat();
-            check(session.codexPreset === "light_coding", "new chats select dweebo-Light");
+            check(session.codexPreset === "coding", "new chats select dweebo-Do");
             let defaultMode = session.codexPresets.find(item => item.id === session.codexPreset);
-            check(defaultMode.name === "dweebo-Light" && defaultMode.model === "gpt-6-luna" && defaultMode.effort === "low", "default selects the Light model and effort");
+            check(defaultMode.name === "dweebo-Do" && defaultMode.model === "gpt-6.1-sol" && defaultMode.effort === "medium", "default selects the Do model and effort");
             session.sessionReady = true;
             session.codexPreset = "";
             session.currentSessionId = "github-session";
@@ -69,7 +69,7 @@ ShellRoot {
             check(legacy.length === 2 && policy(legacy), "older chats receive only the new policy");
             check(send("Continue").length === 1, "older chat policy does not repeat");
             session.handleBridgeLine(JSON.stringify({bridge: "attached", seq: 1, state: state}));
-            check(session.codexPreset === "light_coding", "custom checkpoints adopt the startup default");
+            check(session.codexPreset === "coding", "custom checkpoints adopt the startup default");
             session.codexPreset = ""; // Keep policy-only assertions independent of mode changes.
             check(send("After bridge restoration").length === 1, "bridge restoration keeps policy delivery");
             session.currentSessionId = "fresh-github-session";
