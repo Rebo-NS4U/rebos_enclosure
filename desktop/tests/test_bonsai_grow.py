@@ -413,31 +413,52 @@ class BonsaiGrowTests(unittest.TestCase):
             bonsai.space_bark_shading(again, seed)
             self.assertEqual(again, canvas)
 
-    def test_optional_lower_leaf_sprays_have_short_visible_branches(self):
-        counts = set()
-        single_sides = set()
+    def test_lower_shoots_removed_and_blossoms_are_occasional(self):
+        blooming = plain = 0
+        for seed in range(64):
+            self.assertFalse(any(branch.get('lower') for branch in bonsai.branch_graph(seed)))
+            sites = bonsai.blossom_sites(seed)
+            self.assertEqual(sites, bonsai.blossom_sites(seed))
+            if sites:
+                blooming += 1
+                self.assertTrue(2 <= len(sites) <= 4)
+                for x,y,born in sites:
+                    self.assertTrue(21 <= born <= 26)
+                for i,(x,y,born) in enumerate(sites):
+                    self.assertTrue(all(max(abs(x-px),abs(y-py)) >= 3 for px,py,_ in sites[i+1:]))
+            else:
+                plain += 1
+        self.assertGreater(blooming, 10)
+        self.assertGreater(plain, 20)
+
+    def test_blossoms_only_replace_existing_foliage_late_in_growth(self):
         for seed in range(48):
-            graph = bonsai.branch_graph(seed)
-            lower = [branch for branch in graph if branch.get('lower')]
-            self.assertIn(len(lower), (0,1,2))
-            counts.add(len(lower))
-            if len(lower) == 1:
-                single_sides.add(lower[0]['start'][1])
-            for branch in lower:
-                self.assertIsNone(branch['parent'])
-                self.assertGreater(branch['length'], 4)
-                self.assertLess(branch['length'], 5.3)
-                self.assertEqual(branch['width'], .55)
-                self.assertEqual(branch['start'][1], branch['end'][1])
-                self.assertEqual(branch['curve'], 0)
-                self.assertTrue(all(bonsai.branch_point(branch,t)[1] == branch['start'][1]
-                                    for t in (0,.25,.5,.75,1)))
-                self.assertGreaterEqual(branch['start'][1], 13)
-                depth = round(18-branch['start'][1])
-                self.assertGreaterEqual(branch['born'], (depth-1)/.7)
-                self.assertFalse(any(child['parent'] == graph.index(branch) for child in graph))
-        self.assertEqual(counts, {0,1,2})
-        self.assertEqual(len(single_sides), 2)
+            canvas = [[(' ', '') for _ in range(57)] for _ in range(24)]
+            for x,y,born in bonsai.blossom_sites(seed):
+                canvas[y][x] = ('●','leaf1')
+            early = [row.copy() for row in canvas]
+            bonsai.add_blossoms(early,seed,10)
+            self.assertEqual(early,canvas)
+            occupied = {(x,y) for y,row in enumerate(canvas) for x,(glyph,ink) in enumerate(row) if glyph != ' '}
+            bonsai.add_blossoms(canvas,seed,30)
+            self.assertEqual(occupied, {(x,y) for y,row in enumerate(canvas) for x,(glyph,ink) in enumerate(row) if glyph != ' '})
+            for x,y,born in bonsai.blossom_sites(seed):
+                self.assertEqual(canvas[y][x], ('✿','blossom'))
+            blank = [[(' ', '') for _ in range(57)] for _ in range(24)]
+            bonsai.add_blossoms(blank,seed,30)
+            self.assertTrue(all(glyph == ' ' for row in blank for glyph,ink in row))
+
+    def test_actual_blossom_rendering_keeps_early_growth_clean(self):
+        flowering = 0
+        for seed in range(48):
+            early = bonsai.render(10,seed,False,80,['#85b470']*3)
+            self.assertNotIn('✿',early)
+            mature = bonsai.render(30,seed,False,80,['#85b470']*3)
+            count = mature.count('✿')
+            self.assertLessEqual(count,4)
+            flowering += count > 0
+        self.assertGreater(flowering,10)
+        self.assertLess(flowering,35)
 
     def test_new_launches_use_fresh_seeds_and_explicit_seed_is_repeatable(self):
         from unittest.mock import patch, Mock
