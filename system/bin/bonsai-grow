@@ -1015,14 +1015,31 @@ def render(days, seed, color=True, columns=80, accents=None, style='informal',
             rgb = [round(wood * (1 - blend) + leaf * blend)
                    for wood, leaf in zip((185, 158, 119), rgb_leaf)]
             palette[f'shoot_{name}{i}'] = '\033[38;2;{};{};{}m'.format(*rgb)
-        for j, brightness in enumerate((.58, .88, 1.12)):
-            rgb = [min(255, round(int(accent[k:k + 2], 16) * brightness)) for k in (1, 3, 5)]
-            palette[f'leaf{i * 3 + j}'] = '\033[38;2;{};{};{}m'.format(*rgb)
+        # Cool reflected light in shade; warm, creamy light on the upper leaves.
+        for j, (brightness, tint, blend) in enumerate((
+                (.55, (70, 105, 150), .18),
+                (.94, (0, 0, 0), 0),
+                (1.08, (255, 231, 167), .23))):
+            rgb = [min(255, round(leaf*brightness*(1-blend)+light*blend))
+                   for leaf,light in zip(rgb_leaf,tint)]
+            key = f'leaf{i * 3 + j}'
+            palette[key] = '\033[38;2;{};{};{}m'.format(*rgb)
+            for variant, light in (('warm',(255,218,140)), ('cool',(102,159,195))):
+                tinted = [round(value*.9+target*.1) for value,target in zip(rgb,light)]
+                palette[f'{key}_{variant}'] = '\033[38;2;{};{};{}m'.format(*tinted)
     output = []
     visible = canvas if fixed_height else canvas[min(occupied):max(occupied) + 1]
-    for row in visible:
+    first_row = 0 if fixed_height else min(occupied)
+    for y, row in enumerate(visible, first_row):
         parts, previous = [], None
-        for glyph, ink in row:
+        for x, (glyph, ink) in enumerate(row):
+            if color and ink.startswith('leaf'):
+                # Stable patches span neighboring leaves instead of flickering specks.
+                patch = random.Random(f'{seed}:leaf-light:{x//3}:{y//2}').random()
+                if patch < .22:
+                    ink += '_cool'
+                elif patch > .78:
+                    ink += '_warm'
             if color and ink != previous:
                 parts.append(palette[ink])
             parts.append(glyph)
