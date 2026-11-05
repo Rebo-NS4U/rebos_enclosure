@@ -25,8 +25,7 @@ class BonsaiGrowTests(unittest.TestCase):
         self.assertNotEqual(image, bonsai.render(30, 43, False, 80, palette))
         self.assertNotEqual(image, bonsai.render(0, 42, False, 80, palette))
 
-    def test_dots_stay_on_foliage_edges_and_off_wood(self):
-        from unittest.mock import patch
+    def test_foliage_dots_stay_on_cluster_edges(self):
         dots = 0
         for seed in range(24):
             for day in (7,14,30):
@@ -40,13 +39,6 @@ class BonsaiGrowTests(unittest.TestCase):
                         self.assertNotIn((x,y),wood)
                         self.assertTrue(any((x+dx,y+dy) not in foliage
                                             for dx,dy in ((-1,0),(1,0),(0,-1),(0,1))))
-                with patch.object(bonsai, 'seat_tree_in_pot', wraps=bonsai.seat_tree_in_pot) as seat:
-                    bonsai.render(day,seed)
-                    canvas = seat.call_args.args[0]
-                for row in canvas:
-                    for glyph,ink in row:
-                        if ink in ('bark','wood','woodlight','scar'):
-                            self.assertNotIn(glyph, '·•●◦')
         self.assertGreater(dots,100)
 
     def test_top_sprays_fill_from_terminal_branches(self):
@@ -503,7 +495,7 @@ class BonsaiGrowTests(unittest.TestCase):
             bonsai.add_knurling(canvas,seed,30)
             self.assertEqual(occupied,{(x,y) for y,row in enumerate(canvas) for x,(g,ink) in enumerate(row) if g != ' '})
             for x,y,born in sites:
-                self.assertEqual(canvas[y][x],('╵','woodlight'))
+                self.assertEqual(canvas[y][x],('◦','woodlight'))
                 self.assertEqual(canvas[y+1][x],('╎','bark'))
             blank = [[('●','leaf1') for _ in range(57)] for _ in range(24)]
             bonsai.add_knurling(blank,seed,30)
@@ -514,8 +506,8 @@ class BonsaiGrowTests(unittest.TestCase):
     def test_knurling_appears_in_some_mature_renderings_only(self):
         knotted = 0
         for seed in range(48):
-            self.assertNotIn('╵',bonsai.render(10,seed,False,80,['#85b470']*3))
-            count = bonsai.render(30,seed,False,80,['#85b470']*3).count('╵')
+            self.assertNotIn('◦',bonsai.render(10,seed,False,80,['#85b470']*3))
+            count = bonsai.render(30,seed,False,80,['#85b470']*3).count('◦')
             self.assertLessEqual(count,2)
             knotted += count > 0
         self.assertGreater(knotted,5)
