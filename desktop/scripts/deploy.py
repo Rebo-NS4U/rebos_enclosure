@@ -117,7 +117,36 @@ def source_record(payload):
         return None
 
 
-def install(payload, home, dry_run=False, cbonsai=None, settings=None, preserve_preferences=False,
+RETIRED_BONSAI_PATHS = (
+    '.local/bin/terminal-bonsai', '.local/bin/cbonsai', '.local/bin/terminal-rainforest',
+    '.local/share/cbonsai', '.local/share/terminal-rainforest',
+    '.local/share/enclosure/system/bin/terminal-bonsai',
+    '.local/share/enclosure/system/bin/cbonsai',
+    '.local/share/enclosure/system/bin/terminal-rainforest',
+    '.local/share/enclosure/system/share/cbonsai',
+    '.local/share/enclosure/system/share/terminal-rainforest',
+)
+
+
+def retire_bonsai_alternatives(home, backup=None, journal=None, dry_run=False):
+    """Archive retired commands and assets without following their symlinks."""
+    paths = [name for name in RETIRED_BONSAI_PATHS if exists(home / name)]
+    # Validate every parent before moving anything; never traverse external links.
+    for name in paths:
+        check_parent(home, name)
+    for name in paths:
+        if dry_run:
+            print(f'Would archive retired bonsai files: {home / name}')
+            continue
+        destination = backup / 'files' / name
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        journal['entries'].append({'path': name, 'existed': True})
+        (backup / 'journal.json').write_text(json.dumps(journal, indent=2))
+        (home / name).rename(destination)
+    return paths
+
+
+def install(payload, home, dry_run=False, settings=None, preserve_preferences=False,
             link_source=False):
     units = verify(payload)
     if manifest(payload).get('layout') == 2:
@@ -262,6 +291,8 @@ def install(payload, home, dry_run=False, cbonsai=None, settings=None, preserve_
                              for parent in (home / relative).parents
                              if home in parent.parents and parent.is_symlink()})
     if dry_run:
+        if '.local/bin/bonsai-grow' in units:
+            retire_bonsai_alternatives(home, dry_run=True)
         print(f'Verified payload; would deploy {len(units)} entries into {home}')
         if manifest(payload).get('layout') == 2:
             print(f'Personal settings: {home / ".config/enclosure"}')
@@ -308,6 +339,8 @@ def install(payload, home, dry_run=False, cbonsai=None, settings=None, preserve_
             shutil.copytree(origin, current, symlinks=True)
 
     try:
+        if '.local/bin/bonsai-grow' in units:
+            retire_bonsai_alternatives(home, backup, journal)
         for relative in units:
             detach_parents(relative)
             source = source_path(payload, relative)
@@ -344,17 +377,6 @@ def install(payload, home, dry_run=False, cbonsai=None, settings=None, preserve_
             else:
                 shutil.copy2(source, destination)
                 expand(destination, home)
-        if cbonsai:
-            destination = home / '.local/bin/cbonsai'
-            relative = str(destination.relative_to(home))
-            entry = {'path': relative, 'existed': exists(destination)}
-            journal['entries'].append(entry)
-            (backup / 'journal.json').write_text(json.dumps(journal, indent=2))
-            if entry['existed']:
-                saved = backup / 'files' / relative
-                saved.parent.mkdir(parents=True, exist_ok=True)
-                destination.rename(saved)
-            shutil.copy2(cbonsai, destination)
         if manifest(payload).get('layout') == 2:
             from organize import organize
             organize(home, payload, backup, journal)
@@ -431,7 +453,6 @@ if __name__ == '__main__':
     parser.add_argument('--payload', type=Path, default=ROOT / 'payload')
     parser.add_argument('--dry-run', action='store_true')
     parser.add_argument('--verify', action='store_true')
-    parser.add_argument('--cbonsai', type=Path)
     parser.add_argument('--restore', type=Path)
     parser.add_argument('--setup-stdin', action='store_true')
     parser.add_argument('--link-source', action='store_true',
@@ -445,7 +466,7 @@ if __name__ == '__main__':
             print(f'Payload checksums OK: {len(verify(args.payload))} install entries')
         else:
             settings = json.load(sys.stdin) if args.setup_stdin else None
-            install(args.payload, args.home.absolute(), args.dry_run, args.cbonsai, settings,
+            install(args.payload, args.home.absolute(), args.dry_run, settings,
                     preserve_preferences=args.preserve_preferences, link_source=args.link_source)
     except (OSError, ValueError) as error:
         parser.exit(1, f'Deployment error: {error}\n')

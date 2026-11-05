@@ -42,6 +42,27 @@ class StorageLayoutTests(unittest.TestCase):
         hashes = {name: hashlib.sha256(path.read_bytes()).hexdigest() for name, path in inventory(self.payload).items()}
         (self.payload / 'checksums.json').write_text(json.dumps(hashes))
 
+    def test_already_grouped_theme_settings_are_not_moved_into_themselves(self):
+        data = json.loads((self.payload / 'manifest.json').read_text())
+        name = '.config/enclosure/theme/widgets.qss'
+        data['units'].append(name)
+        data['sources'][name] = {'source':'config/enclosure/theme/widgets.qss','kind':'personal'}
+        (self.payload / 'manifest.json').write_text(json.dumps(data))
+        source = self.root / 'config/enclosure/theme/widgets.qss'
+        source.parent.mkdir(parents=True)
+        source.write_text('theme defaults')
+        self.rehash()
+        existing = self.home / '.config/enclosure/theme/widgets.qss'
+        existing.parent.mkdir(parents=True)
+        existing.write_text('personal theme')
+        self.assertFalse(any(old == self.home / '.config/enclosure'
+                             for old,new in organize.plan(self.home,self.payload)))
+        backup = deploy.install(self.payload,self.home)
+        self.assertEqual(existing.read_text(),'theme defaults')
+        self.assertFalse((self.home / '.config/enclosure/enclosure').exists())
+        deploy.restore(backup)
+        self.assertEqual(existing.read_text(),'personal theme')
+
     def test_preview_leaves_home_empty_and_checks_new_source(self):
         deploy.install(self.payload, self.home, dry_run=True)
         self.assertEqual(list(self.home.iterdir()), [])

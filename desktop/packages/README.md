@@ -52,7 +52,8 @@ by the package manager.
 - Qt5/Qt6 theme and Wayland support, Breeze, image formats, Qt multimedia and
   syntax highlighting support the shipped application settings and QML imports.
 - Terminal helpers and fonts match the supplied terminal/editor configuration.
-  Base-devel and ncurses build the bundled bonsai greeting and optional AUR apps.
+  Base-devel builds the native greeter helpers and optional AUR apps.
+  The bonsai greeting uses Python’s standard library.
 
 Optional groups retain Zen, Discord, Spotify/Spicetify/imv, Obsidian,
 OBS/scrcpy, development tools, Fastfetch/Flatpak and video wallpapers.

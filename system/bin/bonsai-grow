@@ -768,7 +768,7 @@ def cover_crown_wood(canvas):
         canvas[y][x] = (' ', '')
 
 
-# Ceramic inlay designs from the pushed terminal-bonsai greeting.
+# Ceramic inlay designs retained from the original framed greeting.
 POT_MOTIFS = (('╱─╲', '╲─╱'), ('╭───╮', '╰╮ ╭╯'), ('╲ ╱', ' ╳ '), ('╱◇╲', '╲─╱'), ('╭◇╮', '╰─╯'), ('╭┬╮', '╰┴╯'), ('┌┬┐', '└┴┘'), ('╱│╲', '╲│╱'), ('╭─┬─╮', '╰─┴─╯'), ('╱╲ ╱╲', '╲╱ ╲╱'), ('╭╮ ╭╮', '╰╯ ╰╯'), ('╱─┬─╲', '╲─┴─╱'), ('┌─◇─┐', '└───┘'), ('╲│╱', '╱│╲'), ('╭◆╮', '╰─╯'), ('┌◇┐', '└─┘'))
 
 

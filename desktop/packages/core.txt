@@ -64,7 +64,6 @@ unzip
 base-devel
 git
 github-cli
-ncurses
 fontconfig
 adw-gtk-theme
 papirus-icon-theme

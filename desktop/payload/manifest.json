@@ -67,9 +67,6 @@
     ".local/bin/regreet-sync",
     ".local/bin/rice",
     ".local/bin/bonsai-grow",
-    ".local/bin/terminal-bonsai",
-    ".local/bin/terminal-rainforest",
-    ".local/share/terminal-rainforest",
     ".local/bin/thinkpad-fan-control",
     ".local/bin/wallpaper",
     ".local/bin/wallpaper-switcher",
@@ -81,10 +78,6 @@
     ".local/share/applications/rebos-shell-settings.desktop",
     ".local/share/applications/thinkpad-fan-control.desktop",
     ".local/share/applications/wallpaper-switcher.desktop",
-    ".local/share/cbonsai/INSTALL.md",
-    ".local/share/cbonsai/LICENSE",
-    ".local/share/cbonsai/README.md",
-    ".local/share/cbonsai/cbonsai.c",
     ".local/share/dbus-1/services/rs.wl-gammarelay.service",
     ".local/share/fonts/opendyslexic",
     ".local/share/fonts/phosphor",
@@ -350,18 +343,6 @@
       "source": "system/bin/bonsai-grow",
       "kind": "managed"
     },
-    ".local/bin/terminal-bonsai": {
-      "source": "system/bin/terminal-bonsai",
-      "kind": "managed"
-    },
-    ".local/share/terminal-rainforest": {
-      "source": "system/share/terminal-rainforest",
-      "kind": "managed"
-    },
-    ".local/bin/terminal-rainforest": {
-      "source": "system/bin/terminal-rainforest",
-      "kind": "managed"
-    },
     ".local/bin/thinkpad-fan-control": {
       "source": "system/bin/thinkpad-fan-control",
       "kind": "managed"
@@ -404,22 +385,6 @@
     },
     ".local/share/applications/wallpaper-switcher.desktop": {
       "source": "system/share/applications/wallpaper-switcher.desktop",
-      "kind": "managed"
-    },
-    ".local/share/cbonsai/INSTALL.md": {
-      "source": "system/share/cbonsai/INSTALL.md",
-      "kind": "managed"
-    },
-    ".local/share/cbonsai/LICENSE": {
-      "source": "system/share/cbonsai/LICENSE",
-      "kind": "managed"
-    },
-    ".local/share/cbonsai/README.md": {
-      "source": "system/share/cbonsai/README.md",
-      "kind": "managed"
-    },
-    ".local/share/cbonsai/cbonsai.c": {
-      "source": "system/share/cbonsai/cbonsai.c",
       "kind": "managed"
     },
     ".local/share/dbus-1/services/rs.wl-gammarelay.service": {

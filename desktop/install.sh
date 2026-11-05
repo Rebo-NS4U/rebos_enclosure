@@ -154,7 +154,6 @@ if ((!files_only)) && [[ $login == regreet ]]; then
     cc -O2 -shared -fPIC "$ROOT/../system/etc/rebos-greeter/cage-cursor.c" -ldl -o "$work_dir/cage-cursor.so"
     cc -O2 -shared -fPIC "$ROOT/../system/etc/rebos-greeter/layout.c" $(pkg-config --cflags --libs gtk4) -o "$work_dir/layout.so"
 fi
-cc -O2 "$ROOT/../system/share/cbonsai/cbonsai.c" -lpanelw -lncursesw -o "$work_dir/cbonsai"
 # Validate the exact customized Niri configuration before changing user files.
 python3 - "$ROOT/../config/niri" "$work_dir/niri" <<'PY'
 from pathlib import Path
@@ -167,7 +166,7 @@ for path in Path(sys.argv[2]).rglob('*.kdl'):
 PY
 plan render "$work_dir/niri"
 if command -v niri >/dev/null; then niri validate -c "$work_dir/niri/config.kdl"; fi
-printf '%s\n' "$plan_json" | python3 "$ROOT/scripts/deploy.py" --setup-stdin --cbonsai "$work_dir/cbonsai"
+printf '%s\n' "$plan_json" | python3 "$ROOT/scripts/deploy.py" --setup-stdin
 export PATH="$HOME/.local/bin:$PATH"
 mkdir -p "$HOME/Pictures/Screenshots" "$HOME/code"
 fc-cache -f "$HOME/.local/share/fonts"

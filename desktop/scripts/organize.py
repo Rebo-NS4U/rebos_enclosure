@@ -20,6 +20,8 @@ def plan(home, payload):
         name = Path(item['source'])
         if item['kind'] == 'personal':
             component = Path(relative).parts[1]
+            if component == 'enclosure':
+                continue  # These settings already live in the grouped directory.
             old = home / '.config' / component
             label = 'shell' if component == 'rebos_shell' else component
             new = home / '.config/enclosure' / label
@@ -36,7 +38,7 @@ def plan(home, payload):
         if item['kind'] == 'personal' and (new.exists() or new.is_symlink()):
             raise ValueError(f'Both personal configuration locations exist: {old} and {new}; reconcile them first.')
         moves[str(old.relative_to(home))] = (old, new)
-    for name in ('cbonsai', 'rebos-prime-run'):
+    for name in ('rebos-prime-run',):
         old = home / '.local/bin' / name
         new = home / '.local/share/enclosure/system/bin' / name
         if old.exists() and not (old.is_symlink() and old.resolve() == new.resolve()):

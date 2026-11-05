@@ -33,6 +33,70 @@ class DeploymentTests(unittest.TestCase):
                   if p.is_file() and p.name not in {'checksums.json', 'manifest.json'}}
         (self.payload / 'checksums.json').write_text(json.dumps(hashes))
 
+    def bonsai_payload(self):
+        source = self.payload / 'home/.local/bin/bonsai-grow'
+        source.parent.mkdir(parents=True,exist_ok=True)
+        source.write_text('#!/usr/bin/env python3\nprint("approved tree")\n')
+        (self.payload / 'manifest.json').write_text(json.dumps({'units':['.local/bin/bonsai-grow']}))
+        self.seal()
+
+    def test_bonsai_install_archives_alternatives_and_restore_recovers_links(self):
+        self.bonsai_payload()
+        target = self.root / 'old-renderer'
+        target.write_text('external source stays intact')
+        retired = self.home / '.local/bin/terminal-bonsai'
+        retired.parent.mkdir(parents=True)
+        retired.symlink_to(target)
+        asset = self.home / '.local/share/enclosure/system/share/cbonsai/cbonsai.c'
+        asset.parent.mkdir(parents=True)
+        asset.write_text('old source')
+        backup = deploy.install(self.payload,self.home)
+        self.assertFalse(retired.is_symlink())
+        self.assertFalse(asset.exists())
+        self.assertEqual(target.read_text(),'external source stays intact')
+        self.assertTrue((self.home / '.local/bin/bonsai-grow').is_file())
+        saved = backup / 'files/.local/bin/terminal-bonsai'
+        self.assertTrue(saved.is_symlink())
+        deploy.restore(backup)
+        self.assertTrue(retired.is_symlink())
+        self.assertEqual(retired.readlink(),target)
+        self.assertEqual(asset.read_text(),'old source')
+        self.assertFalse((self.home / '.local/bin/bonsai-grow').exists())
+
+    def test_bonsai_retirement_dry_run_preserves_everything(self):
+        self.bonsai_payload()
+        retired = self.home / '.local/bin/cbonsai'
+        retired.parent.mkdir(parents=True)
+        retired.write_text('old tree')
+        deploy.install(self.payload,self.home,dry_run=True)
+        self.assertEqual(retired.read_text(),'old tree')
+        self.assertFalse((self.home / '.local/state').exists())
+        self.assertFalse((self.home / '.local/bin/bonsai-grow').exists())
+
+    def test_bonsai_retirement_does_not_touch_unselected_installs(self):
+        retired = self.home / '.local/bin/cbonsai'
+        retired.parent.mkdir(parents=True)
+        retired.write_text('old tree')
+        deploy.install(self.payload,self.home)
+        self.assertEqual(retired.read_text(),'old tree')
+
+    def test_bonsai_retirement_preflights_linked_parents(self):
+        self.bonsai_payload()
+        retired = self.home / '.local/bin/cbonsai'
+        retired.parent.mkdir(parents=True)
+        retired.write_text('old tree')
+        external = self.root / 'outside'
+        old_source = external / 'system/bin/cbonsai'
+        old_source.parent.mkdir(parents=True)
+        old_source.write_text('external tree')
+        link = self.home / '.local/share/enclosure'
+        link.parent.mkdir(parents=True)
+        link.symlink_to(external,target_is_directory=True)
+        with self.assertRaisesRegex(ValueError,'Parent must be a real directory'):
+            deploy.install(self.payload,self.home)
+        self.assertEqual(retired.read_text(),'old tree')
+        self.assertEqual(old_source.read_text(),'external tree')
+
     def test_older_installation_recovers_default_from_recorded_revision(self):
         destination = self.home / '.config/kitty/kitty.conf'
         destination.parent.mkdir(parents=True)

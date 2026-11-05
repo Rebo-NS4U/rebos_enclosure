@@ -34,7 +34,7 @@ PAM file; only an existing original should produce a backup command.
   remain available to callers.
 - `tox.ini` provides repeatable lint and test environments. Ruff checks Python
   runtime mistakes without enforcing formatting changes.
-- `desktop/scripts/build-check.sh` compiles cbonsai and both greeter extensions
+- `desktop/scripts/build-check.sh` compiles both greeter extensions
   in temporary storage. CI now runs that build independently of installer tests.
 - Media source and checksum changes are deployed together. Existing Python
   processes keep their loaded code until the next launch; no playback or
@@ -47,6 +47,6 @@ The recovery script is now separated into hardware validation/preview, generated
 payloads and host-application modules, with the same CLI entry point. Tests check
 original generated payload bytes, syntax and confirmation gates using temporary
 files and stubbed host actions. No recovery changes are applied to the host.
-The remaining size finding is third-party cbonsai; preserve its provenance.
+The former third-party bonsai implementation has since been retired; its source and provenance remain in Git history.
 Blueprint still misidentifies unittest assertion calls and
 the use of `HOME` as described above.
