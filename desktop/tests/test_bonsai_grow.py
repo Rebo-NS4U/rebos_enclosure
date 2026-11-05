@@ -73,6 +73,31 @@ class BonsaiGrowTests(unittest.TestCase):
             self.assertTrue(any(ink == 'bark' and glyph in '▒╎'
                                 for x, y, born, glyph, ink in branch))
 
+    def test_trunks_vary_without_disconnected_rows(self):
+        silhouettes = set()
+        bend_positions = set()
+        for seed in range(48):
+            path = bonsai.trunk_path(seed)
+            self.assertEqual(path, bonsai.trunk_path(seed))
+            self.assertEqual(path[0], 27)
+            self.assertEqual(len(path), 15)
+            self.assertTrue(all(abs(a - b) <= .951 for a, b in zip(path, path[1:])))
+            silhouettes.add(tuple(round(x) for x in path))
+            bend_positions.add(max(range(1, 14), key=lambda i: abs(path[i] - 27)))
+        self.assertGreater(len(silhouettes), 40)
+        self.assertGreater(len(bend_positions), 3)
+
+    def test_foliage_hides_sticks_without_increasing_leaf_count(self):
+        canvas = [[(' ', '') for _ in range(7)] for _ in range(7)]
+        canvas[2][2] = ('╱', 'wood')
+        canvas[1][2] = ('●', 'leaf1')
+        canvas[2][3] = ('◆', 'leaf2')
+        canvas[5][2] = ('│', 'wood')
+        bonsai.cover_crown_wood(canvas)
+        self.assertEqual(canvas[2][2], (' ', ''))
+        self.assertEqual(canvas[5][2], ('│', 'wood'))
+        self.assertEqual(sum(ink.startswith('leaf') for row in canvas for _, ink in row), 2)
+
     def test_preview_does_not_create_growth_state(self):
         with tempfile.TemporaryDirectory() as directory:
             result = subprocess.run([str(SOURCE), '--preview', '30', '--seed', '42', '--plain'],

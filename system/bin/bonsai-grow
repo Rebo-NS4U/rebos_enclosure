@@ -73,13 +73,16 @@ def trunk_path(seed, style='informal'):
     """Seeded, smoothly joined bends; age never changes established wood."""
     rng = random.Random(f'{seed}:trunk')
     if style == 'informal':
-        # The reference rises left from flared roots, swells right through
-        # the middle, then turns back into the crown. Vary that silhouette.
+        # Vary bend heights, reach and overall lean rather than reusing one S.
         mirror = rng.choice((-1, 1))
-        knots = [(0, 27), (4, 27 - mirror * rng.uniform(2.4, 3.2)),
-                 (8, 27 + mirror * rng.uniform(1.5, 2.5)),
-                 (12, 27 - mirror * rng.uniform(1.5, 2.5)),
-                 (14, 27 - mirror * rng.uniform(.3, 1.3))]
+        lean = rng.uniform(-2.5, 2.5)
+        depths = [0, rng.randint(3, 5), rng.randint(7, 9), rng.randint(11, 12), 14]
+        knots = [(0, 27)]
+        for index, depth in enumerate(depths[1:-1]):
+            side = mirror * (-1 if index % 2 == 0 else 1)
+            reach = rng.uniform(1.3, 4.2) * (1 - depth / 28)
+            knots.append((depth, 27 + lean * depth / 14 + side * reach))
+        knots.append((14, 27 + lean + rng.uniform(-1.5, 1.5)))
         path = []
         for depth in range(15):
             segment = min(3, next((i for i in range(4) if depth <= knots[i+1][0]), 3))
@@ -387,6 +390,23 @@ def specimen(seed, days=0, style='informal'):
     return cells
 
 
+def cover_crown_wood(canvas):
+    """Hide twig strokes inside visible leaf sprays without adding more leaves."""
+    covered = []
+    for y, row in enumerate(canvas):
+        for x, (glyph, ink) in enumerate(row):
+            if ink not in ('wood', 'woodlight', 'bark'):
+                continue
+            neighbors = sum(
+                canvas[ny][nx][1].startswith('leaf')
+                for ny in range(max(0, y - 1), min(len(canvas), y + 2))
+                for nx in range(max(0, x - 1), min(len(row), x + 2)))
+            if neighbors >= (5 if ink == 'bark' else 2):
+                covered.append((x, y))
+    for x, y in covered:
+        canvas[y][x] = (' ', '')
+
+
 def render(days, seed, color=True, columns=80, accents=None, style='informal'):
     width, height = 57, 24
     canvas = [[(' ', '') for _ in range(width)] for _ in range(height)]
@@ -400,6 +420,8 @@ def render(days, seed, color=True, columns=80, accents=None, style='informal'):
     for x, y, born, glyph, ink in wood + stem(days, seed, style) + leaves:
         if born <= days + 1 and 0 <= x < width and 0 <= y < 19:
             canvas[y][x] = (glyph, ink)
+    if style == 'informal':
+        cover_crown_wood(canvas)
     for y, row in enumerate(('╭─────────────────╮', ' ╲_______________╱ ', '   └───────────┘   '), 19):
         for x, char in enumerate(row, 18):
             canvas[y][x] = (char, 'pot')

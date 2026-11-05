@@ -627,7 +627,7 @@
   "system/bin/ani-cli": "585ecc18d36104053d55ebabde905af207ca12cca19c43d3457920925f3959be",
   "system/bin/anime-streamer": "1064db9f65d5006672e1d95a53e74bec59d6943f911049475e7867e48182e2de",
   "system/bin/assistant-sudo": "5bbc9bcb090916759f1cbd7ed8c913fe13f6450530957358268e7847bab74e95",
-  "system/bin/bonsai-grow": "0776be06db201d26c691515e21fa292ab554994f8b7d1704e7dbefa95f00276a",
+  "system/bin/bonsai-grow": "9925db35d79bb7dd73f3babd0b40a2da869cbeef38c6e1a2251f1df73a69b81e",
   "system/bin/colorscheme": "19c9c10fd75bee08b807042fdb345d3a5c5b37ad52f2c01c7a5df42b99c82174",
   "system/bin/config-browser": "cd35e2d3bfdfc702c1d960a72e7488198d8d514f08e1dddd9f52ab6afa939894",
   "system/bin/emoji-dmenu": "45643c618f3f449bad92352d2589a525771528da728b9d7c243a43c805535d19",
