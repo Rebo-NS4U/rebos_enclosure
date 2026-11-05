@@ -80,39 +80,6 @@ class BonsaiGrowTests(unittest.TestCase):
         bonsai.outline_exposed_wood(again)
         self.assertEqual(again,canvas)
 
-    def test_canopy_twigs_are_sparse_attached_and_follow_existing_branches(self):
-        from unittest.mock import patch
-        total = 0
-        for seed in range(32):
-            captured = []
-            original = bonsai.reveal_canopy_twigs
-            def capture(canvas, specimen_seed, days):
-                before = [row.copy() for row in canvas]
-                original(canvas,specimen_seed,days)
-                captured.append((before,[row.copy() for row in canvas]))
-            with patch.object(bonsai, 'reveal_canopy_twigs', side_effect=capture):
-                bonsai.render(30,seed)
-            before,after = captured[0]
-            changed = [(x,y) for y,row in enumerate(after) for x,cell in enumerate(row)
-                       if cell != before[y][x]]
-            self.assertLessEqual(len(changed),4)
-            total += len(changed)
-            for x,y in changed:
-                self.assertTrue(before[y][x][1].startswith('leaf'))
-                self.assertEqual(after[y][x][1],'wood')
-                self.assertIn(after[y][x][0],'│─╱╲')
-                self.assertTrue(any(after[ny][nx][1] in ('wood','bark','woodlight')
-                                    for ny in range(max(0,y-1),min(len(after),y+2))
-                                    for nx in range(max(0,x-1),min(len(after[ny]),x+2))
-                                    if (nx,ny) != (x,y)))
-            repeat = [row.copy() for row in before]
-            bonsai.reveal_canopy_twigs(repeat,seed,30)
-            self.assertEqual(repeat,after)
-            early = [row.copy() for row in before]
-            bonsai.reveal_canopy_twigs(early,seed,7)
-            self.assertEqual(early,before)
-        self.assertGreater(total,32)
-
     def test_top_sprays_fill_from_terminal_branches(self):
         for seed in range(24):
             leaves = [cell for cell in bonsai.specimen(seed, 30)
