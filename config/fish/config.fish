@@ -1,7 +1,19 @@
 ## Full bonsai growth time-lapse with patterned ceramic pots.
 function fish_greeting
     if status is-interactive; and test -t 1; and command -q bonsai-grow
-        bonsai-grow --animate --duration 2.5
+        if bonsai-grow --reserve-animation
+            bonsai-grow --background --duration 2.5 </dev/null &
+            set -g __bonsai_animation_pid $last_pid
+            disown $last_pid
+        end
+    end
+end
+
+# Finish painting before command output or another application owns the terminal.
+function __bonsai_stop_animation --on-event fish_preexec --on-event fish_exit
+    if set -q __bonsai_animation_pid
+        command kill -TERM $__bonsai_animation_pid 2>/dev/null
+        set -e __bonsai_animation_pid
     end
 end
 

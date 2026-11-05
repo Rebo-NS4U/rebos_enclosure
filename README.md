@@ -135,3 +135,5 @@ Accounts, credentials, browser profiles and personal chat/media history are excl
 ## Credits
 
 Based on [jR4dh3y's dots-niri](https://github.com/jR4dh3y/dots-niri), with the bundled rebos_shell derived from Ambxst by Axenide and subsequent contributors. The shell retains its [AGPL-3.0 license](system/apps/shell/LICENSE); bundled components retain their own licenses. Wallpaper metadata includes the [MAKC collection](https://github.com/makccr/wallpapers). See [upstream documentation](UPSTREAM.md).
+
+The Fish bonsai greeting grows above an immediately usable prompt. Typing stays in the command line; submitting a command stops painting before command output begins. Small terminals and `REDUCE_MOTION=1` use a still greeting.

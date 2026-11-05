@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""A persistent, additive terminal bonsai. No ncurses or background process."""
+"""A persistent, additive terminal bonsai. Standard library terminal rendering."""
 import argparse
 import fcntl
 import functools
@@ -1036,6 +1036,25 @@ def animate_growth(seed, accents, duration=2.5, style='informal'):
             signal.signal(signal.SIGTERM, old_term)
 
 
+def animate_background(seed, accents, duration, style):
+    """Paint only the reserved greeting rows, without touching terminal input."""
+    import signal
+    signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))
+    size = shutil.get_terminal_size()
+    pot_seed = random.SystemRandom().randrange(2**63)
+    began = time.monotonic()
+    while shutil.get_terminal_size() == size:
+        day = min(30, (time.monotonic() - began) / duration * 30)
+        picture = render(day, seed, True, size.columns, accents, style,
+                         fixed_height=True, pot_seed=pot_seed)
+        # One synchronized write saves and restores Fish's editing cursor.
+        frame = '\033[?2026h\0337\033[H' + picture + '\0338\033[?2026l'
+        os.write(sys.stdout.fileno(), frame.encode())
+        if day >= 30:
+            break
+        time.sleep(1 / 30)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--preview', type=float, metavar='DAYS', help='preview an age without changing saved growth')
@@ -1045,11 +1064,26 @@ def main():
     parser.add_argument('--plain', action='store_true', help='disable colors')
     parser.add_argument('--animate', action='store_true', help='Play full growth without changing saved age; any key skips')
     parser.add_argument('--duration', type=float, default=2.5, help='Time-lapse duration in seconds (default: 2.5)')
+    parser.add_argument('--reserve-animation', action='store_true', help='Reserve greeting rows before Fish starts its prompt')
+    parser.add_argument('--background', action='store_true', help='Animate reserved greeting rows without reading input')
     args = parser.parse_args()
     if not math.isfinite(args.duration) or args.duration <= 0:
         parser.error('--duration must be a positive finite number')
     columns = shutil.get_terminal_size().columns
     if args.preview is None and (not sys.stdout.isatty() or columns < 59 or os.environ.get('TERM') == 'dumb'):
+        return
+    if args.reserve_animation:
+        size = shutil.get_terminal_size()
+        if size.lines < 30 or os.environ.get('REDUCE_MOTION') == '1':
+            print(render(30, 42, True, columns, wallpaper_palette(), args.style), end='')
+            return 1
+        # Scroll existing content into scrollback and leave two prompt rows.
+        sys.stdout.write('\n' * size.lines + '\033[H\033[26B')
+        sys.stdout.flush()
+        return
+    if args.background:
+        animate_background(args.seed if args.seed is not None else random.SystemRandom().randrange(2**63),
+                           wallpaper_palette(), args.duration, args.style)
         return
     if args.animate:
         if not sys.stdout.isatty() or not sys.stdin.isatty():
@@ -1071,4 +1105,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())
