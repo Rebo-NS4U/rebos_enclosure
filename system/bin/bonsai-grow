@@ -544,12 +544,13 @@ def natural_specimen(seed, days):
                 if distance > rim or cleft or texture.random() < (.025 if distance < .7 else .14):
                     continue
                 birth = arrival + .5 + math.hypot(x-cx,(y-cy)*1.5)*.35
-                # Larger leaves gather inside each spray; fine tips soften its rim.
+                # Broad trefoil clusters fill sprays; diamond leaves shape the
+                # rim. Small dots belong to opening buds, not mature foliage.
                 patch = random.Random(f'{seed}:leaf-patch:{index}:{x//3}:{y//2}').random()
-                weights = (7,0,3,0) if distance < .65 and patch < .65 else (2,0,7,1)
+                weights = (8,2,0) if distance < .65 and patch < .65 else (5,4,1)
                 if distance > .85:
-                    weights = (0,0,6,4)
-                glyph = texture.choices(('●','◆','•','·'),weights)[0]
+                    weights = (2,7,1)
+                glyph = texture.choices(('♣','◆','●'),weights)[0]
                 # Light falls from the upper left, with a continuous dark underside.
                 light = ny + nx*.22
                 shade = 2 if light < -.25 else 0 if light > .3 else 1
@@ -559,7 +560,7 @@ def natural_specimen(seed, days):
         # may create holes, but it must never create detached leaf islands.
         anchor = (round(cx), round(cy))
         if arrival + .5 <= days+1:
-            candidates[anchor] = (*anchor, arrival+.5, '●', f'leaf{index%3*3+1}')
+            candidates[anchor] = (*anchor, arrival+.5, '♣', f'leaf{index%3*3+1}')
         pending = [anchor] if anchor in candidates else []
         reached = set(pending)
         while pending:

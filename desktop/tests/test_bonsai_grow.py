@@ -25,6 +25,14 @@ class BonsaiGrowTests(unittest.TestCase):
         self.assertNotEqual(image, bonsai.render(30, 43, False, 80, palette))
         self.assertNotEqual(image, bonsai.render(0, 42, False, 80, palette))
 
+    def test_mature_sprays_use_full_leaves_instead_of_tiny_dots(self):
+        for seed in range(24):
+            leaves = [c for c in bonsai.natural_specimen(seed, 30)
+                      if c[4].startswith('leaf')]
+            self.assertTrue(leaves)
+            self.assertFalse(any(c[3] in '•·' for c in leaves))
+            self.assertGreater(sum(c[3] in '♣◆' for c in leaves), len(leaves) * .8)
+
     def test_top_sprays_fill_from_terminal_branches(self):
         for seed in range(24):
             leaves = [cell for cell in bonsai.specimen(seed, 30)
@@ -372,7 +380,7 @@ class BonsaiGrowTests(unittest.TestCase):
                                 pending.append(point)
                 self.assertEqual(points, reached, (seed, day))
                 if day == 30:
-                    self.assertGreater(sum(char in '●◆•·' for row in rows for char in row), 30)
+                    self.assertGreater(sum(char in '♣●◆•·' for row in rows for char in row), 30)
 
     def test_shallow_main_branches_cannot_form_long_shelves(self):
         for seed in range(80):
