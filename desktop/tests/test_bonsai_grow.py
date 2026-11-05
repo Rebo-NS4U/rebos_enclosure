@@ -360,6 +360,26 @@ class BonsaiGrowTests(unittest.TestCase):
                 expected = '╱' if turn > .2 else '╲' if turn < -.2 else '╎'
                 self.assertEqual(glyph, expected)
 
+    def test_one_direction_forms_keep_compact_tapered_proportions(self):
+        checked = 0
+        for seed in range(120):
+            habit, side = bonsai.growth_pattern(seed)
+            trunk = bonsai.trunk_path(seed)
+            if habit == 'windswept':
+                self.assertLessEqual(abs(trunk[-1]-27), 5)
+            graph = bonsai.branch_graph(seed)
+            if not any(branch['leader'] for branch in graph):
+                continue
+            checked += 1
+            self.assertLessEqual(max(branch['level'] for branch in graph), 1)
+            for branch in graph:
+                if branch['leader']:
+                    continue
+                x,y = branch['end']
+                center = trunk[min(14, max(0, round(18-y)))]
+                self.assertLessEqual(abs(x-center), 3.5+max(0,y-3)*.4 + 1e-8)
+        self.assertGreater(checked, 10)
+
     def test_new_launches_use_fresh_seeds_and_explicit_seed_is_repeatable(self):
         from unittest.mock import patch, Mock
         with patch('sys.stdout', Mock(isatty=lambda: True)), \
