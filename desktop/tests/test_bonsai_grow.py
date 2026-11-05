@@ -92,7 +92,9 @@ class BonsaiGrowTests(unittest.TestCase):
             cells = bonsai.juvenile_foliage(day, 42)
             first_leaf = next(cell for cell in cells if cell[4].startswith('leaf'))
             glyphs.append(first_leaf[3])
-            self.assertTrue(any(cell[3] in '╰╯' for cell in cells))
+            shoots = [cell for cell in cells if cell[4].startswith('shoot')]
+            self.assertFalse(any(cell[3] in '│╰╯' for cell in shoots))
+            self.assertTrue(any(cell[3] in '╱╲' for cell in shoots))
         self.assertEqual(glyphs, ['·', '•', '●'])
         image = bonsai.render(3, 42, True, 80, ['#00ff00'] * 3)
         # Petioles carry intermediate colors rather than a hard wood/leaf jump.
@@ -145,7 +147,7 @@ class BonsaiGrowTests(unittest.TestCase):
                 cells = bonsai.juvenile_foliage(day, seed)
                 first = next(cell for cell in cells if cell[4].startswith('leaf'))
                 stem_tip = min(cell[1] for cell in bonsai.stem(day, seed))
-                self.assertEqual(first[1], stem_tip - 1)
+                self.assertEqual(first[1], stem_tip)
                 heights.append(first[1])
                 self.assertLessEqual(sum(cell[4].startswith('leaf') for cell in cells), 8)
             self.assertTrue(all(a > b for a, b in zip(heights, heights[1:])))

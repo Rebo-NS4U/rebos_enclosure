@@ -237,11 +237,11 @@ def juvenile_foliage(days, seed):
         x, y = round(centers[depth]), 18 - depth
         for side in (-1, 1):
             # A short shoot extends outward; its leaves follow the terminal bud.
-            reach = min(5, 3 + int(age * .4))
-            tip_x, tip_y = x + side * (reach - 1), y - 1
+            reach = min(3, 2 + int(age * .2))
+            tip_x, tip_y = x + side * reach, y - 1
             tone = (cohort + (side > 0)) % 3
             leaves = []
-            for index, (dx, dy, delay) in enumerate(((0, -1, 0), (1, 0, 2))):
+            for index, (dx, dy, delay) in enumerate(((1, 0, 0), (0, -1, 2))):
                 rng = random.Random(f'{seed}:juvenile:{cohort}:{side}:{index}')
                 shed = min(29, 24 + cohort * 1.5 + rng.uniform(0, 2))
                 if age < delay or days >= shed:
@@ -255,11 +255,10 @@ def juvenile_foliage(days, seed):
             if not leaves:
                 continue
             for step in range(1, reach):
-                elbow = step == reach - 1
-                glyph = ('╯' if side > 0 else '╰') if elbow else '─'
-                ink = f'shoot_mid{tone}' if elbow else 'shoot'
+                glyph = '─'
+                ink = f'shoot_mid{tone}' if step == reach - 1 else 'shoot'
                 cells.append((x + side * step, y, born, glyph, ink))
-            cells.append((tip_x, tip_y, born, '│', f'shoot_tip{tone}'))
+            cells.append((tip_x, tip_y, born, '╱' if side > 0 else '╲', f'shoot_tip{tone}'))
             cells.extend(leaves)
     # No temporary woody spurs remain after the juvenile leaves retire.
     return cells if days < 29 else []
