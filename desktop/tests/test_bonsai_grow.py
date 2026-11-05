@@ -50,15 +50,40 @@ class BonsaiGrowTests(unittest.TestCase):
                 self.assertLessEqual(len(leaves), 16)
                 self.assertGreaterEqual(len(leaves), previous_count)
                 previous_count = len(leaves)
-                stem = bonsai.stem(day, seed)
                 for x, y, born, glyph, ink in leaves:
                     self.assertLessEqual(born, day)
-                    self.assertTrue(any(abs(x - sx) + abs(y - sy) <= 4
-                                        for sx, sy, *_ in stem))
+                    shoots = [cell for cell in cells if cell[4] == 'shoot']
+                    self.assertTrue(any(max(abs(x - sx), abs(y - sy)) <= 1
+                                        for sx, sy, *_ in shoots))
                     self.assertTrue(0 <= x < 57 and 0 <= y < 19)
                 image = bonsai.render(day, seed, False, 80, ['#85b470'] * 3)
                 self.assertTrue(any(glyph in image for glyph in '◆●•'))
             self.assertEqual(bonsai.juvenile_foliage(30, seed), [])
+
+    def test_early_leaves_follow_connected_shoot_tips(self):
+        for seed in range(24):
+            for day in (0, 1, 2, 3, 7, 14, 25):
+                cells = bonsai.juvenile_foliage(day, seed)
+                shoots = {(x, y) for x, y, _, _, ink in cells if ink == 'shoot'}
+                reached = {(x, y) for x, y, *_ in bonsai.stem(day, seed)}
+                pending = set(shoots)
+                while pending:
+                    attached = {point for point in pending
+                                if any(max(abs(point[0]-x), abs(point[1]-y)) <= 1
+                                       for x, y in reached)}
+                    self.assertTrue(attached, 'Detached juvenile branch')
+                    reached.update(attached)
+                    pending.difference_update(attached)
+                # Leaves sit at an end, not midway along a continuing branch.
+                for x, y, _, _, ink in cells:
+                    if not ink.startswith('leaf'):
+                        continue
+                    neighbors = {(sx, sy) for sx, sy in shoots
+                                 if max(abs(sx-x), abs(sy-y)) <= 1}
+                    self.assertTrue(neighbors)
+                    self.assertTrue(any(sum(max(abs(sx-ox), abs(sy-oy)) <= 1
+                                            for ox, oy in shoots if (ox, oy) != (sx, sy)) <= 1
+                                        for sx, sy in neighbors))
 
     def test_starting_wood_has_body_and_tapers(self):
         for seed in range(24):

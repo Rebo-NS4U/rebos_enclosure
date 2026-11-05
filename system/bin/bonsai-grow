@@ -233,20 +233,27 @@ def juvenile_foliage(days, seed):
         age = days - born
         x, y = round(centers[depth]), 18 - depth
         for side in (-1, 1):
-            # Short petioles connect every spray to an established stem node.
-            cells.append((x + side, y, born, '╱' if side > 0 else '╲', 'woodlight'))
-            offsets = ((2, -1, 0), (2, 0, 2))
-            for dx, dy, delay in offsets:
-                rng = random.Random(f'{seed}:juvenile:{depth}:{side}:{dx}:{dy}')
-                # Individual leaves retire gradually as the permanent pads fill.
+            # A short shoot extends outward; its leaves follow the terminal bud.
+            reach = min(5, 2 + int(age * .5))
+            tip_x, tip_y = x + side * reach, y - 1
+            leaves = []
+            for index, (dx, dy, delay) in enumerate(((0, -1, 0), (1, 0, 2))):
+                rng = random.Random(f'{seed}:juvenile:{depth}:{side}:{index}')
                 shed = min(29, 20 + depth * .4 + rng.uniform(0, 2))
                 if age < delay or days >= shed:
                     continue
                 glyph = '•' if age - delay < 1 else rng.choice(('◆', '●'))
                 tone = (depth // 2 + (side > 0)) % 3
                 shade = 2 if dy < 0 else 1
-                cells.append((x + side * dx, y + dy, born + delay,
-                              glyph, f'leaf{tone * 3 + shade}'))
+                leaves.append((tip_x + side * dx, tip_y + dy, born + delay,
+                               glyph, f'leaf{tone * 3 + shade}'))
+            if not leaves:
+                continue
+            for step in range(1, reach + 1):
+                rise = 1 if step == reach else 0
+                glyph = ('╱' if side > 0 else '╲') if rise else '─'
+                cells.append((x + side * step, y - rise, born, glyph, 'shoot'))
+            cells.extend(leaves)
     # No temporary woody spurs remain after the juvenile leaves retire.
     return cells if days < 29 else []
 
@@ -432,6 +439,7 @@ def render(days, seed, color=True, columns=80, accents=None, style='informal'):
     if style == 'informal':
         palette.update(wood='\033[38;2;185;158;119m', bark='\033[38;2;151;135;112m',
                        woodlight='\033[38;2;214;195;155m')
+    palette['shoot'] = palette['wood']
     accents = accents if valid_palette(accents) else wallpaper_palette()
     for i, accent in enumerate(accents):
         for j, brightness in enumerate((.75, .95, 1.12)):
