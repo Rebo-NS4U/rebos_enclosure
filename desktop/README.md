@@ -73,6 +73,7 @@ Early KMS is optional and currently supports mkinitcpio. It adds an additive NVI
 
 - Live rebos_shell QML and scripts: island bar, launcher, dashboard, lockscreen, notifications, settings and wallpaper color/sort controls. No clone of an older upstream shell is needed.
 - Portable Niri keybindings, named workspaces, rounded windows, transparency and blur. Applications open on the current workspace. Monitor modes are selected by the destination computer.
+- Locus Linux opens in a full-width tiled column, preserving Niri's border and outer gaps.
 - Dark OLED theme with wallpaper-driven GTK, Qt, KDE, Kitty, Fish, Fuzzel, btop, Neovim and supported app palettes; a current palette snapshot is provided for the first login.
 - Kitty/Fish prompt and shortcuts, wallpaper-colored bonsai greeting, cbonsai source and license, bundled terminal/shell fonts, GoogleDot cursor and Papirus icons.
 - Custom Neovim IDE configuration and plugin lockfile. Plugins and language servers download separately through Neovim on first use; open `:IDEHelp` for instructions.

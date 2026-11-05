@@ -406,6 +406,13 @@ window-rule {
     open-floating false
 }
 
+// Locus keeps the desktop gaps and border while filling the tiled workspace.
+window-rule {
+    match app-id="locus-linux"
+    open-floating false
+    default-column-width { proportion 1.0; }
+}
+
 // Ghost uses a full-width tiled workspace.
 window-rule {
     match app-id="org.ghostlocation.desktop"
