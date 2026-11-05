@@ -37,6 +37,27 @@ class BonsaiTests(unittest.TestCase):
         self.assertGreater(count(1), 100)
         self.assertTrue(all(0 <= leaf[2] <= 1 for leaf in tree.leaves))
 
+    def test_leafy_leader_precedes_lateral_canopy(self):
+        for seed in range(12):
+            tree = bonsai.Tree(72, 26, seed)
+            leader = tree.shoots[0]
+            lateral = [shoot for shoot in tree.shoots if shoot['parent'] == 0]
+            crown = next(pad for pad in tree.pads if pad['support'] == 0)
+            self.assertLess(crown['birth'], min(shoot['birth'] for shoot in lateral))
+            for node in tree.leader_nodes:
+                arrival = leader['duration']*node['attachment']
+                self.assertGreaterEqual(node['birth'], arrival)
+                # First leaves open immediately behind a moving apex, rather
+                # than waiting for a full-height bare trunk or lower branches.
+                self.assertLess(node['birth']-arrival, .02)
+            first = tree.leader_nodes[0]
+            span = round(4*tree.sx)
+            endpoint = (first['anchor'][0]+span, first['anchor'][1]-round(tree.sy))
+            for age in (.12, .25):
+                x, y = endpoint
+                self.assertEqual(tree.cells(age)[y][x][0], '●')
+            self.assertGreater(min(shoot['birth'] for shoot in lateral), .25)
+
     def test_child_shoots_and_buds_wait_for_supporting_wood(self):
         for seed in range(20):
             tree = bonsai.Tree(72, 26, seed)
