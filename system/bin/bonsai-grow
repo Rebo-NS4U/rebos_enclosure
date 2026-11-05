@@ -75,8 +75,6 @@ def trunk_path(seed, style='informal'):
     rng = random.Random(f'{seed}:trunk')
     if style == 'informal':
         pattern, side = growth_pattern(seed)
-        if pattern == 'cascade':
-            return [x for x,y in cascade_path(seed)]
         amplitude = rng.uniform(2, 3.5) if pattern in ('forked','broom') else rng.uniform(4.5, 5.5) if pattern in ('recurved','slant') else rng.uniform(4.5, 8)
         phase = rng.uniform(.8, 1.15)
         path = []
@@ -84,8 +82,6 @@ def trunk_path(seed, style='informal'):
             t = depth / 14
             if pattern == 'upright':
                 bend = .3 * math.sin(t * math.pi * phase) + .12*t
-            elif pattern == 'root_over_rock':
-                bend = .55*t**.9 + .12*math.sin(t*math.pi)
             elif pattern == 'slant':
                 bend = t ** .85
             elif pattern == 'bowed':
@@ -137,8 +133,6 @@ def cascade_path(seed):
         t = depth / 14
         weights = ((1 - t)**3, 3 * (1 - t)**2 * t, 3 * (1 - t) * t*t, t**3)
         path.append(tuple(sum(p[axis] * w for p, w in zip(controls, weights)) for axis in (0, 1)))
-    if growth_pattern(seed)[0] == 'cascade' and growth_pattern(seed)[1] < 0:
-        path = [(54-x,y) for x,y in path]
     return path
 
 
@@ -164,7 +158,7 @@ def cascade_stem(days, seed):
     for x, y in sorted(wood):
         interior = all(p in wood for p in ((x-1, y), (x+1, y), (x, y-1), (x, y+1)))
         if interior:
-            glyph, ink = ('╎' if (x * 3 + y) % 9 == 0 else '░'), 'bark'
+            glyph, ink = ('╵' if (x * 3 + y) % 9 == 0 else ' '), 'bark'
         else:
             nearest = min(range(height), key=lambda d: (path[d][0]-x)**2 + (path[d][1]-y)**2)
             before, after = path[max(0, nearest-1)], path[min(height-1, nearest+1)]
@@ -172,14 +166,12 @@ def cascade_stem(days, seed):
             glyph = '│' if abs(dx) < abs(dy)*.6 else '─' if abs(dy) < abs(dx)*.35 else '╱' if dx*dy < 0 else '╲'
             ink = 'wood'
         cells.append((x, y, 0, glyph, ink))
-    for x in (26,27,28):
-        cells.append((x,18,0,'┴' if x == 27 else '─','wood'))
     return cells
 
 
 def stem(days, seed=42, style='informal'):
     """A tapered trunk: length, girth, roots and bark develop at different rates."""
-    if style == 'semi-cascade' or (style == 'informal' and growth_pattern(seed)[0] == 'cascade'):
+    if style == 'semi-cascade':
         return cascade_stem(days, seed)
     centers = trunk_path(seed, style)
     height = min(len(centers), 2 + int(days * .7))
@@ -243,9 +235,6 @@ def stem(days, seed=42, style='informal'):
 
 def growth_pattern(seed):
     """Choose a whole-tree habit, not just jitter around the same silhouette."""
-    dramatic = random.Random(f'{seed}:dramatic-habit')
-    if dramatic.random() < .2:
-        return dramatic.choice(('cascade','root_over_rock')), dramatic.choice((-1,1))
     extra = random.Random(f'{seed}:extra-habit')
     if extra.random() < .28:
         keep_broom = extra.choice((True,False))
@@ -261,18 +250,6 @@ def branch_layout(seed):
     rng = random.Random(f'{seed}:limb-layout')
     pattern, side = growth_pattern(seed)
     centers = trunk_path(seed)
-    if pattern == 'cascade':
-        shift = (centers[-1]-27)*.6
-        path = cascade_path(seed)
-        result = []
-        for index,depth in enumerate((5,9,12)):
-            x,y = path[depth]
-            result.append((depth,x+side*rng.uniform(2.5,4)-shift,
-                           max(5,y-rng.uniform(1,2.5)), max((depth-1)/.7,9+index*3)))
-        for depth in (12,14):
-            x,y = path[depth]
-            result.append((depth,x+side*.2-shift,y,(depth-1)/.7+.3))
-        return result
     if pattern == 'broom':
         shift = (centers[-1]-27)*.6
         result = []
@@ -343,16 +320,12 @@ def juvenile_foliage(days, seed):
     # establish, then travels outward on those limbs as their tips extend.
     primaries = [branch for branch in branch_graph(seed) if branch['parent'] is None]
     for cohort, branch in enumerate(primaries[:2]):
-        attachment = branch.get('trunk_depth',round(18 - branch['start'][1]))
+        attachment = round(18 - branch['start'][1])
         tx, ty = branch['end']
         branch_born = branch['born']
         depth = min(height - 1, attachment)
         born, age = 0, days
-        if growth_pattern(seed)[0] == 'cascade':
-            px,py = cascade_path(seed)[depth]
-            x,y = round(px),round(py)
-        else:
-            x,y = round(centers[depth]),18-depth
+        x, y = round(centers[depth]), 18 - depth
         length = math.hypot(tx - x, ty - y)
         progress = min(1, max(2 / length, (days + 1 - branch_born) / (length * .55)))
         tip_x = round(x + (tx - x) * progress)
@@ -411,15 +384,15 @@ def branch_graph(seed):
     layout = branch_layout(seed)
     directions = {1 if x + shift >= centers[depth] else -1
                   for depth, x, y, born in layout[:3]}
-    one_sided = len(directions) == 1 and habit != 'cascade'
+    one_sided = len(directions) == 1
     def add(start, end, born, width, parent=None, attachment=0, level=0, leader=False, lower=False):
         # Stagger crown-tip heights instead of clipping every twig to one roof.
         ceiling = rng.uniform(2.7, 3.1) if leader else rng.uniform(3.2, 5.2)
-        if habit in ('forked', 'bowed', 'upright', 'recurved', 'broom', 'slant', 'root_over_rock') and not lower:
+        if habit in ('forked', 'bowed', 'upright', 'recurved', 'broom', 'slant') and not lower:
             # Keep the apex highest; outer branch pads sit progressively lower.
             crown_center = centers[-1]
             ceiling = max(ceiling, 2.8 + (abs(end[0]-crown_center)/6)**1.4)
-        end = (max(9, min(47, end[0])), max(ceiling, min(17.5 if habit == 'cascade' else 15 if lower else 14, end[1])))
+        end = (max(9, min(47, end[0])), max(ceiling, min(15 if lower else 14, end[1])))
         if level == 0 and not leader and not lower:
             # A shallow upper limb must stay short; it cannot become a shelf.
             run_limit = 1.5 + 3*max(0, start[1]-end[1])
@@ -440,7 +413,7 @@ def branch_graph(seed):
         if lower or level >= (1 if one_sided else 2) or length < 3:
             return
         # One stronger continuation and a shorter lateral fork, at unequal nodes.
-        fractions = (rng.uniform(.65, .85), rng.uniform(.4, .65)) if habit in ('forked', 'bowed', 'upright', 'recurved', 'broom', 'slant', 'root_over_rock') else (rng.uniform(.7, .95), rng.uniform(.4, .7))
+        fractions = (rng.uniform(.65, .85), rng.uniform(.4, .65)) if habit in ('forked', 'bowed', 'upright', 'recurved', 'broom', 'slant') else (rng.uniform(.7, .95), rng.uniform(.4, .7))
         for child, fraction in enumerate(fractions):
             origin = branch_point(branch, fraction)
             direction = 1 if end[0] >= start[0] else -1
@@ -448,7 +421,7 @@ def branch_graph(seed):
                 direction *= -1
             if habit == 'windswept':
                 direction = wind
-            reach = length * rng.uniform(.3, .48) * (1 if child == 0 else .6) if habit in ('forked', 'bowed', 'upright', 'recurved', 'broom', 'slant', 'root_over_rock') else length * rng.uniform(.45, .65) * (1 if child == 0 else .6)
+            reach = length * rng.uniform(.3, .48) * (1 if child == 0 else .6) if habit in ('forked', 'bowed', 'upright', 'recurved', 'broom', 'slant') else length * rng.uniform(.45, .65) * (1 if child == 0 else .6)
             if leader:
                 # The apex keeps reaching upward instead of becoming another
                 # long horizontal, wind-driven limb.
@@ -465,10 +438,7 @@ def branch_graph(seed):
         if one_sided and depth >= 11:
             tx = centers[depth] + (tx-centers[depth]) * .55
         width = max(.55, 1.45*(1-depth/24))
-        origin = cascade_path(seed)[depth] if habit == 'cascade' else (centers[depth],18-depth)
-        root_id = len(branches)
-        add(origin, (tx, ty), born, width)
-        branches[root_id]['trunk_depth'] = depth
+        add((centers[depth], 18-depth), (tx, ty), born, width)
     if one_sided:
         # Give the swept lower body a distinct vertical continuation and crown.
         add((centers[11], 7), (centers[-1] + wind*1.2, 2.7),
@@ -525,8 +495,6 @@ def natural_specimen(seed, days):
         cx, cy = branch['end']
         rng = random.Random(f'{seed}:terminal:{index}')
         rx, ry = (rng.uniform(2.6,3.8), rng.uniform(1.3,1.9)) if compact else (rng.uniform(3.2,5), rng.uniform(1.6,2.4))
-        if growth_pattern(seed)[0] == 'cascade' and branch['length'] < 1:
-            rx,ry = rng.uniform(2.3,3),rng.uniform(1,1.3)
         if branch.get('lower', False):
             rx, ry = rng.uniform(2.5,3.3), rng.uniform(1,1.35)
         arrival = branch['born'] + branch['length']*.55
@@ -896,22 +864,6 @@ def add_trunk_scar(canvas, seed, days):
                 break
 
 
-def add_root_rock(canvas, seed):
-    """A stone under the root flare, with warm roots gripping its faces."""
-    if growth_pattern(seed)[0] != 'root_over_rock':
-        return
-    for y,half in ((14,2),(15,4),(16,6),(17,7),(18,6)):
-        for x in range(27-half,28+half):
-            if canvas[y][x][0] != ' ':
-                continue
-            glyph = ('╭' if x == 27-half else '╮' if x == 27+half else '─') if y == 14 else ('│' if y == 17 else '╱') if x == 27-half else ('│' if y == 17 else '╲') if x == 27+half else '·'
-            canvas[y][x] = (glyph,'stone')
-    for y in range(14,19):
-        spread = round(1+(y-14)*1.1)
-        for side in (-1,1):
-            canvas[y][27+side*spread] = ('╱' if side < 0 else '╲','wood')
-
-
 def render(days, seed, color=True, columns=80, accents=None, style='informal',
            fixed_height=False, pot_seed=None):
     width, height = 57, 24
@@ -932,7 +884,6 @@ def render(days, seed, color=True, columns=80, accents=None, style='informal',
         add_trunk_scar(canvas, seed, days)
         add_knurling(canvas, seed, days)
         add_blossoms(canvas, seed, days)
-        add_root_rock(canvas, seed)
     for y, row in enumerate(pot_rows(seed if pot_seed is None else pot_seed), 19):
         for x, char in enumerate(row, 16):
             ink = 'pot'
@@ -950,8 +901,6 @@ def render(days, seed, color=True, columns=80, accents=None, style='informal',
     palette['scar'] = '\033[38;2;98;88;73m'
     accents = accents if valid_palette(accents) else wallpaper_palette()
     bloom_rgb = [round(int(accents[2][k:k+2],16)*.8+255*.2) for k in (1,3,5)]
-    stone_rgb = [round(int(accents[1][k:k+2],16)*.65) for k in (1,3,5)]
-    palette['stone'] = '\033[38;2;{};{};{}m'.format(*stone_rgb)
     palette['blossom'] = '\033[38;2;{};{};{}m'.format(*bloom_rgb)
     for name, accent, brightness in (('pot', accents[1], .85),
                                     ('pot_inlay', accents[0], .88),
