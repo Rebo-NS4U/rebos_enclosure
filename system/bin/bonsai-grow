@@ -262,7 +262,8 @@ def specimen(seed, days=0, style='informal'):
     # Upward-reaching limbs tuck beneath overlapping crown pads.
     tiers = ((5, 14, 8, 12), (8, 41, 7, 15), (10, 18, 4, 18), (12, 36, 3, 21), (14, 26, 2, 24))
     if style == 'informal':
-        tiers = ((5, 13, 12, 12), (7, 42, 9, 15), (10, 17, 5, 18), (12, 36, 3, 21), (14, 25, 2, 24))
+        # Establish the two crown-bearing shoots as the leader reaches them.
+        tiers = ((5, 13, 12, 12), (7, 42, 9, 15), (10, 17, 5, 18), (12, 36, 3, 17), (14, 25, 2, 19))
     if cascade:
         tiers = ((5, 27, 8, 12), (8, 38, 8, 15), (10, 44, 10, 18), (12, 49, 13, 21), (14, 50, 16, 24))
     for depth, tx, ty, born in tiers:
@@ -300,8 +301,8 @@ def specimen(seed, days=0, style='informal'):
     lobes = ((18, 7, 8, 2.6), (24, 3.7, 7, 3.2), (31, 4.2, 8, 3.5),
              (37, 6, 8, 2.8), (39, 8.2, 6, 2), (24, 8.8, 9, 2.4))
     if style == 'informal':
-        lobes = ((14, 11, 7, 2.5), (18, 7, 8, 2.6), (24, 4, 7, 2.8),
-                 (31, 3.7, 6, 2.7), (37, 6, 7, 2.8), (43, 8.5, 6, 2.2))
+        lobes = ((14, 11, 7, 2.5), (18, 7, 8, 2.6), (24, 3.5, 6.5, 2.5),
+                 (32, 3.8, 6.5, 2.8), (37, 6, 7, 2.8), (43, 8.5, 6, 2.2))
     if cascade:
         lobes = ((27, 7.5, 6, 2.6), (36, 7, 6, 2.6), (43, 9, 6, 2.4),
                  (47, 12, 5, 2.3), (50, 15.5, 4, 2.4))
@@ -313,20 +314,23 @@ def specimen(seed, days=0, style='informal'):
             pad = min(range(len(lobes)), key=pad_distances.__getitem__)
             distance = pad_distances[pad]
             cx, cy, rx, ry = lobes[pad]
+            # The two upper pads are the focal point: coherent, full sprays
+            # with a rounded outline, rather than tiny scattered dots.
+            top_pad = style == 'informal' and pad in (2, 3)
             leafrng = random.Random(f'{seed}:crown:{x}:{y}')
             if distance > 1 or leafrng.random() < (.035 if distance < .7 else .16):
                 continue
-            if style == 'informal' and leafrng.random() < (.12 if y < 8 else .23):
+            if style == 'informal' and not top_pad and leafrng.random() < (.12 if y < 8 else .23):
                 continue
             # Small seams below overlapping pads reveal their layered shape.
             separation = sorted(pad_distances)[1] - distance
             seam = y > cy + .5 and separation < .10
-            if seam and leafrng.random() < .5:
+            if seam and not top_pad and leafrng.random() < .5:
                 continue
             # Leaves spread from the nearest connected shoot into the crown.
             nearest = min(tips, key=lambda tip: math.hypot(x - tip[0], (y - tip[1]) * 1.5))
             travel = math.hypot(x - nearest[0], (y - nearest[1]) * 1.5)
-            birth = nearest[2] + 3 + travel * .8 + leafrng.uniform(0, 2)
+            birth = nearest[2] + (2 if top_pad else 3) + travel * (.45 if top_pad else .8) + leafrng.uniform(0, 2)
             tone = pad % 3
             shade = 2 if y < cy - .5 else 0 if y > cy + .5 else 1
             # Real bonsai read as foliage sprays grouped into pads. Coherent
@@ -344,6 +348,9 @@ def specimen(seed, days=0, style='informal'):
             glyph = sizes.choices(('♣', '●', '•', '·'), weights)[0]
             if style == 'informal':
                 glyph = sizes.choices(('◆', '●', '•', '·'), (3, 4, 2, 1) if distance < .75 else (1, 2, 4, 3))[0]
+            if top_pad:
+                glyph = sizes.choices(('◆', '●', '•', '·'),
+                    (3, 6, 1, 0) if distance < .75 else (1, 3, 4, 1))[0]
             cells.append((x, y, birth, glyph, f'leaf{tone * 3 + shade}'))
     return cells
 

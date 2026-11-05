@@ -25,6 +25,21 @@ class BonsaiGrowTests(unittest.TestCase):
         self.assertNotEqual(image, bonsai.render(30, 43, False, 80, palette))
         self.assertNotEqual(image, bonsai.render(0, 42, False, 80, palette))
 
+    def test_top_clusters_fill_during_growth(self):
+        for seed in range(24):
+            def upper_leaves(age):
+                return [cell for cell in bonsai.specimen(seed, age)
+                        if cell[4].startswith('leaf') and cell[1] <= 5
+                        and cell[2] <= age + 1]
+            developing = upper_leaves(25)
+            mature = upper_leaves(30)
+            self.assertGreaterEqual(len(developing), 10)
+            self.assertGreaterEqual(len(mature), 60)
+            center = 28 + (bonsai.trunk_path(seed)[-1] - 27) * .6
+            self.assertGreaterEqual(sum(cell[0] < center for cell in mature), 20)
+            self.assertGreaterEqual(sum(cell[0] >= center for cell in mature), 20)
+            self.assertGreater(sum(cell[3] in '◆●' for cell in mature), len(mature) // 2)
+
     def test_preview_does_not_create_growth_state(self):
         with tempfile.TemporaryDirectory() as directory:
             result = subprocess.run([str(SOURCE), '--preview', '30', '--seed', '42', '--plain'],
