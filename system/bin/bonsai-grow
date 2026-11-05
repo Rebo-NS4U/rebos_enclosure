@@ -228,38 +228,52 @@ def juvenile_foliage(days, seed):
     centers = trunk_path(seed, 'informal')
     height = min(len(centers), 2 + int(days * .7))
     cells = []
-    # Keep the original pair with the leader; a second pair follows behind.
-    for cohort, born in enumerate((0, 6)):
-        depth = height - 1 - cohort * 4
-        if days < born or depth < 1:
-            continue
-        age = days - born
+    # The original pair follows the leader until the first limb attachments
+    # establish, then travels outward on those limbs as their tips extend.
+    target_rng = random.Random(seed)
+    crown_shift = (centers[-1] - 27) * .6
+    for side, attachment, tx, ty, branch_born in ((-1, 5, 13, 12, 12),
+                                                 (1, 7, 42, 9, 15)):
+        tx += crown_shift + target_rng.uniform(-.6, .6)
+        ty += target_rng.uniform(-.3, .3)
+        depth = min(height - 1, attachment)
+        born, age, cohort = 0, days, 0
         x, y = round(centers[depth]), 18 - depth
-        for side in (-1, 1):
-            # A short shoot extends outward; its leaves follow the terminal bud.
-            reach = min(3, 2 + int(age * .2))
-            tip_x, tip_y = x + side * reach, y - 1
-            tone = (cohort + (side > 0)) % 3
-            leaves = []
-            for index, (dx, dy, delay) in enumerate(((1, 0, 0), (0, -1, 2))):
-                rng = random.Random(f'{seed}:juvenile:{cohort}:{side}:{index}')
-                shed = min(29, 24 + cohort * 1.5 + rng.uniform(0, 2))
-                if age < delay or days >= shed:
-                    continue
-                unfold = age - delay
-                glyph = '·' if unfold < .5 else '•' if unfold < 2.5 else '●'
-                tone = (cohort + (side > 0)) % 3
-                shade = 2 if dy < 0 else 1
-                leaves.append((tip_x + side * dx, tip_y + dy, born + delay,
-                               glyph, f'leaf{tone * 3 + shade}'))
-            if not leaves:
+        length = math.hypot(tx - x, ty - y)
+        progress = min(1, max(2 / length, (days + 1 - branch_born) / (length * .55)))
+        tip_x = round(x + (tx - x) * progress)
+        tip_y = round(y + (ty - y) * progress - math.sin(progress * math.pi) * .5)
+        tone = (side > 0)
+        leaves = []
+        for index, (dx, dy, delay) in enumerate(((1, 0, 0), (0, -1, 2))):
+            rng = random.Random(f'{seed}:juvenile:{cohort}:{side}:{index}')
+            shed = min(29, 24 + cohort * 1.5 + rng.uniform(0, 2))
+            if age < delay or days >= shed:
                 continue
-            for step in range(1, reach):
-                glyph = '─'
-                ink = f'shoot_mid{tone}' if step == reach - 1 else 'shoot'
-                cells.append((x + side * step, y, born, glyph, ink))
-            cells.append((tip_x, tip_y, born, '╱' if side > 0 else '╲', f'shoot_tip{tone}'))
-            cells.extend(leaves)
+            unfold = age - delay
+            glyph = '·' if unfold < .5 else '•' if unfold < 2.5 else '●'
+            tone = (cohort + (side > 0)) % 3
+            shade = 2 if dy < 0 else 1
+            leaves.append((tip_x + side * dx, tip_y + dy, born + delay,
+                           glyph, f'leaf{tone * 3 + shade}'))
+        if not leaves:
+            continue
+        steps = max(abs(tip_x - x), abs(tip_y - y), 1)
+        path = []
+        for step in range(1, steps + 1):
+            t = step / steps
+            point = (round(x + (tip_x - x) * t), round(y + (tip_y - y) * t))
+            if path and point == path[-1]:
+                continue
+            path.append(point)
+        previous_y = y
+        for index, (sx, sy) in enumerate(path):
+            is_tip = index == len(path) - 1
+            glyph = ('╱' if side > 0 else '╲') if sy < previous_y else '─'
+            ink = f'shoot_tip{tone:d}' if is_tip else f'shoot_mid{tone:d}'
+            cells.append((sx, sy, born, glyph, ink))
+            previous_y = sy
+        cells.extend(leaves)
     # No temporary woody spurs remain after the juvenile leaves retire.
     return cells if days < 29 else []
 

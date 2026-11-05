@@ -140,17 +140,24 @@ class BonsaiGrowTests(unittest.TestCase):
         self.assertEqual(canvas[5][2], ('│', 'wood'))
         self.assertEqual(sum(ink.startswith('leaf') for row in canvas for _, ink in row), 2)
 
-    def test_starting_leaves_rise_with_the_leader(self):
+    def test_starter_leaves_rise_then_extend_with_first_branches(self):
         for seed in range(24):
-            heights = []
-            for day in (0, 3, 7, 14):
+            def tips(day):
+                return [(x, y) for x, y, _, _, ink in bonsai.juvenile_foliage(day, seed)
+                        if ink.startswith('shoot_tip')]
+            self.assertLess(tips(3)[0][1], tips(0)[0][1])
+            left_start, right_start = tips(12)
+            left_end, right_end = tips(22)
+            self.assertLess(left_end[0], left_start[0])
+            self.assertGreater(right_end[0], right_start[0])
+            main_wood = [(x, y) for x, y, _, _, ink in bonsai.specimen(seed, 22)
+                         if not ink.startswith('leaf')]
+            for x, y in (left_end, right_end):
+                self.assertTrue(any(max(abs(x-wx), abs(y-wy)) <= 1
+                                    for wx, wy in main_wood))
+            for day in (0, 3, 7, 14, 22):
                 cells = bonsai.juvenile_foliage(day, seed)
-                first = next(cell for cell in cells if cell[4].startswith('leaf'))
-                stem_tip = min(cell[1] for cell in bonsai.stem(day, seed))
-                self.assertEqual(first[1], stem_tip)
-                heights.append(first[1])
-                self.assertLessEqual(sum(cell[4].startswith('leaf') for cell in cells), 8)
-            self.assertTrue(all(a > b for a, b in zip(heights, heights[1:])))
+                self.assertLessEqual(sum(cell[4].startswith('leaf') for cell in cells), 4)
 
     def test_supported_foliage_intersection_stays_visible(self):
         canvas = [[(' ', '') for _ in range(8)] for _ in range(8)]
