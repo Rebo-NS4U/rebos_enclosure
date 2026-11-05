@@ -129,7 +129,7 @@ class BonsaiGrowTests(unittest.TestCase):
                          {'upright', 'slant', 'bowed', 'windswept', 'recurved'})
         self.assertGreater(len(bend_positions), 3)
 
-    def test_foliage_hides_sticks_without_increasing_leaf_count(self):
+    def test_cleanup_removes_detached_sticks_and_leaves(self):
         canvas = [[(' ', '') for _ in range(7)] for _ in range(7)]
         canvas[2][2] = ('╱', 'wood')
         canvas[1][2] = ('●', 'leaf1')
@@ -138,7 +138,7 @@ class BonsaiGrowTests(unittest.TestCase):
         bonsai.cover_crown_wood(canvas)
         self.assertEqual(canvas[2][2], (' ', ''))
         self.assertEqual(canvas[5][2], ('│', 'wood'))
-        self.assertEqual(sum(ink.startswith('leaf') for row in canvas for _, ink in row), 2)
+        self.assertEqual(sum(ink.startswith('leaf') for row in canvas for _, ink in row), 0)
 
     def test_starter_leaves_rise_then_extend_with_first_branches(self):
         for seed in range(24):
@@ -379,6 +379,36 @@ class BonsaiGrowTests(unittest.TestCase):
                 center = trunk[min(14, max(0, round(18-y)))]
                 self.assertLessEqual(abs(x-center), 3.5+max(0,y-3)*.4 + 1e-8)
         self.assertGreater(checked, 10)
+
+    def test_final_silhouette_is_connected_throughout_growth(self):
+        for seed in range(64):
+            for day in (0, 3, 7, 14, 22, 30):
+                rows = bonsai.render(day, seed, False, 59, ['#85b470']*3,
+                                    fixed_height=True).splitlines()[1:20]
+                points = {(x,y) for y,row in enumerate(rows)
+                          for x,char in enumerate(row[1:-1]) if char != ' '}
+                reached = {(x,y) for x,y in points if y == 18}
+                pending = list(reached)
+                while pending:
+                    x,y = pending.pop()
+                    for dx in (-1,0,1):
+                        for dy in (-1,0,1):
+                            point = (x+dx,y+dy)
+                            if point in points and point not in reached:
+                                reached.add(point)
+                                pending.append(point)
+                self.assertEqual(points, reached, (seed, day))
+                if day == 30:
+                    self.assertGreater(sum(char in '●◆•·' for row in rows for char in row), 30)
+
+    def test_shallow_main_branches_cannot_form_long_shelves(self):
+        for seed in range(80):
+            for branch in bonsai.branch_graph(seed):
+                if branch['parent'] is not None or branch['leader']:
+                    continue
+                x,y = branch['start']
+                tx,ty = branch['end']
+                self.assertLessEqual(abs(tx-x), 1.5+3*max(0,y-ty)+1e-8)
 
     def test_new_launches_use_fresh_seeds_and_explicit_seed_is_repeatable(self):
         from unittest.mock import patch, Mock

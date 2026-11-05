@@ -181,7 +181,7 @@ def stem(days, seed=42, style='informal'):
             # Give the young stem a visible body below its tapered tip.
             starter_girth = 2 if depth < height - 2 else 1 if depth < height - 1 else 0
             girth = max(girth, starter_girth)
-            girth = min(girth, max(0, round(6 * (1 - depth / 15)**.9)))
+            girth = min(girth, max(0, round(4 * (1 - depth / 15)**.9)))
         girth = min(girth, (height - depth - 1) * 2)
         if depth == 0 and days >= 14:
             girth += 2
@@ -255,7 +255,7 @@ def branch_layout(seed):
         if pattern == 'windswept':
             reach = min(reach, 8.5 - depth * .35)
         x = max(11, min(44, centers[depth] + direction * reach))
-        y = max(4, 18 - depth - rng.uniform(.8, 3))
+        y = max(3.5, 18 - depth - max(2, abs(x-centers[depth])*.3) - rng.uniform(0, .6))
         born = max((depth-1)/.7, 11 + index*2 + rng.uniform(-1, 1))
         # The renderer applies the crown offset once to every limb.
         result.append((depth, x - (centers[-1]-27)*.6, y, born))
@@ -345,6 +345,10 @@ def branch_graph(seed):
         # Stagger crown-tip heights instead of clipping every twig to one roof.
         ceiling = rng.uniform(2.7, 3.1) if leader else rng.uniform(3.2, 5.2)
         end = (max(9, min(47, end[0])), max(ceiling, min(14, end[1])))
+        if level == 0 and not leader:
+            # A shallow upper limb must stay short; it cannot become a shelf.
+            run_limit = 1.5 + 3*max(0, start[1]-end[1])
+            end = (max(start[0]-run_limit, min(start[0]+run_limit, end[0])), end[1])
         if one_sided and not leader:
             # Taper the swept crown around the trunk instead of stacking
             # ever-longer horizontal forks against the outside edge.
@@ -395,6 +399,8 @@ def natural_specimen(seed, days):
     """Render connected tapered wood and leaf sprays at its own terminal tips."""
     graph = branch_graph(seed)
     wood = {}
+    strokes = {}
+    centerline = set()
     for branch in graph:
         steps = max(1, math.ceil(branch['length']*2))
         for step in range(steps+1):
@@ -403,21 +409,30 @@ def natural_specimen(seed, days):
             if birth > days+1:
                 continue
             px, py = branch_point(branch, t)
+            dx = branch['end'][0]-branch['start'][0]
+            dy = branch['end'][1]-branch['start'][1] - math.pi*math.cos(t*math.pi)*branch['curve']
+            stroke = '─' if abs(dy) < abs(dx)*.25 else '│' if abs(dx) < abs(dy)*.5 else '╱' if dx*dy < 0 else '╲'
             age = max(0, days-birth)
             radius = min(branch['width'], (1.4 if branch['level'] == 0 else .4)+math.sqrt(age)*.25)*(1-t)**.7
+            if t > .25:
+                radius = 0
             vertical_scale = 1.5 if branch['level'] == 0 else 1.8
             for y in range(math.floor(py-radius), math.ceil(py+radius)+1):
                 for x in range(math.floor(px-radius), math.ceil(px+radius)+1):
                     if (x-px)**2 + ((y-py)*vertical_scale)**2 <= radius**2:
-                        wood[(x,y)] = min(birth, wood.get((x,y), birth))
+                        if birth <= wood.get((x,y), math.inf):
+                            wood[(x,y)] = birth
+                            strokes[(x,y)] = stroke
             key = (round(px), round(py))
-            wood[key] = min(birth, wood.get(key, birth))
+            centerline.add(key)
+            if birth <= wood.get(key, math.inf):
+                wood[key] = birth
+                strokes[key] = stroke
     cells = []
     for (x,y), birth in wood.items():
-        vertical = (x,y-1) in wood and (x,y+1) in wood
-        horizontal = (x-1,y) in wood and (x+1,y) in wood
-        glyph = '▒' if vertical else '─' if horizontal else '╱' if (x+1,y-1) in wood else '╲'
-        cells.append((x,y,birth,glyph,'bark' if vertical else 'wood'))
+        filled = (x,y) not in centerline
+        glyph = '░' if filled else strokes[(x,y)]
+        cells.append((x,y,birth,glyph,'bark' if filled else 'wood'))
     parents = {branch['parent'] for branch in graph if branch['parent'] is not None}
     compact = any(branch['leader'] for branch in graph)
     for index, branch in enumerate(graph):
@@ -427,6 +442,7 @@ def natural_specimen(seed, days):
         rng = random.Random(f'{seed}:terminal:{index}')
         rx, ry = (rng.uniform(2.6,3.8), rng.uniform(1.3,1.9)) if compact else (rng.uniform(3.2,5), rng.uniform(1.6,2.4))
         arrival = branch['born'] + branch['length']*.55
+        candidates = {}
         for y in range(max(1,math.floor(cy-ry)), min(18,math.ceil(cy+ry))+1):
             for x in range(max(2,math.floor(cx-rx)), min(54,math.ceil(cx+rx))+1):
                 distance = ((x-cx)/rx)**2 + ((y-cy)/ry)**2
@@ -435,7 +451,24 @@ def natural_specimen(seed, days):
                 birth = arrival + .5 + math.hypot(x-cx,(y-cy)*1.5)*.35
                 glyph = rng.choices(('●','◆','•','·'), (5,2,2,1) if distance < .7 else (1,1,4,3))[0]
                 shade = 2 if y < cy else 1 if y == round(cy) else 0
-                cells.append((x,y,birth,glyph,f'leaf{index%3*3+shade}'))
+                if birth <= days+1:
+                    candidates[(x,y)] = (x,y,birth,glyph,f'leaf{index%3*3+shade}')
+        # A spray grows out from its actual supporting tip. Random texture
+        # may create holes, but it must never create detached leaf islands.
+        anchor = (round(cx), round(cy))
+        if arrival + .5 <= days+1:
+            candidates[anchor] = (*anchor, arrival+.5, '●', f'leaf{index%3*3+1}')
+        pending = [anchor] if anchor in candidates else []
+        reached = set(pending)
+        while pending:
+            x, y = pending.pop()
+            cells.append(candidates[(x,y)])
+            for dx in (-1,0,1):
+                for dy in (-1,0,1):
+                    neighbor = (x+dx,y+dy)
+                    if neighbor in candidates and neighbor not in reached:
+                        reached.add(neighbor)
+                        pending.append(neighbor)
     return cells
 
 
@@ -597,31 +630,26 @@ def specimen(seed, days=0, style='informal'):
 
 
 def cover_crown_wood(canvas):
-    """Hide twig strokes inside visible leaf sprays without adding more leaves."""
-    covered = set()
-    exposed = set()
-    for y, row in enumerate(canvas):
-        for x, (glyph, ink) in enumerate(row):
-            if ink not in ('wood', 'woodlight', 'bark'):
-                continue
-            neighbors = sum(
-                canvas[ny][nx][1].startswith('leaf')
-                for ny in range(max(0, y - 1), min(len(canvas), y + 2))
-                for nx in range(max(0, x - 1), min(len(row), x + 2)))
-            if neighbors >= (5 if ink == 'bark' else 2):
-                covered.add((x, y))
-            elif glyph.strip():
-                exposed.add((x, y))
-    # Let a visible branch enter a spray for one cell. An isolated stroke
-    # inside the foliage has no exposed supporting segment and stays hidden.
-    anchors = {(x, y) for x, y in exposed
-               if any((x + dx, y + dy) in exposed
-                      for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1)))}
-    junctions = {(x, y) for x, y in covered
-                 if any((x + dx, y + dy) in anchors
-                        for dx in (-1, 0, 1) for dy in (-1, 0, 1)
-                        if dx or dy)}
-    for x, y in covered - junctions:
+    """Keep a rooted silhouette, following connections through wood and foliage."""
+    wood = {(x,y) for y,row in enumerate(canvas) for x,(glyph,ink) in enumerate(row)
+            if glyph.strip() and (ink in ('wood','woodlight','bark') or ink.startswith('shoot'))}
+    if not wood:
+        return
+    connected_art = wood | {(x,y) for y,row in enumerate(canvas)
+                            for x,(glyph,ink) in enumerate(row)
+                            if glyph.strip() and ink.startswith('leaf')}
+    root_y = max(y for x,y in wood)
+    reached = {(x,y) for x,y in wood if y == root_y}
+    pending = list(reached)
+    while pending:
+        x,y = pending.pop()
+        for dx in (-1,0,1):
+            for dy in (-1,0,1):
+                point = (x+dx,y+dy)
+                if point in connected_art and point not in reached:
+                    reached.add(point)
+                    pending.append(point)
+    for x,y in connected_art - reached:
         canvas[y][x] = (' ', '')
 
 
