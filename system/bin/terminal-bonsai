@@ -66,8 +66,12 @@ def refine_trunk(lines):
                 glyph = "╱" if depth == 0 or above_left > left else "╲" if above_left < left else "│"
             elif x == right:
                 glyph = "╲" if depth == 0 or above_right < right else "╱" if above_right > right else "│"
-            elif right - left >= 3 and x == left + 1:
-                glyph, code = "│", b"woodlight"
+            elif right - left >= 2:
+                # Broken vertical grain follows the taper; occasional knots
+                # interrupt the ridges without widening the silhouette.
+                grain = (x - left + depth * 3) % 7
+                glyph = "◦" if grain == 0 else "┆" if grain in (2, 5) else "│"
+                code = b"woodlight" if x == left + 1 else b"woodgrain"
             lines[y][x] = (code, glyph.encode("utf-8"))
 
 
@@ -185,11 +189,20 @@ def main():
         previous = None
         for x in range(left, right):
             code, char = line[x]
-            # Rounded leaves; smaller dots soften the canopy's outer texture.
-            glyph = ("•" if (x * 7 + y * 11) % 5 == 0 else "●") if char == b"&" else char.decode("utf-8")
+            glyph = char.decode("utf-8")
             ink = colors.get(code, RESET)
+            if char == b"&":
+                # Airy buds at the edge, overlapping oval leaves inside.
+                neighbors = sum(0 <= y + dy < len(lines) and 0 <= x + dx < width
+                                and lines[y + dy][x + dx][1] == b"&"
+                                for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1)))
+                texture = (x * 7 + y * 11) % 11
+                glyph = ("·", "•", "◦")[texture % 3] if neighbors <= 1 else ("●", "◖", "◗", "•", "●")[texture % 5]
+                # Neighboring leaves cast shade, while sparse tips catch light.
+                tone = "tertiary" if code in (b"33", b"93") else "primary"
+                ink = color(tone, (.72, .82, .93, 1.0)[(texture + 4 - neighbors) % 4])
             # Deep walnut bark, independent of wallpaper accents.
-            if code in (b"wood", b"woodlight") or char in (b"/", b"\\", b"|", b"_", b"~"):
+            if code in (b"wood", b"woodlight", b"woodgrain") or char in (b"/", b"\\", b"|", b"_", b"~"):
                 glyph = {"/": "╱", "\\": "╲", "_": "─", "~": "─", "|": "│"}.get(glyph, glyph)
                 ink = "\033[38;2;105;79;62m" if code in (b"93", b"woodlight") else "\033[38;2;85;63;49m"
             if ink != previous:
