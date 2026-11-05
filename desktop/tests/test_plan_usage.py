@@ -20,6 +20,30 @@ class PlanUsageTests(unittest.TestCase):
             self.assertIn('aistudio.google.com', data['error'])
 
     @unittest.skipUnless(shutil.which('node'), 'Node.js needed to exercise QML JavaScript')
+    def test_gemini_provider_status(self):
+        for app in ('assistant', 'shell'):
+            source = (ROOT / 'system/apps' / app / 'modules/services/AiSession.qml').read_text()
+            start = source.index('    function updateGeminiStatus(')
+            end = source.index('    property bool usageRequestedInChat', start)
+            script = "let geminiPlanUsage=true, geminiStatus='Ready', geminiRetryAt=0, geminiStatusNow=0;\n"
+            script += source[start:end] + """
+updateGeminiStatus('HTTP 429 rate limit exceeded. Please retry in 12.5s', false);
+if(geminiStatus !== 'Rate limited' || geminiRetryAt-geminiStatusNow !== 12500) throw Error('Retry countdown');
+updateGeminiStatus('RESOURCE_EXHAUSTED quota exceeded', false);
+if(geminiStatus !== 'Quota exhausted' || geminiRetryAt !== 0) throw Error('Quota status');
+updateGeminiStatus('network error', false);
+if(geminiStatus !== 'Quota exhausted') throw Error('Unrelated error cleared limit');
+updateGeminiStatus('', true);
+if(geminiStatus !== 'Ready' || geminiRetryAt !== 0) throw Error('Success recovery');
+updateGeminiStatus('429 {"retryDelay":"2s"}', false);
+if(geminiRetryAt-geminiStatusNow !== 2000) throw Error('Structured retry delay');
+geminiPlanUsage=false;
+updateGeminiStatus('quota exceeded', false);
+if(geminiStatus !== 'Rate limited') throw Error('Provider isolation');
+"""
+            subprocess.run(['node', '-e', script], check=True)
+
+    @unittest.skipUnless(shutil.which('node'), 'Node.js needed to exercise QML JavaScript')
     def test_refresh_never_opens_browser(self):
         for app in ('assistant', 'shell'):
             source = (ROOT / 'system/apps' / app / 'modules/services/AiSession.qml').read_text()
@@ -27,6 +51,7 @@ class PlanUsageTests(unittest.TestCase):
             end = source.index('    function applyPlanUsage(data)', start)
             script = """
 let geminiPlanUsage=true, planUsageSummary='', planUsageDetails='', messages=[];
+const geminiStatusSummary='Gemini: Ready', geminiStatusDetails='No limit reported';
 const root={pushSystemMessage: message => messages.push(message), get planUsageDetails() {return planUsageDetails;}};
 const Qt={openUrlExternally: () => {throw Error('Unexpected browser launch');}, callLater: fn => fn()};
 """ + source[start:end] + """

@@ -448,11 +448,47 @@ Scope {
     onGeminiPlanUsageChanged: {
         if (planUsageProcess.running) planUsageProcess.running = false;
         usageRequestedInChat = false;
-        planUsageSummary = geminiPlanUsage ? "Gemini API quota: check AI Studio" : "Codex remaining: not checked";
+        planUsageSummary = geminiPlanUsage ? "Gemini: Ready" : "Codex remaining: not checked";
         planUsageDetails = "";
     }
-    property string planUsageSummary: geminiPlanUsage ? "Gemini API quota: check AI Studio" : "Codex remaining: not checked"
+    property string planUsageSummary: geminiPlanUsage ? "Gemini: Ready" : "Codex remaining: not checked"
     property string planUsageDetails: ""
+    property string geminiStatus: "Ready"
+    property double geminiRetryAt: 0
+    property double geminiStatusNow: Date.now()
+    readonly property int geminiRetrySeconds: Math.max(0, Math.ceil((geminiRetryAt - geminiStatusNow) / 1000))
+    readonly property string geminiStatusSummary: "Gemini: " + geminiStatus
+        + (geminiRetrySeconds > 0 ? " · retry in " + geminiRetrySeconds + "s" : "")
+    readonly property string geminiStatusDetails: geminiStatusSummary
+        + "\nBased on this session's latest provider response. Ready means no limit is currently reported; it does not guarantee remaining allowance."
+        + (geminiRetryAt > 0 && geminiRetrySeconds === 0 ? "\nRetry delay elapsed; send a request to check availability." : "")
+
+    Timer {
+        interval: 1000
+        running: root.geminiPlanUsage && root.geminiRetryAt > root.geminiStatusNow
+        repeat: true
+        onTriggered: root.geminiStatusNow = Date.now()
+    }
+
+    function updateGeminiStatus(message, succeeded) {
+        if (!geminiPlanUsage) return;
+        if (succeeded) {
+            geminiStatus = "Ready";
+            geminiRetryAt = 0;
+            return;
+        }
+        const text = String(message || "").toLowerCase();
+        const limited = /rate[ _-]?limit|\b429\b|resource_exhausted/.test(text);
+        const exhausted = /quota[ _-]?(exhausted|reached|exceeded)|exceeded[^\n]*quota|daily[^\n]*limit|per.?day[^\n]*limit/.test(text);
+        if (!limited && !exhausted) return;
+        geminiStatus = exhausted ? "Quota exhausted" : "Rate limited";
+        // Accept explicit provider delays only; never invent a reset time.
+        const retry = text.match(/(?:retry[ _-]?after|retrydelay|retry in)["'\s:=]*(\d+(?:\.\d+)?)\s*(ms|milliseconds?|s|seconds?|m|minutes?)\b/);
+        geminiStatusNow = Date.now();
+        const seconds = retry ? Number(retry[1]) * (retry[2].startsWith("ms") || retry[2].startsWith("millisecond") ? 0.001 : retry[2].startsWith("m") ? 60 : 1) : 0;
+        geminiRetryAt = seconds > 0 ? geminiStatusNow + seconds * 1000 : 0;
+    }
+
     property bool usageRequestedInChat: false
     readonly property bool checkingPlanUsage: planUsageProcess.running
     readonly property string usageScript: Qt.resolvedUrl("../../scripts/ai_plan_usage.py").toString().replace(/^file:\/\//, "")
@@ -460,8 +496,8 @@ Scope {
 
     function refreshPlanUsage(showInChat) {
         if (geminiPlanUsage) {
-            planUsageSummary = "Gemini API quota: check AI Studio";
-            planUsageDetails = "Remaining Gemini API quota is unavailable through this API-key connection. View your project's current limits and usage in Google AI Studio.";
+            planUsageSummary = geminiStatusSummary;
+            planUsageDetails = geminiStatusDetails;
             if (showInChat)
                 Qt.callLater(() => root.pushSystemMessage(root.planUsageDetails));
             return;
@@ -1123,6 +1159,7 @@ Scope {
 
     function handleRpcError(entry, error) {
         let message = formatRpcError(error);
+        updateGeminiStatus(message + " " + JSON.stringify(error), false);
         console.warn("ACP " + (entry ? entry.method : "request") + " failed: " + message);
         if (entry && entry.kind === "codex_preset") {
             failCodexPreset("Could not apply mode: " + message);
@@ -1227,6 +1264,7 @@ Scope {
         case "prompt":
             if (!agentTurnActive || message.id !== activePromptRequestId)
                 break;
+            if (result.stopReason === "end_turn") updateGeminiStatus("", true);
             turnFailureHandled = true;
             taskOutcome = result.stopReason === "end_turn" ? reportedTaskOutcome()
                 : result.stopReason === "cancelled" ? "Stopped" : "Negative";
@@ -1662,6 +1700,7 @@ Scope {
         if (!agentTurnActive || turnFailureHandled)
             return;
 
+        updateGeminiStatus(line, false);
         let lower = line.toLowerCase();
         // Retain only fixed categories for diagnosis, never copy raw logs into findings.
         if (/quota reached|quota_exhausted|resource_exhausted/.test(lower)) backendEvidence = "The backend reported a quota error.";

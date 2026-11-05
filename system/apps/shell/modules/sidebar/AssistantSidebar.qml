@@ -632,7 +632,7 @@ Item {
                         border.width: 1
                     }
                     contentItem: StyledText {
-                        text: Ai.activeSession.checkingPlanUsage ? "Checking plan usage…" : Ai.activeSession.planUsageSummary
+                        text: Ai.activeSession.geminiPlanUsage ? Ai.activeSession.geminiStatusSummary : Ai.activeSession.checkingPlanUsage ? "Checking plan usage…" : Ai.activeSession.planUsageSummary
                         color: Colors.overSurface
                         font.pixelSize: Styling.fontSize(-3)
                         elide: Text.ElideRight
@@ -640,14 +640,9 @@ Item {
                     }
                     StyledToolTip {
                         show: parent.hovered
-                        tooltipText: Ai.activeSession.planUsageDetails || (Ai.activeSession.geminiPlanUsage ? "Open Gemini API quota in Google AI Studio" : "Click to check remaining shared Codex allowance")
+                        tooltipText: Ai.activeSession.geminiPlanUsage ? Ai.activeSession.geminiStatusDetails : Ai.activeSession.planUsageDetails || "Click to check remaining shared Codex allowance"
                     }
-                    onClicked: {
-                        if (Ai.activeSession.geminiPlanUsage)
-                            Qt.openUrlExternally("https://aistudio.google.com/usage?tab=rate-limit");
-                        else
-                            Ai.activeSession.refreshPlanUsage(true);
-                    }
+                    onClicked: Ai.activeSession.refreshPlanUsage(true)
                 }
 
                 Item {
