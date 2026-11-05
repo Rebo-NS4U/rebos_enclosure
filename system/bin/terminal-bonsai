@@ -24,12 +24,22 @@ def refine_trunk(lines):
         if not runs:
             break
         run = min(runs, key=lambda match: abs((match.start() + match.end() - 1) / 2 - center))
-        midpoint = (run.start() + run.end() - 1) / 2
-        # Leave forks and foliage alone; only reshape the exposed main stem.
-        if (abs(midpoint - center) > 4 or (path and run.end() - run.start() > 7)
-                or b"&" in row[max(0, run.start() - 1):run.end() + 1]):
+        start, end = run.start(), run.end()
+        midpoint = (start + end - 1) / 2
+        # A wide connected run can include several branch junctions. Follow
+        # the nearest trunk marker through it instead of stopping at the fork.
+        markers = [x for x in range(start, end) if row[x:x + 1] == b"~"]
+        if markers:
+            midpoint = min(markers, key=lambda x: abs(x - center))
+        if abs(midpoint - center) > 4:
             break
-        path.append((y, run.start(), run.end(), midpoint))
+        if end - start > 5:
+            start = max(start, round(midpoint) - 2)
+            end = min(end, round(midpoint) + 3)
+        # Stop before entering foliage; retain branches outside the stem.
+        if b"&" in row[max(0, start - 1):end + 1]:
+            break
+        path.append((y, start, end, midpoint))
         center = midpoint
     if len(path) < 2:
         return
