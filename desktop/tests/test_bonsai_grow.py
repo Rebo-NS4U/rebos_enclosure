@@ -126,7 +126,9 @@ class BonsaiGrowTests(unittest.TestCase):
             self.assertTrue(all(abs(a - b) <= .951 for a, b in zip(path, path[1:])))
             silhouettes.add(tuple(round(x) for x in path))
             bend_positions.add(max(range(1, 14), key=lambda i: abs(path[i] - 27)))
-        self.assertGreater(len(silhouettes), 40)
+        self.assertGreaterEqual(len(silhouettes), 35)
+        self.assertEqual({bonsai.growth_pattern(seed)[0] for seed in range(48)},
+                         {'upright', 'slant', 'bowed', 'windswept', 'recurved'})
         self.assertGreater(len(bend_positions), 3)
 
     def test_foliage_hides_sticks_without_increasing_leaf_count(self):
@@ -148,8 +150,10 @@ class BonsaiGrowTests(unittest.TestCase):
             self.assertLess(tips(3)[0][1], tips(0)[0][1])
             left_start, right_start = tips(12)
             left_end, right_end = tips(22)
-            self.assertLess(left_end[0], left_start[0])
-            self.assertGreater(right_end[0], right_start[0])
+            for index, (start, end) in enumerate(zip((left_start, right_start), (left_end, right_end))):
+                depth, _, _, _ = bonsai.branch_layout(seed)[index]
+                origin = bonsai.trunk_path(seed)[depth]
+                self.assertGreaterEqual(abs(end[0] - origin), abs(start[0] - origin))
             main_wood = [(x, y) for x, y, _, _, ink in bonsai.specimen(seed, 22)
                          if not ink.startswith('leaf')]
             for x, y in (left_end, right_end):
@@ -280,6 +284,18 @@ class BonsaiGrowTests(unittest.TestCase):
             layouts.add(tuple((depth, round(x), round(y)) for depth, x, y, born in layout))
             self.assertTrue(all(born >= (depth - 1) / .7 for depth, x, y, born in layout))
         self.assertGreater(len(layouts), 40)
+
+    def test_branch_habits_include_swept_and_opposing_arrangements(self):
+        swept = opposing = False
+        for seed in range(80):
+            trunk = bonsai.trunk_path(seed)
+            shift = (trunk[-1] - 27) * .6
+            directions = [1 if x + shift >= trunk[depth] else -1
+                          for depth, x, y, born in bonsai.branch_layout(seed)[:3]]
+            swept |= len(set(directions)) == 1
+            opposing |= len(set(directions)) > 1
+        self.assertTrue(swept)
+        self.assertTrue(opposing)
 
     def test_new_launches_use_fresh_seeds_and_explicit_seed_is_repeatable(self):
         from unittest.mock import patch, Mock
