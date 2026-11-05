@@ -40,6 +40,25 @@ class BonsaiGrowTests(unittest.TestCase):
             self.assertGreaterEqual(sum(cell[0] >= center for cell in mature), 20)
             self.assertGreater(sum(cell[3] in '◆●' for cell in mature), len(mature) // 2)
 
+    def test_leafy_juvenile_stages_are_attached_and_retire(self):
+        for seed in range(24):
+            previous_count = 0
+            for day in (0, 3, 7, 14):
+                cells = bonsai.juvenile_foliage(day, seed)
+                leaves = [cell for cell in cells if cell[4].startswith('leaf')]
+                self.assertGreaterEqual(len(leaves), 6)
+                self.assertGreaterEqual(len(leaves), previous_count)
+                previous_count = len(leaves)
+                stem = bonsai.stem(day, seed)
+                for x, y, born, glyph, ink in leaves:
+                    self.assertLessEqual(born, day)
+                    self.assertTrue(any(abs(x - sx) + abs(y - sy) <= 4
+                                        for sx, sy, *_ in stem))
+                    self.assertTrue(0 <= x < 57 and 0 <= y < 19)
+                image = bonsai.render(day, seed, False, 80, ['#85b470'] * 3)
+                self.assertTrue(any(glyph in image for glyph in '◆●•'))
+            self.assertEqual(bonsai.juvenile_foliage(30, seed), [])
+
     def test_preview_does_not_create_growth_state(self):
         with tempfile.TemporaryDirectory() as directory:
             result = subprocess.run([str(SOURCE), '--preview', '30', '--seed', '42', '--plain'],

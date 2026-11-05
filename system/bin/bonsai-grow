@@ -217,6 +217,35 @@ def stem(days, seed=42, style='informal'):
     return cells
 
 
+def juvenile_foliage(days, seed):
+    """Leafy node pairs unfold along the young leader, then yield to its crown."""
+    centers = trunk_path(seed, 'informal')
+    height = min(len(centers), 2 + int(days * .7))
+    cells = []
+    for depth in range(1, height, 2):
+        born = max(0, (depth - 1) / .7)
+        age = days - born
+        x, y = round(centers[depth]), 18 - depth
+        for side in (-1, 1):
+            # Short petioles connect every spray to an established stem node.
+            cells.append((x + side, y, born, '╱' if side > 0 else '╲', 'woodlight'))
+            offsets = ((1, -1, 0), (2, -1, 0), (2, 0, 0),
+                       (3, -1, 1.5), (3, 0, 2.5))
+            for dx, dy, delay in offsets:
+                rng = random.Random(f'{seed}:juvenile:{depth}:{side}:{dx}:{dy}')
+                # Individual leaves retire gradually as the permanent pads fill.
+                shed = min(29, 20 + depth * .4 + rng.uniform(0, 2))
+                if age < delay or days >= shed:
+                    continue
+                glyph = '•' if age - delay < 1 else rng.choice(('◆', '●'))
+                tone = (depth // 2 + (side > 0)) % 3
+                shade = 2 if dy < 0 else 1
+                cells.append((x + side * dx, y + dy, born + delay,
+                              glyph, f'leaf{tone * 3 + shade}'))
+    # No temporary woody spurs remain after the juvenile leaves retire.
+    return cells if days < 29 else []
+
+
 def specimen(seed, days=0, style='informal'):
     """Connected woody limbs supporting a broad, densely filled crown."""
     rng = random.Random(seed)
@@ -360,6 +389,8 @@ def render(days, seed, color=True, columns=80, accents=None, style='informal'):
     canvas = [[(' ', '') for _ in range(width)] for _ in range(height)]
     # Growth starts with a rooted sapling; cells remain as new growth arrives.
     plan = specimen(seed, days, style)
+    if style == 'informal':
+        plan += juvenile_foliage(days, seed)
     # Leaves cover the upper wood while the exposed lower stem keeps its contour.
     wood = [cell for cell in plan if not cell[4].startswith('leaf')]
     leaves = [cell for cell in plan if cell[4].startswith('leaf')]
