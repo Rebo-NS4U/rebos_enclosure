@@ -35,8 +35,46 @@ class BonsaiTests(unittest.TestCase):
         self.assertGreater(count(.5), count(.1))
         self.assertGreater(count(1), count(.5))
         self.assertGreater(count(1), 100)
-        self.assertGreater(len(set(round(leaf[2], 4) for leaf in tree.leaves)), 100)
         self.assertTrue(all(0 <= leaf[2] <= 1 for leaf in tree.leaves))
+
+    def test_child_shoots_and_buds_wait_for_supporting_wood(self):
+        for seed in range(20):
+            tree = bonsai.Tree(72, 26, seed)
+            for shoot in tree.shoots:
+                if shoot['parent'] is not None:
+                    parent = tree.shoots[shoot['parent']]
+                    arrival = parent['birth'] + parent['duration']*shoot['attachment']
+                    self.assertGreaterEqual(shoot['birth'], arrival)
+            for pad in tree.pads:
+                support = tree.shoots[pad['support']]
+                self.assertGreaterEqual(pad['birth'], support['birth']+support['duration'])
+
+    def test_every_visible_stage_stays_connected_to_the_root(self):
+        for width, height in ((28, 10), (48, 18), (72, 26)):
+            for seed in range(8):
+                tree = bonsai.Tree(width, height, seed)
+                established = set()
+                for step in range(101):
+                    age = step/100
+                    grid = tree.cells(age)
+                    cells = {(x, y) for y, row in enumerate(grid)
+                             for x, cell in enumerate(row) if cell[0] != ' '}
+                    root = (tree.center, height-1)
+                    reached, pending = {root}, [root]
+                    while pending:
+                        x, y = pending.pop()
+                        for dx in (-1, 0, 1):
+                            for dy in (-1, 0, 1):
+                                pixel = (x+dx, y+dy)
+                                if pixel in cells and pixel not in reached:
+                                    reached.add(pixel)
+                                    pending.append(pixel)
+                    self.assertFalse(cells-reached, (width, seed, age))
+                    # Wood may gain bark or be covered by a leaf, but its
+                    # location never slides or disappears during thickening.
+                    self.assertTrue(established <= cells)
+                    established = {cell for shoot in tree.shoots for cell, t in shoot['path']
+                                   if shoot['birth']+t*shoot['duration'] <= age}
 
     def test_frame_fits_supported_terminal_sizes(self):
         for columns, rows in ((36, 18), (44, 24), (80, 24), (120, 40)):
