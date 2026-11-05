@@ -414,9 +414,11 @@ def natural_specimen(seed, days):
             stroke = '─' if abs(dy) < abs(dx)*.25 else '│' if abs(dx) < abs(dy)*.5 else '╱' if dx*dy < 0 else '╲'
             age = max(0, days-birth)
             radius = min(branch['width'], (1.4 if branch['level'] == 0 else .4)+math.sqrt(age)*.25)*(1-t)**.7
-            if t > .25:
-                radius = 0
-            vertical_scale = 1.5 if branch['level'] == 0 else 1.8
+            if branch['level'] == 0:
+                radius = min(1.35, radius*1.4)
+            # Keep a rounded body through the limb, narrowing continuously
+            # toward the twig rather than switching abruptly to a line.
+            vertical_scale = 1.05 if branch['level'] == 0 else 1.6
             for y in range(math.floor(py-radius), math.ceil(py+radius)+1):
                 for x in range(math.floor(px-radius), math.ceil(px+radius)+1):
                     if (x-px)**2 + ((y-py)*vertical_scale)**2 <= radius**2:
@@ -430,7 +432,8 @@ def natural_specimen(seed, days):
                 strokes[key] = stroke
     cells = []
     for (x,y), birth in wood.items():
-        filled = (x,y) not in centerline
+        interior = all(point in wood for point in ((x-1,y),(x+1,y),(x,y-1),(x,y+1)))
+        filled = (x,y) not in centerline or interior
         glyph = '░' if filled else strokes[(x,y)]
         cells.append((x,y,birth,glyph,'bark' if filled else 'wood'))
     parents = {branch['parent'] for branch in graph if branch['parent'] is not None}

@@ -410,6 +410,20 @@ class BonsaiGrowTests(unittest.TestCase):
                 tx,ty = branch['end']
                 self.assertLessEqual(abs(tx-x), 1.5+3*max(0,y-ty)+1e-8)
 
+    def test_main_branch_keeps_a_tapered_body_beyond_its_base(self):
+        from unittest.mock import patch
+        import math
+        branch = dict(start=(15,14), end=(29,8), length=math.hypot(14,6),
+                      born=0, width=1.2, level=0, curve=.4, parent=None, leader=False)
+        with patch.object(bonsai, 'branch_graph', return_value=[branch]):
+            wood = {(x,y):ink for x,y,born,glyph,ink in bonsai.natural_specimen(42,30)
+                    if not ink.startswith('leaf')}
+        middle = [(x,y) for x,y in wood if 21 <= x <= 24]
+        self.assertGreaterEqual(sum(wood[point] == 'bark' for point in middle), 3)
+        self.assertTrue(all(2 <= sum(xx == x for xx,y in wood) <= 3 for x in range(21,25)))
+        self.assertTrue(all(sum(xx == x for xx,y in wood) == 1 for x in range(26,30)))
+        self.assertLessEqual(max(sum(xx == x for xx,y in wood) for x in range(15,30)), 3)
+
     def test_new_launches_use_fresh_seeds_and_explicit_seed_is_repeatable(self):
         from unittest.mock import patch, Mock
         with patch('sys.stdout', Mock(isatty=lambda: True)), \
