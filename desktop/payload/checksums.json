@@ -203,7 +203,7 @@
   "system/apps/assistant/shell.qml": "4672423f6c8d8c136bcb21bab1c6c4767386ca937e6ad9ed87bb3fb78163cb9d",
   "system/apps/assistant/version": "1c60df040a80b6d2e3f56442b17d127d8620cd773873e6e1353362f989b1deca",
   "system/apps/media/app.py": "2710a9418e5fc352c72f4f45ca0f283d70d92489af141a0186069e5a4a9568bd",
-  "system/apps/media/backend_server.py": "1ae75a424e04a04a48f5cb1498ac845998141fc89d2f5f7035863a047ea6b039",
+  "system/apps/media/backend_server.py": "560ca404844d20bce5f16961e1f1ab38bed2e0f0977b5111c0b05cce2b3571a5",
   "system/apps/media/browser_bridge.py": "5fc5a99d19f42348a42264105909cbf23441985a47cb2b8862be20f3ce3a5c5c",
   "system/apps/media/direct_source.py": "990c4a4d49b18662e776e1a614279979efc996bf7cac4e9c4a97b737e94aaad5",
   "system/apps/media/discovery_catalogue.py": "ffa7279eec60bede506565aa6aefbc0b47a6838b2dc8420551682d34643e927a",
