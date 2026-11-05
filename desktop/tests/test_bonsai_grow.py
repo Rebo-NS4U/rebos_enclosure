@@ -20,7 +20,7 @@ class BonsaiGrowTests(unittest.TestCase):
         image = bonsai.render(30, 42, False, 80, palette)
         self.assertEqual(image, bonsai.render(30, 42, False, 80, palette))
         self.assertIn('╭─────────────────────╮', image)
-        self.assertLessEqual(len(image.splitlines()), 24)
+        self.assertLessEqual(len(image.splitlines()), 26)
         self.assertTrue(all(len(row) <= 80 for row in image.splitlines()))
         self.assertNotEqual(image, bonsai.render(30, 43, False, 80, palette))
         self.assertNotEqual(image, bonsai.render(0, 42, False, 80, palette))
@@ -197,7 +197,7 @@ class BonsaiGrowTests(unittest.TestCase):
                     while time.monotonic() - began < 4:
                         if select.select([master], [], [], .05)[0]:
                             output += os.read(master, 65536)
-                        if skip and not sent and b'\033[24A' in output:
+                        if skip and not sent and b'\033[26A' in output:
                             if skip == 'signal':
                                 import signal
                                 process.send_signal(signal.SIGTERM)
@@ -213,7 +213,7 @@ class BonsaiGrowTests(unittest.TestCase):
                     import re
                     plain = re.sub(rb'\x1b\[[0-9;]*m', b'', output)
                     self.assertIn('╭─────────────────────╮'.encode(), plain)
-                    self.assertGreaterEqual(output.count(b'\033[24A'), 2)
+                    self.assertGreaterEqual(output.count(b'\033[26A'), 2)
                     self.assertIn(b'\033[?25h', output)
                     self.assertNotIn(b'Traceback', output)
                     self.assertEqual(list(Path(directory).iterdir()), [])
@@ -225,6 +225,43 @@ class BonsaiGrowTests(unittest.TestCase):
                         process.wait()
                     os.close(master)
                     os.close(slave)
+
+    def test_frame_fits_and_keeps_animation_height(self):
+        for columns in (59, 80, 100):
+            for day in (0, 7, 30):
+                image = bonsai.render(day, 42, False, columns,
+                                     ['#85b470'] * 3, fixed_height=True)
+                rows = image.splitlines()
+                self.assertEqual(len(rows), 26)
+                self.assertIn('╔', rows[0])
+                self.assertIn('╝', rows[-1])
+                self.assertEqual(len({len(row) for row in rows}), 1)
+                self.assertTrue(all(len(row) <= columns for row in rows))
+                self.assertNotIn('\033', image)
+
+    def test_theme_updates_without_recoloring_wood_or_rewriting_state(self):
+        import json
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            state = base / 'state/bonsai-grow/tree.json'
+            state.parent.mkdir(parents=True)
+            original = json.dumps({'seed': 123, 'palette': ['#ff0000'] * 3})
+            state.write_text(original)
+            cache = base / 'cache/rebos_shell/effective-palette.json'
+            cache.parent.mkdir(parents=True)
+            with patch.dict(os.environ, {'XDG_STATE_HOME': str(base/'state'),
+                                         'XDG_CACHE_HOME': str(base/'cache')}):
+                for accent in ('#00ff00', '#0000ff'):
+                    cache.write_text(json.dumps(dict.fromkeys(
+                        ('primary', 'secondary', 'tertiary'), accent)))
+                    seed, palette = bonsai.preview_identity(None)
+                    self.assertEqual(seed, 123)
+                    self.assertEqual(palette, [accent] * 3)
+                    image = bonsai.render(30, seed, True, 80, palette)
+                    self.assertIn('\033[38;2;185;158;119m', image)
+                    self.assertIn('\033[38;2;151;135;112m', image)
+                    self.assertEqual(state.read_text(), original)
 
     def test_preview_does_not_create_growth_state(self):
         with tempfile.TemporaryDirectory() as directory:
