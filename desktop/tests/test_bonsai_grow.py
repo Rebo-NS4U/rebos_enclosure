@@ -116,7 +116,7 @@ class BonsaiGrowTests(unittest.TestCase):
     def test_trunks_vary_without_disconnected_rows(self):
         silhouettes = set()
         bend_positions = set()
-        for seed in range(48):
+        for seed in range(120):
             path = bonsai.trunk_path(seed)
             self.assertEqual(path, bonsai.trunk_path(seed))
             self.assertEqual(path[0], 27)
@@ -125,8 +125,8 @@ class BonsaiGrowTests(unittest.TestCase):
             silhouettes.add(tuple(round(x) for x in path))
             bend_positions.add(max(range(1, 14), key=lambda i: abs(path[i] - 27)))
         self.assertGreaterEqual(len(silhouettes), 35)
-        self.assertEqual({bonsai.growth_pattern(seed)[0] for seed in range(48)},
-                         {'upright', 'slant', 'bowed', 'forked', 'recurved', 'broom', 'twin_leader'})
+        self.assertEqual({bonsai.growth_pattern(seed)[0] for seed in range(120)},
+                         {'upright', 'slant', 'bowed', 'forked', 'recurved', 'broom'})
         self.assertGreater(len(bend_positions), 3)
 
     def test_cleanup_removes_detached_sticks_and_leaves(self):
@@ -566,26 +566,42 @@ class BonsaiGrowTests(unittest.TestCase):
                 self.assertLessEqual(abs(x+shift-path[depth]),9)
         self.assertGreater(checked,10)
 
-    def test_new_broom_and_twin_leader_architectures(self):
-        seen = set()
+    def test_broom_is_retained_and_twin_leader_removed(self):
+        broom_count = 0
         for seed in range(120):
             habit, side = bonsai.growth_pattern(seed)
-            if habit not in ('broom','twin_leader'):
+            self.assertNotEqual(habit,'twin_leader')
+            if habit != 'broom':
                 continue
-            seen.add(habit)
+            broom_count += 1
             roots = [branch for branch in bonsai.branch_graph(seed) if branch['parent'] is None]
-            wood = bonsai.stem(30,seed)
-            if habit == 'broom':
-                self.assertEqual(len(roots),3)
-                self.assertEqual(min(cell[1] for cell in wood),12)
-                self.assertTrue(all(branch['start'][1] >= 12 for branch in roots))
-            else:
-                self.assertEqual(len(roots),2)
-                self.assertEqual(roots[0]['start'],roots[1]['start'])
-                self.assertEqual(min(cell[1] for cell in wood),14)
-                self.assertLess(roots[0]['end'][1],roots[1]['end'][1])
-                self.assertLess(roots[1]['width'],roots[0]['width'])
-        self.assertEqual(seen,{'broom','twin_leader'})
+            self.assertEqual(len(roots),3)
+            self.assertEqual(min(cell[1] for cell in bonsai.stem(30,seed)),12)
+            self.assertTrue(all(branch['start'][1] >= 12 for branch in roots))
+        self.assertGreater(broom_count,10)
+        for seed in (9,19):
+            self.assertNotEqual(bonsai.growth_pattern(seed)[0],'twin_leader')
+
+    def test_slant_form_keeps_its_crown_close_and_balanced(self):
+        checked = 0
+        for seed in range(160):
+            habit,side = bonsai.growth_pattern(seed)
+            if habit != 'slant':
+                continue
+            checked += 1
+            trunk = bonsai.trunk_path(seed)
+            self.assertLessEqual(abs(trunk[-1]-27),5.5)
+            shift = (trunk[-1]-27)*.6
+            layout = bonsai.branch_layout(seed)
+            depth,x,y,born = layout[0]
+            self.assertLessEqual(depth,6)
+            self.assertLess((x+shift-trunk[depth])*side,0)
+            for depth,x,y,born in layout[:3]:
+                self.assertLessEqual(abs(x+shift-trunk[depth]),8)
+            for branch in bonsai.branch_graph(seed):
+                x,y = branch['end']
+                self.assertGreaterEqual(y+1e-8,2.8+(abs(x-trunk[-1])/6)**1.4)
+        self.assertGreater(checked,15)
 
     def test_new_launches_use_fresh_seeds_and_explicit_seed_is_repeatable(self):
         from unittest.mock import patch, Mock
