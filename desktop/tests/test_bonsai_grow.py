@@ -272,6 +272,32 @@ class BonsaiGrowTests(unittest.TestCase):
                     self.assertIn('\033[38;2;151;135;112m', image)
                     self.assertEqual(state.read_text(), original)
 
+    def test_branch_plans_vary_and_repeat_by_seed(self):
+        layouts = set()
+        for seed in range(48):
+            layout = bonsai.branch_layout(seed)
+            self.assertEqual(layout, bonsai.branch_layout(seed))
+            layouts.add(tuple((depth, round(x), round(y)) for depth, x, y, born in layout))
+            self.assertTrue(all(born >= (depth - 1) / .7 for depth, x, y, born in layout))
+        self.assertGreater(len(layouts), 40)
+
+    def test_new_launches_use_fresh_seeds_and_explicit_seed_is_repeatable(self):
+        from unittest.mock import patch, Mock
+        with patch('sys.stdout', Mock(isatty=lambda: True)), \
+             patch('sys.stdin', Mock(isatty=lambda: True)), \
+             patch.dict(os.environ, {'TERM': 'xterm-256color'}), \
+             patch.object(bonsai.shutil, 'get_terminal_size', return_value=os.terminal_size((100, 40))), \
+             patch.object(bonsai.random, 'SystemRandom') as entropy, \
+             patch.object(bonsai, 'render', return_value='') as render:
+            entropy.return_value.randrange.side_effect = [111, 222]
+            for _ in range(2):
+                with patch('sys.argv', [str(SOURCE), '--animate', '--plain']):
+                    bonsai.main()
+            self.assertEqual([call.args[1] for call in render.call_args_list], [111, 222])
+            with patch('sys.argv', [str(SOURCE), '--animate', '--plain', '--seed', '42']):
+                bonsai.main()
+            self.assertEqual(render.call_args.args[1], 42)
+
     def test_preview_does_not_create_growth_state(self):
         with tempfile.TemporaryDirectory() as directory:
             result = subprocess.run([str(SOURCE), '--preview', '30', '--seed', '42', '--plain'],

@@ -223,6 +223,22 @@ def stem(days, seed=42, style='informal'):
     return cells
 
 
+def branch_layout(seed):
+    """Share each specimen's varied limb plan with its starter leaves."""
+    rng = random.Random(f'{seed}:limb-layout')
+    base = ((5, 13, 12, 12), (7, 42, 9, 15), (10, 17, 5, 18),
+            (12, 36, 3, 17), (14, 25, 2, 19))
+    result = []
+    for index, (depth, x, y, born) in enumerate(base):
+        if index < 3:
+            depth = max(3, min(11, depth + rng.choice((-1, 0, 1))))
+        x += rng.uniform(-2, 2) if index < 3 else rng.uniform(-.7, .7)
+        y += rng.uniform(-.5, .5) if index < 3 else 0
+        born = max((depth - 1) / .7, born + rng.uniform(-.5, .5))
+        result.append((depth, x, y, born))
+    return result
+
+
 def juvenile_foliage(days, seed):
     """Leafy node pairs unfold along the young leader, then yield to its crown."""
     centers = trunk_path(seed, 'informal')
@@ -232,8 +248,7 @@ def juvenile_foliage(days, seed):
     # establish, then travels outward on those limbs as their tips extend.
     target_rng = random.Random(seed)
     crown_shift = (centers[-1] - 27) * .6
-    for side, attachment, tx, ty, branch_born in ((-1, 5, 13, 12, 12),
-                                                 (1, 7, 42, 9, 15)):
+    for side, (attachment, tx, ty, branch_born) in zip((-1, 1), branch_layout(seed)[:2]):
         tx += crown_shift + target_rng.uniform(-.6, .6)
         ty += target_rng.uniform(-.3, .3)
         depth = min(height - 1, attachment)
@@ -325,7 +340,7 @@ def specimen(seed, days=0, style='informal'):
     tiers = ((5, 14, 8, 12), (8, 41, 7, 15), (10, 18, 4, 18), (12, 36, 3, 21), (14, 26, 2, 24))
     if style == 'informal':
         # Establish the two crown-bearing shoots as the leader reaches them.
-        tiers = ((5, 13, 12, 12), (7, 42, 9, 15), (10, 17, 5, 18), (12, 36, 3, 17), (14, 25, 2, 19))
+        tiers = branch_layout(seed)
     if cascade:
         tiers = ((5, 27, 8, 12), (8, 38, 8, 15), (10, 44, 10, 18), (12, 49, 13, 21), (14, 50, 16, 24))
     for depth, tx, ty, born in tiers:
@@ -368,6 +383,16 @@ def specimen(seed, days=0, style='informal'):
     if cascade:
         lobes = ((27, 7.5, 6, 2.6), (36, 7, 6, 2.6), (43, 9, 6, 2.4),
                  (47, 12, 5, 2.3), (50, 15.5, 4, 2.4))
+    if style == 'informal':
+        foliage_rng = random.Random(f'{seed}:foliage-shape')
+        varied = []
+        for index, (cx, cy, rx, ry) in enumerate(lobes):
+            upper = index in (2, 3)
+            varied.append((cx + foliage_rng.uniform(-.6 if upper else -1.5, .6 if upper else 1.5),
+                cy if upper else cy + foliage_rng.uniform(-.5, .5),
+                rx * foliage_rng.uniform(1 if upper else .85, 1.1 if upper else 1.18),
+                ry if upper else ry * foliage_rng.uniform(.85, 1.15)))
+        lobes = varied
     lobes = [(cx + (0 if cascade else crown_shift) + rng.uniform(-.6, .6), cy, rx, ry) for cx, cy, rx, ry in lobes]
     for y in range(1, 19 if cascade else 14 if style == 'informal' else 12):
         for x in range(8, 56 if cascade else 49):
@@ -627,7 +652,9 @@ def main():
     if args.animate:
         if not sys.stdout.isatty() or not sys.stdin.isatty():
             return
-        seed, accents = preview_identity(args.seed)
+        # New terminals get a fresh specimen; --seed keeps previews repeatable.
+        seed = args.seed if args.seed is not None else random.SystemRandom().randrange(2**63)
+        accents = wallpaper_palette()
         if args.plain:
             print(render(30, seed, False, columns, accents, args.style), end='')
         else:
