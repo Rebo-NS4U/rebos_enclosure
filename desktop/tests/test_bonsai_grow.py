@@ -428,8 +428,10 @@ class BonsaiGrowTests(unittest.TestCase):
                 self.assertGreater(branch['length'], 4)
                 self.assertLess(branch['length'], 5.3)
                 self.assertEqual(branch['width'], .55)
-                self.assertLessEqual(abs(branch['start'][1]-branch['end'][1]), .35+1e-8)
-                self.assertLessEqual(branch['curve'], .15)
+                self.assertEqual(branch['start'][1], branch['end'][1])
+                self.assertEqual(branch['curve'], 0)
+                self.assertTrue(all(bonsai.branch_point(branch,t)[1] == branch['start'][1]
+                                    for t in (0,.25,.5,.75,1)))
                 self.assertGreaterEqual(branch['start'][1], 13)
                 depth = round(18-branch['start'][1])
                 self.assertGreaterEqual(branch['born'], (depth-1)/.7)

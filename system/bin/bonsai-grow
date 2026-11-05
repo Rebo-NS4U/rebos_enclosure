@@ -372,7 +372,7 @@ def branch_graph(seed):
         length = math.hypot(end[0]-start[0], end[1]-start[1])
         branch = dict(start=start, end=end, born=born, width=width,
                       parent=parent, attachment=attachment, length=length,
-                      curve=rng.uniform(.05, .15) if lower else rng.uniform(.15, .7),
+                      curve=0 if lower else rng.uniform(.15, .7),
                       level=level, leader=leader, lower=lower)
         index = len(branches)
         branches.append(branch)
@@ -413,7 +413,7 @@ def branch_graph(seed):
     for depth, direction in lower_nodes:
         origin = (centers[depth], 18-depth)
         target = (origin[0] + direction*low_rng.uniform(4,5),
-                  origin[1] - low_rng.uniform(.1,.35))
+                  origin[1])
         add(origin, target, (depth-1)/.7 + .3, .55, lower=True)
     return branches
 
