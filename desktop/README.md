@@ -443,4 +443,12 @@ Network failures leave credentials untouched and do not trigger reauthentication
 An assistant session restricted by its host can still be unable to reach GitHub;
 repairing login does not change that session's network permissions.
 
-The terminal bonsai greeting uses Python’s standard library and grows for about two seconds on each new interactive terminal. Every launch generates a fresh tree. Run `terminal-bonsai --seed 42` to replay a tree, `--no-animation` for an instant mature tree, or `--plain` to export uncolored art. `REDUCE_MOTION=1` also skips growth. Small terminals and redirected greetings stay quiet. Growth uses normal scrollback without reading keyboard input or switching screens.
+The terminal bonsai greeting uses Python’s standard library. One saved tree grows over 24 real hours from its first planting, including time with terminals closed. New terminals immediately show its current age without delaying the prompt. Curved, tapered wood develops first, followed by staggered twig buds and shaded foliage pads. The specimen retains its shape across terminal sizes and stays mature until explicitly replanted.
+
+- `terminal-bonsai --live`: watch saved growth in a dedicated view, refreshed every 30 seconds; Ctrl+C returns to the shell. Greetings already printed in scrollback remain snapshots.
+- `terminal-bonsai --new`: plant another unique seed and restart the 24-hour clock.
+- `terminal-bonsai --seed 42 --age 0.5`: preview a reproducible tree at 12 hours without changing the saved specimen. Omit `--age` for a mature preview; combine `--new --seed 42` to plant it.
+- `terminal-bonsai --plain`: export current growth without colors or terminal controls.
+- `--no-animation` or `REDUCE_MOTION=1`: print once even when `--live` is supplied.
+
+Growth is saved privately under `${XDG_STATE_HOME:-~/.local/state}/terminal-bonsai/tree.json`, with an atomic write and lock for concurrent greetings. This personal state is excluded from the installer. Ordinary greetings never read keyboard input or move the cursor; only the optional live view uses an alternate screen, restoring it on Ctrl+C or SIGTERM. Small terminals and redirected ordinary greetings stay quiet.
