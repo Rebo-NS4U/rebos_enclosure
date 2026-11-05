@@ -75,7 +75,7 @@ def trunk_path(seed, style='informal'):
     rng = random.Random(f'{seed}:trunk')
     if style == 'informal':
         pattern, side = growth_pattern(seed)
-        amplitude = rng.uniform(2, 3.5) if pattern == 'forked' else rng.uniform(4.5, 6.5) if pattern == 'recurved' else rng.uniform(4.5, 8)
+        amplitude = rng.uniform(2, 3.5) if pattern == 'forked' else rng.uniform(4.5, 5.5) if pattern == 'recurved' else rng.uniform(4.5, 8)
         phase = rng.uniform(.8, 1.15)
         path = []
         for depth in range(15):
@@ -89,7 +89,7 @@ def trunk_path(seed, style='informal'):
             elif pattern == 'forked':
                 bend = .35 * math.sin(t*math.pi*.85)
             else:
-                bend = math.sin(t * math.pi * 1.2) * .7 + .15*t
+                bend = math.sin(t * math.pi * 1.2) * .6 + .15*t
             x = 27 + side * amplitude * bend
             path.append(x if not path else max(path[-1]-.95, min(path[-1]+.95, x)))
         return path
