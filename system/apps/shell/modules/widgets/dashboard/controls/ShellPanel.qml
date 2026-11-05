@@ -396,7 +396,7 @@ Item {
                     enableShadow: false
                     Layout.fillWidth: true
                     height: 36
-                    radius: isSelected ? Styling.radius(0) / 2 : Styling.radius(0)
+                    radius: Styling.radius(0)
 
                     StyledText {
                         renderType: Text.NativeRendering

@@ -1958,7 +1958,7 @@ Item {
 
                                                         background: Rectangle {
                                                             color: Colors.surfaceBright
-                                                            radius: 8
+                                                            radius: Styling.radius(0)
                                                         }
 
                                                         onClicked: mainChatArea.removeAttachment(index)
@@ -2098,7 +2098,7 @@ Item {
 
                                         background: Rectangle {
                                             color: parent.hovered ? Colors.surfaceBright : "transparent"
-                                            radius: 16
+                                            radius: Styling.radius(0)
                                         }
 
                                         onClicked: zenityProcess.running = true
@@ -2120,7 +2120,7 @@ Item {
 
                                         background: Rectangle {
                                             color: parent.hovered ? Colors.surfaceBright : "transparent"
-                                            radius: 16
+                                            radius: Styling.radius(0)
                                         }
 
                                         onClicked: {

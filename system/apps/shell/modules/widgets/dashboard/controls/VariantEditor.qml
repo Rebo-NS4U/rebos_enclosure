@@ -86,7 +86,7 @@ Item {
                     enableShadow: false
                     width: (typeSelector.width - (root.gradientTypes.length - 1) * typeSelector.spacing) / root.gradientTypes.length
                     height: 36
-                    radius: isSelected ? Styling.radius(0) / 2 : Styling.radius(0)
+                    radius: Styling.radius(0)
 
                     Text {
                         renderType: Text.NativeRendering

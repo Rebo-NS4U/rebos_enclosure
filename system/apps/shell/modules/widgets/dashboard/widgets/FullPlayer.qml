@@ -596,7 +596,7 @@ StyledRect {
                     width: playersListView.width
                     height: 40
                     variant: delegateMouseArea.containsMouse ? "focus" : "transparent"
-                    radius: 4
+                    radius: Styling.radius(0)
 
                     RowLayout {
                         anchors.fill: parent

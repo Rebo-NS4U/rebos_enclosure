@@ -562,7 +562,7 @@ Item {
                                             property bool buttonHovered: false
 
                                             readonly property real defaultRadius: Styling.radius(0)
-                                            readonly property real selectedRadius: Styling.radius(0) / 2
+                                            readonly property real selectedRadius: Styling.radius(0)
 
                                             readonly property real gridWidth: weatherButtonsGrid.width
                                             readonly property real gridHeight: weatherButtonsGrid.height

@@ -1050,7 +1050,7 @@ Item {
 
                                                     width: tagContentRow.width + 24 + (isSelected ? checkIconRow.width + 4 : 0)
                                                     height: 32
-                                                    radius: isSelected ? Styling.radius(0) / 2 : Styling.radius(0)
+                                                    radius: Styling.radius(0)
 
                                                     Behavior on width {
                                                         enabled: (Config.animDuration ?? 0) > 0
@@ -1210,7 +1210,7 @@ Item {
 
                                             width: tagContent.width + 24 + (isSelected ? checkIcon.width + 4 : 0)
                                             height: 32
-                                            radius: isSelected ? Styling.radius(0) / 2 : Styling.radius(0)
+                                            radius: Styling.radius(0)
 
                                             Behavior on width {
                                                 enabled: (Config.animDuration ?? 0) > 0

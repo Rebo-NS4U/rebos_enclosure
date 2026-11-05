@@ -636,8 +636,8 @@ Item {
             anchors.fill: parent
             variant: Styling.shellStyle === "dithered" ? "bar" : "pane"
             backgroundOpacity: BarAppearance.panelOpacity(root.isExpanded)
-            topLeftRadius: BarAppearance.polished ? root.cornerRadius / 2 : 0
-            topRightRadius: BarAppearance.polished ? root.cornerRadius / 2 : 0
+            topLeftRadius: BarAppearance.polished ? root.cornerRadius : 0
+            topRightRadius: BarAppearance.polished ? root.cornerRadius : 0
             border.width: BarAppearance.polished || Styling.shellStyle === "dithered" ? 1 : 0
             border.color: BarAppearance.panelBorder(root.isExpanded)
 
