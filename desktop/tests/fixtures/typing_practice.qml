@@ -147,8 +147,12 @@ ShellRoot {
                     find(practice, "typing-passage-flow").forceLayout();
                     const movingCaret = find(practice, "typing-smooth-caret");
                     const activeLine = find(practice, "typing-line-highlight");
+                    input.cursorPosition = 0;
+                    movingCaret.follow(find(practice, "typing-character-0"));
+                    const lineEvents = practice.lineTransitions;
                     input.cursorPosition = input.length;
                     movingCaret.follow(find(practice, "typing-character-120"));
+                    if (Motion.enabled && practice.lineTransitions <= lineEvents) throw Error("Moving to a new line did not trigger the accent sweep");
                     if (movingCaret.targetRowY <= 0 || activeLine.y !== movingCaret.rowY) throw Error("Line highlight did not follow wrapped text");
                     input.cursorPosition = 0;
                     movingCaret.follow(find(practice, "typing-character-0"));
