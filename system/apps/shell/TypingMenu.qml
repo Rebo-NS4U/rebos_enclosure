@@ -15,6 +15,15 @@ Item {
     id: root
     signal backRequested()
     property bool practicing: false
+    property bool fullscreen: false
+    function toggleFullscreen() {
+        fullscreen = !fullscreen;
+        if (practicing) Qt.callLater(() => answer.forceActiveFocus());
+    }
+    function handleEscape() {
+        if (fullscreen) { fullscreen = false; if (practicing) answer.forceActiveFocus(); }
+        else goBack();
+    }
     property bool filePickerActive: false
     property bool resumeOnOpen: false
     property string bookId: ""
@@ -230,7 +239,7 @@ Item {
     Timer { interval: 5000; running: root.backendStarted; repeat: true; onTriggered: root.saveProgress() }
 
     function status() {
-        return JSON.stringify({practicing: practicing, pageLines: pageLayout.lines, turningPage: turningPage, textLength: bookLength,
+        return JSON.stringify({practicing: practicing, fullscreen: fullscreen, pageLines: pageLayout.lines, turningPage: turningPage, textLength: bookLength,
             typed: answer.text.length, position: position, rounds: rounds,
             presets: TypingTexts.passages.length, message: message, busy: busy,
             title: bookTitle, chapters: chapters.length, library: library.length, books: libraryBooks.length, wpm: liveWpm, filePickerActive: filePickerActive});
@@ -345,7 +354,10 @@ Item {
         // Commit the focus/mask release before mapping the external file chooser.
         pickerLaunch.restart();
     }
-    Keys.onEscapePressed: event => { root.goBack(); event.accepted = true; }
+    Keys.onEscapePressed: event => { root.handleEscape(); event.accepted = true; }
+    Keys.onPressed: event => {
+        if (event.key === Qt.Key_F11) { root.toggleFullscreen(); event.accepted = true; }
+    }
     function start() {
         if (busy) return;
         if (draft || !bookId) {
@@ -438,6 +450,7 @@ Item {
                 Layout.fillWidth: true
                 Layout.maximumHeight: 36
                 StyledText { text: root.practicing ? root.bookTitle : "Your book library"; elide: Text.ElideRight; Layout.minimumWidth: 0; font.pixelSize: 18; opacity: 0.65; Layout.fillWidth: true }
+                TextButton { objectName: "typing-fullscreen"; text: root.fullscreen ? "Exit fullscreen" : "Fullscreen"; onClicked: root.toggleFullscreen() }
                 TextButton { objectName: "typing-library"; visible: root.practicing; text: "Library"; onClicked: root.showLibrary() }
                 TextButton { visible: root.practicing; text: "Import"; enabled: !root.busy; onClicked: root.openImport() }
                 TextButton { objectName: "typing-back"; visible: !root.practicing; text: "Back"; enabled: !root.busy && (root.bookId.length > 0 || root.draft || root.library.length > 0); onClicked: root.goBack() }
@@ -769,11 +782,12 @@ Item {
                             readOnly: root.busy
                             onTextChanged: root.advance()
                             Keys.onPressed: event => {
+                                if (event.key === Qt.Key_F11) { root.toggleFullscreen(); event.accepted = true; return; }
                                 if (!root.turningPage || (event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier))) return;
                                 if (event.key === Qt.Key_Backspace) { root.undoQueuedKey(); event.accepted = true; }
                                 else if (event.text.length && event.text.charCodeAt(0) >= 32) { root.queueTyping(event.text); event.accepted = true; }
                             }
-                            Keys.onEscapePressed: event => { root.goBack(); event.accepted = true; }
+                            Keys.onEscapePressed: event => { root.handleEscape(); event.accepted = true; }
                         }
                     }
                     RowLayout {

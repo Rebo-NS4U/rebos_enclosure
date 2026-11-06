@@ -10,6 +10,7 @@ ShellRoot {
     id: harness
     property bool closeRequested: false
     PanelWindow {
+        id: testWindow
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
         exclusionMode: ExclusionMode.Ignore
@@ -48,6 +49,10 @@ ShellRoot {
                     const quoteInput = find(practice, "typing-input");
                     quoteInput.text = "\"Don't\"-go-on";
                     if (practice.correctCount() !== 13) throw Error("Keyboard quotes must count toward accuracy and WPM");
+                    find(practice, "typing-fullscreen").clicked();
+                    if (!practice.fullscreen || practice.correctCount() !== 13 || quoteInput.text !== "\"Don't\"-go-on") throw Error("Fullscreen lost typed input");
+                    practice.handleEscape();
+                    if (practice.fullscreen || practice.correctCount() !== 13) throw Error("Escape did not restore compact typing");
                     quoteInput.text = "";
                     practice.restoring = false;
                     let meter = Speed.record(Speed.create(), 1000);
@@ -68,6 +73,15 @@ ShellRoot {
                     if (rebuilt !== original) throw Error("Paging dropped or duplicated book characters");
                     const bar = Qt.createComponent("modules/bar/layouts/IslandBar.qml");
                     if (bar.status === Component.Error) throw Error(bar.errorString());
+                    const island = bar.createObject(testWindow.contentItem, {screen: testWindow.screen, visible: false});
+                    if (!island) throw Error("Could not create island for fullscreen check");
+                    island.currentMode = "typing";
+                    const compactWidth = island.targetWidth;
+                    island.typingPractice.toggleFullscreen();
+                    if (!island.typingFullscreen || island.targetWidth !== island.width || island.targetHeight !== island.height) throw Error("Fullscreen does not fill the screen");
+                    island.typingPractice.handleEscape();
+                    if (island.typingFullscreen || island.targetWidth !== compactWidth) throw Error("Compact dimensions were not restored");
+                    island.destroy();
                     const panel = Qt.createComponent("modules/shell/UnifiedShellPanel.qml");
                     if (panel.status === Component.Error) throw Error(panel.errorString());
                     practice.loadPreset(0); practice.start(); phase++; return;
