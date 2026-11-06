@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
+import "TypingTexts.js" as TypingTexts
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Dialogs
@@ -29,6 +30,12 @@ PanelWindow {
     WlrLayershell.namespace: "rebos-shell-typing"
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.keyboardFocus: opened ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+    function loadPreset(index) {
+        if (index < 0 || index >= TypingTexts.passages.length) return;
+        paste.text = TypingTexts.passages[index].text;
+        practicing = false;
+        message = TypingTexts.passages[index].title + " loaded. Choose Start practice.";
+    }
     function start() {
         let value = paste.text.replace(/\s+/g, " ").trim();
         if (!value.length) { message = "Add some text first."; return; }
@@ -46,6 +53,8 @@ PanelWindow {
         target: "typing"
         function toggle(): void { root.opened = !root.opened; }
         function close(): void { root.opened = false; }
+        function preset(index: int): void { root.loadPreset(index); }
+        function status(): string { return JSON.stringify({opened: root.opened, practicing: root.practicing, textLength: paste.text.length, message: root.message, presets: TypingTexts.passages.length}); }
     }
     FileDialog {
         id: picker
@@ -96,6 +105,27 @@ PanelWindow {
                 RowLayout {
                     Button { text: importer.running ? "Importing…" : "Import document"; enabled: !importer.running; onClicked: picker.open() }
                     Button { text: root.practicing ? "Edit text" : "Start practice"; onClicked: { if (root.practicing) root.practicing = false; else root.start(); } }
+                }
+                RowLayout {
+                    visible: !root.practicing
+                    Layout.fillWidth: true
+                    StyledText { text: "Practice texts" }
+                    ComboBox {
+                        id: presets
+                        Layout.fillWidth: true
+                        model: TypingTexts.passages
+                        textRole: "title"
+                        currentIndex: -1
+                        displayText: currentIndex < 0 ? "Choose a built-in passage…" : currentText
+                        onActivated: index => root.loadPreset(index)
+                    }
+                }
+                StyledText {
+                    visible: !root.practicing
+                    text: "Original passages · CC0 · Free to copy, change and share"
+                    font.pixelSize: 12
+                    Layout.fillWidth: true
+                    wrapMode: Text.Wrap
                 }
                 ScrollView {
                     visible: !root.practicing

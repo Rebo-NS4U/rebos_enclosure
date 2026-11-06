@@ -105,3 +105,9 @@ the dropdown to pause visually; the current passage stays available when reopene
 Text stays in this shell session and is not uploaded or saved. PDF import uses
 Poppler's `pdftotext`; scanned PDFs require OCR before import. Legacy DOC and RTF
 are not supported. IPC: `qs -p ~/.config/quickshell/shell.qml ipc call typing toggle`.
+
+The **Practice texts** selector includes six original CC0 passages: a lowercase
+warmup, two short stories, a reflective passage, dialogue and punctuation, and
+numbers and everyday details. Select one, then choose **Start practice**. These
+passages may be copied, changed and shared freely. Choosing a passage replaces
+the text in the editor; pasting and document import remain available.
