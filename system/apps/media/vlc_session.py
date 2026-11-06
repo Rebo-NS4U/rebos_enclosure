@@ -33,7 +33,7 @@ def pause_click_available():
 
 
 def read_cues(path):
-    text = Path(path).read_text()
+    text = Path(path).read_text(encoding='utf-8-sig')
     result = []
     def seconds(value):
         h, m, s, ms = map(int, re.split('[:,.]', value))
@@ -43,6 +43,27 @@ def read_cues(path):
         if match:
             result.append((seconds(match[1]), seconds(match[2]), match[3].strip()))
     return sorted(result)
+
+
+def provided_cues_usable(cues, duration=0):
+    """Conservative structural checks; these cannot judge translation accuracy."""
+    if len(cues) < 10:
+        return False
+    texts = [re.sub(r'<[^>]*>|\\{[^}]*}', '', text).strip() for _, _, text in cues]
+    if any(not text or '\ufffd' in text or len(text) > 500 for text in texts):
+        return False
+    if any(start < 0 or not 0.15 <= end - start <= 20 for start, end, _ in cues):
+        return False
+    if len(set(texts)) < len(texts) * .35:
+        return False
+    if sum(end - start for start, end, _ in cues) < 30:
+        return False
+    if duration > 0:
+        if cues[-1][1] > duration + 15 or cues[-1][1] < duration * .65:
+            return False
+        if len(cues) < duration / 20:
+            return False
+    return True
 
 
 class VlcSession:
@@ -61,6 +82,7 @@ class VlcSession:
         self.cues = []
         self.cue_starts = []
         self.caption_requested = False
+        self.provided_cues = []
         self.whisper_only = True
         self.caption_registered = False
         self.caption_text = None
@@ -158,7 +180,7 @@ class VlcSession:
                                 '-f', 'srt', str(converted)], check=True, capture_output=True, timeout=12)
                 path = converted
             return str(path)
-        except (OSError, subprocess.SubprocessError):
+        except (OSError, ValueError, subprocess.SubprocessError):
             return ''
 
     def clear_captions(self):
@@ -186,6 +208,15 @@ class VlcSession:
                 options.append('http-referrer=' + referer)
             if audio:
                 options.extend(['demux=avformat', 'input-slave=' + self.public_stream(audio, referer)])
+            self.provided_cues = []
+            if subtitle and self.whisper_only:
+                try:
+                    path = self.subtitle_path(subtitle, referer)
+                    cues = read_cues(path) if path else []
+                    if provided_cues_usable(cues):
+                        self.provided_cues = cues
+                except (OSError, ValueError):
+                    pass  # Invalid or unavailable provider captions use Whisper.
             if self.whisper_only:
                 options.extend(['sub-track=-1', 'sub-track-id=-1', 'no-sub-autodetect-file'])
             if subtitle and not self.whisper_only:
@@ -196,7 +227,9 @@ class VlcSession:
             self.generation += 1
             self.loaded = self.finished = self.input_error = False
             self.caption_registered = self.caption_requested = False
-            self.cues, self.cue_starts = [], []
+            self.cues = self.provided_cues
+            self.cue_starts = [cue[0] for cue in self.cues]
+            self.caption_requested = bool(self.provided_cues)
             self.last = {}
             self.requested = True
             self.pause_when_ready = paused
@@ -264,11 +297,15 @@ class VlcSession:
             return
         if state.get('input_state') == 5:
             self.input_error = True
+        if self.provided_cues and not provided_cues_usable(self.provided_cues, state.get('duration', 0)):
+            self.provided_cues = []
+            self.cues, self.cue_starts = [], []
+            self.caption_requested = False
         whisper_active = self.whisper_only and self.caption_requested
         values = {'time-pos':state.get('time',0), 'duration':state.get('duration',0), 'pause':state.get('state') == 'paused',
                   'sid': 'whisper' if whisper_active else (False if self.whisper_only else state.get('sid', -1)),
                   'sub-visibility': whisper_active if self.whisper_only else state.get('sid', -1) >= 0,
-                  'whisper-captions': whisper_active,
+                  'whisper-captions': whisper_active and not bool(self.provided_cues),
                   'chapter-info': {'index': state.get('chapter', -1), 'count': state.get('chapter_count', 0),
                                    'name': state.get('chapter_name', '')}}
         for name, value in values.items():

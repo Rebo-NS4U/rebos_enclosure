@@ -302,6 +302,8 @@ class Engine(app.Browser):
         send(dict(event='subtitle-state', off=True, whisper=False))
 
     def start_captions(self):
+        if isinstance(getattr(self.session, 'provided_cues', None), list) and self.session.provided_cues:
+            return
         if not self.settings.get('live_subtitles', True) or self.links is None:
             return
         if self.context and media_sources.kind_of(self.context[0]) == 'youtube':
