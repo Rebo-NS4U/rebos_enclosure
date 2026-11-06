@@ -25,6 +25,21 @@ class YouTubePanelTests(unittest.TestCase):
         self.assertIn('--no-check-formats', args)
         self.assertIn('bv*[height<=720]+ba/b[height<=720]', args)
 
+    def test_details_prepare_selected_stream_without_starting_player(self):
+        import menu_requests
+        engine = Mock()
+        engine.history = {}
+        engine.settings = {'mode': 'dub', 'quality': '720p'}
+        show = {'id': 'youtube:test', 'kind': 'youtube', 'url': 'https://www.youtube.com/watch?v=test'}
+        send = Mock()
+        menu_requests.dispatch({'action': 'details', 'show': show}, engine, send)
+        ready = engine.background.call_args.args[1]
+        ready({'episodes': ['first', 'second'], 'resumeIndex': 1})
+        send.assert_called_once()
+        self.assertEqual(engine.resolve.call_args.args[0], ('youtube:test', 'second', 'dub', '720p'))
+        engine.ensure_player.assert_not_called()
+        engine.start_episode.assert_not_called()
+
     def test_feed_requires_explicit_connection(self):
         with patch.object(youtube_account, 'selection', return_value=''):
             with self.assertRaisesRegex(ValueError, 'Connect'):

@@ -285,7 +285,7 @@ class VlcSession:
             video, referer, subtitle, audio = links
             options = ['no-start-paused', 'input-repeat=0', 'audio-language=eng,en', 'sub-language=eng,en']
             if video.startswith(('https://', 'http://')):
-                options.extend(['network-caching=1500', 'prefetch-buffer-size=65536'])
+                options.extend(['network-caching=' + ('1500' if self.whisper_only else '500'), 'prefetch-buffer-size=65536'])
                 if str(getattr(links, 'format_name', '')).startswith('mov,'):
                     options.append('demux=avformat')
             if self.audio_normalization:

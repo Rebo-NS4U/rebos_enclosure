@@ -113,7 +113,15 @@ def dispatch(request, engine, send):
                 entry = engine.history.get(show_id, {})
                 data['resumeIndex'] = resume_index(data['episodes'], entry)
                 return data
-            engine.background(details, result, fail)
+            def details_ready(data):
+                result(data)
+                if media_sources.kind_of(request['show']) == 'youtube' and data.get('episodes'):
+                    index = data.get('resumeIndex', 0)
+                    episode = data['episodes'][index]
+                    # Share Engine's in-flight/cache entry with an eventual Play.
+                    engine.resolve((show_id, episode, engine.settings['mode'], engine.settings['quality']),
+                                   lambda links: None, lambda error: None)
+            engine.background(details, details_ready, fail)
         elif action == 'season':
             show = request['show']
             if media_sources.kind_of(show) != 'tv':
