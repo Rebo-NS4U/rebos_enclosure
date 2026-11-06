@@ -1,5 +1,16 @@
 # Validation record
 
+## Verified YouTube direct-stream playback — 2026-11-06
+
+- The affected video's HLS manifest loaded, but its first media segment returned
+  HTTP 403. This also reproduced with desktop network access.
+- The resolver now checks format availability and prefers direct HTTPS video
+  plus audio, retaining the existing quality cap and HLS fallback.
+- Using the updated installed source through the relay, real VLC decoded both
+  video and audio for the previously failing video with no relay errors. Stream
+  resolution took 8.55 seconds in this check. All 14 focused resolver/player
+  tests and payload verification passed. Network lookup time remains variable.
+
 ## YouTube HLS decoder dependency — 2026-11-06
 
 - The live installation lacked the already-declared `vlc-plugin-dvb` package.
