@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Anime Streamer
+Comment=Browse and play anime in Quickshell
+Exec="@HOME@/.local/bin/anime-streamer"
+Icon=video-display
+Terminal=false
+Categories=AudioVideo;Video;
+Keywords=quickshell;enclosure;anime;streaming;media;

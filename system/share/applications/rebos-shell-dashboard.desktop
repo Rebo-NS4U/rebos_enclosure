@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Dashboard
+Comment=Open the Quickshell dashboard
+Exec="@HOME@/.local/bin/rebos_shell" run dashboard
+Icon=view-dashboard
+Terminal=false
+Categories=Utility;
+Keywords=quickshell;enclosure;overview;widgets;

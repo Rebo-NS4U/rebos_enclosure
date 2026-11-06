@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Sound Controls
+Comment=Open the Quickshell sound controls
+Exec="@HOME@/.local/bin/rebos_shell" run sound
+Icon=audio-volume-high
+Terminal=false
+Categories=Settings;
+Keywords=quickshell;enclosure;audio;volume;speakers;

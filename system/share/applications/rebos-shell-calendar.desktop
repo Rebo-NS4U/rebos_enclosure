@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Calendar
+Comment=Open the Quickshell calendar
+Exec="@HOME@/.local/bin/rebos_shell" run calendar
+Icon=x-office-calendar
+Terminal=false
+Categories=Office;
+Keywords=quickshell;enclosure;date;time;

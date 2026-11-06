@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Bluetooth Controls
+Comment=Open the Quickshell bluetooth controls
+Exec="@HOME@/.local/bin/rebos_shell" run bluetooth
+Icon=bluetooth
+Terminal=false
+Categories=Settings;
+Keywords=quickshell;enclosure;devices;wireless;

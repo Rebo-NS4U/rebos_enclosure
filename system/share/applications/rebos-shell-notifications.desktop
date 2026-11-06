@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Notifications
+Comment=Open the Quickshell notifications
+Exec="@HOME@/.local/bin/rebos_shell" run notifications
+Icon=preferences-system-notifications
+Terminal=false
+Categories=Utility;
+Keywords=quickshell;enclosure;alerts;history;

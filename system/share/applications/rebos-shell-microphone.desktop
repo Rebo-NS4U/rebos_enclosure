@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Microphone Controls
+Comment=Open the Quickshell microphone controls
+Exec="@HOME@/.local/bin/rebos_shell" run microphone
+Icon=audio-input-microphone
+Terminal=false
+Categories=Settings;
+Keywords=quickshell;enclosure;mic;input;

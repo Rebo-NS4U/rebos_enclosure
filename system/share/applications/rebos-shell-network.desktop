@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Network Controls
+Comment=Open the Quickshell network controls
+Exec="@HOME@/.local/bin/rebos_shell" run network
+Icon=network-wireless
+Terminal=false
+Categories=Settings;Network;
+Keywords=quickshell;enclosure;wifi;internet;

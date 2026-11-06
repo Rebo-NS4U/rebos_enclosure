@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Shell Wallpapers
+Comment=Open the Quickshell shell wallpapers
+Exec="@HOME@/.local/bin/rebos_shell" run wallpapers
+Icon=preferences-desktop-wallpaper
+Terminal=false
+Categories=Settings;
+Keywords=quickshell;enclosure;background;appearance;

@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Battery and Power
+Comment=Open the Quickshell battery and power
+Exec="@HOME@/.local/bin/rebos_shell" run battery
+Icon=battery
+Terminal=false
+Categories=Settings;
+Keywords=quickshell;enclosure;power;profile;charging;

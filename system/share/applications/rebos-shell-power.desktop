@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Power Menu
+Comment=Open the Quickshell power menu
+Exec="@HOME@/.local/bin/rebos_shell" run power
+Icon=system-shutdown
+Terminal=false
+Categories=System;
+Keywords=quickshell;enclosure;logout;shutdown;reboot;suspend;

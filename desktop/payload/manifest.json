@@ -87,7 +87,23 @@
     ".local/share/wallpapers/default.jpg",
     "code/anime-streamer",
     "code/rebos-assistant",
-    ".config/enclosure/theme/widgets.qss"
+    ".config/enclosure/theme/widgets.qss",
+    ".local/share/applications/rebos-shell-notes.desktop",
+    ".local/share/applications/rebos-shell-file-shelf.desktop",
+    ".local/share/applications/rebos-shell-calendar.desktop",
+    ".local/share/applications/rebos-shell-weather.desktop",
+    ".local/share/applications/rebos-shell-system-monitor.desktop",
+    ".local/share/applications/rebos-shell-projects.desktop",
+    ".local/share/applications/rebos-shell-dashboard.desktop",
+    ".local/share/applications/rebos-shell-notifications.desktop",
+    ".local/share/applications/rebos-shell-sound.desktop",
+    ".local/share/applications/rebos-shell-microphone.desktop",
+    ".local/share/applications/rebos-shell-network.desktop",
+    ".local/share/applications/rebos-shell-bluetooth.desktop",
+    ".local/share/applications/rebos-shell-battery.desktop",
+    ".local/share/applications/rebos-shell-power.desktop",
+    ".local/share/applications/rebos-shell-wallpapers.desktop",
+    ".local/share/applications/rebos-shell-anime.desktop"
   ],
   "layout": 2,
   "sources": {
@@ -426,6 +442,70 @@
     ".config/enclosure/theme/widgets.qss": {
       "source": "config/enclosure/theme/widgets.qss",
       "kind": "personal"
+    },
+    ".local/share/applications/rebos-shell-notes.desktop": {
+      "source": "system/share/applications/rebos-shell-notes.desktop",
+      "kind": "managed"
+    },
+    ".local/share/applications/rebos-shell-file-shelf.desktop": {
+      "source": "system/share/applications/rebos-shell-file-shelf.desktop",
+      "kind": "managed"
+    },
+    ".local/share/applications/rebos-shell-calendar.desktop": {
+      "source": "system/share/applications/rebos-shell-calendar.desktop",
+      "kind": "managed"
+    },
+    ".local/share/applications/rebos-shell-weather.desktop": {
+      "source": "system/share/applications/rebos-shell-weather.desktop",
+      "kind": "managed"
+    },
+    ".local/share/applications/rebos-shell-system-monitor.desktop": {
+      "source": "system/share/applications/rebos-shell-system-monitor.desktop",
+      "kind": "managed"
+    },
+    ".local/share/applications/rebos-shell-projects.desktop": {
+      "source": "system/share/applications/rebos-shell-projects.desktop",
+      "kind": "managed"
+    },
+    ".local/share/applications/rebos-shell-dashboard.desktop": {
+      "source": "system/share/applications/rebos-shell-dashboard.desktop",
+      "kind": "managed"
+    },
+    ".local/share/applications/rebos-shell-notifications.desktop": {
+      "source": "system/share/applications/rebos-shell-notifications.desktop",
+      "kind": "managed"
+    },
+    ".local/share/applications/rebos-shell-sound.desktop": {
+      "source": "system/share/applications/rebos-shell-sound.desktop",
+      "kind": "managed"
+    },
+    ".local/share/applications/rebos-shell-microphone.desktop": {
+      "source": "system/share/applications/rebos-shell-microphone.desktop",
+      "kind": "managed"
+    },
+    ".local/share/applications/rebos-shell-network.desktop": {
+      "source": "system/share/applications/rebos-shell-network.desktop",
+      "kind": "managed"
+    },
+    ".local/share/applications/rebos-shell-bluetooth.desktop": {
+      "source": "system/share/applications/rebos-shell-bluetooth.desktop",
+      "kind": "managed"
+    },
+    ".local/share/applications/rebos-shell-battery.desktop": {
+      "source": "system/share/applications/rebos-shell-battery.desktop",
+      "kind": "managed"
+    },
+    ".local/share/applications/rebos-shell-power.desktop": {
+      "source": "system/share/applications/rebos-shell-power.desktop",
+      "kind": "managed"
+    },
+    ".local/share/applications/rebos-shell-wallpapers.desktop": {
+      "source": "system/share/applications/rebos-shell-wallpapers.desktop",
+      "kind": "managed"
+    },
+    ".local/share/applications/rebos-shell-anime.desktop": {
+      "source": "system/share/applications/rebos-shell-anime.desktop",
+      "kind": "managed"
     }
   }
 }

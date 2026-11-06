@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=System Monitor
+Comment=Open the Quickshell system monitor
+Exec="@HOME@/.local/bin/rebos_shell" run system-monitor
+Icon=utilities-system-monitor
+Terminal=false
+Categories=System;Monitor;
+Keywords=quickshell;enclosure;cpu;memory;resources;stats;

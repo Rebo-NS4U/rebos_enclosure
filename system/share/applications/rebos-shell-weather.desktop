@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Weather
+Comment=Open the Quickshell weather
+Exec="@HOME@/.local/bin/rebos_shell" run weather
+Icon=weather-clear
+Terminal=false
+Categories=Utility;
+Keywords=quickshell;enclosure;forecast;temperature;

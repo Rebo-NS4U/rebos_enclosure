@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=File Shelf
+Comment=Open the Quickshell file shelf
+Exec="@HOME@/.local/bin/rebos_shell" run file-shelf
+Icon=folder
+Terminal=false
+Categories=Utility;
+Keywords=quickshell;enclosure;files;clipboard;shelf;

@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Project Picker
+Comment=Open the Quickshell project picker
+Exec="@HOME@/.local/bin/rebos_shell" run projects
+Icon=folder-development
+Terminal=false
+Categories=Development;
+Keywords=quickshell;enclosure;projects;editor;

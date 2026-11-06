@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Quick Notes
+Comment=Open the Quickshell quick notes
+Exec="@HOME@/.local/bin/rebos_shell" run notes
+Icon=accessories-text-editor
+Terminal=false
+Categories=Office;Utility;
+Keywords=quickshell;enclosure;notes;notepad;markdown;
