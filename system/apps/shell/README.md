@@ -94,3 +94,14 @@ history.
 
 This project is licensed under the GNU Affero General Public License v3.0 or
 later. See [LICENSE](./LICENSE).
+
+### Continuous typing dropdown
+
+Click **Typing ▾** at the upper right of the desktop. Paste text or import PDF,
+DOCX, ODT, HTML, XML, TXT, Markdown, CSV, JSON or LOG files, then select
+**Start practice**. Each completed passage advances automatically and the document
+loops forever. Mistakes are highlighted without a timer or failure state. Close
+the dropdown to pause visually; the current passage stays available when reopened.
+Text stays in this shell session and is not uploaded or saved. PDF import uses
+Poppler's `pdftotext`; scanned PDFs require OCR before import. Legacy DOC and RTF
+are not supported. IPC: `qs -p ~/.config/quickshell/shell.qml ipc call typing toggle`.
