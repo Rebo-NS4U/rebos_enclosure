@@ -103,6 +103,18 @@ ShellRoot {
                 if (input.opacity !== 0 || !input.enabled) throw Error("Native editor must accept input without painting ghost characters");
                 if (phase === 1) {
                     const originalSource = practice.pageSource;
+                    const screenshotText = "comfortable? I have a better view of things now. This is no ordinary hospital room. More words follow here.";
+                    practice.pageSource = screenshotText; practice.fitPage();
+                    find(practice, "typing-passage-flow").forceLayout();
+                    const screenshotPage = practice.passage;
+                    const screenshotPosition = practice.position;
+                    input.text = screenshotText.slice(0, 68); input.cursorPosition = 68;
+                    const spaceCaret = find(practice, "typing-smooth-caret");
+                    spaceCaret.follow(find(practice, "typing-character-68"));
+                    if (!find(practice, "typing-space-indicator").visible || spaceCaret.targetGlyph.modelData !== " ") throw Error("Cursor must identify the space before the final word");
+                    input.insert(input.cursorPosition, " ");
+                    if (practice.busy || practice.position !== screenshotPosition || practice.passage !== screenshotPage) throw Error("Typing the space before the last word turned the page early");
+                    input.text = "";
                     practice.fullscreen = true;
                     practice.pageSource = "word ".repeat(800); practice.fitPage();
                     if (practice.pageLayout.lines <= 2) throw Error("Fullscreen must show additional lines");

@@ -875,6 +875,15 @@ Item {
                                     GradientStop { position: 1; color: Qt.alpha(smoothCaret.accent, 0.5) }
                                 }
                                 opacity: Motion.enabled ? smoothCaret.breath : 1
+                                StyledText {
+                                    objectName: "typing-space-indicator"
+                                    anchors.centerIn: parent
+                                    text: "·"
+                                    font.pixelSize: 16
+                                    color: Colors.overSurface
+                                    opacity: 0.8
+                                    visible: smoothCaret.targetGlyph !== null && smoothCaret.targetGlyph.modelData === " "
+                                }
                                 Rectangle {
                                     anchors.top: parent.top
                                     anchors.left: parent.left
