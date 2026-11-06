@@ -49,32 +49,69 @@ def join_sections(sections):
     if not chunks: raise ValueError('No readable text found. Scanned PDFs need OCR first.')
     return ' '.join(chunks), chapters
 
-def read_epub(path):
+class HeadingText(HTMLText):
+    """Heading-only image alternatives; decorative body images stay excluded."""
+    def handle_starttag(self, tag, attrs):
+        super().handle_starttag(tag, attrs)
+        if tag == 'img' and not self.hidden:
+            self.parts.append(dict(attrs).get('alt', ''))
+
+def read_epub_details(path):
     with zipfile.ZipFile(path) as archive:
         def read(name):
             if archive.getinfo(name).file_size > 100 * 1024 * 1024:
                 raise ValueError('EPUB member is too large.')
             return archive.read(name)
+        def resolve(base, href):
+            return posixpath.normpath(posixpath.join(posixpath.dirname(base), unquote(href.split('#')[0])))
         container = ET.fromstring(read('META-INF/container.xml'))
         package = next(e.attrib['full-path'] for e in container.iter() if e.tag.endswith('rootfile'))
         opf = ET.fromstring(read(package))
+        title = next((normalize(e.text or '') for e in opf.iter() if e.tag.endswith('}title') and e.text), Path(path).stem)
         manifest = {e.attrib['id']: e.attrib for e in opf.iter() if e.tag.endswith('}item')}
+        labels = {}
+        for entry in manifest.values():
+            location = resolve(package, entry['href'])
+            if entry.get('media-type') == 'application/x-dtbncx+xml':
+                navigation = ET.fromstring(read(location))
+                for point in navigation.iter():
+                    if point.tag.rsplit('}', 1)[-1] != 'navPoint': continue
+                    label = next((normalize(''.join(e.itertext())) for e in point if e.tag.rsplit('}', 1)[-1] == 'navLabel'), '')
+                    target = next((e.get('src', '') for e in point if e.tag.rsplit('}', 1)[-1] == 'content'), '')
+                    if target and label: labels.setdefault(resolve(location, target), label)
+            elif 'nav' in entry.get('properties', '').split():
+                navigation = ET.fromstring(read(location))
+                for nav in navigation.iter():
+                    if nav.tag.rsplit('}', 1)[-1] != 'nav': continue
+                    kind = nav.get('{http://www.idpf.org/2007/ops}type', '').split()
+                    if 'toc' not in kind: continue
+                    for link in nav.iter():
+                        if link.tag.rsplit('}', 1)[-1] == 'a' and link.get('href'):
+                            label = normalize(''.join(link.itertext()))
+                            if label: labels.setdefault(resolve(location, link.get('href')), label)
         sections = []
         size = 0
         for item in opf.iter():
             if not item.tag.endswith('}itemref') or item.get('linear') == 'no': continue
             entry = manifest[item.attrib['idref']]
             if entry.get('media-type') not in ('application/xhtml+xml', 'text/html'): continue
-            member = posixpath.normpath(str(PurePosixPath(package).parent / unquote(entry['href'].split('#')[0])))
+            member = resolve(package, entry['href'])
             raw = read(member).decode('utf-8-sig')
             parser = HTMLText(); parser.feed(raw)
             text = ''.join(parser.parts)
             size += len(text)
             if size > LIMIT: raise ValueError('Book exceeds 20 million characters.')
             heading = re.search(r'<h[1-3]\b[^>]*>(.*?)</h[1-3]>', raw, re.S | re.I)
-            label = HTMLText(); label.feed(heading.group(1) if heading else f'Section {len(sections) + 1}')
-            sections.append((normalize(''.join(label.parts)), text))
-    return join_sections(sections)
+            heading_text = HeadingText()
+            if heading: heading_text.feed(heading.group(1))
+            label = labels.get(member) or normalize(''.join(heading_text.parts)) or f'Section {len(sections) + 1}'
+            sections.append((label, text))
+    text, chapters = join_sections(sections)
+    return text, chapters, title
+
+def read_epub(path):
+    text, chapters, _ = read_epub_details(path)
+    return text, chapters
 
 class Library:
     def __init__(self, path):
@@ -95,7 +132,7 @@ class Library:
         if not text or len(text) > LIMIT: raise ValueError('Book must contain 1 to 20 million characters.')
         key = hashlib.sha256(text.encode()).hexdigest()
         with self.db:
-            self.db.execute('INSERT OR IGNORE INTO book_catalogue VALUES (?,?,?,?)', (key, title[:160], json.dumps(chapters), len(text)))
+            self.db.execute('INSERT INTO book_catalogue VALUES (?,?,?,?) ON CONFLICT(id) DO UPDATE SET title=excluded.title,chapters=excluded.chapters,size=excluded.size', (key, title[:160], json.dumps(chapters), len(text)))
             self.db.execute('INSERT OR IGNORE INTO book_content VALUES (?,?)', (key, text))
             self.db.execute('INSERT OR IGNORE INTO book_progress (id,updated) VALUES (?,?)', (key, time.time()))
         return self.page(key)
@@ -132,12 +169,23 @@ class Library:
             value = request['path']
             path = Path(unquote(urlparse(value).path) if value.startswith('file:') else value).expanduser()
             if path.stat().st_size > 100 * 1024 * 1024: raise ValueError('Choose a book under 100 MB.')
-            text, chapters = read_epub(path) if path.suffix.lower() == '.epub' else sections_document(extract_raw(str(path)))
-            return self.add(path.stem, text, chapters)
+            if path.suffix.lower() == '.epub':
+                text, chapters, title = read_epub_details(path)
+            else:
+                text, chapters = sections_document(extract_raw(str(path)))
+                title = path.stem
+            return self.add(title, text, chapters)
         if action == 'add':
             text, chapters = sections_document(request['text'])
             return self.add(request.get('title', 'Pasted text'), text, chapters)
         if action == 'open': return self.page(request['id'])
+        if action == 'chapter':
+            current = self.page(request['id'])
+            index = request['index']
+            if not isinstance(index, int) or not 0 <= index < len(current['chapters']):
+                raise ValueError('Choose a valid chapter.')
+            self.save(request['id'], current['chapters'][index]['position'], '', request.get('loops', current['loops']))
+            return self.page(request['id'])
         if action in ('save', 'seek', 'next'):
             if action == 'seek':
                 self.page(request['id'], False)

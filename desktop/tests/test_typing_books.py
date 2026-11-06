@@ -8,7 +8,7 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'system/apps/shell/scripts'))
-from typing_books import Library, read_epub, sections_document
+from typing_books import Library, read_epub, read_epub_details, sections_document
 
 class Books(unittest.TestCase):
     def setUp(self):
@@ -76,5 +76,38 @@ class Books(unittest.TestCase):
         self.assertEqual(text, 'First Hello world. Second Last page.')
         self.assertEqual(text[chapters[1]['position']:], 'Second Last page.')
         self.assertEqual(self.library.handle({'action': 'import', 'path': str(path)})['chapters'], chapters)
+
+    def test_image_headings_ncx_metadata_and_refresh_preserve_position(self):
+        path = Path(self.temp.name) / 'unhelpful-file-name.epub'
+        with zipfile.ZipFile(path, 'w') as book:
+            book.writestr('META-INF/container.xml', '<container><rootfile full-path="OPS/book.opf"/></container>')
+            book.writestr('OPS/book.opf', '<package xmlns="http://www.idpf.org/2007/opf" xmlns:dc="http://purl.org/dc/elements/1.1/"><metadata><dc:title>Readable book title</dc:title></metadata><manifest><item id="a" href="a.xhtml" media-type="application/xhtml+xml"/><item id="b" href="b.xhtml" media-type="application/xhtml+xml"/><item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/></manifest><spine><itemref idref="a"/><itemref idref="b"/></spine></package>')
+            book.writestr('OPS/toc.ncx', '<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/"><navMap><navPoint><navLabel><text>Chapter 1</text></navLabel><content src="a.xhtml#start"/></navPoint><navPoint><navLabel><text>Chapter 2</text></navLabel><content src="b.xhtml#start"/></navPoint></navMap></ncx>')
+            book.writestr('OPS/a.xhtml', '<h1><img alt="" src="one.png"/></h1><p>First original practice passage.</p>')
+            book.writestr('OPS/b.xhtml', '<h1><img alt="Wrong scanned label" src="two.png"/></h1><p>Second original practice passage.</p>')
+        text, chapters, title = read_epub_details(path)
+        self.assertEqual(title, 'Readable book title')
+        self.assertEqual([chapter['title'] for chapter in chapters], ['Chapter 1', 'Chapter 2'])
+        old = self.library.add('Filename', text, [{'title': '', 'position': 0}])
+        self.library.save(old['id'], 3, 'rs', 2)
+        refreshed = self.library.add(title, text, chapters)
+        self.assertEqual((refreshed['position'], refreshed['typed'], refreshed['loops']), (3, 'rs', 2))
+        self.assertEqual(refreshed['id'], old['id'])
+        jumped = self.library.handle({'action': 'chapter', 'id': old['id'], 'index': 1})
+        self.assertEqual(jumped['passage'], 'Second original practice passage.')
+        self.assertEqual(jumped['position'], chapters[1]['position'])
+        with self.assertRaises(ValueError): self.library.handle({'action': 'chapter', 'id': old['id'], 'index': 99})
+
+    def test_epub3_navigation_and_image_alt_fallback(self):
+        path = Path(self.temp.name) / 'book.epub'
+        with zipfile.ZipFile(path, 'w') as book:
+            book.writestr('META-INF/container.xml', '<container><rootfile full-path="book.opf"/></container>')
+            book.writestr('book.opf', '<package xmlns="http://www.idpf.org/2007/opf"><manifest><item id="a" href="a.xhtml" media-type="application/xhtml+xml"/><item id="b" href="b.xhtml" media-type="application/xhtml+xml"/><item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/></manifest><spine><itemref idref="a"/><itemref idref="b"/></spine></package>')
+            book.writestr('nav.xhtml', '<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><nav epub:type="toc"><a href="a.xhtml">Opening chapter</a></nav></html>')
+            book.writestr('a.xhtml', '<p>Opening text.</p>')
+            book.writestr('b.xhtml', '<h1><img alt="Chapter 2"/></h1><p>Closing text.</p>')
+        text, chapters = read_epub(path)
+        self.assertEqual([chapter['title'] for chapter in chapters], ['Opening chapter', 'Chapter 2'])
+        self.assertEqual(text, 'Opening text. Closing text.')
 
 if __name__ == '__main__': unittest.main()

@@ -38,6 +38,13 @@ Singleton {
             const island = Visibilities.getIslandForActive();
             if (island?.currentMode === "typing") island.collapse();
         }
+        function resume(): void {
+            const island = Visibilities.getIslandForActive();
+            if (island) {
+                island.expand("typing");
+                if (!island.typingPractice.practicing) island.typingPractice.goBack();
+            }
+        }
         function upload(): void {
             const island = Visibilities.getIslandForActive();
             if (island) { island.expand("typing"); island.typingPractice.openImport(); }

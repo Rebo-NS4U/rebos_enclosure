@@ -7,6 +7,7 @@ import Quickshell
 import Quickshell.Io
 import qs.modules.components
 import qs.modules.theme
+import qs.config
 
 Item {
     id: root
@@ -33,11 +34,15 @@ Item {
     property int pageRequest: 0
     property var queued: []
     property string errorMessage: ""
-    readonly property string chapterTitle: {
-        let title = "Beginning";
-        for (const chapter of chapters) { if (chapter.position > position) break; title = chapter.title; }
-        return title;
+    readonly property int currentChapterIndex: {
+        let result = -1;
+        for (let index = 0; index < chapters.length; index++) {
+            if (chapters[index].position > position) break;
+            result = index;
+        }
+        return result;
     }
+    readonly property string chapterTitle: currentChapterIndex < 0 ? "Beginning" : (chapters[currentChapterIndex].title || "Section " + (currentChapterIndex + 1))
     property string message: "Import a book, resume your library, or choose a practice text."
     function characters(value) {
         return value.match(/[\uD800-\uDBFF][\uDC00-\uDFFF]|[\s\S]/g) ?? [];
@@ -103,6 +108,11 @@ Item {
         dirty = false;
         send({action: "seek", id: bookId, position: Math.max(0, Math.min(bookLength - 1, offset)), typed: "", loops: rounds});
     }
+    function jumpChapter(index) {
+        if (!bookId || busy || index < 0 || index >= chapters.length) return;
+        dirty = false;
+        send({action: "chapter", id: bookId, index: index, loops: rounds});
+    }
     function receive(line) {
         try {
             const data = JSON.parse(line);
@@ -117,6 +127,7 @@ Item {
             message = "Ready to resume. Your place is saved on this device.";
             if (data.action === "add") { paste.text = ""; practicing = true; }
             if (data.action === "import") { paste.text = ""; practicing = false; }
+            if (data.action === "chapter") practicing = true;
             if (data.action === "open" && resumeOnOpen) { resumeOnOpen = false; practicing = true; }
             if (practicing && visible) Qt.callLater(() => answer.forceActiveFocus());
             if (data.action !== "next") send({action: "list"}, false);
@@ -145,6 +156,71 @@ Item {
                 enabled: Motion.enabled
                 NumberAnimation { duration: Motion.feedback; easing.type: Easing.OutCubic }
             }
+        }
+    }
+    component ThemeSelect: ComboBox {
+        id: select
+        implicitHeight: 48
+        textRole: "title"
+        leftPadding: 12
+        rightPadding: 32
+        contentItem: StyledText {
+            text: select.displayText
+            color: select.activeFocus ? Colors.primary : Colors.overSurface
+            verticalAlignment: Text.AlignVCenter
+            elide: Text.ElideRight
+        }
+        indicator: StyledText {
+            anchors.right: parent.right
+            anchors.rightMargin: 12
+            anchors.verticalCenter: parent.verticalCenter
+            text: "⌄"
+            color: Colors.primary
+        }
+        background: StyledRect {
+            variant: "pane"
+            radius: 12
+            backgroundOpacity: 0.35
+            border.width: 1
+            border.color: select.activeFocus ? Colors.primary : Qt.alpha(Colors.outlineVariant, 0.55)
+        }
+        delegate: ItemDelegate {
+            required property int index
+            width: select.width - 12
+            implicitHeight: 40
+            text: select.textAt(index)
+            highlighted: select.highlightedIndex === index
+            contentItem: StyledText {
+                text: parent.text
+                color: parent.highlighted ? Colors.primary : Colors.overSurface
+                verticalAlignment: Text.AlignVCenter
+                elide: Text.ElideRight
+            }
+            background: Rectangle {
+                radius: 8
+                color: parent.highlighted ? Qt.alpha(Colors.primary, 0.16) : "transparent"
+            }
+        }
+        popup: Popup {
+            y: select.height + 4
+            width: select.width
+            padding: 6
+            modal: true
+            dim: false
+            closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+            background: StyledRect { variant: "popup"; radius: 12 }
+            contentItem: ListView {
+                id: options
+                clip: true
+                implicitHeight: Math.min(select.count * 40, 260)
+                model: select.delegateModel
+                currentIndex: select.highlightedIndex
+                ScrollBar.vertical: ScrollBar {
+                    contentItem: Rectangle { implicitWidth: 4; radius: 2; color: Qt.alpha(Colors.primary, 0.65) }
+                    background: Item {}
+                }
+            }
+            onOpened: Qt.callLater(() => options.positionViewAtIndex(Math.max(0, select.currentIndex), ListView.Contain))
         }
     }
     function loadPreset(index) {
@@ -273,7 +349,7 @@ Item {
                     TextButton { text: "Paste text"; enabled: !root.busy; onClicked: { root.saveProgress(); root.draft = true; root.draftTitle = "Pasted text"; paste.text = ""; paste.forceActiveFocus(); } }
                     TextButton { text: root.bookId && !root.draft ? "Resume" : "Start practice"; enabled: !root.busy; onClicked: root.start() }
                 }
-                ComboBox {
+                ThemeSelect {
                     visible: !root.practicing && root.library.length > 0
                     Layout.fillWidth: true
                     model: root.library
@@ -282,23 +358,49 @@ Item {
                     displayText: currentIndex < 0 ? "Resume a saved book…" : currentText
                     onActivated: index => root.openBook(root.library[index].id)
                 }
-                RowLayout {
+                ColumnLayout {
                     visible: !root.practicing && root.bookId.length > 0 && !root.draft
                     Layout.fillWidth: true
-                    ComboBox {
+                    StyledText { text: "Jump to chapter"; color: Colors.overSurfaceVariant; font.pixelSize: 12 }
+                    RowLayout {
                         Layout.fillWidth: true
-                        model: root.chapters
-                        textRole: "title"
-                        displayText: "Jump to chapter…"
-                        onActivated: index => root.seek(root.chapters[index].position)
+                        TextButton { text: "‹"; enabled: !root.busy && root.currentChapterIndex > 0; onClicked: root.jumpChapter(root.currentChapterIndex - 1) }
+                        ThemeSelect {
+                            id: chapterSelect
+                            objectName: "typing-chapter-select"
+                            Layout.fillWidth: true
+                            Layout.minimumWidth: 0
+                            model: root.chapters
+                            currentIndex: root.currentChapterIndex
+                            enabled: !root.busy
+                            displayText: root.chapterTitle
+                            onActivated: index => root.jumpChapter(index)
+                        }
+                        TextButton { text: "›"; enabled: !root.busy && root.currentChapterIndex + 1 < root.chapters.length; onClicked: root.jumpChapter(root.currentChapterIndex + 1) }
                     }
-                    StyledText { opacity: 0.6; text: (root.progress * 100).toFixed(1) + "%" }
                 }
                 Slider {
                     id: bookPositionSlider
                     objectName: "typing-book-position"
                     visible: !root.practicing && root.bookId.length > 0 && !root.draft
                     Layout.fillWidth: true
+                    implicitHeight: 24
+                    background: Rectangle {
+                        x: bookPositionSlider.leftPadding
+                        y: bookPositionSlider.topPadding + bookPositionSlider.availableHeight / 2 - height / 2
+                        width: bookPositionSlider.availableWidth
+                        height: 4
+                        radius: 2
+                        color: Qt.alpha(Colors.primary, 0.14)
+                        Rectangle { width: parent.width * bookPositionSlider.visualPosition; height: parent.height; radius: 2; color: Colors.primary }
+                    }
+                    handle: Rectangle {
+                        x: bookPositionSlider.leftPadding + bookPositionSlider.visualPosition * (bookPositionSlider.availableWidth - width)
+                        y: bookPositionSlider.topPadding + bookPositionSlider.availableHeight / 2 - height / 2
+                        implicitWidth: 14; implicitHeight: 14; radius: 7
+                        color: bookPositionSlider.pressed ? Colors.primary : Colors.overSurface
+                        border.width: 2; border.color: Colors.primary
+                    }
                     from: 0; to: Math.max(1, root.bookLength - 1)
                     value: root.position
                     onMoved: jumpDelay.restart()
@@ -310,41 +412,11 @@ Item {
                     visible: !root.practicing
                     Layout.fillWidth: true
                     StyledText { text: "Practice texts" }
-                    ComboBox {
+                    ThemeSelect {
                         id: presets
                         Layout.fillWidth: true
                         model: TypingTexts.passages
                         textRole: "title"
-                        background: Item {}
-                        contentItem: StyledText {
-                            text: presets.displayText
-                            opacity: 0.65
-                            verticalAlignment: Text.AlignVCenter
-                            elide: Text.ElideRight
-                        }
-                        indicator: Item {}
-                        popup: Popup {
-                            y: presets.height
-                            width: presets.width
-                            padding: 0
-                            background: Item {}
-                            contentItem: Column {
-                                Repeater {
-                                    model: TypingTexts.passages
-                                    delegate: TextButton {
-                                        required property int index
-                                        required property var modelData
-                                        width: presets.width
-                                        text: modelData.title
-                                        onClicked: {
-                                            presets.currentIndex = index;
-                                            root.loadPreset(index);
-                                            presets.popup.close();
-                                        }
-                                    }
-                                }
-                            }
-                        }
                         currentIndex: -1
                         displayText: currentIndex < 0 ? "Choose a built-in passage…" : currentText
                         onActivated: index => root.loadPreset(index)
@@ -370,7 +442,7 @@ Item {
                         placeholderTextColor: Qt.alpha(Colors.overSurface, 0.35)
                         wrapMode: TextEdit.Wrap
                         color: Colors.overSurface
-                        font.family: "JetBrains Mono"
+                        font.family: Config.theme.font
                         font.pixelSize: 14
                     }
                 }
@@ -402,6 +474,7 @@ Item {
                                             id: glyph
                                             required property int index
                                             required property string modelData
+                                            readonly property bool caretHere: root.practicing && characterIndex === Math.min(answer.cursorPosition, root.passage.length - 1)
                                             readonly property bool typed: characterIndex < answer.text.length
                                             property bool initialized: false
                                             property real lift: 0
@@ -432,16 +505,37 @@ Item {
                                             objectName: "typing-character-" + characterIndex
                                             text: modelData === " " ? "\u00a0" : modelData
                                             textFormat: Text.PlainText
-                                            font.family: "JetBrains Mono"
+                                            font.family: Config.theme.font
                                             font.pixelSize: 22
-                                            font.underline: characterIndex === answer.text.length
+                                            font.underline: false
                                             lineHeight: 1.45
-                                            opacity: (typed ? 1 : 0.28) * entrance
-                                            Behavior on opacity {
+                                            property real inkOpacity: caretHere || typed ? 1 : 0.28
+                                            opacity: caretHere ? 1 : inkOpacity * entrance
+                                            Behavior on inkOpacity {
                                                 enabled: Motion.enabled
                                                 NumberAnimation { duration: Math.round(Motion.base * 0.45); easing.type: Easing.OutCubic }
                                             }
-                                            color: typed ? (answer.text.substr(characterIndex, modelData.length) !== modelData ? Colors.error : Qt.tint(Colors.overSurface, Qt.alpha(Colors.primary, shine * 0.65))) : Colors.overSurface
+                                            color: caretHere ? Colors.overPrimary : (typed ? (answer.text.substr(characterIndex, modelData.length) !== modelData ? Colors.error : Qt.tint(Colors.overSurface, Qt.alpha(Colors.primary, shine * 0.65))) : Colors.overSurface)
+                                            Rectangle {
+                                                objectName: "typing-caret-" + glyph.characterIndex
+                                                anchors.fill: parent
+                                                anchors.leftMargin: -1
+                                                anchors.rightMargin: -1
+                                                z: -1
+                                                radius: 4
+                                                color: Colors.primary
+                                                visible: glyph.caretHere
+                                            }
+                                            Rectangle {
+                                                width: 3
+                                                height: glyph.font.pixelSize + 5
+                                                anchors.left: parent.left
+                                                anchors.leftMargin: -3
+                                                anchors.verticalCenter: parent.verticalCenter
+                                                radius: 1
+                                                color: Colors.primary
+                                                visible: glyph.caretHere
+                                            }
 
                                         }
                                     }
@@ -456,6 +550,10 @@ Item {
                             selectionColor: "transparent"
                             selectedTextColor: "transparent"
                             cursorVisible: false
+                            selectByMouse: false
+                            font.family: Config.theme.font
+                            font.pixelSize: 22
+                            TapHandler { onTapped: { answer.forceActiveFocus(); answer.cursorPosition = answer.length; } }
                             wrapMode: TextEdit.Wrap
                             inputMethodHints: Qt.ImhNoPredictiveText
                             readOnly: root.busy

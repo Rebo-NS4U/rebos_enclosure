@@ -145,3 +145,13 @@ until you select a document or cancel. EPUB and other document formats are
 included in the Books filter. Niri focuses this import dialog automatically.
 
 Press **Mod+T** to open book typing practice directly from the desktop.
+
+The active typing cursor is a solid block in the shell's accent color, with a
+contrasting character and leading bar. It follows the editing position, including
+arrow keys, and stays opaque during passage animations. Chapter selectors,
+scrollbars and the position slider use the same semantic palette as the shell.
+The chapter menu is scrollable, shows the current section, and provides previous
+and next controls. Selecting an entry jumps to that exact section and resumes
+typing. EPUB navigation labels come from NCX/EPUB3 tables of contents, with image
+heading alternatives as a fallback. Re-importing identical book text refreshes
+its title and chapter labels without resetting saved progress.

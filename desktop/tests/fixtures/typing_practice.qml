@@ -38,16 +38,20 @@ ShellRoot {
                 const first = find(practice, "typing-character-0");
                 if (!input || !first) throw Error("Typing input or glyph missing");
                 if (phase === 1) {
-                    if (Math.abs(first.opacity - 0.28) > 0.001) throw Error("Faint initial glyph missing");
-                    input.text = practice.passage[0];
+                    if (!find(practice, "typing-caret-0").visible || Math.abs(first.opacity - 1) > 0.001) throw Error("Visible cursor block missing: " + JSON.stringify({opacity: first.opacity, current: first.caretHere, entrance: first.entrance, cursor: input.cursorPosition, practicing: practice.practicing, visible: find(practice, "typing-caret-0").visible, motion: Motion.base}));
+                    if (Math.abs(find(practice, "typing-character-1").opacity - 0.28) > 0.001) throw Error("Upcoming text should stay faint");
+                    input.text = practice.passage[0]; input.cursorPosition = input.length;
                 } else if (phase === 2) {
-                    if (first.opacity !== 1) throw Error("Typed glyph did not become opaque after animation");
+                    if (Math.abs(first.opacity - 1) > 0.001) throw Error("Typed glyph did not become opaque after animation");
+                    if (!find(practice, "typing-caret-1").visible) throw Error("Cursor did not advance");
+                    input.cursorPosition = 0;
+                    if (!find(practice, "typing-caret-0").visible) throw Error("Cursor does not follow editing position");
                     practice.openBook(practice.bookId);
                 } else if (phase === 3) {
                     if (input.text !== practice.passage[0]) throw Error("Partial typing progress did not resume");
                     input.text = "";
                 } else if (phase < 100) {
-                    if (phase === 4 && Math.abs(first.opacity - 0.28) > 0.001) throw Error("Backspace did not restore faint glyph");
+                    if (phase === 4 && (!find(practice, "typing-caret-0").visible || Math.abs(find(practice, "typing-character-1").opacity - 0.28) > 0.001)) throw Error("Backspace did not restore the cursor and faint text");
                     if (practice.rounds < 1) { input.text = practice.passage; phase++; return; }
                     if (practice.position !== 0) throw Error("Continuous loop failed");
                     phase = 100;
@@ -60,12 +64,23 @@ ShellRoot {
                 } else if (phase === 101) {
                     if (practice.position !== expectedPosition) throw Error("Unicode book position drifted");
                     if (practice.library.length < 2) throw Error("Library did not retain books");
-                    practice.seek(practice.chapters[1].position);
+                    practice.showLibrary();
+                    const chapters = find(practice, "typing-chapter-select");
+                    if (chapters.currentIndex !== practice.currentChapterIndex || !chapters.displayText.length) throw Error("Chapter selection is not synchronized");
+                    chapters.popup.open();
                 } else if (phase === 102) {
-                    if (practice.chapterTitle !== "Chapter Two" || !practice.passage.startsWith("Chapter Two")) throw Error("Chapter navigation failed");
+                    const chapters = find(practice, "typing-chapter-select");
+                    chapters.popup.contentItem.positionViewAtIndex(1, ListView.Contain);
+                    const entry = chapters.popup.contentItem.itemAtIndex(1);
+                    if (!entry || entry.text !== "Chapter Two") throw Error("Chapter popup is missing its labels");
+                    entry.clicked();
+                    phase = 110; return;
+                } else if (phase === 110) {
+                    if (practice.chapterTitle !== "Chapter Two" || !practice.passage.startsWith("Chapter Two") || !practice.practicing) throw Error("Chapter selection did not jump back to typing");
                     const slider = find(practice, "typing-book-position");
                     slider.value = Math.floor(practice.bookLength / 2);
                     slider.moved();
+                    phase = 103; return;
                 } else if (phase === 103) {
                     if (practice.progress < 0.45 || practice.progress > 0.65) throw Error("Book position slider failed");
                     const place = practice.position;
@@ -90,7 +105,7 @@ ShellRoot {
                     if (practice.bookTitle !== "picker test book") throw Error("Cancelling the picker changed the current book");
                     practice.goBack();
                     if (!practice.practicing || harness.closeRequested) throw Error("Back failed after cancelling the picker");
-                    console.log("PASS: book paging, animations, saved progress, Unicode, chapter navigation, Back returns to typing, EPUB picker success and cancellation");
+                    console.log("PASS: themed chapter popup, chapter selection, visible editing cursor, book paging, saved progress, Back navigation and EPUB picker");
                     Qt.quit();
                 }
 
