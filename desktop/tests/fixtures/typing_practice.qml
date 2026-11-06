@@ -96,7 +96,8 @@ ShellRoot {
                     island.destroy();
                     const panel = Qt.createComponent("modules/shell/UnifiedShellPanel.qml");
                     if (panel.status === Component.Error) throw Error(panel.errorString());
-                    practice.loadPreset(0); practice.start(); phase++; return;
+                    practice.samplesExpanded = true;
+                    find(practice, "typing-sample-select").activated(0); phase++; return;
                 }
                 if (practice.busy || !practice.passage.length) return;
                 if (practice.practicing && (practice.pageLayout.lines > practice.pageLineLimit || practice.implicitHeight !== 116 + 4 * practice.passageLineHeight)) throw Error("Practice is not compact");
@@ -105,6 +106,7 @@ ShellRoot {
                 if (!input || !first) throw Error("Typing input or glyph missing");
                 if (input.opacity !== 0 || !input.enabled) throw Error("Native editor must accept input without painting ghost characters");
                 if (phase === 1) {
+                    if (!practice.practicing || practice.draft || !input.activeFocus) throw Error("Selecting a sample must open focused typing without Start practice");
                     input.forceActiveFocus();
                     practice.speedState = {elapsed: 1000, lastTick: Date.now(), lastInput: Date.now()};
                     practice.forceActiveFocus();

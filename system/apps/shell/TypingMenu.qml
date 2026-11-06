@@ -398,7 +398,7 @@ Item {
         draftKind = "practice"; samplesExpanded = true;
         draftTitle = TypingTexts.passages[index].title;
         draft = true; practicing = false;
-        message = draftTitle + " loaded. Choose Start practice.";
+        start();
     }
     function showLibrary() {
         samplesExpanded = false;
@@ -684,6 +684,8 @@ Item {
                     StyledText { text: "Optional samples"; opacity: 0.5 }
                     ThemeSelect {
                         id: presets
+                        objectName: "typing-sample-select"
+                        enabled: !root.busy
                         Layout.fillWidth: true
                         model: TypingTexts.passages
                         textRole: "title"
