@@ -61,6 +61,12 @@ Singleton {
     property list<var> friendlyWifiNetworks: []
 
     function updateFriendlyList() {
+        // A JS-array model reset destroys delegates and their password drafts.
+        // Keep the current list until the user submits the open prompt.
+        if (wifiNetworks.some(network => network.askingPassword) || wifiConnectTarget) {
+            updateActive();
+            return;
+        }
         const sorted = [...wifiNetworks].sort((a, b) => {
             if (a.active && !b.active)
                 return -1;
@@ -436,7 +442,7 @@ Singleton {
                 for (let i = rNetworks.length - 1; i >= 0; i--) {
                     const rn = rNetworks[i];
                     const found = networkMap.has(rn.ssid);
-                    if (!found) {
+                    if (!found && !rn.askingPassword && rn !== root.wifiConnectTarget) {
                         rNetworks.splice(i, 1);
                         rn.destroy();
                     }

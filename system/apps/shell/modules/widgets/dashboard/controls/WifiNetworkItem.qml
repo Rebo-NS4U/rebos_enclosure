@@ -15,6 +15,13 @@ Item {
 
     property bool expanded: false
 
+    function submitPassword() {
+        if (passwordInput.text.length > 0 && !NetworkService.isUpdating) {
+            NetworkService.changePassword(root.network, passwordInput.text);
+            passwordInput.text = "";
+        }
+    }
+
     implicitHeight: contentColumn.implicitHeight + 32
 
     Behavior on implicitHeight {
@@ -39,7 +46,10 @@ Item {
         id: mouseArea
         anchors.fill: parent
         hoverEnabled: true
-        onClicked: root.expanded = !root.expanded
+        onClicked: {
+            if (!root.network?.askingPassword)
+                root.expanded = !root.expanded;
+        }
     }
 
     ColumnLayout {
@@ -185,12 +195,7 @@ Item {
                 implicitHeight: 40
                 variant: "internalbg"
 
-                onAccepted: {
-                    if (text.length > 0 && !NetworkService.isUpdating) {
-                        NetworkService.changePassword(root.network, text);
-                        text = "";
-                    }
-                }
+                onAccepted: root.submitPassword()
             }
 
             // Action buttons
@@ -204,7 +209,7 @@ Item {
 
                 Button {
                     id: actionButton
-                    enabled: !NetworkService.isUpdating
+                    enabled: !NetworkService.isUpdating && (!root.network?.askingPassword || passwordInput.text.length > 0)
                     flat: true
                     implicitWidth: 100
                     implicitHeight: 32
@@ -215,7 +220,7 @@ Item {
                     }
 
                     contentItem: Text {
-                        text: root.network?.active ? "Disconnect" : "Connect"
+                        text: root.network?.askingPassword ? "Submit" : (root.network?.active ? "Disconnect" : "Connect")
                         font.family: Config.theme.font
                         font.pixelSize: Styling.fontSize(-1)
                         color: root.network?.active ? Colors.overSurfaceVariant : Styling.srItem("primary")
@@ -224,7 +229,9 @@ Item {
                     }
 
                     onClicked: {
-                        if (root.network?.active) {
+                        if (root.network?.askingPassword) {
+                            root.submitPassword();
+                        } else if (root.network?.active) {
                             NetworkService.disconnectWifiNetwork();
                         } else {
                             NetworkService.connectToWifiNetwork(root.network);
