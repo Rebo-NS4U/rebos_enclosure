@@ -17,7 +17,7 @@ Item {
     property bool practicing: false
     property bool fullscreen: false
     readonly property real passageLineHeight: Math.ceil(typingMetrics.height * 1.45)
-    readonly property int pageLineLimit: fullscreen ? Math.max(2, Math.floor(passageArea.height / Math.max(1, passageLineHeight))) : 2
+    readonly property int pageLineLimit: fullscreen ? Math.max(3, Math.floor(passageArea.height / Math.max(1, passageLineHeight))) : 3
     onPageLineLimitChanged: fitDelay.restart()
     function toggleFullscreen() {
         fullscreen = !fullscreen;
@@ -121,7 +121,7 @@ Item {
     function undoQueuedKey() {
         if (turningPage) pendingKeys = characters(pendingKeys).slice(0, -1).join("");
     }
-    implicitHeight: practicing ? 240 : 600
+    implicitHeight: practicing ? 240 + passageLineHeight : 600
     property real revealProgress: 1
     function reveal() {
         if (!Motion.enabled || !visible) { revealProgress = 1; return; }

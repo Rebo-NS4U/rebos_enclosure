@@ -96,13 +96,15 @@ ShellRoot {
                     practice.loadPreset(0); practice.start(); phase++; return;
                 }
                 if (practice.busy || !practice.passage.length) return;
-                if (practice.practicing && (practice.pageLayout.lines > practice.pageLineLimit || practice.implicitHeight !== 240)) throw Error("Practice is not compact");
+                if (practice.practicing && (practice.pageLayout.lines > practice.pageLineLimit || practice.implicitHeight !== 240 + practice.passageLineHeight)) throw Error("Practice is not compact");
                 const input = find(practice, "typing-input");
                 const first = find(practice, "typing-character-0");
                 if (!input || !first) throw Error("Typing input or glyph missing");
                 if (input.opacity !== 0 || !input.enabled) throw Error("Native editor must accept input without painting ghost characters");
                 if (phase === 1) {
                     const originalSource = practice.pageSource;
+                    practice.pageSource = "word ".repeat(800); practice.fitPage();
+                    if (practice.pageLineLimit !== 3 || practice.pageLayout.lines !== 3) throw Error("Compact practice must show three lines");
                     const screenshotText = "comfortable? I have a better view of things now. This is no ordinary hospital room. More words follow here.";
                     practice.pageSource = screenshotText; practice.fitPage();
                     find(practice, "typing-passage-flow").forceLayout();
@@ -283,15 +285,15 @@ ShellRoot {
                     const restored = freshView.item;
                     if (restored.busy) return;
                     const field = find(restored, "typing-input");
-                    if (restored.pageLayout.lines > 2 || restored.position + restored.characters(field.text).length !== 85 || restored.liveWpm !== 0) throw Error("Legacy page carryover lost saved input or counted it as WPM");
+                    if (restored.pageLayout.lines > 3 || restored.position + restored.characters(field.text).length !== 85 || restored.liveWpm !== 0) throw Error("Legacy page carryover lost saved input or counted it as WPM");
                     expectedPosition = restored.position + restored.characters(restored.passage).length;
                     field.text = "z".repeat(restored.characters(restored.passage).length);
                     if (!restored.turningPage) throw Error("Typos blocked continuous page advance");
                 } else if (phase === 112) {
                     const restored = freshView.item;
                     if (restored.busy) return;
-                    if (restored.position !== expectedPosition || restored.pageLayout.lines > 2) throw Error("Continuous two-line advance failed");
-                    console.log("PASS: two-line fitting, lossless paging, queued input, legacy bookmark carryover, no-fail advance, resume, WPM and EPUB import");
+                    if (restored.position !== expectedPosition || restored.pageLayout.lines > 3) throw Error("Continuous three-line advance failed");
+                    console.log("PASS: three-line compact fitting, lossless paging, queued input, legacy bookmark carryover, no-fail advance, resume, WPM and EPUB import");
                     Qt.quit();
                 }
 
