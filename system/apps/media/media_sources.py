@@ -243,7 +243,7 @@ def resolve_youtube(episode, quality):
     youtube_url(episode)
     height = {'1080p': 1080, '720p': 720, '480p': 480}.get(quality)
     fmt = f'bv*[height<={height}]+ba/b[height<={height}]' if height else ('worst' if quality == 'worst' else 'bv*+ba/b')
-    payload = json.loads(ytdlp(['--no-playlist', '--check-formats', '--dump-single-json', '--skip-download', '-S', 'res,fps,vcodec:h264,acodec:aac', '-f', fmt, '--', episode]))
+    payload = json.loads(ytdlp(['--no-playlist', '--no-check-formats', '--dump-single-json', '--skip-download', '-S', 'res,fps,vcodec:h264,acodec:aac', '-f', fmt, '--', episode]))
     streams = payload.get('requested_formats') or []
     if streams:
         video = next((stream for stream in streams if stream.get('vcodec') != 'none'), streams[0])

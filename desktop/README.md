@@ -450,3 +450,5 @@ Foliage forms layered clusters with airy gaps and fine dots at their edges. The 
 Use `bonsai-grow --animate --duration 10` for a slower foreground preview, or `bonsai-grow --preview 30 --seed 42` for a reproducible mature specimen. Saved growth for non-animation use lives privately under `${XDG_STATE_HOME:-~/.local/state}/bonsai-grow/` and is never shipped.
 
 The older terminal-bonsai, cbonsai, and experimental rainforest renderers are retired. Installing this version archives their commands and assets in the desktop recovery backup instead of reinstalling them. The approved renderer and Fish greeting remain the only bonsai implementation.
+
+Video startup avoids extra YouTube format probes and uses a 1.5-second network buffer for all VLC sources. Slow connections may buffer again during playback. These changes apply when the media backend next starts; active playback is preserved.
