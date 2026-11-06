@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import "MediaGridPaging.js" as MediaGridPaging
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Effects
@@ -23,6 +24,7 @@ PanelWindow {
     property bool loading: false
     property bool detailLoading: false
     property bool hasMore: true
+    property int emptyCataloguePages: 0
     property bool loadFailed: false
     property int requestId: 0
     property int detailRequest: 0
@@ -130,7 +132,7 @@ PanelWindow {
         const items = [];
         for (let i = 0; i < shows.count; i++) items.push(Object.assign({}, shows.get(i)));
         tabStates[mediaKind] = {items: items, query: query, category: category, filters: appliedFilters,
-            page: cataloguePage, hasMore: hasMore, message: message, scroll: grid.contentY,
+            page: cataloguePage, hasMore: hasMore, emptyPages: emptyCataloguePages, message: message, scroll: grid.contentY,
             needsLoad: loading || loadFailed, pendingAppend: loading && cataloguePage > 1};
         requestId++;
         detailRequest++;
@@ -150,6 +152,7 @@ PanelWindow {
         draftFilters = Object.assign({}, appliedFilters);
         cataloguePage = state?.page ?? 1;
         hasMore = state?.hasMore ?? true;
+        emptyCataloguePages = state?.emptyPages ?? 0;
         shows.clear();
         if (state) {
             for (const item of state.items) shows.append(item);
@@ -192,7 +195,7 @@ PanelWindow {
     function load(append: bool): void {
         if (!ready || (append && (loading || !hasMore))) return;
         requestId++;
-        if (!append) { cataloguePage = 1; shows.clear(); hasMore = true; }
+        if (!append) { cataloguePage = 1; shows.clear(); hasMore = true; emptyCataloguePages = 0; }
         else cataloguePage++;
         loading = true;
         loadFailed = false;
@@ -220,8 +223,10 @@ PanelWindow {
         Qt.callLater(() => search.focusInput());
     }
     function loadNearBottom(): void {
+        if (!active || !ready || pageView !== "browse" || loading || loadFailed || !hasMore || emptyCataloguePages >= 3) return;
         const ahead = mediaKind === "movies" || mediaKind === "tv" ? grid.height * 2 : unit * 12;
-        if (pageView === "browse" && !loadFailed && grid.contentY > 0 && grid.contentY + grid.height >= grid.contentHeight - ahead) load(true);
+        if (MediaGridPaging.needsMore(shows.count, grid.width, grid.height, grid.cellWidth, grid.cellHeight,
+                grid.contentY - grid.originY, grid.contentHeight, ahead)) load(true);
     }
     function selectShow(show): void {
         selectedShow = Object.assign({}, show, {kind: mediaKind});
@@ -292,6 +297,8 @@ PanelWindow {
                 }
                 hasMore = !Array.isArray(data.data) ? data.data.hasMore : added > 0 && (category !== "history" || query.length > 0 || filterCount > 0);
                 loading = false;
+                emptyCataloguePages = added === 0 ? emptyCataloguePages + 1 : 0;
+                fillGridTimer.restart();
                 const countMessage = (isYoutube && !query && category !== "history" ? (youtubeRecommendations.find(row => row.id === category)?.title ?? "Popular") + " recommendations · " : filterCount > 0 ? "Filtered · " : "") + shows.count + (hasMore ? " results · Scroll for more" : " results · End of results");
                 message = (mediaKind === "movies" || mediaKind === "tv" ? "English audio · No CAM · HTTPS only · " : "") + countMessage;
                 if (grid.currentIndex < 0 && shows.count) grid.currentIndex = 0;
@@ -422,7 +429,7 @@ PanelWindow {
         function status(): string {
             return JSON.stringify({open: root.opened, presented: root.presented, slideProgress: root.slideProgress,
                 sheetY: card.y, sheetHeight: card.height, screenHeight: root.height,
-                ready: root.ready, view: root.pageView, settingsSection: root.settingsSection, gridHeight: grid.height, gridColumns: Math.round(grid.width / grid.cellWidth),
+                ready: root.ready, view: root.pageView, settingsSection: root.settingsSection, emptyCataloguePages: root.emptyCataloguePages, gridHeight: grid.height, gridColumns: Math.round(grid.width / grid.cellWidth),
                 nextEpisodeAvailable: root.nextEpisodeAvailable, nextEpisodeLabel: root.nextEpisodeLabel, nextEpisodeTitle: root.nextEpisodeTitle,
                 nextOverlayVisible: root.nextOverlayVisible, playbackWindowFocused: root.playbackWindowFocused,
                 playbackWindowTitle: root.playbackWindowTitle, activeWindowTitle: root.playbackClient?.title ?? "",
@@ -469,6 +476,14 @@ PanelWindow {
         onActivated: root.send({action: "next_episode"})
     }
     ListModel { id: shows }
+    onActiveChanged: fillGridTimer.restart()
+    onPageViewChanged: fillGridTimer.restart()
+    onReadyChanged: fillGridTimer.restart()
+    Timer {
+        id: fillGridTimer
+        interval: 80
+        onTriggered: root.loadNearBottom()
+    }
 
     component MenuButton: Button {
         id: control
@@ -620,6 +635,11 @@ PanelWindow {
                     cellWidth: width / Math.max(1, Math.floor(width / (root.unit * (root.isYoutube ? 17 : 11))))
                     cellHeight: root.isYoutube ? cellWidth * 0.5625 + root.unit * 5 : cellWidth * 1.55
                     keyNavigationEnabled: true
+                    onWidthChanged: fillGridTimer.restart()
+                    onHeightChanged: fillGridTimer.restart()
+                    onCellWidthChanged: fillGridTimer.restart()
+                    onCellHeightChanged: fillGridTimer.restart()
+                    onContentHeightChanged: fillGridTimer.restart()
                     onContentYChanged: root.loadNearBottom()
                     onMovementEnded: root.loadNearBottom()
                     Keys.onReturnPressed: { if (currentIndex >= 0) root.selectShow(shows.get(currentIndex)); }
