@@ -221,7 +221,7 @@
   "system/apps/media/stream_relay.py": "18f4fb4e95d16fd38f4e6440ded7e7b82426e9955e51ea4202ed30eb45c223fd",
   "system/apps/media/torbox_source.py": "145ec403a844c2b868bc5bbf3cb73eda1eddf209e71eb5f53c2976092916575b",
   "system/apps/media/vlc_control.lua": "41eb3a368da106ad9c0d63885891f8b14606215ea292af7f2385c2273048abd8",
-  "system/apps/media/vlc_session.py": "47e44d2a920fdfb6c0e6cbfe88f841e7c1ce80d19356d30331c933cad5d9dff5",
+  "system/apps/media/vlc_session.py": "5c469a990b608424995181ebbb5c79b9904494011a44a00abe3a4634e1f9b118",
   "system/apps/media/vlc_theme.py": "f1bbb0da0f00a37c415b47a10b1b0854a1768d37fc0061b1e8ab33d334e799ee",
   "system/apps/shell/AnimeMenu.qml": "bf4697b47123ac0066552edeb9e116dedc7dba5f461b20649a9736939cd012cf",
   "system/apps/shell/FanShell.qml": "fc2332e71c718a44f5176ab88c0ce01794d69dd7f80b1e5a3a25a44ba50b9dcd",

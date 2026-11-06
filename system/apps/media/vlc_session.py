@@ -33,7 +33,19 @@ def pause_click_available():
 
 
 def read_cues(path):
-    text = Path(path).read_text(encoding='utf-8-sig')
+    data = Path(path).read_bytes()
+    if data.startswith((b'\xff\xfe', b'\xfe\xff')):
+        text = data.decode('utf-16')
+    else:
+        try:
+            text = data.decode('utf-8-sig')
+        except UnicodeDecodeError:
+            from charset_normalizer import from_bytes
+            match = from_bytes(data).best()
+            if match is None or match.chaos > .1:
+                raise ValueError('Subtitle encoding is uncertain')
+            text = str(match)
+    text = text.replace('\r\n', '\n').replace('\r', '\n')
     result = []
     def seconds(value):
         h, m, s, ms = map(int, re.split('[:,.]', value))
@@ -51,6 +63,14 @@ def provided_cues_usable(cues, duration=0):
         return False
     texts = [re.sub(r'<[^>]*>|\\{[^}]*}', '', text).strip() for _, _, text in cues]
     if any(not text or '\ufffd' in text or len(text) > 500 for text in texts):
+        return False
+    # English is the player's subtitle output language, including when Whisper
+    # detects Spanish/other source audio. Require positive evidence in dialogue;
+    # a provider's language label alone is not reliable. Uncertain files fall back.
+    words = re.findall(r"[^\W\d_]+(?:'[^\W\d_]+)?", ' '.join(texts).casefold())
+    common = set("the a an and or but if then because so of to in on at for from with as is are was were be been being i you he she it we they me him her us them my your his our their this that these those what who when where why how not no yes do does did have has had can could will would should must don't i'm it's you're that's i'll can't just know think want go come get let please okay thank thanks about here there now really all some up out good right well".split())
+    hits = [word for word in words if word in common]
+    if not words or len(hits) / len(words) < .15 or len(set(hits)) < 8:
         return False
     if any(start < 0 or not 0.15 <= end - start <= 20 for start, end, _ in cues):
         return False
@@ -215,7 +235,7 @@ class VlcSession:
                     cues = read_cues(path) if path else []
                     if provided_cues_usable(cues):
                         self.provided_cues = cues
-                except (OSError, ValueError):
+                except (OSError, ValueError, ImportError):
                     pass  # Invalid or unavailable provider captions use Whisper.
             if self.whisper_only:
                 options.extend(['sub-track=-1', 'sub-track-id=-1', 'no-sub-autodetect-file'])

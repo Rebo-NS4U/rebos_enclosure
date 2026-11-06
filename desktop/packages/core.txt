@@ -95,3 +95,5 @@ ttf-dejavu
 ttf-liberation
 ttf-jetbrains-mono-nerd
 ttf-nerd-fonts-symbols
+
+python-charset-normalizer
