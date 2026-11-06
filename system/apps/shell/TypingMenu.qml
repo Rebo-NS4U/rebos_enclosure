@@ -556,12 +556,16 @@ Item {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     Item {
+                        id: passageArea
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         clip: true
+                        onWidthChanged: Qt.callLater(() => { if (smoothCaret.targetGlyph) smoothCaret.follow(smoothCaret.targetGlyph); })
                         Flow {
                             anchors.left: parent.left
                             anchors.right: parent.right
+                            anchors.leftMargin: 6
+                            anchors.rightMargin: 6
                             spacing: 0
                             Repeater {
                                 model: root.passageWords
@@ -583,13 +587,19 @@ Item {
                                             property real entrance: 1
                                             scale: zoom
                                             transform: Translate { y: glyph.lift + (1 - glyph.entrance) * 7 }
+                                            onCaretHereChanged: { if (caretHere && initialized) Qt.callLater(() => smoothCaret.follow(glyph)); }
+                                            Connections {
+                                                target: word
+                                                function onXChanged() { if (glyph.caretHere) Qt.callLater(() => smoothCaret.follow(glyph)); }
+                                                function onYChanged() { if (glyph.caretHere) Qt.callLater(() => smoothCaret.follow(glyph)); }
+                                            }
                                             onTypedChanged: {
                                                 if (!initialized) return;
                                                 if (typed && Motion.enabled && visible) letterPop.restart();
                                                 else { letterPop.stop(); lift = 0; zoom = 1; shine = 0; }
                                             }
-                                            Component.onCompleted: { initialized = true; if (Motion.enabled && visible) entranceAnimation.start(); }
-                                            onVisibleChanged: { if (initialized && visible && Motion.enabled) entranceAnimation.restart(); }
+                                            Component.onCompleted: { initialized = true; if (Motion.enabled && visible) entranceAnimation.start(); if (caretHere) Qt.callLater(() => smoothCaret.follow(glyph)); }
+                                            onVisibleChanged: { if (initialized && visible) { if (Motion.enabled) entranceAnimation.restart(); if (caretHere) Qt.callLater(() => smoothCaret.follow(glyph)); } }
                                             SequentialAnimation {
                                                 id: entranceAnimation
                                                 PauseAnimation { duration: Math.min(glyph.characterIndex, 24) * 7 }
@@ -615,31 +625,71 @@ Item {
                                                 enabled: Motion.enabled
                                                 NumberAnimation { duration: Math.round(Motion.base * 0.45); easing.type: Easing.OutCubic }
                                             }
-                                            color: caretHere ? Colors.overPrimary : (typed ? (answer.text.substr(characterIndex, modelData.length) !== modelData ? Colors.error : Qt.tint(Colors.overSurface, Qt.alpha(Colors.primary, shine * 0.65))) : Colors.overSurface)
+                                            color: caretHere ? Colors.primary : (typed ? (answer.text.substr(characterIndex, modelData.length) !== modelData ? Colors.error : Qt.tint(Colors.overSurface, Qt.alpha(Colors.primary, shine * 0.65))) : Colors.overSurface)
                                             Rectangle {
                                                 objectName: "typing-caret-" + glyph.characterIndex
-                                                anchors.fill: parent
-                                                anchors.leftMargin: -1
-                                                anchors.rightMargin: -1
+                                                x: -1
+                                                y: Math.max(0, glyph.baselineOffset - glyph.font.pixelSize - 1)
+                                                width: parent.width + 2
+                                                height: glyph.font.pixelSize + 6
                                                 z: -1
                                                 radius: 4
-                                                color: Colors.primary
-                                                visible: glyph.caretHere
-                                            }
-                                            Rectangle {
-                                                width: 3
-                                                height: glyph.font.pixelSize + 5
-                                                anchors.left: parent.left
-                                                anchors.leftMargin: -3
-                                                anchors.verticalCenter: parent.verticalCenter
-                                                radius: 1
-                                                color: Colors.primary
+                                                color: Qt.alpha(Colors.primary, 0.10)
                                                 visible: glyph.caretHere
                                             }
 
                                         }
                                     }
                                 }
+                            }
+                        }
+                        Item {
+                            id: smoothCaret
+                            objectName: "typing-smooth-caret"
+                            property Item targetGlyph: null
+                            property bool glide: false
+                            property real breath: 1
+                            property bool placed: false
+                            width: 2.5
+                            height: 26
+                            z: 2
+                            visible: root.practicing && root.passage.length > 0 && !root.busy && placed && targetGlyph !== null && targetGlyph.caretHere
+                            function follow(item) {
+                                if (!item || !item.caretHere || !item.visible) return;
+                                const point = item.parent.mapToItem(passageArea, item.x, item.y);
+                                const nextY = point.y + Math.max(0, item.baselineOffset - item.font.pixelSize);
+                                glide = placed && Math.abs(nextY - y) < 2 && Motion.enabled;
+                                targetGlyph = item;
+                                x = Math.max(1, point.x - 3);
+                                y = nextY;
+                                height = Math.round(item.font.pixelSize * 1.15);
+                                placed = true;
+                                if (Motion.enabled) idlePulse.restart();
+                            }
+                            Behavior on x {
+                                enabled: smoothCaret.glide
+                                NumberAnimation { duration: Math.min(110, Motion.feedback); easing.type: Easing.OutCubic }
+                            }
+                            SequentialAnimation {
+                                id: idlePulse
+                                running: smoothCaret.visible && Motion.enabled
+                                loops: Animation.Infinite
+                                NumberAnimation { target: smoothCaret; property: "breath"; from: 1; to: 0.65; duration: 700; easing.type: Easing.InOutSine }
+                                NumberAnimation { target: smoothCaret; property: "breath"; from: 0.65; to: 1; duration: 700; easing.type: Easing.InOutSine }
+                            }
+                            Rectangle {
+                                anchors.centerIn: parent
+                                width: 9
+                                height: parent.height + 4
+                                radius: 4
+                                color: Qt.alpha(Colors.primary, 0.10)
+                            }
+                            Rectangle {
+                                objectName: "typing-caret-core"
+                                anchors.fill: parent
+                                radius: width / 2
+                                color: Colors.primary
+                                opacity: Motion.enabled ? smoothCaret.breath : 1
                             }
                         }
                         TextEdit {

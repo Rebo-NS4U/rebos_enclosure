@@ -50,12 +50,15 @@ ShellRoot {
                 const first = find(practice, "typing-character-0");
                 if (!input || !first) throw Error("Typing input or glyph missing");
                 if (phase === 1) {
-                    if (!find(practice, "typing-caret-0").visible || Math.abs(first.opacity - 1) > 0.001) throw Error("Visible cursor block missing: " + JSON.stringify({opacity: first.opacity, current: first.caretHere, entrance: first.entrance, cursor: input.cursorPosition, practicing: practice.practicing, visible: find(practice, "typing-caret-0").visible, motion: Motion.base}));
+                    const caret = find(practice, "typing-smooth-caret");
+                    const core = find(practice, "typing-caret-core");
+                    if (!caret.visible || core.width > 3 || core.height < 20) throw Error("Slim caret is missing or oversized");
+                    if (!find(practice, "typing-caret-0").visible || Math.abs(first.opacity - 1) > 0.001) throw Error("Current-character highlight missing: " + JSON.stringify({opacity: first.opacity, current: first.caretHere, entrance: first.entrance, cursor: input.cursorPosition, practicing: practice.practicing, visible: find(practice, "typing-caret-0").visible, motion: Motion.base}));
                     if (Math.abs(find(practice, "typing-character-1").opacity - 0.28) > 0.001) throw Error("Upcoming text should stay faint");
                     input.text = practice.passage[0]; input.cursorPosition = input.length;
                 } else if (phase === 2) {
                     if (Math.abs(first.opacity - 1) > 0.001) throw Error("Typed glyph did not become opaque after animation");
-                    if (!find(practice, "typing-caret-1").visible) throw Error("Cursor did not advance");
+                    if (!find(practice, "typing-caret-1").visible || find(practice, "typing-smooth-caret").targetGlyph.characterIndex !== 1) throw Error("Cursor did not advance");
                     input.cursorPosition = 0;
                     if (!find(practice, "typing-caret-0").visible) throw Error("Cursor does not follow editing position");
                     practice.openBook(practice.bookId);
