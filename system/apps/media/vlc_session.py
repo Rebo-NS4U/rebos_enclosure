@@ -93,6 +93,8 @@ class VlcSession:
         self.closed = threading.Event()
         self.loaded = False
         self.generation = 0
+        self.subtitle_revision = 0
+        self.pending_subtitle = None
         self.requested = False
         self.finished = False
         self.stop_count = 0
@@ -196,7 +198,7 @@ class VlcSession:
             if len(data) > 2_000_000:
                 return ''
             extension = '.vtt' if data.lstrip().startswith(b'WEBVTT') else '.srt'
-            path = Path(self.directory.name) / ('Provided English' + extension)
+            path = Path(self.directory.name) / ('Provided English-' + secrets.token_hex(8) + extension)
             path.write_bytes(data)
             if extension == '.vtt':
                 converted = path.with_suffix('.srt')
@@ -240,6 +242,7 @@ class VlcSession:
     def select_subtitle_source(self, source):
         if source not in {row['id'] for row in self.subtitle_tracks()['options']}:
             return
+        self.subtitle_revision += 1
         self.api('clear-caption')
         self.caption_text = ''
         self.subtitle_source = source
@@ -250,6 +253,28 @@ class VlcSession:
             self.whisper_only = False
         if not self.whisper_only:
             self.api('subtitle', value=int(source.split(':')[1]) if source.startswith('native:') else -1)
+
+    def apply_pending_subtitle(self):
+        if not self.loaded or self.pending_subtitle is None:
+            return
+        _, generation, revision, path, cues = self.pending_subtitle
+        self.pending_subtitle = None
+        if generation != self.generation:
+            return
+        if self.whisper_only:
+            if not provided_cues_usable(cues, self.last_state.get('duration', 0)):
+                return
+            self.provided_cues = cues
+            if revision == self.subtitle_revision:
+                self.subtitle_source = 'provided'
+                self.cues = cues
+                self.cue_starts = [cue[0] for cue in cues]
+                self.caption_requested = True
+        else:
+            try:
+                self.api('addsubtitle', value=path, select='true' if revision == self.subtitle_revision else 'false')
+            except (OSError, ValueError, RuntimeError):
+                pass  # An optional subtitle failure must not stop the video.
 
     def apply(self, command):
         action = command[0]
@@ -270,22 +295,10 @@ class VlcSession:
             self.provided_cues = []
             self.whisper_cues = []
             self.caption_error = ''
-            if subtitle and self.whisper_only:
-                try:
-                    path = self.subtitle_path(subtitle, referer)
-                    cues = read_cues(path) if path else []
-                    if provided_cues_usable(cues):
-                        self.provided_cues = cues
-                except (OSError, ValueError, ImportError):
-                    pass  # Invalid or unavailable provider captions use Whisper.
             if self.whisper_only:
                 options.extend(['sub-track=-1', 'sub-track-id=-1', 'no-sub-autodetect-file'])
-            if subtitle and not self.whisper_only:
-                path = self.subtitle_path(subtitle, referer)
-                if path:
-                    options.append('sub-file=' + path)
-                    options.append('sub-description=Provided English')
             self.generation += 1
+            self.pending_subtitle = None
             self.loaded = self.finished = self.input_error = False
             self.caption_registered = self.caption_requested = False
             self.cues = self.provided_cues
@@ -298,6 +311,23 @@ class VlcSession:
             self.pause_when_ready = paused
             self.log_offset = self.logpath.stat().st_size
             self.api('load', data=json.dumps(dict(url=self.public_stream(video, referer), title=title, options=options, generation=self.generation, whisper_only=self.whisper_only)))
+            if subtitle:
+                generation, revision, whisper_only = self.generation, self.subtitle_revision, self.whisper_only
+                def prepare_subtitle():
+                    try:
+                        path = self.subtitle_path(subtitle, referer)
+                        cues = read_cues(path) if path and whisper_only else []
+                        if whisper_only and not provided_cues_usable(cues):
+                            return
+                        if path:
+                            self.command(['subtitle-ready', generation, revision, path, cues])
+                    except (OSError, ValueError, ImportError):
+                        pass  # Captions must never delay or prevent playback.
+                threading.Thread(target=prepare_subtitle, daemon=True, name='media-subtitle').start()
+        elif action == 'subtitle-ready':
+            if command[1] == self.generation and self.requested and not self.finished:
+                self.pending_subtitle = command
+                self.apply_pending_subtitle()
         elif action == 'set_property' and command[1] == 'pause':
             self.api('pause', value='true' if command[2] else 'false')
         elif action == 'set_property' and command[1] == 'sid':
@@ -363,6 +393,7 @@ class VlcSession:
                 self.pause_when_ready = False
                 state = dict(state, state='paused')
             self.loaded = True
+            self.apply_pending_subtitle()
             self.emit({'event':'file-loaded'})
         if not self.loaded:
             return

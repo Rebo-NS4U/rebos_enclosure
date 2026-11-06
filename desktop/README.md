@@ -452,3 +452,5 @@ Use `bonsai-grow --animate --duration 10` for a slower foreground preview, or `b
 The older terminal-bonsai, cbonsai, and experimental rainforest renderers are retired. Installing this version archives their commands and assets in the desktop recovery backup instead of reinstalling them. The approved renderer and Fish greeting remain the only bonsai implementation.
 
 Video startup avoids extra YouTube format probes and uses a 1.5-second network buffer for all VLC sources. Slow connections may buffer again during playback. These changes apply when the media backend next starts; active playback is preserved.
+
+Single-video YouTube quick-play uses the existing feed card instead of fetching full details a second time. Playlist enumeration is preserved. Provider subtitle downloads and conversion run after video loading starts; late results are scoped to the current video and preserve explicit subtitle choices.

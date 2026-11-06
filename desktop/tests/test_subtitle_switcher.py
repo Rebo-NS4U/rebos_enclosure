@@ -14,6 +14,9 @@ class SubtitleSwitcherTests(unittest.TestCase):
         session = object.__new__(VlcSession)
         session.loaded = session.requested = True
         session.finished = False
+        session.subtitle_revision = 0
+        session.pending_subtitle = None
+        session.generation = 0
         session.provided_cues = [(i*5, i*5+3, f'I think you should come here now. What do we do? {i}') for i in range(30)]
         session.whisper_cues = [(0, 2, 'Generated English')]
         session.whisper_only = True

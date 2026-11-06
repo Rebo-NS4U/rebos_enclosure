@@ -3,7 +3,7 @@ import hashlib
 import io
 import math
 import re
-from urllib.parse import quote
+from urllib.parse import quote, urlparse, parse_qs
 
 import app
 import youtube_account
@@ -41,6 +41,14 @@ def resume_index(episodes, entry):
 
 def card_selection(show, history):
     entry = history.get(show['id'], {}) or history.get(show.get('historyId', ''), {})
+    if media_sources.kind_of(show) == 'youtube':
+        url = media_sources.youtube_url(show['url'])
+        parsed = urlparse(url)
+        # Feed cards already contain everything needed to play a single video.
+        # Playlist/channel cards still need enumeration before queue selection.
+        if (parse_qs(parsed.query).get('v') or
+                (parsed.hostname == 'youtu.be' and parsed.path.strip('/'))) and 'list' not in parse_qs(parsed.query):
+            return dict(show, episodeLabels={url: show['title']}), [url], 0
     if media_sources.kind_of(show) == 'anime':
         data = dict(episodes=app.ani_bridge('episodes', show['id']))
     else:
