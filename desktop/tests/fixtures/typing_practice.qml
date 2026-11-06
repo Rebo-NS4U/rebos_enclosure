@@ -105,6 +105,13 @@ ShellRoot {
                 if (!input || !first) throw Error("Typing input or glyph missing");
                 if (input.opacity !== 0 || !input.enabled) throw Error("Native editor must accept input without painting ghost characters");
                 if (phase === 1) {
+                    input.forceActiveFocus();
+                    practice.speedState = {elapsed: 1000, lastTick: Date.now(), lastInput: Date.now()};
+                    practice.forceActiveFocus();
+                    if (practice.speedState.lastInput !== 0 || practice.speedState.elapsed < 1000) throw Error("Focus loss did not pause the speed clock");
+                    if (find(practice, "typing-smooth-caret").opacity >= 1) throw Error("Inactive caret must dim");
+                    input.forceActiveFocus();
+                    if (find(practice, "typing-smooth-caret").opacity !== 1) throw Error("Active caret must regain emphasis");
                     const originalSource = practice.pageSource;
                     practice.pageSource = "word ".repeat(800); practice.fitPage();
                     if (practice.pageLineLimit !== Math.max(1, Math.floor(Math.max(0, find(practice, "typing-passage-flow").parent.height - 8) / practice.passageLineHeight)) || practice.pageLayout.lines !== practice.pageLineLimit) throw Error("Practice must fill the available height with complete lines");
@@ -132,9 +139,9 @@ ShellRoot {
                     const editedGlyph = find(practice, "typing-character-10");
                     const originalTyped = input.text;
                     input.text = originalTyped.slice(0, 10) + "!" + originalTyped.slice(11);
-                    if (!editedGlyph.incorrect) throw Error("Middle edit did not update error state");
+                    if (!editedGlyph.incorrect || !editedGlyph.font.underline) throw Error("Middle edit did not underline the mistake");
                     input.text = originalTyped;
-                    if (editedGlyph.incorrect) throw Error("Correction did not clear error state");
+                    if (editedGlyph.incorrect || editedGlyph.font.underline) throw Error("Correction did not clear the error underline");
                     find(practice, "typing-passage-flow").forceLayout();
                     const movingCaret = find(practice, "typing-smooth-caret");
                     const activeLine = find(practice, "typing-line-highlight");
@@ -193,7 +200,7 @@ ShellRoot {
                     if (first.font.family !== Config.theme.font || first.font.pixelSize !== Config.theme.fontSize + 2) throw Error("Passage must use the theme font with the larger reading size");
                     if (Math.abs(caret.width - caret.targetGlyph.width - 2 * practice.letterPadding) > 0.01) throw Error("Letter highlight is wider than a single character");
                     if (!caret.visible || core.width <= 0 || core.height <= 0 || core.radius <= 0 || core.color.a < 0.35) throw Error("Rounded glass cursor is missing or too faint");
-                    if (!find(practice, "typing-character-0").caretHere || Math.abs(first.opacity - 1) > 0.001) throw Error("Current-character highlight missing: " + JSON.stringify({opacity: first.opacity, current: first.caretHere, entrance: first.entrance, cursor: input.cursorPosition, practicing: practice.practicing, visible: find(practice, "typing-character-0").caretHere, motion: Motion.base}));
+                    if (!find(practice, "typing-character-0").caretHere || Math.abs(first.opacity - 1) > 0.001) throw Error("Current-character highlight missing: " + JSON.stringify({opacity: first.opacity, current: first.caretHere, cursor: input.cursorPosition, practicing: practice.practicing, visible: find(practice, "typing-character-0").caretHere, motion: Motion.base}));
                     if (Math.abs(find(practice, "typing-character-1").opacity - 0.65) > 0.001) throw Error("Upcoming text must remain readable");
                     input.text = practice.passage[0]; input.cursorPosition = input.length;
                 } else if (phase === 2) {

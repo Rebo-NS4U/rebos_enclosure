@@ -19,6 +19,7 @@ Item {
     readonly property real passageLineHeight: Math.ceil(typingMetrics.height * 1.45)
     readonly property int pageLineLimit: Math.max(1, Math.floor(Math.max(0, passageArea.height - 8) / Math.max(1, passageLineHeight)))
     onPageLineLimitChanged: fitDelay.restart()
+    onReadingFontChanged: fitDelay.restart()
     function toggleFullscreen() {
         fullscreen = !fullscreen;
         fitDelay.restart();
@@ -114,7 +115,7 @@ Item {
     Timer {
         id: fitDelay
         interval: 150
-        onTriggered: { if (!root.restoring && root.pageSource.length) { root.fitPage(); if (root.bookId && root.characters(answer.text).length >= root.characters(root.passage).length) root.advance(); } }
+        onTriggered: { if (root.visible && root.practicing && passageArea.width > 0 && passageArea.height > 0 && !root.restoring && root.pageSource.length) { root.fitPage(); if (root.bookId && root.characters(answer.text).length >= root.characters(root.passage).length) root.advance(); } }
     }
     NumberAnimation {
         id: pageArrival
@@ -151,7 +152,7 @@ Item {
         if (visible) { reveal(); backendStarted = true; if (ready) send({action: "list"}, false); }
         else saveProgress();
         resetSpeed();
-        if (visible && practicing) Qt.callLater(() => answer.forceActiveFocus());
+        if (visible && practicing) { fitDelay.restart(); Qt.callLater(() => answer.forceActiveFocus()); }
     }
     Component.onCompleted: { if (visible) backendStarted = true; }
     function send(data, page = true) {
@@ -212,7 +213,7 @@ Item {
     Timer {
         interval: 500
         repeat: true
-        running: root.visible && root.practicing && !root.busy
+        running: root.visible && root.practicing && !root.busy && answer.activeFocus
         onTriggered: {
             root.speedNow = Date.now();
             root.speedState = TypingSpeed.tick(root.speedState, root.speedNow, true);
@@ -304,7 +305,7 @@ Item {
     Timer { interval: 5000; running: root.backendStarted; repeat: true; onTriggered: root.saveProgress() }
 
     function status() {
-        return JSON.stringify({practicing: practicing, fullscreen: fullscreen, pageLines: pageLayout.lines, pageLineLimit: pageLineLimit, passageHeight: passageArea.height, renderedHeight: passageFlow.height, fontSize: readingFont.pixelSize, layoutVersion: 2, turningPage: turningPage, textLength: bookLength,
+        return JSON.stringify({practicing: practicing, fullscreen: fullscreen, pageLines: pageLayout.lines, pageLineLimit: pageLineLimit, passageHeight: passageArea.height, renderedHeight: passageFlow.height, fontSize: readingFont.pixelSize, layoutVersion: 3, focused: answer.activeFocus, turningPage: turningPage, textLength: bookLength,
             typed: answer.text.length, position: position, rounds: rounds,
             presets: TypingTexts.passages.length, message: message, busy: busy,
             title: bookTitle, chapters: chapters.length, library: library.length, books: libraryBooks.length, wpm: liveWpm, filePickerActive: filePickerActive});
@@ -726,7 +727,7 @@ Item {
                         Layout.fillHeight: true
                         clip: true
                         onWidthChanged: {
-                            if (root.pageSource.length && !answer.text.length) fitDelay.restart();
+                            if (root.pageSource.length) fitDelay.restart();
                             Qt.callLater(() => { if (smoothCaret.targetGlyph) smoothCaret.follow(smoothCaret.targetGlyph); });
                         }
                         Rectangle {
@@ -740,6 +741,7 @@ Item {
                             color: Qt.alpha(Colors.primary, 0.14)
                             border.width: 0
                             visible: smoothCaret.visible
+                            opacity: answer.activeFocus ? 1 : 0.4
                         }
                         Flow {
                             id: passageFlow
@@ -771,7 +773,6 @@ Item {
                                             property bool typed: false
                                             property bool incorrect: false
                                             property bool initialized: false
-                                            property real entrance: 1
                                             onCaretHereChanged: { if (caretHere && initialized) Qt.callLater(() => smoothCaret.follow(glyph)); }
                                             Connections {
                                                 target: word
@@ -793,11 +794,11 @@ Item {
                                             text: modelData === " " ? "\u00a0" : modelData
                                             textFormat: Text.PlainText
                                             width: root.characterWidth(modelData)
-                                            font: root.readingFont
+                                            font: Qt.font({family: root.readingFont.family, pixelSize: root.readingFont.pixelSize, weight: Font.Normal, underline: glyph.incorrect})
                                             height: root.passageLineHeight
                                             lineHeight: 1.45
                                             property real inkOpacity: caretHere || typed ? 1 : 0.65
-                                            opacity: caretHere ? 1 : inkOpacity * entrance
+                                            opacity: caretHere ? 1 : inkOpacity
                                             Behavior on inkOpacity {
                                                 enabled: Motion.enabled
                                                 NumberAnimation { duration: Math.round(Motion.base * 0.45); easing.type: Easing.OutCubic }
@@ -812,6 +813,7 @@ Item {
                         Item {
                             id: smoothCaret
                             objectName: "typing-smooth-caret"
+                            opacity: answer.activeFocus ? 1 : 0.45
                             property Item targetGlyph: null
                             property bool glide: false
                             property real breath: 1
@@ -845,7 +847,6 @@ Item {
                                 width = item.width + 2 * root.letterPadding;
                                 height = root.highlightBounds.height + 2 * root.letterPadding;
                                 placed = true;
-                                if (Motion.enabled) idlePulse.restart();
                             }
                             Behavior on x {
                                 enabled: smoothCaret.glide && Motion.enabled
@@ -869,7 +870,7 @@ Item {
                             }
                             SequentialAnimation {
                                 id: idlePulse
-                                running: smoothCaret.visible && Motion.enabled
+                                running: smoothCaret.visible && answer.activeFocus && Motion.enabled
                                 loops: Animation.Infinite
                                 NumberAnimation { target: smoothCaret; property: "breath"; from: 1; to: 0.9; duration: 700; easing.type: Easing.InOutSine }
                                 NumberAnimation { target: smoothCaret; property: "breath"; from: 0.9; to: 1; duration: 700; easing.type: Easing.InOutSine }
@@ -886,7 +887,7 @@ Item {
                                     GradientStop { position: 0.45; color: Qt.alpha(smoothCaret.accent, 0.36) }
                                     GradientStop { position: 1; color: Qt.alpha(smoothCaret.accent, 0.5) }
                                 }
-                                opacity: Motion.enabled ? smoothCaret.breath : 1
+                                opacity: Motion.enabled && answer.activeFocus ? smoothCaret.breath : 1
                                 StyledText {
                                     objectName: "typing-space-indicator"
                                     anchors.centerIn: parent
@@ -929,6 +930,13 @@ Item {
                             readOnly: root.busy
                             onTextChanged: { root.advance(); root.syncGlyphs(); }
                             onCursorPositionChanged: root.syncCaret()
+                            onActiveFocusChanged: {
+                                root.speedNow = Date.now();
+                                if (!activeFocus) {
+                                    root.speedState = TypingSpeed.pause(TypingSpeed.tick(root.speedState, root.speedNow, true));
+                                    root.saveProgress();
+                                }
+                            }
                             Keys.onPressed: event => {
                                 if (event.key === Qt.Key_F11) { root.toggleFullscreen(); event.accepted = true; return; }
                                 if (!root.turningPage || (event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier))) return;
