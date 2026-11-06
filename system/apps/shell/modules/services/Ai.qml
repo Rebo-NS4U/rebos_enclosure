@@ -108,7 +108,10 @@ AiSession {
     function newSession() {
         let channel = "chat-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
         let session = addSession(channel);
-        if (session) selectSession(session);
+        if (session) {
+            session.codexPreset = "coding";
+            selectSession(session);
+        }
         rememberSessions();
     }
 
