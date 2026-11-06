@@ -136,3 +136,8 @@ warmup, two short stories, a reflective passage, dialogue and punctuation, and
 numbers and everyday details. Select one, then choose **Start practice**. These
 passages may be copied, changed and shared freely. Choosing a passage replaces
 the text in the editor; pasting and document import remain available.
+
+Open typing practice with `t` in a terminal. The shell IPC
+command `rebos_shell run t` also opens it. Repeating `t` keeps the panel open.
+Choose **Import EPUB / PDF** and the **EPUB books** filter to select an EPUB;
+other document formats remain available in the file-type selector.

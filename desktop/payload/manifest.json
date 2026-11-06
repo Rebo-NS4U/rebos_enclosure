@@ -67,6 +67,7 @@
     ".local/bin/regreet-sync",
     ".local/bin/rice",
     ".local/bin/bonsai-grow",
+    ".local/bin/t",
     ".local/bin/thinkpad-fan-control",
     ".local/bin/wallpaper",
     ".local/bin/wallpaper-switcher",
@@ -505,6 +506,10 @@
     },
     ".local/share/applications/rebos-shell-anime.desktop": {
       "source": "system/share/applications/rebos-shell-anime.desktop",
+      "kind": "managed"
+    },
+    ".local/bin/t": {
+      "source": "system/bin/t",
       "kind": "managed"
     }
   }

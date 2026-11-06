@@ -40,7 +40,12 @@ Singleton {
         }
         function preset(index: int): void { Visibilities.getIslandForActive()?.typingPractice.loadPreset(index); }
         function start(): void { Visibilities.getIslandForActive()?.typingPractice.start(); }
-        function status(): string { return Visibilities.getIslandForActive()?.typingPractice.status() ?? "{}"; }
+        function status(): string {
+            const island = Visibilities.getIslandForActive();
+            const state = JSON.parse(island?.typingPractice.status() ?? "{}");
+            state.opened = island?.currentMode === "typing";
+            return JSON.stringify(state);
+        }
     }
 
     function run(command) {
@@ -57,6 +62,10 @@ Singleton {
         if (command !== "notes" && QuickNotes.visible)
             QuickNotes.close();
         switch (command) {
+            case "t":
+                const typingTarget = Visibilities.getIslandForActive();
+                if (typingTarget) typingTarget.expand("typing");
+                break;
             case "typing":
                 const typingIsland = Visibilities.getIslandForActive();
                 if (typingIsland) {

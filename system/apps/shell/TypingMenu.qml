@@ -177,7 +177,7 @@ Item {
     FileDialog {
         id: picker
         title: "Import a book"
-        nameFilters: ["Books and documents (*.epub *.pdf *.docx *.odt *.html *.htm *.xml *.txt *.md *.csv *.json *.log)", "All files (*)"]
+        nameFilters: ["EPUB books (*.epub *.EPUB)", "Books and documents (*.epub *.pdf *.docx *.odt *.html *.htm *.xml *.txt *.md *.csv *.json *.log)", "All files (*)"]
         onAccepted: { root.saveProgress(); root.send({action: "import", path: selectedFile.toString()}); }
     }
     Process {
@@ -219,7 +219,7 @@ Item {
                 StyledText { visible: !root.practicing; opacity: 0.55; text: root.message; Layout.fillWidth: true; wrapMode: Text.Wrap }
                 RowLayout {
                     visible: !root.practicing
-                    TextButton { text: root.busy ? "Loading…" : "Import book"; enabled: !root.busy; onClicked: picker.open() }
+                    TextButton { text: root.busy ? "Loading…" : "Import EPUB / PDF"; enabled: !root.busy; onClicked: picker.open() }
                     TextButton { text: "Paste text"; enabled: !root.busy; onClicked: { root.saveProgress(); root.draft = true; root.draftTitle = "Pasted text"; paste.text = ""; paste.forceActiveFocus(); } }
                     TextButton { text: root.bookId && !root.draft ? "Resume" : "Start practice"; enabled: !root.busy; onClicked: root.start() }
                 }
