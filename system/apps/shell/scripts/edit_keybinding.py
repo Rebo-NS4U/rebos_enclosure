@@ -96,10 +96,10 @@ def save(request, config_dir):
             original = target.read_text()
         candidate = upsert_kitty(original, binding["rawKey"], "map " + binding["rawKey"] + " no_op")
         candidate = upsert_kitty(candidate, new_key, declaration)
-    return persist(target, original, candidate, binding["group"], new_key, source_guard)
+    return persist(target, original, candidate, binding["group"], new_key, source_guard=source_guard)
 
 
-def persist(target, original, candidate, group, new_key, source_guard=None):
+def persist(target, original, candidate, group, new_key, *, source_guard=None):
     temporary = None
     try:
         with tempfile.NamedTemporaryFile(mode="w", dir=target.parent, prefix=".keybinding-check-", suffix=target.suffix, delete=False) as stream:

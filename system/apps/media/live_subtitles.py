@@ -160,7 +160,7 @@ def recognize(wav, output, run=subprocess.run, language='en', on_progress=None):
 
 
 class LiveSubtitles:
-    def __init__(self, links, cache, on_ready, on_status, delay=0, language='en', position=0, duration=0):
+    def __init__(self, links, cache, on_ready, on_status, *, delay=0, language='en', position=0, duration=0):
         if language not in ('en', 'es', 'auto'):
             raise ValueError('Unsupported caption language')
         self.language = language

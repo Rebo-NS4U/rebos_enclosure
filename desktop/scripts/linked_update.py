@@ -61,7 +61,7 @@ def save_backup(root, home):
 
 
 class PreparedUpdate:
-    def __init__(self, checkout, plan, home, head, status, untracked_moves=()):
+    def __init__(self, checkout, plan, home, head, status, *, untracked_moves=()):
         self.checkout, self.plan, self.home = checkout, plan, home
         self.head, self.status = head, status
         self.untracked_moves = untracked_moves
@@ -190,6 +190,6 @@ def prepare(checkout, snapshot, home):
                       for name in sorted(names) if checksum_path(payload, name).is_file()}
             (payload / 'checksums.json').write_text(json.dumps(hashes, indent=2) + '\n')
             verify(payload)
-            yield PreparedUpdate(checkout, plan, home, head, before, untracked_moves)
+            yield PreparedUpdate(checkout, plan, home, head, before, untracked_moves=untracked_moves)
         finally:
             git(checkout, 'worktree', 'remove', '--force', str(plan))

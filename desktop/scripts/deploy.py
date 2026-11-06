@@ -284,7 +284,7 @@ def plan_source_links(payload, home, units, link_source):
     return payload, units, linked
 
 
-def install(payload, home, dry_run=False, settings=None, preserve_preferences=False,
+def install(payload, home, *, dry_run=False, settings=None, preserve_preferences=False,
             link_source=False):
     units = verify(payload)
     if manifest(payload).get('layout') == 2:
@@ -502,7 +502,7 @@ if __name__ == '__main__':
             print(f'Payload checksums OK: {len(verify(args.payload))} install entries')
         else:
             settings = json.load(sys.stdin) if args.setup_stdin else None
-            install(args.payload, args.home.absolute(), args.dry_run, settings,
+            install(args.payload, args.home.absolute(), dry_run=args.dry_run, settings=settings,
                     preserve_preferences=args.preserve_preferences, link_source=args.link_source)
     except (OSError, ValueError) as error:
         parser.exit(1, f'Deployment error: {error}\n')

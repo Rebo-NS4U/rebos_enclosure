@@ -67,3 +67,7 @@ Default-file fingerprinting and replacement decisions, recovery of legacy defaul
 Monitor normalization now delegates automatic placement and manual overlap checking to distinct helpers. Its complexity fell from 32 to 17; the placement and overlap functions score 9 and 8. Validation and placement errors retain their existing messages and behavior. These splits make the permission to replace a preference file and the geometry rules independently reviewable.
 
 Validation: **88 tests passed** across deployment (31), monitor/setup (16), updater/health/handoff (18), source layout (12) and linked-update recovery (11). Ruff and payload verification passed, and preference-preserving deployment preview against the installed desktop passed. Changes remain in installer/updater tooling; no desktop services or personal configuration were changed.
+
+## Argument and duplication audit
+
+See the [detailed argument, duplication and branch review](CODE-QUALITY-DETAILS.md) for the decisions on every argument warning, the actual bridge differences, the consolidated helpers and the remaining branch inventory. The latest scanner reports 137 warnings (previously 150), including 7 duplicate-code, 35 branch and 6 positional-argument warnings. Total-argument warnings remain visible.

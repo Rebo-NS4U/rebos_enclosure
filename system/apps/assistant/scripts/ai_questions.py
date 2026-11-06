@@ -48,6 +48,24 @@ def question_schema(arguments):
     return question, {"type": "object", "properties": properties, "required": ["answer"]}
 
 
+def complete_question(message, pending, tool_result):
+    """Resolve one outstanding elicitation response back to its original call."""
+    identifier = message.get("id")
+    waiting = pending.pop(identifier, None)
+    if waiting is not None:
+        response = message.get("result") or {}
+        action = response.get("action", "cancel")
+        tool_result(waiting, {"action": action, "content": response.get("content") if action == "accept" else None}, "error" in message)
+
+
+def cancel_question(params, pending, send):
+    """Cancel matching elicitations and prevent a late response being delivered."""
+    for request_id, call_id in list(pending.items()):
+        if call_id == params.get("requestId"):
+            del pending[request_id]
+            send({"method": "notifications/cancelled", "params": {"requestId": request_id}})
+
+
 def serve():
     pending = {}
     counter = 0
@@ -72,19 +90,12 @@ def serve():
             continue
         identifier = message.get("id")
         if "method" not in message:
-            waiting = pending.pop(identifier, None)
-            if waiting is not None:
-                response = message.get("result") or {}
-                action = response.get("action", "cancel")
-                tool_result(waiting, {"action": action, "content": response.get("content") if action == "accept" else None}, "error" in message)
+            complete_question(message, pending, tool_result)
             continue
         method = message["method"]
         params = message.get("params") or {}
         if method == "notifications/cancelled":
-            for request_id, call_id in list(pending.items()):
-                if call_id == params.get("requestId"):
-                    del pending[request_id]
-                    send({"method": "notifications/cancelled", "params": {"requestId": request_id}})
+            cancel_question(params, pending, send)
             continue
         if "id" not in message:
             continue
