@@ -24,6 +24,8 @@ Item {
     readonly property int baseOuterMargin: layoutLoader.item ? layoutLoader.item.baseOuterMargin : (root.isIsland ? 0 : 8)
     readonly property int totalBarHeight: layoutLoader.item ? layoutLoader.item.totalBarHeight : (root.isIsland ? 36 : 44)
 
+    readonly property bool typingDialogActive: layoutLoader.item?.typingDialogActive ?? false
+
     readonly property bool timerInputActive: layoutLoader.item ? layoutLoader.item.timerInputActive : false
     readonly property bool dashboardInputActive: layoutLoader.item ? layoutLoader.item.dashboardInputActive : false
 

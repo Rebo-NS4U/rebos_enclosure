@@ -101,13 +101,13 @@ Open the island bar's control panel and choose **Typing practice →**. Typing
 replaces the expanded bar contents, using the same input and dismissal behavior
 as its other panels. The compact typing surface uses a faint glass fill, soft blur and a subtle rim;
 controls are text only. Practice shows about 90 characters at a time, with only
-Library and Back in the header. Setup controls stay hidden while typing. Panel
+Library, Import and Close in the header. Setup controls stay hidden while typing. Panel
 resizing, passage reveals and typed characters animate smoothly, respecting the
 Appearance motion setting (zero disables animations). Upcoming characters are faint, and typed characters become opaque
 (errors use the error color). Type directly over the passage. Backspace to correct.
 Paste text or import documents, then select **Start practice**. Completed passages
-advance and the document loops forever, without a timer or failure state. **Back**
-or Escape returns to the control panel. Clicking outside collapses the bar.
+advance and the document loops forever, without a timer or failure state. **Library** opens book management; **Back** returns to the typing field.
+Escape moves between typing and the library; **Close** collapses the bar. Clicking outside collapses the bar.
 Imported books, pasted text, and progress are now cached locally under
 `$XDG_DATA_HOME/rebos_shell/typing-books/library.sqlite3` (normally
 `~/.local/share/rebos_shell/typing-books/`). Nothing is uploaded. Choose a saved
@@ -139,7 +139,9 @@ the text in the editor; pasting and document import remain available.
 
 Open typing practice with `t` in a terminal. The shell IPC
 command `rebos_shell run t` also opens it. Repeating `t` keeps the panel open.
-Choose **Import EPUB / PDF** and the **EPUB books** filter to select an EPUB;
-other document formats remain available in the file-type selector.
+Choose **Import** while typing, or **Import EPUB / PDF** in the library, to open
+the native file chooser. The bar temporarily releases keyboard and pointer input
+until you select a document or cancel. EPUB and other document formats are
+included in the Books filter. Niri focuses this import dialog automatically.
 
 Press **Mod+T** to open book typing practice directly from the desktop.

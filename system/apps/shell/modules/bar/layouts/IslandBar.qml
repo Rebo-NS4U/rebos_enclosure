@@ -99,6 +99,7 @@ Item {
     }
 
     readonly property alias typingPractice: typingView
+    readonly property bool typingDialogActive: typingView.filePickerActive
     function expand(mode: string) {
         FocusGrabManager.clearTopGrab();
         Visibilities.closeActiveBarPopup();
@@ -331,7 +332,9 @@ Item {
             if (root.currentMode === "osd") {
                 return Math.min(270, root.width - 32);
             }
-            if (root.currentMode === "apps" || root.currentMode === "projects") {
+            if (root.currentMode === "typing") {
+                typingView.goBack();
+            } else if (root.currentMode === "apps" || root.currentMode === "projects") {
                 return Math.min(480, root.width - 32);
             }
             if (root.currentMode === "wallpapers") {
@@ -1018,7 +1021,7 @@ Item {
                 anchors.fill: parent
                 visible: root.currentMode === "typing"
                 enabled: visible && !root.retractingToHidden
-                onBackRequested: root.expand("dashboard")
+                onBackRequested: root.collapse()
             }
 
             IslandDashboard {

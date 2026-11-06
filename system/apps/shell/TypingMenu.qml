@@ -3,7 +3,6 @@ import QtQuick
 import "TypingTexts.js" as TypingTexts
 import QtQuick.Controls
 import QtQuick.Layouts
-import QtQuick.Dialogs
 import Quickshell
 import Quickshell.Io
 import qs.modules.components
@@ -13,6 +12,8 @@ Item {
     id: root
     signal backRequested()
     property bool practicing: false
+    property bool filePickerActive: false
+    property bool resumeOnOpen: false
     property string bookId: ""
     property string bookTitle: ""
     property int bookLength: 0
@@ -116,6 +117,7 @@ Item {
             message = "Ready to resume. Your place is saved on this device.";
             if (data.action === "add") { paste.text = ""; practicing = true; }
             if (data.action === "import") { paste.text = ""; practicing = false; }
+            if (data.action === "open" && resumeOnOpen) { resumeOnOpen = false; practicing = true; }
             if (practicing && visible) Qt.callLater(() => answer.forceActiveFocus());
             if (data.action !== "next") send({action: "list"}, false);
         } catch (error) { busy = false; message = "Could not read the book service response."; }
@@ -127,7 +129,7 @@ Item {
         return JSON.stringify({practicing: practicing, textLength: bookLength,
             typed: answer.text.length, position: position, rounds: rounds,
             presets: TypingTexts.passages.length, message: message, busy: busy,
-            title: bookTitle, chapters: chapters.length, library: library.length});
+            title: bookTitle, chapters: chapters.length, library: library.length, filePickerActive: filePickerActive});
     }
     component TextButton: Button {
         implicitHeight: 36
@@ -153,6 +155,25 @@ Item {
         draft = true; practicing = false;
         message = draftTitle + " loaded. Choose Start practice.";
     }
+    function showLibrary() {
+        saveProgress();
+        practicing = false;
+    }
+    function goBack() {
+        if (busy || filePickerActive) return;
+        if (practicing) { showLibrary(); return; }
+        if (bookId) { practicing = true; answer.forceActiveFocus(); }
+        else if (draft) start();
+        else if (library.length) { resumeOnOpen = true; openBook(library[0].id); }
+    }
+    function openImport() {
+        if (busy || filePickerActive) return;
+        showLibrary();
+        filePickerActive = true;
+        // Commit the focus/mask release before mapping the external file chooser.
+        pickerLaunch.restart();
+    }
+    Keys.onEscapePressed: event => { root.goBack(); event.accepted = true; }
     function start() {
         if (busy) return;
         if (draft || !bookId) {
@@ -174,11 +195,38 @@ Item {
         send({action: "next", id: bookId, position: next >= bookLength ? 0 : next,
             typed: "", loops: rounds + (next >= bookLength ? 1 : 0)});
     }
-    FileDialog {
-        id: picker
-        title: "Import a book"
-        nameFilters: ["EPUB books (*.epub *.EPUB)", "Books and documents (*.epub *.pdf *.docx *.odt *.html *.htm *.xml *.txt *.md *.csv *.json *.log)", "All files (*)"]
-        onAccepted: { root.saveProgress(); root.send({action: "import", path: selectedFile.toString()}); }
+    Timer {
+        id: pickerLaunch
+        interval: 100
+        onTriggered: { pickerProcess.running = true; pickerWatchdog.restart(); }
+    }
+    Timer {
+        id: pickerWatchdog
+        interval: 2000
+        onTriggered: {
+            if (root.filePickerActive && !pickerProcess.running) {
+                root.filePickerActive = false;
+                root.message = "Could not open the file chooser. Check that Zenity is installed.";
+            }
+        }
+    }
+    Process {
+        id: pickerProcess
+        command: ["zenity", "--file-selection", "--title=Import EPUB or PDF",
+            "--file-filter=Books | *.epub *.EPUB *.pdf *.docx *.odt *.html *.htm *.xml *.txt *.md *.csv *.json *.log",
+            "--file-filter=All files | *"]
+        onStarted: pickerWatchdog.stop()
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const path = text.replace(/\r?\n$/, "");
+                if (path.length) root.send({action: "import", path: path});
+            }
+        }
+        onExited: (exitCode, exitStatus) => {
+            pickerWatchdog.stop();
+            root.filePickerActive = false;
+            if (exitCode > 1) root.message = "The file chooser could not open. Try Import again.";
+        }
     }
     Process {
         id: backend
@@ -209,8 +257,10 @@ Item {
                 Layout.fillWidth: true
                 Layout.maximumHeight: 36
                 StyledText { text: root.practicing ? root.bookTitle : "Your book library"; elide: Text.ElideRight; Layout.minimumWidth: 0; font.pixelSize: 18; opacity: 0.65; Layout.fillWidth: true }
-                TextButton { visible: root.practicing; text: "Library"; onClicked: { root.saveProgress(); root.practicing = false; } }
-                TextButton { text: "Back"; onClicked: { root.saveProgress(); root.backRequested(); } }
+                TextButton { objectName: "typing-library"; visible: root.practicing; text: "Library"; onClicked: root.showLibrary() }
+                TextButton { visible: root.practicing; text: "Import"; enabled: !root.busy; onClicked: root.openImport() }
+                TextButton { objectName: "typing-back"; visible: !root.practicing; text: "Back"; enabled: !root.busy && (root.bookId.length > 0 || root.draft || root.library.length > 0); onClicked: root.goBack() }
+                TextButton { text: "Close"; onClicked: { root.saveProgress(); root.backRequested(); } }
             }
             ColumnLayout {
                 Layout.fillWidth: true
@@ -219,7 +269,7 @@ Item {
                 StyledText { visible: !root.practicing; opacity: 0.55; text: root.message; Layout.fillWidth: true; wrapMode: Text.Wrap }
                 RowLayout {
                     visible: !root.practicing
-                    TextButton { text: root.busy ? "Loading…" : "Import EPUB / PDF"; enabled: !root.busy; onClicked: picker.open() }
+                    TextButton { text: root.busy ? "Loading…" : "Import EPUB / PDF"; objectName: "typing-import"; enabled: !root.busy; onClicked: root.openImport() }
                     TextButton { text: "Paste text"; enabled: !root.busy; onClicked: { root.saveProgress(); root.draft = true; root.draftTitle = "Pasted text"; paste.text = ""; paste.forceActiveFocus(); } }
                     TextButton { text: root.bookId && !root.draft ? "Resume" : "Start practice"; enabled: !root.busy; onClicked: root.start() }
                 }
@@ -410,7 +460,7 @@ Item {
                             inputMethodHints: Qt.ImhNoPredictiveText
                             readOnly: root.busy
                             onTextChanged: root.advance()
-                            Keys.onEscapePressed: event => { root.backRequested(); event.accepted = true; }
+                            Keys.onEscapePressed: event => { root.goBack(); event.accepted = true; }
                         }
                     }
                     RowLayout {

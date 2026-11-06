@@ -1,13 +1,16 @@
 import QtQuick
 import Quickshell
 import qs.modules.bar.layouts
+import qs.modules.shell
 import qs.modules.theme
 ShellRoot {
+    id: harness
+    property bool closeRequested: false
     PanelWindow {
         implicitWidth: 640
         implicitHeight: 500
         color: "transparent"
-        TypingMenu { id: practice; anchors.fill: parent }
+        TypingMenu { id: practice; anchors.fill: parent; onBackRequested: harness.closeRequested = true }
     }
     function find(item, name) {
         if (item.objectName === name) return item;
@@ -25,10 +28,12 @@ ShellRoot {
                 if (phase === 0) {
                     const bar = Qt.createComponent("modules/bar/layouts/IslandBar.qml");
                     if (bar.status === Component.Error) throw Error(bar.errorString());
+                    const panel = Qt.createComponent("modules/shell/UnifiedShellPanel.qml");
+                    if (panel.status === Component.Error) throw Error(panel.errorString());
                     practice.loadPreset(0); practice.start(); phase++; return;
                 }
                 if (practice.busy || !practice.passage.length) return;
-                if (practice.characters(practice.passage).length > 90 || practice.implicitHeight !== 240) throw Error("Practice is not compact");
+                if (practice.practicing && (practice.characters(practice.passage).length > 90 || practice.implicitHeight !== 240)) throw Error("Practice is not compact");
                 const input = find(practice, "typing-input");
                 const first = find(practice, "typing-character-0");
                 if (!input || !first) throw Error("Typing input or glyph missing");
@@ -61,9 +66,31 @@ ShellRoot {
                     const slider = find(practice, "typing-book-position");
                     slider.value = Math.floor(practice.bookLength / 2);
                     slider.moved();
-                } else {
+                } else if (phase === 103) {
                     if (practice.progress < 0.45 || practice.progress > 0.65) throw Error("Book position slider failed");
-                    console.log("PASS: bounded book view, animated glyphs, durable partial resume, looping, Unicode, chapters and position slider");
+                    const place = practice.position;
+                    find(practice, "typing-library").clicked();
+                    if (practice.practicing) throw Error("Library button did not open library");
+                    find(practice, "typing-back").clicked();
+                    if (!practice.practicing || practice.position !== place || harness.closeRequested) throw Error("Back left typing or lost the current passage");
+                    find(practice, "typing-library").clicked();
+                    find(practice, "typing-import").clicked();
+                } else if (phase === 104) {
+                    if (!practice.filePickerActive) throw Error("File picker did not release panel input");
+                } else if (phase === 105) {
+                    if (practice.filePickerActive || practice.busy) return;
+                    if (practice.bookTitle !== "picker test book" || practice.chapters.length !== 1) throw Error("Picker did not import the EPUB");
+                    find(practice, "typing-back").clicked();
+                    if (!practice.practicing || harness.closeRequested) throw Error("Back did not return to imported EPUB typing");
+                    practice.openImport();
+                } else if (phase === 106) {
+                    if (!practice.filePickerActive) throw Error("Second picker did not open");
+                } else {
+                    if (practice.filePickerActive || practice.busy) return;
+                    if (practice.bookTitle !== "picker test book") throw Error("Cancelling the picker changed the current book");
+                    practice.goBack();
+                    if (!practice.practicing || harness.closeRequested) throw Error("Back failed after cancelling the picker");
+                    console.log("PASS: book paging, animations, saved progress, Unicode, chapter navigation, Back returns to typing, EPUB picker success and cancellation");
                     Qt.quit();
                 }
 

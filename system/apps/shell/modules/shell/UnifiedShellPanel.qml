@@ -31,6 +31,8 @@ PanelWindow {
     readonly property bool launcherOpen: runMenu.open || (barContent.islandActive && GlobalStates.islandLauncherOpen)
 
     WlrLayershell.keyboardFocus: {
+        if (barContent.typingDialogActive)
+            return WlrKeyboardFocus.None;
         if (notesPopup.open)
             return WlrKeyboardFocus.Exclusive;
         if (launcherOpen)
@@ -51,7 +53,7 @@ PanelWindow {
     exclusionMode: ExclusionMode.Ignore
 
     // Menus temporarily receive outside clicks so they can be dismissed.
-    readonly property bool needsFullScreenInput: notesPopup.open || ((!SystemResources.keepMonitorOpen) && (barContent.dashboardInputActive || (barContent.islandActive && !launcherOpen))) || FocusGrabManager.hasActiveGrab
+    readonly property bool needsFullScreenInput: !barContent.typingDialogActive && (notesPopup.open || ((!SystemResources.keepMonitorOpen) && (barContent.dashboardInputActive || (barContent.islandActive && !launcherOpen))) || FocusGrabManager.hasActiveGrab)
 
     readonly property bool barEnabled: {
         if (!Config.barReady) return false;
@@ -63,7 +65,7 @@ PanelWindow {
     readonly property alias barOuterMargin: barContent.baseOuterMargin
     readonly property alias totalBarHeight: barContent.totalBarHeight
     readonly property string barPosition: Config.bar?.position ?? "top"
-    readonly property bool edgeNavigationVisible: !GlobalStates.lockscreenVisible && !NiriService.overviewOpen
+    readonly property bool edgeNavigationVisible: !barContent.typingDialogActive && !GlobalStates.lockscreenVisible && !NiriService.overviewOpen
         && !NiriService.fullscreenOutputs.includes(targetScreen.name)
         && !needsFullScreenInput && !fileShelf.open && !FileShelf.dragging
 
@@ -190,7 +192,7 @@ PanelWindow {
             anchors.fill: parent
             screen: unifiedPanel.targetScreen
             z: 100
-            visible: unifiedPanel.barEnabled
+            visible: unifiedPanel.barEnabled && !barContent.typingDialogActive
         }
 
         // Notification toasts live on this panel so they share the bar's
