@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import "TypingTexts.js" as TypingTexts
 import "TypingSpeed.js" as TypingSpeed
+import "TypingPaging.js" as TypingPaging
 import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
@@ -21,7 +22,14 @@ Item {
     property int bookLength: 0
     property int position: 0
     property int rounds: 0
-    property string passage: ""
+    property string pageSource: ""
+    property var pageLayout: ({text: "", words: [], lines: 0})
+    readonly property string passage: pageLayout.text
+    property bool turningPage: false
+    property string pendingKeys: ""
+    property string restoreAction: ""
+    property var restoreChapters: []
+    property real pageReveal: 1
     property var chapters: []
     property var library: []
     property bool backendStarted: false
@@ -37,7 +45,7 @@ Item {
     property int speedCommitted: 0
     property int speedBaseline: 0
     property double speedNow: Date.now()
-    readonly property int liveWpm: TypingSpeed.rate(speedState, speedCommitted + Math.max(0, correctPrefix() - speedBaseline), speedNow)
+    readonly property int liveWpm: TypingSpeed.rate(speedState, speedCommitted + Math.max(0, correctCount() - speedBaseline), speedNow)
     property string draftTitle: "Pasted text"
     property int requestId: 0
     property int pageRequest: 0
@@ -57,21 +65,31 @@ Item {
         return value.match(/[\uD800-\uDBFF][\uDC00-\uDFFF]|[\s\S]/g) ?? [];
     }
     readonly property real progress: bookLength ? Math.min(1, (position + characters(answer.text).length) / bookLength) : 0
-    readonly property var passageWords: {
-        let words = [];
-        let start = 0;
-        for (const token of passage.match(/\S+\s*|\s+/g) ?? []) {
-            // Keep ordinary words together while bounding unusually long tokens.
-            let tokenStart = start;
-            const letters = characters(token);
-            for (let offset = 0; offset < letters.length; offset += 36) {
-                const wordText = letters.slice(offset, offset + 36).join("");
-                words.push({text: wordText, start: tokenStart});
-                tokenStart += wordText.length;
-            }
-            start += token.length;
-        }
-        return words;
+    readonly property var passageWords: pageLayout.words
+    FontMetrics { id: typingMetrics; font.family: Config.theme.font; font.pixelSize: 22 }
+    function characterWidth(text) { return Math.max(1, Math.ceil(typingMetrics.advanceWidth(text))); }
+    function fitPage() {
+        pageLayout = TypingPaging.layout(pageSource, Math.max(80, root.width - 52), characterWidth);
+    }
+    Timer {
+        id: fitDelay
+        interval: 150
+        onTriggered: { if (!root.restoring && !answer.text.length && root.pageSource.length) root.fitPage(); }
+    }
+    NumberAnimation {
+        id: pageArrival
+        target: root
+        property: "pageReveal"
+        from: 0.25
+        to: 1
+        duration: Math.max(120, Motion.contentIn)
+        easing.type: Easing.OutCubic
+    }
+    function queueTyping(text) {
+        if (turningPage) pendingKeys = characters(pendingKeys + text).slice(0, 90).join("");
+    }
+    function undoQueuedKey() {
+        if (turningPage) pendingKeys = characters(pendingKeys).slice(0, -1).join("");
     }
     implicitHeight: practicing ? 240 : 600
     property real revealProgress: 1
@@ -89,7 +107,6 @@ Item {
         easing.type: Easing.OutQuint
     }
     onPracticingChanged: { reveal(); resetSpeed(); }
-    onPositionChanged: { if (practicing) reveal(); }
     onVisibleChanged: {
         if (visible) { reveal(); backendStarted = true; if (ready) send({action: "list"}, false); }
         else saveProgress();
@@ -103,16 +120,17 @@ Item {
         if (ready) backend.write(JSON.stringify(data) + "\n");
         else { queued = queued.concat([data]); backendStarted = true; }
     }
-    function correctPrefix() {
+    function correctCount() {
         const input = characters(answer.text);
         const target = characters(passage);
         let count = 0;
-        while (count < input.length && count < target.length && input[count] === target[count]) count++;
+        for (let index = 0; index < input.length && index < target.length; index++)
+            if (input[index] === target[index]) count++;
         return count;
     }
     function resetSpeed() {
         speedState = TypingSpeed.create(); speedCommitted = 0;
-        speedBaseline = correctPrefix(); speedNow = Date.now();
+        speedBaseline = correctCount(); speedNow = Date.now();
     }
     function reopen() {
         if (busy || filePickerActive) return;
@@ -153,20 +171,50 @@ Item {
         try {
             const data = JSON.parse(line);
             if (data.action === "list") { if (data.books) library = data.books; return; }
-            if (data.error) { if (data.request === pageRequest) busy = false; if (data.action === "save") dirty = true; message = data.error; errorMessage = data.error; return; }
+            if (data.error) { if (data.request === pageRequest) { busy = false; turningPage = false; } if (data.action === "save") dirty = true; message = data.error; errorMessage = data.error; return; }
             if (data.request !== pageRequest) return;
             if (data.empty) { busy = false; practicing = false; return; }
             if (!data.passage) return;
+            // Old versions could save a full, mistyped 90-character window.
+            // Rebase that saved input into measured pages without changing the
+            // absolute book position or counting restored text toward WPM.
+            if (restoreAction && data.action === "next") {
+                data.action = restoreAction;
+                data.chapters = restoreChapters;
+            }
+            const fitted = TypingPaging.layout(data.passage, Math.max(80, root.width - 52), characterWidth);
+            const entered = characters(data.typed);
+            const pageCount = characters(fitted.text).length;
+            if (data.action !== "next" && pageCount > 0 && entered.length >= pageCount) {
+                restoreAction = data.action;
+                restoreChapters = data.chapters || chapters;
+                const next = data.position + pageCount;
+                send({action: "next", id: data.id, position: next >= data.length ? 0 : next,
+                    typed: entered.slice(pageCount).join(""), loops: data.loops + (next >= data.length ? 1 : 0)});
+                return;
+            }
+            restoreAction = ""; restoreChapters = [];
             if (data.action === "next") {
-                speedCommitted += Math.max(0, correctPrefix() - speedBaseline);
+                speedCommitted += Math.max(0, correctCount() - speedBaseline);
                 speedBaseline = 0;
                 speedState = TypingSpeed.pause(speedState);
             }
             restoring = true;
             bookId = data.id; bookTitle = data.title; bookLength = data.length;
             position = data.position; rounds = data.loops; if (data.chapters) chapters = data.chapters;
-            passage = data.passage; answer.text = data.typed; answer.cursorPosition = answer.length;
+            pageSource = data.passage; fitPage();
+            answer.text = data.typed; answer.cursorPosition = answer.length;
             dirty = false; draft = false; busy = false; restoring = false;
+            turningPage = false;
+            if (data.action === "next") {
+                if (Motion.enabled && visible && practicing) pageArrival.restart();
+                else pageReveal = 1;
+                const buffered = pendingKeys; pendingKeys = "";
+                if (buffered.length) Qt.callLater(() => {
+                    answer.text = buffered; answer.cursorPosition = answer.length;
+                    if (!root.visible || !root.practicing) root.saveProgress();
+                });
+            } else { pendingKeys = ""; pageReveal = 1; }
             message = "Ready to resume. Your place is saved on this device.";
             if (data.kind === "book") samplesExpanded = false;
             if (data.action === "add") { paste.text = ""; practicing = true; }
@@ -182,7 +230,7 @@ Item {
     Timer { interval: 5000; running: root.backendStarted; repeat: true; onTriggered: root.saveProgress() }
 
     function status() {
-        return JSON.stringify({practicing: practicing, textLength: bookLength,
+        return JSON.stringify({practicing: practicing, pageLines: pageLayout.lines, turningPage: turningPage, textLength: bookLength,
             typed: answer.text.length, position: position, rounds: rounds,
             presets: TypingTexts.passages.length, message: message, busy: busy,
             title: bookTitle, chapters: chapters.length, library: library.length, books: libraryBooks.length, wpm: liveWpm, filePickerActive: filePickerActive});
@@ -315,9 +363,16 @@ Item {
         speedNow = Date.now();
         speedState = TypingSpeed.record(speedState, speedNow);
         dirty = true; saveDelay.restart();
-        if (!passage.length || answer.text !== passage) return;
-        const next = position + characters(passage).length;
-        dirty = false;
+        const pageCount = characters(passage).length;
+        const entered = characters(answer.text);
+        if (!pageCount || entered.length < pageCount) return;
+        pendingKeys = entered.slice(pageCount).join("") + pendingKeys;
+        restoring = true;
+        answer.text = entered.slice(0, pageCount).join("");
+        answer.cursorPosition = answer.length;
+        restoring = false;
+        const next = position + pageCount;
+        dirty = false; turningPage = true;
         send({action: "next", id: bookId, position: next >= bookLength ? 0 : next,
             typed: "", loops: rounds + (next >= bookLength ? 1 : 0)});
     }
@@ -560,8 +615,12 @@ Item {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         clip: true
-                        onWidthChanged: Qt.callLater(() => { if (smoothCaret.targetGlyph) smoothCaret.follow(smoothCaret.targetGlyph); })
+                        onWidthChanged: {
+                            if (root.pageSource.length && !answer.text.length) fitDelay.restart();
+                            Qt.callLater(() => { if (smoothCaret.targetGlyph) smoothCaret.follow(smoothCaret.targetGlyph); });
+                        }
                         Flow {
+                            opacity: root.pageReveal
                             anchors.left: parent.left
                             anchors.right: parent.right
                             anchors.leftMargin: 6
@@ -615,6 +674,7 @@ Item {
                                             objectName: "typing-character-" + characterIndex
                                             text: modelData === " " ? "\u00a0" : modelData
                                             textFormat: Text.PlainText
+                                            width: root.characterWidth(modelData)
                                             font.family: Config.theme.font
                                             font.pixelSize: 22
                                             font.underline: false
@@ -708,6 +768,11 @@ Item {
                             inputMethodHints: Qt.ImhNoPredictiveText
                             readOnly: root.busy
                             onTextChanged: root.advance()
+                            Keys.onPressed: event => {
+                                if (!root.turningPage || (event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier))) return;
+                                if (event.key === Qt.Key_Backspace) { root.undoQueuedKey(); event.accepted = true; }
+                                else if (event.text.length && event.text.charCodeAt(0) >= 32) { root.queueTyping(event.text); event.accepted = true; }
+                            }
                             Keys.onEscapePressed: event => { root.goBack(); event.accepted = true; }
                         }
                     }

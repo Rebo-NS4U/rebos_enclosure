@@ -138,7 +138,7 @@ passages may be copied, changed and shared freely. Choosing a passage replaces
 the text in the editor; pasting and document import remain available.
 
 Open typing practice with `t` in a terminal. The shell IPC
-command `rebos_shell run t` also opens it. Repeating `t` keeps the panel open.
+command `rebos_shell run t` also opens it. Repeating `t` closes the panel; reopening resumes the saved book.
 Choose **Import** while typing, or **Import EPUB / PDF** in the library, to open
 the native file chooser. The bar temporarily releases keyboard and pointer input
 until you select a document or cancel. EPUB and other document formats are
@@ -169,3 +169,13 @@ The live WPM counter uses net correct characters and five characters per word.
 It updates twice a second, starts after one second of activity, and pauses its
 clock after five idle seconds. Restored text and chapter jumps do not earn WPM;
 opening the library, hiding typing, or switching books starts a fresh session.
+
+Mod+T toggles typing open and closed. Passages are fitted to two measured lines
+instead of a fixed character count. Completing the final character advances
+automatically, fading only the passage while the header and WPM stay steady.
+Keystrokes received during the short page fetch are queued for the next passage.
+Existing saved partial passages remain intact when switching to the new layout.
+Continuous practice advances after the visible two-line passage is typed, even
+if some characters differ; errors stay highlighted and WPM counts only correct
+characters. Saved windows from older layouts are carried into the new pages
+without changing the absolute position in the book.

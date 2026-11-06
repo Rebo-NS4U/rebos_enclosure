@@ -18,5 +18,4 @@ beside the edited file. Niri reloads automatically; no desktop restart is needed
 Regression coverage: `desktop/tests/test_personal_bindings.py` and
 `system/apps/shell/scripts/test_keybindings.py`.
 
-`Mod+T` opens book typing practice in the bar. Repeating the shortcut keeps it
-open, and `repeat=false` prevents key-hold repeats. Niri hot-reloads this binding.
+`Mod+T` toggles book typing practice in the bar. Repeating the shortcut closes it, and `repeat=false` prevents key-hold repeats. Niri hot-reloads this binding.

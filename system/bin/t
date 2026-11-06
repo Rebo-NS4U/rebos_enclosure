@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
-# Open typing practice without toggling an already open session closed.
+# Toggle typing practice; reopening resumes the saved book.
 set -euo pipefail
 exec qs -p "${REBOS_SHELL_PATH:-${XDG_CONFIG_HOME:-$HOME/.config}/quickshell}/shell.qml" ipc call rebos_shell run t

@@ -13,7 +13,7 @@ def main():
     with tempfile.TemporaryDirectory(prefix="enclosure-typing-") as directory:
         target = Path(directory)
         source = ROOT / "system/apps/shell"
-        for name in ("config", "modules", "TypingMenu.qml", "TypingTexts.js", "TypingSpeed.js", "scripts", "version"):
+        for name in ("config", "modules", "TypingMenu.qml", "TypingTexts.js", "TypingSpeed.js", "TypingPaging.js", "scripts", "version"):
             if (source / name).is_dir():
                 shutil.copytree(source / name, target / name)
             else:

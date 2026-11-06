@@ -4,6 +4,7 @@ import Quickshell.Wayland
 import qs.modules.bar.layouts
 import qs.modules.shell
 import "TypingSpeed.js" as Speed
+import "TypingPaging.js" as Pages
 import qs.modules.theme
 ShellRoot {
     id: harness
@@ -27,6 +28,7 @@ ShellRoot {
     Timer {
         property int phase: 0
         property int expectedPosition: 0
+        property string expectedBuffered: ""
         interval: Math.max(900, Motion.base * 1.5)
         running: true
         repeat: true
@@ -38,6 +40,17 @@ ShellRoot {
                     if (Speed.rate(meter, 5, 2000) !== 60 || Speed.rate(meter, 0, 2000) !== 0) throw Error("WPM must count net correct five-character words");
                     const paused = Speed.pause(meter);
                     if (Speed.tick(paused, 9000, true).elapsed !== meter.elapsed || Speed.rate(meter, 5, 7000) !== 0) throw Error("WPM idle/pause handling failed");
+                    const tiny = Pages.layout("abcdefghijkl", 30, text => 10, 0);
+                    if (tiny.text !== "abcdef" || tiny.lines !== 2) throw Error("Two-line fitting failed");
+                    const original = "😀 alpha beta gamma delta averylongwordwithoutspaces ".repeat(4);
+                    const letters = Pages.characters(original);
+                    let consumed = 0, rebuilt = "";
+                    while (consumed < letters.length) {
+                        const page = Pages.layout(letters.slice(consumed, consumed + 90).join(""), 100, text => 10, 0);
+                        if (!page.text.length || page.lines > 2) throw Error("Page fitting stalled or used a third line");
+                        rebuilt += page.text; consumed += Pages.characters(page.text).length;
+                    }
+                    if (rebuilt !== original) throw Error("Paging dropped or duplicated book characters");
                     const bar = Qt.createComponent("modules/bar/layouts/IslandBar.qml");
                     if (bar.status === Component.Error) throw Error(bar.errorString());
                     const panel = Qt.createComponent("modules/shell/UnifiedShellPanel.qml");
@@ -45,7 +58,7 @@ ShellRoot {
                     practice.loadPreset(0); practice.start(); phase++; return;
                 }
                 if (practice.busy || !practice.passage.length) return;
-                if (practice.practicing && (practice.characters(practice.passage).length > 90 || practice.implicitHeight !== 240)) throw Error("Practice is not compact");
+                if (practice.practicing && (practice.characters(practice.passage).length > 90 || practice.pageLayout.lines > 2 || practice.implicitHeight !== 240)) throw Error("Practice is not compact");
                 const input = find(practice, "typing-input");
                 const first = find(practice, "typing-character-0");
                 if (!input || !first) throw Error("Typing input or glyph missing");
@@ -75,9 +88,14 @@ ShellRoot {
                 } else if (phase === 100) {
                     if (first.text !== "😀") throw Error("Unicode glyph was split");
                     expectedPosition = practice.characters(practice.passage).length;
+                    expectedBuffered = Pages.characters(practice.pageSource.slice(practice.passage.length))[0] || "";
                     input.text = practice.passage;
+                    if (!practice.turningPage) throw Error("Completing the second line did not start the next page");
+                    practice.queueTyping(expectedBuffered + "?");
+                    practice.undoQueuedKey();
                 } else if (phase === 101) {
                     if (practice.position !== expectedPosition) throw Error("Unicode book position drifted");
+                    if (input.text !== expectedBuffered) throw Error("Typing during page turn was lost or duplicated");
                     if (practice.library.length < 2) throw Error("Library did not retain books");
                     practice.showLibrary();
                     const chapters = find(practice, "typing-chapter-select");
@@ -137,7 +155,22 @@ ShellRoot {
                     const restoredInput = find(restored, "typing-input");
                     if (!restored.practicing || restored.bookTitle !== "picker test book" || restoredInput.text !== restored.passage.slice(0, 3)) throw Error("A fresh view did not automatically resume the saved partial passage");
                     if (restored.libraryBooks.length !== 2 || restored.liveWpm !== 0) throw Error("Practice samples or restored text affect library/WPM");
-                    console.log("PASS: automatic resume in a fresh view, book completion cards, secondary samples, live WPM, chapter navigation and EPUB picker");
+                    const legacy = restored.library.find(book => book.title === "Unicode test");
+                    restored.send({action: "seek", id: legacy.id, position: 0, typed: "x".repeat(85), loops: 0});
+                    phase = 111; return;
+                } else if (phase === 111) {
+                    const restored = freshView.item;
+                    if (restored.busy) return;
+                    const field = find(restored, "typing-input");
+                    if (restored.pageLayout.lines > 2 || restored.position + restored.characters(field.text).length !== 85 || restored.liveWpm !== 0) throw Error("Legacy page carryover lost saved input or counted it as WPM");
+                    expectedPosition = restored.position + restored.characters(restored.passage).length;
+                    field.text = "z".repeat(restored.characters(restored.passage).length);
+                    if (!restored.turningPage) throw Error("Typos blocked continuous page advance");
+                } else if (phase === 112) {
+                    const restored = freshView.item;
+                    if (restored.busy) return;
+                    if (restored.position !== expectedPosition || restored.pageLayout.lines > 2) throw Error("Continuous two-line advance failed");
+                    console.log("PASS: two-line fitting, lossless paging, queued input, legacy bookmark carryover, no-fail advance, resume, WPM and EPUB import");
                     Qt.quit();
                 }
 

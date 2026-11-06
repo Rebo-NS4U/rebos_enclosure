@@ -74,16 +74,10 @@ Singleton {
             QuickNotes.close();
         switch (command) {
             case "t":
-                const typingTarget = Visibilities.getIslandForActive();
-                if (typingTarget && typingTarget.currentMode !== "typing") {
-                    typingTarget.expand("typing");
-                    typingTarget.typingPractice.reopen();
-                }
-                break;
             case "typing":
                 const typingIsland = Visibilities.getIslandForActive();
                 if (typingIsland) {
-                    if (typingIsland.currentMode === "typing") typingIsland.collapse();
+                    if (typingIsland.currentMode === "typing" && !typingIsland.retractingToHidden) typingIsland.collapse();
                     else { typingIsland.expand("typing"); typingIsland.typingPractice.reopen(); }
                 }
                 break;
