@@ -5,7 +5,6 @@ import qs.modules.bar.layouts
 import qs.modules.shell
 import "TypingSpeed.js" as Speed
 import "TypingPaging.js" as Pages
-import "modules/theme/ShellStyles.js" as Styles
 import qs.modules.theme
 ShellRoot {
     id: harness
@@ -37,14 +36,6 @@ ShellRoot {
         onTriggered: {
             try {
                 if (phase === 0) {
-                    for (const background of ["#000000", "#ffffff", "#777777", "#f4e4cc", "#182234"]) {
-                        practice.readingBackground = background;
-                        for (const ink of [practice.readingInk, practice.readingUpcoming, practice.readingAccent, practice.readingError]) {
-                            if (Styles.contrast(ink.toString(), background) < 4.5) throw Error("Insufficient reading contrast on " + background);
-                            if (Styles.contrast(ink.toString(), practice.outlineFor(ink)) < 4.5) throw Error("Text outline has insufficient contrast");
-                        }
-                    }
-                    practice.readingBackground = Qt.binding(() => Colors.background);
                     for (const quote of "‘’‚‛'")
                         if (!Pages.matchingCharacter("'", quote)) throw Error("Single quote rejected");
                     for (const quote of '“”„‟"')
@@ -120,6 +111,15 @@ ShellRoot {
                     if (!editedGlyph.incorrect) throw Error("Middle edit did not update error state");
                     input.text = originalTyped;
                     if (editedGlyph.incorrect) throw Error("Correction did not clear error state");
+                    find(practice, "typing-passage-flow").forceLayout();
+                    const movingCaret = find(practice, "typing-smooth-caret");
+                    const activeLine = find(practice, "typing-line-highlight");
+                    input.cursorPosition = input.length;
+                    movingCaret.follow(find(practice, "typing-character-120"));
+                    if (activeLine.y <= 0 || activeLine.y !== movingCaret.rowY) throw Error("Line highlight did not follow wrapped text");
+                    input.cursorPosition = 0;
+                    movingCaret.follow(find(practice, "typing-character-0"));
+                    if (activeLine.y !== 0) throw Error("Line highlight did not follow cursor back to the first line");
                     input.text = "";
                     if (editedGlyph.typed) throw Error("Backspace did not clear typed state");
                     practice.fullscreen = false;
@@ -133,9 +133,13 @@ ShellRoot {
                     input.text = ""; practice.pageSource = originalSource; practice.fitPage();
                     const caret = find(practice, "typing-smooth-caret");
                     const core = find(practice, "typing-caret-core");
+                    const line = find(practice, "typing-line-highlight");
+                    if (!line.visible || line.width < practice.width - 60 || line.height < 25 || line.y !== caret.rowY) throw Error("Current line highlight is missing or too narrow");
+                    if (core.color.toString() !== Colors.primary.toString()) throw Error("Cursor must use the exact theme accent");
+                    if (first.style !== Text.Normal || first.color.toString() !== Colors.overSurface.toString()) throw Error("Text must use the normal theme color without outlines");
                     if (!caret.visible || core.width > 3 || core.height < 20) throw Error("Slim caret is missing or oversized");
                     if (!find(practice, "typing-caret-0").visible || Math.abs(first.opacity - 1) > 0.001) throw Error("Current-character highlight missing: " + JSON.stringify({opacity: first.opacity, current: first.caretHere, entrance: first.entrance, cursor: input.cursorPosition, practicing: practice.practicing, visible: find(practice, "typing-caret-0").visible, motion: Motion.base}));
-                    if (Math.abs(find(practice, "typing-character-1").opacity - 1) > 0.001) throw Error("Upcoming text must remain readable");
+                    if (Math.abs(find(practice, "typing-character-1").opacity - 0.65) > 0.001) throw Error("Upcoming text must remain readable");
                     input.text = practice.passage[0]; input.cursorPosition = input.length;
                 } else if (phase === 2) {
                     if (Math.abs(first.opacity - 1) > 0.001) throw Error("Typed glyph did not become opaque after animation");
@@ -147,7 +151,7 @@ ShellRoot {
                     if (input.text !== practice.passage[0]) throw Error("Partial typing progress did not resume");
                     input.text = "";
                 } else if (phase < 100) {
-                    if (phase === 4 && (!find(practice, "typing-caret-0").visible || Math.abs(find(practice, "typing-character-1").opacity - 1) > 0.001)) throw Error("Backspace did not restore the cursor and readable upcoming text");
+                    if (phase === 4 && (!find(practice, "typing-caret-0").visible || Math.abs(find(practice, "typing-character-1").opacity - 0.65) > 0.001)) throw Error("Backspace did not restore the cursor and readable upcoming text");
                     if (practice.rounds < 1) { input.text = practice.passage; phase++; return; }
                     if (practice.position !== 0) throw Error("Continuous loop failed");
                     phase = 100;

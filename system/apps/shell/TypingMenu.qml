@@ -3,7 +3,6 @@ import QtQuick
 import "TypingTexts.js" as TypingTexts
 import "TypingSpeed.js" as TypingSpeed
 import "TypingPaging.js" as TypingPaging
-import "modules/theme/ShellStyles.js" as ShellStyles
 import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
@@ -133,27 +132,6 @@ Item {
         if (page) { pageRequest = data.request; busy = true; errorMessage = ""; }
         if (ready) backend.write(JSON.stringify(data) + "\n");
         else { queued = queued.concat([data]); backendStarted = true; }
-    }
-    // Follow wallpaper/theme updates once per palette change, not per keystroke.
-    property color readingBackground: Colors.background
-    readonly property color readingInk: legible(Colors.overSurface, readingBackground, 7)
-    readonly property color readingUpcoming: legible(ShellStyles.mix(readingBackground.toString(), readingInk.toString(), 0.55), readingBackground, 4.5)
-    readonly property color readingAccent: legible(Colors.primary, readingBackground, 4.5)
-    readonly property color readingError: legible(Colors.error, readingBackground, 4.5)
-    function outlineFor(color) {
-        const value = color.toString();
-        return ShellStyles.contrast(value, "#000000") >= ShellStyles.contrast(value, "#ffffff") ? "#000000" : "#ffffff";
-    }
-    function legible(preferred, background, minimum) {
-        const base = Qt.color(background).toString();
-        const ink = Qt.color(preferred).toString();
-        const endpoint = ShellStyles.contrast("#000000", base) >= ShellStyles.contrast("#ffffff", base) ? "#000000" : "#ffffff";
-        const goal = Math.min(minimum, ShellStyles.contrast(endpoint, base));
-        for (let step = 0; step <= 20; step++) {
-            const candidate = ShellStyles.mix(ink, endpoint, step / 20);
-            if (ShellStyles.contrast(candidate, base) >= goal) return candidate;
-        }
-        return endpoint;
     }
     // Keep input dependencies off the thousands of static glyph delegates.
     property var glyphItems: ({})
@@ -698,7 +676,29 @@ Item {
                             if (root.pageSource.length && !answer.text.length) fitDelay.restart();
                             Qt.callLater(() => { if (smoothCaret.targetGlyph) smoothCaret.follow(smoothCaret.targetGlyph); });
                         }
+                        Rectangle {
+                            objectName: "typing-line-highlight"
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            y: smoothCaret.rowY
+                            height: smoothCaret.rowHeight
+                            radius: 7
+                            color: Qt.alpha(Colors.primary, 0.14)
+                            border.width: 1
+                            border.color: Qt.alpha(Colors.primary, 0.24)
+                            visible: smoothCaret.visible
+                            Rectangle {
+                                width: 3
+                                anchors.left: parent.left
+                                anchors.top: parent.top
+                                anchors.bottom: parent.bottom
+                                anchors.margins: 4
+                                radius: 1.5
+                                color: Colors.primary
+                            }
+                        }
                         Flow {
+                            objectName: "typing-passage-flow"
                             opacity: root.pageReveal
                             anchors.left: parent.left
                             anchors.right: parent.right
@@ -768,24 +768,22 @@ Item {
                                             font.pixelSize: 22
                                             font.underline: false
                                             lineHeight: 1.45
-                                            property real inkOpacity: 1
+                                            property real inkOpacity: caretHere || typed ? 1 : 0.65
                                             opacity: caretHere ? 1 : inkOpacity * entrance
                                             Behavior on inkOpacity {
                                                 enabled: Motion.enabled
                                                 NumberAnimation { duration: Math.round(Motion.base * 0.45); easing.type: Easing.OutCubic }
                                             }
-                                            color: caretHere ? root.readingAccent : (typed ? (incorrect ? root.readingError : Qt.tint(root.readingInk, Qt.alpha(root.readingAccent, shine * 0.65))) : root.readingUpcoming)
-                                            style: Text.Outline
-                                            styleColor: root.outlineFor(color)
+                                            color: typed && incorrect ? Colors.error : Colors.overSurface
                                             Rectangle {
                                                 objectName: "typing-caret-" + glyph.characterIndex
                                                 x: -1
-                                                y: Math.max(0, glyph.baselineOffset - glyph.font.pixelSize - 1)
+                                                y: glyph.baselineOffset + 3
                                                 width: parent.width + 2
-                                                height: glyph.font.pixelSize + 6
+                                                height: 2
                                                 z: -1
                                                 radius: 4
-                                                color: Qt.alpha(root.readingAccent, 0.10)
+                                                color: Qt.alpha(Colors.primary, 0.75)
                                                 visible: glyph.caretHere
                                             }
 
@@ -801,6 +799,8 @@ Item {
                             property bool glide: false
                             property real breath: 1
                             property bool placed: false
+                            property real rowY: 0
+                            property real rowHeight: 32
                             width: 2.5
                             height: 26
                             z: 2
@@ -811,6 +811,8 @@ Item {
                                 const nextY = point.y + Math.max(0, item.baselineOffset - item.font.pixelSize);
                                 glide = placed && Math.abs(nextY - y) < 2 && Motion.enabled;
                                 targetGlyph = item;
+                                rowY = Math.max(0, point.y);
+                                rowHeight = Math.max(30, item.height);
                                 x = Math.max(1, point.x - 3);
                                 y = nextY;
                                 height = Math.round(item.font.pixelSize * 1.15);
@@ -836,12 +838,19 @@ Item {
                                 color: Qt.alpha(Colors.primary, 0.10)
                             }
                             Rectangle {
+                                width: 5
+                                height: 5
+                                radius: 1
+                                rotation: 45
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                y: -3
+                                color: Colors.primary
+                            }
+                            Rectangle {
                                 objectName: "typing-caret-core"
                                 anchors.fill: parent
                                 radius: width / 2
-                                color: root.readingAccent
-                                border.width: 1
-                                border.color: root.outlineFor(color)
+                                color: Colors.primary
                                 opacity: Motion.enabled ? smoothCaret.breath : 1
                             }
                         }
