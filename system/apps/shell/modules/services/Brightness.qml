@@ -72,7 +72,7 @@ Singleton {
             return;
         const monitor = monitors.find(m => focusedName === m.screen.name);
         if (monitor)
-            monitor.setBrightness(monitor.brightness - 0.05);
+            monitor.setBrightness(Math.max(0.05, monitor.brightness - 0.05));
     }
 
     reloadableId: "brightness"

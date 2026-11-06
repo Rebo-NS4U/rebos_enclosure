@@ -236,7 +236,7 @@ Singleton {
 
         function decrement() {
             if (root.sink?.audio)
-                root.sink.audio.volume = Math.max(0, root.sink.audio.volume - 0.05);
+                root.sink.audio.volume = Math.max(0.05, root.sink.audio.volume - 0.05);
         }
 
         function set(volume: real) {
@@ -258,7 +258,7 @@ Singleton {
 
         function decrementMic() {
             if (root.source?.audio)
-                root.setMicVolume((root.source.audio.volume ?? 0) - 0.05);
+                root.setMicVolume(Math.max(0.05, (root.source.audio.volume ?? 0) - 0.05));
         }
     }
 }

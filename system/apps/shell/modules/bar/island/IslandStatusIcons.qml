@@ -158,7 +158,7 @@ RowLayout {
             onStepped: steps => {
                 if (volBtn.audioDevice) {
                     const delta = steps * 0.05;
-                    volBtn.audioDevice.volume = Math.max(0.0, Math.min(1.0, volBtn.volumeVal + delta));
+                    volBtn.audioDevice.volume = Math.max(0.05, Math.min(1.0, volBtn.volumeVal + delta));
                 }
             }
         }

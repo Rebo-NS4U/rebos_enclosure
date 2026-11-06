@@ -155,7 +155,7 @@ Item {
         }
 
         ScrollStepHandler {
-            onStepped: steps => root.adjusted(Math.max(0, Math.min(1, root.normalizedValue + steps * 0.05)))
+            onStepped: steps => root.adjusted(Math.max(0.05, Math.min(1, root.normalizedValue + steps * 0.05)))
         }
 
         StyledToolTip {

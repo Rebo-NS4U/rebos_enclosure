@@ -829,7 +829,7 @@ Item {
                         }
                         onWheelScrolled: (delta) => {
                             if (delta > 0) Audio.setMicVolume(Math.min(1.0, micVol + 0.05));
-                            else Audio.setMicVolume(Math.max(0, micVol - 0.05));
+                            else Audio.setMicVolume(Math.max(0.05, micVol - 0.05));
                         }
                     }
                     StyledText {

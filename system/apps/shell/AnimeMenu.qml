@@ -1205,7 +1205,7 @@ PanelWindow {
                     }
                     RowLayout {
                         StyledText { text: "Starting volume"; Layout.preferredWidth: root.unit * 10 }
-                        Slider { from: 0; to: 100; stepSize: 5; value: root.settings.volume ?? 80; onMoved: root.updateSetting("volume", Math.round(value)) }
+                        Slider { from: 5; to: 100; stepSize: 5; value: root.settings.volume ?? 80; onMoved: root.updateSetting("volume", Math.round(value)) }
                         StyledText { text: (root.settings.volume ?? 80) + "%" }
                     }
                     StyledText { text: "When an episode ends, load the next one in the same player and pause it. Press Play here or Space in VLC when you are ready. Turning this off stops at the end of the current episode. Settings save automatically."; Layout.fillWidth: true; wrapMode: Text.Wrap; color: Colors.overSurfaceVariant }
