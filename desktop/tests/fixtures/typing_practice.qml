@@ -100,6 +100,7 @@ ShellRoot {
                 const input = find(practice, "typing-input");
                 const first = find(practice, "typing-character-0");
                 if (!input || !first) throw Error("Typing input or glyph missing");
+                if (input.opacity !== 0 || !input.enabled) throw Error("Native editor must accept input without painting ghost characters");
                 if (phase === 1) {
                     const originalSource = practice.pageSource;
                     practice.fullscreen = true;
@@ -179,7 +180,13 @@ ShellRoot {
                     const expectedRow = Math.max(0, firstPoint.y + firstGlyph.baselineOffset + practice.highlightBounds.y - practice.highlightPadding);
                     if (pageCaret.targetGlyph !== firstGlyph || Math.abs(pageCaret.targetRowY - expectedRow) > 0.01) throw Error("New page did not reset the highlight to its first row: " + JSON.stringify({phase: phase, position: practice.position, targetCorrect: pageCaret.targetGlyph === firstGlyph, row: pageCaret.targetRowY, expected: expectedRow, cursor: input.cursorPosition}));
                     if (practice.rounds < 1) {
-                        input.text = practice.passage.slice(0, -1); input.cursorPosition = input.length;
+                        const stablePage = practice.passage;
+                        const stablePosition = practice.position;
+                        const pageLetters = practice.characters(stablePage);
+                        for (let count = 1; count < pageLetters.length; count++) {
+                            input.text = pageLetters.slice(0, count).join(""); input.cursorPosition = input.length;
+                            if (practice.busy || practice.position !== stablePosition || practice.passage !== stablePage) throw Error("Passage changed before its final character was entered");
+                        }
                         pageCaret.follow(find(practice, "typing-character-" + input.cursorPosition));
                         input.text = practice.passage; phase++; return;
                     }

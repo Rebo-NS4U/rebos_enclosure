@@ -891,6 +891,8 @@ Item {
                         TextEdit {
                             id: answer
                             objectName: "typing-input"
+                            // Keep native preedit/selection rendering out of the custom passage.
+                            opacity: 0
                             anchors.fill: parent
                             color: "transparent"
                             selectionColor: "transparent"
