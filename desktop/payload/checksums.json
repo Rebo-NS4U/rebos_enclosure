@@ -218,7 +218,7 @@
   "system/apps/media/mpv_session.py": "495b7fb065f93064c31119fe89966c9569ee5255f6b685c360bde01d2c8a8469",
   "system/apps/media/primewire_browser.cjs": "b5945b69f52ed7e338276e5b016b90fb0269acd22be0425f11899feb932558d0",
   "system/apps/media/primewire_source.py": "281f0d8a0795afe047812da52766ced2023f5b8001fa72c9c2e40ff9ef9121ee",
-  "system/apps/media/stream_relay.py": "b4e6c8187458a73b2093bb0fb9c30d2c0567c24d42914f958c3c9429a6061992",
+  "system/apps/media/stream_relay.py": "7d56b424596160c758d3d2e3d6c6f7602f1292d028db0d75126d91f96fca3c8d",
   "system/apps/media/torbox_source.py": "145ec403a844c2b868bc5bbf3cb73eda1eddf209e71eb5f53c2976092916575b",
   "system/apps/media/vlc_control.lua": "6c8d8f4b0ed9beb735797ee56878aa61aeea16dda1ebd8278b01b581ed49c3ea",
   "system/apps/media/vlc_session.py": "f9d0fc1d913efe248b001c79d95281e89af39fdbf4a42a2422515c4c8b23c211",

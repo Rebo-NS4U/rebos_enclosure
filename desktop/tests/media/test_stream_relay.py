@@ -47,6 +47,21 @@ class RelayTests(unittest.TestCase):
     def tearDown(self):
         self.relay.close();self.origin.shutdown();self.origin.server_close();self.folder.cleanup()
 
+    def test_hls_host_checks_are_cached_briefly_and_revalidated(self):
+        self.relay.allow_local = False
+        public = [(2, 1, 6, '', ('8.8.8.8', 443))]
+        private = [(2, 1, 6, '', ('127.0.0.1', 443))]
+        playlist = '#EXTM3U\n' + '\n'.join(f'segment-{i}.ts' for i in range(1000))
+        with patch('stream_relay.socket.getaddrinfo', return_value=public) as dns, \
+             patch('stream_relay.time.monotonic', return_value=100):
+            rewritten = self.relay.rewrite(playlist, 'https://example.com/list.m3u8', {})
+            self.assertEqual(rewritten.count('/media/'), 1000)
+            self.assertEqual(dns.call_count, 1)
+        with patch('stream_relay.socket.getaddrinfo', return_value=private), \
+             patch('stream_relay.time.monotonic', return_value=131):
+            with self.assertRaisesRegex(ValueError, 'Public video source'):
+                self.relay.register('https://example.com/new.ts')
+
     def test_slow_origin_forwards_available_bytes_before_full_chunk(self):
         data = bytes(range(256)) * 512
         for preloaded in (False, True):

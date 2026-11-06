@@ -18,6 +18,7 @@ class StreamRelay:
         self.allow_local = allow_local
         self.sources = OrderedDict()
         self.routes = {}
+        self.validated_hosts = OrderedDict()
         self.lock = threading.Lock()
         self.next_id = 0
         self.failures = {}
@@ -198,9 +199,22 @@ class StreamRelay:
         if not self.allow_local:
             if parsed.scheme != 'https':
                 raise ValueError('HTTPS media required')
-            addresses = socket.getaddrinfo(parsed.hostname, parsed.port or 443, type=socket.SOCK_STREAM)
+            # Large HLS playlists can contain thousands of segments on one host.
+            # Bound both the lifetime and size of successful DNS checks.
+            host = (parsed.hostname, parsed.port or 443)
+            now = time.monotonic()
+            with self.lock:
+                checked = self.validated_hosts.get(host)
+            if checked is not None and now - checked < 30:
+                return
+            addresses = socket.getaddrinfo(*host, type=socket.SOCK_STREAM)
             if not addresses or any(not ipaddress.ip_address(entry[4][0]).is_global for entry in addresses):
                 raise ValueError('Public video source required')
+            with self.lock:
+                self.validated_hosts[host] = now
+                self.validated_hosts.move_to_end(host)
+                while len(self.validated_hosts) > 256:
+                    self.validated_hosts.popitem(last=False)
 
     def register(self, url, headers=None, height=None):
         parts = urlsplit(url)
