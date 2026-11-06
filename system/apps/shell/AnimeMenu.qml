@@ -66,6 +66,8 @@ PanelWindow {
     property bool torboxBusy: false
     property bool torboxManual: false
     property var youtubeRecommendations: []
+    property var youtubeAccount: ({connected: false, browsers: [], text: "Connect your YouTube account for a personalized For You page."})
+    property bool youtubeBusy: false
     property list<string> mediaGenres: []
     property var filterOptions: []
     property var appliedFilters: ({})
@@ -141,7 +143,7 @@ PanelWindow {
         const state = tabStates[kind];
         query = state?.query ?? "";
         search.text = query;
-        category = state?.category ?? "most-popular";
+        category = state?.category ?? (kind === "youtube" ? "for-you" : "most-popular");
         appliedFilters = state?.filters ?? ({});
         draftFilters = Object.assign({}, appliedFilters);
         cataloguePage = state?.page ?? 1;
@@ -157,7 +159,7 @@ PanelWindow {
                 Qt.callLater(() => { grid.contentY = state.scroll; });
             }
         } else load(false);
-        categoryPicker.currentIndex = Math.max(0, (mediaKind === "anime" ? ["most-popular", "recently-updated", "top-rated", "history"] : mediaKind === "youtube" ? ["most-popular", "history"] : ["most-popular", "featured", "recently-updated", "history"]).indexOf(category));
+        categoryPicker.currentIndex = Math.max(0, (mediaKind === "anime" ? ["most-popular", "recently-updated", "top-rated", "history"] : mediaKind === "youtube" ? ["for-you", "most-popular", "history"] : ["most-popular", "featured", "recently-updated", "history"]).indexOf(category));
         Qt.callLater(() => search.focusInput());
     }
     function chooseRecommendation(value: string): void {
@@ -231,10 +233,19 @@ PanelWindow {
         Qt.callLater(() => { if (detailScroll.contentItem) detailScroll.contentItem.contentY = 0; });
         card.forceActiveFocus();
     }
+    function youtubeQueue(): var {
+        if (!isYoutube) return [];
+        const items = [];
+        for (let i = 0; i < shows.count; i++) {
+            const row = shows.get(i);
+            if (row.url) items.push({url: row.url, title: row.title});
+        }
+        return items;
+    }
     function playCard(index: int): void {
         if (!ready || index < 0 || index >= shows.count) return;
         grid.currentIndex = index;
-        send({action: "quick_play", show: Object.assign({}, shows.get(index), {kind: mediaKind})});
+        send({action: "quick_play", queue: youtubeQueue(), show: Object.assign({}, shows.get(index), {kind: mediaKind})});
     }
     function updateSetting(key: string, value): void {
         const updated = Object.assign({}, settings);
@@ -266,6 +277,8 @@ PanelWindow {
                 filterOptions = data.filterOptions ?? [];
                 mediaGenres = data.mediaGenres ?? [];
                 youtubeRecommendations = data.youtubeRecommendations ?? [];
+                youtubeAccount = data.youtubeAccount ?? youtubeAccount;
+                youtubeBusy = false;
                 if (opened && shows.count === 0) load(false);
             } else if (data.event === "catalogue" && data.request === requestId) {
                 const existing = new Set();
@@ -317,6 +330,13 @@ PanelWindow {
                     Qt.openUrlExternally(torbox.url);
                     opened = false;
                 }
+            } else if (["youtube_account", "youtube_connect", "youtube_disconnect"].indexOf(data.event) >= 0) {
+                youtubeAccount = data.data;
+                youtubeBusy = false;
+                if (data.event !== "youtube_account") {
+                    delete tabStates.youtube;
+                    if (isYoutube) chooseRecommendation("for-you");
+                }
             } else if (data.event === "settings") {
                 settings = data.data;
             } else if (data.event === "verification") {
@@ -361,6 +381,9 @@ PanelWindow {
                     message = data.text;
                 } else if ((data.action === "details" || data.action === "season") && data.request === detailRequest) {
                     detailLoading = false; details = Object.assign({}, details, {warning: data.text});
+                } else if ((data.action ?? "").startsWith("youtube_")) {
+                    youtubeBusy = false;
+                    youtubeAccount = Object.assign({}, youtubeAccount, {text: data.text});
                 } else if ((data.action ?? "").startsWith("torbox_")) {
                     torboxBusy = false;
                     torbox = Object.assign({}, torbox, {text: data.text});
@@ -386,7 +409,7 @@ PanelWindow {
         }
         function season(index: int): void { root.chooseSeason(index); }
         function play(index: int): void {
-            if (index >= 0 && index < root.episodes.length) root.send({action: "play", show: root.selectedShow, episodes: root.episodes, index: index});
+            if (index >= 0 && index < root.episodes.length) root.send({action: "play", queue: root.youtubeQueue(), show: root.selectedShow, episodes: root.episodes, index: index});
         }
         function filters(): void { root.openFilters(); }
         function filter(key: string, value: string): void { root.setDraftFilter(key, value); }
@@ -401,7 +424,7 @@ PanelWindow {
                 playbackWindowTitle: root.playbackWindowTitle, activeWindowTitle: root.playbackClient?.title ?? "",
                 nextOverlayX: nextOverlay.cardX, nextOverlayY: nextOverlay.cardY,
                 searchText: search.text, searchFocused: search.inputActiveFocus, cardFocused: card.activeFocus, kind: root.mediaKind, category: root.category, hasMore: root.hasMore, title: root.selectedShow.title ?? "", seasonCount: root.details.seasons?.length ?? 0, shows: shows.count, loading: root.loading, detailLoading: root.detailLoading,
-                cast: root.details.cast ?? [], directors: root.details.directors ?? [], genres: root.details.genres ?? [], recommendationGroups: root.youtubeRecommendations.length, episodes: root.episodes.length, metadata: root.details.metadata?.length ?? 0,
+                cast: root.details.cast ?? [], directors: root.details.directors ?? [], genres: root.details.genres ?? [], youtubeConnected: root.youtubeAccount.connected ?? false, youtubeAutoNext: root.settings.youtube_auto_next ?? true, youtubeBusy: root.youtubeBusy, recommendationGroups: root.youtubeRecommendations.length, episodes: root.episodes.length, metadata: root.details.metadata?.length ?? 0,
                 descriptionLength: root.details.description?.length ?? 0, filters: root.appliedFilters,
                 filterFields: root.filterOptions.length, page: root.cataloguePage, message: root.message,
                 subtitleFont: root.settings.subtitle_font ?? "OpenDyslexic", liveSubtitles: root.settings.live_subtitles ?? true, captions: root.captionStatus,
@@ -579,8 +602,8 @@ PanelWindow {
                     MenuButton { visible: root.mediaKind === "anime"; text: root.filterCount > 0 ? "Filters (" + root.filterCount + ")" : "Filters"; selected: root.filterCount > 0; enabled: root.ready; onClicked: root.openFilters() }
                     MenuCombo {
                         id: categoryPicker
-                        model: root.mediaKind === "anime" ? ["Popular", "Recently updated", "Top rated", "History"] : root.isYoutube ? ["Recommended", "History"] : ["Popular", "Featured", "New releases", "History"]
-                        onActivated: { root.category = (root.mediaKind === "anime" ? ["most-popular", "recently-updated", "top-rated", "history"] : root.isYoutube ? ["most-popular", "history"] : ["most-popular", "featured", "recently-updated", "history"])[currentIndex]; search.text = ""; root.query = ""; root.appliedFilters = ({}); root.draftFilters = ({}); root.load(false); }
+                        model: root.mediaKind === "anime" ? ["Popular", "Recently updated", "Top rated", "History"] : root.isYoutube ? ["For You", "Popular", "History"] : ["Popular", "Featured", "New releases", "History"]
+                        onActivated: { root.category = (root.mediaKind === "anime" ? ["most-popular", "recently-updated", "top-rated", "history"] : root.isYoutube ? ["for-you", "most-popular", "history"] : ["most-popular", "featured", "recently-updated", "history"])[currentIndex]; search.text = ""; root.query = ""; root.appliedFilters = ({}); root.draftFilters = ({}); root.load(false); }
                     }
                 }
                 StyledText {
@@ -591,6 +614,68 @@ PanelWindow {
                         : "Search a title, actor: Anne Hathaway, or genre: Comedy. Genres include Action, Drama, Horror, Romance and Sci-Fi."
                     color: Colors.overSurfaceVariant
                     wrapMode: Text.Wrap
+                }
+                ColumnLayout {
+                    visible: root.isYoutube
+                    Layout.fillWidth: true
+                    spacing: root.unit * 0.5
+                    RowLayout {
+                        Layout.fillWidth: true
+                        StyledText { text: "YouTube · For You"; font.bold: true; Layout.fillWidth: true }
+                        CheckBox {
+                            text: "Auto next"
+                            checked: root.settings.youtube_auto_next ?? true
+                            onToggled: root.updateSetting("youtube_auto_next", checked)
+                            enabled: root.ready
+                        }
+                        MenuButton {
+                            text: "Refresh"
+                            enabled: root.ready && !root.loading && !root.youtubeBusy
+                            onClicked: { root.send({action: "youtube_account"}); root.load(false); }
+                        }
+                    }
+                    RowLayout {
+                        Layout.fillWidth: true
+                        MenuCombo {
+                            id: youtubeBrowser
+                            Layout.fillWidth: true
+                            model: (root.youtubeAccount.browsers ?? []).map(row => row.label)
+                            currentIndex: Math.max(0, (root.youtubeAccount.browsers ?? []).findIndex(row => row.id === root.youtubeAccount.browser))
+                            enabled: !root.youtubeBusy
+                            Accessible.name: "YouTube browser profile"
+                        }
+                        MenuButton {
+                            text: "Sign in in browser"
+                            enabled: root.ready && !root.youtubeBusy
+                            onClicked: Qt.openUrlExternally("https://www.youtube.com/")
+                        }
+                        MenuButton {
+                            text: root.youtubeBusy ? "Connecting…" : "Finish connection"
+                            enabled: root.ready && !root.youtubeBusy && (root.youtubeAccount.browsers ?? []).length > 0
+                            onClicked: {
+                                root.youtubeBusy = true;
+                                root.send({action: "youtube_connect", browser: root.youtubeAccount.browsers[youtubeBrowser.currentIndex].id});
+                            }
+                        }
+                        MenuButton {
+                            text: "Disconnect"
+                            visible: root.youtubeAccount.connected ?? false
+                            enabled: root.ready && !root.youtubeBusy
+                            onClicked: { root.youtubeBusy = true; root.send({action: "youtube_disconnect"}); }
+                        }
+                    }
+                    StyledText {
+                        Layout.fillWidth: true
+                        text: root.youtubeAccount.text ?? ""
+                        color: Colors.overSurfaceVariant
+                        wrapMode: Text.Wrap
+                    }
+                    StyledText {
+                        Layout.fillWidth: true
+                        text: "Connect the profile signed in to YouTube, then browse and play here. Auto next follows the loaded feed or playlist; it stops at the last video."
+                        color: Colors.overSurfaceVariant
+                        wrapMode: Text.Wrap
+                    }
                 }
                 GridLayout {
                     visible: root.isYoutube
@@ -614,7 +699,7 @@ PanelWindow {
                 StyledText {
                     visible: root.isYoutube && !root.query && root.category !== "history"
                     Layout.fillWidth: true
-                    text: (root.youtubeRecommendations.find(row => row.id === root.category)?.title ?? "Popular") + " recommendations · Public search suggestions, without sign-in or personalization. Search or paste a link for something specific."
+                    text: root.category === "for-you" ? "For You · Recommendations from your connected YouTube session" : (root.youtubeRecommendations.find(row => row.id === root.category)?.title ?? "Popular") + " · Public topic search"
                     color: Colors.overSurfaceVariant
                     wrapMode: Text.Wrap
                 }
@@ -865,7 +950,7 @@ PanelWindow {
                         text: root.episodes.length ? (root.mediaKind === "movies" || root.isYoutube ? "Play" : "Play · " + root.episodeLabel(root.episodes[root.selectedEpisode])) : root.detailLoading ? "Loading…" : "Unavailable"
                         enabled: root.episodes.length > 0
                         selected: true
-                        onClicked: root.send({action: "play", show: root.selectedShow, episodes: root.episodes, index: root.selectedEpisode})
+                        onClicked: root.send({action: "play", queue: root.youtubeQueue(), show: root.selectedShow, episodes: root.episodes, index: root.selectedEpisode})
                     }
                 }
                 GridView {
@@ -879,7 +964,7 @@ PanelWindow {
                     keyNavigationEnabled: true
                     currentIndex: root.selectedEpisode
                     onCurrentIndexChanged: { if (currentIndex >= 0) root.selectedEpisode = currentIndex; }
-                    Keys.onReturnPressed: { if (root.episodes.length) root.send({action: "play", show: root.selectedShow, episodes: root.episodes, index: root.selectedEpisode}); }
+                    Keys.onReturnPressed: { if (root.episodes.length) root.send({action: "play", queue: root.youtubeQueue(), show: root.selectedShow, episodes: root.episodes, index: root.selectedEpisode}); }
                     Keys.onEscapePressed: root.back()
                     cellWidth: width / Math.max(1, Math.floor(width / (root.unit * (root.mediaKind === "anime" ? 7 : 26))))
                     cellHeight: root.unit * 3.5
@@ -896,7 +981,7 @@ PanelWindow {
                             text: root.mediaKind === "anime" ? "Ep " + episode.modelData : root.episodeLabel(episode.modelData)
                             selected: root.selectedEpisode === episode.index
                             onClicked: root.selectedEpisode = episode.index
-                            onDoubleClicked: root.send({action: "play", show: root.selectedShow, episodes: root.episodes, index: episode.index})
+                            onDoubleClicked: root.send({action: "play", queue: root.youtubeQueue(), show: root.selectedShow, episodes: root.episodes, index: episode.index})
                         }
                     }
                 }

@@ -199,12 +199,12 @@ class Engine(app.Browser):
             if token == self.play_token:
                 if automatic and getattr(self.session, 'stop_count', 0) != stop_count:
                     return
-                if automatic and not self.settings['auto_next']:
+                if automatic and not self.settings.get('youtube_auto_next' if media_sources.kind_of(show) == 'youtube' else 'auto_next', True):
                     self.next_requested = False
                     self.publish_next_episode()
                     self.play_status.set_text('Episode finished. Loading the next episode is off.')
                     return
-                self.launch_player(show, episodes, index, token, links, settings, paused=automatic)
+                self.launch_player(show, episodes, index, token, links, settings, paused=automatic and media_sources.kind_of(show) != 'youtube')
         def failed(message):
             if token == self.play_token:
                 self.next_requested = False
@@ -400,7 +400,10 @@ class Engine(app.Browser):
                 self.history[show['id']]['completed'] = True
                 self.history[show['id']]['position'] = 0
                 app.save_json(app.STATE / 'history.json', self.history)
-            if index + 1 < len(episodes):
+            if media_sources.kind_of(show) == 'youtube' and index + 1 < len(episodes) and self.settings.get('youtube_auto_next', True):
+                self.next_requested = True
+                self.start_episode(show, episodes, index + 1, token, automatic=True)
+            elif index + 1 < len(episodes):
                 # Keep the player surface alive and wait for the on-screen next card.
                 self.next_episode_paused = False
                 self.play_status.set_text('Episode finished. Choose the next episode to continue.')
@@ -466,7 +469,7 @@ def read_requests():
 if __name__ == '__main__':
     engine = Engine()
     signal.signal(signal.SIGTERM, lambda *_: loop.quit())
-    send(dict(event='ready', settings=engine.settings, filterOptions=app.filter_fields(), mediaGenres=media_sources.discovery_catalogue.GENRES, youtubeRecommendations=media_sources.YOUTUBE_RECOMMENDATIONS))
+    send(dict(event='ready', settings=engine.settings, filterOptions=app.filter_fields(), mediaGenres=media_sources.discovery_catalogue.GENRES, youtubeRecommendations=media_sources.YOUTUBE_RECOMMENDATIONS, youtubeAccount=media_sources.youtube_account.status()))
     threading.Thread(target=read_requests, daemon=True).start()
     try:
         loop.run()

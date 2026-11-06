@@ -1,4 +1,6 @@
 """Movie/TV catalogue adapter and YouTube extraction, independent of the UI."""
+import youtube_account
+import time
 import moviebox_source
 import primewire_source
 import discovery_catalogue
@@ -14,6 +16,7 @@ from urllib.parse import urlparse, parse_qs
 
 KINDS = ('anime', 'movies', 'tv', 'youtube')
 YOUTUBE_RECOMMENDATIONS = (
+    dict(id='for-you', title='For You', query=''),
     dict(id='most-popular', title='Popular', query='popular videos'),
     dict(id='youtube-music', title='Music', query='music official live performances'),
     dict(id='youtube-gaming', title='Gaming', query='gaming gameplay highlights'),
@@ -35,6 +38,8 @@ def kind_of(show):
 
 def catalogue(kind, category, query, page, fetch=None, check_availability=True):
     if kind == 'youtube':
+        if category == 'for-you' and not query.strip():
+            return youtube_for_you(page)
         topic = next((row for row in YOUTUBE_RECOMMENDATIONS if row['id'] == category), YOUTUBE_RECOMMENDATIONS[0])
         items = youtube_catalogue(query.strip() or topic['query'], page)
         collection = '/@' in query or '/channel/' in query
@@ -109,10 +114,12 @@ def youtube_url(value):
     return value
 
 
-def ytdlp(args, timeout=100):
+def ytdlp(args, timeout=100, browser=None):
     executable = shutil.which('yt-dlp') or str(Path.home() / '.local/bin/yt-dlp')
+    account = youtube_account.selection() if browser is None else browser
+    auth = ['--cookies-from-browser', account] if account else []
     try:
-        result = subprocess.run([executable, '--ignore-config', '--no-warnings', '--socket-timeout', '15', '--retries', '1', '--extractor-retries', '1', '--js-runtimes', 'node', *args], capture_output=True, text=True, timeout=timeout)
+        result = subprocess.run([executable, *auth, '--ignore-config', '--no-warnings', '--socket-timeout', '15', '--retries', '1', '--extractor-retries', '1', '--js-runtimes', 'node', *args], capture_output=True, text=True, timeout=timeout)
     except subprocess.TimeoutExpired:
         raise RuntimeError('YouTube took too long to respond. Try again.') from None
     if result.returncode:
@@ -120,6 +127,51 @@ def ytdlp(args, timeout=100):
         message = 'YouTube could not load this item. It may require sign-in, be unavailable, or need an updated yt-dlp.'
         raise RuntimeError(message)
     return result.stdout
+
+
+def fetch_youtube_feed(browser):
+    payload = json.loads(ytdlp(['--flat-playlist', '--dump-single-json', '--skip-download',
+                               '--playlist-end', '200', '--', ':ytrec'], browser=browser))
+    entries = [youtube_card(row) for row in payload.get('entries', []) if row and row.get('id')]
+    entries = list({row['id']: row for row in entries}.values())
+    if not entries:
+        raise ValueError('YouTube returned no recommendations. Check your browser sign-in and YouTube watch history.')
+    return entries
+
+
+def youtube_for_you(page):
+    browser = youtube_account.selection()
+    if not browser:
+        raise ValueError('Connect your YouTube account above to load For You, or choose a public topic.')
+    with youtube_account.LOCK:
+        cached = youtube_account.FEEDS.get(browser)
+    if page == 1 or cached is None or time.monotonic() - cached[0] > 600:
+        youtube_account.assert_signed_in(browser)
+        items = fetch_youtube_feed(browser)
+        with youtube_account.LOCK:
+            youtube_account.FEEDS[browser] = (time.monotonic(), items)
+    else:
+        items = cached[1]
+    start = (page - 1) * 20
+    return dict(items=items[start:start + 20], hasMore=start + 20 < len(items))
+
+
+def youtube_queue(show, episodes, index, cards):
+    """Single videos continue through the visible feed; playlists keep their order."""
+    if kind_of(show) != 'youtube' or len(episodes) != 1 or not cards:
+        return show, episodes, index
+    queue, labels = [], {}
+    for row in cards[:200]:
+        url = youtube_url(row.get('url', ''))
+        parsed = urlparse(url)
+        if not (parse_qs(parsed.query).get('v') or parsed.hostname == 'youtu.be'):
+            continue
+        if url not in labels:
+            queue.append(url)
+            labels[url] = str(row.get('title', 'Video'))
+    if episodes[0] not in queue:
+        return show, episodes, index
+    return dict(show, episodeLabels=labels), queue, queue.index(episodes[0])
 
 
 def youtube_card(entry):

@@ -10,6 +10,7 @@ import uuid
 from gi.repository import GLib
 import menu_backend as backend
 import torbox_source
+import youtube_account
 
 
 def socket_path():
@@ -42,7 +43,7 @@ class BackendServer:
         engine = backend.engine
         return dict(event='ready', settings=engine.settings, filterOptions=backend.app.filter_fields(), mediaGenres=backend.media_sources.discovery_catalogue.GENRES,
                     youtubeRecommendations=backend.media_sources.YOUTUBE_RECOMMENDATIONS,
-                    torbox=torbox_source.status(),
+                    torbox=torbox_source.status(), youtubeAccount=youtube_account.status(),
                     playerPid=engine.player.pid if engine.player is not None and engine.player.poll() is None else None)
 
     def read_client(self, key, connection):

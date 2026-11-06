@@ -6,6 +6,7 @@ import re
 from urllib.parse import quote
 
 import app
+import youtube_account
 import media_sources
 import torbox_source
 from PIL import Image
@@ -121,7 +122,7 @@ def dispatch(request, engine, send):
             engine.play_status.set_text('Preparing ' + show['title'] + '…')
             def start(selection):
                 if token == engine.play_token:
-                    selected, episodes, index = selection
+                    selected, episodes, index = media_sources.youtube_queue(*selection, request.get('queue', []))
                     engine.current = None
                     engine.start_episode(selected, episodes, index, token)
                     result(True)
@@ -137,8 +138,15 @@ def dispatch(request, engine, send):
                 raise ValueError('Choose an available episode')
             engine.stop()
             engine.current = None
+            show, episodes, index = media_sources.youtube_queue(show, episodes, index, request.get('queue', []))
             engine.start_episode(show, episodes, index, engine.play_token)
             result(True)
+        elif action == 'youtube_account':
+            result(youtube_account.status())
+        elif action == 'youtube_connect':
+            engine.background(lambda: youtube_account.connect(str(request.get('browser', '')), media_sources.fetch_youtube_feed), result, fail)
+        elif action == 'youtube_disconnect':
+            result(youtube_account.disconnect())
         elif action == 'stop':
             engine.stop()
             result(True)
@@ -189,7 +197,7 @@ def dispatch(request, engine, send):
             if not isinstance(new, dict):
                 raise ValueError('Settings must be an object')
             settings = engine.settings.copy()
-            for key in ['auto_next', 'fullscreen', 'live_subtitles', 'audio_normalization']:
+            for key in ['auto_next', 'youtube_auto_next', 'fullscreen', 'live_subtitles', 'audio_normalization']:
                 if key in new:
                     settings[key] = bool(new[key])
             for key, values in [('quality', ['best', '1080p', '720p', '480p', 'worst']), ('mode', ['sub', 'dub']), ('caption_language', ['en', 'es', 'auto']), ('subtitle_font', app.SUBTITLE_FONTS)]:

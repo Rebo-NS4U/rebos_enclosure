@@ -27,7 +27,7 @@ POOL = concurrent.futures.ThreadPoolExecutor(max_workers=8)
 BASE = 'https://hianime.at'
 SUBTITLE_FONTS = ('OpenDyslexic', 'Noto Sans', 'Noto Serif', 'DejaVu Sans')
 
-DEFAULTS = dict(auto_next=True, quality='best', mode='sub', fullscreen=False, volume=80, audio_normalization=True, live_subtitles=True, caption_delay=0, caption_language='auto', subtitle_font='OpenDyslexic')
+DEFAULTS = dict(auto_next=True, youtube_auto_next=True, quality='best', mode='sub', fullscreen=False, volume=80, audio_normalization=True, live_subtitles=True, caption_delay=0, caption_language='auto', subtitle_font='OpenDyslexic')
 
 
 def read_json(path, default):

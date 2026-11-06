@@ -21,9 +21,9 @@ class CaptionPolicyTests(unittest.TestCase):
         session.apply(['load', ('https://video', '', 'https://subtitle', ''), 'title', False, whisper_only])
         return session, json.loads(session.api.call_args.kwargs['data'])
 
-    def test_non_youtube_does_not_download_or_load_provided_subtitles(self):
+    def test_invalid_provider_captions_fall_back_without_native_track(self):
         session, data = self.load(True)
-        session.subtitle_path.assert_not_called()
+        session.subtitle_path.assert_called_once()
         self.assertIn('sub-track=-1', data['options'])
         self.assertIn('no-sub-autodetect-file', data['options'])
         self.assertTrue(data['whisper_only'])
