@@ -250,13 +250,9 @@ def youtube_details(show):
 def youtube_format(quality):
     height = {'1080p': 1080, '720p': 720, '480p': 480}.get(quality)
     fmt = f'bv*[height<={height}]+ba/b[height<={height}]' if height else ('worst' if quality == 'worst' else 'bv*+ba/b')
-    # Prefer verified direct streams: an accessible HLS manifest can still point
-    # to segments that YouTube rejects with 403 after the player opens it.
-    limit = f'[height<={height}]' if height else ''
-    direct = f'bv*{limit}[protocol=https]+ba[protocol=https]/b{limit}[protocol=https]'
-    if quality == 'worst':
-        direct = 'worst[protocol=https]'
-    return direct + "/" + fmt
+    # Rank resolution across both direct and HLS streams; a protocol-first
+    # fallback can select a 360p download despite an available 1080p stream.
+    return fmt
 
 
 def resolve_youtube(episode, quality):

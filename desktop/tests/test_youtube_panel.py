@@ -24,7 +24,24 @@ class YouTubePanelTests(unittest.TestCase):
         args = extract.call_args.args[0]
         self.assertIn('--check-formats', args)
         self.assertIn('bv*[height<=720]+ba/b[height<=720]', args[args.index('-f') + 1])
-        self.assertTrue(args[args.index('-f') + 1].startswith('bv*[height<=720][protocol=https]'))
+        self.assertEqual(args[args.index('-f') + 1], 'bv*[height<=720]+ba/b[height<=720]')
+
+    def test_resolution_wins_over_protocol_with_real_format_selector(self):
+        from yt_dlp import YoutubeDL
+        formats = [dict(format_id=str(height), url='https://example.com/video.m3u8',
+                        ext='mp4', height=height, width=height * 16 // 9,
+                        vcodec='avc1', acodec='mp4a', protocol=protocol)
+                   for height, protocol in [(144, 'm3u8_native'), (360, 'https'),
+                                            (480, 'm3u8_native'), (720, 'm3u8_native'),
+                                            (1080, 'm3u8_native')]]
+        for quality, expected in [('1080p', 1080), ('720p', 720), ('480p', 480),
+                                  ('best', 1080), ('worst', 144)]:
+            with self.subTest(quality=quality), YoutubeDL(dict(
+                    quiet=True, skip_download=True, check_formats=False,
+                    format=media_sources.youtube_format(quality))) as extractor:
+                result = extractor.process_ie_result(dict(
+                    id='test', title='Test', formats=[dict(row) for row in formats]), download=False)
+                self.assertEqual(result['height'], expected)
 
     def test_feed_requires_explicit_connection(self):
         with patch.object(youtube_account, 'selection', return_value=''):
