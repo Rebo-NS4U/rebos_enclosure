@@ -2,7 +2,7 @@
 function fish_greeting
     if status is-interactive; and test -t 1; and command -q bonsai-grow
         if bonsai-grow --reserve-animation
-            bonsai-grow --background --duration 2.5 </dev/null &
+            bonsai-grow --background </dev/null &
             set -g __bonsai_animation_pid $last_pid
             disown $last_pid
         end
