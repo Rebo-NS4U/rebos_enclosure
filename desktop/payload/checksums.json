@@ -224,7 +224,7 @@
   "system/apps/media/vlc_session.py": "5c469a990b608424995181ebbb5c79b9904494011a44a00abe3a4634e1f9b118",
   "system/apps/media/vlc_theme.py": "f1bbb0da0f00a37c415b47a10b1b0854a1768d37fc0061b1e8ab33d334e799ee",
   "system/apps/media/youtube_account.py": "865c663273f66eadf9f0779ec24135a32e922fcf395d958163d0ffb8b64ea259",
-  "system/apps/shell/AnimeMenu.qml": "9fd09a68437750ae4cae809eb426aea6abffa43d91a2f5c641a9cc5474629c41",
+  "system/apps/shell/AnimeMenu.qml": "c4ca30aeacf4e16bcd0b2d49487353bc67892d982f208d48ef91a6939bee3aff",
   "system/apps/shell/FanShell.qml": "fc2332e71c718a44f5176ab88c0ce01794d69dd7f80b1e5a3a25a44ba50b9dcd",
   "system/apps/shell/LICENSE": "06486a75fe21ab1eb92d6e070e7b5980d5a5ff88be9ed0ca32eeb3730442acda",
   "system/apps/shell/PlaybackNextOverlay.qml": "b644723d7b1cfaa3186c324e6ce9bc3a3b5ba8fe1a669d54827b0c4e2fe90ce9",

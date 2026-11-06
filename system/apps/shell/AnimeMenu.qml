@@ -33,6 +33,7 @@ PanelWindow {
     property var tabStates: ({})
     property string pageView: "browse"
     property string previousPage: "browse"
+    property string settingsSection: "general"
     property string query: ""
     property string category: "most-popular"
     property string message: "Choose a show to see its details"
@@ -159,14 +160,14 @@ PanelWindow {
                 Qt.callLater(() => { grid.contentY = state.scroll; });
             }
         } else load(false);
-        categoryPicker.currentIndex = Math.max(0, (mediaKind === "anime" ? ["most-popular", "recently-updated", "top-rated", "history"] : mediaKind === "youtube" ? ["for-you", "most-popular", "history"] : ["most-popular", "featured", "recently-updated", "history"]).indexOf(category));
+        categoryPicker.currentIndex = Math.max(0, (mediaKind === "anime" ? ["most-popular", "recently-updated", "top-rated", "history"] : mediaKind === "youtube" ? root.youtubeRecommendations.map(row => row.id).concat(["history"]) : ["most-popular", "featured", "recently-updated", "history"]).indexOf(category));
         Qt.callLater(() => search.focusInput());
     }
     function chooseRecommendation(value: string): void {
         category = value;
         query = "";
         search.text = "";
-        categoryPicker.currentIndex = 0;
+        categoryPicker.currentIndex = Math.max(0, youtubeRecommendations.findIndex(row => row.id === value));
         load(false);
     }
     function browseCredit(prefix: string, value: string): void {
@@ -414,11 +415,11 @@ PanelWindow {
         function filters(): void { root.openFilters(); }
         function filter(key: string, value: string): void { root.setDraftFilter(key, value); }
         function applyFilters(): void { root.applyFilters(); }
-        function settings(): void { root.previousPage = root.pageView; root.pageView = "settings"; card.forceActiveFocus(); }
+        function settings(): void { root.previousPage = root.pageView; root.settingsSection = root.isYoutube ? "youtube" : "general"; root.pageView = "settings"; card.forceActiveFocus(); }
         function status(): string {
             return JSON.stringify({open: root.opened, presented: root.presented, slideProgress: root.slideProgress,
                 sheetY: card.y, sheetHeight: card.height, screenHeight: root.height,
-                ready: root.ready, view: root.pageView,
+                ready: root.ready, view: root.pageView, settingsSection: root.settingsSection, gridHeight: grid.height, gridColumns: Math.round(grid.width / grid.cellWidth),
                 nextEpisodeAvailable: root.nextEpisodeAvailable, nextEpisodeLabel: root.nextEpisodeLabel, nextEpisodeTitle: root.nextEpisodeTitle,
                 nextOverlayVisible: root.nextOverlayVisible, playbackWindowFocused: root.playbackWindowFocused,
                 playbackWindowTitle: root.playbackWindowTitle, activeWindowTitle: root.playbackClient?.title ?? "",
@@ -505,8 +506,8 @@ PanelWindow {
         variant: "popup"
         radius: Styling.radius(20)
         anchors.horizontalCenter: parent.horizontalCenter
-        width: Math.min(root.width - root.unit * 2, root.unit * 90)
-        height: Math.min(root.height - root.unit * 4, root.unit * 53)
+        width: Math.min(root.width - root.unit * 2, root.unit * 110)
+        height: Math.min(root.height - root.unit * 4, root.unit * 78)
         y: root.height - (height + root.unit) * root.slideProgress
         clip: true
         focus: true
@@ -514,8 +515,8 @@ PanelWindow {
         MouseArea { anchors.fill: parent; onClicked: card.forceActiveFocus() }
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: root.unit * 1.5
-            spacing: root.unit
+            anchors.margins: root.unit
+            spacing: root.unit * 0.65
             StyledRect {
                 Layout.alignment: Qt.AlignHCenter
                 Layout.preferredWidth: root.unit * 3
@@ -537,7 +538,7 @@ PanelWindow {
                 MenuButton {
                     text: "Settings"
                     visible: root.pageView !== "settings"
-                    onClicked: { root.previousPage = root.pageView; root.pageView = "settings"; }
+                    onClicked: { root.previousPage = root.pageView; root.settingsSection = root.isYoutube ? "youtube" : "general"; root.pageView = "settings"; }
                 }
                 MenuButton { text: "×"; Accessible.name: "Close media menu"; onClicked: root.opened = false }
             }
@@ -598,110 +599,14 @@ PanelWindow {
                             search.focusInput();
                         }
                     }
+                    MenuButton { text: "Refresh"; enabled: root.ready && !root.loading; onClicked: root.load(false) }
                     MenuButton { text: "Search"; onClicked: { root.query = search.text.trim(); root.load(false); } }
                     MenuButton { visible: root.mediaKind === "anime"; text: root.filterCount > 0 ? "Filters (" + root.filterCount + ")" : "Filters"; selected: root.filterCount > 0; enabled: root.ready; onClicked: root.openFilters() }
                     MenuCombo {
                         id: categoryPicker
-                        model: root.mediaKind === "anime" ? ["Popular", "Recently updated", "Top rated", "History"] : root.isYoutube ? ["For You", "Popular", "History"] : ["Popular", "Featured", "New releases", "History"]
-                        onActivated: { root.category = (root.mediaKind === "anime" ? ["most-popular", "recently-updated", "top-rated", "history"] : root.isYoutube ? ["for-you", "most-popular", "history"] : ["most-popular", "featured", "recently-updated", "history"])[currentIndex]; search.text = ""; root.query = ""; root.appliedFilters = ({}); root.draftFilters = ({}); root.load(false); }
+                        model: root.mediaKind === "anime" ? ["Popular", "Recently updated", "Top rated", "History"] : root.isYoutube ? root.youtubeRecommendations.map(row => row.title).concat(["History"]) : ["Popular", "Featured", "New releases", "History"]
+                        onActivated: { root.category = (root.mediaKind === "anime" ? ["most-popular", "recently-updated", "top-rated", "history"] : root.isYoutube ? root.youtubeRecommendations.map(row => row.id).concat(["history"]) : ["most-popular", "featured", "recently-updated", "history"])[currentIndex]; search.text = ""; root.query = ""; root.appliedFilters = ({}); root.draftFilters = ({}); root.load(false); }
                     }
-                }
-                StyledText {
-                    visible: root.mediaKind === "movies" || root.mediaKind === "tv"
-                    Layout.fillWidth: true
-                    text: search.text.toLowerCase().startsWith("actor:")
-                        ? "Search catalogue cast, e.g. actor: Anne Hathaway. Load more checks further titles; cast coverage may be incomplete."
-                        : "Search a title, actor: Anne Hathaway, or genre: Comedy. Genres include Action, Drama, Horror, Romance and Sci-Fi."
-                    color: Colors.overSurfaceVariant
-                    wrapMode: Text.Wrap
-                }
-                ColumnLayout {
-                    visible: root.isYoutube
-                    Layout.fillWidth: true
-                    spacing: root.unit * 0.5
-                    RowLayout {
-                        Layout.fillWidth: true
-                        StyledText { text: "YouTube · For You"; font.bold: true; Layout.fillWidth: true }
-                        CheckBox {
-                            text: "Auto next"
-                            checked: root.settings.youtube_auto_next ?? true
-                            onToggled: root.updateSetting("youtube_auto_next", checked)
-                            enabled: root.ready
-                        }
-                        MenuButton {
-                            text: "Refresh"
-                            enabled: root.ready && !root.loading && !root.youtubeBusy
-                            onClicked: { root.send({action: "youtube_account"}); root.load(false); }
-                        }
-                    }
-                    RowLayout {
-                        Layout.fillWidth: true
-                        MenuCombo {
-                            id: youtubeBrowser
-                            Layout.fillWidth: true
-                            model: (root.youtubeAccount.browsers ?? []).map(row => row.label)
-                            currentIndex: Math.max(0, (root.youtubeAccount.browsers ?? []).findIndex(row => row.id === root.youtubeAccount.browser))
-                            enabled: !root.youtubeBusy
-                            Accessible.name: "YouTube browser profile"
-                        }
-                        MenuButton {
-                            text: "Sign in in browser"
-                            enabled: root.ready && !root.youtubeBusy
-                            onClicked: Qt.openUrlExternally("https://www.youtube.com/")
-                        }
-                        MenuButton {
-                            text: root.youtubeBusy ? "Connecting…" : "Finish connection"
-                            enabled: root.ready && !root.youtubeBusy && (root.youtubeAccount.browsers ?? []).length > 0
-                            onClicked: {
-                                root.youtubeBusy = true;
-                                root.send({action: "youtube_connect", browser: root.youtubeAccount.browsers[youtubeBrowser.currentIndex].id});
-                            }
-                        }
-                        MenuButton {
-                            text: "Disconnect"
-                            visible: root.youtubeAccount.connected ?? false
-                            enabled: root.ready && !root.youtubeBusy
-                            onClicked: { root.youtubeBusy = true; root.send({action: "youtube_disconnect"}); }
-                        }
-                    }
-                    StyledText {
-                        Layout.fillWidth: true
-                        text: root.youtubeAccount.text ?? ""
-                        color: Colors.overSurfaceVariant
-                        wrapMode: Text.Wrap
-                    }
-                    StyledText {
-                        Layout.fillWidth: true
-                        text: "Connect the profile signed in to YouTube, then browse and play here. Auto next follows the loaded feed or playlist; it stops at the last video."
-                        color: Colors.overSurfaceVariant
-                        wrapMode: Text.Wrap
-                    }
-                }
-                GridLayout {
-                    visible: root.isYoutube
-                    Layout.fillWidth: true
-                    columns: width < root.unit * 55 ? 4 : 8
-                    columnSpacing: root.unit * 0.5
-                    rowSpacing: root.unit * 0.5
-                    Repeater {
-                        model: root.youtubeRecommendations
-                        delegate: MenuButton {
-                            required property var modelData
-                            Layout.fillWidth: true
-                            Layout.preferredWidth: 0
-                            text: modelData.title
-                            selected: !root.query && root.category === modelData.id
-                            enabled: root.ready
-                            onClicked: root.chooseRecommendation(modelData.id)
-                        }
-                    }
-                }
-                StyledText {
-                    visible: root.isYoutube && !root.query && root.category !== "history"
-                    Layout.fillWidth: true
-                    text: root.category === "for-you" ? "For You · Recommendations from your connected YouTube session" : (root.youtubeRecommendations.find(row => row.id === root.category)?.title ?? "Popular") + " · Public topic search"
-                    color: Colors.overSurfaceVariant
-                    wrapMode: Text.Wrap
                 }
                 GridView {
                     id: grid
@@ -709,8 +614,8 @@ PanelWindow {
                     Layout.fillHeight: true
                     clip: true
                     model: shows
-                    cellWidth: width / Math.max(1, Math.floor(width / (root.unit * (root.isYoutube ? 22 : 13))))
-                    cellHeight: root.isYoutube ? cellWidth * 0.5625 + root.unit * 6 : cellWidth * 1.55
+                    cellWidth: width / Math.max(1, Math.floor(width / (root.unit * (root.isYoutube ? 17 : 11))))
+                    cellHeight: root.isYoutube ? cellWidth * 0.5625 + root.unit * 5 : cellWidth * 1.55
                     keyNavigationEnabled: true
                     onContentYChanged: root.loadNearBottom()
                     onMovementEnded: root.loadNearBottom()
@@ -1054,7 +959,22 @@ PanelWindow {
                     }
                 }
             }
+            RowLayout {
+                visible: root.pageView === "settings"
+                Layout.fillWidth: true
+                Repeater {
+                    model: [{id: "general", title: "Playback & subtitles"}, {id: "youtube", title: "YouTube"}, {id: "sources", title: "Movies & TV accounts"}]
+                    delegate: MenuButton {
+                        required property var modelData
+                        Layout.fillWidth: true
+                        text: modelData.title
+                        selected: root.settingsSection === modelData.id
+                        onClicked: { root.settingsSection = modelData.id; settingsScroll.contentItem.contentY = 0; }
+                    }
+                }
+            }
             ScrollView {
+                id: settingsScroll
                 visible: root.pageView === "settings"
                 Layout.fillWidth: true
                 Layout.fillHeight: true
@@ -1063,6 +983,72 @@ PanelWindow {
                 ColumnLayout {
                     width: parent.width
                     spacing: root.unit * 1.2
+                ColumnLayout {
+                    visible: root.settingsSection === "youtube"
+                    Layout.fillWidth: true
+                    spacing: root.unit * 0.5
+                    RowLayout {
+                        Layout.fillWidth: true
+                        StyledText { text: "YouTube · For You"; font.bold: true; Layout.fillWidth: true }
+                        CheckBox {
+                            text: "Auto next"
+                            checked: root.settings.youtube_auto_next ?? true
+                            onToggled: root.updateSetting("youtube_auto_next", checked)
+                            enabled: root.ready
+                        }
+                        MenuButton {
+                            text: "Check account"
+                            enabled: root.ready && !root.loading && !root.youtubeBusy
+                            onClicked: { root.send({action: "youtube_account"}); }
+                        }
+                    }
+                    RowLayout {
+                        Layout.fillWidth: true
+                        MenuCombo {
+                            id: youtubeBrowser
+                            Layout.fillWidth: true
+                            model: (root.youtubeAccount.browsers ?? []).map(row => row.label)
+                            currentIndex: Math.max(0, (root.youtubeAccount.browsers ?? []).findIndex(row => row.id === root.youtubeAccount.browser))
+                            enabled: !root.youtubeBusy
+                            Accessible.name: "YouTube browser profile"
+                        }
+                        MenuButton {
+                            text: "Sign in in browser"
+                            enabled: root.ready && !root.youtubeBusy
+                            onClicked: Qt.openUrlExternally("https://www.youtube.com/")
+                        }
+                        MenuButton {
+                            text: root.youtubeBusy ? "Connecting…" : "Finish connection"
+                            enabled: root.ready && !root.youtubeBusy && (root.youtubeAccount.browsers ?? []).length > 0
+                            onClicked: {
+                                root.youtubeBusy = true;
+                                root.send({action: "youtube_connect", browser: root.youtubeAccount.browsers[youtubeBrowser.currentIndex].id});
+                            }
+                        }
+                        MenuButton {
+                            text: "Disconnect"
+                            visible: root.youtubeAccount.connected ?? false
+                            enabled: root.ready && !root.youtubeBusy
+                            onClicked: { root.youtubeBusy = true; root.send({action: "youtube_disconnect"}); }
+                        }
+                    }
+                    StyledText {
+                        Layout.fillWidth: true
+                        text: root.youtubeAccount.text ?? ""
+                        color: Colors.overSurfaceVariant
+                        wrapMode: Text.Wrap
+                    }
+                    StyledText {
+                        Layout.fillWidth: true
+                        text: "Connect the profile signed in to YouTube, then browse and play here. Auto next follows the loaded feed or playlist; it stops at the last video."
+                        color: Colors.overSurfaceVariant
+                        wrapMode: Text.Wrap
+                    }
+                }
+                    ColumnLayout {
+                        visible: root.settingsSection === "sources"
+                        Layout.fillWidth: true
+                        spacing: root.unit
                     StyledText { text: "TorBox"; font.bold: true }
                     StyledText {
                         text: root.torbox.text ?? "TorBox is not connected."
@@ -1128,6 +1114,11 @@ PanelWindow {
                         wrapMode: Text.Wrap
                         color: Colors.overSurfaceVariant
                     }
+                    }
+                    ColumnLayout {
+                        visible: root.settingsSection === "general"
+                        Layout.fillWidth: true
+                        spacing: root.unit
                     CheckBox {
                         text: "Load the next episode paused"
                         palette.windowText: Colors.overSurface
@@ -1215,6 +1206,7 @@ PanelWindow {
                         StyledText { text: (root.settings.volume ?? 80) + "%" }
                     }
                     StyledText { text: "When an episode ends, load the next one in the same player and pause it. Press Play here or Space in VLC when you are ready. Turning this off stops at the end of the current episode. Settings save automatically."; Layout.fillWidth: true; wrapMode: Text.Wrap; color: Colors.overSurfaceVariant }
+                    }
                 }
             }
             StyledText {
