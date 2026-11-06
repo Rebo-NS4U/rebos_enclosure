@@ -119,6 +119,7 @@ def dispatch(request, engine, send):
             show = request['show']
             engine.stop()
             token = engine.play_token
+            engine.ensure_player(token)
             engine.play_status.set_text('Preparing ' + show['title'] + '…')
             def start(selection):
                 if token == engine.play_token:
@@ -128,6 +129,7 @@ def dispatch(request, engine, send):
                     result(True)
             def failed(error):
                 if token == engine.play_token:
+                    engine.discard_preparing_player(token)
                     engine.play_status.set_text(str(error))
                     fail(error)
             engine.background(lambda: card_selection(show, engine.history), start, failed)

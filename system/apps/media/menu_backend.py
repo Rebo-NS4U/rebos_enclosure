@@ -172,8 +172,35 @@ class Engine(app.Browser):
             return links
         self.background(resolve_source, ready, failure)
 
+    def ensure_player(self, token):
+        """Show the window before episode discovery or network resolution starts."""
+        if token != self.play_token:
+            return
+        if self.session is None:
+            def player_event(event):
+                # A closed/replaced preparation window cannot affect a new request.
+                if self.session is session:
+                    return self.player_event(event, token)
+                return False
+            session = VlcSession(self.settings.copy(), player_event, app.STATE / 'vlc.log')
+            self.session = session
+            self.player = session.process
+            self.stop_button.set_sensitive(True)
+
+    def discard_preparing_player(self, token):
+        if token == self.play_token and self.context is None and self.session is not None:
+            session = self.session
+            self.session = self.player = None
+            session.close()
+            self.stop_button.set_sensitive(False)
+
     def start_episode(self, show, episodes, index, token, automatic=False, _queue_ready=False):
         if token != self.play_token:
+            return
+        try:
+            self.ensure_player(token)
+        except OSError as error:
+            self.play_status.set_text('Could not open VLC: ' + str(error))
             return
         if media_sources.kind_of(show) == 'tv' and not _queue_ready:
             stop_count = getattr(self.session, 'stop_count', 0)
@@ -187,6 +214,7 @@ class Engine(app.Browser):
                 self.start_episode(*selection, token, automatic=automatic, _queue_ready=True)
             def failed_queue(message):
                 if token == self.play_token:
+                    self.discard_preparing_player(token)
                     self.next_requested = False
                     self.publish_next_episode()
                     self.play_status.set_text(message)
@@ -208,6 +236,7 @@ class Engine(app.Browser):
                 self.launch_player(show, episodes, index, token, links, settings, paused=automatic and media_sources.kind_of(show) != 'youtube')
         def failed(message):
             if token == self.play_token:
+                self.discard_preparing_player(token)
                 self.next_requested = False
                 self.publish_next_episode()
                 self.play_status.set_text(message)
@@ -233,9 +262,7 @@ class Engine(app.Browser):
         self.episode_ended = False
         self.publish_next_episode()
         try:
-            if self.session is None:
-                self.session = VlcSession(settings, lambda event: self.player_event(event, token), app.STATE / 'vlc.log')
-                self.player = self.session.process
+            self.ensure_player(token)
             self.session.load(links, self.media_title(show, episodes[index]), paused=paused, whisper_only=media_sources.kind_of(show) != 'youtube')
             self.stop_button.set_sensitive(True)
         except OSError as error:
