@@ -443,7 +443,7 @@ Network failures leave credentials untouched and do not trigger reauthentication
 An assistant session restricted by its host can still be unable to reach GitHub;
 repairing login does not change that session's network permissions.
 
-`bonsai-grow` is the sole shipped bonsai renderer. The Fish greeting reserves space for the tree, then runs `bonsai-grow --background` (one second by default) while the prompt accepts input. Submitting a command stops painting before command output starts. Each terminal gets a fresh specimen and one of 16 patterned ceramic pots. Small terminals and `REDUCE_MOTION=1` show a still greeting.
+`bonsai-grow` is the sole shipped bonsai renderer. The Fish greeting reserves space for the tree, then runs `bonsai-grow --background` (1.5 seconds by default) while the prompt accepts input. Submitting a command stops painting before command output starts. Each terminal gets a fresh specimen and one of 16 patterned ceramic pots. Small terminals and `REDUCE_MOTION=1` show a still greeting.
 
 Foliage forms layered clusters with airy gaps and fine dots at their edges. The trunk has solid exposed outlines with spaced bark shading, fine dots, and occasional knots inside. Leaf highlights are warm, shadows are cool, and stable patches add color variation using the current wallpaper palette. Existing branches remain visible through natural foliage gaps.
 
