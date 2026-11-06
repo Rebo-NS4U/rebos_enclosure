@@ -86,7 +86,11 @@ local function handle(_, query)
             vlc.volume.set(math.floor(math.max(0, math.min(100, tonumber(args.value) or 80)) * 256 / 100))
         elseif command == "subtitle" then
             local input = vlc.object.input()
-            if input and not whisper_only then vlc.var.set(input, "spu-es", tonumber(args.value)) end
+            local id = tonumber(args.value)
+            if input and id then
+                whisper_only = id < 0
+                vlc.var.set(input, "spu-es", id)
+            end
         elseif command == "addsubtitle" then
             vlc.input.add_subtitle(args.value, args.select == "true")
         elseif command == "caption" then

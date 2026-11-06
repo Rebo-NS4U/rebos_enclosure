@@ -83,6 +83,7 @@ class Engine(app.Browser):
         self.captions = None
         self.links = None
         self.file_loaded = False
+        self.subtitle_choice = 'auto'
         self.subtitle_sid = False
         self.subtitles_visible = True
         self.whisper_selected = False
@@ -216,7 +217,9 @@ class Engine(app.Browser):
         if token != self.play_token:
             return
         self.context = (show, episodes, index, token)
+        self.subtitle_choice = 'auto'
         self.close_captions()
+        send(dict(event='subtitle-tracks', selected='off', options=[dict(id='off', label='Off')], available=False))
         self.links = links
         self.file_loaded = False
         self.duration = self.position = 0
@@ -280,9 +283,11 @@ class Engine(app.Browser):
         self.resolve(key, lambda _: None, lambda _: None, preload=True)
 
     def settings_changed(self):
+        if self.session is not None:
+            self.session.live_enabled = self.settings.get('live_subtitles', True)
         if self.captions is not None and self.captions.language != self.settings.get('caption_language', 'auto'):
             self.close_captions()
-        if not self.settings.get('live_subtitles', True):
+        if getattr(self, 'subtitle_choice', 'auto') == 'off' or (not self.settings.get('live_subtitles', True) and getattr(self, 'subtitle_choice', 'auto') != 'whisper'):
             if self.captions is not None:
                 self.close_captions()
         elif self.captions is None and self.file_loaded and self.session is not None:
@@ -301,12 +306,17 @@ class Engine(app.Browser):
         self.whisper_selected = False
         send(dict(event='subtitle-state', off=True, whisper=False))
 
-    def start_captions(self):
-        if isinstance(getattr(self.session, 'provided_cues', None), list) and self.session.provided_cues:
+    def start_captions(self, force=False):
+        error = getattr(self.session, 'caption_error', '')
+        if not force and isinstance(error, str) and error:
             return
-        if not self.settings.get('live_subtitles', True) or self.links is None:
+        if not force and getattr(self, 'subtitle_choice', 'auto') == 'off':
             return
-        if self.context and media_sources.kind_of(self.context[0]) == 'youtube':
+        if not force and getattr(self, 'subtitle_choice', 'auto') != 'whisper' and isinstance(getattr(self.session, 'provided_cues', None), list) and self.session.provided_cues:
+            return
+        if (not force and not self.settings.get('live_subtitles', True) and getattr(self, 'subtitle_choice', 'auto') != 'whisper') or self.links is None:
+            return
+        if not force and getattr(self, 'subtitle_choice', 'auto') != 'whisper' and self.context and media_sources.kind_of(self.context[0]) == 'youtube':
             return  # YouTube supplies its own native/automatic caption track.
         try:
             def ready(path):
@@ -323,17 +333,35 @@ class Engine(app.Browser):
             self.session.show_captions()
             service.update_position(self.position, self.duration)
         except Exception as error:
+            if self.session is not None:
+                self.session.caption_error = str(error)
             send(dict(event='captions', text='Live captions unavailable: ' + str(error)))
+
+    def select_subtitles(self, source):
+        if self.session is None or not self.file_loaded:
+            raise ValueError('Start a video before choosing subtitles.')
+        tracks = self.session.subtitle_tracks()
+        if source not in {row['id'] for row in tracks['options']}:
+            raise ValueError('This subtitle source is not available for this video.')
+        self.close_captions()
+        self.subtitle_choice = source
+        self.session.caption_error = ''
+        self.session.command(['subtitle-source', source])
+        if source == 'whisper':
+            self.start_captions(force=True)
 
     def player_event(self, event, token):
         if token != self.play_token:
             return False
         kind = event.get('event')
+        if kind == 'end-file':
+            send(dict(event='subtitle-tracks', selected='off', options=[dict(id='off', label='Off')], available=False))
         if kind == 'process-exited':
             self.save_progress(force=True)
             self.close_captions()
             self.file_loaded = False
             self.session = None
+            send(dict(event='subtitle-tracks', selected='off', options=[dict(id='off', label='Off')], available=False))
             self.player = None
             self.context = None
             self.play_token += 1
@@ -362,6 +390,11 @@ class Engine(app.Browser):
             send(dict(event='episode', show=show['id'], index=index, episode=episodes[index]))
             self.start_captions()
         elif kind == 'property-change':
+            if event.get('name') == 'subtitle-tracks':
+                tracks = event.get('data') or {}
+                if getattr(self, 'subtitle_choice', 'auto') == 'provided' and tracks.get('selected') != 'provided':
+                    self.subtitle_choice = 'auto'
+                send(dict(event='subtitle-tracks', **tracks))
             if event.get('name') == 'sid':
                 self.subtitle_sid = event.get('data')
             elif event.get('name') == 'sub-visibility':
@@ -440,6 +473,7 @@ class Engine(app.Browser):
         self.next_requested = self.next_episode_paused = self.episode_ended = False
         self.publish_next_episode()
         send(dict(event='paused', value=False))
+        send(dict(event='subtitle-tracks', selected='off', options=[dict(id='off', label='Off')], available=False))
         self.play_status.set_text('Playback stopped.')
         self.stop_button.set_sensitive(False)
 

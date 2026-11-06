@@ -157,6 +157,9 @@ def dispatch(request, engine, send):
             if engine.session is not None:
                 engine.session.command(['set_property', 'pause', False])
             result(True)
+        elif action == 'subtitle_source':
+            engine.select_subtitles(str(request.get('source', 'off')))
+            result(True)
         elif action == 'show_captions':
             if engine.session is not None and engine.context and media_sources.kind_of(engine.context[0]) != 'youtube':
                 engine.settings_changed()

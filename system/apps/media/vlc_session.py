@@ -103,6 +103,10 @@ class VlcSession:
         self.cue_starts = []
         self.caption_requested = False
         self.provided_cues = []
+        self.whisper_cues = []
+        self.subtitle_source = 'off'
+        self.caption_error = ''
+        self.live_enabled = settings.get('live_subtitles', True)
         self.whisper_only = True
         self.caption_registered = False
         self.caption_text = None
@@ -212,6 +216,41 @@ class VlcSession:
     def show_captions(self):
         self.command(['captions-show'])
 
+    def subtitle_tracks(self):
+        state = self.last_state
+        options = [dict(id='off', label='Off')]
+        if self.provided_cues:
+            options.append(dict(id='provided', label='Provided English · checked'))
+        options.append(dict(id='whisper', label='Whisper English · local AI'))
+        for track in state.get('subtitles', []):
+            name = str(track.get('name', ''))
+            if track.get('id', -1) >= 0 and re.search(r'\b(english|eng|en)\b', name, re.I):
+                options.append(dict(id='native:' + str(track['id']), label='Video English · ' + name))
+        source = self.subtitle_source
+        if not self.whisper_only and (source in ('native', 'off') or source.startswith('native:')) and state.get('sid', -1) >= 0:
+            source = 'native:' + str(state['sid'])
+        if source.startswith('native:') and state.get('sid', -1) < 0:
+            source = 'off'
+        if source not in {row['id'] for row in options}:
+            source = 'off'
+        return dict(selected=source, options=options, available=bool(self.loaded),
+                    generating=source == 'whisper' and not self.whisper_cues,
+                    failed=source == 'whisper' and bool(getattr(self, 'caption_error', '')))
+
+    def select_subtitle_source(self, source):
+        if source not in {row['id'] for row in self.subtitle_tracks()['options']}:
+            return
+        self.api('clear-caption')
+        self.caption_text = ''
+        self.subtitle_source = source
+        self.caption_requested = source in ('provided', 'whisper')
+        self.cues = self.provided_cues if source == 'provided' else self.whisper_cues if source == 'whisper' else []
+        self.cue_starts = [cue[0] for cue in self.cues]
+        if source.startswith('native:'):
+            self.whisper_only = False
+        if not self.whisper_only:
+            self.api('subtitle', value=int(source.split(':')[1]) if source.startswith('native:') else -1)
+
     def apply(self, command):
         action = command[0]
         if action == 'load':
@@ -229,6 +268,8 @@ class VlcSession:
             if audio:
                 options.extend(['demux=avformat', 'input-slave=' + self.public_stream(audio, referer)])
             self.provided_cues = []
+            self.whisper_cues = []
+            self.caption_error = ''
             if subtitle and self.whisper_only:
                 try:
                     path = self.subtitle_path(subtitle, referer)
@@ -250,7 +291,9 @@ class VlcSession:
             self.cues = self.provided_cues
             self.cue_starts = [cue[0] for cue in self.cues]
             self.caption_requested = bool(self.provided_cues)
+            self.subtitle_source = 'provided' if self.provided_cues else ('whisper' if self.whisper_only and getattr(self, 'live_enabled', True) else 'native' if not self.whisper_only else 'off')
             self.last = {}
+            self.last_state = {}
             self.requested = True
             self.pause_when_ready = paused
             self.log_offset = self.logpath.stat().st_size
@@ -260,16 +303,24 @@ class VlcSession:
         elif action == 'set_property' and command[1] == 'sid':
             if not self.whisper_only:
                 self.api('subtitle', value=command[2])
+        elif action == 'subtitle-source':
+            self.select_subtitle_source(command[1])
         elif action == 'seek':
             self.api('seek', value=command[1])
         elif action == 'captions-file':
-            self.cues = read_cues(command[1])
-            self.cue_starts = [cue[0] for cue in self.cues]
+            self.whisper_cues = read_cues(command[1])
+            if self.subtitle_source == 'whisper':
+                self.cues = self.whisper_cues
+                self.cue_starts = [cue[0] for cue in self.cues]
         elif action == 'captions-show':
-            self.caption_requested = self.whisper_only
+            if self.subtitle_source == 'off':
+                self.subtitle_source = 'whisper'
+            self.caption_requested = self.subtitle_source in ('provided', 'whisper')
         elif action == 'captions-clear':
-            self.cues, self.cue_starts = [], []
-            self.caption_requested = False
+            self.whisper_cues = []
+            if self.subtitle_source != 'provided':
+                self.cues, self.cue_starts = [], []
+                self.caption_requested = False
             self.api('clear-caption')
         elif action == 'observe_property':
             pass  # The native interface publishes the properties below.
@@ -319,13 +370,26 @@ class VlcSession:
             self.input_error = True
         if self.provided_cues and not provided_cues_usable(self.provided_cues, state.get('duration', 0)):
             self.provided_cues = []
-            self.cues, self.cue_starts = [], []
+            if self.subtitle_source == 'provided':
+                self.cues, self.cue_starts = [], []
+                self.caption_requested = False
+                self.subtitle_source = 'whisper' if self.live_enabled else 'off'
+        if not self.whisper_only and state.get('sid', -1) >= 0:
+            if 'native:' + str(state['sid']) not in {row['id'] for row in self.subtitle_tracks()['options']}:
+                self.api('subtitle', value=-1)
+                state = dict(state, sid=-1)
+                self.last_state = state
+                self.subtitle_source = 'off'
+        if not self.whisper_only and state.get('sid', -1) >= 0:
+            # Reflect native VLC track changes and prevent duplicate OSD captions.
+            self.subtitle_source = 'native:' + str(state['sid'])
             self.caption_requested = False
-        whisper_active = self.whisper_only and self.caption_requested
+        whisper_active = self.subtitle_source in ('provided', 'whisper') and self.caption_requested
         values = {'time-pos':state.get('time',0), 'duration':state.get('duration',0), 'pause':state.get('state') == 'paused',
-                  'sid': 'whisper' if whisper_active else (False if self.whisper_only else state.get('sid', -1)),
-                  'sub-visibility': whisper_active if self.whisper_only else state.get('sid', -1) >= 0,
-                  'whisper-captions': whisper_active and not bool(self.provided_cues),
+                  'sid': self.subtitle_source if whisper_active else (False if self.whisper_only else state.get('sid', -1)),
+                  'sub-visibility': whisper_active or (not self.whisper_only and state.get('sid', -1) >= 0),
+                  'whisper-captions': whisper_active and self.subtitle_source == 'whisper',
+                  'subtitle-tracks': self.subtitle_tracks(),
                   'chapter-info': {'index': state.get('chapter', -1), 'count': state.get('chapter_count', 0),
                                    'name': state.get('chapter_name', '')}}
         for name, value in values.items():

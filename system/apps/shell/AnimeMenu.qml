@@ -59,6 +59,7 @@ PanelWindow {
     property string captionStatus: ""
     property bool subtitlesOff: true
     property bool whisperSelected: false
+    property var subtitleTracks: ({selected: "off", options: [{id: "off", label: "Off"}], available: false})
     readonly property bool captionsEnabled: (settings.live_subtitles ?? true) && whisperSelected && !subtitlesOff
     property var selectedShow: ({})
     property var details: ({})
@@ -355,6 +356,8 @@ PanelWindow {
                 playbackPaused = data.value;
             } else if (data.event === "captions") {
                 captionStatus = data.text;
+            } else if (data.event === "subtitle-tracks") {
+                subtitleTracks = {selected: data.selected, options: data.options ?? [], available: data.available ?? false, generating: data.generating ?? false, failed: data.failed ?? false};
             } else if (data.event === "subtitle-state") {
                 subtitlesOff = data.off;
                 whisperSelected = data.whisper ?? !data.off;
@@ -429,7 +432,7 @@ PanelWindow {
                 descriptionLength: root.details.description?.length ?? 0, filters: root.appliedFilters,
                 filterFields: root.filterOptions.length, page: root.cataloguePage, message: root.message,
                 subtitleFont: root.settings.subtitle_font ?? "OpenDyslexic", liveSubtitles: root.settings.live_subtitles ?? true, captions: root.captionStatus,
-                captionDelay: root.settings.caption_delay ?? 0, subtitlesOff: root.subtitlesOff, captionsEnabled: root.captionsEnabled});
+                subtitleSource: root.subtitleTracks.selected, subtitleOptions: root.subtitleTracks.options, captionDelay: root.settings.caption_delay ?? 0, subtitlesOff: root.subtitlesOff, captionsEnabled: root.captionsEnabled});
         }
     }
     Process {
@@ -1231,19 +1234,18 @@ PanelWindow {
                     onClicked: root.send({action: "next_episode"})
                 }
                 MenuButton { text: "Play"; visible: root.playbackPaused && !root.nextEpisodeResumesPlayback; selected: true; onClicked: root.send({action: "resume"}) }
-                MenuButton {
-                    text: "Captions"
-                    visible: root.mediaKind !== "youtube"
-                    checkable: true
-                    checked: root.captionsEnabled
-                    selected: root.captionsEnabled
-                    glowing: root.captionsEnabled
-                    Accessible.name: "Whisper captions in VLC"
-                    onClicked: {
-                        const enable = !root.captionsEnabled;
-                        root.updateSetting("live_subtitles", enable);
-                        if (enable) root.send({action: "show_captions"});
-                    }
+                MenuCombo {
+                    id: subtitleSwitcher
+                    Layout.preferredWidth: root.unit * 31
+                    Layout.maximumWidth: card.width * 0.45
+                    model: (root.subtitleTracks.options ?? []).map(row => row.label)
+                    currentIndex: Math.max(0, (root.subtitleTracks.options ?? []).findIndex(row => row.id === root.subtitleTracks.selected))
+                    displayText: "Subtitles: " + currentText + (root.subtitleTracks.failed ? " · unavailable" : root.subtitleTracks.generating ? " · preparing" : "")
+                    enabled: root.ready && (root.subtitleTracks.available ?? false)
+                    Accessible.name: "Active subtitle source: " + currentText
+                    ToolTip.visible: hovered
+                    ToolTip.text: "Choose the English subtitle source for the current video"
+                    onActivated: root.send({action: "subtitle_source", source: root.subtitleTracks.options[currentIndex].id})
                 }
                 MenuButton { text: "Stop"; onClicked: root.send({action: "stop"}) }
             }

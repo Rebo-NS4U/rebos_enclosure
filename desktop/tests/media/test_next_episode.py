@@ -182,6 +182,8 @@ class ChapterPollingTests(unittest.TestCase):
         state = dict(state='playing', input=True, input_state=3,
                      time=800, duration=1200, chapter=4, chapter_count=6, chapter_name='Credits')
         session.provided_cues = []
+        session.subtitle_source = 'off'
+        session.whisper_cues = []
         session.poll(state)
         session.emit.assert_any_call({'event': 'property-change', 'name': 'chapter-info',
                                       'data': {'index': 4, 'count': 6, 'name': 'Credits'}})
