@@ -17,7 +17,7 @@ Item {
     property bool practicing: false
     property bool fullscreen: false
     readonly property real passageLineHeight: Math.ceil(typingMetrics.height * 1.45)
-    readonly property int pageLineLimit: Math.max(1, Math.floor(passageArea.height / Math.max(1, passageLineHeight)))
+    readonly property int pageLineLimit: Math.max(1, Math.floor(Math.max(0, passageArea.height - 8) / Math.max(1, passageLineHeight)))
     onPageLineLimitChanged: fitDelay.restart()
     function toggleFullscreen() {
         fullscreen = !fullscreen;
@@ -131,7 +131,7 @@ Item {
     function undoQueuedKey() {
         if (turningPage) pendingKeys = characters(pendingKeys).slice(0, -1).join("");
     }
-    implicitHeight: practicing ? 240 + passageLineHeight : 600
+    implicitHeight: practicing ? 116 + 4 * passageLineHeight : 600
     property real revealProgress: 1
     function reveal() {
         if (!Motion.enabled || !visible) { revealProgress = 1; return; }
@@ -304,7 +304,7 @@ Item {
     Timer { interval: 5000; running: root.backendStarted; repeat: true; onTriggered: root.saveProgress() }
 
     function status() {
-        return JSON.stringify({practicing: practicing, fullscreen: fullscreen, pageLines: pageLayout.lines, turningPage: turningPage, textLength: bookLength,
+        return JSON.stringify({practicing: practicing, fullscreen: fullscreen, pageLines: pageLayout.lines, pageLineLimit: pageLineLimit, passageHeight: passageArea.height, renderedHeight: passageFlow.height, fontSize: readingFont.pixelSize, layoutVersion: 2, turningPage: turningPage, textLength: bookLength,
             typed: answer.text.length, position: position, rounds: rounds,
             presets: TypingTexts.passages.length, message: message, busy: busy,
             title: bookTitle, chapters: chapters.length, library: library.length, books: libraryBooks.length, wpm: liveWpm, filePickerActive: filePickerActive});
@@ -538,7 +538,7 @@ Item {
         transform: Translate { y: (1 - root.revealProgress) * 8 }
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 20
+            anchors.margins: root.practicing ? 12 : 20
             anchors.leftMargin: root.practicing ? 16 : 20
             anchors.rightMargin: root.practicing ? 16 : 20
             spacing: 12
@@ -744,7 +744,7 @@ Item {
                         Flow {
                             id: passageFlow
                             objectName: "typing-passage-flow"
-                            y: Math.max(0, (parent.height - height) / 2)
+                            y: 4
                             onYChanged: Qt.callLater(() => { if (smoothCaret.targetGlyph) smoothCaret.follow(smoothCaret.targetGlyph); })
                             z: 1
                             opacity: root.pageReveal
@@ -771,51 +771,30 @@ Item {
                                             property bool typed: false
                                             property bool incorrect: false
                                             property bool initialized: false
-                                            property real lift: 0
-                                            property real zoom: 1
-                                            property real shine: 0
                                             property real entrance: 1
-                                            scale: zoom
-                                            transform: Translate { y: glyph.lift + (1 - glyph.entrance) * 7 }
                                             onCaretHereChanged: { if (caretHere && initialized) Qt.callLater(() => smoothCaret.follow(glyph)); }
                                             Connections {
                                                 target: word
                                                 function onXChanged() { if (glyph.caretHere) Qt.callLater(() => smoothCaret.follow(glyph)); }
                                                 function onYChanged() { if (glyph.caretHere) Qt.callLater(() => smoothCaret.follow(glyph)); }
                                             }
-                                            onTypedChanged: {
-                                                if (!initialized) return;
-                                                if (typed && Motion.enabled && visible) letterPop.restart();
-                                                else { letterPop.stop(); lift = 0; zoom = 1; shine = 0; }
-                                            }
                                             Component.onCompleted: {
                                                 root.glyphItems[characterIndex] = glyph;
                                                 root.updateGlyph(glyph);
                                                 initialized = true;
-                                                if (Motion.enabled && visible && !root.fullscreen) entranceAnimation.start();
                                                 if (caretHere) Qt.callLater(() => smoothCaret.follow(glyph));
                                             }
                                             Component.onDestruction: {
                                                 if (root.glyphItems[characterIndex] === glyph) delete root.glyphItems[characterIndex];
                                             }
-                                            onVisibleChanged: { if (initialized && visible) { if (Motion.enabled && !root.fullscreen) entranceAnimation.restart(); if (caretHere) Qt.callLater(() => smoothCaret.follow(glyph)); } }
-                                            SequentialAnimation {
-                                                id: entranceAnimation
-                                                PauseAnimation { duration: Math.min(glyph.characterIndex, 24) * 7 }
-                                                NumberAnimation { target: glyph; property: "entrance"; from: 0; to: 1; duration: Motion.enter; easing.type: Easing.OutCubic }
-                                            }
-                                            ParallelAnimation {
-                                                id: letterPop
-                                                NumberAnimation { target: glyph; property: "lift"; from: -4; to: 0; duration: Motion.enter; easing.type: Easing.OutBack }
-                                                NumberAnimation { target: glyph; property: "zoom"; from: 1.12; to: 1; duration: Motion.enter; easing.type: Easing.OutBack }
-                                                NumberAnimation { target: glyph; property: "shine"; from: 1; to: 0; duration: Motion.base; easing.type: Easing.OutCubic }
-                                            }
+                                            onVisibleChanged: { if (initialized && visible && caretHere) Qt.callLater(() => smoothCaret.follow(glyph)); }
                                             readonly property int characterIndex: word.modelData.start + root.characters(word.modelData.text).slice(0, index).join("").length
                                             objectName: "typing-character-" + characterIndex
                                             text: modelData === " " ? "\u00a0" : modelData
                                             textFormat: Text.PlainText
                                             width: root.characterWidth(modelData)
                                             font: root.readingFont
+                                            height: root.passageLineHeight
                                             lineHeight: 1.45
                                             property real inkOpacity: caretHere || typed ? 1 : 0.65
                                             opacity: caretHere ? 1 : inkOpacity * entrance
@@ -840,7 +819,7 @@ Item {
                             property real rowY: 0
                             property real rowHeight: 32
                             readonly property color accent: Colors.primary
-                            readonly property int moveDuration: Math.min(160, Motion.contentIn)
+                            readonly property int moveDuration: Math.min(90, Motion.feedback)
                             property real targetRowY: 0
                             property real targetX: 0
                             property real targetY: 0
@@ -853,7 +832,8 @@ Item {
                                 if (root.glyphItems[item.characterIndex] !== item || item.characterIndex !== root.renderedCaret) return;
                                 const point = item.parent.mapToItem(passageArea, item.x, item.y);
                                 const nextY = point.y + item.baselineOffset + root.highlightBounds.y - root.highlightPadding;
-                                glide = placed && targetGlyph !== null && root.glyphItems[targetGlyph.characterIndex] === targetGlyph && Motion.enabled;
+                                // Snap between rows instead of sweeping diagonally across the passage.
+                                glide = placed && targetGlyph !== null && root.glyphItems[targetGlyph.characterIndex] === targetGlyph && Math.abs(nextY - targetRowY) < 1 && Motion.enabled;
                                 targetGlyph = item;
                                 targetRowY = Math.max(0, nextY);
                                 rowY = targetRowY;

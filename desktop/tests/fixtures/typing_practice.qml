@@ -99,7 +99,7 @@ ShellRoot {
                     practice.loadPreset(0); practice.start(); phase++; return;
                 }
                 if (practice.busy || !practice.passage.length) return;
-                if (practice.practicing && (practice.pageLayout.lines > practice.pageLineLimit || practice.implicitHeight !== 240 + practice.passageLineHeight)) throw Error("Practice is not compact");
+                if (practice.practicing && (practice.pageLayout.lines > practice.pageLineLimit || practice.implicitHeight !== 116 + 4 * practice.passageLineHeight)) throw Error("Practice is not compact");
                 const input = find(practice, "typing-input");
                 let first = find(practice, "typing-character-0");
                 if (!input || !first) throw Error("Typing input or glyph missing");
@@ -107,7 +107,10 @@ ShellRoot {
                 if (phase === 1) {
                     const originalSource = practice.pageSource;
                     practice.pageSource = "word ".repeat(800); practice.fitPage();
-                    if (practice.pageLineLimit !== Math.max(1, Math.floor(find(practice, "typing-passage-flow").parent.height / practice.passageLineHeight)) || practice.pageLayout.lines !== practice.pageLineLimit) throw Error("Practice must fill the available height with complete lines");
+                    if (practice.pageLineLimit !== Math.max(1, Math.floor(Math.max(0, find(practice, "typing-passage-flow").parent.height - 8) / practice.passageLineHeight)) || practice.pageLayout.lines !== practice.pageLineLimit) throw Error("Practice must fill the available height with complete lines");
+                    const filledFlow = find(practice, "typing-passage-flow");
+                    filledFlow.forceLayout();
+                    if (filledFlow.parent.height - filledFlow.height >= practice.passageLineHeight + 8) throw Error("Long passage leaves an empty row");
                     const screenshotText = "comfortable? I have a better view of things now. This is no ordinary hospital room. More words follow here.";
                     practice.pageSource = screenshotText; practice.fitPage();
                     find(practice, "typing-passage-flow").forceLayout();
@@ -181,7 +184,7 @@ ShellRoot {
                     const line = find(practice, "typing-line-highlight");
                     if (line.border.width !== 0 || line.children.length !== 0) throw Error("Line highlight must have uniform transparency without a side strip");
                     const textFlow = find(practice, "typing-passage-flow");
-                    if (Math.abs(textFlow.y + textFlow.height / 2 - textFlow.parent.height / 2) > 1) throw Error("Passage is not vertically centered");
+                    if (textFlow.y !== 4 || textFlow.height > textFlow.parent.height - 4) throw Error("Passage leaves unused rows or clips vertically");
                     const centeredWord = find(practice, "typing-character-0").parent;
                     if (Math.abs(centeredWord.centerOffset - (textFlow.width - practice.pageLayout.lineWidths[0]) / 2) > 1) throw Error("Text line is not horizontally centered");
                     if (!line.visible || line.width < practice.width - 60 || line.height < practice.highlightBounds.height + 2 * practice.highlightPadding || line.y !== caret.rowY) throw Error("Current line highlight is missing or too narrow");
