@@ -227,7 +227,11 @@ ShellRoot {
                         if (practice.effectKind !== "line" || practice.activeEffects !== 1 || first.spark !== 0) throw Error("Letter feedback overlapped the line pop");
                         practice.requestFeedback("page");
                         if (practice.effectKind !== "page" || practice.activeEffects !== 1 || find(practice, "typing-line-ripple").strength !== 0) throw Error("Page feedback overlapped the line pop");
+                        keyDriver.wait(20);
+                        const pageVisuals = find(practice, "typing-page-visuals");
+                        if (pageVisuals.rotation !== 0 || pageVisuals.transform[0].yScale === pageVisuals.transform[0].xScale) throw Error("Page arrival did not use the squash-and-stretch effect");
                         practice.stopFeedback();
+                        if (Math.abs(pageVisuals.transform[0].yScale - 1) > 0.001 || pageVisuals.opacity !== 1) throw Error("Page stretch did not reset cleanly");
                         if (practice.activeEffects !== 0 || practice.effectStrength !== 0) throw Error("Feedback did not stop cleanly");
                     }
                     const settled = find(practice, "typing-smooth-caret");

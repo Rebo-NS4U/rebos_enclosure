@@ -373,7 +373,7 @@ Item {
     Timer { interval: 5000; running: root.backendStarted; repeat: true; onTriggered: root.saveProgress() }
 
     function status() {
-        return JSON.stringify({practicing: practicing, fullscreen: fullscreen, pageLines: pageLayout.lines, pageLineLimit: pageLineLimit, passageHeight: passageArea.height, renderedHeight: passageFlow.height, fontSize: readingFont.pixelSize, layoutVersion: 8, previousPages: pageHistory.length, activeEffects: activeEffects, effectKind: effectKind, lineTransitions: lineTransitions, pageTransitions: pageTransitions, motionEnabled: Motion.enabled, feedbackEvents: feedbackEvents, focused: answer.activeFocus, turningPage: turningPage, textLength: bookLength,
+        return JSON.stringify({practicing: practicing, fullscreen: fullscreen, pageLines: pageLayout.lines, pageLineLimit: pageLineLimit, passageHeight: passageArea.height, renderedHeight: passageFlow.height, fontSize: readingFont.pixelSize, layoutVersion: 9, previousPages: pageHistory.length, activeEffects: activeEffects, effectKind: effectKind, lineTransitions: lineTransitions, pageTransitions: pageTransitions, motionEnabled: Motion.enabled, feedbackEvents: feedbackEvents, focused: answer.activeFocus, turningPage: turningPage, textLength: bookLength,
             typed: answer.text.length, position: position, rounds: rounds,
             presets: TypingTexts.passages.length, message: message, busy: busy,
             title: bookTitle, chapters: chapters.length, library: library.length, books: libraryBooks.length, wpm: liveWpm, filePickerActive: filePickerActive});
@@ -800,12 +800,13 @@ Item {
                             id: passageVisuals
                             anchors.fill: parent
                             readonly property real pagePop: root.effectKind === "page" ? root.effectStrength : 0
-                            scale: 1 - pagePop * 0.035 + (pagePop > 0 ? Math.sin((1 - pagePop) * Math.PI) * 0.05 : 0)
-                            rotation: -1.2 * root.pageDirection * pagePop
-                            transformOrigin: Item.Center
-                            transform: Translate {
-                                x: root.pageDirection * 10 * passageVisuals.pagePop
-                                y: passageVisuals.pagePop > 0 ? -6 * Math.sin((1 - passageVisuals.pagePop) * Math.PI) : 0
+                            objectName: "typing-page-visuals"
+                            opacity: 1 - pagePop * 0.2
+                            transform: Scale {
+                                origin.x: passageVisuals.width / 2
+                                origin.y: passageVisuals.height / 2
+                                xScale: 1 + Math.sin((1 - passageVisuals.pagePop) * Math.PI) * 0.025
+                                yScale: 1 - passageVisuals.pagePop * 0.22 + Math.sin((1 - passageVisuals.pagePop) * Math.PI) * 0.10
                             }
                             Rectangle {
                                 objectName: "typing-line-highlight"
