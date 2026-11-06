@@ -1,4 +1,5 @@
 import QtQuick
+import QtTest as TestTools
 import Quickshell
 import Quickshell.Wayland
 import qs.modules.bar.layouts
@@ -12,6 +13,7 @@ ShellRoot {
     property bool closeRequested: false
     PanelWindow {
         id: testWindow
+        TestTools.TestCase { id: keyDriver; name: "TypingKeystrokes"; when: false }
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
         exclusionMode: ExclusionMode.Ignore
@@ -99,7 +101,7 @@ ShellRoot {
                 if (practice.busy || !practice.passage.length) return;
                 if (practice.practicing && (practice.pageLayout.lines > practice.pageLineLimit || practice.implicitHeight !== 240 + practice.passageLineHeight)) throw Error("Practice is not compact");
                 const input = find(practice, "typing-input");
-                const first = find(practice, "typing-character-0");
+                let first = find(practice, "typing-character-0");
                 if (!input || !first) throw Error("Typing input or glyph missing");
                 if (input.opacity !== 0 || !input.enabled) throw Error("Native editor must accept input without painting ghost characters");
                 if (phase === 1) {
@@ -145,14 +147,34 @@ ShellRoot {
                     if (editedGlyph.typed) throw Error("Backspace did not clear typed state");
                     practice.fullscreen = false;
                     practice.pageSource = "… next"; practice.fitPage();
-                    input.text = ".";
+                    input.forceActiveFocus();
+                    keyDriver.keyClick(Qt.Key_Period, Qt.NoModifier, 0);
                     if (practice.turningPage) throw Error("First ellipsis period advanced the page");
-                    input.text = "..";
+                    if (practice.renderedCaret !== 0 || practice.displayedInput !== "") throw Error("First period moved the highlight past the ellipsis");
+                    keyDriver.keyClick(Qt.Key_Period, Qt.NoModifier, 0);
                     if (practice.turningPage) throw Error("Second ellipsis period advanced the page");
-                    input.text = "...";
-                    if (input.text !== "…" || practice.correctCount() !== 1) throw Error("Three periods did not compose in the input field");
+                    if (practice.renderedCaret !== 0 || practice.displayedInput !== "") throw Error("Second period affected following letters");
+                    keyDriver.keyClick(Qt.Key_Period, Qt.NoModifier, 0);
+                    keyDriver.wait(0);
+                    if (input.text !== "…" || practice.correctCount() !== 1) throw Error("Three periods did not compose in the input field: " + JSON.stringify({text: input.text, cursor: input.cursorPosition}));
+                    if (input.cursorPosition !== 1) throw Error("Ellipsis moved the insertion point behind the composed character: " + input.cursorPosition);
+                    keyDriver.keyClick(Qt.Key_Space, Qt.NoModifier, 0);
+                    keyDriver.keyClick(Qt.Key_N, Qt.NoModifier, 0);
+                    if (input.text !== "… n") throw Error("Typing after ellipsis shifted the following letters: " + input.text);
+                    const prefix = "word ".repeat(26);
+                    practice.pageSource = prefix + "… next"; practice.fitPage();
+                    practice.restoring = true;
+                    input.text = prefix + ".. next"; input.cursorPosition = prefix.length + 2;
+                    practice.restoring = false;
+                    keyDriver.keyClick(Qt.Key_Period, Qt.NoModifier, 0);
+                    keyDriver.wait(0);
+                    if (input.cursorPosition !== prefix.length + 1) throw Error("Composing an ellipsis in the last line moved the cursor into following text: " + input.cursorPosition + " expected " + (prefix.length + 1));
+                    keyDriver.keyClick(Qt.Key_X, Qt.NoModifier, 0);
+                    if (input.text !== prefix + "…x next") throw Error("Ellipsis editing corrupted following letters: " + JSON.stringify({text: input.text.slice(prefix.length), cursor: input.cursorPosition}));
                     input.text = ""; practice.pageSource = originalSource; practice.fitPage();
                     find(practice, "typing-passage-flow").forceLayout();
+                    practice.refreshPageCaret();
+                    first = find(practice, "typing-character-0");
                     const caret = find(practice, "typing-smooth-caret");
                     const core = find(practice, "typing-caret-core");
                     if (find(practice, "typing-caret-0")) throw Error("Letter underline must not be rendered");

@@ -29,6 +29,12 @@ function prepareInput(input, target) {
     return {text: result, pending: false};
 }
 
+// Incomplete keyboard ellipses must not consume following book characters.
+function displayInput(input, target) {
+    var prepared = prepareInput(input, target);
+    return prepared.pending ? prepared.text.replace(/\.+$/, "") : prepared.text;
+}
+
 // Match the renderer's word rows and measured character widths. Never discard
 // whitespace or split surrogate pairs.
 function layout(source, width, measure, maxLines) {

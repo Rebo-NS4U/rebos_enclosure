@@ -50,6 +50,7 @@ Item {
     property bool busy: false
     property bool dirty: false
     property bool restoring: false
+    property bool editingCorrection: false
     property bool draft: false
     property bool samplesExpanded: false
     property string draftKind: "book"
@@ -77,7 +78,11 @@ Item {
     function characters(value) {
         return value.match(/[\uD800-\uDBFF][\uDC00-\uDFFF]|[\s\S]/g) ?? [];
     }
-    readonly property real progress: bookLength ? Math.min(1, (position + characters(answer.text).length) / bookLength) : 0
+    readonly property string displayedInput: TypingPaging.displayInput(answer.text, passage)
+    onDisplayedInputChanged: syncGlyphs()
+    onVisualCursorChanged: syncCaret()
+    readonly property int visualCursor: Math.min(TypingPaging.displayInput(answer.text.slice(0, answer.cursorPosition), passage).length, passage.length - 1)
+    readonly property real progress: bookLength ? Math.min(1, (position + characters(displayedInput).length) / bookLength) : 0
     readonly property var passageWords: pageLayout.words
     readonly property font readingFont: Qt.font({family: Config.theme.font, pixelSize: Config.theme.fontSize, weight: Font.Normal})
     FontMetrics { id: typingMetrics; font: root.readingFont }
@@ -162,20 +167,20 @@ Item {
     property int renderedCaret: -1
     function updateGlyph(glyph) {
         if (!glyph) return;
-        glyph.typed = glyph.characterIndex < answer.text.length;
-        glyph.incorrect = glyph.typed && !TypingPaging.matchingCharacter(answer.text.substr(glyph.characterIndex, glyph.modelData.length), glyph.modelData);
-        glyph.caretHere = practicing && glyph.characterIndex === Math.min(answer.cursorPosition, passage.length - 1);
+        glyph.typed = glyph.characterIndex < displayedInput.length;
+        glyph.incorrect = glyph.typed && !TypingPaging.matchingCharacter(displayedInput.substr(glyph.characterIndex, glyph.modelData.length), glyph.modelData);
+        glyph.caretHere = practicing && glyph.characterIndex === visualCursor;
     }
     function syncCaret() {
         const previous = renderedCaret;
-        renderedCaret = practicing ? Math.min(answer.cursorPosition, passage.length - 1) : -1;
+        renderedCaret = practicing ? visualCursor : -1;
         if (previous !== renderedCaret) {
             updateGlyph(glyphItems[previous]);
             updateGlyph(glyphItems[renderedCaret]);
         }
     }
     function syncGlyphs() {
-        const current = answer.text;
+        const current = displayedInput;
         let first = 0;
         const shared = Math.min(current.length, renderedInput.length);
         while (first < shared && current[first] === renderedInput[first]) first++;
@@ -187,7 +192,7 @@ Item {
         syncCaret();
     }
     function correctCount() {
-        const input = characters(answer.text);
+        const input = characters(displayedInput);
         const target = characters(passage);
         let count = 0;
         for (let index = 0; index < input.length && index < target.length; index++)
@@ -310,7 +315,7 @@ Item {
         background: Item {}
         contentItem: StyledText {
             text: parent.text
-            opacity: parent.down || parent.activeFocus ? 1 : (parent.hovered ? 0.9 : 0.65)
+            opacity: !parent.enabled ? 0.3 : (parent.down || parent.activeFocus ? 1 : (parent.hovered ? 0.9 : 0.75))
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
             font.underline: parent.activeFocus
@@ -425,14 +430,34 @@ Item {
             send({action: "add", title: draftTitle, text: paste.text, kind: draftKind});
         } else { practicing = true; answer.forceActiveFocus(); }
     }
+    function normalizeInput() {
+        if (restoring || busy || !bookId) return;
+        const prepared = TypingPaging.prepareInput(answer.text, passage);
+        if (prepared.text === answer.text) return;
+        const prefix = TypingPaging.prepareInput(answer.text.slice(0, answer.cursorPosition), passage);
+        restoring = true;
+        // Edit the native document rather than resetting it, which moves Qt's
+        // insertion point to the end when composing inside an existing line.
+        const previous = answer.text;
+        let first = 0;
+        while (first < prepared.text.length && previous[first] === prepared.text[first]) first++;
+        let end = previous.length, replacementEnd = prepared.text.length;
+        while (end > first && replacementEnd > first && previous[end - 1] === prepared.text[replacementEnd - 1]) { end--; replacementEnd--; }
+        answer.remove(first, end);
+        answer.insert(first, prepared.text.slice(first, replacementEnd));
+        answer.cursorPosition = prefix.text.length;
+        restoring = false;
+        editingCorrection = answer.cursorPosition < answer.length;
+        if (answer.cursorPosition === answer.length) advance();
+        else { dirty = true; saveDelay.restart(); }
+        syncGlyphs();
+    }
     function advance() {
         if (restoring || busy || !bookId) return;
         const prepared = TypingPaging.prepareInput(answer.text, passage);
         if (prepared.text !== answer.text) {
-            const cursor = answer.cursorPosition;
-            const removed = answer.text.length - prepared.text.length;
-            answer.text = prepared.text;
-            answer.cursorPosition = Math.max(0, cursor - removed);
+            // Let Qt finish the key edit before replacing its document/cursor.
+            Qt.callLater(normalizeInput);
             return;
         }
         if (characters(answer.text).length > 4096) {
@@ -443,9 +468,10 @@ Item {
         speedNow = Date.now();
         speedState = TypingSpeed.record(speedState, speedNow);
         dirty = true; saveDelay.restart();
+        if (!answer.text.length || answer.cursorPosition === answer.length) editingCorrection = false;
         const pageCount = characters(passage).length;
         const entered = characters(answer.text);
-        if (!pageCount || entered.length < pageCount || prepared.pending) return;
+        if (!pageCount || entered.length < pageCount || prepared.pending || editingCorrection) return;
         pendingKeys = entered.slice(pageCount).join("") + pendingKeys;
         restoring = true;
         answer.text = entered.slice(0, pageCount).join("");
@@ -517,7 +543,7 @@ Item {
             RowLayout {
                 Layout.fillWidth: true
                 Layout.maximumHeight: 36
-                StyledText { text: root.practicing ? root.bookTitle : "Your book library"; elide: Text.ElideRight; Layout.minimumWidth: 0; font.pixelSize: 18; opacity: 0.65; Layout.fillWidth: true }
+                StyledText { text: root.practicing ? root.bookTitle : "Your book library"; textFormat: Text.PlainText; elide: Text.ElideRight; Layout.minimumWidth: 0; font.pixelSize: 18; opacity: 0.65; Layout.fillWidth: true }
                 TextButton { objectName: "typing-fullscreen"; text: root.fullscreen ? "Exit fullscreen" : "Fullscreen"; onClicked: root.toggleFullscreen() }
                 TextButton { objectName: "typing-library"; visible: root.practicing; text: "Library"; onClicked: root.showLibrary() }
                 TextButton { visible: root.practicing; text: "Import"; enabled: !root.busy; onClicked: root.openImport() }
@@ -528,13 +554,13 @@ Item {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 spacing: 12
-                StyledText { visible: !root.practicing && (root.errorMessage.length > 0 || !root.bookId); opacity: 0.55; text: root.message; Layout.fillWidth: true; wrapMode: Text.Wrap }
+                StyledText { visible: !root.practicing && (root.errorMessage.length > 0 || !root.bookId); opacity: root.errorMessage ? 1 : 0.7; color: root.errorMessage ? Colors.error : Colors.overSurface; textFormat: Text.PlainText; text: root.message; Layout.fillWidth: true; wrapMode: Text.Wrap }
                 RowLayout {
                     visible: !root.practicing
                     Layout.maximumHeight: 36
                     TextButton { text: root.busy ? "Loading…" : "Import EPUB / PDF"; objectName: "typing-import"; enabled: !root.busy; onClicked: root.openImport() }
                     TextButton { text: "Paste text"; enabled: !root.busy; onClicked: { root.saveProgress(); root.draft = true; root.draftTitle = "Pasted text"; root.draftKind = "book"; paste.text = ""; paste.forceActiveFocus(); } }
-                    TextButton { text: root.bookId && !root.draft ? "Resume" : "Start practice"; enabled: !root.busy; onClicked: root.start() }
+                    TextButton { text: root.bookId && !root.draft ? "Resume" : "Start practice"; enabled: !root.busy && (root.draft ? paste.text.trim().length > 0 : root.bookId.length > 0); onClicked: root.start() }
                 }
                 ListView {
                     id: bookCards
@@ -567,7 +593,7 @@ Item {
                             spacing: 6
                             RowLayout {
                                 Layout.fillWidth: true
-                                StyledText { text: bookCard.modelData.title; Layout.fillWidth: true; Layout.minimumWidth: 0; elide: Text.ElideRight; color: Colors.overSurface }
+                                StyledText { text: bookCard.modelData.title; textFormat: Text.PlainText; Layout.fillWidth: true; Layout.minimumWidth: 0; elide: Text.ElideRight; color: Colors.overSurface }
                                 StyledText { objectName: "typing-card-progress"; text: (bookCard.modelData.completion * 100).toFixed(1) + "%"; color: Colors.primary }
                             }
                             Rectangle {
@@ -677,6 +703,8 @@ Item {
                     Layout.fillHeight: true
                     TextArea {
                         id: paste
+                        textFormat: TextEdit.PlainText
+                        Accessible.name: "Text to practice"
                         placeholderText: "Paste a book or text here, or import EPUB / PDF…"
                         onTextChanged: { if (activeFocus && !root.restoring) { root.draft = true; root.draftTitle = "Pasted text"; root.draftKind = "book"; } }
                         background: Item {}
@@ -909,6 +937,8 @@ Item {
                             selectionColor: "transparent"
                             selectedTextColor: "transparent"
                             cursorVisible: false
+                            textFormat: TextEdit.PlainText
+                            Accessible.name: "Type the passage shown above"
                             selectByMouse: false
                             font: root.readingFont
                             TapHandler { onTapped: { answer.forceActiveFocus(); answer.cursorPosition = answer.length; } }
@@ -928,7 +958,7 @@ Item {
                     }
                     RowLayout {
                         Layout.fillWidth: true
-                        StyledText { text: root.errorMessage || root.chapterTitle; opacity: 0.5; font.pixelSize: 11; elide: Text.ElideRight; Layout.fillWidth: true; Layout.minimumWidth: 0 }
+                        StyledText { text: root.errorMessage || (root.busy ? "Loading…" : (!answer.activeFocus ? "Click the passage to continue typing" : root.chapterTitle)); textFormat: Text.PlainText; color: root.errorMessage ? Colors.error : Colors.overSurface; opacity: root.errorMessage ? 1 : 0.7; font.pixelSize: 11; elide: Text.ElideRight; Layout.fillWidth: true; Layout.minimumWidth: 0 }
                         StyledText { objectName: "typing-live-wpm"; text: root.liveWpm + " WPM"; color: Colors.primary; font.pixelSize: 12 }
                         StyledText { text: (root.progress * 100).toFixed(1) + "%"; opacity: 0.5; font.pixelSize: 11 }
                     }
