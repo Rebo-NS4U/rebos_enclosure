@@ -83,10 +83,13 @@ ShellRoot {
                     if (!island) throw Error("Could not create island for fullscreen check");
                     island.currentMode = "typing";
                     const compactWidth = island.targetWidth;
+                    const typingContainer = find(island, "typing-island-container");
+                    if (typingContainer.y !== island.containerY) throw Error("Compact typer must remain at the top");
                     island.typingPractice.toggleFullscreen();
                     if (!island.typingFullscreen || island.targetWidth !== Math.min(960, island.width - 64) || island.targetHeight !== island.height) throw Error("Fullscreen reading width or height is incorrect");
+                    if (typingContainer.y !== Math.max(0, (island.height - typingContainer.height) / 2)) throw Error("Fullscreen must remain vertically centered");
                     island.typingPractice.handleEscape();
-                    if (island.typingFullscreen || island.targetWidth !== compactWidth) throw Error("Compact dimensions were not restored");
+                    if (island.typingFullscreen || island.targetWidth !== compactWidth || typingContainer.y !== island.containerY) throw Error("Compact dimensions were not restored");
                     island.destroy();
                     const panel = Qt.createComponent("modules/shell/UnifiedShellPanel.qml");
                     if (panel.status === Component.Error) throw Error(panel.errorString());
