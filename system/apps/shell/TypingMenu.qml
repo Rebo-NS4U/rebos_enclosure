@@ -79,9 +79,14 @@ Item {
     }
     readonly property real progress: bookLength ? Math.min(1, (position + characters(answer.text).length) / bookLength) : 0
     readonly property var passageWords: pageLayout.words
-    FontMetrics { id: typingMetrics; font.family: Config.theme.font; font.pixelSize: 22 }
-    readonly property rect highlightBounds: typingMetrics.tightBoundingRect("Hg")
+    readonly property font readingFont: Qt.font({family: Config.theme.font, pixelSize: Config.theme.fontSize, weight: Font.Normal})
+    FontMetrics { id: typingMetrics; font: root.readingFont }
+    readonly property rect highlightBounds: {
+        const metricsFont = typingMetrics.font;
+        return typingMetrics.tightBoundingRect("Hg");
+    }
     readonly property real highlightPadding: 3
+    readonly property real letterPadding: 1
     function characterWidth(text) { return Math.max(1, Math.ceil(typingMetrics.advanceWidth(text))); }
     function fitPage() {
         pageLayout = TypingPaging.layout(pageSource, Math.max(80, root.width - 52), characterWidth, pageLineLimit);
@@ -678,8 +683,7 @@ Item {
                         placeholderTextColor: Qt.alpha(Colors.overSurface, 0.35)
                         wrapMode: TextEdit.Wrap
                         color: Colors.overSurface
-                        font.family: Config.theme.font
-                        font.pixelSize: 14
+                        font: root.readingFont
                     }
                 }
                 ColumnLayout {
@@ -781,9 +785,7 @@ Item {
                                             text: modelData === " " ? "\u00a0" : modelData
                                             textFormat: Text.PlainText
                                             width: root.characterWidth(modelData)
-                                            font.family: Config.theme.font
-                                            font.pixelSize: 22
-                                            font.underline: false
+                                            font: root.readingFont
                                             lineHeight: 1.45
                                             property real inkOpacity: caretHere || typed ? 1 : 0.65
                                             opacity: caretHere ? 1 : inkOpacity * entrance
@@ -826,12 +828,12 @@ Item {
                                 targetRowY = Math.max(0, nextY);
                                 rowY = targetRowY;
                                 rowHeight = root.highlightBounds.height + 2 * root.highlightPadding;
-                                targetX = Math.max(1, point.x - 3);
-                                targetY = targetRowY;
+                                targetX = Math.max(0, point.x - root.letterPadding);
+                                targetY = Math.max(0, nextY + root.highlightPadding - root.letterPadding);
                                 x = targetX;
                                 y = targetY;
-                                width = Math.max(12, item.width + 6);
-                                height = rowHeight;
+                                width = item.width + 2 * root.letterPadding;
+                                height = root.highlightBounds.height + 2 * root.letterPadding;
                                 placed = true;
                                 if (Motion.enabled) idlePulse.restart();
                             }
@@ -865,7 +867,7 @@ Item {
                             Rectangle {
                                 objectName: "typing-caret-core"
                                 anchors.fill: parent
-                                radius: 6
+                                radius: Math.min(4, width / 3, height / 3)
                                 color: Qt.alpha(smoothCaret.accent, 0.46)
                                 border.width: 1
                                 border.color: Qt.alpha(smoothCaret.accent, 0.8)
@@ -879,7 +881,7 @@ Item {
                                     objectName: "typing-space-indicator"
                                     anchors.centerIn: parent
                                     text: "·"
-                                    font.pixelSize: 16
+                                    font.pixelSize: root.readingFont.pixelSize
                                     color: Colors.overSurface
                                     opacity: 0.8
                                     visible: smoothCaret.targetGlyph !== null && smoothCaret.targetGlyph.modelData === " "
@@ -889,8 +891,8 @@ Item {
                                     anchors.left: parent.left
                                     anchors.right: parent.right
                                     anchors.topMargin: 2
-                                    anchors.leftMargin: 4
-                                    anchors.rightMargin: 4
+                                    anchors.leftMargin: Math.min(3, parent.width / 4)
+                                    anchors.rightMargin: Math.min(3, parent.width / 4)
                                     height: 1
                                     radius: 0.5
                                     color: Qt.alpha(Colors.overSurface, 0.45)
@@ -908,8 +910,7 @@ Item {
                             selectedTextColor: "transparent"
                             cursorVisible: false
                             selectByMouse: false
-                            font.family: Config.theme.font
-                            font.pixelSize: 22
+                            font: root.readingFont
                             TapHandler { onTapped: { answer.forceActiveFocus(); answer.cursorPosition = answer.length; } }
                             wrapMode: TextEdit.Wrap
                             inputMethodHints: Qt.ImhNoPredictiveText

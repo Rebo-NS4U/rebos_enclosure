@@ -6,6 +6,7 @@ import qs.modules.shell
 import "TypingSpeed.js" as Speed
 import "TypingPaging.js" as Pages
 import qs.modules.theme
+import qs.config
 ShellRoot {
     id: harness
     property bool closeRequested: false
@@ -151,6 +152,7 @@ ShellRoot {
                     input.text = "...";
                     if (input.text !== "…" || practice.correctCount() !== 1) throw Error("Three periods did not compose in the input field");
                     input.text = ""; practice.pageSource = originalSource; practice.fitPage();
+                    find(practice, "typing-passage-flow").forceLayout();
                     const caret = find(practice, "typing-smooth-caret");
                     const core = find(practice, "typing-caret-core");
                     if (find(practice, "typing-caret-0")) throw Error("Letter underline must not be rendered");
@@ -160,10 +162,12 @@ ShellRoot {
                     if (Math.abs(textFlow.y + textFlow.height / 2 - textFlow.parent.height / 2) > 1) throw Error("Passage is not vertically centered");
                     const centeredWord = find(practice, "typing-character-0").parent;
                     if (Math.abs(centeredWord.centerOffset - (textFlow.width - practice.pageLayout.lineWidths[0]) / 2) > 1) throw Error("Text line is not horizontally centered");
-                    if (!line.visible || line.width < practice.width - 60 || line.height < 25 || line.y !== caret.rowY) throw Error("Current line highlight is missing or too narrow");
+                    if (!line.visible || line.width < practice.width - 60 || line.height < practice.highlightBounds.height + 2 * practice.highlightPadding || line.y !== caret.rowY) throw Error("Current line highlight is missing or too narrow");
                     if (caret.accent.toString() !== Colors.primary.toString()) throw Error("Cursor must use the exact theme accent");
                     if (first.style !== Text.Normal || first.color.toString() !== Colors.overSurface.toString()) throw Error("Text must use the normal theme color without outlines");
-                    if (!caret.visible || core.width < 12 || core.height < 20 || core.radius < 4 || core.color.a < 0.35) throw Error("Rounded glass cursor is missing or too faint");
+                    if (first.font.family !== Config.theme.font || first.font.pixelSize !== Config.theme.fontSize) throw Error("Passage must use the system theme font and size");
+                    if (Math.abs(caret.width - caret.targetGlyph.width - 2 * practice.letterPadding) > 0.01) throw Error("Letter highlight is wider than a single character");
+                    if (!caret.visible || core.width <= 0 || core.height <= 0 || core.radius <= 0 || core.color.a < 0.35) throw Error("Rounded glass cursor is missing or too faint");
                     if (!find(practice, "typing-character-0").caretHere || Math.abs(first.opacity - 1) > 0.001) throw Error("Current-character highlight missing: " + JSON.stringify({opacity: first.opacity, current: first.caretHere, entrance: first.entrance, cursor: input.cursorPosition, practicing: practice.practicing, visible: find(practice, "typing-character-0").caretHere, motion: Motion.base}));
                     if (Math.abs(find(practice, "typing-character-1").opacity - 0.65) > 0.001) throw Error("Upcoming text must remain readable");
                     input.text = practice.passage[0]; input.cursorPosition = input.length;
@@ -176,8 +180,8 @@ ShellRoot {
                     const inkTop = baseline + practice.highlightBounds.y;
                     const topPadding = inkTop - settled.y;
                     const bottomPadding = settled.y + settled.height - (inkTop + practice.highlightBounds.height);
-                    if (Math.abs(topPadding - bottomPadding) > 0.01 || Math.abs(topPadding - practice.highlightPadding) > 0.01) throw Error("Highlight does not have equal top and bottom padding");
-                    if (Math.abs(settled.y - settledLine.y) > 0.01 || Math.abs(settled.height - settledLine.height) > 0.01) throw Error("Cursor and line boxes must share vertical bounds");
+                    if (Math.abs(topPadding - bottomPadding) > 0.01 || Math.abs(topPadding - practice.letterPadding) > 0.01) throw Error("Highlight does not have equal top and bottom padding");
+                    if (Math.abs(settled.y + settled.height / 2 - settledLine.y - settledLine.height / 2) > 0.01) throw Error("Cursor and line boxes must share their vertical center");
                     if (Math.abs(settled.x - settled.targetX) > 0.01 || Math.abs(settled.y - settled.targetY) > 0.01 || Math.abs(settledLine.y - settled.targetRowY) > 0.01) throw Error("Cursor and line transitions did not settle together");
                     if (!find(practice, "typing-character-1").caretHere || find(practice, "typing-smooth-caret").targetGlyph.characterIndex !== 1) throw Error("Cursor did not advance");
                     input.cursorPosition = 0;
