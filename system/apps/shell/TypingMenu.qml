@@ -17,9 +17,40 @@ Item {
     property int position: 0
     property int rounds: 0
     property string message: "Choose a practice text, paste your own, or import a document."
-    readonly property string passage: sourceText.slice(position, position + 160)
-    implicitHeight: 520
-    onVisibleChanged: { if (visible && practicing) Qt.callLater(() => answer.forceActiveFocus()); }
+    readonly property string passage: {
+        const chunk = sourceText.slice(position, position + 90);
+        const boundary = chunk.lastIndexOf(" ");
+        return position + 90 < sourceText.length && boundary > 40 ? chunk.slice(0, boundary + 1) : chunk;
+    }
+    readonly property var passageWords: {
+        let words = [];
+        let start = 0;
+        for (const token of passage.match(/\S+\s*|\s+/g) ?? []) {
+            // Keep ordinary words together while bounding unusually long tokens.
+            for (let offset = 0; offset < token.length; offset += 36)
+                words.push({text: token.slice(offset, offset + 36), start: start + offset});
+            start += token.length;
+        }
+        return words;
+    }
+    implicitHeight: practicing ? 220 : 440
+    property real revealProgress: 1
+    function reveal() {
+        if (!Motion.enabled || !visible) { revealProgress = 1; return; }
+        revealAnimation.restart();
+    }
+    NumberAnimation {
+        id: revealAnimation
+        target: root
+        property: "revealProgress"
+        from: 0.35
+        to: 1
+        duration: Math.round(Motion.base * 1.25)
+        easing.type: Easing.OutQuint
+    }
+    onPracticingChanged: reveal()
+    onPositionChanged: { if (practicing) reveal(); }
+    onVisibleChanged: { if (visible) reveal(); if (visible && practicing) Qt.callLater(() => answer.forceActiveFocus()); }
     function status() {
         return JSON.stringify({practicing: practicing, textLength: paste.text.length,
             typed: answer.text.length, position: position, rounds: rounds,
@@ -35,6 +66,10 @@ Item {
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
             font.underline: parent.activeFocus
+            Behavior on opacity {
+                enabled: Motion.enabled
+                NumberAnimation { duration: Motion.feedback; easing.type: Easing.OutCubic }
+            }
         }
     }
     function loadPreset(index) {
@@ -79,21 +114,25 @@ Item {
     }
     Item {
         anchors.fill: parent
+        opacity: root.revealProgress
+        transform: Translate { y: (1 - root.revealProgress) * 8 }
         ColumnLayout {
             anchors.fill: parent
             anchors.margins: 20
             spacing: 12
             RowLayout {
                 Layout.fillWidth: true
-                StyledText { text: "Continuous typing"; font.pixelSize: 18; opacity: 0.65; Layout.fillWidth: true }
+                StyledText { text: root.practicing ? "Typing" : "Continuous typing"; font.pixelSize: 18; opacity: 0.65; Layout.fillWidth: true }
+                TextButton { visible: root.practicing; text: "Edit"; onClicked: root.practicing = false }
                 TextButton { text: "Back"; onClicked: root.backRequested() }
             }
             ColumnLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 spacing: 12
-                StyledText { opacity: 0.55; text: root.message; Layout.fillWidth: true; wrapMode: Text.Wrap }
+                StyledText { visible: !root.practicing; opacity: 0.55; text: root.message; Layout.fillWidth: true; wrapMode: Text.Wrap }
                 RowLayout {
+                    visible: !root.practicing
                     TextButton { text: importer.running ? "Importing…" : "Import document"; enabled: !importer.running; onClicked: picker.open() }
                     TextButton { text: root.practicing ? "Edit text" : "Start practice"; onClicked: { if (root.practicing) root.practicing = false; else root.start(); } }
                 }
@@ -176,18 +215,34 @@ Item {
                             anchors.right: parent.right
                             spacing: 0
                             Repeater {
-                                model: root.passage.length
-                                delegate: StyledText {
-                                    required property int index
-                                    objectName: "typing-character-" + index
-                                    text: root.passage.charAt(index) === " " ? "\u00a0" : root.passage.charAt(index)
-                                    textFormat: Text.PlainText
-                                    font.family: "JetBrains Mono"
-                                    font.pixelSize: 22
-                                    font.underline: index === answer.text.length
-                                    lineHeight: 1.6
-                                    opacity: index < answer.text.length ? 1 : 0.28
-                                    color: index < answer.text.length && answer.text[index] !== root.passage[index] ? Colors.error : Colors.overSurface
+                                model: root.passageWords
+                                delegate: Row {
+                                    id: word
+                                    required property var modelData
+                                    Repeater {
+                                        model: word.modelData.text.length
+                                        delegate: StyledText {
+                                            required property int index
+                                            readonly property int characterIndex: word.modelData.start + index
+                                            objectName: "typing-character-" + characterIndex
+                                            text: root.passage.charAt(characterIndex) === " " ? "\u00a0" : root.passage.charAt(characterIndex)
+                                            textFormat: Text.PlainText
+                                            font.family: "JetBrains Mono"
+                                            font.pixelSize: 22
+                                            font.underline: characterIndex === answer.text.length
+                                            lineHeight: 1.45
+                                            opacity: characterIndex < answer.text.length ? 1 : 0.28
+                                            Behavior on opacity {
+                                                enabled: Motion.enabled
+                                                NumberAnimation { duration: Math.round(Motion.base * 0.45); easing.type: Easing.OutCubic }
+                                            }
+                                            Behavior on color {
+                                                enabled: Motion.enabled
+                                                ColorAnimation { duration: Motion.feedback; easing.type: Easing.OutCubic }
+                                            }
+                                            color: characterIndex < answer.text.length && answer.text[characterIndex] !== root.passage[characterIndex] ? Colors.error : Colors.overSurface
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -205,11 +260,6 @@ Item {
                             Keys.onEscapePressed: event => { root.backRequested(); event.accepted = true; }
                         }
                     }
-                    StyledText {
-                        opacity: 0.55
-                        text: "Character " + (root.position + answer.text.length) + " / " + root.sourceText.length + " · Loops " + root.rounds
-                    }
-                    StyledText { opacity: 0.55; text: root.passage.startsWith(answer.text) ? "Take your time. Every completed passage continues automatically." : "A small mismatch — backspace whenever you like."; Layout.fillWidth: true; wrapMode: Text.Wrap }
                 }
             }
         }

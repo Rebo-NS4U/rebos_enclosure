@@ -327,7 +327,7 @@ Item {
 
     readonly property int targetWidth: {
         if (root.isExpanded || root.retractingToHidden) {
-            if (root.currentMode === "typing") return Math.min(760, root.width - 32);
+            if (root.currentMode === "typing") return Math.min(640, root.width - 32);
             if (root.currentMode === "osd") {
                 return Math.min(270, root.width - 32);
             }
@@ -349,7 +349,7 @@ Item {
         case "notification":
             return (notificationView.implicitHeight > 0) ? notificationView.implicitHeight : root.islandHeight;
         case "typing":
-            return Math.min(520, root.height - 32);
+            return Math.min(typingView.implicitHeight, root.height - 32);
         case "dashboard":
             return dashboardView.implicitHeight;
         case "power":
@@ -498,7 +498,7 @@ Item {
     readonly property bool timerInputActive: false
     readonly property bool dashboardInputActive: islandActive && currentMode === "dashboard"
 
-    readonly property Region backgroundBlur: BlurRegion { target: islandBody; enabled: root.currentMode !== "typing" }
+    readonly property Region backgroundBlur: BlurRegion { target: islandBody }
 
     property alias barHitbox: activeBarHitbox
 
@@ -603,16 +603,16 @@ Item {
         Behavior on width {
             enabled: Config.animDuration > 0 && root.barNormallyVisible && !root.retractingToHidden
             NumberAnimation {
-                duration: root.isExpanded ? root.morphDuration : root.morphCollapseDuration
-                easing.type: Motion.enterCurve
+                duration: root.currentMode === "typing" || root.previousMode === "typing" ? Math.round(Motion.base * 1.4) : (root.isExpanded ? root.morphDuration : root.morphCollapseDuration)
+                easing.type: root.currentMode === "typing" || root.previousMode === "typing" ? Easing.OutQuint : Motion.enterCurve
             }
         }
 
         Behavior on height {
             enabled: Config.animDuration > 0 && root.barNormallyVisible && !root.retractingToHidden
             NumberAnimation {
-                duration: root.isExpanded ? root.morphDuration : root.morphCollapseDuration
-                easing.type: Motion.enterCurve
+                duration: root.currentMode === "typing" || root.previousMode === "typing" ? Math.round(Motion.base * 1.4) : (root.isExpanded ? root.morphDuration : root.morphCollapseDuration)
+                easing.type: root.currentMode === "typing" || root.previousMode === "typing" ? Easing.OutQuint : Motion.enterCurve
             }
         }
 
@@ -640,11 +640,12 @@ Item {
             id: islandBody
             anchors.fill: parent
             variant: Styling.shellStyle === "dithered" ? "bar" : "pane"
-            backgroundOpacity: root.currentMode === "typing" ? 0 : BarAppearance.panelOpacity(root.isExpanded)
+            styleOverride: root.currentMode === "typing" ? "glass" : ""
+            backgroundOpacity: root.currentMode === "typing" ? 0.14 : BarAppearance.panelOpacity(root.isExpanded)
             topLeftRadius: BarAppearance.polished ? root.cornerRadius : 0
             topRightRadius: BarAppearance.polished ? root.cornerRadius : 0
-            border.width: root.currentMode === "typing" ? 0 : (BarAppearance.polished || Styling.shellStyle === "dithered" ? 1 : 0)
-            border.color: BarAppearance.panelBorder(root.isExpanded)
+            border.width: root.currentMode === "typing" ? 1 : (BarAppearance.polished || Styling.shellStyle === "dithered" ? 1 : 0)
+            border.color: root.currentMode === "typing" ? Qt.alpha(Colors.overSurface, 0.12) : BarAppearance.panelBorder(root.isExpanded)
 
             Behavior on backgroundOpacity {
                 enabled: Config.animDuration > 0
@@ -669,7 +670,7 @@ Item {
                 }
             }
             enableShadow: root.currentMode !== "typing" && (root.isExpanded || root.retractingToHidden)
-            enableBorder: root.currentMode !== "typing"
+            enableBorder: true
             clip: true
 
             // A quiet wallpaper tint over the translucent pane, below all controls.

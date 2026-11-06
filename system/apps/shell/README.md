@@ -99,8 +99,11 @@ later. See [LICENSE](./LICENSE).
 
 Open the island bar's control panel and choose **Typing practice →**. Typing
 replaces the expanded bar contents, using the same input and dismissal behavior
-as its other panels. The typing surface has no fill, tint, border or blur; controls
-are text only. Upcoming characters are faint, and typed characters become opaque
+as its other panels. The compact typing surface uses a faint glass fill, soft blur and a subtle rim;
+controls are text only. Practice shows about 90 characters at a time, with only
+Edit and Back in the header. Setup controls stay hidden while typing. Panel
+resizing, passage reveals and typed characters animate smoothly, respecting the
+Appearance motion setting (zero disables animations). Upcoming characters are faint, and typed characters become opaque
 (errors use the error color). Type directly over the passage. Backspace to correct.
 Paste text or import documents, then select **Start practice**. Completed passages
 advance and the document loops forever, without a timer or failure state. **Back**
