@@ -111,6 +111,16 @@ local function handle(_, query)
             vlc.misc.quit()
         end
     end)
+    -- HTTP callbacks and the interface loop share one Lua state. Keep VLC
+    -- object references here so callback GC cannot release the loop's vout
+    -- while it is being used on the other thread.
+    if fullscreen_pending then
+        local vout = vlc.object.vout()
+        if vout then
+            local ok = pcall(vlc.var.set, vout, "fullscreen", true)
+            if ok then fullscreen_pending = false end
+        end
+    end
     local data = status()
     data.ok = ok
     if not ok then data.error = "VLC could not apply the player command." end
@@ -120,13 +130,7 @@ local function handle(_, query)
 end
 
 local endpoint = http:file("/session.json", "application/json", "", settings.password, handle, nil)
+-- The interface thread only waits; object access belongs to the callback.
 while endpoint do
-    if fullscreen_pending then
-        local vout = vlc.object.vout()
-        if vout then
-            local ok = pcall(vlc.var.set, vout, "fullscreen", true)
-            if ok then fullscreen_pending = false end
-        end
-    end
     vlc.misc.mwait(vlc.misc.mdate() + 1000000)
 end
