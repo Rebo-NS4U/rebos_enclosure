@@ -20,6 +20,49 @@ exec env __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia __VK_LAYER
 '''
 
 
+def normalize_monitor(item, names):
+    """Validate one connector without mixing validation with layout placement."""
+    allowed = {'name', 'enabled', 'mode', 'scale', 'transform', 'position', 'primary', 'preferred_mode'}
+    if not isinstance(item, dict) or set(item) - allowed:
+        raise ValueError('Unknown monitor field')
+    name = item.get('name', '')
+    if not isinstance(name, str) or not re.fullmatch(r'[A-Za-z0-9_.:-]{1,128}', name) or name in names:
+        raise ValueError('Each monitor needs a unique connector name such as eDP-1 or HDMI-A-1')
+    names.add(name)
+    enabled = item.get('enabled', True)
+    primary = item.get('primary', False)
+    if type(enabled) is not bool or type(primary) is not bool:
+        raise ValueError('enabled and primary must be booleans')
+    mode = item.get('mode', 'auto')
+    preferred = item.get('preferred_mode', '')
+    if not isinstance(mode, str) or (mode != 'auto' and not MODE.fullmatch(mode)):
+        raise ValueError('Mode must be auto or WIDTHxHEIGHT[@REFRESH], such as 1920x1080@144')
+    if not isinstance(preferred, str) or (preferred and not MODE.fullmatch(preferred)):
+        raise ValueError('Invalid preferred monitor mode')
+    scale = item.get('scale', 1)
+    if type(scale) not in (int, float) or not 0 < scale <= 10 or not math.isfinite(scale):
+        raise ValueError('Monitor scale must be greater than 0 and at most 10')
+    transform = item.get('transform', 'normal')
+    if transform not in TRANSFORMS:
+        raise ValueError('Invalid monitor rotation/transform')
+    pos = item.get('position')
+    if pos is not None and (not isinstance(pos, dict) or set(pos) != {'x', 'y'} or
+                            any(type(v) is not int or abs(v) > 100000 for v in pos.values())):
+        raise ValueError('Monitor position must contain integer x and y coordinates')
+    if primary and not enabled:
+        raise ValueError('The startup monitor must be enabled')
+    return dict(name=name, enabled=enabled, mode=mode, scale=scale,
+                        transform=transform, primary=primary, preferred_mode=preferred, position=pos)
+
+
+def logical_monitor_size(output, dimensions):
+    """Return scaled dimensions after rotation, rounded like Niri positions."""
+    width, height = map(int, dimensions.group(1, 2))
+    if output['transform'] in ('90', '270', 'flipped-90', 'flipped-270'):
+        width, height = height, width
+    return math.ceil(width / output['scale']), math.ceil(height / output['scale'])
+
+
 def normalize_monitors(config):
     if not isinstance(config, dict) or set(config) - {'layout', 'outputs'}:
         raise ValueError('Monitor configuration must contain layout and outputs only')
@@ -30,38 +73,8 @@ def normalize_monitors(config):
     if not isinstance(raw, list) or len(raw) > 16:
         raise ValueError('outputs must be a list of up to 16 monitors')
     outputs, names = [], set()
-    allowed = {'name', 'enabled', 'mode', 'scale', 'transform', 'position', 'primary', 'preferred_mode'}
     for item in raw:
-        if not isinstance(item, dict) or set(item) - allowed:
-            raise ValueError('Unknown monitor field')
-        name = item.get('name', '')
-        if not isinstance(name, str) or not re.fullmatch(r'[A-Za-z0-9_.:-]{1,128}', name) or name in names:
-            raise ValueError('Each monitor needs a unique connector name such as eDP-1 or HDMI-A-1')
-        names.add(name)
-        enabled = item.get('enabled', True)
-        primary = item.get('primary', False)
-        if type(enabled) is not bool or type(primary) is not bool:
-            raise ValueError('enabled and primary must be booleans')
-        mode = item.get('mode', 'auto')
-        preferred = item.get('preferred_mode', '')
-        if not isinstance(mode, str) or (mode != 'auto' and not MODE.fullmatch(mode)):
-            raise ValueError('Mode must be auto or WIDTHxHEIGHT[@REFRESH], such as 1920x1080@144')
-        if not isinstance(preferred, str) or (preferred and not MODE.fullmatch(preferred)):
-            raise ValueError('Invalid preferred monitor mode')
-        scale = item.get('scale', 1)
-        if type(scale) not in (int, float) or not math.isfinite(scale) or not 0 < scale <= 10:
-            raise ValueError('Monitor scale must be greater than 0 and at most 10')
-        transform = item.get('transform', 'normal')
-        if transform not in TRANSFORMS:
-            raise ValueError('Invalid monitor rotation/transform')
-        pos = item.get('position')
-        if pos is not None and (not isinstance(pos, dict) or set(pos) != {'x', 'y'} or
-                                any(type(v) is not int or abs(v) > 100000 for v in pos.values())):
-            raise ValueError('Monitor position must contain integer x and y coordinates')
-        if primary and not enabled:
-            raise ValueError('The startup monitor must be enabled')
-        outputs.append(dict(name=name, enabled=enabled, mode=mode, scale=scale,
-                            transform=transform, primary=primary, preferred_mode=preferred, position=pos))
+        outputs.append(normalize_monitor(item, names))
     enabled = [o for o in outputs if o['enabled']]
     if outputs and not enabled:
         raise ValueError('At least one monitor must stay enabled')
@@ -75,12 +88,10 @@ def normalize_monitors(config):
             dimensions = MODE.fullmatch(output['mode'] if output['mode'] != 'auto' else output['preferred_mode'])
             if not dimensions:
                 raise ValueError('Automatic rows/columns need known resolutions. Choose a mode or use automatic/manual positioning.')
-            width, height = map(int, dimensions.group(1, 2))
-            if output['transform'] in ('90', '270', 'flipped-90', 'flipped-270'):
-                width, height = height, width
+            width, height = logical_monitor_size(output, dimensions)
             output['position'] = {'x': cursor if layout == 'horizontal' else 0,
                                   'y': cursor if layout == 'vertical' else 0}
-            cursor += math.ceil((width if layout == 'horizontal' else height) / output['scale'])
+            cursor += width if layout == 'horizontal' else height
         elif layout == 'auto':
             output['position'] = None
     if layout == 'manual':
@@ -89,11 +100,9 @@ def normalize_monitors(config):
             dimensions = MODE.fullmatch(output['mode'] if output['mode'] != 'auto' else output['preferred_mode'])
             if not dimensions or output['position'] is None:
                 continue
-            w, h = map(int, dimensions.group(1, 2))
-            if output['transform'] in ('90', '270', 'flipped-90', 'flipped-270'):
-                w, h = h, w
+            w, h = logical_monitor_size(output, dimensions)
             x, y = output['position']['x'], output['position']['y']
-            rect = (x, y, x + math.ceil(w / output['scale']), y + math.ceil(h / output['scale']))
+            rect = (x, y, x + w, y + h)
             for name, other in rectangles:
                 if max(x, other[0]) < min(rect[2], other[2]) and max(y, other[1]) < min(rect[3], other[3]):
                     raise ValueError(f'Monitor positions overlap: {name} and {output["name"]}')

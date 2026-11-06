@@ -133,6 +133,24 @@ class SetupTests(unittest.TestCase):
                 {'name': 'DP-1', 'mode': '1920x1080', 'position': {'x': 0, 'y': 0}},
                 {'name': 'DP-2', 'mode': '1920x1080', 'position': {'x': 0, 'y': 0}}]})
 
+    def test_extreme_scale_is_a_validation_error(self):
+        with self.assertRaisesRegex(ValueError, 'scale'):
+            setup.normalize_monitors({'outputs': [{'name': 'DP-1', 'scale': 10**1000}]})
+
+    def test_fractional_rotated_layout_and_manual_boundary_agree(self):
+        config = {'layout': 'horizontal', 'outputs': [
+            {'name': 'DP-1', 'mode': '1920x1080', 'scale': 1.25, 'transform': '90'},
+            {'name': 'DP-2', 'mode': '1920x1080', 'scale': 1.25}]}
+        original = copy.deepcopy(config)
+        result = setup.normalize_monitors(config)
+        self.assertEqual(config, original)
+        self.assertEqual(result['outputs'][1]['position'], {'x': 864, 'y': 0})
+        result['layout'] = 'manual'
+        self.assertEqual(setup.normalize_monitors(result), result)
+        result['outputs'][1]['position']['x'] -= 1
+        with self.assertRaisesRegex(ValueError, 'overlap'):
+            setup.normalize_monitors(result)
+
     def test_rendered_monitor_kdl_validates_with_real_niri(self):
         config = {'layout': 'horizontal', 'outputs': [
             {'name': 'DP-1', 'mode': '3840x2160@144', 'scale': 2},

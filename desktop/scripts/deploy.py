@@ -146,96 +146,96 @@ def retire_bonsai_alternatives(home, backup=None, journal=None, dry_run=False):
     return paths
 
 
-def install(payload, home, dry_run=False, settings=None, preserve_preferences=False,
-            link_source=False):
-    units = verify(payload)
+def is_preference(payload, relative):
     if manifest(payload).get('layout') == 2:
-        from organize import plan as organization_plan
-        organization_plan(home, payload)  # Detect conflicting locations before any writes.
-    if preserve_preferences and settings is not None:
-        raise ValueError('Preference-preserving updates cannot replace the installation plan')
-    if preserve_preferences:
-        def preference(relative):
-            if manifest(payload).get('layout') == 2:
-                return source_entry(payload, relative)[1]['kind'] in ('personal', 'cache')
-            if (relative == '.config/regreet-sync/regreet.css.in' or
-                    relative.startswith(('.config/scripts/', '.config/systemd/user/'))):
-                return False  # Managed application code, refreshed on updates.
-            return ((relative.startswith(('.config/', '.cache/')) and
-                     relative != '.config/quickshell') or
-                    relative == 'code/rebos-assistant/config' or
-                    relative.startswith('.local/share/wallpapers/'))
-        # Track shipped defaults, never personal contents. Update individual
-        # unchanged files instead of skipping an entire configuration directory.
-        record = home / '.local/state/rebos-desktop/preference-defaults.json'
-        previous = json.loads(record.read_text()) if record.is_file() else {}
-        installed_record = home / '.local/state/rebos-desktop/source.json'
-        installed_commit = (json.loads(installed_record.read_text()).get('commit', '')
-                            if installed_record.is_file() else '')
-        if len(installed_commit) != 40 or any(c not in '0123456789abcdef' for c in installed_commit):
-            installed_commit = ''
-        defaults = {}
-        selected = []
-        for relative in units:
-            if not preference(relative):
+        return source_entry(payload, relative)[1]['kind'] in ('personal', 'cache')
+    if (relative == '.config/regreet-sync/regreet.css.in' or
+            relative.startswith(('.config/scripts/', '.config/systemd/user/'))):
+        return False  # Managed application code, refreshed on updates.
+    return ((relative.startswith(('.config/', '.cache/')) and
+             relative != '.config/quickshell') or
+            relative == 'code/rebos-assistant/config' or
+            relative.startswith('.local/share/wallpapers/'))
+
+
+def select_preference_updates(payload, home, units):
+    """Plan updates to shipped defaults while retaining personal changes."""
+    # Track shipped defaults, never personal contents. Update individual
+    # unchanged files instead of skipping an entire configuration directory.
+    record = home / '.local/state/rebos-desktop/preference-defaults.json'
+    previous = json.loads(record.read_text()) if record.is_file() else {}
+    installed_record = home / '.local/state/rebos-desktop/source.json'
+    installed_commit = (json.loads(installed_record.read_text()).get('commit', '')
+                        if installed_record.is_file() else '')
+    if len(installed_commit) != 40 or any(c not in '0123456789abcdef' for c in installed_commit):
+        installed_commit = ''
+    defaults = {}
+    selected = []
+    for relative in units:
+        if not is_preference(payload, relative):
+            selected.append(relative)
+            continue
+        source = source_path(payload, relative)
+        # Generated palettes and wallpaper choices remain personal state.
+        if relative.startswith(('.cache/', '.local/share/wallpapers/')):
+            if not exists(home / relative):
                 selected.append(relative)
+            continue
+        paths = sorted(source.rglob('*')) if source.is_dir() else [source]
+        for path in paths:
+            if not path.is_file():
                 continue
-            source = source_path(payload, relative)
-            # Generated palettes and wallpaper choices remain personal state.
-            if relative.startswith(('.cache/', '.local/share/wallpapers/')):
-                if not exists(home / relative):
-                    selected.append(relative)
+            name = destination_name(payload, path)
+            content = path.read_bytes().replace(b'@HOME@', str(home).encode())
+            digest = hashlib.sha256(content).hexdigest()
+            defaults[name] = digest
+            destination = home / name
+            # Preserve links (including linked parents) and unknown existing
+            # preferences. The first update establishes a safe baseline.
+            parents = destination.relative_to(home).parents
+            links = [destination, *(home / p for p in parents)]
+            if any(p.is_symlink() and not p.resolve().is_relative_to(home / '.config/enclosure') for p in links):
                 continue
-            paths = sorted(source.rglob('*')) if source.is_dir() else [source]
-            for path in paths:
-                if not path.is_file():
-                    continue
-                name = destination_name(payload, path)
-                content = path.read_bytes().replace(b'@HOME@', str(home).encode())
-                digest = hashlib.sha256(content).hexdigest()
-                defaults[name] = digest
-                destination = home / name
-                # Preserve links (including linked parents) and unknown existing
-                # preferences. The first update establishes a safe baseline.
-                parents = destination.relative_to(home).parents
-                links = [destination, *(home / p for p in parents)]
-                if any(p.is_symlink() and not p.resolve().is_relative_to(home / '.config/enclosure') for p in links):
-                    continue
-                if not exists(destination):
-                    # A missing previously shipped file may be an intentional
-                    # personal deletion. Only add genuinely new defaults.
-                    if name not in previous:
-                        selected.append(name)
-                elif destination.is_file():
-                    current = hashlib.sha256(destination.read_bytes()).hexdigest()
-                    # Older installations have a revision but no defaults record.
-                    # Recover the old shipped default when its Git object exists.
-                    if name not in previous and installed_commit:
-                        candidates = [f'desktop/payload/home/{name}']
-                        if manifest(payload).get('layout') == 2:
-                            candidates.insert(0, str(path.relative_to(payload.parents[1])))
-                        for candidate in candidates:
-                            try:
-                                old = subprocess.check_output(
-                                    ['git', '-C', str(ROOT.parent), 'show',
-                                     f'{installed_commit}:{candidate}'],
-                                    stderr=subprocess.PIPE, timeout=10)
-                                old = old.replace(b'@HOME@', str(home).encode())
-                                previous[name] = hashlib.sha256(old).hexdigest()
-                                break
-                            except (OSError, subprocess.SubprocessError):
-                                pass
-                    if current == previous.get(name) and current != digest:
-                        selected.append(name)
-                    elif current != digest:
-                        print(f'Keeping personal configuration: {name}')
-        units = selected
-        # Fish contains personal configuration as well as this shipped command.
-        # Refresh only the command when preserving an existing Fish directory.
-        fish_update = '.config/fish/functions/update.fish'
-        if (manifest(payload).get('layout') != 2 and '.config/fish' not in units and fish_update not in units and
-                source_path(payload, fish_update).is_file()):
-            units.append(fish_update)
+            if not exists(destination):
+                # A missing previously shipped file may be an intentional
+                # personal deletion. Only add genuinely new defaults.
+                if name not in previous:
+                    selected.append(name)
+            elif destination.is_file():
+                current = hashlib.sha256(destination.read_bytes()).hexdigest()
+                # Older installations have a revision but no defaults record.
+                # Recover the old shipped default when its Git object exists.
+                if name not in previous and installed_commit:
+                    candidates = [f'desktop/payload/home/{name}']
+                    if manifest(payload).get('layout') == 2:
+                        candidates.insert(0, str(path.relative_to(payload.parents[1])))
+                    for candidate in candidates:
+                        try:
+                            old = subprocess.check_output(
+                                ['git', '-C', str(ROOT.parent), 'show',
+                                 f'{installed_commit}:{candidate}'],
+                                stderr=subprocess.PIPE, timeout=10)
+                            old = old.replace(b'@HOME@', str(home).encode())
+                            previous[name] = hashlib.sha256(old).hexdigest()
+                            break
+                        except (OSError, subprocess.SubprocessError):
+                            pass
+                if current == previous.get(name) and current != digest:
+                    selected.append(name)
+                elif current != digest:
+                    print(f'Keeping personal configuration: {name}')
+    units = selected
+    # Fish contains personal configuration as well as this shipped command.
+    # Refresh only the command when preserving an existing Fish directory.
+    fish_update = '.config/fish/functions/update.fish'
+    if (manifest(payload).get('layout') != 2 and '.config/fish' not in units and fish_update not in units and
+            source_path(payload, fish_update).is_file()):
+        units.append(fish_update)
+    return units, defaults
+
+
+def plan_source_links(payload, home, units, link_source):
+    """Validate source ownership and choose links before deployment mutates files."""
     linked = {}
     if link_source:
         payload = payload.resolve()
@@ -260,6 +260,21 @@ def install(payload, home, dry_run=False, settings=None, preserve_preferences=Fa
             target = home / root
             if target.is_symlink() and checkout_for(target) is not None:
                 raise ValueError('Checkout-managed sources require --link-source; refusing to recreate duplicate code')
+    return payload, units, linked
+
+
+def install(payload, home, dry_run=False, settings=None, preserve_preferences=False,
+            link_source=False):
+    units = verify(payload)
+    if manifest(payload).get('layout') == 2:
+        from organize import plan as organization_plan
+        organization_plan(home, payload)  # Detect conflicting locations before any writes.
+    if preserve_preferences and settings is not None:
+        raise ValueError('Preference-preserving updates cannot replace the installation plan')
+    defaults = {}
+    if preserve_preferences:
+        units, defaults = select_preference_updates(payload, home, units)
+    payload, units, linked = plan_source_links(payload, home, units, link_source)
     # Capture shortcuts before any backup or replacement, including included files.
     spec = importlib.util.spec_from_file_location('personal_bindings', Path(__file__).with_name('personal_bindings.py'))
     personal_bindings = importlib.util.module_from_spec(spec)
