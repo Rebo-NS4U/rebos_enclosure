@@ -187,7 +187,7 @@ ShellRoot {
                     if (!line.visible || line.width < practice.width - 60 || line.height < practice.highlightBounds.height + 2 * practice.highlightPadding || line.y !== caret.rowY) throw Error("Current line highlight is missing or too narrow");
                     if (caret.accent.toString() !== Colors.primary.toString()) throw Error("Cursor must use the exact theme accent");
                     if (first.style !== Text.Normal || first.color.toString() !== Colors.overSurface.toString()) throw Error("Text must use the normal theme color without outlines");
-                    if (first.font.family !== Config.theme.font || first.font.pixelSize !== Config.theme.fontSize) throw Error("Passage must use the system theme font and size");
+                    if (first.font.family !== Config.theme.font || first.font.pixelSize !== Config.theme.fontSize + 2) throw Error("Passage must use the theme font with the larger reading size");
                     if (Math.abs(caret.width - caret.targetGlyph.width - 2 * practice.letterPadding) > 0.01) throw Error("Letter highlight is wider than a single character");
                     if (!caret.visible || core.width <= 0 || core.height <= 0 || core.radius <= 0 || core.color.a < 0.35) throw Error("Rounded glass cursor is missing or too faint");
                     if (!find(practice, "typing-character-0").caretHere || Math.abs(first.opacity - 1) > 0.001) throw Error("Current-character highlight missing: " + JSON.stringify({opacity: first.opacity, current: first.caretHere, entrance: first.entrance, cursor: input.cursorPosition, practicing: practice.practicing, visible: find(practice, "typing-character-0").caretHere, motion: Motion.base}));

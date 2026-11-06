@@ -84,7 +84,7 @@ Item {
     readonly property int visualCursor: Math.min(TypingPaging.displayInput(answer.text.slice(0, answer.cursorPosition), passage).length, passage.length - 1)
     readonly property real progress: bookLength ? Math.min(1, (position + characters(displayedInput).length) / bookLength) : 0
     readonly property var passageWords: pageLayout.words
-    readonly property font readingFont: Qt.font({family: Config.theme.font, pixelSize: Config.theme.fontSize, weight: Font.Normal})
+    readonly property font readingFont: Qt.font({family: Config.theme.font, pixelSize: Config.theme.fontSize + 2, weight: Font.Normal})
     FontMetrics { id: typingMetrics; font: root.readingFont }
     readonly property rect highlightBounds: {
         const metricsFont = typingMetrics.font;
@@ -94,7 +94,7 @@ Item {
     readonly property real letterPadding: 1
     function characterWidth(text) { return Math.max(1, Math.ceil(typingMetrics.advanceWidth(text))); }
     function fitPage() {
-        pageLayout = TypingPaging.layout(pageSource, Math.max(80, root.width - 52), characterWidth, pageLineLimit);
+        pageLayout = TypingPaging.layout(pageSource, Math.max(80, root.width - 40), characterWidth, pageLineLimit);
         Qt.callLater(refreshPageCaret);
     }
     function refreshPageCaret() {
@@ -253,7 +253,7 @@ Item {
                 data.action = restoreAction;
                 data.chapters = restoreChapters;
             }
-            const fitted = TypingPaging.layout(data.passage, Math.max(80, root.width - 52), characterWidth, pageLineLimit);
+            const fitted = TypingPaging.layout(data.passage, Math.max(80, root.width - 40), characterWidth, pageLineLimit);
             const prepared = TypingPaging.prepareInput(data.typed, fitted.text);
             data.typed = prepared.text;
             const entered = characters(data.typed);
@@ -539,6 +539,8 @@ Item {
         ColumnLayout {
             anchors.fill: parent
             anchors.margins: 20
+            anchors.leftMargin: root.practicing ? 16 : 20
+            anchors.rightMargin: root.practicing ? 16 : 20
             spacing: 12
             RowLayout {
                 Layout.fillWidth: true
@@ -748,8 +750,8 @@ Item {
                             opacity: root.pageReveal
                             anchors.left: parent.left
                             anchors.right: parent.right
-                            anchors.leftMargin: 6
-                            anchors.rightMargin: 6
+                            anchors.leftMargin: 4
+                            anchors.rightMargin: 4
                             spacing: 0
                             Repeater {
                                 model: root.passageWords
