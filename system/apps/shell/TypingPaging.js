@@ -2,12 +2,13 @@
 
 function characters(text) { return text.match(/[\uD800-\uDBFF][\uDC00-\uDFFF]|[\s\S]/g) || []; }
 
-// Books commonly use typographic quotes that ordinary keyboard keys cannot type.
+// Books use typographic quotes and dashes absent from ordinary keyboard keys.
 // Compare equivalent quote styles without altering source text or saved offsets.
 function matchingCharacter(input, target) {
     function canonical(value) {
         return value.replace(/[\u2018\u2019\u201a\u201b]/g, "'")
-                    .replace(/[\u201c\u201d\u201e\u201f]/g, '\"');
+                    .replace(/[\u201c\u201d\u201e\u201f]/g, '\"')
+                    .replace(/[\u2010-\u2015]/g, '-');
     }
     return canonical(input) === canonical(target);
 }

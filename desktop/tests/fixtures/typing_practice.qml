@@ -39,13 +39,15 @@ ShellRoot {
                         if (!Pages.matchingCharacter("'", quote)) throw Error("Single quote rejected");
                     for (const quote of '“”„‟"')
                         if (!Pages.matchingCharacter('"', quote)) throw Error("Double quote rejected");
+                    for (const dash of "‐‑‒–—―-")
+                        if (!Pages.matchingCharacter("-", dash)) throw Error("Keyboard hyphen rejected for book dash");
                     if (Pages.matchingCharacter("'", '"') || Pages.matchingCharacter("a", "A")) throw Error("Different characters accepted");
                     practice.restoring = true;
-                    practice.pageSource = "“Don’t”";
+                    practice.pageSource = "“Don’t”—go–on";
                     practice.fitPage();
                     const quoteInput = find(practice, "typing-input");
-                    quoteInput.text = "\"Don't\"";
-                    if (practice.correctCount() !== 7) throw Error("Keyboard quotes must count toward accuracy and WPM");
+                    quoteInput.text = "\"Don't\"-go-on";
+                    if (practice.correctCount() !== 13) throw Error("Keyboard quotes must count toward accuracy and WPM");
                     quoteInput.text = "";
                     practice.restoring = false;
                     let meter = Speed.record(Speed.create(), 1000);
