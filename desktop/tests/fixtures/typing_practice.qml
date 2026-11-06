@@ -141,7 +141,7 @@ ShellRoot {
                     const editedGlyph = find(practice, "typing-character-10");
                     const originalTyped = input.text;
                     input.text = originalTyped.slice(0, 10) + "!" + originalTyped.slice(11);
-                    if (!editedGlyph.incorrect || !editedGlyph.font.underline) throw Error("Middle edit did not underline the mistake");
+                    if (!editedGlyph.incorrect || !editedGlyph.font.underline || editedGlyph.scale !== 1) throw Error("Middle edit did not underline the mistake");
                     input.text = originalTyped;
                     if (editedGlyph.incorrect || editedGlyph.font.underline) throw Error("Correction did not clear the error underline");
                     find(practice, "typing-passage-flow").forceLayout();
@@ -206,7 +206,7 @@ ShellRoot {
                     if (Math.abs(find(practice, "typing-character-1").opacity - 0.65) > 0.001) throw Error("Upcoming text must remain readable");
                     input.text = practice.passage[0]; input.cursorPosition = input.length;
                 } else if (phase === 2) {
-                    if (Math.abs(first.opacity - 1) > 0.001) throw Error("Typed glyph did not become opaque after animation");
+                    if (Math.abs(first.opacity - 1) > 0.001 || Math.abs(first.scale - 1) > 0.001) throw Error("Typed glyph did not settle after animation");
                     const settled = find(practice, "typing-smooth-caret");
                     const settledLine = find(practice, "typing-line-highlight");
                     const activeGlyph = settled.targetGlyph;

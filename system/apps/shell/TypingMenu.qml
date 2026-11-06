@@ -44,6 +44,7 @@ Item {
     property string restoreAction: ""
     property var restoreChapters: []
     property real pageReveal: 1
+    property real pageCelebration: 0
     property var chapters: []
     property var library: []
     property bool backendStarted: false
@@ -117,14 +118,19 @@ Item {
         interval: 150
         onTriggered: { if (root.visible && root.practicing && passageArea.width > 0 && passageArea.height > 0 && !root.restoring && root.pageSource.length) { root.fitPage(); if (root.bookId && root.characters(answer.text).length >= root.characters(root.passage).length) root.advance(); } }
     }
-    NumberAnimation {
+    ParallelAnimation {
         id: pageArrival
-        target: root
-        property: "pageReveal"
-        from: 0.25
-        to: 1
-        duration: Math.max(120, Motion.contentIn)
-        easing.type: Easing.OutCubic
+        NumberAnimation { target: root; property: "pageReveal"; from: 0.4; to: 1; duration: Math.max(120, Motion.contentIn); easing.type: Easing.OutCubic }
+        NumberAnimation { target: root; property: "pageCelebration"; from: 1; to: 0; duration: Math.max(180, Motion.enter); easing.type: Easing.OutCubic }
+    }
+    Connections {
+        target: Motion
+        function onEnabledChanged() {
+            if (!Motion.enabled) {
+                pageArrival.stop(); revealAnimation.stop();
+                root.pageReveal = 1; root.pageCelebration = 0; root.revealProgress = 1;
+            }
+        }
     }
     function queueTyping(text) {
         if (turningPage) pendingKeys = characters(pendingKeys + text).slice(0, 4096).join("");
@@ -150,7 +156,7 @@ Item {
     onPracticingChanged: { reveal(); resetSpeed(); syncCaret(); }
     onVisibleChanged: {
         if (visible) { reveal(); backendStarted = true; if (ready) send({action: "list"}, false); }
-        else saveProgress();
+        else { saveProgress(); pageArrival.stop(); pageReveal = 1; pageCelebration = 0; }
         resetSpeed();
         if (visible && practicing) { fitDelay.restart(); Qt.callLater(() => answer.forceActiveFocus()); }
     }
@@ -168,9 +174,13 @@ Item {
     property int renderedCaret: -1
     function updateGlyph(glyph) {
         if (!glyph) return;
+        const wasCorrect = glyph.typed && !glyph.incorrect;
         glyph.typed = glyph.characterIndex < displayedInput.length;
         glyph.incorrect = glyph.typed && !TypingPaging.matchingCharacter(displayedInput.substr(glyph.characterIndex, glyph.modelData.length), glyph.modelData);
         glyph.caretHere = practicing && glyph.characterIndex === visualCursor;
+        if (!glyph.typed || glyph.incorrect) glyph.stopFeedback();
+        else if (!wasCorrect && glyph.initialized && !restoring && !busy && visible && practicing && answer.activeFocus && Motion.enabled && glyph.modelData.trim().length)
+            glyph.celebrate();
     }
     function syncCaret() {
         const previous = renderedCaret;
@@ -289,7 +299,7 @@ Item {
                     answer.text = buffered; answer.cursorPosition = answer.length;
                     if (!root.visible || !root.practicing) root.saveProgress();
                 });
-            } else { pendingKeys = ""; pageReveal = 1; }
+            } else { pendingKeys = ""; pageArrival.stop(); pageReveal = 1; pageCelebration = 0; }
             message = "Ready to resume. Your place is saved on this device.";
             if (data.kind === "book") samplesExpanded = false;
             if (data.action === "add") { paste.text = ""; practicing = true; }
@@ -745,6 +755,16 @@ Item {
                             visible: smoothCaret.visible
                             opacity: answer.activeFocus ? 1 : 0.4
                         }
+                        Rectangle {
+                            objectName: "typing-page-celebration"
+                            anchors.fill: parent
+                            radius: 10
+                            color: "transparent"
+                            border.width: 1
+                            border.color: Qt.alpha(Colors.primary, 0.5)
+                            opacity: Motion.enabled ? root.pageCelebration : 0
+                            visible: opacity > 0
+                        }
                         Flow {
                             id: passageFlow
                             objectName: "typing-passage-flow"
@@ -775,6 +795,24 @@ Item {
                                             property bool typed: false
                                             property bool incorrect: false
                                             property bool initialized: false
+                                            property real spark: 0
+                                            scale: 1 + spark * 0.08
+                                            transformOrigin: Item.Center
+                                            function celebrate() { successPop.restart(); }
+                                            function stopFeedback() { successPop.stop(); spark = 0; }
+                                            NumberAnimation {
+                                                id: successPop
+                                                target: glyph
+                                                property: "spark"
+                                                from: 1
+                                                to: 0
+                                                duration: Math.max(140, Motion.enter)
+                                                easing.type: Easing.OutCubic
+                                            }
+                                            Connections {
+                                                target: Motion
+                                                function onEnabledChanged() { if (!Motion.enabled) glyph.stopFeedback(); }
+                                            }
                                             onCaretHereChanged: { if (caretHere && initialized) Qt.callLater(() => smoothCaret.follow(glyph)); }
                                             Connections {
                                                 target: word
@@ -790,7 +828,7 @@ Item {
                                             Component.onDestruction: {
                                                 if (root.glyphItems[characterIndex] === glyph) delete root.glyphItems[characterIndex];
                                             }
-                                            onVisibleChanged: { if (initialized && visible && caretHere) Qt.callLater(() => smoothCaret.follow(glyph)); }
+                                            onVisibleChanged: { if (!visible) stopFeedback(); else if (initialized && caretHere) Qt.callLater(() => smoothCaret.follow(glyph)); }
                                             readonly property int characterIndex: word.modelData.start + root.characters(word.modelData.text).slice(0, index).join("").length
                                             objectName: "typing-character-" + characterIndex
                                             text: modelData === " " ? "\u00a0" : modelData
@@ -805,7 +843,7 @@ Item {
                                                 enabled: Motion.enabled
                                                 NumberAnimation { duration: Math.round(Motion.base * 0.45); easing.type: Easing.OutCubic }
                                             }
-                                            color: typed && incorrect ? Colors.error : Colors.overSurface
+                                            color: typed && incorrect ? Colors.error : Qt.tint(Colors.overSurface, Qt.alpha(Colors.primary, spark * 0.65))
 
                                         }
                                     }
