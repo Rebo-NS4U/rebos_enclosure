@@ -85,7 +85,7 @@ class StreamRelay:
                             if upstream.status != 206 or upstream.headers.get('Content-Range') != expected:
                                 raise ValueError('Preloaded range changed')
                             while offset <= end:
-                                chunk = upstream.read(min(65536, end + 1 - offset))
+                                chunk = upstream.read1(min(65536, end + 1 - offset))
                                 if not chunk:
                                     raise OSError('Truncated video range')
                                 self.wfile.write(chunk)
@@ -142,7 +142,8 @@ class StreamRelay:
                         self.close_connection = True
                         if body:
                             self.wfile.write(prefix)
-                            while chunk := upstream.read(65536):
+                            # Forward available bytes without waiting to fill 64 KB.
+                            while chunk := upstream.read1(65536):
                                 self.wfile.write(chunk)
                 except (BrokenPipeError, ConnectionResetError):
                     pass

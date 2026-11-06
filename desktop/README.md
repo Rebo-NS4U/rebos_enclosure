@@ -454,3 +454,5 @@ The older terminal-bonsai, cbonsai, and experimental rainforest renderers are re
 Video startup avoids extra YouTube format probes and uses a 1.5-second network buffer for all VLC sources. Slow connections may buffer again during playback. These changes apply when the media backend next starts; active playback is preserved.
 
 Single-video YouTube quick-play uses the existing feed card instead of fetching full details a second time. Playlist enumeration is preserved. Provider subtitle downloads and conversion run after video loading starts; late results are scoped to the current video and preserve explicit subtitle choices.
+
+The shared stream relay forwards available network bytes immediately, including after a preloaded prefix, rather than waiting for a full 64 KB chunk. VLC pause-click capability detection is cached for the media backend lifetime to avoid an extra VLC process on repeat launches.

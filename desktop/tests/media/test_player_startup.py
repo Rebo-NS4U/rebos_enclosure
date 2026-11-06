@@ -23,12 +23,22 @@ class NetworkPlaybackTests(unittest.TestCase):
                 links.format_name = format_name
                 session.apply(['load', links, 'Network clip', False, True])
                 options = json.loads(session.api.call_args.kwargs['data'])['options']
-                self.assertIn('network-caching=5000', options)
+                self.assertIn('network-caching=1500', options)
                 self.assertIn('prefetch-buffer-size=65536', options)
                 self.assertEqual('demux=avformat' in options, format_name.startswith('mov,'))
 
 
 class PluginDetectionTests(unittest.TestCase):
+    def setUp(self):
+        vlc_session.pause_click_available.cache_clear()
+        self.addCleanup(vlc_session.pause_click_available.cache_clear)
+
+    def test_repeated_player_launches_reuse_plugin_probe(self):
+        with patch.object(vlc_session.subprocess, 'run', return_value=subprocess.CompletedProcess([], 0, '--pause-click-mouse-button')) as run:
+            self.assertTrue(vlc_session.pause_click_available())
+            self.assertTrue(vlc_session.pause_click_available())
+            run.assert_called_once()
+
     def test_available_options(self):
         with patch.object(vlc_session.subprocess, 'run', return_value=subprocess.CompletedProcess([], 0, '--pause-click-mouse-button')):
             self.assertTrue(vlc_session.pause_click_available())
@@ -39,6 +49,7 @@ class PluginDetectionTests(unittest.TestCase):
 
     def test_failed_probe(self):
         for error in (OSError('missing executable'), subprocess.TimeoutExpired('vlc', 5)):
+            vlc_session.pause_click_available.cache_clear()
             with self.subTest(error=error), patch.object(vlc_session.subprocess, 'run', side_effect=error):
                 self.assertFalse(vlc_session.pause_click_available())
 

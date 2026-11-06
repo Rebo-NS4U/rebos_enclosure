@@ -47,6 +47,55 @@ class RelayTests(unittest.TestCase):
     def tearDown(self):
         self.relay.close();self.origin.shutdown();self.origin.server_close();self.folder.cleanup()
 
+    def test_slow_origin_forwards_available_bytes_before_full_chunk(self):
+        data = bytes(range(256)) * 512
+        for preloaded in (False, True):
+            with self.subTest(preloaded=preloaded):
+                release = threading.Event()
+                class SlowOrigin(http.server.BaseHTTPRequestHandler):
+                    def log_message(self, *args):
+                        pass
+                    def do_GET(self):
+                        match = re.fullmatch(r'bytes=(\d+)-(\d*)', self.headers.get('Range', ''))
+                        start = int(match[1]) if match else 0
+                        end = int(match[2]) if match and match[2] else len(data)-1
+                        self.send_response(206 if match else 200)
+                        self.send_header('Content-Type', 'video/mp4')
+                        self.send_header('Content-Length', str(end-start+1))
+                        self.send_header('ETag', '"slow-video"')
+                        if match:
+                            self.send_header('Content-Range', f'bytes {start}-{end}/{len(data)}')
+                        self.end_headers()
+                        first_end = min(start+4096, end+1)
+                        self.wfile.write(data[start:first_end])
+                        self.wfile.flush()
+                        if first_end <= end:
+                            release.wait(4)
+                            try:
+                                self.wfile.write(data[first_end:end+1])
+                            except (BrokenPipeError, ConnectionResetError):
+                                pass
+                origin = http.server.ThreadingHTTPServer(('127.0.0.1', 0), SlowOrigin)
+                thread = threading.Thread(target=origin.serve_forever, daemon=True)
+                thread.start()
+                try:
+                    local = self.relay.register(f'http://127.0.0.1:{origin.server_port}/slow')
+                    if preloaded:
+                        self.assertTrue(self.relay.preload(local, size=128))
+                    with urlopen(local, timeout=1) as response:
+                        # Requires new upstream data in both paths, while the
+                        # origin deliberately withholds the rest of a 64 KB read.
+                        count = 129 if preloaded else 65
+                        self.assertEqual(response.read(count), data[:count])
+                        self.assertFalse(release.is_set())
+                        release.set()
+                        self.assertEqual(response.read(), data[count:])
+                finally:
+                    release.set()
+                    origin.shutdown()
+                    origin.server_close()
+                    thread.join(2)
+
     def test_open_ended_byte_range_is_forwarded_without_truncation(self):
         self.path.joinpath('video').write_bytes(b'video')
         local = self.relay.register(self.base + 'video')
@@ -97,7 +146,8 @@ class RelayTests(unittest.TestCase):
         upstream.url = self.base + 'interrupted'
         upstream.status = 200
         upstream.headers = {'Content-Type': 'video/mp4', 'Content-Length': '100000'}
-        upstream.read.side_effect = [b'v' * 64, b'v' * 65536, OSError('upstream timeout')]
+        upstream.read.return_value = b'v' * 64
+        upstream.read1.side_effect = [b'v' * 65536, OSError('upstream timeout')]
         with patch.object(self.relay.opener, 'open', return_value=upstream):
             with urlopen(local) as response:
                 with self.assertRaises(IncompleteRead) as error:

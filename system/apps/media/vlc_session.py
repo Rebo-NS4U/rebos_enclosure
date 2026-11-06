@@ -1,6 +1,7 @@
 """One native VLC window, private controls, and live subtitle rendering."""
 import base64
 import bisect
+from functools import lru_cache
 import json
 import os
 from pathlib import Path
@@ -22,6 +23,7 @@ from vlc_theme import vlc_environment
 INPUT_ERROR = re.compile(r'\bmain (?:input|stream) error:(?! INPUT_CONTROL_SET_POSITION 100\.0% failed)')
 
 
+@lru_cache(maxsize=1)
 def pause_click_available():
     """Never pass plugin-only options unless this VLC can parse them."""
     try:
