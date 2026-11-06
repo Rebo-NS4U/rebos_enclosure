@@ -101,16 +101,35 @@ Open the island bar's control panel and choose **Typing practice →**. Typing
 replaces the expanded bar contents, using the same input and dismissal behavior
 as its other panels. The compact typing surface uses a faint glass fill, soft blur and a subtle rim;
 controls are text only. Practice shows about 90 characters at a time, with only
-Edit and Back in the header. Setup controls stay hidden while typing. Panel
+Library and Back in the header. Setup controls stay hidden while typing. Panel
 resizing, passage reveals and typed characters animate smoothly, respecting the
 Appearance motion setting (zero disables animations). Upcoming characters are faint, and typed characters become opaque
 (errors use the error color). Type directly over the passage. Backspace to correct.
 Paste text or import documents, then select **Start practice**. Completed passages
 advance and the document loops forever, without a timer or failure state. **Back**
 or Escape returns to the control panel. Clicking outside collapses the bar.
-Text stays in this shell session and is not uploaded or saved. PDF import uses
-Poppler's `pdftotext`; scanned PDFs require OCR before import. Legacy DOC and RTF
-are not supported. IPC: `qs -p ~/.config/quickshell/shell.qml ipc call typing toggle`.
+Imported books, pasted text, and progress are now cached locally under
+`$XDG_DATA_HOME/rebos_shell/typing-books/library.sqlite3` (normally
+`~/.local/share/rebos_shell/typing-books/`). Nothing is uploaded. Choose a saved
+book and **Resume** to continue, including a partially typed passage. Progress
+saves after a short pause, every five seconds during typing, when a passage is
+completed, and when the view is closed. Re-importing identical text resumes its
+existing location instead of duplicating the book.
+
+Book mode supports EPUB as well as the existing document formats, up to 100 MB
+and 20 million extracted characters. EPUB chapters follow the book's spine;
+chapter/part/book headings and Markdown headings are detected in other formats
+when their structure is available. Use **Library** for chapter navigation and a
+position slider. Scanned PDFs still need OCR first; legacy DOC and RTF are not
+supported. PDF extraction uses Poppler's `pdftotext`.
+
+Only the current passage (at most 90 Unicode code points) enters the practice
+renderer. The backend caches one active book in memory and stores books in
+SQLite, with bookmark records separate from immutable content; it does not send a whole book through the text editor on every page.
+Letter lifts, color shimmers, and staggered passage entrances remain bounded to
+this small window and respect the Appearance motion setting. Chapter and overall
+progress stay visible in a quiet footer. IPC:
+`qs -p ~/.config/quickshell/shell.qml ipc call typing toggle`.
 
 The **Practice texts** selector includes six original CC0 passages: a lowercase
 warmup, two short stories, a reflective passage, dialogue and punctuation, and

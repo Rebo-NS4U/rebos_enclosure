@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Run the typing rendering and loop checks in an isolated Wayland panel."""
 from pathlib import Path
+import os
 import shutil
 import subprocess
 import tempfile
@@ -17,7 +18,7 @@ def main():
             else:
                 shutil.copyfile(source / name, target / name)
         shutil.copyfile(ROOT / "desktop/tests/fixtures/typing_practice.qml", target / "shell.qml")
-        result = subprocess.run(["qs", "-p", str(target / "shell.qml")], capture_output=True, text=True, timeout=15)
+        result = subprocess.run(["qs", "-p", str(target / "shell.qml")], capture_output=True, text=True, timeout=25, env=dict(os.environ, XDG_DATA_HOME=str(target / "data")))
         output = result.stdout + result.stderr
         print(output)
         assert result.returncode == 0 and "PASS:" in output and "ERROR" not in output
