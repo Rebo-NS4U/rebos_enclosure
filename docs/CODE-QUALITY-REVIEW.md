@@ -57,3 +57,13 @@ Pylint now reports 155 design warnings, up from 153 because the extracted prefer
 These changes affect the checkout's installer/updater tooling. No active desktop or assistant service was restarted, and no personal monitor configuration was applied. The deployment payload itself is unchanged and its existing checksum inventory still verifies.
 
 Validation after the follow-up: 343 desktop tests and 84 media tests passed, Ruff runtime checks passed, payload verification passed, and preference-preserving deployment preview against the actual installation passed without applying files. Raw follow-up metrics and test logs are retained with the local review artifacts.
+
+## Second cleanup pass
+
+Pylint design warnings fell from **155 to 150**, with no suppressions or threshold changes. Preference selection no longer exceeds the branch, statement or local-variable thresholds; monitor normalization no longer exceeds the branch/local thresholds.
+
+Default-file fingerprinting and replacement decisions, recovery of legacy defaults from Git, and loading recorded baselines now have separate functions. The selection loop retains the same symlink safeguards and preserves unknown personal files and intentional deletions. Its cyclomatic complexity is now 13 (previously 32 before this pass).
+
+Monitor normalization now delegates automatic placement and manual overlap checking to distinct helpers. Its complexity fell from 32 to 17; the placement and overlap functions score 9 and 8. Validation and placement errors retain their existing messages and behavior. These splits make the permission to replace a preference file and the geometry rules independently reviewable.
+
+Validation: **88 tests passed** across deployment (31), monitor/setup (16), updater/health/handoff (18), source layout (12) and linked-update recovery (11). Ruff and payload verification passed, and preference-preserving deployment preview against the installed desktop passed. Changes remain in installer/updater tooling; no desktop services or personal configuration were changed.

@@ -158,10 +158,58 @@ def is_preference(payload, relative):
             relative.startswith('.local/share/wallpapers/'))
 
 
-def select_preference_updates(payload, home, units):
-    """Plan updates to shipped defaults while retaining personal changes."""
-    # Track shipped defaults, never personal contents. Update individual
-    # unchanged files instead of skipping an entire configuration directory.
+def recorded_default_digest(payload, home, path, revision):
+    """Recover a shipped default from a recorded revision, never personal state."""
+    name = destination_name(payload, path)
+    candidates = [f'desktop/payload/home/{name}']
+    if manifest(payload).get('layout') == 2:
+        candidates.insert(0, str(path.relative_to(payload.parents[1])))
+    for candidate in candidates:
+        try:
+            old = subprocess.check_output(
+                ['git', '-C', str(ROOT.parent), 'show', f'{revision}:{candidate}'],
+                stderr=subprocess.PIPE, timeout=10)
+            old = old.replace(b'@HOME@', str(home).encode())
+            return hashlib.sha256(old).hexdigest()
+        except (OSError, subprocess.SubprocessError):
+            pass
+    return None
+
+
+def preference_file_update(payload, home, path, previous, installed_commit):
+    """Return a default fingerprint and whether its installed copy may change."""
+    name = destination_name(payload, path)
+    content = path.read_bytes().replace(b'@HOME@', str(home).encode())
+    digest = hashlib.sha256(content).hexdigest()
+    destination = home / name
+    # Preserve links (including linked parents) and unknown existing
+    # preferences. The first update establishes a safe baseline.
+    parents = destination.relative_to(home).parents
+    links = [destination, *(home / p for p in parents)]
+    if any(p.is_symlink() and not p.resolve().is_relative_to(home / '.config/enclosure') for p in links):
+        return name, digest, False
+    if not exists(destination):
+        # A missing previously shipped file may be an intentional
+        # personal deletion. Only add genuinely new defaults.
+        if name not in previous:
+            return name, digest, True
+    elif destination.is_file():
+        current = hashlib.sha256(destination.read_bytes()).hexdigest()
+        # Older installations have a revision but no defaults record.
+        # Recover the old shipped default when its Git object exists.
+        if name not in previous and installed_commit:
+            recovered = recorded_default_digest(payload, home, path, installed_commit)
+            if recovered is not None:
+                previous[name] = recovered
+        if current == previous.get(name) and current != digest:
+            return name, digest, True
+        elif current != digest:
+            print(f'Keeping personal configuration: {name}')
+    return name, digest, False
+
+
+def load_preference_baseline(home):
+    """Load recorded default hashes and a usable installed Git revision."""
     record = home / '.local/state/rebos-desktop/preference-defaults.json'
     previous = json.loads(record.read_text()) if record.is_file() else {}
     installed_record = home / '.local/state/rebos-desktop/source.json'
@@ -169,6 +217,14 @@ def select_preference_updates(payload, home, units):
                         if installed_record.is_file() else '')
     if len(installed_commit) != 40 or any(c not in '0123456789abcdef' for c in installed_commit):
         installed_commit = ''
+    return previous, installed_commit
+
+
+def select_preference_updates(payload, home, units):
+    """Plan updates to shipped defaults while retaining personal changes."""
+    # Track shipped defaults, never personal contents. Update individual
+    # unchanged files instead of skipping an entire configuration directory.
+    previous, installed_commit = load_preference_baseline(home)
     defaults = {}
     selected = []
     for relative in units:
@@ -185,45 +241,10 @@ def select_preference_updates(payload, home, units):
         for path in paths:
             if not path.is_file():
                 continue
-            name = destination_name(payload, path)
-            content = path.read_bytes().replace(b'@HOME@', str(home).encode())
-            digest = hashlib.sha256(content).hexdigest()
+            name, digest, replace = preference_file_update(payload, home, path, previous, installed_commit)
             defaults[name] = digest
-            destination = home / name
-            # Preserve links (including linked parents) and unknown existing
-            # preferences. The first update establishes a safe baseline.
-            parents = destination.relative_to(home).parents
-            links = [destination, *(home / p for p in parents)]
-            if any(p.is_symlink() and not p.resolve().is_relative_to(home / '.config/enclosure') for p in links):
-                continue
-            if not exists(destination):
-                # A missing previously shipped file may be an intentional
-                # personal deletion. Only add genuinely new defaults.
-                if name not in previous:
-                    selected.append(name)
-            elif destination.is_file():
-                current = hashlib.sha256(destination.read_bytes()).hexdigest()
-                # Older installations have a revision but no defaults record.
-                # Recover the old shipped default when its Git object exists.
-                if name not in previous and installed_commit:
-                    candidates = [f'desktop/payload/home/{name}']
-                    if manifest(payload).get('layout') == 2:
-                        candidates.insert(0, str(path.relative_to(payload.parents[1])))
-                    for candidate in candidates:
-                        try:
-                            old = subprocess.check_output(
-                                ['git', '-C', str(ROOT.parent), 'show',
-                                 f'{installed_commit}:{candidate}'],
-                                stderr=subprocess.PIPE, timeout=10)
-                            old = old.replace(b'@HOME@', str(home).encode())
-                            previous[name] = hashlib.sha256(old).hexdigest()
-                            break
-                        except (OSError, subprocess.SubprocessError):
-                            pass
-                if current == previous.get(name) and current != digest:
-                    selected.append(name)
-                elif current != digest:
-                    print(f'Keeping personal configuration: {name}')
+            if replace:
+                selected.append(name)
     units = selected
     # Fish contains personal configuration as well as this shipped command.
     # Refresh only the command when preserving an existing Fish directory.

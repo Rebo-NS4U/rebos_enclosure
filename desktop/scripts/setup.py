@@ -63,6 +63,38 @@ def logical_monitor_size(output, dimensions):
     return math.ceil(width / output['scale']), math.ceil(height / output['scale'])
 
 
+def position_monitors(enabled, layout):
+    """Place enabled connectors in a row/column or clear automatic positions."""
+    cursor = 0
+    for output in enabled:
+        if layout in ('horizontal', 'vertical'):
+            dimensions = MODE.fullmatch(output['mode'] if output['mode'] != 'auto' else output['preferred_mode'])
+            if not dimensions:
+                raise ValueError('Automatic rows/columns need known resolutions. Choose a mode or use automatic/manual positioning.')
+            width, height = logical_monitor_size(output, dimensions)
+            output['position'] = {'x': cursor if layout == 'horizontal' else 0,
+                                  'y': cursor if layout == 'vertical' else 0}
+            cursor += width if layout == 'horizontal' else height
+        elif layout == 'auto':
+            output['position'] = None
+
+
+def validate_monitor_overlap(enabled):
+    """Reject intersections for connectors with known size and manual position."""
+    rectangles = []
+    for output in enabled:
+        dimensions = MODE.fullmatch(output['mode'] if output['mode'] != 'auto' else output['preferred_mode'])
+        if not dimensions or output['position'] is None:
+            continue
+        w, h = logical_monitor_size(output, dimensions)
+        x, y = output['position']['x'], output['position']['y']
+        rect = (x, y, x + w, y + h)
+        for name, other in rectangles:
+            if max(x, other[0]) < min(rect[2], other[2]) and max(y, other[1]) < min(rect[3], other[3]):
+                raise ValueError(f'Monitor positions overlap: {name} and {output["name"]}')
+        rectangles.append((output['name'], rect))
+
+
 def normalize_monitors(config):
     if not isinstance(config, dict) or set(config) - {'layout', 'outputs'}:
         raise ValueError('Monitor configuration must contain layout and outputs only')
@@ -82,31 +114,10 @@ def normalize_monitors(config):
         raise ValueError('Choose only one startup monitor')
     if enabled and not any(o['primary'] for o in enabled):
         enabled[0]['primary'] = True
-    cursor = 0
-    for output in enabled:
-        if layout in ('horizontal', 'vertical'):
-            dimensions = MODE.fullmatch(output['mode'] if output['mode'] != 'auto' else output['preferred_mode'])
-            if not dimensions:
-                raise ValueError('Automatic rows/columns need known resolutions. Choose a mode or use automatic/manual positioning.')
-            width, height = logical_monitor_size(output, dimensions)
-            output['position'] = {'x': cursor if layout == 'horizontal' else 0,
-                                  'y': cursor if layout == 'vertical' else 0}
-            cursor += width if layout == 'horizontal' else height
-        elif layout == 'auto':
-            output['position'] = None
     if layout == 'manual':
-        rectangles = []
-        for output in enabled:
-            dimensions = MODE.fullmatch(output['mode'] if output['mode'] != 'auto' else output['preferred_mode'])
-            if not dimensions or output['position'] is None:
-                continue
-            w, h = logical_monitor_size(output, dimensions)
-            x, y = output['position']['x'], output['position']['y']
-            rect = (x, y, x + w, y + h)
-            for name, other in rectangles:
-                if max(x, other[0]) < min(rect[2], other[2]) and max(y, other[1]) < min(rect[3], other[3]):
-                    raise ValueError(f'Monitor positions overlap: {name} and {output["name"]}')
-            rectangles.append((output['name'], rect))
+        validate_monitor_overlap(enabled)
+    else:
+        position_monitors(enabled, layout)
     return {'layout': layout, 'outputs': outputs}
 
 
