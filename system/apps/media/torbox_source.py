@@ -268,7 +268,9 @@ def availability(media_type, imdb, episode='1:1'):
         return 'unknown'
 
 
-def streams(media_type, imdb, episode, quality='best'):
+# Quality exception: Provider identifiers, candidate metadata and verification results remain explicitly named across the bounded lookup.
+# Numeric ceilings are enforced by desktop/scripts/quality.py.
+def streams(media_type, imdb, episode, quality='best'):  # pylint: disable=too-many-locals
     key = read_key()
     if not key:
         return

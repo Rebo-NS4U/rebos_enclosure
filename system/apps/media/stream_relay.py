@@ -13,149 +13,172 @@ from urllib.request import Request, HTTPRedirectHandler, HTTPCookieProcessor, bu
 from http.cookiejar import CookieJar
 
 
-class StreamRelay:
+class RelayRedirects(HTTPRedirectHandler):
+    def __init__(self, relay):
+        super().__init__()
+        self.relay = relay
+
+    # Quality exception: Framework callback arity is fixed by Gio or HTTPRedirectHandler.
+    # Numeric ceilings are enforced by desktop/scripts/quality.py.
+    def redirect_request(self, req, fp, code, msg, headers, newurl):  # pylint: disable=too-many-arguments,too-many-positional-arguments
+        self.relay.validate(newurl)
+        redirect = super().redirect_request(req, fp, code, msg, headers, newurl)
+        if redirect and urlparse(req.full_url).hostname != urlparse(newurl).hostname:
+            redirect.remove_header('Cookie')
+            redirect.remove_header('Authorization')
+        return redirect
+
+
+class RelayRequestHandler(BaseHTTPRequestHandler):
+    protocol_version = 'HTTP/1.1'
+    def log_message(self, *args):
+        pass
+    def do_HEAD(self):
+        self.serve(False)
+    def do_GET(self):
+        self.serve(True)
+    def serve_preloaded(self, body, source):
+        with self.server.relay.lock:
+            entry = self.server.relay.preloaded.get(self.path)
+        if entry is None or time.monotonic() - entry[0] >= 300:
+            return False
+        _, data, total, metadata = entry
+        requested = self.headers.get('Range')
+        match = re.fullmatch(r'bytes=(\d+)-(\d*)', requested) if requested else None
+        if requested and not match:
+            return False
+        start = int(match[1]) if match else 0
+        end = min(int(match[2]), total - 1) if match and match[2] else total - 1
+        if start >= len(data) or end < start:
+            return False
+        try:
+            self.send_response(206 if requested else 200)
+            for key, value in metadata.items():
+                self.send_header(key, value)
+            self.send_header('Content-Length', str(end - start + 1))
+            self.send_header('Accept-Ranges', 'bytes')
+            if requested:
+                self.send_header('Content-Range', f'bytes {start}-{end}/{total}')
+            self.send_header('Connection', 'close')
+            self.end_headers()
+            self.close_connection = True
+            if not body:
+                return True
+            self.stream_preloaded(source, entry, (start, end))
+        except (BrokenPipeError, ConnectionResetError):
+            pass  # Players routinely cancel a read when seeking.
+        except (OSError, ValueError, HTTPException) as error:
+            # Headers have already been sent: never append an error page.
+            with self.server.relay.lock:
+                self.server.relay.preloaded.pop(self.path, None)
+            self.server.relay.failures[self.path] = str(getattr(error, 'code', type(error).__name__))
+            self.close_connection = True
+        return True
+    def stream_preloaded(self, source, entry, span):
+        _, data, total, metadata = entry
+        start, end = span
+        self.wfile.write(data[start:min(end + 1, len(data))])
+        self.wfile.flush()
+        with self.server.relay.lock:
+            self.server.relay.preload_hits += 1
+        offset = len(data)
+        if offset <= end:
+            url, headers, _ = source
+            headers = dict(headers, Range=f'bytes={offset}-{end}', **{'Accept-Encoding': 'identity'})
+            if metadata.get('ETag'):
+                headers['If-Match'] = metadata['ETag']
+            with self.server.relay.opener.open(Request(url, headers=headers), timeout=20) as upstream:
+                self.server.relay.validate(upstream.url)
+                expected = f'bytes {offset}-{end}/{total}'
+                if upstream.status != 206 or upstream.headers.get('Content-Range') != expected:
+                    raise ValueError('Preloaded range changed')
+                while offset <= end:
+                    chunk = upstream.read1(min(65536, end + 1 - offset))
+                    if not chunk:
+                        raise OSError('Truncated video range')
+                    self.wfile.write(chunk)
+                    offset += len(chunk)
+
+    # Quality exception: The request/response code names protocol ranges, totals, headers and upstream state explicitly.
+    # Numeric ceilings are enforced by desktop/scripts/quality.py.
+    def serve(self, body):  # pylint: disable=too-many-locals
+        response_started = False
+        with self.server.relay.lock:
+            source = self.server.relay.sources.get(self.path)
+        if source is None:
+            self.send_error(404); return
+        if self.serve_preloaded(body, source):
+            return
+        url, headers, height = source
+        headers = dict(headers)
+        if self.headers.get('Range'):
+            headers['Range'] = self.headers['Range']
+        headers['Accept-Encoding'] = 'identity'
+        try:
+            with self.server.relay.opener.open(Request(url, headers=headers, method='GET' if body else 'HEAD'), timeout=20) as upstream:
+                self.server.relay.validate(upstream.url)
+                content_type = upstream.headers.get('Content-Type', '').lower()
+                prefix = upstream.read(64) if body else b''
+                playlist = body and (prefix.lstrip().startswith(b'#EXTM3U') or 'mpegurl' in content_type)
+                if playlist:
+                    raw = prefix + upstream.read(2_000_000)
+                    if len(raw) >= 2_000_000:
+                        raise ValueError('Oversized playlist')
+                    rewritten = self.server.relay.rewrite(raw.decode(), upstream.url, source[1], height).encode()
+                    self.send_response(200)
+                    self.send_header('Content-Type', 'application/vnd.apple.mpegurl')
+                    self.send_header('Content-Length', str(len(rewritten)))
+                    self.send_header('Connection', 'close')
+                    self.end_headers()
+                    response_started = True
+                    self.close_connection = True
+                    self.wfile.write(rewritten)
+                    return
+                self.send_response(upstream.status)
+                for key in ('Content-Type', 'Content-Length', 'Content-Range', 'Accept-Ranges', 'ETag', 'Last-Modified'):
+                    if upstream.headers.get(key):
+                        self.send_header(key, upstream.headers[key])
+                self.send_header('Connection', 'close')
+                self.end_headers()
+                response_started = True
+                self.close_connection = True
+                if body:
+                    self.wfile.write(prefix)
+                    # Forward available bytes without waiting to fill 64 KB.
+                    while chunk := upstream.read1(65536):
+                        self.wfile.write(chunk)
+        except (BrokenPipeError, ConnectionResetError):
+            pass
+        except (OSError, ValueError, HTTPException) as error:
+            self.upstream_failure(error, response_started)
+
+    def upstream_failure(self, error, response_started):
+        self.server.relay.failures[self.path] = str(getattr(error, 'code', type(error).__name__))
+        self.close_connection = True
+        # Appending an HTTP error after media headers corrupts the
+        # video payload. Closing lets the player detect truncation.
+        if not response_started:
+            try: self.send_error(502, 'Video source unavailable')
+            except OSError: pass
+
+
+# Quality exception: These fields are widget references, caches, locks or previous samples with distinct names and lifetimes.
+# Numeric ceilings are enforced by desktop/scripts/quality.py.
+class StreamRelay:  # pylint: disable=too-many-instance-attributes
     def __init__(self, allow_local=False):
         self.allow_local = allow_local
         self.sources = OrderedDict()
         self.routes = {}
+        self.validated_hosts = OrderedDict()
         self.lock = threading.Lock()
         self.next_id = 0
         self.failures = {}
         self.preloaded = OrderedDict()
         self.preload_hits = 0
-        relay = self
-        class Redirects(HTTPRedirectHandler):
-            def redirect_request(self, req, fp, code, msg, headers, newurl):
-                relay.validate(newurl)
-                redirect = super().redirect_request(req, fp, code, msg, headers, newurl)
-                if redirect and urlparse(req.full_url).hostname != urlparse(newurl).hostname:
-                    redirect.remove_header('Cookie')
-                    redirect.remove_header('Authorization')
-                return redirect
         self.cookies = CookieJar()
-        self.opener = build_opener(Redirects(), HTTPCookieProcessor(self.cookies))
-        class Handler(BaseHTTPRequestHandler):
-            protocol_version = 'HTTP/1.1'
-            def log_message(self, *args):
-                pass
-            def do_HEAD(self):
-                self.serve(False)
-            def do_GET(self):
-                self.serve(True)
-            def serve_preloaded(self, body, source):
-                with relay.lock:
-                    entry = relay.preloaded.get(self.path)
-                if entry is None or time.monotonic() - entry[0] >= 300:
-                    return False
-                _, data, total, metadata = entry
-                requested = self.headers.get('Range')
-                match = re.fullmatch(r'bytes=(\d+)-(\d*)', requested) if requested else None
-                if requested and not match:
-                    return False
-                start = int(match[1]) if match else 0
-                end = min(int(match[2]), total - 1) if match and match[2] else total - 1
-                if start >= len(data) or end < start:
-                    return False
-                try:
-                    self.send_response(206 if requested else 200)
-                    for key, value in metadata.items():
-                        self.send_header(key, value)
-                    self.send_header('Content-Length', str(end - start + 1))
-                    self.send_header('Accept-Ranges', 'bytes')
-                    if requested:
-                        self.send_header('Content-Range', f'bytes {start}-{end}/{total}')
-                    self.send_header('Connection', 'close')
-                    self.end_headers()
-                    self.close_connection = True
-                    if not body:
-                        return True
-                    self.wfile.write(data[start:min(end + 1, len(data))])
-                    self.wfile.flush()
-                    with relay.lock:
-                        relay.preload_hits += 1
-                    offset = len(data)
-                    if offset <= end:
-                        url, headers, _ = source
-                        headers = dict(headers, Range=f'bytes={offset}-{end}', **{'Accept-Encoding': 'identity'})
-                        if metadata.get('ETag'):
-                            headers['If-Match'] = metadata['ETag']
-                        with relay.opener.open(Request(url, headers=headers), timeout=20) as upstream:
-                            relay.validate(upstream.url)
-                            expected = f'bytes {offset}-{end}/{total}'
-                            if upstream.status != 206 or upstream.headers.get('Content-Range') != expected:
-                                raise ValueError('Preloaded range changed')
-                            while offset <= end:
-                                chunk = upstream.read1(min(65536, end + 1 - offset))
-                                if not chunk:
-                                    raise OSError('Truncated video range')
-                                self.wfile.write(chunk)
-                                offset += len(chunk)
-                except (BrokenPipeError, ConnectionResetError):
-                    pass  # Players routinely cancel a read when seeking.
-                except (OSError, ValueError, HTTPException) as error:
-                    # Headers have already been sent: never append an error page.
-                    with relay.lock:
-                        relay.preloaded.pop(self.path, None)
-                    relay.failures[self.path] = str(getattr(error, 'code', type(error).__name__))
-                    self.close_connection = True
-                return True
-            def serve(self, body):
-                response_started = False
-                with relay.lock:
-                    source = relay.sources.get(self.path)
-                if source is None:
-                    self.send_error(404); return
-                if self.serve_preloaded(body, source):
-                    return
-                url, headers, height = source
-                headers = dict(headers)
-                if self.headers.get('Range'):
-                    headers['Range'] = self.headers['Range']
-                headers['Accept-Encoding'] = 'identity'
-                try:
-                    with relay.opener.open(Request(url, headers=headers, method='GET' if body else 'HEAD'), timeout=20) as upstream:
-                        relay.validate(upstream.url)
-                        content_type = upstream.headers.get('Content-Type', '').lower()
-                        prefix = upstream.read(64) if body else b''
-                        playlist = body and (prefix.lstrip().startswith(b'#EXTM3U') or 'mpegurl' in content_type)
-                        if playlist:
-                            raw = prefix + upstream.read(2_000_000)
-                            if len(raw) >= 2_000_000:
-                                raise ValueError('Oversized playlist')
-                            rewritten = relay.rewrite(raw.decode(), upstream.url, source[1], height).encode()
-                            self.send_response(200)
-                            self.send_header('Content-Type', 'application/vnd.apple.mpegurl')
-                            self.send_header('Content-Length', str(len(rewritten)))
-                            self.send_header('Connection', 'close')
-                            self.end_headers()
-                            response_started = True
-                            self.close_connection = True
-                            self.wfile.write(rewritten)
-                            return
-                        self.send_response(upstream.status)
-                        for key in ('Content-Type', 'Content-Length', 'Content-Range', 'Accept-Ranges', 'ETag', 'Last-Modified'):
-                            if upstream.headers.get(key):
-                                self.send_header(key, upstream.headers[key])
-                        self.send_header('Connection', 'close')
-                        self.end_headers()
-                        response_started = True
-                        self.close_connection = True
-                        if body:
-                            self.wfile.write(prefix)
-                            # Forward available bytes without waiting to fill 64 KB.
-                            while chunk := upstream.read1(65536):
-                                self.wfile.write(chunk)
-                except (BrokenPipeError, ConnectionResetError):
-                    pass
-                except (OSError, ValueError, HTTPException) as error:
-                    relay.failures[self.path] = str(getattr(error, 'code', type(error).__name__))
-                    self.close_connection = True
-                    # Appending an HTTP error after media headers corrupts the
-                    # video payload. Closing lets the player detect truncation.
-                    if not response_started:
-                        try: self.send_error(502, 'Video source unavailable')
-                        except OSError: pass
-        self.server = ThreadingHTTPServer(('127.0.0.1', 0), Handler)
+        self.opener = build_opener(RelayRedirects(self), HTTPCookieProcessor(self.cookies))
+        self.server = ThreadingHTTPServer(('127.0.0.1', 0), RelayRequestHandler)
+        self.server.relay = self
         self.server.daemon_threads = True
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
         self.thread.start()
@@ -198,9 +221,22 @@ class StreamRelay:
         if not self.allow_local:
             if parsed.scheme != 'https':
                 raise ValueError('HTTPS media required')
-            addresses = socket.getaddrinfo(parsed.hostname, parsed.port or 443, type=socket.SOCK_STREAM)
+            # Large HLS playlists can contain thousands of segments on one host.
+            # Bound both the lifetime and size of successful DNS checks.
+            host = (parsed.hostname, parsed.port or 443)
+            now = time.monotonic()
+            with self.lock:
+                checked = self.validated_hosts.get(host)
+            if checked is not None and now - checked < 30:
+                return
+            addresses = socket.getaddrinfo(*host, type=socket.SOCK_STREAM)
             if not addresses or any(not ipaddress.ip_address(entry[4][0]).is_global for entry in addresses):
                 raise ValueError('Public video source required')
+            with self.lock:
+                self.validated_hosts[host] = now
+                self.validated_hosts.move_to_end(host)
+                while len(self.validated_hosts) > 256:
+                    self.validated_hosts.popitem(last=False)
 
     def register(self, url, headers=None, height=None):
         parts = urlsplit(url)

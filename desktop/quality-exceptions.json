@@ -1,0 +1,510 @@
+{
+  "version": 1,
+  "pylint": "4.1.3",
+  "exceptions": [
+    {
+      "path": "desktop/scripts/deploy.py",
+      "object": "InstallPlan",
+      "symbol": "too-many-instance-attributes",
+      "ceiling": 10,
+      "reason": "A typed deployment schema names the journaled inputs explicitly; it is not a behavior-heavy object."
+    },
+    {
+      "path": "desktop/scripts/deploy.py",
+      "object": "prepare_install",
+      "symbol": "too-many-locals",
+      "ceiling": 18,
+      "reason": "Explicit paths, fingerprints and recovery records preserve auditability at the file-mutation boundary."
+    },
+    {
+      "path": "desktop/scripts/hardware.py",
+      "object": "detect",
+      "symbol": "too-many-locals",
+      "ceiling": 21,
+      "reason": "The detector names independent CPU, GPU, kernel and display probes; partial hardware availability is expected."
+    },
+    {
+      "path": "desktop/scripts/hardware.py",
+      "object": "detect",
+      "symbol": "too-many-branches",
+      "ceiling": 14,
+      "reason": "The detector names independent CPU, GPU, kernel and display probes; partial hardware availability is expected."
+    },
+    {
+      "path": "desktop/scripts/linked_update.py",
+      "object": "PreparedUpdate.apply",
+      "symbol": "too-many-locals",
+      "ceiling": 18,
+      "reason": "The frozen updater handoff and lock validation paths remain explicit and ordered before host changes."
+    },
+    {
+      "path": "desktop/scripts/linked_update.py",
+      "object": "PreparedUpdate",
+      "symbol": "too-few-public-methods",
+      "ceiling": 1,
+      "reason": "A single state/action operation is the complete public interface; dummy methods add no behavior."
+    },
+    {
+      "path": "desktop/scripts/organize.py",
+      "object": "organize",
+      "symbol": "too-many-locals",
+      "ceiling": 20,
+      "reason": "Explicit paths, fingerprints and recovery records preserve auditability at the file-mutation boundary."
+    },
+    {
+      "path": "desktop/scripts/setup.py",
+      "object": "build_plan",
+      "symbol": "too-many-branches",
+      "ceiling": 18,
+      "reason": "The installer expresses compatibility rules and interactive choices explicitly; merging rejection cases obscures their errors."
+    },
+    {
+      "path": "desktop/scripts/setup.py",
+      "object": "monitor_wizard",
+      "symbol": "too-many-branches",
+      "ceiling": 14,
+      "reason": "The installer expresses compatibility rules and interactive choices explicitly; merging rejection cases obscures their errors."
+    },
+    {
+      "path": "desktop/scripts/setup.py",
+      "object": "main",
+      "symbol": "too-many-branches",
+      "ceiling": 13,
+      "reason": "The installer expresses compatibility rules and interactive choices explicitly; merging rejection cases obscures their errors."
+    },
+    {
+      "path": "desktop/scripts/setup.py",
+      "object": "main",
+      "symbol": "too-many-statements",
+      "ceiling": 59,
+      "reason": "The installer expresses compatibility rules and interactive choices explicitly; merging rejection cases obscures their errors."
+    },
+    {
+      "path": "desktop/scripts/update.py",
+      "object": "main",
+      "symbol": "too-many-locals",
+      "ceiling": 16,
+      "reason": "The frozen updater handoff and lock validation paths remain explicit and ordered before host changes."
+    },
+    {
+      "path": "desktop/scripts/update.py",
+      "object": "main",
+      "symbol": "too-many-branches",
+      "ceiling": 14,
+      "reason": "The frozen updater handoff and lock validation paths remain explicit and ordered before host changes."
+    },
+    {
+      "path": "desktop/scripts/update.py",
+      "object": "main",
+      "symbol": "too-many-statements",
+      "ceiling": 55,
+      "reason": "The frozen updater handoff and lock validation paths remain explicit and ordered before host changes."
+    },
+    {
+      "path": "system/apps/assistant/scripts/ai_bridge.py",
+      "object": "Bridge",
+      "symbol": "too-many-instance-attributes",
+      "ceiling": 11,
+      "reason": "One owner controls this process/session lifetime; explicit state fields preserve existing transition invariants."
+    },
+    {
+      "path": "system/apps/media/app.py",
+      "object": "Browser",
+      "symbol": "too-many-instance-attributes",
+      "ceiling": 29,
+      "reason": "These fields are widget references, caches, locks or previous samples with distinct names and lifetimes."
+    },
+    {
+      "path": "system/apps/media/app.py",
+      "object": "Browser.activate",
+      "symbol": "too-many-statements",
+      "ceiling": 69,
+      "reason": "Declarative widget construction is kept in layout order; statement count is not control-flow complexity."
+    },
+    {
+      "path": "system/apps/media/app.py",
+      "object": "Browser.launch_player",
+      "symbol": "too-many-locals",
+      "ceiling": 21,
+      "reason": "The bounded player-launch operation names resources and captured episode identity until ownership transfers to the monitor."
+    },
+    {
+      "path": "system/apps/media/app.py",
+      "object": "Browser.launch_player",
+      "symbol": "too-many-statements",
+      "ceiling": 56,
+      "reason": "The bounded player-launch operation names resources and captured episode identity until ownership transfers to the monitor."
+    },
+    {
+      "path": "system/apps/media/direct_source.py",
+      "object": "playback_selection",
+      "symbol": "too-many-locals",
+      "ceiling": 18,
+      "reason": "Provider identifiers, candidate metadata and verification results remain explicitly named across the bounded lookup."
+    },
+    {
+      "path": "system/apps/media/direct_source.py",
+      "object": "verify",
+      "symbol": "too-many-locals",
+      "ceiling": 18,
+      "reason": "Provider identifiers, candidate metadata and verification results remain explicitly named across the bounded lookup."
+    },
+    {
+      "path": "system/apps/media/discovery_catalogue.py",
+      "object": "_page",
+      "symbol": "too-many-locals",
+      "ceiling": 22,
+      "reason": "Provider identifiers, candidate metadata and verification results remain explicitly named across the bounded lookup."
+    },
+    {
+      "path": "system/apps/media/live_subtitles.py",
+      "object": "recognize",
+      "symbol": "too-many-locals",
+      "ceiling": 23,
+      "reason": "Speech-span boundaries, language selection, timestamps and cleanup are explicit within one bounded recognition operation."
+    },
+    {
+      "path": "system/apps/media/live_subtitles.py",
+      "object": "recognize",
+      "symbol": "too-many-branches",
+      "ceiling": 14,
+      "reason": "Speech-span boundaries, language selection, timestamps and cleanup are explicit within one bounded recognition operation."
+    },
+    {
+      "path": "system/apps/media/live_subtitles.py",
+      "object": "LiveSubtitles",
+      "symbol": "too-many-instance-attributes",
+      "ceiling": 20,
+      "reason": "One owner controls this process/session lifetime; explicit state fields preserve existing transition invariants."
+    },
+    {
+      "path": "system/apps/media/menu_backend.py",
+      "object": "Engine",
+      "symbol": "too-many-instance-attributes",
+      "ceiling": 30,
+      "reason": "One owner controls this process/session lifetime; explicit state fields preserve existing transition invariants."
+    },
+    {
+      "path": "system/apps/media/moviebox_source.py",
+      "object": "Client._request",
+      "symbol": "too-many-locals",
+      "ceiling": 20,
+      "reason": "Provider identifiers, candidate metadata and verification results remain explicitly named across the bounded lookup."
+    },
+    {
+      "path": "system/apps/media/moviebox_source.py",
+      "object": "Client",
+      "symbol": "too-few-public-methods",
+      "ceiling": 1,
+      "reason": "A single state/action operation is the complete public interface; dummy methods add no behavior."
+    },
+    {
+      "path": "system/apps/media/primewire_source.py",
+      "object": "resolve",
+      "symbol": "too-many-locals",
+      "ceiling": 24,
+      "reason": "Provider identifiers, candidate metadata and verification results remain explicitly named across the bounded lookup."
+    },
+    {
+      "path": "system/apps/media/stream_relay.py",
+      "object": "RelayRedirects.redirect_request",
+      "symbol": "too-many-arguments",
+      "ceiling": 6,
+      "reason": "Framework callback arity is fixed by Gio or HTTPRedirectHandler."
+    },
+    {
+      "path": "system/apps/media/stream_relay.py",
+      "object": "RelayRedirects.redirect_request",
+      "symbol": "too-many-positional-arguments",
+      "ceiling": 6,
+      "reason": "Framework callback arity is fixed by Gio or HTTPRedirectHandler."
+    },
+    {
+      "path": "system/apps/media/stream_relay.py",
+      "object": "RelayRequestHandler.serve",
+      "symbol": "too-many-locals",
+      "ceiling": 16,
+      "reason": "The request/response code names protocol ranges, totals, headers and upstream state explicitly."
+    },
+    {
+      "path": "system/apps/media/stream_relay.py",
+      "object": "StreamRelay",
+      "symbol": "too-many-instance-attributes",
+      "ceiling": 13,
+      "reason": "Explicit relay lifetime fields include the existing bounded DNS-validation cache recovered from installed code; retain its 30-second/256-host limits."
+    },
+    {
+      "path": "system/apps/media/torbox_source.py",
+      "object": "streams",
+      "symbol": "too-many-locals",
+      "ceiling": 18,
+      "reason": "Provider identifiers, candidate metadata and verification results remain explicitly named across the bounded lookup."
+    },
+    {
+      "path": "system/apps/media/vlc_session.py",
+      "object": "provided_cues_usable",
+      "symbol": "too-many-return-statements",
+      "ceiling": 9,
+      "reason": "Independent rejection guard clauses keep invalid captions and stale process actions fail-closed."
+    },
+    {
+      "path": "system/apps/media/vlc_session.py",
+      "object": "VlcSession",
+      "symbol": "too-many-instance-attributes",
+      "ceiling": 36,
+      "reason": "One owner controls this process/session lifetime; explicit state fields preserve existing transition invariants."
+    },
+    {
+      "path": "system/apps/media/vlc_session.py",
+      "object": "VlcSession.__init__",
+      "symbol": "too-many-statements",
+      "ceiling": 61,
+      "reason": "Distinct inputs and intermediate results are explicit within this bounded operation; retain readable names over count-driven packing."
+    },
+    {
+      "path": "system/apps/media/vlc_theme.py",
+      "object": "vlc_environment",
+      "symbol": "too-many-locals",
+      "ceiling": 17,
+      "reason": "Named color/configuration intermediates keep per-application transformations reviewable; numeric packing would obscure them."
+    },
+    {
+      "path": "system/apps/shell/scripts/apply_app_palette.py",
+      "object": "patch_jsonc",
+      "symbol": "too-many-locals",
+      "ceiling": 21,
+      "reason": "The bounded JSONC scanner handles quotes, escapes and comment nesting together to preserve source formatting."
+    },
+    {
+      "path": "system/apps/shell/scripts/apply_app_palette.py",
+      "object": "patch_jsonc",
+      "symbol": "too-many-branches",
+      "ceiling": 16,
+      "reason": "The bounded JSONC scanner handles quotes, escapes and comment nesting together to preserve source formatting."
+    },
+    {
+      "path": "system/apps/shell/scripts/apply_app_palette.py",
+      "object": "apply_spotify_palette",
+      "symbol": "too-many-locals",
+      "ceiling": 18,
+      "reason": "Named color/configuration intermediates keep per-application transformations reviewable; numeric packing would obscure them."
+    },
+    {
+      "path": "system/apps/shell/scripts/apply_app_palette.py",
+      "object": "apply_zen_palette",
+      "symbol": "too-many-locals",
+      "ceiling": 23,
+      "reason": "Named color/configuration intermediates keep per-application transformations reviewable; numeric packing would obscure them."
+    },
+    {
+      "path": "system/apps/shell/scripts/apply_app_palette.py",
+      "object": "apply",
+      "symbol": "too-many-locals",
+      "ceiling": 27,
+      "reason": "Named color/configuration intermediates keep per-application transformations reviewable; numeric packing would obscure them."
+    },
+    {
+      "path": "system/apps/shell/scripts/apply_desktop_palette.py",
+      "object": "apply",
+      "symbol": "too-many-locals",
+      "ceiling": 47,
+      "reason": "Named color/configuration intermediates keep per-application transformations reviewable; numeric packing would obscure them."
+    },
+    {
+      "path": "system/apps/shell/scripts/apply_desktop_palette.py",
+      "object": "apply",
+      "symbol": "too-many-branches",
+      "ceiling": 17,
+      "reason": "Named color/configuration intermediates keep per-application transformations reviewable; numeric packing would obscure them."
+    },
+    {
+      "path": "system/apps/shell/scripts/apply_desktop_palette.py",
+      "object": "apply",
+      "symbol": "too-many-statements",
+      "ceiling": 76,
+      "reason": "Named color/configuration intermediates keep per-application transformations reviewable; numeric packing would obscure them."
+    },
+    {
+      "path": "system/apps/shell/scripts/assistant_sudo_dialog.py",
+      "object": "Prompt",
+      "symbol": "too-many-instance-attributes",
+      "ceiling": 8,
+      "reason": "These fields are widget references, caches, locks or previous samples with distinct names and lifetimes."
+    },
+    {
+      "path": "system/apps/shell/scripts/assistant_sudo_dialog.py",
+      "object": "Prompt.activate",
+      "symbol": "too-many-statements",
+      "ceiling": 58,
+      "reason": "Declarative widget construction is kept in layout order; statement count is not control-flow complexity."
+    },
+    {
+      "path": "system/apps/shell/scripts/bluetooth_pair.py",
+      "object": "KeyboardAgent.handle",
+      "symbol": "too-many-arguments",
+      "ceiling": 7,
+      "reason": "Framework callback arity is fixed by Gio or HTTPRedirectHandler."
+    },
+    {
+      "path": "system/apps/shell/scripts/bluetooth_pair.py",
+      "object": "KeyboardAgent.handle",
+      "symbol": "too-many-positional-arguments",
+      "ceiling": 7,
+      "reason": "Framework callback arity is fixed by Gio or HTTPRedirectHandler."
+    },
+    {
+      "path": "system/apps/shell/scripts/bluetooth_pair.py",
+      "object": "KeyboardAgent",
+      "symbol": "too-few-public-methods",
+      "ceiling": 1,
+      "reason": "A single state/action operation is the complete public interface; dummy methods add no behavior."
+    },
+    {
+      "path": "system/apps/shell/scripts/display_settings.py",
+      "object": "save",
+      "symbol": "too-many-locals",
+      "ceiling": 22,
+      "reason": "Each user-editable field has a separate validation or serialization step and explanatory rejection path."
+    },
+    {
+      "path": "system/apps/shell/scripts/dither_wallpaper.py",
+      "object": "convert",
+      "symbol": "too-many-locals",
+      "ceiling": 29,
+      "reason": "Named image dimensions and color/dither intermediates describe the pixel transform without opaque containers."
+    },
+    {
+      "path": "system/apps/shell/scripts/dither_wallpaper.py",
+      "object": "convert",
+      "symbol": "too-many-statements",
+      "ceiling": 51,
+      "reason": "Named image dimensions and color/dither intermediates describe the pixel transform without opaque containers."
+    },
+    {
+      "path": "system/apps/shell/scripts/edit_keybinding.py",
+      "object": "save",
+      "symbol": "too-many-locals",
+      "ceiling": 16,
+      "reason": "Each user-editable field has a separate validation or serialization step and explanatory rejection path."
+    },
+    {
+      "path": "system/apps/shell/scripts/edit_keybinding.py",
+      "object": "save",
+      "symbol": "too-many-branches",
+      "ceiling": 13,
+      "reason": "Each user-editable field has a separate validation or serialization step and explanatory rejection path."
+    },
+    {
+      "path": "system/apps/shell/scripts/list_keybindings.py",
+      "object": "collect.niri",
+      "symbol": "too-many-locals",
+      "ceiling": 16,
+      "reason": "The source parser tracks includes, key names, line locations and declarations explicitly for safe edits."
+    },
+    {
+      "path": "system/apps/shell/scripts/list_keybindings.py",
+      "object": "collect.niri",
+      "symbol": "too-many-branches",
+      "ceiling": 17,
+      "reason": "The source parser tracks includes, key names, line locations and declarations explicitly for safe edits."
+    },
+    {
+      "path": "system/apps/shell/scripts/list_keybindings.py",
+      "object": "collect.kitty",
+      "symbol": "too-many-locals",
+      "ceiling": 19,
+      "reason": "The source parser tracks includes, key names, line locations and declarations explicitly for safe edits."
+    },
+    {
+      "path": "system/apps/shell/scripts/list_keybindings.py",
+      "object": "collect.kitty",
+      "symbol": "too-many-branches",
+      "ceiling": 14,
+      "reason": "The source parser tracks includes, key names, line locations and declarations explicitly for safe edits."
+    },
+    {
+      "path": "system/apps/shell/scripts/list_keybindings.py",
+      "object": "collect",
+      "symbol": "too-many-statements",
+      "ceiling": 104,
+      "reason": "The source parser tracks includes, key names, line locations and declarations explicitly for safe edits."
+    },
+    {
+      "path": "system/apps/shell/scripts/lock_key_monitor.py",
+      "object": "LockState",
+      "symbol": "too-few-public-methods",
+      "ceiling": 1,
+      "reason": "A single state/action operation is the complete public interface; dummy methods add no behavior."
+    },
+    {
+      "path": "system/apps/shell/scripts/process_monitor.py",
+      "object": "ProcessMonitor.snapshot",
+      "symbol": "too-many-locals",
+      "ceiling": 16,
+      "reason": "Independent hardware/process counters have different units and are kept explicitly named."
+    },
+    {
+      "path": "system/apps/shell/scripts/process_monitor.py",
+      "object": "window_action",
+      "symbol": "too-many-return-statements",
+      "ceiling": 9,
+      "reason": "Independent rejection guard clauses keep invalid captions and stale process actions fail-closed."
+    },
+    {
+      "path": "system/apps/shell/scripts/reload_theme_apps.py",
+      "object": "refresh",
+      "symbol": "too-many-locals",
+      "ceiling": 17,
+      "reason": "The batch operation names signatures, cache paths and per-item results for reviewable update decisions."
+    },
+    {
+      "path": "system/apps/shell/scripts/standard_theme.py",
+      "object": "apply",
+      "symbol": "too-many-locals",
+      "ceiling": 25,
+      "reason": "Named color/configuration intermediates keep per-application transformations reviewable; numeric packing would obscure them."
+    },
+    {
+      "path": "system/apps/shell/scripts/system_monitor.py",
+      "object": "SystemMonitor",
+      "symbol": "too-many-instance-attributes",
+      "ceiling": 9,
+      "reason": "These fields are widget references, caches, locks or previous samples with distinct names and lifetimes."
+    },
+    {
+      "path": "system/apps/shell/scripts/system_monitor.py",
+      "object": "SystemMonitor.get_gpu_stats",
+      "symbol": "too-many-locals",
+      "ceiling": 18,
+      "reason": "Independent hardware/process counters have different units and are kept explicitly named."
+    },
+    {
+      "path": "system/apps/shell/scripts/thumbgen.py",
+      "object": "ThumbnailGenerator",
+      "symbol": "too-many-instance-attributes",
+      "ceiling": 9,
+      "reason": "These fields are widget references, caches, locks or previous samples with distinct names and lifetimes."
+    },
+    {
+      "path": "system/apps/shell/scripts/wallpaper_color_index.py",
+      "object": "build_index",
+      "symbol": "too-many-locals",
+      "ceiling": 16,
+      "reason": "The batch operation names signatures, cache paths and per-item results for reviewable update decisions."
+    },
+    {
+      "path": "system/apps/shell/scripts/window_rules.py",
+      "object": "render_rule",
+      "symbol": "too-many-locals",
+      "ceiling": 18,
+      "reason": "Each user-editable field has a separate validation or serialization step and explanatory rejection path."
+    },
+    {
+      "path": "system/apps/shell/scripts/window_rules.py",
+      "object": "render_rule",
+      "symbol": "too-many-branches",
+      "ceiling": 15,
+      "reason": "Each user-editable field has a separate validation or serialization step and explanatory rejection path."
+    }
+  ]
+}

@@ -12,6 +12,89 @@ import sys
 import time
 
 
+def read_quota_response(process):
+    deadline = time.monotonic() + 20
+    buffer = b""
+    selector = selectors.DefaultSelector()
+    selector.register(process.stdout, selectors.EVENT_READ)
+
+    def send(message):
+        process.stdin.write((json.dumps(message) + "\n").encode())
+        process.stdin.flush()
+
+    def request(identifier, method, params):
+        nonlocal buffer
+        send({"id": identifier, "method": method, "params": params})
+        while time.monotonic() < deadline:
+            while b"\n" in buffer:
+                line, buffer = buffer.split(b"\n", 1)
+                try:
+                    response = json.loads(line)
+                except (ValueError, UnicodeDecodeError):
+                    continue
+                if response.get("id") == identifier and "method" not in response:
+                    if "error" in response:
+                        raise RuntimeError("Codex could not read plan usage; check your login and connection")
+                    return response.get("result", {})
+            if selector.select(max(0, deadline - time.monotonic())):
+                chunk = os.read(process.stdout.fileno(), 65536)
+                if not chunk:
+                    raise RuntimeError("Codex usage service stopped")
+                buffer += chunk
+        raise TimeoutError("Plan usage check timed out")
+
+    try:
+        request(1, "initialize", {"clientInfo": {
+            "name": "rebos_shell_usage", "title": "Assistant plan usage", "version": "1.0.0"
+        }})
+        send({"method": "initialized", "params": {}})
+        result = request(2, "account/rateLimits/read", {})
+    finally:
+        selector.close()
+    return result
+
+
+def format_rate_limits(result):
+    # Only quota fields leave the helper. No account identity or credentials.
+    buckets = result.get("rateLimitsByLimitId") or {}
+    if not buckets and result.get("rateLimits"):
+        snapshot = result["rateLimits"]
+        buckets = {snapshot.get("limitId") or "codex": snapshot}
+    if not buckets:
+        return {"error": "Plan usage is unavailable for this account"}
+    limits = []
+    for key, snapshot in buckets.items():
+        if not isinstance(snapshot, dict):
+            continue
+        windows = []
+        for kind in ("primary", "secondary"):
+            window = snapshot.get(kind)
+            if window and isinstance(window.get("usedPercent"), (int, float)):
+                windows.append({
+                    "kind": kind, "usedPercent": window["usedPercent"],
+                    "windowDurationMins": window.get("windowDurationMins"),
+                    "resetsAt": window.get("resetsAt"),
+                })
+        limits.append({"id": key, "name": snapshot.get("limitName") or key,
+                       "plan": snapshot.get("planType"), "windows": windows})
+    return {"limits": limits, "checkedAt": int(time.time()),
+            "scope": "Shared Codex account quota, including other Codex clients"}
+
+
+def close_usage_process(process):
+    with suppress(OSError):
+        process.stdin.close()
+    with suppress(ProcessLookupError):
+        os.killpg(process.pid, signal.SIGTERM)
+    try:
+        process.wait(timeout=2)
+    except subprocess.TimeoutExpired:
+        with suppress(ProcessLookupError):
+            os.killpg(process.pid, signal.SIGKILL)
+        process.wait()
+    process.stdout.close()
+
+
 def read_usage():
     if "--provider" in sys.argv and sys.argv[sys.argv.index("--provider") + 1:] == ["gemini"]:
         return {"error": "Remaining Gemini API quota is unavailable through this API-key connection. Check https://aistudio.google.com/usage?tab=rate-limit", "provider": "gemini"}
@@ -25,83 +108,12 @@ def read_usage():
             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL, start_new_session=True,
         )
-        deadline = time.monotonic() + 20
-        buffer = b""
-        selector = selectors.DefaultSelector()
-        selector.register(process.stdout, selectors.EVENT_READ)
-
-        def send(message):
-            process.stdin.write((json.dumps(message) + "\n").encode())
-            process.stdin.flush()
-
-        def request(identifier, method, params):
-            nonlocal buffer
-            send({"id": identifier, "method": method, "params": params})
-            while time.monotonic() < deadline:
-                while b"\n" in buffer:
-                    line, buffer = buffer.split(b"\n", 1)
-                    try:
-                        response = json.loads(line)
-                    except (ValueError, UnicodeDecodeError):
-                        continue
-                    if response.get("id") == identifier and "method" not in response:
-                        if "error" in response:
-                            raise RuntimeError("Codex could not read plan usage; check your login and connection")
-                        return response.get("result", {})
-                if selector.select(max(0, deadline - time.monotonic())):
-                    chunk = os.read(process.stdout.fileno(), 65536)
-                    if not chunk:
-                        raise RuntimeError("Codex usage service stopped")
-                    buffer += chunk
-            raise TimeoutError("Plan usage check timed out")
-
-        try:
-            request(1, "initialize", {"clientInfo": {
-                "name": "rebos_shell_usage", "title": "Assistant plan usage", "version": "1.0.0"
-            }})
-            send({"method": "initialized", "params": {}})
-            result = request(2, "account/rateLimits/read", {})
-        finally:
-            selector.close()
-        # Only quota fields leave the helper. No account identity or credentials.
-        buckets = result.get("rateLimitsByLimitId") or {}
-        if not buckets and result.get("rateLimits"):
-            snapshot = result["rateLimits"]
-            buckets = {snapshot.get("limitId") or "codex": snapshot}
-        if not buckets:
-            return {"error": "Plan usage is unavailable for this account"}
-        limits = []
-        for key, snapshot in buckets.items():
-            if not isinstance(snapshot, dict):
-                continue
-            windows = []
-            for kind in ("primary", "secondary"):
-                window = snapshot.get(kind)
-                if window and isinstance(window.get("usedPercent"), (int, float)):
-                    windows.append({
-                        "kind": kind, "usedPercent": window["usedPercent"],
-                        "windowDurationMins": window.get("windowDurationMins"),
-                        "resetsAt": window.get("resetsAt"),
-                    })
-            limits.append({"id": key, "name": snapshot.get("limitName") or key,
-                           "plan": snapshot.get("planType"), "windows": windows})
-        return {"limits": limits, "checkedAt": int(time.time()),
-                "scope": "Shared Codex account quota, including other Codex clients"}
+        return format_rate_limits(read_quota_response(process))
     except (OSError, RuntimeError, TimeoutError):
         return {"error": "Could not read plan usage; check Codex login and network access"}
     finally:
         if process is not None:
-            with suppress(OSError):
-                process.stdin.close()
-            with suppress(ProcessLookupError):
-                os.killpg(process.pid, signal.SIGTERM)
-            try:
-                process.wait(timeout=2)
-            except subprocess.TimeoutExpired:
-                with suppress(ProcessLookupError):
-                    os.killpg(process.pid, signal.SIGKILL)
-                process.wait()
-            process.stdout.close()
+            close_usage_process(process)
 
 
 def serve_mcp():

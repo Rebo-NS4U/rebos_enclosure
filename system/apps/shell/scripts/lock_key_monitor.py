@@ -21,7 +21,9 @@ def read_leds(directory=Path("/sys/class/leds")):
     return snapshot
 
 
-class LockState:
+# Quality exception: A single state/action operation is the complete public interface; dummy methods add no behavior.
+# Numeric ceilings are enforced by desktop/scripts/quality.py.
+class LockState:  # pylint: disable=too-few-public-methods
     def __init__(self):
         self.previous = {}
         self.states = {}

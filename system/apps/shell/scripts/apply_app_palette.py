@@ -26,7 +26,9 @@ def read_jsonc(text):
     return json.loads(clean)
 
 
-def patch_jsonc(text, values):
+# Quality exception: The bounded JSONC scanner handles quotes, escapes and comment nesting together to preserve source formatting.
+# Numeric ceilings are enforced by desktop/scripts/quality.py.
+def patch_jsonc(text, values):  # pylint: disable=too-many-branches,too-many-locals
     """Edit top-level settings while retaining unrelated text and comments."""
     if not text.strip():
         text = '{}\n'
@@ -189,7 +191,9 @@ input:focus-visible, button:focus-visible, a:focus-visible {{
 '''
 
 
-def apply_spotify_palette(p, home, refresh=True):
+# Quality exception: Named color/configuration intermediates keep per-application transformations reviewable; numeric packing would obscure them.
+# Numeric ceilings are enforced by desktop/scripts/quality.py.
+def apply_spotify_palette(p, home, refresh=True):  # pylint: disable=too-many-locals
     bg, fg, accent = p['background'], p['overSurface'], p['primary']
     surface, muted, border = p['surfaceContainer'], p['outline'], p['outlineVariant']
     theme = home / '.config/spicetify/Themes/rebos_shell'
@@ -224,7 +228,9 @@ def apply_spotify_palette(p, home, refresh=True):
 
 
 
-def apply_zen_palette(p, home):
+# Quality exception: Named color/configuration intermediates keep per-application transformations reviewable; numeric packing would obscure them.
+# Numeric ceilings are enforced by desktop/scripts/quality.py.
+def apply_zen_palette(p, home):  # pylint: disable=too-many-locals
     bg, fg, accent = p['background'], p['overSurface'], p['primary']
     surface, border = p['surfaceContainer'], p['outlineVariant']
     popup = p['surfaceContainerHigh']
@@ -328,7 +334,9 @@ menupopup :is(menu, menuitem)[_moz-menuactive]:not([disabled="true"]) {{
         write(userjs, text)
 
 
-def apply(p, home, refresh=True):
+# Quality exception: Named color/configuration intermediates keep per-application transformations reviewable; numeric packing would obscure them.
+# Numeric ceilings are enforced by desktop/scripts/quality.py.
+def apply(p, home, refresh=True):  # pylint: disable=too-many-locals
     bg, fg, accent = p['background'], p['overSurface'], p['primary']
     surface, muted, border = p['surfaceContainer'], p['outline'], p['outlineVariant']
     dark = sum(int(bg[i:i+2], 16) * weight for i, weight in ((1, .299), (3, .587), (5, .114))) < 128

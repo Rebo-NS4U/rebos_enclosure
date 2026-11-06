@@ -133,7 +133,9 @@ class PlaybackLinks(list):
         self.audio_language = 'eng,en'
 
 
-def resolve(show_id, episode, quality):
+# Quality exception: Provider identifiers, candidate metadata and verification results remain explicitly named across the bounded lookup.
+# Numeric ceilings are enforced by desktop/scripts/quality.py.
+def resolve(show_id, episode, quality):  # pylint: disable=too-many-locals
     import stream_relay
     show = dict(id=show_id, kind='movies' if show_id.startswith('primewire:movie:') else 'tv')
     media_type, tmdb = identifier(show)

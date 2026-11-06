@@ -1,4 +1,5 @@
 """Generate timestamped English captions locally, ahead of the current position."""
+from dataclasses import dataclass
 import hashlib
 import json
 import math
@@ -30,15 +31,9 @@ def srt_time(seconds):
     return f'{hours:02}:{minutes:02}:{seconds:02},{millis:03}'
 
 
-def cues_from_whisper(data, offset):
-    segments = data.get('transcription', [])
-    if any(segment.get('tokens') for segment in segments) and any(not segment.get('tokens') for segment in segments):
-        # Auto mode mixes word-timed English with speech-timed translations.
-        # Preserve both kinds instead of dropping segment-only translations.
-        return sorted(cue for segment in segments
-                      for cue in cues_from_whisper({'transcription': [segment]}, offset))
+def whisper_words(segments, offset):
     words = []
-    for segment in data.get('transcription', []):
+    for segment in segments:
         for token in segment.get('tokens', []):
             text = token.get('text', '')
             times = token.get('offsets', {})
@@ -57,6 +52,17 @@ def cues_from_whisper(data, offset):
             else:
                 words[-1][1] = offset + end / 1000
                 words[-1][2] += text
+    return words
+
+
+def cues_from_whisper(data, offset):
+    segments = data.get('transcription', [])
+    if any(segment.get('tokens') for segment in segments) and any(not segment.get('tokens') for segment in segments):
+        # Auto mode mixes word-timed English with speech-timed translations.
+        # Preserve both kinds instead of dropping segment-only translations.
+        return sorted(cue for segment in segments
+                      for cue in cues_from_whisper({'transcription': [segment]}, offset))
+    words = whisper_words(segments, offset)
     if words:
         groups, group = [], []
         for word in words:
@@ -98,7 +104,9 @@ def write_srt(path, cues):
     temp.replace(path)
 
 
-def recognize(wav, output, run=subprocess.run, language='en', on_progress=None):
+# Quality exception: Speech-span boundaries, language selection, timestamps and cleanup are explicit within one bounded recognition operation.
+# Numeric ceilings are enforced by desktop/scripts/quality.py.
+def recognize(wav, output, run=subprocess.run, language='en', on_progress=None):  # pylint: disable=too-many-branches,too-many-locals
     if language not in ('en', 'es', 'auto'):
         raise ValueError('Unsupported caption language')
     model = SPANISH_MODEL if language != 'en' else MODEL
@@ -159,8 +167,21 @@ def recognize(wav, output, run=subprocess.run, language='en', on_progress=None):
     return data
 
 
-class LiveSubtitles:
-    def __init__(self, links, cache, on_ready, on_status, *, delay=0, language='en', position=0, duration=0):
+@dataclass(frozen=True)
+class CaptionOptions:
+    delay: float = 0
+    language: str = 'en'
+    position: float = 0
+    duration: float = 0
+
+
+# Quality exception: One owner controls this process/session lifetime; explicit state fields preserve existing transition invariants.
+# Numeric ceilings are enforced by desktop/scripts/quality.py.
+class LiveSubtitles:  # pylint: disable=too-many-instance-attributes
+    def __init__(self, links, cache, on_ready, on_status, *, options=None):
+        options = options or CaptionOptions()
+        delay, language = options.delay, options.language
+        position, duration = options.position, options.duration
         if language not in ('en', 'es', 'auto'):
             raise ValueError('Unsupported caption language')
         self.language = language

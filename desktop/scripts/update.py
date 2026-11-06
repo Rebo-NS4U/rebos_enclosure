@@ -159,7 +159,9 @@ def supports_handoff(script):
 
 
 
-def main():
+# Quality exception: The frozen updater handoff and lock validation paths remain explicit and ordered before host changes.
+# Numeric ceilings are enforced by desktop/scripts/quality.py.
+def main():  # pylint: disable=too-many-branches,too-many-locals,too-many-statements
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--repository', default=REPOSITORY, help='Git source (default: official GitHub repository)')
     source = parser.add_mutually_exclusive_group()

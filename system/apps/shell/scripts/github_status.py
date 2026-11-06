@@ -92,6 +92,59 @@ def local_details(home, result, checkout=None):
     result['changes'] = changes[:12]
 
 
+def apply_comparison_status(result, comparison):
+    status = comparison['status']
+    if status == 'ahead':
+        result.update(status='behind', message=f"Update available · {comparison['ahead_by']} commits behind")
+    elif status == 'behind':
+        result.update(status='ahead', message='Local version is ahead of GitHub')
+    elif status == 'identical':
+        result.update(status='current', message='Up to date', ahead=0, behind=0)
+    else:
+        result.update(status='diverged', message='Local version has diverged from GitHub')
+
+
+def compare_remote(fetch, result, home, checkout, latest):
+    """Compare remotely, falling back to local history for unpublished commits."""
+    try:
+        comparison = fetch('/compare/' + result['local'] + '...' + latest)
+    except urllib.error.HTTPError as error:
+        if error.code != 404:
+            raise
+        error.close()
+        # Unpublished local commits cannot be compared by GitHub.
+        local_checkout = checkout or linked_checkout(home)
+        try:
+            if local_checkout is None:
+                raise ValueError('No local Git history')
+            counts = git(local_checkout, 'rev-list', '--left-right', '--count',
+                         result['local'] + '...' + latest).split()
+            local_count, remote_count = map(int, counts)
+            relation = ('diverged' if local_count and remote_count else
+                        'behind' if local_count else 'ahead')
+            comparison = {'status': relation, 'ahead_by': remote_count, 'behind_by': local_count}
+        except (OSError, ValueError, subprocess.SubprocessError):
+            result.update(status='unpublished', message='Installed revision is unavailable on GitHub')
+            return False
+    result['ahead'] = comparison.get('behind_by')
+    result['behind'] = comparison.get('ahead_by')
+    commits = comparison.get('commits', [])
+    # GitHub caps unpaginated comparisons at 250 commits. Fetch the last
+    # page for large updates so the list still contains recent commits.
+    total = comparison.get('total_commits', len(commits))
+    if total > 250:
+        try:
+            page = (total + 4) // 5
+            commits = fetch('/compare/' + result['local'] + '...' + latest
+                              + '?per_page=5&page=' + str(page)).get('commits', [])
+        except (OSError, ValueError, KeyError) as error:
+            commits = []
+            result['details_error'] = 'Incoming commit details are unavailable: ' + str(error)
+    result['incoming'] = [commit_details(c) for c in commits[-5:][::-1]]
+    apply_comparison_status(result, comparison)
+    return True
+
+
 def check(home, checkout=None, repository=REPOSITORY, api_request=None):
     result = {'status': 'unknown', 'message': 'Not checked', 'local': '', 'remote': '', 'dirty': False,
               'repository': repository, 'branch': '', 'default_branch': '',
@@ -124,50 +177,8 @@ def check(home, checkout=None, repository=REPOSITORY, api_request=None):
                 result['local_commit'] = result['remote_commit']
             result.update(status='current', message='Up to date', ahead=0, behind=0)
         else:
-            try:
-                comparison = fetch('/compare/' + result['local'] + '...' + latest)
-            except urllib.error.HTTPError as error:
-                if error.code != 404:
-                    raise
-                error.close()
-                # Unpublished local commits cannot be compared by GitHub.
-                local_checkout = checkout or linked_checkout(home)
-                try:
-                    if local_checkout is None:
-                        raise ValueError('No local Git history')
-                    counts = git(local_checkout, 'rev-list', '--left-right', '--count',
-                                 result['local'] + '...' + latest).split()
-                    local_count, remote_count = map(int, counts)
-                    relation = ('diverged' if local_count and remote_count else
-                                'behind' if local_count else 'ahead')
-                    comparison = {'status': relation, 'ahead_by': remote_count, 'behind_by': local_count}
-                except (OSError, ValueError, subprocess.SubprocessError):
-                    result.update(status='unpublished', message='Installed revision is unavailable on GitHub')
-                    return result
-            result['ahead'] = comparison.get('behind_by')
-            result['behind'] = comparison.get('ahead_by')
-            commits = comparison.get('commits', [])
-            # GitHub caps unpaginated comparisons at 250 commits. Fetch the last
-            # page for large updates so the list still contains recent commits.
-            total = comparison.get('total_commits', len(commits))
-            if total > 250:
-                try:
-                    page = (total + 4) // 5
-                    commits = fetch('/compare/' + result['local'] + '...' + latest
-                                      + '?per_page=5&page=' + str(page)).get('commits', [])
-                except (OSError, ValueError, KeyError) as error:
-                    commits = []
-                    result['details_error'] = 'Incoming commit details are unavailable: ' + str(error)
-            result['incoming'] = [commit_details(c) for c in commits[-5:][::-1]]
-            status = comparison['status']
-            if status == 'ahead':
-                result.update(status='behind', message=f"Update available · {comparison['ahead_by']} commits behind")
-            elif status == 'behind':
-                result.update(status='ahead', message='Local version is ahead of GitHub')
-            elif status == 'identical':
-                result.update(status='current', message='Up to date', ahead=0, behind=0)
-            else:
-                result.update(status='diverged', message='Local version has diverged from GitHub')
+            if not compare_remote(fetch, result, home, checkout, latest):
+                return result
         if result['dirty']:
             result['message'] += ' · local changes'
     except (OSError, ValueError, KeyError, subprocess.SubprocessError) as error:

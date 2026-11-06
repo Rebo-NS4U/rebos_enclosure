@@ -121,7 +121,9 @@ def apply_niri_theme(p, home):
           '}\n')
 
 
-def apply(p, home):
+# Quality exception: Named color/configuration intermediates keep per-application transformations reviewable; numeric packing would obscure them.
+# Numeric ceilings are enforced by desktop/scripts/quality.py.
+def apply(p, home):  # pylint: disable=too-many-branches,too-many-locals,too-many-statements
     required = ['background', 'surface', 'surfaceBright', 'surfaceContainer',
                 'surfaceContainerHigh', 'surfaceContainerLowest', 'overSurface',
                 'overPrimary', 'outline', 'outlineVariant', 'primary', 'secondary',

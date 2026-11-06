@@ -3,6 +3,7 @@
 import concurrent.futures
 import hashlib
 import html
+from playback_context import PlaybackContext
 import json
 import os
 from pathlib import Path
@@ -139,7 +140,9 @@ def completed_episode(event):
     return event.get('event') == 'end-file' and event.get('reason') == 'eof'
 
 
-class Browser(Gtk.Application):
+# Quality exception: These fields are widget references, caches, locks or previous samples with distinct names and lifetimes.
+# Numeric ceilings are enforced by desktop/scripts/quality.py.
+class Browser(Gtk.Application):  # pylint: disable=too-many-instance-attributes
     def __init__(self):
         super().__init__(application_id='local.rebo.AnimeStreamer')
         self.settings = DEFAULTS | read_json(CONFIG, DEFAULTS)
@@ -174,7 +177,9 @@ class Browser(Gtk.Application):
         self.spinner.stop()
         return False
 
-    def activate(self, *_):
+    # Quality exception: Declarative widget construction is kept in layout order; statement count is not control-flow complexity.
+    # Numeric ceilings are enforced by desktop/scripts/quality.py.
+    def activate(self, *_):  # pylint: disable=too-many-statements
         if hasattr(self, 'window'):
             self.window.present()
             return
@@ -387,14 +392,17 @@ class Browser(Gtk.Application):
         def ready(links):
             if token != self.play_token:
                 return
-            self.launch_player(show, episodes, index, token, links, settings)
+            self.launch_player(PlaybackContext(show, episodes, index, token), links, settings)
         def failed(message):
             if token == self.play_token:
                 self.stop_button.set_sensitive(False)
                 self.play_status.set_text(message)
         self.background(lambda: ani_bridge('resolve', show['id'], ep, settings['mode'], settings['quality']), ready, failed)
 
-    def launch_player(self, show, episodes, index, token, links, settings):
+    # Quality exception: The bounded player-launch operation names resources and captured episode identity until ownership transfers to the monitor.
+    # Numeric ceilings are enforced by desktop/scripts/quality.py.
+    def launch_player(self, context, links, settings):  # pylint: disable=too-many-locals,too-many-statements
+        show, episodes, index, token = context
         video, referer, subtitles, audio = links
         ep = episodes[index]
         sockdir = tempfile.TemporaryDirectory(prefix='anime-mpv-')
@@ -453,10 +461,11 @@ class Browser(Gtk.Application):
                 process.wait()
             finally:
                 sockdir.cleanup()
-            GLib.idle_add(self.player_finished, show, episodes, index, token, natural_end, process.returncode)
+            GLib.idle_add(self.player_finished, context, natural_end, process.returncode)
         threading.Thread(target=monitor, daemon=True).start()
 
-    def player_finished(self, show, episodes, index, token, natural_end, code):
+    def player_finished(self, context, natural_end, code):
+        show, episodes, index, token = context
         if token != self.play_token:
             return
         self.player = None

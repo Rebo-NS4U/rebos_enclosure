@@ -4,6 +4,7 @@ Thumbnail Generator for rebos_shell Wallpaper System
 Generates thumbnails for video files, images, and GIFs using FFmpeg and ImageMagick with multithreading.
 """
 
+from frame_helpers import render_frame
 import json
 import os
 import subprocess
@@ -23,7 +24,9 @@ GIF_EXTENSIONS = {".gif"}
 THUMBNAIL_SIZE = "140x140"
 
 
-class ThumbnailGenerator:
+# Quality exception: These fields are widget references, caches, locks or previous samples with distinct names and lifetimes.
+# Numeric ceilings are enforced by desktop/scripts/quality.py.
+class ThumbnailGenerator:  # pylint: disable=too-many-instance-attributes
     def __init__(
         self,
         config_path: str,
@@ -152,47 +155,25 @@ class ThumbnailGenerator:
         """Generate thumbnail for a video file using FFmpeg."""
         thumbnail_path = self.get_thumbnail_path(video_path)
 
-        try:
-            # Ensure parent directory exists
-            thumbnail_path.parent.mkdir(parents=True, exist_ok=True)
-
-            # FFmpeg command for high-quality thumbnail
-            cmd = [
-                "ffmpeg",
-                "-y",
-                "-i",
-                str(video_path),
-                "-ss",
-                "00:00:01",  # Skip first second to avoid black frames
-                "-vframes",
-                "1",  # Extract only 1 frame
-                "-vf",
-                f"scale=140:140:force_original_aspect_ratio=increase,crop=140:140",
-                "-q:v",
-                "2",  # High quality
-                "-f",
-                "image2",  # Force image format
-                str(thumbnail_path),
-            ]
-
-            # Run FFmpeg with error suppression
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=30,  # 30 second timeout per video
-            )
-
-            if result.returncode == 0 and thumbnail_path.exists():
-                return True, "Success"
-            else:
-                error_msg = result.stderr.strip() if result.stderr else "Unknown error"
-                return False, error_msg
-
-        except subprocess.TimeoutExpired:
-            return False, "Timeout"
-        except Exception as e:
-            return False, str(e)
+        cmd = [
+            "ffmpeg",
+            "-y",
+            "-i",
+            str(video_path),
+            "-ss",
+            "00:00:01",  # Skip first second to avoid black frames
+            "-vframes",
+            "1",  # Extract only 1 frame
+            "-vf",
+            f"scale=140:140:force_original_aspect_ratio=increase,crop=140:140",
+            "-q:v",
+            "2",  # High quality
+            "-f",
+            "image2",  # Force image format
+            str(thumbnail_path),
+        ]
+        success, message = render_frame(cmd, thumbnail_path)
+        return success, message
 
     def generate_image_thumbnail(self, image_path: Path) -> Tuple[bool, str]:
         """Generate thumbnail for an image file using ImageMagick."""

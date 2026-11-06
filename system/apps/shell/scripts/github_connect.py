@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Connect GitHub and configure Git without replacing existing author settings."""
+from console_helpers import close_console
 import argparse
 import json
 import re
@@ -65,11 +66,7 @@ def main():
     except (OSError, ValueError, subprocess.SubprocessError) as error:
         print(f'GitHub setup stopped: {error}', flush=True)
         code = 1
-    try:
-        input('\nPress Enter to close this window.')
-    except (EOFError, KeyboardInterrupt):
-        pass
-    return code
+    return close_console(code)
 
 
 if __name__ == '__main__':

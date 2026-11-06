@@ -22,7 +22,9 @@ SIGNING_MATERIAL = '76iRl07s0xSN9jqmEWAt79EBJZulIQIsV64FZr2O'
 PREFIX = '/wefeed-mobile-bff/subject-api/'
 
 
-class Client:
+# Quality exception: A single state/action operation is the complete public interface; dummy methods add no behavior.
+# Numeric ceilings are enforced by desktop/scripts/quality.py.
+class Client:  # pylint: disable=too-few-public-methods
     def __init__(self):
         self.lock = threading.RLock()
         self.token = None
@@ -37,7 +39,9 @@ class Client:
                 self._request('/wefeed-mobile-bff/tab-operating?page=1&tabId=0&version=')
         return self._request(path, payload)
 
-    def _request(self, path, payload=None):
+    # Quality exception: Provider identifiers, candidate metadata and verification results remain explicitly named across the bounded lookup.
+    # Numeric ceilings are enforced by desktop/scripts/quality.py.
+    def _request(self, path, payload=None):  # pylint: disable=too-many-locals
         body = json.dumps(payload, separators=(',', ':')).encode() if payload is not None else None
         method = 'POST' if body is not None else 'GET'
         start_host = self.host

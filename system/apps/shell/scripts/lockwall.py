@@ -5,6 +5,7 @@ Extracts first frame from video/GIF wallpapers for lockscreen background.
 Only processes video and GIF files - skips regular images.
 """
 
+from frame_helpers import render_frame
 import os
 import subprocess
 import sys
@@ -69,38 +70,24 @@ class LockscreenWallpaperGenerator:
         """Extract first frame from video/GIF using FFmpeg."""
         output_path = self.get_output_path()
 
-        try:
-            # FFmpeg command to extract first frame
-            cmd = [
-                "ffmpeg",
-                "-y",
-                "-i",
-                str(self.current_wallpaper),
-                "-vframes",
-                "1",  # Extract only first frame
-                "-q:v",
-                "2",  # High quality
-                "-f",
-                "image2",  # Force image format
-                str(output_path),
-            ]
-
-            print(f"⚡ Extracting first frame...")
-
-            # Run FFmpeg
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
-
-            if result.returncode == 0 and output_path.exists():
-                print(f"✅ Frame saved: {output_path.name}")
-                return True, "Success"
-            else:
-                error_msg = result.stderr.strip() if result.stderr else "Unknown error"
-                return False, error_msg
-
-        except subprocess.TimeoutExpired:
-            return False, "Timeout"
-        except Exception as e:
-            return False, str(e)
+        cmd = [
+            "ffmpeg",
+            "-y",
+            "-i",
+            str(self.current_wallpaper),
+            "-vframes",
+            "1",  # Extract only first frame
+            "-q:v",
+            "2",  # High quality
+            "-f",
+            "image2",  # Force image format
+            str(output_path),
+        ]
+        print("⚡ Extracting first frame...")
+        success, message = render_frame(cmd, output_path)
+        if success:
+            print(f"✅ Frame saved: {output_path.name}")
+        return success, message
 
     def run(self) -> int:
         """Main execution function."""

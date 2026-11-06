@@ -1,4 +1,5 @@
 """Movie/TV catalogue adapter and YouTube extraction, independent of the UI."""
+from dataclasses import dataclass
 import youtube_account
 import time
 import moviebox_source
@@ -36,7 +37,14 @@ def kind_of(show):
     return kind
 
 
-def catalogue(kind, category, query, page, fetch=None, check_availability=True):
+@dataclass(frozen=True)
+class CatalogueOptions:
+    fetch: object = None
+    check_availability: bool = True
+
+
+def catalogue(kind, category, query, page, **controls):
+    options = CatalogueOptions(**controls)
     if kind == 'youtube':
         if category == 'for-you' and not query.strip():
             return youtube_for_you(page)
@@ -45,10 +53,10 @@ def catalogue(kind, category, query, page, fetch=None, check_availability=True):
         collection = '/@' in query or '/channel/' in query
         has_more = bool(items) and page < 10 and (not query.startswith(('https://', 'http://')) or (collection and 'list=' not in query))
         return dict(items=items, hasMore=has_more)
-    if fetch is None:
+    if options.fetch is None:
         raise ValueError('Discovery requires an HTTPS fetcher')
-    result = discovery_catalogue.catalogue(kind, category, page, fetch, query)
-    return dict(result, items=availability_labels(result['items'])) if check_availability else result
+    result = discovery_catalogue.catalogue(kind, category, page, options.fetch, query)
+    return dict(result, items=availability_labels(result['items'])) if options.check_availability else result
 
 
 def refresh_availability(items, done):
@@ -239,11 +247,21 @@ def youtube_details(show):
     return dict(description=payload.get('description') or show.get('description', ''), metadata=[value for value in [payload.get('channel'), payload.get('upload_date')] if value], episodes=episodes, episodeLabels=labels, seasons=[], warning='Playlists show up to 100 videos.' if is_playlist else '')
 
 
-def resolve_youtube(episode, quality):
-    youtube_url(episode)
+def youtube_format(quality):
     height = {'1080p': 1080, '720p': 720, '480p': 480}.get(quality)
     fmt = f'bv*[height<={height}]+ba/b[height<={height}]' if height else ('worst' if quality == 'worst' else 'bv*+ba/b')
-    payload = json.loads(ytdlp(['--no-playlist', '--no-check-formats', '--dump-single-json', '--skip-download', '-S', 'res,fps,vcodec:h264,acodec:aac', '-f', fmt, '--', episode]))
+    # Prefer verified direct streams: an accessible HLS manifest can still point
+    # to segments that YouTube rejects with 403 after the player opens it.
+    limit = f'[height<={height}]' if height else ''
+    direct = f'bv*{limit}[protocol=https]+ba[protocol=https]/b{limit}[protocol=https]'
+    if quality == 'worst':
+        direct = 'worst[protocol=https]'
+    return direct + "/" + fmt
+
+
+def resolve_youtube(episode, quality):
+    youtube_url(episode)
+    payload = json.loads(ytdlp(['--no-playlist', '--check-formats', '--dump-single-json', '--skip-download', '-S', 'res,fps,vcodec:h264,acodec:aac', '-f', youtube_format(quality), '--', episode]))
     streams = payload.get('requested_formats') or []
     if streams:
         video = next((stream for stream in streams if stream.get('vcodec') != 'none'), streams[0])

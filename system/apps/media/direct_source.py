@@ -127,7 +127,9 @@ def season_episodes(show, season_id):
     return dict(episodes=episodes, episodeLabels={token: 'Episode ' + str(row['episode']) + ' · ' + (row.get('name') or '') for token, row in zip(episodes, rows)}, seasonId=str(season_id), resumeIndex=0)
 
 
-def playback_selection(show, episodes, index, now=None):
+# Quality exception: Provider identifiers, candidate metadata and verification results remain explicitly named across the bounded lookup.
+# Numeric ceilings are enforced by desktop/scripts/quality.py.
+def playback_selection(show, episodes, index, now=None):  # pylint: disable=too-many-locals
     """Keep season browsing separate from the ordered series playback queue."""
     selected = episodes[index]
     season, number = map(int, selected.split(':'))
@@ -226,7 +228,9 @@ def resolution(stream):
     return int(match[1]) if match else 0
 
 
-def verify(stream, expected, quality):
+# Quality exception: Provider identifiers, candidate metadata and verification results remain explicitly named across the bounded lookup.
+# Numeric ceilings are enforced by desktop/scripts/quality.py.
+def verify(stream, expected, quality):  # pylint: disable=too-many-locals
     if not eligible(stream):
         raise InvalidMedia('No English, non-CAM HTTPS stream is available.')
     headers = (stream.get('behaviorHints') or {}).get('proxyHeaders', {}).get('request') or {}

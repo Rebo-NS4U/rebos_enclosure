@@ -11,7 +11,9 @@ def parser():
     return config
 
 
-def vlc_environment():
+# Quality exception: Named color/configuration intermediates keep per-application transformations reviewable; numeric packing would obscure them.
+# Numeric ceilings are enforced by desktop/scripts/quality.py.
+def vlc_environment():  # pylint: disable=too-many-locals
     home = Path.home()
     source = parser()
     source.read(home / '.config/qt5ct/qt5ct.conf')

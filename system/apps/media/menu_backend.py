@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """JSON-lines transport for the QuickShell menu and existing playback engine."""
+from playback_context import PlaybackContext
 import json
 import re
 import signal
@@ -14,7 +15,7 @@ import browser_bridge
 import stream_relay
 from gi.repository import GLib
 from vlc_session import VlcSession
-from live_subtitles import LiveSubtitles
+from live_subtitles import LiveSubtitles, CaptionOptions
 
 OUTPUT_LOCK = threading.Lock()
 ENDING_CHAPTER = re.compile(r'(?:end|ending|closing)(?: credits| titles)?|credits|outro|ed(?: \d+)?')
@@ -61,7 +62,9 @@ class Status:
         pass
 
 
-class Engine(app.Browser):
+# Quality exception: One owner controls this process/session lifetime; explicit state fields preserve existing transition invariants.
+# Numeric ceilings are enforced by desktop/scripts/quality.py.
+class Engine(app.Browser):  # pylint: disable=too-many-instance-attributes
     def __init__(self):
         super().__init__()
         self.stop_button = Status()
@@ -233,7 +236,7 @@ class Engine(app.Browser):
                     self.publish_next_episode()
                     self.play_status.set_text('Episode finished. Loading the next episode is off.')
                     return
-                self.launch_player(show, episodes, index, token, links, settings, paused=automatic and media_sources.kind_of(show) != 'youtube')
+                self.launch_player(PlaybackContext(show, episodes, index, token), links, settings, paused=automatic and media_sources.kind_of(show) != 'youtube')
         def failed(message):
             if token == self.play_token:
                 self.discard_preparing_player(token)
@@ -242,10 +245,11 @@ class Engine(app.Browser):
                 self.play_status.set_text(message)
         self.resolve((show['id'], ep, settings['mode'], settings['quality']), ready, failed)
 
-    def launch_player(self, show, episodes, index, token, links, settings, paused=False):
+    def launch_player(self, context, links, settings, *, paused=False):
+        show, episodes, index, token = context
         if token != self.play_token:
             return
-        self.context = (show, episodes, index, token)
+        self.context = context
         self.subtitle_choice = 'auto'
         self.close_captions()
         send(dict(event='subtitle-tracks', selected='off', options=[dict(id='off', label='Off')], available=False))
@@ -353,9 +357,9 @@ class Engine(app.Browser):
                 if self.captions is service:
                     send(dict(event='captions', text=text))
             service = LiveSubtitles(self.links, app.CACHE, ready, status,
-                                    delay=self.settings.get('caption_delay', 0),
+                                    options=CaptionOptions(delay=self.settings.get('caption_delay', 0),
                                     language=self.settings.get('caption_language', 'auto'),
-                                    position=self.position, duration=self.duration)
+                                    position=self.position, duration=self.duration))
             self.captions = service
             self.session.show_captions()
             service.update_position(self.position, self.duration)
@@ -376,6 +380,86 @@ class Engine(app.Browser):
         self.session.command(['subtitle-source', source])
         if source == 'whisper':
             self.start_captions(force=True)
+
+    def _event_loaded(self, event, token, context):
+        show, episodes, index, _ = context
+        self.file_loaded = True
+        previous = self.history.pop(show['id'], {}) or self.history.get(show.get('historyId', ''), {})
+        resume = previous.get('position', 0) if previous.get('episode') == episodes[index] and not previous.get('completed') else 0
+        if previous.get('duration', 0) > 0 and previous['duration'] - resume <= 15:
+            resume = 0
+        self.history[show['id']] = dict(show=show, episode=episodes[index], completed=False, position=resume, duration=0)
+        if resume > 1 and not self.paused:
+            self.session.command(['seek', resume, 'absolute+exact'])
+        app.save_json(app.STATE / 'history.json', self.history)
+        self.play_status.set_text(('Paused' if self.paused else 'Playing') + ' · ' + self.media_title(show, episodes[index]))
+        send(dict(event='paused', value=self.paused))
+        send(dict(event='episode', show=show['id'], index=index, episode=episodes[index]))
+        self.start_captions()
+
+
+    def _subtitle_property(self, event):
+        if event.get('name') == 'subtitle-tracks':
+            tracks = event.get('data') or {}
+            if getattr(self, 'subtitle_choice', 'auto') == 'provided' and tracks.get('selected') != 'provided':
+                self.subtitle_choice = 'auto'
+            send(dict(event='subtitle-tracks', **tracks))
+        if event.get('name') == 'sid':
+            self.subtitle_sid = event.get('data')
+        elif event.get('name') == 'sub-visibility':
+            self.subtitles_visible = bool(event.get('data'))
+        elif event.get('name') == 'whisper-captions':
+            self.whisper_selected = bool(event.get('data'))
+        if event.get('name') in ['sid', 'sub-visibility', 'whisper-captions']:
+            send(dict(event='subtitle-state', off=not self.subtitles_visible or self.subtitle_sid in (False, None, 'no'), whisper=self.whisper_selected and self.subtitles_visible))
+
+    def _event_properties(self, event, token, context):
+        show, episodes, index, _ = context
+        Engine._subtitle_property(self, event)
+        if event.get('name') == 'pause':
+            self.paused = bool(event.get('data'))
+            if not self.paused:
+                self.next_episode_paused = False
+            send(dict(event='paused', value=self.paused))
+            if self.history.get(show['id'], {}).get('episode') == episodes[index]:
+                self.play_status.set_text(('Paused' if self.paused else 'Playing') + ' · ' + self.media_title(show, episodes[index]))
+        if event.get('name') == 'duration':
+            self.duration = event.get('data') or 0
+        elif event.get('name') == 'chapter-info':
+            info = event.get('data') or {}
+            self.chapter = info.get('index', -1)
+            self.chapter_count = info.get('count', 0)
+            self.chapter_name = info.get('name') or ''
+        elif event.get('name') == 'time-pos':
+            self.position = event.get('data') or 0
+        self.save_progress(force=event.get('name') == 'pause')
+        self.settings_changed()
+        if self.captions is not None:
+            self.captions.update_position(self.position, self.duration)
+
+
+    def _event_completed(self, event, token, context):
+        show, episodes, index, _ = context
+        if self.episode_ended or self.next_requested:
+            return False
+        self.episode_ended = True
+        self.file_loaded = False
+        self.close_captions()
+        if show['id'] in self.history:
+            self.history[show['id']]['completed'] = True
+            self.history[show['id']]['position'] = 0
+            app.save_json(app.STATE / 'history.json', self.history)
+        if media_sources.kind_of(show) == 'youtube' and index + 1 < len(episodes) and self.settings.get('youtube_auto_next', True):
+            self.next_requested = True
+            self.start_episode(show, episodes, index + 1, token, automatic=True)
+        elif index + 1 < len(episodes):
+            # Keep the player surface alive and wait for the on-screen next card.
+            self.next_episode_paused = False
+            self.play_status.set_text('Episode finished. Choose the next episode to continue.')
+        else:
+            self.play_status.set_text('Playback finished.')
+        return True
+
 
     def player_event(self, event, token):
         if token != self.play_token:
@@ -403,72 +487,12 @@ class Engine(app.Browser):
             return False
         show, episodes, index, _ = self.context
         if kind == 'file-loaded':
-            self.file_loaded = True
-            previous = self.history.pop(show['id'], {}) or self.history.get(show.get('historyId', ''), {})
-            resume = previous.get('position', 0) if previous.get('episode') == episodes[index] and not previous.get('completed') else 0
-            if previous.get('duration', 0) > 0 and previous['duration'] - resume <= 15:
-                resume = 0
-            self.history[show['id']] = dict(show=show, episode=episodes[index], completed=False, position=resume, duration=0)
-            if resume > 1 and not self.paused:
-                self.session.command(['seek', resume, 'absolute+exact'])
-            app.save_json(app.STATE / 'history.json', self.history)
-            self.play_status.set_text(('Paused' if self.paused else 'Playing') + ' · ' + self.media_title(show, episodes[index]))
-            send(dict(event='paused', value=self.paused))
-            send(dict(event='episode', show=show['id'], index=index, episode=episodes[index]))
-            self.start_captions()
+            Engine._event_loaded(self, event, token, self.context)
         elif kind == 'property-change':
-            if event.get('name') == 'subtitle-tracks':
-                tracks = event.get('data') or {}
-                if getattr(self, 'subtitle_choice', 'auto') == 'provided' and tracks.get('selected') != 'provided':
-                    self.subtitle_choice = 'auto'
-                send(dict(event='subtitle-tracks', **tracks))
-            if event.get('name') == 'sid':
-                self.subtitle_sid = event.get('data')
-            elif event.get('name') == 'sub-visibility':
-                self.subtitles_visible = bool(event.get('data'))
-            elif event.get('name') == 'whisper-captions':
-                self.whisper_selected = bool(event.get('data'))
-            if event.get('name') in ['sid', 'sub-visibility', 'whisper-captions']:
-                send(dict(event='subtitle-state', off=not self.subtitles_visible or self.subtitle_sid in (False, None, 'no'), whisper=self.whisper_selected and self.subtitles_visible))
-            if event.get('name') == 'pause':
-                self.paused = bool(event.get('data'))
-                if not self.paused:
-                    self.next_episode_paused = False
-                send(dict(event='paused', value=self.paused))
-                if self.history.get(show['id'], {}).get('episode') == episodes[index]:
-                    self.play_status.set_text(('Paused' if self.paused else 'Playing') + ' · ' + self.media_title(show, episodes[index]))
-            if event.get('name') == 'duration':
-                self.duration = event.get('data') or 0
-            elif event.get('name') == 'chapter-info':
-                info = event.get('data') or {}
-                self.chapter = info.get('index', -1)
-                self.chapter_count = info.get('count', 0)
-                self.chapter_name = info.get('name') or ''
-            elif event.get('name') == 'time-pos':
-                self.position = event.get('data') or 0
-            self.save_progress(force=event.get('name') == 'pause')
-            self.settings_changed()
-            if self.captions is not None:
-                self.captions.update_position(self.position, self.duration)
+            Engine._event_properties(self, event, token, self.context)
         elif app.completed_episode(event):
-            if self.episode_ended or self.next_requested:
+            if Engine._event_completed(self, event, token, self.context) is False:
                 return False
-            self.episode_ended = True
-            self.file_loaded = False
-            self.close_captions()
-            if show['id'] in self.history:
-                self.history[show['id']]['completed'] = True
-                self.history[show['id']]['position'] = 0
-                app.save_json(app.STATE / 'history.json', self.history)
-            if media_sources.kind_of(show) == 'youtube' and index + 1 < len(episodes) and self.settings.get('youtube_auto_next', True):
-                self.next_requested = True
-                self.start_episode(show, episodes, index + 1, token, automatic=True)
-            elif index + 1 < len(episodes):
-                # Keep the player surface alive and wait for the on-screen next card.
-                self.next_episode_paused = False
-                self.play_status.set_text('Episode finished. Choose the next episode to continue.')
-            else:
-                self.play_status.set_text('Playback finished.')
         elif kind == 'end-file' and event.get('reason') == 'stop':
             self.save_progress(force=True)
             self.file_loaded = False

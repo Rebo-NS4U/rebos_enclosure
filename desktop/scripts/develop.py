@@ -189,30 +189,62 @@ def push(root=ROOT):
     git('push', 'origin', 'HEAD:' + target, root=root)
 
 
-def action(name, args, root=ROOT):
-    verify_checkout(root)
-    if name == 'status':
+class DevelopmentCommand:
+    def __init__(self, name, args, root):
+        self.name, self.args, self.root = name, args, root
+
+    def do_status(self):
+        root = self.root
         git('status', '--short', '--branch', root=root)
         git('log', '-5', '--oneline', root=root)
         print(outgoing(root))
-    elif name == 'outgoing':
+
+
+    def do_outgoing(self):
+        root = self.root
         print(outgoing(root))
-    elif name == 'health':
+
+
+    def do_health(self):
+        root = self.root
         print(health_report(root))
-    elif name == 'diff':
+
+
+    def do_diff(self):
+        root = self.root
         git('--no-pager', 'diff', root=root)
         git('--no-pager', 'diff', '--cached', root=root)
-    elif name == 'check':
+
+
+    def do_check(self):
+        root = self.root
         checks(root)
-    elif name == 'hashes':
+
+
+    def do_hashes(self):
+        root = self.root
         refresh_checksums(root)
-    elif name == 'stage':
+
+
+    def do_stage(self):
+        args = self.args
+        root = self.root
         stage(args.paths, root)
-    elif name == 'commit':
+
+
+    def do_commit(self):
+        args = self.args
+        root = self.root
         commit(args.message, root)
-    elif name == 'push':
+
+
+    def do_push(self):
+        root = self.root
         push(root)
-    elif name == 'pull':
+
+
+    def do_pull(self):
+        root = self.root
         if git('status', '--porcelain', root=root, capture=True):
             raise ValueError('Commit or preserve local changes before pulling.')
         branch = verify_checkout(root)
@@ -221,7 +253,12 @@ def action(name, args, root=ROOT):
         if remote != 'origin' or not target.startswith('refs/heads/'):
             raise ValueError('Configure an origin branch upstream before pulling.')
         git('pull', '--ff-only', 'origin', target, root=root)
-    elif name in ('preview', 'deploy'):
+
+
+    def do_preview(self):
+        name = self.name
+        args = self.args
+        root = self.root
         command = [sys.executable, 'desktop/scripts/deploy.py', '--preserve-preferences']
         if name == 'preview':
             command += ['--dry-run']
@@ -235,17 +272,43 @@ def action(name, args, root=ROOT):
         if args.link_source or linked:
             command += ['--link-source']
         run(command, root)
-    elif name == 'hardware':
+
+
+    def do_hardware(self):
+        args = self.args
+        root = self.root
         plan = run([sys.executable, 'desktop/scripts/setup.py', 'plan', '--machine', args.machine,
                     '--profile', 'core', '--groups', 'none'], root, capture=True).stdout
         subprocess.run([sys.executable, 'desktop/scripts/setup.py', 'summary'], input=plan,
                        cwd=root, text=True, check=True, env={**os.environ, 'PYTHONDONTWRITEBYTECODE': '1'})
-    elif name in ('organize-preview', 'organize'):
+
+
+    def do_organize_preview(self):
+        name = self.name
+        root = self.root
         run([sys.executable, 'desktop/scripts/organize.py'] + (['--apply'] if name == 'organize' else []), root)
-    elif name == 'configs':
+
+
+    def do_configs(self):
+        root = self.root
         run(['xdg-open', str(Path.home() / '.config/enclosure')], root)
-    elif name in ('update-preview', 'update'):
+
+
+    def do_update_preview(self):
+        name = self.name
+        root = self.root
         run(['bash', 'update.sh', '--files-only'] + (['--dry-run'] if name == 'update-preview' else []), root)
+
+
+def action(name, args, root=ROOT):
+    verify_checkout(root)
+    command = DevelopmentCommand(name, args, root)
+    method = DEVELOPMENT_HANDLERS.get(name)
+    if method is not None:
+        getattr(command, method)()
+
+
+DEVELOPMENT_HANDLERS = {'status': 'do_status', 'outgoing': 'do_outgoing', 'health': 'do_health', 'diff': 'do_diff', 'check': 'do_check', 'hashes': 'do_hashes', 'stage': 'do_stage', 'commit': 'do_commit', 'push': 'do_push', 'pull': 'do_pull', 'preview': 'do_preview', 'deploy': 'do_preview', 'hardware': 'do_hardware', 'organize-preview': 'do_organize_preview', 'organize': 'do_organize_preview', 'configs': 'do_configs', 'update-preview': 'do_update_preview', 'update': 'do_update_preview'}
 
 
 MENU = [('health', 'System condition in plain words'),
@@ -263,6 +326,28 @@ MENU = [('health', 'System condition in plain words'),
         ('update', 'Update installed desktop from GitHub (files only)')]
 
 
+def prepare_menu_action(name, args):
+    if name == 'stage':
+        args.paths = shlex.split(input('Repository-relative files (quote spaces): '))
+    if name == 'commit':
+        git('diff', '--cached', '--stat')
+        args.message = input('Commit message (empty cancels): ')
+        if not args.message.strip():
+            return False
+    if name in ('push', 'pull', 'deploy', 'update', 'organize'):
+        if name == 'push':
+            print(outgoing())
+        if name == 'organize':
+            action('organize-preview', args)
+        if name == 'deploy':
+            action('preview', args)
+        if name == 'update':
+            action('update-preview', args)
+        if input(f'Run {name}? Type yes: ').strip() != 'yes':
+            return False
+    return True
+
+
 def menu(args):
     branch = verify_checkout()
     while True:
@@ -276,24 +361,8 @@ def menu(args):
             continue
         name = MENU[int(selected) - 1][0]
         try:
-            if name == 'stage':
-                args.paths = shlex.split(input('Repository-relative files (quote spaces): '))
-            if name == 'commit':
-                git('diff', '--cached', '--stat')
-                args.message = input('Commit message (empty cancels): ')
-                if not args.message.strip():
-                    continue
-            if name in ('push', 'pull', 'deploy', 'update', 'organize'):
-                if name == 'push':
-                    print(outgoing())
-                if name == 'organize':
-                    action('organize-preview', args)
-                if name == 'deploy':
-                    action('preview', args)
-                if name == 'update':
-                    action('update-preview', args)
-                if input(f'Run {name}? Type yes: ').strip() != 'yes':
-                    continue
+            if not prepare_menu_action(name, args):
+                continue
             action(name, args)
             print('Completed: ' + name)
         except (OSError, ValueError, subprocess.CalledProcessError) as error:

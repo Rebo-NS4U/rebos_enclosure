@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """QuickShell transport that survives playback service restarts."""
+from dataclasses import dataclass
 import json
 import os
 from pathlib import Path
@@ -10,71 +11,95 @@ import sys
 import time
 
 
-def relay(path, input_fd, output, retry_delay=1):
-    """Reconnect without replaying playback commands or owning playback lifetime."""
-    connection = None
-    retry_at = 0
-    notified = False
-    pending = b''
-    try:
-        while True:
-            if connection is None and time.monotonic() >= retry_at:
-                candidate = socket.socket(socket.AF_UNIX)
-                try:
-                    candidate.connect(str(path))
-                except OSError:
-                    candidate.close()
-                    retry_at = time.monotonic() + retry_delay
-                    if not notified:
-                        output.write(b'{"event":"connection-lost"}\n')
-                        output.flush()
-                        notified = True
-                else:
-                    connection = candidate
-                    notified = False
-            readers = [input_fd] + ([connection] if connection is not None else [])
-            readable, _, _ = select.select(readers, [], [], retry_delay)
-            # Drain socket events first so EOF is announced before further commands.
-            if connection is not None and connection in readable:
-                try:
-                    data = connection.recv(65536)
-                except OSError:
-                    data = b''
-                if data:
-                    pending += data
-                    while b'\n' in pending:
-                        line, pending = pending.split(b'\n', 1)
-                        output.write(line + b'\n')
-                        output.flush()
-                else:
-                    connection.close()
-                    connection = None
-                    pending = b''
-                    retry_at = time.monotonic() + retry_delay
-                    output.write(b'{"event":"connection-lost"}\n')
-                    output.flush()
-                    notified = True
-            if input_fd in readable:
-                data = os.read(input_fd, 65536)
-                if not data:
+@dataclass(frozen=True)
+class RelayIO:
+    path: Path
+    input_fd: int
+    output: object
+    retry_delay: float
+
+
+class MenuRelay:
+    def __init__(self, transport):
+        self.io = transport
+        self.connection = None
+        self.retry_at = 0
+        self.notified = False
+        self.pending = b''
+
+    def notify_lost(self):
+        self.io.output.write(b'{"event":"connection-lost"}\n')
+        self.io.output.flush()
+        self.notified = True
+
+    def connect(self):
+        candidate = socket.socket(socket.AF_UNIX)
+        try:
+            candidate.connect(str(self.io.path))
+        except OSError:
+            candidate.close()
+            self.retry_at = time.monotonic() + self.io.retry_delay
+            if not self.notified:
+                self.notify_lost()
+        else:
+            self.connection = candidate
+            self.notified = False
+
+    def disconnect(self, retry_at):
+        self.connection.close()
+        self.connection = None
+        self.pending = b''
+        self.retry_at = retry_at
+        self.notify_lost()
+
+    def read_socket(self):
+        try:
+            data = self.connection.recv(65536)
+        except OSError:
+            data = b''
+        if not data:
+            self.disconnect(time.monotonic() + self.io.retry_delay)
+            return
+        self.pending += data
+        while b'\n' in self.pending:
+            line, self.pending = self.pending.split(b'\n', 1)
+            self.io.output.write(line + b'\n')
+            self.io.output.flush()
+
+    def read_input(self):
+        data = os.read(self.io.input_fd, 65536)
+        if not data:
+            return False
+        if self.connection is not None:
+            try:
+                self.connection.sendall(data)
+            except OSError:
+                self.disconnect(0)
+        # Never replay commands issued during an outage.
+        return True
+
+    def run(self):
+        try:
+            while True:
+                if self.connection is None and time.monotonic() >= self.retry_at:
+                    self.connect()
+                readers = [self.io.input_fd] + ([self.connection] if self.connection is not None else [])
+                readable, _, _ = select.select(readers, [], [], self.io.retry_delay)
+                # EOF must be announced before processing further input.
+                if self.connection is not None and self.connection in readable:
+                    self.read_socket()
+                if self.io.input_fd in readable and not self.read_input():
                     return 0
-                if connection is not None:
-                    try:
-                        connection.sendall(data)
-                    except OSError:
-                        connection.close()
-                        connection = None
-                        pending = b''
-                        retry_at = 0
-                        output.write(b'{"event":"connection-lost"}\n')
-                        output.flush()
-                        notified = True
-                # Never replay commands issued during an outage.
-    except (BrokenPipeError, ConnectionResetError):
-        return 0
-    finally:
-        if connection is not None:
-            connection.close()
+        except (BrokenPipeError, ConnectionResetError):
+            return 0
+        finally:
+            if self.connection is not None:
+                self.connection.close()
+
+
+def relay(path, input_fd, output, retry_delay=1):
+    """Reconnect without replaying commands or owning playback lifetime."""
+    return MenuRelay(RelayIO(path, input_fd, output, retry_delay)).run()
 
 
 def main():

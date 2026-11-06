@@ -228,44 +228,74 @@ def require_clean(path):
         raise ValueError('Commit or preserve local changes before switching branches or pulling.')
 
 
-def action(data):
-    kind = data.get('action')
-    if kind == 'clone':
-        name = repo_name(data.get('repository', ''))
-        destination = Path(data.get('destination', '')).expanduser()
-        if not data.get('destination') or not destination.is_absolute():
-            raise ValueError('Choose an absolute destination folder, such as ~/code/project.')
-        if destination.exists() or destination.is_symlink():
-            raise ValueError('The destination already exists. Choose a new folder.')
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        if shutil.which('gh'):
-            output = run('gh', 'repo', 'clone', name, str(destination), timeout=180)
-        else:
-            output = run('git', 'clone', '--', 'https://github.com/' + name + '.git', str(destination), timeout=180)
-        path, _ = checkout(destination)
-        remember(path)
-        return {'ok': True, 'message': 'Repository cloned.', 'output': output, 'path': str(path)}
-    path, name = checkout(data.get('path', ''))
-    if kind == 'add':
+def clone_project(data):
+    name = repo_name(data.get('repository', ''))
+    destination = Path(data.get('destination', '')).expanduser()
+    if not data.get('destination') or not destination.is_absolute():
+        raise ValueError('Choose an absolute destination folder, such as ~/code/project.')
+    if destination.exists() or destination.is_symlink():
+        raise ValueError('The destination already exists. Choose a new folder.')
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    if shutil.which('gh'):
+        output = run('gh', 'repo', 'clone', name, str(destination), timeout=180)
+    else:
+        output = run('git', 'clone', '--', 'https://github.com/' + name + '.git', str(destination), timeout=180)
+    path, _ = checkout(destination)
+    remember(path)
+    return {'ok': True, 'message': 'Repository cloned.', 'output': output, 'path': str(path)}
+
+
+class ProjectAction:
+    def __init__(self, data):
+        self.data = data
+        self.path, self.name = checkout(data.get('path', ''))
+
+    def do_add(self):
+        kind = self.data.get("action")
+        path = self.path
         remember(path)
         output = 'Project added.'
-    elif kind == 'review':
+        return {'ok': True, 'message': f'{kind.capitalize()} completed.', 'output': output[-10000:], 'path': str(path)}
+
+
+    def do_review(self):
+        path = self.path
         return review(str(path))
-    elif kind == 'fetch':
+
+
+    def do_fetch(self):
+        kind = self.data.get("action")
+        path = self.path
         output = git(path, 'fetch', 'origin', timeout=120)
-    elif kind == 'pull':
+        return {'ok': True, 'message': f'{kind.capitalize()} completed.', 'output': output[-10000:], 'path': str(path)}
+
+
+    def do_pull(self):
+        kind = self.data.get("action")
+        path = self.path
         require_clean(path)
         if not git(path, 'rev-parse', '--abbrev-ref', '@{upstream}').startswith('origin/'):
             raise ValueError('This branch must track origin before pulling.')
         output = git(path, '-c', 'pull.rebase=false', 'pull', '--ff-only', timeout=120)
-    elif kind in ('switch', 'branch'):
+        return {'ok': True, 'message': f'{kind.capitalize()} completed.', 'output': output[-10000:], 'path': str(path)}
+
+
+    def do_switch(self):
+        data = self.data
+        kind = self.data.get("action")
+        path = self.path
         require_clean(path)
         branch = data.get('branch', '').strip()
         if not branch or branch.startswith('-'):
             raise ValueError('Enter a valid branch name.')
         git(path, 'check-ref-format', '--branch', branch)
         output = git(path, 'switch', *(['-c'] if kind == 'branch' else []), branch)
-    elif kind == 'diff':
+        return {'ok': True, 'message': f'{kind.capitalize()} completed.', 'output': output[-10000:], 'path': str(path)}
+
+
+    def do_diff(self):
+        data = self.data
+        path = self.path
         files = selected_paths(path, data)
         try:
             git(path, 'rev-parse', '--verify', 'HEAD')
@@ -278,13 +308,29 @@ def action(data):
             output += '\nUntracked files are not in the diff yet. Open them in your editor or stage them to review additions.\n' + '\n'.join(untracked)
         return {'ok': True, 'message': 'Selected file diff', 'output': output[:20000] or 'No differences.',
                 'path': str(path), 'refresh': False}
-    elif kind == 'stage':
+
+
+    def do_stage(self):
+        data = self.data
+        kind = self.data.get("action")
+        path = self.path
         files = selected_paths(path, data)
-        # Explicit file paths only. -- separates file names from options.
         output = git(path, 'add', '--', *files)
-    elif kind == 'unstage':
+        return {'ok': True, 'message': f'{kind.capitalize()} completed.', 'output': output[-10000:], 'path': str(path)}
+
+
+    def do_unstage(self):
+        data = self.data
+        kind = self.data.get("action")
+        path = self.path
         output = git(path, 'restore', '--staged', '--', *selected_paths(path, data, staged_only=True))
-    elif kind == 'commit':
+        return {'ok': True, 'message': f'{kind.capitalize()} completed.', 'output': output[-10000:], 'path': str(path)}
+
+
+    def do_commit(self):
+        data = self.data
+        kind = self.data.get("action")
+        path = self.path
         files = selected_paths(path, data, staged_only=True)
         message = data.get('message', '').strip()
         if not message:
@@ -297,9 +343,14 @@ def action(data):
                 pair = {next(renames), next(renames)}
                 if pair.intersection(files) and not pair.issubset(files):
                     raise ValueError('Select both the old and new paths for a staged rename.')
-        # --only leaves unrelated staged changes in the index.
         output = git(path, 'commit', '--only', '-m', message, '--', *files)
-    elif kind == 'push':
+        return {'ok': True, 'message': f'{kind.capitalize()} completed.', 'output': output[-10000:], 'path': str(path)}
+
+
+    def do_push(self):
+        kind = self.data.get("action")
+        path = self.path
+        name = self.name
         destinations = git(path, 'remote', 'get-url', '--push', '--all', 'origin').splitlines()
         if not destinations or any(repo_name(url) != name for url in destinations):
             raise ValueError('The push destination differs from the selected GitHub repository.')
@@ -307,13 +358,19 @@ def action(data):
         if branch.startswith('-'):
             raise ValueError('Unsupported branch name.')
         output = git(path, 'push', '--set-upstream', 'origin', f'HEAD:refs/heads/{branch}', timeout=120)
-    elif kind == 'pr':
+        return {'ok': True, 'message': f'{kind.capitalize()} completed.', 'output': output[-10000:], 'path': str(path)}
+
+
+    def do_pr(self):
+        data = self.data
+        kind = self.data.get("action")
+        path = self.path
+        name = self.name
         title = data.get('title', '').strip()
         base = data.get('base', '').strip()
         if not title or not base or base.startswith('-'):
             raise ValueError('Enter a pull request title and base branch.')
         branch = git(path, 'symbolic-ref', '--quiet', '--short', 'HEAD')
-        # Creating a PR never silently pushes working-tree or local commit changes.
         remote_sha = git(path, 'ls-remote', '--heads', 'origin', 'refs/heads/' + branch).split()
         if not remote_sha or remote_sha[0] != git(path, 'rev-parse', 'HEAD'):
             raise ValueError('Push this branch before creating a pull request.')
@@ -323,9 +380,21 @@ def action(data):
             output = run('gh', 'pr', 'create', '--repo', name, '--head', branch,
                          '--base', base, '--title', title, '--body-file', body.name,
                          *(['--draft'] if data.get('draft', True) else []), cwd=path, timeout=90)
-    else:
+        return {'ok': True, 'message': f'{kind.capitalize()} completed.', 'output': output[-10000:], 'path': str(path)}
+
+
+def action(data):
+    kind = data.get('action')
+    if kind == 'clone':
+        return clone_project(data)
+    command = ProjectAction(data)
+    method = PROJECT_HANDLERS.get(kind)
+    if method is None:
         raise ValueError('Unknown project action.')
-    return {'ok': True, 'message': f'{kind.capitalize()} completed.', 'output': output[-10000:], 'path': str(path)}
+    return getattr(command, method)()
+
+
+PROJECT_HANDLERS = {'add': 'do_add', 'review': 'do_review', 'fetch': 'do_fetch', 'pull': 'do_pull', 'switch': 'do_switch', 'branch': 'do_switch', 'diff': 'do_diff', 'stage': 'do_stage', 'unstage': 'do_unstage', 'commit': 'do_commit', 'push': 'do_push', 'pr': 'do_pr'}
 
 
 def main():

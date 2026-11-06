@@ -12,7 +12,7 @@ import menu_backend
 
 
 class YouTubePanelTests(unittest.TestCase):
-    def test_resolution_skips_probes_and_preserves_quality_audio_and_captions(self):
+    def test_resolution_checks_direct_streams_and_preserves_quality_audio_and_captions(self):
         payload = {'requested_formats': [
             {'vcodec': 'h264', 'url': 'https://example.com/video'},
             {'vcodec': 'none', 'url': 'https://example.com/audio'}],
@@ -22,8 +22,9 @@ class YouTubePanelTests(unittest.TestCase):
         self.assertEqual(links, ['https://example.com/video', 'https://www.youtube.com/',
                                  'https://example.com/subs', 'https://example.com/audio'])
         args = extract.call_args.args[0]
-        self.assertIn('--no-check-formats', args)
-        self.assertIn('bv*[height<=720]+ba/b[height<=720]', args)
+        self.assertIn('--check-formats', args)
+        self.assertIn('bv*[height<=720]+ba/b[height<=720]', args[args.index('-f') + 1])
+        self.assertTrue(args[args.index('-f') + 1].startswith('bv*[height<=720][protocol=https]'))
 
     def test_feed_requires_explicit_connection(self):
         with patch.object(youtube_account, 'selection', return_value=''):

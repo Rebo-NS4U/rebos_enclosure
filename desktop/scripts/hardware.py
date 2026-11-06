@@ -76,7 +76,9 @@ def run(args):
         return ''
 
 
-def detect(sysfs=Path('/sys'), cpuinfo_path=Path('/proc/cpuinfo'),
+# Quality exception: The detector names independent CPU, GPU, kernel and display probes; partial hardware availability is expected.
+# Numeric ceilings are enforced by desktop/scripts/quality.py.
+def detect(sysfs=Path('/sys'), cpuinfo_path=Path('/proc/cpuinfo'),  # pylint: disable=too-many-branches,too-many-locals
            modules_path=Path('/usr/lib/modules'), command=run, virtual=None):
     cpuinfo = read(cpuinfo_path)
     cpu = 'intel' if 'GenuineIntel' in cpuinfo else 'amd' if 'AuthenticAMD' in cpuinfo else 'unknown'

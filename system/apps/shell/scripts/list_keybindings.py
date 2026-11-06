@@ -53,7 +53,9 @@ def binding_identity(value):
     return tuple(sorted(aliases.get(part, part) for part in parts[:-1])) + (parts[-1],)
 
 
-def collect(config_dir, include_disabled=False):
+# Quality exception: The source parser tracks includes, key names, line locations and declarations explicitly for safe edits.
+# Numeric ceilings are enforced by desktop/scripts/quality.py.
+def collect(config_dir, include_disabled=False):  # pylint: disable=too-many-statements
     rows, files, errors = [], [], []
     visited = set()
 
@@ -71,7 +73,9 @@ def collect(config_dir, include_disabled=False):
             errors.append("Could not read " + path.name)
             return None
 
-    def niri(path):
+    # Quality exception: The source parser tracks includes, key names, line locations and declarations explicitly for safe edits.
+    # Numeric ceilings are enforced by desktop/scripts/quality.py.
+    def niri(path):  # pylint: disable=too-many-branches,too-many-locals
         text = read(path)
         if text is None:
             return
@@ -135,7 +139,9 @@ def collect(config_dir, include_disabled=False):
                              "fingerprint": fingerprint, "editable": True})
             i += 1
 
-    def kitty(path):
+    # Quality exception: The source parser tracks includes, key names, line locations and declarations explicitly for safe edits.
+    # Numeric ceilings are enforced by desktop/scripts/quality.py.
+    def kitty(path):  # pylint: disable=too-many-branches,too-many-locals
         text = read(path)
         if text is None:
             return

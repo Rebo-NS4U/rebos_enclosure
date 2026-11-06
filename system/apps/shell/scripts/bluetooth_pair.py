@@ -34,13 +34,17 @@ def is_keyboard(device):
             or int(device.get("Appearance", 0)) == 0x03C1)
 
 
-class KeyboardAgent:
+# Quality exception: A single state/action operation is the complete public interface; dummy methods add no behavior.
+# Numeric ceilings are enforced by desktop/scripts/quality.py.
+class KeyboardAgent:  # pylint: disable=too-few-public-methods
     def __init__(self, path, output=emit):
         self.path = path
         self.output = output
         self.pin = f"{secrets.randbelow(1000000):06d}"
 
-    def handle(self, connection, sender, object_path, interface, method, parameters, invocation):
+    # Quality exception: Framework callback arity is fixed by Gio or HTTPRedirectHandler.
+    # Numeric ceilings are enforced by desktop/scripts/quality.py.
+    def handle(self, connection, sender, object_path, interface, method, parameters, invocation):  # pylint: disable=too-many-arguments,too-many-positional-arguments
         args = parameters.unpack()
         if args and args[0] != self.path:
             invocation.return_dbus_error("org.bluez.Error.Rejected", "Unexpected pairing device")

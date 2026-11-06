@@ -69,21 +69,40 @@ class MpvSession:
     def show_captions(self):
         self.command(['script-message-to', 'live_captions', 'anime-captions-show'])
 
+    def _connect_player(self, connection):
+        for _ in range(200):
+            if self.closed.is_set() or self.process.poll() is not None:
+                return False
+            try:
+                connection.connect(self.socket_path)
+                break
+            except OSError:
+                time.sleep(.025)
+        else:
+            raise RuntimeError('Could not connect to the player')
+        return True
+
+    def _dispatch_event(self, event, pending):
+        if 'request_id' in event:
+            command_name = pending.pop(event['request_id'], '')
+            if event.get('error', 'success') != 'success':
+                self.emit({'event': 'command-error', 'command': command_name, 'error': event['error']})
+        else:
+            if event.get('event') == 'file-loaded':
+                subtitles, audio = self.tracks
+                if subtitles:
+                    self.command(['sub-add', subtitles, 'select'])
+                if audio:
+                    self.command(['audio-add', audio, 'select'])
+            self.emit(event)
+
     def monitor(self):
         connection = socket.socket(socket.AF_UNIX)
         pending = {}
         sequence = 0
         try:
-            for _ in range(200):
-                if self.closed.is_set() or self.process.poll() is not None:
-                    return
-                try:
-                    connection.connect(self.socket_path)
-                    break
-                except OSError:
-                    time.sleep(.025)
-            else:
-                raise RuntimeError('Could not connect to the player')
+            if not self._connect_player(connection):
+                return
             connection.settimeout(.05)
             buffer = b''
             while not self.closed.is_set() and self.process.poll() is None:
@@ -107,18 +126,7 @@ class MpvSession:
                         event = json.loads(line)
                     except ValueError:
                         continue
-                    if 'request_id' in event:
-                        command_name = pending.pop(event['request_id'], '')
-                        if event.get('error', 'success') != 'success':
-                            self.emit({'event': 'command-error', 'command': command_name, 'error': event['error']})
-                    else:
-                        if event.get('event') == 'file-loaded':
-                            subtitles, audio = self.tracks
-                            if subtitles:
-                                self.command(['sub-add', subtitles, 'select'])
-                            if audio:
-                                self.command(['audio-add', audio, 'select'])
-                        self.emit(event)
+                    self._dispatch_event(event, pending)
         except (OSError, RuntimeError) as error:
             if not self.closed.is_set():
                 self.emit({'event': 'connection-error', 'error': str(error)})

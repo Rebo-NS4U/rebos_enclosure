@@ -45,7 +45,9 @@ def replace_settings(body, settings):
     return body.rstrip() + "\n" + settings + "\n"
 
 
-def save(request, config_dir, outputs):
+# Quality exception: Each user-editable field has a separate validation or serialization step and explanatory rejection path.
+# Numeric ceilings are enforced by desktop/scripts/quality.py.
+def save(request, config_dir, outputs):  # pylint: disable=too-many-locals
     name = request.get("name")
     output = outputs.get(name)
     if not output or output.get("current_mode") is None:

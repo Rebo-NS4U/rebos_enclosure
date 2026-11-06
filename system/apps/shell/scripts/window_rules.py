@@ -22,7 +22,9 @@ def fingerprint(text):
     return hashlib.sha256(text.encode()).hexdigest()
 
 
-def render_rule(rule):
+# Quality exception: Each user-editable field has a separate validation or serialization step and explanatory rejection path.
+# Numeric ceilings are enforced by desktop/scripts/quality.py.
+def render_rule(rule):  # pylint: disable=too-many-branches,too-many-locals
     app = rule.get("appId", "").strip()
     title = rule.get("title", "").strip()
     if not app and not title:

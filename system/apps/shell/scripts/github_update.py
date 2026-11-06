@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Interactive installed-desktop update launched by GitHub Settings."""
+from console_helpers import close_console
 import argparse
 from pathlib import Path
 import subprocess
@@ -50,11 +51,7 @@ def main():
         print(f'Update stopped: {error}', flush=True)
     except (EOFError, KeyboardInterrupt):
         print('\nUpdate interrupted. Review any output above before retrying.', flush=True)
-    try:
-        input('\nPress Enter to close this window.')
-    except (EOFError, KeyboardInterrupt):
-        pass
-    return code
+    return close_console(code)
 
 
 if __name__ == '__main__':

@@ -66,6 +66,13 @@ def cancel_question(params, pending, send):
             send({"method": "notifications/cancelled", "params": {"requestId": request_id}})
 
 
+def decode_request(line):
+    message = json.loads(line)
+    if not isinstance(message, dict):
+        raise ValueError("Expected a JSON object")
+    return message
+
+
 def serve():
     pending = {}
     counter = 0
@@ -82,9 +89,7 @@ def serve():
 
     for line in sys.stdin:
         try:
-            message = json.loads(line)
-            if not isinstance(message, dict):
-                raise ValueError("Expected a JSON object")
+            message = decode_request(line)
         except ValueError:
             send({"id": None, "error": {"code": -32700, "message": "Invalid JSON request"}})
             continue

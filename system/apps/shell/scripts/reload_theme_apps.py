@@ -41,7 +41,9 @@ def processes(proc=Path('/proc')):
             continue
 
 
-def refresh(home):
+# Quality exception: The batch operation names signatures, cache paths and per-item results for reviewable update decisions.
+# Numeric ceilings are enforced by desktop/scripts/quality.py.
+def refresh(home):  # pylint: disable=too-many-locals
     cache = home / '.cache/rebos_shell'
     state = cache / 'app-theme-reload.json'
     paths = {

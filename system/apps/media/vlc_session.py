@@ -59,7 +59,9 @@ def read_cues(path):
     return sorted(result)
 
 
-def provided_cues_usable(cues, duration=0):
+# Quality exception: Independent rejection guard clauses keep invalid captions and stale process actions fail-closed.
+# Numeric ceilings are enforced by desktop/scripts/quality.py.
+def provided_cues_usable(cues, duration=0):  # pylint: disable=too-many-return-statements
     """Conservative structural checks; these cannot judge translation accuracy."""
     if len(cues) < 10:
         return False
@@ -88,8 +90,12 @@ def provided_cues_usable(cues, duration=0):
     return True
 
 
-class VlcSession:
-    def __init__(self, settings, on_event, logpath, extra_args=()):
+# Quality exception: One owner controls this process/session lifetime; explicit state fields preserve existing transition invariants.
+# Numeric ceilings are enforced by desktop/scripts/quality.py.
+class VlcSession:  # pylint: disable=too-many-instance-attributes
+    # Quality exception: Distinct inputs and intermediate results are explicit within this bounded operation; retain readable names over count-driven packing.
+    # Numeric ceilings are enforced by desktop/scripts/quality.py.
+    def __init__(self, settings, on_event, logpath, extra_args=()):  # pylint: disable=too-many-statements
         self.on_event = on_event
         self.commands = queue.Queue()
         self.closed = threading.Event()
@@ -279,97 +285,130 @@ class VlcSession:
                 pass  # An optional subtitle failure must not stop the video.
 
     def apply(self, command):
-        action = command[0]
-        if action == 'load':
-            links, title, paused, self.whisper_only = command[1:]
-            video, referer, subtitle, audio = links
-            options = ['no-start-paused', 'input-repeat=0', 'audio-language=eng,en', 'sub-language=eng,en']
-            if video.startswith(('https://', 'http://')):
-                options.extend(['network-caching=1500', 'prefetch-buffer-size=65536'])
-                if str(getattr(links, 'format_name', '')).startswith('mov,'):
-                    options.append('demux=avformat')
-            if self.audio_normalization:
-                options.append('audio-filter=compressor')
-            if referer:
-                options.append('http-referrer=' + referer)
-            if audio:
-                options.extend(['demux=avformat', 'input-slave=' + self.public_stream(audio, referer)])
-            self.provided_cues = []
-            self.whisper_cues = []
-            self.caption_error = ''
-            if self.whisper_only:
-                options.extend(['sub-track=-1', 'sub-track-id=-1', 'no-sub-autodetect-file'])
-            self.generation += 1
-            self.pending_subtitle = None
-            self.loaded = self.finished = self.input_error = False
-            self.caption_registered = self.caption_requested = False
-            self.cues = self.provided_cues
+        handler = self.COMMAND_HANDLERS.get(command[0])
+        if handler is not None:
+            getattr(self, handler)(command)
+
+    COMMAND_HANDLERS = {'load': '_command_load', 'subtitle-ready': '_command_subtitle_ready', 'subtitle-source': '_command_subtitle_source', 'seek': '_command_seek', 'captions-file': '_command_captions_file', 'captions-show': '_command_captions_show', 'captions-clear': '_command_captions_clear', 'observe_property': '_command_observe_property', 'quit': '_command_quit', 'stop': '_command_quit', 'set_property': '_command_property'}
+
+    def input_options(self, links):
+        video, referer, _subtitle, audio = links
+        options = ['no-start-paused', 'input-repeat=0', 'audio-language=eng,en', 'sub-language=eng,en']
+        if video.startswith(('https://', 'http://')):
+            options.extend(['network-caching=' + ('1500' if self.whisper_only else '500'), 'prefetch-buffer-size=65536'])
+            if str(getattr(links, 'format_name', '')).startswith('mov,'):
+                options.append('demux=avformat')
+        if self.audio_normalization:
+            options.append('audio-filter=compressor')
+        if referer:
+            options.append('http-referrer=' + referer)
+        if audio:
+            options.extend(['demux=avformat', 'input-slave=' + self.public_stream(audio, referer)])
+        return options
+
+    def prepare_subtitle(self, subtitle, referer):
+        generation, revision, whisper_only = self.generation, self.subtitle_revision, self.whisper_only
+        def prepare_subtitle():
+            try:
+                path = self.subtitle_path(subtitle, referer)
+                cues = read_cues(path) if path and whisper_only else []
+                if whisper_only and not provided_cues_usable(cues):
+                    return
+                if path:
+                    self.command(['subtitle-ready', generation, revision, path, cues])
+            except (OSError, ValueError, ImportError):
+                pass  # Captions must never delay or prevent playback.
+        threading.Thread(target=prepare_subtitle, daemon=True, name='media-subtitle').start()
+
+
+    def _command_load(self, command):
+        links, title, paused, self.whisper_only = command[1:]
+        video, referer, subtitle, audio = links
+        options = self.input_options(links)
+        self.provided_cues = []
+        self.whisper_cues = []
+        self.caption_error = ''
+        if self.whisper_only:
+            options.extend(['sub-track=-1', 'sub-track-id=-1', 'no-sub-autodetect-file'])
+        self.generation += 1
+        self.pending_subtitle = None
+        self.loaded = self.finished = self.input_error = False
+        self.caption_registered = self.caption_requested = False
+        self.cues = self.provided_cues
+        self.cue_starts = [cue[0] for cue in self.cues]
+        self.caption_requested = bool(self.provided_cues)
+        self.subtitle_source = 'provided' if self.provided_cues else ('whisper' if self.whisper_only and getattr(self, 'live_enabled', True) else 'native' if not self.whisper_only else 'off')
+        self.last = {}
+        self.last_state = {}
+        self.requested = True
+        self.pause_when_ready = paused
+        self.log_offset = self.logpath.stat().st_size
+        self.api('load', data=json.dumps(dict(url=self.public_stream(video, referer), title=title, options=options, generation=self.generation, whisper_only=self.whisper_only)))
+        if subtitle:
+            self.prepare_subtitle(subtitle, referer)
+
+    def _command_subtitle_ready(self, command):
+        if command[1] == self.generation and self.requested and not self.finished:
+            self.pending_subtitle = command
+            self.apply_pending_subtitle()
+
+
+    def _command_subtitle_source(self, command):
+        self.select_subtitle_source(command[1])
+
+
+    def _command_seek(self, command):
+        self.api('seek', value=command[1])
+
+
+    def _command_captions_file(self, command):
+        self.whisper_cues = read_cues(command[1])
+        if self.subtitle_source == 'whisper':
+            self.cues = self.whisper_cues
             self.cue_starts = [cue[0] for cue in self.cues]
-            self.caption_requested = bool(self.provided_cues)
-            self.subtitle_source = 'provided' if self.provided_cues else ('whisper' if self.whisper_only and getattr(self, 'live_enabled', True) else 'native' if not self.whisper_only else 'off')
-            self.last = {}
-            self.last_state = {}
-            self.requested = True
-            self.pause_when_ready = paused
-            self.log_offset = self.logpath.stat().st_size
-            self.api('load', data=json.dumps(dict(url=self.public_stream(video, referer), title=title, options=options, generation=self.generation, whisper_only=self.whisper_only)))
-            if subtitle:
-                generation, revision, whisper_only = self.generation, self.subtitle_revision, self.whisper_only
-                def prepare_subtitle():
-                    try:
-                        path = self.subtitle_path(subtitle, referer)
-                        cues = read_cues(path) if path and whisper_only else []
-                        if whisper_only and not provided_cues_usable(cues):
-                            return
-                        if path:
-                            self.command(['subtitle-ready', generation, revision, path, cues])
-                    except (OSError, ValueError, ImportError):
-                        pass  # Captions must never delay or prevent playback.
-                threading.Thread(target=prepare_subtitle, daemon=True, name='media-subtitle').start()
-        elif action == 'subtitle-ready':
-            if command[1] == self.generation and self.requested and not self.finished:
-                self.pending_subtitle = command
-                self.apply_pending_subtitle()
-        elif action == 'set_property' and command[1] == 'pause':
+
+
+    def _command_captions_show(self, command):
+        if self.subtitle_source == 'off':
+            self.subtitle_source = 'whisper'
+        self.caption_requested = self.subtitle_source in ('provided', 'whisper')
+
+
+    def _command_captions_clear(self, command):
+        self.whisper_cues = []
+        if self.subtitle_source != 'provided':
+            self.cues, self.cue_starts = [], []
+            self.caption_requested = False
+        self.api('clear-caption')
+
+
+    def _command_observe_property(self, command):
+        pass  # The native interface publishes the properties below.
+
+
+    def _command_quit(self, command):
+        action = command[0]
+        self.requested = False
+        if action == 'quit':
+            self.close()
+        else:
+            self.api('stop')
+
+
+    def _command_property(self, command):
+        if command[1] == "pause":
             self.api('pause', value='true' if command[2] else 'false')
-        elif action == 'set_property' and command[1] == 'sid':
+        elif command[1] == "sid":
             if not self.whisper_only:
                 self.api('subtitle', value=command[2])
-        elif action == 'subtitle-source':
-            self.select_subtitle_source(command[1])
-        elif action == 'seek':
-            self.api('seek', value=command[1])
-        elif action == 'captions-file':
-            self.whisper_cues = read_cues(command[1])
-            if self.subtitle_source == 'whisper':
-                self.cues = self.whisper_cues
-                self.cue_starts = [cue[0] for cue in self.cues]
-        elif action == 'captions-show':
-            if self.subtitle_source == 'off':
-                self.subtitle_source = 'whisper'
-            self.caption_requested = self.subtitle_source in ('provided', 'whisper')
-        elif action == 'captions-clear':
-            self.whisper_cues = []
-            if self.subtitle_source != 'provided':
-                self.cues, self.cue_starts = [], []
-                self.caption_requested = False
-            self.api('clear-caption')
-        elif action == 'observe_property':
-            pass  # The native interface publishes the properties below.
-        elif action in ('quit', 'stop'):
-            self.requested = False
-            if action == 'quit':
-                self.close()
-            else:
-                self.api('stop')
 
-    def poll(self, state):
-        self.last_state = state
+
+    def _poll_ended(self, state):
         if self.requested and (self.loaded or self.finished) and not state.get('eof') and state.get('state') == 'stopped':
             self.loaded = self.finished = False
             self.stop_count += 1
             self.emit({'event':'end-file', 'reason':'stop'})
-            return
+            return True
         if self.requested and state.get('eof') and not self.finished:
             # VLC also advances to the marker when demuxing fails. Only an
             # input that actually played to its end may advance the episode.
@@ -384,9 +423,10 @@ class VlcSession:
                 self.requested = False
                 self.api('stop')
             self.emit({'event':'end-file', 'reason':'error' if self.input_error else 'eof'})
-            return
-        if not self.requested or self.finished or state.get('eof'):
-            return
+            return True
+        return False
+
+    def _poll_loading(self, state):
         if state.get('input_state') == 5:
             self.input_error = True
         if state.get('input') and state.get('input_state') in (2, 3) and not self.loaded:
@@ -397,10 +437,11 @@ class VlcSession:
             self.loaded = True
             self.apply_pending_subtitle()
             self.emit({'event':'file-loaded'})
-        if not self.loaded:
-            return
         if state.get('input_state') == 5:
             self.input_error = True
+        return state
+
+    def _poll_subtitles(self, state):
         if self.provided_cues and not provided_cues_usable(self.provided_cues, state.get('duration', 0)):
             self.provided_cues = []
             if self.subtitle_source == 'provided':
@@ -417,6 +458,9 @@ class VlcSession:
             # Reflect native VLC track changes and prevent duplicate OSD captions.
             self.subtitle_source = 'native:' + str(state['sid'])
             self.caption_requested = False
+        return state
+
+    def _publish_properties(self, state):
         whisper_active = self.subtitle_source in ('provided', 'whisper') and self.caption_requested
         values = {'time-pos':state.get('time',0), 'duration':state.get('duration',0), 'pause':state.get('state') == 'paused',
                   'sid': self.subtitle_source if whisper_active else (False if self.whisper_only else state.get('sid', -1)),
@@ -429,6 +473,9 @@ class VlcSession:
             if self.last.get(name) != value:
                 self.last[name] = value
                 self.emit({'event':'property-change','name':name,'data':value})
+        return whisper_active
+
+    def _render_caption(self, state, whisper_active):
         now = time.monotonic()
         text = ''
         if whisper_active:
@@ -444,19 +491,37 @@ class VlcSession:
             self.api('caption', value=text)
             self.caption_text, self.last_caption = text, now
 
+    def poll(self, state):
+        self.last_state = state
+        if self._poll_ended(state):
+            return
+        if not self.requested or self.finished or state.get('eof'):
+            return
+        state = self._poll_loading(state)
+        if not self.loaded:
+            return
+        state = self._poll_subtitles(state)
+        whisper_active = self._publish_properties(state)
+        self._render_caption(state, whisper_active)
+
+    def _wait_for_api(self):
+        for _ in range(100):
+            if self.closed.is_set() or self.process.poll() is not None:
+                return False
+            try:
+                self.api()
+                break
+            except OSError:
+                time.sleep(.05)
+        else:
+            raise RuntimeError('Could not connect to VLC.')
+        return True
+
     def monitor(self):
         self.log_offset = 0
         try:
-            for _ in range(100):
-                if self.closed.is_set() or self.process.poll() is not None:
-                    return
-                try:
-                    self.api()
-                    break
-                except OSError:
-                    time.sleep(.05)
-            else:
-                raise RuntimeError('Could not connect to VLC.')
+            if not self._wait_for_api():
+                return
             self.api('volume', value=self.start_volume)
             poll_failures = 0
             while not self.closed.is_set() and self.process.poll() is None:

@@ -17,7 +17,9 @@ class ProcessMonitor:
         self.ticks = os.sysconf('SC_CLK_TCK')
         self.page_size = os.sysconf('SC_PAGE_SIZE')
 
-    def snapshot(self, pid):
+    # Quality exception: Independent hardware/process counters have different units and are kept explicitly named.
+    # Numeric ceilings are enforced by desktop/scripts/quality.py.
+    def snapshot(self, pid):  # pylint: disable=too-many-locals
         base = self.proc / str(pid)
         stat = (base / 'stat').read_text()
         end = stat.rfind(')')
@@ -109,7 +111,9 @@ def pick_window():
         return {'error': 'Could not read window information.'}
 
 
-def window_action(action, window_id, pid, start):
+# Quality exception: Independent rejection guard clauses keep invalid captions and stale process actions fail-closed.
+# Numeric ceilings are enforced by desktop/scripts/quality.py.
+def window_action(action, window_id, pid, start):  # pylint: disable=too-many-return-statements
     """Act only on the selected window and the same process incarnation."""
     if action not in ('close', 'terminate', 'kill'):
         return {'error': 'Unknown window action.'}

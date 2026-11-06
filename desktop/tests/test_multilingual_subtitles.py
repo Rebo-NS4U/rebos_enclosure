@@ -8,7 +8,7 @@ from unittest.mock import Mock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'system/apps/media'))
 import menu_backend
-from live_subtitles import LiveSubtitles, cues_from_whisper, recognize
+from live_subtitles import LiveSubtitles, CaptionOptions, cues_from_whisper, recognize
 
 class SpanishCaptionTests(unittest.TestCase):
     def test_auto_detection_changes_language_between_speech_spans(self):
@@ -86,15 +86,15 @@ class SpanishCaptionTests(unittest.TestCase):
             engine.settings_changed()
             old.close.assert_called_once()
             engine.session.clear_captions.assert_called_once()
-            self.assertEqual(factory.call_args.kwargs['language'], 'es')
-            self.assertEqual(factory.call_args.kwargs['delay'], 1.5)
+            self.assertEqual(factory.call_args.kwargs['options'].language, 'es')
+            self.assertEqual(factory.call_args.kwargs['options'].delay, 1.5)
             engine.session.load.assert_not_called()
             engine.session.close.assert_not_called()
 
     def test_missing_spanish_model_reports_the_required_file(self):
         with patch('live_subtitles.SPANISH_MODEL', Path('/missing/ggml-base.bin')):
             with self.assertRaisesRegex(RuntimeError, 'ggml-base.bin'):
-                LiveSubtitles(['video', '', '', ''], '/tmp', lambda _: None, lambda _: None, language='es')
+                LiveSubtitles(['video', '', '', ''], '/tmp', lambda _: None, lambda _: None, options=CaptionOptions(language='es'))
 
 
 class CaptionReadinessTests(unittest.TestCase):
@@ -134,7 +134,7 @@ class CaptionSchedulingTests(unittest.TestCase):
     def test_resume_starts_worker_at_playback_position(self):
         with patch('live_subtitles.threading.Thread') as thread, patch.object(Path, 'is_file', return_value=True), tempfile.TemporaryDirectory() as folder:
             worker = LiveSubtitles(['video', '', '', ''], folder, Mock(), Mock(),
-                                   position=1234, duration=2400)
+                                   options=CaptionOptions(position=1234, duration=2400))
             thread.return_value.start.assert_called_once()
             self.assertEqual(worker.position, 1234)
             self.assertEqual(worker.duration, 2400)

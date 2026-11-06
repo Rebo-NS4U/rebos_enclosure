@@ -56,7 +56,9 @@ def defaults_match(home, payload):
                 for name in names))
 
 
-def organize(home, payload, backup, journal):
+# Quality exception: Explicit paths, fingerprints and recovery records preserve auditability at the file-mutation boundary.
+# Numeric ceilings are enforced by desktop/scripts/quality.py.
+def organize(home, payload, backup, journal):  # pylint: disable=too-many-locals
     from deploy import check_parent, exists
     moves = plan(home, payload)
     for old, new in moves:

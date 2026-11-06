@@ -1,5 +1,6 @@
 """Preview linked updates with local edits before touching the live checkout."""
 from contextlib import contextmanager
+from dataclasses import dataclass
 import hashlib
 import json
 import os
@@ -60,13 +61,23 @@ def save_backup(root, home):
     return backup
 
 
-class PreparedUpdate:
-    def __init__(self, checkout, plan, home, head, status, *, untracked_moves=()):
+@dataclass(frozen=True)
+class CheckoutSnapshot:
+    head: str
+    status: str
+
+
+# Quality exception: A single state/action operation is the complete public interface; dummy methods add no behavior.
+# Numeric ceilings are enforced by desktop/scripts/quality.py.
+class PreparedUpdate:  # pylint: disable=too-few-public-methods
+    def __init__(self, checkout, plan, home, snapshot, *, untracked_moves=()):
         self.checkout, self.plan, self.home = checkout, plan, home
-        self.head, self.status = head, status
+        self.head, self.status = snapshot.head, snapshot.status
         self.untracked_moves = untracked_moves
 
-    def apply(self):
+    # Quality exception: The frozen updater handoff and lock validation paths remain explicit and ordered before host changes.
+    # Numeric ceilings are enforced by desktop/scripts/quality.py.
+    def apply(self):  # pylint: disable=too-many-locals
         root, plan = self.checkout, self.plan
         if git(root, 'rev-parse', 'HEAD') != self.head or working_state(root) != self.status:
             raise ValueError('Local source changed during the preview. Run the update again.')
@@ -118,6 +129,74 @@ class PreparedUpdate:
         print('Local edits restored. Recovery archive and Git stash retained.', flush=True)
 
 
+def merge_local_changes(plan, incoming, saved, original_index):
+    merged = git(plan, '-c', 'commit.gpgsign=false', 'merge', '--no-edit', incoming, check=False)
+    if merged.returncode:
+        conflicts = git(plan, 'diff', '--name-only', '--diff-filter=U')
+        raise ValueError('Incoming commits conflict with local commits; live files are unchanged: '
+                         + (conflicts or merged.stderr.strip()))
+    if saved:
+        applied = git(plan, 'stash', 'apply', saved, check=False)
+        conflicts = git(plan, 'diff', '--name-only', '--diff-filter=U').splitlines()
+        other = [p for p in conflicts if p != 'desktop/payload/checksums.json']
+        if other or (applied.returncode and not conflicts):
+            raise ValueError('Local edits conflict with the update; live files are unchanged: '
+                             + (', '.join(other) or applied.stderr.strip()))
+    # Restore the original staged/unstaged boundary in the isolated index.
+    git(plan, 'restore', '--staged', '--source=HEAD', '--', '.')
+    if original_index:
+        git(plan, 'apply', '--cached', '--3way', '--binary', '-', input=original_index)
+
+
+def copy_untracked(checkout, plan):
+    untracked_moves = []
+    for name in filter(None, git(checkout, 'ls-files', '--others', '--exclude-standard', '-z').split('\0')):
+        destination = plan / name
+        if name.startswith('desktop/payload/home/'):
+            from layout import manifest, source as source_path
+            payload = plan / 'desktop/payload'
+            if manifest(payload).get('layout') == 2:
+                destination = source_path(payload, name.removeprefix('desktop/payload/home/'))
+                untracked_moves.append((name, str(destination.relative_to(plan))))
+        if destination.exists() or destination.is_symlink():
+            raise ValueError(f'Untracked file conflicts with incoming source; live files unchanged: {name}')
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(checkout / name, destination, follow_symlinks=False)
+    return untracked_moves
+
+
+def refresh_plan_checksums(checkout, plan):
+    payload = plan / 'desktop/payload'
+    # Hash metadata is generated, so reconcile it from the preserved
+    # sources instead of exposing merge markers to the live desktop.
+    current = json.loads((checkout / 'desktop/payload/checksums.json').read_text())
+    incoming_hashes = json.loads(git(plan, 'show', 'HEAD:desktop/payload/checksums.json'))
+    names = set(current) | set(incoming_hashes)
+    from deploy import check_parent
+    from layout import checksum_path, manifest, source as source_path
+    if manifest(payload).get('layout') == 2:
+        translated = set()
+        for name in names:
+            if name.startswith('home/'):
+                path = source_path(payload, name.removeprefix('home/'))
+                if path.is_relative_to(plan) and path.is_file():
+                    translated.add(str(path.relative_to(plan)))
+            elif name.startswith('system/') and not (plan / name).exists() and (plan / 'system/etc' / name.removeprefix('system/')).exists():
+                translated.add('system/etc/' + name.removeprefix('system/'))
+            else:
+                translated.add(name)
+        names = translated
+    for name in names:
+        path = checksum_path(payload, name)
+        check_parent(plan if path.is_relative_to(plan) else payload, str(path.relative_to(plan if path.is_relative_to(plan) else payload)))
+        if path.is_symlink():
+            raise ValueError('Payload checksum path cannot be a symlink: ' + name)
+    hashes = {name: hashlib.sha256(checksum_path(payload, name).read_bytes()).hexdigest()
+              for name in sorted(names) if checksum_path(payload, name).is_file()}
+    (payload / 'checksums.json').write_text(json.dumps(hashes, indent=2) + '\n')
+    verify(payload)
+
+
 @contextmanager
 def prepare(checkout, snapshot, home):
     checkout = Path(checkout)
@@ -132,64 +211,9 @@ def prepare(checkout, snapshot, home):
         plan = Path(temporary) / 'source'
         git(checkout, 'worktree', 'add', '--detach', str(plan), head)
         try:
-            merged = git(plan, '-c', 'commit.gpgsign=false', 'merge', '--no-edit', incoming, check=False)
-            if merged.returncode:
-                conflicts = git(plan, 'diff', '--name-only', '--diff-filter=U')
-                raise ValueError('Incoming commits conflict with local commits; live files are unchanged: '
-                                 + (conflicts or merged.stderr.strip()))
-            if saved:
-                applied = git(plan, 'stash', 'apply', saved, check=False)
-                conflicts = git(plan, 'diff', '--name-only', '--diff-filter=U').splitlines()
-                other = [p for p in conflicts if p != 'desktop/payload/checksums.json']
-                if other or (applied.returncode and not conflicts):
-                    raise ValueError('Local edits conflict with the update; live files are unchanged: '
-                                     + (', '.join(other) or applied.stderr.strip()))
-            # Restore the original staged/unstaged boundary in the isolated index.
-            git(plan, 'restore', '--staged', '--source=HEAD', '--', '.')
-            if original_index:
-                git(plan, 'apply', '--cached', '--3way', '--binary', '-', input=original_index)
-            untracked_moves = []
-            for name in filter(None, git(checkout, 'ls-files', '--others', '--exclude-standard', '-z').split('\0')):
-                destination = plan / name
-                if name.startswith('desktop/payload/home/'):
-                    from layout import manifest, source as source_path
-                    payload = plan / 'desktop/payload'
-                    if manifest(payload).get('layout') == 2:
-                        destination = source_path(payload, name.removeprefix('desktop/payload/home/'))
-                        untracked_moves.append((name, str(destination.relative_to(plan))))
-                if destination.exists() or destination.is_symlink():
-                    raise ValueError(f'Untracked file conflicts with incoming source; live files unchanged: {name}')
-                destination.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(checkout / name, destination, follow_symlinks=False)
-            payload = plan / 'desktop/payload'
-            # Hash metadata is generated, so reconcile it from the preserved
-            # sources instead of exposing merge markers to the live desktop.
-            current = json.loads((checkout / 'desktop/payload/checksums.json').read_text())
-            incoming_hashes = json.loads(git(plan, 'show', 'HEAD:desktop/payload/checksums.json'))
-            names = set(current) | set(incoming_hashes)
-            from deploy import check_parent
-            from layout import checksum_path, manifest, source as source_path
-            if manifest(payload).get('layout') == 2:
-                translated = set()
-                for name in names:
-                    if name.startswith('home/'):
-                        path = source_path(payload, name.removeprefix('home/'))
-                        if path.is_relative_to(plan) and path.is_file():
-                            translated.add(str(path.relative_to(plan)))
-                    elif name.startswith('system/') and not (plan / name).exists() and (plan / 'system/etc' / name.removeprefix('system/')).exists():
-                        translated.add('system/etc/' + name.removeprefix('system/'))
-                    else:
-                        translated.add(name)
-                names = translated
-            for name in names:
-                path = checksum_path(payload, name)
-                check_parent(plan if path.is_relative_to(plan) else payload, str(path.relative_to(plan if path.is_relative_to(plan) else payload)))
-                if path.is_symlink():
-                    raise ValueError('Payload checksum path cannot be a symlink: ' + name)
-            hashes = {name: hashlib.sha256(checksum_path(payload, name).read_bytes()).hexdigest()
-                      for name in sorted(names) if checksum_path(payload, name).is_file()}
-            (payload / 'checksums.json').write_text(json.dumps(hashes, indent=2) + '\n')
-            verify(payload)
-            yield PreparedUpdate(checkout, plan, home, head, before, untracked_moves=untracked_moves)
+            merge_local_changes(plan, incoming, saved, original_index)
+            untracked_moves = copy_untracked(checkout, plan)
+            refresh_plan_checksums(checkout, plan)
+            yield PreparedUpdate(checkout, plan, home, CheckoutSnapshot(head, before), untracked_moves=untracked_moves)
         finally:
             git(checkout, 'worktree', 'remove', '--force', str(plan))

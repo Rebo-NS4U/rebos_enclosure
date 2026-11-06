@@ -7,6 +7,29 @@ class InvalidMedia(RuntimeError):
     pass
 
 
+def movie_header_duration(data):
+    """Parse child boxes of one bounded moov payload."""
+    cursor = 0
+    while cursor + 8 <= len(data):
+        length, child = struct.unpack('>I4s', data[cursor:cursor + 8])
+        if length < 8 or cursor + length > len(data):
+            break
+        if child == b'mvhd':
+            payload = data[cursor + 8:cursor + length]
+            if len(payload) < 20:
+                break
+            if payload[0] == 1:
+                if len(payload) < 32:
+                    break
+                scale, duration = struct.unpack('>IQ', payload[20:32])
+            else:
+                scale, duration = struct.unpack('>II', payload[12:20])
+            if scale and duration:
+                return duration / scale
+        cursor += length
+    return None
+
+
 def mp4_duration(read_at):
     """Walk ISO BMFF boxes via bounded reads; skip the large mdat payload."""
     offset = 0
@@ -27,24 +50,9 @@ def mp4_duration(read_at):
             if size > 8_000_000:
                 raise InvalidMedia('The video metadata is unexpectedly large.')
             data = read_at(offset + header_size, size - header_size)
-            cursor = 0
-            while cursor + 8 <= len(data):
-                length, child = struct.unpack('>I4s', data[cursor:cursor + 8])
-                if length < 8 or cursor + length > len(data):
-                    break
-                if child == b'mvhd':
-                    payload = data[cursor + 8:cursor + length]
-                    if len(payload) < 20:
-                        break
-                    if payload[0] == 1:
-                        if len(payload) < 32:
-                            break
-                        scale, duration = struct.unpack('>IQ', payload[20:32])
-                    else:
-                        scale, duration = struct.unpack('>II', payload[12:20])
-                    if scale and duration:
-                        return duration / scale
-                cursor += length
+            duration = movie_header_duration(data)
+            if duration is not None:
+                return duration
             break
         offset += size
     raise InvalidMedia('Could not verify the actual video duration. Playback was blocked.')

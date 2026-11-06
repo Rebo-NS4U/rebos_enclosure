@@ -19,7 +19,7 @@ jobs:
       - name: Install native test dependencies
         run: >-
           pacman -Syu --noconfirm --needed
-          git python python-pillow python-gobject gtk4 ruff
+          git python python-pip python-pillow python-gobject gtk4 ruff
           gcc pkgconf fish fontconfig
           niri quickshell qt6-multimedia-ffmpeg ttf-dejavu nodejs lua51
           ffmpeg vlc vlc-plugin-ffmpeg vlc-plugin-freetype vlc-plugin-lua
@@ -40,6 +40,11 @@ jobs:
         run: runuser -u ci -- python desktop/scripts/deploy.py --verify
       - name: Lint Python for runtime errors
         run: runuser -u ci -- ruff check --no-cache desktop system
+      - name: Check design warnings and exception ceilings
+        run: |
+          python -m venv /tmp/enclosure-quality-ci
+          /tmp/enclosure-quality-ci/bin/pip install pylint==4.1.3
+          runuser -u ci -- /tmp/enclosure-quality-ci/bin/python desktop/scripts/quality.py
       - name: Build native helpers
         run: runuser -u ci -- bash desktop/scripts/build-check.sh
       - name: Check installer shell syntax

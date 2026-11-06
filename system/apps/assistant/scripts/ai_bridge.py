@@ -38,7 +38,10 @@ def encode(value):
     return (json.dumps(value, separators=(",", ":")) + "\n").encode()
 
 
-class Bridge:
+# Quality exception: One owner controls this process/session lifetime; explicit state fields preserve existing transition invariants.
+# Numeric ceilings are enforced by desktop/scripts/quality.py.
+class Bridge:  # pylint: disable=too-many-instance-attributes
+    parking_enabled = True
     def __init__(self):
         self.process = None
         self.tasks = []
@@ -153,6 +156,73 @@ class Bridge:
             self.parked = False
         self.stopping = False
 
+    def send_attached(self, state, sequence):
+        message = dict(bridge="attached", state=state, seq=sequence)
+        if self.parking_enabled:
+            message['parking'] = True
+        self.send(message)
+
+    async def handle_frame(self, frame):
+        handlers = {
+            'checkpoint': self.handle_send, 'send': self.handle_send,
+            'reset': self.handle_reset, 'shutdown': self.handle_reset,
+            'park': self.handle_park, 'wake': self.handle_wake,
+        }
+        kind = frame.get('bridge')
+        handler = handlers.get(kind)
+        if handler is None or (kind in ('park', 'wake') and not self.parking_enabled):
+            raise ValueError("Unknown assistant bridge command")
+        return await handler(frame)
+
+    async def handle_send(self, frame):
+        self.checkpoint(frame)
+        if frame['bridge'] == 'send':
+            if not self.process or self.process.returncode is not None:
+                self.publish("exit", code=self.process.returncode if self.process else -1)
+                return True
+            self.process.stdin.write(encode(frame["message"]))
+            await self.process.stdin.drain()
+        return True
+
+    async def handle_park(self, frame):
+        self.checkpoint(frame)
+        state = self.state
+        capabilities = state.get("agentCapabilities", {})
+        resumable = (capabilities.get("loadSession") is True or
+                     capabilities.get("sessionCapabilities", {}).get("resume") is not None)
+        if (not resumable or not state.get("sessionReady") or
+            not state.get("currentSessionId") or
+            any(state.get(key) for key in (
+                "isLoading", "toolRunning", "agentTurnActive", "queuedPrompt",
+                "pendingRpc", "pendingPermissions", "questionRequests",
+                "pendingSessionAction", "pendingSessionModelId", "pendingDistillPreset"))):
+            self.send(dict(bridge="park-rejected"))
+            return True
+        await self.stop(preserve_state=True)
+        self.parked = True
+        state.update(agentParked=True, initialized=False, authenticated=False, sessionReady=False)
+        self.publish("parked")
+        return True
+
+    async def handle_wake(self, frame):
+        self.checkpoint(frame)
+        if self.parked:
+            await self.start(self.launch)
+            self.parked = False
+            self.state = None
+            self.acknowledged = self.sequence
+            self.events.clear()
+            self.send_attached(None, self.acknowledged)
+        return True
+
+    async def handle_reset(self, frame):
+        await self.stop()
+        if frame['bridge'] == 'reset':
+            await self.start(self.launch)
+            self.send_attached(None, 0)
+            return True
+        return False
+
     async def attach(self, reader, writer):
         try:
             frame = json.loads(await reader.readline())
@@ -171,7 +241,7 @@ class Bridge:
                 self.client = writer
                 if self.process is None and not self.parked:
                     await self.start(frame)
-                self.send(dict(bridge="attached", state=self.state, seq=self.acknowledged, parking=True))
+                self.send_attached(self.state, self.acknowledged)
                 for event in self.events:
                     self.send(event)
                 await writer.drain()
@@ -179,53 +249,8 @@ class Bridge:
                 async with self.lock:
                     if writer is not self.client:
                         break
-                    frame = json.loads(line)
-                    kind = frame.get("bridge")
-                    if kind in ("checkpoint", "send"):
-                        self.checkpoint(frame)
-                        if kind == "send":
-                            if not self.process or self.process.returncode is not None:
-                                self.publish("exit", code=self.process.returncode if self.process else -1)
-                                continue
-                            self.process.stdin.write(encode(frame["message"]))
-                            await self.process.stdin.drain()
-                    elif kind == "park":
-                        self.checkpoint(frame)
-                        state = self.state
-                        capabilities = state.get("agentCapabilities", {})
-                        resumable = (capabilities.get("loadSession") is True or
-                                     capabilities.get("sessionCapabilities", {}).get("resume") is not None)
-                        if (not resumable or not state.get("sessionReady") or
-                            not state.get("currentSessionId") or
-                            any(state.get(key) for key in (
-                                "isLoading", "toolRunning", "agentTurnActive", "queuedPrompt",
-                                "pendingRpc", "pendingPermissions", "questionRequests",
-                                "pendingSessionAction", "pendingSessionModelId", "pendingDistillPreset"))):
-                            self.send(dict(bridge="park-rejected"))
-                            continue
-                        await self.stop(preserve_state=True)
-                        self.parked = True
-                        state.update(agentParked=True, initialized=False,
-                                     authenticated=False, sessionReady=False)
-                        self.publish("parked")
-                    elif kind == "wake":
-                        self.checkpoint(frame)
-                        if self.parked:
-                            await self.start(self.launch)
-                            self.parked = False
-                            self.state = None
-                            self.acknowledged = self.sequence
-                            self.events.clear()
-                            self.send(dict(bridge="attached", state=None, seq=self.acknowledged, parking=True))
-                    elif kind in ("reset", "shutdown"):
-                        await self.stop()
-                        if kind == "reset":
-                            await self.start(self.launch)
-                            self.send(dict(bridge="attached", state=None, seq=0, parking=True))
-                        else:
-                            break
-                    else:
-                        raise ValueError("Unknown assistant bridge command")
+                    if not await self.handle_frame(json.loads(line)):
+                        break
         except (ValueError, KeyError, OSError, RuntimeError) as error:
             # Only diagnostic errors, never protocol payloads or chat content.
             with contextlib.suppress(OSError):

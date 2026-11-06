@@ -136,7 +136,9 @@ menupopup > menuitem[_moz-menuactive="true"], menupopup > menu[_moz-menuactive="
 '''
 
 
-def apply(p, home):
+# Quality exception: Named color/configuration intermediates keep per-application transformations reviewable; numeric packing would obscure them.
+# Numeric ceilings are enforced by desktop/scripts/quality.py.
+def apply(p, home):  # pylint: disable=too-many-locals
     m = metrics(home)
     cfg = home / '.config'
     base, css = gtk_css(p, m)

@@ -273,8 +273,8 @@ and updater checks exercise the normal user path. See
 [code quality review](../docs/CODE-QUALITY-REVIEW.md) for Radon/Pylint analysis.
 
 For repeatable local runs, install tox in a development environment and use
-`tox -e lint,checks` from the repository root. The checks environment uses system
-Python packages for GTK/Pillow and needs the same native tools as CI. The Ruff
+`tox -e lint,quality,checks` from the repository root. The checks environment uses system
+Python packages for GTK/Pillow and needs the same native tools as CI. The [design quality gate](../docs/QUALITY-GATE.md) also checks bounded, documented exceptions. The Ruff
 rules check syntax, invalid control flow, undefined names and unbound locals;
 they do not enforce a new formatting style.
 

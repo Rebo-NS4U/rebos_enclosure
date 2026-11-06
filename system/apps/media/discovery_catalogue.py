@@ -5,6 +5,7 @@ https://github.com/Stremio/stremio-addon-sdk/blob/master/docs/api/requests/catal
 Playback uses the independent HTTPS-only adapter; metadata is not proof of playback.
 """
 from concurrent.futures import ThreadPoolExecutor
+from typing import NamedTuple
 from contextlib import closing
 from functools import lru_cache
 import json
@@ -119,7 +120,51 @@ def lookup(kind, meta):
     return card
 
 
-def _page(kind, category, page, fetch, query=""):
+class SearchTerms(NamedTuple):
+    mode: str
+    term: str
+
+
+def catalogue_chunk(media_type, catalogue_id, cursor, search, fetch):
+    parameters = ['search=' + quote(search.term, safe='')] if search.term and search.mode == 'title' else []
+    if search.mode == 'genre':
+        parameters.append('genre=' + quote(search.term, safe=''))
+    elif catalogue_id == 'year':
+        parameters.append('genre=' + str(datetime.now(timezone.utc).year))
+    if cursor or search.mode == 'genre':
+        parameters.append('skip=' + str(cursor))
+    extra = '/' + '&'.join(parameters) if parameters else ''
+    url = f'{BASE}/catalog/{media_type}/{catalogue_id}{extra}.json'
+    hit, payload = cached(url, 3600)
+    if not hit:
+        payload = json.loads(fetch(url))
+        if not isinstance(payload.get('metas'), list):
+            raise RuntimeError('The discovery catalogue returned an invalid response')
+        remember(url, payload)
+    return [meta for meta in payload['metas'] if meta.get('id') and meta.get('name')]
+
+
+def resolve_candidates(kind, candidates, item_ids):
+    items = []
+    futures = [LOOKUPS.submit(lookup, kind, meta) for meta in candidates]
+    failures = []
+    for future in futures:
+        try:
+            card = future.result()
+        except Exception as error:
+            failures.append(error)
+            continue
+        if card and card['id'] not in item_ids:
+            items.append(card)
+            item_ids.add(card['id'])
+    if failures:
+        raise RuntimeError('Some titles could not be checked. Retry this page.') from failures[0]
+    return items
+
+
+# Quality exception: Provider identifiers, candidate metadata and verification results remain explicitly named across the bounded lookup.
+# Numeric ceilings are enforced by desktop/scripts/quality.py.
+def _page(kind, category, page, fetch, query=""):  # pylint: disable=too-many-locals
     mode, term = search_terms(query)
     page_key = f'page-search-v2:{kind}:{category}:{page}:{query}'
     hit, plan = cached(page_key, 3600)
@@ -133,22 +178,7 @@ def _page(kind, category, page, fetch, query=""):
     cursor, seen = previous['cursor'], set(previous['seen'])
     items, item_ids, has_more = [], set(previous.get('matchedIds', [])), True
     for _ in range(MAX_SCAN_CHUNKS):
-        parameters = ['search=' + quote(term, safe='')] if term and mode == 'title' else []
-        if mode == 'genre':
-            parameters.append('genre=' + quote(term, safe=''))
-        elif catalogue_id == 'year':
-            parameters.append('genre=' + str(datetime.now(timezone.utc).year))
-        if cursor or mode == 'genre':
-            parameters.append('skip=' + str(cursor))
-        extra = '/' + '&'.join(parameters) if parameters else ''
-        url = f'{BASE}/catalog/{media_type}/{catalogue_id}{extra}.json'
-        hit, payload = cached(url, 3600)
-        if not hit:
-            payload = json.loads(fetch(url))
-            if not isinstance(payload.get('metas'), list):
-                raise RuntimeError('The discovery catalogue returned an invalid response')
-            remember(url, payload)
-        metas = [meta for meta in payload['metas'] if meta.get('id') and meta.get('name')]
+        metas = catalogue_chunk(media_type, catalogue_id, cursor, SearchTerms(mode, term), fetch)
         batch = metas if mode == 'actor' else metas[:PAGE_SIZE]
         candidates = [meta for meta in batch if meta['id'] not in seen]
         has_more = len(metas) >= PAGE_SIZE
@@ -164,19 +194,7 @@ def _page(kind, category, page, fetch, query=""):
             actor = normalized_title(term)
             candidates = [meta for meta in candidates if any(
                 actor in normalized_title(name) for name in (meta.get('cast') or []) if isinstance(name, str))]
-        futures = [LOOKUPS.submit(lookup, kind, meta) for meta in candidates]
-        failures = []
-        for future in futures:
-            try:
-                card = future.result()
-            except Exception as error:
-                failures.append(error)
-                continue
-            if card and card['id'] not in item_ids:
-                items.append(card)
-                item_ids.add(card['id'])
-        if failures:
-            raise RuntimeError('Some titles could not be checked. Retry this page.') from failures[0]
+        items.extend(resolve_candidates(kind, candidates, item_ids))
         if len(items) >= TARGET_SIZE or not has_more:
             break
     plan = dict(items=items, hasMore=has_more, cursor=cursor, seen=sorted(seen), matchedIds=sorted(item_ids))

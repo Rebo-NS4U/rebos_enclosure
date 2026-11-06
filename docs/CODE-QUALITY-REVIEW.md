@@ -75,3 +75,7 @@ See the [detailed argument, duplication and branch review](CODE-QUALITY-DETAILS.
 ## Remaining warning usefulness
 
 The [remaining warning review](REMAINING-WARNINGS.md) classifies all 136 current observations by usefulness and records the bounded GPU-query fix. Low-value structural warnings remain visible; no suppressions were added.
+
+## Current enforced profile
+
+See [Design-warning cleanup and quality gate](QUALITY-GATE.md). The raw count is now 72 documented, bounded exceptions (64 fewer findings than the original 136). The configured gate has no active warnings. Exceptions remain visible and cannot grow unnoticed.

@@ -12,7 +12,9 @@ VERSION = 3
 STRENGTHS = {'normal': (24, 1), 'strong': (6, 2), 'intense': (4, 3)}
 
 
-def convert(source: Path, cache: Path, palette: str = 'original', strength: str = 'strong',
+# Quality exception: Named image dimensions and color/dither intermediates describe the pixel transform without opaque containers.
+# Numeric ceilings are enforced by desktop/scripts/quality.py.
+def convert(source: Path, cache: Path, palette: str = 'original', strength: str = 'strong',  # pylint: disable=too-many-locals,too-many-statements
             tint: str = '#4c9cbd') -> Path:
     from PIL import Image, ImageOps
 

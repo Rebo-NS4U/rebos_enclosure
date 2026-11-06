@@ -7,7 +7,9 @@ import subprocess
 import re
 
 
-class SystemMonitor:
+# Quality exception: These fields are widget references, caches, locks or previous samples with distinct names and lifetimes.
+# Numeric ceilings are enforced by desktop/scripts/quality.py.
+class SystemMonitor:  # pylint: disable=too-many-instance-attributes
     def __init__(self, disks=[]):
         self.prev_cpu_total = 0
         self.prev_cpu_idle = 0
@@ -349,7 +351,55 @@ class SystemMonitor:
             pass
         return unavailable
 
-    def get_gpu_stats(self):
+    def _amd_gpu_stats(self, card):
+        u, t, memory_used, memory_total, frequency = 0.0, -1, 0, 0, 0.0
+        try:
+            with open(
+                f"/sys/class/drm/{card}/device/gpu_busy_percent", "r"
+            ) as f:
+                u = float(f.read().strip())
+        except:
+            pass
+        try:
+            hwmon_base = f"/sys/class/drm/{card}/device/hwmon"
+            if os.path.exists(hwmon_base):
+                hwmon_dir = os.listdir(hwmon_base)[0]
+                with open(
+                    os.path.join(hwmon_base, hwmon_dir, "temp1_input"), "r"
+                ) as f:
+                    t = int(f.read().strip()) // 1000
+        except:
+            pass
+        try:
+            with open(
+                f"/sys/class/drm/{card}/device/mem_info_vram_used", "r"
+            ) as f:
+                memory_used = int(f.read().strip())
+            with open(
+                f"/sys/class/drm/{card}/device/mem_info_vram_total", "r"
+            ) as f:
+                memory_total = int(f.read().strip())
+        except (OSError, ValueError):
+            pass
+        try:
+            with open(
+                f"/sys/class/drm/{card}/device/pp_dpm_sclk", "r"
+            ) as f:
+                clock_data = f.read()
+            active_clock = next(
+                (line for line in clock_data.splitlines() if "*" in line),
+                "",
+            )
+            match = re.search(r"(\d+)\s*Mhz", active_clock, re.I)
+            if match:
+                frequency = float(match.group(1))
+        except OSError:
+            pass
+        return u, t, memory_used, memory_total, frequency
+
+    # Quality exception: Independent hardware/process counters have different units and are kept explicitly named.
+    # Numeric ceilings are enforced by desktop/scripts/quality.py.
+    def get_gpu_stats(self):  # pylint: disable=too-many-locals
         usages = []
         temps = []
         drivers = []
@@ -365,49 +415,7 @@ class SystemMonitor:
             if gpu["vendor"] == "nvidia" and driver == "nvidia":
                 u, t, memory_used, memory_total, frequency = self._nvidia_gpu_stats(gpu["pci_id"])
             elif gpu["vendor"] == "amd" and driver == "amdgpu":
-                card = gpu["card"]
-                try:
-                    with open(
-                        f"/sys/class/drm/{card}/device/gpu_busy_percent", "r"
-                    ) as f:
-                        u = float(f.read().strip())
-                except:
-                    pass
-                try:
-                    hwmon_base = f"/sys/class/drm/{card}/device/hwmon"
-                    if os.path.exists(hwmon_base):
-                        hwmon_dir = os.listdir(hwmon_base)[0]
-                        with open(
-                            os.path.join(hwmon_base, hwmon_dir, "temp1_input"), "r"
-                        ) as f:
-                            t = int(f.read().strip()) // 1000
-                except:
-                    pass
-                try:
-                    with open(
-                        f"/sys/class/drm/{card}/device/mem_info_vram_used", "r"
-                    ) as f:
-                        memory_used = int(f.read().strip())
-                    with open(
-                        f"/sys/class/drm/{card}/device/mem_info_vram_total", "r"
-                    ) as f:
-                        memory_total = int(f.read().strip())
-                except (OSError, ValueError):
-                    pass
-                try:
-                    with open(
-                        f"/sys/class/drm/{card}/device/pp_dpm_sclk", "r"
-                    ) as f:
-                        clock_data = f.read()
-                    active_clock = next(
-                        (line for line in clock_data.splitlines() if "*" in line),
-                        "",
-                    )
-                    match = re.search(r"(\d+)\s*Mhz", active_clock, re.I)
-                    if match:
-                        frequency = float(match.group(1))
-                except OSError:
-                    pass
+                u, t, memory_used, memory_total, frequency = self._amd_gpu_stats(gpu["card"])
             elif gpu["vendor"] == "intel" and driver in ("i915", "xe"):
                 card = gpu["card"]
                 frequency_paths = [

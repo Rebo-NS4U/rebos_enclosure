@@ -144,7 +144,9 @@ def packages_from(path):
     return [line.split('#')[0].strip() for line in path.read_text().splitlines() if line.split('#')[0].strip()]
 
 
-def build_plan(options, hardware):
+# Quality exception: The installer expresses compatibility rules and interactive choices explicitly; merging rejection cases obscures their errors.
+# Numeric ceilings are enforced by desktop/scripts/quality.py.
+def build_plan(options, hardware):  # pylint: disable=too-many-branches
     groups = list(GROUPS) if options.groups == 'all' or (options.groups is None and options.profile == 'full') else []
     if options.groups not in (None, 'all', 'none', ''):
         groups = list(dict.fromkeys(options.groups.split(',')))
@@ -269,7 +271,9 @@ def yes(prompt, default=True):
         print('Enter y or n.', file=sys.stderr)
 
 
-def monitor_wizard(hardware):
+# Quality exception: The installer expresses compatibility rules and interactive choices explicitly; merging rejection cases obscures their errors.
+# Numeric ceilings are enforced by desktop/scripts/quality.py.
+def monitor_wizard(hardware):  # pylint: disable=too-many-branches
     method = choice('Monitor setup', [('auto', 'Automatic display modes and placement'),
                                      ('configure', 'Configure connected monitors or enter connectors manually')], 'auto')
     if method == 'auto':
@@ -393,7 +397,9 @@ def customize_niri(directory, plan):
         (directory / 'hardware.kdl').write_text(render_hardware(plan['machine']))
 
 
-def main():
+# Quality exception: The installer expresses compatibility rules and interactive choices explicitly; merging rejection cases obscures their errors.
+# Numeric ceilings are enforced by desktop/scripts/quality.py.
+def main():  # pylint: disable=too-many-branches,too-many-statements
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest='command', required=True)
     p = sub.add_parser('plan')

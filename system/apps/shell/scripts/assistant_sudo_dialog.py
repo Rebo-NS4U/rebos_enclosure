@@ -51,7 +51,9 @@ def theme():
                 font=str(config.get("font", "sans-serif")), size=max(10, int(config.get("fontSize", 14))))
 
 
-class Prompt:
+# Quality exception: These fields are widget references, caches, locks or previous samples with distinct names and lifetimes.
+# Numeric ceilings are enforced by desktop/scripts/quality.py.
+class Prompt:  # pylint: disable=too-many-instance-attributes
     def __init__(self, args):
         self.args = args
         self.result = 1
@@ -67,7 +69,9 @@ class Prompt:
         self.result = 0 if accepted else 1
         self.app.quit()
 
-    def activate(self, app):
+    # Quality exception: Declarative widget construction is kept in layout order; statement count is not control-flow complexity.
+    # Numeric ceilings are enforced by desktop/scripts/quality.py.
+    def activate(self, app):  # pylint: disable=too-many-statements
         self.window = Gtk.ApplicationWindow(application=app)
         self.window.set_title("Administrator password" if self.args.mode == "password" else "Administrator approval")
         self.window.set_default_size(600 if self.args.mode == "approve" else 440, -1)

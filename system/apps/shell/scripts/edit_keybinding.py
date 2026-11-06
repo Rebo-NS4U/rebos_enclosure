@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Add desktop shortcuts or change keys, preserving surrounding configuration."""
+from dataclasses import dataclass
 import hashlib
 import json
 import os
@@ -50,7 +51,9 @@ def equivalent(value, group):
         return value.lower()
 
 
-def save(request, config_dir):
+# Quality exception: Each user-editable field has a separate validation or serialization step and explanatory rejection path.
+# Numeric ceilings are enforced by desktop/scripts/quality.py.
+def save(request, config_dir):  # pylint: disable=too-many-branches,too-many-locals
     selected = request.get("binding", {})
     data = collect(config_dir)
     if data["error"]:
@@ -96,10 +99,21 @@ def save(request, config_dir):
             original = target.read_text()
         candidate = upsert_kitty(original, binding["rawKey"], "map " + binding["rawKey"] + " no_op")
         candidate = upsert_kitty(candidate, new_key, declaration)
-    return persist(target, original, candidate, binding["group"], new_key, source_guard=source_guard)
+    return persist(target, BindingChange(original, candidate, binding["group"], new_key, source_guard))
 
 
-def persist(target, original, candidate, group, new_key, *, source_guard=None):
+@dataclass(frozen=True)
+class BindingChange:
+    original: str
+    candidate: str
+    group: str
+    key: str
+    source_guard: tuple | None = None
+
+
+def persist(target, change):
+    original, candidate = change.original, change.candidate
+    group, new_key, source_guard = change.group, change.key, change.source_guard
     temporary = None
     try:
         with tempfile.NamedTemporaryFile(mode="w", dir=target.parent, prefix=".keybinding-check-", suffix=target.suffix, delete=False) as stream:
@@ -157,7 +171,7 @@ def add(request, config_dir):
     title = " hotkey-overlay-title=" + json.dumps(name, ensure_ascii=False) if name else ""
     line = "    " + json.dumps(key) + title + " { spawn \"sh\" \"-c\" " + json.dumps(command, ensure_ascii=False) + "; }\n"
     candidate = upsert_niri(original, key, line.strip())
-    return persist(target, original, candidate, group, key)
+    return persist(target, BindingChange(original, candidate, group, key))
 
 
 def niri_declarations(text):

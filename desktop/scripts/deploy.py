@@ -2,6 +2,7 @@
 """Verify, install and restore the selected user files without following existing links."""
 import argparse
 from datetime import datetime, timezone
+from dataclasses import dataclass
 import hashlib
 import importlib.util
 import json
@@ -284,8 +285,42 @@ def plan_source_links(payload, home, units, link_source):
     return payload, units, linked
 
 
-def install(payload, home, *, dry_run=False, settings=None, preserve_preferences=False,
-            link_source=False):
+@dataclass
+class DeploymentOptions:
+    dry_run: bool = False
+    settings: dict | None = None
+    preserve_preferences: bool = False
+    link_source: bool = False
+
+
+@dataclass
+# Quality exception: A typed deployment schema names the journaled inputs explicitly; it is not a behavior-heavy object.
+# Numeric ceilings are enforced by desktop/scripts/quality.py.
+class InstallPlan:  # pylint: disable=too-many-instance-attributes
+    payload: Path
+    home: Path
+    units: list
+    linked: dict
+    generated: dict
+    personal: dict
+    personal_bindings: object
+    settings: dict | None
+    provenance: dict | None
+    linked_parents: list
+
+
+def load_binding_module():
+    spec = importlib.util.spec_from_file_location('personal_bindings', Path(__file__).with_name('personal_bindings.py'))
+    personal_bindings = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(personal_bindings)
+    return personal_bindings
+
+
+# Quality exception: Explicit paths, fingerprints and recovery records preserve auditability at the file-mutation boundary.
+# Numeric ceilings are enforced by desktop/scripts/quality.py.
+def prepare_install(payload, home, options):  # pylint: disable=too-many-locals
+    settings = options.settings
+    preserve_preferences, link_source = options.preserve_preferences, options.link_source
     units = verify(payload)
     if manifest(payload).get('layout') == 2:
         from organize import plan as organization_plan
@@ -297,9 +332,7 @@ def install(payload, home, *, dry_run=False, settings=None, preserve_preferences
         units, defaults = select_preference_updates(payload, home, units)
     payload, units, linked = plan_source_links(payload, home, units, link_source)
     # Capture shortcuts before any backup or replacement, including included files.
-    spec = importlib.util.spec_from_file_location('personal_bindings', Path(__file__).with_name('personal_bindings.py'))
-    personal_bindings = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(personal_bindings)
+    personal_bindings = load_binding_module()
     personal = personal_bindings.capture(home / '.config', units)
     generated = {}
     if preserve_preferences:
@@ -326,122 +359,143 @@ def install(payload, home, *, dry_run=False, settings=None, preserve_preferences
     linked_parents = sorted({str(parent.relative_to(home)) for relative in units
                              for parent in (home / relative).parents
                              if home in parent.parents and parent.is_symlink()})
-    if dry_run:
-        if '.local/bin/bonsai-grow' in units:
-            retire_bonsai_alternatives(home, dry_run=True)
-        print(f'Verified payload; would deploy {len(units)} entries into {home}')
-        if manifest(payload).get('layout') == 2:
-            print(f'Personal settings: {home / ".config/enclosure"}')
-            print(f'Managed files: {home / ".local/share/enclosure/system"}; development source links are retained')
-            print(f'Shipped defaults: {home / ".local/share/enclosure/defaults"}')
-            for old, new in organization_plan(home, payload):
-                print(f'Would group {old} -> {new}')
-        for parent in linked_parents:
-            print(f'Would back up linked folder {home / parent} and install into a local copy; its source stays unchanged')
-        for relative, source in linked.items():
-            print(f'Would link {home / relative} to {source}')
-        if personal:
-            print('Would retain existing Niri and Kitty shortcuts in personal files loaded after defaults')
-        if settings is not None:
-            print('Would write selected monitor settings and save the installation plan with the same backup/restore protection')
-        return None
-    backup = home / '.local/state/rebos-desktop/backups' / datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S.%fZ')
-    check_parent(home, str(backup.relative_to(home)) + '/journal.json')
-    backup.mkdir(parents=True, mode=0o700)
-    print(f'Desktop recovery backup: {backup}', flush=True)
-    journal = {'home': str(home), 'entries': []}
-    def save_journal():
-        (backup / 'journal.json').write_text(json.dumps(journal, indent=2))
+    return InstallPlan(payload, home, units, linked, generated, personal, personal_bindings, settings, provenance, linked_parents)
 
-    save_journal()
 
-    def detach_parents(relative):
-        current = home
+def preview_install(plan):
+    from organize import plan as organization_plan
+    if '.local/bin/bonsai-grow' in plan.units:
+        retire_bonsai_alternatives(plan.home, dry_run=True)
+    print(f'Verified payload; would deploy {len(plan.units)} entries into {plan.home}')
+    if manifest(plan.payload).get('layout') == 2:
+        print(f'Personal settings: {plan.home / ".config/enclosure"}')
+        print(f'Managed files: {plan.home / ".local/share/enclosure/system"}; development source links are retained')
+        print(f'Shipped defaults: {plan.home / ".local/share/enclosure/defaults"}')
+        for old, new in organization_plan(plan.home, plan.payload):
+            print(f'Would group {old} -> {new}')
+    for parent in plan.linked_parents:
+        print(f'Would back up linked folder {plan.home / parent} and install into a local copy; its source stays unchanged')
+    for relative, source in plan.linked.items():
+        print(f'Would link {plan.home / relative} to {source}')
+    if plan.personal:
+        print('Would retain existing Niri and Kitty shortcuts in personal files loaded after defaults')
+    if plan.settings is not None:
+        print('Would write selected monitor settings and save the installation plan with the same backup/restore protection')
+    return None
+
+
+class DeploymentWriter:
+    """Apply one preflighted plan, journaling each mutation before it happens."""
+    def __init__(self, plan):
+        backup = plan.home / '.local/state/rebos-desktop/backups' / datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S.%fZ')
+        check_parent(plan.home, str(backup.relative_to(plan.home)) + '/journal.json')
+        backup.mkdir(parents=True, mode=0o700)
+        print(f'Desktop recovery backup: {backup}', flush=True)
+        journal = {'home': str(plan.home), 'entries': []}
+        self.plan = plan
+        self.backup, self.journal = backup, journal
+        self.save_journal()
+
+    def save_journal(self):
+        (self.backup / 'journal.json').write_text(json.dumps(self.journal, indent=2))
+
+    def detach_parents(self, relative):
+        current = self.plan.home
         for part in Path(relative).parts[:-1]:
             current = current / part
             if not current.is_symlink():
                 continue
-            if current.resolve().is_relative_to(home / '.config/enclosure'):
+            if current.resolve().is_relative_to(self.plan.home / '.config/enclosure'):
                 continue
             origin = current.resolve(strict=True)
             # Separate storage prevents a later leaf backup writing through a saved parent link.
-            saved_relative = f'parent-links/{len(journal["entries"])}'
-            saved = backup / saved_relative
+            saved_relative = f'parent-links/{len(self.journal["entries"])}'
+            saved = self.backup / saved_relative
             saved.parent.mkdir(parents=True, exist_ok=True)
-            journal['entries'].append({'path': str(current.relative_to(home)),
+            self.journal['entries'].append({'path': str(current.relative_to(self.plan.home)),
                                        'existed': True, 'saved': saved_relative})
-            save_journal()
+            self.save_journal()
             current.rename(saved)
             shutil.copytree(origin, current, symlinks=True)
 
-    try:
-        if '.local/bin/bonsai-grow' in units:
-            retire_bonsai_alternatives(home, backup, journal)
-        for relative in units:
-            detach_parents(relative)
-            source = source_path(payload, relative)
-            destination = organized_destination(home, relative)
-            destination_relative = str(destination.relative_to(home))
-            check_parent(home, destination_relative)
-            saved = backup / 'files' / destination_relative
-            entry = {'path': destination_relative, 'existed': exists(destination)}
-            # Journal before each mutation so interrupted deployments remain recoverable.
-            journal['entries'].append(entry)
-            (backup / 'journal.json').write_text(json.dumps(journal, indent=2))
-            destination.parent.mkdir(parents=True, exist_ok=True)
-            if entry['existed']:
-                saved.parent.mkdir(parents=True, exist_ok=True)
-                destination.rename(saved)
-            if relative in linked:
-                destination.symlink_to(linked[relative], target_is_directory=linked[relative].is_dir())
-            elif relative in generated:
-                content, mode = generated[relative]
-                destination.write_text(content)
-                destination.chmod(mode)
-            elif source.is_dir():
-                shutil.copytree(source, destination)
-                for path in destination.rglob('*'):
-                    if path.is_file():
-                        expand(path, home)
-                if relative == '.config/niri' and settings is not None:
-                    from setup import customize_niri
-                    customize_niri(destination, settings)
-                if relative == '.config/niri':
-                    personal_bindings.record_defaults(destination)
-                if relative in personal:
-                    personal_bindings.apply(destination, *personal[relative])
-            else:
-                shutil.copy2(source, destination)
-                expand(destination, home)
-        if manifest(payload).get('layout') == 2:
-            from organize import organize
-            organize(home, payload, backup, journal)
-        if provenance is not None:
-            # Fingerprint deployed managed code, excluding preserved preferences,
-            # account directories, caches and files not supplied by the payload.
-            fingerprints = {}
-            for relative in units:
-                if not (relative.startswith(('.local/bin/', '.config/scripts/', '.config/quickshell/',
-                                             'code/anime-streamer/')) or
-                        relative == '.config/quickshell' or
-                        (relative.startswith('code/rebos-assistant/') and
-                         not relative.startswith('code/rebos-assistant/config'))):
-                    continue
-                source = source_path(payload, relative)
-                sources = source.rglob('*') if source.is_dir() else [source]
-                for path in sources:
-                    if path.is_file():
-                        name = destination_name(payload, path)
-                        fingerprints[name] = hashlib.sha256((home / name).read_bytes()).hexdigest()
-            provenance['files'] = fingerprints
-            (home / '.local/state/rebos-desktop/source.json').write_text(json.dumps(provenance, indent=2) + '\n')
-    except BaseException:
-        # The journal is written before each replacement, so even partial copies
-        # can be removed and their original files restored automatically.
-        restore(backup)
-        raise
-    print(f'Installed desktop files. Backup: {backup}')
-    return backup
+
+    def install_unit(self, relative):
+        self.detach_parents(relative)
+        source = source_path(self.plan.payload, relative)
+        destination = organized_destination(self.plan.home, relative)
+        destination_relative = str(destination.relative_to(self.plan.home))
+        check_parent(self.plan.home, destination_relative)
+        saved = self.backup / 'files' / destination_relative
+        entry = {'path': destination_relative, 'existed': exists(destination)}
+        self.journal['entries'].append(entry)
+        (self.backup / 'journal.json').write_text(json.dumps(self.journal, indent=2))
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        if entry['existed']:
+            saved.parent.mkdir(parents=True, exist_ok=True)
+            destination.rename(saved)
+        self.write_source(relative, source, destination)
+
+    def write_source(self, relative, source, destination):
+        if relative in self.plan.linked:
+            destination.symlink_to(self.plan.linked[relative], target_is_directory=self.plan.linked[relative].is_dir())
+        elif relative in self.plan.generated:
+            content, mode = self.plan.generated[relative]
+            destination.write_text(content)
+            destination.chmod(mode)
+        elif source.is_dir():
+            shutil.copytree(source, destination)
+            for path in destination.rglob('*'):
+                if path.is_file():
+                    expand(path, self.plan.home)
+            if relative == '.config/niri' and self.plan.settings is not None:
+                from setup import customize_niri
+                customize_niri(destination, self.plan.settings)
+            if relative == '.config/niri':
+                self.plan.personal_bindings.record_defaults(destination)
+            if relative in self.plan.personal:
+                self.plan.personal_bindings.apply(destination, *self.plan.personal[relative])
+        else:
+            shutil.copy2(source, destination)
+            expand(destination, self.plan.home)
+
+    def record_provenance(self):
+        fingerprints = {}
+        for relative in self.plan.units:
+            if not (relative.startswith(('.local/bin/', '.config/scripts/', '.config/quickshell/', 'code/anime-streamer/')) or relative == '.config/quickshell' or (relative.startswith('code/rebos-assistant/') and (not relative.startswith('code/rebos-assistant/config')))):
+                continue
+            source = source_path(self.plan.payload, relative)
+            sources = source.rglob('*') if source.is_dir() else [source]
+            for path in sources:
+                if path.is_file():
+                    name = destination_name(self.plan.payload, path)
+                    fingerprints[name] = hashlib.sha256((self.plan.home / name).read_bytes()).hexdigest()
+        self.plan.provenance['files'] = fingerprints
+        (self.plan.home / '.local/state/rebos-desktop/source.json').write_text(json.dumps(self.plan.provenance, indent=2) + '\n')
+
+    def run(self):
+        try:
+            if '.local/bin/bonsai-grow' in self.plan.units:
+                retire_bonsai_alternatives(self.plan.home, self.backup, self.journal)
+            for relative in self.plan.units:
+                self.install_unit(relative)
+            if manifest(self.plan.payload).get('layout') == 2:
+                from organize import organize
+                organize(self.plan.home, self.plan.payload, self.backup, self.journal)
+            if self.plan.provenance is not None:
+                self.record_provenance()
+        except BaseException:
+            restore(self.backup)
+            raise
+        return self.backup
+
+
+def install(payload, home, **controls):
+    """Deploy with named controls; reject unknown options before changing files."""
+    options = DeploymentOptions(**controls)
+    plan = prepare_install(payload, home, options)
+    if options.dry_run:
+        return preview_install(plan)
+    return DeploymentWriter(plan).run()
 
 
 def restore(backup):

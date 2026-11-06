@@ -41,7 +41,9 @@ def color_info(image):
             'swatch': '#%02x%02x%02x' % rgb}
 
 
-def build_index(root, cache_dir):
+# Quality exception: The batch operation names signatures, cache paths and per-item results for reviewable update decisions.
+# Numeric ceilings are enforced by desktop/scripts/quality.py.
+def build_index(root, cache_dir):  # pylint: disable=too-many-locals
     cache_dir.mkdir(parents=True, exist_ok=True)
     cache_file = cache_dir / 'wallpaper-color-index.json'
     try:
