@@ -107,7 +107,7 @@ ShellRoot {
                 if (phase === 1) {
                     const originalSource = practice.pageSource;
                     practice.pageSource = "word ".repeat(800); practice.fitPage();
-                    if (practice.pageLineLimit !== 3 || practice.pageLayout.lines !== 3) throw Error("Compact practice must show three lines");
+                    if (practice.pageLineLimit !== Math.max(1, Math.floor(find(practice, "typing-passage-flow").parent.height / practice.passageLineHeight)) || practice.pageLayout.lines !== practice.pageLineLimit) throw Error("Practice must fill the available height with complete lines");
                     const screenshotText = "comfortable? I have a better view of things now. This is no ordinary hospital room. More words follow here.";
                     practice.pageSource = screenshotText; practice.fitPage();
                     find(practice, "typing-passage-flow").forceLayout();
@@ -232,7 +232,7 @@ ShellRoot {
                     }
                     if (practice.position !== 0) throw Error("Continuous loop failed");
                     phase = 100;
-                    practice.send({action: "add", title: "Unicode test", text: "😀 A gentle morning with words to type. ".repeat(8) + "\nChapter Two\nA new chapter begins here."});
+                    practice.send({action: "add", title: "Unicode test", text: "😀 A gentle morning with words to type. ".repeat(80) + "\nChapter Two\nA new chapter begins here."});
                     return;
                 } else if (phase === 100) {
                     if (first.text !== "😀") throw Error("Unicode glyph was split");
@@ -311,15 +311,15 @@ ShellRoot {
                     const restored = freshView.item;
                     if (restored.busy) return;
                     const field = find(restored, "typing-input");
-                    if (restored.pageLayout.lines > 3 || restored.position + restored.characters(field.text).length !== 85 || restored.liveWpm !== 0) throw Error("Legacy page carryover lost saved input or counted it as WPM");
+                    if (restored.pageLayout.lines > restored.pageLineLimit || restored.position + restored.characters(field.text).length !== 85 || restored.liveWpm !== 0) throw Error("Legacy page carryover lost saved input or counted it as WPM");
                     expectedPosition = restored.position + restored.characters(restored.passage).length;
                     field.text = "z".repeat(restored.characters(restored.passage).length);
                     if (!restored.turningPage) throw Error("Typos blocked continuous page advance");
                 } else if (phase === 112) {
                     const restored = freshView.item;
                     if (restored.busy) return;
-                    if (restored.position !== expectedPosition || restored.pageLayout.lines > 3) throw Error("Continuous three-line advance failed");
-                    console.log("PASS: three-line compact fitting, lossless paging, queued input, legacy bookmark carryover, no-fail advance, resume, WPM and EPUB import");
+                    if (restored.position !== expectedPosition || restored.pageLayout.lines > restored.pageLineLimit) throw Error("Continuous available-height advance failed");
+                    console.log("PASS: available-height passage fitting, lossless paging, queued input, legacy bookmark carryover, no-fail advance, resume, WPM and EPUB import");
                     Qt.quit();
                 }
 

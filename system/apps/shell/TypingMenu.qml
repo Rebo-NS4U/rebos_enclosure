@@ -17,7 +17,7 @@ Item {
     property bool practicing: false
     property bool fullscreen: false
     readonly property real passageLineHeight: Math.ceil(typingMetrics.height * 1.45)
-    readonly property int pageLineLimit: fullscreen ? Math.max(3, Math.floor(passageArea.height / Math.max(1, passageLineHeight))) : 3
+    readonly property int pageLineLimit: Math.max(1, Math.floor(passageArea.height / Math.max(1, passageLineHeight)))
     onPageLineLimitChanged: fitDelay.restart()
     function toggleFullscreen() {
         fullscreen = !fullscreen;
