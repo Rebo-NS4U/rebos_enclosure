@@ -82,6 +82,7 @@ class SystemMonitor:
                 ["lspci", "-D", "-s", pci_id],
                 stderr=subprocess.DEVNULL,
                 text=True,
+                timeout=3,
             ).strip()
             description = output.split(": ", 1)[-1]
             description = re.sub(r"\s+\(rev [^)]+\)$", "", description)
@@ -323,6 +324,31 @@ class SystemMonitor:
         self.prev_network_time = now
         return download, upload
 
+    def _nvidia_gpu_stats(self, pci_id):
+        """Read active hardware without letting a stalled driver stop monitoring."""
+        unavailable = (0.0, -1, 0, 0, 0.0)
+        power_path = f"/sys/bus/pci/devices/{pci_id}/power/runtime_status"
+        if os.path.exists(power_path):
+            try:
+                with open(power_path, "r") as stream:
+                    if stream.read().strip() != "active":
+                        return unavailable
+            except OSError:
+                pass
+        try:
+            output = subprocess.check_output(
+                ["nvidia-smi", "-i", pci_id,
+                 "--query-gpu=utilization.gpu,temperature.gpu,memory.used,memory.total,clocks.current.graphics",
+                 "--format=csv,noheader,nounits"], timeout=3)
+            parts = output.decode("utf-8").strip().split(",")
+            if len(parts) >= 5:
+                return (float(parts[0]), int(parts[1]),
+                        int(float(parts[2])) * 1024 * 1024,
+                        int(float(parts[3])) * 1024 * 1024, float(parts[4]))
+        except (OSError, ValueError, UnicodeError, subprocess.SubprocessError):
+            pass
+        return unavailable
+
     def get_gpu_stats(self):
         usages = []
         temps = []
@@ -337,40 +363,7 @@ class SystemMonitor:
             drivers.append(driver)
 
             if gpu["vendor"] == "nvidia" and driver == "nvidia":
-                is_active = True
-                power_path = f"/sys/bus/pci/devices/{gpu['pci_id']}/power/runtime_status"
-                if os.path.exists(power_path):
-                    try:
-                        with open(power_path, "r") as f:
-                            is_active = f.read().strip() == "active"
-                    except:
-                        pass
-
-                if is_active:
-                    try:
-                        out = (
-                            subprocess.check_output(
-                                [
-                                    "nvidia-smi",
-                                    "-i",
-                                    gpu["pci_id"],
-                                    "--query-gpu=utilization.gpu,temperature.gpu,memory.used,memory.total,clocks.current.graphics",
-                                    "--format=csv,noheader,nounits",
-                                ]
-                            )
-                            .decode("utf-8")
-                            .strip()
-                        )
-                        parts = out.split(",")
-                        if len(parts) >= 5:
-                            u, t = float(parts[0]), int(parts[1])
-                            memory_used = int(float(parts[2])) * 1024 * 1024
-                            memory_total = int(float(parts[3])) * 1024 * 1024
-                            frequency = float(parts[4])
-                    except:
-                        pass
-                else:
-                    u, t = 0.0, -1
+                u, t, memory_used, memory_total, frequency = self._nvidia_gpu_stats(gpu["pci_id"])
             elif gpu["vendor"] == "amd" and driver == "amdgpu":
                 card = gpu["card"]
                 try:

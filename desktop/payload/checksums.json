@@ -610,7 +610,7 @@
   "system/apps/shell/scripts/rebos-nightlight.service": "88947a3a71b73c96daa5651a1d4e617e29c2fc4de2e6526b83a2d8d730e22c57",
   "system/apps/shell/scripts/reload_theme_apps.py": "72b5ebeca4299b33fd1ef78cd57680e7aaa58109451e468b07fc340ff53f1a2b",
   "system/apps/shell/scripts/standard_theme.py": "4d49a088be876b094a537208f1454aa0633144218f730f93eaddd844d4ed312b",
-  "system/apps/shell/scripts/system_monitor.py": "85fed4cbf2bc1a710e54078bb88a6f7cf211617514627577460563dac0ab9c89",
+  "system/apps/shell/scripts/system_monitor.py": "bedfb226110f8539aefb9fcaa9e98b0965c0391c3efea0571305754ad5993a45",
   "system/apps/shell/scripts/test_bluetooth_pair.py": "25a2b46a3e376a07483b88f653ee98d184310a732c5285377b5101fb6e4681f9",
   "system/apps/shell/scripts/test_bluetooth_scroll.py": "5e28baa2f5e5615b38d73b6987e64371fb6e603c07e42ee66b74eeb4a219723a",
   "system/apps/shell/scripts/test_connectivity_services.cjs": "63aa5f06ba20f8bbfeb8acb65a923b7f3ab8c92322f29592b2a326bad0e969fb",

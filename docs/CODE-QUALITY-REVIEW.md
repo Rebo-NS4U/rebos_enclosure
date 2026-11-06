@@ -71,3 +71,7 @@ Validation: **88 tests passed** across deployment (31), monitor/setup (16), upda
 ## Argument and duplication audit
 
 See the [detailed argument, duplication and branch review](CODE-QUALITY-DETAILS.md) for the decisions on every argument warning, the actual bridge differences, the consolidated helpers and the remaining branch inventory. The latest scanner reports 137 warnings (previously 150), including 7 duplicate-code, 35 branch and 6 positional-argument warnings. Total-argument warnings remain visible.
+
+## Remaining warning usefulness
+
+The [remaining warning review](REMAINING-WARNINGS.md) classifies all 136 current observations by usefulness and records the bounded GPU-query fix. Low-value structural warnings remain visible; no suppressions were added.
