@@ -141,3 +141,5 @@ Open typing practice with `t` in a terminal. The shell IPC
 command `rebos_shell run t` also opens it. Repeating `t` keeps the panel open.
 Choose **Import EPUB / PDF** and the **EPUB books** filter to select an EPUB;
 other document formats remain available in the file-type selector.
+
+Press **Mod+T** to open book typing practice directly from the desktop.
