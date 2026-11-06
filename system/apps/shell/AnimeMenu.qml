@@ -164,14 +164,14 @@ PanelWindow {
                 Qt.callLater(() => { grid.contentY = state.scroll; });
             }
         } else load(false);
-        categoryPicker.currentIndex = Math.max(0, (mediaKind === "anime" ? ["most-popular", "recently-updated", "top-rated", "history"] : mediaKind === "youtube" ? root.youtubeRecommendations.map(row => row.id).concat(["history"]) : ["most-popular", "featured", "recently-updated", "history"]).indexOf(category));
+        categoryPicker.currentIndex = Math.max(0, (mediaKind === "anime" ? ["most-popular", "recently-updated", "top-rated", "history"] : mediaKind === "youtube" ? ["for-you", "history"] : ["most-popular", "featured", "recently-updated", "history"]).indexOf(category));
         Qt.callLater(() => search.focusInput());
     }
     function chooseRecommendation(value: string): void {
         category = value;
         query = "";
         search.text = "";
-        categoryPicker.currentIndex = Math.max(0, youtubeRecommendations.findIndex(row => row.id === value));
+        categoryPicker.currentIndex = Math.max(0, ["for-you", "history"].indexOf(value));
         load(false);
     }
     function browseCredit(prefix: string, value: string): void {
@@ -622,8 +622,8 @@ PanelWindow {
                     MenuButton { visible: root.mediaKind === "anime"; text: root.filterCount > 0 ? "Filters (" + root.filterCount + ")" : "Filters"; selected: root.filterCount > 0; enabled: root.ready; onClicked: root.openFilters() }
                     MenuCombo {
                         id: categoryPicker
-                        model: root.mediaKind === "anime" ? ["Popular", "Recently updated", "Top rated", "History"] : root.isYoutube ? root.youtubeRecommendations.map(row => row.title).concat(["History"]) : ["Popular", "Featured", "New releases", "History"]
-                        onActivated: { root.category = (root.mediaKind === "anime" ? ["most-popular", "recently-updated", "top-rated", "history"] : root.isYoutube ? root.youtubeRecommendations.map(row => row.id).concat(["history"]) : ["most-popular", "featured", "recently-updated", "history"])[currentIndex]; search.text = ""; root.query = ""; root.appliedFilters = ({}); root.draftFilters = ({}); root.load(false); }
+                        model: root.mediaKind === "anime" ? ["Popular", "Recently updated", "Top rated", "History"] : root.isYoutube ? ["For You", "History"] : ["Popular", "Featured", "New releases", "History"]
+                        onActivated: { root.category = (root.mediaKind === "anime" ? ["most-popular", "recently-updated", "top-rated", "history"] : root.isYoutube ? ["for-you", "history"] : ["most-popular", "featured", "recently-updated", "history"])[currentIndex]; search.text = ""; root.query = ""; root.appliedFilters = ({}); root.draftFilters = ({}); root.load(false); }
                     }
                 }
                 GridView {

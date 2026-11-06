@@ -225,7 +225,7 @@
   "system/apps/media/vlc_session.py": "8a3d13d93982a8ac37c269c284eefe9072d4776119c618bb51981624090c745e",
   "system/apps/media/vlc_theme.py": "d1758fbf8ea76bb6cd80b6d0de5dcb9957934fd649d79c8d52c4b883a334a08d",
   "system/apps/media/youtube_account.py": "865c663273f66eadf9f0779ec24135a32e922fcf395d958163d0ffb8b64ea259",
-  "system/apps/shell/AnimeMenu.qml": "013d6ad29492d275489f1ff26b52baac8b0ae911374dfb78f118a0cf35dd02ff",
+  "system/apps/shell/AnimeMenu.qml": "4efac369f177d7b9a35721d0e8ffbb8e8c9d7a9c5710087c127e11f9481b93f0",
   "system/apps/shell/FanShell.qml": "fc2332e71c718a44f5176ab88c0ce01794d69dd7f80b1e5a3a25a44ba50b9dcd",
   "system/apps/shell/LICENSE": "06486a75fe21ab1eb92d6e070e7b5980d5a5ff88be9ed0ca32eeb3730442acda",
   "system/apps/shell/MediaGridPaging.js": "4970e4d202c87909737f777d330796336080ec951e3cf6368711016e882edbdd",
