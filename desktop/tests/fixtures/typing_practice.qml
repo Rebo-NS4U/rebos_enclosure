@@ -119,7 +119,9 @@ ShellRoot {
                     if (movingCaret.targetRowY <= 0 || activeLine.y !== movingCaret.rowY) throw Error("Line highlight did not follow wrapped text");
                     input.cursorPosition = 0;
                     movingCaret.follow(find(practice, "typing-character-0"));
-                    if (movingCaret.targetRowY !== 0) throw Error("Line highlight did not follow cursor back to the first line");
+                    const firstRowGlyph = find(practice, "typing-character-0");
+                    const firstRowPoint = firstRowGlyph.parent.mapToItem(movingCaret.parent, firstRowGlyph.x, firstRowGlyph.y);
+                    if (Math.abs(movingCaret.targetRowY - firstRowPoint.y) > 0.01) throw Error("Line highlight did not return to the centered first line");
                     input.text = "";
                     if (editedGlyph.typed) throw Error("Backspace did not clear typed state");
                     practice.fullscreen = false;
@@ -134,6 +136,11 @@ ShellRoot {
                     const caret = find(practice, "typing-smooth-caret");
                     const core = find(practice, "typing-caret-core");
                     const line = find(practice, "typing-line-highlight");
+                    if (line.border.width !== 0 || line.children.length !== 0) throw Error("Line highlight must have uniform transparency without a side strip");
+                    const textFlow = find(practice, "typing-passage-flow");
+                    if (Math.abs(textFlow.y + textFlow.height / 2 - textFlow.parent.height / 2) > 1) throw Error("Passage is not vertically centered");
+                    const centeredWord = find(practice, "typing-character-0").parent;
+                    if (Math.abs(centeredWord.centerOffset - (textFlow.width - practice.pageLayout.lineWidths[0]) / 2) > 1) throw Error("Text line is not horizontally centered");
                     if (!line.visible || line.width < practice.width - 60 || line.height < 25 || line.y !== caret.rowY) throw Error("Current line highlight is missing or too narrow");
                     if (caret.accent.toString() !== Colors.primary.toString()) throw Error("Cursor must use the exact theme accent");
                     if (first.style !== Text.Normal || first.color.toString() !== Colors.overSurface.toString()) throw Error("Text must use the normal theme color without outlines");

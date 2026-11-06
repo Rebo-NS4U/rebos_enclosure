@@ -602,7 +602,7 @@ Item {
         anchors.horizontalCenter: parent.horizontalCenter
         width: root.targetWidth
         height: root.targetHeight
-        y: root.typingFullscreen ? 0 : root.containerY
+        y: root.currentMode === "typing" && root.isExpanded ? Math.max(0, (root.height - islandContainer.height) / 2) : root.containerY
 
         Behavior on width {
             enabled: Config.animDuration > 0 && root.barNormallyVisible && !root.retractingToHidden

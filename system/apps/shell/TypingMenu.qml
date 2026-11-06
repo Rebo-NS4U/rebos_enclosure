@@ -16,7 +16,8 @@ Item {
     signal backRequested()
     property bool practicing: false
     property bool fullscreen: false
-    readonly property int pageLineLimit: fullscreen ? Math.max(2, Math.floor(passageArea.height / (22 * 1.45))) : 2
+    readonly property real passageLineHeight: Math.ceil(typingMetrics.height * 1.45)
+    readonly property int pageLineLimit: fullscreen ? Math.max(2, Math.floor(passageArea.height / Math.max(1, passageLineHeight))) : 2
     onPageLineLimitChanged: fitDelay.restart()
     function toggleFullscreen() {
         fullscreen = !fullscreen;
@@ -35,7 +36,7 @@ Item {
     property int position: 0
     property int rounds: 0
     property string pageSource: ""
-    property var pageLayout: ({text: "", words: [], lines: 0})
+    property var pageLayout: ({text: "", words: [], lines: 0, lineWidths: []})
     readonly property string passage: pageLayout.text
     property bool turningPage: false
     property string pendingKeys: ""
@@ -685,21 +686,14 @@ Item {
                             height: smoothCaret.rowHeight
                             radius: 7
                             color: Qt.alpha(Colors.primary, 0.14)
-                            border.width: 1
-                            border.color: Qt.alpha(Colors.primary, 0.24)
+                            border.width: 0
                             visible: smoothCaret.visible
-                            Rectangle {
-                                width: 3
-                                anchors.left: parent.left
-                                anchors.top: parent.top
-                                anchors.bottom: parent.bottom
-                                anchors.margins: 4
-                                radius: 1.5
-                                color: Colors.primary
-                            }
                         }
                         Flow {
+                            id: passageFlow
                             objectName: "typing-passage-flow"
+                            y: Math.max(0, (parent.height - height) / 2)
+                            onYChanged: Qt.callLater(() => { if (smoothCaret.targetGlyph) smoothCaret.follow(smoothCaret.targetGlyph); })
                             z: 1
                             opacity: root.pageReveal
                             anchors.left: parent.left
@@ -712,6 +706,9 @@ Item {
                                 delegate: Row {
                                     id: word
                                     required property var modelData
+                                    readonly property real centerOffset: Math.max(0, (passageFlow.width - (root.pageLayout.lineWidths[modelData.line] || 0)) / 2)
+                                    transform: Translate { x: word.centerOffset }
+                                    onCenterOffsetChanged: { if (smoothCaret.targetGlyph?.parent === word) Qt.callLater(() => { if (smoothCaret.targetGlyph) smoothCaret.follow(smoothCaret.targetGlyph); }); }
                                     Repeater {
                                         model: root.characters(word.modelData.text)
                                         delegate: StyledText {

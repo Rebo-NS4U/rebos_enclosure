@@ -34,7 +34,7 @@ function prepareInput(input, target) {
 function layout(source, width, measure, maxLines) {
     maxLines = Math.max(1, maxLines || 2);
     width = Math.max(1, width);
-    var words = [], used = 0, line = 1, rowWidth = 0;
+    var words = [], lineWidths = [], used = 0, line = 1, rowWidth = 0;
     var tokens = source.match(/\S+\s*|\s+/g) || [];
     for (var tokenIndex = 0; tokenIndex < tokens.length; tokenIndex++) {
         var letters = characters(tokens[tokenIndex]);
@@ -48,12 +48,13 @@ function layout(source, width, measure, maxLines) {
             }
             if (rowWidth && rowWidth + chunkWidth > width) {
                 if (line >= maxLines)
-                    return {text: source.slice(0, used), words: words, lines: line};
+                    return {text: source.slice(0, used), words: words, lines: line, lineWidths: lineWidths};
                 line++; rowWidth = 0;
             }
-            words.push({text: chunk, start: used});
+            words.push({text: chunk, start: used, line: line - 1});
             used += chunk.length; rowWidth += chunkWidth;
+            lineWidths[line - 1] = rowWidth;
         }
     }
-    return {text: source.slice(0, used), words: words, lines: line};
+    return {text: source.slice(0, used), words: words, lines: line, lineWidths: lineWidths};
 }
