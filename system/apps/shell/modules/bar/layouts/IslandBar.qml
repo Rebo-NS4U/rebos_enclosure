@@ -16,6 +16,7 @@ import qs.modules.theme
 import qs.modules.widgets.launcher
 import "../island"
 import ".."
+import "../../.." as ShellWidgets
 
 Item {
     id: root
@@ -97,6 +98,7 @@ Item {
         root.containerY = root.shouldBeRevealed ? 0 : -root.islandHeight;
     }
 
+    readonly property alias typingPractice: typingView
     function expand(mode: string) {
         FocusGrabManager.clearTopGrab();
         Visibilities.closeActiveBarPopup();
@@ -325,6 +327,7 @@ Item {
 
     readonly property int targetWidth: {
         if (root.isExpanded || root.retractingToHidden) {
+            if (root.currentMode === "typing") return Math.min(760, root.width - 32);
             if (root.currentMode === "osd") {
                 return Math.min(270, root.width - 32);
             }
@@ -345,6 +348,8 @@ Item {
             return osdView.implicitHeight;
         case "notification":
             return (notificationView.implicitHeight > 0) ? notificationView.implicitHeight : root.islandHeight;
+        case "typing":
+            return Math.min(520, root.height - 32);
         case "dashboard":
             return dashboardView.implicitHeight;
         case "power":
@@ -493,7 +498,7 @@ Item {
     readonly property bool timerInputActive: false
     readonly property bool dashboardInputActive: islandActive && currentMode === "dashboard"
 
-    readonly property Region backgroundBlur: BlurRegion { target: islandBody }
+    readonly property Region backgroundBlur: BlurRegion { target: islandBody; enabled: root.currentMode !== "typing" }
 
     property alias barHitbox: activeBarHitbox
 
@@ -635,10 +640,10 @@ Item {
             id: islandBody
             anchors.fill: parent
             variant: Styling.shellStyle === "dithered" ? "bar" : "pane"
-            backgroundOpacity: BarAppearance.panelOpacity(root.isExpanded)
+            backgroundOpacity: root.currentMode === "typing" ? 0 : BarAppearance.panelOpacity(root.isExpanded)
             topLeftRadius: BarAppearance.polished ? root.cornerRadius : 0
             topRightRadius: BarAppearance.polished ? root.cornerRadius : 0
-            border.width: BarAppearance.polished || Styling.shellStyle === "dithered" ? 1 : 0
+            border.width: root.currentMode === "typing" ? 0 : (BarAppearance.polished || Styling.shellStyle === "dithered" ? 1 : 0)
             border.color: BarAppearance.panelBorder(root.isExpanded)
 
             Behavior on backgroundOpacity {
@@ -663,8 +668,8 @@ Item {
                     easing.type: Motion.enterCurve
                 }
             }
-            enableShadow: root.isExpanded || root.retractingToHidden
-            enableBorder: true
+            enableShadow: root.currentMode !== "typing" && (root.isExpanded || root.retractingToHidden)
+            enableBorder: root.currentMode !== "typing"
             clip: true
 
             // A quiet wallpaper tint over the translucent pane, below all controls.
@@ -676,6 +681,7 @@ Item {
                 topRightRadius: islandBody.topRightRadius
                 bottomLeftRadius: islandBody.bottomLeftRadius
                 bottomRightRadius: islandBody.bottomRightRadius
+                visible: root.currentMode !== "typing"
                 color: BarAppearance.panelTint(root.isExpanded)
             }
 
@@ -1006,6 +1012,14 @@ Item {
             // ═══════════════════════════════════════════════════════════════
             // EXPANDED STATE 1: MAIN DASHBOARD HUB
             // ═══════════════════════════════════════════════════════════════
+            ShellWidgets.TypingMenu {
+                id: typingView
+                anchors.fill: parent
+                visible: root.currentMode === "typing"
+                enabled: visible && !root.retractingToHidden
+                onBackRequested: root.expand("dashboard")
+            }
+
             IslandDashboard {
                 id: dashboardView
                 screen: root.screen
@@ -1025,6 +1039,7 @@ Item {
                     }
                 }
 
+                onOpenTyping: root.expand("typing")
                 onOpenPower: root.currentMode = "power"
                 onOpenSound: root.currentMode = "sound"
                 onOpenMic: root.currentMode = "mic"

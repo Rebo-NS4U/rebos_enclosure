@@ -6,30 +6,37 @@ import QtQuick.Layouts
 import QtQuick.Dialogs
 import Quickshell
 import Quickshell.Io
-import Quickshell.Wayland
 import qs.modules.components
 import qs.modules.theme
-import qs.modules.globals
 
-PanelWindow {
+Item {
     id: root
-    property bool opened: false
+    signal backRequested()
     property bool practicing: false
     property string sourceText: ""
     property int position: 0
     property int rounds: 0
-    property string message: "Paste text or import a document. Practice at your own pace."
+    property string message: "Choose a practice text, paste your own, or import a document."
     readonly property string passage: sourceText.slice(position, position + 160)
-    anchors { top: true; right: true }
-    margins { top: 8; right: 18 }
-    implicitWidth: opened ? Math.min(720, screen.width - 36) : 110
-    implicitHeight: opened ? Math.min(570, screen.height - 40) : 36
-    visible: !GlobalStates.lockscreenVisible
-    color: "transparent"
-    exclusionMode: ExclusionMode.Ignore
-    WlrLayershell.namespace: "rebos-shell-typing"
-    WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.keyboardFocus: opened ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+    implicitHeight: 520
+    onVisibleChanged: { if (visible && practicing) Qt.callLater(() => answer.forceActiveFocus()); }
+    function status() {
+        return JSON.stringify({practicing: practicing, textLength: paste.text.length,
+            typed: answer.text.length, position: position, rounds: rounds,
+            presets: TypingTexts.passages.length, message: message});
+    }
+    component TextButton: Button {
+        implicitHeight: 36
+        padding: 8
+        background: Item {}
+        contentItem: StyledText {
+            text: parent.text
+            opacity: parent.down || parent.activeFocus ? 1 : (parent.hovered ? 0.9 : 0.65)
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+            font.underline: parent.activeFocus
+        }
+    }
     function loadPreset(index) {
         if (index < 0 || index >= TypingTexts.passages.length) return;
         paste.text = TypingTexts.passages[index].text;
@@ -48,13 +55,6 @@ PanelWindow {
         position += passage.length;
         if (position >= sourceText.length) { position = 0; rounds++; }
         answer.text = "";
-    }
-    IpcHandler {
-        target: "typing"
-        function toggle(): void { root.opened = !root.opened; }
-        function close(): void { root.opened = false; }
-        function preset(index: int): void { root.loadPreset(index); }
-        function status(): string { return JSON.stringify({opened: root.opened, practicing: root.practicing, textLength: paste.text.length, message: root.message, presets: TypingTexts.passages.length}); }
     }
     FileDialog {
         id: picker
@@ -77,34 +77,25 @@ PanelWindow {
             }
         }
     }
-    Rectangle {
+    Item {
         anchors.fill: parent
-        radius: 16
-        color: Qt.alpha(Colors.surfaceContainer, 0.82)
-        border.color: Qt.alpha(Colors.outline, 0.45)
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: root.opened ? 18 : 0
+            anchors.margins: 20
             spacing: 12
             RowLayout {
                 Layout.fillWidth: true
-                Button {
-                    text: root.opened ? "Typing ▴" : "Typing ▾"
-                    Layout.fillWidth: true
-                    onClicked: root.opened = !root.opened
-                }
-                Button { visible: root.opened; text: "Close"; onClicked: root.opened = false }
+                StyledText { text: "Continuous typing"; font.pixelSize: 18; opacity: 0.65; Layout.fillWidth: true }
+                TextButton { text: "Back"; onClicked: root.backRequested() }
             }
             ColumnLayout {
-                visible: root.opened
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 spacing: 12
-                StyledText { text: "Continuous typing"; font.pixelSize: 20 }
-                StyledText { text: root.message; Layout.fillWidth: true; wrapMode: Text.Wrap }
+                StyledText { opacity: 0.55; text: root.message; Layout.fillWidth: true; wrapMode: Text.Wrap }
                 RowLayout {
-                    Button { text: importer.running ? "Importing…" : "Import document"; enabled: !importer.running; onClicked: picker.open() }
-                    Button { text: root.practicing ? "Edit text" : "Start practice"; onClicked: { if (root.practicing) root.practicing = false; else root.start(); } }
+                    TextButton { text: importer.running ? "Importing…" : "Import document"; enabled: !importer.running; onClicked: picker.open() }
+                    TextButton { text: root.practicing ? "Edit text" : "Start practice"; onClicked: { if (root.practicing) root.practicing = false; else root.start(); } }
                 }
                 RowLayout {
                     visible: !root.practicing
@@ -115,6 +106,36 @@ PanelWindow {
                         Layout.fillWidth: true
                         model: TypingTexts.passages
                         textRole: "title"
+                        background: Item {}
+                        contentItem: StyledText {
+                            text: presets.displayText
+                            opacity: 0.65
+                            verticalAlignment: Text.AlignVCenter
+                            elide: Text.ElideRight
+                        }
+                        indicator: Item {}
+                        popup: Popup {
+                            y: presets.height
+                            width: presets.width
+                            padding: 0
+                            background: Item {}
+                            contentItem: Column {
+                                Repeater {
+                                    model: TypingTexts.passages
+                                    delegate: TextButton {
+                                        required property int index
+                                        required property var modelData
+                                        width: presets.width
+                                        text: modelData.title
+                                        onClicked: {
+                                            presets.currentIndex = index;
+                                            root.loadPreset(index);
+                                            presets.popup.close();
+                                        }
+                                    }
+                                }
+                            }
+                        }
                         currentIndex: -1
                         displayText: currentIndex < 0 ? "Choose a built-in passage…" : currentText
                         onActivated: index => root.loadPreset(index)
@@ -128,12 +149,15 @@ PanelWindow {
                     wrapMode: Text.Wrap
                 }
                 ScrollView {
-                    visible: !root.practicing
+                    background: Item {}
+                    visible: !root.practicing && !presets.popup.visible
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     TextArea {
                         id: paste
                         placeholderText: "Paste your text here…"
+                        background: Item {}
+                        placeholderTextColor: Qt.alpha(Colors.overSurface, 0.35)
                         wrapMode: TextEdit.Wrap
                         color: Colors.overSurface
                         font.family: "JetBrains Mono"
@@ -144,29 +168,48 @@ PanelWindow {
                     visible: root.practicing
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    StyledText {
-                        text: root.passage
-                        Layout.fillWidth: true
-                        wrapMode: Text.Wrap
-                        font.family: "JetBrains Mono"
-                        font.pixelSize: 20
-                        lineHeight: 1.5
-                    }
-                    StyledText { text: "Character " + (root.position + answer.text.length) + " / " + root.sourceText.length + " · Loops " + root.rounds }
-                    ScrollView {
+                    Item {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
-                        TextArea {
+                        Flow {
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            spacing: 0
+                            Repeater {
+                                model: root.passage.length
+                                delegate: StyledText {
+                                    required property int index
+                                    objectName: "typing-character-" + index
+                                    text: root.passage.charAt(index) === " " ? "\u00a0" : root.passage.charAt(index)
+                                    textFormat: Text.PlainText
+                                    font.family: "JetBrains Mono"
+                                    font.pixelSize: 22
+                                    font.underline: index === answer.text.length
+                                    lineHeight: 1.6
+                                    opacity: index < answer.text.length ? 1 : 0.28
+                                    color: index < answer.text.length && answer.text[index] !== root.passage[index] ? Colors.error : Colors.overSurface
+                                }
+                            }
+                        }
+                        TextEdit {
                             id: answer
-                            placeholderText: "Type the passage above…"
+                            objectName: "typing-input"
+                            anchors.fill: parent
+                            color: "transparent"
+                            selectionColor: "transparent"
+                            selectedTextColor: "transparent"
+                            cursorVisible: false
                             wrapMode: TextEdit.Wrap
-                            font.family: "JetBrains Mono"
-                            font.pixelSize: 18
-                            color: root.passage.startsWith(text) ? Colors.overSurface : Colors.error
+                            inputMethodHints: Qt.ImhNoPredictiveText
                             onTextChanged: root.advance()
+                            Keys.onEscapePressed: event => { root.backRequested(); event.accepted = true; }
                         }
                     }
-                    StyledText { text: root.passage.startsWith(answer.text) ? "Take your time. Every completed passage continues automatically." : "A small mismatch — backspace whenever you like."; Layout.fillWidth: true; wrapMode: Text.Wrap }
+                    StyledText {
+                        opacity: 0.55
+                        text: "Character " + (root.position + answer.text.length) + " / " + root.sourceText.length + " · Loops " + root.rounds
+                    }
+                    StyledText { opacity: 0.55; text: root.passage.startsWith(answer.text) ? "Take your time. Every completed passage continues automatically." : "A small mismatch — backspace whenever you like."; Layout.fillWidth: true; wrapMode: Text.Wrap }
                 }
             }
         }

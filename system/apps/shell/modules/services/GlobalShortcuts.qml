@@ -31,6 +31,18 @@ Singleton {
         }
     }
 
+    IpcHandler {
+        target: "typing"
+        function toggle(): void { root.run("typing"); }
+        function close(): void {
+            const island = Visibilities.getIslandForActive();
+            if (island?.currentMode === "typing") island.collapse();
+        }
+        function preset(index: int): void { Visibilities.getIslandForActive()?.typingPractice.loadPreset(index); }
+        function start(): void { Visibilities.getIslandForActive()?.typingPractice.start(); }
+        function status(): string { return Visibilities.getIslandForActive()?.typingPractice.status() ?? "{}"; }
+    }
+
     function run(command) {
         console.log("IPC run command received:", command);
         const barAccentPrefix = "bar-accent ";
@@ -45,6 +57,13 @@ Singleton {
         if (command !== "notes" && QuickNotes.visible)
             QuickNotes.close();
         switch (command) {
+            case "typing":
+                const typingIsland = Visibilities.getIslandForActive();
+                if (typingIsland) {
+                    if (typingIsland.currentMode === "typing") typingIsland.collapse();
+                    else typingIsland.expand("typing");
+                }
+                break;
             case "file-shelf":
             case "shelf":
                 FileShelf.toggle("");
