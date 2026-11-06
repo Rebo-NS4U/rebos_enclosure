@@ -42,7 +42,7 @@ Singleton {
             const island = Visibilities.getIslandForActive();
             if (island) {
                 island.expand("typing");
-                if (!island.typingPractice.practicing) island.typingPractice.goBack();
+                island.typingPractice.reopen();
             }
         }
         function upload(): void {
@@ -75,13 +75,16 @@ Singleton {
         switch (command) {
             case "t":
                 const typingTarget = Visibilities.getIslandForActive();
-                if (typingTarget) typingTarget.expand("typing");
+                if (typingTarget && typingTarget.currentMode !== "typing") {
+                    typingTarget.expand("typing");
+                    typingTarget.typingPractice.reopen();
+                }
                 break;
             case "typing":
                 const typingIsland = Visibilities.getIslandForActive();
                 if (typingIsland) {
                     if (typingIsland.currentMode === "typing") typingIsland.collapse();
-                    else typingIsland.expand("typing");
+                    else { typingIsland.expand("typing"); typingIsland.typingPractice.reopen(); }
                 }
                 break;
             case "file-shelf":

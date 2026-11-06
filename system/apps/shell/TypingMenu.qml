@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 import QtQuick
 import "TypingTexts.js" as TypingTexts
+import "TypingSpeed.js" as TypingSpeed
 import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
@@ -29,6 +30,14 @@ Item {
     property bool dirty: false
     property bool restoring: false
     property bool draft: false
+    property bool samplesExpanded: false
+    property string draftKind: "book"
+    readonly property var libraryBooks: library.filter(book => book.kind !== "practice")
+    property var speedState: TypingSpeed.create()
+    property int speedCommitted: 0
+    property int speedBaseline: 0
+    property double speedNow: Date.now()
+    readonly property int liveWpm: TypingSpeed.rate(speedState, speedCommitted + Math.max(0, correctPrefix() - speedBaseline), speedNow)
     property string draftTitle: "Pasted text"
     property int requestId: 0
     property int pageRequest: 0
@@ -64,7 +73,7 @@ Item {
         }
         return words;
     }
-    implicitHeight: practicing ? 240 : 500
+    implicitHeight: practicing ? 240 : 600
     property real revealProgress: 1
     function reveal() {
         if (!Motion.enabled || !visible) { revealProgress = 1; return; }
@@ -79,11 +88,12 @@ Item {
         duration: Math.round(Motion.base * 1.25)
         easing.type: Easing.OutQuint
     }
-    onPracticingChanged: reveal()
+    onPracticingChanged: { reveal(); resetSpeed(); }
     onPositionChanged: { if (practicing) reveal(); }
     onVisibleChanged: {
         if (visible) { reveal(); backendStarted = true; if (ready) send({action: "list"}, false); }
         else saveProgress();
+        resetSpeed();
         if (visible && practicing) Qt.callLater(() => answer.forceActiveFocus());
     }
     Component.onCompleted: { if (visible) backendStarted = true; }
@@ -93,6 +103,32 @@ Item {
         if (ready) backend.write(JSON.stringify(data) + "\n");
         else { queued = queued.concat([data]); backendStarted = true; }
     }
+    function correctPrefix() {
+        const input = characters(answer.text);
+        const target = characters(passage);
+        let count = 0;
+        while (count < input.length && count < target.length && input[count] === target[count]) count++;
+        return count;
+    }
+    function resetSpeed() {
+        speedState = TypingSpeed.create(); speedCommitted = 0;
+        speedBaseline = correctPrefix(); speedNow = Date.now();
+    }
+    function reopen() {
+        if (busy || filePickerActive) return;
+        if (draft && paste.text.trim().length) { practicing = false; return; }
+        samplesExpanded = false;
+        send({action: "resume"});
+    }
+    Timer {
+        interval: 500
+        repeat: true
+        running: root.visible && root.practicing && !root.busy
+        onTriggered: {
+            root.speedNow = Date.now();
+            root.speedState = TypingSpeed.tick(root.speedState, root.speedNow, true);
+        }
+    }
     function saveProgress() {
         if (!dirty || !bookId || busy || restoring) return;
         dirty = false;
@@ -100,7 +136,7 @@ Item {
     }
     function openBook(id) {
         if (busy) return;
-        saveProgress(); draft = false;
+        saveProgress(); draft = false; resumeOnOpen = true;
         send({action: "open", id: id});
     }
     function seek(offset) {
@@ -118,17 +154,26 @@ Item {
             const data = JSON.parse(line);
             if (data.action === "list") { if (data.books) library = data.books; return; }
             if (data.error) { if (data.request === pageRequest) busy = false; if (data.action === "save") dirty = true; message = data.error; errorMessage = data.error; return; }
-            if (data.request !== pageRequest || !data.passage) return;
+            if (data.request !== pageRequest) return;
+            if (data.empty) { busy = false; practicing = false; return; }
+            if (!data.passage) return;
+            if (data.action === "next") {
+                speedCommitted += Math.max(0, correctPrefix() - speedBaseline);
+                speedBaseline = 0;
+                speedState = TypingSpeed.pause(speedState);
+            }
             restoring = true;
             bookId = data.id; bookTitle = data.title; bookLength = data.length;
             position = data.position; rounds = data.loops; if (data.chapters) chapters = data.chapters;
             passage = data.passage; answer.text = data.typed; answer.cursorPosition = answer.length;
             dirty = false; draft = false; busy = false; restoring = false;
             message = "Ready to resume. Your place is saved on this device.";
+            if (data.kind === "book") samplesExpanded = false;
             if (data.action === "add") { paste.text = ""; practicing = true; }
             if (data.action === "import") { paste.text = ""; practicing = false; }
-            if (data.action === "chapter") practicing = true;
+            if (data.action === "chapter" || data.action === "resume") practicing = true;
             if (data.action === "open" && resumeOnOpen) { resumeOnOpen = false; practicing = true; }
+            if (data.action !== "next") resetSpeed();
             if (practicing && visible) Qt.callLater(() => answer.forceActiveFocus());
             if (data.action !== "next") send({action: "list"}, false);
         } catch (error) { busy = false; message = "Could not read the book service response."; }
@@ -140,7 +185,7 @@ Item {
         return JSON.stringify({practicing: practicing, textLength: bookLength,
             typed: answer.text.length, position: position, rounds: rounds,
             presets: TypingTexts.passages.length, message: message, busy: busy,
-            title: bookTitle, chapters: chapters.length, library: library.length, filePickerActive: filePickerActive});
+            title: bookTitle, chapters: chapters.length, library: library.length, books: libraryBooks.length, wpm: liveWpm, filePickerActive: filePickerActive});
     }
     component TextButton: Button {
         implicitHeight: 36
@@ -227,12 +272,15 @@ Item {
         if (busy || index < 0 || index >= TypingTexts.passages.length) return;
         saveProgress();
         paste.text = TypingTexts.passages[index].text;
+        draftKind = "practice"; samplesExpanded = true;
         draftTitle = TypingTexts.passages[index].title;
         draft = true; practicing = false;
         message = draftTitle + " loaded. Choose Start practice.";
     }
     function showLibrary() {
+        samplesExpanded = false;
         saveProgress();
+        send({action: "list"}, false);
         practicing = false;
     }
     function goBack() {
@@ -254,7 +302,7 @@ Item {
         if (busy) return;
         if (draft || !bookId) {
             if (!paste.text.trim().length) { message = "Add some text or import a book first."; return; }
-            send({action: "add", title: draftTitle, text: paste.text});
+            send({action: "add", title: draftTitle, text: paste.text, kind: draftKind});
         } else { practicing = true; answer.forceActiveFocus(); }
     }
     function advance() {
@@ -264,6 +312,8 @@ Item {
             answer.cursorPosition = answer.length;
             return;
         }
+        speedNow = Date.now();
+        speedState = TypingSpeed.record(speedState, speedNow);
         dirty = true; saveDelay.restart();
         if (!passage.length || answer.text !== passage) return;
         const next = position + characters(passage).length;
@@ -342,21 +392,70 @@ Item {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 spacing: 12
-                StyledText { visible: !root.practicing; opacity: 0.55; text: root.message; Layout.fillWidth: true; wrapMode: Text.Wrap }
+                StyledText { visible: !root.practicing && (root.errorMessage.length > 0 || !root.bookId); opacity: 0.55; text: root.message; Layout.fillWidth: true; wrapMode: Text.Wrap }
                 RowLayout {
                     visible: !root.practicing
+                    Layout.maximumHeight: 36
                     TextButton { text: root.busy ? "Loading…" : "Import EPUB / PDF"; objectName: "typing-import"; enabled: !root.busy; onClicked: root.openImport() }
-                    TextButton { text: "Paste text"; enabled: !root.busy; onClicked: { root.saveProgress(); root.draft = true; root.draftTitle = "Pasted text"; paste.text = ""; paste.forceActiveFocus(); } }
+                    TextButton { text: "Paste text"; enabled: !root.busy; onClicked: { root.saveProgress(); root.draft = true; root.draftTitle = "Pasted text"; root.draftKind = "book"; paste.text = ""; paste.forceActiveFocus(); } }
                     TextButton { text: root.bookId && !root.draft ? "Resume" : "Start practice"; enabled: !root.busy; onClicked: root.start() }
                 }
-                ThemeSelect {
-                    visible: !root.practicing && root.library.length > 0
+                ListView {
+                    id: bookCards
+                    objectName: "typing-book-cards"
+                    visible: !root.practicing && !root.draft && root.libraryBooks.length > 0
                     Layout.fillWidth: true
-                    model: root.library
-                    textRole: "title"
+                    Layout.fillHeight: true
+                    Layout.minimumHeight: 100
+                    clip: true
+                    spacing: 8
+                    model: root.libraryBooks
                     currentIndex: -1
-                    displayText: currentIndex < 0 ? "Resume a saved book…" : currentText
-                    onActivated: index => root.openBook(root.library[index].id)
+                    delegate: Button {
+                        id: bookCard
+                        required property var modelData
+                        width: bookCards.width
+                        implicitHeight: 86
+                        padding: 12
+                        enabled: !root.busy
+                        Accessible.name: modelData.title + ", " + (modelData.completion * 100).toFixed(1) + "% complete"
+                        onClicked: root.openBook(modelData.id)
+                        background: StyledRect {
+                            variant: "pane"
+                            radius: 12
+                            backgroundOpacity: bookCard.hovered || bookCard.activeFocus ? 0.65 : 0.35
+                            border.width: 1
+                            border.color: bookCard.modelData.id === root.bookId || bookCard.activeFocus ? Colors.primary : Qt.alpha(Colors.outlineVariant, 0.4)
+                        }
+                        contentItem: ColumnLayout {
+                            spacing: 6
+                            RowLayout {
+                                Layout.fillWidth: true
+                                StyledText { text: bookCard.modelData.title; Layout.fillWidth: true; Layout.minimumWidth: 0; elide: Text.ElideRight; color: Colors.overSurface }
+                                StyledText { objectName: "typing-card-progress"; text: (bookCard.modelData.completion * 100).toFixed(1) + "%"; color: Colors.primary }
+                            }
+                            Rectangle {
+                                Layout.fillWidth: true
+                                implicitHeight: 3
+                                radius: 2
+                                color: Qt.alpha(Colors.primary, 0.12)
+                                Rectangle { width: parent.width * bookCard.modelData.completion; height: parent.height; radius: 2; color: Colors.primary }
+                            }
+                            StyledText { text: bookCard.modelData.completion >= 1 ? "Completed · Continue again" : (bookCard.modelData.position > 0 || bookCard.modelData.partial > 0 ? "Continue where you left off" : "Start reading and typing"); opacity: 0.55; font.pixelSize: 11 }
+                        }
+                    }
+                    ScrollBar.vertical: ScrollBar {
+                        visible: bookCards.contentHeight > bookCards.height
+                        contentItem: Rectangle { implicitWidth: 4; radius: 2; color: Qt.alpha(Colors.primary, 0.6) }
+                        background: Item {}
+                    }
+                }
+                StyledText {
+                    visible: !root.practicing && !root.draft && !root.libraryBooks.length
+                    text: "Your books will appear here. Import an EPUB or PDF to begin."
+                    Layout.fillWidth: true
+                    wrapMode: Text.Wrap
+                    opacity: 0.6
                 }
                 ColumnLayout {
                     visible: !root.practicing && root.bookId.length > 0 && !root.draft
@@ -408,10 +507,16 @@ Item {
                     ToolTip.visible: hovered || pressed
                     ToolTip.text: "Book position · " + (100 * value / Math.max(1, root.bookLength)).toFixed(1) + "%"
                 }
-                RowLayout {
+                TextButton {
+                    objectName: "typing-samples-toggle"
                     visible: !root.practicing
+                    text: root.samplesExpanded ? "Practice samples ▴" : "Practice samples ▾"
+                    onClicked: root.samplesExpanded = !root.samplesExpanded
+                }
+                RowLayout {
+                    visible: !root.practicing && root.samplesExpanded
                     Layout.fillWidth: true
-                    StyledText { text: "Practice texts" }
+                    StyledText { text: "Optional samples"; opacity: 0.5 }
                     ThemeSelect {
                         id: presets
                         Layout.fillWidth: true
@@ -423,7 +528,7 @@ Item {
                     }
                 }
                 StyledText {
-                    visible: !root.practicing
+                    visible: !root.practicing && root.samplesExpanded
                     text: "Original passages · CC0 · Free to copy, change and share"
                     font.pixelSize: 12
                     Layout.fillWidth: true
@@ -431,13 +536,13 @@ Item {
                 }
                 ScrollView {
                     background: Item {}
-                    visible: !root.practicing && (root.draft || !root.bookId) && !presets.popup.visible
+                    visible: !root.practicing && root.draft && !presets.popup.visible
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     TextArea {
                         id: paste
                         placeholderText: "Paste a book or text here, or import EPUB / PDF…"
-                        onTextChanged: { if (activeFocus && !root.restoring) { root.draft = true; root.draftTitle = "Pasted text"; } }
+                        onTextChanged: { if (activeFocus && !root.restoring) { root.draft = true; root.draftTitle = "Pasted text"; root.draftKind = "book"; } }
                         background: Item {}
                         placeholderTextColor: Qt.alpha(Colors.overSurface, 0.35)
                         wrapMode: TextEdit.Wrap
@@ -445,11 +550,6 @@ Item {
                         font.family: Config.theme.font
                         font.pixelSize: 14
                     }
-                }
-                Item {
-                    visible: !root.practicing && !root.draft && root.bookId.length > 0
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
                 }
                 ColumnLayout {
                     visible: root.practicing
@@ -564,6 +664,7 @@ Item {
                     RowLayout {
                         Layout.fillWidth: true
                         StyledText { text: root.errorMessage || root.chapterTitle; opacity: 0.5; font.pixelSize: 11; elide: Text.ElideRight; Layout.fillWidth: true; Layout.minimumWidth: 0 }
+                        StyledText { objectName: "typing-live-wpm"; text: root.liveWpm + " WPM"; color: Colors.primary; font.pixelSize: 12 }
                         StyledText { text: (root.progress * 100).toFixed(1) + "%"; opacity: 0.5; font.pixelSize: 11 }
                     }
                     Rectangle {

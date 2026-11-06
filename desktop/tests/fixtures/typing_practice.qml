@@ -1,16 +1,23 @@
 import QtQuick
 import Quickshell
+import Quickshell.Wayland
 import qs.modules.bar.layouts
 import qs.modules.shell
+import "TypingSpeed.js" as Speed
 import qs.modules.theme
 ShellRoot {
     id: harness
     property bool closeRequested: false
     PanelWindow {
+        WlrLayershell.layer: WlrLayer.Overlay
+        WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+        exclusionMode: ExclusionMode.Ignore
+        mask: Region {}
         implicitWidth: 640
-        implicitHeight: 500
+        implicitHeight: 600
         color: "transparent"
         TypingMenu { id: practice; anchors.fill: parent; onBackRequested: harness.closeRequested = true }
+        Loader { id: freshView; anchors.fill: parent; active: false; visible: false; sourceComponent: TypingMenu {} }
     }
     function find(item, name) {
         if (item.objectName === name) return item;
@@ -26,6 +33,11 @@ ShellRoot {
         onTriggered: {
             try {
                 if (phase === 0) {
+                    let meter = Speed.record(Speed.create(), 1000);
+                    meter = Speed.tick(meter, 2000, true);
+                    if (Speed.rate(meter, 5, 2000) !== 60 || Speed.rate(meter, 0, 2000) !== 0) throw Error("WPM must count net correct five-character words");
+                    const paused = Speed.pause(meter);
+                    if (Speed.tick(paused, 9000, true).elapsed !== meter.elapsed || Speed.rate(meter, 5, 7000) !== 0) throw Error("WPM idle/pause handling failed");
                     const bar = Qt.createComponent("modules/bar/layouts/IslandBar.qml");
                     if (bar.status === Component.Error) throw Error(bar.errorString());
                     const panel = Qt.createComponent("modules/shell/UnifiedShellPanel.qml");
@@ -69,6 +81,10 @@ ShellRoot {
                     if (chapters.currentIndex !== practice.currentChapterIndex || !chapters.displayText.length) throw Error("Chapter selection is not synchronized");
                     chapters.popup.open();
                 } else if (phase === 102) {
+                    const cards = find(practice, "typing-book-cards");
+                    const card = cards.itemAtIndex(0);
+                    if (!card || cards.count !== 1 || !find(card, "typing-card-progress").text.endsWith("%")) throw Error("Book cards invalid: " + JSON.stringify({count: cards.count, visible: cards.visible, height: cards.height, card: !!card, books: practice.libraryBooks.length, viewWidth: practice.width, viewHeight: practice.height, parentHeight: cards.parent.height, samples: practice.samplesExpanded}));
+                    if (practice.samplesExpanded) throw Error("Practice samples should be collapsed by default");
                     const chapters = find(practice, "typing-chapter-select");
                     chapters.popup.contentItem.positionViewAtIndex(1, ListView.Contain);
                     const entry = chapters.popup.contentItem.itemAtIndex(1);
@@ -100,12 +116,25 @@ ShellRoot {
                     practice.openImport();
                 } else if (phase === 106) {
                     if (!practice.filePickerActive) throw Error("Second picker did not open");
-                } else {
+                } else if (phase === 107) {
                     if (practice.filePickerActive || practice.busy) return;
                     if (practice.bookTitle !== "picker test book") throw Error("Cancelling the picker changed the current book");
                     practice.goBack();
                     if (!practice.practicing || harness.closeRequested) throw Error("Back failed after cancelling the picker");
-                    console.log("PASS: themed chapter popup, chapter selection, visible editing cursor, book paging, saved progress, Back navigation and EPUB picker");
+                    input.text = practice.passage.slice(0, 3);
+                    input.cursorPosition = input.length;
+                    practice.saveProgress();
+                    practice.visible = false;
+                    freshView.active = true;
+                    freshView.visible = true;
+                    freshView.item.reopen();
+                } else if (phase === 108) {
+                    const restored = freshView.item;
+                    if (restored.busy || !restored.bookId || restored.library.length < 3) return;
+                    const restoredInput = find(restored, "typing-input");
+                    if (!restored.practicing || restored.bookTitle !== "picker test book" || restoredInput.text !== restored.passage.slice(0, 3)) throw Error("A fresh view did not automatically resume the saved partial passage");
+                    if (restored.libraryBooks.length !== 2 || restored.liveWpm !== 0) throw Error("Practice samples or restored text affect library/WPM");
+                    console.log("PASS: automatic resume in a fresh view, book completion cards, secondary samples, live WPM, chapter navigation and EPUB picker");
                     Qt.quit();
                 }
 

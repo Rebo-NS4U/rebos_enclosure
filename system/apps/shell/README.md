@@ -131,9 +131,9 @@ this small window and respect the Appearance motion setting. Chapter and overall
 progress stay visible in a quiet footer. IPC:
 `qs -p ~/.config/quickshell/shell.qml ipc call typing toggle`.
 
-The **Practice texts** selector includes six original CC0 passages: a lowercase
+The secondary **Practice samples** section includes six original CC0 passages: a lowercase
 warmup, two short stories, a reflective passage, dialogue and punctuation, and
-numbers and everyday details. Select one, then choose **Start practice**. These
+numbers and everyday details. Expand the section, select one, then choose **Start practice**. These
 passages may be copied, changed and shared freely. Choosing a passage replaces
 the text in the editor; pasting and document import remain available.
 
@@ -155,3 +155,16 @@ and next controls. Selecting an entry jumps to that exact section and resumes
 typing. EPUB navigation labels come from NCX/EPUB3 tables of contents, with image
 heading alternatives as a fallback. Re-importing identical book text refreshes
 its title and chapter labels without resetting saved progress.
+
+Opening typing practice with Mod+T or the control panel automatically resumes
+the last opened book, including a partially typed passage. The last-book selection
+and bookmarks survive shell restarts. The library uses scrollable book cards
+with completion percentages and progress bars; selecting a card resumes that
+book. Completed books retain 100% completion when continuous practice loops.
+Built-in samples are kept out of book cards and live in a collapsed secondary
+section.
+
+The live WPM counter uses net correct characters and five characters per word.
+It updates twice a second, starts after one second of activity, and pauses its
+clock after five idle seconds. Restored text and chapter jumps do not earn WPM;
+opening the library, hiding typing, or switching books starts a fresh session.

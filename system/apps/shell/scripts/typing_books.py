@@ -123,25 +123,59 @@ class Library:
         self.cached_text = ""
         # Keep large immutable content separate: saving a bookmark never rewrites a book.
         self.db.executescript('''
-            CREATE TABLE IF NOT EXISTS book_catalogue (id TEXT PRIMARY KEY, title TEXT, chapters TEXT, size INTEGER);
+            CREATE TABLE IF NOT EXISTS book_catalogue (id TEXT PRIMARY KEY, title TEXT, chapters TEXT, size INTEGER, kind TEXT DEFAULT 'book');
             CREATE TABLE IF NOT EXISTS book_content (id TEXT PRIMARY KEY, text TEXT);
+            CREATE TABLE IF NOT EXISTS app_state (key TEXT PRIMARY KEY, value TEXT);
             CREATE TABLE IF NOT EXISTS book_progress (id TEXT PRIMARY KEY, position INTEGER DEFAULT 0, typed TEXT DEFAULT '', loops INTEGER DEFAULT 0, updated REAL);
         ''')
 
-    def add(self, title, text, chapters):
+        self.db.execute('BEGIN IMMEDIATE')
+        if 'kind' not in {row[1] for row in self.db.execute('PRAGMA table_info(book_catalogue)')}:
+            self.db.execute("ALTER TABLE book_catalogue ADD COLUMN kind TEXT DEFAULT 'book'")
+        if not self.db.execute("SELECT 1 FROM app_state WHERE key='practice_classified'").fetchone():
+            # Classify previously saved built-in samples without touching real books.
+            samples = Path(__file__).resolve().parent.parent / 'TypingTexts.js'
+            if samples.exists():
+                raw = samples.read_text()
+                for sample in json.loads(raw[raw.index('['):].strip().rstrip(';')):
+                    key = hashlib.sha256(normalize(sample['text']).encode()).hexdigest()
+                    self.db.execute("UPDATE book_catalogue SET kind='practice' WHERE id=?", (key,))
+            self.db.execute("INSERT INTO app_state VALUES ('practice_classified','1')")
+        self.db.commit()
+
+    def last_id(self):
+        row = self.db.execute("SELECT c.id FROM app_state s JOIN book_catalogue c ON c.id=s.value WHERE s.key='last_book'").fetchone()
+        if row: return row[0]
+        row = self.db.execute("SELECT c.id FROM book_catalogue c JOIN book_progress p USING(id) ORDER BY (c.kind='book') DESC,p.updated DESC LIMIT 1").fetchone()
+        return row[0] if row else None
+
+    def activate(self, key):
+        with self.db:
+            self.db.execute("INSERT INTO app_state VALUES ('last_book',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", (key,))
+            self.db.execute('UPDATE book_progress SET updated=? WHERE id=?', (time.time(), key))
+
+
+    def add(self, title, text, chapters, kind="book"):
         if not text or len(text) > LIMIT: raise ValueError('Book must contain 1 to 20 million characters.')
         key = hashlib.sha256(text.encode()).hexdigest()
         with self.db:
-            self.db.execute('INSERT INTO book_catalogue VALUES (?,?,?,?) ON CONFLICT(id) DO UPDATE SET title=excluded.title,chapters=excluded.chapters,size=excluded.size', (key, title[:160], json.dumps(chapters), len(text)))
+            self.db.execute('INSERT INTO book_catalogue (id,title,chapters,size,kind) VALUES (?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET title=excluded.title,chapters=excluded.chapters,size=excluded.size,kind=excluded.kind', (key, title[:160], json.dumps(chapters), len(text), kind))
             self.db.execute('INSERT OR IGNORE INTO book_content VALUES (?,?)', (key, text))
             self.db.execute('INSERT OR IGNORE INTO book_progress (id,updated) VALUES (?,?)', (key, time.time()))
+        self.activate(key)
         return self.page(key)
 
     def listing(self):
-        return [dict(row) for row in self.db.execute('SELECT c.id,c.title,c.size AS length,p.position,p.loops FROM book_catalogue c JOIN book_progress p ON p.id=c.id ORDER BY p.updated DESC')]
+        rows = self.db.execute('SELECT c.id,c.title,c.kind,c.size AS length,p.position,length(p.typed) AS partial,p.loops FROM book_catalogue c JOIN book_progress p ON p.id=c.id ORDER BY p.updated DESC')
+        books = []
+        for row in rows:
+            data = dict(row)
+            data['completion'] = 1.0 if data['loops'] else min(1.0, (data['position'] + data['partial']) / max(1, data['length']))
+            books.append(data)
+        return books
 
     def page(self, key, include_chapters=True):
-        row = self.db.execute('SELECT c.id,c.title,c.size AS length,c.chapters,p.position,p.typed,p.loops FROM book_catalogue c JOIN book_progress p ON p.id=c.id WHERE c.id=?', (key,)).fetchone()
+        row = self.db.execute('SELECT c.id,c.title,c.kind,c.size AS length,c.chapters,p.position,p.typed,p.loops FROM book_catalogue c JOIN book_progress p ON p.id=c.id WHERE c.id=?', (key,)).fetchone()
         if row is None: raise ValueError('Book is no longer in the library.')
         data = dict(row)
         if self.cached_id != key:
@@ -161,10 +195,14 @@ class Library:
         if not isinstance(position, int) or not 0 <= position < row[0]: raise ValueError('Invalid book position.')
         with self.db:
             self.db.execute('UPDATE book_progress SET position=?,typed=?,loops=?,updated=? WHERE id=?', (position, typed[:WINDOW], max(0, int(loops)), time.time(), key))
+            self.db.execute("INSERT INTO app_state VALUES ('last_book',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", (key,))
 
     def handle(self, request):
         action = request['action']
-        if action == 'list': return {'books': self.listing()}
+        if action == 'list': return {'books': self.listing(), 'last_id': self.last_id()}
+        if action == 'resume':
+            key = self.last_id()
+            return self.page(key) if key else {'empty': True}
         if action == 'import':
             value = request['path']
             path = Path(unquote(urlparse(value).path) if value.startswith('file:') else value).expanduser()
@@ -177,8 +215,11 @@ class Library:
             return self.add(title, text, chapters)
         if action == 'add':
             text, chapters = sections_document(request['text'])
-            return self.add(request.get('title', 'Pasted text'), text, chapters)
-        if action == 'open': return self.page(request['id'])
+            return self.add(request.get('title', 'Pasted text'), text, chapters, request.get('kind', 'book'))
+        if action == 'open':
+            page = self.page(request['id'])
+            self.activate(request['id'])
+            return page
         if action == 'chapter':
             current = self.page(request['id'])
             index = request['index']

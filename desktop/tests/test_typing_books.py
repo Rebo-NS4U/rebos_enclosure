@@ -1,5 +1,6 @@
 """Book import, bounded page delivery, and durable progress regression tests."""
 import json
+import sqlite3
 from pathlib import Path
 import sys
 import tempfile
@@ -109,5 +110,38 @@ class Books(unittest.TestCase):
         text, chapters = read_epub(path)
         self.assertEqual([chapter['title'] for chapter in chapters], ['Opening chapter', 'Chapter 2'])
         self.assertEqual(text, 'Opening text. Closing text.')
+
+    def test_last_opened_resume_and_completion_survive_restart(self):
+        first = self.library.add('First', 'a' * 100, [{'title': 'Start', 'position': 0}])
+        second = self.library.add('Second', 'b' * 200, [{'title': 'Start', 'position': 0}])
+        self.library.save(first['id'], 50, 'aa', 0)
+        self.library.handle({'action': 'open', 'id': second['id']})
+        self.library.db.close()
+        self.library = Library(self.path)
+        self.assertEqual(self.library.handle({'action': 'resume'})['id'], second['id'])
+        rows = {book['id']: book for book in self.library.listing()}
+        self.assertEqual(rows[first['id']]['completion'], 0.52)
+        self.library.save(second['id'], 0, '', 1)
+        self.assertEqual({book['id']: book for book in self.library.listing()}[second['id']]['completion'], 1)
+        sample = self.library.add('A sample', 'practice text', [{'title': 'Sample', 'position': 0}], 'practice')
+        self.assertEqual(self.library.page(sample['id'])['kind'], 'practice')
+        self.assertEqual(self.library.handle({'action': 'resume'})['id'], sample['id'])
+
+    def test_resume_empty_library(self):
+        self.assertEqual(self.library.handle({'action': 'resume'}), {'empty': True})
+
+    def test_upgrade_preserves_existing_book_and_partial_position(self):
+        path = Path(self.temp.name) / 'legacy.sqlite3'
+        old = sqlite3.connect(path)
+        old.executescript("CREATE TABLE book_catalogue (id TEXT PRIMARY KEY,title TEXT,chapters TEXT,size INTEGER); CREATE TABLE book_content(id TEXT PRIMARY KEY,text TEXT); CREATE TABLE book_progress(id TEXT PRIMARY KEY,position INTEGER,typed TEXT,loops INTEGER,updated REAL);")
+        old.execute('INSERT INTO book_catalogue VALUES (?,?,?,?)', ('legacy', 'Existing book', '[{"title":"Beginning","position":0}]', 100))
+        old.execute('INSERT INTO book_content VALUES (?,?)', ('legacy', 'a' * 100))
+        old.execute('INSERT INTO book_progress VALUES (?,?,?,?,?)', ('legacy', 40, 'aa', 0, 1))
+        old.commit(); old.close()
+        upgraded = Library(path)
+        page = upgraded.handle({'action': 'resume'})
+        self.assertEqual((page['id'], page['position'], page['typed'], page['kind']), ('legacy', 40, 'aa', 'book'))
+        self.assertEqual(upgraded.listing()[0]['completion'], 0.42)
+        upgraded.db.close()
 
 if __name__ == '__main__': unittest.main()
