@@ -645,7 +645,7 @@ Item {
             anchors.fill: parent
             variant: Styling.shellStyle === "dithered" ? "bar" : "pane"
             styleOverride: root.currentMode === "typing" ? "glass" : ""
-            backgroundOpacity: root.typingFullscreen ? 0.96 : root.currentMode === "typing" ? Math.min(0.4, BarAppearance.opacity * 0.35) : BarAppearance.panelOpacity(root.isExpanded)
+            backgroundOpacity: root.currentMode === "typing" ? Math.min(0.4, BarAppearance.opacity * 0.35) : BarAppearance.panelOpacity(root.isExpanded)
             topLeftRadius: BarAppearance.polished ? root.cornerRadius : 0
             topRightRadius: BarAppearance.polished ? root.cornerRadius : 0
             border.width: root.currentMode === "typing" ? 1 : (BarAppearance.polished || Styling.shellStyle === "dithered" ? 1 : 0)

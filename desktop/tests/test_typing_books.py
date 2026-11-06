@@ -127,6 +127,20 @@ class Books(unittest.TestCase):
         self.assertEqual(self.library.page(sample['id'])['kind'], 'practice')
         self.assertEqual(self.library.handle({'action': 'resume'})['id'], sample['id'])
 
+    def test_fullscreen_window_and_long_bookmark(self):
+        book = self.library.add('Fullscreen', 'word ' * 2000, [])
+        page = self.library.handle({'action': 'open', 'id': book['id'], 'window': 4096})
+        self.assertGreater(len(page['passage']), 1000)
+        self.assertLessEqual(len(page['passage']), 4096)
+        typed = page['passage'][:1500]
+        self.library.handle({'action': 'save', 'id': book['id'], 'position': 0, 'typed': typed})
+        resumed = self.library.handle({'action': 'resume', 'window': 4096})
+        self.assertEqual(resumed['typed'], typed)
+        self.assertEqual(resumed['position'], 0)
+        compact = self.library.handle({'action': 'open', 'id': book['id']})
+        self.assertLessEqual(len(compact['passage']), 90)
+        self.assertEqual(compact['typed'], typed)
+
     def test_resume_empty_library(self):
         self.assertEqual(self.library.handle({'action': 'resume'}), {'empty': True})
 

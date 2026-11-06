@@ -13,9 +13,25 @@ function matchingCharacter(input, target) {
     return canonical(input) === canonical(target);
 }
 
+// Compose three keyboard periods only where the book expects one ellipsis.
+function prepareInput(input, target) {
+    var source = characters(input), expected = characters(target), result = "";
+    for (var i = 0, j = 0; i < source.length; j++) {
+        if (expected[j] === "\u2026" && source[i] === ".") {
+            var dots = source.slice(i, i + 3).join("");
+            if (dots === "...") { result += "\u2026"; i += 3; continue; }
+            if (/^\.{1,2}$/.test(source.slice(i).join("")))
+                return {text: result + source.slice(i).join(""), pending: true};
+        }
+        result += source[i++];
+    }
+    return {text: result, pending: false};
+}
+
 // Match the renderer's word rows and measured character widths. Never discard
 // whitespace or split surrogate pairs.
-function layout(source, width, measure) {
+function layout(source, width, measure, maxLines) {
+    maxLines = Math.max(1, maxLines || 2);
     width = Math.max(1, width);
     var words = [], used = 0, line = 1, rowWidth = 0;
     var tokens = source.match(/\S+\s*|\s+/g) || [];
@@ -30,7 +46,7 @@ function layout(source, width, measure) {
                 chunk += letters[offset++]; chunkWidth += nextWidth; chunkCount++;
             }
             if (rowWidth && rowWidth + chunkWidth > width) {
-                if (line >= 2)
+                if (line >= maxLines)
                     return {text: source.slice(0, used), words: words, lines: line};
                 line++; rowWidth = 0;
             }

@@ -16,12 +16,15 @@ Item {
     signal backRequested()
     property bool practicing: false
     property bool fullscreen: false
+    readonly property int pageLineLimit: fullscreen ? Math.max(2, Math.floor(passageArea.height / (22 * 1.45))) : 2
+    onPageLineLimitChanged: fitDelay.restart()
     function toggleFullscreen() {
         fullscreen = !fullscreen;
+        fitDelay.restart();
         if (practicing) Qt.callLater(() => answer.forceActiveFocus());
     }
     function handleEscape() {
-        if (fullscreen) { fullscreen = false; if (practicing) answer.forceActiveFocus(); }
+        if (fullscreen) { fullscreen = false; fitDelay.restart(); if (practicing) answer.forceActiveFocus(); }
         else goBack();
     }
     property bool filePickerActive: false
@@ -78,12 +81,12 @@ Item {
     FontMetrics { id: typingMetrics; font.family: Config.theme.font; font.pixelSize: 22 }
     function characterWidth(text) { return Math.max(1, Math.ceil(typingMetrics.advanceWidth(text))); }
     function fitPage() {
-        pageLayout = TypingPaging.layout(pageSource, Math.max(80, root.width - 52), characterWidth);
+        pageLayout = TypingPaging.layout(pageSource, Math.max(80, root.width - 52), characterWidth, pageLineLimit);
     }
     Timer {
         id: fitDelay
         interval: 150
-        onTriggered: { if (!root.restoring && !answer.text.length && root.pageSource.length) root.fitPage(); }
+        onTriggered: { if (!root.restoring && root.pageSource.length) { root.fitPage(); if (root.bookId && root.characters(answer.text).length >= root.characters(root.passage).length) root.advance(); } }
     }
     NumberAnimation {
         id: pageArrival
@@ -95,7 +98,7 @@ Item {
         easing.type: Easing.OutCubic
     }
     function queueTyping(text) {
-        if (turningPage) pendingKeys = characters(pendingKeys + text).slice(0, 90).join("");
+        if (turningPage) pendingKeys = characters(pendingKeys + text).slice(0, 4096).join("");
     }
     function undoQueuedKey() {
         if (turningPage) pendingKeys = characters(pendingKeys).slice(0, -1).join("");
@@ -124,6 +127,7 @@ Item {
     }
     Component.onCompleted: { if (visible) backendStarted = true; }
     function send(data, page = true) {
+        data.window = 4096;
         data.request = ++requestId;
         if (page) { pageRequest = data.request; busy = true; errorMessage = ""; }
         if (ready) backend.write(JSON.stringify(data) + "\n");
@@ -191,10 +195,12 @@ Item {
                 data.action = restoreAction;
                 data.chapters = restoreChapters;
             }
-            const fitted = TypingPaging.layout(data.passage, Math.max(80, root.width - 52), characterWidth);
+            const fitted = TypingPaging.layout(data.passage, Math.max(80, root.width - 52), characterWidth, pageLineLimit);
+            const prepared = TypingPaging.prepareInput(data.typed, fitted.text);
+            data.typed = prepared.text;
             const entered = characters(data.typed);
             const pageCount = characters(fitted.text).length;
-            if (data.action !== "next" && pageCount > 0 && entered.length >= pageCount) {
+            if (data.action !== "next" && pageCount > 0 && entered.length >= pageCount && !prepared.pending) {
                 restoreAction = data.action;
                 restoreChapters = data.chapters || chapters;
                 const next = data.position + pageCount;
@@ -367,8 +373,16 @@ Item {
     }
     function advance() {
         if (restoring || busy || !bookId) return;
-        if (characters(answer.text).length > 90) {
-            answer.text = characters(answer.text).slice(0, 90).join("");
+        const prepared = TypingPaging.prepareInput(answer.text, passage);
+        if (prepared.text !== answer.text) {
+            const cursor = answer.cursorPosition;
+            const removed = answer.text.length - prepared.text.length;
+            answer.text = prepared.text;
+            answer.cursorPosition = Math.max(0, cursor - removed);
+            return;
+        }
+        if (characters(answer.text).length > 4096) {
+            answer.text = characters(answer.text).slice(0, 4096).join("");
             answer.cursorPosition = answer.length;
             return;
         }
@@ -377,7 +391,7 @@ Item {
         dirty = true; saveDelay.restart();
         const pageCount = characters(passage).length;
         const entered = characters(answer.text);
-        if (!pageCount || entered.length < pageCount) return;
+        if (!pageCount || entered.length < pageCount || prepared.pending) return;
         pendingKeys = entered.slice(pageCount).join("") + pendingKeys;
         restoring = true;
         answer.text = entered.slice(0, pageCount).join("");

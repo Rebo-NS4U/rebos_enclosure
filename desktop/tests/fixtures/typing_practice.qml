@@ -55,6 +55,12 @@ ShellRoot {
                     if (practice.fullscreen || practice.correctCount() !== 13) throw Error("Escape did not restore compact typing");
                     quoteInput.text = "";
                     practice.restoring = false;
+                    if (!Pages.prepareInput(".", "…").pending || !Pages.prepareInput("..", "…").pending) throw Error("Partial ellipsis must wait for three periods");
+                    if (Pages.prepareInput("Wait... now...", "Wait… now…").text !== "Wait… now…") throw Error("Ellipsis composition failed");
+                    if (Pages.prepareInput("...", "...").text !== "...") throw Error("Literal periods were changed");
+                    if (Pages.prepareInput("…", "…").pending) throw Error("Direct ellipsis must remain supported");
+                    const moreLines = Pages.layout("word ".repeat(500), 580, text => 13, 12);
+                    if (moreLines.lines !== 12 || moreLines.text.length <= 90) throw Error("Fullscreen must show more than two lines");
                     let meter = Speed.record(Speed.create(), 1000);
                     meter = Speed.tick(meter, 2000, true);
                     if (Speed.rate(meter, 5, 2000) !== 60 || Speed.rate(meter, 0, 2000) !== 0) throw Error("WPM must count net correct five-character words");
@@ -87,11 +93,20 @@ ShellRoot {
                     practice.loadPreset(0); practice.start(); phase++; return;
                 }
                 if (practice.busy || !practice.passage.length) return;
-                if (practice.practicing && (practice.characters(practice.passage).length > 90 || practice.pageLayout.lines > 2 || practice.implicitHeight !== 240)) throw Error("Practice is not compact");
+                if (practice.practicing && (practice.pageLayout.lines > practice.pageLineLimit || practice.implicitHeight !== 240)) throw Error("Practice is not compact");
                 const input = find(practice, "typing-input");
                 const first = find(practice, "typing-character-0");
                 if (!input || !first) throw Error("Typing input or glyph missing");
                 if (phase === 1) {
+                    const originalSource = practice.pageSource;
+                    practice.pageSource = "… next"; practice.fitPage();
+                    input.text = ".";
+                    if (practice.turningPage) throw Error("First ellipsis period advanced the page");
+                    input.text = "..";
+                    if (practice.turningPage) throw Error("Second ellipsis period advanced the page");
+                    input.text = "...";
+                    if (input.text !== "…" || practice.correctCount() !== 1) throw Error("Three periods did not compose in the input field");
+                    input.text = ""; practice.pageSource = originalSource; practice.fitPage();
                     const caret = find(practice, "typing-smooth-caret");
                     const core = find(practice, "typing-caret-core");
                     if (!caret.visible || core.width > 3 || core.height < 20) throw Error("Slim caret is missing or oversized");
