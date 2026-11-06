@@ -14,7 +14,8 @@ Item {
     required property ShellScreen screen
     readonly property bool open: QuickNotes.visible && QuickNotes.screenName === screen.name
         && !GlobalStates.lockscreenVisible
-    readonly property Item blurTarget: reveal.visible ? card : null
+    // Release compositor blur immediately; the exit animation only paints the card.
+    readonly property Item blurTarget: open ? card : null
     readonly property Item hitbox: open ? card : null
     readonly property real unit: Styling.fontSize(0)
     readonly property color statusColor: QuickNotes.error ? Colors.error

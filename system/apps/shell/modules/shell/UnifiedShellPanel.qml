@@ -82,10 +82,9 @@ PanelWindow {
         regions: [
             barContent.backgroundBlur,
             launcherBlur,
-            notesBlur,
             shelfBlur,
             toastStack.backgroundBlur
-        ]
+        ].concat(notesPopup.open ? [notesBlur] : [])
     }
 
 
