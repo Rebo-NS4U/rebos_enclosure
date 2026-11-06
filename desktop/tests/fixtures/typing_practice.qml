@@ -152,7 +152,7 @@ ShellRoot {
                     const lineEvents = practice.lineTransitions;
                     input.cursorPosition = input.length;
                     movingCaret.follow(find(practice, "typing-character-120"));
-                    if (Motion.enabled && practice.lineTransitions <= lineEvents) throw Error("Moving to a new line did not trigger the accent sweep");
+                    if (Motion.enabled && practice.lineTransitions <= lineEvents) throw Error("Moving to a new line did not trigger the ripple");
                     if (movingCaret.targetRowY <= 0 || activeLine.y !== movingCaret.rowY) throw Error("Line highlight did not follow wrapped text");
                     input.cursorPosition = 0;
                     movingCaret.follow(find(practice, "typing-character-0"));
@@ -214,7 +214,7 @@ ShellRoot {
                     keyDriver.wait(20);
                     if (Motion.enabled && (practice.feedbackEvents <= feedbackBefore || first.spark <= 0 || first.scale <= 1 || !find(first, "typing-key-halo-0").visible)) throw Error("Correct typing did not visibly trigger the pop and halo");
                 } else if (phase === 2) {
-                    if (Math.abs(first.opacity - 1) > 0.001 || Math.abs(first.scale - 1) > 0.001) throw Error("Typed glyph did not settle after animation");
+                    if (Math.abs(first.parent.opacity - 1) > 0.001 || Math.abs(first.opacity - 1) > 0.001 || Math.abs(first.scale - 1) > 0.001) throw Error("Typed glyph did not settle after animation");
                     const settled = find(practice, "typing-smooth-caret");
                     const settledLine = find(practice, "typing-line-highlight");
                     const activeGlyph = settled.targetGlyph;

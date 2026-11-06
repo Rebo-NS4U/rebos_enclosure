@@ -46,8 +46,6 @@ Item {
     property real pageReveal: 1
     property real pageCelebration: 0
     property int feedbackEvents: 0
-    property real pageSweep: 1
-    property real lineSweep: 1
     property real lineFlash: 0
     property int lineTransitions: 0
     property int pageTransitions: 0
@@ -114,7 +112,7 @@ Item {
         smoothCaret.follow(current);
     }
     function resetPageCaret() {
-        lineArrival.stop(); lineFlash = 0; lineSweep = 1;
+        lineArrival.stop(); lineFlash = 0;
         smoothCaret.glide = false;
         smoothCaret.placed = false;
         smoothCaret.targetGlyph = null;
@@ -128,41 +126,20 @@ Item {
     ParallelAnimation {
         id: pageArrival
         onStarted: root.pageTransitions++
-        NumberAnimation { target: root; property: "pageSweep"; from: 0; to: 1; duration: Math.max(440, Motion.enter * 1.6); easing.type: Easing.InOutCubic }
-        NumberAnimation { target: root; property: "pageReveal"; from: 0.4; to: 1; duration: Math.max(120, Motion.contentIn); easing.type: Easing.OutCubic }
+        NumberAnimation { target: root; property: "pageReveal"; from: 0; to: 1; duration: Math.max(480, Motion.enter * 1.8); easing.type: Easing.InOutCubic }
         NumberAnimation { target: root; property: "pageCelebration"; from: 1; to: 0; duration: Math.max(360, Motion.enter * 1.5); easing.type: Easing.OutCubic }
     }
     ParallelAnimation {
         id: lineArrival
         onStarted: root.lineTransitions++
-        NumberAnimation { target: root; property: "lineSweep"; from: 0; to: 1; duration: Math.max(300, Motion.enter * 1.2); easing.type: Easing.OutCubic }
         NumberAnimation { target: root; property: "lineFlash"; from: 1; to: 0; duration: Math.max(400, Motion.enter * 1.5); easing.type: Easing.InQuad }
-    }
-    component AccentSweep: Item {
-        property real progress: 1
-        property real strength: 0
-        clip: true
-        visible: strength > 0.001
-        opacity: strength
-        Rectangle {
-            width: Math.max(40, parent.width * 0.3)
-            height: parent.height
-            x: (parent.width + width) * parent.progress - width
-            radius: 8
-            gradient: Gradient {
-                orientation: Gradient.Horizontal
-                GradientStop { position: 0; color: "transparent" }
-                GradientStop { position: 0.5; color: Qt.alpha(Colors.primary, 0.5) }
-                GradientStop { position: 1; color: "transparent" }
-            }
-        }
     }
     Connections {
         target: Motion
         function onEnabledChanged() {
             if (!Motion.enabled) {
                 pageArrival.stop(); lineArrival.stop(); revealAnimation.stop();
-                root.pageReveal = 1; root.pageCelebration = 0; root.pageSweep = 1; root.lineFlash = 0; root.lineSweep = 1; root.revealProgress = 1;
+                root.pageReveal = 1; root.pageCelebration = 0; root.lineFlash = 0; root.revealProgress = 1;
             }
         }
     }
@@ -190,7 +167,7 @@ Item {
     onPracticingChanged: { reveal(); resetSpeed(); syncCaret(); }
     onVisibleChanged: {
         if (visible) { reveal(); backendStarted = true; if (ready) send({action: "list"}, false); }
-        else { saveProgress(); pageArrival.stop(); lineArrival.stop(); pageReveal = 1; pageCelebration = 0; pageSweep = 1; lineFlash = 0; }
+        else { saveProgress(); pageArrival.stop(); lineArrival.stop(); pageReveal = 1; pageCelebration = 0; lineFlash = 0; }
         resetSpeed();
         if (visible && practicing) { fitDelay.restart(); Qt.callLater(() => answer.forceActiveFocus()); }
     }
@@ -333,7 +310,7 @@ Item {
                     answer.text = buffered; answer.cursorPosition = answer.length;
                     if (!root.visible || !root.practicing) root.saveProgress();
                 });
-            } else { pendingKeys = ""; pageArrival.stop(); pageReveal = 1; pageCelebration = 0; pageSweep = 1; }
+            } else { pendingKeys = ""; pageArrival.stop(); pageReveal = 1; pageCelebration = 0; }
             message = "Ready to resume. Your place is saved on this device.";
             if (data.kind === "book") samplesExpanded = false;
             if (data.action === "add") { paste.text = ""; practicing = true; }
@@ -349,7 +326,7 @@ Item {
     Timer { interval: 5000; running: root.backendStarted; repeat: true; onTriggered: root.saveProgress() }
 
     function status() {
-        return JSON.stringify({practicing: practicing, fullscreen: fullscreen, pageLines: pageLayout.lines, pageLineLimit: pageLineLimit, passageHeight: passageArea.height, renderedHeight: passageFlow.height, fontSize: readingFont.pixelSize, layoutVersion: 5, lineTransitions: lineTransitions, pageTransitions: pageTransitions, motionEnabled: Motion.enabled, feedbackEvents: feedbackEvents, focused: answer.activeFocus, turningPage: turningPage, textLength: bookLength,
+        return JSON.stringify({practicing: practicing, fullscreen: fullscreen, pageLines: pageLayout.lines, pageLineLimit: pageLineLimit, passageHeight: passageArea.height, renderedHeight: passageFlow.height, fontSize: readingFont.pixelSize, layoutVersion: 6, lineTransitions: lineTransitions, pageTransitions: pageTransitions, motionEnabled: Motion.enabled, feedbackEvents: feedbackEvents, focused: answer.activeFocus, turningPage: turningPage, textLength: bookLength,
             typed: answer.text.length, position: position, rounds: rounds,
             presets: TypingTexts.passages.length, message: message, busy: busy,
             title: bookTitle, chapters: chapters.length, library: library.length, books: libraryBooks.length, wpm: liveWpm, filePickerActive: filePickerActive});
@@ -796,23 +773,22 @@ Item {
                             color: Qt.alpha(Colors.primary, 0.08)
                             border.width: 2
                             border.color: Qt.alpha(Colors.primary, 0.5)
+                            scale: 0.96 + (1 - root.pageCelebration) * 0.04
                             opacity: Motion.enabled ? root.pageCelebration : 0
                             visible: opacity > 0
                         }
-                        AccentSweep {
-                            objectName: "typing-line-sweep"
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            y: smoothCaret.rowY
-                            height: smoothCaret.rowHeight
-                            progress: root.lineSweep
-                            strength: Motion.enabled && answer.activeFocus ? root.lineFlash : 0
-                        }
-                        AccentSweep {
-                            objectName: "typing-page-sweep"
-                            anchors.fill: parent
-                            progress: root.pageSweep
-                            strength: Motion.enabled ? Math.sin(root.pageSweep * Math.PI) : 0
+                        Rectangle {
+                            objectName: "typing-line-ripple"
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            width: parent.width * (0.88 + (1 - root.lineFlash) * 0.12)
+                            height: smoothCaret.rowHeight + (1 - root.lineFlash) * 12
+                            y: smoothCaret.rowY - (height - smoothCaret.rowHeight) / 2
+                            radius: 9
+                            color: Qt.alpha(Colors.primary, 0.08)
+                            border.width: 2
+                            border.color: Qt.alpha(Colors.primary, 0.65)
+                            opacity: Motion.enabled && answer.activeFocus ? root.lineFlash : 0
+                            visible: opacity > 0
                         }
                         Flow {
                             id: passageFlow
@@ -820,7 +796,6 @@ Item {
                             y: 4
                             onYChanged: Qt.callLater(() => { if (smoothCaret.targetGlyph) smoothCaret.follow(smoothCaret.targetGlyph); })
                             z: 1
-                            opacity: root.pageReveal
                             anchors.left: parent.left
                             anchors.right: parent.right
                             anchors.leftMargin: 4
@@ -831,6 +806,8 @@ Item {
                                 delegate: Row {
                                     id: word
                                     required property var modelData
+                                    // Reveal complete rows in order without shifting the typing targets.
+                                    opacity: Motion.enabled ? Math.max(0, Math.min(1, root.pageReveal * (root.pageLayout.lines + 1) - modelData.line)) : 1
                                     readonly property real centerOffset: Math.max(0, (passageFlow.width - (root.pageLayout.lineWidths[modelData.line] || 0)) / 2)
                                     transform: Translate { x: word.centerOffset }
                                     onCenterOffsetChanged: { if (smoothCaret.targetGlyph?.parent === word) Qt.callLater(() => { if (smoothCaret.targetGlyph) smoothCaret.follow(smoothCaret.targetGlyph); }); }
@@ -940,7 +917,7 @@ Item {
                                 const nextY = point.y + item.baselineOffset + root.highlightBounds.y - root.highlightPadding;
                                 const newLine = placed && targetGlyph !== null && item.characterIndex > targetGlyph.characterIndex && nextY > targetRowY + 1;
                                 if (newLine && root.visible && answer.activeFocus && Motion.enabled && !pageArrival.running) lineArrival.restart();
-                                // Keep the cursor anchored while the accent sweeps across the new row.
+                                // Keep the cursor anchored while the new row ripples into view.
                                 glide = placed && targetGlyph !== null && root.glyphItems[targetGlyph.characterIndex] === targetGlyph && Math.abs(nextY - targetRowY) < 1 && Motion.enabled;
                                 targetGlyph = item;
                                 targetRowY = Math.max(0, nextY);
