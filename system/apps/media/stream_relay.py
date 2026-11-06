@@ -13,6 +13,10 @@ from urllib.request import Request, HTTPRedirectHandler, HTTPCookieProcessor, bu
 from http.cookiejar import CookieJar
 
 
+# Long YouTube HLS playlists include signed URLs for thousands of segments.
+MAX_PLAYLIST_BYTES = 16 * 1024 * 1024
+
+
 class RelayRedirects(HTTPRedirectHandler):
     def __init__(self, relay):
         super().__init__()
@@ -121,8 +125,8 @@ class RelayRequestHandler(BaseHTTPRequestHandler):
                 prefix = upstream.read(64) if body else b''
                 playlist = body and (prefix.lstrip().startswith(b'#EXTM3U') or 'mpegurl' in content_type)
                 if playlist:
-                    raw = prefix + upstream.read(2_000_000)
-                    if len(raw) >= 2_000_000:
+                    raw = prefix + upstream.read(MAX_PLAYLIST_BYTES + 1 - len(prefix))
+                    if len(raw) > MAX_PLAYLIST_BYTES:
                         raise ValueError('Oversized playlist')
                     rewritten = self.server.relay.rewrite(raw.decode(), upstream.url, source[1], height).encode()
                     self.send_response(200)
