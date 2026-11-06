@@ -30,6 +30,7 @@ ShellRoot {
         return null;
     }
     Timer {
+        property bool stepping: false
         property int phase: 0
         property int expectedPosition: 0
         property string expectedBuffered: ""
@@ -37,6 +38,8 @@ ShellRoot {
         running: true
         repeat: true
         onTriggered: {
+            if (stepping) return;
+            stepping = true;
             try {
                 if (phase === 0) {
                     for (const quote of "‘’‚‛'")
@@ -214,7 +217,18 @@ ShellRoot {
                     keyDriver.wait(20);
                     if (Motion.enabled && (practice.feedbackEvents <= feedbackBefore || first.spark <= 0 || first.scale <= 1 || !find(first, "typing-key-halo-0").visible)) throw Error("Correct typing did not visibly trigger the pop and halo");
                 } else if (phase === 2) {
-                    if (Math.abs(first.parent.opacity - 1) > 0.001 || Math.abs(first.opacity - 1) > 0.001 || Math.abs(first.scale - 1) > 0.001) throw Error("Typed glyph did not settle after animation");
+                    if (practice.activeEffects) return;
+                    if (Math.abs(first.parent.opacity - 1) > 0.001 || Math.abs(first.opacity - 1) > 0.001 || Math.abs(first.scale - 1) > 0.001) throw Error("Typed glyph did not settle after animation: " + JSON.stringify({opacity:first.opacity, scale:first.scale, spark:first.spark, strength:practice.effectStrength, kind:practice.effectKind, running:practice.activeEffects}));
+                    if (Motion.enabled) {
+                        practice.requestFeedback("letter", first);
+                        practice.requestFeedback("line", first);
+                        practice.requestFeedback("letter", first);
+                        if (practice.effectKind !== "line" || practice.activeEffects !== 1 || first.spark !== 0) throw Error("Letter feedback overlapped the line pop");
+                        practice.requestFeedback("page");
+                        if (practice.effectKind !== "page" || practice.activeEffects !== 1 || find(practice, "typing-line-ripple").strength !== 0) throw Error("Page feedback overlapped the line pop");
+                        practice.stopFeedback();
+                        if (practice.activeEffects !== 0 || practice.effectStrength !== 0) throw Error("Feedback did not stop cleanly");
+                    }
                     const settled = find(practice, "typing-smooth-caret");
                     const settledLine = find(practice, "typing-line-highlight");
                     const activeGlyph = settled.targetGlyph;
@@ -345,6 +359,7 @@ ShellRoot {
 
                 phase++;
             } catch (error) { console.error(error); Qt.quit(); }
+            finally { stepping = false; }
         }
     }
 }
