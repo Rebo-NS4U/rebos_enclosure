@@ -125,7 +125,7 @@ Item {
         const target = characters(passage);
         let count = 0;
         for (let index = 0; index < input.length && index < target.length; index++)
-            if (input[index] === target[index]) count++;
+            if (TypingPaging.matchingCharacter(input[index], target[index])) count++;
         return count;
     }
     function resetSpeed() {
@@ -685,7 +685,7 @@ Item {
                                                 enabled: Motion.enabled
                                                 NumberAnimation { duration: Math.round(Motion.base * 0.45); easing.type: Easing.OutCubic }
                                             }
-                                            color: caretHere ? Colors.primary : (typed ? (answer.text.substr(characterIndex, modelData.length) !== modelData ? Colors.error : Qt.tint(Colors.overSurface, Qt.alpha(Colors.primary, shine * 0.65))) : Colors.overSurface)
+                                            color: caretHere ? Colors.primary : (typed ? (!TypingPaging.matchingCharacter(answer.text.substr(characterIndex, modelData.length), modelData) ? Colors.error : Qt.tint(Colors.overSurface, Qt.alpha(Colors.primary, shine * 0.65))) : Colors.overSurface)
                                             Rectangle {
                                                 objectName: "typing-caret-" + glyph.characterIndex
                                                 x: -1

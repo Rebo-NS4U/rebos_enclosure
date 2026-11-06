@@ -35,6 +35,19 @@ ShellRoot {
         onTriggered: {
             try {
                 if (phase === 0) {
+                    for (const quote of "‘’‚‛'")
+                        if (!Pages.matchingCharacter("'", quote)) throw Error("Single quote rejected");
+                    for (const quote of '“”„‟"')
+                        if (!Pages.matchingCharacter('"', quote)) throw Error("Double quote rejected");
+                    if (Pages.matchingCharacter("'", '"') || Pages.matchingCharacter("a", "A")) throw Error("Different characters accepted");
+                    practice.restoring = true;
+                    practice.pageSource = "“Don’t”";
+                    practice.fitPage();
+                    const quoteInput = find(practice, "typing-input");
+                    quoteInput.text = "\"Don't\"";
+                    if (practice.correctCount() !== 7) throw Error("Keyboard quotes must count toward accuracy and WPM");
+                    quoteInput.text = "";
+                    practice.restoring = false;
                     let meter = Speed.record(Speed.create(), 1000);
                     meter = Speed.tick(meter, 2000, true);
                     if (Speed.rate(meter, 5, 2000) !== 60 || Speed.rate(meter, 0, 2000) !== 0) throw Error("WPM must count net correct five-character words");
