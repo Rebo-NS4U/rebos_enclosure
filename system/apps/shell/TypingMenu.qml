@@ -45,6 +45,7 @@ Item {
     property var restoreChapters: []
     property real pageReveal: 1
     property real pageCelebration: 0
+    property int feedbackEvents: 0
     property var chapters: []
     property var library: []
     property bool backendStarted: false
@@ -121,7 +122,7 @@ Item {
     ParallelAnimation {
         id: pageArrival
         NumberAnimation { target: root; property: "pageReveal"; from: 0.4; to: 1; duration: Math.max(120, Motion.contentIn); easing.type: Easing.OutCubic }
-        NumberAnimation { target: root; property: "pageCelebration"; from: 1; to: 0; duration: Math.max(180, Motion.enter); easing.type: Easing.OutCubic }
+        NumberAnimation { target: root; property: "pageCelebration"; from: 1; to: 0; duration: Math.max(360, Motion.enter * 1.5); easing.type: Easing.OutCubic }
     }
     Connections {
         target: Motion
@@ -315,7 +316,7 @@ Item {
     Timer { interval: 5000; running: root.backendStarted; repeat: true; onTriggered: root.saveProgress() }
 
     function status() {
-        return JSON.stringify({practicing: practicing, fullscreen: fullscreen, pageLines: pageLayout.lines, pageLineLimit: pageLineLimit, passageHeight: passageArea.height, renderedHeight: passageFlow.height, fontSize: readingFont.pixelSize, layoutVersion: 3, focused: answer.activeFocus, turningPage: turningPage, textLength: bookLength,
+        return JSON.stringify({practicing: practicing, fullscreen: fullscreen, pageLines: pageLayout.lines, pageLineLimit: pageLineLimit, passageHeight: passageArea.height, renderedHeight: passageFlow.height, fontSize: readingFont.pixelSize, layoutVersion: 4, motionEnabled: Motion.enabled, feedbackEvents: feedbackEvents, focused: answer.activeFocus, turningPage: turningPage, textLength: bookLength,
             typed: answer.text.length, position: position, rounds: rounds,
             presets: TypingTexts.passages.length, message: message, busy: busy,
             title: bookTitle, chapters: chapters.length, library: library.length, books: libraryBooks.length, wpm: liveWpm, filePickerActive: filePickerActive});
@@ -759,8 +760,8 @@ Item {
                             objectName: "typing-page-celebration"
                             anchors.fill: parent
                             radius: 10
-                            color: "transparent"
-                            border.width: 1
+                            color: Qt.alpha(Colors.primary, 0.08)
+                            border.width: 2
                             border.color: Qt.alpha(Colors.primary, 0.5)
                             opacity: Motion.enabled ? root.pageCelebration : 0
                             visible: opacity > 0
@@ -796,9 +797,10 @@ Item {
                                             property bool incorrect: false
                                             property bool initialized: false
                                             property real spark: 0
-                                            scale: 1 + spark * 0.08
+                                            scale: 1 + spark * 0.18
+                                            transform: Translate { y: -3 * glyph.spark }
                                             transformOrigin: Item.Center
-                                            function celebrate() { successPop.restart(); }
+                                            function celebrate() { root.feedbackEvents++; successPop.restart(); }
                                             function stopFeedback() { successPop.stop(); spark = 0; }
                                             NumberAnimation {
                                                 id: successPop
@@ -806,8 +808,22 @@ Item {
                                                 property: "spark"
                                                 from: 1
                                                 to: 0
-                                                duration: Math.max(140, Motion.enter)
+                                                duration: Math.max(360, Motion.enter * 1.2)
                                                 easing.type: Easing.OutCubic
+                                            }
+                                            Rectangle {
+                                                objectName: "typing-key-halo-" + glyph.characterIndex
+                                                anchors.centerIn: parent
+                                                width: parent.width + 6
+                                                height: root.highlightBounds.height + 6
+                                                radius: 5
+                                                z: -1
+                                                color: Qt.alpha(Colors.primary, 0.2)
+                                                border.width: 1
+                                                border.color: Qt.alpha(Colors.primary, 0.8)
+                                                scale: 1 + (1 - glyph.spark) * 0.45
+                                                opacity: glyph.spark
+                                                visible: opacity > 0
                                             }
                                             Connections {
                                                 target: Motion

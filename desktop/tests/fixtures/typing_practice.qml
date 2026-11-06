@@ -204,7 +204,11 @@ ShellRoot {
                     if (!caret.visible || core.width <= 0 || core.height <= 0 || core.radius <= 0 || core.color.a < 0.35) throw Error("Rounded glass cursor is missing or too faint");
                     if (!find(practice, "typing-character-0").caretHere || Math.abs(first.opacity - 1) > 0.001) throw Error("Current-character highlight missing: " + JSON.stringify({opacity: first.opacity, current: first.caretHere, cursor: input.cursorPosition, practicing: practice.practicing, visible: find(practice, "typing-character-0").caretHere, motion: Motion.base}));
                     if (Math.abs(find(practice, "typing-character-1").opacity - 0.65) > 0.001) throw Error("Upcoming text must remain readable");
+                    input.forceActiveFocus();
+                    const feedbackBefore = practice.feedbackEvents;
                     input.text = practice.passage[0]; input.cursorPosition = input.length;
+                    keyDriver.wait(20);
+                    if (Motion.enabled && (practice.feedbackEvents <= feedbackBefore || first.spark <= 0 || first.scale <= 1 || !find(first, "typing-key-halo-0").visible)) throw Error("Correct typing did not visibly trigger the pop and halo");
                 } else if (phase === 2) {
                     if (Math.abs(first.opacity - 1) > 0.001 || Math.abs(first.scale - 1) > 0.001) throw Error("Typed glyph did not settle after animation");
                     const settled = find(practice, "typing-smooth-caret");
