@@ -792,17 +792,6 @@ Item {
                                                 NumberAnimation { duration: Math.round(Motion.base * 0.45); easing.type: Easing.OutCubic }
                                             }
                                             color: typed && incorrect ? Colors.error : Colors.overSurface
-                                            Rectangle {
-                                                objectName: "typing-caret-" + glyph.characterIndex
-                                                x: -1
-                                                y: glyph.baselineOffset + 3
-                                                width: parent.width + 2
-                                                height: 2
-                                                z: -1
-                                                radius: 4
-                                                color: Qt.alpha(Colors.primary, 0.75)
-                                                visible: glyph.caretHere
-                                            }
 
                                         }
                                     }

@@ -138,6 +138,7 @@ ShellRoot {
                     input.text = ""; practice.pageSource = originalSource; practice.fitPage();
                     const caret = find(practice, "typing-smooth-caret");
                     const core = find(practice, "typing-caret-core");
+                    if (find(practice, "typing-caret-0")) throw Error("Letter underline must not be rendered");
                     const line = find(practice, "typing-line-highlight");
                     if (line.border.width !== 0 || line.children.length !== 0) throw Error("Line highlight must have uniform transparency without a side strip");
                     const textFlow = find(practice, "typing-passage-flow");
@@ -148,7 +149,7 @@ ShellRoot {
                     if (caret.accent.toString() !== Colors.primary.toString()) throw Error("Cursor must use the exact theme accent");
                     if (first.style !== Text.Normal || first.color.toString() !== Colors.overSurface.toString()) throw Error("Text must use the normal theme color without outlines");
                     if (!caret.visible || core.width < 12 || core.height < 20 || core.radius < 4 || core.color.a < 0.35) throw Error("Rounded glass cursor is missing or too faint");
-                    if (!find(practice, "typing-caret-0").visible || Math.abs(first.opacity - 1) > 0.001) throw Error("Current-character highlight missing: " + JSON.stringify({opacity: first.opacity, current: first.caretHere, entrance: first.entrance, cursor: input.cursorPosition, practicing: practice.practicing, visible: find(practice, "typing-caret-0").visible, motion: Motion.base}));
+                    if (!find(practice, "typing-character-0").caretHere || Math.abs(first.opacity - 1) > 0.001) throw Error("Current-character highlight missing: " + JSON.stringify({opacity: first.opacity, current: first.caretHere, entrance: first.entrance, cursor: input.cursorPosition, practicing: practice.practicing, visible: find(practice, "typing-character-0").caretHere, motion: Motion.base}));
                     if (Math.abs(find(practice, "typing-character-1").opacity - 0.65) > 0.001) throw Error("Upcoming text must remain readable");
                     input.text = practice.passage[0]; input.cursorPosition = input.length;
                 } else if (phase === 2) {
@@ -163,15 +164,15 @@ ShellRoot {
                     if (Math.abs(topPadding - bottomPadding) > 0.01 || Math.abs(topPadding - practice.highlightPadding) > 0.01) throw Error("Highlight does not have equal top and bottom padding");
                     if (Math.abs(settled.y - settledLine.y) > 0.01 || Math.abs(settled.height - settledLine.height) > 0.01) throw Error("Cursor and line boxes must share vertical bounds");
                     if (Math.abs(settled.x - settled.targetX) > 0.01 || Math.abs(settled.y - settled.targetY) > 0.01 || Math.abs(settledLine.y - settled.targetRowY) > 0.01) throw Error("Cursor and line transitions did not settle together");
-                    if (!find(practice, "typing-caret-1").visible || find(practice, "typing-smooth-caret").targetGlyph.characterIndex !== 1) throw Error("Cursor did not advance");
+                    if (!find(practice, "typing-character-1").caretHere || find(practice, "typing-smooth-caret").targetGlyph.characterIndex !== 1) throw Error("Cursor did not advance");
                     input.cursorPosition = 0;
-                    if (!find(practice, "typing-caret-0").visible) throw Error("Cursor does not follow editing position");
+                    if (!find(practice, "typing-character-0").caretHere) throw Error("Cursor does not follow editing position");
                     practice.openBook(practice.bookId);
                 } else if (phase === 3) {
                     if (input.text !== practice.passage[0]) throw Error("Partial typing progress did not resume");
                     input.text = "";
                 } else if (phase < 100) {
-                    if (phase === 4 && (!find(practice, "typing-caret-0").visible || Math.abs(find(practice, "typing-character-1").opacity - 0.65) > 0.001)) throw Error("Backspace did not restore the cursor and readable upcoming text");
+                    if (phase === 4 && (!find(practice, "typing-character-0").caretHere || Math.abs(find(practice, "typing-character-1").opacity - 0.65) > 0.001)) throw Error("Backspace did not restore the cursor and readable upcoming text");
                     const pageCaret = find(practice, "typing-smooth-caret");
                     const firstGlyph = find(practice, "typing-character-0");
                     const firstPoint = firstGlyph.parent.mapToItem(pageCaret.parent, firstGlyph.x, firstGlyph.y);
