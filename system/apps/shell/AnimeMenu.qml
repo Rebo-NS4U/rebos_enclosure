@@ -425,7 +425,7 @@ PanelWindow {
         function filters(): void { root.openFilters(); }
         function filter(key: string, value: string): void { root.setDraftFilter(key, value); }
         function applyFilters(): void { root.applyFilters(); }
-        function settings(): void { root.previousPage = root.pageView; root.settingsSection = root.isYoutube ? "youtube" : "general"; root.pageView = "settings"; card.forceActiveFocus(); }
+        function settings(): void { root.previousPage = root.pageView; root.settingsSection = "general"; root.pageView = "settings"; card.forceActiveFocus(); }
         function status(): string {
             return JSON.stringify({open: root.opened, presented: root.presented, slideProgress: root.slideProgress,
                 sheetY: card.y, sheetHeight: card.height, screenHeight: root.height,
@@ -547,7 +547,7 @@ PanelWindow {
                 MenuButton { visible: root.pageView !== "browse"; text: "‹ Back"; onClicked: root.back() }
                 StyledText {
                     Layout.fillWidth: true
-                    text: root.pageView === "details" ? (root.selectedShow.title ?? root.mediaName) : root.pageView === "settings" ? "Playback settings" : root.pageView === "filters" ? "Search filters" : "Media Browser"
+                    text: root.pageView === "details" ? (root.selectedShow.title ?? root.mediaName) : root.pageView === "settings" ? "Media settings" : root.pageView === "filters" ? "Search filters" : "Media Browser"
                     font.pixelSize: Styling.fontSize(6)
                     font.bold: true
                     elide: Text.ElideRight
@@ -556,7 +556,7 @@ PanelWindow {
                 MenuButton {
                     text: "Settings"
                     visible: root.pageView !== "settings"
-                    onClicked: { root.previousPage = root.pageView; root.settingsSection = root.isYoutube ? "youtube" : "general"; root.pageView = "settings"; }
+                    onClicked: { root.previousPage = root.pageView; root.settingsSection = "general"; root.pageView = "settings"; }
                 }
                 MenuButton { text: "×"; Accessible.name: "Close media menu"; onClicked: root.opened = false }
             }
@@ -986,7 +986,7 @@ PanelWindow {
                 visible: root.pageView === "settings"
                 Layout.fillWidth: true
                 Repeater {
-                    model: [{id: "general", title: "Playback & subtitles"}, {id: "youtube", title: "YouTube"}, {id: "sources", title: "Movies & TV accounts"}]
+                    model: [{id: "general", title: "Playback"}, {id: "subtitles", title: "Subtitles"}, {id: "youtube", title: "YouTube account"}, {id: "sources", title: "Movie & TV sources"}]
                     delegate: MenuButton {
                         required property var modelData
                         Layout.fillWidth: true
@@ -1012,13 +1012,7 @@ PanelWindow {
                     spacing: root.unit * 0.5
                     RowLayout {
                         Layout.fillWidth: true
-                        StyledText { text: "YouTube · For You"; font.bold: true; Layout.fillWidth: true }
-                        CheckBox {
-                            text: "Auto next"
-                            checked: root.settings.youtube_auto_next ?? true
-                            onToggled: root.updateSetting("youtube_auto_next", checked)
-                            enabled: root.ready
-                        }
+                        StyledText { text: "YouTube recommendations"; font.bold: true; Layout.fillWidth: true }
                         MenuButton {
                             text: "Check account"
                             enabled: root.ready && !root.loading && !root.youtubeBusy
@@ -1041,7 +1035,7 @@ PanelWindow {
                             onClicked: Qt.openUrlExternally("https://www.youtube.com/")
                         }
                         MenuButton {
-                            text: root.youtubeBusy ? "Connecting…" : "Finish connection"
+                            text: root.youtubeBusy ? "Connecting…" : "Connect selected profile"
                             enabled: root.ready && !root.youtubeBusy && (root.youtubeAccount.browsers ?? []).length > 0
                             onClicked: {
                                 root.youtubeBusy = true;
@@ -1063,7 +1057,7 @@ PanelWindow {
                     }
                     StyledText {
                         Layout.fillWidth: true
-                        text: "Connect the profile signed in to YouTube, then browse and play here. Auto next follows the loaded feed or playlist; it stops at the last video."
+                        text: "Choose the browser profile you use for YouTube. Sign in there, then connect it here to load your For You recommendations. Playback quality and automatic advance are in Playback."
                         color: Colors.overSurfaceVariant
                         wrapMode: Text.Wrap
                     }
@@ -1103,7 +1097,7 @@ PanelWindow {
                         }
                     }
                     StyledText {
-                        text: "Create a TorBox account and activate the 24-hour Pro demo if offered, then press Connect. Approve Media Browser on TorBox. Only cached files are used; your computer streams HTTPS and does not run torrents."
+                        text: "Connect your TorBox account and approve Media Browser on the TorBox website. You can also connect with an API key below."
                         Layout.fillWidth: true
                         wrapMode: Text.Wrap
                         color: Colors.overSurfaceVariant
@@ -1132,7 +1126,7 @@ PanelWindow {
                         }
                     }
                     StyledText {
-                        text: root.torbox.connected ? "Movies and TV use cached TorBox files over HTTPS. Local torrents and browser verification are disabled. Playback checks English audio, video duration and seeking before opening the player." : "Movies and TV use direct HTTPS streams. Local torrents and browser verification are disabled. Free sources may be unavailable; playback checks English audio, video duration and seeking before opening the player."
+                        text: root.torbox.connected ? "Connected: movies and TV use files available in your TorBox cache." : "Without TorBox, movies and TV use free streaming sources. Some titles may be unavailable."
                         Layout.fillWidth: true
                         wrapMode: Text.Wrap
                         color: Colors.overSurfaceVariant
@@ -1142,93 +1136,141 @@ PanelWindow {
                         visible: root.settingsSection === "general"
                         Layout.fillWidth: true
                         spacing: root.unit
-                    CheckBox {
-                        text: "Load the next episode paused"
-                        palette.windowText: Colors.overSurface
-                        checked: root.settings.auto_next ?? true
-                        onToggled: root.updateSetting("auto_next", checked)
-                    }
-                    CheckBox {
-                        text: "Generate live English subtitles locally"
-                        palette.windowText: Colors.overSurface
-                        checked: root.settings.live_subtitles ?? true
-                        onToggled: root.updateSetting("live_subtitles", checked)
-                    }
-                    StyledText {
-                        text: "Whisper detects the language of each speech span and generates English captions locally: English dialogue is transcribed and Spanish dialogue is translated. Very short phrases or language changes within one phrase may be less accurate. YouTube uses its own captions."
-                        Layout.fillWidth: true
-                        wrapMode: Text.Wrap
-                        color: Colors.overSurfaceVariant
-                    }
-                    RowLayout {
-                        Layout.fillWidth: true
-                        StyledText { text: "Subtitle font"; Layout.preferredWidth: root.unit * 10 }
-                        MenuCombo {
+                        enabled: root.ready
+                        StyledText { text: "Video & audio"; font.bold: true }
+                        StyledText {
+                            text: "Settings save automatically. Video quality and anime audio apply to the next video you open."
+                            Layout.fillWidth: true; wrapMode: Text.Wrap; color: Colors.overSurfaceVariant
+                        }
+                        RowLayout {
                             Layout.fillWidth: true
-                            model: ["OpenDyslexic", "Noto Sans", "Noto Serif", "DejaVu Sans"]
-                            currentIndex: Math.max(0, model.indexOf(root.settings.subtitle_font ?? "OpenDyslexic"))
-                            enabled: root.ready
-                            onActivated: root.updateSetting("subtitle_font", currentText)
-                            Accessible.name: "Subtitle font"
+                            StyledText { text: "Video quality"; Layout.preferredWidth: root.unit * 12 }
+                            MenuCombo {
+                                Layout.fillWidth: true
+                                readonly property var values: ["best", "1080p", "720p", "480p", "worst"]
+                                model: ["Best available", "Up to 1080p · Full HD", "Up to 720p · HD", "Up to 480p · SD", "Lowest · save data"]
+                                currentIndex: Math.max(0, values.indexOf(root.settings.quality ?? "best"))
+                                onActivated: root.updateSetting("quality", values[currentIndex])
+                                Accessible.name: "Video quality"
+                            }
+                        }
+                        StyledText {
+                            text: "Uses the highest available resolution within your limit. Lower quality uses less data; source availability can limit resolution."
+                            Layout.fillWidth: true; wrapMode: Text.Wrap; color: Colors.overSurfaceVariant
+                        }
+                        RowLayout {
+                            Layout.fillWidth: true
+                            StyledText { text: "Anime audio"; Layout.preferredWidth: root.unit * 12 }
+                            MenuCombo {
+                                Layout.fillWidth: true
+                                model: ["Original audio · subtitled", "English dub"]
+                                currentIndex: root.settings.mode === "dub" ? 1 : 0
+                                onActivated: root.updateSetting("mode", currentIndex === 1 ? "dub" : "sub")
+                                Accessible.name: "Anime audio"
+                            }
+                        }
+                        CheckBox {
+                            text: "Start fullscreen"
+                            checked: root.settings.fullscreen ?? false
+                            onToggled: root.updateSetting("fullscreen", checked)
+                        }
+                        CheckBox {
+                            text: "Reduce loud audio peaks"
+                            checked: root.settings.audio_normalization ?? true
+                            onToggled: root.updateSetting("audio_normalization", checked)
+                        }
+                        RowLayout {
+                            Layout.fillWidth: true
+                            StyledText { text: "Starting volume"; Layout.preferredWidth: root.unit * 12 }
+                            Slider {
+                                Layout.fillWidth: true
+                                from: 5; to: 100; stepSize: 5; value: root.settings.volume ?? 80
+                                onMoved: root.updateSetting("volume", Math.round(value))
+                                Accessible.name: "Starting volume"
+                            }
+                            StyledText { text: (root.settings.volume ?? 80) + "%" }
+                        }
+                        StyledText {
+                            text: "Fullscreen, audio leveling and starting volume apply when a new player session starts."
+                            Layout.fillWidth: true; wrapMode: Text.Wrap; color: Colors.overSurfaceVariant
+                        }
+                        StyledText { text: "When a video ends"; font.bold: true }
+                        CheckBox {
+                            text: "YouTube: play the next video automatically"
+                            checked: root.settings.youtube_auto_next ?? true
+                            onToggled: root.updateSetting("youtube_auto_next", checked)
+                        }
+                        CheckBox {
+                            text: "Episodes: prepare the next episode and pause"
+                            checked: root.settings.auto_next ?? true
+                            onToggled: root.updateSetting("auto_next", checked)
+                        }
+                        StyledText {
+                            text: "YouTube follows the loaded feed or playlist. Episodes wait for you to press Play. Turn either option off to stop at the end."
+                            Layout.fillWidth: true; wrapMode: Text.Wrap; color: Colors.overSurfaceVariant
                         }
                     }
-                    StyledText {
-                        text: "Font changes save automatically and apply when a new player session starts. OpenDyslexic is included."
+                    ColumnLayout {
+                        visible: root.settingsSection === "subtitles"
                         Layout.fillWidth: true
-                        wrapMode: Text.Wrap
-                        color: Colors.overSurfaceVariant
-                    }
-                    CheckBox {
-                        text: "Auto-detect language and translate to English"
-                        palette.windowText: Colors.overSurface
-                        checked: (root.settings.caption_language ?? "auto") === "auto"
-                        onToggled: root.updateSetting("caption_language", checked ? "auto" : "en")
-                    }
-                    RowLayout {
-                        Layout.fillWidth: true
-                        StyledText { text: "Whisper timing"; Layout.preferredWidth: root.unit * 10 }
-                        Slider {
-                            Layout.fillWidth: true
-                            from: -10; to: 10; stepSize: 0.1
-                            value: root.settings.caption_delay ?? 0
-                            onMoved: root.updateSetting("caption_delay", Math.round(value * 10) / 10)
-                            Accessible.name: "Whisper subtitle delay in seconds"
+                        spacing: root.unit
+                        enabled: root.ready
+                        StyledText { text: "Subtitles"; font.bold: true }
+                        CheckBox {
+                            text: "Generate English subtitles when needed"
+                            palette.windowText: Colors.overSurface
+                            checked: root.settings.live_subtitles ?? true
+                            onToggled: root.updateSetting("live_subtitles", checked)
                         }
-                        StyledText { text: Number(root.settings.caption_delay ?? 0).toFixed(1) + " s" }
-                        MenuButton { text: "Reset"; onClicked: root.updateSetting("caption_delay", 0) }
-                    }
-                    StyledText {
-                        text: "Move right to show Whisper captions later; left shows them earlier. Changes apply immediately and save automatically. YouTube captions are unaffected."
-                        Layout.fillWidth: true
-                        wrapMode: Text.Wrap
-                        color: Colors.overSurfaceVariant
-                    }
-                    CheckBox {
-                        text: "Start videos fullscreen"
-                        palette.windowText: Colors.overSurface
-                        checked: root.settings.fullscreen ?? false
-                        onToggled: root.updateSetting("fullscreen", checked)
-                    }
-                    CheckBox {
-                        text: "Normalize audio (reduce loud peaks)"
-                        palette.windowText: Colors.overSurface
-                        checked: root.settings.audio_normalization ?? true
-                        onToggled: root.updateSetting("audio_normalization", checked)
-                    }
-                    RowLayout {
-                        StyledText { text: "Quality"; Layout.preferredWidth: root.unit * 10 }
-                        MenuCombo { model: ["best", "1080p", "720p", "480p", "worst"]; currentIndex: Math.max(0, model.indexOf(root.settings.quality ?? "best")); onActivated: root.updateSetting("quality", currentText) }
-                    }
-                    RowLayout {
-                        StyledText { text: "Anime audio"; Layout.preferredWidth: root.unit * 10 }
-                        MenuCombo { model: ["sub", "dub"]; currentIndex: root.settings.mode === "dub" ? 1 : 0; onActivated: root.updateSetting("mode", currentText) }
-                    }
-                    RowLayout {
-                        StyledText { text: "Starting volume"; Layout.preferredWidth: root.unit * 10 }
-                        Slider { from: 5; to: 100; stepSize: 5; value: root.settings.volume ?? 80; onMoved: root.updateSetting("volume", Math.round(value)) }
-                        StyledText { text: (root.settings.volume ?? 80) + "%" }
-                    }
-                    StyledText { text: "When an episode ends, load the next one in the same player and pause it. Press Play here or Space in VLC when you are ready. Turning this off stops at the end of the current episode. Settings save automatically."; Layout.fillWidth: true; wrapMode: Text.Wrap; color: Colors.overSurfaceVariant }
+                        StyledText {
+                            text: "Generated subtitles run locally on your computer. With translation off, speech is treated as English. YouTube uses its own captions."
+                            Layout.fillWidth: true
+                            wrapMode: Text.Wrap
+                            color: Colors.overSurfaceVariant
+                        }
+                        RowLayout {
+                            Layout.fillWidth: true
+                            StyledText { text: "Subtitle font"; Layout.preferredWidth: root.unit * 10 }
+                            MenuCombo {
+                                Layout.fillWidth: true
+                                model: ["OpenDyslexic", "Noto Sans", "Noto Serif", "DejaVu Sans"]
+                                currentIndex: Math.max(0, model.indexOf(root.settings.subtitle_font ?? "OpenDyslexic"))
+                                enabled: root.ready
+                                onActivated: root.updateSetting("subtitle_font", currentText)
+                                Accessible.name: "Subtitle font"
+                            }
+                        }
+                        StyledText {
+                            text: "The font applies when a new player session starts."
+                            Layout.fillWidth: true
+                            wrapMode: Text.Wrap
+                            color: Colors.overSurfaceVariant
+                        }
+                        CheckBox {
+                            text: "Translate other languages to English"
+                            palette.windowText: Colors.overSurface
+                            checked: (root.settings.caption_language ?? "auto") === "auto"
+                            onToggled: root.updateSetting("caption_language", checked ? "auto" : "en")
+                        }
+                        RowLayout {
+                            Layout.fillWidth: true
+                            StyledText { text: "Subtitle timing"; Layout.preferredWidth: root.unit * 10 }
+                            Slider {
+                                Layout.fillWidth: true
+                                from: -10; to: 10; stepSize: 0.1
+                                value: root.settings.caption_delay ?? 0
+                                onMoved: root.updateSetting("caption_delay", Math.round(value * 10) / 10)
+                                Accessible.name: "Generated subtitle delay in seconds"
+                            }
+                            StyledText { text: Number(root.settings.caption_delay ?? 0).toFixed(1) + " s" }
+                            MenuButton { text: "Reset"; onClicked: root.updateSetting("caption_delay", 0) }
+                        }
+                        StyledText {
+                            text: "Move right for later captions or left for earlier captions. Timing applies immediately to generated subtitles; YouTube captions are unaffected."
+                            Layout.fillWidth: true
+                            wrapMode: Text.Wrap
+                            color: Colors.overSurfaceVariant
+                        }
                     }
                 }
             }
