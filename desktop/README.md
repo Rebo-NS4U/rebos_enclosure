@@ -169,6 +169,7 @@ its [include documentation](https://niri-wm.github.io/niri/Configuration%3A-Incl
 | Super+Shift+W | Wallpaper gallery |
 | Super+Alt+Left / Right / W | Previous / next / random prepared wallpaper |
 | Super+Alt+L | Lock screen |
+| Super+Alt+S | Sleep / suspend; press a key to resume when keyboard wake is supported |
 | Super+W / E | Browser / file manager |
 | Super+Shift+/ | Keybinding help |
 
