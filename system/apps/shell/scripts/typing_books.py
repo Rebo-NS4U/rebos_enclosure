@@ -238,7 +238,7 @@ class Library:
 
     def handle(self, request):
         self.window = max(WINDOW, min(4096, int(request.get('window', WINDOW))))
-        handlers = {'list': '_handle_list', 'resume': '_handle_resume', 'import': '_handle_import', 'add': '_handle_add', 'open': '_handle_open', 'chapter': '_handle_chapter', 'save': '_handle_save', 'seek': '_handle_save', 'next': '_handle_save'}
+        handlers = {'list': '_handle_list', 'resume': '_handle_resume', 'import': '_handle_import', 'add': '_handle_add', 'open': '_handle_open', 'chapter': '_handle_chapter', 'save': '_handle_save', 'seek': '_handle_save', 'next': '_handle_save', 'previous': '_handle_previous'}
         handler = handlers.get(request['action'])
         if handler is None:
             raise ValueError('Unknown library action.')
@@ -285,6 +285,22 @@ class Library:
         self.save(request['id'], current['chapters'][index]['position'], '', request.get('loops', current['loops']))
         return self.page(request['id'])
 
+
+    def _handle_previous(self, request):
+        current = self.page(request['id'])
+        if request.get('resolved'):
+            return self._handle_save(request)
+        end = request.get('position', current['position'])
+        if not isinstance(end, int) or not 0 <= end < current['length']:
+            raise ValueError('Invalid book position.')
+        loops = max(0, int(request.get('loops', current['loops'])))
+        if end == 0:
+            if loops == 0:
+                return {'atBeginning': True}
+            end = current['length']
+            loops -= 1
+        start = max(0, end - self.window)
+        return {'previousText': self.cached_text[start:end], 'previousStart': start, 'loops': loops}
 
     def _handle_save(self, request):
         action = request["action"]

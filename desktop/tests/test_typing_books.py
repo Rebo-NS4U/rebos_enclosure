@@ -21,6 +21,26 @@ class Books(unittest.TestCase):
         self.library.db.close()
         self.temp.cleanup()
 
+    def test_previous_context_and_exact_durable_restore(self):
+        text = '😀 first word. ' * 100
+        book = self.library.add('Backward test', text, [])
+        key = book['id']
+        self.library.save(key, 137, '', 1)
+        context = self.library.handle({'action': 'previous', 'id': key, 'position': 137, 'window': 4096})
+        self.assertEqual(context['previousText'], text[:137])
+        self.assertEqual(self.library.page(key)['position'], 137)
+        restored = self.library.handle({'action': 'previous', 'id': key, 'resolved': True, 'position': 2, 'typed': 'wrong text', 'loops': 0})
+        self.assertEqual(restored['position'], 2)  # Do not snap to the next word.
+        self.assertEqual(restored['typed'], 'wrong text')
+        self.assertTrue(self.library.handle({'action': 'previous', 'id': key, 'position': 0, 'loops': 0})['atBeginning'])
+        wrapped = self.library.handle({'action': 'previous', 'id': key, 'position': 0, 'loops': 1, 'window': 4096})
+        self.assertEqual(wrapped['previousText'], text)
+        self.assertEqual(wrapped['loops'], 0)
+        self.library.db.close()
+        self.library = Library(self.path)
+        self.assertEqual(self.library.page(key)['position'], 2)
+        self.assertEqual(self.library.page(key)['typed'], 'wrong text')
+
     def test_large_book_bounded_pages_and_durable_resume(self):
         text, chapters = sections_document('Chapter One\n' + ('A quiet line with many words. ' * 150000) + '\nChapter Eleven\nThe end.')
         first = self.library.add('A long book', text, chapters)

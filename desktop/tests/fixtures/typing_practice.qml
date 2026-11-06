@@ -31,6 +31,7 @@ ShellRoot {
     }
     Timer {
         property bool stepping: false
+        property bool backTested: false
         property int phase: 0
         property int expectedPosition: 0
         property string expectedBuffered: ""
@@ -276,7 +277,33 @@ ShellRoot {
                     if (!practice.turningPage) throw Error("Completing the second line did not start the next page");
                     practice.queueTyping(expectedBuffered + "?");
                     practice.undoQueuedKey();
+                } else if (phase === 130) {
+                    if (practice.position !== 0 || practice.characters(input.text).length !== expectedPosition - 1) throw Error("Backspace did not restore the exact previous Unicode page");
+                    keyDriver.keyClick(Qt.Key_Backspace, Qt.NoModifier, 0);
+                    if (practice.characters(input.text).length !== expectedPosition - 2) throw Error("Backspace inside the restored page did not delete normally");
+                    input.text = practice.passage;
+                    keyDriver.keyClick(Qt.Key_Backspace, Qt.NoModifier, 0);
+                } else if (phase === 131) {
+                    if (practice.position !== 0 || practice.characters(input.text).length !== expectedPosition - 1) throw Error("Backspace during a page turn was lost");
+                    input.text = practice.passage;
+                    phase = 134; return;
+                } else if (phase === 134) {
+                    if (practice.position !== expectedPosition || input.text.length) throw Error("Correcting the previous page did not advance normally");
+                    practice.pageHistory = [];
+                    keyDriver.keyClick(Qt.Key_Backspace, Qt.NoModifier, 0);
+                    phase = 132; return;
+                } else if (phase === 132) {
+                    if (practice.position >= expectedPosition || practice.position + practice.characters(input.text).length !== expectedPosition - 1) throw Error("Previous page without in-memory history lost its bookmark");
+                    practice.send({action: "next", id: practice.bookId, position: expectedPosition, typed: expectedBuffered, loops: 0});
+                } else if (phase === 133) {
+                    backTested = true; phase = 101; return;
                 } else if (phase === 101) {
+                    if (!backTested) {
+                        input.text = "";
+                        input.forceActiveFocus();
+                        keyDriver.keyClick(Qt.Key_Backspace, Qt.NoModifier, 0);
+                        phase = 130; return;
+                    }
                     if (practice.position !== expectedPosition) throw Error("Unicode book position drifted");
                     if (input.text !== expectedBuffered) throw Error("Typing during page turn was lost or duplicated");
                     if (practice.library.length < 2) throw Error("Library did not retain books");
@@ -353,7 +380,7 @@ ShellRoot {
                     const restored = freshView.item;
                     if (restored.busy) return;
                     if (restored.position !== expectedPosition || restored.pageLayout.lines > restored.pageLineLimit) throw Error("Continuous available-height advance failed");
-                    console.log("PASS: available-height passage fitting, lossless paging, queued input, legacy bookmark carryover, no-fail advance, resume, WPM and EPUB import");
+                    console.log("PASS: available-height passage fitting, lossless paging, Backspace navigation, queued input, legacy bookmark carryover, no-fail advance, resume, WPM and EPUB import");
                     Qt.quit();
                 }
 

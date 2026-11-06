@@ -39,6 +39,7 @@ def main():
         output = result.stdout + result.stderr
         print(output)
         assert result.returncode == 0 and "PASS:" in output and "ERROR" not in output
+        assert not any("TypingMenu.qml" in line and "TypeError:" in line for line in output.splitlines())
 
 if __name__ == "__main__":
     main()

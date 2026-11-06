@@ -40,6 +40,10 @@ Item {
     property var pageLayout: ({text: "", words: [], lines: 0, lineWidths: []})
     readonly property string passage: pageLayout.text
     property bool turningPage: false
+    property var pageHistory: []
+    property bool historyBack: false
+    property bool backAfterTurn: false
+    property int pageDirection: 1
     property string pendingKeys: ""
     property string restoreAction: ""
     property var restoreChapters: []
@@ -152,7 +156,7 @@ Item {
         property: "effectStrength"
         from: 1
         to: 0
-        duration: Math.max(360, Motion.enter * 1.2)
+        duration: effectKind === "page" ? Math.max(560, Motion.enter * 1.8) : Math.max(360, Motion.enter * 1.2)
         easing.type: Easing.OutCubic
         onFinished: root.stopFeedback()
     }
@@ -269,6 +273,16 @@ Item {
         dirty = false;
         send({action: "seek", id: bookId, position: Math.max(0, Math.min(bookLength - 1, offset)), typed: "", loops: rounds});
     }
+    function previousPage() {
+        if (busy || !bookId || answer.text.length || (!position && !rounds)) return;
+        saveDelay.stop();
+        dirty = false; turningPage = true; pageDirection = -1;
+        const previous = pageHistory.length ? pageHistory[pageHistory.length - 1] : null;
+        historyBack = !!previous && previous.width === width && previous.lines === pageLineLimit;
+        if (historyBack) send({action: "previous", id: bookId, resolved: true, position: previous.position,
+            typed: characters(previous.typed).slice(0, -1).join(""), loops: previous.rounds});
+        else send({action: "previous", id: bookId, position: position, loops: rounds});
+    }
     function jumpChapter(index) {
         if (!bookId || busy || index < 0 || index >= chapters.length) return;
         dirty = false;
@@ -278,8 +292,22 @@ Item {
         try {
             const data = JSON.parse(line);
             if (data.action === "list") { if (data.books) library = data.books; return; }
-            if (data.error) { if (data.request === pageRequest) { busy = false; turningPage = false; } if (data.action === "save") dirty = true; message = data.error; errorMessage = data.error; return; }
+            if (data.error) { if (data.request === pageRequest) { busy = false; turningPage = false; historyBack = false; backAfterTurn = false; } if (data.action === "save") dirty = true; message = data.error; errorMessage = data.error; return; }
             if (data.request !== pageRequest) return;
+            if (data.atBeginning) { busy = false; turningPage = false; return; }
+            if (data.previousText !== undefined) {
+                let offset = 0, last = 0, text = "";
+                while (offset < data.previousText.length) {
+                    last = offset;
+                    text = TypingPaging.layout(data.previousText.slice(offset), Math.max(80, width - 40), characterWidth, pageLineLimit).text;
+                    if (!text.length) break;
+                    offset += text.length;
+                }
+                send({action: "previous", id: bookId, resolved: true,
+                    position: data.previousStart + characters(data.previousText.slice(0, last)).length,
+                    typed: characters(text).slice(0, -1).join(""), loops: data.loops});
+                return;
+            }
             if (data.empty) { busy = false; practicing = false; return; }
             if (!data.passage) return;
             // Old versions could save a full, mistyped 90-character window.
@@ -294,7 +322,7 @@ Item {
             data.typed = prepared.text;
             const entered = characters(data.typed);
             const pageCount = characters(fitted.text).length;
-            if (data.action !== "next" && pageCount > 0 && entered.length >= pageCount && !prepared.pending) {
+            if (data.action !== "next" && data.action !== "previous" && pageCount > 0 && entered.length >= pageCount && !prepared.pending) {
                 restoreAction = data.action;
                 restoreChapters = data.chapters || chapters;
                 const next = data.position + pageCount;
@@ -308,6 +336,11 @@ Item {
                 speedBaseline = 0;
                 speedState = TypingSpeed.pause(speedState);
             }
+            if (bookId !== data.id || ["seek", "chapter", "open", "add", "import"].indexOf(data.action) >= 0) pageHistory = [];
+            if (data.action === "previous") {
+                pageHistory = historyBack ? pageHistory.slice(0, -1) : [];
+                historyBack = false;
+            }
             restoring = true;
             bookId = data.id; bookTitle = data.title; bookLength = data.length;
             position = data.position; rounds = data.loops; if (data.chapters) chapters = data.chapters;
@@ -316,14 +349,15 @@ Item {
             answer.text = data.typed; answer.cursorPosition = answer.length;
             dirty = false; draft = false; busy = false; restoring = false;
             turningPage = false;
-            if (data.action === "next") {
+            if (data.action === "next" || data.action === "previous") {
                 if (Motion.enabled && visible && practicing) requestFeedback("page");
                 const buffered = pendingKeys; pendingKeys = "";
                 if (buffered.length) Qt.callLater(() => {
-                    answer.text = buffered; answer.cursorPosition = answer.length;
+                    answer.text = data.action === "previous" ? answer.text + buffered : buffered; answer.cursorPosition = answer.length;
                     if (!root.visible || !root.practicing) root.saveProgress();
                 });
             } else { pendingKeys = ""; stopFeedback(); }
+            if (backAfterTurn && data.action === "next") { backAfterTurn = false; Qt.callLater(previousPage); }
             message = "Ready to resume. Your place is saved on this device.";
             if (data.kind === "book") samplesExpanded = false;
             if (data.action === "add") { paste.text = ""; practicing = true; }
@@ -339,7 +373,7 @@ Item {
     Timer { interval: 5000; running: root.backendStarted; repeat: true; onTriggered: root.saveProgress() }
 
     function status() {
-        return JSON.stringify({practicing: practicing, fullscreen: fullscreen, pageLines: pageLayout.lines, pageLineLimit: pageLineLimit, passageHeight: passageArea.height, renderedHeight: passageFlow.height, fontSize: readingFont.pixelSize, layoutVersion: 7, activeEffects: activeEffects, effectKind: effectKind, lineTransitions: lineTransitions, pageTransitions: pageTransitions, motionEnabled: Motion.enabled, feedbackEvents: feedbackEvents, focused: answer.activeFocus, turningPage: turningPage, textLength: bookLength,
+        return JSON.stringify({practicing: practicing, fullscreen: fullscreen, pageLines: pageLayout.lines, pageLineLimit: pageLineLimit, passageHeight: passageArea.height, renderedHeight: passageFlow.height, fontSize: readingFont.pixelSize, layoutVersion: 8, previousPages: pageHistory.length, activeEffects: activeEffects, effectKind: effectKind, lineTransitions: lineTransitions, pageTransitions: pageTransitions, motionEnabled: Motion.enabled, feedbackEvents: feedbackEvents, focused: answer.activeFocus, turningPage: turningPage, textLength: bookLength,
             typed: answer.text.length, position: position, rounds: rounds,
             presets: TypingTexts.passages.length, message: message, busy: busy,
             title: bookTitle, chapters: chapters.length, library: library.length, books: libraryBooks.length, wpm: liveWpm, filePickerActive: filePickerActive});
@@ -504,13 +538,14 @@ Item {
         const pageCount = characters(passage).length;
         const entered = characters(answer.text);
         if (!pageCount || entered.length < pageCount || prepared.pending || editingCorrection) return;
+        pageHistory = pageHistory.concat([{position: position, rounds: rounds, typed: entered.slice(0, pageCount).join(""), width: width, lines: pageLineLimit}]).slice(-128);
         pendingKeys = entered.slice(pageCount).join("") + pendingKeys;
         restoring = true;
         answer.text = entered.slice(0, pageCount).join("");
         answer.cursorPosition = answer.length;
         restoring = false;
         const next = position + pageCount;
-        dirty = false; turningPage = true;
+        dirty = false; turningPage = true; pageDirection = 1;
         send({action: "next", id: bookId, position: next >= bookLength ? 0 : next,
             typed: "", loops: rounds + (next >= bookLength ? 1 : 0)});
     }
@@ -764,9 +799,14 @@ Item {
                         Item {
                             id: passageVisuals
                             anchors.fill: parent
-                            scale: 1 + (root.effectKind === "page" ? root.effectStrength * 0.035 : 0)
-                            transformOrigin: Item.Top
-                            transform: Translate { y: root.effectKind === "page" ? -3 * root.effectStrength : 0 }
+                            readonly property real pagePop: root.effectKind === "page" ? root.effectStrength : 0
+                            scale: 1 - pagePop * 0.035 + (pagePop > 0 ? Math.sin((1 - pagePop) * Math.PI) * 0.05 : 0)
+                            rotation: -1.2 * root.pageDirection * pagePop
+                            transformOrigin: Item.Center
+                            transform: Translate {
+                                x: root.pageDirection * 10 * passageVisuals.pagePop
+                                y: passageVisuals.pagePop > 0 ? -6 * Math.sin((1 - passageVisuals.pagePop) * Math.PI) : 0
+                            }
                             Rectangle {
                                 objectName: "typing-line-highlight"
                                 z: -1
@@ -878,7 +918,7 @@ Item {
                                                 property real inkOpacity: caretHere || typed ? 1 : 0.65
                                                 opacity: caretHere ? 1 : inkOpacity
 
-                                                color: typed && incorrect ? Colors.error : Qt.tint(Colors.overSurface, Qt.alpha(Colors.primary, Math.max(spark, word.linePop, root.effectKind === "page" ? root.effectStrength : 0) * 0.65))
+                                                color: typed && incorrect ? Colors.error : Qt.tint(Colors.overSurface, Qt.alpha(Colors.primary, Math.max(spark, word?.linePop ?? 0, root.effectKind === "page" ? root.effectStrength : 0) * 0.65))
 
                                             }
                                         }
@@ -986,8 +1026,11 @@ Item {
                             }
                             Keys.onPressed: event => {
                                 if (event.key === Qt.Key_F11) { root.toggleFullscreen(); event.accepted = true; return; }
+                                if (event.key === Qt.Key_Backspace && !(event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier)) && !answer.text.length && !root.busy) {
+                                    root.previousPage(); event.accepted = true; return;
+                                }
                                 if (!root.turningPage || (event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier))) return;
-                                if (event.key === Qt.Key_Backspace) { root.undoQueuedKey(); event.accepted = true; }
+                                if (event.key === Qt.Key_Backspace) { if (root.pendingKeys.length) root.undoQueuedKey(); else if (root.pageDirection > 0) root.backAfterTurn = true; event.accepted = true; }
                                 else if (event.text.length && event.text.charCodeAt(0) >= 32) { root.queueTyping(event.text); event.accepted = true; }
                             }
                             Keys.onEscapePressed: event => { root.handleEscape(); event.accepted = true; }
