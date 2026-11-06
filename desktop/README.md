@@ -269,7 +269,8 @@ desktop suite and the separate media suite on pushes and pull requests. The
 runner uses an Arch Linux container with Python, Pillow, GTK, Quickshell, Niri,
 Lua and VLC/FFmpeg dependencies. Tests run as an unprivileged user so installer
 and updater checks exercise the normal user path. See
-[the Blueprint review](../docs/BLUEPRINT-REVIEW.md).
+[the Blueprint review](../docs/BLUEPRINT-REVIEW.md) and the
+[code quality review](../docs/CODE-QUALITY-REVIEW.md) for Radon/Pylint analysis.
 
 For repeatable local runs, install tox in a development environment and use
 `tox -e lint,checks` from the repository root. The checks environment uses system

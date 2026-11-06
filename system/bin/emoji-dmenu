@@ -1,14 +1,8 @@
 #!/bin/bash
+# Select an emoji with the installed Wayland launcher, then copy it.
+set -euo pipefail
 
-DMENU_CMD="/usr/bin/dmenu"
-if [ $? -eq 0 ]
-then
-    sed '1,/^### DATA ###$/d' $0 | $DMENU_CMD | cut -d ' ' -f 1 | tr -d '\n' | wl-copy
-else
-    sed '1,/^### DATA ###$/d' $0 | $DMENU_CMD | cut -d ' ' -f 1 | tr -d '\n' | wl-copy
-fi
-exit
-### DATA ###
+selection=$(fuzzel --dmenu --prompt='Emoji: ' <<'EMOJI_DATA'
 ¿? question upside down reversed spanish
 ← left arrow
 ↑ up arrow
@@ -1872,3 +1866,7 @@ AH↗️HA↘️HA↗️HA↘️HA↗️HA↘️HA↗️HA↘️ pekora arrows h
 🫧 bubbles soap fun carbonation sparkling
 🪪 identification card document
 🟰 heavy equals sign math
+EMOJI_DATA
+)
+[[ -n "$selection" ]] || exit 0
+printf '%s' "${selection%% *}" | wl-copy

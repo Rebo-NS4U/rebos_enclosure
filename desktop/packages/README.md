@@ -86,3 +86,5 @@ causes duplicate portal registration with Qt 6.12 and Quickshell. Use
 `Appearance → Standard dialogs → Default` in Qt6ct if an older personal config
 still selects GTK dialogs. This takes effect for newly launched Qt applications;
 portal access stays enabled.
+
+The emoji picker uses the core Fuzzel launcher in dmenu mode and wl-clipboard. It does not require the X11 dmenu package. Canceling the menu leaves the clipboard unchanged.
