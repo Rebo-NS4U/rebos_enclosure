@@ -80,6 +80,8 @@ Item {
     readonly property real progress: bookLength ? Math.min(1, (position + characters(answer.text).length) / bookLength) : 0
     readonly property var passageWords: pageLayout.words
     FontMetrics { id: typingMetrics; font.family: Config.theme.font; font.pixelSize: 22 }
+    readonly property rect highlightBounds: typingMetrics.tightBoundingRect("Hg")
+    readonly property real highlightPadding: 3
     function characterWidth(text) { return Math.max(1, Math.ceil(typingMetrics.advanceWidth(text))); }
     function fitPage() {
         pageLayout = TypingPaging.layout(pageSource, Math.max(80, root.width - 52), characterWidth, pageLineLimit);
@@ -812,18 +814,18 @@ Item {
                             function follow(item) {
                                 if (!item || !item.caretHere || !item.visible) return;
                                 const point = item.parent.mapToItem(passageArea, item.x, item.y);
-                                const nextY = point.y + Math.max(0, item.baselineOffset - item.font.pixelSize);
+                                const nextY = point.y + item.baselineOffset + root.highlightBounds.y - root.highlightPadding;
                                 glide = placed && targetGlyph !== null && root.glyphItems[targetGlyph.characterIndex] === targetGlyph && Motion.enabled;
                                 targetGlyph = item;
-                                targetRowY = Math.max(0, point.y);
+                                targetRowY = Math.max(0, nextY);
                                 rowY = targetRowY;
-                                rowHeight = Math.max(30, item.height);
+                                rowHeight = root.highlightBounds.height + 2 * root.highlightPadding;
                                 targetX = Math.max(1, point.x - 3);
-                                targetY = Math.max(0, nextY - 1);
+                                targetY = targetRowY;
                                 x = targetX;
                                 y = targetY;
                                 width = Math.max(12, item.width + 6);
-                                height = Math.round(item.font.pixelSize * 1.15) + 2;
+                                height = rowHeight;
                                 placed = true;
                                 if (Motion.enabled) idlePulse.restart();
                             }

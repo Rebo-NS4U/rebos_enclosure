@@ -121,7 +121,7 @@ ShellRoot {
                     movingCaret.follow(find(practice, "typing-character-0"));
                     const firstRowGlyph = find(practice, "typing-character-0");
                     const firstRowPoint = firstRowGlyph.parent.mapToItem(movingCaret.parent, firstRowGlyph.x, firstRowGlyph.y);
-                    if (Math.abs(movingCaret.targetRowY - firstRowPoint.y) > 0.01) throw Error("Line highlight did not return to the centered first line");
+                    if (Math.abs(movingCaret.targetRowY - Math.max(0, firstRowPoint.y + firstRowGlyph.baselineOffset + practice.highlightBounds.y - practice.highlightPadding)) > 0.01) throw Error("Line highlight did not return to the centered first line");
                     input.text = "";
                     if (editedGlyph.typed) throw Error("Backspace did not clear typed state");
                     practice.fullscreen = false;
@@ -152,6 +152,13 @@ ShellRoot {
                     if (Math.abs(first.opacity - 1) > 0.001) throw Error("Typed glyph did not become opaque after animation");
                     const settled = find(practice, "typing-smooth-caret");
                     const settledLine = find(practice, "typing-line-highlight");
+                    const activeGlyph = settled.targetGlyph;
+                    const baseline = activeGlyph.parent.mapToItem(settled.parent, activeGlyph.x, activeGlyph.y).y + activeGlyph.baselineOffset;
+                    const inkTop = baseline + practice.highlightBounds.y;
+                    const topPadding = inkTop - settled.y;
+                    const bottomPadding = settled.y + settled.height - (inkTop + practice.highlightBounds.height);
+                    if (Math.abs(topPadding - bottomPadding) > 0.01 || Math.abs(topPadding - practice.highlightPadding) > 0.01) throw Error("Highlight does not have equal top and bottom padding");
+                    if (Math.abs(settled.y - settledLine.y) > 0.01 || Math.abs(settled.height - settledLine.height) > 0.01) throw Error("Cursor and line boxes must share vertical bounds");
                     if (Math.abs(settled.x - settled.targetX) > 0.01 || Math.abs(settled.y - settled.targetY) > 0.01 || Math.abs(settledLine.y - settled.targetRowY) > 0.01) throw Error("Cursor and line transitions did not settle together");
                     if (!find(practice, "typing-caret-1").visible || find(practice, "typing-smooth-caret").targetGlyph.characterIndex !== 1) throw Error("Cursor did not advance");
                     input.cursorPosition = 0;
