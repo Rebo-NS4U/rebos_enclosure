@@ -84,7 +84,7 @@ ShellRoot {
                     island.currentMode = "typing";
                     const compactWidth = island.targetWidth;
                     island.typingPractice.toggleFullscreen();
-                    if (!island.typingFullscreen || island.targetWidth !== island.width || island.targetHeight !== island.height) throw Error("Fullscreen does not fill the screen");
+                    if (!island.typingFullscreen || island.targetWidth !== Math.min(960, island.width - 64) || island.targetHeight !== island.height) throw Error("Fullscreen reading width or height is incorrect");
                     island.typingPractice.handleEscape();
                     if (island.typingFullscreen || island.targetWidth !== compactWidth) throw Error("Compact dimensions were not restored");
                     island.destroy();
@@ -99,6 +99,21 @@ ShellRoot {
                 if (!input || !first) throw Error("Typing input or glyph missing");
                 if (phase === 1) {
                     const originalSource = practice.pageSource;
+                    practice.fullscreen = true;
+                    practice.pageSource = "word ".repeat(800); practice.fitPage();
+                    if (practice.pageLayout.lines <= 2) throw Error("Fullscreen must show additional lines");
+                    const editStarted = Date.now();
+                    for (let count = 1; count <= 120; count++) input.text = practice.passage.slice(0, count);
+                    console.log("Fullscreen 120 input updates: " + (Date.now() - editStarted) + " ms");
+                    const editedGlyph = find(practice, "typing-character-10");
+                    const originalTyped = input.text;
+                    input.text = originalTyped.slice(0, 10) + "!" + originalTyped.slice(11);
+                    if (!editedGlyph.incorrect) throw Error("Middle edit did not update error state");
+                    input.text = originalTyped;
+                    if (editedGlyph.incorrect) throw Error("Correction did not clear error state");
+                    input.text = "";
+                    if (editedGlyph.typed) throw Error("Backspace did not clear typed state");
+                    practice.fullscreen = false;
                     practice.pageSource = "… next"; practice.fitPage();
                     input.text = ".";
                     if (practice.turningPage) throw Error("First ellipsis period advanced the page");

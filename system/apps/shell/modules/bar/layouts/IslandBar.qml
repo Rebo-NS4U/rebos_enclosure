@@ -329,7 +329,7 @@ Item {
 
     readonly property int targetWidth: {
         if (root.isExpanded || root.retractingToHidden) {
-            if (root.currentMode === "typing") return root.typingFullscreen ? root.width : Math.min(640, root.width - 32);
+            if (root.currentMode === "typing") return root.typingFullscreen ? Math.min(960, root.width - 64) : Math.min(640, root.width - 32);
             if (root.currentMode === "osd") {
                 return Math.min(270, root.width - 32);
             }

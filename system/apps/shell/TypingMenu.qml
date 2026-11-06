@@ -118,7 +118,7 @@ Item {
         duration: Math.round(Motion.base * 1.25)
         easing.type: Easing.OutQuint
     }
-    onPracticingChanged: { reveal(); resetSpeed(); }
+    onPracticingChanged: { reveal(); resetSpeed(); syncCaret(); }
     onVisibleChanged: {
         if (visible) { reveal(); backendStarted = true; if (ready) send({action: "list"}, false); }
         else saveProgress();
@@ -132,6 +132,36 @@ Item {
         if (page) { pageRequest = data.request; busy = true; errorMessage = ""; }
         if (ready) backend.write(JSON.stringify(data) + "\n");
         else { queued = queued.concat([data]); backendStarted = true; }
+    }
+    // Keep input dependencies off the thousands of static glyph delegates.
+    property var glyphItems: ({})
+    property string renderedInput: ""
+    property int renderedCaret: -1
+    function updateGlyph(glyph) {
+        if (!glyph) return;
+        glyph.typed = glyph.characterIndex < answer.text.length;
+        glyph.incorrect = glyph.typed && !TypingPaging.matchingCharacter(answer.text.substr(glyph.characterIndex, glyph.modelData.length), glyph.modelData);
+        glyph.caretHere = practicing && glyph.characterIndex === Math.min(answer.cursorPosition, passage.length - 1);
+    }
+    function syncCaret() {
+        const previous = renderedCaret;
+        renderedCaret = practicing ? Math.min(answer.cursorPosition, passage.length - 1) : -1;
+        if (previous !== renderedCaret) {
+            updateGlyph(glyphItems[previous]);
+            updateGlyph(glyphItems[renderedCaret]);
+        }
+    }
+    function syncGlyphs() {
+        const current = answer.text;
+        let first = 0;
+        const shared = Math.min(current.length, renderedInput.length);
+        while (first < shared && current[first] === renderedInput[first]) first++;
+        let last = Math.max(current.length, renderedInput.length);
+        while (last > first && current[last - 1] === renderedInput[last - 1]) last--;
+        for (let index = first; index < last; index++)
+            updateGlyph(glyphItems[index]);
+        renderedInput = current;
+        syncCaret();
     }
     function correctCount() {
         const input = characters(answer.text);
@@ -664,8 +694,9 @@ Item {
                                             id: glyph
                                             required property int index
                                             required property string modelData
-                                            readonly property bool caretHere: root.practicing && characterIndex === Math.min(answer.cursorPosition, root.passage.length - 1)
-                                            readonly property bool typed: characterIndex < answer.text.length
+                                            property bool caretHere: false
+                                            property bool typed: false
+                                            property bool incorrect: false
                                             property bool initialized: false
                                             property real lift: 0
                                             property real zoom: 1
@@ -684,8 +715,17 @@ Item {
                                                 if (typed && Motion.enabled && visible) letterPop.restart();
                                                 else { letterPop.stop(); lift = 0; zoom = 1; shine = 0; }
                                             }
-                                            Component.onCompleted: { initialized = true; if (Motion.enabled && visible) entranceAnimation.start(); if (caretHere) Qt.callLater(() => smoothCaret.follow(glyph)); }
-                                            onVisibleChanged: { if (initialized && visible) { if (Motion.enabled) entranceAnimation.restart(); if (caretHere) Qt.callLater(() => smoothCaret.follow(glyph)); } }
+                                            Component.onCompleted: {
+                                                root.glyphItems[characterIndex] = glyph;
+                                                root.updateGlyph(glyph);
+                                                initialized = true;
+                                                if (Motion.enabled && visible && !root.fullscreen) entranceAnimation.start();
+                                                if (caretHere) Qt.callLater(() => smoothCaret.follow(glyph));
+                                            }
+                                            Component.onDestruction: {
+                                                if (root.glyphItems[characterIndex] === glyph) delete root.glyphItems[characterIndex];
+                                            }
+                                            onVisibleChanged: { if (initialized && visible) { if (Motion.enabled && !root.fullscreen) entranceAnimation.restart(); if (caretHere) Qt.callLater(() => smoothCaret.follow(glyph)); } }
                                             SequentialAnimation {
                                                 id: entranceAnimation
                                                 PauseAnimation { duration: Math.min(glyph.characterIndex, 24) * 7 }
@@ -712,7 +752,7 @@ Item {
                                                 enabled: Motion.enabled
                                                 NumberAnimation { duration: Math.round(Motion.base * 0.45); easing.type: Easing.OutCubic }
                                             }
-                                            color: caretHere ? Colors.primary : (typed ? (!TypingPaging.matchingCharacter(answer.text.substr(characterIndex, modelData.length), modelData) ? Colors.error : Qt.tint(Colors.overSurface, Qt.alpha(Colors.primary, shine * 0.65))) : Colors.overSurface)
+                                            color: caretHere ? Colors.primary : (typed ? (incorrect ? Colors.error : Qt.tint(Colors.overSurface, Qt.alpha(Colors.primary, shine * 0.65))) : Colors.overSurface)
                                             Rectangle {
                                                 objectName: "typing-caret-" + glyph.characterIndex
                                                 x: -1
@@ -794,7 +834,8 @@ Item {
                             wrapMode: TextEdit.Wrap
                             inputMethodHints: Qt.ImhNoPredictiveText
                             readOnly: root.busy
-                            onTextChanged: root.advance()
+                            onTextChanged: { root.advance(); root.syncGlyphs(); }
+                            onCursorPositionChanged: root.syncCaret()
                             Keys.onPressed: event => {
                                 if (event.key === Qt.Key_F11) { root.toggleFullscreen(); event.accepted = true; return; }
                                 if (!root.turningPage || (event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier))) return;
