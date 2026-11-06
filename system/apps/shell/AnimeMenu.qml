@@ -1243,8 +1243,6 @@ PanelWindow {
                     displayText: "Subtitles: " + currentText + (root.subtitleTracks.failed ? " · unavailable" : root.subtitleTracks.generating ? " · preparing" : "")
                     enabled: root.ready && (root.subtitleTracks.available ?? false)
                     Accessible.name: "Active subtitle source: " + currentText
-                    ToolTip.visible: hovered
-                    ToolTip.text: "Choose the English subtitle source for the current video"
                     onActivated: root.send({action: "subtitle_source", source: root.subtitleTracks.options[currentIndex].id})
                 }
                 MenuButton { text: "Stop"; onClicked: root.send({action: "stop"}) }
