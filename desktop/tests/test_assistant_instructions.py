@@ -55,15 +55,17 @@ ShellRoot {
             check(github.text.includes("sandbox_permissions=require_escalated") && github.text.includes("Never log out, delete credentials"), "network approval and credential guidance reaches the agent");
             check(github.text.includes("Dweebo enables network access") && github.text.includes("Host or administrator restrictions"), "guidance reflects configured access and managed limits");
             check(github.text.includes("preserve unrelated work") && github.text.includes("Never force-push"), "preserves work and approvals");
+            check(github.text.includes("~/rebos_enclosure first") && github.text.includes("git rev-parse --show-toplevel") && github.text.includes("git remote -v"), "checkout discovery reaches the agent");
+            check(github.text.includes("missing .git") && github.text.includes("recover any missed focused changes"), "copied installs require checkout discovery and source reconciliation");
             check(send("Follow up").length === 1, "policy is sent only once per conversation");
             let chat = session.chatEnvelope();
             let state = session.bridgeState();
-            check(chat.instructionGithubSessionId === "github-session:commit-only-v4" && state.instructionGithubSessionId === "github-session:commit-only-v4", "delivery persists in chat and bridge state");
-            session.instructionGithubSessionId = "github-session:network-v3"; // Previous policy version.
+            check(chat.instructionGithubSessionId === "github-session:checkout-discovery-v5" && state.instructionGithubSessionId === "github-session:checkout-discovery-v5", "delivery persists in chat and bridge state");
+            session.instructionGithubSessionId = "github-session:commit-only-v4"; // Previous policy version.
             session.syntheticTransportWorks = false;
             session.queuedPrompt = {text: "Offline", attachments: []};
             session.dispatchQueuedPrompt();
-            check(session.instructionGithubSessionId === "github-session:network-v3", "failed transport does not consume policy delivery");
+            check(session.instructionGithubSessionId === "github-session:commit-only-v4", "failed transport does not consume policy delivery");
             session.syntheticTransportWorks = true;
             let legacy = send("Continue an older chat");
             check(legacy.length === 2 && policy(legacy), "older chats receive only the new policy");

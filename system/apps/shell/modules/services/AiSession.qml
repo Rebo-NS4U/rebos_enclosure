@@ -14,6 +14,194 @@ Scope {
     id: root
 
     property string channelId: "default"
+    property string preferredAgentId: ""
+    readonly property bool isDistill: currentAgentId === "distill"
+    readonly property string distillBinary: Quickshell.env("HOME") + "/.local/share/distill/bin/distill"
+    readonly property var distillPresets: [
+        {id: "auto", name: "Auto", description: "Balances the approach as the work changes."},
+        {id: "ultrasave", name: "UltraSave", description: "Uses fewer tokens with focused searches and concise replies."},
+        {id: "ultrafast", name: "UltraFast", description: "Starts work directly with less planning."},
+        {id: "ultracode", name: "UltraCode", description: "Can share suitable work with parallel agents."}
+    ]
+    // Start with Do; named per-chat choices still survive restoration.
+    readonly property var codexPresets: [
+        {id: "coding", name: "dweebo-Do", model: "gpt-6.1-sol", effort: "medium",
+            description: "Sol · medium reasoning. Implement, debug and verify code efficiently.",
+            guidance: "Coding mode: Make focused changes, inspect only relevant context, and run checks that verify the requested behavior. Keep explanations concise. Do not delegate unless requested."},
+        {id: "light_coding", name: "dweebo-Light", model: "gpt-6-luna", effort: "low",
+            description: "Luna · low reasoning. Linux configs, terminal tasks and small scripts.",
+            guidance: "Light coding mode: Edit requested app source, desktop UI, Linux configs and scripts. Linux specialization is guidance, not a restriction. Check the distro, shell and relevant tool version. Distinguish user and system services. Back up configs; preserve unrelated edits, permissions and symlink targets. Validate syntax and behavior; reload only what is needed. Suggest Coding for complex debugging; never switch models silently or delegate unless requested."},
+        {id: "quick", name: "dweebo-Quick", model: "gpt-6-luna", effort: "low",
+            description: "Luna · low reasoning. Short, direct answers with minimal overhead.",
+            guidance: "Quick question mode: Answer directly, usually in 1–3 sentences. Avoid plans, repository scans, memory reads and tools unless needed to answer accurately or explicitly requested. Verify current or uncertain facts when needed. Ask only essential clarifying questions. Do not change files unless explicitly asked."},
+        {id: "knowledge", name: "dweebo-Know", model: "gpt-6-luna", effort: "low",
+            description: "Luna · low reasoning. Clear explanations and useful factual context.",
+            guidance: "General knowledge mode: Give a clear, concise explanation with enough context to understand it. Use examples when helpful. Search for current or uncertain facts and cite sources; avoid unnecessary local inspection. Do not change files unless explicitly asked. If the question needs deeper reasoning, explain the limitation rather than silently claiming certainty."}
+    ]
+    property string codexPreset: "coding"
+    property var pendingCodexPreset: null
+    property string codexPresetError: ""
+    readonly property bool switchingCodexPreset: pendingCodexPreset !== null
+    readonly property string codexPresetName: {
+        let preset = codexPresets.find(item => item.id === codexPreset);
+        return preset ? preset.name : "Custom Codex";
+    }
+
+    function codexOption(id) {
+        return sessionConfigOptions.find(option => option.id === id);
+    }
+
+    function codexPresetMatches(preset) {
+        let model = codexOption("model");
+        let effort = codexOption("reasoning_effort");
+        return model && effort && model.currentValue === preset.model && effort.currentValue === preset.effort;
+    }
+
+    function setCodexPreset(value, duringSetup) {
+        let preset = codexPresets.find(item => item.id === value);
+        if (currentAgentId !== "codex" || !preset || switchingCodexPreset
+            || switchingSessionModel || switchingDistillPreset || (isBusy && !duringSetup)) return;
+        codexPresetError = "";
+        if (!sessionReady) {
+            codexPreset = value;
+            saveCurrentChat();
+            bridgeDirty = true;
+            return;
+        }
+        pendingCodexPreset = preset;
+        continueCodexPreset();
+    }
+
+    function continueCodexPreset() {
+        let preset = pendingCodexPreset;
+        if (!preset) return;
+        for (let setting of [{id: "model", value: preset.model}, {id: "reasoning_effort", value: preset.effort}]) {
+            let option = codexOption(setting.id);
+            if (!option || !Array.isArray(option.options) || !option.options.some(choice => choice.value === setting.value)) {
+                failCodexPreset("This Codex connection does not offer " + setting.value + ". Use the model picker or refresh the connection.");
+                return;
+            }
+            if (option.currentValue !== setting.value) {
+                let request = sendRequest("session/set_config_option", {
+                    sessionId: currentSessionId, configId: setting.id, value: setting.value
+                }, "codex_preset", {configId: setting.id, value: setting.value});
+                if (request < 0) failCodexPreset("Connection lost. Choose the mode again after reconnecting.");
+                return;
+            }
+        }
+        codexPreset = preset.id;
+        pendingCodexPreset = null;
+        codexPresetError = "";
+        saveCurrentChat();
+        bridgeDirty = true;
+        if (queuedPrompt) dispatchQueuedPrompt();
+    }
+
+    function failCodexPreset(message) {
+        let pending = Object.assign({}, pendingRpc);
+        for (let id of Object.keys(pending)) {
+            if (pending[id].kind === "codex_preset") delete pending[id];
+        }
+        pendingRpc = pending;
+        pendingCodexPreset = null;
+        // A model change may have succeeded before an effort change failed.
+        let previous = codexPresets.find(item => item.id === codexPreset);
+        if (previous && !codexPresetMatches(previous)) codexPreset = "";
+        codexPresetError = message;
+        if (queuedPrompt) {
+            queuedPrompt = null;
+            turnWatchdog.stop();
+            turnFailureHandled = true;
+            taskOutcome = "Negative";
+            outcomeFinding = "The message was not sent because the Codex mode could not be confirmed.";
+            isLoading = false;
+            agentTurnActive = false;
+            statusText = "";
+            pushSystemMessage(outcomeFinding + " " + message);
+        }
+        saveCurrentChat();
+        bridgeDirty = true;
+    }
+
+    Timer {
+        interval: 15000
+        running: root.switchingCodexPreset
+        onTriggered: root.failCodexPreset("Codex did not confirm the mode in time. Choose it again to retry.")
+    }
+
+    property string distillPreset: "auto"
+    property string pendingDistillPreset: ""
+    property string distillPresetError: ""
+    property bool distillPresetReady: false
+    property bool distillNeedsChatGPT: false
+    readonly property bool switchingDistillPreset: pendingDistillPreset.length > 0
+    readonly property string distillPresetName: {
+        let preset = distillPresets.find(item => item.id === distillPreset);
+        return preset ? preset.name : "Auto";
+    }
+
+    function setDistillPreset(value, duringSetup) {
+        if (!isDistill || !distillPresets.some(item => item.id === value)
+            || switchingDistillPreset || switchingSessionModel || (isBusy && !duringSetup)) return;
+        distillPresetError = "";
+        if (!sessionReady) {
+            distillPreset = value;
+            bridgeDirty = true;
+            saveCurrentChat();
+            return;
+        }
+        pendingDistillPreset = value;
+        let request = sendRequest("_x.ai/session/execution_mode/set", {
+            sessionId: currentSessionId, mode: value
+        }, "distill_preset", {preset: value});
+        if (request < 0) failDistillPreset("Connection lost. Try again after reconnecting.");
+    }
+
+    Timer {
+        interval: 15000
+        running: root.switchingDistillPreset
+        onTriggered: {
+            let pending = Object.assign({}, root.pendingRpc);
+            for (let id of Object.keys(pending)) {
+                if (pending[id].kind === "distill_preset") delete pending[id];
+            }
+            root.pendingRpc = pending;
+            root.distillPresetReady = false;
+            root.failDistillPreset("Distill did not confirm in time. Choose the preset again to retry.");
+        }
+    }
+
+    function failDistillPreset(message) {
+        pendingDistillPreset = "";
+        distillPresetError = message;
+        if (!distillPresetReady && queuedPrompt) {
+            queuedPrompt = null;
+            turnWatchdog.stop();
+            turnFailureHandled = true;
+            taskOutcome = "Negative";
+            outcomeFinding = "The task could not start because Distill session setup failed.";
+            isLoading = false;
+            agentTurnActive = false;
+            statusText = "";
+            pushSystemMessage("The message was not sent because Distill could not apply the preset. " + message);
+        }
+        bridgeDirty = true;
+    }
+
+    function connectDistillAccount() {
+        if (distillLogin.running || isBusy || switchingDistillPreset || switchingSessionModel) return;
+        distillLogin.running = true;
+    }
+    readonly property bool connectingDistillAccount: distillLogin.running
+    Process {
+        id: distillLogin
+        command: [root.distillBinary, "login", "--chatgpt"]
+        // OAuth output is deliberately not copied into chat or checkpoints.
+        onExited: code => {
+            if (code === 0 && root.isDistill && !root.isBusy) root.reconnectAgent();
+            else if (code !== 0) root.pushSystemMessage("Distill sign-in did not finish. You can try Connect ChatGPT again.");
+        }
+    }
     property string inputDraft: ""
     property list<var> attachmentDraft: []
     readonly property string sessionTitle: {
@@ -37,12 +225,30 @@ Scope {
             name: "Codex",
             description: "OpenAI Codex coding agent through the official ACP adapter",
             icon: Qt.resolvedUrl("../../assets/aiproviders/openai.svg"),
-            command: ["sh", "-lc", "CODEX_PATH=\"$(command -v codex)\" exec npx -y @agentclientprotocol/codex-acp"],
+            command: ["sh", "-lc", "INITIAL_AGENT_MODE=workspace-write CODEX_CONFIG='{\"sandbox_workspace_write\":{\"network_access\":true},\"features\":{\"memories\":false},\"memories\":{\"generate_memories\":false,\"use_memories\":false}}' REBOS_CODEX_BINARY=\"$(command -v codex)\" CODEX_PATH=\"$HOME/code/rebos-assistant/scripts/codex_workspace.py\" exec npx -y @agentclientprotocol/codex-acp"],
             authMethod: "chat-gpt",
             installHint: "Install Codex and Node.js; the ACP adapter reuses your Codex login",
             provider: "acp",
             api_format: "ACP",
             model: "codex"
+        },
+        {
+            id: "google", name: "Google Gemini",
+            description: "Gemini Flash Lite through Google's native ACP agent",
+            icon: Qt.resolvedUrl("../../assets/aiproviders/google.svg"),
+            command: ["sh", "-lc", "exec python3 \"$HOME/code/rebos-assistant/scripts/google_agent.py\""],
+            authMethod: "gemini-api-key",
+            installHint: "Save your Google API key in ~/.config/dweebo/google-api-key (permissions 600).",
+            provider: "acp", api_format: "ACP", model: "google"
+        },
+        {
+            id: "distill", name: "Distill",
+            description: "Distill with Auto, UltraSave, UltraFast and UltraCode",
+            icon: Qt.resolvedUrl("../../assets/aiproviders/openai.svg"),
+            command: [distillBinary, "agent", "--no-leader", "--model", "chatgpt/gpt-6.1-sol", "stdio"],
+            authMethod: "",
+            installHint: "Choose Connect ChatGPT in the preset menu to sign in to Distill.",
+            provider: "acp", api_format: "ACP", model: "distill"
         }
     ]
 
@@ -54,7 +260,11 @@ Scope {
 
     function normalizeAgent(configured, fallback) {
         let command = configured && Array.isArray(configured.command) ? configured.command : fallback.command;
-        if (!command || command.length === 0)
+        // Older shipped presets stored the stock launch command in user config.
+        // Upgrade that exact default so it cannot mask new launcher settings.
+        const stockCodex = ["sh", "-lc", "CODEX_PATH=\"$(command -v codex)\" exec npx -y @agentclientprotocol/codex-acp"];
+        if (!command || command.length === 0
+            || (fallback.id === "codex" && JSON.stringify(command) === JSON.stringify(stockCodex)))
             command = fallback.command;
         return {
             id: configured && configured.id ? configured.id : fallback.id,
@@ -146,6 +356,42 @@ Scope {
         }
     }
 
+    // App servers cache their account. Recreate an idle connection after a CLI
+    // account switch, then restore the saved conversation with the new login.
+    property bool codexAccountRefreshAttempted: false
+
+    function isAccountAuthenticationError(message) {
+        return /authentication required|authentication failed|unauthorized|not signed in|not logged in|token.*expired|refresh.token.*(invalid|reused|expired)/i.test(message || "");
+    }
+
+    function refreshCodexAccount() {
+        if (!featureEnabled || currentAgentId !== "codex" || isBusy
+            || switchingSessionModel || switchingDistillPreset) return;
+        codexAccountRefreshAttempted = true;
+        queuedPrompt = null; // Never replay a user task during account recovery.
+        pendingSessionAction = {
+            kind: currentSessionId ? "load" : "new",
+            sessionId: currentSessionId,
+            cwd: currentChatCwd || workingDirectory()
+        };
+        sessionReady = false;
+        lastError = "";
+        statusText = "Refreshing Codex account…";
+        if (agentProcess.running && bridgeAttached) {
+            bridgeAttached = false;
+            agentProcess.write(JSON.stringify({bridge: "reset"}) + "\n");
+        } else {
+            restartAgentProcess();
+        }
+    }
+
+    function recoverCodexAccount() {
+        if (currentAgentId === "codex" && !isBusy && !codexAccountRefreshAttempted
+            && isAccountAuthenticationError(lastError)) {
+            refreshCodexAccount();
+        }
+    }
+
     Timer {
         id: refreshTimer
         interval: 250
@@ -172,8 +418,10 @@ Scope {
     property var queuedPrompt: null
     // Delivery belongs to the backend conversation, not the UI connection.
     property string instructionSessionId: ""
+    property string instructionGithubSessionId: ""
     // Resend desktop guidance once after a UI reload, including restored chats.
     property string instructionDesktopSessionId: ""
+    property string instructionModeGuidance: ""
     property string agentStderrTail: ""
     property bool turnFailureHandled: false
 
@@ -182,7 +430,7 @@ Scope {
     property string currentSessionModelId: ""
     property string pendingSessionModelId: ""
     property string modelSwitchError: ""
-    readonly property bool switchingSessionModel: pendingSessionModelId.length > 0
+    readonly property bool switchingSessionModel: pendingSessionModelId.length > 0 || switchingCodexPreset
     readonly property string sessionModelName: {
         for (let i = 0; i < sessionModels.length; i++) {
             if (sessionModels[i].modelId === currentSessionModelId)
@@ -329,15 +577,58 @@ Scope {
     // permission requests and undelivered events live in the background bridge.
     readonly property string bridgeScript: Qt.resolvedUrl("../../scripts/ai_bridge.py").toString().replace(/^file:\/\//, "")
     property bool bridgeAttached: false
+    property bool agentParked: false
+    property bool bridgeSupportsParking: false
+    property bool foreground: true
+    property int idleReleaseInterval: 300000
+    readonly property bool canReleaseIdleAgent: bridgeAttached && !agentParked && sessionReady && !bridgeUpgrade.running
+        && !foreground && !isBusy && !queuedPrompt && !pendingSessionAction
+        && !switchingDistillPreset && !switchingSessionModel && !connectingDistillAccount
+        && Object.keys(pendingRpc).length === 0 && Object.keys(pendingPermissions).length === 0
+        && questionRequests.length === 0 && currentSessionId.length > 0
+        && (agentCapabilities.loadSession === true
+            || agentCapabilities.sessionCapabilities?.resume != null)
+
+    Timer {
+        interval: root.idleReleaseInterval
+        running: root.canReleaseIdleAgent
+        onTriggered: root.releaseIdleAgent()
+    }
+
+    function releaseIdleAgent() {
+        if (!canReleaseIdleAgent) return false;
+        saveCurrentChat();
+        if (!bridgeSupportsParking) {
+            // Upgrade an older bridge only between tasks. The client retains
+            // the conversation and resumes it through the usual reconnect path.
+            bridgeUpgrade.running = true;
+            return true;
+        }
+        agentProcess.write(JSON.stringify({bridge: "park", seq: bridgeSequence, state: bridgeState()}) + "\n");
+        // A prompt arriving while the backend exits must queue a wake, rather
+        // than dispatching to the process that is being released.
+        agentParked = true;
+        sessionReady = false;
+        return true;
+    }
+
+    Process {
+        id: bridgeUpgrade
+        command: ["systemctl", "--user", "restart", root.channelId === "default"
+            ? "rebos-assistant.service" : "rebos-assistant@" + root.channelId + ".service"]
+    }
     property bool bridgeDirty: false
     property double bridgeSequence: 0
     readonly property list<string> bridgeStateKeys: [
+        "agentParked",
         "initialized", "authenticated", "sessionReady", "suppressReplay",
         "agentCapabilities", "authMethods", "pendingRpc", "nextRpcId",
         "activePromptRequestId", "pendingSessionAction", "queuedPrompt", "agentStderrTail",
-        "instructionSessionId",
-        "turnFailureHandled", "sessionConfigOptions", "sessionModels", "currentSessionModelId",
+        "instructionSessionId", "instructionModeGuidance", "instructionGithubSessionId",
+        "turnFailureHandled", "taskOutcome", "outcomeVersion", "outcomeFinding", "backendEvidence", "sessionConfigOptions", "sessionModels", "currentSessionModelId",
         "pendingSessionModelId", "modelSwitchError", "availableCommands", "currentModeId",
+        "codexPreset", "pendingCodexPreset", "codexPresetError",
+        "distillPreset", "pendingDistillPreset", "distillPresetError", "distillPresetReady", "distillNeedsChatGPT",
         "contextUsed", "contextSize", "sessionCost", "sessionCostCurrency",
         "activeAssistantMessageId", "activeAssistantIndex", "pendingPermissions", "isLoading",
         "toolRunning", "agentTurnActive", "statusText", "thoughtText", "thoughtMessageId", "lastError",
@@ -408,6 +699,7 @@ Scope {
             return;
         }
         if (event.bridge === "attached") {
+            bridgeSupportsParking = event.parking === true;
             // A checkpoint already contains flushed text. Discard any local
             // batch before restoring it, otherwise it can be appended twice.
             assistantTextTimer.stop();
@@ -416,16 +708,34 @@ Scope {
             bridgeSequence = event.seq || 0;
             bridgeAttached = true;
             if (event.state) {
+                taskOutcome = "";
+                outcomeFinding = "";
+                backendEvidence = "";
                 for (let key of bridgeStateKeys) {
                     if (event.state[key] !== undefined)
                         root[key] = event.state[key];
+                }
+                // Legacy/custom checkpoints must not erase the startup default.
+                // Do not send model RPCs while a restored turn is running; the
+                // next prompt confirms the selected model and effort first.
+                if (currentAgentId === "codex" && !codexPreset && !pendingCodexPreset)
+                    codexPreset = "coding";
+                // Older checkpoints marked every end_turn as successful.
+                if (event.state.outcomeVersion !== 1 && taskOutcome === "Positive")
+                    taskOutcome = "";
+                outcomeVersion = 1;
+                if (taskOutcome === "Hung" && !outcomeFinding) {
+                    outcomeFinding = "Automatic local investigation: this checkpoint records a previous inactivity timeout. Original connection and activity evidence was not retained, so the cause cannot be established. A timeout alone does not prove a hang. No retry or restart was attempted.";
+                    pushSystemMessage(outcomeFinding);
                 }
                 currentModel = findAgent(currentAgentId) || models[0];
                 processAgentId = currentAgentId;
                 chatModelChanged();
                 if (agentTurnActive && Object.keys(pendingPermissions).length === 0 && questionRequests.length === 0)
                     turnWatchdog.restart();
+                Qt.callLater(root.recoverCodexAccount);
             } else {
+                agentParked = false;
                 resetConnectionState();
                 processAgentId = currentAgentId;
                 if (!currentChatId) {
@@ -446,13 +756,29 @@ Scope {
                 return;
             bridgeSequence = event.seq;
         }
-        if (event.bridge === "acp") {
+        if (event.bridge === "park-rejected") {
+            agentParked = false;
+            sessionReady = true;
+            if (queuedPrompt) {
+                pendingSessionAction = null;
+                dispatchQueuedPrompt();
+            }
+        } else if (event.bridge === "parked") {
+            agentParked = true;
+            resetConnectionState();
+            statusText = "";
+        } else if (event.bridge === "acp") {
             handleAcpLine(JSON.stringify(event.message));
         } else if (event.bridge === "stderr") {
             handleAgentStderr(event.text);
         } else if (event.bridge === "exit") {
+            if (switchingCodexPreset) failCodexPreset("Codex exited before the mode was confirmed.");
             flushAssistantText();
             turnWatchdog.stop();
+            if (agentTurnActive) {
+                taskOutcome = "Negative";
+                outcomeFinding = "The backend exited before the task completed (exit code " + event.code + ").";
+            }
             isLoading = false;
             agentTurnActive = false;
             toolRunning = false;
@@ -487,6 +813,11 @@ Scope {
         sessionModels = [];
         currentSessionModelId = "";
         pendingSessionModelId = "";
+        pendingCodexPreset = null;
+        codexPresetError = "";
+        pendingDistillPreset = "";
+        distillPresetReady = false;
+        distillPresetError = "";
         modelSwitchError = "";
         availableCommands = [];
         currentModeId = "";
@@ -529,6 +860,11 @@ Scope {
         if (!featureEnabled)
             return;
         pendingSessionAction = action;
+        if (agentParked && bridgeAttached && agentProcess.running) {
+            agentProcess.write(JSON.stringify({bridge: "wake", seq: bridgeSequence, state: bridgeState()}) + "\n");
+            statusText = "Resuming " + currentModel.name + "…";
+            return;
+        }
         if (agentProcess.running && processAgentId === currentAgentId && authenticated) {
             performSessionAction();
             return;
@@ -623,9 +959,13 @@ Scope {
     }
 
     function chooseAuthMethod(result) {
+        if (isDistill || currentAgentId === "free-code" || currentAgentId === "free-nemotron") return ""; // Provider handles its own credentials.
         let methods = result && Array.isArray(result.authMethods) ? result.authMethods : [];
         if (methods.length === 0)
             return "";
+
+        if (currentAgentId === "google")
+            return methods.some(method => method.id === "gemini-api-key") ? "gemini-api-key" : "";
 
         // The adapter's ChatGPT method is "chat-gpt", not "chatgpt".
         // Never fall back to its first method: that is API-key authentication.
@@ -658,6 +998,16 @@ Scope {
             }]
         };
 
+        if (currentAgentId.startsWith("free-")) {
+            params.systemPrompt = {mode: "append", content: [
+                {type: "text", text: "Apply the following standing preferences only when relevant to the user's request. They are not a task to perform. Reply to greetings and conversation directly; use tools only for tasks that require them."}
+            ].concat(standingInstructions(null, true))};
+        }
+
+        // Permission policy is separate from execution mode and never enables bypass.
+        if (isDistill)
+            params._meta = {autoMode: true, yoloMode: false};
+
         if (action.kind === "load" && action.sessionId) {
             let sessionCapabilities = agentCapabilities && agentCapabilities.sessionCapabilities
                 ? agentCapabilities.sessionCapabilities : {};
@@ -681,7 +1031,7 @@ Scope {
         statusText = "Opening " + currentModel.name + " session…";
     }
 
-    function applySessionSetup(result) {
+    function applySessionSetup(result, actionKind) {
         let setup = result || {};
         if (setup.sessionId)
             currentSessionId = setup.sessionId;
@@ -690,8 +1040,19 @@ Scope {
         updateSessionConfiguration(setup);
         statusText = queuedPrompt ? "Thinking…" : "";
         saveCurrentChat();
-        if (queuedPrompt)
+        if (isDistill) {
+            distillPresetReady = false;
+            if (actionKind === "session_new") distillNeedsChatGPT = !currentSessionModelId.startsWith("chatgpt/");
+            if (distillNeedsChatGPT) {
+                failDistillPreset("ChatGPT is not available yet. Choose Connect ChatGPT, then try again.");
+                return;
+            }
+            setDistillPreset(distillPreset, true);
+        } else if (codexPreset) {
+            setCodexPreset(codexPreset, true);
+        } else if (queuedPrompt) {
             dispatchQueuedPrompt();
+        }
     }
 
     function updateSessionConfiguration(payload) {
@@ -744,12 +1105,14 @@ Scope {
     }
 
     function setSessionModel(modelId) {
-        if (!sessionReady || isBusy || switchingSessionModel || !modelId || modelId === currentSessionModelId)
+        if (!sessionReady || isBusy || switchingDistillPreset || switchingSessionModel || !modelId || modelId === currentSessionModelId)
             return;
         if (!sessionModels.some(model => model.modelId === modelId)) {
             modelSwitchError = "This model is no longer available. Reopen the model list.";
             return;
         }
+        codexPreset = ""; // A manual model choice leaves the named mode.
+        codexPresetError = "";
         modelSwitchError = "";
         pendingSessionModelId = modelId;
         for (let i = 0; i < sessionConfigOptions.length; i++) {
@@ -798,6 +1161,14 @@ Scope {
         let message = formatRpcError(error);
         updateGeminiStatus(message + " " + JSON.stringify(error), false);
         console.warn("ACP " + (entry ? entry.method : "request") + " failed: " + message);
+        if (entry && entry.kind === "codex_preset") {
+            failCodexPreset("Could not apply mode: " + message);
+            return;
+        }
+        if (entry && entry.kind === "distill_preset") {
+            failDistillPreset("Could not apply preset: " + message);
+            return;
+        }
         if (entry && (entry.kind === "set_model" || (entry.kind === "set_config_option" && entry.context.modelId))) {
             pendingSessionModelId = "";
             modelSwitchError = "Could not switch models: " + message;
@@ -805,7 +1176,8 @@ Scope {
         }
         turnWatchdog.stop();
 
-        if (entry && (entry.kind === "session_load" || entry.kind === "session_resume")) {
+        if (entry && (entry.kind === "session_load" || entry.kind === "session_resume")
+            && !isAccountAuthenticationError(message)) {
             suppressReplay = false;
             pushSystemMessage("Could not restore the ACP session: " + message + ". Starting a new session.");
             pendingSessionAction = {
@@ -816,12 +1188,24 @@ Scope {
         }
 
         lastError = message;
+        taskOutcome = "Negative";
+        outcomeFinding = "The backend reported a request failure.";
+        turnFailureHandled = true;
         isLoading = false;
         agentTurnActive = false;
         toolRunning = false;
         statusText = "";
-        let hint = currentModel && currentModel.installHint ? "\n\n" + currentModel.installHint : "";
+        // A prompt failure does not imply missing credentials. Keep the actual
+        // backend error instead of attaching unrelated installation guidance.
+        let hint = isAccountAuthenticationError(message) && currentModel && currentModel.installHint
+            ? "\n\n" + currentModel.installHint : "";
+        if (message === "Internal error" && currentAgentId.startsWith("free-"))
+            hint = "\n\nThe OpenRouter request failed. If you recently replaced your API key, choose this backend again to open a fresh chat with the current key.";
         pushSystemMessage(message + hint);
+        if (currentAgentId === "codex" && isAccountAuthenticationError(message)) {
+            pushSystemMessage("Codex needs its current account connection refreshed. After it reconnects, send your message again. If this continues, choose Preset → Use current Codex login.");
+            Qt.callLater(root.recoverCodexAccount);
+        }
     }
 
     function handleResponse(message) {
@@ -832,6 +1216,8 @@ Scope {
         delete next[key];
         pendingRpc = next;
         if (!entry)
+            return;
+        if (entry.kind === "prompt" && (!agentTurnActive || message.id !== activePromptRequestId))
             return;
         if (message.error) {
             handleRpcError(entry, message.error);
@@ -873,10 +1259,18 @@ Scope {
         case "session_new":
         case "session_load":
         case "session_resume":
-            applySessionSetup(result);
+            applySessionSetup(result, entry.kind);
             break;
         case "prompt":
+            if (!agentTurnActive || message.id !== activePromptRequestId)
+                break;
             if (result.stopReason === "end_turn") updateGeminiStatus("", true);
+            turnFailureHandled = true;
+            taskOutcome = result.stopReason === "end_turn" ? reportedTaskOutcome()
+                : result.stopReason === "cancelled" ? "Stopped" : "Negative";
+            outcomeFinding = taskOutcome === "Positive" ? "The assistant explicitly reported task success; this is not independent verification."
+                : taskOutcome === "Negative" ? "The task was reported incomplete or the backend ended without completing the turn."
+                : taskOutcome === "Stopped" ? "The turn was cancelled." : "The turn ended without an explicit task outcome.";
             if (message.id === activePromptRequestId)
                 activePromptRequestId = -1;
             turnWatchdog.stop();
@@ -888,6 +1282,32 @@ Scope {
             activeAssistantMessageId = "";
             saveCurrentChat();
             break;
+        case "codex_preset": {
+            updateSessionConfiguration(result);
+            let option = codexOption(entry.context.configId);
+            if (!option || option.currentValue !== entry.context.value) {
+                failCodexPreset("Codex did not confirm the requested setting. Choose the mode again to retry.");
+                break;
+            }
+            continueCodexPreset();
+            break;
+        }
+        case "distill_preset": {
+            let confirmed = result.choice || result.mode;
+            if (confirmed !== entry.context.preset) {
+                distillPresetReady = false;
+                failDistillPreset("Distill did not confirm the selected preset. Try again.");
+                break;
+            }
+            distillPreset = confirmed;
+            pendingDistillPreset = "";
+            distillPresetError = "";
+            distillPresetReady = true;
+            saveCurrentChat();
+            bridgeDirty = true;
+            if (queuedPrompt) dispatchQueuedPrompt();
+            break;
+        }
         case "set_config_option":
             updateSessionConfiguration(result);
             if (entry.context.modelId) {
@@ -988,7 +1408,7 @@ Scope {
         command = Array.isArray(command) ? command.join(" ") : String(command);
         let source = command || title;
         // Preserve descriptive titles, including those naming files or test suites.
-        let technical = /^(?:mcp__|functions\.|tools\.|[\w]+\.[\w]+\s*\(|(?:rg|cat|sed|grep|python\d*|pytest|qmllint|git|bash|sh)\s)|[{}\n]/;
+        let technical = /^(?:\/|~\/|mcp__|functions\.|tools\.|[\w]+\.[\w]+\s*\(|(?:rg|cat|sed|grep|python\d*|pytest|qmllint|git|bash|sh)\s)|[{}\n]/;
         let descriptive = title.split(" ").length >= 4 && !technical.test(title)
             && !/^(?:Run a command for this task|Search for the information needed|Check that the changes work correctly|Read the relevant files and settings)/i.test(title);
         if (descriptive)
@@ -1016,6 +1436,8 @@ Scope {
             action = "Inspect " + (target || "the relevant configuration") + " to understand its current implementation";
         else if (/apply_patch|write_file|edit_file/.test(source) || kind === "edit" || patch.includes("*** Begin Patch"))
             action = "Update " + (target || "the affected files") + " with the requested changes";
+        else if (/screenshot|\b(?:niri|journalctl|systemctl)\b/.test(source))
+            action = "Check the assistant window and its desktop connection";
         else if (kind === "fetch")
             action = "Retrieve " + (args.url ? "information from " + String(args.url).split("/")[2] : "online reference information");
         else
@@ -1057,7 +1479,7 @@ Scope {
 
     Timer {
         interval: 1000
-        running: root.bridgeAttached && (!root.questionSupportNegotiated || !root.questionToolNegotiated) && !root.isBusy
+        running: root.bridgeAttached && !root.agentParked && (!root.questionSupportNegotiated || !root.questionToolNegotiated) && !root.isBusy
             && Object.keys(root.pendingRpc).length === 0
         onTriggered: {
             root.pendingSessionAction = {kind: root.currentSessionId ? "load" : "new",
@@ -1179,6 +1601,11 @@ Scope {
 
     function handleAgentRequest(message) {
         flushAssistantText();
+        if (turnFailureHandled && (message.method === "elicitation/create" || message.method === "session/request_permission")) {
+            sendResponse(message.id, message.method === "elicitation/create"
+                ? {action: "cancel"} : {outcome: {outcome: "cancelled"}});
+            return;
+        }
         if (message.method === "elicitation/create") {
             handleQuestionRequest(message.id, message.params || {});
             return;
@@ -1253,7 +1680,8 @@ Scope {
             root.bridgeAttached = false;
             root.expectedProcessStop = false;
             root.restartPending = false;
-            turnWatchdog.stop();
+            if (!root.agentTurnActive) turnWatchdog.stop();
+            // Keep observing an active turn while the disposable relay reconnects.
             if (shouldRestart) {
                 Qt.callLater(root.startAgentProcess);
             } else if (!wasExpected && root.featureEnabled) {
@@ -1274,6 +1702,12 @@ Scope {
 
         updateGeminiStatus(line, false);
         let lower = line.toLowerCase();
+        // Retain only fixed categories for diagnosis, never copy raw logs into findings.
+        if (/quota reached|quota_exhausted|resource_exhausted/.test(lower)) backendEvidence = "The backend reported a quota error.";
+        else if (/rate.limited|rate limit exceeded|\[429\]|status":429/.test(lower)) backendEvidence = "The backend reported a rate limit.";
+        else if (/unauthorized|authentication failed|invalid api key/.test(lower)) backendEvidence = "The backend reported an authentication error.";
+        else if (/timed out|timeout error|timeouterror|error.*timeout/.test(lower)) backendEvidence = "The backend reported a timeout.";
+        else if (/connection refused|connection reset|network unreachable/.test(lower)) backendEvidence = "The backend reported a connection error.";
         if (lower.includes("quota reached") || lower.includes("quota_exhausted")
                 || lower.includes("resource_exhausted")) {
             failActiveTurn(
@@ -1308,7 +1742,7 @@ Scope {
 
     Timer {
         id: assistantTextTimer
-        interval: 33
+        interval: 100
         onTriggered: root.flushAssistantText()
     }
 
@@ -1542,7 +1976,7 @@ Scope {
         });
         currentChat = chat;
         statusText = allow ? "Running tool…" : "Tool rejected";
-        if (allow && agentTurnActive && questionRequests.length === 0)
+        if (agentTurnActive && questionRequests.length === 0 && Object.keys(pendingPermissions).length === 0)
             turnWatchdog.restart();
         let optionId = choosePermissionOption(permission.options, allow);
         if (optionId) {
@@ -1574,12 +2008,12 @@ Scope {
     function handleSessionUpdate(params) {
         if (params.sessionId && currentSessionId && params.sessionId !== currentSessionId)
             return;
-        if (suppressReplay)
-            return;
-        if (agentTurnActive && questionRequests.length === 0 && Object.keys(pendingPermissions).length === 0)
-            turnWatchdog.restart();
-
         let update = params.update || {};
+        const turnUpdate = ["agent_message_chunk", "agent_thought_chunk", "tool_call", "tool_call_update", "plan", "plan_update", "plan_removed"].includes(update.sessionUpdate);
+        if (suppressReplay || (turnFailureHandled && turnUpdate))
+            return;
+        if (turnUpdate && agentTurnActive && questionRequests.length === 0 && Object.keys(pendingPermissions).length === 0)
+            turnWatchdog.restart();
         if (update.sessionUpdate !== "agent_message_chunk")
             flushAssistantText();
         switch (update.sessionUpdate) {
@@ -1643,6 +2077,53 @@ Scope {
     property bool toolRunning: false
     property bool agentTurnActive: false
     readonly property bool isBusy: isLoading || toolRunning || agentTurnActive
+    property string taskOutcome: ""
+    property int outcomeVersion: 1
+    property string outcomeFinding: ""
+    property string backendEvidence: ""
+
+    function reportedTaskOutcome() {
+        const reply = currentChat[activeAssistantIndex];
+        if (!reply || reply.role !== "assistant" || reply.functionCall)
+            return "";
+        // Read only the final line of this turn's current assistant message.
+        const match = (reply.content || "").trim().match(/(?:^|\n)Task outcome: (Positive|Negative) — [^\n]+$/);
+        return match ? match[1] : "";
+    }
+
+    function investigateStall() {
+        const running = activityLog.filter(entry => entry.status === "in_progress");
+        const pending = activityLog.filter(entry => entry.status === "pending");
+        const latest = running.length ? running[running.length - 1] : null;
+        const kinds = {execute: "a command", read: "a read", search: "a search", edit: "an edit", fetch: "a fetch", think: "a reasoning step"};
+        const latestFinding = latest ? " Latest running activity: " + (kinds[latest.kind] || "an unclassified action") + "." : " No running activity record was available.";
+        return "Automatic local investigation: no task progress updates were received for two minutes. "
+            + "Panel relay " + (bridgeAttached ? "attached" : "detached")
+            + "; session " + (sessionReady ? "ready" : "not ready")
+            + "; prompt " + (activePromptRequestId >= 0 ? "awaiting a reply" : "not dispatched")
+            + "; activity records: " + running.length + " running, " + pending.length + " pending."
+            + latestFinding + " "
+            + (backendEvidence || "No recognized backend error was observed this turn.")
+            + " Silence does not prove a hang: a long operation or an unreported provider delay is still possible. "
+            + "The turn was cancelled locally; backend termination is unconfirmed. No retry or service restart was attempted.";
+    }
+    readonly property string activityStatus: {
+        if (questionRequests.length > 0 || Object.keys(pendingPermissions).length > 0)
+            return "Waiting";
+        if (isBusy)
+            return sessionReady ? "Running" : "Connecting";
+        if (taskOutcome === "Hung")
+            return "Hung";
+        if (lastError)
+            return "Negative";
+        if (taskOutcome)
+            return taskOutcome;
+        if (statusText === "Stopped" || statusText === "Assistant stopped")
+            return "Stopped";
+        if (!sessionReady)
+            return "Disconnected";
+        return "Ready";
+    }
     readonly property bool supportsMessageEditing: false
     readonly property bool supportsRegeneration: false
     property string statusText: ""
@@ -1654,10 +2135,12 @@ Scope {
         id: turnWatchdog
         interval: 120000
         repeat: false
-        onTriggered: root.failActiveTurn(
-            "The ACP agent produced no updates for two minutes, so the stalled turn was cancelled."
-            + "\n\nCheck the agent's provider connection or select another agent/model."
-        )
+        onTriggered: root.checkTurnInactivity()
+    }
+
+    function checkTurnInactivity() {
+        if (questionRequests.length === 0 && Object.keys(pendingPermissions).length === 0)
+            failActiveTurn("Possible stalled task.", "Hung");
     }
 
     property var currentChat: []
@@ -1689,11 +2172,15 @@ Scope {
         saveCurrentChat();
     }
 
-    function failActiveTurn(message) {
+    function failActiveTurn(message, outcome) {
         if (!agentTurnActive || turnFailureHandled)
             return;
+        const finding = outcome === "Hung" ? investigateStall() : message;
         turnFailureHandled = true;
         cancelGeneration(false);
+        taskOutcome = outcome || "Negative";
+        outcomeFinding = finding;
+        if (outcome === "Hung") message += "\n\n" + finding;
         lastError = message;
         pushSystemMessage(message);
     }
@@ -1785,7 +2272,7 @@ Scope {
     }
 
     function sendMessage(message, attachments) {
-        if (switchingSessionModel)
+        if (switchingSessionModel || switchingDistillPreset)
             return;
         let text = message || "";
         if (handleLocalCommand(text))
@@ -1822,6 +2309,9 @@ Scope {
         isLoading = true;
         agentTurnActive = true;
         turnFailureHandled = false;
+        taskOutcome = "";
+        outcomeFinding = "";
+        backendEvidence = "";
         lastError = "";
         statusText = sessionReady ? "Thinking…" : "Connecting to " + currentModel.name + "…";
         activeAssistantIndex = -1;
@@ -1837,25 +2327,67 @@ Scope {
             });
     }
 
+    function standingInstructions(mode, force) {
+        let prompt = [];
+        // A changed mode needs new guidance; shared preferences stay in history.
+        if (mode && (force || instructionSessionId !== currentSessionId || instructionModeGuidance !== mode.guidance))
+            prompt.push({type: "text", text: mode.guidance});
+        if (force || instructionDesktopSessionId !== currentSessionId)
+            prompt.push({type: "text", text: "Desktop access: Empty ps/pgrep results in a restricted command session do not prove desktop apps are stopped. Check the user service and session connection (systemctl --user, D-Bus, WAYLAND_DISPLAY, XDG_RUNTIME_DIR and NIRI_SOCKET) using available tools. If access is restricted, request the tool's supported approval for the specific desktop check or action and retry after approval; never bypass isolation or a denied approval. If approval is unavailable, state that exact limitation. Never claim a restart succeeded without checking it. Quickshell QML and Niri configuration hot-reload automatically; do not kill or restart them for config edits. Anime Streamer mpv launch changes apply on the next playback launch; they do not require restarting VLC or Quickshell. Preserve active playback and assistant backends unless the user requests a restart."});
+        let sendSharedInstructions = force || instructionSessionId !== currentSessionId;
+        if (force || instructionGithubSessionId !== currentSessionId + ":checkout-discovery-v5")
+            prompt.push({type: "text", text: "GitHub workflow: For all GitHub-related project work in this assistant, find the owning Git checkout and verify its remote before editing. Work in the repository first and keep applicable installed files, installer payload, dependencies, documentation and tests synchronized during the task. For Enclosure integrations, check ~/rebos_enclosure first, then ~/code/rebos_enclosure and resolved installed symlink targets; verify the owning checkout with git rev-parse --show-toplevel and git remote -v, then read its AGENTS.md. Installed copies may live under ~/.local/share/enclosure without .git; a missing .git there does not mean the project has no repository. Map assistant to system/apps/assistant, shell to system/apps/shell and media to system/apps/media. Before finishing, compare task-related installed files with tracked source and recover any missed focused changes into the checkout. The user authorizes automatically committing tested task-scoped changes locally to the verified existing repository; follow its branch/PR policy and preserve unrelated work. Ask only when a new repository's destination or visibility is unclear. Never force-push, include secrets or personal state, or bypass sandbox approvals. Do not push automatically. Push only when the user explicitly requests it or uses the Push button in GitHub Settings. Report verification and the local commit; clearly state when changes have not been pushed. Create releases when requested. GitHub network access: Dweebo enables network access in Codex workspace mode while retaining workspace file protections and tool approvals. Try the normal git or gh command first. Host or administrator restrictions can still block access. For GitHub DNS failures (Could not resolve host), blocked connections, or a gh auth status failure in that sandbox, request the execution tool's supported network approval for the exact git or gh command and retry after approval. For Codex exec_command use sandbox_permissions=require_escalated with a specific justification when that option is available. Task authorization to push does not replace a tool approval. If approval is unavailable or rejected, report the exact blocker and give the user the command to run. A sandboxed gh auth status failure does not establish an invalid credential. Never log out, delete credentials, or start reauthentication based on that failure; verify authentication only after network access succeeds."});
+        if (sendSharedInstructions) {
+            prompt.push({type: "text", text: "Local desktop context: Assistant source: " + Quickshell.env("HOME") + "/code/rebos-assistant; shell config: " + Quickshell.env("HOME") + "/.config/quickshell. Inspect and edit these files for requested panel changes. Establish access with tools. If blocked, request the tool's supported approval; report unavailable or rejected approval and the exact blocked action. Never bypass sandbox or approval. Use ~/.local/bin/assistant-sudo --reason 'reason' -- command for each administrator action. Preserve unrelated work and active backends."});
+            prompt.push({type: "text", text: "Task outcome reporting: End the final reply with one line: Task outcome: Positive — <verification> only if the whole request succeeded; otherwise Task outcome: Negative — <remaining work or blocker>. This is self-reported."});
+            prompt.push({type: "text", text: "Shell preferences: Start with one task sentence. Give brief, useful progress for multi-step work. Activity titles state the action and purpose; put commands and output in details. For a consequential preference or missing detail, discover assistant_questions.ask_user_question, offer 2–3 choices and wait before dependent edits; ask in chat only if unavailable. Continue clear authorized work. Use only relevant skills; read the entrypoint and required references, skip generic explanations, and keep answers concise. Do not delegate unless requested. Do not automatically read or write persistent memory, including Obsidian notes; use saved notes only on explicit request. Verify changes. Keep Token Optimizer enabled."});
+            if (!isDistill)
+                prompt.push({type: "text", text: "RTK: Use ~/.local/bin/rtk for supported noisy searches, git, tests and logs; check rtk <command> --help for syntax. Use raw commands for exact source, patches, structured output or details omitted by compression. Compression never replaces verification."});
+        }
+
+        return prompt;
+    }
+
     function dispatchQueuedPrompt() {
-        if (!queuedPrompt || !sessionReady)
+        if (!queuedPrompt || !sessionReady || switchingDistillPreset) return;
+        if (isDistill && distillNeedsChatGPT) {
+            if (!currentSessionModelId.startsWith("chatgpt/")) {
+                failDistillPreset("ChatGPT is not available yet. Choose Connect ChatGPT, then try again.");
+                return;
+            }
+            distillNeedsChatGPT = false;
+        }
+        if (isDistill && !distillPresetReady) {
+            setDistillPreset(distillPreset, true);
             return;
+        }
+        if (currentAgentId === "codex") {
+            if (switchingCodexPreset) return;
+            let preset = codexPresets.find(item => item.id === codexPreset);
+            if (preset && !codexPresetMatches(preset)) {
+                setCodexPreset(codexPreset, true);
+                return;
+            }
+        }
         let queued = queuedPrompt;
         queuedPrompt = null;
         let prompt = [];
+
+        let mode = !isDistill ? codexPresets.find(item => item.id === codexPreset) : null;
+        prompt = currentAgentId.startsWith("free-") ? [] : standingInstructions(mode, false);
+        if (prompt.length > 0) {
+            let preferences = prompt.map(item => item.text || "").join("\n\n");
+            prompt = [{type: "text", text: "Standing preferences (context only, not the current task):\n"
+                + preferences
+                + "\nEnd of standing preferences. Apply them only when relevant to the user's actual request below. Do not initiate desktop checks, repository work, or tool use merely because these preferences describe those procedures. A greeting should receive a greeting."}];
+        }
+        // Preferences precede the user's request so backends do not interpret
+        // the final desktop-policy block as the task they should answer.
         if (queued.text)
             prompt.push({
                 type: "text",
                 text: queued.text
             });
-
-        if (instructionDesktopSessionId !== currentSessionId)
-            prompt.push({type: "text", text: "Desktop access: Empty ps/pgrep results in a restricted command session do not prove desktop apps are stopped. Check the user service and session connection (systemctl --user, D-Bus, WAYLAND_DISPLAY, XDG_RUNTIME_DIR and NIRI_SOCKET) using available tools. If access is restricted, request the tool's supported approval for the specific desktop check or action and retry after approval; never bypass isolation or a denied approval. If approval is unavailable, state that exact limitation. Never claim a restart succeeded without checking it. Quickshell QML and Niri configuration hot-reload automatically; do not kill or restart them for config edits. Anime Streamer mpv launch changes apply on the next playback launch; they do not require restarting VLC or Quickshell. Preserve active playback and assistant backends unless the user requests a restart."});
-        let sendSharedInstructions = instructionSessionId !== currentSessionId;
-        if (sendSharedInstructions) {
-            prompt.push({type: "text", text: "Shell activity preference: Begin with one concise, descriptive sentence stating the overall task you are working on. For multi-step work, keep the plan in plain English with specific steps describing the intended result. Give concise public progress updates explaining what you found, what you are doing next, and why it helps the request. Use everyday English in visible activity rows: describe the feature, action and purpose rather than filenames, command names or technical jargon. For example, say Check that activity rows explain the work clearly. Put filenames and technical identifiers in expandable details. Use specific descriptive tool titles where supported, avoiding vague labels such as Running a command or Reading files. Keep code, patches, commands and relevant output in expandable details; the visible activity should explain the purpose and progress of the work."});
-            prompt.push({type: "text", text: "Shell assistant interaction preference: Use the assistant_questions ask_user_question tool to ask a focused, answerable question early when a meaningful preference, scope choice, or missing detail could change the result. Offer 2–3 clear choices when useful, with the recommendation first. Ask more actively instead of silently choosing subjective details. Wait for the answer before dependent changes. Continue routine authorized work without extra permission questions. Do not repeat answered questions or ask unnecessary questions for clear, simple tasks. If the tool is unavailable, ask a concise question in chat."});
-        }
 
         let supportsImages = agentCapabilities && agentCapabilities.promptCapabilities
             && agentCapabilities.promptCapabilities.image === true;
@@ -1883,7 +2415,9 @@ Scope {
             return;
         }
         instructionSessionId = currentSessionId;
+        instructionGithubSessionId = currentSessionId + ":checkout-discovery-v5";
         instructionDesktopSessionId = currentSessionId;
+        instructionModeGuidance = mode ? mode.guidance : "";
         saveCurrentChat();
         bridgeDirty = true;
         turnWatchdog.restart();
@@ -1891,6 +2425,7 @@ Scope {
     }
 
     function cancelGeneration(announce) {
+        turnFailureHandled = true;
         flushAssistantText();
         turnWatchdog.stop();
         if (currentSessionId && agentProcess.running) {
@@ -1922,10 +2457,19 @@ Scope {
         }
         pendingPermissions = {};
         activePromptRequestId = -1;
+        pendingCodexPreset = null;
+        let remainingRpc = Object.assign({}, pendingRpc);
+        for (let id of Object.keys(remainingRpc)) {
+            if (remainingRpc[id].kind === "codex_preset") delete remainingRpc[id];
+        }
+        pendingRpc = remainingRpc;
         queuedPrompt = null;
         isLoading = false;
         agentTurnActive = false;
         toolRunning = false;
+        taskOutcome = announce ? "Stopped" : "";
+        outcomeFinding = announce ? "Stopped by you." : "";
+        lastError = "";
         statusText = announce ? "Stopped" : "";
 
         let chat = Array.from(currentChat);
@@ -1945,6 +2489,9 @@ Scope {
     function createNewChat() {
         cancelGeneration(false);
         instructionSessionId = "";
+        instructionGithubSessionId = "";
+        instructionModeGuidance = "";
+        codexPreset = currentAgentId === "codex" ? "coding" : "";
         currentChat = [];
         taskPlan = [];
         taskPlanMarkdown = "";
@@ -1967,7 +2514,39 @@ Scope {
     }
 
     function regenerateResponse(index) {
-        pushSystemMessage("Regeneration is owned by the ACP agent. Ask it to reconsider or regenerate the response.");
+        // ACP agents own their conversation history, so continue the failed
+        // user prompt in the same session instead of regenerating history.
+        if (isBusy || !sessionReady || !currentSessionId || !agentProcess.running) {
+            pushSystemMessage("Reconnect to the assistant before continuing this prompt.");
+            return;
+        }
+        let chat = Array.from(currentChat);
+        let userIndex = Math.min(index, chat.length - 1);
+        while (userIndex >= 0 && chat[userIndex].role !== "user") userIndex--;
+        if (userIndex < 0) {
+            pushSystemMessage("Could not find the prompt to continue.");
+            return;
+        }
+        let original = chat[userIndex];
+        chat.splice(userIndex + 1);
+        currentChat = chat;
+        taskPlan = [];
+        taskPlanMarkdown = "";
+        activityLog = [];
+        thoughtText = "";
+        thoughtMessageId = "";
+        queuedPrompt = { text: original.content || "", attachments: original.attachments || [] };
+        isLoading = true;
+        agentTurnActive = true;
+        turnFailureHandled = false;
+        taskOutcome = "";
+        outcomeFinding = "";
+        backendEvidence = "";
+        lastError = "";
+        statusText = "Continuing…";
+        activeAssistantIndex = -1;
+        activeAssistantMessageId = "";
+        dispatchQueuedPrompt();
     }
 
     function updateMessage(index, newContent) {
@@ -1995,6 +2574,10 @@ Scope {
             agentId: currentChatAgentId || currentAgentId,
             sessionId: currentSessionId,
             instructionSessionId: instructionSessionId,
+            instructionGithubSessionId: instructionGithubSessionId,
+            instructionModeGuidance: instructionModeGuidance,
+            distillPreset: distillPreset,
+            codexPreset: codexPreset,
             cwd: currentChatCwd || workingDirectory(),
             taskPlan: taskPlan,
             taskPlanMarkdown: taskPlanMarkdown,
@@ -2125,10 +2708,15 @@ for path in files:
                 root.currentModel = agent;
                 root.currentAgentId = agent.id;
                 root.currentChatAgentId = agent.id;
+                root.distillPreset = root.distillPresets.some(item => item.id === payload.distillPreset) ? payload.distillPreset : "auto";
+                root.distillPresetReady = false;
+                root.codexPreset = root.codexPresets.some(item => item.id === payload.codexPreset) ? payload.codexPreset : (agent.id === "codex" ? "coding" : "");
                 root.currentChat = isLegacy ? payload : (payload.messages || []);
                 root.currentChatId = targetId;
                 root.currentSessionId = isLegacy ? "" : (payload.sessionId || "");
                 root.instructionSessionId = isLegacy ? "" : (payload.instructionSessionId || "");
+                root.instructionGithubSessionId = isLegacy ? "" : (payload.instructionGithubSessionId || "");
+                root.instructionModeGuidance = isLegacy ? "" : (payload.instructionModeGuidance || "");
                 root.currentChatCwd = isLegacy ? root.workingDirectory() : (payload.cwd || root.workingDirectory());
                 root.sessionReady = false;
                 root.activeAssistantIndex = -1;
@@ -2182,7 +2770,11 @@ for path in files:
         isLoading = false;
         agentTurnActive = false;
         toolRunning = false;
-        statusText = "";
+        turnFailureHandled = true;
+        taskOutcome = "Stopped";
+        lastError = "";
+        outcomeFinding = "The assistant was disabled intentionally.";
+        statusText = "Assistant stopped";
         if (agentProcess.running) {
             // Explicitly disabling AI stops the backend. QML destruction only
             // closes the relay, so ordinary shell reloads keep work running.
@@ -2207,7 +2799,7 @@ for path in files:
             return;
         bootstrapped = true;
         refreshAgents();
-        let preferred = StateService.get(
+        let preferred = preferredAgentId || StateService.get(
             "lastAiAgent",
             Config.ai && Config.ai.defaultAgent ? Config.ai.defaultAgent : "codex"
         );

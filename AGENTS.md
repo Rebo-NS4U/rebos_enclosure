@@ -4,8 +4,15 @@ The repository-first, tested automatic local-commit workflow applies to every Gi
 
 Work in this repository first and apply the task's changes to installed files for verification. If a live edit is necessary first, bring its focused diff into the repository during the same task. Preserve unrelated changes and portable installer substitutions; do not refresh the entire desktop snapshot for a small edit.
 
-This development desktop links its installed application sources to the payload
-in this checkout. Check `readlink -f` before editing or deploying: both paths may
+Locate the checkout before editing: check `~/rebos_enclosure`, then
+`~/code/rebos_enclosure` and resolved installed symlink targets. Verify with
+`git rev-parse --show-toplevel` and `git remote -v`. A copied installation under
+`~/.local/share/enclosure` has no `.git`; this does not establish that no checkout
+exists. Before finishing, compare the task-related installed files with their
+tracked mappings and recover any missed focused changes.
+
+Development installations can link application sources to the payload
+in this checkout; copied installations have separate managed files. Check `readlink -f` before editing or deploying: both paths may
 already refer to the same file. Preserve these links; do not recreate duplicate
 installed source trees. See `desktop/SOURCE-LINKS.md` for deployment and updates.
 
