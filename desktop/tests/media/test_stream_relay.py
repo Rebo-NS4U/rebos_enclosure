@@ -230,3 +230,18 @@ class RelayTests(unittest.TestCase):
         local=self.relay.register(self.base+'master.m3u8')
         result=subprocess.run(['ffmpeg','-v','error','-allowed_extensions','ALL','-allowed_segment_extensions','ALL','-extension_picky','0','-ss','5','-i',local,'-frames:v','1','-f','null','-'],capture_output=True,timeout=15)
         self.assertEqual(result.returncode,0,result.stderr.decode(errors='replace'))
+
+    def test_vlc_decodes_hls_through_relay(self):
+        target = self.path / 'vlc.m3u8'
+        subprocess.run(['ffmpeg', '-v', 'error', '-f', 'lavfi', '-i',
+                        'color=s=32x32:d=4:r=10', '-c:v', 'libx264', '-g', '10',
+                        '-f', 'hls', '-hls_time', '2', '-hls_list_size', '0', str(target)],
+                       check=True, capture_output=True)
+        local = self.relay.register(self.base + 'vlc.m3u8')
+        result = subprocess.run(['vlc', '--ignore-config', '-I', 'dummy',
+                                 '--vout=dummy', '--aout=dummy', '--no-audio',
+                                 '--play-and-exit', '--run-time=2', '-vv', local],
+                                capture_output=True, text=True, timeout=20)
+        self.assertEqual(result.returncode, 0, result.stderr[-3000:])
+        self.assertIn('Received first picture', result.stderr)
+        self.assertNotIn('Failed to create demuxer', result.stderr)

@@ -1,5 +1,17 @@
 # Validation record
 
+## YouTube HLS decoder dependency — 2026-11-06
+
+- The live installation lacked the already-declared `vlc-plugin-dvb` package.
+  Installed it and verified VLC lists the MPEG transport-stream demuxer.
+- Added a real VLC decode check through the relay. It reproduced the missing
+  TS demuxer failure before installation and decoded a first picture afterward.
+  All 12 relay tests and 14 installer tests passed; payload verification passed.
+- The affected YouTube video's first upstream media segment still returned
+  HTTP 403, including with extractor-provided headers. Successful local HLS
+  decoding does not establish that YouTube playback is fixed. No existing
+  playback process or desktop service was restarted.
+
 ## Repository review in GitHub Settings — 2026-11-04
 
 - Removed the standalone graphical maintenance implementation and Settings launch
