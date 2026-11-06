@@ -678,6 +678,7 @@ Item {
                         }
                         Rectangle {
                             objectName: "typing-line-highlight"
+                            z: -1
                             anchors.left: parent.left
                             anchors.right: parent.right
                             y: smoothCaret.rowY
@@ -699,6 +700,7 @@ Item {
                         }
                         Flow {
                             objectName: "typing-passage-flow"
+                            z: 1
                             opacity: root.pageReveal
                             anchors.left: parent.left
                             anchors.right: parent.right
@@ -801,57 +803,84 @@ Item {
                             property bool placed: false
                             property real rowY: 0
                             property real rowHeight: 32
-                            width: 2.5
-                            height: 26
-                            z: 2
+                            readonly property color accent: Colors.primary
+                            readonly property int moveDuration: Math.min(160, Motion.contentIn)
+                            property real targetRowY: 0
+                            property real targetX: 0
+                            property real targetY: 0
+                            width: 18
+                            height: 28
+                            z: 0
                             visible: root.practicing && root.passage.length > 0 && !root.busy && placed && targetGlyph !== null && targetGlyph.caretHere
                             function follow(item) {
                                 if (!item || !item.caretHere || !item.visible) return;
                                 const point = item.parent.mapToItem(passageArea, item.x, item.y);
                                 const nextY = point.y + Math.max(0, item.baselineOffset - item.font.pixelSize);
-                                glide = placed && Math.abs(nextY - y) < 2 && Motion.enabled;
+                                glide = placed && targetGlyph !== null && root.glyphItems[targetGlyph.characterIndex] === targetGlyph && Motion.enabled;
                                 targetGlyph = item;
-                                rowY = Math.max(0, point.y);
+                                targetRowY = Math.max(0, point.y);
+                                rowY = targetRowY;
                                 rowHeight = Math.max(30, item.height);
-                                x = Math.max(1, point.x - 3);
-                                y = nextY;
-                                height = Math.round(item.font.pixelSize * 1.15);
+                                targetX = Math.max(1, point.x - 3);
+                                targetY = Math.max(0, nextY - 1);
+                                x = targetX;
+                                y = targetY;
+                                width = Math.max(12, item.width + 6);
+                                height = Math.round(item.font.pixelSize * 1.15) + 2;
                                 placed = true;
                                 if (Motion.enabled) idlePulse.restart();
                             }
                             Behavior on x {
-                                enabled: smoothCaret.glide
-                                NumberAnimation { duration: Math.min(110, Motion.feedback); easing.type: Easing.OutCubic }
+                                enabled: smoothCaret.glide && Motion.enabled
+                                NumberAnimation { duration: smoothCaret.moveDuration; easing.type: Easing.OutCubic }
+                            }
+                            Behavior on y {
+                                enabled: smoothCaret.glide && Motion.enabled
+                                NumberAnimation { duration: smoothCaret.moveDuration; easing.type: Easing.OutCubic }
+                            }
+                            Behavior on rowY {
+                                enabled: smoothCaret.glide && Motion.enabled
+                                NumberAnimation { duration: smoothCaret.moveDuration; easing.type: Easing.OutCubic }
+                            }
+                            Behavior on width {
+                                enabled: smoothCaret.glide && Motion.enabled
+                                NumberAnimation { duration: smoothCaret.moveDuration; easing.type: Easing.OutCubic }
+                            }
+                            Behavior on height {
+                                enabled: smoothCaret.glide && Motion.enabled
+                                NumberAnimation { duration: smoothCaret.moveDuration; easing.type: Easing.OutCubic }
                             }
                             SequentialAnimation {
                                 id: idlePulse
                                 running: smoothCaret.visible && Motion.enabled
                                 loops: Animation.Infinite
-                                NumberAnimation { target: smoothCaret; property: "breath"; from: 1; to: 0.65; duration: 700; easing.type: Easing.InOutSine }
-                                NumberAnimation { target: smoothCaret; property: "breath"; from: 0.65; to: 1; duration: 700; easing.type: Easing.InOutSine }
-                            }
-                            Rectangle {
-                                anchors.centerIn: parent
-                                width: 9
-                                height: parent.height + 4
-                                radius: 4
-                                color: Qt.alpha(Colors.primary, 0.10)
-                            }
-                            Rectangle {
-                                width: 5
-                                height: 5
-                                radius: 1
-                                rotation: 45
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                y: -3
-                                color: Colors.primary
+                                NumberAnimation { target: smoothCaret; property: "breath"; from: 1; to: 0.9; duration: 700; easing.type: Easing.InOutSine }
+                                NumberAnimation { target: smoothCaret; property: "breath"; from: 0.9; to: 1; duration: 700; easing.type: Easing.InOutSine }
                             }
                             Rectangle {
                                 objectName: "typing-caret-core"
                                 anchors.fill: parent
-                                radius: width / 2
-                                color: Colors.primary
+                                radius: 6
+                                color: Qt.alpha(smoothCaret.accent, 0.46)
+                                border.width: 1
+                                border.color: Qt.alpha(smoothCaret.accent, 0.8)
+                                gradient: Gradient {
+                                    GradientStop { position: 0; color: Qt.alpha(smoothCaret.accent, 0.58) }
+                                    GradientStop { position: 0.45; color: Qt.alpha(smoothCaret.accent, 0.36) }
+                                    GradientStop { position: 1; color: Qt.alpha(smoothCaret.accent, 0.5) }
+                                }
                                 opacity: Motion.enabled ? smoothCaret.breath : 1
+                                Rectangle {
+                                    anchors.top: parent.top
+                                    anchors.left: parent.left
+                                    anchors.right: parent.right
+                                    anchors.topMargin: 2
+                                    anchors.leftMargin: 4
+                                    anchors.rightMargin: 4
+                                    height: 1
+                                    radius: 0.5
+                                    color: Qt.alpha(Colors.overSurface, 0.45)
+                                }
                             }
                         }
                         TextEdit {
