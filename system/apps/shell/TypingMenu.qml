@@ -85,6 +85,21 @@ Item {
     function characterWidth(text) { return Math.max(1, Math.ceil(typingMetrics.advanceWidth(text))); }
     function fitPage() {
         pageLayout = TypingPaging.layout(pageSource, Math.max(80, root.width - 52), characterWidth, pageLineLimit);
+        Qt.callLater(refreshPageCaret);
+    }
+    function refreshPageCaret() {
+        if (busy || restoring) return;
+        passageFlow.forceLayout();
+        syncCaret();
+        const current = glyphItems[renderedCaret];
+        updateGlyph(current);
+        smoothCaret.follow(current);
+    }
+    function resetPageCaret() {
+        smoothCaret.glide = false;
+        smoothCaret.placed = false;
+        smoothCaret.targetGlyph = null;
+        renderedCaret = -1;
     }
     Timer {
         id: fitDelay
@@ -250,6 +265,7 @@ Item {
             restoring = true;
             bookId = data.id; bookTitle = data.title; bookLength = data.length;
             position = data.position; rounds = data.loops; if (data.chapters) chapters = data.chapters;
+            resetPageCaret();
             pageSource = data.passage; fitPage();
             answer.text = data.typed; answer.cursorPosition = answer.length;
             dirty = false; draft = false; busy = false; restoring = false;
@@ -812,7 +828,8 @@ Item {
                             z: 0
                             visible: root.practicing && root.passage.length > 0 && !root.busy && placed && targetGlyph !== null && targetGlyph.caretHere
                             function follow(item) {
-                                if (!item || !item.caretHere || !item.visible) return;
+                                if (root.busy || root.restoring || !item || !item.caretHere || !item.visible) return;
+                                if (root.glyphItems[item.characterIndex] !== item || item.characterIndex !== root.renderedCaret) return;
                                 const point = item.parent.mapToItem(passageArea, item.x, item.y);
                                 const nextY = point.y + item.baselineOffset + root.highlightBounds.y - root.highlightPadding;
                                 glide = placed && targetGlyph !== null && root.glyphItems[targetGlyph.characterIndex] === targetGlyph && Motion.enabled;

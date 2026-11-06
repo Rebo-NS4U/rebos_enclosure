@@ -172,7 +172,16 @@ ShellRoot {
                     input.text = "";
                 } else if (phase < 100) {
                     if (phase === 4 && (!find(practice, "typing-caret-0").visible || Math.abs(find(practice, "typing-character-1").opacity - 0.65) > 0.001)) throw Error("Backspace did not restore the cursor and readable upcoming text");
-                    if (practice.rounds < 1) { input.text = practice.passage; phase++; return; }
+                    const pageCaret = find(practice, "typing-smooth-caret");
+                    const firstGlyph = find(practice, "typing-character-0");
+                    const firstPoint = firstGlyph.parent.mapToItem(pageCaret.parent, firstGlyph.x, firstGlyph.y);
+                    const expectedRow = Math.max(0, firstPoint.y + firstGlyph.baselineOffset + practice.highlightBounds.y - practice.highlightPadding);
+                    if (pageCaret.targetGlyph !== firstGlyph || Math.abs(pageCaret.targetRowY - expectedRow) > 0.01) throw Error("New page did not reset the highlight to its first row: " + JSON.stringify({phase: phase, position: practice.position, targetCorrect: pageCaret.targetGlyph === firstGlyph, row: pageCaret.targetRowY, expected: expectedRow, cursor: input.cursorPosition}));
+                    if (practice.rounds < 1) {
+                        input.text = practice.passage.slice(0, -1); input.cursorPosition = input.length;
+                        pageCaret.follow(find(practice, "typing-character-" + input.cursorPosition));
+                        input.text = practice.passage; phase++; return;
+                    }
                     if (practice.position !== 0) throw Error("Continuous loop failed");
                     phase = 100;
                     practice.send({action: "add", title: "Unicode test", text: "😀 A gentle morning with words to type. ".repeat(8) + "\nChapter Two\nA new chapter begins here."});
