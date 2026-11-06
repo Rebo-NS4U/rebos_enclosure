@@ -38,12 +38,14 @@ by the package manager.
 
 ## Dependencies deliberately retained
 
-- VLC, its FFmpeg, FreeType and Lua plugins, and Lua Socket support the bundled media
+- VLC, its FFmpeg, DVB, FreeType and Lua plugins, and Lua Socket support the bundled media
   browser's VLC session and local control interface. Arch documents Lua Socket
   as the HTTP-interface optional dependency of
   [vlc-plugin-lua](https://archlinux.org/packages/extra/x86_64/vlc-plugin-lua/).
   FreeType supplies the subtitle-font options passed at player startup; without
   it VLC rejects those options and exits before playback.
+  The DVB package supplies the MPEG transport-stream demuxer used by HLS anime
+  segments; without it VLC can open the playlist but fails before decoding video.
   MPV remains the bundled ani-cli default player.
 - Python GObject/GTK4 support the media app and administrator dialog; Pillow
   supports wallpaper processing. FFmpeg supports video thumbnails and wallpapers.

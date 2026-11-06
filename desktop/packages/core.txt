@@ -79,6 +79,7 @@ syntax-highlighting
 mpv
 vlc
 vlc-plugin-ffmpeg
+vlc-plugin-dvb
 vlc-plugin-freetype
 vlc-plugin-lua
 lua-socket
