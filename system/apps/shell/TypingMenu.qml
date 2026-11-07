@@ -52,6 +52,10 @@ Item {
             send({action: "previous", id: bookId, position: position, loops: 0});
         }
     }
+    function readerHtml(value) {
+        const escaped = value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        return '<p style="line-height:155%; margin-top:0px; margin-bottom:0px;">' + escaped + '</p>';
+    }
     function readingWordAt(index) {
         const start = passage.lastIndexOf(" ", Math.max(0, index - 1)) + 1;
         const end = passage.indexOf(" ", index);
@@ -261,7 +265,7 @@ Item {
     readonly property int visualCursor: Math.min(TypingPaging.displayInput(answer.text.slice(0, answer.cursorPosition), passage).length, passage.length - 1)
     readonly property real progress: bookLength ? Math.min(1, (position + characters(displayedInput).length) / bookLength) : 0
     readonly property var passageWords: pageLayout.words
-    readonly property font readingFont: Qt.font({family: Config.theme.font, pixelSize: fullscreen ? 22 : Config.theme.fontSize + 2, weight: Font.Normal})
+    readonly property font readingFont: Qt.font({family: fullscreen ? "Noto Serif" : Config.theme.font, pixelSize: fullscreen ? 24 : Config.theme.fontSize + 2, weight: Font.Normal})
     FontMetrics { id: typingMetrics; font: root.readingFont }
     readonly property rect highlightBounds: {
         const metricsFont = typingMetrics.font;
@@ -610,6 +614,16 @@ Item {
             verticalAlignment: Text.AlignVCenter
             font.underline: parent.activeFocus
 
+        }
+    }
+    component ReaderNavButton: TextButton {
+        id: nav
+        implicitHeight: 40
+        implicitWidth: 100
+        background: StyledRect {
+            variant: nav.hovered || nav.activeFocus ? "focus" : "pane"
+            radius: 16
+            backgroundOpacity: nav.enabled ? 0.75 : 0.25
         }
     }
     component ReaderAction: MenuItem {
@@ -1093,15 +1107,17 @@ Item {
     Item {
         anchors.fill: parent
         ColumnLayout {
-            anchors.fill: parent
-            anchors.margins: root.practicing ? 12 : 20
-            anchors.leftMargin: root.practicing ? 16 : 20
-            anchors.rightMargin: root.practicing ? 16 : 20
-            spacing: 12
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+            anchors.topMargin: root.fullscreen ? 32 : (root.practicing ? 12 : 20)
+            anchors.bottomMargin: root.fullscreen ? 28 : (root.practicing ? 12 : 20)
+            width: root.fullscreen ? Math.min(720, Math.max(1, parent.width - 80)) : Math.max(1, parent.width - (root.practicing ? 32 : 40))
+            spacing: root.fullscreen ? 20 : 12
             RowLayout {
                 Layout.fillWidth: true
                 Layout.maximumHeight: 36
-                StyledText { text: root.practicing ? root.bookTitle : "Your book library"; textFormat: Text.PlainText; elide: Text.ElideRight; Layout.minimumWidth: 0; font.pixelSize: 18; opacity: 0.65; Layout.fillWidth: true }
+                StyledText { text: root.practicing ? root.bookTitle : "Your book library"; textFormat: Text.PlainText; elide: Text.ElideRight; Layout.minimumWidth: 0; font.pixelSize: root.fullscreen ? 13 : 18; font.letterSpacing: root.fullscreen ? 0.7 : 0; opacity: root.fullscreen ? 0.5 : 0.65; Layout.fillWidth: true }
                 TextButton { objectName: "typing-book-notebook"; text: "Notes"; visible: root.practicing; enabled: !!root.bookId && !root.busy; onClicked: root.openNotebook() }
                 TextButton {
                     id: readerActionsButton
@@ -1123,7 +1139,20 @@ Item {
                     }
                 }
                 TextButton { objectName: "typing-back"; visible: !root.practicing; text: "Back"; enabled: !root.busy && (root.bookId.length > 0 || root.draft || root.library.length > 0); onClicked: root.goBack() }
-                TextButton { text: "Close"; onClicked: { root.saveProgress(); root.backRequested(); } }
+                TextButton { visible: root.fullscreen; text: "Exit reading"; onClicked: root.toggleFullscreen() }
+                TextButton { visible: !root.fullscreen; text: "Close"; onClicked: { root.saveProgress(); root.backRequested(); } }
+            }
+            Rectangle { visible: root.fullscreen; Layout.fillWidth: true; implicitHeight: 1; color: Qt.alpha(Colors.outlineVariant, 0.4) }
+            StyledText {
+                visible: root.fullscreen && !root.atChapterStart
+                text: root.chapterTitle
+                textFormat: Text.PlainText
+                font.pixelSize: 12
+                font.letterSpacing: 1.5
+                color: Qt.alpha(Colors.primary, 0.7)
+                horizontalAlignment: Text.AlignHCenter
+                Layout.fillWidth: true
+                elide: Text.ElideRight
             }
             ColumnLayout {
                 Layout.fillWidth: true
@@ -1300,11 +1329,11 @@ Item {
                         objectName: "typing-chapter-card"
                         visible: root.atChapterStart
                         Layout.fillWidth: true
-                        implicitHeight: chapterCardText.implicitHeight + 28
-                        variant: "pane"
+                        implicitHeight: chapterCardText.implicitHeight + (root.fullscreen ? 48 : 28)
+                        variant: root.fullscreen ? "transparent" : "pane"
                         radius: 16
                         border.width: 1
-                        border.color: Qt.alpha(Colors.primary, 0.35)
+                        border.color: root.fullscreen ? "transparent" : Qt.alpha(Colors.primary, 0.35)
                         ColumnLayout {
                             id: chapterCardText
                             anchors.left: parent.left
@@ -1313,18 +1342,21 @@ Item {
                             anchors.margins: 18
                             spacing: 6
                             StyledText {
-                                text: "NEW CHAPTER · " + (root.currentChapterIndex + 1) + " / " + root.chapters.length
+                                text: (root.fullscreen ? "CHAPTER · " : "NEW CHAPTER · ") + (root.currentChapterIndex + 1) + " / " + root.chapters.length
                                 color: Colors.primary
                                 font.pixelSize: 11
-                                font.letterSpacing: 1.2
+                                font.letterSpacing: root.fullscreen ? 2.5 : 1.2
+                                horizontalAlignment: root.fullscreen ? Text.AlignHCenter : Text.AlignLeft
                                 Layout.fillWidth: true
                             }
                             StyledText {
                                 objectName: "typing-chapter-card-title"
                                 text: root.chapterTitle
                                 textFormat: Text.PlainText
-                                font.pixelSize: root.fullscreen ? 32 : 26
-                                font.weight: Font.DemiBold
+                                font.family: root.fullscreen ? "Noto Serif" : Config.theme.font
+                                font.pixelSize: root.fullscreen ? 40 : 26
+                                font.weight: root.fullscreen ? Font.Normal : Font.DemiBold
+                                horizontalAlignment: root.fullscreen ? Text.AlignHCenter : Text.AlignLeft
                                 color: Colors.overSurface
                                 wrapMode: Text.Wrap
                                 maximumLineCount: 2
@@ -1628,8 +1660,8 @@ Item {
                             visible: root.fullscreen
                             readOnly: true
                             selectByMouse: true
-                            textFormat: TextEdit.PlainText
-                            text: root.passage
+                            textFormat: TextEdit.RichText
+                            text: root.readerHtml(root.passage)
                             font: root.readingFont
                             color: Colors.overSurface
                             selectionColor: Qt.alpha(Colors.primary, 0.3)
@@ -1703,11 +1735,12 @@ Item {
                     RowLayout {
                         visible: root.fullscreen
                         Layout.fillWidth: true
-                        TextButton { objectName: "reader-previous-page"; text: "‹ Previous"; enabled: !root.busy && root.position > 0; onClicked: root.readPreviousPage() }
-                        StyledText { text: "Page Up / Page Down · Space to continue"; font.pixelSize: 11; opacity: 0.6; Layout.fillWidth: true; horizontalAlignment: Text.AlignHCenter }
-                        TextButton { objectName: "reader-next-page"; text: root.position + root.characters(root.passage).length >= root.bookLength ? "End of book" : "Next ›"; enabled: !root.busy && root.position + root.characters(root.passage).length < root.bookLength; onClicked: root.readNextPage() }
+                        ReaderNavButton { objectName: "reader-previous-page"; text: "‹ Previous"; enabled: !root.busy && root.position > 0; onClicked: root.readPreviousPage() }
+                        StyledText { text: Math.round(root.progress * 100) + "% read"; font.pixelSize: 12; opacity: 0.5; Layout.fillWidth: true; horizontalAlignment: Text.AlignHCenter }
+                        ReaderNavButton { objectName: "reader-next-page"; text: root.position + root.characters(root.passage).length >= root.bookLength ? "End of book" : "Next ›"; enabled: !root.busy && root.position + root.characters(root.passage).length < root.bookLength; onClicked: root.readNextPage() }
                     }
                     RowLayout {
+                        visible: !root.fullscreen || root.errorMessage.length > 0
                         Layout.fillWidth: true
                         StyledText { text: root.errorMessage || (root.busy ? "Loading…" : (!root.fullscreen && !answer.activeFocus ? "Click the passage to continue typing" : root.chapterTitle)); textFormat: Text.PlainText; color: root.errorMessage ? Colors.error : Colors.overSurface; opacity: root.errorMessage ? 1 : 0.7; font.pixelSize: 11; elide: Text.ElideRight; Layout.fillWidth: true; Layout.minimumWidth: 0 }
                         StyledText { objectName: "typing-live-wpm"; visible: !root.fullscreen; text: root.liveWpm + " WPM"; color: Colors.primary; font.pixelSize: 12 }
@@ -1715,7 +1748,7 @@ Item {
                     }
                     Rectangle {
                         Layout.fillWidth: true
-                        implicitHeight: 2
+                        implicitHeight: root.fullscreen ? 1 : 2
                         radius: 1
                         color: Qt.alpha(Colors.overSurface, 0.08)
                         Rectangle {

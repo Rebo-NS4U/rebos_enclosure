@@ -570,6 +570,10 @@ ShellRoot {
                     const restored = freshView.item;
                     const reader = find(restored, "reader-page-text");
                     if (!reader.visible || !reader.readOnly || find(restored, "typing-input").visible || find(restored, "typing-live-wpm").visible) throw Error("Reading mode still exposes typing controls");
+                    if (reader.font.family !== "Noto Serif" || reader.width > 720 || reader.getText(0, reader.length).trim() !== restored.passage.trim()) throw Error("Reader typography, measure, or displayed text is incorrect");
+                    const escaped = restored.readerHtml('<img src="missing"> & book');
+                    if (escaped.includes('<img') || !escaped.includes('&lt;img') || !escaped.includes('&amp;')) throw Error("Book markup was not escaped for reader formatting");
+                    restored.grabToImage(result => result.saveToFile("/tmp/enclosure-reader-preview.png"));
                     reader.forceActiveFocus();
                     const original = reader.text;
                     keyDriver.keyClick(Qt.Key_A, Qt.NoModifier, 0);

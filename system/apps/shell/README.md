@@ -150,7 +150,9 @@ bar keeps the book title and **Notes** visible; **⋯** groups Reading mode (F11
 Book library and Import book actions.
 
 F11 opens a fullscreen **reading mode** with plain, selectable book text and
-no typing input, accuracy effects, caret or WPM. Use Previous/Next, Page Up/Page
+no typing input, accuracy effects, caret or WPM. The fullscreen page uses a
+centered 720-pixel reading column, 24px serif text with generous line spacing, an
+opaque themed surface, restrained running headers and quiet page controls. Use Previous/Next, Page Up/Page
 Down, or Space to turn pages. Escape or F11 returns to typing at the current
 reading position. Switching modes without navigating preserves partial typing.
 Right-click a word or select it and press Ctrl+Space for definitions and notes.
