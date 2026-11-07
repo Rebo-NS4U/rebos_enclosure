@@ -2,7 +2,10 @@
 
 Use `~/.local/bin/assistant-sudo --reason 'Reason for the change' -- command argument...`.
 The desktop first shows the exact argument list and working directory for approval.
-After approval, sudo requests authentication through a masked desktop password dialog.
+After approval, sudo reuses temporary authentication when its existing policy allows.
+Otherwise it requests authentication through a masked desktop password dialog.
+Expiry and session scope follow the system sudo policy; no sudoers changes are made.
+Each command still requires approval, including while authentication is cached.
 Canceling either dialog prevents execution. No password is stored by these helpers or sent to chat.
 Sudo policy still determines which commands the user can run.
 

@@ -35,9 +35,9 @@ def main():
         sys.stderr.write("Administrator command cancelled or desktop prompt unavailable. Nothing was run.\n")
         return 1
     environment = dict(os.environ, SUDO_ASKPASS=str(askpass))
-    # -k ignores cached credentials for this invocation. Password stdout travels
-    # only from the askpass child to sudo, never through this process or chat.
-    return subprocess.run(["/usr/bin/sudo", "-A", "-k", "--", *command],
+    # Let sudo reuse authentication according to its existing timestamp policy.
+    # Password stdout travels only from askpass to sudo, never through chat.
+    return subprocess.run(["/usr/bin/sudo", "-A", "--", *command],
                           env=environment).returncode
 
 
