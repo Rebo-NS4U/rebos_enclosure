@@ -103,7 +103,7 @@ Item {
     function characterWidth(text) { return Math.max(1, Math.ceil(typingMetrics.advanceWidth(text))); }
     function fitPage() {
         stopFeedback();
-        pageLayout = TypingPaging.layout(pageSource, Math.max(80, root.width - 40), characterWidth, pageLineLimit);
+        pageLayout = TypingPaging.layout(pageSource, Math.max(1, passageFlow.width), characterWidth, pageLineLimit);
         Qt.callLater(refreshPageCaret);
     }
     function refreshPageCaret() {
@@ -325,7 +325,7 @@ Item {
                 let offset = 0, last = 0, text = "";
                 while (offset < data.previousText.length) {
                     last = offset;
-                    text = TypingPaging.layout(data.previousText.slice(offset), Math.max(80, width - 40), characterWidth, pageLineLimit).text;
+                    text = TypingPaging.layout(data.previousText.slice(offset), Math.max(1, passageFlow.width), characterWidth, pageLineLimit).text;
                     if (!text.length) break;
                     offset += text.length;
                 }
@@ -343,7 +343,7 @@ Item {
                 data.action = restoreAction;
                 data.chapters = restoreChapters;
             }
-            const fitted = TypingPaging.layout(data.passage, Math.max(80, root.width - 40), characterWidth, pageLineLimit);
+            const fitted = TypingPaging.layout(data.passage, Math.max(1, passageFlow.width), characterWidth, pageLineLimit);
             const prepared = TypingPaging.prepareInput(data.typed, fitted.text);
             data.typed = prepared.text;
             const entered = characters(data.typed);
@@ -908,6 +908,9 @@ Item {
                                     delegate: Row {
                                         id: word
                                         required property var modelData
+                                        // Flow must wrap with the same widths used by pagination.
+                                        // Row implicit widths can differ under native font hinting.
+                                        width: root.characters(modelData.text).reduce((total, letter) => total + root.characterWidth(letter), 0)
                                         readonly property real linePop: root.effectKind === "line" && root.effectLine === modelData.line ? root.effectStrength : 0
                                         readonly property real centerOffset: Math.max(0, (passageFlow.width - (root.pageLayout.lineWidths[modelData.line] || 0)) / 2)
                                         readonly property real arrival: root.effectKind === "page" ? Math.max(0, 1 - transitionBurst.progress / (0.48 + 0.45 * (modelData.line + 1) / Math.max(1, root.pageLayout.lines))) : 0

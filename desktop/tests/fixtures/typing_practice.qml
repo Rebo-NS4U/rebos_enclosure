@@ -218,6 +218,13 @@ ShellRoot {
                     if (line.border.width !== 0 || line.children.length !== 0) throw Error("Line highlight must have uniform transparency without a side strip");
                     const textFlow = find(practice, "typing-passage-flow");
                     if (textFlow.y !== 4 || textFlow.height > textFlow.parent.height - 4) throw Error("Passage leaves unused rows or clips vertically");
+                    for (const word of textFlow.children) {
+                        if (!word.modelData || word.modelData.line === undefined) continue;
+                        if (Math.abs(word.y - word.modelData.line * practice.passageLineHeight) > 1)
+                            throw Error("Rendered wrapping disagrees with pagination");
+                        if (word.x + word.centerOffset < -1 || word.x + word.centerOffset + word.width > textFlow.width + 1)
+                            throw Error("Centered word extends outside the passage");
+                    }
                     const centeredWord = find(practice, "typing-character-0").parent;
                     if (Math.abs(centeredWord.centerOffset - (textFlow.width - practice.pageLayout.lineWidths[0]) / 2) > 1) throw Error("Text line is not horizontally centered");
                     if (!line.visible || line.width < practice.width - 60 || line.height < practice.highlightBounds.height + 2 * practice.highlightPadding || line.y !== caret.rowY) throw Error("Current line highlight is missing or too narrow");
