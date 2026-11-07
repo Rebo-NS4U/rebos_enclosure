@@ -23,15 +23,47 @@ def normalize(text):
     text = re.sub(r'(\w)-[ \t]*\n[ \t]*(\w)', r'\1\2', text)
     return ' '.join(text.replace('\u00ad', '').split())
 
+# Require a chapter identifier, rather than treating any sentence starting with
+# "chapter" as a heading. Bare identifiers need surrounding whitespace.
+NUMBER_WORD = r'(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred)'
+IDENTIFIER = rf'(?:[0-9]+|[ivxlcdm]+|{NUMBER_WORD}(?:[ -]+{NUMBER_WORD})*)'
+CHAPTER_HEADING = re.compile(
+    rf'(?:chapter|part|book|section)\s+{IDENTIFIER}(?=$|[\s.:—–-])', re.I)
+BARE_HEADING = re.compile(rf'{IDENTIFIER}[.)]?(?:\s*[:.—–-]\s*\S.*)?', re.I)
+SPECIAL_HEADING = re.compile(
+    r'(?:prologue|epilogue|preface|foreword|afterword|introduction|conclusion)(?:\s*[:—–-]\s*\S.*)?', re.I)
+
+
+def document_heading(lines, index):
+    line = lines[index].strip()
+    if not line or len(line) >= 160:
+        return None
+    markdown = re.fullmatch(r'#{1,6}\s+(.+?)(?:\s+#+)?', line)
+    if markdown:
+        return markdown[1].strip()
+    # Dotted leaders and tab/space-separated page numbers belong to a TOC.
+    if re.search(r'\.{2,}\s*\d+$|(?:\t| {2,})\d+$', line):
+        return None
+    if CHAPTER_HEADING.match(line) or SPECIAL_HEADING.fullmatch(line):
+        return line
+    isolated = (index == 0 or not lines[index - 1].strip()) and (
+        index + 1 == len(lines) or not lines[index + 1].strip())
+    if isolated and BARE_HEADING.fullmatch(line):
+        return line
+    return None
+
+
 def sections_document(raw):
     sections = []
     current = []
     title = 'Beginning'
-    for line in raw.splitlines():
-        heading = re.match(r'^\s*(?:#{1,3}\s+.+|(?:chapter|part|book)\s+[0-9a-z].*)$', line, re.I)
-        if heading and len(line) < 160:
+    # Form feeds emitted by document extractors are page boundaries.
+    lines = raw.replace('\f', '\n\n').splitlines()
+    for index, line in enumerate(lines):
+        heading = document_heading(lines, index)
+        if heading:
             if current: sections.append((title, '\n'.join(current)))
-            title = line.strip().lstrip('#').strip()
+            title = heading
             current = []
         current.append(line)
     if current: sections.append((title, '\n'.join(current)))

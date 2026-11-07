@@ -118,7 +118,8 @@ existing location instead of duplicating the book.
 
 Book mode supports EPUB as well as the existing document formats, up to 100 MB
 and 20 million extracted characters. EPUB chapters follow the book's spine;
-chapter/part/book headings and Markdown headings are detected in other formats
+chapter/part/book/section headings, prologues and epilogues, isolated numbered or
+Roman-numeral headings, and Markdown headings are detected in other formats
 when their structure is available. Use **Library** for chapter navigation and a
 position slider. Scanned PDFs still need OCR first; legacy DOC and RTF are not
 supported. PDF extraction uses Poppler's `pdftotext`.

@@ -21,6 +21,27 @@ class Books(unittest.TestCase):
         self.library.db.close()
         self.temp.cleanup()
 
+    def test_document_heading_variants_and_offsets(self):
+        headings = ['Prologue', 'CHAPTER XXIV — Arrival', 'Chapter Twenty-One',
+                    'Part 2: Winter', 'IV', '12. The Return', '###### Finale ######',
+                    'Epilogue: Home']
+        raw = '\n\n'.join(h + '\n\nA body paragraph with emoji 😀.' for h in headings)
+        text, chapters = sections_document(raw)
+        self.assertEqual([c['title'] for c in chapters],
+                         headings[:6] + ['Finale', headings[7]])
+        for chapter, original in zip(chapters, headings):
+            self.assertTrue(text[chapter['position']:].startswith(original))
+
+    def test_prose_toc_and_unisolated_numbers_are_not_headings(self):
+        raw = ('Chapter One\nBody text.\n'
+               'Chapter titles are sometimes misleading.\n'
+               'Chapter 2 ........ 14\nChapter 3    27\n'
+               'We counted\n12\nitems.\n'
+               'Introduction to the subject is ordinary prose.\n')
+        text, chapters = sections_document(raw)
+        self.assertEqual([c['title'] for c in chapters], ['Chapter One'])
+        self.assertIn('Chapter titles are', text)
+
     def test_previous_context_and_exact_durable_restore(self):
         text = '😀 first word. ' * 100
         book = self.library.add('Backward test', text, [])
