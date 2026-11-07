@@ -26,6 +26,10 @@ ShellRoot {
     }
     function find(item, name) {
         if (item.objectName === name) return item;
+        if (item.readerMenu) {
+            const found = find(item.readerMenu.contentItem, name);
+            if (found) return found;
+        }
         if (item.wordTools) {
             if (item.wordTools.objectName === name) return item.wordTools;
             const found = find(item.wordTools.contentItem, name);
@@ -61,6 +65,8 @@ ShellRoot {
                     const quoteInput = find(practice, "typing-input");
                     quoteInput.text = "\"Don't\"-go-on";
                     if (practice.correctCount() !== 13) throw Error("Keyboard quotes must count toward accuracy and WPM");
+                    find(practice, "typing-reader-actions").clicked();
+                    if (!practice.readerMenu.opened || !find(practice, "typing-fullscreen")) throw Error("Reader actions menu did not expose fullscreen");
                     find(practice, "typing-fullscreen").clicked();
                     if (!practice.fullscreen || practice.correctCount() !== 13 || quoteInput.text !== "\"Don't\"-go-on") throw Error("Fullscreen lost typed input");
                     practice.handleEscape();

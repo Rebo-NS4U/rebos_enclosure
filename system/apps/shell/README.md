@@ -145,7 +145,9 @@ the native file chooser. The bar temporarily releases keyboard and pointer input
 until you select a document or cancel. EPUB and other document formats are
 included in the Books filter. Niri focuses this import dialog automatically.
 
-Press **Mod+T** to open book typing practice directly from the desktop.
+Press **Mod+T** to open book typing practice directly from the desktop. The top
+bar keeps the book title and **Notes** visible; **⋯** groups Fullscreen (F11),
+Book library and Import book actions.
 
 Press **Ctrl+Space** while typing to open definitions and notes for the current
 word. Definitions, word notes and the notebook open directly below the typing

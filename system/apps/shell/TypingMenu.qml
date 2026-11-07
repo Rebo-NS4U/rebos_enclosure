@@ -89,6 +89,7 @@ Item {
     readonly property bool atChapterStart: bookKind === "book" && currentChapterIndex >= 0
         && position === chapters[currentChapterIndex].position
     property alias wordTools: wordPanel
+    property alias readerMenu: readerActions
     property string selectedTerm: ""
     property string wordBookId: ""
     property string savedWordNote: ""
@@ -558,7 +559,7 @@ Item {
     Timer { interval: 5000; running: root.backendStarted; repeat: true; onTriggered: root.saveProgress() }
 
     function status() {
-        return JSON.stringify({chapterCardVisible: chapterCard.visible, chapterTitle: chapterTitle, wordToolsOpen: wordPanel.opened, wordToolsShortcut: "Ctrl+Space", wordMenuWidth: wordPanel.width, wordMenuHeight: wordPanel.height, typingPanelWidth: menuAnchorItem.width, typingPanelHeight: menuAnchorItem.height, notebookMode: notebookMode, notebookCreating: notebookCreating, notesSection: notebookFilter, definitionsEnabled: definitionsEnabled, notedWordCount: notedTerms.length, practicing: practicing, fullscreen: fullscreen, pageLines: pageLayout.lines, pageLineLimit: pageLineLimit, passageHeight: passageArea.height, renderedHeight: passageFlow.height, fontSize: readingFont.pixelSize, layoutVersion: 9, previousPages: pageHistory.length, activeEffects: activeEffects, effectKind: effectKind, lineTransitions: lineTransitions, pageTransitions: pageTransitions, motionEnabled: Motion.enabled, feedbackEvents: feedbackEvents, focused: answer.activeFocus, turningPage: turningPage, textLength: bookLength,
+        return JSON.stringify({chapterCardVisible: chapterCard.visible, chapterTitle: chapterTitle, wordToolsOpen: wordPanel.opened, noteDirty: noteDirty, noteSaving: noteSaving, wordToolsShortcut: "Ctrl+Space", wordMenuWidth: wordPanel.width, wordMenuHeight: wordPanel.height, typingPanelWidth: menuAnchorItem.width, typingPanelHeight: menuAnchorItem.height, notebookMode: notebookMode, notebookCreating: notebookCreating, notesSection: notebookFilter, definitionsEnabled: definitionsEnabled, notedWordCount: notedTerms.length, practicing: practicing, fullscreen: fullscreen, pageLines: pageLayout.lines, pageLineLimit: pageLineLimit, passageHeight: passageArea.height, renderedHeight: passageFlow.height, fontSize: readingFont.pixelSize, layoutVersion: 9, previousPages: pageHistory.length, activeEffects: activeEffects, effectKind: effectKind, lineTransitions: lineTransitions, pageTransitions: pageTransitions, motionEnabled: Motion.enabled, feedbackEvents: feedbackEvents, focused: answer.activeFocus, turningPage: turningPage, textLength: bookLength,
             typed: answer.text.length, position: position, rounds: rounds,
             presets: TypingTexts.passages.length, message: message, busy: busy,
             title: bookTitle, chapters: chapters.length, library: library.length, books: libraryBooks.length, wpm: liveWpm, filePickerActive: filePickerActive});
@@ -575,6 +576,17 @@ Item {
             font.underline: parent.activeFocus
 
         }
+    }
+    component ReaderAction: MenuItem {
+        id: action
+        implicitHeight: 40
+        contentItem: StyledText {
+            text: action.text
+            opacity: action.enabled ? 1 : 0.35
+            color: action.highlighted ? Colors.primary : Colors.overSurface
+            verticalAlignment: Text.AlignVCenter
+        }
+        background: StyledRect { variant: action.highlighted ? "focus" : "transparent"; radius: 8 }
     }
     component ThemeSelect: ComboBox {
         id: select
@@ -1054,10 +1066,26 @@ Item {
                 Layout.fillWidth: true
                 Layout.maximumHeight: 36
                 StyledText { text: root.practicing ? root.bookTitle : "Your book library"; textFormat: Text.PlainText; elide: Text.ElideRight; Layout.minimumWidth: 0; font.pixelSize: 18; opacity: 0.65; Layout.fillWidth: true }
-                TextButton { objectName: "typing-fullscreen"; text: root.fullscreen ? "Exit fullscreen" : "Fullscreen"; onClicked: root.toggleFullscreen() }
                 TextButton { objectName: "typing-book-notebook"; text: "Notes"; visible: root.practicing; enabled: !!root.bookId && !root.busy; onClicked: root.openNotebook() }
-                TextButton { objectName: "typing-library"; visible: root.practicing; text: "Library"; onClicked: root.showLibrary() }
-                TextButton { visible: root.practicing; text: "Import"; enabled: !root.busy; onClicked: root.openImport() }
+                TextButton {
+                    id: readerActionsButton
+                    objectName: "typing-reader-actions"
+                    text: "⋯"
+                    implicitWidth: 36
+                    Accessible.name: "Reader actions"
+                    onClicked: readerActions.open()
+                    Menu {
+                        id: readerActions
+                        x: readerActionsButton.width - width
+                        y: readerActionsButton.height + 4
+                        width: 220
+                        padding: 6
+                        background: StyledRect { variant: "bg"; radius: 12; border.width: 1; border.color: Qt.alpha(Colors.primary, 0.28) }
+                        ReaderAction { objectName: "typing-fullscreen"; text: root.fullscreen ? "Exit fullscreen · F11" : "Fullscreen · F11"; onClicked: { readerActions.close(); root.toggleFullscreen(); } }
+                        ReaderAction { objectName: "typing-library"; text: "Book library"; enabled: root.practicing; onClicked: { readerActions.close(); root.showLibrary(); } }
+                        ReaderAction { objectName: "typing-reader-import"; text: "Import book…"; enabled: !root.busy; onClicked: { readerActions.close(); root.openImport(); } }
+                    }
+                }
                 TextButton { objectName: "typing-back"; visible: !root.practicing; text: "Back"; enabled: !root.busy && (root.bookId.length > 0 || root.draft || root.library.length > 0); onClicked: root.goBack() }
                 TextButton { text: "Close"; onClicked: { root.saveProgress(); root.backRequested(); } }
             }
