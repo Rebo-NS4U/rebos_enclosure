@@ -326,6 +326,7 @@ Item {
         // A direct fit also satisfies any pending resize/font fit.
         fitDelay.stop();
         stopFeedback();
+        scrollLine = -1;
         passageVisuals.contentY = 0;
         pageLayout = TypingPaging.layout(pageSource, Math.max(1, passageFlow.width), characterWidth, layoutLineLimit);
         Qt.callLater(refreshPageCaret);
@@ -421,7 +422,7 @@ Item {
     function undoQueuedKey() {
         if (turningPage) pendingKeys = characters(pendingKeys).slice(0, -1).join("");
     }
-    implicitHeight: practicing ? 116 + 6 * passageLineHeight : 600
+    implicitHeight: 600
     onPracticingChanged: { resetSpeed(); syncCaret(); }
     onVisibleChanged: {
         if (visible) { backendStarted = true; if (ready) send({action: "list"}, false); }
@@ -462,6 +463,7 @@ Item {
         else if (!wasCorrect && glyph.initialized && !restoring && !busy && visible && practicing && answer.activeFocus && Motion.enabled && glyph.modelData.trim().length)
             glyph.celebrate();
     }
+    property int scrollLine: -1
     function syncCaret() {
         const previous = renderedCaret;
         // Move the viewport before creating glyphs for a distant cursor jump.
@@ -473,7 +475,14 @@ Item {
                 if (words[middle].start <= visualCursor) { line = words[middle].line; low = middle + 1; }
                 else high = middle - 1;
             }
-            passageVisuals.contentY = Math.max(0, line * passageLineHeight);
+            // Only reposition for a new row or a cursor outside the viewport.
+            // Same-row keystrokes must not fight manual scrolling or churn delegates.
+            const rowY = line * passageLineHeight;
+            const caretY = rowY + passageVisuals.centerPadding;
+            if (line !== scrollLine || caretY < passageVisuals.contentY
+                    || caretY + passageLineHeight > passageVisuals.contentY + passageVisuals.height)
+                passageVisuals.contentY = Math.max(0, Math.min(rowY, passageVisuals.contentHeight - passageVisuals.height));
+            scrollLine = line;
         }
         renderedCaret = practicing ? visualCursor : -1;
         if (previous !== renderedCaret) {
@@ -1298,7 +1307,7 @@ Item {
             anchors.bottom: parent.bottom
             anchors.topMargin: root.fullscreen ? 32 : (root.practicing ? 12 : 20)
             anchors.bottomMargin: root.fullscreen ? 28 : (root.practicing ? 12 : 20)
-            width: root.fullscreen ? Math.min(720, Math.max(1, parent.width - 80)) : Math.max(1, parent.width - (root.practicing ? 32 : 40))
+            width: root.fullscreen ? Math.min(720, Math.max(1, parent.width - 80)) : Math.max(1, parent.width - (root.practicing ? 48 : 40))
             spacing: root.fullscreen ? 20 : 12
             RowLayout {
                 Layout.fillWidth: true
@@ -1580,7 +1589,7 @@ Item {
                         id: passageArea
                         Layout.fillWidth: true
                         Layout.fillHeight: true
-                        Layout.maximumHeight: root.fullscreen ? Infinity : 6 * root.passageLineHeight + 8
+                        Layout.minimumHeight: Math.min(3 * root.passageLineHeight, root.height / 3)
                         clip: true
                         onWidthChanged: {
                             if (root.pageSource.length) fitDelay.restart();
@@ -1687,8 +1696,8 @@ Item {
                                         // but build animated characters only near the viewport.
                                         height: root.passageLineHeight
                                         readonly property bool inRenderWindow: !root.fullscreen
-                                            && modelData.line * root.passageLineHeight + passageFlow.y + height >= passageVisuals.contentY - passageVisuals.height * 2
-                                            && modelData.line * root.passageLineHeight + passageFlow.y <= passageVisuals.contentY + passageVisuals.height * 3
+                                            && modelData.line * root.passageLineHeight + passageFlow.y + height >= passageVisuals.contentY - root.passageLineHeight * 2
+                                            && modelData.line * root.passageLineHeight + passageFlow.y <= passageVisuals.contentY + passageVisuals.height + root.passageLineHeight * 2
                                         readonly property var letters: root.characters(modelData.text)
                                         readonly property var offsets: {
                                             let offset = modelData.start;
@@ -1786,7 +1795,7 @@ Item {
                                                 font: Qt.font({family: root.readingFont.family, pixelSize: root.readingFont.pixelSize, weight: Font.Normal, underline: glyph.incorrect})
                                                 height: root.passageLineHeight
                                                 lineHeight: 1.45
-                                                property real inkOpacity: caretHere || typed ? 1 : 0.65
+                                                property real inkOpacity: caretHere || typed ? 1 : (word?.modelData?.line === root.scrollLine ? 0.85 : 0.65)
                                                 Behavior on inkOpacity {
                                                     enabled: Motion.enabled && glyph.initialized && !root.restoring && !root.busy
                                                     NumberAnimation { duration: 110; easing.type: Easing.OutCubic }
@@ -1949,7 +1958,8 @@ Item {
                                     }
                                 }
                             }
-                            wrapMode: TextEdit.Wrap
+                            // The invisible editor only captures input; custom glyphs do the wrapping.
+                            wrapMode: TextEdit.NoWrap
                             inputMethodHints: Qt.ImhNoPredictiveText
                             onTextChanged: { root.advance(); root.syncGlyphs(); }
                             onCursorPositionChanged: root.syncCaret()

@@ -118,7 +118,7 @@ ShellRoot {
                     find(practice, "typing-sample-select").activated(0); phase++; return;
                 }
                 if (practice.busy || !practice.passage.length) return;
-                if (practice.practicing && (practice.passage !== practice.pageSource || practice.implicitHeight !== 116 + 6 * practice.passageLineHeight)) throw Error("Practice is not compact");
+                if (practice.practicing && (practice.passage !== practice.pageSource || practice.implicitHeight !== 600)) throw Error("Practice viewport height changed");
                 const input = find(practice, "typing-input");
                 let first = find(practice, "typing-character-0");
                 if (!input) throw Error("Typing input missing");
@@ -138,7 +138,7 @@ ShellRoot {
                     filledFlow.forceLayout();
                     if (practice.passage !== practice.pageSource || practice.pageLayout.lines <= 6) throw Error("Full section must remain available beyond six lines");
                     const scroll = find(practice, "typing-page-visuals");
-                    if (scroll.height > 6 * practice.passageLineHeight + 8 || scroll.contentHeight <= scroll.height) throw Error("Section must scroll within six lines");
+                    if (scroll.height < 6 * practice.passageLineHeight || scroll.contentHeight <= scroll.height) throw Error("Section must scroll in the expanded viewport");
                     const screenshotText = "comfortable? I have a better view of things now. This is no ordinary hospital room. More words follow here.";
                     practice.pageSource = screenshotText; practice.fitPage();
                     find(practice, "typing-passage-flow").forceLayout();
@@ -264,7 +264,7 @@ ShellRoot {
                     if (Math.abs(caret.width - caret.targetGlyph.width - 2 * practice.letterPadding) > 0.01) throw Error("Letter highlight is wider than a single character");
                     if (!caret.visible || core.width <= 0 || core.height <= 0 || core.radius <= 0 || core.color.a < 0.35) throw Error("Rounded glass cursor is missing or too faint");
                     if (!find(practice, "typing-character-0").caretHere || Math.abs(first.opacity - 1) > 0.001) throw Error("Current-character highlight missing: " + JSON.stringify({opacity: first.opacity, current: first.caretHere, cursor: input.cursorPosition, practicing: practice.practicing, visible: find(practice, "typing-character-0").caretHere, motion: Motion.base}));
-                    if (Math.abs(find(practice, "typing-character-1").opacity - 0.65) > 0.001) throw Error("Upcoming text must remain readable");
+                    if ((find(practice, "typing-character-1").opacity < 0.649 || find(practice, "typing-character-1").opacity > 0.851)) throw Error("Upcoming text must remain readable");
                     input.forceActiveFocus();
                     const feedbackBefore = practice.feedbackEvents;
                     input.text = practice.passage[0]; input.cursorPosition = input.length;
@@ -321,7 +321,7 @@ ShellRoot {
                     if (input.text !== practice.passage[0]) throw Error("Partial typing progress did not resume");
                     input.text = "";
                 } else if (phase < 100) {
-                    if (phase === 4 && (!find(practice, "typing-character-0").caretHere || Math.abs(find(practice, "typing-character-1").opacity - 0.65) > 0.001)) throw Error("Backspace did not restore the cursor and readable upcoming text");
+                    if (phase === 4 && (!find(practice, "typing-character-0").caretHere || (find(practice, "typing-character-1").opacity < 0.649 || find(practice, "typing-character-1").opacity > 0.851))) throw Error("Backspace did not restore the cursor and readable upcoming text");
                     keyDriver.wait(0); // Flush the animated row transform and caret anchor together.
                     const pageCaret = find(practice, "typing-smooth-caret");
                     const firstGlyph = find(practice, "typing-character-0");
