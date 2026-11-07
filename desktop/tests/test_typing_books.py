@@ -42,6 +42,34 @@ class Books(unittest.TestCase):
         self.assertEqual([c['title'] for c in chapters], ['Chapter One'])
         self.assertIn('Chapter titles are', text)
 
+    def test_word_notes_are_book_scoped_durable_and_preserve_reading(self):
+        first = self.library.add('First', 'A character named Macy.', [])
+        second = self.library.add('Second', 'Another Macy.', [])
+        self.library.save(first['id'], 2, 'char', 1)
+        before = tuple(self.library.db.execute('SELECT * FROM book_progress WHERE id=?', (first['id'],)).fetchone())
+        saved = self.library.handle({'action': 'note', 'id': first['id'], 'term': '  MACY  ', 'note': 'A character.\nKeep this reminder.'})
+        self.assertEqual(saved['term'], 'macy')
+        self.assertEqual(saved['terms'], ['macy'])
+        self.assertEqual(self.library.handle({'action': 'word', 'id': second['id'], 'term': 'Macy'})['note'], '')
+        self.assertEqual(before, tuple(self.library.db.execute('SELECT * FROM book_progress WHERE id=?', (first['id'],)).fetchone()))
+        self.library.db.close()
+        self.library = Library(self.path)
+        self.assertEqual(self.library.handle({'action': 'word', 'id': first['id'], 'term': 'Macy'})['note'], saved['note'])
+        with self.assertRaises(ValueError):
+            self.library.handle({'action': 'note', 'id': first['id'], 'term': 'Macy', 'note': 'x' * 10001})
+        with self.assertRaises(ValueError):
+            self.library.handle({'action': 'word', 'id': 'missing', 'term': 'Macy'})
+        self.library.handle({'action': 'note', 'id': first['id'], 'term': 'Macy', 'note': ''})
+        self.assertEqual(self.library.handle({'action': 'words', 'id': first['id']})['terms'], [])
+
+    def test_dictionary_can_be_disabled_and_stays_disabled(self):
+        self.assertTrue(self.library.handle({'action': 'word_settings'})['enabled'])
+        self.assertFalse(self.library.handle({'action': 'word_settings', 'enabled': False})['enabled'])
+        self.library.db.close()
+        self.library = Library(self.path)
+        self.assertFalse(self.library.handle({'action': 'word_settings'})['enabled'])
+        self.assertTrue(self.library.handle({'action': 'word_settings', 'enabled': True})['enabled'])
+
     def test_previous_context_and_exact_durable_restore(self):
         text = '😀 first word. ' * 100
         book = self.library.add('Backward test', text, [])

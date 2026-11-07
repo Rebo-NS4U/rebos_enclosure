@@ -26,6 +26,11 @@ ShellRoot {
     }
     function find(item, name) {
         if (item.objectName === name) return item;
+        if (item.wordTools) {
+            if (item.wordTools.objectName === name) return item.wordTools;
+            const found = find(item.wordTools.contentItem, name);
+            if (found) return found;
+        }
         for (let child of item.children ?? []) { const result = find(child, name); if (result) return result; }
         return null;
     }
@@ -424,12 +429,63 @@ ShellRoot {
                     const restored = freshView.item;
                     if (restored.busy) return;
                     if (restored.position !== expectedPosition || restored.pageLayout.lines > restored.pageLineLimit) throw Error("Continuous available-height advance failed");
-                    console.log("PASS: available-height passage fitting, lossless paging, Backspace navigation, queued input, legacy bookmark carryover, no-fail advance, resume, WPM and EPUB import");
+                    restored.send({action: "word_settings", enabled: false}, false);
+                } else if (phase === 113) {
+                    const restored = freshView.item;
+                    if (restored.definitionsEnabled) throw Error("Dictionary disable did not persist");
+                    restored.openWord("“Macy,”");
+                } else if (phase === 114) {
+                    const restored = freshView.item;
+                    if (!restored.noteLoaded) return;
+                    if (restored.selectedTerm !== "macy" || restored.definitionRequest !== null) throw Error("Word selection or disabled dictionary failed");
+                    find(restored, "typing-word-note").text = "Character reminder";
+                    find(restored, "typing-save-word-note").clicked();
+                } else if (phase === 115) {
+                    const restored = freshView.item;
+                    if (restored.noteSaving) return;
+                    if (restored.noteDirty || restored.savedWordNote !== "Character reminder") throw Error("Word note did not save");
+                    find(restored, "typing-word-panel").close();
+                    restored.openWord("MACY");
+                } else if (phase === 116) {
+                    const restored = freshView.item;
+                    if (!restored.noteLoaded) return;
+                    if (find(restored, "typing-word-note").text !== "Character reminder" || restored.notedTerms[0] !== "macy" || find(restored, "typing-saved-words").textAt(0) !== "macy") throw Error("Word note did not reopen");
+                    find(restored, "typing-word-panel").close();
+                    const field = find(restored, "typing-input");
+                    const glyph = find(restored, "typing-character-0");
+                    const point = glyph.mapToItem(field, glyph.width / 2, glyph.height / 2);
+                    keyDriver.mouseClick(field, point.x, point.y, Qt.RightButton);
+                } else if (phase === 117) {
+                    const restored = freshView.item;
+                    if (!find(restored, "typing-word-panel").opened || !restored.selectedTerm) throw Error("Right click did not open word tools");
+                    if (restored.definitionRequest !== null) throw Error("Disabled dictionary made a request");
+                    restored.createDictionaryRequest = function() {
+                        return {
+                            readyState: 0, status: 200,
+                            responseText: JSON.stringify([{meanings: [{partOfSpeech: "noun", definitions: [{definition: "A test definition."}]}]}]),
+                            open: function(method, url) { if (method !== "GET" || !url.endsWith(encodeURIComponent(restored.selectedTerm))) throw Error("Wrong dictionary URL"); },
+                            abort: function() {},
+                            send: function() { const request = this; Qt.callLater(() => { request.readyState = XMLHttpRequest.DONE; request.onreadystatechange(); }); }
+                        };
+                    };
+                    restored.definitionsEnabled = true;
+                    restored.lookupDefinition();
+                } else if (phase === 118) {
+                    const restored = freshView.item;
+                    if (!restored.definitionText.includes("A test definition.") || restored.definitionRequest !== null) throw Error("Definition response did not render");
+                    restored.definitionsEnabled = false;
+                    restored.lookupDefinition();
+                    if (restored.definitionText !== "" || restored.definitionRequest !== null) throw Error("Dictionary off did not clear lookup");
+                    let aborted = false;
+                    restored.definitionRequest = {abort: function() { aborted = true; }};
+                    restored.openWord("");
+                    if (!aborted || restored.definitionRequest !== null) throw Error("Changing terms did not cancel old definition");
+                    console.log("PASS: word selection, saved notes, dictionary toggle, available-height passage fitting, lossless paging, Backspace navigation, queued input, legacy bookmark carryover, no-fail advance, resume, WPM and EPUB import");
                     Qt.quit();
                 }
 
                 phase++;
-            } catch (error) { console.error(error); Qt.quit(); }
+            } catch (error) { console.error("Phase " + phase + ": " + error + "\n" + error.stack); Qt.quit(); }
             finally { stepping = false; }
         }
     }

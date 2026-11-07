@@ -147,6 +147,19 @@ included in the Books filter. Niri focuses this import dialog automatically.
 
 Press **Mod+T** to open book typing practice directly from the desktop.
 
+Right-click any passage word to open **Words & notes**, or use the toolbar button
+and enter a word or a character's full name. Definitions appear inside the reader
+using the [Free Dictionary API](https://dictionaryapi.dev/) (English, internet
+required). **Online definitions: On/Off** is saved across reader sessions; turning
+it off cancels lookup and keeps notes available offline. Only the selected term
+is sent to the dictionary service.
+
+Notes are stored locally per book and case-insensitive word/name. Choose **Save
+note** to keep a reminder, select a saved term to reopen it, or clear its note and
+save to remove it. Unsaved edits must be saved or discarded before changing terms
+or closing the panel. Notes survive reader restarts and re-importing identical
+book text without changing reading progress.
+
 The active typing cursor is a slim rounded accent caret with a soft halo and
 a subtle current-character highlight. It glides between letters on the same
 line, snaps cleanly at line wraps, and gently breathes while idle. It follows the editing position, including

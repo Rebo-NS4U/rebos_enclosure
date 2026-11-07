@@ -26,6 +26,7 @@ Item {
         if (practicing) Qt.callLater(() => answer.forceActiveFocus());
     }
     function handleEscape() {
+        if (wordPanel.opened) { if (!noteDirty && !noteSaving) wordPanel.close(); return; }
         if (fullscreen) { fullscreen = false; fitDelay.restart(); if (practicing) answer.forceActiveFocus(); }
         else goBack();
     }
@@ -83,6 +84,69 @@ Item {
     }
     readonly property string chapterTitle: currentChapterIndex < 0 ? "Beginning" : (chapters[currentChapterIndex].title || "Section " + (currentChapterIndex + 1))
     property string message: "Import a book, resume your library, or choose a practice text."
+    property alias wordTools: wordPanel
+    property string selectedTerm: ""
+    property string wordBookId: ""
+    property string savedWordNote: ""
+    property string wordMessage: ""
+    property string definitionText: ""
+    property var notedTerms: []
+    property bool noteLoaded: false
+    property bool noteSaving: false
+    property int wordRequest: 0
+    property bool definitionsEnabled: false
+    property var definitionRequest: null
+    property var createDictionaryRequest: () => new XMLHttpRequest()
+    readonly property bool noteDirty: wordNote.text !== savedWordNote
+    function openWord(value) {
+        if (!bookId || (wordPanel.opened && (noteDirty || noteSaving))) return;
+        cancelDefinition();
+        selectedTerm = value.trim().replace(/^[\s.,!?;:"“”‘’'()[\]{}—–]+|[\s.,!?;:"“”‘’'()[\]{}—–]+$/g, "");
+        notedTerms = [];
+        wordBookId = bookId; noteLoaded = false; noteSaving = false;
+        savedWordNote = ""; wordNote.text = ""; wordMessage = "";
+        termInput.text = selectedTerm; definitionText = "";
+        wordPanel.open();
+        wordRequest = requestId + 1;
+        if (selectedTerm) {
+            send({action: "word", id: wordBookId, term: selectedTerm}, false);
+        } else send({action: "words", id: wordBookId}, false);
+    }
+    function saveWordNote() {
+        if (!noteLoaded || noteSaving) return;
+        noteSaving = true; wordMessage = "Saving…";
+        wordRequest = requestId + 1;
+        send({action: "note", id: wordBookId, term: selectedTerm, note: wordNote.text}, false);
+    }
+    function cancelDefinition() {
+        definitionTimeout.stop();
+        const previous = definitionRequest;
+        definitionRequest = null;
+        if (previous) previous.abort();
+    }
+    function lookupDefinition() {
+        cancelDefinition(); definitionText = "";
+        if (!definitionsEnabled || !selectedTerm || !wordPanel.opened) return;
+        definitionText = "Looking up definition…";
+        const xhr = createDictionaryRequest(); definitionRequest = xhr;
+        xhr.open("GET", "https://api.dictionaryapi.dev/api/v2/entries/en/" + encodeURIComponent(selectedTerm));
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState !== XMLHttpRequest.DONE || root.definitionRequest !== xhr) return;
+            definitionTimeout.stop(); root.definitionRequest = null;
+            if (xhr.status === 404) { root.definitionText = "No dictionary entry found. You can still add a note."; return; }
+            if (xhr.status !== 200) { root.definitionText = "Dictionary unavailable. Try again when connected."; return; }
+            try {
+                const entries = JSON.parse(xhr.responseText), lines = [];
+                for (const entry of entries.slice(0, 2))
+                    for (const meaning of entry.meanings || [])
+                        for (const item of (meaning.definitions || []).slice(0, 2))
+                            lines.push((meaning.partOfSpeech || "") + " — " + item.definition);
+                root.definitionText = lines.slice(0, 8).join("\n\n") || "No definition found.";
+            } catch (error) { root.definitionText = "Could not read the dictionary response."; }
+        };
+        definitionTimeout.start(); xhr.send();
+    }
+    Timer { id: definitionTimeout; interval: 10000; onTriggered: { root.cancelDefinition(); root.definitionText = "Dictionary timed out. Try again."; } }
     function characters(value) {
         return value.match(/[\uD800-\uDBFF][\uDC00-\uDFFF]|[\s\S]/g) ?? [];
     }
@@ -317,6 +381,23 @@ Item {
     function receive(line) {
         try {
             const data = JSON.parse(line);
+            if (["words", "word", "note", "word_settings"].indexOf(data.action) >= 0) {
+                if (data.action === "word_settings") {
+                    if (!data.error) { definitionsEnabled = data.enabled; lookupDefinition(); }
+                    else wordMessage = data.error;
+                    return;
+                }
+                if (data.request !== wordRequest) return;
+                noteSaving = false;
+                if (data.error) { wordMessage = data.error; return; }
+                if (data.id !== wordBookId) return;
+                if (data.action === "words") { notedTerms = data.terms || []; return; }
+                selectedTerm = data.term; savedWordNote = data.note; wordNote.text = data.note;
+                notedTerms = data.terms || []; noteLoaded = true;
+                wordMessage = data.action === "note" ? "Note saved on this device." : "";
+                if (data.action === "word") lookupDefinition();
+                return;
+            }
             if (data.action === "list") { if (data.books) library = data.books; return; }
             if (data.error) { if (data.request === pageRequest) { busy = false; turningPage = false; historyBack = false; backAfterTurn = false; } if (data.action === "save") dirty = true; message = data.error; errorMessage = data.error; return; }
             if (data.request !== pageRequest) return;
@@ -399,7 +480,7 @@ Item {
     Timer { interval: 5000; running: root.backendStarted; repeat: true; onTriggered: root.saveProgress() }
 
     function status() {
-        return JSON.stringify({practicing: practicing, fullscreen: fullscreen, pageLines: pageLayout.lines, pageLineLimit: pageLineLimit, passageHeight: passageArea.height, renderedHeight: passageFlow.height, fontSize: readingFont.pixelSize, layoutVersion: 9, previousPages: pageHistory.length, activeEffects: activeEffects, effectKind: effectKind, lineTransitions: lineTransitions, pageTransitions: pageTransitions, motionEnabled: Motion.enabled, feedbackEvents: feedbackEvents, focused: answer.activeFocus, turningPage: turningPage, textLength: bookLength,
+        return JSON.stringify({wordToolsOpen: wordPanel.opened, definitionsEnabled: definitionsEnabled, notedWordCount: notedTerms.length, practicing: practicing, fullscreen: fullscreen, pageLines: pageLayout.lines, pageLineLimit: pageLineLimit, passageHeight: passageArea.height, renderedHeight: passageFlow.height, fontSize: readingFont.pixelSize, layoutVersion: 9, previousPages: pageHistory.length, activeEffects: activeEffects, effectKind: effectKind, lineTransitions: lineTransitions, pageTransitions: pageTransitions, motionEnabled: Motion.enabled, feedbackEvents: feedbackEvents, focused: answer.activeFocus, turningPage: turningPage, textLength: bookLength,
             typed: answer.text.length, position: position, rounds: rounds,
             presets: TypingTexts.passages.length, message: message, busy: busy,
             title: bookTitle, chapters: chapters.length, library: library.length, books: libraryBooks.length, wpm: liveWpm, filePickerActive: filePickerActive});
@@ -618,11 +699,111 @@ Item {
             for (const data of root.queued) backend.write(JSON.stringify(data) + "\n");
             root.queued = [];
             root.send({action: "list"}, false);
+            root.send({action: "word_settings"}, false);
         }
         stdout: SplitParser { onRead: line => root.receive(line) }
         onExited: {
             root.ready = false; root.backendStarted = false; root.busy = false;
             root.message = "Book service stopped. Reopen typing to reconnect."; root.errorMessage = root.message;
+        }
+    }
+    Popup {
+        id: wordPanel
+        objectName: "typing-word-panel"
+        anchors.centerIn: parent
+        width: Math.min(root.width - 16, 540)
+        height: Math.min(root.height - 16, 560)
+        modal: true
+        dim: false
+        focus: true
+        closePolicy: Popup.NoAutoClose
+        padding: 16
+        onClosed: { root.cancelDefinition(); if (root.practicing) answer.forceActiveFocus(); }
+        background: StyledRect { variant: "popup"; radius: 16; border.width: 1; border.color: Colors.outlineVariant }
+        contentItem: ScrollView {
+            clip: true
+            contentWidth: availableWidth
+            ColumnLayout {
+                width: wordPanel.availableWidth - 12
+                spacing: 8
+                Keys.onEscapePressed: event => { root.handleEscape(); event.accepted = true; }
+                StyledText { text: "Words & notes"; font.pixelSize: 18 }
+                StyledText { text: "Right-click a passage word, or enter a word or character name."; wrapMode: Text.Wrap; Layout.fillWidth: true; font.pixelSize: 12 }
+                RowLayout {
+                    Layout.fillWidth: true
+                    TextField {
+                        id: termInput
+                        objectName: "typing-word-term"
+                        Layout.fillWidth: true
+                        maximumLength: 120
+                        placeholderText: "Word or name"
+                        color: Colors.overSurface
+                        font.family: Config.theme.font
+                        selectByMouse: true
+                        enabled: !root.noteDirty && !root.noteSaving
+                        background: StyledRect { variant: "pane"; radius: 8; border.width: 1; border.color: termInput.activeFocus ? Colors.primary : Colors.outlineVariant }
+                        onAccepted: root.openWord(text)
+                    }
+                    TextButton { text: "Open"; enabled: termInput.text.trim().length > 0 && !root.noteDirty && !root.noteSaving; onClicked: root.openWord(termInput.text) }
+                }
+                ThemeSelect {
+                    textRole: ""
+                    objectName: "typing-saved-words"
+                    Layout.fillWidth: true
+                    visible: root.notedTerms.length > 0
+                    model: root.notedTerms
+                    displayText: "Saved notes in this book"
+                    enabled: !root.noteDirty && !root.noteSaving
+                    onActivated: index => root.openWord(root.notedTerms[index])
+                }
+                TextButton {
+                    objectName: "typing-definitions-toggle"
+                    text: "Online definitions: " + (root.definitionsEnabled ? "On" : "Off")
+                    onClicked: {
+                        root.definitionsEnabled = !root.definitionsEnabled;
+                        root.cancelDefinition(); root.definitionText = "";
+                        root.send({action: "word_settings", enabled: root.definitionsEnabled}, false);
+                    }
+                }
+                ScrollView {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: Math.min(130, root.height / 4)
+                    visible: root.definitionsEnabled && root.selectedTerm.length > 0
+                    clip: true
+                    StyledText { width: wordPanel.availableWidth - 12; text: root.definitionText; textFormat: Text.PlainText; wrapMode: Text.Wrap; font.pixelSize: 12 }
+                }
+                RowLayout {
+                    visible: root.definitionsEnabled
+                    StyledText { text: "English definitions · Free Dictionary API"; font.pixelSize: 11; opacity: 0.65 }
+                    TextButton { text: "Retry"; enabled: root.selectedTerm.length > 0; onClicked: root.lookupDefinition() }
+                }
+                StyledText { text: "Your note · saved locally for this book"; font.pixelSize: 12 }
+                ScrollView {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 110
+                    Layout.minimumHeight: 55
+                    TextArea {
+                        id: wordNote
+                        objectName: "typing-word-note"
+                        enabled: root.noteLoaded && !root.noteSaving
+                        textFormat: TextEdit.PlainText
+                        placeholderText: "Character details, connections, reminders…"
+                        wrapMode: TextEdit.Wrap
+                        selectByMouse: true
+                        color: Colors.overSurface
+                        font.family: Config.theme.font
+                        background: StyledRect { variant: "pane"; radius: 8 }
+                        Accessible.name: "Note for selected word or name"
+                    }
+                }
+                StyledText { text: wordNote.length > 10000 ? "Notes can contain up to 10,000 characters." : root.wordMessage || (root.noteDirty ? "Unsaved changes" : "Clear a note and save to remove it."); textFormat: Text.PlainText; wrapMode: Text.Wrap; Layout.fillWidth: true; font.pixelSize: 11 }
+                RowLayout {
+                    TextButton { objectName: "typing-save-word-note"; text: "Save note"; enabled: root.noteLoaded && root.noteDirty && !root.noteSaving && wordNote.length <= 10000; onClicked: root.saveWordNote() }
+                    TextButton { text: "Discard"; visible: root.noteDirty; enabled: !root.noteSaving; onClicked: { wordNote.text = root.savedWordNote; wordPanel.close(); } }
+                    Item { Layout.fillWidth: true }
+                    TextButton { text: "Close"; enabled: !root.noteDirty && !root.noteSaving; onClicked: wordPanel.close() }
+                }
+            }
         }
     }
     Item {
@@ -638,6 +819,7 @@ Item {
                 Layout.maximumHeight: 36
                 StyledText { text: root.practicing ? root.bookTitle : "Your book library"; textFormat: Text.PlainText; elide: Text.ElideRight; Layout.minimumWidth: 0; font.pixelSize: 18; opacity: 0.65; Layout.fillWidth: true }
                 TextButton { objectName: "typing-fullscreen"; text: root.fullscreen ? "Exit fullscreen" : "Fullscreen"; onClicked: root.toggleFullscreen() }
+                TextButton { objectName: "typing-word-tools"; text: "Words"; visible: root.practicing; enabled: !!root.bookId && !root.busy; onClicked: root.openWord("") }
                 TextButton { objectName: "typing-library"; visible: root.practicing; text: "Library"; onClicked: root.showLibrary() }
                 TextButton { visible: root.practicing; text: "Import"; enabled: !root.busy; onClicked: root.openImport() }
                 TextButton { objectName: "typing-back"; visible: !root.practicing; text: "Back"; enabled: !root.busy && (root.bookId.length > 0 || root.draft || root.library.length > 0); onClicked: root.goBack() }
@@ -904,6 +1086,7 @@ Item {
                                 anchors.rightMargin: 4
                                 spacing: 0
                                 Repeater {
+                                    id: wordRepeater
                                     model: root.passageWords
                                     delegate: Row {
                                         id: word
@@ -1113,6 +1296,16 @@ Item {
                             selectByMouse: false
                             font: root.readingFont
                             TapHandler { onTapped: { answer.forceActiveFocus(); answer.cursorPosition = answer.length; } }
+                            TapHandler {
+                                acceptedButtons: Qt.RightButton
+                                onTapped: point => {
+                                    for (let index = 0; index < wordRepeater.count; index++) {
+                                        const wordItem = wordRepeater.itemAt(index);
+                                        const local = wordItem.mapFromItem(answer, point.position.x, point.position.y);
+                                        if (wordItem.contains(local)) { root.openWord(wordItem.modelData.text); break; }
+                                    }
+                                }
+                            }
                             wrapMode: TextEdit.Wrap
                             inputMethodHints: Qt.ImhNoPredictiveText
                             readOnly: root.busy

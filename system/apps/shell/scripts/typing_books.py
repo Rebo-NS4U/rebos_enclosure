@@ -247,6 +247,7 @@ class Library:
             CREATE TABLE IF NOT EXISTS book_catalogue (id TEXT PRIMARY KEY, title TEXT, chapters TEXT, size INTEGER, kind TEXT DEFAULT 'book');
             CREATE TABLE IF NOT EXISTS book_content (id TEXT PRIMARY KEY, text TEXT);
             CREATE TABLE IF NOT EXISTS app_state (key TEXT PRIMARY KEY, value TEXT);
+            CREATE TABLE IF NOT EXISTS word_notes (book_id TEXT, term TEXT, note TEXT NOT NULL, PRIMARY KEY(book_id,term));
             CREATE TABLE IF NOT EXISTS book_progress (id TEXT PRIMARY KEY, position INTEGER DEFAULT 0, typed TEXT DEFAULT '', loops INTEGER DEFAULT 0, updated REAL);
         ''')
 
@@ -320,11 +321,54 @@ class Library:
 
     def handle(self, request):
         self.window = max(WINDOW, min(4096, int(request.get('window', WINDOW))))
-        handlers = {'list': '_handle_list', 'resume': '_handle_resume', 'import': '_handle_import', 'add': '_handle_add', 'open': '_handle_open', 'chapter': '_handle_chapter', 'save': '_handle_save', 'seek': '_handle_save', 'next': '_handle_save', 'previous': '_handle_previous'}
+        handlers = {'list': '_handle_list', 'resume': '_handle_resume', 'import': '_handle_import', 'add': '_handle_add', 'open': '_handle_open', 'chapter': '_handle_chapter', 'save': '_handle_save', 'seek': '_handle_save', 'next': '_handle_save', 'previous': '_handle_previous', 'words': '_handle_words', 'word': '_handle_word', 'note': '_handle_note', 'word_settings': '_handle_word_settings'}
         handler = handlers.get(request['action'])
         if handler is None:
             raise ValueError('Unknown library action.')
         return getattr(self, handler)(request)
+
+    def _word_key(self, request):
+        key = request['id']
+        if not self.db.execute('SELECT 1 FROM book_catalogue WHERE id=?', (key,)).fetchone():
+            raise ValueError('Book is no longer in the library.')
+        term = normalize(str(request.get('term', ''))).casefold()
+        if not term or len(term) > 120:
+            raise ValueError('Choose a word or name of 1–120 characters.')
+        return key, term
+
+    def _handle_words(self, request):
+        key = request['id']
+        if not self.db.execute('SELECT 1 FROM book_catalogue WHERE id=?', (key,)).fetchone():
+            raise ValueError('Book is no longer in the library.')
+        terms = [row[0] for row in self.db.execute('SELECT term FROM word_notes WHERE book_id=? ORDER BY term', (key,))]
+        return {'id': key, 'terms': terms}
+
+    def _handle_word(self, request):
+        key, term = self._word_key(request)
+        row = self.db.execute('SELECT note FROM word_notes WHERE book_id=? AND term=?', (key, term)).fetchone()
+        terms = [row[0] for row in self.db.execute('SELECT term FROM word_notes WHERE book_id=? ORDER BY term', (key,))]
+        return {'id': key, 'term': term, 'note': row[0] if row else '', 'terms': terms}
+
+    def _handle_note(self, request):
+        key, term = self._word_key(request)
+        note = request.get('note', '')
+        if not isinstance(note, str) or len(note) > 10000:
+            raise ValueError('Notes can contain up to 10,000 characters.')
+        with self.db:
+            if note.strip():
+                self.db.execute('INSERT INTO word_notes VALUES (?,?,?) ON CONFLICT(book_id,term) DO UPDATE SET note=excluded.note', (key, term, note))
+            else:
+                self.db.execute('DELETE FROM word_notes WHERE book_id=? AND term=?', (key, term))
+        return self._handle_word(request)
+
+    def _handle_word_settings(self, request):
+        if 'enabled' in request:
+            if not isinstance(request['enabled'], bool):
+                raise ValueError('Invalid dictionary preference.')
+            with self.db:
+                self.db.execute("INSERT INTO app_state VALUES ('word_definitions',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", ('1' if request['enabled'] else '0',))
+        row = self.db.execute("SELECT value FROM app_state WHERE key='word_definitions'").fetchone()
+        return {'enabled': row is None or row[0] == '1'}
 
     def _handle_list(self, request):
         return {'books': self.listing(), 'last_id': self.last_id()}
