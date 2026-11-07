@@ -19,10 +19,25 @@ LIMIT = 20000000
 WINDOW = 90
 NOTE_CATEGORIES = ("People", "Settings", "Mysteries", "Plot", "General")
 
+class BookText(str):
+    """Normalized text with paragraph offsets; string identity stays compatible."""
+    def __new__(cls, text, paragraph_starts=()):
+        value = super().__new__(cls, text)
+        value.paragraph_starts = list(paragraph_starts)
+        return value
+
+
 def normalize(text):
-    # Remove soft hyphens and PDF line-break hyphenation before flattening.
+    # Preserve paragraph metadata separately so bookmarks and book IDs stay valid.
     text = re.sub(r'(\w)-[ \t]*\n[ \t]*(\w)', r'\1\2', text)
-    return ' '.join(text.replace('\u00ad', '').split())
+    text = text.replace('\u00ad', '')
+    paragraphs = [' '.join(part.split()) for part in re.split(r'\n[ \t]*\n+', text)]
+    paragraphs = [part for part in paragraphs if part]
+    starts, offset = [], 0
+    for part in paragraphs:
+        starts.append(offset)
+        offset += len(part) + 1
+    return BookText(' '.join(paragraphs), starts)
 
 # Require a chapter identifier, rather than treating any sentence starting with
 # "chapter" as a heading. Bare identifiers need surrounding whitespace.
@@ -71,17 +86,18 @@ def sections_document(raw):
     return join_sections(sections)
 
 def join_sections(sections):
-    chunks, chapters = [], []
+    chunks, chapters, paragraph_starts = [], [], []
     offset = 0
     for title, raw in sections:
         text = normalize(raw)
         if not text: continue
         chapters.append({'title': title[:160], 'position': offset})
+        paragraph_starts.extend(offset + start for start in text.paragraph_starts)
         chunks.append(text)
         offset += len(text) + 1
         if offset > LIMIT + 1: raise ValueError('Book exceeds 20 million characters.')
     if not chunks: raise ValueError('No readable text found. Scanned PDFs need OCR first.')
-    return ' '.join(chunks), chapters
+    return BookText(' '.join(chunks), paragraph_starts), chapters
 
 class HeadingText(HTMLText):
     """Heading-only image alternatives; decorative body images stay excluded."""
@@ -240,12 +256,14 @@ class Library:
         path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
         self.db = sqlite3.connect(path)
         self.db.row_factory = sqlite3.Row
+        self.paragraph_mode = False
         self.window = WINDOW
         self.cached_id = None
         self.cached_text = ""
         # Keep large immutable content separate: saving a bookmark never rewrites a book.
         self.db.executescript('''
             CREATE TABLE IF NOT EXISTS book_catalogue (id TEXT PRIMARY KEY, title TEXT, chapters TEXT, size INTEGER, kind TEXT DEFAULT 'book');
+            CREATE TABLE IF NOT EXISTS book_paragraphs (id TEXT PRIMARY KEY, starts TEXT);
             CREATE TABLE IF NOT EXISTS book_content (id TEXT PRIMARY KEY, text TEXT);
             CREATE TABLE IF NOT EXISTS app_state (key TEXT PRIMARY KEY, value TEXT);
             CREATE TABLE IF NOT EXISTS word_notes (book_id TEXT, term TEXT, note TEXT NOT NULL, PRIMARY KEY(book_id,term));
@@ -286,6 +304,9 @@ class Library:
         with self.db:
             self.db.execute('INSERT INTO book_catalogue (id,title,chapters,size,kind) VALUES (?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET title=excluded.title,chapters=excluded.chapters,size=excluded.size,kind=excluded.kind', (key, title[:160], json.dumps(chapters), len(text), kind))
             self.db.execute('INSERT OR IGNORE INTO book_content VALUES (?,?)', (key, text))
+            starts = getattr(text, 'paragraph_starts', [])
+            if starts:
+                self.db.execute('INSERT OR REPLACE INTO book_paragraphs VALUES (?,?)', (key, json.dumps(starts)))
             self.db.execute('INSERT OR IGNORE INTO book_progress (id,updated) VALUES (?,?)', (key, time.time()))
         self.activate(key)
         return self.page(key)
@@ -309,6 +330,12 @@ class Library:
         chapters = json.loads(data['chapters'])
         end = min([data['position'] + self.window] + [chapter['position'] for chapter in chapters
                   if chapter['position'] > data['position']])
+        if self.paragraph_mode:
+            row = self.db.execute('SELECT starts FROM book_paragraphs WHERE id=?', (key,)).fetchone()
+            if row:
+                following = [offset for offset in json.loads(row[0]) if offset > data['position']]
+                if following:
+                    end = min(end, following[0])
         chunk = self.cached_text[data['position']:end]
         boundary = chunk.rfind(' ')
         if end == data['position'] + self.window and end < data['length'] and boundary > 40:
@@ -327,6 +354,7 @@ class Library:
             self.db.execute("INSERT INTO app_state VALUES ('last_book',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", (key,))
 
     def handle(self, request):
+        self.paragraph_mode = bool(request.get('paragraphs', False))
         self.window = max(WINDOW, min(4096, int(request.get('window', WINDOW))))
         handlers = {'delete': '_handle_delete', 'list': '_handle_list', 'resume': '_handle_resume', 'import': '_handle_import', 'add': '_handle_add', 'open': '_handle_open', 'chapter': '_handle_chapter', 'save': '_handle_save', 'seek': '_handle_save', 'next': '_handle_save', 'previous': '_handle_previous', 'words': '_handle_words', 'word': '_handle_word', 'note': '_handle_note', 'word_settings': '_handle_word_settings'}
         handler = handlers.get(request['action'])
@@ -387,7 +415,7 @@ class Library:
         with self.db:
             if not self.db.execute('SELECT 1 FROM book_catalogue WHERE id=?', (key,)).fetchone():
                 raise ValueError('Book is no longer in the library.')
-            for table in ('word_notes', 'book_progress', 'book_content', 'book_catalogue'):
+            for table in ('word_notes', 'book_progress', 'book_paragraphs', 'book_content', 'book_catalogue'):
                 self.db.execute(f'DELETE FROM {table} WHERE ' + ('book_id' if table == 'word_notes' else 'id') + '=?', (key,))
             self.db.execute("DELETE FROM app_state WHERE key='last_book' AND value=?", (key,))
         if self.cached_id == key:
@@ -451,6 +479,12 @@ class Library:
             end = current['length']
             loops -= 1
         start = max(0, end - self.window)
+        if self.paragraph_mode:
+            row = self.db.execute('SELECT starts FROM book_paragraphs WHERE id=?', (request['id'],)).fetchone()
+            if row:
+                preceding = [offset for offset in json.loads(row[0]) if start <= offset < end]
+                if preceding:
+                    start = preceding[-1]
         return {'previousText': self.cached_text[start:end], 'previousStart': start, 'loops': loops}
 
     def _handle_save(self, request):

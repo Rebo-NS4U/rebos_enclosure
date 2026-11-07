@@ -425,6 +425,7 @@ Item {
     Component.onCompleted: { if (visible) backendStarted = true; }
     function send(data, page = true) {
         data.window = 4096;
+        data.paragraphs = !fullscreen;
         data.request = ++requestId;
         if (page) { pageRequest = data.request; busy = true; errorMessage = ""; }
         if (ready) backend.write(JSON.stringify(data) + "\n");

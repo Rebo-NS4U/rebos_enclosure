@@ -21,6 +21,23 @@ class Books(unittest.TestCase):
         self.library.db.close()
         self.temp.cleanup()
 
+    def test_paragraph_pages_preserve_identity_and_saved_progress(self):
+        raw = "First paragraph ends here.\n\nSecond paragraph continues here."
+        book = self.library.handle({'action': 'add', 'text': raw, 'window': 4096, 'paragraphs': True})
+        self.assertEqual(book['passage'], 'First paragraph ends here. ')
+        first_end = len(book['passage'])
+        page = self.library.handle({'action': 'next', 'id': book['id'], 'position': first_end, 'typed': 'Sec', 'paragraphs': True, 'window': 4096})
+        self.assertEqual(page['passage'], 'Second paragraph continues here.')
+        self.library.db.close()
+        self.library = Library(self.path)
+        restored = self.library.handle({'action': 'open', 'id': book['id'], 'paragraphs': True, 'window': 4096})
+        self.assertEqual((restored['position'], restored['typed']), (first_end, 'Sec'))
+        imported = self.library.handle({'action': 'add', 'text': raw, 'paragraphs': True, 'window': 4096})
+        self.assertEqual(imported['id'], book['id'])
+        self.assertEqual(imported['position'], first_end)
+        previous = self.library.handle({'action': 'previous', 'id': book['id'], 'position': first_end, 'paragraphs': True, 'window': 4096})
+        self.assertEqual((previous['previousStart'], previous['previousText']), (0, book['passage']))
+
     def test_document_heading_variants_and_offsets(self):
         headings = ['Prologue', 'CHAPTER XXIV — Arrival', 'Chapter Twenty-One',
                     'Part 2: Winter', 'IV', '12. The Return', '###### Finale ######',
@@ -207,6 +224,7 @@ class Books(unittest.TestCase):
         text, chapters = read_epub(path)
         self.assertEqual([row['title'] for row in chapters], ['First', 'Second'])
         self.assertEqual(text, 'First Hello world. Second Last page.')
+        self.assertEqual(text.paragraph_starts, [0, 6, 19, 26])
         self.assertEqual(text[chapters[1]['position']:], 'Second Last page.')
         self.assertEqual(self.library.handle({'action': 'import', 'path': str(path)})['chapters'], chapters)
 

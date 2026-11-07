@@ -19,7 +19,7 @@ class HTMLText(html.parser.HTMLParser):
         if tag == 'br': self.parts.append('\n')
     def handle_endtag(self, tag):
         if tag in ('head', 'script', 'style'): self.hidden = max(0, self.hidden - 1)
-        if tag in ('p', 'div', 'h1', 'h2', 'h3', 'li'): self.parts.append('\n')
+        if tag in ('p', 'div', 'h1', 'h2', 'h3', 'li'): self.parts.append('\n\n')
     def handle_data(self, data):
         if not self.hidden: self.parts.append(data)
 
@@ -38,7 +38,7 @@ def extract_raw(value):
             if archive.getinfo(member).file_size > 100 * 1024 * 1024:
                 raise ValueError('Document text is too large.')
             tree = ET.fromstring(archive.read(member))
-        text = '\n'.join(''.join(p.itertext()) for p in tree.iter() if p.tag.rsplit('}', 1)[-1] in ('p', 'h'))
+        text = '\n\n'.join(''.join(p.itertext()) for p in tree.iter() if p.tag.rsplit('}', 1)[-1] in ('p', 'h'))
     elif suffix in ('.txt', '.md', '.csv', '.json', '.xml', '.html', '.htm', '.log'):
         text = path.read_text(encoding='utf-8-sig')
         if suffix in ('.html', '.htm'):
