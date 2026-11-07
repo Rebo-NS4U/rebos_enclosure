@@ -12,7 +12,7 @@ import sys
 import tempfile
 
 from deploy import SOURCE_ROOTS, install, verify
-from layout import checkout_for
+from layout import checkout_for, source as source_path
 from update_health import validate
 from linked_update import prepare
 
@@ -65,18 +65,37 @@ def apply_snapshot(snapshot, home, dry_run=False):
     return install(payload, home, dry_run=dry_run, preserve_preferences=True)
 
 
-def check_local_changes(home):
+def check_local_changes(home, payload=None):
     record = home / '.local/state/rebos-desktop/source.json'
     if not record.is_file():
         return
     files = json.loads(record.read_text()).get('files', {})
     changed = []
+    verified = False
     for relative, expected in files.items():
         path = Path(relative)
         if path.is_absolute() or '..' in path.parts:
             raise ValueError('Unsafe path in installed source record')
         destination = home / path
         if not destination.is_file() or hashlib.sha256(destination.read_bytes()).hexdigest() != expected:
+            # Live fixes already shipped in this verified update are safe to
+            # reinstall. Keep blocking edits that exist only on this machine.
+            if payload is not None and destination.is_file():
+                if not verified:
+                    verify(payload)
+                    verified = True
+                incoming = source_path(payload, relative)
+                if incoming.is_file():
+                    content = incoming.read_bytes()
+                    try:
+                        text = content.decode('utf-8')
+                    except UnicodeError:
+                        pass
+                    else:
+                        if '@HOME@' in text:
+                            content = text.replace('\r\n', '\n').replace('\r', '\n').replace('@HOME@', str(home)).encode('utf-8')
+                    if destination.read_bytes() == content:
+                        continue
             changed.append(relative)
     if changed:
         raise ValueError('Installed managed files changed since deployment: '
@@ -87,7 +106,7 @@ def check_local_changes(home):
 
 def apply_fetched_snapshot(snapshot, home, args):
     if not args.allow_local_changes and source_checkout(home) is None:
-        check_local_changes(home)
+        check_local_changes(home, snapshot / 'desktop/payload')
     commit = subprocess.check_output(['git', '-C', str(snapshot), 'rev-parse', 'HEAD'], text=True).strip()
     print(f'Updating desktop to {commit}', flush=True)
     apply_snapshot(snapshot, home, dry_run=True)
@@ -112,7 +131,7 @@ def apply_fetched_snapshot(snapshot, home, args):
         # Qt upgrades can change which QML properties and types are available.
         validate(snapshot / "desktop/payload")
     if not args.allow_local_changes and source_checkout(home) is None:
-        check_local_changes(home)
+        check_local_changes(home, snapshot / 'desktop/payload')
     backup = apply_snapshot(snapshot, home)
     # Use the fetched implementation so this update matches its payload.
     greeter_setup = snapshot / 'desktop/scripts/greeter_sync.py'

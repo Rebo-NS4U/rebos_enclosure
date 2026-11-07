@@ -94,3 +94,11 @@ not unpublished commits. A branch can be 19 commits ahead of `main` while
 **Push to GitHub** correctly shows **No commits waiting to push to
 origin/linux-desktop** because those commits are already published on that branch.
 The push section uses the tracked branch; **Fetch origin** refreshes its cached refs.
+
+## Installed files already saved upstream
+
+The desktop update preview compares changed managed files with the verified
+incoming payload. A live fix already included in that payload does not block
+installation, even when the last deployment record predates it. Home placeholders
+are expanded before comparison. Unsaved local edits and missing managed files
+still stop the update; personal preferences remain preserved.

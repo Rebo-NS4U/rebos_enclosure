@@ -56,6 +56,37 @@ class UpdateHealthTests(unittest.TestCase):
                 update_health.validate(payload)
 
 class LocalChangeTests(unittest.TestCase):
+    def test_only_edits_equal_to_verified_incoming_files_are_accepted(self):
+        import hashlib
+        import json
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            home, payload = root / 'home', root / 'payload'
+            relative = 'code/app.py'
+            code, incoming = home / relative, payload / 'home' / relative
+            code.parent.mkdir(parents=True)
+            incoming.parent.mkdir(parents=True)
+            incoming.write_text('home = "@HOME@"\n')
+            code.write_text('home = "' + str(home) + '"\n')
+            record = home / '.local/state/rebos-desktop/source.json'
+            record.parent.mkdir(parents=True)
+            record.write_text(json.dumps({'files': {relative: 'old-deployment-hash'}}))
+            (payload / 'manifest.json').write_text(json.dumps({'units': [relative]}))
+            hashes = {str(p.relative_to(payload)): hashlib.sha256(p.read_bytes()).hexdigest()
+                      for p in payload.rglob('*') if p.is_file()}
+            (payload / 'checksums.json').write_text(json.dumps(hashes))
+            update.check_local_changes(home, payload)
+            code.write_text('unsaved local change')
+            with self.assertRaisesRegex(ValueError, relative):
+                update.check_local_changes(home, payload)
+            code.unlink()
+            with self.assertRaisesRegex(ValueError, relative):
+                update.check_local_changes(home, payload)
+            code.write_text('home = "' + str(home) + '"\n')
+            incoming.write_text('unverified incoming edit')
+            with self.assertRaisesRegex(ValueError, 'checksum'):
+                update.check_local_changes(home, payload)
+
     def test_modified_managed_code_blocks_update_but_preferences_do_not(self):
         import hashlib
         import json
