@@ -7,6 +7,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
+import qs.modules.services as Services
 import qs.modules.components
 import qs.modules.theme
 import qs.config
@@ -101,8 +102,31 @@ Item {
     property var definitionRequest: null
     property var createDictionaryRequest: () => new XMLHttpRequest()
     readonly property bool noteDirty: wordNote.text !== savedWordNote
-    function openWord(value) {
+    property var wordAnchor: null
+    property point wordAnchorPoint: Qt.point(16, 60)
+    function currentWordItem() {
+        for (let index = 0; index < wordRepeater.count; index++) {
+            const item = wordRepeater.itemAt(index);
+            if (visualCursor >= item.modelData.start && visualCursor < item.modelData.start + item.modelData.text.length)
+                return item;
+        }
+        return wordRepeater.count ? wordRepeater.itemAt(wordRepeater.count - 1) : null;
+    }
+    function openCurrentWord() {
+        if (wordPanel.opened) { handleEscape(); return; }
+        const item = currentWordItem();
+        if (item) openWord(item.modelData.text, item);
+    }
+    Shortcut {
+        sequence: "Ctrl+Space"
+        context: Qt.ApplicationShortcut
+        enabled: root.visible && root.practicing && !root.busy && !root.turningPage
+        onActivated: root.openCurrentWord()
+    }
+    function openWord(value, anchor = null) {
         if (!bookId || (wordPanel.opened && (noteDirty || noteSaving))) return;
+        wordAnchor = anchor || currentWordItem();
+        wordAnchorPoint = wordAnchor ? wordAnchor.mapToItem(root, 0, wordAnchor.height) : Qt.point(16, 60);
         cancelDefinition();
         selectedTerm = value.trim().replace(/^[\s.,!?;:"“”‘’'()[\]{}—–]+|[\s.,!?;:"“”‘’'()[\]{}—–]+$/g, "");
         notedTerms = [];
@@ -483,7 +507,7 @@ Item {
     Timer { interval: 5000; running: root.backendStarted; repeat: true; onTriggered: root.saveProgress() }
 
     function status() {
-        return JSON.stringify({chapterCardVisible: chapterCard.visible, chapterTitle: chapterTitle, wordToolsOpen: wordPanel.opened, definitionsEnabled: definitionsEnabled, notedWordCount: notedTerms.length, practicing: practicing, fullscreen: fullscreen, pageLines: pageLayout.lines, pageLineLimit: pageLineLimit, passageHeight: passageArea.height, renderedHeight: passageFlow.height, fontSize: readingFont.pixelSize, layoutVersion: 9, previousPages: pageHistory.length, activeEffects: activeEffects, effectKind: effectKind, lineTransitions: lineTransitions, pageTransitions: pageTransitions, motionEnabled: Motion.enabled, feedbackEvents: feedbackEvents, focused: answer.activeFocus, turningPage: turningPage, textLength: bookLength,
+        return JSON.stringify({chapterCardVisible: chapterCard.visible, chapterTitle: chapterTitle, wordToolsOpen: wordPanel.opened, wordToolsShortcut: "Ctrl+Space", definitionsEnabled: definitionsEnabled, notedWordCount: notedTerms.length, practicing: practicing, fullscreen: fullscreen, pageLines: pageLayout.lines, pageLineLimit: pageLineLimit, passageHeight: passageArea.height, renderedHeight: passageFlow.height, fontSize: readingFont.pixelSize, layoutVersion: 9, previousPages: pageHistory.length, activeEffects: activeEffects, effectKind: effectKind, lineTransitions: lineTransitions, pageTransitions: pageTransitions, motionEnabled: Motion.enabled, feedbackEvents: feedbackEvents, focused: answer.activeFocus, turningPage: turningPage, textLength: bookLength,
             typed: answer.text.length, position: position, rounds: rounds,
             presets: TypingTexts.passages.length, message: message, busy: busy,
             title: bookTitle, chapters: chapters.length, library: library.length, books: libraryBooks.length, wpm: liveWpm, filePickerActive: filePickerActive});
@@ -710,28 +734,51 @@ Item {
             root.message = "Book service stopped. Reopen typing to reconnect."; root.errorMessage = root.message;
         }
     }
-    Popup {
+    PopupWindow {
         id: wordPanel
         objectName: "typing-word-panel"
-        anchors.centerIn: parent
-        width: Math.min(root.width - 16, 540)
-        height: Math.min(root.height - 16, 560)
-        modal: true
-        dim: false
-        focus: true
-        closePolicy: Popup.NoAutoClose
-        padding: 16
-        onClosed: { root.cancelDefinition(); if (root.practicing) answer.forceActiveFocus(); }
-        background: StyledRect { variant: "popup"; radius: 16; border.width: 1; border.color: Colors.outlineVariant }
-        contentItem: ScrollView {
+        anchor.item: root
+        anchor.rect.x: Math.max(8, Math.min(root.wordAnchorPoint.x, root.width - width - 8))
+        anchor.rect.y: root.wordAnchorPoint.y + 6
+        anchor.rect.width: 0
+        anchor.rect.height: 0
+        implicitWidth: Math.min(root.width - 16, 420)
+        implicitHeight: Math.min(420, Math.max(260, root.height - 16))
+        color: "transparent"
+        visible: false
+        readonly property bool opened: visible
+        readonly property real availableWidth: width - 32
+        property alias surface: wordPanelSurface
+        function open() { visible = true; Qt.callLater(() => termInput.forceActiveFocus()); }
+        function close() { visible = false; }
+        onVisibleChanged: {
+            if (!visible) { root.cancelDefinition(); if (root.practicing) answer.forceActiveFocus(); }
+        }
+        Services.FocusGrab {
+            active: wordPanel.visible
+            windows: [wordPanel]
+            onCleared: { if (!root.noteDirty && !root.noteSaving) wordPanel.close(); }
+        }
+        StyledRect {
+            id: wordPanelSurface
+            objectName: "typing-word-panel-surface"
+            anchors.fill: parent
+            variant: "bg"
+            radius: 16
+            border.width: 1
+            border.color: Qt.alpha(Colors.primary, 0.28)
+        }
+        ScrollView {
+            anchors.fill: parent
+            anchors.margins: 16
             clip: true
             contentWidth: availableWidth
             ColumnLayout {
                 width: wordPanel.availableWidth - 12
                 spacing: 8
                 Keys.onEscapePressed: event => { root.handleEscape(); event.accepted = true; }
-                StyledText { text: "Words & notes"; font.pixelSize: 18 }
-                StyledText { text: "Right-click a passage word, or enter a word or character name."; wrapMode: Text.Wrap; Layout.fillWidth: true; font.pixelSize: 12 }
+                StyledText { text: root.selectedTerm || "Words & notes"; textFormat: Text.PlainText; font: root.readingFont; Layout.fillWidth: true; elide: Text.ElideRight }
+                StyledText { text: "Ctrl+Space · definitions & notes for this word"; wrapMode: Text.Wrap; Layout.fillWidth: true; font.pixelSize: 12 }
                 RowLayout {
                     Layout.fillWidth: true
                     TextField {
@@ -741,7 +788,10 @@ Item {
                         maximumLength: 120
                         placeholderText: "Word or name"
                         color: Colors.overSurface
-                        font.family: Config.theme.font
+                        font: root.readingFont
+                        placeholderTextColor: Qt.alpha(Colors.overSurface, 0.35)
+                        selectionColor: Qt.alpha(Colors.primary, 0.3)
+                        selectedTextColor: Colors.overSurface
                         selectByMouse: true
                         enabled: !root.noteDirty && !root.noteSaving
                         background: StyledRect { variant: "pane"; radius: 8; border.width: 1; border.color: termInput.activeFocus ? Colors.primary : Colors.outlineVariant }
@@ -794,7 +844,10 @@ Item {
                         wrapMode: TextEdit.Wrap
                         selectByMouse: true
                         color: Colors.overSurface
-                        font.family: Config.theme.font
+                        font: root.readingFont
+                        placeholderTextColor: Qt.alpha(Colors.overSurface, 0.35)
+                        selectionColor: Qt.alpha(Colors.primary, 0.3)
+                        selectedTextColor: Colors.overSurface
                         background: StyledRect { variant: "pane"; radius: 8 }
                         Accessible.name: "Note for selected word or name"
                     }
@@ -1343,7 +1396,7 @@ Item {
                                     for (let index = 0; index < wordRepeater.count; index++) {
                                         const wordItem = wordRepeater.itemAt(index);
                                         const local = wordItem.mapFromItem(answer, point.position.x, point.position.y);
-                                        if (wordItem.contains(local)) { root.openWord(wordItem.modelData.text); break; }
+                                        if (wordItem.contains(local)) { root.openWord(wordItem.modelData.text, wordItem); break; }
                                     }
                                 }
                             }

@@ -147,8 +147,11 @@ included in the Books filter. Niri focuses this import dialog automatically.
 
 Press **Mod+T** to open book typing practice directly from the desktop.
 
-Right-click any passage word to open **Words & notes**, or use the toolbar button
-and enter a word or a character's full name. Definitions appear inside the reader
+Press **Ctrl+Space** while typing to open definitions and notes directly below
+the current word. Press it again (or Escape) to close the panel and return to
+typing after saving or discarding edits. The word panel uses the same themed
+background, accent border and reading font as the typing panel. Right-click a
+word to inspect it, or use **Words** to enter a character's full name. Definitions appear inside the reader
 using the [Free Dictionary API](https://dictionaryapi.dev/) (English, internet
 required). **Online definitions: On/Off** is saved across reader sessions; turning
 it off cancels lookup and keeps notes available offline. Only the selected term

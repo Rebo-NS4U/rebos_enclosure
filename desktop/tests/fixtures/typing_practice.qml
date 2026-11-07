@@ -15,7 +15,7 @@ ShellRoot {
         id: testWindow
         TestTools.TestCase { id: keyDriver; name: "TypingKeystrokes"; when: false }
         WlrLayershell.layer: WlrLayer.Overlay
-        WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+        WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
         exclusionMode: ExclusionMode.Ignore
         mask: Region {}
         implicitWidth: 640
@@ -436,6 +436,21 @@ ShellRoot {
                 } else if (phase === 113) {
                     const restored = freshView.item;
                     if (restored.definitionsEnabled) throw Error("Dictionary disable did not persist");
+                    const field = find(restored, "typing-input");
+                    const before = field.text;
+                    field.forceActiveFocus();
+                    const currentWord = restored.currentWordItem();
+                    keyDriver.keyClick(Qt.Key_Space, Qt.ControlModifier, 0);
+                    keyDriver.wait(30);
+                    const panel = restored.wordTools;
+                    const anchor = currentWord.mapToItem(restored, 0, currentWord.height);
+                    if (!panel.opened || restored.selectedTerm.toLowerCase() !== currentWord.modelData.text.trim().toLowerCase() || field.text !== before)
+                        throw Error("Ctrl+Space did not inspect the current word without editing input: " + JSON.stringify({opened:panel.opened, term:restored.selectedTerm, expected:currentWord.modelData.text, before:before, after:field.text}));
+                    if (Math.abs(panel.anchor.rect.y - anchor.y - 6) > 1) throw Error("Word panel is not anchored below the current word");
+                    if (panel.surface.variant !== "bg") throw Error("Word panel does not share the typing surface theme");
+                    keyDriver.keyClick(Qt.Key_Space, Qt.ControlModifier, 0);
+                    keyDriver.wait(30);
+                    if (panel.opened || !field.activeFocus) throw Error("Ctrl+Space did not close word panel and restore typing focus");
                     restored.openWord("“Macy,”");
                 } else if (phase === 114) {
                     const restored = freshView.item;
