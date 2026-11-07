@@ -151,7 +151,12 @@ Press **Ctrl+Space** while typing to open definitions and notes directly below
 the current word. Press it again (or Escape) to close the panel and return to
 typing after saving or discarding edits. The word panel uses the same themed
 background, accent border and reading font as the typing panel. Right-click a
-word to inspect it, or use **Words** to enter a character's full name. Definitions appear inside the reader
+word to inspect it. Use **Notes** to open this book's notebook, browse **People**,
+**Settings**, **Mysteries**, **Plot**, or **General**, and create a titled note.
+Search matches note titles and content. Each note can be moved between sections;
+**Use prompts** supplies an editable outline for characters, places, clues, or
+plot connections. Existing word notes stay in **General** until you categorize
+them, and word-popup notes appear in the same notebook. Definitions appear inside the reader
 using the [Free Dictionary API](https://dictionaryapi.dev/) (English, internet
 required). **Online definitions: On/Off** is saved across reader sessions; turning
 it off cancels lookup and keeps notes available offline. Only the selected term

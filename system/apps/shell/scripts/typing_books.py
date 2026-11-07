@@ -17,6 +17,7 @@ from typing_import import HTMLText, extract_raw
 
 LIMIT = 20000000
 WINDOW = 90
+NOTE_CATEGORIES = ("People", "Settings", "Mysteries", "Plot", "General")
 
 def normalize(text):
     # Remove soft hyphens and PDF line-break hyphenation before flattening.
@@ -252,6 +253,8 @@ class Library:
         ''')
 
         self.db.execute('BEGIN IMMEDIATE')
+        if 'category' not in {row[1] for row in self.db.execute('PRAGMA table_info(word_notes)')}:
+            self.db.execute("ALTER TABLE word_notes ADD COLUMN category TEXT NOT NULL DEFAULT 'General'")
         if 'kind' not in {row[1] for row in self.db.execute('PRAGMA table_info(book_catalogue)')}:
             self.db.execute("ALTER TABLE book_catalogue ADD COLUMN kind TEXT DEFAULT 'book'")
         if not self.db.execute("SELECT 1 FROM app_state WHERE key='practice_classified'").fetchone():
@@ -345,22 +348,25 @@ class Library:
         if not self.db.execute('SELECT 1 FROM book_catalogue WHERE id=?', (key,)).fetchone():
             raise ValueError('Book is no longer in the library.')
         terms = [row[0] for row in self.db.execute('SELECT term FROM word_notes WHERE book_id=? ORDER BY term', (key,))]
-        return {'id': key, 'terms': terms}
+        entries = [dict(row) for row in self.db.execute('SELECT term,note,category FROM word_notes WHERE book_id=? ORDER BY term', (key,))]
+        return {'id': key, 'terms': terms, 'entries': entries}
 
     def _handle_word(self, request):
         key, term = self._word_key(request)
-        row = self.db.execute('SELECT note FROM word_notes WHERE book_id=? AND term=?', (key, term)).fetchone()
-        terms = [row[0] for row in self.db.execute('SELECT term FROM word_notes WHERE book_id=? ORDER BY term', (key,))]
-        return {'id': key, 'term': term, 'note': row[0] if row else '', 'terms': terms}
+        row = self.db.execute('SELECT note,category FROM word_notes WHERE book_id=? AND term=?', (key, term)).fetchone()
+        return dict(self._handle_words(request), term=term, note=row['note'] if row else '', category=row['category'] if row else 'General')
 
     def _handle_note(self, request):
         key, term = self._word_key(request)
         note = request.get('note', '')
+        category = request.get('category', 'General')
+        if category not in NOTE_CATEGORIES:
+            raise ValueError('Choose People, Settings, Mysteries, Plot or General.')
         if not isinstance(note, str) or len(note) > 10000:
             raise ValueError('Notes can contain up to 10,000 characters.')
         with self.db:
             if note.strip():
-                self.db.execute('INSERT INTO word_notes VALUES (?,?,?) ON CONFLICT(book_id,term) DO UPDATE SET note=excluded.note', (key, term, note))
+                self.db.execute('INSERT INTO word_notes (book_id,term,note,category) VALUES (?,?,?,?) ON CONFLICT(book_id,term) DO UPDATE SET note=excluded.note,category=excluded.category', (key, term, note, category))
             else:
                 self.db.execute('DELETE FROM word_notes WHERE book_id=? AND term=?', (key, term))
         return self._handle_word(request)

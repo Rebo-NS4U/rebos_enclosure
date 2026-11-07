@@ -82,6 +82,35 @@ class Books(unittest.TestCase):
         self.assertEqual(page['passage'], 'Chapter Two Next passage.')
         self.assertEqual(page['position'], boundary)
 
+    def test_categorized_notebook_entries_survive_reimport_and_restart(self):
+        book = self.library.add('Notebook', 'The story begins here.', [])
+        other = self.library.add('Other', 'A different story.', [])
+        before = tuple(self.library.db.execute('SELECT * FROM book_progress WHERE id=?', (book['id'],)).fetchone())
+        for category in ('People', 'Settings', 'Mysteries', 'Plot', 'General'):
+            self.library.handle({'action': 'note', 'id': book['id'], 'term': category + ' title', 'note': 'Details and connections.', 'category': category})
+        entries = self.library.handle({'action': 'words', 'id': book['id']})['entries']
+        self.assertEqual({entry['category'] for entry in entries}, {'People', 'Settings', 'Mysteries', 'Plot', 'General'})
+        self.assertEqual(self.library.handle({'action': 'words', 'id': other['id']})['entries'], [])
+        self.assertEqual(before, tuple(self.library.db.execute('SELECT * FROM book_progress WHERE id=?', (book['id'],)).fetchone()))
+        with self.assertRaises(ValueError):
+            self.library.handle({'action': 'note', 'id': book['id'], 'term': 'Bad', 'note': 'Unchanged', 'category': 'Invalid'})
+        self.library.add('Notebook', 'The story begins here.', [])
+        self.library.db.close()
+        self.library = Library(self.path)
+        self.assertEqual(self.library.handle({'action': 'word', 'id': book['id'], 'term': 'People title'})['category'], 'People')
+        self.library.handle({'action': 'note', 'id': book['id'], 'term': 'People title', 'note': 'A new clue.', 'category': 'Mysteries'})
+        self.assertEqual(self.library.handle({'action': 'word', 'id': book['id'], 'term': 'People title'})['category'], 'Mysteries')
+
+    def test_existing_word_notes_migrate_to_general_without_loss(self):
+        path = Path(self.temp.name) / 'old-notes.sqlite3'
+        with sqlite3.connect(path) as db:
+            db.execute('CREATE TABLE word_notes (book_id TEXT,term TEXT,note TEXT NOT NULL,PRIMARY KEY(book_id,term))')
+            db.execute('INSERT INTO word_notes VALUES (?,?,?)', ('old', 'macy', 'Original personal note.'))
+        upgraded = Library(path)
+        row = upgraded.db.execute('SELECT note,category FROM word_notes WHERE book_id=?', ('old',)).fetchone()
+        self.assertEqual(tuple(row), ('Original personal note.', 'General'))
+        upgraded.db.close()
+
     def test_previous_context_and_exact_durable_restore(self):
         text = '😀 first word. ' * 100
         book = self.library.add('Backward test', text, [])

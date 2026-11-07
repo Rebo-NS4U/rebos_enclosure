@@ -504,7 +504,46 @@ ShellRoot {
                     restored.definitionRequest = {abort: function() { aborted = true; }};
                     restored.openWord("");
                     if (!aborted || restored.definitionRequest !== null) throw Error("Changing terms did not cancel old definition");
-                    console.log("PASS: word selection, saved notes, dictionary toggle, available-height passage fitting, lossless paging, Backspace navigation, queued input, legacy bookmark carryover, no-fail advance, resume, WPM and EPUB import");
+                    restored.openNotebook();
+                } else if (phase === 119) {
+                    const restored = freshView.item;
+                    if (!restored.notebookBrowsing || restored.noteEntries.length !== 1 || restored.noteEntries[0].category !== "General") throw Error("Book notebook did not load existing notes");
+                    restored.notebookFilter = "People";
+                    if (restored.visibleNoteEntries.length !== 0) throw Error("Notebook sections do not filter entries");
+                    find(restored, "typing-word-term").text = "Elliot";
+                    find(restored, "typing-new-notebook-note").clicked();
+                } else if (phase === 120) {
+                    const restored = freshView.item;
+                    if (!restored.noteLoaded) return;
+                    if (!restored.notebookMode || restored.notebookBrowsing || restored.noteCategory !== "People" || restored.definitionRequest !== null) throw Error("New categorized notebook entry failed");
+                    find(restored, "typing-edit-word-note").clicked();
+                    if (!find(restored, "typing-note-category").visible || !find(restored, "typing-note-template").visible) throw Error("Section selector or prompts missing");
+                    find(restored, "typing-note-template").clicked();
+                    if (!find(restored, "typing-word-note").text.includes("Relationships:")) throw Error("People prompts did not populate note");
+                    find(restored, "typing-word-note").text += "A childhood friend.";
+                    restored.saveWordNote();
+                } else if (phase === 121) {
+                    const restored = freshView.item;
+                    if (restored.noteSaving) return;
+                    if (restored.savedNoteCategory !== "People" || !restored.savedWordNote.includes("childhood friend")) throw Error("Categorized note did not save");
+                    find(restored, "typing-notebook-back").clicked();
+                } else if (phase === 122) {
+                    const restored = freshView.item;
+                    if (restored.visibleNoteEntries.length !== 1 || restored.visibleNoteEntries[0].term !== "elliot") throw Error("Saved note did not appear in People section");
+                    restored.notebookFilter = "Mysteries";
+                    if (restored.visibleNoteEntries.length !== 0) throw Error("People note leaked into Mysteries section");
+                    restored.notebookFilter = "People";
+                    keyDriver.wait(40);
+                    const card = find(restored, "typing-notebook-entry-elliot");
+                    if (!card) throw Error("Notebook entry card is missing");
+                    keyDriver.mouseClick(card, card.width / 2, card.height / 2, Qt.LeftButton);
+                    keyDriver.wait(40);
+                    if (restored.notebookBrowsing) throw Error("Notebook card click did not open entry: " + JSON.stringify({width:card.width,height:card.height,visible:card.visible}));
+                } else if (phase === 123) {
+                    const restored = freshView.item;
+                    if (!restored.noteLoaded) return;
+                    if (restored.notebookBrowsing || restored.selectedTerm !== "elliot" || restored.savedNoteCategory !== "People") throw Error("Clicking a notebook entry did not reopen its note");
+                    console.log("PASS: categorized book notebook, templates, word selection, saved notes, dictionary toggle, available-height passage fitting, lossless paging, Backspace navigation, queued input, legacy bookmark carryover, no-fail advance, resume, WPM and EPUB import");
                     Qt.quit();
                 }
 

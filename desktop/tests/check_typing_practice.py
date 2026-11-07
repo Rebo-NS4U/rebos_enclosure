@@ -31,7 +31,7 @@ def main():
         picker.write_text("#!/usr/bin/env python3\nimport pathlib, sys, time\nflag = pathlib.Path(" + repr(str(target / 'picked')) + ")\nif flag.exists():\n    time.sleep(2)\n    sys.exit(1)\nflag.touch()\nassert any('*.epub' in arg for arg in sys.argv)\ntime.sleep(4)\nprint(" + repr(str(book)) + ")\n")
         picker.chmod(0o755)
         try:
-            result = subprocess.run(["qs", "-p", str(target / "shell.qml")], capture_output=True, text=True, timeout=40, env=dict(os.environ, XDG_DATA_HOME=str(target / "data"), PATH=str(binaries) + os.pathsep + os.environ['PATH']))
+            result = subprocess.run(["qs", "-p", str(target / "shell.qml")], capture_output=True, text=True, timeout=55, env=dict(os.environ, XDG_DATA_HOME=str(target / "data"), PATH=str(binaries) + os.pathsep + os.environ['PATH']))
         except subprocess.TimeoutExpired as error:
             print((error.stdout or b" ").decode(errors="replace"))
             print((error.stderr or b" ").decode(errors="replace"))
