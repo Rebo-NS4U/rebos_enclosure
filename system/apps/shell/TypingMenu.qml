@@ -941,7 +941,7 @@ Item {
                                                 property bool failedFeedback: false
                                                 property real spark: 0
                                                 readonly property real rejectionPhase: 1 - Math.pow(Math.max(0, spark), 1 / 3)
-                                                readonly property real rejectionOffset: failedFeedback ? Math.sin(rejectionPhase * Math.PI * 8) * spark * 9 : 0
+                                                readonly property real rejectionOffset: failedFeedback ? Math.sin(rejectionPhase * Math.PI * 8) * spark * 8 : 0
                                                 scale: 1 + spark * (failedFeedback ? 0.28 : 0.105)
                                                 rotation: failedFeedback ? rejectionOffset * 1.6 : 0
                                                 transform: Translate {
