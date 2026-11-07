@@ -145,9 +145,25 @@ ShellRoot {
                     const editedGlyph = find(practice, "typing-character-10");
                     const originalTyped = input.text;
                     input.text = originalTyped.slice(0, 10) + "!" + originalTyped.slice(11);
-                    if (!editedGlyph.incorrect || !editedGlyph.font.underline || editedGlyph.scale !== 1) throw Error("Middle edit did not underline the mistake");
+                    if (!editedGlyph.incorrect || !editedGlyph.font.underline) throw Error("Middle edit did not underline the mistake");
+                    if (Motion.enabled) {
+                        if (!editedGlyph.failedFeedback || editedGlyph.spark <= 0 || editedGlyph.scale <= 1.2) throw Error("Mistype did not trigger exaggerated feedback");
+                        const failures = practice.failureEvents;
+                        practice.syncGlyphs(); practice.syncCaret();
+                        if (practice.failureEvents !== failures) throw Error("Caret refresh replayed failure feedback");
+                        keyDriver.wait(50);
+                        if (Math.abs(editedGlyph.rejectionOffset) < 0.1) throw Error("Mistyped letter did not shake");
+                        input.text = originalTyped.slice(0, 10) + "?" + originalTyped.slice(11);
+                        if (practice.failureEvents !== failures + 1) throw Error("Another wrong input did not retrigger failure feedback");
+                    }
                     input.text = originalTyped;
-                    if (editedGlyph.incorrect || editedGlyph.font.underline) throw Error("Correction did not clear the error underline");
+                    if (editedGlyph.incorrect || editedGlyph.font.underline || editedGlyph.failedFeedback) throw Error("Correction did not clear the error feedback");
+                    const spaceIndex = originalTyped.indexOf(" ");
+                    const wrongSpace = find(practice, "typing-character-" + spaceIndex);
+                    input.text = originalTyped.slice(0, spaceIndex) + "!" + originalTyped.slice(spaceIndex + 1);
+                    if (Motion.enabled && !wrongSpace.failedFeedback) throw Error("Mistyped space has no failure reaction");
+                    input.text = originalTyped;
+                    if (wrongSpace.failedFeedback || wrongSpace.incorrect || wrongSpace.spark !== 0) throw Error("Corrected space kept its failure reaction");
                     find(practice, "typing-passage-flow").forceLayout();
                     const movingCaret = find(practice, "typing-smooth-caret");
                     const activeLine = find(practice, "typing-line-highlight");

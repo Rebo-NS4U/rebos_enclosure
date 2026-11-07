@@ -48,6 +48,7 @@ Item {
     property string restoreAction: ""
     property var restoreChapters: []
     property int feedbackEvents: 0
+    property int failureEvents: 0
     property int lineTransitions: 0
     property int pageTransitions: 0
     property var chapters: []
@@ -145,14 +146,14 @@ Item {
     }
     function requestFeedback(kind, glyph = null) {
         if (!Motion.enabled || !visible || !practicing) return;
-        if (kind === "letter") {
+        if (kind === "letter" || kind === "error") {
             if (!glyph) return;
             // Each keystroke finishes its own fade, even during the next key or row.
             glyph.stopFeedback();
             if (glowingGlyphs.length >= 12) glowingGlyphs[0].stopFeedback();
             glowingGlyphs = glowingGlyphs.concat([glyph]);
-            feedbackEvents++;
-            glyph.startFeedback();
+            if (kind === "error") failureEvents++; else feedbackEvents++;
+            glyph.startFeedback(kind === "error");
             return;
         }
         if (feedbackAnimation.running && effectKind === "page" && kind === "line") return;
@@ -219,10 +220,20 @@ Item {
     function updateGlyph(glyph) {
         if (!glyph) return;
         const wasCorrect = glyph.typed && !glyph.incorrect;
+        const previousInput = glyph.enteredCharacter;
         glyph.typed = glyph.characterIndex < displayedInput.length;
         glyph.incorrect = glyph.typed && !TypingPaging.matchingCharacter(displayedInput.substr(glyph.characterIndex, glyph.modelData.length), glyph.modelData);
+        glyph.enteredCharacter = glyph.typed ? displayedInput.substr(glyph.characterIndex, glyph.modelData.length) : "";
         glyph.caretHere = practicing && glyph.characterIndex === visualCursor;
-        if (!glyph.typed || glyph.incorrect) glyph.stopFeedback();
+        if (!glyph.incorrect && glyph.failedFeedback) glyph.stopFeedback();
+        if (!glyph.typed) glyph.stopFeedback();
+        else if (glyph.incorrect) {
+            if (previousInput !== glyph.enteredCharacter) {
+                glyph.stopFeedback();
+                if (glyph.initialized && !restoring && !busy && visible && practicing && answer.activeFocus && Motion.enabled)
+                    requestFeedback("error", glyph);
+            }
+        }
         else if (!wasCorrect && glyph.initialized && !restoring && !busy && visible && practicing && answer.activeFocus && Motion.enabled && glyph.modelData.trim().length)
             glyph.celebrate();
     }
@@ -926,20 +937,28 @@ Item {
                                                 property bool typed: false
                                                 property bool incorrect: false
                                                 property bool initialized: false
+                                                property string enteredCharacter: ""
+                                                property bool failedFeedback: false
                                                 property real spark: 0
-                                                scale: 1 + spark * 0.105
-                                                transform: Translate { y: -2.2 * glyph.spark }
+                                                readonly property real rejectionPhase: 1 - Math.pow(Math.max(0, spark), 1 / 3)
+                                                readonly property real rejectionOffset: failedFeedback ? Math.sin(rejectionPhase * Math.PI * 8) * spark * 9 : 0
+                                                scale: 1 + spark * (failedFeedback ? 0.28 : 0.105)
+                                                rotation: failedFeedback ? rejectionOffset * 1.6 : 0
+                                                transform: Translate {
+                                                    x: glyph.rejectionOffset
+                                                    y: -glyph.spark * (glyph.failedFeedback ? 4 : 2.2)
+                                                }
                                                 transformOrigin: Item.Center
                                                 function celebrate() { root.requestFeedback("letter", glyph); }
-                                                function startFeedback() { keyFeedback.restart(); }
-                                                function stopFeedback() { keyFeedback.stop(); spark = 0; root.forgetGlyph(glyph); }
+                                                function startFeedback(failed = false) { failedFeedback = failed; keyFeedback.restart(); }
+                                                function stopFeedback() { keyFeedback.stop(); spark = 0; failedFeedback = false; root.forgetGlyph(glyph); }
                                                 NumberAnimation {
                                                     id: keyFeedback
                                                     target: glyph
                                                     property: "spark"
                                                     from: 1
                                                     to: 0
-                                                    duration: Math.max(280, Math.min(420, Motion.feedback * 2.4))
+                                                    duration: glyph.failedFeedback ? 560 : Math.max(280, Math.min(420, Motion.feedback * 2.4))
                                                     easing.type: Easing.OutCubic
                                                     onFinished: root.forgetGlyph(glyph)
                                                 }
@@ -950,6 +969,9 @@ Item {
                                                     height: root.highlightBounds.height + 6
                                                     z: -1
                                                     strength: Math.min(1, glyph.spark * 1.4)
+                                                    growth: glyph.failedFeedback ? 0.55 : 0.12
+                                                    color: Qt.alpha(glyph.failedFeedback ? Colors.error : Colors.primary, glyph.failedFeedback ? 0.32 : 0.07)
+                                                    border.color: Qt.alpha(glyph.failedFeedback ? Colors.error : Colors.primary, glyph.failedFeedback ? 0.9 : 0.22)
                                                 }
                                                 onCaretHereChanged: { if (caretHere && initialized) Qt.callLater(() => smoothCaret.follow(glyph)); }
                                                 Connections {
@@ -987,7 +1009,7 @@ Item {
                                                 }
                                                 opacity: caretHere ? 1 : inkOpacity
 
-                                                color: typed && incorrect ? Colors.error : Qt.tint(Colors.overSurface, Qt.alpha(Colors.primary, Math.min(0.88, (typed ? 0.38 : 0) + spark * 0.50 + (word?.linePop ?? 0) * 0.12)))
+                                                color: typed && incorrect ? Qt.tint(Colors.error, Qt.alpha(Colors.overSurface, spark * 0.45)) : Qt.tint(Colors.overSurface, Qt.alpha(Colors.primary, Math.min(0.88, (typed ? 0.38 : 0) + spark * 0.50 + (word?.linePop ?? 0) * 0.12)))
 
                                             }
                                         }
