@@ -760,6 +760,19 @@ Item {
                             }
                         }
 
+                        function pasteClipboardTypes(text) {
+                            let types = text.trim().split("\n").map(type => type.trim());
+                            let imageType = types.find(type => type.startsWith("image/"));
+                            if (imageType) {
+                                clipboardImageProcess.mimeType = imageType;
+                                clipboardImageProcess.running = true;
+                            } else if (types.indexOf("text/uri-list") !== -1) {
+                                clipboardUrisProcess.running = true;
+                            } else {
+                                inputField.paste();
+                            }
+                        }
+
                         function removeAttachment(index) {
                             let list = pendingAttachments.slice();
                             list.splice(index, 1);
@@ -940,24 +953,7 @@ Item {
                             command: ["wl-paste", "--list-types"]
                             stdout: StdioCollector {
                                 onStreamFinished: {
-                                    let types = text.trim().split("\n");
-                                    let imageType = "";
-                                    for (let i = 0; i < types.length; i++) {
-                                        if (types[i].startsWith("image/")) {
-                                            imageType = types[i].trim();
-                                            break;
-                                        }
-                                    }
-                                    if (imageType.length > 0) {
-                                        clipboardImageProcess.mimeType = imageType;
-                                        clipboardImageProcess.running = true;
-                                        return;
-                                    }
-                                    if (types.indexOf("text/uri-list") !== -1) {
-                                        clipboardUrisProcess.running = true;
-                                        return;
-                                    }
-                                    mainChatArea.session.pushSystemMessage("Clipboard does not contain an image or file.");
+                                    mainChatArea.pasteClipboardTypes(text);
                                 }
                             }
                             stderr: StdioCollector {
@@ -2021,6 +2017,8 @@ Item {
 
                                             Keys.priority: Keys.BeforeItem
                                             Keys.onShortcutOverride: event => {
+                                                if (event.matches(StandardKey.Paste))
+                                                    event.accepted = true;
                                                 if ((event.key === Qt.Key_Return || event.key === Qt.Key_Enter)
                                                         && event.modifiers === Qt.NoModifier
                                                         && Object.keys(mainChatArea.session.pendingPermissions).length > 0)
@@ -2049,8 +2047,9 @@ Item {
                                                         return;
                                                     }
                                                 }
-                                                if (event.key === Qt.Key_V && (event.modifiers & Qt.ControlModifier)) {
+                                                if (event.matches(StandardKey.Paste)) {
                                                     clipboardTypesProcess.running = true;
+                                                    event.accepted = true;
                                                     return;
                                                 }
                                                 if (event.key === Qt.Key_Escape) {
@@ -2081,14 +2080,13 @@ Item {
                                     }
 
                                     Button {
-                                        Layout.preferredWidth: 32
+                                        Layout.preferredWidth: 96
                                         Layout.preferredHeight: 32
                                         flat: true
 
                                         contentItem: StyledText {
-                                            text: Icons.plus
-                                            font.family: Icons.font
-                                            font.pixelSize: Styling.fontSize(6)
+                                            text: "Add image"
+                                            font.pixelSize: Styling.fontSize(0)
                                             color: Colors.outline
                                             horizontalAlignment: Text.AlignHCenter
                                             verticalAlignment: Text.AlignVCenter
@@ -2099,6 +2097,9 @@ Item {
                                             radius: Styling.radius(0)
                                         }
 
+                                        Accessible.name: "Add image"
+                                        ToolTip.visible: hovered
+                                        ToolTip.text: "Choose a picture, paste with Ctrl+V, or drop it here"
                                         onClicked: zenityProcess.running = true
                                     }
                                     Button {
