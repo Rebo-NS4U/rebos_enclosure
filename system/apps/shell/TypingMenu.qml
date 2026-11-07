@@ -462,6 +462,17 @@ Item {
     }
     function syncCaret() {
         const previous = renderedCaret;
+        // Move the viewport before creating glyphs for a distant cursor jump.
+        if (practicing && !fullscreen) {
+            const words = pageLayout.words;
+            let low = 0, high = words.length - 1, line = 0;
+            while (low <= high) {
+                const middle = (low + high) >> 1;
+                if (words[middle].start <= visualCursor) { line = words[middle].line; low = middle + 1; }
+                else high = middle - 1;
+            }
+            passageVisuals.contentY = Math.max(0, line * passageLineHeight);
+        }
         renderedCaret = practicing ? visualCursor : -1;
         if (previous !== renderedCaret) {
             updateGlyph(glyphItems[previous]);
@@ -1670,6 +1681,12 @@ Item {
                                         required property var modelData
                                         // Flow must wrap with the same widths used by pagination.
                                         // Row implicit widths can differ under native font hinting.
+                                        // Keep lightweight word geometry for the whole section,
+                                        // but build animated characters only near the viewport.
+                                        height: root.passageLineHeight
+                                        readonly property bool inRenderWindow: !root.fullscreen
+                                            && modelData.line * root.passageLineHeight + passageFlow.y + height >= passageVisuals.contentY - passageVisuals.height * 2
+                                            && modelData.line * root.passageLineHeight + passageFlow.y <= passageVisuals.contentY + passageVisuals.height * 3
                                         readonly property var letters: root.characters(modelData.text)
                                         readonly property var offsets: {
                                             let offset = modelData.start;
@@ -1696,7 +1713,7 @@ Item {
                                         onWaveChanged: { if (smoothCaret.targetGlyph?.parent === word) Qt.callLater(root.refreshPageCaret); }
                                         onCenterOffsetChanged: { if (smoothCaret.targetGlyph?.parent === word) Qt.callLater(() => { if (smoothCaret.targetGlyph) smoothCaret.follow(smoothCaret.targetGlyph); }); }
                                         Repeater {
-                                            model: word.letters
+                                            model: word.inRenderWindow ? word.letters : []
                                             delegate: StyledText {
                                                 id: glyph
                                                 required property int index
@@ -1755,6 +1772,7 @@ Item {
                                                 }
                                                 Component.onDestruction: {
                                                     stopFeedback();
+                                                    if (smoothCaret.targetGlyph === glyph) { smoothCaret.targetGlyph = null; smoothCaret.placed = false; }
                                                     if (root.glyphItems[characterIndex] === glyph) delete root.glyphItems[characterIndex];
                                                 }
                                                 onVisibleChanged: { if (!visible) stopFeedback(); else if (initialized && caretHere) Qt.callLater(() => smoothCaret.follow(glyph)); }

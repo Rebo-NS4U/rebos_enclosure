@@ -121,7 +121,7 @@ ShellRoot {
                 if (practice.practicing && (practice.passage !== practice.pageSource || practice.implicitHeight !== 116 + 6 * practice.passageLineHeight)) throw Error("Practice is not compact");
                 const input = find(practice, "typing-input");
                 let first = find(practice, "typing-character-0");
-                if (!input || !first) throw Error("Typing input or glyph missing");
+                if (!input) throw Error("Typing input missing");
                 if (input.opacity !== 0 || !input.enabled) throw Error("Native editor must accept input without painting ghost characters");
                 if (phase === 1) {
                     if (!practice.practicing || practice.draft || !input.activeFocus) throw Error("Selecting a sample must open focused typing without Start practice");
