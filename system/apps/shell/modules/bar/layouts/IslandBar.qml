@@ -1020,8 +1020,21 @@ Item {
             ShellWidgets.TypingMenu {
                 id: typingView
                 menuAnchorItem: islandBody
-                anchors.fill: parent
+                // Lay out once at the destination size while the body morphs.
+                // Revealing live, shrinking text made opening look like a reflow.
+                anchors.top: parent.top
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: root.targetWidth
+                height: root.targetHeight
                 visible: root.currentMode === "typing"
+                opacity: visible && !root.retractingToHidden ? 1 : 0
+                Behavior on opacity {
+                    enabled: Motion.enabled
+                    SequentialAnimation {
+                        PauseAnimation { duration: typingView.visible ? Math.round(Motion.base * 1.4) : 0 }
+                        NumberAnimation { duration: Motion.enter; easing.type: Easing.OutCubic }
+                    }
+                }
                 enabled: visible && !root.retractingToHidden
                 onBackRequested: root.collapse()
             }
