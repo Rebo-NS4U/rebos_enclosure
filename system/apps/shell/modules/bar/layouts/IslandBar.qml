@@ -644,7 +644,7 @@ Item {
         StyledRect {
             id: islandBody
             anchors.fill: parent
-            variant: Styling.shellStyle === "dithered" ? "bar" : "pane"
+            variant: "bg"
             styleOverride: root.currentMode === "typing" ? "glass" : ""
             backgroundOpacity: root.currentMode === "typing" ? Math.min(0.4, BarAppearance.opacity * 0.35) : BarAppearance.panelOpacity(root.isExpanded)
             topLeftRadius: BarAppearance.polished ? root.cornerRadius : 0

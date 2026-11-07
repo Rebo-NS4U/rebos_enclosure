@@ -28,7 +28,7 @@ StyledRect {
         anchors.bottomMargin: Styling.fontSize(0)
         width: Math.min(parent.width - Styling.fontSize(0) * 2, content.implicitWidth + Styling.fontSize(0) * 2)
         height: Styling.fontSize(0) * 2.6
-        variant: "pane"
+        variant: "bg"
         backgroundOpacity: BarAppearance.panelOpacity(false)
         radius: height / 2
         border.width: BarAppearance.polished ? 1 : 0

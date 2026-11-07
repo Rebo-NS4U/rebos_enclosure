@@ -17,7 +17,8 @@ Singleton {
         return Styling.shellStyle === "quiet" || Styling.shellStyle === "dithered" ? 1 : (polished ? (expanded ? Math.max(0.94, opacity) : opacity) : 1);
     }
     function panelTint(expanded: bool): color {
-        return Qt.alpha(Colors.primary, accent * 0.28);
+        // The background surface already supplies the active theme color.
+        return "transparent";
     }
     function panelBorder(expanded: bool): color {
         return Styling.shellStyle === "quiet" || Styling.shellStyle === "dithered" ? Config.resolveColor(Styling.getStyledRectConfig("popup").border[0]) : Qt.alpha(Colors.primary, polished ? accent * (expanded ? 0.33 : 0.44) : 0);

@@ -17,7 +17,8 @@ Item {
 
     StyledRect {
         anchors.fill: parent
-        variant: "barbg"
+        variant: "bg"
+        backgroundOpacity: root.bgOpacity
         visible: root.backgroundVisible
         radius: Styling.radius(0)
         enableBorder: true
