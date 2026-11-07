@@ -34,6 +34,7 @@ Item {
     property bool resumeOnOpen: false
     property string bookId: ""
     property string bookTitle: ""
+    property string bookKind: "book"
     property int bookLength: 0
     property int position: 0
     property int rounds: 0
@@ -84,6 +85,8 @@ Item {
     }
     readonly property string chapterTitle: currentChapterIndex < 0 ? "Beginning" : (chapters[currentChapterIndex].title || "Section " + (currentChapterIndex + 1))
     property string message: "Import a book, resume your library, or choose a practice text."
+    readonly property bool atChapterStart: bookKind === "book" && currentChapterIndex >= 0
+        && position === chapters[currentChapterIndex].position
     property alias wordTools: wordPanel
     property string selectedTerm: ""
     property string wordBookId: ""
@@ -449,7 +452,7 @@ Item {
                 historyBack = false;
             }
             restoring = true;
-            bookId = data.id; bookTitle = data.title; bookLength = data.length;
+            bookId = data.id; bookTitle = data.title; bookKind = data.kind || "book"; bookLength = data.length;
             position = data.position; rounds = data.loops; if (data.chapters) chapters = data.chapters;
             resetPageCaret();
             pageSource = data.passage; fitPage();
@@ -480,7 +483,7 @@ Item {
     Timer { interval: 5000; running: root.backendStarted; repeat: true; onTriggered: root.saveProgress() }
 
     function status() {
-        return JSON.stringify({wordToolsOpen: wordPanel.opened, definitionsEnabled: definitionsEnabled, notedWordCount: notedTerms.length, practicing: practicing, fullscreen: fullscreen, pageLines: pageLayout.lines, pageLineLimit: pageLineLimit, passageHeight: passageArea.height, renderedHeight: passageFlow.height, fontSize: readingFont.pixelSize, layoutVersion: 9, previousPages: pageHistory.length, activeEffects: activeEffects, effectKind: effectKind, lineTransitions: lineTransitions, pageTransitions: pageTransitions, motionEnabled: Motion.enabled, feedbackEvents: feedbackEvents, focused: answer.activeFocus, turningPage: turningPage, textLength: bookLength,
+        return JSON.stringify({chapterCardVisible: chapterCard.visible, chapterTitle: chapterTitle, wordToolsOpen: wordPanel.opened, definitionsEnabled: definitionsEnabled, notedWordCount: notedTerms.length, practicing: practicing, fullscreen: fullscreen, pageLines: pageLayout.lines, pageLineLimit: pageLineLimit, passageHeight: passageArea.height, renderedHeight: passageFlow.height, fontSize: readingFont.pixelSize, layoutVersion: 9, previousPages: pageHistory.length, activeEffects: activeEffects, effectKind: effectKind, lineTransitions: lineTransitions, pageTransitions: pageTransitions, motionEnabled: Motion.enabled, feedbackEvents: feedbackEvents, focused: answer.activeFocus, turningPage: turningPage, textLength: bookLength,
             typed: answer.text.length, position: position, rounds: rounds,
             presets: TypingTexts.passages.length, message: message, busy: busy,
             title: bookTitle, chapters: chapters.length, library: library.length, books: libraryBooks.length, wpm: liveWpm, filePickerActive: filePickerActive});
@@ -995,6 +998,44 @@ Item {
                     visible: root.practicing
                     Layout.fillWidth: true
                     Layout.fillHeight: true
+                    StyledRect {
+                        id: chapterCard
+                        objectName: "typing-chapter-card"
+                        visible: root.atChapterStart
+                        Layout.fillWidth: true
+                        implicitHeight: chapterCardText.implicitHeight + 28
+                        variant: "pane"
+                        radius: 16
+                        border.width: 1
+                        border.color: Qt.alpha(Colors.primary, 0.35)
+                        ColumnLayout {
+                            id: chapterCardText
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                            anchors.margins: 18
+                            spacing: 6
+                            StyledText {
+                                text: "NEW CHAPTER · " + (root.currentChapterIndex + 1) + " / " + root.chapters.length
+                                color: Colors.primary
+                                font.pixelSize: 11
+                                font.letterSpacing: 1.2
+                                Layout.fillWidth: true
+                            }
+                            StyledText {
+                                objectName: "typing-chapter-card-title"
+                                text: root.chapterTitle
+                                textFormat: Text.PlainText
+                                font.pixelSize: root.fullscreen ? 32 : 26
+                                font.weight: Font.DemiBold
+                                color: Colors.overSurface
+                                wrapMode: Text.Wrap
+                                maximumLineCount: 2
+                                elide: Text.ElideRight
+                                Layout.fillWidth: true
+                            }
+                        }
+                    }
                     Item {
                         id: passageArea
                         Layout.fillWidth: true

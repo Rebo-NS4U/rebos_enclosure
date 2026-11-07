@@ -165,6 +165,9 @@ a subtle current-character highlight. It glides between letters on the same
 line, snaps cleanly at line wraps, and gently breathes while idle. It follows the editing position, including
 arrow keys, and remains visible during passage animations. Chapter selectors,
 scrollbars and the position slider use the same semantic palette as the shell.
+A large title card marks the opening page of each chapter, including chapter
+jumps. It stays above the passage until that page is completed; reading windows
+stop at chapter boundaries so the next chapter begins on a fresh page.
 The chapter menu is scrollable, shows the current section, and provides previous
 and next controls. Selecting an entry jumps to that exact section and resumes
 typing. EPUB navigation follows NCX/EPUB3 file and anchor targets, including

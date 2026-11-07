@@ -303,11 +303,15 @@ class Library:
         if self.cached_id != key:
             self.cached_text = self.db.execute('SELECT text FROM book_content WHERE id=?', (key,)).fetchone()[0]
             self.cached_id = key
-        chunk = self.cached_text[data['position']:data['position'] + self.window]
+        chapters = json.loads(data['chapters'])
+        end = min([data['position'] + self.window] + [chapter['position'] for chapter in chapters
+                  if chapter['position'] > data['position']])
+        chunk = self.cached_text[data['position']:end]
         boundary = chunk.rfind(' ')
-        if data['position'] + self.window < data['length'] and boundary > 40: chunk = chunk[:boundary + 1]
+        if end == data['position'] + self.window and end < data['length'] and boundary > 40:
+            chunk = chunk[:boundary + 1]
         data['passage'] = chunk
-        if include_chapters: data['chapters'] = json.loads(data['chapters'])
+        if include_chapters: data['chapters'] = chapters
         else: data.pop('chapters')
         return data
 

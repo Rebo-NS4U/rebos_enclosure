@@ -70,6 +70,18 @@ class Books(unittest.TestCase):
         self.assertFalse(self.library.handle({'action': 'word_settings'})['enabled'])
         self.assertTrue(self.library.handle({'action': 'word_settings', 'enabled': True})['enabled'])
 
+    def test_reading_windows_stop_exactly_at_chapter_boundaries(self):
+        text, chapters = sections_document('Chapter One\nHello 😀 world.\nChapter Two\nNext passage.')
+        book = self.library.add('Chapter transitions', text, chapters)
+        boundary = chapters[1]['position']
+        self.assertEqual(book['passage'], text[:boundary])
+        self.library.save(book['id'], boundary - 3, '', 0)
+        self.assertEqual(self.library.page(book['id'])['passage'], text[boundary - 3:boundary])
+        self.library.save(book['id'], boundary, '', 0)
+        page = self.library.page(book['id'])
+        self.assertEqual(page['passage'], 'Chapter Two Next passage.')
+        self.assertEqual(page['position'], boundary)
+
     def test_previous_context_and_exact_durable_restore(self):
         text = '😀 first word. ' * 100
         book = self.library.add('Backward test', text, [])

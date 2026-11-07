@@ -373,12 +373,15 @@ ShellRoot {
                     phase = 110; return;
                 } else if (phase === 110) {
                     if (practice.chapterTitle !== "Chapter Two" || !practice.passage.startsWith("Chapter Two") || !practice.practicing) throw Error("Chapter selection did not jump back to typing");
+                    const chapterCard = find(practice, "typing-chapter-card");
+                    if (!chapterCard.visible || find(practice, "typing-chapter-card-title").text !== "Chapter Two" || chapterCard.height < 60) throw Error("Chapter jump did not show a prominent title card");
                     const slider = find(practice, "typing-book-position");
                     slider.value = Math.floor(practice.bookLength / 2);
                     slider.moved();
                     phase = 103; return;
                 } else if (phase === 103) {
                     if (practice.progress < 0.45 || practice.progress > 0.65) throw Error("Book position slider failed");
+                    if (find(practice, "typing-chapter-card").visible) throw Error("Chapter card stayed visible away from chapter start");
                     const place = practice.position;
                     find(practice, "typing-library").clicked();
                     if (practice.practicing) throw Error("Library button did not open library");
