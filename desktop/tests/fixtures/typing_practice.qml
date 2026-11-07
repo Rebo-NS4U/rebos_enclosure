@@ -223,17 +223,22 @@ ShellRoot {
                     if (Motion.enabled) {
                         practice.requestFeedback("letter", first);
                         practice.requestFeedback("line", first);
+                        const burst = find(practice, "typing-transition-burst");
+                        if (!burst.visible || burst.page || !find(practice, "typing-line-sweep").visible) throw Error("Line ribbon and spark burst missing");
                         practice.requestFeedback("letter", first);
                         if (practice.effectKind !== "line" || practice.activeEffects !== 1 || first.spark !== 0) throw Error("Letter feedback overlapped the line pop");
                         practice.requestFeedback("page");
                         if (practice.effectKind !== "page" || practice.activeEffects !== 1 || find(practice, "typing-line-ripple").strength !== 0) throw Error("Page feedback overlapped the line pop");
                         keyDriver.wait(20);
+                        if (!burst.visible || !burst.page || first.parent.arrival <= 0) throw Error("Page burst and staggered entrance missing");
                         const pageVisuals = find(practice, "typing-page-visuals");
                         if (pageVisuals.rotation !== 0 || pageVisuals.transform[0].yScale === pageVisuals.transform[0].xScale) throw Error("Page arrival did not use the squash-and-stretch effect");
                         practice.stopFeedback();
                         if (Math.abs(pageVisuals.transform[0].yScale - 1) > 0.001 || pageVisuals.opacity !== 1) throw Error("Page stretch did not reset cleanly");
+                        if (burst.visible || first.parent.arrival !== 0 || first.parent.wave !== 0) throw Error("Transition visuals did not reset");
                         if (practice.activeEffects !== 0 || practice.effectStrength !== 0) throw Error("Feedback did not stop cleanly");
                     }
+                    keyDriver.wait(0); // Flush caret updates after the word transforms settle.
                     const settled = find(practice, "typing-smooth-caret");
                     const settledLine = find(practice, "typing-line-highlight");
                     const activeGlyph = settled.targetGlyph;

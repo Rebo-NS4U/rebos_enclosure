@@ -156,7 +156,7 @@ Item {
         property: "effectStrength"
         from: 1
         to: 0
-        duration: effectKind === "page" ? Math.max(560, Motion.enter * 1.8) : Math.max(360, Motion.enter * 1.2)
+        duration: effectKind === "page" ? Math.max(900, Motion.enter * 2.8) : effectKind === "line" ? Math.max(650, Motion.enter * 2) : Math.max(360, Motion.enter * 1.2)
         easing.type: Easing.OutCubic
         onFinished: root.stopFeedback()
     }
@@ -839,6 +839,54 @@ Item {
                                 growth: 0.12
                                 strength: root.effectKind === "line" ? root.effectStrength : 0
                             }
+                            // A bounded, deterministic burst shares the feedback clock: no
+                            // particle timers survive a page change or reduced-motion toggle.
+                            Item {
+                                id: transitionBurst
+                                objectName: "typing-transition-burst"
+                                anchors.fill: parent
+                                z: 3
+                                readonly property bool page: root.effectKind === "page"
+                                readonly property real strength: root.effectKind === "line" || page ? root.effectStrength : 0
+                                readonly property real progress: 1 - Math.pow(strength, 1 / 3)
+                                visible: strength > 0
+                                Rectangle {
+                                    objectName: "typing-line-sweep"
+                                    visible: !transitionBurst.page
+                                    x: (parent.width + width) * transitionBurst.progress - width
+                                    y: smoothCaret.rowY
+                                    width: Math.max(60, parent.width * 0.22)
+                                    height: smoothCaret.rowHeight
+                                    radius: height / 2
+                                    opacity: Math.sin(transitionBurst.progress * Math.PI) * 0.5
+                                    gradient: Gradient {
+                                        orientation: Gradient.Horizontal
+                                        GradientStop { position: 0; color: "transparent" }
+                                        GradientStop { position: 0.65; color: Colors.primary }
+                                        GradientStop { position: 1; color: "transparent" }
+                                    }
+                                }
+                                Repeater {
+                                    model: transitionBurst.page ? 28 : 12
+                                    delegate: Rectangle {
+                                        required property int index
+                                        readonly property real phase: transitionBurst.progress
+                                        readonly property real angle: index * 2.39996
+                                        readonly property real travel: (45 + (index % 7) * 22) * phase
+                                        width: 3 + index % 4
+                                        height: index % 3 === 0 ? width * 2.5 : width
+                                        radius: index % 3 === 0 ? 1 : width / 2
+                                        color: index % 3 === 0 ? Colors.overSurface : Colors.primary
+                                        x: transitionBurst.page ? parent.width / 2 + Math.cos(angle) * travel * 1.8
+                                                               : parent.width * phase + Math.cos(angle) * travel * 0.3
+                                        y: (transitionBurst.page ? parent.height * 0.4 : smoothCaret.rowY + smoothCaret.rowHeight / 2)
+                                           + Math.sin(angle) * travel * (transitionBurst.page ? 1 : 0.45) + phase * phase * 40
+                                        rotation: index * 31 + phase * (index % 2 ? 220 : -220)
+                                        opacity: Math.sin(Math.min(1, phase * 3) * Math.PI / 2) * (1 - phase)
+                                        scale: 1 - phase * 0.6
+                                    }
+                                }
+                            }
                             Flow {
                                 id: passageFlow
                                 objectName: "typing-passage-flow"
@@ -857,8 +905,13 @@ Item {
                                         required property var modelData
                                         readonly property real linePop: root.effectKind === "line" && root.effectLine === modelData.line ? root.effectStrength : 0
                                         readonly property real centerOffset: Math.max(0, (passageFlow.width - (root.pageLayout.lineWidths[modelData.line] || 0)) / 2)
+                                        readonly property real arrival: root.effectKind === "page" ? Math.max(0, 1 - transitionBurst.progress / (0.48 + 0.45 * (modelData.line + 1) / Math.max(1, root.pageLayout.lines))) : 0
+                                        readonly property real wave: linePop > 0 ? Math.sin(Math.max(0, Math.min(1, transitionBurst.progress * 1.6 - x / Math.max(1, passageFlow.width) * 0.5)) * Math.PI * 2) * linePop : 0
                                         transform: [
-                                            Translate { x: word.centerOffset; y: -3 * word.linePop },
+                                            Translate {
+                                                x: word.centerOffset + root.pageDirection * word.arrival * 46
+                                                y: -10 * word.wave + word.arrival * 26
+                                            },
                                             Scale {
                                                 origin.x: passageFlow.width / 2 - word.x - word.centerOffset
                                                 origin.y: word.height / 2
@@ -866,6 +919,8 @@ Item {
                                                 yScale: 1 + word.linePop * 0.08
                                             }
                                         ]
+                                        onArrivalChanged: { if (smoothCaret.targetGlyph?.parent === word) Qt.callLater(root.refreshPageCaret); }
+                                        onWaveChanged: { if (smoothCaret.targetGlyph?.parent === word) Qt.callLater(root.refreshPageCaret); }
                                         onCenterOffsetChanged: { if (smoothCaret.targetGlyph?.parent === word) Qt.callLater(() => { if (smoothCaret.targetGlyph) smoothCaret.follow(smoothCaret.targetGlyph); }); }
                                         Repeater {
                                             model: root.characters(word.modelData.text)
