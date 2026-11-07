@@ -700,10 +700,6 @@ Item {
         id: nav
         implicitHeight: 40
         implicitWidth: 100
-        property string keyHint: ""
-        ToolTip.visible: hovered && keyHint.length > 0
-        ToolTip.text: keyHint
-        ToolTip.delay: 400
         background: StyledRect {
             variant: nav.hovered || nav.activeFocus ? "focus" : "pane"
             radius: 16
@@ -1381,8 +1377,6 @@ Item {
                     value: root.position
                     onMoved: jumpDelay.restart()
                     Timer { id: jumpDelay; interval: 250; onTriggered: root.seek(Math.round(bookPositionSlider.value)) }
-                    ToolTip.visible: hovered || pressed
-                    ToolTip.text: "Book position · " + (100 * value / Math.max(1, root.bookLength)).toFixed(1) + "%"
                 }
                 TextButton {
                     objectName: "typing-samples-toggle"
@@ -1862,10 +1856,10 @@ Item {
                     RowLayout {
                         visible: root.fullscreen
                         Layout.fillWidth: true
-                        ReaderNavButton { objectName: "reader-previous-page"; keyHint: "h · Left · Page Up · Shift+Space"; text: "‹ Previous"; enabled: !root.busy && root.position > 0; onClicked: root.readPreviousPage() }
+                        ReaderNavButton { objectName: "reader-previous-page"; text: "‹ Previous"; enabled: !root.busy && root.position > 0; onClicked: root.readPreviousPage() }
                         StyledText { text: Math.round(root.progress * 100) + "% read"; font.pixelSize: 12; opacity: 0.5; Layout.fillWidth: true; horizontalAlignment: Text.AlignHCenter }
                         TextButton { objectName: "reader-shortcut-help"; text: "?"; Accessible.name: "Keyboard shortcuts"; onClicked: root.readerHelp = !root.readerHelp }
-                        ReaderNavButton { objectName: "reader-next-page"; keyHint: "l · Right · Page Down · Space"; text: root.position + root.characters(root.passage).length >= root.bookLength ? "End of book" : "Next ›"; enabled: !root.busy && root.position + root.characters(root.passage).length < root.bookLength; onClicked: root.readNextPage() }
+                        ReaderNavButton { objectName: "reader-next-page"; text: root.position + root.characters(root.passage).length >= root.bookLength ? "End of book" : "Next ›"; enabled: !root.busy && root.position + root.characters(root.passage).length < root.bookLength; onClicked: root.readNextPage() }
                     }
                     RowLayout {
                         visible: !root.fullscreen || root.errorMessage.length > 0
