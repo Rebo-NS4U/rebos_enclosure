@@ -21,7 +21,7 @@ Item {
     readonly property int pageLineLimit: Math.max(1, Math.floor(Math.max(0, passageArea.height - 8) / Math.max(1, passageLineHeight)))
     readonly property int layoutLineLimit: fullscreen ? pageLineLimit : 1000000
     onPageLineLimitChanged: fitDelay.restart()
-    onReadingFontChanged: fitDelay.restart()
+    onReadingFontChanged: { widthCache = ({}); fitDelay.restart(); }
     property var readerPageHistory: []
     property real readerReveal: 1
     property int readerDirection: 1
@@ -316,7 +316,12 @@ Item {
     }
     readonly property real highlightPadding: 3
     readonly property real letterPadding: 1
-    function characterWidth(text) { return Math.max(1, Math.ceil(typingMetrics.advanceWidth(text))); }
+    property var widthCache: ({})
+    function characterWidth(text) {
+        if (widthCache[text] === undefined)
+            widthCache[text] = Math.max(1, Math.ceil(typingMetrics.advanceWidth(text)));
+        return widthCache[text];
+    }
     function fitPage() {
         stopFeedback();
         passageVisuals.contentY = 0;
@@ -1571,7 +1576,9 @@ Item {
                         Flickable {
                             id: passageVisuals
                             objectName: "typing-page-visuals"
-                            contentHeight: passageFlow.height + 8
+                            readonly property real centerPadding: Math.max(4, (height - root.passageLineHeight) / 2)
+                            contentHeight: passageFlow.height + 2 * centerPadding
+                            onHeightChanged: Qt.callLater(root.refreshPageCaret)
                             contentWidth: width
                             boundsBehavior: Flickable.StopAtBounds
                             flickableDirection: Flickable.VerticalFlick
@@ -1647,7 +1654,7 @@ Item {
                             Flow {
                                 id: passageFlow
                                 objectName: "typing-passage-flow"
-                                y: 4
+                                y: passageVisuals.centerPadding
                                 onYChanged: Qt.callLater(() => { if (smoothCaret.targetGlyph) smoothCaret.follow(smoothCaret.targetGlyph); })
                                 z: 1
                                 anchors.left: parent.left
@@ -1663,7 +1670,12 @@ Item {
                                         required property var modelData
                                         // Flow must wrap with the same widths used by pagination.
                                         // Row implicit widths can differ under native font hinting.
-                                        width: root.characters(modelData.text).reduce((total, letter) => total + root.characterWidth(letter), 0)
+                                        readonly property var letters: root.characters(modelData.text)
+                                        readonly property var offsets: {
+                                            let offset = modelData.start;
+                                            return letters.map(letter => { const start = offset; offset += letter.length; return start; });
+                                        }
+                                        width: letters.reduce((total, letter) => total + root.characterWidth(letter), 0)
                                         readonly property real linePop: root.effectKind === "line" && root.effectLine === modelData.line ? root.effectStrength : 0
                                         readonly property real centerOffset: Math.max(0, (passageFlow.width - (root.pageLayout.lineWidths[modelData.line] || 0)) / 2)
                                         readonly property real arrival: root.effectKind === "page" ? Math.max(0, 1 - transitionBurst.progress / (0.48 + 0.45 * (modelData.line + 1) / Math.max(1, root.pageLayout.lines))) : 0
@@ -1684,7 +1696,7 @@ Item {
                                         onWaveChanged: { if (smoothCaret.targetGlyph?.parent === word) Qt.callLater(root.refreshPageCaret); }
                                         onCenterOffsetChanged: { if (smoothCaret.targetGlyph?.parent === word) Qt.callLater(() => { if (smoothCaret.targetGlyph) smoothCaret.follow(smoothCaret.targetGlyph); }); }
                                         Repeater {
-                                            model: root.characters(word.modelData.text)
+                                            model: word.letters
                                             delegate: StyledText {
                                                 id: glyph
                                                 required property int index
@@ -1746,7 +1758,7 @@ Item {
                                                     if (root.glyphItems[characterIndex] === glyph) delete root.glyphItems[characterIndex];
                                                 }
                                                 onVisibleChanged: { if (!visible) stopFeedback(); else if (initialized && caretHere) Qt.callLater(() => smoothCaret.follow(glyph)); }
-                                                readonly property int characterIndex: word.modelData.start + root.characters(word.modelData.text).slice(0, index).join("").length
+                                                readonly property int characterIndex: word.offsets[index]
                                                 objectName: "typing-character-" + characterIndex
                                                 text: modelData === " " ? "\u00a0" : modelData
                                                 textFormat: Text.PlainText
@@ -1797,11 +1809,10 @@ Item {
                                     if (root.busy || root.restoring || !item || !item.caretHere || !item.visible) return;
                                     if (root.glyphItems[item.characterIndex] !== item || item.characterIndex !== root.renderedCaret) return;
                                     const point = item.parent.mapToItem(passageVisuals.contentItem, item.x, item.y);
-                                    const rowBottom = point.y + root.passageLineHeight + 4;
-                                    if (point.y < passageVisuals.contentY)
-                                        passageVisuals.contentY = Math.max(0, point.y - 4);
-                                    else if (rowBottom > passageVisuals.contentY + passageVisuals.height)
-                                        passageVisuals.contentY = Math.max(0, rowBottom - passageVisuals.height);
+                                    // Padding lets even the first and last rows stay centered.
+                                    passageVisuals.contentY = Math.max(0, Math.min(
+                                        passageVisuals.contentHeight - passageVisuals.height,
+                                        point.y + root.passageLineHeight / 2 - passageVisuals.height / 2));
                                     const nextY = point.y + item.baselineOffset + root.highlightBounds.y - root.highlightPadding;
                                     const newLine = placed && targetGlyph !== null && item.characterIndex > targetGlyph.characterIndex && nextY > targetRowY + 1;
                                     if (newLine && root.visible && answer.activeFocus && Motion.enabled) root.requestFeedback("line", item);

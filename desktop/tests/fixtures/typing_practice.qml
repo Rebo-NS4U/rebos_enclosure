@@ -232,7 +232,22 @@ ShellRoot {
                     const line = find(practice, "typing-line-highlight");
                     if (line.border.width !== 0 || line.children.length !== 0) throw Error("Line highlight must have uniform transparency without a side strip");
                     const textFlow = find(practice, "typing-passage-flow");
-                    if (textFlow.y !== 4 || textFlow.height > textFlow.parent.height - 4) throw Error("Passage leaves unused rows or clips vertically");
+                    const viewport = find(practice, "typing-page-visuals");
+                    if (Math.abs(textFlow.y - viewport.centerPadding) > 1) throw Error("Passage lacks centering padding");
+                    const assertCentered = () => {
+                        practice.refreshPageCaret();
+                        const active = find(practice, "typing-character-" + practice.visualCursor);
+                        const point = active.mapToItem(viewport.contentItem, 0, 0);
+                        if (Math.abs(point.y + practice.passageLineHeight / 2 - viewport.contentY - viewport.height / 2) > 1)
+                            throw Error("Active typing row is not centered");
+                    };
+                    assertCentered();
+                    input.text = practice.passage.slice(0, Math.floor(practice.passage.length / 2));
+                    assertCentered();
+                    input.text = practice.passage.slice(0, -1);
+                    assertCentered();
+                    input.text = "";
+                    practice.refreshPageCaret();
                     for (const word of textFlow.children) {
                         if (!word.modelData || word.modelData.line === undefined) continue;
                         if (Math.abs(word.y - word.modelData.line * practice.passageLineHeight) > 1)
