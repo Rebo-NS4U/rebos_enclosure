@@ -21,4 +21,5 @@ Requires sudo, Python with GTK4/PyGObject and Cairo, and an accessible desktop s
 Both dialogs read the shell palette and theme settings, following wallpaper colors,
 OLED backgrounds, font, roundness and the shared logical-pixel dither grid. Open
 dialogs refresh their appearance when the theme changes. The approval dialog starts
-with Cancel focused; Escape or window close cancels either dialog.
+with Allow this command focused, so Enter approves; Escape or window close cancels
+either dialog.

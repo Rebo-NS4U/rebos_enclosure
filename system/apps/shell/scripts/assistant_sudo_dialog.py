@@ -130,9 +130,10 @@ class Prompt:  # pylint: disable=too-many-instance-attributes
         self.current_theme = None
         self.refresh()
         GLib.timeout_add(500, self.refresh)
+        self.window.set_default_widget(allow)
         self.window.present()
-        # Approval deliberately defaults to Cancel; password Enter submits.
-        (self.entry if self.args.mode == "password" else cancel).grab_focus()
+        # Enter approves by default; Escape and window close still cancel.
+        (self.entry if self.args.mode == "password" else allow).grab_focus()
 
     def key_pressed(self, controller, key, code, state):
         if key == Gdk.KEY_Escape:
