@@ -152,6 +152,47 @@ class Books(unittest.TestCase):
         self.assertEqual([chapter['title'] for chapter in chapters], ['Opening chapter', 'Chapter 2'])
         self.assertEqual(text, 'Opening text. Closing text.')
 
+    def test_multiple_anchored_chapters_keep_text_and_bookmarks(self):
+        for epub3 in (False, True):
+            with self.subTest(epub3=epub3):
+                path = Path(self.temp.name) / 'anchors.epub'
+                targets = [('a.xhtml#first', 'Now'), ('a.xhtml#deux%20%C3%A9', 'Then'),
+                           ('b.xhtml#third', 'Now'), ('b.xhtml#missing', 'Broken')]
+                if epub3:
+                    nav = ('<html xmlns:epub="http://www.idpf.org/2007/ops"><nav epub:type="toc">'
+                           + ''.join(f'<a href="{href}">{label}</a>' for href, label in reversed(targets))
+                           + '</nav></html>')
+                    nav_item = '<item id="toc" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>'
+                    nav_path = 'OPS/nav.xhtml'
+                else:
+                    nav = ('<ncx><navMap>' + ''.join(
+                        f'<navPoint><navLabel><text>{label}</text></navLabel><content src="{href}"/></navPoint>'
+                        for href, label in reversed(targets)) + '</navMap></ncx>')
+                    nav_item = '<item id="toc" href="toc.ncx" media-type="application/x-dtbncx+xml"/>'
+                    nav_path = 'OPS/toc.ncx'
+                with zipfile.ZipFile(path, 'w') as book:
+                    book.writestr('META-INF/container.xml', '<container><rootfile full-path="OPS/book.opf"/></container>')
+                    book.writestr('OPS/book.opf', '<package xmlns="http://www.idpf.org/2007/opf"><manifest>'
+                                  '<item id="a" href="a.xhtml" media-type="application/xhtml+xml"/>'
+                                  '<item id="b" href="b.xhtml" media-type="application/xhtml+xml"/>'
+                                  + nav_item + '</manifest><spine><itemref idref="a"/><itemref idref="b"/></spine></package>')
+                    book.writestr(nav_path, nav)
+                    book.writestr('OPS/a.xhtml', '<head><title id="hidden">Hidden</title></head>'
+                                  '<p id="first">Now 😀 &amp; here.</p><a name="deux é"></a>'
+                                  '<p>Then and there.</p>')
+                    book.writestr('OPS/b.xhtml', '<p>Continuation of Then.</p><p id="third">Now again.</p>')
+                text, chapters = read_epub(path)
+                self.assertEqual(text, 'Now 😀 & here. Then and there. Continuation of Then. Now again.')
+                self.assertEqual([c['title'] for c in chapters], ['Now', 'Then', 'Now'])
+                self.assertEqual([text[c['position']:] for c in chapters],
+                                 [text, 'Then and there. Continuation of Then. Now again.', 'Now again.'])
+                old = self.library.add('Old metadata', text, [{'title': 'Old', 'position': 0}])
+                self.library.save(old['id'], 4, '😀', 2)
+                refreshed = self.library.add('New metadata', text, chapters)
+                self.assertEqual(refreshed['id'], old['id'])
+                self.assertEqual((refreshed['position'], refreshed['typed'], refreshed['loops']), (4, '😀', 2))
+                self.assertEqual(self.library.handle({'action': 'chapter', 'id': old['id'], 'index': 2})['passage'], 'Now again.')
+
     def test_last_opened_resume_and_completion_survive_restart(self):
         first = self.library.add('First', 'a' * 100, [{'title': 'Start', 'position': 0}])
         second = self.library.add('Second', 'b' * 200, [{'title': 'Start', 'position': 0}])

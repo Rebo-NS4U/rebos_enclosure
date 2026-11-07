@@ -89,6 +89,27 @@ class HeadingText(HTMLText):
         if tag == 'img' and not self.hidden:
             self.parts.append(dict(attrs).get('alt', ''))
 
+class AnchoredText(HTMLText):
+    """Record visible navigation targets without changing extracted text."""
+    def __init__(self):
+        super().__init__()
+        self.anchors = {}
+
+    def handle_starttag(self, tag, attrs):
+        super().handle_starttag(tag, attrs)
+        if not self.hidden:
+            attrs = dict(attrs)
+            anchor = attrs.get('id') or (attrs.get('name') if tag == 'a' else None)
+            if anchor:
+                self.anchors.setdefault(anchor, len(self.parts))
+
+    def offsets(self):
+        offsets = [0]
+        for part in self.parts:
+            offsets.append(offsets[-1] + len(part))
+        return {anchor: offsets[index] for anchor, index in self.anchors.items()}
+
+
 class EpubIndex(NamedTuple):
     package: str
     manifest: dict
@@ -96,7 +117,9 @@ class EpubIndex(NamedTuple):
 
 
 def resolve_epub_href(base, href):
-    return posixpath.normpath(posixpath.join(posixpath.dirname(base), unquote(href.split('#')[0])))
+    path, _, fragment = href.partition('#')
+    member = posixpath.normpath(posixpath.join(posixpath.dirname(base), unquote(path)))
+    return member + ('#' + unquote(fragment) if fragment else '')
 
 
 def ncx_labels(navigation, location):
@@ -143,7 +166,7 @@ def epub_labels(read, package, manifest):
 
 
 def epub_sections(opf, index, read):
-    sections = []
+    sections, chapter_groups = [], []
     size = 0
     for item in opf.iter():
         if not item.tag.endswith('}itemref') or item.get('linear') == 'no': continue
@@ -151,16 +174,44 @@ def epub_sections(opf, index, read):
         if entry.get('media-type') not in ('application/xhtml+xml', 'text/html'): continue
         member = resolve_epub_href(index.package, entry['href'])
         raw = read(member).decode('utf-8-sig')
-        parser = HTMLText(); parser.feed(raw)
+        parser = AnchoredText(); parser.feed(raw); parser.close()
         text = ''.join(parser.parts)
         size += len(text)
         if size > LIMIT: raise ValueError('Book exceeds 20 million characters.')
         heading = re.search(r'<h[1-3]\b[^>]*>(.*?)</h[1-3]>', raw, re.S | re.I)
         heading_text = HeadingText()
         if heading: heading_text.feed(heading.group(1))
-        label = index.labels.get(member) or normalize(''.join(heading_text.parts)) or f'Section {len(sections) + 1}'
+        targets = [(target.partition('#')[2], label) for target, label in index.labels.items()
+                   if target.partition('#')[0] == member]
+        label = (index.labels.get(member) or next((label for _, label in targets), '')
+                 or normalize(''.join(heading_text.parts)) or f'Section {len(sections) + 1}')
+        normalized = normalize(text)
+        if not normalized:
+            continue
+        offsets = parser.offsets()
+        local = {}
+        for anchor, title in targets:
+            if not anchor:
+                position = 0
+            elif anchor in offsets:
+                # Normalize prefixes with the same rules as the complete text.
+                # Keep the complete text intact so existing book IDs and bookmarks survive.
+                position = len(normalize(text[:offsets[anchor]]))
+                if normalized[position:position + 1] == ' ':
+                    position += 1
+            else:
+                continue  # Broken anchors must not create bogus chapter jumps.
+            if position < len(normalized):
+                local.setdefault(position, title)
+        if not local:
+            local[0] = label
         sections.append((label, text))
-    return sections
+        chapter_groups.append(sorted(local.items()))
+    text, file_chapters = join_sections(sections)
+    chapters = [{'title': title[:160], 'position': base['position'] + position}
+                for base, group in zip(file_chapters, chapter_groups)
+                for position, title in group]
+    return text, chapters
 
 
 def read_epub_details(path):
@@ -175,8 +226,7 @@ def read_epub_details(path):
         title = next((normalize(e.text or '') for e in opf.iter() if e.tag.endswith('}title') and e.text), Path(path).stem)
         manifest = {e.attrib['id']: e.attrib for e in opf.iter() if e.tag.endswith('}item')}
         labels = epub_labels(read, package, manifest)
-        sections = epub_sections(opf, EpubIndex(package, manifest, labels), read)
-    text, chapters = join_sections(sections)
+        text, chapters = epub_sections(opf, EpubIndex(package, manifest, labels), read)
     return text, chapters, title
 
 def read_epub(path):

@@ -154,7 +154,8 @@ arrow keys, and remains visible during passage animations. Chapter selectors,
 scrollbars and the position slider use the same semantic palette as the shell.
 The chapter menu is scrollable, shows the current section, and provides previous
 and next controls. Selecting an entry jumps to that exact section and resumes
-typing. EPUB navigation labels come from NCX/EPUB3 tables of contents, with image
+typing. EPUB navigation follows NCX/EPUB3 file and anchor targets, including
+multiple chapters within one file and chapters spanning file boundaries, with image
 heading alternatives as a fallback. Re-importing identical book text refreshes
 its title and chapter labels without resetting saved progress.
 
