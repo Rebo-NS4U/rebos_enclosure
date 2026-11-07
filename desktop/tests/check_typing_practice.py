@@ -2,6 +2,7 @@
 """Run the typing rendering and loop checks in an isolated Wayland panel."""
 from pathlib import Path
 import os
+import sys
 import shutil
 import subprocess
 import tempfile
@@ -18,7 +19,7 @@ def main():
                 shutil.copytree(source / name, target / name)
             else:
                 shutil.copyfile(source / name, target / name)
-        shutil.copyfile(ROOT / "desktop/tests/fixtures/typing_practice.qml", target / "shell.qml")
+        shutil.copyfile(ROOT / "desktop/tests/fixtures" / (sys.argv[1] if len(sys.argv) > 1 else "typing_practice.qml"), target / "shell.qml")
         book = target / 'picker test book.epub'
         with zipfile.ZipFile(book, 'w') as archive:
             archive.writestr('META-INF/container.xml', '<container><rootfile full-path="book.opf"/></container>')

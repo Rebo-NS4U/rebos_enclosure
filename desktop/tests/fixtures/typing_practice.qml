@@ -118,7 +118,7 @@ ShellRoot {
                     find(practice, "typing-sample-select").activated(0); phase++; return;
                 }
                 if (practice.busy || !practice.passage.length) return;
-                if (practice.practicing && (practice.pageLayout.lines > practice.pageLineLimit || practice.implicitHeight !== 116 + 4 * practice.passageLineHeight)) throw Error("Practice is not compact");
+                if (practice.practicing && (practice.passage !== practice.pageSource || practice.implicitHeight !== 116 + 6 * practice.passageLineHeight)) throw Error("Practice is not compact");
                 const input = find(practice, "typing-input");
                 let first = find(practice, "typing-character-0");
                 if (!input || !first) throw Error("Typing input or glyph missing");
@@ -134,10 +134,11 @@ ShellRoot {
                     if (find(practice, "typing-smooth-caret").opacity !== 1) throw Error("Active caret must regain emphasis");
                     const originalSource = practice.pageSource;
                     practice.pageSource = "word ".repeat(800); practice.fitPage();
-                    if (practice.pageLineLimit !== Math.max(1, Math.floor(Math.max(0, find(practice, "typing-passage-flow").parent.height - 8) / practice.passageLineHeight)) || practice.pageLayout.lines !== practice.pageLineLimit) throw Error("Practice must fill the available height with complete lines");
                     const filledFlow = find(practice, "typing-passage-flow");
                     filledFlow.forceLayout();
-                    if (filledFlow.parent.height - filledFlow.height >= practice.passageLineHeight + 8) throw Error("Long passage leaves an empty row");
+                    if (practice.passage !== practice.pageSource || practice.pageLayout.lines <= 6) throw Error("Full section must remain available beyond six lines");
+                    const scroll = find(practice, "typing-page-visuals");
+                    if (scroll.height > 6 * practice.passageLineHeight + 8 || scroll.contentHeight <= scroll.height) throw Error("Section must scroll within six lines");
                     const screenshotText = "comfortable? I have a better view of things now. This is no ordinary hospital room. More words follow here.";
                     practice.pageSource = screenshotText; practice.fitPage();
                     find(practice, "typing-passage-flow").forceLayout();
@@ -433,14 +434,14 @@ ShellRoot {
                     const restored = freshView.item;
                     if (restored.busy) return;
                     const field = find(restored, "typing-input");
-                    if (restored.pageLayout.lines > restored.pageLineLimit || restored.position + restored.characters(field.text).length !== 85 || restored.liveWpm !== 0) throw Error("Legacy page carryover lost saved input or counted it as WPM");
+                    if (restored.passage !== restored.pageSource || restored.position + restored.characters(field.text).length !== 85 || restored.liveWpm !== 0) throw Error("Legacy page carryover lost saved input or counted it as WPM");
                     expectedPosition = restored.position + restored.characters(restored.passage).length;
                     field.text = "z".repeat(restored.characters(restored.passage).length);
                     if (!restored.turningPage) throw Error("Typos blocked continuous page advance");
                 } else if (phase === 112) {
                     const restored = freshView.item;
                     if (restored.busy) return;
-                    if (restored.position !== expectedPosition || restored.pageLayout.lines > restored.pageLineLimit) throw Error("Continuous available-height advance failed");
+                    if (restored.position !== expectedPosition || restored.passage !== restored.pageSource) throw Error("Continuous available-height advance failed");
                     restored.send({action: "word_settings", enabled: false}, false);
                 } else if (phase === 113) {
                     const restored = freshView.item;

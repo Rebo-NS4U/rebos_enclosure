@@ -19,6 +19,7 @@ Item {
     property bool fullscreen: false
     readonly property real passageLineHeight: Math.ceil(typingMetrics.height * 1.45)
     readonly property int pageLineLimit: Math.max(1, Math.floor(Math.max(0, passageArea.height - 8) / Math.max(1, passageLineHeight)))
+    readonly property int layoutLineLimit: fullscreen ? pageLineLimit : 1000000
     onPageLineLimitChanged: fitDelay.restart()
     onReadingFontChanged: fitDelay.restart()
     property var readerPageHistory: []
@@ -318,7 +319,8 @@ Item {
     function characterWidth(text) { return Math.max(1, Math.ceil(typingMetrics.advanceWidth(text))); }
     function fitPage() {
         stopFeedback();
-        pageLayout = TypingPaging.layout(pageSource, Math.max(1, passageFlow.width), characterWidth, pageLineLimit);
+        passageVisuals.contentY = 0;
+        pageLayout = TypingPaging.layout(pageSource, Math.max(1, passageFlow.width), characterWidth, layoutLineLimit);
         Qt.callLater(refreshPageCaret);
     }
     function refreshPageCaret() {
@@ -412,7 +414,7 @@ Item {
     function undoQueuedKey() {
         if (turningPage) pendingKeys = characters(pendingKeys).slice(0, -1).join("");
     }
-    implicitHeight: practicing ? 116 + 4 * passageLineHeight : 600
+    implicitHeight: practicing ? 116 + 6 * passageLineHeight : 600
     onPracticingChanged: { resetSpeed(); syncCaret(); }
     onVisibleChanged: {
         if (visible) { backendStarted = true; if (ready) send({action: "list"}, false); }
@@ -600,7 +602,7 @@ Item {
                 let offset = 0, last = 0, text = "";
                 while (offset < data.previousText.length) {
                     last = offset;
-                    text = TypingPaging.layout(data.previousText.slice(offset), Math.max(1, passageFlow.width), characterWidth, pageLineLimit).text;
+                    text = TypingPaging.layout(data.previousText.slice(offset), Math.max(1, passageFlow.width), characterWidth, layoutLineLimit).text;
                     if (!text.length) break;
                     offset += text.length;
                 }
@@ -618,7 +620,7 @@ Item {
                 data.action = restoreAction;
                 data.chapters = restoreChapters;
             }
-            const fitted = TypingPaging.layout(data.passage, Math.max(1, passageFlow.width), characterWidth, pageLineLimit);
+            const fitted = TypingPaging.layout(data.passage, Math.max(1, passageFlow.width), characterWidth, layoutLineLimit);
             const prepared = TypingPaging.prepareInput(data.typed, fitted.text);
             data.typed = prepared.text;
             const entered = characters(data.typed);
@@ -1559,17 +1561,23 @@ Item {
                         id: passageArea
                         Layout.fillWidth: true
                         Layout.fillHeight: true
+                        Layout.maximumHeight: root.fullscreen ? Infinity : 6 * root.passageLineHeight + 8
                         clip: true
                         onWidthChanged: {
                             if (root.pageSource.length) fitDelay.restart();
                             Qt.callLater(() => { if (smoothCaret.targetGlyph) smoothCaret.follow(smoothCaret.targetGlyph); });
                         }
-                        Item {
+                        Flickable {
                             id: passageVisuals
+                            objectName: "typing-page-visuals"
+                            contentHeight: passageFlow.height + 8
+                            contentWidth: width
+                            boundsBehavior: Flickable.StopAtBounds
+                            flickableDirection: Flickable.VerticalFlick
+                            ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
                             visible: !root.fullscreen
                             anchors.fill: parent
                             readonly property real pagePop: root.effectKind === "page" ? root.effectStrength : 0
-                            objectName: "typing-page-visuals"
                             opacity: 1 - pagePop * 0.10
                             transform: Scale {
                                 origin.x: passageVisuals.width / 2
@@ -1787,7 +1795,12 @@ Item {
                                 function follow(item) {
                                     if (root.busy || root.restoring || !item || !item.caretHere || !item.visible) return;
                                     if (root.glyphItems[item.characterIndex] !== item || item.characterIndex !== root.renderedCaret) return;
-                                    const point = item.parent.mapToItem(passageVisuals, item.x, item.y);
+                                    const point = item.parent.mapToItem(passageVisuals.contentItem, item.x, item.y);
+                                    const rowBottom = point.y + root.passageLineHeight + 4;
+                                    if (point.y < passageVisuals.contentY)
+                                        passageVisuals.contentY = Math.max(0, point.y - 4);
+                                    else if (rowBottom > passageVisuals.contentY + passageVisuals.height)
+                                        passageVisuals.contentY = Math.max(0, rowBottom - passageVisuals.height);
                                     const nextY = point.y + item.baselineOffset + root.highlightBounds.y - root.highlightPadding;
                                     const newLine = placed && targetGlyph !== null && item.characterIndex > targetGlyph.characterIndex && nextY > targetRowY + 1;
                                     if (newLine && root.visible && answer.activeFocus && Motion.enabled) root.requestFeedback("line", item);
@@ -1885,6 +1898,13 @@ Item {
                             textFormat: TextEdit.PlainText
                             Accessible.name: "Type the passage shown above"
                             selectByMouse: false
+                            WheelHandler {
+                                onWheel: event => {
+                                    passageVisuals.contentY = Math.max(0, Math.min(passageVisuals.contentHeight - passageVisuals.height,
+                                        passageVisuals.contentY - event.angleDelta.y / 120 * root.passageLineHeight * 3));
+                                    event.accepted = true;
+                                }
+                            }
                             font: root.readingFont
                             TapHandler { onTapped: { root.focusPassage(); answer.cursorPosition = answer.length; } }
                             TapHandler {
