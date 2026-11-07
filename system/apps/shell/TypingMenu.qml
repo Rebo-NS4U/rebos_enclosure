@@ -97,6 +97,8 @@ Item {
     property var notedTerms: []
     property bool noteLoaded: false
     property bool noteSaving: false
+    property bool editingWordNote: false
+    property bool wordOptionsExpanded: false
     property int wordRequest: 0
     property bool definitionsEnabled: false
     property var definitionRequest: null
@@ -133,6 +135,7 @@ Item {
         wordBookId = bookId; noteLoaded = false; noteSaving = false;
         savedWordNote = ""; wordNote.text = ""; wordMessage = "";
         termInput.text = selectedTerm; definitionText = "";
+        editingWordNote = false; wordOptionsExpanded = !selectedTerm;
         wordPanel.open();
         wordRequest = requestId + 1;
         if (selectedTerm) {
@@ -421,7 +424,8 @@ Item {
                 if (data.action === "words") { notedTerms = data.terms || []; return; }
                 selectedTerm = data.term; savedWordNote = data.note; wordNote.text = data.note;
                 notedTerms = data.terms || []; noteLoaded = true;
-                wordMessage = data.action === "note" ? "Note saved on this device." : "";
+                wordMessage = "";
+                if (data.action === "note") editingWordNote = false;
                 if (data.action === "word") lookupDefinition();
                 return;
             }
@@ -743,13 +747,13 @@ Item {
         anchor.rect.width: 0
         anchor.rect.height: 0
         implicitWidth: Math.min(root.width - 16, 420)
-        implicitHeight: Math.min(420, Math.max(260, root.height - 16))
+        implicitHeight: Math.min(420, Math.max(120, wordContent.implicitHeight + 32))
         color: "transparent"
         visible: false
         readonly property bool opened: visible
         readonly property real availableWidth: width - 32
         property alias surface: wordPanelSurface
-        function open() { visible = true; Qt.callLater(() => termInput.forceActiveFocus()); }
+        function open() { visible = true; Qt.callLater(() => { if (root.wordOptionsExpanded) termInput.forceActiveFocus(); else contentItem.forceActiveFocus(); }); }
         function close() { visible = false; }
         onVisibleChanged: {
             if (!visible) { root.cancelDefinition(); if (root.practicing) answer.forceActiveFocus(); }
@@ -774,12 +778,18 @@ Item {
             clip: true
             contentWidth: availableWidth
             ColumnLayout {
+                id: wordContent
                 width: wordPanel.availableWidth - 12
                 spacing: 8
                 Keys.onEscapePressed: event => { root.handleEscape(); event.accepted = true; }
-                StyledText { text: root.selectedTerm || "Words & notes"; textFormat: Text.PlainText; font: root.readingFont; Layout.fillWidth: true; elide: Text.ElideRight }
-                StyledText { text: "Ctrl+Space · definitions & notes for this word"; wrapMode: Text.Wrap; Layout.fillWidth: true; font.pixelSize: 12 }
                 RowLayout {
+                    Layout.fillWidth: true
+                    StyledText { text: root.selectedTerm || "Words & notes"; textFormat: Text.PlainText; font: root.readingFont; Layout.fillWidth: true; elide: Text.ElideRight }
+                    TextButton { text: "Close"; enabled: !root.noteDirty && !root.noteSaving; onClicked: wordPanel.close() }
+                }
+                RowLayout {
+                    objectName: "typing-word-search"
+                    visible: root.wordOptionsExpanded
                     Layout.fillWidth: true
                     TextField {
                         id: termInput
@@ -803,7 +813,7 @@ Item {
                     textRole: ""
                     objectName: "typing-saved-words"
                     Layout.fillWidth: true
-                    visible: root.notedTerms.length > 0
+                    visible: root.wordOptionsExpanded && root.notedTerms.length > 0
                     model: root.notedTerms
                     displayText: "Saved notes in this book"
                     enabled: !root.noteDirty && !root.noteSaving
@@ -811,6 +821,7 @@ Item {
                 }
                 TextButton {
                     objectName: "typing-definitions-toggle"
+                    visible: root.wordOptionsExpanded
                     text: "Online definitions: " + (root.definitionsEnabled ? "On" : "Off")
                     onClicked: {
                         root.definitionsEnabled = !root.definitionsEnabled;
@@ -820,18 +831,35 @@ Item {
                 }
                 ScrollView {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: Math.min(130, root.height / 4)
+                    Layout.preferredHeight: Math.min(160, definitionLabel.implicitHeight)
                     visible: root.definitionsEnabled && root.selectedTerm.length > 0
                     clip: true
-                    StyledText { width: wordPanel.availableWidth - 12; text: root.definitionText; textFormat: Text.PlainText; wrapMode: Text.Wrap; font.pixelSize: 12 }
+                    StyledText { id: definitionLabel; width: wordPanel.availableWidth - 12; text: root.definitionText; textFormat: Text.PlainText; wrapMode: Text.Wrap; font.pixelSize: 12 }
                 }
                 RowLayout {
-                    visible: root.definitionsEnabled
+                    visible: root.wordOptionsExpanded && root.definitionsEnabled
                     StyledText { text: "English definitions · Free Dictionary API"; font.pixelSize: 11; opacity: 0.65 }
                     TextButton { text: "Retry"; enabled: root.selectedTerm.length > 0; onClicked: root.lookupDefinition() }
                 }
-                StyledText { text: "Your note · saved locally for this book"; font.pixelSize: 12 }
+                StyledText {
+                    objectName: "typing-word-note-preview"
+                    visible: !root.editingWordNote && root.savedWordNote.length > 0
+                    text: root.savedWordNote
+                    textFormat: Text.PlainText
+                    wrapMode: Text.Wrap
+                    Layout.fillWidth: true
+                    color: Colors.overSurface
+                    font.pixelSize: 12
+                }
+                TextButton {
+                    objectName: "typing-edit-word-note"
+                    visible: !root.editingWordNote && root.selectedTerm.length > 0
+                    enabled: root.noteLoaded
+                    text: root.savedWordNote.length ? "Edit note" : "Add note"
+                    onClicked: { root.editingWordNote = true; wordNote.forceActiveFocus(); }
+                }
                 ScrollView {
+                    visible: root.editingWordNote
                     Layout.fillWidth: true
                     Layout.preferredHeight: 110
                     Layout.minimumHeight: 55
@@ -852,12 +880,18 @@ Item {
                         Accessible.name: "Note for selected word or name"
                     }
                 }
-                StyledText { text: wordNote.length > 10000 ? "Notes can contain up to 10,000 characters." : root.wordMessage || (root.noteDirty ? "Unsaved changes" : "Clear a note and save to remove it."); textFormat: Text.PlainText; wrapMode: Text.Wrap; Layout.fillWidth: true; font.pixelSize: 11 }
+                StyledText { visible: text.length > 0; text: wordNote.length > 10000 ? "Notes can contain up to 10,000 characters." : root.wordMessage || (root.noteDirty ? "Unsaved changes" : ""); textFormat: Text.PlainText; wrapMode: Text.Wrap; Layout.fillWidth: true; font.pixelSize: 11 }
                 RowLayout {
+                    visible: root.editingWordNote
                     TextButton { objectName: "typing-save-word-note"; text: "Save note"; enabled: root.noteLoaded && root.noteDirty && !root.noteSaving && wordNote.length <= 10000; onClicked: root.saveWordNote() }
                     TextButton { text: "Discard"; visible: root.noteDirty; enabled: !root.noteSaving; onClicked: { wordNote.text = root.savedWordNote; wordPanel.close(); } }
                     Item { Layout.fillWidth: true }
-                    TextButton { text: "Close"; enabled: !root.noteDirty && !root.noteSaving; onClicked: wordPanel.close() }
+                    TextButton { text: "Done"; enabled: !root.noteDirty && !root.noteSaving; onClicked: root.editingWordNote = false }
+                }
+                TextButton {
+                    objectName: "typing-word-options"
+                    text: root.wordOptionsExpanded ? "Less" : "More"
+                    onClicked: root.wordOptionsExpanded = !root.wordOptionsExpanded
                 }
             }
         }

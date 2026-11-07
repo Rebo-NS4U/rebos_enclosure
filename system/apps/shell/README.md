@@ -157,6 +157,10 @@ required). **Online definitions: On/Off** is saved across reader sessions; turni
 it off cancels lookup and keeps notes available offline. Only the selected term
 is sent to the dictionary service.
 
+The word popup shows the selected word, its definition and any saved note.
+**Add note** or **Edit note** opens the editor; **More** reveals search, saved
+words and the online dictionary switch.
+
 Notes are stored locally per book and case-insensitive word/name. Choose **Save
 note** to keep a reminder, select a saved term to reopen it, or clear its note and
 save to remove it. Unsaved edits must be saved or discarded before changing terms

@@ -456,6 +456,9 @@ ShellRoot {
                     const restored = freshView.item;
                     if (!restored.noteLoaded) return;
                     if (restored.selectedTerm !== "macy" || restored.definitionRequest !== null) throw Error("Word selection or disabled dictionary failed");
+                    if (find(restored, "typing-word-search").visible || find(restored, "typing-word-note").visible || find(restored, "typing-definitions-toggle").visible) throw Error("Word panel did not hide secondary controls");
+                    find(restored, "typing-edit-word-note").clicked();
+                    if (!find(restored, "typing-word-note").visible) throw Error("Add note did not open the editor");
                     find(restored, "typing-word-note").text = "Character reminder";
                     find(restored, "typing-save-word-note").clicked();
                 } else if (phase === 115) {
@@ -468,6 +471,9 @@ ShellRoot {
                     const restored = freshView.item;
                     if (!restored.noteLoaded) return;
                     if (find(restored, "typing-word-note").text !== "Character reminder" || restored.notedTerms[0] !== "macy" || find(restored, "typing-saved-words").textAt(0) !== "macy") throw Error("Word note did not reopen");
+                    if (!find(restored, "typing-word-note-preview").visible || find(restored, "typing-word-note-preview").text !== "Character reminder") throw Error("Saved note is missing from compact view");
+                    find(restored, "typing-word-options").clicked();
+                    if (!find(restored, "typing-word-search").visible || !find(restored, "typing-definitions-toggle").visible) throw Error("More did not reveal word options");
                     find(restored, "typing-word-panel").close();
                     const field = find(restored, "typing-input");
                     const glyph = find(restored, "typing-character-0");
