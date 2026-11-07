@@ -620,6 +620,24 @@ ShellRoot {
                     if (restored.currentChapterIndex !== harness.readerChapter) throw Error("k did not return to the previous chapter");
                     restored.handleEscape();
                     if (restored.fullscreen || !find(restored, "typing-input").visible) throw Error("Escape did not restore typing mode");
+                    restored.showLibrary();
+                    const oldId = restored.bookId;
+                    keyDriver.wait(40);
+                    const cards = find(restored, "typing-book-cards");
+                    const card = cards.itemAtIndex(0);
+                    const remove = find(card, "typing-delete-book");
+                    keyDriver.mouseClick(remove, remove.width / 2, remove.height / 2, Qt.LeftButton);
+                    keyDriver.wait(40);
+                    if (restored.practicing) throw Error("Remove button also opened the book");
+                    if (!restored.pendingDeleteId || !find(restored, "typing-delete-confirmation").visible) throw Error("Remove did not ask for confirmation");
+                    find(restored, "typing-cancel-delete").clicked();
+                    if (restored.pendingDeleteId || restored.libraryBooks.length !== 2) throw Error("Cancel changed the library");
+                    restored.requestBookDeletion(oldId, restored.bookTitle);
+                    find(restored, "typing-confirm-delete").clicked();
+                } else if (phase === 129) {
+                    const restored = freshView.item;
+                    if (restored.busy) return;
+                    if (restored.bookId || restored.libraryBooks.length !== 1 || restored.pendingDeleteId || restored.noteEntries.length || restored.practicing) throw Error("Removing current book did not clear stale reader state");
                     console.log("PASS: categorized book notebook, templates, word selection, saved notes, dictionary toggle, available-height passage fitting, lossless paging, Backspace navigation, queued input, legacy bookmark carryover, no-fail advance, resume, WPM and EPUB import");
                     Qt.quit();
                 }

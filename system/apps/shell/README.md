@@ -147,7 +147,9 @@ included in the Books filter. Niri focuses this import dialog automatically.
 
 Press **Mod+T** to open book typing practice directly from the desktop. The top
 bar keeps the book title and **Notes** visible; **⋯** groups Reading mode (F11),
-Book library and Import book actions.
+Book library and Import book actions. Each library card has **Remove**, followed
+by confirmation. Removal clears only that book's local text, progress and notes;
+the original imported file stays on disk.
 
 F11 opens a fullscreen **reading mode** with plain, selectable book text and
 no typing input, accuracy effects, caret or WPM. The fullscreen page uses a

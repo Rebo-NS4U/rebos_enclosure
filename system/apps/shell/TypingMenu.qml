@@ -504,6 +504,21 @@ Item {
         dirty = false;
         send({action: "save", id: bookId, position: position, typed: answer.text, loops: rounds}, false);
     }
+    property string pendingDeleteId: ""
+    property string pendingDeleteTitle: ""
+    property string deleteMessage: ""
+    property int deleteRequest: 0
+    function requestBookDeletion(id, title) {
+        if (busy) return;
+        pendingDeleteId = id; pendingDeleteTitle = title; deleteMessage = "";
+    }
+    function confirmBookDeletion() {
+        if (!pendingDeleteId || busy) return;
+        if (pendingDeleteId === bookId) { saveProgress(); saveDelay.stop(); dirty = false; }
+        busy = true; deleteMessage = "";
+        deleteRequest = requestId + 1;
+        send({action: "delete", id: pendingDeleteId, confirmed: true}, false);
+    }
     function openBook(id) {
         if (busy) return;
         saveProgress(); draft = false; resumeOnOpen = true;
@@ -534,6 +549,26 @@ Item {
     function receive(line) {
         try {
             const data = JSON.parse(line);
+            if (data.action === "delete") {
+                if (data.request !== deleteRequest) return;
+                busy = false;
+                if (data.error) { deleteMessage = data.error; return; }
+                library = data.books || []; pendingDeleteId = ""; pendingDeleteTitle = "";
+                if (bookId === data.deleted) {
+                    saveDelay.stop(); dirty = false; restoring = true;
+                    wordPanel.close(); bookId = ""; bookTitle = ""; bookLength = 0;
+                    position = 0; rounds = 0; chapters = []; pageSource = "";
+                    pageLayout = {text: "", words: [], lines: 0, lineWidths: []};
+                    answer.text = ""; pageHistory = []; readerPageHistory = [];
+                    selectedTerm = ""; wordBookId = ""; savedWordNote = ""; wordNote.text = "";
+                    noteCategory = "General"; savedNoteCategory = "General"; notedTerms = []; noteEntries = [];
+                    noteLoaded = false; editingWordNote = false; notebookMode = false;
+                    practicing = false; fullscreen = false; draft = false; restoring = false;
+                    resetPageCaret(); resetSpeed();
+                }
+                message = "Book removed from your library.";
+                return;
+            }
             if (["words", "word", "note", "word_settings"].indexOf(data.action) >= 0) {
                 if (data.action === "word_settings") {
                     if (!data.error) { definitionsEnabled = data.enabled; lookupDefinition(); }
@@ -1215,6 +1250,32 @@ Item {
                     TextButton { text: "Paste text"; enabled: !root.busy; onClicked: { root.saveProgress(); root.draft = true; root.draftTitle = "Pasted text"; root.draftKind = "book"; paste.text = ""; paste.forceActiveFocus(); } }
                     TextButton { text: root.bookId && !root.draft ? "Resume" : "Start practice"; enabled: !root.busy && (root.draft ? paste.text.trim().length > 0 : root.bookId.length > 0); onClicked: root.start() }
                 }
+                StyledRect {
+                    objectName: "typing-delete-confirmation"
+                    visible: !root.practicing && root.pendingDeleteId.length > 0
+                    Layout.fillWidth: true
+                    implicitHeight: deleteContent.implicitHeight + 24
+                    variant: "pane"
+                    radius: 12
+                    border.width: 1
+                    border.color: Qt.alpha(Colors.error, 0.5)
+                    ColumnLayout {
+                        id: deleteContent
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.top: parent.top
+                        anchors.margins: 12
+                        spacing: 8
+                        StyledText { text: 'Remove “' + root.pendingDeleteTitle + '”?'; textFormat: Text.PlainText; wrapMode: Text.Wrap; Layout.fillWidth: true }
+                        StyledText { text: "This removes its saved progress and notes. The original file stays on disk."; font.pixelSize: 12; wrapMode: Text.Wrap; Layout.fillWidth: true }
+                        StyledText { visible: root.deleteMessage.length > 0; text: root.deleteMessage; textFormat: Text.PlainText; color: Colors.error; wrapMode: Text.Wrap; Layout.fillWidth: true }
+                        RowLayout {
+                            Item { Layout.fillWidth: true }
+                            TextButton { objectName: "typing-cancel-delete"; text: "Cancel"; enabled: !root.busy; onClicked: { root.pendingDeleteId = ""; root.deleteMessage = ""; } }
+                            TextButton { objectName: "typing-confirm-delete"; text: root.busy ? "Removing…" : "Remove book"; enabled: !root.busy; onClicked: root.confirmBookDeletion() }
+                        }
+                    }
+                }
                 ListView {
                     id: bookCards
                     objectName: "typing-book-cards"
@@ -1248,6 +1309,7 @@ Item {
                                 Layout.fillWidth: true
                                 StyledText { text: bookCard.modelData.title; textFormat: Text.PlainText; Layout.fillWidth: true; Layout.minimumWidth: 0; elide: Text.ElideRight; color: Colors.overSurface }
                                 StyledText { objectName: "typing-card-progress"; text: (bookCard.modelData.completion * 100).toFixed(1) + "%"; color: Colors.primary }
+                                TextButton { objectName: "typing-delete-book"; text: "Remove"; enabled: !root.busy; Accessible.name: "Remove " + bookCard.modelData.title; onClicked: root.requestBookDeletion(bookCard.modelData.id, bookCard.modelData.title) }
                             }
                             Rectangle {
                                 Layout.fillWidth: true

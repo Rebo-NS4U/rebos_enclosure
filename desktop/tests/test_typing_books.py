@@ -111,6 +111,28 @@ class Books(unittest.TestCase):
         self.assertEqual(tuple(row), ('Original personal note.', 'General'))
         upgraded.db.close()
 
+    def test_delete_book_requires_confirmation_and_removes_only_its_local_data(self):
+        first = self.library.add('Remove', 'A first story.', [])
+        second = self.library.add('Keep', 'A second story.', [])
+        self.library.handle({'action': 'note', 'id': first['id'], 'term': 'story', 'note': 'First note'})
+        self.library.handle({'action': 'note', 'id': second['id'], 'term': 'story', 'note': 'Keep note', 'category': 'People'})
+        self.library.handle({'action': 'open', 'id': first['id']})
+        with self.assertRaises(ValueError):
+            self.library.handle({'action': 'delete', 'id': first['id']})
+        self.assertEqual(len(self.library.listing()), 2)
+        deleted = self.library.handle({'action': 'delete', 'id': first['id'], 'confirmed': True})
+        self.assertEqual(deleted['last_id'], second['id'])
+        self.assertIsNone(self.library.cached_id)
+        for table, column in [('book_catalogue', 'id'), ('book_content', 'id'), ('book_progress', 'id'), ('word_notes', 'book_id')]:
+            self.assertEqual(self.library.db.execute(f'SELECT COUNT(*) FROM {table} WHERE {column}=?', (first['id'],)).fetchone()[0], 0)
+        self.assertEqual(self.library.handle({'action': 'word', 'id': second['id'], 'term': 'story'})['note'], 'Keep note')
+        self.library.db.close()
+        self.library = Library(self.path)
+        self.assertEqual(self.library.handle({'action': 'resume'})['id'], second['id'])
+        self.library.handle({'action': 'delete', 'id': second['id'], 'confirmed': True})
+        self.assertEqual(self.library.handle({'action': 'resume'}), {'empty': True})
+        self.assertEqual(self.library.listing(), [])
+
     def test_previous_context_and_exact_durable_restore(self):
         text = '😀 first word. ' * 100
         book = self.library.add('Backward test', text, [])

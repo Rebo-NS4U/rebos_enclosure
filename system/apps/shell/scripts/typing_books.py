@@ -328,7 +328,7 @@ class Library:
 
     def handle(self, request):
         self.window = max(WINDOW, min(4096, int(request.get('window', WINDOW))))
-        handlers = {'list': '_handle_list', 'resume': '_handle_resume', 'import': '_handle_import', 'add': '_handle_add', 'open': '_handle_open', 'chapter': '_handle_chapter', 'save': '_handle_save', 'seek': '_handle_save', 'next': '_handle_save', 'previous': '_handle_previous', 'words': '_handle_words', 'word': '_handle_word', 'note': '_handle_note', 'word_settings': '_handle_word_settings'}
+        handlers = {'delete': '_handle_delete', 'list': '_handle_list', 'resume': '_handle_resume', 'import': '_handle_import', 'add': '_handle_add', 'open': '_handle_open', 'chapter': '_handle_chapter', 'save': '_handle_save', 'seek': '_handle_save', 'next': '_handle_save', 'previous': '_handle_previous', 'words': '_handle_words', 'word': '_handle_word', 'note': '_handle_note', 'word_settings': '_handle_word_settings'}
         handler = handlers.get(request['action'])
         if handler is None:
             raise ValueError('Unknown library action.')
@@ -379,6 +379,21 @@ class Library:
                 self.db.execute("INSERT INTO app_state VALUES ('word_definitions',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", ('1' if request['enabled'] else '0',))
         row = self.db.execute("SELECT value FROM app_state WHERE key='word_definitions'").fetchone()
         return {'enabled': row is None or row[0] == '1'}
+
+    def _handle_delete(self, request):
+        if request.get('confirmed') is not True:
+            raise ValueError('Confirm removal of the book and its saved notes first.')
+        key = request['id']
+        with self.db:
+            if not self.db.execute('SELECT 1 FROM book_catalogue WHERE id=?', (key,)).fetchone():
+                raise ValueError('Book is no longer in the library.')
+            for table in ('word_notes', 'book_progress', 'book_content', 'book_catalogue'):
+                self.db.execute(f'DELETE FROM {table} WHERE ' + ('book_id' if table == 'word_notes' else 'id') + '=?', (key,))
+            self.db.execute("DELETE FROM app_state WHERE key='last_book' AND value=?", (key,))
+        if self.cached_id == key:
+            self.cached_id = None
+            self.cached_text = ''
+        return {'deleted': key, 'books': self.listing(), 'last_id': self.last_id()}
 
     def _handle_list(self, request):
         return {'books': self.listing(), 'last_id': self.last_id()}
