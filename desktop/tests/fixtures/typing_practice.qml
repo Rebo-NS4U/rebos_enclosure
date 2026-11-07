@@ -510,13 +510,22 @@ ShellRoot {
                     if (!restored.notebookBrowsing || restored.noteEntries.length !== 1 || restored.noteEntries[0].category !== "General") throw Error("Book notebook did not load existing notes");
                     restored.notebookFilter = "People";
                     if (restored.visibleNoteEntries.length !== 0) throw Error("Notebook sections do not filter entries");
-                    find(restored, "typing-word-term").text = "Elliot";
+                    const search = find(restored, "typing-word-term");
+                    search.text = "No matching name";
+                    search.accepted();
+                    if (!restored.notebookBrowsing || restored.selectedTerm) throw Error("Searching unexpectedly created a note");
+                    find(restored, "typing-new-notebook-note").clicked();
+                    if (!restored.notebookCreating || search.text) throw Error("New note did not open a separate blank title form");
+                    search.text = "Elliot";
                     find(restored, "typing-new-notebook-note").clicked();
                 } else if (phase === 120) {
                     const restored = freshView.item;
                     if (!restored.noteLoaded) return;
                     if (!restored.notebookMode || restored.notebookBrowsing || restored.noteCategory !== "People" || restored.definitionRequest !== null) throw Error("New categorized notebook entry failed");
-                    find(restored, "typing-edit-word-note").clicked();
+                    if (!restored.editingWordNote) throw Error("New notebook entry did not open its editor");
+                    const actions = find(restored, "typing-note-actions");
+                    const scroll = find(restored, "typing-word-scroll");
+                    if (!actions.visible || actions.y < scroll.y + scroll.height - 1) throw Error("Save controls are not pinned below the scroll region");
                     if (!find(restored, "typing-note-category").visible || !find(restored, "typing-note-template").visible) throw Error("Section selector or prompts missing");
                     find(restored, "typing-note-template").clicked();
                     if (!find(restored, "typing-word-note").text.includes("Relationships:")) throw Error("People prompts did not populate note");
@@ -543,6 +552,11 @@ ShellRoot {
                     const restored = freshView.item;
                     if (!restored.noteLoaded) return;
                     if (restored.notebookBrowsing || restored.selectedTerm !== "elliot" || restored.savedNoteCategory !== "People") throw Error("Clicking a notebook entry did not reopen its note");
+                    const originalNote = restored.savedWordNote;
+                    find(restored, "typing-edit-word-note").clicked();
+                    find(restored, "typing-word-note").text = "Unsaved replacement";
+                    find(restored, "typing-cancel-note-edit").clicked();
+                    if (restored.noteDirty || restored.editingWordNote || find(restored, "typing-word-note").text !== originalNote) throw Error("Cancel did not restore the saved note");
                     console.log("PASS: categorized book notebook, templates, word selection, saved notes, dictionary toggle, available-height passage fitting, lossless paging, Backspace navigation, queued input, legacy bookmark carryover, no-fail advance, resume, WPM and EPUB import");
                     Qt.quit();
                 }

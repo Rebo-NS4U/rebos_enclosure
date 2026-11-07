@@ -154,8 +154,11 @@ typing after saving or discarding edits. The word panel uses the same themed
 background, accent border and reading font as the typing panel. Right-click a
 word to inspect it. Use **Notes** to open this book's notebook, browse **People**,
 **Settings**, **Mysteries**, **Plot**, or **General**, and create a titled note.
-Search matches note titles and content. Each note can be moved between sections;
-**Use prompts** supplies an editable outline for characters, places, clues, or
+Search filters titles and content without creating notes. Choose **New note**,
+enter its title and section, then **Create note** to start writing. Navigation
+and save/cancel actions stay visible while the contents scroll. **Cancel**
+restores the saved note. Each note can be moved between sections;
+**Insert outline** supplies an editable outline for characters, places, clues, or
 plot connections. Existing word notes stay in **General** until you categorize
 them, and word-popup notes appear in the same notebook. Definitions appear inside the reader
 using the [Free Dictionary API](https://dictionaryapi.dev/) (English, internet
@@ -164,7 +167,7 @@ it off cancels lookup and keeps notes available offline. Only the selected term
 is sent to the dictionary service.
 
 The word menu shows the selected word, its definition and any saved note.
-**Add note** or **Edit note** opens the editor; **More** reveals search, saved
+**Add note** or **Edit note** opens the editor; **Dictionary options** reveals search, saved
 words and the online dictionary switch.
 
 Notes are stored locally per book and case-insensitive word/name. Choose **Save
