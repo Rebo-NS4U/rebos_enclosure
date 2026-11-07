@@ -122,8 +122,7 @@ Item {
     property var definitionRequest: null
     property var createDictionaryRequest: () => new XMLHttpRequest()
     readonly property bool noteDirty: wordNote.text !== savedWordNote || noteCategory !== savedNoteCategory
-    property var wordAnchor: null
-    property point wordAnchorPoint: Qt.point(16, 60)
+    property Item menuAnchorItem: root
     function currentWordItem() {
         for (let index = 0; index < wordRepeater.count; index++) {
             const item = wordRepeater.itemAt(index);
@@ -135,7 +134,7 @@ Item {
     function openCurrentWord() {
         if (wordPanel.opened) { handleEscape(); return; }
         const item = currentWordItem();
-        if (item) openWord(item.modelData.text, item);
+        if (item) openWord(item.modelData.text);
     }
     Shortcut {
         sequence: "Ctrl+Space"
@@ -155,10 +154,8 @@ Item {
         newNoteCategory = category;
         cancelDefinition();
     }
-    function openWord(value, anchor = null) {
+    function openWord(value) {
         if (!bookId || (wordPanel.opened && (noteDirty || noteSaving))) return;
-        wordAnchor = anchor || currentWordItem();
-        wordAnchorPoint = wordAnchor ? wordAnchor.mapToItem(root, 0, wordAnchor.height) : Qt.point(16, 60);
         cancelDefinition();
         selectedTerm = value.trim().replace(/^[\s.,!?;:"“”‘’'()[\]{}—–]+|[\s.,!?;:"“”‘’'()[\]{}—–]+$/g, "");
         notedTerms = []; noteEntries = [];
@@ -545,7 +542,7 @@ Item {
     Timer { interval: 5000; running: root.backendStarted; repeat: true; onTriggered: root.saveProgress() }
 
     function status() {
-        return JSON.stringify({chapterCardVisible: chapterCard.visible, chapterTitle: chapterTitle, wordToolsOpen: wordPanel.opened, wordToolsShortcut: "Ctrl+Space", notebookMode: notebookMode, notesSection: notebookFilter, definitionsEnabled: definitionsEnabled, notedWordCount: notedTerms.length, practicing: practicing, fullscreen: fullscreen, pageLines: pageLayout.lines, pageLineLimit: pageLineLimit, passageHeight: passageArea.height, renderedHeight: passageFlow.height, fontSize: readingFont.pixelSize, layoutVersion: 9, previousPages: pageHistory.length, activeEffects: activeEffects, effectKind: effectKind, lineTransitions: lineTransitions, pageTransitions: pageTransitions, motionEnabled: Motion.enabled, feedbackEvents: feedbackEvents, focused: answer.activeFocus, turningPage: turningPage, textLength: bookLength,
+        return JSON.stringify({chapterCardVisible: chapterCard.visible, chapterTitle: chapterTitle, wordToolsOpen: wordPanel.opened, wordToolsShortcut: "Ctrl+Space", wordMenuWidth: wordPanel.width, wordMenuHeight: wordPanel.height, typingPanelWidth: menuAnchorItem.width, typingPanelHeight: menuAnchorItem.height, notebookMode: notebookMode, notesSection: notebookFilter, definitionsEnabled: definitionsEnabled, notedWordCount: notedTerms.length, practicing: practicing, fullscreen: fullscreen, pageLines: pageLayout.lines, pageLineLimit: pageLineLimit, passageHeight: passageArea.height, renderedHeight: passageFlow.height, fontSize: readingFont.pixelSize, layoutVersion: 9, previousPages: pageHistory.length, activeEffects: activeEffects, effectKind: effectKind, lineTransitions: lineTransitions, pageTransitions: pageTransitions, motionEnabled: Motion.enabled, feedbackEvents: feedbackEvents, focused: answer.activeFocus, turningPage: turningPage, textLength: bookLength,
             typed: answer.text.length, position: position, rounds: rounds,
             presets: TypingTexts.passages.length, message: message, busy: busy,
             title: bookTitle, chapters: chapters.length, library: library.length, books: libraryBooks.length, wpm: liveWpm, filePickerActive: filePickerActive});
@@ -775,13 +772,13 @@ Item {
     PopupWindow {
         id: wordPanel
         objectName: "typing-word-panel"
-        anchor.item: root
-        anchor.rect.x: Math.max(8, Math.min(root.wordAnchorPoint.x, root.width - width - 8))
-        anchor.rect.y: root.wordAnchorPoint.y + 6
+        anchor.item: root.menuAnchorItem
+        anchor.rect.x: 0
+        anchor.rect.y: root.menuAnchorItem.height + 6
         anchor.rect.width: 0
         anchor.rect.height: 0
-        implicitWidth: Math.min(root.width - 16, 420)
-        implicitHeight: Math.min(420, Math.max(120, wordContent.implicitHeight + 32))
+        implicitWidth: Math.max(1, root.menuAnchorItem.width)
+        implicitHeight: Math.max(1, root.menuAnchorItem.height)
         color: "transparent"
         visible: false
         readonly property bool opened: visible
@@ -1542,7 +1539,7 @@ Item {
                                     for (let index = 0; index < wordRepeater.count; index++) {
                                         const wordItem = wordRepeater.itemAt(index);
                                         const local = wordItem.mapFromItem(answer, point.position.x, point.position.y);
-                                        if (wordItem.contains(local)) { root.openWord(wordItem.modelData.text, wordItem); break; }
+                                        if (wordItem.contains(local)) { root.openWord(wordItem.modelData.text); break; }
                                     }
                                 }
                             }

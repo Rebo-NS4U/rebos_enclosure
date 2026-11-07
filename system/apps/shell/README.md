@@ -147,8 +147,9 @@ included in the Books filter. Niri focuses this import dialog automatically.
 
 Press **Mod+T** to open book typing practice directly from the desktop.
 
-Press **Ctrl+Space** while typing to open definitions and notes directly below
-the current word. Press it again (or Escape) to close the panel and return to
+Press **Ctrl+Space** while typing to open definitions and notes for the current
+word. Definitions, word notes and the notebook open directly below the typing
+panel, aligned to its left edge and matching its width and height. Press it again (or Escape) to close the panel and return to
 typing after saving or discarding edits. The word panel uses the same themed
 background, accent border and reading font as the typing panel. Right-click a
 word to inspect it. Use **Notes** to open this book's notebook, browse **People**,
@@ -162,7 +163,7 @@ required). **Online definitions: On/Off** is saved across reader sessions; turni
 it off cancels lookup and keeps notes available offline. Only the selected term
 is sent to the dictionary service.
 
-The word popup shows the selected word, its definition and any saved note.
+The word menu shows the selected word, its definition and any saved note.
 **Add note** or **Edit note** opens the editor; **More** reveals search, saved
 words and the online dictionary switch.
 

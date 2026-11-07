@@ -443,10 +443,9 @@ ShellRoot {
                     keyDriver.keyClick(Qt.Key_Space, Qt.ControlModifier, 0);
                     keyDriver.wait(30);
                     const panel = restored.wordTools;
-                    const anchor = currentWord.mapToItem(restored, 0, currentWord.height);
                     if (!panel.opened || restored.selectedTerm.toLowerCase() !== currentWord.modelData.text.trim().toLowerCase() || field.text !== before)
                         throw Error("Ctrl+Space did not inspect the current word without editing input: " + JSON.stringify({opened:panel.opened, term:restored.selectedTerm, expected:currentWord.modelData.text, before:before, after:field.text}));
-                    if (Math.abs(panel.anchor.rect.y - anchor.y - 6) > 1) throw Error("Word panel is not anchored below the current word");
+                    if (panel.anchor.item !== restored.menuAnchorItem || panel.anchor.rect.x !== 0 || Math.abs(panel.anchor.rect.y - restored.menuAnchorItem.height - 6) > 1 || Math.abs(panel.width - restored.menuAnchorItem.width) > 1 || Math.abs(panel.height - restored.menuAnchorItem.height) > 1) throw Error("Word menu does not match the typing panel or sit below it");
                     if (panel.surface.variant !== "bg") throw Error("Word panel does not share the typing surface theme");
                     keyDriver.keyClick(Qt.Key_Space, Qt.ControlModifier, 0);
                     keyDriver.wait(30);
@@ -507,6 +506,7 @@ ShellRoot {
                     restored.openNotebook();
                 } else if (phase === 119) {
                     const restored = freshView.item;
+                    if (Math.abs(restored.wordTools.width - restored.menuAnchorItem.width) > 1 || Math.abs(restored.wordTools.height - restored.menuAnchorItem.height) > 1) throw Error("Notebook size does not match the typing panel");
                     if (!restored.notebookBrowsing || restored.noteEntries.length !== 1 || restored.noteEntries[0].category !== "General") throw Error("Book notebook did not load existing notes");
                     restored.notebookFilter = "People";
                     if (restored.visibleNoteEntries.length !== 0) throw Error("Notebook sections do not filter entries");

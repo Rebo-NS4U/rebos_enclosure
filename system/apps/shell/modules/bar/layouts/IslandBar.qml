@@ -1019,6 +1019,7 @@ Item {
             // ═══════════════════════════════════════════════════════════════
             ShellWidgets.TypingMenu {
                 id: typingView
+                menuAnchorItem: islandBody
                 anchors.fill: parent
                 visible: root.currentMode === "typing"
                 enabled: visible && !root.retractingToHidden
