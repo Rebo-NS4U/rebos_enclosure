@@ -153,7 +153,7 @@ the original imported file stays on disk.
 
 F11 opens a fullscreen **reading mode** with plain, selectable book text and
 no typing input, accuracy effects, caret or WPM. The fullscreen page uses a
-centered 720-pixel reading column, 20px text in your configured theme font,
+centered 720-pixel reading column, centered 20px text in your configured theme font,
 and the same glass surface, opacity and palette as typing mode. Subtle directional
 page slides and fades follow the shared motion setting, including reduced motion.
 Use Left/Right arrows, Page Up/Page Down, Space/Shift+Space to turn pages; [ and ]

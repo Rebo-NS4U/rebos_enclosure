@@ -95,7 +95,7 @@ Item {
     }
     function readerHtml(value) {
         const escaped = value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-        return '<p style="line-height:155%; margin-top:0px; margin-bottom:0px;">' + escaped + '</p>';
+        return '<p align="center" style="line-height:155%; margin-top:0px; margin-bottom:0px;">' + escaped + '</p>';
     }
     function readingWordAt(index) {
         const start = passage.lastIndexOf(" ", Math.max(0, index - 1)) + 1;
