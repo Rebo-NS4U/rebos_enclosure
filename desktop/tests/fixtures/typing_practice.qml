@@ -12,6 +12,7 @@ ShellRoot {
     id: harness
     property bool closeRequested: false
     property int previousReaderAnimations: 0
+    property int readerChapter: 0
     PanelWindow {
         id: testWindow
         TestTools.TestCase { id: keyDriver; name: "TypingKeystrokes"; when: false }
@@ -580,9 +581,9 @@ ShellRoot {
                     keyDriver.keyClick(Qt.Key_A, Qt.NoModifier, 0);
                     if (reader.text !== original) throw Error("Reader allowed text editing");
                     const beforeAnimation = restored.readerAnimationEvents;
-                    keyDriver.keyClick(Qt.Key_Right, Qt.NoModifier, 0);
+                    keyDriver.keyClick(Qt.Key_L, Qt.NoModifier, 0);
                     restored.readerHelp = false;
-                    keyDriver.keyClick(Qt.Key_H, Qt.NoModifier, 0);
+                    keyDriver.keyClick(Qt.Key_Question, Qt.NoModifier, 0);
                     if (!restored.readerHelp || !find(restored, "reader-keyboard-guide").visible) throw Error("Keyboard guide shortcut failed");
                     restored.readerHelp = false;
                     harness.previousReaderAnimations = beforeAnimation;
@@ -592,7 +593,7 @@ ShellRoot {
                     if (restored.position <= expectedPosition || find(restored, "typing-input").text.length) throw Error("Reading next page did not navigate without typing");
                     if (Motion.enabled && restored.readerAnimationEvents <= harness.previousReaderAnimations) throw Error("Page navigation did not animate");
                     find(restored, "reader-page-text").forceActiveFocus();
-                    keyDriver.keyClick(Qt.Key_Space, Qt.ShiftModifier, 0);
+                    keyDriver.keyClick(Qt.Key_H, Qt.NoModifier, 0);
                 } else if (phase === 126) {
                     const restored = freshView.item;
                     if (restored.busy) return;
@@ -603,6 +604,20 @@ ShellRoot {
                     restored.animateReaderPage(1);
                     if (restored.readerReveal !== 1 || restored.readerAnimationEvents !== animationCount) throw Error("Reader ignored reduced motion setting");
                     Config.animDuration = oldDuration;
+                    harness.readerChapter = restored.currentChapterIndex;
+                    if (harness.readerChapter + 1 >= restored.chapters.length) throw Error("Missing chapter fixture for hjkl test");
+                    find(restored, "reader-page-text").forceActiveFocus();
+                    keyDriver.keyClick(Qt.Key_J, Qt.NoModifier, 0);
+                } else if (phase === 127) {
+                    const restored = freshView.item;
+                    if (restored.busy) return;
+                    if (restored.currentChapterIndex !== harness.readerChapter + 1) throw Error("j did not advance to the next chapter");
+                    find(restored, "reader-page-text").forceActiveFocus();
+                    keyDriver.keyClick(Qt.Key_K, Qt.NoModifier, 0);
+                } else if (phase === 128) {
+                    const restored = freshView.item;
+                    if (restored.busy) return;
+                    if (restored.currentChapterIndex !== harness.readerChapter) throw Error("k did not return to the previous chapter");
                     restored.handleEscape();
                     if (restored.fullscreen || !find(restored, "typing-input").visible) throw Error("Escape did not restore typing mode");
                     console.log("PASS: categorized book notebook, templates, word selection, saved notes, dictionary toggle, available-height passage fitting, lossless paging, Backspace navigation, queued input, legacy bookmark carryover, no-fail advance, resume, WPM and EPUB import");

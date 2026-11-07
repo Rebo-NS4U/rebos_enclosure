@@ -53,13 +53,13 @@ Item {
         if (event.key === Qt.Key_F11) toggleFullscreen();
         else if (event.key === Qt.Key_Escape) handleEscape();
         else if (event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier)) return false;
-        else if (event.key === Qt.Key_Right || event.key === Qt.Key_PageDown) readNextPage();
-        else if (event.key === Qt.Key_Left || event.key === Qt.Key_PageUp) readPreviousPage();
+        else if (event.key === Qt.Key_L || event.key === Qt.Key_Right || event.key === Qt.Key_PageDown) readNextPage();
+        else if (event.key === Qt.Key_H || event.key === Qt.Key_Left || event.key === Qt.Key_PageUp) readPreviousPage();
         else if (event.key === Qt.Key_Space) { if (event.modifiers & Qt.ShiftModifier) readPreviousPage(); else readNextPage(); }
-        else if (event.key === Qt.Key_BracketRight && currentChapterIndex + 1 < chapters.length) jumpChapter(currentChapterIndex + 1);
-        else if (event.key === Qt.Key_BracketLeft && currentChapterIndex > 0) jumpChapter(currentChapterIndex - 1);
+        else if ((event.key === Qt.Key_J || event.key === Qt.Key_BracketRight) && currentChapterIndex + 1 < chapters.length) jumpChapter(currentChapterIndex + 1);
+        else if ((event.key === Qt.Key_K || event.key === Qt.Key_BracketLeft) && currentChapterIndex > 0) jumpChapter(currentChapterIndex - 1);
         else if (event.key === Qt.Key_N) openNotebook();
-        else if (event.key === Qt.Key_Question || event.key === Qt.Key_H) readerHelp = !readerHelp;
+        else if (event.key === Qt.Key_Question) readerHelp = !readerHelp;
         else return false;
         return true;
     }
@@ -1792,7 +1792,7 @@ Item {
                             anchors.right: parent.right
                             anchors.top: parent.top
                             anchors.margins: 12
-                            text: "Next: → / Page Down / Space   Previous: ← / Page Up / Shift+Space\nChapter: [ / ]   Notes: N   Word lookup: Ctrl+Space\nShortcut guide: ? or H   Exit reading: F11 or Esc"
+                            text: "Next: l / → / Page Down / Space   Previous: h / ← / Page Up / Shift+Space\nChapter: k / j or [ / ]   Notes: N   Word lookup: Ctrl+Space\nShortcut guide: ?   Exit reading: F11 or Esc"
                             wrapMode: Text.Wrap
                             font.pixelSize: 12
                         }
@@ -1800,10 +1800,10 @@ Item {
                     RowLayout {
                         visible: root.fullscreen
                         Layout.fillWidth: true
-                        ReaderNavButton { objectName: "reader-previous-page"; keyHint: "Left · Page Up · Shift+Space"; text: "‹ Previous"; enabled: !root.busy && root.position > 0; onClicked: root.readPreviousPage() }
+                        ReaderNavButton { objectName: "reader-previous-page"; keyHint: "h · Left · Page Up · Shift+Space"; text: "‹ Previous"; enabled: !root.busy && root.position > 0; onClicked: root.readPreviousPage() }
                         StyledText { text: Math.round(root.progress * 100) + "% read"; font.pixelSize: 12; opacity: 0.5; Layout.fillWidth: true; horizontalAlignment: Text.AlignHCenter }
                         TextButton { objectName: "reader-shortcut-help"; text: "?"; Accessible.name: "Keyboard shortcuts"; onClicked: root.readerHelp = !root.readerHelp }
-                        ReaderNavButton { objectName: "reader-next-page"; keyHint: "Right · Page Down · Space"; text: root.position + root.characters(root.passage).length >= root.bookLength ? "End of book" : "Next ›"; enabled: !root.busy && root.position + root.characters(root.passage).length < root.bookLength; onClicked: root.readNextPage() }
+                        ReaderNavButton { objectName: "reader-next-page"; keyHint: "l · Right · Page Down · Space"; text: root.position + root.characters(root.passage).length >= root.bookLength ? "End of book" : "Next ›"; enabled: !root.busy && root.position + root.characters(root.passage).length < root.bookLength; onClicked: root.readNextPage() }
                     }
                     RowLayout {
                         visible: !root.fullscreen || root.errorMessage.length > 0

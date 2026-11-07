@@ -155,7 +155,8 @@ centered 720-pixel reading column, larger text in your configured theme font,
 and the same glass surface, opacity and palette as typing mode. Subtle directional
 page slides and fades follow the shared motion setting, including reduced motion.
 Use Left/Right arrows, Page Up/Page Down, Space/Shift+Space to turn pages; [ and ]
-change chapters, N opens book notes, and ? or H shows the keyboard guide.
+change chapters. Vim keys **h/l** turn pages and **k/j** change chapters.
+N opens book notes, and **?** shows the keyboard guide.
 Escape or F11 returns to typing at the current
 reading position. Switching modes without navigating preserves partial typing.
 Right-click a word or select it and press Ctrl+Space for definitions and notes.
