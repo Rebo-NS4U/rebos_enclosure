@@ -71,7 +71,9 @@ ColumnLayout {
         const payload = Object.assign({ action: action, path: activePath }, fields || {});
         pending = payload;
         if (confirm) {
-            feedback = "Review the push details and confirm to publish this branch.";
+            feedback = action === "commit" ? "Review the selected staged files and confirm to create a local commit."
+                : action === "pr" ? "Review the pull request details and confirm to create it."
+                : "Review the push details and confirm to publish this branch.";
             failed = false;
             confirmation.open();
         } else {
@@ -428,7 +430,7 @@ ColumnLayout {
             Caption { visible: root.pending.action === "pr"; text: "Title: " + (root.pending.title || "") + "\nBase: " + (root.pending.base || "") + "\nDraft: " + (root.pending.draft ? "Yes" : "No") + "\n" + (root.pending.body || "") }
             RowLayout {
                 SettingsButton { text: "Cancel"; onClicked: confirmation.close() }
-                SettingsButton { text: "Confirm " + (root.pending.action || "action"); onClicked: { confirmation.close(); root.requestText = JSON.stringify(root.pending); root.start("action"); } }
+                SettingsButton { text: "Confirm " + (root.pending.action || "action"); enabled: !root.busy; onClicked: { confirmation.close(); root.requestText = JSON.stringify(root.pending); root.start("action"); } }
             }
         }
     }
