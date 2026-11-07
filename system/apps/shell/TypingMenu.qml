@@ -323,6 +323,8 @@ Item {
         return widthCache[text];
     }
     function fitPage() {
+        // A direct fit also satisfies any pending resize/font fit.
+        fitDelay.stop();
         stopFeedback();
         passageVisuals.contentY = 0;
         pageLayout = TypingPaging.layout(pageSource, Math.max(1, passageFlow.width), characterWidth, layoutLineLimit);
