@@ -125,28 +125,43 @@ Item {
         onTriggered: { if (root.visible && root.practicing && passageArea.width > 0 && passageArea.height > 0 && !root.restoring && root.pageSource.length) { root.fitPage(); if (root.bookId && root.characters(answer.text).length >= root.characters(root.passage).length) root.advance(); } }
     }
     property string effectKind: ""
-    property Item effectGlyph: null
     property int effectLine: -1
     property real effectStrength: 0
+    property var glowingGlyphs: []
     onEffectStrengthChanged: {
-        if (effectKind === "letter" && effectGlyph) effectGlyph.spark = effectStrength;
-        else if (effectKind === "line") Qt.callLater(refreshPageCaret);
+        if (effectKind === "line") Qt.callLater(refreshPageCaret);
     }
-    readonly property int activeEffects: feedbackAnimation.running ? 1 : 0
+    readonly property int activeEffects: (feedbackAnimation.running ? 1 : 0) + glowingGlyphs.length
+    function forgetGlyph(glyph) {
+        glowingGlyphs = glowingGlyphs.filter(item => item !== glyph);
+    }
+    function stopLetters() {
+        const previous = glowingGlyphs;
+        glowingGlyphs = [];
+        for (const glyph of previous) glyph.stopFeedback();
+    }
     function stopFeedback() {
-        feedbackAnimation.stop(); if (effectGlyph) effectGlyph.spark = 0; effectStrength = 0; effectKind = ""; effectGlyph = null; effectLine = -1;
+        feedbackAnimation.stop(); stopLetters(); effectStrength = 0; effectKind = ""; effectLine = -1;
     }
     function requestFeedback(kind, glyph = null) {
         if (!Motion.enabled || !visible || !practicing) return;
-        const priority = {letter: 1, line: 2, page: 3};
-        if (feedbackAnimation.running && priority[effectKind] > priority[kind]) return;
+        if (kind === "letter") {
+            if (!glyph) return;
+            // Each keystroke finishes its own fade, even during the next key or row.
+            glyph.stopFeedback();
+            if (glowingGlyphs.length >= 12) glowingGlyphs[0].stopFeedback();
+            glowingGlyphs = glowingGlyphs.concat([glyph]);
+            feedbackEvents++;
+            glyph.startFeedback();
+            return;
+        }
+        if (feedbackAnimation.running && effectKind === "page" && kind === "line") return;
         feedbackAnimation.stop();
-        if (effectGlyph) effectGlyph.spark = 0;
+        if (kind === "page") stopLetters();
         effectStrength = 0;
-        effectKind = kind; effectGlyph = kind === "letter" ? glyph : null;
+        effectKind = kind;
         effectLine = kind === "line" && glyph ? glyph.parent.modelData.line : -1;
-        if (kind === "letter") feedbackEvents++;
-        else if (kind === "line") lineTransitions++;
+        if (kind === "line") lineTransitions++;
         else pageTransitions++;
         feedbackAnimation.restart();
     }
@@ -156,9 +171,9 @@ Item {
         property: "effectStrength"
         from: 1
         to: 0
-        duration: effectKind === "page" ? Math.max(720, Motion.enter * 2.2) : effectKind === "line" ? Math.max(520, Motion.enter * 1.6) : Math.max(240, Motion.enter * 0.8)
+        duration: effectKind === "page" ? Math.max(720, Motion.enter * 2.2) : Math.max(520, Motion.enter * 1.6)
         easing.type: Easing.OutCubic
-        onFinished: root.stopFeedback()
+        onFinished: { root.effectStrength = 0; root.effectKind = ""; root.effectLine = -1; }
     }
     component PopHalo: Rectangle {
         property real strength: 0
@@ -912,11 +927,22 @@ Item {
                                                 property bool incorrect: false
                                                 property bool initialized: false
                                                 property real spark: 0
-                                                scale: 1 + spark * 0.035
-                                                transform: Translate { y: -0.6 * glyph.spark }
+                                                scale: 1 + spark * 0.075
+                                                transform: Translate { y: -1.6 * glyph.spark }
                                                 transformOrigin: Item.Center
                                                 function celebrate() { root.requestFeedback("letter", glyph); }
-                                                function stopFeedback() { if (root.effectKind === "letter" && root.effectGlyph === glyph) root.stopFeedback(); }
+                                                function startFeedback() { keyFeedback.restart(); }
+                                                function stopFeedback() { keyFeedback.stop(); spark = 0; root.forgetGlyph(glyph); }
+                                                NumberAnimation {
+                                                    id: keyFeedback
+                                                    target: glyph
+                                                    property: "spark"
+                                                    from: 1
+                                                    to: 0
+                                                    duration: Math.max(220, Math.min(360, Motion.feedback * 2))
+                                                    easing.type: Easing.OutCubic
+                                                    onFinished: root.forgetGlyph(glyph)
+                                                }
                                                 PopHalo {
                                                     objectName: "typing-key-halo-" + glyph.characterIndex
                                                     anchors.centerIn: parent
@@ -951,9 +977,17 @@ Item {
                                                 height: root.passageLineHeight
                                                 lineHeight: 1.45
                                                 property real inkOpacity: caretHere || typed ? 1 : 0.65
+                                                Behavior on inkOpacity {
+                                                    enabled: Motion.enabled && glyph.initialized && !root.restoring && !root.busy
+                                                    NumberAnimation { duration: 110; easing.type: Easing.OutCubic }
+                                                }
+                                                Behavior on color {
+                                                    enabled: Motion.enabled && glyph.initialized && !root.restoring && !root.busy && !glyph.incorrect
+                                                    ColorAnimation { duration: 130; easing.type: Easing.OutCubic }
+                                                }
                                                 opacity: caretHere ? 1 : inkOpacity
 
-                                                color: typed && incorrect ? Colors.error : Qt.tint(Colors.overSurface, Qt.alpha(Colors.primary, Math.max(spark, word?.linePop ?? 0, root.effectKind === "page" ? root.effectStrength : 0) * 0.28))
+                                                color: typed && incorrect ? Colors.error : Qt.tint(Colors.overSurface, Qt.alpha(Colors.primary, Math.min(0.75, (typed ? 0.32 : 0) + spark * 0.43 + (word?.linePop ?? 0) * 0.12)))
 
                                             }
                                         }
@@ -966,6 +1000,11 @@ Item {
                                 opacity: answer.activeFocus ? 1 : 0.45
                                 property Item targetGlyph: null
                                 property bool placed: false
+                                property bool glideAllowed: false
+                                Behavior on x {
+                                    enabled: Motion.enabled && smoothCaret.placed && smoothCaret.glideAllowed && !root.busy && !root.restoring
+                                    NumberAnimation { duration: 85; easing.type: Easing.OutCubic }
+                                }
                                 property real rowY: 0
                                 property real rowHeight: 32
                                 readonly property color accent: Colors.primary
@@ -983,7 +1022,9 @@ Item {
                                     const nextY = point.y + item.baselineOffset + root.highlightBounds.y - root.highlightPadding;
                                     const newLine = placed && targetGlyph !== null && item.characterIndex > targetGlyph.characterIndex && nextY > targetRowY + 1;
                                     if (newLine && root.visible && answer.activeFocus && Motion.enabled) root.requestFeedback("line", item);
-                                    // Keep the cursor anchored during the subtle row settle.
+                                    // Glide through nearby letters; snap across rows and restored pages.
+                                    glideAllowed = placed && targetGlyph !== null && Math.abs(nextY - targetRowY) < 1
+                                        && Math.abs(item.characterIndex - targetGlyph.characterIndex) <= 2;
                                     targetGlyph = item;
                                     targetRowY = Math.max(0, nextY);
                                     rowY = targetRowY;

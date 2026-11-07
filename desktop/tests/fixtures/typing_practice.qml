@@ -217,8 +217,19 @@ ShellRoot {
                     input.text = practice.passage[0]; input.cursorPosition = input.length;
                     keyDriver.wait(20);
                     if (Motion.enabled && (practice.feedbackEvents <= feedbackBefore || first.spark <= 0 || first.scale <= 1 || !find(first, "typing-key-halo-0").visible)) throw Error("Correct typing did not visibly trigger the pop and halo");
+                    if (Motion.enabled) {
+                        const nextGlyph = find(practice, "typing-character-1");
+                        input.text = practice.passage.slice(0, 2); input.cursorPosition = input.length;
+                        keyDriver.wait(20);
+                        if (first.spark <= 0) throw Error("The next key canceled the previous letter fade");
+                        if (nextGlyph.modelData.trim().length && nextGlyph.spark <= 0) throw Error("The next letter has no independent feedback");
+                        const glide = find(practice, "typing-smooth-caret");
+                        if (glide.glideAllowed && Math.abs(glide.x - glide.targetX) < 0.01) throw Error("Caret snapped instead of gliding between letters");
+                        input.text = practice.passage[0]; input.cursorPosition = input.length;
+                    }
                 } else if (phase === 2) {
                     if (practice.activeEffects) return;
+                    if (first.color.toString() === Colors.overSurface.toString()) throw Error("Completed letters lost their accent color");
                     if (Math.abs(first.parent.opacity - 1) > 0.001 || Math.abs(first.opacity - 1) > 0.001 || Math.abs(first.scale - 1) > 0.001) throw Error("Typed glyph did not settle after animation: " + JSON.stringify({opacity:first.opacity, scale:first.scale, spark:first.spark, strength:practice.effectStrength, kind:practice.effectKind, running:practice.activeEffects}));
                     if (Motion.enabled) {
                         practice.requestFeedback("letter", first);
@@ -226,7 +237,7 @@ ShellRoot {
                         const burst = find(practice, "typing-transition-burst");
                         if (!burst.visible || burst.page || !find(practice, "typing-line-sweep").visible) throw Error("Line ribbon and spark burst missing");
                         practice.requestFeedback("letter", first);
-                        if (practice.effectKind !== "line" || practice.activeEffects !== 1 || first.spark !== 0) throw Error("Letter feedback overlapped the line pop");
+                        if (practice.effectKind !== "line" || practice.activeEffects !== 2 || first.spark <= 0) throw Error("Line transition suppressed per-letter feedback");
                         practice.requestFeedback("page");
                         if (practice.effectKind !== "page" || practice.activeEffects !== 1 || find(practice, "typing-line-ripple").strength !== 0) throw Error("Page feedback overlapped the line pop");
                         keyDriver.wait(20);
@@ -238,7 +249,7 @@ ShellRoot {
                         if (burst.visible || first.parent.arrival !== 0 || first.parent.wave !== 0) throw Error("Transition visuals did not reset");
                         if (practice.activeEffects !== 0 || practice.effectStrength !== 0) throw Error("Feedback did not stop cleanly");
                     }
-                    keyDriver.wait(0); // Flush caret updates after the word transforms settle.
+                    keyDriver.wait(140); // Let the short caret glide settle after the row transforms.
                     const settled = find(practice, "typing-smooth-caret");
                     const settledLine = find(practice, "typing-line-highlight");
                     const activeGlyph = settled.targetGlyph;
@@ -258,6 +269,7 @@ ShellRoot {
                     input.text = "";
                 } else if (phase < 100) {
                     if (phase === 4 && (!find(practice, "typing-character-0").caretHere || Math.abs(find(practice, "typing-character-1").opacity - 0.65) > 0.001)) throw Error("Backspace did not restore the cursor and readable upcoming text");
+                    keyDriver.wait(0); // Flush the animated row transform and caret anchor together.
                     const pageCaret = find(practice, "typing-smooth-caret");
                     const firstGlyph = find(practice, "typing-character-0");
                     const firstPoint = firstGlyph.parent.mapToItem(pageCaret.parent, firstGlyph.x, firstGlyph.y);
