@@ -927,8 +927,8 @@ Item {
                                                 property bool incorrect: false
                                                 property bool initialized: false
                                                 property real spark: 0
-                                                scale: 1 + spark * 0.075
-                                                transform: Translate { y: -1.6 * glyph.spark }
+                                                scale: 1 + spark * 0.105
+                                                transform: Translate { y: -2.2 * glyph.spark }
                                                 transformOrigin: Item.Center
                                                 function celebrate() { root.requestFeedback("letter", glyph); }
                                                 function startFeedback() { keyFeedback.restart(); }
@@ -939,7 +939,7 @@ Item {
                                                     property: "spark"
                                                     from: 1
                                                     to: 0
-                                                    duration: Math.max(220, Math.min(360, Motion.feedback * 2))
+                                                    duration: Math.max(280, Math.min(420, Motion.feedback * 2.4))
                                                     easing.type: Easing.OutCubic
                                                     onFinished: root.forgetGlyph(glyph)
                                                 }
@@ -949,7 +949,7 @@ Item {
                                                     width: parent.width + 6
                                                     height: root.highlightBounds.height + 6
                                                     z: -1
-                                                    strength: glyph.spark
+                                                    strength: Math.min(1, glyph.spark * 1.4)
                                                 }
                                                 onCaretHereChanged: { if (caretHere && initialized) Qt.callLater(() => smoothCaret.follow(glyph)); }
                                                 Connections {
@@ -987,7 +987,7 @@ Item {
                                                 }
                                                 opacity: caretHere ? 1 : inkOpacity
 
-                                                color: typed && incorrect ? Colors.error : Qt.tint(Colors.overSurface, Qt.alpha(Colors.primary, Math.min(0.75, (typed ? 0.32 : 0) + spark * 0.43 + (word?.linePop ?? 0) * 0.12)))
+                                                color: typed && incorrect ? Colors.error : Qt.tint(Colors.overSurface, Qt.alpha(Colors.primary, Math.min(0.88, (typed ? 0.38 : 0) + spark * 0.50 + (word?.linePop ?? 0) * 0.12)))
 
                                             }
                                         }
@@ -1003,7 +1003,7 @@ Item {
                                 property bool glideAllowed: false
                                 Behavior on x {
                                     enabled: Motion.enabled && smoothCaret.placed && smoothCaret.glideAllowed && !root.busy && !root.restoring
-                                    NumberAnimation { duration: 85; easing.type: Easing.OutCubic }
+                                    NumberAnimation { duration: 100; easing.type: Easing.OutCubic }
                                 }
                                 property real rowY: 0
                                 property real rowHeight: 32
