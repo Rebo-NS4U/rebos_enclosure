@@ -503,7 +503,7 @@
   "system/apps/shell/modules/widgets/dashboard/controls/ColorPickerView.qml": "4e786940ce0da5ceef41182ce2412a7e184315187039f87cc6a00d81d9df0926",
   "system/apps/shell/modules/widgets/dashboard/controls/DisplayPanel.qml": "cce43d05694f21155c808c2f1fe91aefc76b236e57ff8727bf43c897fdf0eea2",
   "system/apps/shell/modules/widgets/dashboard/controls/GithubPanel.qml": "a6dcb055309921a70c7d866a39feb2bd41a7382b1701a01c2c500a0dffc9900a",
-  "system/apps/shell/modules/widgets/dashboard/controls/GithubProjects.qml": "dfc92c7068a932c26b6164d4e6750725790b15381aa53d0ae847bf31177c0a9a",
+  "system/apps/shell/modules/widgets/dashboard/controls/GithubProjects.qml": "5aa3a577c96d58a4a8839084b5aa363f29309d8ac2e3106d7bda2fcc18b626cf",
   "system/apps/shell/modules/widgets/dashboard/controls/GithubSection.qml": "076b4c23333f66cc7e1ffe4f97d2a8cbe2eaf190dbe3cf712929841264ebdb10",
   "system/apps/shell/modules/widgets/dashboard/controls/GpuPanel.qml": "7c5e20ebea1de36ad5e53661b444c9aee18c7bd1739c4dc0b82e05cc2040c100",
   "system/apps/shell/modules/widgets/dashboard/controls/GradientStopsEditor.qml": "3f509d5a5a3b65f2bf21c6ba0d0bd8d4669803f5693e214d8fabc09127032024",
