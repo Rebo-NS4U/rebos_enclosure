@@ -156,17 +156,17 @@ Item {
         property: "effectStrength"
         from: 1
         to: 0
-        duration: effectKind === "page" ? Math.max(900, Motion.enter * 2.8) : effectKind === "line" ? Math.max(650, Motion.enter * 2) : Math.max(360, Motion.enter * 1.2)
+        duration: effectKind === "page" ? Math.max(720, Motion.enter * 2.2) : effectKind === "line" ? Math.max(520, Motion.enter * 1.6) : Math.max(240, Motion.enter * 0.8)
         easing.type: Easing.OutCubic
         onFinished: root.stopFeedback()
     }
     component PopHalo: Rectangle {
         property real strength: 0
-        property real growth: 0.45
+        property real growth: 0.12
         radius: 5
-        color: Qt.alpha(Colors.primary, 0.2)
+        color: Qt.alpha(Colors.primary, 0.07)
         border.width: 1
-        border.color: Qt.alpha(Colors.primary, 0.8)
+        border.color: Qt.alpha(Colors.primary, 0.22)
         scale: 1 + (1 - strength) * growth
         opacity: strength
         visible: opacity > 0
@@ -801,12 +801,12 @@ Item {
                             anchors.fill: parent
                             readonly property real pagePop: root.effectKind === "page" ? root.effectStrength : 0
                             objectName: "typing-page-visuals"
-                            opacity: 1 - pagePop * 0.2
+                            opacity: 1 - pagePop * 0.10
                             transform: Scale {
                                 origin.x: passageVisuals.width / 2
                                 origin.y: passageVisuals.height / 2
-                                xScale: 1 + Math.sin((1 - passageVisuals.pagePop) * Math.PI) * 0.025
-                                yScale: 1 - passageVisuals.pagePop * 0.22 + Math.sin((1 - passageVisuals.pagePop) * Math.PI) * 0.10
+                                xScale: 1
+                                yScale: 1 - passageVisuals.pagePop * 0.012
                             }
                             Rectangle {
                                 objectName: "typing-line-highlight"
@@ -826,7 +826,7 @@ Item {
                                 anchors.fill: parent
                                 anchors.margins: 6
                                 radius: 10
-                                growth: 0.06
+                                growth: 0.015
                                 strength: root.effectKind === "page" ? root.effectStrength : 0
                             }
                             PopHalo {
@@ -836,11 +836,10 @@ Item {
                                 height: smoothCaret.rowHeight + 6
                                 y: smoothCaret.rowY - 3
                                 radius: 7
-                                growth: 0.12
+                                growth: 0.025
                                 strength: root.effectKind === "line" ? root.effectStrength : 0
                             }
-                            // A bounded, deterministic burst shares the feedback clock: no
-                            // particle timers survive a page change or reduced-motion toggle.
+                            // A quiet sweep shares the feedback clock and respects reduced motion.
                             Item {
                                 id: transitionBurst
                                 objectName: "typing-transition-burst"
@@ -858,32 +857,12 @@ Item {
                                     width: Math.max(60, parent.width * 0.22)
                                     height: smoothCaret.rowHeight
                                     radius: height / 2
-                                    opacity: Math.sin(transitionBurst.progress * Math.PI) * 0.5
+                                    opacity: Math.sin(transitionBurst.progress * Math.PI) * 0.12
                                     gradient: Gradient {
                                         orientation: Gradient.Horizontal
                                         GradientStop { position: 0; color: "transparent" }
                                         GradientStop { position: 0.65; color: Colors.primary }
                                         GradientStop { position: 1; color: "transparent" }
-                                    }
-                                }
-                                Repeater {
-                                    model: transitionBurst.page ? 28 : 12
-                                    delegate: Rectangle {
-                                        required property int index
-                                        readonly property real phase: transitionBurst.progress
-                                        readonly property real angle: index * 2.39996
-                                        readonly property real travel: (45 + (index % 7) * 22) * phase
-                                        width: 3 + index % 4
-                                        height: index % 3 === 0 ? width * 2.5 : width
-                                        radius: index % 3 === 0 ? 1 : width / 2
-                                        color: index % 3 === 0 ? Colors.overSurface : Colors.primary
-                                        x: transitionBurst.page ? parent.width / 2 + Math.cos(angle) * travel * 1.8
-                                                               : parent.width * phase + Math.cos(angle) * travel * 0.3
-                                        y: (transitionBurst.page ? parent.height * 0.4 : smoothCaret.rowY + smoothCaret.rowHeight / 2)
-                                           + Math.sin(angle) * travel * (transitionBurst.page ? 1 : 0.45) + phase * phase * 40
-                                        rotation: index * 31 + phase * (index % 2 ? 220 : -220)
-                                        opacity: Math.sin(Math.min(1, phase * 3) * Math.PI / 2) * (1 - phase)
-                                        scale: 1 - phase * 0.6
                                     }
                                 }
                             }
@@ -909,14 +888,14 @@ Item {
                                         readonly property real wave: linePop > 0 ? Math.sin(Math.max(0, Math.min(1, transitionBurst.progress * 1.6 - x / Math.max(1, passageFlow.width) * 0.5)) * Math.PI * 2) * linePop : 0
                                         transform: [
                                             Translate {
-                                                x: word.centerOffset + root.pageDirection * word.arrival * 46
-                                                y: -10 * word.wave + word.arrival * 26
+                                                x: word.centerOffset + root.pageDirection * word.arrival * 8
+                                                y: -1.5 * word.wave + word.arrival * 5
                                             },
                                             Scale {
                                                 origin.x: passageFlow.width / 2 - word.x - word.centerOffset
                                                 origin.y: word.height / 2
-                                                xScale: 1 + word.linePop * 0.025
-                                                yScale: 1 + word.linePop * 0.08
+                                                xScale: 1
+                                                yScale: 1 + word.linePop * 0.008
                                             }
                                         ]
                                         onArrivalChanged: { if (smoothCaret.targetGlyph?.parent === word) Qt.callLater(root.refreshPageCaret); }
@@ -933,8 +912,8 @@ Item {
                                                 property bool incorrect: false
                                                 property bool initialized: false
                                                 property real spark: 0
-                                                scale: 1 + spark * 0.18
-                                                transform: Translate { y: -3 * glyph.spark }
+                                                scale: 1 + spark * 0.035
+                                                transform: Translate { y: -0.6 * glyph.spark }
                                                 transformOrigin: Item.Center
                                                 function celebrate() { root.requestFeedback("letter", glyph); }
                                                 function stopFeedback() { if (root.effectKind === "letter" && root.effectGlyph === glyph) root.stopFeedback(); }
@@ -974,7 +953,7 @@ Item {
                                                 property real inkOpacity: caretHere || typed ? 1 : 0.65
                                                 opacity: caretHere ? 1 : inkOpacity
 
-                                                color: typed && incorrect ? Colors.error : Qt.tint(Colors.overSurface, Qt.alpha(Colors.primary, Math.max(spark, word?.linePop ?? 0, root.effectKind === "page" ? root.effectStrength : 0) * 0.65))
+                                                color: typed && incorrect ? Colors.error : Qt.tint(Colors.overSurface, Qt.alpha(Colors.primary, Math.max(spark, word?.linePop ?? 0, root.effectKind === "page" ? root.effectStrength : 0) * 0.28))
 
                                             }
                                         }
@@ -1004,7 +983,7 @@ Item {
                                     const nextY = point.y + item.baselineOffset + root.highlightBounds.y - root.highlightPadding;
                                     const newLine = placed && targetGlyph !== null && item.characterIndex > targetGlyph.characterIndex && nextY > targetRowY + 1;
                                     if (newLine && root.visible && answer.activeFocus && Motion.enabled) root.requestFeedback("line", item);
-                                    // Keep the cursor anchored while the new row ripples into view.
+                                    // Keep the cursor anchored during the subtle row settle.
                                     targetGlyph = item;
                                     targetRowY = Math.max(0, nextY);
                                     rowY = targetRowY;
