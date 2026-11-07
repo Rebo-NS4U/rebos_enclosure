@@ -21,14 +21,45 @@ Item {
     readonly property int pageLineLimit: Math.max(1, Math.floor(Math.max(0, passageArea.height - 8) / Math.max(1, passageLineHeight)))
     onPageLineLimitChanged: fitDelay.restart()
     onReadingFontChanged: fitDelay.restart()
+    property var readerPageHistory: []
     function toggleFullscreen() {
+        saveProgress();
+        readerPageHistory = [];
         fullscreen = !fullscreen;
+        stopFeedback();
         fitDelay.restart();
-        if (practicing) Qt.callLater(() => answer.forceActiveFocus());
+        if (practicing) Qt.callLater(() => root.focusPassage());
+    }
+    function focusPassage() {
+        if (fullscreen) readerText.forceActiveFocus();
+        else answer.forceActiveFocus();
+    }
+    function readNextPage() {
+        if (!fullscreen || busy || !bookId || !passage.length) return;
+        const next = position + characters(passage).length;
+        if (next >= bookLength) return;
+        readerPageHistory = readerPageHistory.concat([position]);
+        seek(next, true);
+    }
+    function readPreviousPage() {
+        if (!fullscreen || busy || !bookId || position <= 0) return;
+        if (readerPageHistory.length) {
+            const previous = readerPageHistory[readerPageHistory.length - 1];
+            readerPageHistory = readerPageHistory.slice(0, -1);
+            seek(previous, true);
+        } else {
+            historyBack = false;
+            send({action: "previous", id: bookId, position: position, loops: 0});
+        }
+    }
+    function readingWordAt(index) {
+        const start = passage.lastIndexOf(" ", Math.max(0, index - 1)) + 1;
+        const end = passage.indexOf(" ", index);
+        return passage.slice(start, end < 0 ? passage.length : end);
     }
     function handleEscape() {
         if (wordPanel.opened) { if (!noteDirty && !noteSaving) wordPanel.close(); else wordMessage = "Save or cancel your changes before returning to reading."; return; }
-        if (fullscreen) { fullscreen = false; fitDelay.restart(); if (practicing) answer.forceActiveFocus(); }
+        if (fullscreen) { fullscreen = false; fitDelay.restart(); if (practicing) root.focusPassage(); }
         else goBack();
     }
     property bool filePickerActive: false
@@ -135,6 +166,7 @@ Item {
     }
     function openCurrentWord() {
         if (wordPanel.opened) { handleEscape(); return; }
+        if (fullscreen) { openWord(readerText.selectedText || readingWordAt(readerText.cursorPosition)); return; }
         const item = currentWordItem();
         if (item) openWord(item.modelData.text);
     }
@@ -229,7 +261,7 @@ Item {
     readonly property int visualCursor: Math.min(TypingPaging.displayInput(answer.text.slice(0, answer.cursorPosition), passage).length, passage.length - 1)
     readonly property real progress: bookLength ? Math.min(1, (position + characters(displayedInput).length) / bookLength) : 0
     readonly property var passageWords: pageLayout.words
-    readonly property font readingFont: Qt.font({family: Config.theme.font, pixelSize: Config.theme.fontSize + 2, weight: Font.Normal})
+    readonly property font readingFont: Qt.font({family: Config.theme.font, pixelSize: fullscreen ? 22 : Config.theme.fontSize + 2, weight: Font.Normal})
     FontMetrics { id: typingMetrics; font: root.readingFont }
     readonly property rect highlightBounds: {
         const metricsFont = typingMetrics.font;
@@ -260,7 +292,7 @@ Item {
     Timer {
         id: fitDelay
         interval: 150
-        onTriggered: { if (root.visible && root.practicing && passageArea.width > 0 && passageArea.height > 0 && !root.restoring && root.pageSource.length) { root.fitPage(); if (root.bookId && root.characters(answer.text).length >= root.characters(root.passage).length) root.advance(); } }
+        onTriggered: { if (root.visible && root.practicing && passageArea.width > 0 && passageArea.height > 0 && !root.restoring && root.pageSource.length) { root.fitPage(); if (!root.fullscreen && root.bookId && root.characters(answer.text).length >= root.characters(root.passage).length) root.advance(); } }
     }
     property string effectKind: ""
     property int effectLine: -1
@@ -340,7 +372,7 @@ Item {
         if (visible) { backendStarted = true; if (ready) send({action: "list"}, false); }
         else { saveProgress(); stopFeedback(); }
         resetSpeed();
-        if (visible && practicing) { fitDelay.restart(); Qt.callLater(() => answer.forceActiveFocus()); }
+        if (visible && practicing) { fitDelay.restart(); Qt.callLater(() => root.focusPassage()); }
     }
     Component.onCompleted: { if (visible) backendStarted = true; }
     function send(data, page = true) {
@@ -415,7 +447,7 @@ Item {
     Timer {
         interval: 500
         repeat: true
-        running: root.visible && root.practicing && !root.busy && answer.activeFocus
+        running: root.visible && root.practicing && !root.fullscreen && !root.busy && answer.activeFocus
         onTriggered: {
             root.speedNow = Date.now();
             root.speedState = TypingSpeed.tick(root.speedState, root.speedNow, true);
@@ -431,8 +463,9 @@ Item {
         saveProgress(); draft = false; resumeOnOpen = true;
         send({action: "open", id: id});
     }
-    function seek(offset) {
+    function seek(offset, preserveReaderHistory = false) {
         if (!bookId || busy) return;
+        if (!preserveReaderHistory) readerPageHistory = [];
         dirty = false;
         send({action: "seek", id: bookId, position: Math.max(0, Math.min(bookLength - 1, offset)), typed: "", loops: rounds});
     }
@@ -448,6 +481,7 @@ Item {
     }
     function jumpChapter(index) {
         if (!bookId || busy || index < 0 || index >= chapters.length) return;
+        readerPageHistory = [];
         dirty = false;
         send({action: "chapter", id: bookId, index: index, loops: rounds});
     }
@@ -491,7 +525,7 @@ Item {
                 }
                 send({action: "previous", id: bookId, resolved: true,
                     position: data.previousStart + characters(data.previousText.slice(0, last)).length,
-                    typed: characters(text).slice(0, -1).join(""), loops: data.loops});
+                    typed: fullscreen ? "" : characters(text).slice(0, -1).join(""), loops: data.loops});
                 return;
             }
             if (data.empty) { busy = false; practicing = false; return; }
@@ -508,7 +542,7 @@ Item {
             data.typed = prepared.text;
             const entered = characters(data.typed);
             const pageCount = characters(fitted.text).length;
-            if (data.action !== "next" && data.action !== "previous" && pageCount > 0 && entered.length >= pageCount && !prepared.pending) {
+            if (!fullscreen && data.action !== "next" && data.action !== "previous" && pageCount > 0 && entered.length >= pageCount && !prepared.pending) {
                 restoreAction = data.action;
                 restoreChapters = data.chapters || chapters;
                 const next = data.position + pageCount;
@@ -517,7 +551,7 @@ Item {
                 return;
             }
             restoreAction = ""; restoreChapters = [];
-            if (data.action === "next") {
+            if (data.action === "next" && !fullscreen) {
                 speedCommitted += Math.max(0, correctCount() - speedBaseline);
                 speedBaseline = 0;
                 speedState = TypingSpeed.pause(speedState);
@@ -527,6 +561,7 @@ Item {
                 pageHistory = historyBack ? pageHistory.slice(0, -1) : [];
                 historyBack = false;
             }
+            if (bookId !== data.id || ["open", "add", "import"].indexOf(data.action) >= 0) readerPageHistory = [];
             restoring = true;
             bookId = data.id; bookTitle = data.title; bookKind = data.kind || "book"; bookLength = data.length;
             position = data.position; rounds = data.loops; if (data.chapters) chapters = data.chapters;
@@ -551,7 +586,7 @@ Item {
             if (data.action === "chapter" || data.action === "resume") practicing = true;
             if (data.action === "open" && resumeOnOpen) { resumeOnOpen = false; practicing = true; }
             if (data.action !== "next") resetSpeed();
-            if (practicing && visible) Qt.callLater(() => answer.forceActiveFocus());
+            if (practicing && visible) Qt.callLater(() => root.focusPassage());
             if (data.action !== "next") send({action: "list"}, false);
         } catch (error) { busy = false; message = "Could not read the book service response."; }
     }
@@ -559,7 +594,7 @@ Item {
     Timer { interval: 5000; running: root.backendStarted; repeat: true; onTriggered: root.saveProgress() }
 
     function status() {
-        return JSON.stringify({chapterCardVisible: chapterCard.visible, chapterTitle: chapterTitle, wordToolsOpen: wordPanel.opened, noteDirty: noteDirty, noteSaving: noteSaving, wordToolsShortcut: "Ctrl+Space", wordMenuWidth: wordPanel.width, wordMenuHeight: wordPanel.height, typingPanelWidth: menuAnchorItem.width, typingPanelHeight: menuAnchorItem.height, notebookMode: notebookMode, notebookCreating: notebookCreating, notesSection: notebookFilter, definitionsEnabled: definitionsEnabled, notedWordCount: notedTerms.length, practicing: practicing, fullscreen: fullscreen, pageLines: pageLayout.lines, pageLineLimit: pageLineLimit, passageHeight: passageArea.height, renderedHeight: passageFlow.height, fontSize: readingFont.pixelSize, layoutVersion: 9, previousPages: pageHistory.length, activeEffects: activeEffects, effectKind: effectKind, lineTransitions: lineTransitions, pageTransitions: pageTransitions, motionEnabled: Motion.enabled, feedbackEvents: feedbackEvents, focused: answer.activeFocus, turningPage: turningPage, textLength: bookLength,
+        return JSON.stringify({readingMode: fullscreen, chapterCardVisible: chapterCard.visible, chapterTitle: chapterTitle, wordToolsOpen: wordPanel.opened, noteDirty: noteDirty, noteSaving: noteSaving, wordToolsShortcut: "Ctrl+Space", wordMenuWidth: wordPanel.width, wordMenuHeight: wordPanel.height, typingPanelWidth: menuAnchorItem.width, typingPanelHeight: menuAnchorItem.height, notebookMode: notebookMode, notebookCreating: notebookCreating, notesSection: notebookFilter, definitionsEnabled: definitionsEnabled, notedWordCount: notedTerms.length, practicing: practicing, fullscreen: fullscreen, pageLines: pageLayout.lines, pageLineLimit: pageLineLimit, passageHeight: passageArea.height, renderedHeight: passageFlow.height, fontSize: readingFont.pixelSize, layoutVersion: 9, previousPages: pageHistory.length, activeEffects: activeEffects, effectKind: effectKind, lineTransitions: lineTransitions, pageTransitions: pageTransitions, motionEnabled: Motion.enabled, feedbackEvents: feedbackEvents, focused: answer.activeFocus, turningPage: turningPage, textLength: bookLength,
             typed: answer.text.length, position: position, rounds: rounds,
             presets: TypingTexts.passages.length, message: message, busy: busy,
             title: bookTitle, chapters: chapters.length, library: library.length, books: libraryBooks.length, wpm: liveWpm, filePickerActive: filePickerActive});
@@ -671,7 +706,7 @@ Item {
     function goBack() {
         if (busy || filePickerActive) return;
         if (practicing) { showLibrary(); return; }
-        if (bookId) { practicing = true; answer.forceActiveFocus(); }
+        if (bookId) { practicing = true; root.focusPassage(); }
         else if (draft) start();
         else if (library.length) { resumeOnOpen = true; openBook(library[0].id); }
     }
@@ -691,7 +726,7 @@ Item {
         if (draft || !bookId) {
             if (!paste.text.trim().length) { message = "Add some text or import a book first."; return; }
             send({action: "add", title: draftTitle, text: paste.text, kind: draftKind});
-        } else { practicing = true; answer.forceActiveFocus(); }
+        } else { practicing = true; root.focusPassage(); }
     }
     function normalizeInput() {
         if (restoring || busy || !bookId) return;
@@ -716,6 +751,7 @@ Item {
         syncGlyphs();
     }
     function advance() {
+        if (fullscreen) return;
         if (restoring || busy || !bookId) return;
         const prepared = TypingPaging.prepareInput(answer.text, passage);
         if (prepared.text !== answer.text) {
@@ -815,7 +851,7 @@ Item {
         function open() { visible = true; Qt.callLater(() => { if (root.wordOptionsExpanded) termInput.forceActiveFocus(); else contentItem.forceActiveFocus(); }); }
         function close() { visible = false; }
         onVisibleChanged: {
-            if (!visible) { root.cancelDefinition(); if (root.practicing) answer.forceActiveFocus(); }
+            if (!visible) { root.cancelDefinition(); if (root.practicing) root.focusPassage(); }
         }
         Services.FocusGrab {
             active: wordPanel.visible
@@ -1081,7 +1117,7 @@ Item {
                         width: 220
                         padding: 6
                         background: StyledRect { variant: "bg"; radius: 12; border.width: 1; border.color: Qt.alpha(Colors.primary, 0.28) }
-                        ReaderAction { objectName: "typing-fullscreen"; text: root.fullscreen ? "Exit fullscreen · F11" : "Fullscreen · F11"; onClicked: { readerActions.close(); root.toggleFullscreen(); } }
+                        ReaderAction { objectName: "typing-fullscreen"; text: root.fullscreen ? "Typing mode · F11" : "Reading mode · F11"; onClicked: { readerActions.close(); root.toggleFullscreen(); } }
                         ReaderAction { objectName: "typing-library"; text: "Book library"; enabled: root.practicing; onClicked: { readerActions.close(); root.showLibrary(); } }
                         ReaderAction { objectName: "typing-reader-import"; text: "Import book…"; enabled: !root.busy; onClicked: { readerActions.close(); root.openImport(); } }
                     }
@@ -1308,6 +1344,7 @@ Item {
                         }
                         Item {
                             id: passageVisuals
+                            visible: !root.fullscreen
                             anchors.fill: parent
                             readonly property real pagePop: root.effectKind === "page" ? root.effectStrength : 0
                             objectName: "typing-page-visuals"
@@ -1584,7 +1621,39 @@ Item {
                             }
                         }
                         TextEdit {
+                            id: readerText
+                            objectName: "reader-page-text"
+                            anchors.fill: parent
+                            anchors.margins: 4
+                            visible: root.fullscreen
+                            readOnly: true
+                            selectByMouse: true
+                            textFormat: TextEdit.PlainText
+                            text: root.passage
+                            font: root.readingFont
+                            color: Colors.overSurface
+                            selectionColor: Qt.alpha(Colors.primary, 0.3)
+                            selectedTextColor: Colors.overSurface
+                            wrapMode: TextEdit.Wrap
+                            cursorVisible: false
+                            Accessible.name: "Book passage"
+                            TapHandler {
+                                acceptedButtons: Qt.RightButton
+                                onTapped: point => root.openWord(root.readingWordAt(readerText.positionAt(point.position.x, point.position.y)))
+                            }
+                            Keys.onPressed: event => {
+                                if (event.key === Qt.Key_F11) root.toggleFullscreen();
+                                else if (event.key === Qt.Key_Escape) root.handleEscape();
+                                else if (event.key === Qt.Key_PageDown || (event.key === Qt.Key_Space && !(event.modifiers & Qt.ControlModifier))) root.readNextPage();
+                                else if (event.key === Qt.Key_PageUp) root.readPreviousPage();
+                                else return;
+                                event.accepted = true;
+                            }
+                        }
+                        TextEdit {
                             id: answer
+                            visible: !root.fullscreen
+                            readOnly: root.fullscreen || root.busy
                             objectName: "typing-input"
                             // Keep native preedit/selection rendering out of the custom passage.
                             opacity: 0
@@ -1597,7 +1666,7 @@ Item {
                             Accessible.name: "Type the passage shown above"
                             selectByMouse: false
                             font: root.readingFont
-                            TapHandler { onTapped: { answer.forceActiveFocus(); answer.cursorPosition = answer.length; } }
+                            TapHandler { onTapped: { root.focusPassage(); answer.cursorPosition = answer.length; } }
                             TapHandler {
                                 acceptedButtons: Qt.RightButton
                                 onTapped: point => {
@@ -1610,7 +1679,6 @@ Item {
                             }
                             wrapMode: TextEdit.Wrap
                             inputMethodHints: Qt.ImhNoPredictiveText
-                            readOnly: root.busy
                             onTextChanged: { root.advance(); root.syncGlyphs(); }
                             onCursorPositionChanged: root.syncCaret()
                             onActiveFocusChanged: {
@@ -1633,9 +1701,16 @@ Item {
                         }
                     }
                     RowLayout {
+                        visible: root.fullscreen
                         Layout.fillWidth: true
-                        StyledText { text: root.errorMessage || (root.busy ? "Loading…" : (!answer.activeFocus ? "Click the passage to continue typing" : root.chapterTitle)); textFormat: Text.PlainText; color: root.errorMessage ? Colors.error : Colors.overSurface; opacity: root.errorMessage ? 1 : 0.7; font.pixelSize: 11; elide: Text.ElideRight; Layout.fillWidth: true; Layout.minimumWidth: 0 }
-                        StyledText { objectName: "typing-live-wpm"; text: root.liveWpm + " WPM"; color: Colors.primary; font.pixelSize: 12 }
+                        TextButton { objectName: "reader-previous-page"; text: "‹ Previous"; enabled: !root.busy && root.position > 0; onClicked: root.readPreviousPage() }
+                        StyledText { text: "Page Up / Page Down · Space to continue"; font.pixelSize: 11; opacity: 0.6; Layout.fillWidth: true; horizontalAlignment: Text.AlignHCenter }
+                        TextButton { objectName: "reader-next-page"; text: root.position + root.characters(root.passage).length >= root.bookLength ? "End of book" : "Next ›"; enabled: !root.busy && root.position + root.characters(root.passage).length < root.bookLength; onClicked: root.readNextPage() }
+                    }
+                    RowLayout {
+                        Layout.fillWidth: true
+                        StyledText { text: root.errorMessage || (root.busy ? "Loading…" : (!root.fullscreen && !answer.activeFocus ? "Click the passage to continue typing" : root.chapterTitle)); textFormat: Text.PlainText; color: root.errorMessage ? Colors.error : Colors.overSurface; opacity: root.errorMessage ? 1 : 0.7; font.pixelSize: 11; elide: Text.ElideRight; Layout.fillWidth: true; Layout.minimumWidth: 0 }
+                        StyledText { objectName: "typing-live-wpm"; visible: !root.fullscreen; text: root.liveWpm + " WPM"; color: Colors.primary; font.pixelSize: 12 }
                         StyledText { text: (root.progress * 100).toFixed(1) + "%"; opacity: 0.5; font.pixelSize: 11 }
                     }
                     Rectangle {

@@ -147,12 +147,12 @@ ShellRoot {
                     input.insert(input.cursorPosition, " ");
                     if (practice.busy || practice.position !== screenshotPosition || practice.passage !== screenshotPage) throw Error("Typing the space before the last word turned the page early");
                     input.text = "";
-                    practice.fullscreen = true;
+                    practice.fullscreen = false;
                     practice.pageSource = "word ".repeat(800); practice.fitPage();
-                    if (practice.pageLayout.lines <= 2) throw Error("Fullscreen must show additional lines");
+                    if (practice.pageLayout.lines <= 2) throw Error("Tall typing view must show additional lines");
                     const editStarted = Date.now();
                     for (let count = 1; count <= 120; count++) input.text = practice.passage.slice(0, count);
-                    console.log("Fullscreen 120 input updates: " + (Date.now() - editStarted) + " ms");
+                    console.log("Typing 120 input updates: " + (Date.now() - editStarted) + " ms");
                     const editedGlyph = find(practice, "typing-character-10");
                     const originalTyped = input.text;
                     input.text = originalTyped.slice(0, 10) + "!" + originalTyped.slice(11);
@@ -563,6 +563,29 @@ ShellRoot {
                     find(restored, "typing-word-note").text = "Unsaved replacement";
                     find(restored, "typing-cancel-note-edit").clicked();
                     if (restored.noteDirty || restored.editingWordNote || find(restored, "typing-word-note").text !== originalNote) throw Error("Cancel did not restore the saved note");
+                    restored.wordTools.close();
+                    expectedPosition = restored.position;
+                    restored.toggleFullscreen();
+                } else if (phase === 124) {
+                    const restored = freshView.item;
+                    const reader = find(restored, "reader-page-text");
+                    if (!reader.visible || !reader.readOnly || find(restored, "typing-input").visible || find(restored, "typing-live-wpm").visible) throw Error("Reading mode still exposes typing controls");
+                    reader.forceActiveFocus();
+                    const original = reader.text;
+                    keyDriver.keyClick(Qt.Key_A, Qt.NoModifier, 0);
+                    if (reader.text !== original) throw Error("Reader allowed text editing");
+                    find(restored, "reader-next-page").clicked();
+                } else if (phase === 125) {
+                    const restored = freshView.item;
+                    if (restored.busy) return;
+                    if (restored.position <= expectedPosition || find(restored, "typing-input").text.length) throw Error("Reading next page did not navigate without typing");
+                    find(restored, "reader-previous-page").clicked();
+                } else if (phase === 126) {
+                    const restored = freshView.item;
+                    if (restored.busy) return;
+                    if (restored.position !== expectedPosition) throw Error("Reader previous page lost its exact position");
+                    restored.handleEscape();
+                    if (restored.fullscreen || !find(restored, "typing-input").visible) throw Error("Escape did not restore typing mode");
                     console.log("PASS: categorized book notebook, templates, word selection, saved notes, dictionary toggle, available-height passage fitting, lossless paging, Backspace navigation, queued input, legacy bookmark carryover, no-fail advance, resume, WPM and EPUB import");
                     Qt.quit();
                 }

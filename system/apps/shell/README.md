@@ -146,8 +146,14 @@ until you select a document or cancel. EPUB and other document formats are
 included in the Books filter. Niri focuses this import dialog automatically.
 
 Press **Mod+T** to open book typing practice directly from the desktop. The top
-bar keeps the book title and **Notes** visible; **⋯** groups Fullscreen (F11),
+bar keeps the book title and **Notes** visible; **⋯** groups Reading mode (F11),
 Book library and Import book actions.
+
+F11 opens a fullscreen **reading mode** with plain, selectable book text and
+no typing input, accuracy effects, caret or WPM. Use Previous/Next, Page Up/Page
+Down, or Space to turn pages. Escape or F11 returns to typing at the current
+reading position. Switching modes without navigating preserves partial typing.
+Right-click a word or select it and press Ctrl+Space for definitions and notes.
 
 Press **Ctrl+Space** while typing to open definitions and notes for the current
 word. Definitions, word notes and the notebook open directly below the typing
