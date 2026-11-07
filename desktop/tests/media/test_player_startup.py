@@ -27,6 +27,19 @@ class NetworkPlaybackTests(unittest.TestCase):
                 self.assertIn('prefetch-buffer-size=65536', options)
                 self.assertEqual('demux=avformat' in options, format_name.startswith('mov,'))
 
+    def test_youtube_uses_shorter_startup_buffer(self):
+        with tempfile.TemporaryDirectory() as folder:
+            session = vlc_session.VlcSession.__new__(vlc_session.VlcSession)
+            session.audio_normalization = False
+            session.generation = 0
+            session.logpath = Path(folder) / 'vlc.log'
+            session.logpath.touch()
+            session.api = Mock()
+            session.public_stream = lambda url, referer: url
+            session.apply(['load', ['https://example.com/video', '', '', ''], 'Video', False, False])
+            options = json.loads(session.api.call_args.kwargs['data'])['options']
+            self.assertIn('network-caching=500', options)
+
 
 class PluginDetectionTests(unittest.TestCase):
     def setUp(self):
