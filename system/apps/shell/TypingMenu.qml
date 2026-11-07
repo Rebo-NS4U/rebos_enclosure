@@ -678,7 +678,7 @@ Item {
     Timer { interval: 5000; running: root.backendStarted; repeat: true; onTriggered: root.saveProgress() }
 
     function status() {
-        return JSON.stringify({readingMode: fullscreen, readerAnimationEvents: readerAnimationEvents, readerMotionEnabled: Motion.enabled, chapterCardVisible: chapterCard.visible, chapterTitle: chapterTitle, wordToolsOpen: wordPanel.opened, noteDirty: noteDirty, noteSaving: noteSaving, wordToolsShortcut: "Ctrl+Space", wordMenuWidth: wordPanel.width, wordMenuHeight: wordPanel.height, typingPanelWidth: menuAnchorItem.width, typingPanelHeight: menuAnchorItem.height, notebookMode: notebookMode, notebookCreating: notebookCreating, notesSection: notebookFilter, definitionsEnabled: definitionsEnabled, notedWordCount: notedTerms.length, practicing: practicing, fullscreen: fullscreen, pageLines: pageLayout.lines, pageLineLimit: pageLineLimit, passageHeight: passageArea.height, renderedHeight: passageFlow.height, fontSize: readingFont.pixelSize, layoutVersion: 9, previousPages: pageHistory.length, activeEffects: activeEffects, effectKind: effectKind, lineTransitions: lineTransitions, pageTransitions: pageTransitions, motionEnabled: Motion.enabled, feedbackEvents: feedbackEvents, focused: answer.activeFocus, turningPage: turningPage, textLength: bookLength,
+        return JSON.stringify({readingMode: fullscreen, readerAnimationEvents: readerAnimationEvents, readerMotionEnabled: Motion.enabled, chapterCardVisible: chapterCard.visible, chapterTitle: chapterTitle, wordToolsOpen: wordPanel.opened, wordMenuReveal: wordPanel.reveal, wordMenuOpenAnimations: wordPanel.openAnimations, wordMenuCloseAnimations: wordPanel.closeAnimations, noteDirty: noteDirty, noteSaving: noteSaving, wordToolsShortcut: "Ctrl+Space", wordMenuWidth: wordPanel.width, wordMenuHeight: wordPanel.height, typingPanelWidth: menuAnchorItem.width, typingPanelHeight: menuAnchorItem.height, notebookMode: notebookMode, notebookCreating: notebookCreating, notesSection: notebookFilter, definitionsEnabled: definitionsEnabled, notedWordCount: notedTerms.length, practicing: practicing, fullscreen: fullscreen, pageLines: pageLayout.lines, pageLineLimit: pageLineLimit, passageHeight: passageArea.height, renderedHeight: passageFlow.height, fontSize: readingFont.pixelSize, layoutVersion: 9, previousPages: pageHistory.length, activeEffects: activeEffects, effectKind: effectKind, lineTransitions: lineTransitions, pageTransitions: pageTransitions, motionEnabled: Motion.enabled, feedbackEvents: feedbackEvents, focused: answer.activeFocus, turningPage: turningPage, textLength: bookLength,
             typed: answer.text.length, position: position, rounds: rounds,
             presets: TypingTexts.passages.length, message: message, busy: busy,
             title: bookTitle, chapters: chapters.length, library: library.length, books: libraryBooks.length, wpm: liveWpm, filePickerActive: filePickerActive});
@@ -695,6 +695,13 @@ Item {
             font.underline: parent.activeFocus
 
         }
+    }
+    component PrimaryTextButton: TextButton {
+        id: primaryButton
+        implicitHeight: 40
+        padding: 12
+        background: StyledRect { id: primarySurface; variant: primaryButton.down ? "primaryfocus" : "primary"; radius: 12 }
+        contentItem: StyledText { text: primaryButton.text; color: primarySurface.item; opacity: primaryButton.enabled ? 1 : 0.4; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
     }
     component ReaderNavButton: TextButton {
         id: nav
@@ -939,248 +946,326 @@ Item {
         implicitHeight: Math.max(1, root.menuAnchorItem.height)
         color: "transparent"
         visible: false
-        readonly property bool opened: visible
+        property bool opened: false
+        property real reveal: 0
+        property int openAnimations: 0
+        property int closeAnimations: 0
         readonly property real availableWidth: width - 32
         property alias surface: wordPanelSurface
-        function open() { visible = true; Qt.callLater(() => { if (root.wordOptionsExpanded) termInput.forceActiveFocus(); else contentItem.forceActiveFocus(); }); }
-        function close() { visible = false; }
-        onVisibleChanged: {
-            if (!visible) { root.cancelDefinition(); if (root.practicing) root.focusPassage(); }
+        mask: Region { item: panelViewport }
+        function open() {
+            const wasOpen = opened;
+            panelMotion.stop(); opened = true; visible = true;
+            if (!wasOpen && Motion.enabled) {
+                openAnimations++; panelMotion.to = 1; panelMotion.duration = Motion.enter; panelMotion.start();
+            } else reveal = 1;
+            Qt.callLater(() => { if (root.wordOptionsExpanded || root.notebookCreating) termInput.forceActiveFocus(); else contentItem.forceActiveFocus(); });
         }
+        function close() {
+            if (!opened) return;
+            opened = false; panelMotion.stop(); root.cancelDefinition();
+            if (root.practicing) root.focusPassage();
+            if (Motion.enabled) {
+                closeAnimations++; panelMotion.to = 0; panelMotion.duration = Motion.exit; panelMotion.start();
+            } else { reveal = 0; visible = false; }
+        }
+        NumberAnimation {
+            id: panelMotion
+            target: wordPanel
+            property: "reveal"
+            easing.type: Motion.enterCurve
+            onFinished: { if (!wordPanel.opened) wordPanel.visible = false; }
+        }
+        Connections {
+            target: Motion
+            function onEnabledChanged() {
+                if (!Motion.enabled) { panelMotion.stop(); wordPanel.reveal = wordPanel.opened ? 1 : 0; if (!wordPanel.opened) wordPanel.visible = false; }
+            }
+        }
+        onVisibleChanged: { if (!visible) { panelMotion.stop(); opened = false; reveal = 0; root.cancelDefinition(); } }
         Services.FocusGrab {
-            active: wordPanel.visible
+            active: wordPanel.opened
             windows: [wordPanel]
             onCleared: { if (!root.noteDirty && !root.noteSaving) wordPanel.close(); }
         }
-        StyledRect {
-            id: wordPanelSurface
-            objectName: "typing-word-panel-surface"
-            anchors.fill: parent
-            variant: "bg"
-            radius: 16
-            border.width: 1
-            border.color: Qt.alpha(Colors.primary, 0.28)
-        }
-        ColumnLayout {
-            anchors.fill: parent
-            anchors.margins: 16
-            spacing: 8
-            RowLayout {
-                Layout.fillWidth: true
-                TextButton { objectName: "typing-notebook-back"; visible: root.notebookMode && !root.notebookBrowsing; text: "‹ Notes"; enabled: !root.noteDirty && !root.noteSaving; onClicked: root.openNotebook() }
-                StyledText {
-                    text: root.notebookBrowsing ? "Book notes" : (root.notebookCreating ? "New note" : (root.selectedTerm || "Word lookup"))
-                    textFormat: Text.PlainText
-                    font: root.readingFont
-                    Layout.fillWidth: true
-                    elide: Text.ElideRight
+        Item {
+            id: panelViewport
+            width: wordPanel.width
+            height: wordPanel.height * wordPanel.reveal
+            clip: true
+            Item {
+                id: panelSheet
+                objectName: "typing-notes-sheet"
+                width: wordPanel.width
+                height: wordPanel.height
+                enabled: wordPanel.opened
+                opacity: 0.65 + 0.35 * wordPanel.reveal
+                transform: Translate { y: -24 * (1 - wordPanel.reveal) }
+                StyledRect {
+                    id: wordPanelSurface
+                    objectName: "typing-word-panel-surface"
+                    anchors.fill: parent
+                    variant: "bg"
+                    radius: 16
+                    border.width: 1
+                    border.color: Qt.alpha(Colors.primary, 0.28)
                 }
-                TextButton { text: "Return to reading"; enabled: !root.noteDirty && !root.noteSaving; onClicked: wordPanel.close() }
-            }
-            ScrollView {
-                objectName: "typing-word-scroll"
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                clip: true
-                contentWidth: availableWidth
                 ColumnLayout {
-                    id: wordContent
-                    width: wordPanel.availableWidth - 12
+                    anchors.fill: parent
+                    anchors.margins: 16
                     spacing: 8
-                    Keys.onEscapePressed: event => { root.handleEscape(); event.accepted = true; }
                     RowLayout {
-                        objectName: "typing-word-search"
-                        visible: root.notebookBrowsing || root.notebookCreating || (root.wordOptionsExpanded && !root.notebookMode)
                         Layout.fillWidth: true
-                        TextField {
-                            id: termInput
-                            objectName: "typing-word-term"
+                        TextButton { objectName: "typing-notebook-back"; visible: root.notebookMode && !root.notebookBrowsing; text: "‹ Notes"; enabled: !root.noteDirty && !root.noteSaving; onClicked: root.openNotebook() }
+                        ColumnLayout {
                             Layout.fillWidth: true
-                            maximumLength: 120
-                            placeholderText: root.notebookBrowsing ? "Search your notes" : (root.notebookCreating ? "Title, e.g. Elliot or the missing letter" : "Word to look up")
-                            color: Colors.overSurface
-                            font: root.readingFont
-                            placeholderTextColor: Qt.alpha(Colors.overSurface, 0.35)
-                            selectionColor: Qt.alpha(Colors.primary, 0.3)
-                            selectedTextColor: Colors.overSurface
-                            selectByMouse: true
-                            enabled: !root.noteDirty && !root.noteSaving
-                            background: StyledRect { variant: "pane"; radius: 8; border.width: 1; border.color: termInput.activeFocus ? Colors.primary : Colors.outlineVariant }
-                            onAccepted: { if (!root.notebookBrowsing) { if (root.notebookCreating) root.openNotebookEntry(text); else root.openWord(text); } }
-                        }
-                        TextButton {
-                            text: root.notebookBrowsing ? "New note" : (root.notebookCreating ? "Create note" : "Look up")
-                            objectName: "typing-new-notebook-note"
-                            enabled: (root.notebookBrowsing || termInput.text.trim().length > 0) && !root.noteDirty && !root.noteSaving
-                            onClicked: { if (root.notebookBrowsing) root.beginNotebookNote(); else if (root.notebookCreating) root.openNotebookEntry(termInput.text); else root.openWord(termInput.text); }
-                        }
-                    }
-                    StyledText { visible: root.notebookCreating; text: "Choose a section"; font.pixelSize: 12 }
-                    ThemeSelect {
-                        visible: root.notebookCreating
-                        Layout.fillWidth: true
-                        textRole: ""
-                        model: root.noteCategories
-                        currentIndex: root.noteCategories.indexOf(root.newNoteCategory)
-                        onActivated: index => root.newNoteCategory = root.noteCategories[index]
-                    }
-                    Flow {
-                        visible: root.notebookBrowsing
-                        Layout.fillWidth: true
-                        spacing: 4
-                        Repeater {
-                            model: ["All"].concat(root.noteCategories)
-                            delegate: TextButton {
-                                required property string modelData
-                                text: (root.notebookFilter === modelData ? "• " : "") + modelData
-                                onClicked: root.notebookFilter = modelData
-                            }
-                        }
-                    }
-                    ColumnLayout {
-                        objectName: "typing-notebook-entries"
-                        visible: root.notebookBrowsing
-                        Layout.fillWidth: true
-                        spacing: 6
-                        StyledText {
-                            visible: root.visibleNoteEntries.length === 0
-                            text: termInput.text.trim() ? "No matching notes. Try another search." : "No notes in this section. Choose New note to start."
-                            font.pixelSize: 12
-                            wrapMode: Text.Wrap
-                            Layout.fillWidth: true
-                        }
-                        Repeater {
-                            model: root.visibleNoteEntries
-                            delegate: StyledRect {
-                                id: notebookEntryCard
-                                required property var modelData
-                                objectName: "typing-notebook-entry-" + modelData.term
+                            spacing: 4
+                            StyledText { visible: root.fullscreen; text: root.notebookMode ? "BOOK NOTEBOOK" : "WORD NOTES"; font.pixelSize: 10; font.letterSpacing: 2; color: Colors.primary }
+                            StyledText {
+                                text: root.notebookBrowsing ? "Book notes" : (root.notebookCreating ? "New note" : (root.selectedTerm || "Word lookup"))
+                                textFormat: Text.PlainText
+                                font.family: Config.theme.font
+                                font.pixelSize: root.fullscreen ? 24 : 16
+                                font.weight: Font.DemiBold
                                 Layout.fillWidth: true
-                                implicitHeight: entryContent.implicitHeight + 20
-                                variant: "pane"
-                                radius: 8
-                                activeFocusOnTab: true
-                                Accessible.name: modelData.term
-                                Accessible.role: Accessible.Button
-                                Keys.onReturnPressed: root.openNotebookEntry(modelData.term)
-                                TapHandler { onTapped: root.openNotebookEntry(notebookEntryCard.modelData.term) }
-                                ColumnLayout {
-                                    id: entryContent
-                                    anchors.left: parent.left
-                                    anchors.right: parent.right
-                                    anchors.top: parent.top
-                                    anchors.margins: 10
-                                    spacing: 4
-                                    StyledText { text: notebookEntryCard.modelData.term + " · " + notebookEntryCard.modelData.category; textFormat: Text.PlainText; color: Colors.primary; elide: Text.ElideRight; Layout.fillWidth: true }
-                                    StyledText { text: notebookEntryCard.modelData.note; textFormat: Text.PlainText; font.pixelSize: 12; wrapMode: Text.Wrap; maximumLineCount: 2; elide: Text.ElideRight; Layout.fillWidth: true }
+                                elide: Text.ElideRight
+                            }
+                            StyledText { visible: root.fullscreen; text: root.bookTitle; textFormat: Text.PlainText; opacity: 0.5; font.pixelSize: 11; Layout.fillWidth: true; elide: Text.ElideRight }
+                        }
+                        TextButton { text: "Return to reading"; enabled: !root.noteDirty && !root.noteSaving; onClicked: wordPanel.close() }
+                    }
+                    ScrollView {
+                        objectName: "typing-word-scroll"
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        clip: true
+                        contentWidth: availableWidth
+                        ColumnLayout {
+                            id: wordContent
+                            width: wordPanel.availableWidth - 12
+                            spacing: 8
+                            Keys.onEscapePressed: event => { root.handleEscape(); event.accepted = true; }
+                            RowLayout {
+                                objectName: "typing-word-search"
+                                visible: root.notebookBrowsing || root.notebookCreating || (root.wordOptionsExpanded && !root.notebookMode)
+                                Layout.fillWidth: true
+                                TextField {
+                                    id: termInput
+                                    objectName: "typing-word-term"
+                                    Layout.fillWidth: true
+                                    maximumLength: 120
+                                    implicitHeight: 48
+                                    padding: 12
+                                    placeholderText: root.notebookBrowsing ? "Search your notes" : (root.notebookCreating ? "Title, e.g. Elliot or the missing letter" : "Word to look up")
+                                    color: Colors.overSurface
+                                    font: Qt.font({family: Config.theme.font, pixelSize: root.fullscreen ? 16 : root.readingFont.pixelSize})
+                                    placeholderTextColor: Qt.alpha(Colors.overSurface, 0.35)
+                                    selectionColor: Qt.alpha(Colors.primary, 0.3)
+                                    selectedTextColor: Colors.overSurface
+                                    selectByMouse: true
+                                    enabled: !root.noteDirty && !root.noteSaving
+                                    background: StyledRect { variant: "pane"; radius: 8; border.width: 1; border.color: termInput.activeFocus ? Colors.primary : Colors.outlineVariant }
+                                    onAccepted: { if (!root.notebookBrowsing) { if (root.notebookCreating) root.openNotebookEntry(text); else root.openWord(text); } }
+                                }
+                                PrimaryTextButton {
+                                    text: root.notebookBrowsing ? "New note" : (root.notebookCreating ? "Create note" : "Look up")
+                                    objectName: "typing-new-notebook-note"
+                                    enabled: (root.notebookBrowsing || termInput.text.trim().length > 0) && !root.noteDirty && !root.noteSaving
+                                    onClicked: { if (root.notebookBrowsing) root.beginNotebookNote(); else if (root.notebookCreating) root.openNotebookEntry(termInput.text); else root.openWord(termInput.text); }
                                 }
                             }
+                            StyledText { visible: root.notebookCreating; text: "Choose a section"; font.pixelSize: 12 }
+                            ThemeSelect {
+                                visible: root.notebookCreating
+                                Layout.fillWidth: true
+                                textRole: ""
+                                model: root.noteCategories
+                                currentIndex: root.noteCategories.indexOf(root.newNoteCategory)
+                                onActivated: index => root.newNoteCategory = root.noteCategories[index]
+                            }
+                            Flow {
+                                visible: root.notebookBrowsing
+                                Layout.fillWidth: true
+                                spacing: 4
+                                Repeater {
+                                    model: ["All"].concat(root.noteCategories)
+                                    delegate: Button {
+                                        id: sectionTab
+                                        required property string modelData
+                                        implicitHeight: 36
+                                        leftPadding: 12
+                                        rightPadding: 12
+                                        text: modelData
+                                        Accessible.name: modelData + " notes"
+                                        background: StyledRect { variant: root.notebookFilter === sectionTab.modelData ? "focus" : "pane"; radius: 10; border.width: 1; border.color: root.notebookFilter === sectionTab.modelData ? Qt.alpha(Colors.primary, 0.6) : "transparent" }
+                                        contentItem: StyledText { text: sectionTab.text; color: root.notebookFilter === sectionTab.modelData ? Colors.primary : Colors.overSurface; opacity: root.notebookFilter === sectionTab.modelData ? 1 : 0.65; verticalAlignment: Text.AlignVCenter; horizontalAlignment: Text.AlignHCenter }
+                                        onClicked: root.notebookFilter = modelData
+                                    }
+                                }
+                            }
+                            RowLayout {
+                                visible: root.fullscreen && root.notebookBrowsing
+                                Layout.fillWidth: true
+                                Layout.topMargin: 8
+                                StyledText { text: root.notebookFilter === "All" ? "All notes" : root.notebookFilter; font.pixelSize: 22; font.weight: Font.DemiBold; Layout.fillWidth: true }
+                                StyledText { text: root.visibleNoteEntries.length + (root.visibleNoteEntries.length === 1 ? " note" : " notes"); font.pixelSize: 12; opacity: 0.5 }
+                            }
+                            GridLayout {
+                                id: notesGrid
+                                objectName: "typing-notebook-entries"
+                                columns: root.fullscreen && wordPanel.width >= 760 ? 2 : 1
+                                columnSpacing: 12
+                                rowSpacing: 12
+                                visible: root.notebookBrowsing
+                                Layout.fillWidth: true
+                                StyledText {
+                                    Layout.columnSpan: notesGrid.columns
+                                    visible: root.visibleNoteEntries.length === 0
+                                    text: termInput.text.trim() ? "No matching notes. Try another search." : "No notes in this section. Choose New note to start."
+                                    font.pixelSize: 12
+                                    wrapMode: Text.Wrap
+                                    Layout.fillWidth: true
+                                }
+                                Repeater {
+                                    model: root.visibleNoteEntries
+                                    delegate: StyledRect {
+                                        id: notebookEntryCard
+                                        required property var modelData
+                                        objectName: "typing-notebook-entry-" + modelData.term
+                                        Layout.fillWidth: true
+                                        implicitHeight: Math.max(root.fullscreen ? 120 : 86, entryContent.implicitHeight + 28)
+                                        variant: "pane"
+                                        radius: 12
+                                        backgroundOpacity: entryHover.hovered || activeFocus ? 0.75 : 0.4
+                                        border.width: 1
+                                        border.color: entryHover.hovered || activeFocus ? Qt.alpha(Colors.primary, 0.6) : Qt.alpha(Colors.outlineVariant, 0.35)
+                                        HoverHandler { id: entryHover }
+                                        activeFocusOnTab: true
+                                        Accessible.name: modelData.term
+                                        Accessible.role: Accessible.Button
+                                        Keys.onReturnPressed: root.openNotebookEntry(modelData.term)
+                                        TapHandler { onTapped: root.openNotebookEntry(notebookEntryCard.modelData.term) }
+                                        ColumnLayout {
+                                            id: entryContent
+                                            anchors.left: parent.left
+                                            anchors.right: parent.right
+                                            anchors.top: parent.top
+                                            anchors.margins: 14
+                                            spacing: 8
+                                            StyledText { text: notebookEntryCard.modelData.category.toUpperCase(); color: Colors.primary; font.pixelSize: 10; font.letterSpacing: 1.5; Layout.fillWidth: true }
+                                            StyledText { text: notebookEntryCard.modelData.term; textFormat: Text.PlainText; font.pixelSize: root.fullscreen ? 18 : 14; font.weight: Font.DemiBold; elide: Text.ElideRight; Layout.fillWidth: true }
+                                            StyledText { text: notebookEntryCard.modelData.note; textFormat: Text.PlainText; opacity: 0.65; font.pixelSize: root.fullscreen ? 14 : 12; wrapMode: Text.Wrap; maximumLineCount: 3; elide: Text.ElideRight; Layout.fillWidth: true }
+                                        }
+                                    }
+                                }
+                            }
+                            ThemeSelect {
+                                textRole: ""
+                                objectName: "typing-saved-words"
+                                Layout.fillWidth: true
+                                visible: !root.notebookMode && root.wordOptionsExpanded && root.notedTerms.length > 0
+                                model: root.notedTerms
+                                displayText: "Saved notes in this book"
+                                enabled: !root.noteDirty && !root.noteSaving
+                                onActivated: index => root.openWord(root.notedTerms[index])
+                            }
+                            TextButton {
+                                objectName: "typing-definitions-toggle"
+                                visible: !root.notebookMode && root.wordOptionsExpanded
+                                text: "Online definitions: " + (root.definitionsEnabled ? "On" : "Off")
+                                onClicked: {
+                                    root.definitionsEnabled = !root.definitionsEnabled;
+                                    root.cancelDefinition(); root.definitionText = "";
+                                    root.send({action: "word_settings", enabled: root.definitionsEnabled}, false);
+                                }
+                            }
+                            ScrollView {
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: Math.min(160, definitionLabel.implicitHeight)
+                                visible: !root.notebookMode && root.definitionsEnabled && root.selectedTerm.length > 0
+                                clip: true
+                                StyledText { id: definitionLabel; width: wordPanel.availableWidth - 12; text: root.definitionText; textFormat: Text.PlainText; wrapMode: Text.Wrap; font.pixelSize: 12 }
+                            }
+                            RowLayout {
+                                visible: !root.notebookMode && root.wordOptionsExpanded && root.definitionsEnabled
+                                StyledText { text: "English definitions · Free Dictionary API"; font.pixelSize: 11; opacity: 0.65 }
+                                TextButton { text: "Retry"; enabled: root.selectedTerm.length > 0; onClicked: root.lookupDefinition() }
+                            }
+                            StyledText {
+                                objectName: "typing-word-note-preview"
+                                visible: !root.editingWordNote && root.savedWordNote.length > 0
+                                text: root.savedWordNote
+                                textFormat: Text.PlainText
+                                wrapMode: Text.Wrap
+                                Layout.fillWidth: true
+                                color: Colors.overSurface
+                                font.pixelSize: 12
+                            }
+                            TextButton {
+                                objectName: "typing-edit-word-note"
+                                visible: !root.editingWordNote && root.selectedTerm.length > 0
+                                enabled: root.noteLoaded
+                                text: root.savedWordNote.length ? "Edit note" : "Add note"
+                                onClicked: { root.editingWordNote = true; wordNote.forceActiveFocus(); }
+                            }
+                            StyledText { visible: root.savedWordNote.length > 0 && !root.editingWordNote; text: root.savedNoteCategory; color: Colors.primary; font.pixelSize: 11 }
+                            ThemeSelect {
+                                objectName: "typing-note-category"
+                                visible: root.editingWordNote
+                                Layout.fillWidth: true
+                                textRole: ""
+                                model: root.noteCategories
+                                currentIndex: root.noteCategories.indexOf(root.noteCategory)
+                                enabled: !root.noteSaving
+                                onActivated: index => root.noteCategory = root.noteCategories[index]
+                            }
+                            TextButton {
+                                objectName: "typing-note-template"
+                                visible: root.editingWordNote && root.noteCategory !== "General" && !wordNote.text.length
+                                text: "Insert outline"
+                                onClicked: { wordNote.text = root.notePrompt + "\n"; wordNote.forceActiveFocus(); }
+                            }
+                            ScrollView {
+                                visible: root.editingWordNote
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: root.fullscreen ? Math.max(160, Math.min(420, wordPanel.height * 0.35)) : 110
+                                Layout.minimumHeight: 55
+                                TextArea {
+                                    id: wordNote
+                                    objectName: "typing-word-note"
+                                    enabled: root.noteLoaded && !root.noteSaving
+                                    textFormat: TextEdit.PlainText
+                                    placeholderText: root.notePrompt
+                                    padding: root.fullscreen ? 16 : 10
+                                    wrapMode: TextEdit.Wrap
+                                    selectByMouse: true
+                                    color: Colors.overSurface
+                                    font: Qt.font({family: Config.theme.font, pixelSize: root.fullscreen ? 18 : root.readingFont.pixelSize})
+                                    placeholderTextColor: Qt.alpha(Colors.overSurface, 0.35)
+                                    selectionColor: Qt.alpha(Colors.primary, 0.3)
+                                    selectedTextColor: Colors.overSurface
+                                    background: StyledRect { variant: "pane"; radius: 8 }
+                                    Accessible.name: "Note for selected word or name"
+                                }
+                            }
+                            StyledText { visible: text.length > 0; text: wordNote.length > 10000 ? "Notes can contain up to 10,000 characters." : (root.noteSaving ? "" : root.wordMessage); textFormat: Text.PlainText; wrapMode: Text.Wrap; Layout.fillWidth: true; font.pixelSize: 11 }
+                            TextButton {
+                                objectName: "typing-word-options"
+                                visible: !root.notebookMode
+                                text: root.wordOptionsExpanded ? "Hide dictionary options" : "Dictionary options"
+                                onClicked: root.wordOptionsExpanded = !root.wordOptionsExpanded
+                            }
                         }
-                    }
-                    ThemeSelect {
-                        textRole: ""
-                        objectName: "typing-saved-words"
-                        Layout.fillWidth: true
-                        visible: !root.notebookMode && root.wordOptionsExpanded && root.notedTerms.length > 0
-                        model: root.notedTerms
-                        displayText: "Saved notes in this book"
-                        enabled: !root.noteDirty && !root.noteSaving
-                        onActivated: index => root.openWord(root.notedTerms[index])
-                    }
-                    TextButton {
-                        objectName: "typing-definitions-toggle"
-                        visible: !root.notebookMode && root.wordOptionsExpanded
-                        text: "Online definitions: " + (root.definitionsEnabled ? "On" : "Off")
-                        onClicked: {
-                            root.definitionsEnabled = !root.definitionsEnabled;
-                            root.cancelDefinition(); root.definitionText = "";
-                            root.send({action: "word_settings", enabled: root.definitionsEnabled}, false);
-                        }
-                    }
-                    ScrollView {
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: Math.min(160, definitionLabel.implicitHeight)
-                        visible: !root.notebookMode && root.definitionsEnabled && root.selectedTerm.length > 0
-                        clip: true
-                        StyledText { id: definitionLabel; width: wordPanel.availableWidth - 12; text: root.definitionText; textFormat: Text.PlainText; wrapMode: Text.Wrap; font.pixelSize: 12 }
                     }
                     RowLayout {
-                        visible: !root.notebookMode && root.wordOptionsExpanded && root.definitionsEnabled
-                        StyledText { text: "English definitions · Free Dictionary API"; font.pixelSize: 11; opacity: 0.65 }
-                        TextButton { text: "Retry"; enabled: root.selectedTerm.length > 0; onClicked: root.lookupDefinition() }
-                    }
-                    StyledText {
-                        objectName: "typing-word-note-preview"
-                        visible: !root.editingWordNote && root.savedWordNote.length > 0
-                        text: root.savedWordNote
-                        textFormat: Text.PlainText
-                        wrapMode: Text.Wrap
-                        Layout.fillWidth: true
-                        color: Colors.overSurface
-                        font.pixelSize: 12
-                    }
-                    TextButton {
-                        objectName: "typing-edit-word-note"
-                        visible: !root.editingWordNote && root.selectedTerm.length > 0
-                        enabled: root.noteLoaded
-                        text: root.savedWordNote.length ? "Edit note" : "Add note"
-                        onClicked: { root.editingWordNote = true; wordNote.forceActiveFocus(); }
-                    }
-                    StyledText { visible: root.savedWordNote.length > 0 && !root.editingWordNote; text: root.savedNoteCategory; color: Colors.primary; font.pixelSize: 11 }
-                    ThemeSelect {
-                        objectName: "typing-note-category"
+                        objectName: "typing-note-actions"
                         visible: root.editingWordNote
                         Layout.fillWidth: true
-                        textRole: ""
-                        model: root.noteCategories
-                        currentIndex: root.noteCategories.indexOf(root.noteCategory)
-                        enabled: !root.noteSaving
-                        onActivated: index => root.noteCategory = root.noteCategories[index]
-                    }
-                    TextButton {
-                        objectName: "typing-note-template"
-                        visible: root.editingWordNote && root.noteCategory !== "General" && !wordNote.text.length
-                        text: "Insert outline"
-                        onClicked: { wordNote.text = root.notePrompt + "\n"; wordNote.forceActiveFocus(); }
-                    }
-                    ScrollView {
-                        visible: root.editingWordNote
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 110
-                        Layout.minimumHeight: 55
-                        TextArea {
-                            id: wordNote
-                            objectName: "typing-word-note"
-                            enabled: root.noteLoaded && !root.noteSaving
-                            textFormat: TextEdit.PlainText
-                            placeholderText: root.notePrompt
-                            wrapMode: TextEdit.Wrap
-                            selectByMouse: true
-                            color: Colors.overSurface
-                            font: root.readingFont
-                            placeholderTextColor: Qt.alpha(Colors.overSurface, 0.35)
-                            selectionColor: Qt.alpha(Colors.primary, 0.3)
-                            selectedTextColor: Colors.overSurface
-                            background: StyledRect { variant: "pane"; radius: 8 }
-                            Accessible.name: "Note for selected word or name"
-                        }
-                    }
-                    StyledText { visible: text.length > 0; text: wordNote.length > 10000 ? "Notes can contain up to 10,000 characters." : (root.noteSaving ? "" : root.wordMessage); textFormat: Text.PlainText; wrapMode: Text.Wrap; Layout.fillWidth: true; font.pixelSize: 11 }
-                    TextButton {
-                        objectName: "typing-word-options"
-                        visible: !root.notebookMode
-                        text: root.wordOptionsExpanded ? "Hide dictionary options" : "Dictionary options"
-                        onClicked: root.wordOptionsExpanded = !root.wordOptionsExpanded
+                        StyledText { text: root.noteSaving ? "Saving…" : (root.noteDirty ? "Unsaved changes" : ""); font.pixelSize: 11; Layout.fillWidth: true }
+                        TextButton { objectName: "typing-cancel-note-edit"; text: "Cancel"; enabled: !root.noteSaving; onClicked: root.cancelNoteEdit() }
+                        PrimaryTextButton { objectName: "typing-save-word-note"; text: "Save note"; enabled: root.noteLoaded && root.noteDirty && !root.noteSaving && wordNote.length <= 10000; onClicked: root.saveWordNote() }
                     }
                 }
-            }
-            RowLayout {
-                objectName: "typing-note-actions"
-                visible: root.editingWordNote
-                Layout.fillWidth: true
-                StyledText { text: root.noteSaving ? "Saving…" : (root.noteDirty ? "Unsaved changes" : ""); font.pixelSize: 11; Layout.fillWidth: true }
-                TextButton { objectName: "typing-cancel-note-edit"; text: "Cancel"; enabled: !root.noteSaving; onClicked: root.cancelNoteEdit() }
-                TextButton { objectName: "typing-save-word-note"; text: "Save note"; enabled: root.noteLoaded && root.noteDirty && !root.noteSaving && wordNote.length <= 10000; onClicked: root.saveWordNote() }
             }
         }
     }

@@ -13,6 +13,7 @@ ShellRoot {
     property bool closeRequested: false
     property int previousReaderAnimations: 0
     property int readerChapter: 0
+    property var notebookPreviewEntries: []
     PanelWindow {
         id: testWindow
         TestTools.TestCase { id: keyDriver; name: "TypingKeystrokes"; when: false }
@@ -455,10 +456,13 @@ ShellRoot {
                         throw Error("Ctrl+Space did not inspect the current word without editing input: " + JSON.stringify({opened:panel.opened, term:restored.selectedTerm, expected:currentWord.modelData.text, before:before, after:field.text}));
                     if (panel.anchor.item !== restored.menuAnchorItem || panel.anchor.rect.x !== 0 || Math.abs(panel.anchor.rect.y - restored.menuAnchorItem.height - 6) > 1 || Math.abs(panel.width - restored.menuAnchorItem.width) > 1 || Math.abs(panel.height - restored.menuAnchorItem.height) > 1) throw Error("Word menu does not match the typing panel or sit below it");
                     if (panel.surface.variant !== "bg") throw Error("Word panel does not share the typing surface theme");
+                    if (Motion.enabled && panel.openAnimations < 1) throw Error("Word menu did not start incoming animation");
                     keyDriver.keyClick(Qt.Key_Space, Qt.ControlModifier, 0);
+                    if (Motion.enabled && (!panel.visible || panel.opened || panel.closeAnimations < 1)) throw Error("Word menu hid before its outgoing animation");
                     keyDriver.wait(30);
                     if (panel.opened || !field.activeFocus) throw Error("Ctrl+Space did not close word panel and restore typing focus");
                     restored.openWord("“Macy,”");
+                    if (Motion.enabled && panel.openAnimations < 2) throw Error("Reopening menu did not reverse its exit animation");
                 } else if (phase === 114) {
                     const restored = freshView.item;
                     if (!restored.noteLoaded) return;
@@ -516,6 +520,27 @@ ShellRoot {
                     const restored = freshView.item;
                     if (Math.abs(restored.wordTools.width - restored.menuAnchorItem.width) > 1 || Math.abs(restored.wordTools.height - restored.menuAnchorItem.height) > 1) throw Error("Notebook size does not match the typing panel");
                     if (!restored.notebookBrowsing || restored.noteEntries.length !== 1 || restored.noteEntries[0].category !== "General") throw Error("Book notebook did not load existing notes");
+                    harness.notebookPreviewEntries = restored.noteEntries;
+                    restored.noteEntries = [
+                        {term: "The caretaker", category: "People", note: "Quiet and observant. Knows the station better than anyone. What is he protecting?"},
+                        {term: "Old station", category: "Settings", note: "A platform at the edge of town. The clock stopped before the last train left."},
+                        {term: "A missing key", category: "Mysteries", note: "Clues: a brass mark on the desk. Theory: someone returned after midnight."}
+                    ];
+                    restored.fullscreen = true;
+                    testWindow.implicitWidth = 960; testWindow.implicitHeight = 800;
+                    phase = 140; return;
+                } else if (phase === 140) {
+                    const restored = freshView.item;
+                    if (find(restored, "typing-notebook-entries").columns !== 2 || restored.wordTools.reveal < 0.99) throw Error("Fullscreen notebook grid or incoming reveal failed");
+                    find(restored, "typing-notes-sheet").grabToImage(result => result.saveToFile("/tmp/enclosure-notebook-preview.png"));
+                } else if (phase === 141) {
+                    const restored = freshView.item;
+                    restored.noteEntries = harness.notebookPreviewEntries;
+                    const beforeClose = restored.wordTools.closeAnimations;
+                    restored.wordTools.close();
+                    if (Motion.enabled && (!restored.wordTools.visible || restored.wordTools.closeAnimations <= beforeClose)) throw Error("Notebook did not animate out before hiding");
+                    restored.openNotebook();
+                    restored.fullscreen = false; testWindow.implicitWidth = 640; testWindow.implicitHeight = 600;
                     restored.notebookFilter = "People";
                     if (restored.visibleNoteEntries.length !== 0) throw Error("Notebook sections do not filter entries");
                     const search = find(restored, "typing-word-term");
@@ -526,6 +551,7 @@ ShellRoot {
                     if (!restored.notebookCreating || search.text) throw Error("New note did not open a separate blank title form");
                     search.text = "Elliot";
                     find(restored, "typing-new-notebook-note").clicked();
+                    phase = 120; return;
                 } else if (phase === 120) {
                     const restored = freshView.item;
                     if (!restored.noteLoaded) return;
@@ -603,6 +629,10 @@ ShellRoot {
                     Config.animDuration = 0;
                     restored.animateReaderPage(1);
                     if (restored.readerReveal !== 1 || restored.readerAnimationEvents !== animationCount) throw Error("Reader ignored reduced motion setting");
+                    restored.openWord("motion check");
+                    if (restored.wordTools.reveal !== 1 || !restored.wordTools.opened) throw Error("Reduced-motion menu did not open immediately");
+                    restored.wordTools.close();
+                    if (restored.wordTools.visible || restored.wordTools.reveal !== 0) throw Error("Reduced-motion menu did not close immediately");
                     Config.animDuration = oldDuration;
                     harness.readerChapter = restored.currentChapterIndex;
                     if (harness.readerChapter + 1 >= restored.chapters.length) throw Error("Missing chapter fixture for hjkl test");

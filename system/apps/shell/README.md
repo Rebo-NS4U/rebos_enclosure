@@ -165,7 +165,11 @@ Right-click a word or select it and press Ctrl+Space for definitions and notes.
 
 Press **Ctrl+Space** while typing to open definitions and notes for the current
 word. Definitions, word notes and the notebook open directly below the typing
-panel, aligned to its left edge and matching its width and height. Press it again (or Escape) to close the panel and return to
+panel, aligned to its left edge and matching its width and height. Both menus
+reveal downward from the panel edge when opened and retract upward when closed;
+reopening during a close reverses the motion, and reduced motion is respected.
+The fullscreen notebook has a book header, highlighted section tabs, note counts,
+a responsive two-column card grid, and a larger editor with pinned save controls. Press it again (or Escape) to close the panel and return to
 typing after saving or discarding edits. The word panel uses the same themed
 background, accent border and reading font as the typing panel. Right-click a
 word to inspect it. Use **Notes** to open this book's notebook, browse **People**,
