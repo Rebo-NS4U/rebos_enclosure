@@ -11,6 +11,7 @@ import qs.config
 ShellRoot {
     id: harness
     property bool closeRequested: false
+    property int previousReaderAnimations: 0
     PanelWindow {
         id: testWindow
         TestTools.TestCase { id: keyDriver; name: "TypingKeystrokes"; when: false }
@@ -570,7 +571,7 @@ ShellRoot {
                     const restored = freshView.item;
                     const reader = find(restored, "reader-page-text");
                     if (!reader.visible || !reader.readOnly || find(restored, "typing-input").visible || find(restored, "typing-live-wpm").visible) throw Error("Reading mode still exposes typing controls");
-                    if (reader.font.family !== "Noto Serif" || reader.width > 720 || reader.getText(0, reader.length).trim() !== restored.passage.trim()) throw Error("Reader typography, measure, or displayed text is incorrect");
+                    if (reader.font.family !== Config.theme.font || reader.width > 720 || reader.getText(0, reader.length).trim() !== restored.passage.trim()) throw Error("Reader typography, measure, or displayed text is incorrect");
                     const escaped = restored.readerHtml('<img src="missing"> & book');
                     if (escaped.includes('<img') || !escaped.includes('&lt;img') || !escaped.includes('&amp;')) throw Error("Book markup was not escaped for reader formatting");
                     restored.grabToImage(result => result.saveToFile("/tmp/enclosure-reader-preview.png"));
@@ -578,16 +579,30 @@ ShellRoot {
                     const original = reader.text;
                     keyDriver.keyClick(Qt.Key_A, Qt.NoModifier, 0);
                     if (reader.text !== original) throw Error("Reader allowed text editing");
-                    find(restored, "reader-next-page").clicked();
+                    const beforeAnimation = restored.readerAnimationEvents;
+                    keyDriver.keyClick(Qt.Key_Right, Qt.NoModifier, 0);
+                    restored.readerHelp = false;
+                    keyDriver.keyClick(Qt.Key_H, Qt.NoModifier, 0);
+                    if (!restored.readerHelp || !find(restored, "reader-keyboard-guide").visible) throw Error("Keyboard guide shortcut failed");
+                    restored.readerHelp = false;
+                    harness.previousReaderAnimations = beforeAnimation;
                 } else if (phase === 125) {
                     const restored = freshView.item;
                     if (restored.busy) return;
                     if (restored.position <= expectedPosition || find(restored, "typing-input").text.length) throw Error("Reading next page did not navigate without typing");
-                    find(restored, "reader-previous-page").clicked();
+                    if (Motion.enabled && restored.readerAnimationEvents <= harness.previousReaderAnimations) throw Error("Page navigation did not animate");
+                    find(restored, "reader-page-text").forceActiveFocus();
+                    keyDriver.keyClick(Qt.Key_Space, Qt.ShiftModifier, 0);
                 } else if (phase === 126) {
                     const restored = freshView.item;
                     if (restored.busy) return;
                     if (restored.position !== expectedPosition) throw Error("Reader previous page lost its exact position");
+                    const animationCount = restored.readerAnimationEvents;
+                    const oldDuration = Config.animDuration;
+                    Config.animDuration = 0;
+                    restored.animateReaderPage(1);
+                    if (restored.readerReveal !== 1 || restored.readerAnimationEvents !== animationCount) throw Error("Reader ignored reduced motion setting");
+                    Config.animDuration = oldDuration;
                     restored.handleEscape();
                     if (restored.fullscreen || !find(restored, "typing-input").visible) throw Error("Escape did not restore typing mode");
                     console.log("PASS: categorized book notebook, templates, word selection, saved notes, dictionary toggle, available-height passage fitting, lossless paging, Backspace navigation, queued input, legacy bookmark carryover, no-fail advance, resume, WPM and EPUB import");

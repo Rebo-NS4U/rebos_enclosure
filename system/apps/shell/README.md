@@ -151,9 +151,12 @@ Book library and Import book actions.
 
 F11 opens a fullscreen **reading mode** with plain, selectable book text and
 no typing input, accuracy effects, caret or WPM. The fullscreen page uses a
-centered 720-pixel reading column, 24px serif text with generous line spacing, an
-opaque themed surface, restrained running headers and quiet page controls. Use Previous/Next, Page Up/Page
-Down, or Space to turn pages. Escape or F11 returns to typing at the current
+centered 720-pixel reading column, larger text in your configured theme font,
+and the same glass surface, opacity and palette as typing mode. Subtle directional
+page slides and fades follow the shared motion setting, including reduced motion.
+Use Left/Right arrows, Page Up/Page Down, Space/Shift+Space to turn pages; [ and ]
+change chapters, N opens book notes, and ? or H shows the keyboard guide.
+Escape or F11 returns to typing at the current
 reading position. Switching modes without navigating preserves partial typing.
 Right-click a word or select it and press Ctrl+Space for definitions and notes.
 

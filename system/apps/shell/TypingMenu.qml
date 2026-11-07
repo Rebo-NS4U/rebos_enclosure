@@ -22,6 +22,47 @@ Item {
     onPageLineLimitChanged: fitDelay.restart()
     onReadingFontChanged: fitDelay.restart()
     property var readerPageHistory: []
+    property real readerReveal: 1
+    property int readerDirection: 1
+    property int readerAnimationEvents: 0
+    property bool readerHelp: false
+    onFullscreenChanged: {
+        readerRevealAnimation.stop(); readerReveal = 1; readerHelp = false;
+        if (fullscreen) Qt.callLater(() => animateReaderPage(1));
+    }
+    function animateReaderPage(direction) {
+        readerRevealAnimation.stop();
+        readerReveal = 1;
+        if (!fullscreen || !Motion.enabled) return;
+        readerDirection = direction; readerReveal = 0; readerAnimationEvents++;
+        readerRevealAnimation.start();
+    }
+    NumberAnimation {
+        id: readerRevealAnimation
+        target: root
+        property: "readerReveal"
+        to: 1
+        duration: Motion.enter
+        easing.type: Motion.enterCurve
+    }
+    Connections {
+        target: Motion
+        function onEnabledChanged() { if (!Motion.enabled) { readerRevealAnimation.stop(); root.readerReveal = 1; } }
+    }
+    function readerKey(event) {
+        if (event.key === Qt.Key_F11) toggleFullscreen();
+        else if (event.key === Qt.Key_Escape) handleEscape();
+        else if (event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier)) return false;
+        else if (event.key === Qt.Key_Right || event.key === Qt.Key_PageDown) readNextPage();
+        else if (event.key === Qt.Key_Left || event.key === Qt.Key_PageUp) readPreviousPage();
+        else if (event.key === Qt.Key_Space) { if (event.modifiers & Qt.ShiftModifier) readPreviousPage(); else readNextPage(); }
+        else if (event.key === Qt.Key_BracketRight && currentChapterIndex + 1 < chapters.length) jumpChapter(currentChapterIndex + 1);
+        else if (event.key === Qt.Key_BracketLeft && currentChapterIndex > 0) jumpChapter(currentChapterIndex - 1);
+        else if (event.key === Qt.Key_N) openNotebook();
+        else if (event.key === Qt.Key_Question || event.key === Qt.Key_H) readerHelp = !readerHelp;
+        else return false;
+        return true;
+    }
     function toggleFullscreen() {
         saveProgress();
         readerPageHistory = [];
@@ -63,6 +104,7 @@ Item {
     }
     function handleEscape() {
         if (wordPanel.opened) { if (!noteDirty && !noteSaving) wordPanel.close(); else wordMessage = "Save or cancel your changes before returning to reading."; return; }
+        if (fullscreen && readerHelp) { readerHelp = false; return; }
         if (fullscreen) { fullscreen = false; fitDelay.restart(); if (practicing) root.focusPassage(); }
         else goBack();
     }
@@ -265,7 +307,7 @@ Item {
     readonly property int visualCursor: Math.min(TypingPaging.displayInput(answer.text.slice(0, answer.cursorPosition), passage).length, passage.length - 1)
     readonly property real progress: bookLength ? Math.min(1, (position + characters(displayedInput).length) / bookLength) : 0
     readonly property var passageWords: pageLayout.words
-    readonly property font readingFont: Qt.font({family: fullscreen ? "Noto Serif" : Config.theme.font, pixelSize: fullscreen ? 24 : Config.theme.fontSize + 2, weight: Font.Normal})
+    readonly property font readingFont: Qt.font({family: Config.theme.font, pixelSize: fullscreen ? 24 : Config.theme.fontSize + 2, weight: Font.Normal})
     FontMetrics { id: typingMetrics; font: root.readingFont }
     readonly property rect highlightBounds: {
         const metricsFont = typingMetrics.font;
@@ -566,6 +608,8 @@ Item {
                 historyBack = false;
             }
             if (bookId !== data.id || ["open", "add", "import"].indexOf(data.action) >= 0) readerPageHistory = [];
+            const readerMoved = bookId !== data.id || position !== data.position;
+            const revealDirection = data.position < position ? -1 : 1;
             restoring = true;
             bookId = data.id; bookTitle = data.title; bookKind = data.kind || "book"; bookLength = data.length;
             position = data.position; rounds = data.loops; if (data.chapters) chapters = data.chapters;
@@ -574,6 +618,7 @@ Item {
             answer.text = data.typed; answer.cursorPosition = answer.length;
             dirty = false; draft = false; busy = false; restoring = false;
             turningPage = false;
+            if (fullscreen && readerMoved) animateReaderPage(revealDirection);
             if (data.action === "next" || data.action === "previous") {
                 if (Motion.enabled && visible && practicing) requestFeedback("page");
                 const buffered = pendingKeys; pendingKeys = "";
@@ -598,7 +643,7 @@ Item {
     Timer { interval: 5000; running: root.backendStarted; repeat: true; onTriggered: root.saveProgress() }
 
     function status() {
-        return JSON.stringify({readingMode: fullscreen, chapterCardVisible: chapterCard.visible, chapterTitle: chapterTitle, wordToolsOpen: wordPanel.opened, noteDirty: noteDirty, noteSaving: noteSaving, wordToolsShortcut: "Ctrl+Space", wordMenuWidth: wordPanel.width, wordMenuHeight: wordPanel.height, typingPanelWidth: menuAnchorItem.width, typingPanelHeight: menuAnchorItem.height, notebookMode: notebookMode, notebookCreating: notebookCreating, notesSection: notebookFilter, definitionsEnabled: definitionsEnabled, notedWordCount: notedTerms.length, practicing: practicing, fullscreen: fullscreen, pageLines: pageLayout.lines, pageLineLimit: pageLineLimit, passageHeight: passageArea.height, renderedHeight: passageFlow.height, fontSize: readingFont.pixelSize, layoutVersion: 9, previousPages: pageHistory.length, activeEffects: activeEffects, effectKind: effectKind, lineTransitions: lineTransitions, pageTransitions: pageTransitions, motionEnabled: Motion.enabled, feedbackEvents: feedbackEvents, focused: answer.activeFocus, turningPage: turningPage, textLength: bookLength,
+        return JSON.stringify({readingMode: fullscreen, readerAnimationEvents: readerAnimationEvents, readerMotionEnabled: Motion.enabled, chapterCardVisible: chapterCard.visible, chapterTitle: chapterTitle, wordToolsOpen: wordPanel.opened, noteDirty: noteDirty, noteSaving: noteSaving, wordToolsShortcut: "Ctrl+Space", wordMenuWidth: wordPanel.width, wordMenuHeight: wordPanel.height, typingPanelWidth: menuAnchorItem.width, typingPanelHeight: menuAnchorItem.height, notebookMode: notebookMode, notebookCreating: notebookCreating, notesSection: notebookFilter, definitionsEnabled: definitionsEnabled, notedWordCount: notedTerms.length, practicing: practicing, fullscreen: fullscreen, pageLines: pageLayout.lines, pageLineLimit: pageLineLimit, passageHeight: passageArea.height, renderedHeight: passageFlow.height, fontSize: readingFont.pixelSize, layoutVersion: 9, previousPages: pageHistory.length, activeEffects: activeEffects, effectKind: effectKind, lineTransitions: lineTransitions, pageTransitions: pageTransitions, motionEnabled: Motion.enabled, feedbackEvents: feedbackEvents, focused: answer.activeFocus, turningPage: turningPage, textLength: bookLength,
             typed: answer.text.length, position: position, rounds: rounds,
             presets: TypingTexts.passages.length, message: message, busy: busy,
             title: bookTitle, chapters: chapters.length, library: library.length, books: libraryBooks.length, wpm: liveWpm, filePickerActive: filePickerActive});
@@ -620,6 +665,10 @@ Item {
         id: nav
         implicitHeight: 40
         implicitWidth: 100
+        property string keyHint: ""
+        ToolTip.visible: hovered && keyHint.length > 0
+        ToolTip.text: keyHint
+        ToolTip.delay: 400
         background: StyledRect {
             variant: nav.hovered || nav.activeFocus ? "focus" : "pane"
             radius: 16
@@ -1353,7 +1402,7 @@ Item {
                                 objectName: "typing-chapter-card-title"
                                 text: root.chapterTitle
                                 textFormat: Text.PlainText
-                                font.family: root.fullscreen ? "Noto Serif" : Config.theme.font
+                                font.family: Config.theme.font
                                 font.pixelSize: root.fullscreen ? 40 : 26
                                 font.weight: root.fullscreen ? Font.Normal : Font.DemiBold
                                 horizontalAlignment: root.fullscreen ? Text.AlignHCenter : Text.AlignLeft
@@ -1655,6 +1704,11 @@ Item {
                         TextEdit {
                             id: readerText
                             objectName: "reader-page-text"
+                            opacity: 0.35 + 0.65 * root.readerReveal
+                            transform: Translate {
+                                x: (1 - root.readerReveal) * root.readerDirection * 12
+                                y: (1 - root.readerReveal) * 3
+                            }
                             anchors.fill: parent
                             anchors.margins: 4
                             visible: root.fullscreen
@@ -1673,14 +1727,7 @@ Item {
                                 acceptedButtons: Qt.RightButton
                                 onTapped: point => root.openWord(root.readingWordAt(readerText.positionAt(point.position.x, point.position.y)))
                             }
-                            Keys.onPressed: event => {
-                                if (event.key === Qt.Key_F11) root.toggleFullscreen();
-                                else if (event.key === Qt.Key_Escape) root.handleEscape();
-                                else if (event.key === Qt.Key_PageDown || (event.key === Qt.Key_Space && !(event.modifiers & Qt.ControlModifier))) root.readNextPage();
-                                else if (event.key === Qt.Key_PageUp) root.readPreviousPage();
-                                else return;
-                                event.accepted = true;
-                            }
+                            Keys.onPressed: event => { event.accepted = root.readerKey(event); }
                         }
                         TextEdit {
                             id: answer
@@ -1732,12 +1779,31 @@ Item {
                             Keys.onEscapePressed: event => { root.handleEscape(); event.accepted = true; }
                         }
                     }
+                    StyledRect {
+                        objectName: "reader-keyboard-guide"
+                        visible: root.fullscreen && root.readerHelp
+                        Layout.fillWidth: true
+                        implicitHeight: readerHelpText.implicitHeight + 24
+                        variant: "pane"
+                        radius: 12
+                        StyledText {
+                            id: readerHelpText
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            anchors.top: parent.top
+                            anchors.margins: 12
+                            text: "Next: → / Page Down / Space   Previous: ← / Page Up / Shift+Space\nChapter: [ / ]   Notes: N   Word lookup: Ctrl+Space\nShortcut guide: ? or H   Exit reading: F11 or Esc"
+                            wrapMode: Text.Wrap
+                            font.pixelSize: 12
+                        }
+                    }
                     RowLayout {
                         visible: root.fullscreen
                         Layout.fillWidth: true
-                        ReaderNavButton { objectName: "reader-previous-page"; text: "‹ Previous"; enabled: !root.busy && root.position > 0; onClicked: root.readPreviousPage() }
+                        ReaderNavButton { objectName: "reader-previous-page"; keyHint: "Left · Page Up · Shift+Space"; text: "‹ Previous"; enabled: !root.busy && root.position > 0; onClicked: root.readPreviousPage() }
                         StyledText { text: Math.round(root.progress * 100) + "% read"; font.pixelSize: 12; opacity: 0.5; Layout.fillWidth: true; horizontalAlignment: Text.AlignHCenter }
-                        ReaderNavButton { objectName: "reader-next-page"; text: root.position + root.characters(root.passage).length >= root.bookLength ? "End of book" : "Next ›"; enabled: !root.busy && root.position + root.characters(root.passage).length < root.bookLength; onClicked: root.readNextPage() }
+                        TextButton { objectName: "reader-shortcut-help"; text: "?"; Accessible.name: "Keyboard shortcuts"; onClicked: root.readerHelp = !root.readerHelp }
+                        ReaderNavButton { objectName: "reader-next-page"; keyHint: "Right · Page Down · Space"; text: root.position + root.characters(root.passage).length >= root.bookLength ? "End of book" : "Next ›"; enabled: !root.busy && root.position + root.characters(root.passage).length < root.bookLength; onClicked: root.readNextPage() }
                     }
                     RowLayout {
                         visible: !root.fullscreen || root.errorMessage.length > 0
