@@ -567,7 +567,7 @@
   "system/apps/shell/modules/widgets/fileshelf/FileShelfPanel.qml": "50b7802dd7f45d3e5d2d148d3b5897d7666457d3eb7cf27385500ff4061b0ffe",
   "system/apps/shell/modules/widgets/fileshelf/ShelfAction.qml": "32068245fc9dfe66458754f8ef9ddbca5ce13c4418dc273a8c607b5f2476b6d0",
   "system/apps/shell/modules/widgets/fileshelf/ShelfDropArea.qml": "6ae4248332a3d73578554d17386aa6f5b589a1a13e22ba615539e7a3c7263cba",
-  "system/apps/shell/modules/widgets/launcher/LauncherView.qml": "28fbac4a39770a96dc56e6919615a602ee8ded10a5a212bb862b523240f558ba",
+  "system/apps/shell/modules/widgets/launcher/LauncherView.qml": "539044cb6b6ecc76115226e705fc68d450bae231adef3d5e78edee00642294b9",
   "system/apps/shell/modules/widgets/launcher/RunMenuHost.qml": "5165342d3d70f6e0f4eeb8fc621340f483dc4a4c18c3a64e21303f2df4d84a8f",
   "system/apps/shell/modules/widgets/launcher/qmldir": "f69644603f0591f08bebb0491909c6e2149c3c56cbe6d28062a48cae16721da3",
   "system/apps/shell/modules/widgets/notes/NotesAction.qml": "2ddb70e30bda444f442ebddf403fd4227e5e2189e7ac6d08331c409bc2819801",

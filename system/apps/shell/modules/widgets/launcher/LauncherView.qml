@@ -84,6 +84,13 @@ Item {
         function onLauncherModeChanged() {
             root.focusSearchInput();
         }
+
+        function onLauncherSearchTextChanged() {
+            // Imperative edits (such as Escape) can replace the text binding.
+            // Always synchronize the retained view when a new opening resets state.
+            searchInput.text = GlobalStates.launcherSearchText;
+            appLauncher.searchText = GlobalStates.launcherSearchText;
+        }
     }
 
     Component.onCompleted: {
