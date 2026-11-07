@@ -94,8 +94,9 @@ PanelWindow {
             easing.type: Easing.InOutCubic
         }
     }
-    // Preserve the surface while queued Wayland output events are delivered.
-    visible: true
+    // Recreate the layer surface on open after an output is disconnected.
+    // Keep it mapped until the closing animation finishes.
+    visible: presented && !GlobalStates.lockscreenVisible
     mask: Region {
         item: root.presented && !GlobalStates.lockscreenVisible ? inputArea : null
     }
@@ -105,8 +106,8 @@ PanelWindow {
     WlrLayershell.namespace: "rebos_shell-anime"
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.keyboardFocus: active ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
-    // This surface stays mapped when closed. Do not request background blur:
-    // an empty/off-screen blur region is treated as full-surface by the compositor.
+    // Do not request background blur: an empty/off-screen blur region
+    // is treated as full-surface by the compositor.
 
     function toggle(): void {
         if (opened) { opened = false; return; }
