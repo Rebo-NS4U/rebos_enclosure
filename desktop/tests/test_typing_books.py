@@ -139,7 +139,6 @@ class Books(unittest.TestCase):
         self.assertEqual(len(self.library.listing()), 2)
         deleted = self.library.handle({'action': 'delete', 'id': first['id'], 'confirmed': True})
         self.assertEqual(deleted['last_id'], second['id'])
-        self.assertIsNone(self.library.cached_id)
         for table, column in [('book_catalogue', 'id'), ('book_content', 'id'), ('book_progress', 'id'), ('word_notes', 'book_id')]:
             self.assertEqual(self.library.db.execute(f'SELECT COUNT(*) FROM {table} WHERE {column}=?', (first['id'],)).fetchone()[0], 0)
         self.assertEqual(self.library.handle({'action': 'word', 'id': second['id'], 'term': 'story'})['note'], 'Keep note')
@@ -196,14 +195,28 @@ class Books(unittest.TestCase):
 
     def test_bookmarks_do_not_reload_or_rewrite_book_content(self):
         book = self.library.add('Stable content', 'A short sentence. ' * 10000, [{'title': 'Beginning', 'position': 0}])
-        cached = self.library.cached_text
         statements = []
         self.library.db.set_trace_callback(statements.append)
         for position in range(0, 900, 90):
             self.library.handle({'action': 'next', 'id': book['id'], 'position': position})
-        self.assertIs(self.library.cached_text, cached)
-        self.assertFalse(any('book_content' in query for query in statements))
+        reads = [query for query in statements if 'FROM book_content' in query]
+        self.assertTrue(reads)
+        self.assertTrue(all('SELECT substr(text,' in query for query in reads))
+        self.assertFalse(any(query.startswith(('UPDATE book_content', 'INSERT INTO book_content')) for query in statements))
         self.assertTrue(any('UPDATE book_progress' in query for query in statements))
+
+    def test_small_windows_preserve_unicode_and_every_character(self):
+        text = 'A 😀 quoted “sentence” with narrow iii and wide WWW. ' * 100
+        book = self.library.add('Paged', text, [])
+        position, pieces = 0, []
+        while position < len(text):
+            page = self.library.handle({'action': 'next', 'id': book['id'],
+                'position': position, 'window': 512})
+            self.assertLessEqual(len(page['passage']), 512)
+            self.assertTrue(page['passage'])
+            pieces.append(page['passage'])
+            position += len(page['passage'])
+        self.assertEqual(''.join(pieces), text)
 
     def test_heading_offsets_unicode_and_loop(self):
         text, chapters = sections_document('Chapter One\nHello 😀 world.\nChapter Two\nGoodbye.')

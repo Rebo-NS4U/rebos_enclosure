@@ -258,8 +258,6 @@ class Library:
         self.db.row_factory = sqlite3.Row
         self.paragraph_mode = False
         self.window = WINDOW
-        self.cached_id = None
-        self.cached_text = ""
         # Keep large immutable content separate: saving a bookmark never rewrites a book.
         self.db.executescript('''
             CREATE TABLE IF NOT EXISTS book_catalogue (id TEXT PRIMARY KEY, title TEXT, chapters TEXT, size INTEGER, kind TEXT DEFAULT 'book');
@@ -320,13 +318,15 @@ class Library:
             books.append(data)
         return books
 
+    def text_slice(self, key, start, end):
+        # SQLite offsets count Unicode characters, as do durable book positions.
+        return self.db.execute('SELECT substr(text, ?, ?) FROM book_content WHERE id=?',
+                               (start + 1, max(0, end - start), key)).fetchone()[0]
+
     def page(self, key, include_chapters=True):
         row = self.db.execute('SELECT c.id,c.title,c.kind,c.size AS length,c.chapters,p.position,p.typed,p.loops FROM book_catalogue c JOIN book_progress p ON p.id=c.id WHERE c.id=?', (key,)).fetchone()
         if row is None: raise ValueError('Book is no longer in the library.')
         data = dict(row)
-        if self.cached_id != key:
-            self.cached_text = self.db.execute('SELECT text FROM book_content WHERE id=?', (key,)).fetchone()[0]
-            self.cached_id = key
         chapters = json.loads(data['chapters'])
         end = min([data['position'] + self.window] + [chapter['position'] for chapter in chapters
                   if chapter['position'] > data['position']])
@@ -336,7 +336,7 @@ class Library:
                 following = [offset for offset in json.loads(row[0]) if offset > data['position']]
                 if following:
                     end = min(end, following[0])
-        chunk = self.cached_text[data['position']:end]
+        chunk = self.text_slice(key, data['position'], end)
         boundary = chunk.rfind(' ')
         if end == data['position'] + self.window and end < data['length'] and boundary > 40:
             chunk = chunk[:boundary + 1]
@@ -418,9 +418,6 @@ class Library:
             for table in ('word_notes', 'book_progress', 'book_paragraphs', 'book_content', 'book_catalogue'):
                 self.db.execute(f'DELETE FROM {table} WHERE ' + ('book_id' if table == 'word_notes' else 'id') + '=?', (key,))
             self.db.execute("DELETE FROM app_state WHERE key='last_book' AND value=?", (key,))
-        if self.cached_id == key:
-            self.cached_id = None
-            self.cached_text = ''
         return {'deleted': key, 'books': self.listing(), 'last_id': self.last_id()}
 
     def _handle_list(self, request):
@@ -485,17 +482,19 @@ class Library:
                 preceding = [offset for offset in json.loads(row[0]) if start <= offset < end]
                 if preceding:
                     start = preceding[-1]
-        return {'previousText': self.cached_text[start:end], 'previousStart': start, 'loops': loops}
+        return {'previousText': self.text_slice(request['id'], start, end), 'previousStart': start, 'loops': loops}
 
     def _handle_save(self, request):
         action = request["action"]
         if action == 'seek':
-            self.page(request['id'], False)
+            current = self.page(request['id'], False)
             position = request['position']
-            if 0 < position < len(self.cached_text) and self.cached_text[position - 1] != ' ':
-                boundary = self.cached_text.find(' ', position, position + 40)
-                if boundary >= 0:
-                    request['position'] = min(boundary + 1, len(self.cached_text) - 1)
+            if 0 < position < current['length']:
+                context = self.text_slice(request['id'], position - 1, position + 40)
+                if context and context[0] != ' ':
+                    boundary = context.find(' ', 1)
+                    if boundary >= 0:
+                        request['position'] = min(position + boundary, current['length'] - 1)
         self.save(request['id'], request['position'], request.get('typed', ''), request.get('loops', 0))
         return self.page(request['id'], action != 'next') if action != 'save' else {'saved': True}
 

@@ -30,7 +30,9 @@ ShellRoot {
                 }
                 practice.refreshPageCaret();
                 const count = Object.keys(practice.glyphItems).length;
-                if (count >= practice.passage.length / 2) throw Error("Offscreen characters were eagerly instantiated: " + count);
+                if (practice.pageLayout.lines > practice.layoutLineLimit) throw Error("Page exceeds viewport line budget");
+                if (practice.passage.length >= practice.pageSource.length) throw Error("Entire long section was laid out");
+                if (count > practice.passage.length) throw Error("Glyph count exceeds bounded page");
                 const viewport = find(practice, "typing-page-visuals");
                 const glyph = practice.glyphItems[practice.visualCursor];
                 if (!glyph) throw Error("Cursor glyph missing after jump");

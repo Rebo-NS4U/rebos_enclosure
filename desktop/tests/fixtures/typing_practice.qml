@@ -118,7 +118,7 @@ ShellRoot {
                     find(practice, "typing-sample-select").activated(0); phase++; return;
                 }
                 if (practice.busy || !practice.passage.length) return;
-                if (practice.practicing && (practice.passage !== practice.pageSource || practice.implicitHeight !== 600)) throw Error("Practice viewport height changed");
+                if (practice.practicing && (practice.pageLayout.lines > practice.layoutLineLimit || practice.implicitHeight !== 600)) throw Error("Practice viewport height changed");
                 const input = find(practice, "typing-input");
                 let first = find(practice, "typing-character-0");
                 if (!input) throw Error("Typing input missing");
@@ -133,10 +133,10 @@ ShellRoot {
                     input.forceActiveFocus();
                     if (find(practice, "typing-smooth-caret").opacity !== 1) throw Error("Active caret must regain emphasis");
                     const originalSource = practice.pageSource;
-                    practice.pageSource = "word ".repeat(160); practice.fitPage();
+                    practice.pageSource = "word ".repeat(1600); practice.fitPage();
                     const filledFlow = find(practice, "typing-passage-flow");
                     filledFlow.forceLayout();
-                    if (practice.passage !== practice.pageSource || practice.pageLayout.lines <= 6) throw Error("Full section must remain available beyond six lines");
+                    if (practice.passage.length >= practice.pageSource.length || practice.pageLayout.lines > practice.layoutLineLimit) throw Error("Section must be bounded to the viewport");
                     const scroll = find(practice, "typing-page-visuals");
                     if (scroll.height < 6 * practice.passageLineHeight || scroll.contentHeight <= scroll.height) throw Error("Section must scroll in the expanded viewport");
                     const screenshotText = "comfortable? I have a better view of things now. This is no ordinary hospital room. More words follow here.";
@@ -152,7 +152,7 @@ ShellRoot {
                     if (practice.busy || practice.position !== screenshotPosition || practice.passage !== screenshotPage) throw Error("Typing the space before the last word turned the page early");
                     input.text = "";
                     practice.fullscreen = false;
-                    practice.pageSource = "word ".repeat(160); practice.fitPage();
+                    practice.pageSource = "word ".repeat(1600); practice.fitPage();
                     if (practice.pageLayout.lines <= 2) throw Error("Tall typing view must show additional lines");
                     const editStarted = Date.now();
                     for (let count = 1; count <= 120; count++) input.text = practice.passage.slice(0, count);
@@ -449,14 +449,14 @@ ShellRoot {
                     const restored = freshView.item;
                     if (restored.busy) return;
                     const field = find(restored, "typing-input");
-                    if (restored.passage !== restored.pageSource || restored.position + restored.characters(field.text).length !== 85 || restored.liveWpm !== 0) throw Error("Legacy page carryover lost saved input or counted it as WPM");
+                    if (restored.pageLayout.lines > restored.layoutLineLimit || restored.position + restored.characters(field.text).length !== 85 || restored.liveWpm !== 0) throw Error("Legacy page carryover lost saved input or counted it as WPM");
                     expectedPosition = restored.position + restored.characters(restored.passage).length;
                     field.text = "z".repeat(restored.characters(restored.passage).length);
                     if (!restored.turningPage) throw Error("Typos blocked continuous page advance");
                 } else if (phase === 112) {
                     const restored = freshView.item;
                     if (restored.busy) return;
-                    if (restored.position !== expectedPosition || restored.passage !== restored.pageSource) throw Error("Continuous available-height advance failed");
+                    if (restored.position !== expectedPosition || restored.pageLayout.lines > restored.layoutLineLimit) throw Error("Continuous available-height advance failed");
                     restored.send({action: "word_settings", enabled: false}, false);
                 } else if (phase === 113) {
                     const restored = freshView.item;

@@ -27,7 +27,7 @@ ShellRoot {
                 const scroll = find(practice, "typing-page-visuals");
                 const flow = find(practice, "typing-passage-flow");
                 flow.forceLayout();
-                if (practice.passage !== practice.pageSource) throw Error("Section was truncated");
+                if (practice.passage.length >= practice.pageSource.length || practice.pageLayout.lines > practice.layoutLineLimit) throw Error("Section was not bounded");
                 if (scroll.height < 6 * practice.passageLineHeight || scroll.contentHeight <= scroll.height) throw Error("Expanded scrolling viewport missing");
                 practice.restoring = false;
                 const input = find(practice, "typing-input");
@@ -38,7 +38,7 @@ ShellRoot {
                 input.cursorPosition = 0;
                 practice.refreshPageCaret();
                 if (scroll.contentY > 4) throw Error("Caret did not scroll back");
-                console.log("PASS: complete section, expanded viewport, cursor scrolling both ways"); Qt.quit();
+                console.log("PASS: bounded section, expanded viewport, cursor scrolling both ways"); Qt.quit();
             } catch (error) { console.error(error); Qt.exit(1); }
         }
     }

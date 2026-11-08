@@ -19,7 +19,8 @@ Item {
     property bool fullscreen: false
     readonly property real passageLineHeight: Math.ceil(typingMetrics.height * 1.45)
     readonly property int pageLineLimit: Math.max(1, Math.floor(Math.max(0, passageArea.height - 8) / Math.max(1, passageLineHeight)))
-    readonly property int layoutLineLimit: fullscreen ? pageLineLimit : 1000000
+    // Bound both typing and reading to one viewport, including while hidden.
+    readonly property int layoutLineLimit: Math.max(3, Math.min(36, pageLineLimit))
     onPageLineLimitChanged: fitDelay.restart()
     onReadingFontChanged: { widthCache = ({}); fitDelay.restart(); }
     property var readerPageHistory: []
@@ -432,8 +433,11 @@ Item {
     }
     Component.onCompleted: { if (visible) backendStarted = true; }
     function send(data, page = true) {
-        data.window = 4096;
-        data.paragraphs = !fullscreen;
+        // Request enough for one measured page, never a whole paragraph/chapter.
+        const narrowWidth = Math.min(characterWidth("i"), characterWidth(" "));
+        data.window = Math.max(512, Math.min(4096,
+            Math.ceil(Math.max(640, passageFlow.width) / narrowWidth) * layoutLineLimit + 72));
+        data.paragraphs = false;
         data.request = ++requestId;
         if (page) { pageRequest = data.request; busy = true; errorMessage = ""; }
         if (ready) backend.write(JSON.stringify(data) + "\n");

@@ -100,7 +100,7 @@ later. See [LICENSE](./LICENSE).
 Open the island bar's control panel and choose **Typing practice →**. Typing
 replaces the expanded bar contents, using the same input and dismissal behavior
 as its other panels. The compact typing surface uses a faint glass fill, soft blur and a subtle rim;
-controls are text only. Practice shows about 90 characters at a time, with only
+controls are text only. Practice shows one viewport-sized section at a time, with only
 Library, Import and Close in the header. Setup controls stay hidden while typing. Panel
 resizing, passage reveals and typed characters animate smoothly, respecting the
 Appearance motion setting (zero disables animations). Upcoming characters are faint, and typed characters become opaque
@@ -224,12 +224,12 @@ It updates twice a second, starts after one second of activity, and pauses its
 clock after five idle seconds. Restored text and chapter jumps do not earn WPM;
 opening the library, hiding typing, or switching books starts a fresh session.
 
-Mod+T toggles typing open and closed. Passages are fitted to two measured lines
+Mod+T toggles typing open and closed. Passages are fitted to the available viewport (at most 36 measured lines)
 instead of a fixed character count. Completing the final character advances
 automatically, fading only the passage while the header and WPM stay steady.
 Keystrokes received during the short page fetch are queued for the next passage.
 Existing saved partial passages remain intact when switching to the new layout.
-Continuous practice advances after the visible two-line passage is typed, even
+Continuous practice advances after the visible page is typed, even
 if some characters differ; errors stay highlighted and WPM counts only correct
 characters. Saved windows from older layouts are carried into the new pages
 without changing the absolute position in the book.
