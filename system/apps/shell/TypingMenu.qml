@@ -331,7 +331,7 @@ Item {
     readonly property real chapterProgress: chapterEnd > chapterStart
         ? Math.max(0, Math.min(1, (position + characters(displayedInput).length - chapterStart) / (chapterEnd - chapterStart))) : 0
     readonly property var passageWords: pageLayout.words
-    readonly property font readingFont: Qt.font({family: Config.theme.font, pixelSize: fullscreen ? 20 : Config.theme.fontSize + 2, weight: Font.Normal})
+    readonly property font readingFont: Qt.font({family: Config.theme.font, pixelSize: Config.theme.fontSize + 2, weight: Font.Normal})
     FontMetrics { id: typingMetrics; font: root.readingFont }
     readonly property rect highlightBounds: {
         const metricsFont = typingMetrics.font;
@@ -818,15 +818,21 @@ Item {
             title: bookTitle, chapters: chapters.length, library: library.length, books: libraryBooks.length, wpm: liveWpm, filePickerActive: filePickerActive});
     }
     component TextButton: Button {
+        id: textButton
         implicitHeight: 36
-        padding: 8
-        background: Item {}
+        padding: 10
+        background: StyledRect {
+            id: buttonSurface
+            variant: textButton.down || textButton.activeFocus ? "focus" : (textButton.hovered ? "overprimary" : "pane")
+            radius: Config.roundness
+        }
         contentItem: StyledText {
-            text: parent.text
-            opacity: !parent.enabled ? 0.3 : (parent.down || parent.activeFocus ? 1 : (parent.hovered ? 0.9 : 0.75))
+            text: textButton.text
+            color: buttonSurface.item
+            opacity: textButton.enabled ? 1 : 0.35
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
-            font.underline: parent.activeFocus
+            font.underline: textButton.activeFocus
 
         }
     }
@@ -839,12 +845,11 @@ Item {
     }
     component ReaderNavButton: TextButton {
         id: nav
-        implicitHeight: 40
+        implicitHeight: 36
         implicitWidth: 100
         background: StyledRect {
             variant: nav.hovered || nav.activeFocus ? "focus" : "pane"
-            radius: 16
-            backgroundOpacity: nav.enabled ? 0.75 : 0.25
+            radius: Config.roundness
         }
     }
     component ReaderAction: MenuItem {
@@ -1295,7 +1300,7 @@ Item {
                                             anchors.top: parent.top
                                             anchors.margins: 14
                                             spacing: 8
-                                            StyledText { text: notebookEntryCard.modelData.category.toUpperCase(); color: Colors.primary; font.pixelSize: 10; font.letterSpacing: 1.5; Layout.fillWidth: true }
+                                            StyledText { text: notebookEntryCard.modelData.category.toUpperCase(); color: Colors.primary; font.pixelSize: 10; font.letterSpacing: 0; Layout.fillWidth: true }
                                             StyledText { text: notebookEntryCard.modelData.term; textFormat: Text.PlainText; font.pixelSize: root.fullscreen ? 18 : 14; font.weight: Font.DemiBold; elide: Text.ElideRight; Layout.fillWidth: true }
                                             StyledText { text: notebookEntryCard.modelData.note; textFormat: Text.PlainText; opacity: 0.65; font.pixelSize: root.fullscreen ? 14 : 12; wrapMode: Text.Wrap; maximumLineCount: 3; elide: Text.ElideRight; Layout.fillWidth: true }
                                         }
@@ -1422,14 +1427,14 @@ Item {
             // to the bottom distributes blank space above the chapter card.
             height: root.practicing && !root.fullscreen ? implicitHeight
                 : Math.max(0, parent.height - anchors.topMargin - anchors.bottomMargin)
-            anchors.topMargin: root.fullscreen ? 32 : (root.practicing ? 12 : 20)
-            anchors.bottomMargin: root.fullscreen ? 28 : (root.practicing ? 12 : 20)
+            anchors.topMargin: root.fullscreen ? 24 : (root.practicing ? 12 : 20)
+            anchors.bottomMargin: root.fullscreen ? 24 : (root.practicing ? 12 : 20)
             width: root.fullscreen ? Math.min(720, Math.max(1, parent.width - 80)) : Math.max(1, parent.width - (root.practicing ? 48 : 40))
-            spacing: root.fullscreen ? 20 : 12
+            spacing: 12
             RowLayout {
                 Layout.fillWidth: true
                 Layout.maximumHeight: 36
-                StyledText { text: root.practicing ? root.bookTitle : "Your book library"; textFormat: Text.PlainText; elide: Text.ElideRight; Layout.minimumWidth: 0; font.pixelSize: root.fullscreen ? 13 : 18; font.letterSpacing: root.fullscreen ? 0.7 : 0; opacity: root.fullscreen ? 0.5 : 0.65; Layout.fillWidth: true }
+                StyledText { text: root.practicing ? root.bookTitle : "Your book library"; textFormat: Text.PlainText; elide: Text.ElideRight; Layout.minimumWidth: 0; font.pixelSize: Styling.fontSize(0); font.weight: Font.DemiBold; Layout.fillWidth: true }
                 TextButton { objectName: "typing-book-notebook"; text: "Notes"; visible: root.practicing; enabled: !!root.bookId && !root.busy; onClicked: root.openNotebook() }
                 TextButton {
                     id: readerActionsButton
@@ -1444,7 +1449,7 @@ Item {
                         y: readerActionsButton.height + 4
                         width: 220
                         padding: 6
-                        background: StyledRect { variant: "bg"; radius: 12; border.width: 1; border.color: Qt.alpha(Colors.primary, 0.28) }
+                        background: StyledRect { variant: "popup"; radius: Config.roundness }
                         ReaderAction { objectName: "typing-mode"; text: root.readingMode ? "Typing mode" : "Reading mode"; onClicked: { readerActions.close(); root.toggleReadingMode(); } }
                         ReaderAction { objectName: "typing-fullscreen"; text: root.fullscreen ? "Compact window · F11" : "Fullscreen · F11"; onClicked: { readerActions.close(); root.toggleFullscreen(); } }
                         ReaderAction { objectName: "typing-library"; text: "Book library"; enabled: root.practicing; onClicked: { readerActions.close(); root.showLibrary(); } }
@@ -1452,8 +1457,8 @@ Item {
                     }
                 }
                 TextButton { objectName: "typing-back"; visible: !root.practicing; text: "Back"; enabled: !root.busy && (root.bookId.length > 0 || root.draft || root.library.length > 0); onClicked: root.goBack() }
-                TextButton { visible: root.readingMode; text: "Exit reading"; onClicked: root.toggleFullscreen() }
-                TextButton { visible: !root.readingMode; text: "Close"; onClicked: { root.saveProgress(); root.backRequested(); } }
+                TextButton { visible: root.readingMode; text: "Type"; onClicked: root.toggleReadingMode() }
+                TextButton { text: "Close"; onClicked: { root.saveProgress(); root.backRequested(); } }
             }
             Rectangle { visible: root.readingMode; Layout.fillWidth: true; implicitHeight: 1; color: Qt.alpha(Colors.outlineVariant, 0.4) }
             StyledText {
@@ -1461,7 +1466,7 @@ Item {
                 text: root.chapterTitle
                 textFormat: Text.PlainText
                 font.pixelSize: 12
-                font.letterSpacing: 1.5
+                font.letterSpacing: 0
                 color: Qt.alpha(Colors.primary, 0.7)
                 horizontalAlignment: Text.AlignHCenter
                 Layout.fillWidth: true
@@ -1667,11 +1672,10 @@ Item {
                         objectName: "reader-chapter-card"
                         visible: root.readingMode && root.atChapterStart
                         Layout.fillWidth: true
-                        implicitHeight: chapterCardText.implicitHeight + (root.fullscreen ? 48 : 28)
-                        variant: root.fullscreen ? "transparent" : "pane"
+                        implicitHeight: chapterCardText.implicitHeight + 28
+                        variant: "pane"
                         radius: 16
-                        border.width: 1
-                        border.color: root.fullscreen ? "transparent" : Qt.alpha(Colors.primary, 0.35)
+                        enableBorder: true
                         ColumnLayout {
                             id: chapterCardText
                             anchors.left: parent.left
@@ -1680,11 +1684,11 @@ Item {
                             anchors.margins: 18
                             spacing: 6
                             StyledText {
-                                text: (root.readingMode ? "CHAPTER · " : "NEW CHAPTER · ") + (root.currentChapterIndex + 1) + " / " + root.chapters.length
+                                text: "Chapter " + (root.currentChapterIndex + 1) + " / " + root.chapters.length
                                 color: Colors.primary
                                 font.pixelSize: 11
-                                font.letterSpacing: root.fullscreen ? 2.5 : 1.2
-                                horizontalAlignment: root.fullscreen ? Text.AlignHCenter : Text.AlignLeft
+                                font.letterSpacing: 0
+                                horizontalAlignment: Text.AlignLeft
                                 Layout.fillWidth: true
                             }
                             StyledText {
@@ -1692,9 +1696,9 @@ Item {
                                 text: root.chapterTitle
                                 textFormat: Text.PlainText
                                 font.family: Config.theme.font
-                                font.pixelSize: root.fullscreen ? 40 : 26
-                                font.weight: root.fullscreen ? Font.Normal : Font.DemiBold
-                                horizontalAlignment: root.fullscreen ? Text.AlignHCenter : Text.AlignLeft
+                                font.pixelSize: Styling.fontSize(4)
+                                font.weight: Font.DemiBold
+                                horizontalAlignment: Text.AlignLeft
                                 color: Colors.overSurface
                                 wrapMode: Text.Wrap
                                 maximumLineCount: 2
