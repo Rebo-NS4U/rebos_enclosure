@@ -100,8 +100,7 @@ Item {
         }
     }
     function readerHtml(value) {
-        const escaped = value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-        return '<p align="center" style="line-height:155%; margin-top:0px; margin-bottom:0px;">' + escaped + '</p>';
+        return TypingPaging.readerHtml(value, paragraphStarts);
     }
     function readingWordAt(index) {
         const start = passage.lastIndexOf(" ", Math.max(0, index - 1)) + 1;
@@ -123,6 +122,7 @@ Item {
     property int position: 0
     property int rounds: 0
     property string pageSource: ""
+    property var paragraphStarts: []
     property var pageLayout: ({text: "", words: [], lines: 0, lineWidths: []})
     readonly property string passage: pageLayout.text
     property bool turningPage: false
@@ -708,6 +708,7 @@ Item {
             bookId = data.id; bookTitle = data.title; bookKind = data.kind || "book"; bookLength = data.length;
             position = data.position; rounds = data.loops; if (data.chapters) chapters = data.chapters;
             resetPageCaret();
+            paragraphStarts = data.paragraphStarts || [];
             pageSource = data.passage; fitPage(continuingWindow);
             answer.text = data.typed; answer.cursorPosition = answer.length;
             if (continuingWindow) speedBaseline = correctCount();

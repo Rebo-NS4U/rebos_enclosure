@@ -340,6 +340,13 @@ class Library:
         boundary = chunk.rfind(' ')
         if end == data['position'] + self.window and end < data['length'] and boundary > 40:
             chunk = chunk[:boundary + 1]
+        # Relative UTF-16 offsets match QML text cursors without changing the
+        # normalized text, book identity, or durable code-point bookmarks.
+        row = self.db.execute('SELECT starts FROM book_paragraphs WHERE id=?', (key,)).fetchone()
+        starts = json.loads(row[0]) if row else []
+        data['paragraphStarts'] = [len(chunk[:offset - data['position']].encode('utf-16-le')) // 2
+                                   for offset in starts
+                                   if data['position'] < offset < data['position'] + len(chunk)]
         data['passage'] = chunk
         if include_chapters: data['chapters'] = chapters
         else: data.pop('chapters')

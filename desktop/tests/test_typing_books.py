@@ -9,7 +9,7 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'system/apps/shell/scripts'))
-from typing_books import Library, read_epub, read_epub_details, sections_document
+from typing_books import normalize, Library, read_epub, read_epub_details, sections_document
 
 class Books(unittest.TestCase):
     def setUp(self):
@@ -20,6 +20,16 @@ class Books(unittest.TestCase):
     def tearDown(self):
         self.library.db.close()
         self.temp.cleanup()
+
+    def test_reader_paragraph_offsets_preserve_text_and_bookmarks(self):
+        text = normalize('First 😀 paragraph.\n\nSecond paragraph.\n\nThird.')
+        book = self.library.add('Paragraphs', text, [])
+        page = self.library.handle({'action': 'open', 'id': book['id'], 'window': 4096})
+        self.assertEqual(page['passage'], str(text))
+        self.assertEqual(page['paragraphStarts'], [20, 38])
+        page = self.library.handle({'action': 'seek', 'id': book['id'], 'position': 19, 'window': 4096})
+        self.assertEqual(page['position'], 19)
+        self.assertEqual(page['paragraphStarts'], [18])
 
     def test_continuous_typing_windows_remain_bounded_and_overlap(self):
         text = 'word 😀 ' * 2000 + 'Next chapter'

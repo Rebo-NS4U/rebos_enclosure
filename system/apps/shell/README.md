@@ -233,3 +233,6 @@ Continuous practice advances after the visible page is typed, even
 if some characters differ; errors stay highlighted and WPM counts only correct
 characters. Saved windows from older layouts are carried into the new pages
 without changing the absolute position in the book.
+
+Reading mode displays the imported paragraph breaks with space between paragraphs.
+Bookmarks and typing positions continue to use the original normalized text.
