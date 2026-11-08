@@ -80,7 +80,9 @@ function slideOffset(page, cursor, keepLines) {
 }
 
 // Keep one document separator per source space so word cursor offsets agree.
-function readerHtml(value, starts) {
+function readerHtml(value, starts, lineHeight, indent) {
+    lineHeight = lineHeight || 31;
+    indent = indent || 40;
     var paragraphs = [], start = 0;
     for (var i = 0; i < starts.length; i++) {
         var offset = starts[i];
@@ -91,6 +93,6 @@ function readerHtml(value, starts) {
     paragraphs.push(value.slice(start));
     return paragraphs.map(function (paragraph) {
         var escaped = paragraph.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-        return '<p align="center" style="line-height:155%; margin-top:0px; margin-bottom:14px;">' + escaped + '</p>';
+        return '<p align="left" style="line-height:155%; margin-top:0px; margin-bottom:' + lineHeight + 'px; text-indent:' + indent + 'px;">' + escaped + '</p>';
     }).join("");
 }

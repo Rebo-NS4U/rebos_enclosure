@@ -100,7 +100,7 @@ Item {
         }
     }
     function readerHtml(value) {
-        return TypingPaging.readerHtml(value, paragraphStarts);
+        return TypingPaging.readerHtml(value, paragraphStarts, readerLineHeight, readingFont.pixelSize * 2);
     }
     function readingWordAt(index) {
         const start = passage.lastIndexOf(" ", Math.max(0, index - 1)) + 1;

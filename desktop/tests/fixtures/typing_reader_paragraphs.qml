@@ -5,7 +5,7 @@ ShellRoot {
     PanelWindow {
         id: window
         implicitWidth: 640
-        implicitHeight: 600
+        implicitHeight: 800
         exclusionMode: ExclusionMode.Ignore
         TypingMenu {
             id: menu
@@ -35,6 +35,13 @@ ShellRoot {
                     throw new Error("Reader clipped at height " + window.height + ": " + reader.contentHeight + " > " + reader.height);
                 if (!/[\n\u2029]/.test(reader.getText(0, reader.length)))
                     { console.log("FAIL: Paragraph break missing", JSON.stringify(reader.getText(0, reader.length)), menu.paragraphStarts.length, menu.passage.length); Qt.quit(); return; }
+                const first = reader.positionToRectangle(0);
+                const next = reader.positionToRectangle(79);
+                const previous = reader.positionToRectangle(77);
+                if (first.x < 39 || next.x < 39 || next.y - previous.y < menu.readerLineHeight * 1.8) {
+                    console.log("FAIL: paragraph indent or empty line", first.x, next.x, next.y - previous.y, menu.readerLineHeight);
+                    Qt.quit(); return;
+                }
                 if (step === 3) { console.log("PASS: paragraph breaks render and pages fit at three window heights"); Qt.quit(); }
                 window.implicitHeight -= 100;
             }
