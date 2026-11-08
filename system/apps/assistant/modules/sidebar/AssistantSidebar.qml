@@ -84,7 +84,7 @@ Item {
         NumberAnimation {
             id: slideAnimation
             duration: root.active ? Motion.enter : Motion.exit
-            easing.type: Easing.InOutCubic
+            easing.type: root.active ? Motion.enterCurve : Motion.exitCurve
         }
     }
     readonly property Item blurTarget: sidebarBackground
@@ -358,6 +358,11 @@ Item {
             return parent.width - width * root.slideProgress;
         }
         visible: root.presented
+
+        // Move a cached texture during the slide rather than submitting every
+        // chat bubble, glyph and control at each new position. Release the
+        // texture at rest, including when hidden, to bound GPU memory use.
+        layer.enabled: !root.tiled && slideAnimation.running
 
         StyledRect {
             id: sidebarBackground
