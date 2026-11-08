@@ -49,6 +49,27 @@ Item {
         readerRevealAnimation.stop(); readerReveal = 1; readerHelp = false;
         if (readingMode) Qt.callLater(() => animateReaderPage(1));
     }
+    readonly property string speechHelper: decodeURIComponent(Qt.resolvedUrl("scripts/reader_speech.py").toString().replace("file://", ""))
+    property bool naturalVoiceReady: false
+    Process {
+        id: speechStatus
+        command: ["python3", "-B", root.speechHelper, "--status"]
+        running: true
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try { root.naturalVoiceReady = JSON.parse(text).natural; }
+                catch (error) { root.naturalVoiceReady = false; }
+            }
+        }
+    }
+    Process {
+        id: speechSetup
+        command: ["python3", "-B", root.speechHelper, "--setup"]
+        onExited: (code, status) => {
+            if (code !== 0) root.errorMessage = "Voice setup failed. Check your internet connection and try again.";
+            speechStatus.running = true;
+        }
+    }
     readonly property bool speaking: speechProcess.running
     property bool speechCancelled: false
     property string speechText: ""
@@ -70,10 +91,10 @@ Item {
     onPassageChanged: stopSpeech()
     Process {
         id: speechProcess
-        command: ["espeak-ng", "-s", "165", "--", root.speechText]
+        command: ["python3", "-B", root.speechHelper, "--", root.speechText]
         onExited: (code, status) => {
             if (!root.speechCancelled && code !== 0)
-                root.errorMessage = "Speech playback failed. Check that eSpeak NG is installed and audio is available.";
+                root.errorMessage = "Speech playback failed. Check your audio output or set up the natural voice again from Reader actions.";
         }
     }
     function animateReaderPage(direction) {
@@ -1618,6 +1639,12 @@ Item {
                         ReaderAction { objectName: "typing-mode"; text: root.readingMode ? "Typing mode · Ctrl+Tab" : "Reading mode · Ctrl+Tab"; onClicked: { readerActions.close(); root.toggleReadingMode(); } }
                         ReaderAction { objectName: "typing-fullscreen"; text: root.fullscreen ? "Compact window · F11" : "Fullscreen · F11"; onClicked: { readerActions.close(); root.toggleFullscreen(); } }
                         ReaderAction { objectName: "typing-library"; text: "Book library"; enabled: root.practicing; onClicked: { readerActions.close(); root.showLibrary(); } }
+                        ReaderAction {
+                            objectName: "reader-voice-setup"
+                            text: speechSetup.running ? "Downloading natural voice…" : (root.naturalVoiceReady ? "Repair natural voice…" : "Download natural voice…")
+                            enabled: !speechSetup.running && !root.speaking
+                            onClicked: { root.errorMessage = ""; speechSetup.running = true; }
+                        }
                         ReaderAction { objectName: "typing-reader-import"; text: "Import book…"; enabled: !root.busy; onClicked: { readerActions.close(); root.openImport(); } }
                     }
                 }
@@ -1626,8 +1653,10 @@ Item {
                     objectName: "reader-speech"
                     visible: root.readingMode && root.practicing
                     text: root.speaking ? "Stop" : "Read aloud"
-                    enabled: root.speaking || (!root.busy && root.passage.trim().length > 0)
+                    enabled: root.speaking || (!root.busy && !speechSetup.running && root.passage.trim().length > 0)
                     Accessible.name: root.speaking ? "Stop reading aloud" : "Read selection or current page aloud"
+                    ToolTip.visible: hovered
+                    ToolTip.text: root.naturalVoiceReady ? "Natural offline voice · Lessac (US English)" : "Basic offline voice · download the natural voice from Reader actions"
                     onClicked: root.toggleSpeech()
                 }
                 TextButton { visible: root.readingMode; text: "Type"; onClicked: root.toggleReadingMode() }

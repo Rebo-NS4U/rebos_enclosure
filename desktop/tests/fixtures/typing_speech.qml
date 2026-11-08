@@ -21,6 +21,7 @@ ShellRoot {
                 menu.pageSource = "A gentle morning with many words to read. ".repeat(100);
                 menu.fitPage();
             } else if (step === 1) {
+                if (Quickshell.env("ENCLOSURE_READER_SPEECH_DIR") && !menu.naturalVoiceReady) throw Error("Natural voice was not detected");
                 menu.toggleSpeech();
             } else if (step === 2) {
                 if (!menu.speaking || menu.speechText !== menu.passage.trim()) throw Error("Page speech did not start");

@@ -462,4 +462,8 @@ Single-video YouTube quick-play uses the existing feed card instead of fetching 
 
 The shared stream relay forwards available network bytes immediately, including after a preloaded prefix, rather than waiting for a full 64 KB chunk. VLC pause-click capability detection is cached for the media backend lifetime to avoid an extra VLC process on repeat launches.
 
-The book reader offers **Read aloud** and **Stop** in reading mode. It reads selected text, or the current page when nothing is selected, using offline eSpeak NG at 165 words per minute. Navigation, changing modes, and closing the reader stop speech. Install the core package `espeak-ng` for playback; no account or downloaded voice model is required.
+The book reader offers **Read aloud** and **Stop** in reading mode. It reads selected text, or the current page when nothing is selected. Navigation, changing modes, and closing the reader stop speech.
+
+For the natural US English voice, open **Reader actions (⋯) → Download natural voice…** once. This installs Piper 1.8.0 into an isolated user environment and downloads the Lessac high-quality voice (roughly 110 MB, plus the runtime). Setup needs internet; subsequent speech runs entirely offline on the CPU. Voice models and the runtime stay in `$XDG_DATA_HOME/enclosure/reader-speech` (normally `~/.local/share/enclosure/reader-speech`), outside the shipped payload. The existing eSpeak NG voice remains available before setup. Playback uses PipeWire's `pw-play`; no audio files or reading text are saved.
+
+Setup can also be run with `python3 ~/.config/quickshell/scripts/reader_speech.py --setup`. See [Piper](https://github.com/OHF-Voice/piper1-gpl) for the runtime and voice documentation. For an audio sample without playback, use `reader_speech.py --wav /tmp/reader.wav -- "A short sample."` after setup.
