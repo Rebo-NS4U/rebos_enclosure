@@ -738,25 +738,10 @@ Item {
 
                             BarAppearancePreview { Layout.fillWidth: true }
 
-                            AppearanceSliderRow {
-                                visible: BarAppearance.polished
-                                objectName: "bar-opacity"
-                                label: "Background opacity"
-                                minimum: 20
-                                configValue: Config.bar?.islandOpacity ?? 80
-                                onValueEdited: newValue => Config.bar.islandOpacity = newValue
-                            }
-                            AppearanceSliderRow {
-                                visible: BarAppearance.polished
-                                objectName: "bar-accent"
-                                label: "Wallpaper accent"
-                                configValue: Config.bar?.islandAccent ?? 55
-                                onValueEdited: newValue => Config.bar.islandAccent = newValue
-                            }
                             StyledText {
                                 Layout.fillWidth: true
                                 wrapMode: Text.WordWrap
-                                text: "Changes save automatically. Colors follow your theme. Standard keeps the saved transparency settings."
+                                text: "Bar opacity and accent follow your theme automatically. Adjust shell transparency in Personalization → Appearance → Transparency and blur."
                                 font.pixelSize: Styling.fontSize(-1)
                                 color: Colors.overSurfaceVariant
                             }

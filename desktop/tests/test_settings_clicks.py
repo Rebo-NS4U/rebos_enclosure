@@ -17,6 +17,7 @@ import Quickshell
 import qs.modules.widgets.dashboard.controls
 import qs.config
 import qs.modules.globals
+import qs.modules.bar
 import qs.modules.theme
 ShellRoot {
  FloatingWindow {
@@ -170,6 +171,27 @@ ShellRoot {
       fixture.check(reviewControls.feedback.includes("staged whitespace"), "Local check report stays visible");
       reviewControls.selectedPath = "/example/another-repository";
       fixture.check(reviewControls.feedback === "", "Previous repo report cleared when selection changes");
+      Config.bar.islandAppearance = "glass";
+      Config.bar.islandOpacity = 20;
+      Config.bar.islandAccent = 0;
+      for (let style of ["glass", "quiet", "colorful", "dithered", "custom"]) {
+       Config.theme.shellStyle = style;
+       Config.theme.shellTransparency = 65;
+       tester.wait(30);
+       fixture.check(Math.abs(BarAppearance.panelOpacity(false) - 0.35) < 0.001, "Bar follows transparency for " + style);
+       fixture.check(Math.abs(BarAppearance.panelOpacity(true) - 0.35) < 0.001, "Expanded bar follows transparency for " + style);
+       fixture.check(BarAppearance.panelBorder(false).toString() === Config.resolveColor(Styling.getStyledRectConfig("bg").border[0]).toString(), "Bar border follows theme for " + style);
+       fixture.check(BarAppearance.clockTint(false).r === BarAppearance.highlightColor.r, "Clock accent follows theme highlight for " + style);
+       Config.theme.shellTransparency = -1;
+       tester.wait(30);
+       fixture.check(BarAppearance.opacity === Styling.getStyledRectConfig("bg").opacity, "Bar follows default theme opacity for " + style);
+      }
+      Config.theme.shellTransparency = 100; tester.wait(30);
+      fixture.check(BarAppearance.opacity === 0, "Bar supports fully transparent theme");
+      Config.theme.shellTransparency = 0; tester.wait(30);
+      fixture.check(BarAppearance.opacity === 1, "Bar supports opaque theme");
+      Config.theme.shellTransparency = -1;
+      Config.theme.shellStyle = "glass";
       let settingsComponent = Qt.createComponent("modules/widgets/dashboard/controls/SettingsTab.qml");
       fixture.check(settingsComponent.status === Component.Ready, settingsComponent.errorString());
       let settings = settingsComponent.createObject(fixture, {width: 1000, height: 740});

@@ -55,7 +55,7 @@ SettingsGroup {
     StyledText {
         Layout.fillWidth: true
         wrapMode: Text.WordWrap
-        text: "0% is opaque; 100% is transparent. This changes shell menu and panel backgrounds, keeping text solid. App windows and the bar have separate transparency settings."
+        text: "0% is opaque; 100% is transparent. This changes shell menu and panel backgrounds, keeping text solid. The bar follows this setting automatically; app windows have separate transparency settings."
         color: Colors.overSurfaceVariant
     }
     StyledText { text: "Where blur applies"; font.bold: true }

@@ -19,8 +19,8 @@ Personalization → Appearance → Transparency and blur contains two saved slid
 
 - Shell background transparency adjusts menu and panel backgrounds from opaque
   (0%) to transparent (100%) while preserving text opacity. Use theme transparency
-  restores each style's defaults. This override does not change app windows or the
-  bar's separate appearance settings.
+  restores each style's defaults. The bar follows this transparency automatically;
+  app window transparency stays separate.
 - Where blur applies selects Everywhere, Shell panels only, or Off independently
   of strength and transparency. Turning blur off preserves the saved strength.
 - Blur strength uses one scale for Everywhere and Shell panels only. Lighter
@@ -38,3 +38,9 @@ Validation: `python3 desktop/tests/test_settings_clicks.py` exercises navigation
 slider persistence and background opacity in an isolated Quickshell window.
 `python3 desktop/tests/test_desktop_blur.py` validates generated Niri configuration
 at minimum, middle and maximum strength for each mode.
+
+Bar opacity follows the active theme background and shell transparency override.
+Bar borders and clock accents use the theme's border and highlight colors, so
+palette and style changes update them automatically. The separate bar opacity
+and accent sliders have been removed; older saved values are retained for
+compatibility but no longer override the theme.

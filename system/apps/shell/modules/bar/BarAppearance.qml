@@ -10,25 +10,28 @@ Singleton {
     readonly property color foregroundColor: Colors.overBackground
     readonly property color activeWorkspaceOutline: foregroundColor
     readonly property bool polished: (Config.bar?.islandAppearance ?? BarDefaults.data.islandAppearance) === "glass"
-    readonly property real opacity: Math.max(20, Math.min(100, Config.bar?.islandOpacity ?? BarDefaults.data.islandOpacity)) / 100
-    readonly property real accent: Math.max(0, Math.min(100, Config.bar?.islandAccent ?? BarDefaults.data.islandAccent)) / 100
+    readonly property var themeSurface: Styling.getStyledRectConfig("bg")
+    readonly property color highlightColor: Config.resolveColor(Styling.getStyledRectConfig("focus").gradient[0][0])
+    readonly property color surfaceColor: Config.resolveColor(themeSurface.gradient[0][0])
+    readonly property real opacity: themeSurface.opacity
+    // Accent intensity comes from the theme's own highlight/background contrast.
+    readonly property real accent: Math.min(1, 4 * Math.max(Math.abs(highlightColor.r - surfaceColor.r),
+        Math.abs(highlightColor.g - surfaceColor.g), Math.abs(highlightColor.b - surfaceColor.b)))
 
     function panelOpacity(expanded: bool): real {
-        return Styling.shellStyle === "quiet" || Styling.shellStyle === "dithered" ? 1 : (polished ? (expanded ? Styling.getStyledRectConfig("popup").opacity : opacity) : 1);
+        return expanded ? Styling.getStyledRectConfig("popup").opacity : opacity;
     }
     function panelTint(expanded: bool): color {
         // The background surface already supplies the active theme color.
         return "transparent";
     }
     function panelBorder(expanded: bool): color {
-        return Styling.shellStyle === "quiet" || Styling.shellStyle === "dithered" ? Config.resolveColor(Styling.getStyledRectConfig("popup").border[0]) : Qt.alpha(Colors.primary, polished ? accent * (expanded ? 0.33 : 0.44) : 0);
+        return Config.resolveColor(Styling.getStyledRectConfig(expanded ? "popup" : "bg").border[0]);
     }
     function clockTint(hovered: bool): color {
-        return Qt.alpha(Colors.primary, polished ? accent * (hovered ? 0.29 : 0.145) : 0);
+        return polished ? Qt.alpha(highlightColor, hovered ? 0.95 : 0.65) : "transparent";
     }
     function reset(): void {
         Config.bar.islandAppearance = BarDefaults.data.islandAppearance;
-        Config.bar.islandOpacity = BarDefaults.data.islandOpacity;
-        Config.bar.islandAccent = BarDefaults.data.islandAccent;
     }
 }
