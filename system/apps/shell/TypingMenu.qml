@@ -192,6 +192,45 @@ Item {
     property string savedWordNote: ""
     property string wordMessage: ""
     property string definitionText: ""
+    property string meaningContext: ""
+    property string meaningText: ""
+    property string meaningError: ""
+    property bool meaningBusy: false
+    property string meaningToken: ""
+    property var runMeaningLookup: function() { meaningProcess.running = true; }
+    function cancelMeaning() {
+        meaningToken = ""; meaningBusy = false;
+        if (meaningProcess.running) meaningProcess.running = false;
+    }
+    function lookupMeaning() {
+        if (!selectedTerm || !meaningContext || meaningProcess.running) return;
+        meaningToken = "meaning-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
+        meaningText = ""; meaningError = ""; meaningBusy = true;
+        meaningProcess.lookupToken = meaningToken;
+        runMeaningLookup();
+    }
+    Process {
+        id: meaningProcess
+        property string lookupToken: ""
+        property string runningToken: ""
+        command: ["python3", Qt.resolvedUrl("scripts/reader_meaning.py").toString().replace(/^file:\/\//, "")]
+        stdinEnabled: true
+        onStarted: {
+            runningToken = lookupToken;
+            if (runningToken !== root.meaningToken) { running = false; return; }
+            write(JSON.stringify({token: runningToken, term: root.selectedTerm, context: root.meaningContext}) + "\n");
+        }
+        stdout: StdioCollector { id: meaningOutput }
+        onExited: code => {
+            if (runningToken !== root.meaningToken) return;
+            root.meaningBusy = false;
+            try {
+                const result = JSON.parse(meaningOutput.text);
+                root.meaningText = result.text || "";
+                root.meaningError = result.error || (root.meaningText ? "" : "No explanation returned. Try again.");
+            } catch (error) { root.meaningError = "Could not complete the assistant lookup. Try again."; }
+        }
+    }
     property var notedTerms: []
     property bool noteLoaded: false
     property bool noteSaving: false
@@ -232,9 +271,9 @@ Item {
     }
     function openCurrentWord() {
         if (wordPanel.opened) { handleEscape(); return; }
-        if (readingMode) { openWord(readerText.selectedText || readingWordAt(readerText.cursorPosition)); return; }
+        if (readingMode) { openWord(readerText.selectedText || readingWordAt(readerText.cursorPosition), readerText.selectedText ? readerText.selectionStart : readerText.cursorPosition); return; }
         const item = currentWordItem();
-        if (item) openWord(item.modelData.text);
+        if (item) openWord(item.modelData.text, item.modelData.start);
     }
     Shortcut {
         sequence: "Ctrl+Space"
@@ -266,10 +305,13 @@ Item {
         newNoteCategory = category;
         cancelDefinition();
     }
-    function openWord(value) {
+    function openWord(value, offset = -1) {
         if (!bookId || (wordPanel.opened && (noteDirty || noteSaving))) return;
-        cancelDefinition();
+        cancelDefinition(); cancelMeaning();
+        meaningText = ""; meaningError = "";
         selectedTerm = value.trim().replace(/^[\s.,!?;:"“”‘’'()[\]{}—–]+|[\s.,!?;:"“”‘’'()[\]{}—–]+$/g, "");
+        meaningContext = TypingPaging.wordContext(passage, selectedTerm,
+            offset >= 0 ? offset : (readingMode ? readerText.cursorPosition : visualCursor));
         notedTerms = []; noteEntries = [];
         notebookMode = false; notebookBrowsing = false; notebookCreating = false;
         noteCategory = "General"; savedNoteCategory = "General"; newNoteCategory = "General";
@@ -511,7 +553,7 @@ Item {
     onPracticingChanged: { resetSpeed(); syncCaret(); }
     onVisibleChanged: {
         if (visible) { backendStarted = true; if (ready) send({action: "list"}, false); }
-        else { saveProgress(); stopFeedback(); }
+        else { saveProgress(); stopFeedback(); cancelMeaning(); }
         resetSpeed();
         if (visible && practicing) { fitDelay.restart(); Qt.callLater(() => root.focusPassage()); }
     }
@@ -1111,7 +1153,7 @@ Item {
         }
         function close() {
             if (!opened) return;
-            opened = false; panelMotion.stop(); root.cancelDefinition();
+            opened = false; panelMotion.stop(); root.cancelDefinition(); root.cancelMeaning();
             if (root.practicing) root.focusPassage();
             if (Motion.enabled) {
                 closeAnimations++; panelMotion.to = 0; panelMotion.duration = Motion.exit; panelMotion.start();
@@ -1316,6 +1358,37 @@ Item {
                                 displayText: "Saved notes in this book"
                                 enabled: !root.noteDirty && !root.noteSaving
                                 onActivated: index => root.openWord(root.notedTerms[index])
+                            }
+                            TextButton {
+                                objectName: "typing-context-meaning"
+                                visible: !root.notebookMode && root.selectedTerm.length > 0
+                                text: root.meaningBusy ? "Explaining…" : "Meaning in this passage"
+                                enabled: !root.meaningBusy && !meaningProcess.running && root.meaningContext.length > 0
+                                onClicked: root.lookupMeaning()
+                            }
+                            StyledText {
+                                visible: !root.notebookMode && root.selectedTerm.length > 0
+                                text: root.meaningContext ? "Uses your assistant with a short excerpt from this page." : "Select an occurrence of this word in the current passage first."
+                                wrapMode: Text.Wrap
+                                Layout.fillWidth: true
+                                font.pixelSize: 11
+                                opacity: 0.65
+                            }
+                            ScrollView {
+                                visible: !root.notebookMode && (root.meaningText.length > 0 || root.meaningError.length > 0)
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: Math.min(180, meaningLabel.implicitHeight)
+                                clip: true
+                                StyledText {
+                                    id: meaningLabel
+                                    objectName: "typing-context-meaning-result"
+                                    width: wordPanel.availableWidth - 12
+                                    text: root.meaningError || root.meaningText
+                                    textFormat: Text.PlainText
+                                    wrapMode: Text.Wrap
+                                    font.pixelSize: 12
+                                    color: root.meaningError ? Colors.error : Colors.overSurface
+                                }
                             }
                             TextButton {
                                 objectName: "typing-definitions-toggle"
@@ -2099,7 +2172,7 @@ Item {
                             Accessible.name: "Book passage"
                             TapHandler {
                                 acceptedButtons: Qt.RightButton
-                                onTapped: point => root.openWord(root.readingWordAt(readerText.positionAt(point.position.x, point.position.y)))
+                                onTapped: point => { const index = readerText.positionAt(point.position.x, point.position.y); root.openWord(root.readingWordAt(index), index); }
                             }
                             Keys.onPressed: event => { event.accepted = root.readerKey(event); }
                         }
@@ -2133,7 +2206,7 @@ Item {
                                     for (let index = 0; index < wordRepeater.count; index++) {
                                         const wordItem = wordRepeater.itemAt(index);
                                         const local = wordItem.mapFromItem(answer, point.position.x, point.position.y);
-                                        if (wordItem.contains(local)) { root.openWord(wordItem.modelData.text); break; }
+                                        if (wordItem.contains(local)) { root.openWord(wordItem.modelData.text, wordItem.modelData.start); break; }
                                     }
                                 }
                             }

@@ -100,3 +100,25 @@ function readerHtml(value, starts, lineHeight, indent) {
         return '<p align="left" style="line-height:155%; margin-top:0px; margin-bottom:' + lineHeight + 'px; text-indent:' + indent + 'px;">' + escaped + '</p>';
     }).join("");
 }
+
+// Use only a small excerpt from the current page, never later loaded windows.
+// Prefer the selected occurrence; typed dictionary searches use the nearest one.
+function wordContext(source, term, cursor) {
+    if (!term || term.length > 128) return "";
+    var lower = source.toLowerCase(), needle = term.toLowerCase();
+    var nearest = -1, distance = Infinity;
+    function wordCharacter(value) {
+        return value && (/[0-9_]/.test(value) || value.toUpperCase() !== value.toLowerCase());
+    }
+    for (var at = lower.indexOf(needle); at >= 0; at = lower.indexOf(needle, at + 1)) {
+        if ((at > 0 && wordCharacter(source[at - 1]))
+                || (at + term.length < source.length && wordCharacter(source[at + term.length]))) continue;
+        var delta = Math.abs(at - Math.max(0, cursor));
+        if (delta < distance) { nearest = at; distance = delta; }
+    }
+    if (nearest < 0) return "";
+    var start = Math.max(0, nearest - 240), end = Math.min(source.length, nearest + term.length + 160);
+    if (start > 0) { var space = source.indexOf(" ", start); if (space < nearest) start = space + 1; }
+    if (end < source.length) { var boundary = source.lastIndexOf(" ", end); if (boundary > nearest + term.length) end = boundary; }
+    return source.slice(start, end).trim();
+}

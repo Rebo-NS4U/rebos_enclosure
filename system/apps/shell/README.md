@@ -249,3 +249,11 @@ and layout; resizing or switching reading mode still refits the page.
 In typing mode the current chapter card stays in the space above the active row,
 without adding height to the workspace. Its surfaces and the typing panel follow
 the selected shell theme. Reading mode keeps its chapter-opening title layout.
+
+Select a word and choose **Meaning in this passage** for an assistant explanation
+in the word popup. This optional action sends only the word and a short excerpt
+from the current page to the configured assistant backend/model. It uses a separate
+lookup, keeps the normal dictionary toggle independent, and clears the explanation
+when another word is selected. Closing the popup cancels only that lookup. The
+assistant is instructed to use the excerpt alone and avoid later plot knowledge;
+its contextual explanation can still be uncertain or incorrect.

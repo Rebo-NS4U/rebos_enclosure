@@ -18,7 +18,7 @@ ShellRoot {
     Timer {
         interval: 60000
         running: Ai.sessionsReady && !GlobalStates.assistantVisible
-            && Ai.sessions.every(session => session.agentParked || !session.sessionEnabled)
+            && !ReaderMeaning.busy && Ai.sessions.every(session => session.agentParked || !session.sessionEnabled)
         onTriggered: {
             for (let session of Ai.sessions) session.checkpointBridge();
             idleExit.start();
@@ -26,7 +26,7 @@ ShellRoot {
     }
     Timer { id: idleExit; interval: 250; onTriggered: {
         if (!GlobalStates.assistantVisible
-            && Ai.sessions.every(session => session.agentParked || !session.sessionEnabled)) Qt.quit();
+            && !ReaderMeaning.busy && Ai.sessions.every(session => session.agentParked || !session.sessionEnabled)) Qt.quit();
     } }
     IpcHandler {
         target: "assistant"
@@ -35,6 +35,12 @@ ShellRoot {
         function reveal(): void {
             if (!GlobalStates.assistantVisible) GlobalStates.toggleAssistant();
         }
+        function readerMeaningStart(payload: string): string {
+            try { return ReaderMeaning.start(JSON.parse(payload)); }
+            catch (error) { return JSON.stringify({error: "Invalid passage lookup."}); }
+        }
+        function readerMeaningStatus(token: string): string { return ReaderMeaning.status(token); }
+        function readerMeaningCancel(token: string): string { ReaderMeaning.cancel(token); return "{}"; }
         function status(): string {
             return JSON.stringify({visible: GlobalStates.assistantVisible, sessions: Ai.sessions.length, parked: Ai.sessions.filter(session => session.agentParked).length, busySessions: Ai.sessions.filter(session => session.isBusy).length, ready: Ai.sessionsReady, channel: Ai.activeSession.channelId, agent: Ai.activeSession.currentAgentId, model: Ai.activeSession.currentSessionModelId, connected: Ai.activeSession.sessionReady, connectionStatus: Ai.activeSession.statusText, lastError: Ai.activeSession.lastError, busy: Ai.activeSession.isBusy, activityStatus: Ai.activeSession.activityStatus, screen: GlobalStates.assistantScreenName, available: GlobalStates.assistantAvailable, pinned: GlobalStates.assistantPinned, width: GlobalStates.assistantWidth});
         }
