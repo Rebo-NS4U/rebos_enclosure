@@ -34,6 +34,8 @@ ShellRoot {
                 if (practice.passage.length >= practice.pageSource.length) throw Error("Entire long section was laid out");
                 if (count > practice.passage.length) throw Error("Glyph count exceeds bounded page");
                 const viewport = find(practice, "typing-page-visuals");
+                if (Math.abs(viewport.height - 7 * practice.passageLineHeight) > 1) throw Error("Typing viewport must show exactly seven rows total");
+                if (Math.abs(viewport.centerPadding - 3 * practice.passageLineHeight) > 1) throw Error("Blank centering rows must fit inside the seven-row viewport");
                 const glyph = practice.glyphItems[practice.visualCursor];
                 if (!glyph) throw Error("Cursor glyph missing after jump");
                 const point = glyph.mapToItem(viewport.contentItem, 0, 0);

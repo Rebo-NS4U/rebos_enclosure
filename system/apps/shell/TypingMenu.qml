@@ -18,7 +18,9 @@ Item {
     property bool practicing: false
     property bool fullscreen: false
     readonly property real passageLineHeight: Math.ceil(typingMetrics.height * 1.45)
-    readonly property int pageLineLimit: Math.max(1, Math.floor(Math.max(0, passageArea.height - 8) / Math.max(1, passageLineHeight)))
+    readonly property int pageLineLimit: fullscreen
+        ? Math.max(1, Math.floor(Math.max(0, passageArea.height - 8) / Math.max(1, passageLineHeight)))
+        : 7
     // Bound both typing and reading to one viewport, including while hidden.
     readonly property int layoutLineLimit: Math.max(3, Math.min(36, pageLineLimit))
     onPageLineLimitChanged: fitDelay.restart()
@@ -1610,7 +1612,12 @@ Item {
                             flickableDirection: Flickable.VerticalFlick
                             ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
                             visible: !root.fullscreen
-                            anchors.fill: parent
+                            // Seven visible rows total; centering space is inside this budget.
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                            height: Math.min(parent.height, 7 * root.passageLineHeight)
+                            clip: true
                             readonly property real pagePop: root.effectKind === "page" ? root.effectStrength : 0
                             opacity: 1 - pagePop * 0.10
                             transform: Scale {
