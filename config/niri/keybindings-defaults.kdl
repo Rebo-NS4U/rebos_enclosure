@@ -37,6 +37,13 @@ binds {
     // Mod+Space hotkey-overlay-title="Transcribe Audio" { spawn "sh" ".config/scripts/whisper-transcribe.sh"; }
     // Alt+Space hotkey-overlay-title="Cloud Transcribe" { spawn "sh" ".config/scripts/whisper-cloud.sh"; }
 
+    // Vial consumer media keys control Spotify over its MPRIS interface.
+    XF86AudioPlay repeat=false allow-when-locked=true { spawn "busctl" "--user" "call" "org.mpris.MediaPlayer2.spotify" "/org/mpris/MediaPlayer2" "org.mpris.MediaPlayer2.Player" "PlayPause"; }
+    XF86AudioPause repeat=false allow-when-locked=true { spawn "busctl" "--user" "call" "org.mpris.MediaPlayer2.spotify" "/org/mpris/MediaPlayer2" "org.mpris.MediaPlayer2.Player" "Pause"; }
+    XF86AudioNext repeat=false allow-when-locked=true { spawn "busctl" "--user" "call" "org.mpris.MediaPlayer2.spotify" "/org/mpris/MediaPlayer2" "org.mpris.MediaPlayer2.Player" "Next"; }
+    XF86AudioPrev repeat=false allow-when-locked=true { spawn "busctl" "--user" "call" "org.mpris.MediaPlayer2.spotify" "/org/mpris/MediaPlayer2" "org.mpris.MediaPlayer2.Player" "Previous"; }
+    XF86AudioStop repeat=false allow-when-locked=true { spawn "busctl" "--user" "call" "org.mpris.MediaPlayer2.spotify" "/org/mpris/MediaPlayer2" "org.mpris.MediaPlayer2.Player" "Stop"; }
+
     // Route media keys through rebos_shell so its OSD stays in sync.
     XF86AudioRaiseVolume  allow-when-locked=true { spawn "qs" "ipc" "-p" "@HOME@/.config/quickshell" "call" "audio" "increment"; }
     XF86AudioLowerVolume  allow-when-locked=true { spawn "qs" "ipc" "-p" "@HOME@/.config/quickshell" "call" "audio" "decrement"; }

@@ -27,7 +27,7 @@
   "config/kitty/kitty.conf": "b7dcfa9097842a092f08170cd72d74104a824dd47c4995c44ec6d860690bb84d",
   "config/niri/config-quickshell.kdl": "bbb3564ece3344d424e003ea58682f83c9ed0b232e7be0a1e27efea448309c9e",
   "config/niri/config.kdl": "1641a665be01de173e875c3eefb8d460cdf8411d2aa00a0c1649ef6256af7de5",
-  "config/niri/keybindings-defaults.kdl": "d7bb18f804e0fa2f0e009e4e039c534a9b15ea8ca8f6b1af370f0459786f418c",
+  "config/niri/keybindings-defaults.kdl": "5c6937882f7c21b6402e05bdadf1578b3a5b870bcfd46cbbd436d12026962b17",
   "config/niri/keybindings-personal.kdl": "8a59831361685ed837db5fd17277603e3fbf8b02cf5bd6eb7006b88f1a238aa7",
   "config/nvim/README.md": "e73ccfcbbd4b1a2c4c6a8d79d8c18aba6501808eb7b7c8b5967e9c7174322661",
   "config/nvim/init.lua": "8ae26d3a108d0baaf0f16e82bc07ec6135314803f4aaa7a442872aefb4a24209",
