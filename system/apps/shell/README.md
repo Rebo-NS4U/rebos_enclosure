@@ -270,10 +270,10 @@ In typing mode the current chapter card stays in the space above the active row,
 without adding height to the workspace. Its surfaces and the typing panel follow
 the selected shell theme. Reading mode keeps its chapter-opening title layout.
 
-Select a word and choose **Meaning in this passage** for an assistant explanation
-in the word popup. This optional action sends only the word and a short excerpt
-from the current page to the configured assistant backend/model. It uses a separate
-lookup, keeps the normal dictionary toggle independent, and clears the explanation
-when another word is selected. Closing the popup cancels only that lookup. The
-assistant is instructed to use the excerpt alone and avoid later plot knowledge;
-its contextual explanation can still be uncertain or incorrect.
+Select a word and choose **Word context and definition** to show its surrounding
+passage and fetch English definitions directly from the Free Dictionary API.
+No AI agent or assistant connection is required. Only the selected word is sent
+to the dictionary service; the passage stays local and remains readable if the
+network lookup fails. This explicit lookup works independently of the automatic
+online dictionary switch. Selecting another word clears the previous results;
+closing the popup cancels the dictionary request.

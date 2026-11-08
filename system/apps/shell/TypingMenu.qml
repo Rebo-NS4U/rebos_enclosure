@@ -202,42 +202,13 @@ Item {
     property string definitionText: ""
     property string meaningContext: ""
     property string meaningText: ""
-    property string meaningError: ""
-    property bool meaningBusy: false
-    property string meaningToken: ""
-    property var runMeaningLookup: function() { meaningProcess.running = true; }
     function cancelMeaning() {
-        meaningToken = ""; meaningBusy = false;
-        if (meaningProcess.running) meaningProcess.running = false;
+        cancelDefinition();
     }
     function lookupMeaning() {
-        if (!selectedTerm || !meaningContext || meaningProcess.running) return;
-        meaningToken = "meaning-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
-        meaningText = ""; meaningError = ""; meaningBusy = true;
-        meaningProcess.lookupToken = meaningToken;
-        runMeaningLookup();
-    }
-    Process {
-        id: meaningProcess
-        property string lookupToken: ""
-        property string runningToken: ""
-        command: ["python3", Qt.resolvedUrl("scripts/reader_meaning.py").toString().replace(/^file:\/\//, "")]
-        stdinEnabled: true
-        onStarted: {
-            runningToken = lookupToken;
-            if (runningToken !== root.meaningToken) { running = false; return; }
-            write(JSON.stringify({token: runningToken, term: root.selectedTerm, context: root.meaningContext}) + "\n");
-        }
-        stdout: StdioCollector { id: meaningOutput }
-        onExited: code => {
-            if (runningToken !== root.meaningToken) return;
-            root.meaningBusy = false;
-            try {
-                const result = JSON.parse(meaningOutput.text);
-                root.meaningText = result.text || "";
-                root.meaningError = result.error || (root.meaningText ? "" : "No explanation returned. Try again.");
-            } catch (error) { root.meaningError = "Could not complete the assistant lookup. Try again."; }
-        }
+        if (!selectedTerm || !meaningContext) return;
+        meaningText = meaningContext;
+        lookupDefinition(true);
     }
     property var notedTerms: []
     property bool noteLoaded: false
@@ -327,7 +298,7 @@ Item {
     function openWord(value, offset = -1) {
         if (!bookId || (wordPanel.opened && (noteDirty || noteSaving))) return;
         cancelDefinition(); cancelMeaning();
-        meaningText = ""; meaningError = "";
+        meaningText = "";
         selectedTerm = value.trim().replace(/^[\s.,!?;:"“”‘’'()[\]{}—–]+|[\s.,!?;:"“”‘’'()[\]{}—–]+$/g, "");
         meaningContext = TypingPaging.wordContext(passage, selectedTerm,
             offset >= 0 ? offset : (readingMode ? readerText.cursorPosition : visualCursor));
@@ -356,9 +327,9 @@ Item {
         definitionRequest = null;
         if (previous) previous.abort();
     }
-    function lookupDefinition() {
+    function lookupDefinition(explicitLookup = false) {
         cancelDefinition(); definitionText = "";
-        if (!definitionsEnabled || !selectedTerm || !wordPanel.opened || notebookMode) return;
+        if ((!definitionsEnabled && !explicitLookup && !meaningText) || !selectedTerm || !wordPanel.opened || notebookMode) return;
         definitionText = "Looking up definition…";
         const xhr = createDictionaryRequest(); definitionRequest = xhr;
         xhr.open("GET", "https://api.dictionaryapi.dev/api/v2/entries/en/" + encodeURIComponent(selectedTerm));
@@ -1449,20 +1420,20 @@ Item {
                             TextButton {
                                 objectName: "typing-context-meaning"
                                 visible: !root.notebookMode && root.selectedTerm.length > 0
-                                text: root.meaningBusy ? "Explaining…" : "Meaning in this passage"
-                                enabled: !root.meaningBusy && !meaningProcess.running && root.meaningContext.length > 0
+                                text: "Word context and definition"
+                                enabled: root.meaningContext.length > 0
                                 onClicked: root.lookupMeaning()
                             }
                             StyledText {
                                 visible: !root.notebookMode && root.selectedTerm.length > 0
-                                text: root.meaningContext ? "Uses your assistant with a short excerpt from this page." : "Select an occurrence of this word in the current passage first."
+                                text: root.meaningContext ? "Shows the surrounding passage and looks up English dictionary definitions. No AI is used." : "Select an occurrence of this word in the current passage first."
                                 wrapMode: Text.Wrap
                                 Layout.fillWidth: true
                                 font.pixelSize: 11
                                 opacity: 0.65
                             }
                             ScrollView {
-                                visible: !root.notebookMode && (root.meaningText.length > 0 || root.meaningError.length > 0)
+                                visible: !root.notebookMode && root.meaningText.length > 0
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: Math.min(180, meaningLabel.implicitHeight)
                                 clip: true
@@ -1470,11 +1441,11 @@ Item {
                                     id: meaningLabel
                                     objectName: "typing-context-meaning-result"
                                     width: wordPanel.availableWidth - 12
-                                    text: root.meaningError || root.meaningText
+                                    text: root.meaningText
                                     textFormat: Text.PlainText
                                     wrapMode: Text.Wrap
                                     font.pixelSize: 12
-                                    color: root.meaningError ? Colors.error : Colors.overSurface
+                                    color: Colors.overSurface
                                 }
                             }
                             TextButton {
@@ -1490,12 +1461,12 @@ Item {
                             ScrollView {
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: Math.min(160, definitionLabel.implicitHeight)
-                                visible: !root.notebookMode && root.definitionsEnabled && root.selectedTerm.length > 0
+                                visible: !root.notebookMode && (root.definitionsEnabled || root.meaningText.length > 0) && root.selectedTerm.length > 0
                                 clip: true
                                 StyledText { id: definitionLabel; width: wordPanel.availableWidth - 12; text: root.definitionText; textFormat: Text.PlainText; wrapMode: Text.Wrap; font.pixelSize: 12 }
                             }
                             RowLayout {
-                                visible: !root.notebookMode && root.wordOptionsExpanded && root.definitionsEnabled
+                                visible: !root.notebookMode && ((root.wordOptionsExpanded && root.definitionsEnabled) || root.meaningText.length > 0)
                                 StyledText { text: "English definitions · Free Dictionary API"; font.pixelSize: 11; opacity: 0.65 }
                                 TextButton { text: "Retry"; enabled: root.selectedTerm.length > 0; onClicked: root.lookupDefinition() }
                             }

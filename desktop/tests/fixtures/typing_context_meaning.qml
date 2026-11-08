@@ -1,10 +1,12 @@
 import QtQuick
+import QtQuick.Window
 import Quickshell
 import "TypingPaging.js" as Pages
 ShellRoot {
     property string sent: ""
-    PanelWindow {
-        implicitWidth: 640; implicitHeight: 600
+    Window {
+        visible: true
+        width: 640; height: 600
         TypingMenu { id: practice; anchors.fill: parent }
     }
     function find(item, name) {
@@ -25,24 +27,26 @@ ShellRoot {
                     if (Pages.wordContext("A riverbank.", "bank", 0) !== "") throw Error("Matched a word fragment");
                     practice.practicing = true; practice.bookId = "meaning-fixture";
                     practice.pageSource = "They sat on the bank of the river. ".repeat(40); practice.fitPage();
-                    practice.runMeaningLookup = () => {
-                        sent = practice.meaningContext;
-                        practice.meaningText = "Here, bank means the land beside a river.";
-                        practice.meaningBusy = false;
-                    };
+                    practice.createDictionaryRequest = () => ({
+                        readyState: 0, status: 200,
+                        responseText: JSON.stringify([{meanings: [{partOfSpeech: "noun", definitions: [{definition: "Land beside a river."}]}]}]),
+                        open: function(method, url) { sent = url; },
+                        abort: function() {},
+                        send: function() { this.readyState = XMLHttpRequest.DONE; this.onreadystatechange(); }
+                    });
                     practice.openWord("bank", 16); return;
                 }
                 if (phase === 2) {
                     const action = find(practice.wordTools.contentItem, "typing-context-meaning");
                     if (!action.visible || !action.enabled) throw Error("Context action is not available independently of dictionary toggle");
                     action.clicked();
-                    if (!sent.includes("river") || !find(practice.wordTools.contentItem, "typing-context-meaning-result").text.includes("river"))
+                    if (!sent.endsWith("/bank") || !practice.definitionText.includes("Land beside a river") || !find(practice.wordTools.contentItem, "typing-context-meaning-result").text.includes("river"))
                         throw Error("Context answer missing in word popup");
                     practice.wordTools.close();
-                    if (practice.meaningToken || practice.meaningBusy) throw Error("Close did not cancel context lookup");
+                    if (practice.definitionRequest) throw Error("Close did not cancel context lookup");
                     practice.openWord("They", 0);
-                    if (practice.meaningText || practice.meaningError) throw Error("Stale explanation retained for new word");
-                    console.log("PASS: bounded occurrence context, explicit lookup, inline result, close cancellation, stale-answer clearing"); Qt.quit();
+                    if (practice.meaningText) throw Error("Stale explanation retained for new word");
+                    console.log("PASS: bounded occurrence context, direct dictionary lookup without AI, inline passage and definitions, cancellation, stale clearing"); Qt.quit();
                 }
             } catch (error) { console.error(error); Qt.exit(1); }
         }
