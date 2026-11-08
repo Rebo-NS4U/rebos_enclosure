@@ -21,8 +21,8 @@ Item {
     readonly property int pageLineLimit: fullscreen
         ? Math.max(1, Math.floor(Math.max(0, passageArea.height - 8) / Math.max(1, passageLineHeight)))
         : 7
-    // Bound both typing and reading to one viewport, including while hidden.
-    readonly property int layoutLineLimit: Math.max(3, Math.min(36, pageLineLimit))
+    // Reading uses viewport pages; typing scrolls continuously to the chapter boundary.
+    readonly property int layoutLineLimit: fullscreen ? Math.max(3, Math.min(36, pageLineLimit)) : 2147483647
     onPageLineLimitChanged: fitDelay.restart()
     onReadingFontChanged: { widthCache = ({}); fitDelay.restart(); }
     property var readerPageHistory: []
@@ -310,6 +310,10 @@ Item {
     onVisualCursorChanged: syncCaret()
     readonly property int visualCursor: Math.min(TypingPaging.displayInput(answer.text.slice(0, answer.cursorPosition), passage).length, passage.length - 1)
     readonly property real progress: bookLength ? Math.min(1, (position + characters(displayedInput).length) / bookLength) : 0
+    readonly property int chapterStart: currentChapterIndex >= 0 ? chapters[currentChapterIndex].position : 0
+    readonly property int chapterEnd: currentChapterIndex + 1 < chapters.length ? chapters[currentChapterIndex + 1].position : bookLength
+    readonly property real chapterProgress: chapterEnd > chapterStart
+        ? Math.max(0, Math.min(1, (position + characters(displayedInput).length - chapterStart) / (chapterEnd - chapterStart))) : 0
     readonly property var passageWords: pageLayout.words
     readonly property font readingFont: Qt.font({family: Config.theme.font, pixelSize: fullscreen ? 20 : Config.theme.fontSize + 2, weight: Font.Normal})
     FontMetrics { id: typingMetrics; font: root.readingFont }
@@ -435,7 +439,8 @@ Item {
     }
     Component.onCompleted: { if (visible) backendStarted = true; }
     function send(data, page = true) {
-        // Request enough for one measured page, never a whole paragraph/chapter.
+        // Typing keeps the remaining chapter in one continuous scrolling passage.
+        data.chapterMode = !fullscreen;
         const narrowWidth = Math.min(characterWidth("i"), characterWidth(" "));
         data.window = Math.max(512, Math.min(4096,
             Math.ceil(Math.max(640, passageFlow.width) / narrowWidth) * layoutLineLimit + 72));
@@ -894,11 +899,6 @@ Item {
         if (prepared.text !== answer.text) {
             // Let Qt finish the key edit before replacing its document/cursor.
             Qt.callLater(normalizeInput);
-            return;
-        }
-        if (characters(answer.text).length > 4096) {
-            answer.text = characters(answer.text).slice(0, 4096).join("");
-            answer.cursorPosition = answer.length;
             return;
         }
         speedNow = Date.now();
@@ -2036,7 +2036,7 @@ Item {
                         color: Qt.alpha(Colors.overSurface, 0.08)
                         Rectangle {
                             height: parent.height
-                            width: parent.width * root.progress
+                            width: parent.width * root.chapterProgress
                             radius: 1
                             color: Qt.alpha(Colors.primary, 0.65)
 

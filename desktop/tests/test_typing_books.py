@@ -21,6 +21,20 @@ class Books(unittest.TestCase):
         self.library.db.close()
         self.temp.cleanup()
 
+    def test_chapter_mode_preserves_long_input_and_stops_at_next_chapter(self):
+        text = 'word ' * 2000 + 'Next chapter'
+        boundary = 10000
+        book = self.library.add('Long chapters', text, [
+            {'title': 'First', 'position': 0}, {'title': 'Next', 'position': boundary}])
+        page = self.library.handle({'action': 'open', 'id': book['id'], 'chapterMode': True})
+        self.assertEqual(page['passage'], text[:boundary])
+        self.library.save(book['id'], 0, text[:6000], 0)
+        restored = self.library.handle({'action': 'open', 'id': book['id'], 'chapterMode': True})
+        self.assertEqual(restored['typed'], text[:6000])
+        following = self.library.handle({'action': 'next', 'id': book['id'],
+            'position': boundary, 'typed': '', 'chapterMode': True})
+        self.assertEqual(following['passage'], text[boundary:])
+
     def test_paragraph_pages_preserve_identity_and_saved_progress(self):
         raw = "First paragraph ends here.\n\nSecond paragraph continues here."
         book = self.library.handle({'action': 'add', 'text': raw, 'window': 4096, 'paragraphs': True})
