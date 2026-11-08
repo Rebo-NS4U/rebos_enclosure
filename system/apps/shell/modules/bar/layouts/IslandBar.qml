@@ -608,7 +608,7 @@ Item {
         Behavior on width {
             enabled: Config.animDuration > 0 && root.barNormallyVisible && !root.retractingToHidden
             NumberAnimation {
-                duration: root.currentMode === "typing" || root.previousMode === "typing" ? Math.round(Motion.base * 1.4) : (root.isExpanded ? root.morphDuration : root.morphCollapseDuration)
+                duration: root.currentMode === "typing" || root.previousMode === "typing" ? Math.min(180, Motion.enter) : (root.isExpanded ? root.morphDuration : root.morphCollapseDuration)
                 easing.type: root.currentMode === "typing" || root.previousMode === "typing" ? Easing.OutQuint : Motion.enterCurve
             }
         }
@@ -616,7 +616,7 @@ Item {
         Behavior on height {
             enabled: Config.animDuration > 0 && root.barNormallyVisible && !root.retractingToHidden
             NumberAnimation {
-                duration: root.currentMode === "typing" || root.previousMode === "typing" ? Math.round(Motion.base * 1.4) : (root.isExpanded ? root.morphDuration : root.morphCollapseDuration)
+                duration: root.currentMode === "typing" || root.previousMode === "typing" ? Math.min(180, Motion.enter) : (root.isExpanded ? root.morphDuration : root.morphCollapseDuration)
                 easing.type: root.currentMode === "typing" || root.previousMode === "typing" ? Easing.OutQuint : Motion.enterCurve
             }
         }
@@ -1030,10 +1030,8 @@ Item {
                 opacity: visible && !root.retractingToHidden ? 1 : 0
                 Behavior on opacity {
                     enabled: Motion.enabled
-                    SequentialAnimation {
-                        PauseAnimation { duration: typingView.visible ? Math.round(Motion.base * 1.4) : 0 }
-                        NumberAnimation { duration: Motion.enter; easing.type: Easing.OutCubic }
-                    }
+                    // Reveal with the panel rather than waiting for its morph.
+                    NumberAnimation { duration: Math.min(140, Motion.enter); easing.type: Easing.OutCubic }
                 }
                 enabled: visible && !root.retractingToHidden
                 onBackRequested: root.collapse()
