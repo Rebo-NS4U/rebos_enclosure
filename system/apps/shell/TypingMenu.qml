@@ -373,7 +373,7 @@ Item {
     readonly property real chapterProgress: chapterEnd > chapterStart
         ? Math.max(0, Math.min(1, (position + characters(displayedInput).length - chapterStart) / (chapterEnd - chapterStart))) : 0
     readonly property var passageWords: pageLayout.words
-    readonly property font readingFont: Qt.font({family: Config.theme.font, pixelSize: fullscreen && !readingMode ? Math.max(24, Config.theme.fontSize + 8) : Config.theme.fontSize + 2, weight: Font.Normal})
+    readonly property font readingFont: Qt.font({family: Config.theme.font, pixelSize: fullscreen && !readingMode ? Math.max(20, Config.theme.fontSize + 6) : Config.theme.fontSize + 2, weight: Font.Normal})
     FontMetrics { id: typingMetrics; font: root.readingFont }
     readonly property rect highlightBounds: {
         const metricsFont = typingMetrics.font;
@@ -1823,7 +1823,7 @@ Item {
                                     objectName: "typing-chapter-card-title"
                                     text: root.chapterTitle
                                     textFormat: Text.PlainText
-                                    font.pixelSize: root.fullscreen ? Styling.fontSize(8) : Styling.fontSize(4)
+                                    font.pixelSize: Styling.fontSize(4)
                                     font.weight: Font.DemiBold
                                     color: Colors.overSurface
                                     elide: Text.ElideRight
@@ -1980,7 +1980,7 @@ Item {
                                                 property real spark: 0
                                                 readonly property real rejectionPhase: 1 - Math.pow(Math.max(0, spark), 1 / 3)
                                                 readonly property real rejectionOffset: failedFeedback ? Math.sin(rejectionPhase * Math.PI * 8) * spark * 8 : 0
-                                                scale: 1 + spark * (failedFeedback ? 0.28 : 0.105)
+                                                scale: failedFeedback ? 1 + spark * 0.28 : 1
                                                 rotation: failedFeedback ? rejectionOffset * 1.6 : 0
                                                 transform: Translate {
                                                     x: glyph.rejectionOffset
@@ -2048,7 +2048,7 @@ Item {
                                                 }
                                                 opacity: caretHere ? 1 : inkOpacity
 
-                                                color: typed && incorrect ? Qt.tint(Colors.error, Qt.alpha(Colors.overSurface, spark * 0.45)) : Qt.tint(Colors.overSurface, Qt.alpha(Colors.primary, Math.min(0.88, (typed ? 0.38 : 0) + spark * 0.50 + (word?.linePop ?? 0) * 0.12)))
+                                                color: typed && incorrect ? Colors.error : Colors.overSurface
 
                                             }
                                         }

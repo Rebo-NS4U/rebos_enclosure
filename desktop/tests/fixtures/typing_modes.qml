@@ -33,7 +33,8 @@ ShellRoot {
                 if (find(menu, "typing-input").visible === reading) throw Error("Wrong typing visibility");
                 const reader = find(menu, "reader-page-text");
                 if (reader.visible !== reading) throw Error("Wrong reading visibility");
-                const expectedSize = large && !reading ? Math.max(24, Config.theme.fontSize + 8) : Config.theme.fontSize + 2;
+                const expectedSize = large && !reading ? Math.max(20, Config.theme.fontSize + 6) : Config.theme.fontSize + 2;
+                if (menu.readingFont.family !== Config.theme.font) throw Error("Passage lost shell font family");
                 if (menu.readingFont.pixelSize !== expectedSize) throw Error("Wrong passage font size");
                 if (find(menu, "typing-input").text !== retainedInput || menu.position !== retainedPosition)
                     throw Error("Size or activity change lost typing progress");
