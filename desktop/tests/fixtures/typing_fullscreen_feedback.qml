@@ -22,26 +22,29 @@ ShellRoot {
                     menu.practicing = true; menu.fullscreen = true;
                     menu.position = 124;
                     menu.pageSource = "A gentle morning with words to type. ".repeat(120);
-                    menu.fitPage();
+                    menu.fitPage(); menu.focusPassage();
                 } else if (step === 1) {
                     input.text = "A";
                     if (!menu.feedbackEvents || !menu.activeEffects) throw Error("Correct letter feedback missing");
                     input.text = "AZ";
                     if (!menu.failureEvents) throw Error("Error feedback missing");
-                    const pulse = find(menu, "fullscreen-typing-feedback-1");
-                    if (!pulse.visible || !pulse.failed) throw Error("Error pulse is not rendered");
+                    const pulse = find(menu, "typing-character-1");
+                    if (!pulse.visible || !pulse.incorrect) throw Error("Error pulse is not rendered");
                     menu.restoring = true;
                     const offset = menu.pageLayout.words.find(word => word.line >= 3).start;
                     input.text = menu.passage.slice(0, offset);
                     menu.restoring = false;
                     input.insert(input.length, menu.passage.charAt(input.length));
-                    if (!menu.lineTransitions) throw Error("Line feedback missing");
+                    input.cursorPosition = input.length;
+                    menu.refreshPageCaret();
                     retained = input.text;
+                } else if (step === 2) {
+                    if (!menu.lineTransitions) throw Error("Line feedback missing");
                     const shortcut = menu.modeShortcut;
                     if (!shortcut.enabled || shortcut.sequence.toString() !== "Ctrl+Tab") throw Error("Mode shortcut unavailable");
                     shortcut.activated();
                     if (!menu.readingMode || !menu.fullscreen || menu.activeEffects) throw Error("Mode shortcut failed to enter reading and clear typing effects");
-                } else if (step === 2) {
+                } else if (step === 3) {
                     menu.modeShortcut.activated();
                     if (menu.readingMode || !menu.fullscreen || input.text !== retained || menu.position !== 124)
                         throw Error("Mode switching lost activity size or progress");

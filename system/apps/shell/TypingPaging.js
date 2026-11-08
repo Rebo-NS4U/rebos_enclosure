@@ -71,20 +71,20 @@ function layout(source, width, measure, maxLines) {
 
 // Roll before the loaded window ends, retaining enough rows for the viewport.
 // Offsets are UTF-16 indices, matching layout words and QML's text cursor.
-function slideOffset(page, cursor, keepLines) {
+function slideOffset(page, cursor, keepLines, minimumLine) {
     var line = 0;
     for (var i = 0; i < page.words.length; i++) {
         if (page.words[i].start > cursor) break;
         line = page.words[i].line;
     }
-    if (line < keepLines * 2 || page.lines - line > keepLines + 1) return 0;
+    if (line < (minimumLine === undefined ? keepLines * 2 : minimumLine) || page.lines - line > keepLines + 1) return 0;
     for (var j = 0; j < page.words.length; j++)
         if (page.words[j].line >= line - keepLines) return page.words[j].start;
     return 0;
 }
 
 // Keep one document separator per source space so word cursor offsets agree.
-function readerHtml(value, starts, lineHeight, indent, input, errorColor) {
+function readerHtml(value, starts, lineHeight, indent) {
     lineHeight = lineHeight || 31;
     indent = indent || 40;
     var paragraphs = [], start = 0;
@@ -95,20 +95,8 @@ function readerHtml(value, starts, lineHeight, indent, input, errorColor) {
         start = offset;
     }
     paragraphs.push(value.slice(start));
-    var paragraphOffset = 0;
     return paragraphs.map(function (paragraph) {
         var escaped = paragraph.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-        if (input !== undefined) {
-            var offset = paragraphOffset;
-            escaped = characters(paragraph).map(function (letter) {
-                var entered = characters(input.slice(offset, offset + 2))[0];
-                offset += letter.length;
-                var html = letter.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-                return entered !== undefined && !matchingCharacter(entered, letter)
-                    ? '<span style="color:' + errorColor + ';text-decoration:underline">' + html + '</span>' : html;
-            }).join("");
-        }
-        paragraphOffset += paragraph.length + 1;
         return '<p align="left" style="line-height:155%; margin-top:0px; margin-bottom:' + lineHeight + 'px; text-indent:' + indent + 'px;">' + escaped + '</p>';
     }).join("");
 }

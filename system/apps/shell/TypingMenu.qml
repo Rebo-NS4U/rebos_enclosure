@@ -30,9 +30,9 @@ Item {
     readonly property real readerLineHeight: Math.ceil(typingMetrics.height * 1.55)
     readonly property int pageLineLimit: readingMode
         ? Math.max(1, Math.floor(Math.max(0, passageArea.height - 8) / Math.max(1, readerLineHeight)))
-        : 7
+        : fullscreen ? Math.max(1, Math.floor((passageArea.height - 8) / Math.max(1, passageLineHeight))) : 7
     // Keep both layout and delivery bounded; typing rolls overlapping windows.
-    readonly property int layoutLineLimit: readingMode ? Math.max(1, Math.min(36, pageLineLimit)) : 36
+    readonly property int layoutLineLimit: readingMode ? Math.max(1, Math.min(36, pageLineLimit)) : Math.max(36, Math.min(72, pageLineLimit + 16))
     onPageLineLimitChanged: fitDelay.restart()
     onReadingFontChanged: { widthCache = ({}); fitDelay.restart(); }
     property var readerPageHistory: []
@@ -91,22 +91,6 @@ Item {
     }
     function toggleFullscreen() {
         fullscreen = !fullscreen;
-    }
-    function followFullscreenTyping(viewportY = -1) {
-        if (!fullscreen || readingMode || restoring || busy) return;
-        fullscreenTypingText.cursorPosition = Math.max(0, Math.min(visualCursor, fullscreenTypingText.length));
-        const caret = fullscreenTypingText.cursorRectangle;
-        if (viewportY >= 0) {
-            fullscreenTypingScroll.contentY = Math.max(0, Math.min(
-                fullscreenTypingScroll.contentHeight - fullscreenTypingScroll.height, caret.y - viewportY));
-            return;
-        }
-        const margin = readerLineHeight * 2;
-        const bottom = fullscreenTypingScroll.contentY + fullscreenTypingScroll.height - margin;
-        if (caret.y + caret.height > bottom)
-            fullscreenTypingScroll.contentY = Math.max(0, caret.y + caret.height - fullscreenTypingScroll.height + margin);
-        else if (caret.y < fullscreenTypingScroll.contentY)
-            fullscreenTypingScroll.contentY = Math.max(0, caret.y - margin);
     }
     function focusPassage() {
         if (readingMode) readerText.forceActiveFocus();
@@ -389,8 +373,8 @@ Item {
         return value.match(/[\uD800-\uDBFF][\uDC00-\uDFFF]|[\s\S]/g) ?? [];
     }
     readonly property string displayedInput: TypingPaging.displayInput(answer.text, passage)
-    onDisplayedInputChanged: { syncGlyphs(); Qt.callLater(followFullscreenTyping); }
-    onVisualCursorChanged: { syncCaret(); Qt.callLater(followFullscreenTyping); }
+    onDisplayedInputChanged: syncGlyphs()
+    onVisualCursorChanged: syncCaret()
     readonly property int visualCursor: Math.min(TypingPaging.displayInput(answer.text.slice(0, answer.cursorPosition), passage).length, passage.length - 1)
     readonly property real progress: bookLength ? Math.min(1, (position + characters(displayedInput).length) / bookLength) : 0
     readonly property int chapterStart: currentChapterIndex >= 0 ? chapters[currentChapterIndex].position : 0
@@ -412,6 +396,7 @@ Item {
             widthCache[text] = Math.max(1, Math.ceil(typingMetrics.advanceWidth(text)));
         return widthCache[text];
     }
+    property real pendingScrollShift: 0
     property bool slidingWindow: false
     property string fittedSource: ""
     property string fittedGeometry: ""
@@ -476,8 +461,6 @@ Item {
     property string effectKind: ""
     property int effectLine: -1
     property real effectStrength: 0
-    property int fullscreenFeedbackSerial: 0
-    property real fullscreenFeedbackRow: -1
     property var glowingGlyphs: []
     onEffectStrengthChanged: {
         if (effectKind === "line") Qt.callLater(followPageCaret);
@@ -521,7 +504,7 @@ Item {
         for (const glyph of previous) glyph.stopFeedback();
     }
     function stopFeedback() {
-        feedbackAnimation.stop(); stopLetters(); fullscreenFeedbackRow = -1; effectStrength = 0; effectKind = ""; effectLine = -1;
+        feedbackAnimation.stop(); stopLetters(); effectStrength = 0; effectKind = ""; effectLine = -1;
     }
     function requestFeedback(kind, glyph = null) {
         if (!Motion.enabled || !visible || !practicing) return;
@@ -624,7 +607,7 @@ Item {
     function syncCaret() {
         const previous = renderedCaret;
         // Move the viewport before creating glyphs for a distant cursor jump.
-        if (practicing && !readingMode) {
+        if (practicing && !readingMode && !restoring && !busy) {
             const words = pageLayout.words;
             let low = 0, high = words.length - 1, line = 0;
             while (low <= high) {
@@ -636,7 +619,14 @@ Item {
             // Same-row keystrokes must not fight manual scrolling or churn delegates.
             const rowY = line * passageLineHeight;
             const caretY = rowY + passageVisuals.centerPadding;
-            if (line !== scrollLine || caretY < passageVisuals.contentY
+            if (fullscreen) {
+                const margin = Math.min(passageLineHeight * 2, passageVisuals.height / 4);
+                if (caretY + passageLineHeight > passageVisuals.contentY + passageVisuals.height - margin)
+                    passageVisuals.contentY = Math.max(0, Math.min(passageVisuals.contentHeight - passageVisuals.height,
+                        caretY + passageLineHeight - passageVisuals.height + margin));
+                else if (caretY < passageVisuals.contentY)
+                    passageVisuals.contentY = Math.max(0, caretY - margin);
+            } else if (line !== scrollLine || caretY < passageVisuals.contentY
                     || caretY + passageLineHeight > passageVisuals.contentY + passageVisuals.height)
                 passageVisuals.contentY = Math.max(0, Math.min(rowY, passageVisuals.contentHeight - passageVisuals.height));
             scrollLine = line;
@@ -657,14 +647,8 @@ Item {
         while (first < shared && current[first] === previous[first]) first++;
         let last = Math.max(current.length, previous.length);
         while (last > first && current[last - 1] === previous[last - 1]) last--;
-        for (let index = first; index < last; index++) {
+        for (let index = first; index < last; index++)
             updateGlyph(glyphItems[index]);
-            if (fullscreen && !readingMode && !restoring && !busy && index < current.length
-                    && !/[\uDC00-\uDFFF]/.test(current[index])) {
-                const pulse = fullscreenFeedback.itemAt(fullscreenFeedbackSerial++ % 12);
-                if (pulse) pulse.play(index, characters(current.slice(index, index + 2))[0]);
-            }
-        }
         renderedInput = current;
         syncCaret();
     }
@@ -848,7 +832,6 @@ Item {
             }
             if (bookId !== data.id || ["open", "add", "import"].indexOf(data.action) >= 0) readerPageHistory = [];
             const continuingWindow = slidingWindow && data.action === "next";
-            const fullscreenCaretY = fullscreenTypingText.cursorRectangle.y - fullscreenTypingScroll.contentY;
             slidingWindow = false;
             const oldChapterStart = chapterStart;
             const readerMoved = bookId !== data.id || position !== data.position;
@@ -858,15 +841,17 @@ Item {
             position = data.position; rounds = data.loops; if (data.chapters) chapters = data.chapters;
             resetPageCaret();
             paragraphStarts = data.paragraphStarts || [];
+            if (continuingWindow && fullscreen)
+                passageVisuals.contentY = Math.max(0, passageVisuals.contentY - pendingScrollShift);
+            pendingScrollShift = 0;
             pageSource = data.passage; fitPage(continuingWindow);
             answer.text = data.typed; answer.cursorPosition = answer.length;
             if (continuingWindow) speedBaseline = correctCount();
             dirty = false; draft = false; busy = false; restoring = false;
             turningPage = false;
-            Qt.callLater(() => followFullscreenTyping(continuingWindow ? fullscreenCaretY : -1));
             if (readingMode && readerMoved) animateReaderPage(revealDirection);
             if (data.action === "next" || data.action === "previous") {
-                if (Motion.enabled && visible && practicing && (readingMode || (!fullscreen && oldChapterStart !== chapterStart))) requestFeedback("page");
+                if (Motion.enabled && visible && practicing && (readingMode || oldChapterStart !== chapterStart)) requestFeedback("page");
                 const buffered = pendingKeys; pendingKeys = "";
                 if (buffered.length) Qt.callLater(() => {
                     answer.text = data.action === "previous" || continuingWindow ? answer.text + buffered : buffered; answer.cursorPosition = answer.length;
@@ -1084,12 +1069,15 @@ Item {
         const entered = characters(answer.text);
         // Retain seven rows behind the caret and fetch before the current window
         // runs out. The same text remains around the caret across the handoff.
-        const offset = TypingPaging.slideOffset(pageLayout, displayedInput.length, 7);
+        const keepLines = fullscreen ? Math.max(7, pageLineLimit - 3) : 7;
+        const offset = TypingPaging.slideOffset(pageLayout, displayedInput.length, keepLines,
+            fullscreen ? keepLines + 3 : undefined);
         if (!prepared.pending && !editingCorrection && offset > 0
                 && position + pageCount < chapterEnd) {
             pageHistory = pageHistory.concat([{position: position, rounds: rounds,
                 typed: answer.text, width: width, lines: pageLineLimit}]).slice(-128);
             const consumed = characters(passage.slice(0, offset)).length;
+            pendingScrollShift = (pageLayout.words.find(word => word.start === offset)?.line || 0) * passageLineHeight;
             slidingWindow = true;
             dirty = false; turningPage = true; pageDirection = 1;
             send({action: "next", id: bookId, position: position + consumed,
@@ -1568,9 +1556,9 @@ Item {
                 TextButton { visible: root.readingMode; text: "Type"; onClicked: root.toggleReadingMode() }
                 TextButton { text: "Close"; onClicked: { root.saveProgress(); root.backRequested(); } }
             }
-            Rectangle { visible: root.readingMode || root.fullscreen; Layout.fillWidth: true; implicitHeight: 1; color: Qt.alpha(Colors.outlineVariant, 0.4) }
+            Rectangle { visible: root.readingMode; Layout.fillWidth: true; implicitHeight: 1; color: Qt.alpha(Colors.outlineVariant, 0.4) }
             StyledText {
-                visible: (root.readingMode || root.fullscreen) && !root.atChapterStart
+                visible: root.readingMode && !root.atChapterStart
                 text: root.chapterTitle
                 textFormat: Text.PlainText
                 font.pixelSize: 12
@@ -1778,7 +1766,7 @@ Item {
                     StyledRect {
                         id: chapterCard
                         objectName: "reader-chapter-card"
-                        visible: (root.readingMode || root.fullscreen) && root.atChapterStart
+                        visible: (root.readingMode && root.atChapterStart) || (root.fullscreen && !root.readingMode && root.bookKind === "book" && root.currentChapterIndex >= 0)
                         Layout.fillWidth: true
                         implicitHeight: chapterCardText.implicitHeight + 28
                         variant: "pane"
@@ -1834,7 +1822,7 @@ Item {
                             anchors.left: parent.left
                             anchors.right: parent.right
                             height: Math.max(0, Math.min(root.fullscreen ? 112 : Infinity, passageVisuals.centerPadding - 12))
-                            visible: !root.readingMode && !root.fullscreen && root.bookKind === "book" && root.currentChapterIndex >= 0 && height >= 48
+                            visible: !root.readingMode && root.bookKind === "book" && root.currentChapterIndex >= 0 && height >= 48
                             z: 4
                             variant: "pane"
                             radius: Config.roundness
@@ -1870,19 +1858,19 @@ Item {
                         Flickable {
                             id: passageVisuals
                             objectName: "typing-page-visuals"
-                            readonly property real centerPadding: Math.max(4, (height - root.passageLineHeight) / 2)
+                            readonly property real centerPadding: root.fullscreen ? 4 : Math.max(4, (height - root.passageLineHeight) / 2)
                             contentHeight: passageFlow.height + 2 * centerPadding
                             onHeightChanged: Qt.callLater(root.refreshPageCaret)
                             contentWidth: width
                             boundsBehavior: Flickable.StopAtBounds
                             flickableDirection: Flickable.VerticalFlick
                             ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
-                            visible: !root.readingMode && !root.fullscreen
+                            visible: !root.readingMode
                             // Seven visible rows total; centering space is inside this budget.
                             anchors.left: parent.left
                             anchors.right: parent.right
                             anchors.verticalCenter: parent.verticalCenter
-                            height: Math.min(parent.height, 7 * root.passageLineHeight)
+                            height: root.fullscreen ? parent.height : Math.min(parent.height, 7 * root.passageLineHeight)
                             clip: true
                             readonly property real pagePop: root.effectKind === "page" ? root.effectStrength : 0
                             opacity: 1 - pagePop * 0.10
@@ -1972,7 +1960,7 @@ Item {
                                         // Keep lightweight word geometry for the whole section,
                                         // but build animated characters only near the viewport.
                                         height: root.passageLineHeight
-                                        readonly property bool inRenderWindow: !root.readingMode && !root.fullscreen
+                                        readonly property bool inRenderWindow: !root.readingMode
                                             && modelData.line * root.passageLineHeight + passageFlow.y + height >= passageVisuals.contentY - root.passageLineHeight * 2
                                             && modelData.line * root.passageLineHeight + passageFlow.y <= passageVisuals.contentY + passageVisuals.height + root.passageLineHeight * 2
                                         readonly property var letters: root.characters(modelData.text)
@@ -2173,125 +2161,6 @@ Item {
                                 }
                             }
                         }
-                        Flickable {
-                            id: fullscreenTypingScroll
-                            objectName: "fullscreen-typing-scroll"
-                            anchors.fill: parent
-                            anchors.margins: 4
-                            visible: root.fullscreen && !root.readingMode
-                            clip: true
-                            contentWidth: width
-                            contentHeight: fullscreenTypingText.height
-                            boundsBehavior: Flickable.StopAtBounds
-                            ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
-                            TextEdit {
-                                id: fullscreenTypingText
-                                objectName: "fullscreen-typing-text"
-                                width: parent.width
-                                height: Math.max(fullscreenTypingScroll.height, contentHeight)
-                                font: root.readingFont
-                                renderType: readerText.renderType
-                                textFormat: TextEdit.RichText
-                                wrapMode: TextEdit.Wrap
-                                readOnly: true
-                                cursorVisible: false
-                                color: Colors.overSurface
-                                text: TypingPaging.readerHtml(root.passage, root.paragraphStarts,
-                                    root.readerLineHeight, root.readingFont.pixelSize * 2,
-                                    root.displayedInput, Colors.error.toString())
-                                onContentHeightChanged: Qt.callLater(root.followFullscreenTyping)
-                                // Input focus belongs to the invisible answer editor.
-                                // Draw the display caret independently of TextEdit focus.
-                                Rectangle {
-                                    id: fullscreenTypingCaret
-                                    objectName: "fullscreen-typing-caret"
-                                    x: fullscreenTypingText.cursorRectangle.x
-                                    y: fullscreenTypingText.cursorRectangle.y
-                                    width: 2
-                                    height: Math.max(root.readingFont.pixelSize, fullscreenTypingText.cursorRectangle.height)
-                                    radius: 1
-                                    z: 10
-                                    color: Colors.primary
-                                    visible: root.fullscreen && !root.readingMode && root.practicing && root.passage.length > 0
-                                    opacity: answer.activeFocus ? 1 : 0.65
-                                }
-                                Rectangle {
-                                    objectName: "fullscreen-typing-line-feedback"
-                                    width: parent.width
-                                    height: root.readerLineHeight
-                                    y: fullscreenTypingText.cursorRectangle.y
-                                    radius: 4
-                                    color: Qt.alpha(Colors.primary, 0.1)
-                                    opacity: root.effectKind === "line" ? root.effectStrength : 0
-                                    z: -1
-                                }
-                                Repeater {
-                                    id: fullscreenFeedback
-                                    model: 12
-                                    delegate: Item {
-                                        id: pulse
-                                        required property int index
-                                        objectName: "fullscreen-typing-feedback-" + index
-                                        property int sourceIndex: 0
-                                        property string letter: ""
-                                        property bool failed: false
-                                        property real strength: 0
-                                        readonly property rect characterRect: {
-                                            const layoutHeight = fullscreenTypingText.contentHeight;
-                                            const source = root.passage;
-                                            return fullscreenTypingText.positionToRectangle(sourceIndex);
-                                        }
-                                        x: characterRect.x
-                                        y: characterRect.y
-                                        width: root.characterWidth(letter)
-                                        height: characterRect.height
-                                        visible: strength > 0 && root.fullscreen && !root.readingMode
-                                        function stopFeedback() {
-                                            fade.stop(); strength = 0; root.forgetGlyph(pulse);
-                                        }
-                                        function startFeedback(isError) {
-                                            failed = isError; fade.restart();
-                                        }
-                                        function play(at, entered) {
-                                            if (!Motion.enabled || !root.visible || !root.practicing) return;
-                                            sourceIndex = at;
-                                            letter = root.characters(root.passage.slice(at, at + 2))[0] || "";
-                                            const isError = !TypingPaging.matchingCharacter(entered, letter);
-                                            root.requestFeedback(isError ? "error" : "letter", pulse);
-                                            const row = characterRect.y;
-                                            if (root.fullscreenFeedbackRow >= 0 && root.fullscreenFeedbackRow !== row)
-                                                root.requestFeedback("line");
-                                            root.fullscreenFeedbackRow = row;
-                                        }
-                                        NumberAnimation {
-                                            id: fade
-                                            target: pulse; property: "strength"
-                                            from: 1; to: 0
-                                            duration: Math.max(240, Motion.base)
-                                            easing.type: Easing.OutCubic
-                                            onFinished: pulse.stopFeedback()
-                                        }
-                                        PopHalo {
-                                            anchors.fill: parent
-                                            anchors.margins: -3
-                                            strength: pulse.strength
-                                            color: Qt.alpha(pulse.failed ? Colors.error : Colors.primary, 0.18)
-                                            border.color: Qt.alpha(pulse.failed ? Colors.error : Colors.primary, 0.5)
-                                        }
-                                        StyledText {
-                                            anchors.fill: parent
-                                            font: root.readingFont
-                                            renderType: fullscreenTypingText.renderType
-                                            verticalAlignment: Text.AlignVCenter
-                                            text: pulse.letter === " " ? "" : pulse.letter
-                                            color: pulse.failed ? Colors.error : Colors.primary
-                                            opacity: pulse.strength
-                                            scale: 1 + pulse.strength * (pulse.failed ? 0.18 : 0.08)
-                                        }
-                                    }
-                                }
-                            }
-                        }
                         TextEdit {
                             id: readerMeasure
                             visible: false
@@ -2347,9 +2216,8 @@ Item {
                             selectByMouse: false
                             WheelHandler {
                                 onWheel: event => {
-                                    const viewport = root.fullscreen ? fullscreenTypingScroll : passageVisuals;
-                                    viewport.contentY = Math.max(0, Math.min(viewport.contentHeight - viewport.height,
-                                        viewport.contentY - event.angleDelta.y / 120 * root.passageLineHeight * 3));
+                                    passageVisuals.contentY = Math.max(0, Math.min(passageVisuals.contentHeight - passageVisuals.height,
+                                        passageVisuals.contentY - event.angleDelta.y / 120 * root.passageLineHeight * 3));
                                     event.accepted = true;
                                 }
                             }
@@ -2358,12 +2226,6 @@ Item {
                             TapHandler {
                                 acceptedButtons: Qt.RightButton
                                 onTapped: point => {
-                                    if (root.fullscreen) {
-                                        const local = fullscreenTypingText.mapFromItem(answer, point.position.x, point.position.y);
-                                        const index = fullscreenTypingText.positionAt(local.x, local.y);
-                                        root.openWord(root.readingWordAt(index), index);
-                                        return;
-                                    }
                                     for (let index = 0; index < wordRepeater.count; index++) {
                                         const wordItem = wordRepeater.itemAt(index);
                                         const local = wordItem.mapFromItem(answer, point.position.x, point.position.y);

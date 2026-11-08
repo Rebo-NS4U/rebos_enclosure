@@ -59,6 +59,21 @@ ShellRoot {
                 if (phase === 3) {
                     if (practice.position !== expectedPosition || input.text !== expectedInput)
                         throw Error("Fullscreen font reflow lost saved progress");
+                    const words = practice.pageLayout.words;
+                    const keep = Math.max(7, practice.pageLineLimit - 3);
+                    const line = Math.max(keep + 3, practice.pageLayout.lines - 8);
+                    const cursor = words.find(word => word.line >= line).start;
+                    const start = words.find(word => word.line >= line - keep).start;
+                    expectedPosition = practice.position + practice.characters(practice.passage.slice(0, start)).length;
+                    expectedInput = practice.passage.slice(start, cursor);
+                    practice.restoring = true;
+                    input.text = practice.passage.slice(0, cursor); input.cursorPosition = input.length;
+                    practice.restoring = false;
+                    practice.advance(); phase++; return;
+                }
+                if (phase === 4) {
+                    if (practice.position !== expectedPosition || input.text !== expectedInput)
+                        throw Error("Full-height rolling window lost progress");
                     practice.saveProgress();
                     console.log("PASS: bounded continuous windows preserve context, input, chapter progress, page transitions and fullscreen font reflow");
                     Qt.quit();

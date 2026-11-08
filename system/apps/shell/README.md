@@ -97,16 +97,14 @@ later. See [LICENSE](./LICENSE).
 
 ### Continuous typing dropdown
 
-Fullscreen typing shares the reader's 720px column, configured font, paragraph
-indentation and line spacing. The document scrolls with the caret rather than
-turning pages; a visible caret tracks input independently of keyboard focus.
-Loaded text stays bounded and rolling handoffs retain the caret's
-screen position. Mistakes use the theme error color and an underline. Library,
-chapter, notes and menu surfaces share the shell palette and corner radius.
-Ctrl+Tab switches typing and reading while the passage is active (not while
-editing notes). F11 switches sizes; Escape leaves fullscreen while keeping the
-activity. Fullscreen scrolling typing includes letter pulses, error feedback
-and line highlights; disabling Appearance motion stops these animations.
+Fullscreen typing uses the original animated glyphs, row highlight and smooth
+cursor, with visible lines expanding to fill the available height. Compact
+typing keeps seven rows. Text scrolls continuously and bounded loading retains
+visible context through window handoffs. Both activities use the shell font
+and a centered 720px column. Ctrl+Tab switches typing and reading while the
+passage is active (not while editing notes). F11 switches sizes; Escape leaves
+fullscreen while keeping the activity. Appearance motion controls typing
+animations in both sizes.
 
 Open typing with its keyboard shortcut or `qs ipc call typing toggle`. Typing
 replaces the expanded bar contents, using the same input and dismissal behavior
