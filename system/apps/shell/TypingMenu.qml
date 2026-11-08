@@ -354,6 +354,9 @@ Item {
         pageLayout = fitted;
         Qt.callLater(refreshPageCaret);
     }
+    function followPageCaret() {
+        smoothCaret.follow(glyphItems[renderedCaret]);
+    }
     function refreshPageCaret() {
         if (busy || restoring) return;
         passageFlow.forceLayout();
@@ -378,7 +381,7 @@ Item {
     property real effectStrength: 0
     property var glowingGlyphs: []
     onEffectStrengthChanged: {
-        if (effectKind === "line") Qt.callLater(refreshPageCaret);
+        if (effectKind === "line") Qt.callLater(followPageCaret);
     }
     readonly property int activeEffects: (feedbackAnimation.running ? 1 : 0) + glowingGlyphs.length
     function forgetGlyph(glyph) {
@@ -1768,8 +1771,8 @@ Item {
                                                 yScale: 1 + word.linePop * 0.008
                                             }
                                         ]
-                                        onArrivalChanged: { if (smoothCaret.targetGlyph?.parent === word) Qt.callLater(root.refreshPageCaret); }
-                                        onWaveChanged: { if (smoothCaret.targetGlyph?.parent === word) Qt.callLater(root.refreshPageCaret); }
+                                        onArrivalChanged: { if (smoothCaret.targetGlyph?.parent === word) Qt.callLater(root.followPageCaret); }
+                                        onWaveChanged: { if (smoothCaret.targetGlyph?.parent === word) Qt.callLater(root.followPageCaret); }
                                         onCenterOffsetChanged: { if (smoothCaret.targetGlyph?.parent === word) Qt.callLater(() => { if (smoothCaret.targetGlyph) smoothCaret.follow(smoothCaret.targetGlyph); }); }
                                         Repeater {
                                             model: word.inRenderWindow ? word.letters : []
@@ -1886,10 +1889,8 @@ Item {
                                     if (root.busy || root.restoring || !item || !item.caretHere || !item.visible) return;
                                     if (root.glyphItems[item.characterIndex] !== item || item.characterIndex !== root.renderedCaret) return;
                                     const point = item.parent.mapToItem(passageVisuals.contentItem, item.x, item.y);
-                                    // Padding lets even the first and last rows stay centered.
-                                    passageVisuals.contentY = Math.max(0, Math.min(
-                                        passageVisuals.contentHeight - passageVisuals.height,
-                                        point.y + root.passageLineHeight / 2 - passageVisuals.height / 2));
+                                    // syncCaret scrolls to the logical row. Animated wave/arrival
+                                    // coordinates must never scroll or churn viewport delegates.
                                     const nextY = point.y + item.baselineOffset + root.highlightBounds.y - root.highlightPadding;
                                     const newLine = placed && targetGlyph !== null && item.characterIndex > targetGlyph.characterIndex && nextY > targetRowY + 1;
                                     if (newLine && root.visible && answer.activeFocus && Motion.enabled) root.requestFeedback("line", item);
