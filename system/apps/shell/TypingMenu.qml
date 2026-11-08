@@ -1186,15 +1186,16 @@ Item {
         anchor.rect.y: root.menuAnchorItem.height + 6
         anchor.rect.width: 0
         anchor.rect.height: 0
-        implicitWidth: Math.max(1, root.menuAnchorItem.width)
-        implicitHeight: Math.max(1, root.menuAnchorItem.height)
+        implicitWidth: Math.max(1, root.notebookMode || root.editingWordNote ? root.menuAnchorItem.width : Math.min(520, root.menuAnchorItem.width))
+        implicitHeight: Math.max(1, root.notebookMode || root.editingWordNote ? root.menuAnchorItem.height
+            : Math.min(root.menuAnchorItem.height, wordPanelHeader.implicitHeight + wordContent.implicitHeight + 30))
         color: "transparent"
         visible: false
         property bool opened: false
         property real reveal: 0
         property int openAnimations: 0
         property int closeAnimations: 0
-        readonly property real availableWidth: width - 32
+        readonly property real availableWidth: width - 24
         property alias surface: wordPanelSurface
         mask: Region { item: panelViewport }
         function open() {
@@ -1256,15 +1257,16 @@ Item {
                 }
                 ColumnLayout {
                     anchors.fill: parent
-                    anchors.margins: 16
-                    spacing: 8
+                    anchors.margins: 12
+                    spacing: 6
                     RowLayout {
+                        id: wordPanelHeader
                         Layout.fillWidth: true
                         TextButton { objectName: "typing-notebook-back"; visible: root.notebookMode && !root.notebookBrowsing; text: "‹ Notes"; enabled: !root.noteDirty && !root.noteSaving; onClicked: root.openNotebook() }
                         ColumnLayout {
                             Layout.fillWidth: true
                             spacing: 4
-                            StyledText { visible: root.readingMode; text: root.notebookMode ? "BOOK NOTEBOOK" : "WORD NOTES"; font.pixelSize: 10; font.letterSpacing: 2; color: Colors.primary }
+                            StyledText { visible: root.readingMode && root.notebookMode; text: root.notebookMode ? "BOOK NOTEBOOK" : "WORD NOTES"; font.pixelSize: 10; font.letterSpacing: 2; color: Colors.primary }
                             StyledText {
                                 text: root.notebookBrowsing ? "Book notes" : (root.notebookCreating ? "New note" : (root.selectedTerm || "Word lookup"))
                                 textFormat: Text.PlainText
@@ -1274,9 +1276,9 @@ Item {
                                 Layout.fillWidth: true
                                 elide: Text.ElideRight
                             }
-                            StyledText { visible: root.readingMode; text: root.bookTitle; textFormat: Text.PlainText; opacity: 0.5; font.pixelSize: 11; Layout.fillWidth: true; elide: Text.ElideRight }
+                            StyledText { visible: root.readingMode && root.notebookMode; text: root.bookTitle; textFormat: Text.PlainText; opacity: 0.5; font.pixelSize: 11; Layout.fillWidth: true; elide: Text.ElideRight }
                         }
-                        TextButton { text: "Return to reading"; enabled: !root.noteDirty && !root.noteSaving; onClicked: wordPanel.close() }
+                        TextButton { text: "Close"; enabled: !root.noteDirty && !root.noteSaving; onClicked: wordPanel.close() }
                     }
                     ScrollView {
                         objectName: "typing-word-scroll"
@@ -1287,7 +1289,7 @@ Item {
                         ColumnLayout {
                             id: wordContent
                             width: wordPanel.availableWidth - 12
-                            spacing: 8
+                            spacing: 6
                             Keys.onEscapePressed: event => { root.handleEscape(); event.accepted = true; }
                             RowLayout {
                                 objectName: "typing-word-search"
@@ -1416,17 +1418,9 @@ Item {
                             TextButton {
                                 objectName: "typing-context-meaning"
                                 visible: !root.notebookMode && root.selectedTerm.length > 0
-                                text: "Word context and definition"
+                                text: "Definition & context"
                                 enabled: root.meaningContext.length > 0
                                 onClicked: root.lookupMeaning()
-                            }
-                            StyledText {
-                                visible: !root.notebookMode && root.selectedTerm.length > 0
-                                text: root.meaningContext ? "Shows the surrounding passage and looks up English dictionary definitions. No AI is used." : "Select an occurrence of this word in the current passage first."
-                                wrapMode: Text.Wrap
-                                Layout.fillWidth: true
-                                font.pixelSize: 11
-                                opacity: 0.65
                             }
                             ScrollView {
                                 visible: !root.notebookMode && root.meaningText.length > 0
@@ -1463,7 +1457,7 @@ Item {
                             }
                             RowLayout {
                                 visible: !root.notebookMode && ((root.wordOptionsExpanded && root.definitionsEnabled) || root.meaningText.length > 0)
-                                StyledText { text: "English definitions · Free Dictionary API"; font.pixelSize: 11; opacity: 0.65 }
+                                StyledText { text: "Dictionary API"; font.pixelSize: 11; opacity: 0.65 }
                                 TextButton { text: "Retry"; enabled: root.selectedTerm.length > 0; onClicked: root.lookupDefinition() }
                             }
                             StyledText {
@@ -1527,7 +1521,7 @@ Item {
                             TextButton {
                                 objectName: "typing-word-options"
                                 visible: !root.notebookMode
-                                text: root.wordOptionsExpanded ? "Hide dictionary options" : "Dictionary options"
+                                text: root.wordOptionsExpanded ? "Less" : "Options"
                                 onClicked: root.wordOptionsExpanded = !root.wordOptionsExpanded
                             }
                         }

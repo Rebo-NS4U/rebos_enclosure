@@ -42,6 +42,9 @@ ShellRoot {
                     action.clicked();
                     if (!sent.endsWith("/bank") || !practice.definitionText.includes("Land beside a river") || !find(practice.wordTools.contentItem, "typing-context-meaning-result").text.includes("river"))
                         throw Error("Context answer missing in word popup");
+                    if (practice.wordTools.width > 520 || practice.wordTools.height >= practice.height)
+                        throw Error("Definition popup did not shrink to its content");
+                    if (action.text !== "Definition & context") throw Error("Lookup action label is not concise");
                     practice.wordTools.close();
                     if (practice.definitionRequest) throw Error("Close did not cancel context lookup");
                     practice.openWord("They", 0);

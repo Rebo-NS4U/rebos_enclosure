@@ -209,7 +209,7 @@ it off cancels lookup and keeps notes available offline. Only the selected term
 is sent to the dictionary service.
 
 The word menu shows the selected word, its definition and any saved note.
-**Add note** or **Edit note** opens the editor; **Dictionary options** reveals search, saved
+**Add note** or **Edit note** opens the editor; **Options** reveals search, saved
 words and the online dictionary switch.
 
 Notes are stored locally per book and case-insensitive word/name. Choose **Save
@@ -273,10 +273,13 @@ hides as soon as typing begins. It stays hidden mid-chapter and returns at the
 next chapter opening. Fullscreen keeps the current chapter title visible. Its surfaces and the typing panel follow
 the selected shell theme. Reading mode keeps its chapter-opening title layout.
 
-Select a word and choose **Word context and definition** to show its surrounding
+Select a word and choose **Definition & context** to show its surrounding
 passage and fetch English definitions directly from the Free Dictionary API.
 No AI agent or assistant connection is required. Only the selected word is sent
 to the dictionary service; the passage stays local and remains readable if the
 network lookup fails. This explicit lookup works independently of the automatic
 online dictionary switch. Selecting another word clears the previous results;
 closing the popup cancels the dictionary request.
+
+Word lookups use a content-sized popup capped at 520px wide; longer results scroll.
+Notebook browsing and note editing retain the larger workspace.
