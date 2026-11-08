@@ -437,6 +437,7 @@ ShellRoot {
                     freshView.visible = true;
                     freshView.item.reopen();
                 } else if (phase === 108) {
+                    if (Object.keys(practice.glyphItems).length || find(practice, "typing-character-0")) throw Error("Hidden typing view retained character objects");
                     const restored = freshView.item;
                     if (restored.busy || !restored.bookId || restored.library.length < 3) return;
                     const restoredInput = find(restored, "typing-input");
@@ -616,6 +617,7 @@ ShellRoot {
                 } else if (phase === 124) {
                     const restored = freshView.item;
                     const reader = find(restored, "reader-page-text");
+                    if (Object.keys(restored.glyphItems).length || find(restored, "typing-character-0")) throw Error("Reading mode retained typing character objects");
                     if (!reader.visible || !reader.readOnly || find(restored, "typing-input").visible || find(restored, "typing-live-wpm").visible) throw Error("Reading mode still exposes typing controls");
                     if (reader.font.family !== Config.theme.font || reader.width > 720 || reader.getText(0, reader.length).trim() !== restored.passage.trim()) throw Error("Reader typography, measure, or displayed text is incorrect");
                     const escaped = restored.readerHtml('<img src="missing"> & book');

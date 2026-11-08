@@ -542,13 +542,13 @@ Item {
         }
         if (root.currentMode === "power") {
             if (event.key === Qt.Key_Left) {
-                powerView.moveSelection(-1);
+                powerView.item?.moveSelection(-1);
                 event.accepted = true;
             } else if (event.key === Qt.Key_Right) {
-                powerView.moveSelection(1);
+                powerView.item?.moveSelection(1);
                 event.accepted = true;
             } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-                powerView.activateSelected();
+                powerView.item?.activateSelected();
                 event.accepted = true;
             } else if (event.key === Qt.Key_Escape) {
                 root.expand("dashboard");
@@ -1037,13 +1037,15 @@ Item {
                 onBackRequested: root.collapse()
             }
 
-            IslandDashboard {
+            Loader {
                 id: dashboardView
-                screen: root.screen
+                objectName: "island-panel-dashboardView"
                 anchors.top: parent.top
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: root.targetWidth
                 height: implicitHeight
+                // Keep outgoing content through its fade, then release the object tree.
+                active: root.currentMode === "dashboard" || opacity > 0
                 visible: opacity > 0
                 opacity: root.currentMode === "dashboard" ? 1.0 : 0.0
                 enabled: root.currentMode === "dashboard" && !root.retractingToHidden
@@ -1056,30 +1058,37 @@ Item {
                     }
                 }
 
-                onOpenTyping: { root.expand("typing"); typingView.reopen(); }
-                onOpenPower: root.currentMode = "power"
-                onOpenSound: root.currentMode = "sound"
-                onOpenMic: root.currentMode = "mic"
-                onOpenWifi: root.currentMode = "wifi"
-                onOpenBluetooth: root.currentMode = "bluetooth"
-                onOpenStats: root.currentMode = "stats"
-                onOpenAlerts: root.currentMode = "alerts"
-                onOpenWallpapers: root.currentMode = "wallpapers"
-                onOpenBattery: root.currentMode = "battery"
-                onOpenWeather: root.currentMode = "weather"
-                onOpenMedia: root.currentMode = "media"
-                onOpenCalendar: root.currentMode = "calendar"
+                sourceComponent: IslandDashboard {
+                    width: dashboardView.width
+                    screen: root.screen
+                    onOpenTyping: { root.expand("typing"); typingView.reopen(); }
+                    onOpenPower: root.currentMode = "power"
+                    onOpenSound: root.currentMode = "sound"
+                    onOpenMic: root.currentMode = "mic"
+                    onOpenWifi: root.currentMode = "wifi"
+                    onOpenBluetooth: root.currentMode = "bluetooth"
+                    onOpenStats: root.currentMode = "stats"
+                    onOpenAlerts: root.currentMode = "alerts"
+                    onOpenWallpapers: root.currentMode = "wallpapers"
+                    onOpenBattery: root.currentMode = "battery"
+                    onOpenWeather: root.currentMode = "weather"
+                    onOpenMedia: root.currentMode = "media"
+                    onOpenCalendar: root.currentMode = "calendar"
+                }
             }
 
             // ═══════════════════════════════════════════════════════════════
             // EXPANDED STATE 2: POWER MENU (Image 0)
             // ═══════════════════════════════════════════════════════════════
-            IslandPowerPanel {
+            Loader {
                 id: powerView
+                objectName: "island-panel-powerView"
                 anchors.top: parent.top
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: root.targetWidth
                 height: implicitHeight
+                // Keep outgoing content through its fade, then release the object tree.
+                active: root.currentMode === "power" || opacity > 0
                 visible: opacity > 0
                 opacity: root.currentMode === "power" ? 1.0 : 0.0
                 enabled: root.currentMode === "power" && !root.retractingToHidden
@@ -1092,19 +1101,25 @@ Item {
                     }
                 }
 
-                onBackRequested: root.expand("dashboard")
-                onActionTriggered: root.collapse()
+                sourceComponent: IslandPowerPanel {
+                    width: powerView.width
+                    onBackRequested: root.expand("dashboard")
+                    onActionTriggered: root.collapse()
+                }
             }
 
             // ═══════════════════════════════════════════════════════════════
             // EXPANDED STATE 3: SOUND PANEL (Image 1)
             // ═══════════════════════════════════════════════════════════════
-            IslandSoundPanel {
+            Loader {
                 id: soundView
+                objectName: "island-panel-soundView"
                 anchors.top: parent.top
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: root.targetWidth
                 height: implicitHeight
+                // Keep outgoing content through its fade, then release the object tree.
+                active: root.currentMode === "sound" || opacity > 0
                 visible: opacity > 0
                 opacity: root.currentMode === "sound" ? 1.0 : 0.0
                 enabled: root.currentMode === "sound" && !root.retractingToHidden
@@ -1117,18 +1132,24 @@ Item {
                     }
                 }
 
-                onBackRequested: root.expand("dashboard")
+                sourceComponent: IslandSoundPanel {
+                    width: soundView.width
+                    onBackRequested: root.expand("dashboard")
+                }
             }
 
             // ═══════════════════════════════════════════════════════════════
             // EXPANDED STATE 3.5: MICROPHONE PANEL
             // ═══════════════════════════════════════════════════════════════
-            IslandMicPanel {
+            Loader {
                 id: micView
+                objectName: "island-panel-micView"
                 anchors.top: parent.top
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: root.targetWidth
                 height: implicitHeight
+                // Keep outgoing content through its fade, then release the object tree.
+                active: root.currentMode === "mic" || opacity > 0
                 visible: opacity > 0
                 opacity: root.currentMode === "mic" ? 1.0 : 0.0
                 enabled: root.currentMode === "mic" && !root.retractingToHidden
@@ -1141,18 +1162,24 @@ Item {
                     }
                 }
 
-                onBackRequested: root.expand("dashboard")
+                sourceComponent: IslandMicPanel {
+                    width: micView.width
+                    onBackRequested: root.expand("dashboard")
+                }
             }
 
             // ═══════════════════════════════════════════════════════════════
             // EXPANDED STATE 4: WI-FI NETWORKS PANEL (Image 2)
             // ═══════════════════════════════════════════════════════════════
-            IslandWifiPanel {
+            Loader {
                 id: wifiView
+                objectName: "island-panel-wifiView"
                 anchors.top: parent.top
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: root.targetWidth
                 height: implicitHeight
+                // Keep outgoing content through its fade, then release the object tree.
+                active: root.currentMode === "wifi" || opacity > 0
                 visible: opacity > 0
                 opacity: root.currentMode === "wifi" ? 1.0 : 0.0
                 enabled: root.currentMode === "wifi" && !root.retractingToHidden
@@ -1165,18 +1192,24 @@ Item {
                     }
                 }
 
-                onBackRequested: root.expand("dashboard")
+                sourceComponent: IslandWifiPanel {
+                    width: wifiView.width
+                    onBackRequested: root.expand("dashboard")
+                }
             }
 
             // ═══════════════════════════════════════════════════════════════
             // EXPANDED STATE 4.5: BLUETOOTH PANEL
             // ═══════════════════════════════════════════════════════════════
-            IslandBluetoothPanel {
+            Loader {
                 id: bluetoothView
+                objectName: "island-panel-bluetoothView"
                 anchors.top: parent.top
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: root.targetWidth
                 height: implicitHeight
+                // Keep outgoing content through its fade, then release the object tree.
+                active: root.currentMode === "bluetooth" || opacity > 0
                 visible: opacity > 0
                 opacity: root.currentMode === "bluetooth" ? 1.0 : 0.0
                 enabled: root.currentMode === "bluetooth" && !root.retractingToHidden
@@ -1189,18 +1222,24 @@ Item {
                     }
                 }
 
-                onBackRequested: root.expand("dashboard")
+                sourceComponent: IslandBluetoothPanel {
+                    width: bluetoothView.width
+                    onBackRequested: root.expand("dashboard")
+                }
             }
 
             // ═══════════════════════════════════════════════════════════════
             // EXPANDED STATE 5: SYSTEM RESOURCES STATS PANEL
             // ═══════════════════════════════════════════════════════════════
-            IslandStatsPanel {
+            Loader {
                 id: statsView
+                objectName: "island-panel-statsView"
                 anchors.top: parent.top
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: root.targetWidth
                 height: implicitHeight
+                // Keep outgoing content through its fade, then release the object tree.
+                active: root.currentMode === "stats" || opacity > 0
                 visible: opacity > 0
                 opacity: root.currentMode === "stats" ? 1.0 : 0.0
                 enabled: root.currentMode === "stats" && !root.retractingToHidden
@@ -1213,18 +1252,24 @@ Item {
                     }
                 }
 
-                onBackRequested: root.expand("dashboard")
+                sourceComponent: IslandStatsPanel {
+                    width: statsView.width
+                    onBackRequested: root.expand("dashboard")
+                }
             }
 
             // ═══════════════════════════════════════════════════════════════
             // EXPANDED STATE 5.5: ALERTS PANEL
             // ═══════════════════════════════════════════════════════════════
-            IslandAlertsPanel {
+            Loader {
                 id: alertsView
+                objectName: "island-panel-alertsView"
                 anchors.top: parent.top
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: root.targetWidth
                 height: implicitHeight
+                // Keep outgoing content through its fade, then release the object tree.
+                active: root.currentMode === "alerts" || opacity > 0
                 visible: opacity > 0
                 opacity: root.currentMode === "alerts" ? 1.0 : 0.0
                 enabled: root.currentMode === "alerts" && !root.retractingToHidden
@@ -1237,19 +1282,24 @@ Item {
                     }
                 }
 
-                onBackRequested: root.expand("dashboard")
+                sourceComponent: IslandAlertsPanel {
+                    width: alertsView.width
+                    onBackRequested: root.expand("dashboard")
+                }
             }
 
             // ═══════════════════════════════════════════════════════════════
             // EXPANDED STATE 5.6: WALLPAPERS PANEL
             // ═══════════════════════════════════════════════════════════════
-            IslandWallpaperPanel {
+            Loader {
                 id: wallpapersView
-                screen: root.screen
+                objectName: "island-panel-wallpapersView"
                 anchors.top: parent.top
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: root.targetWidth
                 height: implicitHeight
+                // Keep outgoing content through its fade, then release the object tree.
+                active: root.currentMode === "wallpapers" || opacity > 0
                 visible: opacity > 0
                 opacity: root.currentMode === "wallpapers" ? 1.0 : 0.0
                 enabled: root.currentMode === "wallpapers" && !root.retractingToHidden
@@ -1262,18 +1312,25 @@ Item {
                     }
                 }
 
-                onBackRequested: root.expand("dashboard")
+                sourceComponent: IslandWallpaperPanel {
+                    width: wallpapersView.width
+                    screen: root.screen
+                    onBackRequested: root.expand("dashboard")
+                }
             }
 
             // ═══════════════════════════════════════════════════════════════
             // EXPANDED STATE 5.7: BATTERY & POWER PANEL
             // ═══════════════════════════════════════════════════════════════
-            IslandBatteryPanel {
+            Loader {
                 id: batteryView
+                objectName: "island-panel-batteryView"
                 anchors.top: parent.top
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: root.targetWidth
                 height: implicitHeight
+                // Keep outgoing content through its fade, then release the object tree.
+                active: root.currentMode === "battery" || opacity > 0
                 visible: opacity > 0
                 opacity: root.currentMode === "battery" ? 1.0 : 0.0
                 enabled: root.currentMode === "battery" && !root.retractingToHidden
@@ -1286,18 +1343,24 @@ Item {
                     }
                 }
 
-                onBackRequested: root.expand("dashboard")
+                sourceComponent: IslandBatteryPanel {
+                    width: batteryView.width
+                    onBackRequested: root.expand("dashboard")
+                }
             }
 
             // ═══════════════════════════════════════════════════════════════
             // EXPANDED STATE 5.8: WEATHER PANEL
             // ═══════════════════════════════════════════════════════════════
-            IslandWeatherPanel {
+            Loader {
                 id: weatherView
+                objectName: "island-panel-weatherView"
                 anchors.top: parent.top
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: root.targetWidth
                 height: implicitHeight
+                // Keep outgoing content through its fade, then release the object tree.
+                active: root.currentMode === "weather" || opacity > 0
                 visible: opacity > 0
                 opacity: root.currentMode === "weather" ? 1.0 : 0.0
                 enabled: root.currentMode === "weather" && !root.retractingToHidden
@@ -1310,18 +1373,24 @@ Item {
                     }
                 }
 
-                onBackRequested: root.expand("dashboard")
+                sourceComponent: IslandWeatherPanel {
+                    width: weatherView.width
+                    onBackRequested: root.expand("dashboard")
+                }
             }
 
             // ═══════════════════════════════════════════════════════════════
             // EXPANDED STATE 5.9: DEDICATED MEDIA CENTER
             // ═══════════════════════════════════════════════════════════════
-            IslandMediaCenterPanel {
+            Loader {
                 id: mediaCenterView
+                objectName: "island-panel-mediaCenterView"
                 anchors.top: parent.top
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: root.targetWidth
                 height: implicitHeight
+                // Keep outgoing content through its fade, then release the object tree.
+                active: root.currentMode === "media" || opacity > 0
                 visible: opacity > 0
                 opacity: root.currentMode === "media" ? 1.0 : 0.0
                 enabled: root.currentMode === "media" && !root.retractingToHidden
@@ -1334,18 +1403,24 @@ Item {
                     }
                 }
 
-                onBackRequested: root.expand("dashboard")
+                sourceComponent: IslandMediaCenterPanel {
+                    width: mediaCenterView.width
+                    onBackRequested: root.expand("dashboard")
+                }
             }
 
             // ═══════════════════════════════════════════════════════════════
             // EXPANDED STATE 5.95: DEDICATED CALENDAR & DATE TIME
             // ═══════════════════════════════════════════════════════════════
-            IslandCalendarPanel {
+            Loader {
                 id: calendarView
+                objectName: "island-panel-calendarView"
                 anchors.top: parent.top
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: root.targetWidth
                 height: implicitHeight
+                // Keep outgoing content through its fade, then release the object tree.
+                active: root.currentMode === "calendar" || opacity > 0
                 visible: opacity > 0
                 opacity: root.currentMode === "calendar" ? 1.0 : 0.0
                 enabled: root.currentMode === "calendar" && !root.retractingToHidden
@@ -1358,7 +1433,10 @@ Item {
                     }
                 }
 
-                onBackRequested: root.expand("dashboard")
+                sourceComponent: IslandCalendarPanel {
+                    width: calendarView.width
+                    onBackRequested: root.expand("dashboard")
+                }
             }
 
             // ═══════════════════════════════════════════════════════════════

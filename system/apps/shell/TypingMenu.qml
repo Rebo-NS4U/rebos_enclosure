@@ -1700,7 +1700,8 @@ Item {
                                 spacing: 0
                                 Repeater {
                                     id: wordRepeater
-                                    model: root.passageWords
+                                    // Retain session state, not hidden word/character object trees.
+                                    model: root.visible && root.practicing && !root.fullscreen ? root.passageWords : []
                                     delegate: Row {
                                         id: word
                                         required property var modelData
