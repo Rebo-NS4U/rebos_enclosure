@@ -1857,7 +1857,8 @@ Item {
                             anchors.left: parent.left
                             anchors.right: parent.right
                             height: Math.max(0, Math.min(root.fullscreen ? 112 : Infinity, passageVisuals.centerPadding - 12))
-                            visible: !root.readingMode && root.bookKind === "book" && root.currentChapterIndex >= 0 && height >= 48
+                            visible: !root.readingMode && root.bookKind === "book" && root.currentChapterIndex >= 0
+                                && (root.fullscreen || (root.atChapterStart && root.displayedInput.length === 0)) && height >= 48
                             z: 4
                             variant: "pane"
                             radius: Config.roundness

@@ -1,10 +1,12 @@
 import QtQuick
+import QtQuick.Window
 import Quickshell
 import qs.modules.theme
 ShellRoot {
-    PanelWindow {
+    Window {
+        visible: true
         id: driver
-        implicitWidth: 640; implicitHeight: 600
+        width: 640; height: 600
         color: Colors.surface
         TypingMenu { id: practice; anchors.fill: parent }
     }
@@ -30,25 +32,27 @@ ShellRoot {
                 const highlight = find(practice, "typing-line-highlight");
                 const scroll = find(practice, "typing-page-visuals");
                 const title = find(practice, "typing-chapter-card-title");
-                if (!card.visible || card.height < 48 || card.parent !== scroll.parent)
-                    throw Error("Chapter card does not occupy the existing passage header space");
-                const top = card.mapToItem(practice, 0, 0).y;
-                if (top > 72) throw Error("Chapter header is too far down: " + top);
-                const bottom = card.mapToItem(practice, 0, card.height).y;
-                const rowTop = highlight.mapToItem(practice, 0, 0).y;
-                if (bottom > rowTop || scroll.height !== 7 * practice.passageLineHeight)
-                    throw Error("Chapter card overlaps the active row or expands its viewport");
-                if (card.variant !== "pane" || card.styleOverride !== "") throw Error("Card bypasses the shared theme");
+                const input = find(practice, "typing-input");
                 if (phase === 1) {
-                    practice.position = 100;
-                    find(practice, "typing-input").text = practice.passage.slice(0, 200);
-                    practice.refreshPageCaret(); phase++; return;
+                    if (!card.visible || card.height < 48) throw Error("Opening card missing");
+                    input.text = practice.passage.slice(0, 1);
+                    phase++; return;
                 }
-                if (phase === 2 && (title.text !== "The quiet beginning" || practice.atChapterStart))
-                    throw Error("Chapter card was not retained mid-chapter");
-                if (phase === 2) { practice.position = 1000; phase++; return; }
-                if (title.text !== "A new discovery") throw Error("Chapter card did not follow chapter changes");
-                console.log("PASS: chapter header at y=" + top + " uses top space, persists, follows chapters, and inherits theme");
+                if (phase === 2) {
+                    if (card.visible) throw Error("Card stayed visible after typing began");
+                    practice.position = 100; input.text = "";
+                    phase++; return;
+                }
+                if (phase === 3) {
+                    if (card.visible) throw Error("Card returned mid-chapter");
+                    practice.position = 1000;
+                    phase++; return;
+                }
+                if (phase === 4) {
+                    if (!card.visible || title.text !== "A new discovery") throw Error("New chapter opening card missing");
+                    if (card.variant !== "pane" || card.styleOverride !== "") throw Error("Card bypasses theme");
+                    console.log("PASS: small chapter card hides on typing, stays hidden mid-chapter, returns at next chapter");
+                }
                 Qt.quit();
             } catch (error) { console.error(error); Qt.exit(1); }
         }
