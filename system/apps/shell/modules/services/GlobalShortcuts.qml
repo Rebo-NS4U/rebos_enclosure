@@ -59,15 +59,32 @@ Singleton {
         }
     }
 
+    Timer {
+        id: mediaFeedbackTimer
+        interval: 2000
+        property var island: null
+        onTriggered: {
+            if (island && island.currentMode === "media")
+                island.collapse();
+            island = null;
+        }
+    }
+
+    function revealMediaFeedback(): bool {
+        const island = Visibilities.getIslandForActive();
+        if (!island) return false;
+        island.expand("media");
+        mediaFeedbackTimer.island = island;
+        mediaFeedbackTimer.restart();
+        return true;
+    }
+
     // Playback keys select Spotify and reveal the same panel as the bar's media button.
     IpcHandler {
         target: "media"
 
         function reveal(): bool {
-            const island = Visibilities.getIslandForActive();
-            if (!island) return false;
-            island.expand("media");
-            return true;
+            return root.revealMediaFeedback();
         }
 
         function control(action: string): bool {
@@ -80,8 +97,7 @@ Singleton {
             // Keep playback commands on D-Bus, including Stop which has no QML helper.
             Quickshell.execDetached(["busctl", "--user", "call", player.dbusName,
                 "/org/mpris/MediaPlayer2", "org.mpris.MediaPlayer2.Player", action]);
-            const island = Visibilities.getIslandForActive();
-            if (island) island.expand("media");
+            root.revealMediaFeedback();
             return true;
         }
 

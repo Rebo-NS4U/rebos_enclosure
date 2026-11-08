@@ -494,7 +494,7 @@
   "system/apps/shell/modules/services/FileShelf.qml": "b9020175fd90303a0f038b595bb22d6b58c2d431b5024422d022f7e9d5ccadec",
   "system/apps/shell/modules/services/FocusGrab.qml": "b2532010754688e05957427711148bdc1d3b23e84188b01964f3f40ad8a25738",
   "system/apps/shell/modules/services/FocusGrabManager.qml": "48ab29b0eae7de1e341d36638d1fada7e68ad42a260db97757e2a217447dbb86",
-  "system/apps/shell/modules/services/GlobalShortcuts.qml": "0260cc3a5c7b3d3dd167d52a408a0ebf19647900a168fcd8cb23256b30a3a83c",
+  "system/apps/shell/modules/services/GlobalShortcuts.qml": "da54e1a55cd6ac47fead976df2789c1b0df28f6c475ef364fa0a705775710aba",
   "system/apps/shell/modules/services/GpuService.qml": "ccb1c79f985da020e2845e8cbbe81a703c51b8ab39dd26a610a44838203567c6",
   "system/apps/shell/modules/services/KeyboardLocks.qml": "7f0e184471f9f3f0eff9a0149d9af39e24139a460cc7e822e374995ad65646a6",
   "system/apps/shell/modules/services/LockscreenService.qml": "ff338cdec6cf370b390f3b55ee813c081f194a39dc47f722280f3b14b2281c53",
