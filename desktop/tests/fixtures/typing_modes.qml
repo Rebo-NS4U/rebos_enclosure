@@ -33,7 +33,7 @@ ShellRoot {
                 if (find(menu, "typing-input").visible === reading) throw Error("Wrong typing visibility");
                 const reader = find(menu, "reader-page-text");
                 if (reader.visible !== reading) throw Error("Wrong reading visibility");
-                const expectedSize = large && !reading ? Math.max(20, Config.theme.fontSize + 6) : Config.theme.fontSize + 2;
+                const expectedSize = Config.theme.fontSize + 2;
                 if (menu.readingFont.family !== Config.theme.font) throw Error("Passage lost shell font family");
                 if (menu.readingFont.pixelSize !== expectedSize) throw Error("Wrong passage font size");
                 if (find(menu, "typing-input").text !== retainedInput || menu.position !== retainedPosition)
@@ -41,7 +41,7 @@ ShellRoot {
                 if (!menu.passage.length) throw Error("Empty passage");
                 if (reading && reader.contentHeight > reader.height) throw Error("Reader clipped");
                 if (large) { menu.handleEscape(); if (menu.fullscreen || menu.readingMode !== reading) throw Error("Escape changed activity"); }
-            } else { console.log("PASS: fullscreen typing enlarges text; both sizes retain input and position; Escape preserves activity"); Qt.quit(); }
+            } else { console.log("PASS: fullscreen typing shares reader typography; both sizes retain input and position; Escape preserves activity"); Qt.quit(); }
             step++;
         }
     }

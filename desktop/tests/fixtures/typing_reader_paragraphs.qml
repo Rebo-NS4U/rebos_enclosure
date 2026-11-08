@@ -38,7 +38,8 @@ ShellRoot {
                 const first = reader.positionToRectangle(0);
                 const next = reader.positionToRectangle(79);
                 const previous = reader.positionToRectangle(77);
-                if (first.x < 39 || next.x < 39 || next.y - previous.y < menu.readerLineHeight * 1.8) {
+                const expectedIndent = menu.readingFont.pixelSize * 2 - 1;
+                if (first.x < expectedIndent || next.x < expectedIndent || next.y - previous.y < menu.readerLineHeight * 1.8) {
                     console.log("FAIL: paragraph indent or empty line", first.x, next.x, next.y - previous.y, menu.readerLineHeight);
                     Qt.quit(); return;
                 }

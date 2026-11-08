@@ -84,7 +84,7 @@ function slideOffset(page, cursor, keepLines) {
 }
 
 // Keep one document separator per source space so word cursor offsets agree.
-function readerHtml(value, starts, lineHeight, indent) {
+function readerHtml(value, starts, lineHeight, indent, input, errorColor) {
     lineHeight = lineHeight || 31;
     indent = indent || 40;
     var paragraphs = [], start = 0;
@@ -95,8 +95,20 @@ function readerHtml(value, starts, lineHeight, indent) {
         start = offset;
     }
     paragraphs.push(value.slice(start));
+    var paragraphOffset = 0;
     return paragraphs.map(function (paragraph) {
         var escaped = paragraph.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        if (input !== undefined) {
+            var offset = paragraphOffset;
+            escaped = characters(paragraph).map(function (letter) {
+                var entered = characters(input.slice(offset, offset + 2))[0];
+                offset += letter.length;
+                var html = letter.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                return entered !== undefined && !matchingCharacter(entered, letter)
+                    ? '<span style="color:' + errorColor + ';text-decoration:underline">' + html + '</span>' : html;
+            }).join("");
+        }
+        paragraphOffset += paragraph.length + 1;
         return '<p align="left" style="line-height:155%; margin-top:0px; margin-bottom:' + lineHeight + 'px; text-indent:' + indent + 'px;">' + escaped + '</p>';
     }).join("");
 }

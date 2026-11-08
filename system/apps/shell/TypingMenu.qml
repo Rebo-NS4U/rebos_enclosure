@@ -91,6 +91,22 @@ Item {
     function toggleFullscreen() {
         fullscreen = !fullscreen;
     }
+    function followFullscreenTyping(viewportY = -1) {
+        if (!fullscreen || readingMode || restoring || busy) return;
+        fullscreenTypingText.cursorPosition = Math.max(0, Math.min(visualCursor, fullscreenTypingText.length));
+        const caret = fullscreenTypingText.cursorRectangle;
+        if (viewportY >= 0) {
+            fullscreenTypingScroll.contentY = Math.max(0, Math.min(
+                fullscreenTypingScroll.contentHeight - fullscreenTypingScroll.height, caret.y - viewportY));
+            return;
+        }
+        const margin = readerLineHeight * 2;
+        const bottom = fullscreenTypingScroll.contentY + fullscreenTypingScroll.height - margin;
+        if (caret.y + caret.height > bottom)
+            fullscreenTypingScroll.contentY = Math.max(0, caret.y + caret.height - fullscreenTypingScroll.height + margin);
+        else if (caret.y < fullscreenTypingScroll.contentY)
+            fullscreenTypingScroll.contentY = Math.max(0, caret.y - margin);
+    }
     function focusPassage() {
         if (readingMode) readerText.forceActiveFocus();
         else answer.forceActiveFocus();
@@ -364,8 +380,8 @@ Item {
         return value.match(/[\uD800-\uDBFF][\uDC00-\uDFFF]|[\s\S]/g) ?? [];
     }
     readonly property string displayedInput: TypingPaging.displayInput(answer.text, passage)
-    onDisplayedInputChanged: syncGlyphs()
-    onVisualCursorChanged: syncCaret()
+    onDisplayedInputChanged: { syncGlyphs(); Qt.callLater(followFullscreenTyping); }
+    onVisualCursorChanged: { syncCaret(); Qt.callLater(followFullscreenTyping); }
     readonly property int visualCursor: Math.min(TypingPaging.displayInput(answer.text.slice(0, answer.cursorPosition), passage).length, passage.length - 1)
     readonly property real progress: bookLength ? Math.min(1, (position + characters(displayedInput).length) / bookLength) : 0
     readonly property int chapterStart: currentChapterIndex >= 0 ? chapters[currentChapterIndex].position : 0
@@ -373,7 +389,7 @@ Item {
     readonly property real chapterProgress: chapterEnd > chapterStart
         ? Math.max(0, Math.min(1, (position + characters(displayedInput).length - chapterStart) / (chapterEnd - chapterStart))) : 0
     readonly property var passageWords: pageLayout.words
-    readonly property font readingFont: Qt.font({family: Config.theme.font, pixelSize: fullscreen && !readingMode ? Math.max(20, Config.theme.fontSize + 6) : Config.theme.fontSize + 2, weight: Font.Normal})
+    readonly property font readingFont: Qt.font({family: Config.theme.font, pixelSize: Config.theme.fontSize + 2, weight: Font.Normal})
     FontMetrics { id: typingMetrics; font: root.readingFont }
     readonly property rect highlightBounds: {
         const metricsFont = typingMetrics.font;
@@ -815,6 +831,7 @@ Item {
             }
             if (bookId !== data.id || ["open", "add", "import"].indexOf(data.action) >= 0) readerPageHistory = [];
             const continuingWindow = slidingWindow && data.action === "next";
+            const fullscreenCaretY = fullscreenTypingText.cursorRectangle.y - fullscreenTypingScroll.contentY;
             slidingWindow = false;
             const oldChapterStart = chapterStart;
             const readerMoved = bookId !== data.id || position !== data.position;
@@ -829,9 +846,10 @@ Item {
             if (continuingWindow) speedBaseline = correctCount();
             dirty = false; draft = false; busy = false; restoring = false;
             turningPage = false;
+            Qt.callLater(() => followFullscreenTyping(continuingWindow ? fullscreenCaretY : -1));
             if (readingMode && readerMoved) animateReaderPage(revealDirection);
             if (data.action === "next" || data.action === "previous") {
-                if (Motion.enabled && visible && practicing && (readingMode || oldChapterStart !== chapterStart)) requestFeedback("page");
+                if (Motion.enabled && visible && practicing && (readingMode || (!fullscreen && oldChapterStart !== chapterStart))) requestFeedback("page");
                 const buffered = pendingKeys; pendingKeys = "";
                 if (buffered.length) Qt.callLater(() => {
                     answer.text = data.action === "previous" || continuingWindow ? answer.text + buffered : buffered; answer.cursorPosition = answer.length;
@@ -1502,7 +1520,7 @@ Item {
                 : Math.max(0, parent.height - anchors.topMargin - anchors.bottomMargin)
             anchors.topMargin: root.fullscreen ? 24 : (root.practicing ? 12 : 20)
             anchors.bottomMargin: root.fullscreen ? 24 : (root.practicing ? 12 : 20)
-            width: root.fullscreen ? Math.min(root.readingMode ? 720 : 840, Math.max(1, parent.width - 80)) : Math.max(1, parent.width - (root.practicing ? 48 : 40))
+            width: root.fullscreen ? Math.min(720, Math.max(1, parent.width - 80)) : Math.max(1, parent.width - (root.practicing ? 48 : 40))
             spacing: 12
             RowLayout {
                 Layout.fillWidth: true
@@ -1533,9 +1551,9 @@ Item {
                 TextButton { visible: root.readingMode; text: "Type"; onClicked: root.toggleReadingMode() }
                 TextButton { text: "Close"; onClicked: { root.saveProgress(); root.backRequested(); } }
             }
-            Rectangle { visible: root.readingMode; Layout.fillWidth: true; implicitHeight: 1; color: Qt.alpha(Colors.outlineVariant, 0.4) }
+            Rectangle { visible: root.readingMode || root.fullscreen; Layout.fillWidth: true; implicitHeight: 1; color: Qt.alpha(Colors.outlineVariant, 0.4) }
             StyledText {
-                visible: root.readingMode && !root.atChapterStart
+                visible: (root.readingMode || root.fullscreen) && !root.atChapterStart
                 text: root.chapterTitle
                 textFormat: Text.PlainText
                 font.pixelSize: 12
@@ -1743,7 +1761,7 @@ Item {
                     StyledRect {
                         id: chapterCard
                         objectName: "reader-chapter-card"
-                        visible: root.readingMode && root.atChapterStart
+                        visible: (root.readingMode || root.fullscreen) && root.atChapterStart
                         Layout.fillWidth: true
                         implicitHeight: chapterCardText.implicitHeight + 28
                         variant: "pane"
@@ -1799,7 +1817,7 @@ Item {
                             anchors.left: parent.left
                             anchors.right: parent.right
                             height: Math.max(0, Math.min(root.fullscreen ? 112 : Infinity, passageVisuals.centerPadding - 12))
-                            visible: !root.readingMode && root.bookKind === "book" && root.currentChapterIndex >= 0 && height >= 48
+                            visible: !root.readingMode && !root.fullscreen && root.bookKind === "book" && root.currentChapterIndex >= 0 && height >= 48
                             z: 4
                             variant: "pane"
                             radius: Config.roundness
@@ -1842,7 +1860,7 @@ Item {
                             boundsBehavior: Flickable.StopAtBounds
                             flickableDirection: Flickable.VerticalFlick
                             ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
-                            visible: !root.readingMode
+                            visible: !root.readingMode && !root.fullscreen
                             // Seven visible rows total; centering space is inside this budget.
                             anchors.left: parent.left
                             anchors.right: parent.right
@@ -1937,7 +1955,7 @@ Item {
                                         // Keep lightweight word geometry for the whole section,
                                         // but build animated characters only near the viewport.
                                         height: root.passageLineHeight
-                                        readonly property bool inRenderWindow: !root.readingMode
+                                        readonly property bool inRenderWindow: !root.readingMode && !root.fullscreen
                                             && modelData.line * root.passageLineHeight + passageFlow.y + height >= passageVisuals.contentY - root.passageLineHeight * 2
                                             && modelData.line * root.passageLineHeight + passageFlow.y <= passageVisuals.contentY + passageVisuals.height + root.passageLineHeight * 2
                                         readonly property var letters: root.characters(modelData.text)
@@ -2138,6 +2156,39 @@ Item {
                                 }
                             }
                         }
+                        Flickable {
+                            id: fullscreenTypingScroll
+                            objectName: "fullscreen-typing-scroll"
+                            anchors.fill: parent
+                            anchors.margins: 4
+                            visible: root.fullscreen && !root.readingMode
+                            clip: true
+                            contentWidth: width
+                            contentHeight: fullscreenTypingText.height
+                            boundsBehavior: Flickable.StopAtBounds
+                            ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+                            TextEdit {
+                                id: fullscreenTypingText
+                                objectName: "fullscreen-typing-text"
+                                width: parent.width
+                                height: Math.max(fullscreenTypingScroll.height, contentHeight)
+                                font: root.readingFont
+                                renderType: readerText.renderType
+                                textFormat: TextEdit.RichText
+                                wrapMode: TextEdit.Wrap
+                                readOnly: true
+                                cursorVisible: true
+                                color: Colors.overSurface
+                                text: TypingPaging.readerHtml(root.passage, root.paragraphStarts,
+                                    root.readerLineHeight, root.readingFont.pixelSize * 2,
+                                    root.displayedInput, Colors.error.toString())
+                                onContentHeightChanged: Qt.callLater(root.followFullscreenTyping)
+                                cursorDelegate: Rectangle {
+                                    width: 2
+                                    color: Colors.primary
+                                }
+                            }
+                        }
                         TextEdit {
                             id: readerMeasure
                             visible: false
@@ -2193,8 +2244,9 @@ Item {
                             selectByMouse: false
                             WheelHandler {
                                 onWheel: event => {
-                                    passageVisuals.contentY = Math.max(0, Math.min(passageVisuals.contentHeight - passageVisuals.height,
-                                        passageVisuals.contentY - event.angleDelta.y / 120 * root.passageLineHeight * 3));
+                                    const viewport = root.fullscreen ? fullscreenTypingScroll : passageVisuals;
+                                    viewport.contentY = Math.max(0, Math.min(viewport.contentHeight - viewport.height,
+                                        viewport.contentY - event.angleDelta.y / 120 * root.passageLineHeight * 3));
                                     event.accepted = true;
                                 }
                             }
@@ -2203,6 +2255,12 @@ Item {
                             TapHandler {
                                 acceptedButtons: Qt.RightButton
                                 onTapped: point => {
+                                    if (root.fullscreen) {
+                                        const local = fullscreenTypingText.mapFromItem(answer, point.position.x, point.position.y);
+                                        const index = fullscreenTypingText.positionAt(local.x, local.y);
+                                        root.openWord(root.readingWordAt(index), index);
+                                        return;
+                                    }
                                     for (let index = 0; index < wordRepeater.count; index++) {
                                         const wordItem = wordRepeater.itemAt(index);
                                         const local = wordItem.mapFromItem(answer, point.position.x, point.position.y);
