@@ -42,31 +42,34 @@ function displayInput(input, target) {
 // Match the renderer's word rows and measured character widths. Never discard
 // whitespace or split surrogate pairs.
 function layout(source, width, measure, maxLines) {
-    maxLines = Math.max(1, maxLines || 2);
-    width = Math.max(1, width);
-    var words = [], lineWidths = [], used = 0, line = 1, rowWidth = 0;
-    var tokens = source.match(/\S+\s*|\s+/g) || [];
-    for (var tokenIndex = 0; tokenIndex < tokens.length; tokenIndex++) {
-        var letters = characters(tokens[tokenIndex]);
-        var offset = 0;
+    maxLines = Math.max(1, maxLines || 2); width = Math.max(1, width);
+    var words = [], lineWidths = [], used = 0, line = 0, rowWidth = 0;
+    var tokens = source.match(/[^\s]+|[^\S\n\t]+|\n|\t/g) || [];
+    for (var t = 0; t < tokens.length; t++) {
+        var letters = characters(tokens[t]), offset = 0;
         while (offset < letters.length) {
             var chunk = "", chunkWidth = 0, chunkCount = 0;
             while (offset < letters.length && chunkCount < 36) {
-                var nextWidth = measure(letters[offset]);
-                if (chunkCount && chunkWidth + nextWidth > width) break;
-                chunk += letters[offset++]; chunkWidth += nextWidth; chunkCount++;
+                var next = measure(letters[offset]);
+                if (chunk.length && chunkWidth + next > width) break;
+                chunk += letters[offset++]; chunkWidth += next; chunkCount++;
             }
-            if (rowWidth && rowWidth + chunkWidth > width) {
-                if (line >= maxLines)
-                    return {text: source.slice(0, used), words: words, lines: line, lineWidths: lineWidths};
+            if (rowWidth && rowWidth + chunkWidth > width && chunk !== "\n") {
+                if (line + 1 >= maxLines) return {text: source.slice(0, used), words: words, lines: line + 1, lineWidths: lineWidths};
                 line++; rowWidth = 0;
             }
-            words.push({text: chunk, start: used, line: line - 1});
-            used += chunk.length; rowWidth += chunkWidth;
-            lineWidths[line - 1] = rowWidth;
+            // Keep the paragraph's Return, Return, Tab sequence in one window.
+            if (chunk === "\n" && tokens[t + 1] === "\n" && line + 2 >= maxLines)
+                return {text: source.slice(0, used), words: words, lines: line + 1, lineWidths: lineWidths};
+            words.push({text: chunk, start: used, line: line, x: rowWidth});
+            used += chunk.length; rowWidth += chunkWidth; lineWidths[line] = rowWidth;
+            if (chunk === "\n") {
+                if (line + 1 >= maxLines) return {text: source.slice(0, used), words: words, lines: line + 1, lineWidths: lineWidths};
+                line++; rowWidth = 0;
+            }
         }
     }
-    return {text: source.slice(0, used), words: words, lines: line, lineWidths: lineWidths};
+    return {text: source.slice(0, used), words: words, lines: line + 1, lineWidths: lineWidths};
 }
 
 // Roll before the loaded window ends, retaining enough rows for the viewport.

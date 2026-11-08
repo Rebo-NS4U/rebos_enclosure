@@ -26,7 +26,7 @@ ShellRoot {
                 }
                 const scroll = find(practice, "typing-page-visuals");
                 const flow = find(practice, "typing-passage-flow");
-                flow.forceLayout();
+                practice.refreshPageCaret();
                 if (practice.passage.length >= practice.pageSource.length || practice.pageLayout.lines > practice.layoutLineLimit) throw Error("Section was not bounded");
                 if (scroll.height < 6 * practice.passageLineHeight || scroll.contentHeight <= scroll.height) throw Error("Expanded scrolling viewport missing");
                 practice.restoring = false;

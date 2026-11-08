@@ -257,6 +257,7 @@ class Library:
         self.db = sqlite3.connect(path)
         self.db.row_factory = sqlite3.Row
         self.paragraph_mode = False
+        self.typing_format = False
         self.window = WINDOW
         # Keep large immutable content separate: saving a bookmark never rewrites a book.
         self.db.executescript('''
@@ -269,6 +270,10 @@ class Library:
         ''')
 
         self.db.execute('BEGIN IMMEDIATE')
+        columns = {row[1] for row in self.db.execute('PRAGMA table_info(book_progress)')}
+        for name in ('revision', 'typed_format'):
+            if name not in columns:
+                self.db.execute(f'ALTER TABLE book_progress ADD COLUMN {name} INTEGER NOT NULL DEFAULT 0')
         if 'category' not in {row[1] for row in self.db.execute('PRAGMA table_info(word_notes)')}:
             self.db.execute("ALTER TABLE word_notes ADD COLUMN category TEXT NOT NULL DEFAULT 'General'")
         if 'kind' not in {row[1] for row in self.db.execute('PRAGMA table_info(book_catalogue)')}:
@@ -310,7 +315,7 @@ class Library:
         return self.page(key)
 
     def listing(self):
-        rows = self.db.execute('SELECT c.id,c.title,c.kind,c.size AS length,p.position,length(p.typed) AS partial,p.loops FROM book_catalogue c JOIN book_progress p ON p.id=c.id ORDER BY p.updated DESC')
+        rows = self.db.execute("SELECT c.id,c.title,c.kind,c.size AS length,p.position,length(replace(replace(p.typed, char(9), ''), char(10)||char(10), ' ')) AS partial,p.loops FROM book_catalogue c JOIN book_progress p ON p.id=c.id ORDER BY p.updated DESC")
         books = []
         for row in rows:
             data = dict(row)
@@ -324,7 +329,7 @@ class Library:
                                (start + 1, max(0, end - start), key)).fetchone()[0]
 
     def page(self, key, include_chapters=True):
-        row = self.db.execute('SELECT c.id,c.title,c.kind,c.size AS length,c.chapters,p.position,p.typed,p.loops FROM book_catalogue c JOIN book_progress p ON p.id=c.id WHERE c.id=?', (key,)).fetchone()
+        row = self.db.execute('SELECT c.id,c.title,c.kind,c.size AS length,c.chapters,p.position,p.typed,p.loops,p.revision,p.typed_format FROM book_catalogue c JOIN book_progress p ON p.id=c.id WHERE c.id=?', (key,)).fetchone()
         if row is None: raise ValueError('Book is no longer in the library.')
         data = dict(row)
         chapters = json.loads(data['chapters'])
@@ -347,21 +352,64 @@ class Library:
         data['paragraphStarts'] = [len(chunk[:offset - data['position']].encode('utf-16-le')) // 2
                                    for offset in starts
                                    if data['position'] < offset < data['position'] + len(chunk)]
-        data['passage'] = chunk
+        if self.typing_format:
+            # Legacy input may exceed today's delivery window; keep its tail
+            # available for the frontend's measured-page restoration.
+            if not data['typed_format'] and len(data['typed']) > len(chunk):
+                chunk = self.text_slice(key, data['position'], data['position'] + len(data['typed']))
+            if len(chunk) > 1 and chunk.endswith(' ') and data['position'] + len(chunk) in starts:
+                chunk = chunk[:-1]
+            # Insert required typing whitespace without moving durable source offsets.
+            boundaries = set(starts)
+            formatted, offsets = [], [0]
+            def append(letter, consumed):
+                formatted.append(letter)
+                offsets.append(consumed)
+            if data['position'] == 0 or data['position'] in boundaries or any(
+                    item['position'] == data['position'] for item in chapters):
+                append('\t', 0)
+            for index, letter in enumerate(chunk):
+                if letter == ' ' and index + 1 < len(chunk) and data['position'] + index + 1 in boundaries:
+                    append('\n', index + 1)
+                    append('\n', index + 1)
+                    append('\t', index + 1)
+                else:
+                    append(letter, index + 1)
+            if data['typed'] and not data['typed_format']:
+                legacy = data['typed']
+                data['typed'] = ''.join(letter if offsets[index + 1] == offsets[index]
+                                       or (letter == '\n' and legacy[offsets[index]] == ' ')
+                                       else legacy[offsets[index]]
+                                       for index, letter in enumerate(formatted)
+                                       if offsets[index] < len(legacy))
+                if len(legacy) > len(chunk):
+                    tail = legacy[len(chunk):]
+                    data['typed'] += '\n' if tail == ' ' else tail
+            data['passage'] = ''.join(formatted)
+            data['sourceOffsets'] = offsets
+            data['paragraphStarts'] = []  # The typing target now carries explicit separators.
+        else:
+            if data['typed_format']:
+                data['typed'] = data['typed'].replace('\t', '').replace('\n\n', ' ').replace('\n', ' ')
+            data['passage'] = chunk
         if include_chapters: data['chapters'] = chapters
         else: data.pop('chapters')
         return data
 
-    def save(self, key, position, typed, loops):
+    def save(self, key, position, typed, loops, expected_revision=None):
         row = self.db.execute('SELECT size FROM book_catalogue WHERE id=?', (key,)).fetchone()
         if row is None: raise ValueError('Book is no longer in the library.')
         if not isinstance(position, int) or not 0 <= position < row[0]: raise ValueError('Invalid book position.')
         with self.db:
-            self.db.execute('UPDATE book_progress SET position=?,typed=?,loops=?,updated=? WHERE id=?', (position, typed[:4096], max(0, int(loops)), time.time(), key))
+            cursor = self.db.execute('UPDATE book_progress SET position=?,typed=?,loops=?,updated=?,typed_format=?,revision=revision+1 WHERE id=? AND (? IS NULL OR revision=?)',
+                                     (position, typed[:8192], max(0, int(loops)), time.time(), int(self.typing_format), key, expected_revision, expected_revision))
+            if cursor.rowcount != 1:
+                raise ValueError('Progress changed in another view. Reopen this book before saving again.')
             self.db.execute("INSERT INTO app_state VALUES ('last_book',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", (key,))
 
     def handle(self, request):
         self.paragraph_mode = bool(request.get('paragraphs', False))
+        self.typing_format = bool(request.get('typing_format', False))
         self.window = max(WINDOW, min(4096, int(request.get('window', WINDOW))))
         handlers = {'delete': '_handle_delete', 'list': '_handle_list', 'resume': '_handle_resume', 'import': '_handle_import', 'add': '_handle_add', 'open': '_handle_open', 'chapter': '_handle_chapter', 'save': '_handle_save', 'seek': '_handle_save', 'next': '_handle_save', 'previous': '_handle_previous', 'words': '_handle_words', 'word': '_handle_word', 'note': '_handle_note', 'word_settings': '_handle_word_settings'}
         handler = handlers.get(request['action'])
@@ -465,7 +513,7 @@ class Library:
         index = request['index']
         if not isinstance(index, int) or not 0 <= index < len(current['chapters']):
             raise ValueError('Choose a valid chapter.')
-        self.save(request['id'], current['chapters'][index]['position'], '', request.get('loops', current['loops']))
+        self.save(request['id'], current['chapters'][index]['position'], '', request.get('loops', current['loops']), request.get('revision'))
         return self.page(request['id'])
 
 
@@ -502,7 +550,7 @@ class Library:
                     boundary = context.find(' ', 1)
                     if boundary >= 0:
                         request['position'] = min(position + boundary, current['length'] - 1)
-        self.save(request['id'], request['position'], request.get('typed', ''), request.get('loops', 0))
+        self.save(request['id'], request['position'], request.get('typed', ''), request.get('loops', 0), request.get('revision'))
         return self.page(request['id'], action != 'next') if action != 'save' else {'saved': True}
 
 
@@ -518,7 +566,7 @@ def main():
             request = parsed
             result = library.handle(request)
         except Exception as error:
-            result = {'error': str(error)}
+            result = {'error': str(error), 'id': request.get('id')}
         print(json.dumps(dict(result, action=request.get('action'), request=request.get('request'))), flush=True)
 
 if __name__ == '__main__': main()

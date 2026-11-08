@@ -135,13 +135,13 @@ ShellRoot {
                     const originalSource = practice.pageSource;
                     practice.pageSource = "word ".repeat(1600); practice.fitPage();
                     const filledFlow = find(practice, "typing-passage-flow");
-                    filledFlow.forceLayout();
+                    practice.refreshPageCaret();
                     if (practice.passage.length >= practice.pageSource.length || practice.pageLayout.lines > practice.layoutLineLimit) throw Error("Section must be bounded to the viewport");
                     const scroll = find(practice, "typing-page-visuals");
                     if (scroll.height < 6 * practice.passageLineHeight || scroll.contentHeight <= scroll.height) throw Error("Section must scroll in the expanded viewport");
                     const screenshotText = "comfortable? I have a better view of things now. This is no ordinary hospital room. More words follow here.";
                     practice.pageSource = screenshotText; practice.fitPage();
-                    find(practice, "typing-passage-flow").forceLayout();
+                    practice.refreshPageCaret();
                     const screenshotPage = practice.passage;
                     const screenshotPosition = practice.position;
                     input.text = screenshotText.slice(0, 68); input.cursorPosition = 68;
@@ -179,7 +179,7 @@ ShellRoot {
                     if (Motion.enabled && !wrongSpace.failedFeedback) throw Error("Mistyped space has no failure reaction");
                     input.text = originalTyped;
                     if (wrongSpace.failedFeedback || wrongSpace.incorrect || wrongSpace.spark !== 0) throw Error("Corrected space kept its failure reaction");
-                    find(practice, "typing-passage-flow").forceLayout();
+                    practice.refreshPageCaret();
                     const movingCaret = find(practice, "typing-smooth-caret");
                     const activeLine = find(practice, "typing-line-highlight");
                     input.cursorPosition = 0;
@@ -223,7 +223,7 @@ ShellRoot {
                     keyDriver.keyClick(Qt.Key_X, Qt.NoModifier, 0);
                     if (input.text !== prefix + "…x next") throw Error("Ellipsis editing corrupted following letters: " + JSON.stringify({text: input.text.slice(prefix.length), cursor: input.cursorPosition}));
                     input.text = ""; practice.pageSource = originalSource; practice.fitPage();
-                    find(practice, "typing-passage-flow").forceLayout();
+                    practice.refreshPageCaret();
                     practice.refreshPageCaret();
                     first = find(practice, "typing-character-0");
                     const caret = find(practice, "typing-smooth-caret");

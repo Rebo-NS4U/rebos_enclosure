@@ -106,6 +106,14 @@ passage is active (not while editing notes). F11 switches sizes; Escape leaves
 fullscreen while keeping the activity. Appearance motion controls typing
 animations in both sizes.
 
+Typing preserves paragraph indentation and blank rows from the reader. Press
+Tab at ⇥ and Return at each ↵ (two Returns between paragraphs), then Tab for
+the next indent. Spaces cannot substitute for these keys. Existing bookmarks
+and partial input are mapped to the formatted target without changing book
+identity or source positions. Backspace edits text and does not jump to an
+earlier window. Saved-progress revisions reject writes from an outdated view;
+a conflict asks you to reopen the book instead of overwriting newer progress.
+
 Open typing with its keyboard shortcut or `qs ipc call typing toggle`. Typing
 replaces the expanded bar contents, using the same input and dismissal behavior
 as its other panels. The compact typing surface uses a faint glass fill, soft blur and a subtle rim;

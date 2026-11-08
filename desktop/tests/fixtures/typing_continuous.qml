@@ -36,7 +36,7 @@ ShellRoot {
                     const words = practice.pageLayout.words;
                     const cursor = words.find(word => word.line >= practice.pageLayout.lines - 7).start;
                     const start = words.find(word => word.line >= practice.pageLayout.lines - 14).start;
-                    expectedPosition = practice.characters(practice.passage.slice(0, start)).length;
+                    expectedPosition = practice.sourceCount(practice.characters(practice.passage.slice(0, start)).length);
                     expectedInput = practice.passage.slice(start, cursor);
                     expectedPassage = practice.passage.slice(start);
                     practice.restoring = true;
@@ -64,7 +64,7 @@ ShellRoot {
                     const line = Math.max(keep + 3, practice.pageLayout.lines - 8);
                     const cursor = words.find(word => word.line >= line).start;
                     const start = words.find(word => word.line >= line - keep).start;
-                    expectedPosition = practice.position + practice.characters(practice.passage.slice(0, start)).length;
+                    expectedPosition = practice.position + practice.sourceCount(practice.characters(practice.passage.slice(0, start)).length);
                     expectedInput = practice.passage.slice(start, cursor);
                     practice.restoring = true;
                     input.text = practice.passage.slice(0, cursor); input.cursorPosition = input.length;

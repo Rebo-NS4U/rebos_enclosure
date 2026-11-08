@@ -25,7 +25,7 @@ Item {
         fitDelay.restart();
         if (practicing) Qt.callLater(() => root.focusPassage());
     }
-    readonly property real passageLineHeight: Math.ceil(typingMetrics.height * 1.45)
+    readonly property real passageLineHeight: Math.ceil(typingMetrics.height * (sourceOffsets.length ? 1.55 : 1.45))
     // Match the rich-text reader spacing rather than the tighter typing rows.
     readonly property real readerLineHeight: Math.ceil(typingMetrics.height * 1.55)
     readonly property int pageLineLimit: readingMode
@@ -85,6 +85,7 @@ Item {
         saveProgress();
         readerPageHistory = [];
         readingMode = !readingMode;
+        if (bookId && !busy) send({action: "open", id: bookId});
         stopFeedback();
         fitDelay.restart();
         if (practicing) Qt.callLater(() => root.focusPassage());
@@ -137,6 +138,12 @@ Item {
     property int position: 0
     property int rounds: 0
     property string pageSource: ""
+    property var sourceOffsets: []
+    property int bookRevision: -1
+    property bool progressConflict: false
+    function sourceCount(count, offsets = sourceOffsets) {
+        return offsets.length ? offsets[Math.max(0, Math.min(count, offsets.length - 1))] : count;
+    }
     property var paragraphStarts: []
     property var pageLayout: ({text: "", words: [], lines: 0, lineWidths: []})
     readonly property string passage: pageLayout.text
@@ -263,12 +270,15 @@ Item {
     readonly property bool noteDirty: wordNote.text !== savedWordNote || noteCategory !== savedNoteCategory
     property Item menuAnchorItem: root
     function currentWordItem() {
+        let previous = null;
         for (let index = 0; index < wordRepeater.count; index++) {
             const item = wordRepeater.itemAt(index);
-            if (visualCursor >= item.modelData.start && visualCursor < item.modelData.start + item.modelData.text.length)
-                return item;
+            if (!/\S/.test(item.modelData.text)) continue;
+            if (visualCursor < item.modelData.start) return previous || item;
+            if (visualCursor < item.modelData.start + item.modelData.text.length) return item;
+            previous = item;
         }
-        return wordRepeater.count ? wordRepeater.itemAt(wordRepeater.count - 1) : null;
+        return previous;
     }
     function openCurrentWord() {
         if (wordPanel.opened) { handleEscape(); return; }
@@ -376,11 +386,11 @@ Item {
     onDisplayedInputChanged: syncGlyphs()
     onVisualCursorChanged: syncCaret()
     readonly property int visualCursor: Math.min(TypingPaging.displayInput(answer.text.slice(0, answer.cursorPosition), passage).length, passage.length - 1)
-    readonly property real progress: bookLength ? Math.min(1, (position + characters(displayedInput).length) / bookLength) : 0
+    readonly property real progress: bookLength ? Math.min(1, (position + sourceCount(characters(displayedInput).length)) / bookLength) : 0
     readonly property int chapterStart: currentChapterIndex >= 0 ? chapters[currentChapterIndex].position : 0
     readonly property int chapterEnd: currentChapterIndex + 1 < chapters.length ? chapters[currentChapterIndex + 1].position : bookLength
     readonly property real chapterProgress: chapterEnd > chapterStart
-        ? Math.max(0, Math.min(1, (position + characters(displayedInput).length - chapterStart) / (chapterEnd - chapterStart))) : 0
+        ? Math.max(0, Math.min(1, (position + sourceCount(characters(displayedInput).length) - chapterStart) / (chapterEnd - chapterStart))) : 0
     readonly property var passageWords: pageLayout.words
     readonly property font readingFont: Qt.font({family: Config.theme.font, pixelSize: Config.theme.fontSize + 2, weight: Font.Normal})
     FontMetrics { id: typingMetrics; font: root.readingFont }
@@ -392,6 +402,8 @@ Item {
     readonly property real letterPadding: 1
     property var widthCache: ({})
     function characterWidth(text) {
+        if (text === "\t") return readingFont.pixelSize * 2;
+        if (text === "\n") return 1;
         if (widthCache[text] === undefined)
             widthCache[text] = Math.max(1, Math.ceil(typingMetrics.advanceWidth(text)));
         return widthCache[text];
@@ -435,7 +447,7 @@ Item {
     }
     function refreshPageCaret() {
         if (busy || restoring) return;
-        passageFlow.forceLayout();
+        // Glyph rows have explicit positions from the measured layout.
         syncCaret();
         const current = glyphItems[renderedCaret];
         updateGlyph(current);
@@ -574,6 +586,12 @@ Item {
         data.window = Math.max(512, Math.min(4096,
             Math.ceil(Math.max(640, passageFlow.width) / narrowWidth) * layoutLineLimit + 72));
         data.paragraphs = false;
+        data.typing_format = !readingMode;
+        if (data.id === bookId && bookRevision >= 0 && ["save", "next", "seek", "chapter", "previous"].indexOf(data.action) >= 0
+                && (data.action !== "previous" || data.resolved)) {
+            if (data.revision === undefined) data.revision = bookRevision;
+            bookRevision = data.revision + 1;
+        }
         data.request = ++requestId;
         if (page) { pageRequest = data.request; busy = true; errorMessage = ""; }
         if (ready) backend.write(JSON.stringify(data) + "\n");
@@ -688,7 +706,7 @@ Item {
         }
     }
     function saveProgress() {
-        if (!dirty || !bookId || busy || restoring) return;
+        if (!dirty || !bookId || busy || restoring || progressConflict) return;
         dirty = false;
         send({action: "save", id: bookId, position: position, typed: answer.text, loops: rounds}, false);
     }
@@ -781,7 +799,7 @@ Item {
                 return;
             }
             if (data.action === "list") { if (data.books) library = data.books; return; }
-            if (data.error) { if (data.request === pageRequest) { busy = false; turningPage = false; slidingWindow = false; historyBack = false; backAfterTurn = false; } if (data.action === "save") dirty = true; message = data.error; errorMessage = data.error; return; }
+            if (data.error) { if (data.id && bookId && data.id !== bookId) return; if (String(data.error).indexOf("Progress changed in another view") >= 0) progressConflict = true; if (data.request === pageRequest) { busy = false; turningPage = false; slidingWindow = false; historyBack = false; backAfterTurn = false; } if (data.action === "save") dirty = true; message = data.error; errorMessage = data.error; return; }
             if (data.request !== pageRequest) return;
             if (data.atBeginning) { busy = false; turningPage = false; return; }
             if (data.previousText !== undefined) {
@@ -814,8 +832,8 @@ Item {
             if (!readingMode && data.action !== "next" && data.action !== "previous" && pageCount > 0 && entered.length >= pageCount && !prepared.pending) {
                 restoreAction = data.action;
                 restoreChapters = data.chapters || chapters;
-                const next = data.position + pageCount;
-                send({action: "next", id: data.id, position: next >= data.length ? 0 : next,
+                const next = data.position + sourceCount(pageCount, data.sourceOffsets || []);
+                send({action: "next", id: data.id, position: next >= data.length ? 0 : next, revision: data.revision,
                     typed: entered.slice(pageCount).join(""), loops: data.loops + (next >= data.length ? 1 : 0)});
                 return;
             }
@@ -838,7 +856,8 @@ Item {
             const revealDirection = data.position < position ? -1 : 1;
             restoring = true;
             bookId = data.id; bookTitle = data.title; bookKind = data.kind || "book"; bookLength = data.length;
-            position = data.position; rounds = data.loops; if (data.chapters) chapters = data.chapters;
+            progressConflict = false;
+            position = data.position; rounds = data.loops; sourceOffsets = data.sourceOffsets || []; bookRevision = data.revision === undefined ? -1 : data.revision; if (data.chapters) chapters = data.chapters;
             resetPageCaret();
             paragraphStarts = data.paragraphStarts || [];
             if (continuingWindow && fullscreen)
@@ -874,7 +893,7 @@ Item {
     Timer { interval: 5000; running: root.backendStarted; repeat: true; onTriggered: root.saveProgress() }
 
     function status() {
-        return JSON.stringify({animationTiming: animationTiming, animationDuration: Motion.base, glyphCount: Object.keys(glyphItems).length, wordCount: pageLayout.words.length, widthCacheSize: Object.keys(widthCache).length, pageFits: pageFits, loadedCharacters: pageSource.length, readingMode: readingMode, readerAnimationEvents: readerAnimationEvents, readerMotionEnabled: Motion.enabled, chapterCardVisible: chapterCard.visible || typingChapterCard.visible, chapterTitle: chapterTitle, wordToolsOpen: wordPanel.opened, wordMenuReveal: wordPanel.reveal, wordMenuOpenAnimations: wordPanel.openAnimations, wordMenuCloseAnimations: wordPanel.closeAnimations, noteDirty: noteDirty, noteSaving: noteSaving, wordToolsShortcut: "Ctrl+Space", wordMenuWidth: wordPanel.width, wordMenuHeight: wordPanel.height, typingPanelWidth: menuAnchorItem.width, typingPanelHeight: menuAnchorItem.height, notebookMode: notebookMode, notebookCreating: notebookCreating, notesSection: notebookFilter, definitionsEnabled: definitionsEnabled, notedWordCount: notedTerms.length, practicing: practicing, fullscreen: fullscreen, pageLines: pageLayout.lines, pageLineLimit: pageLineLimit, passageHeight: passageArea.height, renderedHeight: passageFlow.height, fontSize: readingFont.pixelSize, layoutVersion: 9, previousPages: pageHistory.length, activeEffects: activeEffects, effectKind: effectKind, lineTransitions: lineTransitions, pageTransitions: pageTransitions, motionEnabled: Motion.enabled, feedbackEvents: feedbackEvents, focused: answer.activeFocus, turningPage: turningPage, textLength: bookLength,
+        return JSON.stringify({animationTiming: animationTiming, animationDuration: Motion.base, glyphCount: Object.keys(glyphItems).length, wordCount: pageLayout.words.length, widthCacheSize: Object.keys(widthCache).length, pageFits: pageFits, loadedCharacters: pageSource.length, readingMode: readingMode, readerAnimationEvents: readerAnimationEvents, readerMotionEnabled: Motion.enabled, chapterCardVisible: chapterCard.visible || typingChapterCard.visible, chapterTitle: chapterTitle, wordToolsOpen: wordPanel.opened, wordMenuReveal: wordPanel.reveal, wordMenuOpenAnimations: wordPanel.openAnimations, wordMenuCloseAnimations: wordPanel.closeAnimations, noteDirty: noteDirty, noteSaving: noteSaving, progressRevision: bookRevision, progressConflict: progressConflict, wordToolsShortcut: "Ctrl+Space", wordMenuWidth: wordPanel.width, wordMenuHeight: wordPanel.height, typingPanelWidth: menuAnchorItem.width, typingPanelHeight: menuAnchorItem.height, notebookMode: notebookMode, notebookCreating: notebookCreating, notesSection: notebookFilter, definitionsEnabled: definitionsEnabled, notedWordCount: notedTerms.length, practicing: practicing, fullscreen: fullscreen, pageLines: pageLayout.lines, pageLineLimit: pageLineLimit, passageHeight: passageArea.height, renderedHeight: passageFlow.height, fontSize: readingFont.pixelSize, layoutVersion: 9, previousPages: pageHistory.length, activeEffects: activeEffects, effectKind: effectKind, lineTransitions: lineTransitions, pageTransitions: pageTransitions, motionEnabled: Motion.enabled, feedbackEvents: feedbackEvents, focused: answer.activeFocus, turningPage: turningPage, textLength: bookLength,
             typed: answer.text.length, position: position, rounds: rounds,
             presets: TypingTexts.passages.length, message: message, busy: busy,
             title: bookTitle, chapters: chapters.length, library: library.length, books: libraryBooks.length, wpm: liveWpm, filePickerActive: filePickerActive});
@@ -1030,6 +1049,22 @@ Item {
             send({action: "add", title: draftTitle, text: paste.text, kind: draftKind});
         } else { practicing = true; root.focusPassage(); }
     }
+    function handleWhitespaceKey(event) {
+        if (busy || (event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier))) return false;
+        const expected = passage.charAt(answer.cursorPosition);
+        if (event.key === Qt.Key_Tab || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+            const entered = event.key === Qt.Key_Tab ? "\t" : "\n";
+            if (expected === entered) {
+                const cursor = answer.cursorPosition;
+                answer.insert(cursor, entered); answer.cursorPosition = cursor + 1;
+            } else requestFeedback("error", glyphItems[answer.cursorPosition]);
+            return true;
+        }
+        if ((expected === "\t" || expected === "\n") && event.text.length && event.text.charCodeAt(0) >= 32) {
+            requestFeedback("error", glyphItems[answer.cursorPosition]); return true;
+        }
+        return false;
+    }
     function normalizeInput() {
         if (restoring || busy || !bookId) return;
         const prepared = TypingPaging.prepareInput(answer.text, passage);
@@ -1053,7 +1088,7 @@ Item {
         syncGlyphs();
     }
     function advance() {
-        if (readingMode) return;
+        if (readingMode || progressConflict) return;
         if (restoring || busy || !bookId) return;
         const prepared = TypingPaging.prepareInput(answer.text, passage);
         if (prepared.text !== answer.text) {
@@ -1070,13 +1105,19 @@ Item {
         // Retain seven rows behind the caret and fetch before the current window
         // runs out. The same text remains around the caret across the handoff.
         const keepLines = fullscreen ? Math.max(7, pageLineLimit - 3) : 7;
-        const offset = TypingPaging.slideOffset(pageLayout, displayedInput.length, keepLines,
+        let offset = TypingPaging.slideOffset(pageLayout, displayedInput.length, keepLines,
             fullscreen ? keepLines + 3 : undefined);
+        // Never cut between the virtual paragraph keys and its first word.
+        if (sourceOffsets.length && offset > 0 && (/[\n\t]/.test(passage.charAt(offset)) || passage.charAt(offset - 1) === "\t")) {
+            const safe = pageLayout.words.find(word => word.start > offset
+                && !/[\n\t]/.test(word.text) && passage.charAt(word.start - 1) !== "\t");
+            offset = safe && safe.start < displayedInput.length ? safe.start : 0;
+        }
         if (!prepared.pending && !editingCorrection && offset > 0
-                && position + pageCount < chapterEnd) {
+                && position + sourceCount(pageCount) < chapterEnd) {
             pageHistory = pageHistory.concat([{position: position, rounds: rounds,
                 typed: answer.text, width: width, lines: pageLineLimit}]).slice(-128);
-            const consumed = characters(passage.slice(0, offset)).length;
+            const consumed = sourceCount(characters(passage.slice(0, offset)).length);
             pendingScrollShift = (pageLayout.words.find(word => word.start === offset)?.line || 0) * passageLineHeight;
             slidingWindow = true;
             dirty = false; turningPage = true; pageDirection = 1;
@@ -1091,7 +1132,7 @@ Item {
         answer.text = entered.slice(0, pageCount).join("");
         answer.cursorPosition = answer.length;
         restoring = false;
-        const next = position + pageCount;
+        const next = position + sourceCount(pageCount);
         dirty = false; turningPage = true; pageDirection = 1;
         send({action: "next", id: bookId, position: next >= bookLength ? 0 : next,
             typed: "", loops: rounds + (next >= bookLength ? 1 : 0)});
@@ -1938,7 +1979,7 @@ Item {
                                     }
                                 }
                             }
-                            Flow {
+                            Item {
                                 id: passageFlow
                                 objectName: "typing-passage-flow"
                                 y: passageVisuals.centerPadding
@@ -1948,7 +1989,7 @@ Item {
                                 anchors.right: parent.right
                                 anchors.leftMargin: 4
                                 anchors.rightMargin: 4
-                                spacing: 0
+                                height: root.pageLayout.lines * root.passageLineHeight
                                 Repeater {
                                     id: wordRepeater
                                     model: root.passageWords
@@ -1959,6 +2000,8 @@ Item {
                                         // Row implicit widths can differ under native font hinting.
                                         // Keep lightweight word geometry for the whole section,
                                         // but build animated characters only near the viewport.
+                                        x: modelData.x || 0
+                                        y: modelData.line * root.passageLineHeight
                                         height: root.passageLineHeight
                                         readonly property bool inRenderWindow: !root.readingMode
                                             && modelData.line * root.passageLineHeight + passageFlow.y + height >= passageVisuals.contentY - root.passageLineHeight * 2
@@ -1970,7 +2013,7 @@ Item {
                                         }
                                         width: letters.reduce((total, letter) => total + root.characterWidth(letter), 0)
                                         readonly property real linePop: root.effectKind === "line" && root.effectLine === modelData.line ? root.effectStrength : 0
-                                        readonly property real centerOffset: Math.max(0, (passageFlow.width - (root.pageLayout.lineWidths[modelData.line] || 0)) / 2)
+                                        readonly property real centerOffset: root.sourceOffsets.length ? 0 : Math.max(0, (passageFlow.width - (root.pageLayout.lineWidths[modelData.line] || 0)) / 2)
                                         readonly property real arrival: root.effectKind === "page" ? Math.max(0, 1 - transitionBurst.progress / (0.48 + 0.45 * (modelData.line + 1) / Math.max(1, root.pageLayout.lines))) : 0
                                         readonly property real wave: linePop > 0 ? Math.sin(Math.max(0, Math.min(1, transitionBurst.progress * 1.6 - x / Math.max(1, passageFlow.width) * 0.5)) * Math.PI * 2) * linePop : 0
                                         transform: [
@@ -2054,12 +2097,12 @@ Item {
                                                 onVisibleChanged: { if (!visible) stopFeedback(); else if (initialized && caretHere) Qt.callLater(() => smoothCaret.follow(glyph)); }
                                                 readonly property int characterIndex: word.offsets[index]
                                                 objectName: "typing-character-" + characterIndex
-                                                text: modelData === " " ? "\u00a0" : modelData
+                                                text: modelData === "\n" ? "↵" : modelData === "\t" ? "⇥" : modelData === " " ? "\u00a0" : modelData
                                                 textFormat: Text.PlainText
                                                 width: root.characterWidth(modelData)
                                                 font: Qt.font({family: root.readingFont.family, pixelSize: root.readingFont.pixelSize, weight: Font.Normal, underline: glyph.incorrect})
                                                 height: root.passageLineHeight
-                                                lineHeight: 1.45
+                                                lineHeight: root.sourceOffsets.length ? 1.55 : 1.45
                                                 property real inkOpacity: caretHere || typed ? 1 : (word?.modelData?.line === root.scrollLine ? 0.85 : 0.65)
                                                 Behavior on inkOpacity {
                                                     enabled: Motion.enabled && glyph.initialized && !root.restoring && !root.busy
@@ -2247,11 +2290,12 @@ Item {
                             }
                             Keys.onPressed: event => {
                                 if (event.key === Qt.Key_F11) { root.toggleFullscreen(); event.accepted = true; return; }
-                                if (event.key === Qt.Key_Backspace && !(event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier)) && !answer.text.length && !root.busy) {
-                                    root.previousPage(); event.accepted = true; return;
-                                }
+                                if (root.handleWhitespaceKey(event)) { event.accepted = true; return; }
                                 if (!root.turningPage || (event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier))) return;
-                                if (event.key === Qt.Key_Backspace) { if (root.pendingKeys.length) root.undoQueuedKey(); else if (root.pageDirection > 0) root.backAfterTurn = true; event.accepted = true; }
+                                if (event.key === Qt.Key_Backspace) { if (root.pendingKeys.length) root.undoQueuedKey(); event.accepted = true; }
+                                else if (event.key === Qt.Key_Tab || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                                    root.queueTyping(event.key === Qt.Key_Tab ? "\t" : "\n"); event.accepted = true;
+                                }
                                 else if (event.text.length && event.text.charCodeAt(0) >= 32) { root.queueTyping(event.text); event.accepted = true; }
                             }
                             Keys.onEscapePressed: event => { root.handleEscape(); event.accepted = true; }

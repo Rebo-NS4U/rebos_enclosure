@@ -21,6 +21,62 @@ class Books(unittest.TestCase):
         self.library.db.close()
         self.temp.cleanup()
 
+    def test_typing_format_maps_whitespace_to_existing_bookmarks(self):
+        text = normalize('First 😀 paragraph.\n\nSecond paragraph.')
+        book = self.library.add('Format', text, [])
+        page = self.library.handle({'action': 'open', 'id': book['id'], 'typing_format': True})
+        self.assertEqual(page['passage'], '\tFirst 😀 paragraph.\n\n\tSecond paragraph.')
+        self.assertEqual(page['sourceOffsets'][-1], len(text))
+        self.assertEqual(page['sourceOffsets'][1], 0)
+        boundary = page['passage'].index('Second')
+        self.assertEqual(page['sourceOffsets'][boundary], str(text).index('Second'))
+        entered = '\tFirst 😀 paragraph.\n\n\tSec'
+        self.library.handle({'action': 'save', 'id': book['id'], 'position': 0,
+                             'typed': entered, 'typing_format': True, 'revision': page['revision']})
+        resumed = self.library.handle({'action': 'open', 'id': book['id'], 'typing_format': True})
+        self.assertEqual(resumed['typed'], entered)
+        reader = self.library.handle({'action': 'open', 'id': book['id']})
+        self.assertEqual(reader['typed'], 'First 😀 paragraph. Sec')
+        self.assertEqual(reader['passage'], str(text))
+
+    def test_legacy_partial_input_keeps_its_place_when_formatting_is_added(self):
+        text = normalize('One paragraph.\n\nNext paragraph.')
+        book = self.library.add('Legacy', text, [])
+        self.library.save(book['id'], 0, 'One paragraph. Nex', 0)
+        page = self.library.handle({'action': 'open', 'id': book['id'], 'typing_format': True})
+        self.assertEqual(page['typed'], '\tOne paragraph.\n\n\tNex')
+        self.assertEqual(page['position'], 0)
+
+    def test_legacy_restore_does_not_drop_input_beyond_current_window(self):
+        text = normalize('Several words in a paragraph. ' * 100)
+        book = self.library.add('Large legacy prefix', text, [])
+        self.library.save(book['id'], 0, str(text)[:700], 0)
+        page = self.library.handle({'action': 'open', 'id': book['id'], 'typing_format': True, 'window': 100})
+        self.assertEqual(page['typed'], '\t' + str(text)[:700])
+        self.assertGreaterEqual(len(page['passage']), len(page['typed']))
+
+    def test_typing_window_does_not_split_paragraph_key_sequence(self):
+        text = normalize('First paragraph.\n\nSecond paragraph.')
+        book = self.library.add('Boundary', text, [])
+        self.library.typing_format = True
+        self.library.window = len('First paragraph. ')
+        page = self.library.page(book['id'])
+        self.assertEqual(page['passage'], '\tFirst paragraph.')
+        consumed = page['sourceOffsets'][-1]
+        self.library.save(book['id'], consumed, '', 0)
+        self.assertTrue(self.library.page(book['id'])['passage'].startswith('\n\n\tSecond'))
+
+    def test_stale_view_cannot_reset_newer_saved_progress(self):
+        book = self.library.add('Race', normalize('Some words to keep saved progress.'), [])
+        stale = self.library.page(book['id'])
+        self.library.handle({'action': 'save', 'id': book['id'], 'position': 5,
+                             'typed': 'words', 'revision': stale['revision']})
+        with self.assertRaisesRegex(ValueError, 'Progress changed in another view'):
+            self.library.handle({'action': 'save', 'id': book['id'], 'position': 0,
+                                 'typed': '', 'revision': stale['revision']})
+        latest = self.library.page(book['id'])
+        self.assertEqual((latest['position'], latest['typed']), (5, 'words'))
+
     def test_reader_paragraph_offsets_preserve_text_and_bookmarks(self):
         text = normalize('First 😀 paragraph.\n\nSecond paragraph.\n\nThird.')
         book = self.library.add('Paragraphs', text, [])
