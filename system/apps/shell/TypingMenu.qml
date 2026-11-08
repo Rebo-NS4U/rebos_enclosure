@@ -894,7 +894,7 @@ Item {
 
     function status() {
         return JSON.stringify({animationTiming: animationTiming, animationDuration: Motion.base, glyphCount: Object.keys(glyphItems).length, wordCount: pageLayout.words.length, widthCacheSize: Object.keys(widthCache).length, pageFits: pageFits, loadedCharacters: pageSource.length, readingMode: readingMode, readerAnimationEvents: readerAnimationEvents, readerMotionEnabled: Motion.enabled, chapterCardVisible: chapterCard.visible || typingChapterCard.visible, chapterTitle: chapterTitle, wordToolsOpen: wordPanel.opened, wordMenuReveal: wordPanel.reveal, wordMenuOpenAnimations: wordPanel.openAnimations, wordMenuCloseAnimations: wordPanel.closeAnimations, noteDirty: noteDirty, noteSaving: noteSaving, progressRevision: bookRevision, progressConflict: progressConflict, wordToolsShortcut: "Ctrl+Space", wordMenuWidth: wordPanel.width, wordMenuHeight: wordPanel.height, typingPanelWidth: menuAnchorItem.width, typingPanelHeight: menuAnchorItem.height, notebookMode: notebookMode, notebookCreating: notebookCreating, notesSection: notebookFilter, definitionsEnabled: definitionsEnabled, notedWordCount: notedTerms.length, practicing: practicing, fullscreen: fullscreen, pageLines: pageLayout.lines, pageLineLimit: pageLineLimit, passageHeight: passageArea.height, renderedHeight: passageFlow.height, fontSize: readingFont.pixelSize, layoutVersion: 9, previousPages: pageHistory.length, activeEffects: activeEffects, effectKind: effectKind, lineTransitions: lineTransitions, pageTransitions: pageTransitions, motionEnabled: Motion.enabled, feedbackEvents: feedbackEvents, focused: answer.activeFocus, turningPage: turningPage, textLength: bookLength,
-            typed: answer.text.length, position: position, rounds: rounds,
+            typed: answer.text.length, selectedCharacters: answer.selectedText.length, position: position, rounds: rounds,
             presets: TypingTexts.passages.length, message: message, busy: busy,
             title: bookTitle, chapters: chapters.length, library: library.length, books: libraryBooks.length, wpm: liveWpm, filePickerActive: filePickerActive});
     }
@@ -1048,6 +1048,29 @@ Item {
             if (!paste.text.trim().length) { message = "Add some text or import a book first."; return; }
             send({action: "add", title: draftTitle, text: paste.text, kind: draftKind});
         } else { practicing = true; root.focusPassage(); }
+    }
+    function handleTypingEditKey(event) {
+        // Selection is invisible in this capture editor; never let it replace
+        // the whole typed prefix when a printable key arrives.
+        if (event.key === Qt.Key_A && (event.modifiers & (Qt.ControlModifier | Qt.MetaModifier))) return true;
+        if (busy || restoring || readingMode || (event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier))) return false;
+        if (event.text.length && event.text.charCodeAt(0) >= 32) {
+            const cursor = answer.selectionStart !== answer.selectionEnd ? answer.selectionEnd : answer.cursorPosition;
+            answer.deselect();
+            answer.insert(cursor, event.text);
+            answer.cursorPosition = cursor + event.text.length;
+            return true;
+        }
+        if (event.key === Qt.Key_Backspace && answer.selectionStart !== answer.selectionEnd) {
+            const cursor = answer.selectionEnd;
+            const preceding = characters(answer.text.slice(0, cursor));
+            const length = preceding.length ? preceding[preceding.length - 1].length : 0;
+            answer.deselect();
+            if (length) answer.remove(cursor - length, cursor);
+            answer.cursorPosition = Math.max(0, cursor - length);
+            return true;
+        }
+        return false;
     }
     function handleWhitespaceKey(event) {
         if (busy || (event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier))) return false;
@@ -2290,7 +2313,7 @@ Item {
                             }
                             Keys.onPressed: event => {
                                 if (event.key === Qt.Key_F11) { root.toggleFullscreen(); event.accepted = true; return; }
-                                if (root.handleWhitespaceKey(event)) { event.accepted = true; return; }
+                                if (root.handleWhitespaceKey(event) || root.handleTypingEditKey(event)) { event.accepted = true; return; }
                                 if (!root.turningPage || (event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier))) return;
                                 if (event.key === Qt.Key_Backspace) { if (root.pendingKeys.length) root.undoQueuedKey(); event.accepted = true; }
                                 else if (event.key === Qt.Key_Tab || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {

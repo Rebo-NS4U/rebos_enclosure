@@ -113,6 +113,9 @@ and partial input are mapped to the formatted target without changing book
 identity or source positions. Backspace edits text and does not jump to an
 earlier window. Saved-progress revisions reject writes from an outdated view;
 a conflict asks you to reopen the book instead of overwriting newer progress.
+The invisible typing input ignores Select All. Printable keys, including
+Shift+A, preserve existing text even if an old keyboard selection remains;
+Backspace cannot delete that entire hidden selection.
 
 Open typing with its keyboard shortcut or `qs ipc call typing toggle`. Typing
 replaces the expanded bar contents, using the same input and dismissal behavior
