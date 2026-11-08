@@ -49,7 +49,7 @@ Item {
                 background: StyledRect {
                     id: buttonBg
                     readonly property color textColor: root.urgency === NotificationUrgency.Critical
-                        ? Colors.shadow
+                        ? Colors.overError
                         : buttonBg.item
 
                     variant: root.urgency === NotificationUrgency.Critical

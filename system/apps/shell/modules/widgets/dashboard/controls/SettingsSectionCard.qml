@@ -8,6 +8,7 @@ import qs.modules.theme
 Button {
     id: root
     focusPolicy: Qt.StrongFocus
+    opacity: enabled ? 1 : 0.45
     Accessible.name: text
     property string description: ""
     property string glyph: ""

@@ -12,12 +12,14 @@ Button {
     implicitWidth: action.unit * 2.5
     implicitHeight: implicitWidth
     hoverEnabled: true
+    focusPolicy: Qt.StrongFocus
+    opacity: enabled ? 1 : 0.45
     Accessible.name: label
     scale: pressed ? 0.93 : 1
     background: StyledRect {
         variant: action.hovered || action.activeFocus ? "focus" : "common"
         radius: Styling.radius(0)
-        border.width: action.activeFocus ? 1 : 0
+        border.width: action.activeFocus ? 2 : 1
         border.color: Colors.primary
     }
     contentItem: StyledText {

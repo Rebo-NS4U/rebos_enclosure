@@ -179,7 +179,7 @@ ColumnLayout {
                 color: Colors.outline
                 wrapMode: Text.WordWrap
             }
-            Button {
+            ThemeButton {
                 Layout.fillWidth: true
                 visible: !Ai.activeSession.sessionReady
                 enabled: !Ai.activeSession.isBusy && !Ai.activeSession.statusText

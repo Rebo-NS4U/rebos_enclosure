@@ -54,3 +54,9 @@ Shell sliders share round 16px handles, themed 4px tracks, keyboard focus and
 disabled styling. Settings, palette opacity and reading controls use the same
 appearance. Arrow keys adjust values; Home and End reach their limits. Existing
 media controls retain their release-to-seek behavior and animated waveform.
+
+A shell-wide source audit checks every direct Qt button and slider for themed
+surfaces and labels/handles (`python3 desktop/tests/test_shell_control_styles.py`).
+Fan controls and model loading share the shell action style. Notification error
+actions use the error foreground role; shared actions include visible focus and
+disabled states. Color swatches retain their exact colors with empty labels.

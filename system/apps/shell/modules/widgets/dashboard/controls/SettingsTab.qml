@@ -665,7 +665,7 @@ Item {
                         text: modelData.label
                         highlighted: root.currentSection === modelData.section
                         background: StyledRect {
-                            variant: parent.highlighted ? "focus" : "common"
+                            variant: parent.highlighted ? "primary" : "common"
                             radius: Styling.radius(-4)
                             border.width: parent.highlighted || parent.activeFocus ? 2 : 1
                             border.color: parent.highlighted || parent.activeFocus ? Colors.primary : Qt.alpha(Colors.outline, 0.3)

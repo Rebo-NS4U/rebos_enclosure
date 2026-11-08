@@ -26,7 +26,7 @@ Button {
     background: StyledRect {
         id: buttonBg
         readonly property color iconColor: root.urgency === NotificationUrgency.Critical
-            ? Colors.shadow
+            ? Colors.overError
             : (root.pressed ? Colors.overError : Colors.error)
 
         variant: root.urgency === NotificationUrgency.Critical

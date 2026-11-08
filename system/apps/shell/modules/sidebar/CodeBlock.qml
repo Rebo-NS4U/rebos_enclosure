@@ -55,6 +55,8 @@ ColumnLayout {
                 Layout.preferredWidth: 24
                 Layout.preferredHeight: 24
                 flat: true
+                focusPolicy: Qt.StrongFocus
+                Accessible.name: "Copy code"
                 padding: 0
 
                 contentItem: Text {
@@ -66,7 +68,12 @@ ColumnLayout {
                     verticalAlignment: Text.AlignVCenter
                 }
 
-                background: null
+                background: StyledRect {
+                    variant: parent.hovered || parent.down ? "focus" : "transparent"
+                    border.width: parent.activeFocus ? 2 : 0
+                    border.color: Colors.primary
+                    radius: Styling.radius(-4)
+                }
 
                 onClicked: {
                     let p = Qt.createQmlObject('import Quickshell; import Quickshell.Io; Process { command: ["wl-copy", "' + root.code.replace(/"/g, '\\"') + '"] }', parent);

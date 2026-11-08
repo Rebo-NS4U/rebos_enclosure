@@ -69,6 +69,8 @@ ColumnLayout {
                 implicitWidth: Styling.fontSize(0) * 2.5
                 implicitHeight: implicitWidth
                 Accessible.name: "Tint wallpaper " + modelData
+                focusPolicy: Qt.StrongFocus
+                contentItem: Item {}
                 StyledToolTip {
                     show: swatch.hovered
                     tooltipText: swatch.modelData

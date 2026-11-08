@@ -440,7 +440,7 @@ Item {
                         background: StyledRect {
                             id: delegateBtnBg
                             readonly property bool isCritical: latestNotification && NotificationUtils.isCriticalUrgency(latestNotification?.urgency)
-                            readonly property color textColor: isCritical ? Colors.shadow : delegateBtnBg.item
+                            readonly property color textColor: isCritical ? Colors.overError : delegateBtnBg.item
 
                             variant: isCritical
                                 ? "error"

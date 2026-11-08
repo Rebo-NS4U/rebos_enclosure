@@ -69,7 +69,7 @@ FloatingWindow {
             RowLayout {
                 Layout.fillWidth: true
                 StyledText { text: "Cooling"; font.pixelSize: Styling.fontSize(6); font.bold: true; Layout.fillWidth: true }
-                Button { text: "Close"; onClicked: root.visible = false }
+                ThemeButton { text: "Close"; onClicked: root.visible = false }
             }
             StyledRect {
                 Layout.fillWidth: true
@@ -88,8 +88,8 @@ FloatingWindow {
                     }
                     RowLayout {
                         Layout.fillWidth: true
-                        Button { text: "Stop fans"; Layout.fillWidth: true; enabled: !root.busy && !!root.reading.level; onClicked: root.change("off") }
-                        Button { text: "Automatic"; Layout.fillWidth: true; enabled: !root.busy && !!root.reading.level; onClicked: root.change("auto") }
+                        ThemeButton { text: "Stop fans"; Layout.fillWidth: true; enabled: !root.busy && !!root.reading.level; onClicked: root.change("off") }
+                        ThemeButton { text: "Automatic"; Layout.fillWidth: true; enabled: !root.busy && !!root.reading.level; onClicked: root.change("auto") }
                     }
                 }
             }
