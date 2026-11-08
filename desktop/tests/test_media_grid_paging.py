@@ -8,7 +8,7 @@ import unittest
 class MediaGridPagingTests(unittest.TestCase):
     @unittest.skipUnless(shutil.which('node'), 'Node required')
     def test_fills_viewport_after_first_page_resize_and_scroll(self):
-        source = Path(__file__).resolve().parents[2] / 'system/apps/shell/MediaGridPaging.js'
+        source = Path(__file__).resolve().parents[2] / 'system/apps/media/ui/MediaGridPaging.js'
         harness = r'''
 const fs = require('fs'), vm = require('vm'), assert = require('assert');
 const context = {};

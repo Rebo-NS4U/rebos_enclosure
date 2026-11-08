@@ -112,7 +112,6 @@ PanelWindow {
     function toggle(): void {
         if (opened) { opened = false; return; }
         screenName = NiriService.focusedMonitor?.name ?? Quickshell.screens[0]?.name ?? "";
-        Visibilities.setActiveModule("");
         opened = true;
         backendStarted = true;
         if (ready && shows.count === 0 && !loading) load(false);
@@ -445,7 +444,7 @@ PanelWindow {
     }
     Process {
         id: backend
-        command: ["python", "-u", Quickshell.env("HOME") + "/code/anime-streamer/menu_client.py"]
+        command: ["python", "-u", Quickshell.env("REBOS_STREAMER_ROOT") + "/menu_client.py"]
         stdinEnabled: true
         running: root.backendStarted
         stdout: SplitParser { onRead: line => root.receive(line) }

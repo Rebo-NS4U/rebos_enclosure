@@ -18,7 +18,6 @@ import qs.config
 ShellRoot {
     id: root
 
-    AnimeMenu {}
 
     // Keep the inherited wallpaper owner: it also provides the wallpaper
     // manager used by the lockscreen.

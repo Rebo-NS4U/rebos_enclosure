@@ -81,7 +81,7 @@ class InstallFlowTests(unittest.TestCase):
             self.assertTrue((ROOT / 'system/apps/assistant/shell.qml').is_file())
             self.assertTrue((home / 'code/rebos-assistant/shell.qml').is_file())
             for relative in ('code/anime-streamer/menu_client.py',
-                             '.config/quickshell/AnimeMenu.qml', '.local/bin/ani-cli',
+                             'code/anime-streamer/ui/AnimeMenu.qml', '.local/bin/ani-cli',
                              '.local/bin/rebos-assistant', '.local/bin/anime-streamer'):
                 self.assertTrue((home / relative).is_file(), relative)
             media_service = (home / '.config/systemd/user/anime-streamer.service').read_text()

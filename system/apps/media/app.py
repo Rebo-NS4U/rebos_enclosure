@@ -101,7 +101,7 @@ def validate_filters(filters):
 
 def ani_bridge(action, show_id, episode='', mode='sub', quality='best'):
     # Reuse upstream functions without running its interactive main program.
-    source = (ROOT / '.local/bin/ani-cli').read_text()
+    source = Path(__file__).with_name('vendor').joinpath('ani-cli').read_text()
     functions = source.split('# MAIN')[0]
     required = ('hianime_episodes()', 'hianime_m3u8()', 'select_quality()')
     if not all(item in functions for item in required):

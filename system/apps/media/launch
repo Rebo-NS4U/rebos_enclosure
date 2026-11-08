@@ -1,0 +1,6 @@
+#!/bin/sh
+set -eu
+app_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+export REBOS_STREAMER_ROOT="$app_dir"
+if qs ipc -p "$app_dir/ui" call anime toggle 2>/dev/null; then exit 0; fi
+exec qs -n -p "$app_dir/ui" "$@"
