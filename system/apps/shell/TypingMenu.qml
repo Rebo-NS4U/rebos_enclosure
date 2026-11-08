@@ -315,6 +315,12 @@ Item {
             send({action: "word", id: wordBookId, term: selectedTerm}, false);
         } else send({action: "words", id: wordBookId}, false);
     }
+    Shortcut {
+        sequences: ["Ctrl+S", "Ctrl+Return"]
+        context: Qt.ApplicationShortcut
+        enabled: root.visible && wordPanel.opened && root.editingWordNote && root.noteLoaded && root.noteDirty && !root.noteSaving && wordNote.length <= 10000
+        onActivated: root.saveWordNote()
+    }
     function saveWordNote() {
         if (!noteLoaded || noteSaving) return;
         noteSaving = true; wordMessage = "Saving…";
@@ -1186,9 +1192,11 @@ Item {
         anchor.rect.y: root.menuAnchorItem.height + 6
         anchor.rect.width: 0
         anchor.rect.height: 0
-        implicitWidth: Math.max(1, root.notebookMode || root.editingWordNote ? root.menuAnchorItem.width : Math.min(520, root.menuAnchorItem.width))
-        implicitHeight: Math.max(1, root.notebookMode || root.editingWordNote ? root.menuAnchorItem.height
-            : Math.min(root.menuAnchorItem.height, wordPanelHeader.implicitHeight + wordContent.implicitHeight + 30))
+        implicitWidth: Math.max(1, Math.min(root.notebookMode ? (root.fullscreen ? 900 : 640) : 520, root.menuAnchorItem.width))
+        implicitHeight: Math.max(1, Math.min(root.menuAnchorItem.height,
+            root.editingWordNote ? (root.fullscreen ? 640 : 440)
+            : Math.min(root.notebookMode ? (root.fullscreen ? 640 : 480) : Infinity,
+                wordPanelHeader.implicitHeight + notebookToolbar.implicitHeight + wordContent.implicitHeight + 36)))
         color: "transparent"
         visible: false
         property bool opened: false
@@ -1266,12 +1274,11 @@ Item {
                         ColumnLayout {
                             Layout.fillWidth: true
                             spacing: 4
-                            StyledText { visible: root.readingMode && root.notebookMode; text: root.notebookMode ? "BOOK NOTEBOOK" : "WORD NOTES"; font.pixelSize: 10; font.letterSpacing: 2; color: Colors.primary }
                             StyledText {
-                                text: root.notebookBrowsing ? "Book notes" : (root.notebookCreating ? "New note" : (root.selectedTerm || "Word lookup"))
+                                text: root.notebookBrowsing ? "Notes · " + root.visibleNoteEntries.length : (root.notebookCreating ? "New note" : (root.selectedTerm || "Word lookup"))
                                 textFormat: Text.PlainText
                                 font.family: Config.theme.font
-                                font.pixelSize: root.fullscreen ? 24 : 16
+                                font.pixelSize: root.fullscreen ? 20 : 16
                                 font.weight: Font.DemiBold
                                 Layout.fillWidth: true
                                 elide: Text.ElideRight
@@ -1280,17 +1287,10 @@ Item {
                         }
                         TextButton { text: "Close"; enabled: !root.noteDirty && !root.noteSaving; onClicked: wordPanel.close() }
                     }
-                    ScrollView {
-                        objectName: "typing-word-scroll"
+                    ColumnLayout {
+                        id: notebookToolbar
                         Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        clip: true
-                        contentWidth: availableWidth
-                        ColumnLayout {
-                            id: wordContent
-                            width: wordPanel.availableWidth - 12
-                            spacing: 6
-                            Keys.onEscapePressed: event => { root.handleEscape(); event.accepted = true; }
+                        spacing: 6
                             RowLayout {
                                 objectName: "typing-word-search"
                                 visible: root.notebookBrowsing || root.notebookCreating || (root.wordOptionsExpanded && !root.notebookMode)
@@ -1300,9 +1300,9 @@ Item {
                                     objectName: "typing-word-term"
                                     Layout.fillWidth: true
                                     maximumLength: 120
-                                    implicitHeight: 48
-                                    padding: 12
-                                    placeholderText: root.notebookBrowsing ? "Search your notes" : (root.notebookCreating ? "Title, e.g. Elliot or the missing letter" : "Word to look up")
+                                    implicitHeight: 40
+                                    padding: 10
+                                    placeholderText: root.notebookBrowsing ? "Search your notes" : (root.notebookCreating ? "Note title" : "Word to look up")
                                     color: Colors.overSurface
                                     font: Qt.font({family: Config.theme.font, pixelSize: root.fullscreen ? 16 : root.readingFont.pixelSize})
                                     placeholderTextColor: Qt.alpha(Colors.overSurface, 0.35)
@@ -1320,7 +1320,6 @@ Item {
                                     onClicked: { if (root.notebookBrowsing) root.beginNotebookNote(); else if (root.notebookCreating) root.openNotebookEntry(termInput.text); else root.openWord(termInput.text); }
                                 }
                             }
-                            StyledText { visible: root.notebookCreating; text: "Choose a section"; font.pixelSize: 12 }
                             ThemeSelect {
                                 visible: root.notebookCreating
                                 Layout.fillWidth: true
@@ -1349,25 +1348,30 @@ Item {
                                     }
                                 }
                             }
-                            RowLayout {
-                                visible: root.readingMode && root.notebookBrowsing
-                                Layout.fillWidth: true
-                                Layout.topMargin: 8
-                                StyledText { text: root.notebookFilter === "All" ? "All notes" : root.notebookFilter; font.pixelSize: 22; font.weight: Font.DemiBold; Layout.fillWidth: true }
-                                StyledText { text: root.visibleNoteEntries.length + (root.visibleNoteEntries.length === 1 ? " note" : " notes"); font.pixelSize: 12; opacity: 0.5 }
-                            }
+                    }
+                    ScrollView {
+                        objectName: "typing-word-scroll"
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        clip: true
+                        contentWidth: availableWidth
+                        ColumnLayout {
+                            id: wordContent
+                            width: wordPanel.availableWidth - 12
+                            spacing: 6
+                            Keys.onEscapePressed: event => { root.handleEscape(); event.accepted = true; }
                             GridLayout {
                                 id: notesGrid
                                 objectName: "typing-notebook-entries"
                                 columns: root.fullscreen && wordPanel.width >= 760 ? 2 : 1
-                                columnSpacing: 12
-                                rowSpacing: 12
+                                columnSpacing: 8
+                                rowSpacing: 8
                                 visible: root.notebookBrowsing
                                 Layout.fillWidth: true
                                 StyledText {
                                     Layout.columnSpan: notesGrid.columns
                                     visible: root.visibleNoteEntries.length === 0
-                                    text: termInput.text.trim() ? "No matching notes. Try another search." : "No notes in this section. Choose New note to start."
+                                    text: termInput.text.trim() ? "No matching notes" : "No notes yet"
                                     font.pixelSize: 12
                                     wrapMode: Text.Wrap
                                     Layout.fillWidth: true
@@ -1379,7 +1383,7 @@ Item {
                                         required property var modelData
                                         objectName: "typing-notebook-entry-" + modelData.term
                                         Layout.fillWidth: true
-                                        implicitHeight: Math.max(root.fullscreen ? 120 : 86, entryContent.implicitHeight + 28)
+                                        implicitHeight: entryContent.implicitHeight + 20
                                         variant: "pane"
                                         radius: Config.roundness
                                         backgroundOpacity: entryHover.hovered || activeFocus ? 0.75 : 0.4
@@ -1396,11 +1400,14 @@ Item {
                                             anchors.left: parent.left
                                             anchors.right: parent.right
                                             anchors.top: parent.top
-                                            anchors.margins: 14
-                                            spacing: 8
-                                            StyledText { text: notebookEntryCard.modelData.category.toUpperCase(); color: Colors.primary; font.pixelSize: 10; font.letterSpacing: 0; Layout.fillWidth: true }
-                                            StyledText { text: notebookEntryCard.modelData.term; textFormat: Text.PlainText; font.pixelSize: root.fullscreen ? 18 : 14; font.weight: Font.DemiBold; elide: Text.ElideRight; Layout.fillWidth: true }
-                                            StyledText { text: notebookEntryCard.modelData.note; textFormat: Text.PlainText; opacity: 0.65; font.pixelSize: root.fullscreen ? 14 : 12; wrapMode: Text.Wrap; maximumLineCount: 3; elide: Text.ElideRight; Layout.fillWidth: true }
+                                            anchors.margins: 10
+                                            spacing: 4
+                                            RowLayout {
+                                                Layout.fillWidth: true
+                                                StyledText { text: notebookEntryCard.modelData.term; textFormat: Text.PlainText; font.pixelSize: 14; font.weight: Font.DemiBold; elide: Text.ElideRight; Layout.fillWidth: true; Layout.minimumWidth: 0 }
+                                                StyledText { text: notebookEntryCard.modelData.category; color: Colors.primary; font.pixelSize: 10 }
+                                            }
+                                            StyledText { text: notebookEntryCard.modelData.note; textFormat: Text.PlainText; opacity: 0.65; font.pixelSize: root.fullscreen ? 14 : 12; wrapMode: Text.Wrap; maximumLineCount: 2; elide: Text.ElideRight; Layout.fillWidth: true }
                                         }
                                     }
                                 }
@@ -1495,12 +1502,16 @@ Item {
                                 onClicked: { wordNote.text = root.notePrompt + "\n"; wordNote.forceActiveFocus(); }
                             }
                             ScrollView {
+                                id: noteEditorScroll
+                                contentWidth: availableWidth
                                 visible: root.editingWordNote
                                 Layout.fillWidth: true
-                                Layout.preferredHeight: root.fullscreen ? Math.max(160, Math.min(420, wordPanel.height * 0.35)) : 110
+                                Layout.preferredHeight: Math.max(100, wordPanel.height - wordPanelHeader.implicitHeight - notebookToolbar.implicitHeight - 150)
                                 Layout.minimumHeight: 55
                                 TextArea {
                                     id: wordNote
+                                    width: noteEditorScroll.availableWidth
+                                    implicitWidth: 0
                                     objectName: "typing-word-note"
                                     enabled: root.noteLoaded && !root.noteSaving
                                     textFormat: TextEdit.PlainText
@@ -1532,7 +1543,7 @@ Item {
                         Layout.fillWidth: true
                         StyledText { text: root.noteSaving ? "Saving…" : (root.noteDirty ? "Unsaved changes" : ""); font.pixelSize: 11; Layout.fillWidth: true }
                         TextButton { objectName: "typing-cancel-note-edit"; text: "Cancel"; enabled: !root.noteSaving; onClicked: root.cancelNoteEdit() }
-                        PrimaryTextButton { objectName: "typing-save-word-note"; text: "Save note"; enabled: root.noteLoaded && root.noteDirty && !root.noteSaving && wordNote.length <= 10000; onClicked: root.saveWordNote() }
+                        PrimaryTextButton { objectName: "typing-save-word-note"; text: "Save"; enabled: root.noteLoaded && root.noteDirty && !root.noteSaving && wordNote.length <= 10000; onClicked: root.saveWordNote() }
                     }
                 }
             }

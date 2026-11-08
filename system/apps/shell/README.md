@@ -282,4 +282,8 @@ online dictionary switch. Selecting another word clears the previous results;
 closing the popup cancels the dictionary request.
 
 Word lookups use a content-sized popup capped at 520px wide; longer results scroll.
-Notebook browsing and note editing retain the larger workspace.
+Notes use a compact browser (up to 640px wide, 900px in fullscreen) with search
+and section filters pinned above the results. Cards show title, category, and a
+two-line preview. The editor gives the note more room while keeping Save and
+Cancel visible; Ctrl+S or Ctrl+Enter saves. Popup sizes stay within the typing
+workspace, and long lists scroll.
