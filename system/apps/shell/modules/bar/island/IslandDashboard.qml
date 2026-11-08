@@ -27,7 +27,6 @@ Item {
     implicitWidth: 420
     implicitHeight: mainColumn.implicitHeight + 28
 
-    signal openTyping()
     signal openPower()
     signal openSound()
     signal openMic()
@@ -130,19 +129,6 @@ Item {
         // ═══════════════════════════════════════════════════════════════
         // HEADER: CLOCK, WEATHER & UTILITIES
         // ═══════════════════════════════════════════════════════════════
-        Button {
-            text: "Typing practice →"
-            Layout.fillWidth: true
-            implicitHeight: 36
-            background: Item {}
-            contentItem: StyledText {
-                text: parent.text
-                opacity: parent.hovered || parent.activeFocus ? 1 : 0.65
-                horizontalAlignment: Text.AlignRight
-                verticalAlignment: Text.AlignVCenter
-            }
-            onClicked: root.openTyping()
-        }
         StyledRect {
             objectName: "dashboardOverview"
             Layout.fillWidth: true

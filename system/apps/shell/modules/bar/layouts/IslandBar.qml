@@ -1057,7 +1057,6 @@ Item {
                     }
                 }
 
-                onOpenTyping: { root.expand("typing"); typingView.reopen(); }
                 onOpenPower: root.currentMode = "power"
                 onOpenSound: root.currentMode = "sound"
                 onOpenMic: root.currentMode = "mic"

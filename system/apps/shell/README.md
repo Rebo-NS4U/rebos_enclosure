@@ -97,7 +97,7 @@ later. See [LICENSE](./LICENSE).
 
 ### Continuous typing dropdown
 
-Open the island bar's control panel and choose **Typing practice →**. Typing
+Open typing with its keyboard shortcut or `qs ipc call typing toggle`. Typing
 replaces the expanded bar contents, using the same input and dismissal behavior
 as its other panels. The compact typing surface uses a faint glass fill, soft blur and a subtle rim;
 controls are text only. The typing panel fits around seven rows total, including blank rows above and below the text, with only
