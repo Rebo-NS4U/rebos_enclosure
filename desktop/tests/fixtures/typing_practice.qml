@@ -612,7 +612,7 @@ ShellRoot {
                     // Start reader navigation where multiple pages remain.
                     restored.seek(0);
                     expectedPosition = 0;
-                    restored.toggleFullscreen();
+                    restored.toggleReadingMode(); restored.toggleFullscreen();
                 } else if (phase === 124) {
                     const restored = freshView.item;
                     const reader = find(restored, "reader-page-text");
@@ -669,7 +669,8 @@ ShellRoot {
                     if (restored.busy) return;
                     if (restored.currentChapterIndex !== harness.readerChapter) throw Error("k did not return to the previous chapter");
                     restored.handleEscape();
-                    if (restored.fullscreen || !find(restored, "typing-input").visible) throw Error("Escape did not restore typing mode");
+                    if (restored.fullscreen || !restored.readingMode) throw Error("Escape did not preserve compact reading mode");
+                    restored.toggleReadingMode();
                     restored.showLibrary();
                     const oldId = restored.bookId;
                     keyDriver.wait(40);

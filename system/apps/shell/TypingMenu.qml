@@ -16,15 +16,22 @@ Item {
     id: root
     signal backRequested()
     property bool practicing: false
+    property bool readingMode: false
     property bool fullscreen: false
+    onFullscreenChanged: {
+        readerPageHistory = [];
+        stopFeedback();
+        fitDelay.restart();
+        if (practicing) Qt.callLater(() => root.focusPassage());
+    }
     readonly property real passageLineHeight: Math.ceil(typingMetrics.height * 1.45)
     // Match the rich-text reader spacing rather than the tighter typing rows.
     readonly property real readerLineHeight: Math.ceil(typingMetrics.height * 1.55)
-    readonly property int pageLineLimit: fullscreen
+    readonly property int pageLineLimit: readingMode
         ? Math.max(1, Math.floor(Math.max(0, passageArea.height - 8) / Math.max(1, readerLineHeight)))
         : 7
     // Keep both layout and delivery bounded; typing rolls overlapping windows.
-    readonly property int layoutLineLimit: fullscreen ? Math.max(1, Math.min(36, pageLineLimit)) : 36
+    readonly property int layoutLineLimit: readingMode ? Math.max(1, Math.min(36, pageLineLimit)) : 36
     onPageLineLimitChanged: fitDelay.restart()
     onReadingFontChanged: { widthCache = ({}); fitDelay.restart(); }
     property var readerPageHistory: []
@@ -32,14 +39,18 @@ Item {
     property int readerDirection: 1
     property int readerAnimationEvents: 0
     property bool readerHelp: false
-    onFullscreenChanged: {
+    onReadingModeChanged: {
+        readerPageHistory = [];
+        stopFeedback();
+        fitDelay.restart();
+        if (practicing) Qt.callLater(() => root.focusPassage());
         readerRevealAnimation.stop(); readerReveal = 1; readerHelp = false;
-        if (fullscreen) Qt.callLater(() => animateReaderPage(1));
+        if (readingMode) Qt.callLater(() => animateReaderPage(1));
     }
     function animateReaderPage(direction) {
         readerRevealAnimation.stop();
         readerReveal = 1;
-        if (!fullscreen || !Motion.enabled) return;
+        if (!readingMode || !Motion.enabled) return;
         readerDirection = direction; readerReveal = 0; readerAnimationEvents++;
         readerRevealAnimation.start();
     }
@@ -69,27 +80,30 @@ Item {
         else return false;
         return true;
     }
-    function toggleFullscreen() {
+    function toggleReadingMode() {
         saveProgress();
         readerPageHistory = [];
-        fullscreen = !fullscreen;
+        readingMode = !readingMode;
         stopFeedback();
         fitDelay.restart();
         if (practicing) Qt.callLater(() => root.focusPassage());
     }
+    function toggleFullscreen() {
+        fullscreen = !fullscreen;
+    }
     function focusPassage() {
-        if (fullscreen) readerText.forceActiveFocus();
+        if (readingMode) readerText.forceActiveFocus();
         else answer.forceActiveFocus();
     }
     function readNextPage() {
-        if (!fullscreen || busy || !bookId || !passage.length) return;
+        if (!readingMode || busy || !bookId || !passage.length) return;
         const next = position + characters(passage).length;
         if (next >= bookLength) return;
         readerPageHistory = readerPageHistory.concat([position]);
         seek(next, true);
     }
     function readPreviousPage() {
-        if (!fullscreen || busy || !bookId || position <= 0) return;
+        if (!readingMode || busy || !bookId || position <= 0) return;
         if (readerPageHistory.length) {
             const previous = readerPageHistory[readerPageHistory.length - 1];
             readerPageHistory = readerPageHistory.slice(0, -1);
@@ -109,8 +123,8 @@ Item {
     }
     function handleEscape() {
         if (wordPanel.opened) { if (!noteDirty && !noteSaving) wordPanel.close(); else wordMessage = "Save or cancel your changes before returning to reading."; return; }
-        if (fullscreen && readerHelp) { readerHelp = false; return; }
-        if (fullscreen) { fullscreen = false; fitDelay.restart(); if (practicing) root.focusPassage(); }
+        if (readingMode && readerHelp) { readerHelp = false; return; }
+        if (fullscreen) { fullscreen = false; }
         else goBack();
     }
     property bool filePickerActive: false
@@ -218,7 +232,7 @@ Item {
     }
     function openCurrentWord() {
         if (wordPanel.opened) { handleEscape(); return; }
-        if (fullscreen) { openWord(readerText.selectedText || readingWordAt(readerText.cursorPosition)); return; }
+        if (readingMode) { openWord(readerText.selectedText || readingWordAt(readerText.cursorPosition)); return; }
         const item = currentWordItem();
         if (item) openWord(item.modelData.text);
     }
@@ -335,7 +349,7 @@ Item {
     property string fittedSource: ""
     property string fittedGeometry: ""
     function pageGeometry() {
-        return [passageFlow.width, layoutLineLimit, fullscreen ? readerText.height : 0,
+        return [passageFlow.width, layoutLineLimit, readingMode ? readerText.height : 0,
             readingFont.family, readingFont.pixelSize].join("|");
     }
     property int pageFits: 0
@@ -350,7 +364,7 @@ Item {
         }
         let limit = layoutLineLimit;
         let fitted = TypingPaging.layout(pageSource, Math.max(1, passageFlow.width), characterWidth, limit);
-        if (fullscreen && readerText.height > 0) {
+        if (readingMode && readerText.height > 0) {
             // Qt rich-text wrapping can differ from the typing word rows.
             // Measure the actual renderer before accepting a page.
             readerMeasure.text = readerHtml(fitted.text);
@@ -388,7 +402,7 @@ Item {
             if (!root.visible || !root.practicing || passageArea.width <= 0 || passageArea.height <= 0
                     || root.restoring || !root.pageSource.length) return;
             if (root.fittedSource !== root.pageSource || root.fittedGeometry !== root.pageGeometry()) root.fitPage();
-            if (!root.fullscreen && root.bookId && root.characters(answer.text).length >= root.characters(root.passage).length)
+            if (!root.readingMode && root.bookId && root.characters(answer.text).length >= root.characters(root.passage).length)
                 root.advance();
         }
     }
@@ -405,7 +419,7 @@ Item {
     property var animationTiming: ({frames: 0, averageMs: 0, maxMs: 0, over50Ms: 0})
     FrameAnimation {
         id: animationProbe
-        running: root.visible && root.practicing && !root.fullscreen && root.activeEffects > 0
+        running: root.visible && root.practicing && !root.readingMode && root.activeEffects > 0
         property bool skipFrame: true
         property int samples: 0
         property real totalMs: 0
@@ -541,7 +555,7 @@ Item {
     function syncCaret() {
         const previous = renderedCaret;
         // Move the viewport before creating glyphs for a distant cursor jump.
-        if (practicing && !fullscreen) {
+        if (practicing && !readingMode) {
             const words = pageLayout.words;
             let low = 0, high = words.length - 1, line = 0;
             while (low <= high) {
@@ -608,7 +622,7 @@ Item {
     Timer {
         interval: 500
         repeat: true
-        running: root.visible && root.practicing && !root.fullscreen && !root.busy && answer.activeFocus
+        running: root.visible && root.practicing && !root.readingMode && !root.busy && answer.activeFocus
         onTriggered: {
             root.speedNow = Date.now();
             root.speedState = TypingSpeed.tick(root.speedState, root.speedNow, true);
@@ -678,7 +692,7 @@ Item {
                     selectedTerm = ""; wordBookId = ""; savedWordNote = ""; wordNote.text = "";
                     noteCategory = "General"; savedNoteCategory = "General"; notedTerms = []; noteEntries = [];
                     noteLoaded = false; editingWordNote = false; notebookMode = false;
-                    practicing = false; fullscreen = false; draft = false; restoring = false;
+                    practicing = false; fullscreen = false; readingMode = false; draft = false; restoring = false;
                     resetPageCaret(); resetSpeed();
                 }
                 message = "Book removed from your library.";
@@ -721,7 +735,7 @@ Item {
                 }
                 send({action: "previous", id: bookId, resolved: true,
                     position: data.previousStart + characters(data.previousText.slice(0, last)).length,
-                    typed: fullscreen ? "" : characters(text).slice(0, -1).join(""), loops: data.loops});
+                    typed: readingMode ? "" : characters(text).slice(0, -1).join(""), loops: data.loops});
                 return;
             }
             if (data.empty) { busy = false; practicing = false; return; }
@@ -738,7 +752,7 @@ Item {
             data.typed = prepared.text;
             const entered = characters(data.typed);
             const pageCount = characters(fitted.text).length;
-            if (!fullscreen && data.action !== "next" && data.action !== "previous" && pageCount > 0 && entered.length >= pageCount && !prepared.pending) {
+            if (!readingMode && data.action !== "next" && data.action !== "previous" && pageCount > 0 && entered.length >= pageCount && !prepared.pending) {
                 restoreAction = data.action;
                 restoreChapters = data.chapters || chapters;
                 const next = data.position + pageCount;
@@ -747,7 +761,7 @@ Item {
                 return;
             }
             restoreAction = ""; restoreChapters = [];
-            if (data.action === "next" && !fullscreen) {
+            if (data.action === "next" && !readingMode) {
                 speedCommitted += Math.max(0, correctCount() - speedBaseline);
                 speedBaseline = 0;
                 speedState = TypingSpeed.pause(speedState);
@@ -773,9 +787,9 @@ Item {
             if (continuingWindow) speedBaseline = correctCount();
             dirty = false; draft = false; busy = false; restoring = false;
             turningPage = false;
-            if (fullscreen && readerMoved) animateReaderPage(revealDirection);
+            if (readingMode && readerMoved) animateReaderPage(revealDirection);
             if (data.action === "next" || data.action === "previous") {
-                if (Motion.enabled && visible && practicing && (fullscreen || oldChapterStart !== chapterStart)) requestFeedback("page");
+                if (Motion.enabled && visible && practicing && (readingMode || oldChapterStart !== chapterStart)) requestFeedback("page");
                 const buffered = pendingKeys; pendingKeys = "";
                 if (buffered.length) Qt.callLater(() => {
                     answer.text = data.action === "previous" || continuingWindow ? answer.text + buffered : buffered; answer.cursorPosition = answer.length;
@@ -798,7 +812,7 @@ Item {
     Timer { interval: 5000; running: root.backendStarted; repeat: true; onTriggered: root.saveProgress() }
 
     function status() {
-        return JSON.stringify({animationTiming: animationTiming, animationDuration: Motion.base, glyphCount: Object.keys(glyphItems).length, wordCount: pageLayout.words.length, widthCacheSize: Object.keys(widthCache).length, pageFits: pageFits, loadedCharacters: pageSource.length, readingMode: fullscreen, readerAnimationEvents: readerAnimationEvents, readerMotionEnabled: Motion.enabled, chapterCardVisible: chapterCard.visible || typingChapterCard.visible, chapterTitle: chapterTitle, wordToolsOpen: wordPanel.opened, wordMenuReveal: wordPanel.reveal, wordMenuOpenAnimations: wordPanel.openAnimations, wordMenuCloseAnimations: wordPanel.closeAnimations, noteDirty: noteDirty, noteSaving: noteSaving, wordToolsShortcut: "Ctrl+Space", wordMenuWidth: wordPanel.width, wordMenuHeight: wordPanel.height, typingPanelWidth: menuAnchorItem.width, typingPanelHeight: menuAnchorItem.height, notebookMode: notebookMode, notebookCreating: notebookCreating, notesSection: notebookFilter, definitionsEnabled: definitionsEnabled, notedWordCount: notedTerms.length, practicing: practicing, fullscreen: fullscreen, pageLines: pageLayout.lines, pageLineLimit: pageLineLimit, passageHeight: passageArea.height, renderedHeight: passageFlow.height, fontSize: readingFont.pixelSize, layoutVersion: 9, previousPages: pageHistory.length, activeEffects: activeEffects, effectKind: effectKind, lineTransitions: lineTransitions, pageTransitions: pageTransitions, motionEnabled: Motion.enabled, feedbackEvents: feedbackEvents, focused: answer.activeFocus, turningPage: turningPage, textLength: bookLength,
+        return JSON.stringify({animationTiming: animationTiming, animationDuration: Motion.base, glyphCount: Object.keys(glyphItems).length, wordCount: pageLayout.words.length, widthCacheSize: Object.keys(widthCache).length, pageFits: pageFits, loadedCharacters: pageSource.length, readingMode: readingMode, readerAnimationEvents: readerAnimationEvents, readerMotionEnabled: Motion.enabled, chapterCardVisible: chapterCard.visible || typingChapterCard.visible, chapterTitle: chapterTitle, wordToolsOpen: wordPanel.opened, wordMenuReveal: wordPanel.reveal, wordMenuOpenAnimations: wordPanel.openAnimations, wordMenuCloseAnimations: wordPanel.closeAnimations, noteDirty: noteDirty, noteSaving: noteSaving, wordToolsShortcut: "Ctrl+Space", wordMenuWidth: wordPanel.width, wordMenuHeight: wordPanel.height, typingPanelWidth: menuAnchorItem.width, typingPanelHeight: menuAnchorItem.height, notebookMode: notebookMode, notebookCreating: notebookCreating, notesSection: notebookFilter, definitionsEnabled: definitionsEnabled, notedWordCount: notedTerms.length, practicing: practicing, fullscreen: fullscreen, pageLines: pageLayout.lines, pageLineLimit: pageLineLimit, passageHeight: passageArea.height, renderedHeight: passageFlow.height, fontSize: readingFont.pixelSize, layoutVersion: 9, previousPages: pageHistory.length, activeEffects: activeEffects, effectKind: effectKind, lineTransitions: lineTransitions, pageTransitions: pageTransitions, motionEnabled: Motion.enabled, feedbackEvents: feedbackEvents, focused: answer.activeFocus, turningPage: turningPage, textLength: bookLength,
             typed: answer.text.length, position: position, rounds: rounds,
             presets: TypingTexts.passages.length, message: message, busy: busy,
             title: bookTitle, chapters: chapters.length, library: library.length, books: libraryBooks.length, wpm: liveWpm, filePickerActive: filePickerActive});
@@ -972,7 +986,7 @@ Item {
         syncGlyphs();
     }
     function advance() {
-        if (fullscreen) return;
+        if (readingMode) return;
         if (restoring || busy || !bookId) return;
         const prepared = TypingPaging.prepareInput(answer.text, passage);
         if (prepared.text !== answer.text) {
@@ -1149,7 +1163,7 @@ Item {
                         ColumnLayout {
                             Layout.fillWidth: true
                             spacing: 4
-                            StyledText { visible: root.fullscreen; text: root.notebookMode ? "BOOK NOTEBOOK" : "WORD NOTES"; font.pixelSize: 10; font.letterSpacing: 2; color: Colors.primary }
+                            StyledText { visible: root.readingMode; text: root.notebookMode ? "BOOK NOTEBOOK" : "WORD NOTES"; font.pixelSize: 10; font.letterSpacing: 2; color: Colors.primary }
                             StyledText {
                                 text: root.notebookBrowsing ? "Book notes" : (root.notebookCreating ? "New note" : (root.selectedTerm || "Word lookup"))
                                 textFormat: Text.PlainText
@@ -1159,7 +1173,7 @@ Item {
                                 Layout.fillWidth: true
                                 elide: Text.ElideRight
                             }
-                            StyledText { visible: root.fullscreen; text: root.bookTitle; textFormat: Text.PlainText; opacity: 0.5; font.pixelSize: 11; Layout.fillWidth: true; elide: Text.ElideRight }
+                            StyledText { visible: root.readingMode; text: root.bookTitle; textFormat: Text.PlainText; opacity: 0.5; font.pixelSize: 11; Layout.fillWidth: true; elide: Text.ElideRight }
                         }
                         TextButton { text: "Return to reading"; enabled: !root.noteDirty && !root.noteSaving; onClicked: wordPanel.close() }
                     }
@@ -1233,7 +1247,7 @@ Item {
                                 }
                             }
                             RowLayout {
-                                visible: root.fullscreen && root.notebookBrowsing
+                                visible: root.readingMode && root.notebookBrowsing
                                 Layout.fillWidth: true
                                 Layout.topMargin: 8
                                 StyledText { text: root.notebookFilter === "All" ? "All notes" : root.notebookFilter; font.pixelSize: 22; font.weight: Font.DemiBold; Layout.fillWidth: true }
@@ -1365,7 +1379,7 @@ Item {
                                     enabled: root.noteLoaded && !root.noteSaving
                                     textFormat: TextEdit.PlainText
                                     placeholderText: root.notePrompt
-                                    padding: root.fullscreen ? 16 : 10
+                                    padding: root.readingMode ? 16 : 10
                                     wrapMode: TextEdit.Wrap
                                     selectByMouse: true
                                     color: Colors.overSurface
@@ -1431,18 +1445,19 @@ Item {
                         width: 220
                         padding: 6
                         background: StyledRect { variant: "bg"; radius: 12; border.width: 1; border.color: Qt.alpha(Colors.primary, 0.28) }
-                        ReaderAction { objectName: "typing-fullscreen"; text: root.fullscreen ? "Typing mode · F11" : "Reading mode · F11"; onClicked: { readerActions.close(); root.toggleFullscreen(); } }
+                        ReaderAction { objectName: "typing-mode"; text: root.readingMode ? "Typing mode" : "Reading mode"; onClicked: { readerActions.close(); root.toggleReadingMode(); } }
+                        ReaderAction { objectName: "typing-fullscreen"; text: root.fullscreen ? "Compact window · F11" : "Fullscreen · F11"; onClicked: { readerActions.close(); root.toggleFullscreen(); } }
                         ReaderAction { objectName: "typing-library"; text: "Book library"; enabled: root.practicing; onClicked: { readerActions.close(); root.showLibrary(); } }
                         ReaderAction { objectName: "typing-reader-import"; text: "Import book…"; enabled: !root.busy; onClicked: { readerActions.close(); root.openImport(); } }
                     }
                 }
                 TextButton { objectName: "typing-back"; visible: !root.practicing; text: "Back"; enabled: !root.busy && (root.bookId.length > 0 || root.draft || root.library.length > 0); onClicked: root.goBack() }
-                TextButton { visible: root.fullscreen; text: "Exit reading"; onClicked: root.toggleFullscreen() }
-                TextButton { visible: !root.fullscreen; text: "Close"; onClicked: { root.saveProgress(); root.backRequested(); } }
+                TextButton { visible: root.readingMode; text: "Exit reading"; onClicked: root.toggleFullscreen() }
+                TextButton { visible: !root.readingMode; text: "Close"; onClicked: { root.saveProgress(); root.backRequested(); } }
             }
-            Rectangle { visible: root.fullscreen; Layout.fillWidth: true; implicitHeight: 1; color: Qt.alpha(Colors.outlineVariant, 0.4) }
+            Rectangle { visible: root.readingMode; Layout.fillWidth: true; implicitHeight: 1; color: Qt.alpha(Colors.outlineVariant, 0.4) }
             StyledText {
-                visible: root.fullscreen && !root.atChapterStart
+                visible: root.readingMode && !root.atChapterStart
                 text: root.chapterTitle
                 textFormat: Text.PlainText
                 font.pixelSize: 12
@@ -1650,7 +1665,7 @@ Item {
                     StyledRect {
                         id: chapterCard
                         objectName: "reader-chapter-card"
-                        visible: root.fullscreen && root.atChapterStart
+                        visible: root.readingMode && root.atChapterStart
                         Layout.fillWidth: true
                         implicitHeight: chapterCardText.implicitHeight + (root.fullscreen ? 48 : 28)
                         variant: root.fullscreen ? "transparent" : "pane"
@@ -1665,7 +1680,7 @@ Item {
                             anchors.margins: 18
                             spacing: 6
                             StyledText {
-                                text: (root.fullscreen ? "CHAPTER · " : "NEW CHAPTER · ") + (root.currentChapterIndex + 1) + " / " + root.chapters.length
+                                text: (root.readingMode ? "CHAPTER · " : "NEW CHAPTER · ") + (root.currentChapterIndex + 1) + " / " + root.chapters.length
                                 color: Colors.primary
                                 font.pixelSize: 11
                                 font.letterSpacing: root.fullscreen ? 2.5 : 1.2
@@ -1707,7 +1722,7 @@ Item {
                             anchors.left: parent.left
                             anchors.right: parent.right
                             height: Math.max(0, passageVisuals.centerPadding - 12)
-                            visible: !root.fullscreen && root.bookKind === "book" && root.currentChapterIndex >= 0 && height >= 48
+                            visible: !root.readingMode && root.bookKind === "book" && root.currentChapterIndex >= 0 && height >= 48
                             z: 4
                             variant: "pane"
                             radius: 16
@@ -1750,7 +1765,7 @@ Item {
                             boundsBehavior: Flickable.StopAtBounds
                             flickableDirection: Flickable.VerticalFlick
                             ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
-                            visible: !root.fullscreen
+                            visible: !root.readingMode
                             // Seven visible rows total; centering space is inside this budget.
                             anchors.left: parent.left
                             anchors.right: parent.right
@@ -1845,7 +1860,7 @@ Item {
                                         // Keep lightweight word geometry for the whole section,
                                         // but build animated characters only near the viewport.
                                         height: root.passageLineHeight
-                                        readonly property bool inRenderWindow: !root.fullscreen
+                                        readonly property bool inRenderWindow: !root.readingMode
                                             && modelData.line * root.passageLineHeight + passageFlow.y + height >= passageVisuals.contentY - root.passageLineHeight * 2
                                             && modelData.line * root.passageLineHeight + passageFlow.y <= passageVisuals.contentY + passageVisuals.height + root.passageLineHeight * 2
                                         readonly property var letters: root.characters(modelData.text)
@@ -2057,8 +2072,8 @@ Item {
                         TextEdit {
                             id: readerText
                             objectName: "reader-page-text"
-                            onHeightChanged: if (root.fullscreen) fitDelay.restart()
-                            onWidthChanged: if (root.fullscreen) fitDelay.restart()
+                            onHeightChanged: if (root.readingMode) fitDelay.restart()
+                            onWidthChanged: if (root.readingMode) fitDelay.restart()
                             opacity: 0.35 + 0.65 * root.readerReveal
                             transform: Translate {
                                 x: (1 - root.readerReveal) * root.readerDirection * 12
@@ -2066,7 +2081,7 @@ Item {
                             }
                             anchors.fill: parent
                             anchors.margins: 4
-                            visible: root.fullscreen
+                            visible: root.readingMode
                             readOnly: true
                             selectByMouse: true
                             textFormat: TextEdit.RichText
@@ -2086,8 +2101,8 @@ Item {
                         }
                         TextEdit {
                             id: answer
-                            visible: !root.fullscreen
-                            readOnly: root.fullscreen || root.busy
+                            visible: !root.readingMode
+                            readOnly: root.readingMode || root.busy
                             objectName: "typing-input"
                             // Keep native preedit/selection rendering out of the custom passage.
                             opacity: 0
@@ -2144,7 +2159,7 @@ Item {
                     }
                     StyledRect {
                         objectName: "reader-keyboard-guide"
-                        visible: root.fullscreen && root.readerHelp
+                        visible: root.readingMode && root.readerHelp
                         Layout.fillWidth: true
                         implicitHeight: readerHelpText.implicitHeight + 24
                         variant: "pane"
@@ -2155,13 +2170,13 @@ Item {
                             anchors.right: parent.right
                             anchors.top: parent.top
                             anchors.margins: 12
-                            text: "Next: l / → / Page Down / Space   Previous: h / ← / Page Up / Shift+Space\nChapter: k / j or [ / ]   Notes: N   Word lookup: Ctrl+Space\nShortcut guide: ?   Exit reading: F11 or Esc"
+                            text: "Next: l / → / Page Down / Space   Previous: h / ← / Page Up / Shift+Space\nChapter: k / j or [ / ]   Notes: N   Word lookup: Ctrl+Space\nShortcut guide: ?   Window size: F11   Close / leave fullscreen: Esc"
                             wrapMode: Text.Wrap
                             font.pixelSize: 12
                         }
                     }
                     RowLayout {
-                        visible: root.fullscreen
+                        visible: root.readingMode
                         Layout.fillWidth: true
                         ReaderNavButton { objectName: "reader-previous-page"; text: "‹ Previous"; enabled: !root.busy && root.position > 0; onClicked: root.readPreviousPage() }
                         StyledText { text: Math.round(root.progress * 100) + "% read"; font.pixelSize: 12; opacity: 0.5; Layout.fillWidth: true; horizontalAlignment: Text.AlignHCenter }
@@ -2169,15 +2184,15 @@ Item {
                         ReaderNavButton { objectName: "reader-next-page"; text: root.position + root.characters(root.passage).length >= root.bookLength ? "End of book" : "Next ›"; enabled: !root.busy && root.position + root.characters(root.passage).length < root.bookLength; onClicked: root.readNextPage() }
                     }
                     RowLayout {
-                        visible: !root.fullscreen || root.errorMessage.length > 0
+                        visible: !root.readingMode || root.errorMessage.length > 0
                         Layout.fillWidth: true
-                        StyledText { text: root.errorMessage || (root.busy ? "Loading…" : (!root.fullscreen && !answer.activeFocus ? "Click the passage to continue typing" : root.chapterTitle)); textFormat: Text.PlainText; color: root.errorMessage ? Colors.error : Colors.overSurface; opacity: root.errorMessage ? 1 : 0.7; font.pixelSize: 11; elide: Text.ElideRight; Layout.fillWidth: true; Layout.minimumWidth: 0 }
-                        StyledText { objectName: "typing-live-wpm"; visible: !root.fullscreen; text: root.liveWpm + " WPM"; color: Colors.primary; font.pixelSize: 12 }
+                        StyledText { text: root.errorMessage || (root.busy ? "Loading…" : (!root.readingMode && !answer.activeFocus ? "Click the passage to continue typing" : root.chapterTitle)); textFormat: Text.PlainText; color: root.errorMessage ? Colors.error : Colors.overSurface; opacity: root.errorMessage ? 1 : 0.7; font.pixelSize: 11; elide: Text.ElideRight; Layout.fillWidth: true; Layout.minimumWidth: 0 }
+                        StyledText { objectName: "typing-live-wpm"; visible: !root.readingMode; text: root.liveWpm + " WPM"; color: Colors.primary; font.pixelSize: 12 }
                         StyledText { text: (root.progress * 100).toFixed(1) + "%"; opacity: 0.5; font.pixelSize: 11 }
                     }
                     Rectangle {
                         Layout.fillWidth: true
-                        implicitHeight: root.fullscreen ? 1 : 2
+                        implicitHeight: root.readingMode ? 1 : 2
                         radius: 1
                         color: Qt.alpha(Colors.overSurface, 0.08)
                         Rectangle {

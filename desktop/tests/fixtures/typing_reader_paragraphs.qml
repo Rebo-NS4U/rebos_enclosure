@@ -26,7 +26,7 @@ ShellRoot {
         onTriggered: {
             if (step === 0) {
                 menu.practicing = true;
-                menu.fullscreen = true;
+                menu.fullscreen = true; menu.readingMode = true;
                 menu.paragraphStarts = Array.from({length: 299}, (_, i) => (i + 1) * 79);
                 menu.pageSource = "A gentle morning with words to read and a final line that must remain visible. ".repeat(300);
             } else {
