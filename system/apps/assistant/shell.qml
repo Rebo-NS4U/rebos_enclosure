@@ -86,8 +86,7 @@ ShellRoot {
             id: panel
             required property ShellScreen modelData
             screen: modelData
-            // Keep the surface until the closing motion ends. Animation progress
-            // is independent of child visibility, avoiding a mapping feedback loop.
+            // Map only while open; the sidebar appears at its final position.
             visible: !GlobalStates.assistantPinned && sidebar.presented
             anchors { top: true; bottom: true; left: true; right: true }
             color: "transparent"

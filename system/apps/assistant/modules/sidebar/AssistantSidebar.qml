@@ -75,18 +75,9 @@ Item {
     readonly property bool active: GlobalStates.assistantAvailable
         && GlobalStates.assistantVisible
         && targetScreen.name === GlobalStates.assistantScreenName
-    // Progress is independent of inherited visibility and pixel geometry.
-    // Reversing a toggle animates from the current position, including while busy.
-    property real slideProgress: active ? 1 : 0
-    readonly property bool presented: active || slideProgress > 0 || slideAnimation.running
-    Behavior on slideProgress {
-        enabled: !root.tiled && Motion.enabled
-        NumberAnimation {
-            id: slideAnimation
-            duration: root.active ? Motion.enter : Motion.exit
-            easing.type: root.active ? Motion.enterCurve : Motion.exitCurve
-        }
-    }
+    // Map directly at the final position: opening and closing must not wait
+    // for animation frames while a busy conversation updates the UI thread.
+    readonly property bool presented: active
     readonly property Item blurTarget: sidebarBackground
     property alias hitbox: sidebarContainer
     property alias resizeHitbox: resizeHandle
@@ -354,15 +345,10 @@ Item {
         x: {
             if (root.tiled) return 0;
             if (GlobalStates.assistantPosition === "left")
-                return -width * (1 - root.slideProgress);
-            return parent.width - width * root.slideProgress;
+                return 0;
+            return parent.width - width;
         }
         visible: root.presented
-
-        // Move a cached texture during the slide rather than submitting every
-        // chat bubble, glyph and control at each new position. Release the
-        // texture at rest, including when hidden, to bound GPU memory use.
-        layer.enabled: !root.tiled && slideAnimation.running
 
         StyledRect {
             id: sidebarBackground
