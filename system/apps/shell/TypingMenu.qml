@@ -7,6 +7,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
+import Quickshell.Wayland._BackgroundEffect
 import qs.modules.services as Services
 import qs.modules.components
 import qs.modules.theme
@@ -1259,6 +1260,10 @@ Item {
         property int closeAnimations: 0
         readonly property real availableWidth: width - 24
         property alias surface: wordPanelSurface
+        BackgroundEffect.blurRegion: BlurRegion {
+            target: panelViewport
+            radius: wordPanelSurface.radius
+        }
         mask: Region { item: panelViewport }
         function open() {
             const wasOpen = opened;
