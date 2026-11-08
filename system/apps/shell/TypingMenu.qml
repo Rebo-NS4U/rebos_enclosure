@@ -597,7 +597,7 @@ Item {
                     requestFeedback("error", glyph);
             }
         }
-        else if (!wasCorrect && glyph.initialized && !restoring && !busy && visible && practicing && answer.activeFocus && Motion.enabled && glyph.modelData.trim().length)
+        else if (!wasCorrect && glyph.initialized && !restoring && !busy && visible && practicing && answer.activeFocus && Motion.enabled && (glyph.modelData.trim().length || glyph.formattingKey))
             glyph.celebrate();
     }
     property int scrollLine: -1
@@ -2005,11 +2005,16 @@ Item {
                                                 property real spark: 0
                                                 readonly property real rejectionPhase: 1 - Math.pow(Math.max(0, spark), 1 / 3)
                                                 readonly property real rejectionOffset: failedFeedback ? Math.sin(rejectionPhase * Math.PI * 8) * spark * 8 : 0
-                                                scale: failedFeedback ? 1 + spark * 0.28 : 1
+                                                // Reuse the bounded key-feedback clock: Tab slides ahead;
+                                                // Return hooks left and drops into the next line.
+                                                readonly property real formattingPulse: formattingKey && !failedFeedback ? Math.sin(rejectionPhase * Math.PI) * (spark > 0 ? 1 : 0) : 0
+                                                readonly property real formattingMotionX: formattingPulse * (modelData === "\t" ? 9 : -5)
+                                                readonly property real formattingMotionY: modelData === "\n" ? formattingPulse * 6 : 0
+                                                scale: failedFeedback ? 1 + spark * 0.28 : 1 - formattingPulse * 0.10
                                                 rotation: failedFeedback ? rejectionOffset * 1.6 : 0
                                                 transform: Translate {
-                                                    x: glyph.rejectionOffset
-                                                    y: -glyph.spark * (glyph.failedFeedback ? 4 : 2.2)
+                                                    x: glyph.rejectionOffset + glyph.formattingMotionX
+                                                    y: glyph.formattingKey && !glyph.failedFeedback ? glyph.formattingMotionY : -glyph.spark * (glyph.failedFeedback ? 4 : 2.2)
                                                 }
                                                 transformOrigin: Item.Center
                                                 function celebrate() { root.requestFeedback("letter", glyph); }
@@ -2021,7 +2026,7 @@ Item {
                                                     property: "spark"
                                                     from: 1
                                                     to: 0
-                                                    duration: glyph.failedFeedback ? 560 : Math.max(280, Math.min(420, Motion.feedback * 2.4))
+                                                    duration: glyph.failedFeedback ? 560 : glyph.formattingKey ? Math.max(180, Math.min(320, Motion.feedback * 2)) : Math.max(280, Math.min(420, Motion.feedback * 2.4))
                                                     easing.type: Easing.OutCubic
                                                     onFinished: root.forgetGlyph(glyph)
                                                 }
@@ -2068,9 +2073,9 @@ Item {
                                                     height: root.highlightBounds.height + 6
                                                     radius: Math.min(Config.roundness, 5)
                                                     z: -1
-                                                    color: Qt.alpha(glyph.incorrect ? Colors.error : Colors.primary, glyph.caretHere ? 0.16 : 0.07)
+                                                    color: Qt.alpha(glyph.incorrect ? Colors.error : Colors.primary, Math.min(0.32, (glyph.caretHere ? 0.16 : 0.07) + glyph.spark * 0.18))
                                                     border.width: 1
-                                                    border.color: Qt.alpha(glyph.incorrect ? Colors.error : Colors.primary, glyph.caretHere || glyph.incorrect ? 0.65 : 0.28)
+                                                    border.color: Qt.alpha(glyph.incorrect ? Colors.error : Colors.primary, Math.min(1, (glyph.caretHere || glyph.incorrect ? 0.65 : 0.28) + glyph.spark * 0.55))
                                                 }
                                                 text: modelData === "\n" ? "↵" : modelData === "\t" ? "⇥" : modelData === " " ? "\u00a0" : modelData
                                                 textFormat: Text.PlainText

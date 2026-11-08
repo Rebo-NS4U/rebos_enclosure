@@ -108,7 +108,9 @@ animations in both sizes.
 
 Typing preserves paragraph indentation and blank rows from the reader. Press
 Tab at ⇥ and Return at each ↵ (two Returns between paragraphs), then Tab for
-the next indent. Tab and Return have outlined key markers. Wrong keys, including
+the next indent. Tab and Return have outlined key markers. Correct Tab presses slide forward;
+Return presses dip down and left, with a brief press and glow. These effects
+share the bounded key-animation budget and stop when Appearance motion is off. Wrong keys, including
 spaces at these markers or Tab/Return at a letter, advance and count as errors;
 Backspace lets you correct them. Existing bookmarks
 and partial input are mapped to the formatted target without changing book
