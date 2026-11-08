@@ -137,15 +137,13 @@ ColumnLayout {
         }
     }
     Caption { text: "Background opacity: " + Math.round(Config.theme.srBg.opacity * 100) + "%" }
-    Slider {
+    ThemeSlider {
         Layout.fillWidth: true
         from: 0.2
         to: 1
         stepSize: 0.05
         value: Config.theme.srBg.opacity
         onMoved: Config.theme.srBg.opacity = value
-        palette.highlight: Colors.primary
-        palette.button: Colors.overSurface
     }
     Caption {
         text: "Opacity applies to supported app backgrounds. The islands bar keeps its transparent outer background."

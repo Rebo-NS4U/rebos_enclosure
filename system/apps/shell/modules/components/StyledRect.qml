@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
+import QtQuick.Effects
 import Quickshell.Widgets
 import qs.config
 import qs.modules.theme
@@ -229,11 +230,21 @@ ClippingRectangle {
         }
     }
 
-    // enableShadow is kept for API compatibility, but we intentionally do
-    // NOT apply layer.effect/MultiEffect on this item. That path rasterizes
-    // every child (including Text) into an FBO and makes bold bar labels
-    // look soft/hazy. Widget chrome shadows live on dedicated shadow items
-    // instead of on text-bearing containers.
+    // Render a separate shape behind the surface; never capture its text.
+    RectangularShadow {
+        objectName: root.objectName + "-shadow"
+        opacity: root.opacity
+        parent: root.parent
+        x: root.x + Config.theme.shadowXOffset
+        y: root.y + Config.theme.shadowYOffset
+        width: root.width
+        height: root.height
+        z: root.z - 0.01
+        visible: root.visible && root.enableShadow && Config.theme.shadowOpacity > 0
+        color: Qt.alpha(Config.resolveColor(Config.theme.shadowColor), Config.theme.shadowOpacity)
+        blur: Config.theme.shadowBlur * 16
+        radius: root.radius
+    }
 
     border.color: Config.resolveColor(borderData?.[0] ?? "transparent")
     border.width: root.enableBorder ? (borderData?.[1] ?? 0) : 0

@@ -1796,28 +1796,12 @@ Item {
                         TextButton { text: "›"; enabled: !root.busy && root.currentChapterIndex + 1 < root.chapters.length; onClicked: root.jumpChapter(root.currentChapterIndex + 1) }
                     }
                 }
-                Slider {
+                ThemeSlider {
                     id: bookPositionSlider
                     objectName: "typing-book-position"
                     visible: !root.practicing && root.bookId.length > 0 && !root.draft
                     Layout.fillWidth: true
                     implicitHeight: 24
-                    background: Rectangle {
-                        x: bookPositionSlider.leftPadding
-                        y: bookPositionSlider.topPadding + bookPositionSlider.availableHeight / 2 - height / 2
-                        width: bookPositionSlider.availableWidth
-                        height: 4
-                        radius: 2
-                        color: Qt.alpha(Colors.primary, 0.14)
-                        Rectangle { width: parent.width * bookPositionSlider.visualPosition; height: parent.height; radius: 2; color: Colors.primary }
-                    }
-                    handle: Rectangle {
-                        x: bookPositionSlider.leftPadding + bookPositionSlider.visualPosition * (bookPositionSlider.availableWidth - width)
-                        y: bookPositionSlider.topPadding + bookPositionSlider.availableHeight / 2 - height / 2
-                        implicitWidth: 14; implicitHeight: 14; radius: 7
-                        color: bookPositionSlider.pressed ? Colors.primary : Colors.overSurface
-                        border.width: 2; border.color: Colors.primary
-                    }
                     from: 0; to: Math.max(1, root.bookLength - 1)
                     value: root.position
                     onMoved: jumpDelay.restart()

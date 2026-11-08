@@ -11,7 +11,7 @@ Item {
 
     Layout.fillHeight: !resizeParent || vertical
     Layout.fillWidth: !resizeParent || !vertical
-    implicitHeight: resizeParent ? (vertical ? size : 4) : 0
+    implicitHeight: resizeParent ? (vertical ? size : 32) : 0
     implicitWidth: resizeParent ? (!vertical ? size : 4) : 0
 
     onWidthChanged: if (!resizeParent && !vertical)
@@ -19,6 +19,19 @@ Item {
     onHeightChanged: if (!resizeParent && vertical)
         size = height
 
+    activeFocusOnTab: true
+    opacity: enabled ? 1 : 0.45
+    Accessible.role: Accessible.Slider
+    function editValue(next) { value = Math.max(0, Math.min(1, applyStep(next))); }
+    Keys.onPressed: event => {
+        const step = stepSize > 0 ? stepSize : 0.01;
+        if (event.key === Qt.Key_Right || event.key === Qt.Key_Up) editValue(value + step);
+        else if (event.key === Qt.Key_Left || event.key === Qt.Key_Down) editValue(value - step);
+        else if (event.key === Qt.Key_Home) editValue(0);
+        else if (event.key === Qt.Key_End) editValue(1);
+        else { event.accepted = false; return; }
+        event.accepted = true;
+    }
     signal iconClicked
     signal iconHovered(bool hovered)
 
@@ -29,8 +42,8 @@ Item {
     property real dragPosition: 0.0
     property real progressRatio: isDragging ? dragPosition : value
     property string tooltipText: `${Math.round(value * 100)}%`
-    property color progressColor: Styling.srItem("overprimary")
-    property color backgroundColor: Colors.surfaceBright
+    property color progressColor: Colors.primary
+    property color backgroundColor: Colors.outlineVariant
     property bool wavy: false
     property bool playing: false // Nuevo estado para controlar la animación
     property real wavyAmplitude: 0.8
@@ -59,7 +72,7 @@ Item {
     function applyStep(val: real): real {
         if (stepSize <= 0)
             return val;
-        return Math.round(val / stepSize) * stepSize;
+        return Math.max(0, Math.min(1, Math.round(val / stepSize) * stepSize));
     }
 
     property real animatedProgress: progressRatio
@@ -123,14 +136,14 @@ Item {
                 }
             }
 
-            Rectangle {
+            SliderHandle {
                 id: hDragHandle
                 anchors.verticalCenter: parent.verticalCenter
                 x: parent.width * root.animatedProgress - width / 2
-                width: root.isDragging ? 2 : 4
-                height: root.isDragging ? Math.max(20, root.thickness + 12) : Math.max(16, root.thickness + 8)
+                width: 16
+                height: 16
                 radius: Styling.radius(0)
-                color: Colors.overBackground
+                focused: root.activeFocus
                 z: 2
                 Behavior on width {
                     enabled: root.smoothDrag
@@ -149,8 +162,7 @@ Item {
             }
 
             Rectangle {
-                anchors.left: hDragHandle.right
-                anchors.leftMargin: root.handleSpacing
+                anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 height: root.thickness
@@ -162,8 +174,7 @@ Item {
             Loader {
                 active: root.wavy
                 anchors.left: parent.left
-                anchors.right: hDragHandle.left
-                anchors.rightMargin: root.handleSpacing
+                anchors.right: hDragHandle.horizontalCenter
                 anchors.verticalCenter: parent.verticalCenter
                 height: hSliderItem.height * root.heightMultiplier
                 z: 1
@@ -179,8 +190,7 @@ Item {
             }
             Rectangle {
                 anchors.left: parent.left
-                anchors.right: hDragHandle.left
-                anchors.rightMargin: root.handleSpacing
+                anchors.right: hDragHandle.horizontalCenter
                 anchors.verticalCenter: parent.verticalCenter
                 height: root.thickness
                 radius: Styling.radius(0) / 4
@@ -221,14 +231,14 @@ Item {
                 }
             }
 
-            Rectangle {
+            SliderHandle {
                 id: vDragHandle
                 anchors.horizontalCenter: parent.horizontalCenter
                 y: parent.height * (1 - root.animatedProgress) - height / 2
-                height: root.isDragging ? 2 : 4
-                width: root.isDragging ? Math.max(20, root.thickness + 12) : Math.max(16, root.thickness + 8)
+                height: 16
+                width: 16
                 radius: Styling.radius(0)
-                color: iconColor
+                focused: root.activeFocus
                 z: 2
                 Behavior on width {
                     enabled: root.smoothDrag
@@ -248,8 +258,7 @@ Item {
 
             Rectangle {
                 anchors.top: parent.top
-                anchors.bottom: vDragHandle.top
-                anchors.bottomMargin: root.handleSpacing
+                anchors.bottom: parent.bottom
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: root.thickness
                 radius: Styling.radius(0) / 4
@@ -259,8 +268,7 @@ Item {
 
             Loader {
                 active: root.wavy
-                anchors.top: vDragHandle.bottom
-                anchors.topMargin: root.handleSpacing
+                anchors.top: vDragHandle.verticalCenter
                 anchors.bottom: parent.bottom
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: parent.width * heightMultiplier
@@ -282,8 +290,7 @@ Item {
                 }
             }
             Rectangle {
-                anchors.top: vDragHandle.bottom
-                anchors.topMargin: root.handleSpacing
+                anchors.top: vDragHandle.verticalCenter
                 anchors.bottom: parent.bottom
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: root.thickness
@@ -378,6 +385,7 @@ Item {
                 mouse.accepted = false;
                 return;
             }
+            root.forceActiveFocus();
             root.isDragging = true;
             let pos = calculatePosition(mouse.x, mouse.y);
             if (root.snapMode === "always") {
@@ -420,7 +428,7 @@ Item {
 
         onWheel: wheel => {
             if (root.scroll) {
-                const scrollStep = root.stepSize > 0 ? root.stepSize : 0.1;
+                const scrollStep = root.stepSize > 0 ? root.stepSize : 0.01;
                 if (wheel.angleDelta.y > 0) {
                     root.value = root.applyStep(Math.min(1, root.value + scrollStep));
                 } else {

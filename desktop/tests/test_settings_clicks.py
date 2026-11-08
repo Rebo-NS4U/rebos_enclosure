@@ -95,7 +95,11 @@ ShellRoot {
       samples.visible = false;
       for (let name of ["SystemPanel", "ShellPanel", "ThemePanel"]) {
        let component = Qt.createComponent("modules/widgets/dashboard/controls/" + name + ".qml");
-       if (name === "ThemePanel") { Config.performance.desktopBlur = "light"; Config.performance.blurStrength = 50; }
+       if (name === "ThemePanel") {
+        Config.performance.desktopBlur = "light"; Config.performance.blurStrength = 50;
+        Config.theme.shadowOpacity = 0.7; Config.theme.shadowBlur = 2;
+        Config.theme.shadowXOffset = -5; Config.theme.shadowYOffset = 8;
+       }
        let page = component.createObject(fixture, {width: 1000, height: 740});
        fixture.check(page !== null, name + " instantiated");
        tester.wait(40);
@@ -121,6 +125,15 @@ ShellRoot {
         fixture.check(page.currentSection !== "", name + " section responds to click: " + target.objectName);
        }
        if (name === "ThemePanel") {
+        fixture.check(Config.theme.shadowOpacity === 0.7 && Config.theme.shadowBlur === 2 && Config.theme.shadowXOffset === -5 && Config.theme.shadowYOffset === 8, "Opening shadows preserves saved values");
+        page.currentSection = "shadow"; tester.wait(30);
+        let shadowOpacity = fixture.find(page, "shadow-opacity");
+        shadowOpacity.value = 0.4; tester.wait(30);
+        fixture.check(Config.theme.shadowOpacity === 0.4, "Shadow opacity saves");
+        let shadow = fixture.find(page, "shadow-preview-shadow");
+        fixture.check(shadow && shadow.visible && Math.abs(shadow.color.a - 0.4) < 0.01 && shadow.blur === 32, "Preview renders current shadow values");
+        fixture.find(page, "shadow-x").value = 0.25; tester.wait(20);
+        fixture.check(Config.theme.shadowXOffset === -10, "Shadow offset saves signed value");
         fixture.check(Config.performance.desktopBlur === "medium" && Config.performance.blurStrength === 22, "Legacy lighter mode converts to shared scale: " + Config.performance.desktopBlur + "/" + Config.performance.blurStrength);
         page.currentSection = "blur";
         tester.wait(30);
@@ -192,6 +205,22 @@ ShellRoot {
       fixture.check(BarAppearance.opacity === 1, "Bar supports opaque theme");
       Config.theme.shellTransparency = -1;
       Config.theme.shellStyle = "glass";
+      let sliderComponent = Qt.createComponent("modules/components/StyledSlider.qml");
+      fixture.check(sliderComponent.status === Component.Ready, sliderComponent.errorString());
+      let control = sliderComponent.createObject(fixture, {width: 300, height: 32, stepSize: 0.05, snapMode: "always"});
+      tester.mouseClick(control, 150, 16); tester.wait(20);
+      fixture.check(Math.abs(control.value - 0.5) < 0.01, "Slider click changes value");
+      control.forceActiveFocus(); tester.keyClick(Qt.Key_Right);
+      fixture.check(Math.abs(control.value - 0.55) < 0.01, "Slider keyboard uses configured step");
+      tester.keyClick(Qt.Key_End); fixture.check(control.value === 1, "Slider End key reaches maximum");
+      tester.keyClick(Qt.Key_Right); fixture.check(control.value === 1, "Slider clamps maximum");
+      tester.keyClick(Qt.Key_Home); fixture.check(control.value === 0, "Slider Home key reaches minimum");
+      control.updateOnRelease = true;
+      tester.mousePress(control, 210, 16); tester.wait(20);
+      fixture.check(control.value === 0 && control.isDragging, "Media seeking waits for release");
+      tester.mouseRelease(control, 210, 16); tester.wait(20);
+      fixture.check(Math.abs(control.value - 0.7) < 0.01 && !control.isDragging, "Media seeking commits on release");
+      control.destroy();
       let settingsComponent = Qt.createComponent("modules/widgets/dashboard/controls/SettingsTab.qml");
       fixture.check(settingsComponent.status === Component.Ready, settingsComponent.errorString());
       let settings = settingsComponent.createObject(fixture, {width: 1000, height: 740});

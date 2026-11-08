@@ -44,3 +44,13 @@ Bar borders and clock accents use the theme's border and highlight colors, so
 palette and style changes update them automatically. The separate bar opacity
 and accent sliders have been removed; older saved values are retained for
 compatibility but no longer override the theme.
+
+Shadows now render as a separate shape behind surfaces that explicitly enable
+shadows, leaving text crisp. The Shadows page provides a live preview and saves
+opacity, softness, color and signed offsets without overwriting saved values on
+load. App window shadows remain compositor settings.
+
+Shell sliders share round 16px handles, themed 4px tracks, keyboard focus and
+disabled styling. Settings, palette opacity and reading controls use the same
+appearance. Arrow keys adjust values; Home and End reach their limits. Existing
+media controls retain their release-to-seek behavior and animated waveform.

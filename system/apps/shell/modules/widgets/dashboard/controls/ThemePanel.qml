@@ -664,6 +664,25 @@ Item {
                                 Layout.bottomMargin: -4
                             }
 
+                            StyledText {
+                                Layout.fillWidth: true
+                                text: "Shadows apply to shell surfaces that enable them. App window shadows are managed separately."
+                                wrapMode: Text.WordWrap
+                                color: Colors.overSurfaceVariant
+                            }
+                            Item {
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: 160
+                                StyledRect {
+                                    objectName: "shadow-preview"
+                                    anchors.centerIn: parent
+                                    width: Math.min(240, parent.width - 80)
+                                    height: 70
+                                    variant: "bg"
+                                    enableShadow: true
+                                    StyledText { anchors.centerIn: parent; text: "Shadow preview" }
+                                }
+                            }
                             // Opacity row
                             RowLayout {
                                 Layout.fillWidth: true
@@ -681,8 +700,9 @@ Item {
 
                                 StyledSlider {
                                     id: shadowOpacitySlider
+                                    objectName: "shadow-opacity"
                                     Layout.fillWidth: true
-                                    Layout.preferredHeight: 20
+                                    Layout.preferredHeight: 32
                                     progressColor: Styling.srItem("overprimary")
                                     tooltipText: `${Math.round(value * 100)}%`
                                     scroll: true
@@ -692,14 +712,18 @@ Item {
                                     readonly property real configValue: Config.theme.shadowOpacity
 
                                     onConfigValueChanged: {
+                                        const wasReady = ready; ready = false;
                                         if (Math.abs(value - configValue) > 0.001) {
                                             value = configValue;
                                         }
+                                        ready = wasReady;
                                     }
 
-                                    Component.onCompleted: value = configValue
+                                    Component.onCompleted: { value = configValue; ready = true; }
+                                    property bool ready: false
 
                                     onValueChanged: {
+                                        if (!ready) return;
                                         if (Math.abs(value - Config.theme.shadowOpacity) > 0.001) {
                                             Config.theme.shadowOpacity = value;
                                         }
@@ -735,8 +759,9 @@ Item {
 
                                 StyledSlider {
                                     id: shadowBlurSlider
+                                    objectName: "shadow-blur"
                                     Layout.fillWidth: true
-                                    Layout.preferredHeight: 20
+                                    Layout.preferredHeight: 32
                                     progressColor: Styling.srItem("overprimary")
                                     tooltipText: `${(value * 4).toFixed(1)}`
                                     scroll: true
@@ -746,14 +771,18 @@ Item {
                                     readonly property real configValue: Config.theme.shadowBlur / 4
 
                                     onConfigValueChanged: {
+                                        const wasReady = ready; ready = false;
                                         if (Math.abs(value - configValue) > 0.001) {
                                             value = configValue;
                                         }
+                                        ready = wasReady;
                                     }
 
-                                    Component.onCompleted: value = configValue
+                                    Component.onCompleted: { value = configValue; ready = true; }
+                                    property bool ready: false
 
                                     onValueChanged: {
+                                        if (!ready) return;
                                         let newBlur = value * 4;
                                         if (Math.abs(newBlur - Config.theme.shadowBlur) > 0.01) {
                                             Config.theme.shadowBlur = newBlur;
@@ -790,8 +819,9 @@ Item {
 
                                 StyledSlider {
                                     id: shadowXOffsetSlider
+                                    objectName: "shadow-x"
                                     Layout.fillWidth: true
-                                    Layout.preferredHeight: 20
+                                    Layout.preferredHeight: 32
                                     progressColor: Styling.srItem("overprimary")
                                     tooltipText: `${Math.round((value - 0.5) * 40)}`
                                     scroll: true
@@ -801,14 +831,18 @@ Item {
                                     readonly property real configValue: (Config.theme.shadowXOffset + 20) / 40
 
                                     onConfigValueChanged: {
+                                        const wasReady = ready; ready = false;
                                         if (Math.abs(value - configValue) > 0.001) {
                                             value = configValue;
                                         }
+                                        ready = wasReady;
                                     }
 
-                                    Component.onCompleted: value = configValue
+                                    Component.onCompleted: { value = configValue; ready = true; }
+                                    property bool ready: false
 
                                     onValueChanged: {
+                                        if (!ready) return;
                                         let newOffset = Math.round((value - 0.5) * 40);
                                         if (newOffset !== Config.theme.shadowXOffset) {
                                             Config.theme.shadowXOffset = newOffset;
@@ -844,8 +878,9 @@ Item {
 
                                 StyledSlider {
                                     id: shadowYOffsetSlider
+                                    objectName: "shadow-y"
                                     Layout.fillWidth: true
-                                    Layout.preferredHeight: 20
+                                    Layout.preferredHeight: 32
                                     progressColor: Styling.srItem("overprimary")
                                     tooltipText: `${Math.round((value - 0.5) * 40)}`
                                     scroll: true
@@ -855,14 +890,18 @@ Item {
                                     readonly property real configValue: (Config.theme.shadowYOffset + 20) / 40
 
                                     onConfigValueChanged: {
+                                        const wasReady = ready; ready = false;
                                         if (Math.abs(value - configValue) > 0.001) {
                                             value = configValue;
                                         }
+                                        ready = wasReady;
                                     }
 
-                                    Component.onCompleted: value = configValue
+                                    Component.onCompleted: { value = configValue; ready = true; }
+                                    property bool ready: false
 
                                     onValueChanged: {
+                                        if (!ready) return;
                                         let newOffset = Math.round((value - 0.5) * 40);
                                         if (newOffset !== Config.theme.shadowYOffset) {
                                             Config.theme.shadowYOffset = newOffset;
