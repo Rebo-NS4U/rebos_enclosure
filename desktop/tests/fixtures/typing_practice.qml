@@ -616,6 +616,7 @@ ShellRoot {
                 } else if (phase === 124) {
                     const restored = freshView.item;
                     const reader = find(restored, "reader-page-text");
+                    if (reader.contentHeight > reader.height) throw Error("Reading page clips its last line: " + reader.contentHeight + " > " + reader.height);
                     if (!reader.visible || !reader.readOnly || find(restored, "typing-input").visible || find(restored, "typing-live-wpm").visible) throw Error("Reading mode still exposes typing controls");
                     if (reader.font.family !== Config.theme.font || reader.width > 720 || reader.getText(0, reader.length).trim() !== restored.passage.trim()) throw Error("Reader typography, measure, or displayed text is incorrect");
                     const escaped = restored.readerHtml('<img src="missing"> & book');

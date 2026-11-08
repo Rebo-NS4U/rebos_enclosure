@@ -18,11 +18,13 @@ Item {
     property bool practicing: false
     property bool fullscreen: false
     readonly property real passageLineHeight: Math.ceil(typingMetrics.height * 1.45)
+    // Match the rich-text reader spacing rather than the tighter typing rows.
+    readonly property real readerLineHeight: Math.ceil(typingMetrics.height * 1.55)
     readonly property int pageLineLimit: fullscreen
-        ? Math.max(1, Math.floor(Math.max(0, passageArea.height - 8) / Math.max(1, passageLineHeight)))
+        ? Math.max(1, Math.floor(Math.max(0, passageArea.height - 8) / Math.max(1, readerLineHeight)))
         : 7
     // Keep both layout and delivery bounded; typing rolls overlapping windows.
-    readonly property int layoutLineLimit: fullscreen ? Math.max(3, Math.min(36, pageLineLimit)) : 36
+    readonly property int layoutLineLimit: fullscreen ? Math.max(1, Math.min(36, pageLineLimit)) : 36
     onPageLineLimitChanged: fitDelay.restart()
     onReadingFontChanged: { widthCache = ({}); fitDelay.restart(); }
     property var readerPageHistory: []
