@@ -12,6 +12,10 @@ Space is the leader key: `Space f f` means press those keys in sequence.
 Press `i` to edit and Escape to return to normal mode. Ctrl-S saves.
 Run `:IDEHelp` for this guide. `:checkhealth` checks the environment.
 
+Press `p` on the main menu or `Space f p` to open Projects. Add folders to
+`~/.config/nvim/projects.lua`, a Lua list such as `return { '~/code/my-project' }`.
+This personal list stays local; recent projects also appear in the picker.
+
 ## Installation
 
 Built-in tools work immediately without downloads: file explorer, fuzzy file
@@ -41,6 +45,7 @@ debug adapters can be added in `lua/ide/plugins.lua`.
 | Ctrl-S / Space w | Save |
 | Space e | Toggle explorer |
 | Ctrl-P / Space f f | Find files |
+| Space f p | Projects |
 | Space f g | Search project |
 | Space f b | Open files |
 | Shift-H / Shift-L | Previous / next file |

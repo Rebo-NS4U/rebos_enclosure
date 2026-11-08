@@ -1,12 +1,16 @@
 local map = vim.keymap.set
+local projects_file = vim.fn.stdpath('config') .. '/projects.lua'
+local projects = vim.fn.filereadable(projects_file) == 1 and dofile(projects_file) or {}
+projects = vim.tbl_map(vim.fn.expand, projects)
 return {
   { 'folke/snacks.nvim', lazy = false, priority = 1000,
-    opts = { picker = { enabled = true }, explorer = { enabled = true },
+    opts = { picker = { enabled = true, sources = { projects = { projects = projects } } }, explorer = { enabled = true },
       input = { enabled = true }, notifier = { enabled = true }, indent = { enabled = true },
       terminal = { enabled = true }, bigfile = { enabled = true }, quickfile = { enabled = true },
       dashboard = { enabled = true, preset = { header = '\nREBO / NEOVIM\n', keys = {
         { icon = ' ', key = 'f', desc = 'Find file', action = ':lua Snacks.picker.files()' },
         { icon = ' ', key = 'g', desc = 'Search project', action = ':lua Snacks.picker.grep()' },
+        { icon = ' ', key = 'p', desc = 'Projects', action = ':lua Snacks.picker.projects()' },
         { icon = ' ', key = 'r', desc = 'Recent files', action = ':lua Snacks.picker.recent()' },
         { icon = ' ', key = 'c', desc = 'Configuration', action = ':edit ~/.config/nvim/init.lua' },
         { icon = '󰋖 ', key = '?', desc = 'IDE guide', action = ':IDEHelp' },
@@ -19,6 +23,7 @@ return {
       bind('<leader>ff', function() Snacks.picker.files({ cwd = require('ide.tools').root(), hidden = true }) end, 'Find files')
       bind('<C-p>', function() Snacks.picker.files({ cwd = require('ide.tools').root(), hidden = true }) end, 'Find files')
       bind('<leader>fg', function() Snacks.picker.grep({ cwd = require('ide.tools').root() }) end, 'Search project')
+      bind('<leader>fp', function() Snacks.picker.projects() end, 'Projects')
       bind('<leader>fb', function() Snacks.picker.buffers() end, 'Open files')
       bind('<leader>fr', function() Snacks.picker.recent() end, 'Recent files')
       bind('<leader><space>', function() Snacks.picker.smart() end, 'Smart file search')
