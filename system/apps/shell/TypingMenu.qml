@@ -1884,7 +1884,9 @@ Item {
                                 width: 18
                                 height: 28
                                 z: 0
-                                visible: root.practicing && root.passage.length > 0 && !root.busy && placed && targetGlyph !== null && targetGlyph.caretHere
+                                // Keep the last valid placement visible while the next glyph
+                                // takes over on callLater; caretHere clears before that handoff.
+                                visible: root.practicing && root.passage.length > 0 && !root.busy && placed && targetGlyph !== null
                                 function follow(item) {
                                     if (root.busy || root.restoring || !item || !item.caretHere || !item.visible) return;
                                     if (root.glyphItems[item.characterIndex] !== item || item.characterIndex !== root.renderedCaret) return;
