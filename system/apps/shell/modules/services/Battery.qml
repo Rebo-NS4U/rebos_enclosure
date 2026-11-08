@@ -92,7 +92,7 @@ Singleton {
         const advice = threshold <= 2 ? "Plug in now. Save your work immediately; power may run out at any moment."
             : threshold <= 5 ? "Connect your charger now and save your work."
             : threshold <= 10 ? "Connect your charger soon. Power saver can help you last longer."
-            : "Consider connecting your charger or enabling power saver.";
+            : "Connect your charger. Enable power saver to extend battery life.";
         const remaining = timeToEmpty !== "" ? " About " + timeToEmpty + " remaining." : "";
         const actions = [];
         if (PowerProfile.currentProfile !== "power-saver")
@@ -104,11 +104,12 @@ Singleton {
             "appIcon": isCritical ? "battery-empty-symbolic" : "battery-caution-symbolic",
             "summary": title + " · " + roundedPercentage + "%",
             "body": advice + remaining,
-            "urgency": isCritical ? NotificationUrgency.Critical : NotificationUrgency.Normal,
+            // Use the shell’s high-contrast warning treatment at every low-battery threshold.
+            "urgency": NotificationUrgency.Critical,
             "historyPriority": 100,
             "replaceKey": "battery-low-alert",
-            // Negative intervals keep critical warnings visible until dismissed.
-            "expireTimeout": isCritical ? -1 : (threshold <= 10 ? 15000 : 10000),
+            // Keep warnings visible until dismissed, plugged in, or battery recovery.
+            "expireTimeout": -1,
             "actions": actions,
             "actionHandlers": {
                 "enable-power-saver": function () {
