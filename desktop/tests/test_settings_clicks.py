@@ -16,6 +16,7 @@ import QtTest
 import Quickshell
 import qs.modules.widgets.dashboard.controls
 import qs.config
+import qs.modules.globals
 import qs.modules.theme
 ShellRoot {
  FloatingWindow {
@@ -151,6 +152,41 @@ ShellRoot {
       fixture.check(reviewControls.feedback.includes("staged whitespace"), "Local check report stays visible");
       reviewControls.selectedPath = "/example/another-repository";
       fixture.check(reviewControls.feedback === "", "Previous repo report cleared when selection changes");
+      let settingsComponent = Qt.createComponent("modules/widgets/dashboard/controls/SettingsTab.qml");
+      fixture.check(settingsComponent.status === Component.Ready, settingsComponent.errorString());
+      let settings = settingsComponent.createObject(fixture, {width: 1000, height: 740});
+      fixture.check(settings !== null, "Grouped settings created");
+      tester.wait(100);
+      fixture.check(settings.filteredSections.length === 5, "Five sidebar categories");
+      fixture.check([].concat.apply([], settings.categoryModel.map(group => group.sections)).sort((a,b) => a-b).join(",") === "0,1,2,3,4,5,6,7,8,9,10", "Every page belongs to exactly one category");
+      for (let group of settings.categoryModel) {
+       settings.openSection(group.section, "");
+       tester.wait(60);
+       fixture.check(settings.activeCategory.label === group.label, "Category activates");
+       for (let section of group.sections) {
+        if (group.sections.length > 1) {
+         let tab = fixture.find(settings, "settings-page-" + section);
+         fixture.check(tab && tab.visible && tab.enabled, "Page tab reachable");
+         tester.mouseClick(tab);
+         tester.wait(60);
+        }
+        fixture.check(settings.currentSection === section, "Tab selects original page");
+        fixture.check(settings.selectedIndex === settings.categoryModel.indexOf(group), "Category stays selected");
+       }
+      }
+      GlobalStates.settingsCurrentTab = 8;
+      tester.wait(60);
+      fixture.check(settings.currentSection === 8 && settings.selectedIndex === 1, "External window-rule link selects Desktop");
+      settings.searchQuery = "transparency";
+      tester.wait(80);
+      fixture.check(settings.currentSection === 4 && settings.pendingSubSection === "" , "Search opens appearance subsection");
+      let loader = fixture.find(settings, "settings-panel-loader");
+      tester.wait(150);
+      fixture.check(loader.item && loader.item.currentSection === "blur", "Search loads transparency sliders directly");
+      settings.searchQuery = "";
+      tester.wait(50);
+      fixture.check(settings.currentSection === 4 && settings.selectedIndex === 0 && settings.filteredSections.length === 5, "Clearing search preserves page and category");
+      settings.destroy();
       console.log("SETTINGS CLICK TESTS PASSED"); Qt.quit();
      } catch (error) { console.error(error); Qt.exit(1); }
     }

@@ -1,10 +1,21 @@
 # Shell settings
 
-The sidebar puts Appearance and Shell first, followed by Display, Keyboard
-shortcuts, Window rules, Network, Bluetooth, Sound, System, Assistant and GitHub.
-Section IDs remain stable for saved selections and search links.
+The sidebar combines settings into five categories. Related pages appear as tabs
+above the content, so switching pages keeps the category selected:
 
-Appearance → Transparency and blur contains two saved sliders:
+| Category | Pages |
+| --- | --- |
+| Personalization | Appearance, Shell |
+| Desktop | Display, Keyboard shortcuts, Window rules |
+| Connections & sound | Network, Bluetooth, Sound |
+| System | System information, weather and effects |
+| Apps & integrations | Assistant, GitHub |
+
+Search opens individual settings and subsections directly. Clearing search keeps
+the current page selected in its category. Section IDs remain stable for saved
+selections and links from elsewhere in the shell.
+
+Personalization → Appearance → Transparency and blur contains two saved sliders:
 
 - Shell background transparency adjusts menu and panel backgrounds from opaque
   (0%) to transparent (100%) while preserving text opacity. Use theme transparency

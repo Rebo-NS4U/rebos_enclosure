@@ -18,17 +18,36 @@ Item {
     // Section IDs stay stable for saved selections and search links, including GitHub (10).
 
     property int currentSection: GlobalStates.settingsCurrentTab
-    property int selectedIndex: sectionModel.findIndex(item => item.section === GlobalStates.settingsCurrentTab)
+    property int selectedIndex: -1
+    property bool syncingSelection: false
+    Component.onCompleted: syncSelection()
     property string searchQuery: ""
 
     onFilteredSectionsChanged: {
         if (searchQuery.length > 0) {
-            selectedIndex = 0;
+            syncingSelection = true;
+            selectedIndex = filteredSections.length ? 0 : -1;
+            syncingSelection = false;
+            activateSelection();
         } else {
-            const index = filteredSections.findIndex(section => section.section === root.currentSection);
-            selectedIndex = index >= 0 ? index : 0;
+            syncSelection();
         }
-        activateSelection();
+    }
+
+    function syncSelection() {
+        syncingSelection = true;
+        selectedIndex = searchQuery.length > 0
+            ? filteredSections.findIndex(item => item.section === currentSection)
+            : categoryModel.findIndex(item => item.sections.includes(currentSection));
+        syncingSelection = false;
+        scrollSidebarToSelection();
+    }
+
+    function openSection(section, subSection) {
+        currentSection = section;
+        GlobalStates.settingsCurrentTab = section;
+        dispatchSubSection(section, subSection);
+        syncSelection();
     }
 
     // Timer to restore focus after panel transitions
@@ -38,15 +57,13 @@ Item {
         onTriggered: searchInput.focusInput()
     }
 
-    onSelectedIndexChanged: activateSelection()
+    onSelectedIndexChanged: if (!syncingSelection) activateSelection()
 
     function activateSelection(): void {
         if (!filteredSections || selectedIndex < 0 || selectedIndex >= filteredSections.length)
             return;
         const item = filteredSections[selectedIndex];
-        root.currentSection = item.section;
-        GlobalStates.settingsCurrentTab = item.section;
-        root.dispatchSubSection(item.section, item.subSection);
+        root.openSection(item.section, item.subSection);
         root.scrollSidebarToSelection();
         focusRestoreTimer.restart();
     }
@@ -54,11 +71,8 @@ Item {
     Connections {
         target: GlobalStates
         function onSettingsCurrentTabChanged() {
-            if (root.currentSection !== GlobalStates.settingsCurrentTab) {
-                const index = root.filteredSections.findIndex(item => item.section === GlobalStates.settingsCurrentTab);
-                if (index >= 0)
-                    root.selectedIndex = index;
-            }
+            if (root.currentSection !== GlobalStates.settingsCurrentTab)
+                root.openSection(GlobalStates.settingsCurrentTab, "");
         }
     }
 
@@ -205,6 +219,16 @@ Item {
         return queryIndex === lowerQuery.length ? score + maxConsecutive * 5 : -1;
     }
 
+    readonly property var categoryModel: [
+        {label: "Personalization", icon: Icons.paintBrush, isIcon: true, section: 4, sections: [4, 6]},
+        {label: "Desktop", icon: Icons.layout, isIcon: true, section: 9, sections: [9, 7, 8]},
+        {label: "Connections & sound", icon: Icons.wifiHigh, isIcon: true, section: 0, sections: [0, 1, 2]},
+        {label: "System", icon: Icons.circuitry, isIcon: true, section: 5, sections: [5]},
+        {label: "Apps & integrations", icon: Icons.robot, isIcon: true, section: 3, sections: [3, 10]}
+    ]
+    readonly property var activeCategory: categoryModel.find(item => item.sections.includes(currentSection)) || categoryModel[0]
+    readonly property var categoryPages: activeCategory.sections.map(id => sectionModel.find(item => item.section === id))
+
     // Original sections model
     readonly property var sectionModel: [
         {
@@ -278,7 +302,7 @@ Item {
     // Filtered sections based on search query
     readonly property var filteredSections: {
         if (searchQuery.length === 0)
-            return sectionModel;
+            return categoryModel;
 
         const query = searchQuery.toLowerCase();
         return searchIndex.items.filter(item => {
@@ -314,8 +338,8 @@ Item {
 
         // Sidebar area: search + list
         ColumnLayout {
-            Layout.preferredWidth: 220
-            Layout.maximumWidth: 220
+            Layout.preferredWidth: 250
+            Layout.maximumWidth: 250
             Layout.fillHeight: true
             spacing: 4
 
@@ -350,8 +374,7 @@ Item {
                     // If single result, select it; if multiple, select top one
                     if (root.filteredSections.length > 0) {
                         const item = root.filteredSections[root.selectedIndex];
-                        root.currentSection = item.section;
-                        root.dispatchSubSection(item.section, item.subSection);
+                        root.openSection(item.section, item.subSection);
                     }
                 }
 
@@ -534,9 +557,7 @@ Item {
                                 }
 
                                 onClicked: {
-                                    root.selectedIndex = index;
-                                    // currentSection updates via binding on selectedIndex
-                                    root.dispatchSubSection(sidebarButton.modelData.section, sidebarButton.modelData.subSection);
+                                    root.openSection(modelData.section, modelData.subSection);
                                 }
                             }
                         }
@@ -630,11 +651,36 @@ Item {
                 }
             ]
 
+            Flow {
+                id: categoryTabs
+                objectName: "settings-category-tabs"
+                width: parent.width
+                spacing: 8
+                visible: root.categoryPages.length > 1
+                Repeater {
+                    model: root.categoryPages
+                    delegate: SettingsButton {
+                        required property var modelData
+                        objectName: "settings-page-" + modelData.section
+                        text: modelData.label
+                        highlighted: root.currentSection === modelData.section
+                        background: StyledRect {
+                            variant: parent.highlighted ? "focus" : "common"
+                            radius: Styling.radius(-4)
+                            border.width: parent.highlighted || parent.activeFocus ? 2 : 1
+                            border.color: parent.highlighted || parent.activeFocus ? Colors.primary : Qt.alpha(Colors.outline, 0.3)
+                        }
+                        onClicked: root.openSection(modelData.section, "")
+                    }
+                }
+            }
+
             // Lazy-loaded panel using Loader
             Loader {
                 id: panelLoader
                 objectName: "settings-panel-loader"
                 anchors.fill: parent
+                anchors.topMargin: categoryTabs.visible ? categoryTabs.height + 12 : 0
                 asynchronous: true
                 source: contentArea.panelComponents[root.currentSection]?.component ?? ""
 

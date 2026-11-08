@@ -24,7 +24,7 @@ SettingsGroup {
             smoothDrag: false
             property bool ready: false
             readonly property real configValue: (Config.theme.shellTransparency < 0 ? (Styling.shellStyle === "glass" || Styling.shellStyle === "colorful" ? 22 : 0) : Config.theme.shellTransparency) / 100
-            onConfigValueChanged: value = configValue
+            onConfigValueChanged: { const wasReady = ready; ready = false; value = configValue; ready = wasReady; }
             Component.onCompleted: { value = configValue; ready = true; }
             onValueChanged: {
                 const percent = Math.round(value * 100);
@@ -47,7 +47,7 @@ SettingsGroup {
             smoothDrag: false
             property bool ready: false
             readonly property real configValue: (Config.performance.blurStrength) / 100
-            onConfigValueChanged: value = configValue
+            onConfigValueChanged: { const wasReady = ready; ready = false; value = configValue; ready = wasReady; }
             Component.onCompleted: { value = configValue; ready = true; }
             onValueChanged: {
                 const percent = Math.round(value * 100);
