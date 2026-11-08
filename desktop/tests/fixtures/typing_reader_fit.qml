@@ -7,7 +7,14 @@ ShellRoot {
         implicitWidth: 640
         implicitHeight: 600
         exclusionMode: ExclusionMode.Ignore
-        TypingMenu { id: menu; anchors.fill: parent }
+        TypingMenu {
+            id: menu
+            anchors.fill: parent
+            // Stress renderer metrics beyond the estimated page-line budget.
+            function readerHtml(value) {
+                return '<p style="line-height:220%; margin:0px;">' + value + '</p>';
+            }
+        }
     }
     function find(item) {
         if (item.objectName === "reader-page-text") return item;

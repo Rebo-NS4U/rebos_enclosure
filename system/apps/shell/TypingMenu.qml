@@ -340,7 +340,18 @@ Item {
             scrollLine = -1;
             passageVisuals.contentY = 0;
         }
-        pageLayout = TypingPaging.layout(pageSource, Math.max(1, passageFlow.width), characterWidth, layoutLineLimit);
+        let limit = layoutLineLimit;
+        let fitted = TypingPaging.layout(pageSource, Math.max(1, passageFlow.width), characterWidth, limit);
+        if (fullscreen && readerText.height > 0) {
+            // Qt rich-text wrapping can differ from the typing word rows.
+            // Measure the actual renderer before accepting a page.
+            readerMeasure.text = readerHtml(fitted.text);
+            while (readerMeasure.contentHeight > readerText.height - 3 && limit > 1) {
+                fitted = TypingPaging.layout(pageSource, Math.max(1, readerText.width), characterWidth, --limit);
+                readerMeasure.text = readerHtml(fitted.text);
+            }
+        }
+        pageLayout = fitted;
         Qt.callLater(refreshPageCaret);
     }
     function refreshPageCaret() {
@@ -1933,8 +1944,18 @@ Item {
                             }
                         }
                         TextEdit {
+                            id: readerMeasure
+                            visible: false
+                            width: readerText.width
+                            font: root.readingFont
+                            textFormat: TextEdit.RichText
+                            wrapMode: TextEdit.Wrap
+                        }
+                        TextEdit {
                             id: readerText
                             objectName: "reader-page-text"
+                            onHeightChanged: if (root.fullscreen) fitDelay.restart()
+                            onWidthChanged: if (root.fullscreen) fitDelay.restart()
                             opacity: 0.35 + 0.65 * root.readerReveal
                             transform: Translate {
                                 x: (1 - root.readerReveal) * root.readerDirection * 12
