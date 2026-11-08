@@ -99,7 +99,8 @@ later. See [LICENSE](./LICENSE).
 
 Fullscreen typing shares the reader's 720px column, configured font, paragraph
 indentation and line spacing. The document scrolls with the caret rather than
-turning pages; loaded text stays bounded and rolling handoffs retain the caret's
+turning pages; a visible caret tracks input independently of keyboard focus.
+Loaded text stays bounded and rolling handoffs retain the caret's
 screen position. Mistakes use the theme error color and an underline. Library,
 chapter, notes and menu surfaces share the shell palette and corner radius.
 Ctrl+Tab switches typing and reading while the passage is active (not while

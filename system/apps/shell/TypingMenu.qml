@@ -2194,15 +2194,26 @@ Item {
                                 textFormat: TextEdit.RichText
                                 wrapMode: TextEdit.Wrap
                                 readOnly: true
-                                cursorVisible: true
+                                cursorVisible: false
                                 color: Colors.overSurface
                                 text: TypingPaging.readerHtml(root.passage, root.paragraphStarts,
                                     root.readerLineHeight, root.readingFont.pixelSize * 2,
                                     root.displayedInput, Colors.error.toString())
                                 onContentHeightChanged: Qt.callLater(root.followFullscreenTyping)
-                                cursorDelegate: Rectangle {
+                                // Input focus belongs to the invisible answer editor.
+                                // Draw the display caret independently of TextEdit focus.
+                                Rectangle {
+                                    id: fullscreenTypingCaret
+                                    objectName: "fullscreen-typing-caret"
+                                    x: fullscreenTypingText.cursorRectangle.x
+                                    y: fullscreenTypingText.cursorRectangle.y
                                     width: 2
+                                    height: Math.max(root.readingFont.pixelSize, fullscreenTypingText.cursorRectangle.height)
+                                    radius: 1
+                                    z: 10
                                     color: Colors.primary
+                                    visible: root.fullscreen && !root.readingMode && root.practicing && root.passage.length > 0
+                                    opacity: answer.activeFocus ? 1 : 0.65
                                 }
                                 Rectangle {
                                     objectName: "fullscreen-typing-line-feedback"
