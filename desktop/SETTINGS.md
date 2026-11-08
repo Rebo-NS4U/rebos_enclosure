@@ -21,9 +21,14 @@ Personalization → Appearance → Transparency and blur contains two saved slid
   (0%) to transparent (100%) while preserving text opacity. Use theme transparency
   restores each style's defaults. This override does not change app windows or the
   bar's separate appearance settings.
-- Blur strength adjusts Niri blur where the selected blur mode permits it. The
-  lowest setting keeps a small blur; choose Blur off to remove it. Lighter glass
-  uses fewer passes. The default strength preserves the previous preset radius.
+- Where blur applies selects Everywhere, Shell panels only, or Off independently
+  of strength and transparency. Turning blur off preserves the saved strength.
+- Blur strength uses one scale for Everywhere and Shell panels only. Lighter
+  glass sets the slider to 22%; Full glass sets it to 50%. Other values show Custom.
+  Presets preserve transparency and blur location. Choosing a preset while blur
+  is off enables it Everywhere. 0% keeps a small blur; choose Off to remove it.
+  The old lighter mode is converted to the shared scale when this panel loads,
+  preserving approximately its previous radius.
 
 Changes apply through normal configuration hot reload; no service restart is
 required. Fonts and corners contains its own controls without duplicating the

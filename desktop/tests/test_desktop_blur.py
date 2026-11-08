@@ -23,6 +23,9 @@ class BlurTests(unittest.TestCase):
                     result = subprocess.run(['niri', 'validate', '-c', f.name], capture_output=True, text=True)
                     self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual(offsets, sorted(set(offsets)))
+        for strength in (0, 22, 50, 80, 100):
+            self.assertEqual(blur.render('medium', strength).splitlines()[1],
+                             blur.render('shell', strength).splitlines()[1])
         self.assertIn('exclude namespace=', blur.render('shell'))
         self.assertNotIn('exclude namespace=', blur.render('off'))
         for value in (-1, 101):

@@ -9,7 +9,21 @@ import qs.modules.theme
 SettingsGroup {
     id: root
     title: "Transparency and blur"
-    description: "Choose where glass blur appears. Less blur can reduce GPU use during video playback. Changes apply immediately."
+    description: "Set transparency, choose where blur appears, then adjust its strength. Changes save and apply automatically."
+
+    // Normalize the former lighter mode into the shared strength scale.
+    function normalizeLegacyMode() {
+        if (Config.performance.desktopBlur === "light") {
+            Config.performance.blurStrength = Math.max(0, Math.round(Config.performance.blurStrength / 2 - 2.78));
+            Config.performance.desktopBlur = "medium";
+        }
+    }
+    Component.onCompleted: normalizeLegacyMode()
+    function applyPreset(strength) {
+        normalizeLegacyMode();
+        Config.performance.blurStrength = strength;
+        if (Config.performance.desktopBlur === "off") Config.performance.desktopBlur = "medium";
+    }
     StyledText { text: "Shell background transparency"; font.bold: true }
     RowLayout {
         Layout.fillWidth: true
@@ -32,6 +46,32 @@ SettingsGroup {
             }
         }
         StyledText { text: Math.round(transparencySlider.value * 100) + "%"; Layout.preferredWidth: 50 }
+    }
+    SettingsButton {
+        objectName: "theme-transparency-reset"
+        text: "Use theme transparency"
+        onClicked: Config.theme.shellTransparency = -1
+    }
+    StyledText {
+        Layout.fillWidth: true
+        wrapMode: Text.WordWrap
+        text: "0% is opaque; 100% is transparent. This changes shell menu and panel backgrounds, keeping text solid. App windows and the bar have separate transparency settings."
+        color: Colors.overSurfaceVariant
+    }
+    StyledText { text: "Where blur applies"; font.bold: true }
+    SettingsComboBox {
+        objectName: "blur-scope"
+        Layout.fillWidth: true
+        model: [{label: "Everywhere", value: "medium"},
+                {label: "Shell panels only", value: "shell"},
+                {label: "Off", value: "off"}]
+        textRole: "label"
+        valueRole: "value"
+        currentIndex: Config.performance.desktopBlur === "shell" ? 1 : Config.performance.desktopBlur === "off" ? 2 : 0
+        onActivated: {
+            root.normalizeLegacyMode();
+            Config.performance.desktopBlur = currentValue;
+        }
     }
     StyledText { text: "Blur strength"; font.bold: true }
     RowLayout {
@@ -56,14 +96,18 @@ SettingsGroup {
         }
         StyledText { text: Math.round(blurstrengthSlider.value * 100) + "%"; Layout.preferredWidth: 50 }
     }
-    SettingsButton {
-        text: "Use theme transparency"
-        onClicked: Config.theme.shellTransparency = -1
+    StyledText {
+        objectName: "blur-preset-status"
+        Layout.fillWidth: true
+        text: Config.performance.desktopBlur === "off" ? "Blur is off. Your strength is saved for when you turn it back on."
+            : Config.performance.blurStrength === 22 ? "Lighter glass · 22%"
+            : Config.performance.blurStrength === 50 ? "Full glass · 50%" : "Custom · " + Config.performance.blurStrength + "%"
+        color: Colors.overSurfaceVariant
     }
     StyledText {
         Layout.fillWidth: true
         wrapMode: Text.WordWrap
-        text: "Transparency affects shell menu and panel backgrounds, keeping text solid. 0% is opaque. Blur strength applies wherever the selected mode enables blur; 0% is the softest blur."
+        text: "Presets set the strength slider. They keep your transparency and blur location; choosing one while blur is off enables blur everywhere. 0% is the softest blur; choose Off to remove it."
         color: Colors.overSurfaceVariant
     }
     GridLayout {
@@ -73,18 +117,16 @@ SettingsGroup {
         rowSpacing: 12
         Repeater {
             model: [
-                {mode: "light", label: "Lighter glass", detail: "Softer blur across apps and shell panels, with fewer blur passes."},
-                {mode: "shell", label: "Shell panels only", detail: "Keep blur on the bar and shell menus. Remove blur from app windows."},
-                {mode: "off", label: "Blur off", detail: "Remove blur everywhere for the lowest blur rendering cost. Transparency stays as configured."},
-                {mode: "medium", label: "Full glass", detail: "The original medium blur across apps and shell panels."}
+                {strength: 22, id: "light", label: "Lighter glass", detail: "Set blur strength to 22% for softer glass."},
+                {strength: 50, id: "medium", label: "Full glass", detail: "Set blur strength to 50% for fuller glass."}
             ]
             delegate: SettingsSectionCard {
                 required property var modelData
-                objectName: "desktop-blur-" + modelData.mode
+                objectName: "desktop-blur-" + modelData.id
                 text: modelData.label
                 description: modelData.detail
-                selected: Config.performance.desktopBlur === modelData.mode
-                onClicked: Config.performance.desktopBlur = modelData.mode
+                selected: Config.performance.desktopBlur !== "off" && Config.performance.blurStrength === modelData.strength
+                onClicked: root.applyPreset(modelData.strength)
             }
         }
     }

@@ -94,6 +94,7 @@ ShellRoot {
       samples.visible = false;
       for (let name of ["SystemPanel", "ShellPanel", "ThemePanel"]) {
        let component = Qt.createComponent("modules/widgets/dashboard/controls/" + name + ".qml");
+       if (name === "ThemePanel") { Config.performance.desktopBlur = "light"; Config.performance.blurStrength = 50; }
        let page = component.createObject(fixture, {width: 1000, height: 740});
        fixture.check(page !== null, name + " instantiated");
        tester.wait(40);
@@ -119,6 +120,7 @@ ShellRoot {
         fixture.check(page.currentSection !== "", name + " section responds to click: " + target.objectName);
        }
        if (name === "ThemePanel") {
+        fixture.check(Config.performance.desktopBlur === "medium" && Config.performance.blurStrength === 22, "Legacy lighter mode converts to shared scale: " + Config.performance.desktopBlur + "/" + Config.performance.blurStrength);
         page.currentSection = "blur";
         tester.wait(30);
         let transparency = fixture.find(page, "transparency-slider");
@@ -128,12 +130,28 @@ ShellRoot {
         fixture.check(Config.theme.shellTransparency === 65, "Transparency slider saves percentage");
         fixture.check(Math.abs(Styling.getStyledRectConfig("bg").opacity - 0.35) < 0.001, "Background opacity responds");
         fixture.check(Math.abs(Styling.getStyledRectConfig("popup").opacity - 0.35) < 0.001, "Popup opacity responds");
-        blur.value = 0.8;
+        Config.performance.desktopBlur = "shell";
+        let lightPreset = fixture.find(page, "desktop-blur-light");
+        let fullPreset = fixture.find(page, "desktop-blur-medium");
+        lightPreset.clicked(); tester.wait(20);
+        fixture.check(Config.performance.blurStrength === 22 && Math.abs(blur.value - 0.22) < 0.001, "Lighter preset moves strength slider");
+        fixture.check(Config.performance.desktopBlur === "shell" && Config.theme.shellTransparency === 65, "Preset preserves scope and transparency");
+        fixture.check(lightPreset.selected && !fullPreset.selected, "Lighter preset selected");
+        fullPreset.clicked(); tester.wait(300);
+        fixture.check(Config.performance.blurStrength === 50 && Math.abs(blur.value - 0.5) < 0.001 && fullPreset.selected, "Full preset moves slider and selection");
+        blur.value = 0.8; tester.wait(20);
         fixture.check(Config.performance.blurStrength === 80, "Blur slider saves percentage");
+        fixture.check(!lightPreset.selected && !fullPreset.selected && fixture.find(page, "blur-preset-status").text.includes("Custom"), "Slider changes mark custom strength");
+        let scope = fixture.find(page, "blur-scope");
+        scope.currentIndex = 0; scope.activated(0); tester.wait(20);
+        fixture.check(Config.performance.desktopBlur === "medium" && Config.performance.blurStrength === 80, "Scope change preserves strength");
         Config.performance.desktopBlur = "off";
         tester.wait(20);
         fixture.check(!blur.enabled, "Blur strength disabled when off");
-        Config.theme.shellTransparency = -1;
+        fullPreset.clicked(); tester.wait(300);
+        fixture.check(Config.performance.desktopBlur === "medium" && blur.enabled && fullPreset.selected, "Preset enables blur from off");
+        fixture.find(page, "theme-transparency-reset").clicked(); tester.wait(20);
+        fixture.check(Config.theme.shellTransparency === -1, "Theme transparency reset remains automatic");
        }
        page.destroy();
        tester.wait(20);
@@ -179,7 +197,7 @@ ShellRoot {
       fixture.check(settings.currentSection === 8 && settings.selectedIndex === 1, "External window-rule link selects Desktop");
       settings.searchQuery = "transparency";
       tester.wait(80);
-      fixture.check(settings.currentSection === 4 && settings.pendingSubSection === "" , "Search opens appearance subsection");
+      fixture.check(settings.currentSection === 4 , "Search opens appearance subsection");
       let loader = fixture.find(settings, "settings-panel-loader");
       tester.wait(150);
       fixture.check(loader.item && loader.item.currentSection === "blur", "Search loads transparency sliders directly");

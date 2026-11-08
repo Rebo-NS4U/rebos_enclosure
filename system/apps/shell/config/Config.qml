@@ -523,6 +523,12 @@ Singleton {
         }
     }
 
+    Timer {
+        id: performanceSaveTimer
+        interval: 200
+        onTriggered: performanceLoader.writeAdapter()
+    }
+
     // ============================================
     // PERFORMANCE MODULE
     // ============================================
@@ -545,10 +551,10 @@ Singleton {
                 });
             }
         }
-        onFileChanged: reload()
+        onFileChanged: { if (!performanceSaveTimer.running) reload(); }
         onAdapterUpdated: {
             if (root.performanceReady) {
-                performanceLoader.writeAdapter();
+                performanceSaveTimer.restart();
             }
         }
 
