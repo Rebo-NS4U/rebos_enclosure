@@ -21,8 +21,8 @@ Item {
     readonly property int pageLineLimit: fullscreen
         ? Math.max(1, Math.floor(Math.max(0, passageArea.height - 8) / Math.max(1, passageLineHeight)))
         : 7
-    // Reading uses viewport pages; typing scrolls continuously to the chapter boundary.
-    readonly property int layoutLineLimit: fullscreen ? Math.max(3, Math.min(36, pageLineLimit)) : 2147483647
+    // Keep both layout and delivery bounded; typing rolls overlapping windows.
+    readonly property int layoutLineLimit: fullscreen ? Math.max(3, Math.min(36, pageLineLimit)) : 36
     onPageLineLimitChanged: fitDelay.restart()
     onReadingFontChanged: { widthCache = ({}); fitDelay.restart(); }
     property var readerPageHistory: []
@@ -329,12 +329,15 @@ Item {
             widthCache[text] = Math.max(1, Math.ceil(typingMetrics.advanceWidth(text)));
         return widthCache[text];
     }
-    function fitPage() {
+    property bool slidingWindow: false
+    function fitPage(keepViewport = false) {
         // A direct fit also satisfies any pending resize/font fit.
         fitDelay.stop();
         stopFeedback();
-        scrollLine = -1;
-        passageVisuals.contentY = 0;
+        if (!keepViewport) {
+            scrollLine = -1;
+            passageVisuals.contentY = 0;
+        }
         pageLayout = TypingPaging.layout(pageSource, Math.max(1, passageFlow.width), characterWidth, layoutLineLimit);
         Qt.callLater(refreshPageCaret);
     }
@@ -439,8 +442,7 @@ Item {
     }
     Component.onCompleted: { if (visible) backendStarted = true; }
     function send(data, page = true) {
-        // Typing keeps the remaining chapter in one continuous scrolling passage.
-        data.chapterMode = !fullscreen;
+        // Load bounded windows, including during continuous chapter typing.
         const narrowWidth = Math.min(characterWidth("i"), characterWidth(" "));
         data.window = Math.max(512, Math.min(4096,
             Math.ceil(Math.max(640, passageFlow.width) / narrowWidth) * layoutLineLimit + 72));
@@ -634,7 +636,7 @@ Item {
                 return;
             }
             if (data.action === "list") { if (data.books) library = data.books; return; }
-            if (data.error) { if (data.request === pageRequest) { busy = false; turningPage = false; historyBack = false; backAfterTurn = false; } if (data.action === "save") dirty = true; message = data.error; errorMessage = data.error; return; }
+            if (data.error) { if (data.request === pageRequest) { busy = false; turningPage = false; slidingWindow = false; historyBack = false; backAfterTurn = false; } if (data.action === "save") dirty = true; message = data.error; errorMessage = data.error; return; }
             if (data.request !== pageRequest) return;
             if (data.atBeginning) { busy = false; turningPage = false; return; }
             if (data.previousText !== undefined) {
@@ -684,22 +686,26 @@ Item {
                 historyBack = false;
             }
             if (bookId !== data.id || ["open", "add", "import"].indexOf(data.action) >= 0) readerPageHistory = [];
+            const continuingWindow = slidingWindow && data.action === "next";
+            slidingWindow = false;
+            const oldChapterStart = chapterStart;
             const readerMoved = bookId !== data.id || position !== data.position;
             const revealDirection = data.position < position ? -1 : 1;
             restoring = true;
             bookId = data.id; bookTitle = data.title; bookKind = data.kind || "book"; bookLength = data.length;
             position = data.position; rounds = data.loops; if (data.chapters) chapters = data.chapters;
             resetPageCaret();
-            pageSource = data.passage; fitPage();
+            pageSource = data.passage; fitPage(continuingWindow);
             answer.text = data.typed; answer.cursorPosition = answer.length;
+            if (continuingWindow) speedBaseline = correctCount();
             dirty = false; draft = false; busy = false; restoring = false;
             turningPage = false;
             if (fullscreen && readerMoved) animateReaderPage(revealDirection);
             if (data.action === "next" || data.action === "previous") {
-                if (Motion.enabled && visible && practicing) requestFeedback("page");
+                if (Motion.enabled && visible && practicing && (fullscreen || oldChapterStart !== chapterStart)) requestFeedback("page");
                 const buffered = pendingKeys; pendingKeys = "";
                 if (buffered.length) Qt.callLater(() => {
-                    answer.text = data.action === "previous" ? answer.text + buffered : buffered; answer.cursorPosition = answer.length;
+                    answer.text = data.action === "previous" || continuingWindow ? answer.text + buffered : buffered; answer.cursorPosition = answer.length;
                     if (!root.visible || !root.practicing) root.saveProgress();
                 });
             } else { pendingKeys = ""; stopFeedback(); }
@@ -907,6 +913,20 @@ Item {
         if (!answer.text.length || answer.cursorPosition === answer.length) editingCorrection = false;
         const pageCount = characters(passage).length;
         const entered = characters(answer.text);
+        // Retain seven rows behind the caret and fetch before the current window
+        // runs out. The same text remains around the caret across the handoff.
+        const offset = TypingPaging.slideOffset(pageLayout, displayedInput.length, 7);
+        if (!prepared.pending && !editingCorrection && offset > 0
+                && position + pageCount < chapterEnd) {
+            pageHistory = pageHistory.concat([{position: position, rounds: rounds,
+                typed: answer.text, width: width, lines: pageLineLimit}]).slice(-128);
+            const consumed = characters(passage.slice(0, offset)).length;
+            slidingWindow = true;
+            dirty = false; turningPage = true; pageDirection = 1;
+            send({action: "next", id: bookId, position: position + consumed,
+                typed: answer.text.slice(offset), loops: rounds});
+            return;
+        }
         if (!pageCount || entered.length < pageCount || prepared.pending || editingCorrection) return;
         pageHistory = pageHistory.concat([{position: position, rounds: rounds, typed: entered.slice(0, pageCount).join(""), width: width, lines: pageLineLimit}]).slice(-128);
         pendingKeys = entered.slice(pageCount).join("") + pendingKeys;

@@ -21,19 +21,23 @@ class Books(unittest.TestCase):
         self.library.db.close()
         self.temp.cleanup()
 
-    def test_chapter_mode_preserves_long_input_and_stops_at_next_chapter(self):
-        text = 'word ' * 2000 + 'Next chapter'
-        boundary = 10000
+    def test_continuous_typing_windows_remain_bounded_and_overlap(self):
+        text = 'word 😀 ' * 2000 + 'Next chapter'
+        boundary = len(text) - len('Next chapter')
         book = self.library.add('Long chapters', text, [
             {'title': 'First', 'position': 0}, {'title': 'Next', 'position': boundary}])
-        page = self.library.handle({'action': 'open', 'id': book['id'], 'chapterMode': True})
-        self.assertEqual(page['passage'], text[:boundary])
-        self.library.save(book['id'], 0, text[:6000], 0)
-        restored = self.library.handle({'action': 'open', 'id': book['id'], 'chapterMode': True})
-        self.assertEqual(restored['typed'], text[:6000])
+        page = self.library.handle({'action': 'open', 'id': book['id'], 'window': 4096})
+        self.assertLessEqual(len(page['passage']), 4096)
+        offset = 2000
+        typed = page['passage'][offset:3000]
         following = self.library.handle({'action': 'next', 'id': book['id'],
-            'position': boundary, 'typed': '', 'chapterMode': True})
-        self.assertEqual(following['passage'], text[boundary:])
+            'position': offset, 'typed': typed, 'window': 4096})
+        self.assertLessEqual(len(following['passage']), 4096)
+        self.assertEqual(following['typed'], typed)
+        self.assertTrue(following['passage'].startswith(typed))
+        last = self.library.handle({'action': 'next', 'id': book['id'],
+            'position': boundary - 1000, 'typed': '', 'window': 4096})
+        self.assertEqual(last['passage'], text[boundary - 1000:boundary])
 
     def test_paragraph_pages_preserve_identity_and_saved_progress(self):
         raw = "First paragraph ends here.\n\nSecond paragraph continues here."

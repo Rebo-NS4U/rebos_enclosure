@@ -328,7 +328,7 @@ class Library:
         if row is None: raise ValueError('Book is no longer in the library.')
         data = dict(row)
         chapters = json.loads(data['chapters'])
-        end = min([data['length'] if getattr(self, 'chapter_mode', False) else data['position'] + self.window] + [chapter['position'] for chapter in chapters
+        end = min([data['position'] + self.window] + [chapter['position'] for chapter in chapters
                   if chapter['position'] > data['position']])
         if self.paragraph_mode:
             row = self.db.execute('SELECT starts FROM book_paragraphs WHERE id=?', (key,)).fetchone()
@@ -338,7 +338,7 @@ class Library:
                     end = min(end, following[0])
         chunk = self.text_slice(key, data['position'], end)
         boundary = chunk.rfind(' ')
-        if not getattr(self, 'chapter_mode', False) and end == data['position'] + self.window and end < data['length'] and boundary > 40:
+        if end == data['position'] + self.window and end < data['length'] and boundary > 40:
             chunk = chunk[:boundary + 1]
         data['passage'] = chunk
         if include_chapters: data['chapters'] = chapters
@@ -350,11 +350,10 @@ class Library:
         if row is None: raise ValueError('Book is no longer in the library.')
         if not isinstance(position, int) or not 0 <= position < row[0]: raise ValueError('Invalid book position.')
         with self.db:
-            self.db.execute('UPDATE book_progress SET position=?,typed=?,loops=?,updated=? WHERE id=?', (position, typed[:row[0]], max(0, int(loops)), time.time(), key))
+            self.db.execute('UPDATE book_progress SET position=?,typed=?,loops=?,updated=? WHERE id=?', (position, typed[:4096], max(0, int(loops)), time.time(), key))
             self.db.execute("INSERT INTO app_state VALUES ('last_book',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", (key,))
 
     def handle(self, request):
-        self.chapter_mode = bool(request.get('chapterMode', False))
         self.paragraph_mode = bool(request.get('paragraphs', False))
         self.window = max(WINDOW, min(4096, int(request.get('window', WINDOW))))
         handlers = {'delete': '_handle_delete', 'list': '_handle_list', 'resume': '_handle_resume', 'import': '_handle_import', 'add': '_handle_add', 'open': '_handle_open', 'chapter': '_handle_chapter', 'save': '_handle_save', 'seek': '_handle_save', 'next': '_handle_save', 'previous': '_handle_previous', 'words': '_handle_words', 'word': '_handle_word', 'note': '_handle_note', 'word_settings': '_handle_word_settings'}

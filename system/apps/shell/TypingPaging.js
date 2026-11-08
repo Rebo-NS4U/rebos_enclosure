@@ -64,3 +64,17 @@ function layout(source, width, measure, maxLines) {
     }
     return {text: source.slice(0, used), words: words, lines: line, lineWidths: lineWidths};
 }
+
+// Roll before the loaded window ends, retaining enough rows for the viewport.
+// Offsets are UTF-16 indices, matching layout words and QML's text cursor.
+function slideOffset(page, cursor, keepLines) {
+    var line = 0;
+    for (var i = 0; i < page.words.length; i++) {
+        if (page.words[i].start > cursor) break;
+        line = page.words[i].line;
+    }
+    if (line < keepLines * 2 || page.lines - line > keepLines + 1) return 0;
+    for (var j = 0; j < page.words.length; j++)
+        if (page.words[j].line >= line - keepLines) return page.words[j].start;
+    return 0;
+}
