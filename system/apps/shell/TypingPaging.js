@@ -16,6 +16,10 @@ function matchingCharacter(input, target) {
 
 // Compose three keyboard periods only where the book expects one ellipsis.
 function prepareInput(input, target) {
+    // Most edits cannot compose an ellipsis. Avoid allocating and walking two
+    // character arrays for every key and every cursor/display recomputation.
+    if (target.indexOf("\u2026") < 0 || input.indexOf(".") < 0)
+        return {text: input, pending: false};
     var source = characters(input), expected = characters(target), result = "";
     for (var i = 0, j = 0; i < source.length; j++) {
         if (expected[j] === "\u2026" && source[i] === ".") {

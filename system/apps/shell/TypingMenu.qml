@@ -552,17 +552,22 @@ Item {
     }
     function syncGlyphs() {
         const current = displayedInput;
+        // Read the QML string once, rather than converting its property value
+        // back into JavaScript on every iteration of the prefix scan.
+        const previous = renderedInput;
         let first = 0;
-        const shared = Math.min(current.length, renderedInput.length);
-        while (first < shared && current[first] === renderedInput[first]) first++;
-        let last = Math.max(current.length, renderedInput.length);
-        while (last > first && current[last - 1] === renderedInput[last - 1]) last--;
+        const shared = Math.min(current.length, previous.length);
+        while (first < shared && current[first] === previous[first]) first++;
+        let last = Math.max(current.length, previous.length);
+        while (last > first && current[last - 1] === previous[last - 1]) last--;
         for (let index = first; index < last; index++)
             updateGlyph(glyphItems[index]);
         renderedInput = current;
         syncCaret();
     }
-    function correctCount() {
+    readonly property int currentCorrectCount: countCorrectInput()
+    function correctCount() { return currentCorrectCount; }
+    function countCorrectInput() {
         const input = characters(displayedInput);
         const target = characters(passage);
         let count = 0;
