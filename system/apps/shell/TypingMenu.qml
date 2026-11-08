@@ -17,6 +17,7 @@ Item {
     signal backRequested()
     property bool practicing: false
     property bool readingMode: false
+    readonly property alias modeShortcut: modeSwitchShortcut
     property bool fullscreen: false
     onFullscreenChanged: {
         readerPageHistory = [];
@@ -297,6 +298,14 @@ Item {
         enabled: root.visible && root.practicing && !root.busy && !root.turningPage
         onActivated: root.openCurrentWord()
     }
+    Shortcut {
+        id: modeSwitchShortcut
+        objectName: "typing-mode-shortcut"
+        sequence: "Ctrl+Tab"
+        context: Qt.ApplicationShortcut
+        enabled: root.visible && root.practicing && !root.busy && !root.turningPage && !wordPanel.opened
+        onActivated: root.toggleReadingMode()
+    }
     function openNotebook() {
         if (wordPanel.opened && (noteDirty || noteSaving)) return;
         openWord(""); notebookMode = true; notebookBrowsing = true; wordOptionsExpanded = false;
@@ -467,6 +476,8 @@ Item {
     property string effectKind: ""
     property int effectLine: -1
     property real effectStrength: 0
+    property int fullscreenFeedbackSerial: 0
+    property real fullscreenFeedbackRow: -1
     property var glowingGlyphs: []
     onEffectStrengthChanged: {
         if (effectKind === "line") Qt.callLater(followPageCaret);
@@ -510,7 +521,7 @@ Item {
         for (const glyph of previous) glyph.stopFeedback();
     }
     function stopFeedback() {
-        feedbackAnimation.stop(); stopLetters(); effectStrength = 0; effectKind = ""; effectLine = -1;
+        feedbackAnimation.stop(); stopLetters(); fullscreenFeedbackRow = -1; effectStrength = 0; effectKind = ""; effectLine = -1;
     }
     function requestFeedback(kind, glyph = null) {
         if (!Motion.enabled || !visible || !practicing) return;
@@ -646,8 +657,14 @@ Item {
         while (first < shared && current[first] === previous[first]) first++;
         let last = Math.max(current.length, previous.length);
         while (last > first && current[last - 1] === previous[last - 1]) last--;
-        for (let index = first; index < last; index++)
+        for (let index = first; index < last; index++) {
             updateGlyph(glyphItems[index]);
+            if (fullscreen && !readingMode && !restoring && !busy && index < current.length
+                    && !/[\uDC00-\uDFFF]/.test(current[index])) {
+                const pulse = fullscreenFeedback.itemAt(fullscreenFeedbackSerial++ % 12);
+                if (pulse) pulse.play(index, characters(current.slice(index, index + 2))[0]);
+            }
+        }
         renderedInput = current;
         syncCaret();
     }
@@ -1538,10 +1555,10 @@ Item {
                         id: readerActions
                         x: readerActionsButton.width - width
                         y: readerActionsButton.height + 4
-                        width: 220
+                        width: 280
                         padding: 6
                         background: StyledRect { variant: "popup"; radius: Config.roundness }
-                        ReaderAction { objectName: "typing-mode"; text: root.readingMode ? "Typing mode" : "Reading mode"; onClicked: { readerActions.close(); root.toggleReadingMode(); } }
+                        ReaderAction { objectName: "typing-mode"; text: root.readingMode ? "Typing mode · Ctrl+Tab" : "Reading mode · Ctrl+Tab"; onClicked: { readerActions.close(); root.toggleReadingMode(); } }
                         ReaderAction { objectName: "typing-fullscreen"; text: root.fullscreen ? "Compact window · F11" : "Fullscreen · F11"; onClicked: { readerActions.close(); root.toggleFullscreen(); } }
                         ReaderAction { objectName: "typing-library"; text: "Book library"; enabled: root.practicing; onClicked: { readerActions.close(); root.showLibrary(); } }
                         ReaderAction { objectName: "typing-reader-import"; text: "Import book…"; enabled: !root.busy; onClicked: { readerActions.close(); root.openImport(); } }
@@ -2187,6 +2204,81 @@ Item {
                                     width: 2
                                     color: Colors.primary
                                 }
+                                Rectangle {
+                                    objectName: "fullscreen-typing-line-feedback"
+                                    width: parent.width
+                                    height: root.readerLineHeight
+                                    y: fullscreenTypingText.cursorRectangle.y
+                                    radius: 4
+                                    color: Qt.alpha(Colors.primary, 0.1)
+                                    opacity: root.effectKind === "line" ? root.effectStrength : 0
+                                    z: -1
+                                }
+                                Repeater {
+                                    id: fullscreenFeedback
+                                    model: 12
+                                    delegate: Item {
+                                        id: pulse
+                                        required property int index
+                                        objectName: "fullscreen-typing-feedback-" + index
+                                        property int sourceIndex: 0
+                                        property string letter: ""
+                                        property bool failed: false
+                                        property real strength: 0
+                                        readonly property rect characterRect: {
+                                            const layoutHeight = fullscreenTypingText.contentHeight;
+                                            const source = root.passage;
+                                            return fullscreenTypingText.positionToRectangle(sourceIndex);
+                                        }
+                                        x: characterRect.x
+                                        y: characterRect.y
+                                        width: root.characterWidth(letter)
+                                        height: characterRect.height
+                                        visible: strength > 0 && root.fullscreen && !root.readingMode
+                                        function stopFeedback() {
+                                            fade.stop(); strength = 0; root.forgetGlyph(pulse);
+                                        }
+                                        function startFeedback(isError) {
+                                            failed = isError; fade.restart();
+                                        }
+                                        function play(at, entered) {
+                                            if (!Motion.enabled || !root.visible || !root.practicing) return;
+                                            sourceIndex = at;
+                                            letter = root.characters(root.passage.slice(at, at + 2))[0] || "";
+                                            const isError = !TypingPaging.matchingCharacter(entered, letter);
+                                            root.requestFeedback(isError ? "error" : "letter", pulse);
+                                            const row = characterRect.y;
+                                            if (root.fullscreenFeedbackRow >= 0 && root.fullscreenFeedbackRow !== row)
+                                                root.requestFeedback("line");
+                                            root.fullscreenFeedbackRow = row;
+                                        }
+                                        NumberAnimation {
+                                            id: fade
+                                            target: pulse; property: "strength"
+                                            from: 1; to: 0
+                                            duration: Math.max(240, Motion.base)
+                                            easing.type: Easing.OutCubic
+                                            onFinished: pulse.stopFeedback()
+                                        }
+                                        PopHalo {
+                                            anchors.fill: parent
+                                            anchors.margins: -3
+                                            strength: pulse.strength
+                                            color: Qt.alpha(pulse.failed ? Colors.error : Colors.primary, 0.18)
+                                            border.color: Qt.alpha(pulse.failed ? Colors.error : Colors.primary, 0.5)
+                                        }
+                                        StyledText {
+                                            anchors.fill: parent
+                                            font: root.readingFont
+                                            renderType: fullscreenTypingText.renderType
+                                            verticalAlignment: Text.AlignVCenter
+                                            text: pulse.letter === " " ? "" : pulse.letter
+                                            color: pulse.failed ? Colors.error : Colors.primary
+                                            opacity: pulse.strength
+                                            scale: 1 + pulse.strength * (pulse.failed ? 0.18 : 0.08)
+                                        }
+                                    }
+                                }
                             }
                         }
                         TextEdit {
@@ -2305,7 +2397,7 @@ Item {
                             anchors.right: parent.right
                             anchors.top: parent.top
                             anchors.margins: 12
-                            text: "Next: l / → / Page Down / Space   Previous: h / ← / Page Up / Shift+Space\nChapter: k / j or [ / ]   Notes: N   Word lookup: Ctrl+Space\nShortcut guide: ?   Window size: F11   Close / leave fullscreen: Esc"
+                            text: "Next: l / → / Page Down / Space   Previous: h / ← / Page Up / Shift+Space\nChapter: k / j or [ / ]   Notes: N   Word lookup: Ctrl+Space\nSwitch typing / reading: Ctrl+Tab\nShortcut guide: ?   Window size: F11   Close / leave fullscreen: Esc"
                             wrapMode: Text.Wrap
                             font.pixelSize: 12
                         }

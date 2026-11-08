@@ -102,7 +102,10 @@ indentation and line spacing. The document scrolls with the caret rather than
 turning pages; loaded text stays bounded and rolling handoffs retain the caret's
 screen position. Mistakes use the theme error color and an underline. Library,
 chapter, notes and menu surfaces share the shell palette and corner radius.
-F11 switches sizes; Escape leaves fullscreen while keeping the activity.
+Ctrl+Tab switches typing and reading while the passage is active (not while
+editing notes). F11 switches sizes; Escape leaves fullscreen while keeping the
+activity. Fullscreen scrolling typing includes letter pulses, error feedback
+and line highlights; disabling Appearance motion stops these animations.
 
 Open typing with its keyboard shortcut or `qs ipc call typing toggle`. Typing
 replaces the expanded bar contents, using the same input and dismissal behavior
