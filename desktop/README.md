@@ -461,3 +461,5 @@ Video startup avoids extra YouTube format probes and uses a 1.5-second network b
 Single-video YouTube quick-play uses the existing feed card instead of fetching full details a second time. Playlist enumeration is preserved. Provider subtitle downloads and conversion run after video loading starts; late results are scoped to the current video and preserve explicit subtitle choices.
 
 The shared stream relay forwards available network bytes immediately, including after a preloaded prefix, rather than waiting for a full 64 KB chunk. VLC pause-click capability detection is cached for the media backend lifetime to avoid an extra VLC process on repeat launches.
+
+The book reader offers **Read aloud** and **Stop** in reading mode. It reads selected text, or the current page when nothing is selected, using offline eSpeak NG at 165 words per minute. Navigation, changing modes, and closing the reader stop speech. Install the core package `espeak-ng` for playback; no account or downloaded voice model is required.

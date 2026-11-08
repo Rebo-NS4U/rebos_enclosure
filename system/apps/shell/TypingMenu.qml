@@ -41,12 +41,40 @@ Item {
     property int readerAnimationEvents: 0
     property bool readerHelp: false
     onReadingModeChanged: {
+        stopSpeech();
         readerPageHistory = [];
         stopFeedback();
         fitDelay.restart();
         if (practicing) Qt.callLater(() => root.focusPassage());
         readerRevealAnimation.stop(); readerReveal = 1; readerHelp = false;
         if (readingMode) Qt.callLater(() => animateReaderPage(1));
+    }
+    readonly property bool speaking: speechProcess.running
+    property bool speechCancelled: false
+    property string speechText: ""
+    function stopSpeech() {
+        if (speechProcess.running) {
+            speechCancelled = true;
+            speechProcess.running = false;
+        }
+    }
+    function toggleSpeech() {
+        if (speaking) { stopSpeech(); return; }
+        if (!readingMode || !practicing || busy || !passage.trim().length) return;
+        speechText = (readerText.selectedText || passage).trim();
+        if (!speechText.length) return;
+        speechCancelled = false;
+        errorMessage = "";
+        speechProcess.running = true;
+    }
+    onPassageChanged: stopSpeech()
+    Process {
+        id: speechProcess
+        command: ["espeak-ng", "-s", "165", "--", root.speechText]
+        onExited: (code, status) => {
+            if (!root.speechCancelled && code !== 0)
+                root.errorMessage = "Speech playback failed. Check that eSpeak NG is installed and audio is available.";
+        }
     }
     function animateReaderPage(direction) {
         readerRevealAnimation.stop();
@@ -551,15 +579,16 @@ Item {
         if (turningPage) pendingKeys = pendingKeys.slice(0, pendingKeys.codePointAt(pendingKeys.length - 2) > 0xffff ? -2 : -1);
     }
     implicitHeight: practicing && !fullscreen ? typingLayout.implicitHeight + 24 : 600
-    onPracticingChanged: { resetSpeed(); syncCaret(); }
+    onPracticingChanged: { if (!practicing) stopSpeech(); resetSpeed(); syncCaret(); }
     onVisibleChanged: {
         if (visible) { backendStarted = true; if (ready) send({action: "list"}, false); }
-        else { saveProgress(); stopFeedback(); cancelMeaning(); }
+        else { stopSpeech(); saveProgress(); stopFeedback(); cancelMeaning(); }
         resetSpeed();
         if (visible && practicing) { fitDelay.restart(); Qt.callLater(() => root.focusPassage()); }
     }
     Component.onCompleted: { if (visible) backendStarted = true; }
     function send(data, page = true) {
+        if (page) stopSpeech();
         // Load bounded windows, including during continuous chapter typing.
         const narrowWidth = Math.min(characterWidth("i"), characterWidth(" "));
         data.window = Math.max(512, Math.min(4096,
@@ -1593,8 +1622,16 @@ Item {
                     }
                 }
                 TextButton { objectName: "typing-back"; visible: !root.practicing; text: "Back"; enabled: !root.busy && (root.bookId.length > 0 || root.draft || root.library.length > 0); onClicked: root.goBack() }
+                TextButton {
+                    objectName: "reader-speech"
+                    visible: root.readingMode && root.practicing
+                    text: root.speaking ? "Stop" : "Read aloud"
+                    enabled: root.speaking || (!root.busy && root.passage.trim().length > 0)
+                    Accessible.name: root.speaking ? "Stop reading aloud" : "Read selection or current page aloud"
+                    onClicked: root.toggleSpeech()
+                }
                 TextButton { visible: root.readingMode; text: "Type"; onClicked: root.toggleReadingMode() }
-                TextButton { text: "Close"; onClicked: { root.saveProgress(); root.backRequested(); } }
+                TextButton { text: "Close"; onClicked: { root.stopSpeech(); root.saveProgress(); root.backRequested(); } }
             }
             Rectangle { visible: root.readingMode; Layout.fillWidth: true; implicitHeight: 1; color: Qt.alpha(Colors.outlineVariant, 0.4) }
             StyledText {

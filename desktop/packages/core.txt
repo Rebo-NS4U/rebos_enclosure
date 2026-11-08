@@ -101,3 +101,6 @@ python-charset-normalizer
 
 # Local PDF text extraction for continuous typing
 poppler
+
+# Offline read-aloud in the book reader.
+espeak-ng
