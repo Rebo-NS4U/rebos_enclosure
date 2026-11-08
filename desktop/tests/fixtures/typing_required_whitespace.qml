@@ -1,8 +1,10 @@
 import QtQuick
+import QtQuick.Window
 import Quickshell
 ShellRoot {
-    PanelWindow {
-        implicitWidth: 960; implicitHeight: 900
+    Window {
+        visible: true
+        width: 960; height: 900
         TypingMenu { id: menu; anchors.fill: parent }
     }
     function find(item, name) {
@@ -11,7 +13,8 @@ ShellRoot {
         return null;
     }
     function key(code, text) {
-        return menu.handleWhitespaceKey({key: code, text: text || "", modifiers: 0});
+        const event = {key: code, text: text || "", modifiers: 0};
+        return menu.handleWhitespaceKey(event) || menu.handleTypingEditKey(event);
     }
     Timer {
         interval: 400; running: true; repeat: true
@@ -31,12 +34,27 @@ ShellRoot {
                 if (menu.busy) return;
                 if (phase === 1) {
                     if (!menu.passage.startsWith("\tFirst paragraph.\n\n\tSecond")) throw Error("Formatted target missing");
-                    if (!key(Qt.Key_Space, " ") || input.text.length) throw Error("Indent accepted a space");
+                    key(Qt.Key_Space, " ");
+                    if (input.text !== " " || !find(menu, "typing-character-0").incorrect) throw Error("Wrong indent was not recorded");
+                    input.remove(0, input.length); input.cursorPosition = 0;
                     key(Qt.Key_Tab);
                     if (input.text !== "\t") throw Error("Tab was not captured");
+                    const tab = find(menu, "typing-character-0");
+                    if (tab.incorrect || !find(tab, "typing-keycap-0").visible) throw Error("Corrected Tab or keycap missing");
+                    key(Qt.Key_Return);
+                    if (input.text !== "\t\n" || !find(menu, "typing-character-1").incorrect) throw Error("Wrong Return was not recorded");
+                    input.remove(1, input.length); input.cursorPosition = 1;
+                    key(Qt.Key_Tab);
+                    if (input.text !== "\t\t" || !find(menu, "typing-character-1").incorrect) throw Error("Wrong Tab was not recorded");
+                    input.remove(1, input.length); input.cursorPosition = 1;
                     if (menu.currentWordItem().modelData.text !== "First") throw Error("Word lookup selected formatting instead of a word");
                     input.insert(input.length, "First paragraph."); input.cursorPosition = input.length;
-                    if (!key(Qt.Key_Space, " ") || input.text.endsWith(" ")) throw Error("Paragraph accepted a space");
+                    const newlineIndex = input.length;
+                    key(Qt.Key_Space, " ");
+                    const newline = find(menu, "typing-character-" + newlineIndex);
+                    if (!input.text.endsWith(" ") || !newline.incorrect) throw Error("Wrong newline was not recorded");
+                    if (newline.width < menu.readingFont.pixelSize || !find(newline, "typing-keycap-" + newlineIndex).visible) throw Error("Return marker is too narrow or missing keycap");
+                    input.remove(newlineIndex, input.length); input.cursorPosition = newlineIndex;
                     key(Qt.Key_Return); key(Qt.Key_Return); key(Qt.Key_Tab);
                     input.insert(input.length, "Sec"); input.cursorPosition = input.length;
                     retained = input.text;
@@ -54,7 +72,7 @@ ShellRoot {
                 }
                 if (phase === 3) { menu.toggleReadingMode(); phase++; return; }
                 if (input.text !== retained || menu.position !== 0 || menu.progressConflict) throw Error("Mode roundtrip lost partial progress");
-                console.log("PASS: Tab and two Returns are required, indent and blank rows render, reopen and mode roundtrip preserve partial input and revision");
+                console.log("PASS: wrong Tab/Return and whitespace recorded and corrected, keycaps render, reopen and mode roundtrip preserve input");
                 Qt.quit();
             } catch (error) { console.error(error); Qt.exit(1); }
         }

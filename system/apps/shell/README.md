@@ -108,7 +108,9 @@ animations in both sizes.
 
 Typing preserves paragraph indentation and blank rows from the reader. Press
 Tab at ⇥ and Return at each ↵ (two Returns between paragraphs), then Tab for
-the next indent. Spaces cannot substitute for these keys. Existing bookmarks
+the next indent. Tab and Return have outlined key markers. Wrong keys, including
+spaces at these markers or Tab/Return at a letter, advance and count as errors;
+Backspace lets you correct them. Existing bookmarks
 and partial input are mapped to the formatted target without changing book
 identity or source positions. Backspace edits text and does not jump to an
 earlier window. Saved-progress revisions reject writes from an outdated view;

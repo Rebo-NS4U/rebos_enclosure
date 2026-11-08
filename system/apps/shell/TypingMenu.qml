@@ -374,7 +374,7 @@ Item {
     property var widthCache: ({})
     function characterWidth(text) {
         if (text === "\t") return readingFont.pixelSize * 2;
-        if (text === "\n") return 1;
+        if (text === "\n") return Math.ceil(readingFont.pixelSize * 1.6);
         if (widthCache[text] === undefined)
             widthCache[text] = Math.max(1, Math.ceil(typingMetrics.advanceWidth(text)));
         return widthCache[text];
@@ -1045,17 +1045,13 @@ Item {
     }
     function handleWhitespaceKey(event) {
         if (busy || (event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier))) return false;
-        const expected = passage.charAt(answer.cursorPosition);
         if (event.key === Qt.Key_Tab || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
             const entered = event.key === Qt.Key_Tab ? "\t" : "\n";
-            if (expected === entered) {
-                const cursor = answer.cursorPosition;
-                answer.insert(cursor, entered); answer.cursorPosition = cursor + 1;
-            } else requestFeedback("error", glyphItems[answer.cursorPosition]);
+            if (turningPage) { queueTyping(entered); return true; }
+            const cursor = answer.selectionStart !== answer.selectionEnd ? answer.selectionEnd : answer.cursorPosition;
+            answer.deselect();
+            answer.insert(cursor, entered); answer.cursorPosition = cursor + 1;
             return true;
-        }
-        if ((expected === "\t" || expected === "\n") && event.text.length && event.text.charCodeAt(0) >= 32) {
-            requestFeedback("error", glyphItems[answer.cursorPosition]); return true;
         }
         return false;
     }
@@ -2092,6 +2088,22 @@ Item {
                                                 onVisibleChanged: { if (!visible) stopFeedback(); else if (initialized && caretHere) Qt.callLater(() => smoothCaret.follow(glyph)); }
                                                 readonly property int characterIndex: word.offsets[index]
                                                 objectName: "typing-character-" + characterIndex
+                                                readonly property bool formattingKey: modelData === "\n" || modelData === "\t"
+                                                Accessible.name: modelData === "\n" ? "Return" : modelData === "\t" ? "Tab" : modelData
+                                                horizontalAlignment: formattingKey ? Text.AlignHCenter : Text.AlignLeft
+                                                Rectangle {
+                                                    objectName: "typing-keycap-" + glyph.characterIndex
+                                                    visible: glyph.formattingKey
+                                                    anchors.horizontalCenter: parent.horizontalCenter
+                                                    y: Math.max(0, root.highlightBounds.y + root.readingFont.pixelSize - 3)
+                                                    width: Math.max(1, parent.width - 4)
+                                                    height: root.highlightBounds.height + 6
+                                                    radius: Math.min(Config.roundness, 5)
+                                                    z: -1
+                                                    color: Qt.alpha(glyph.incorrect ? Colors.error : Colors.primary, glyph.caretHere ? 0.16 : 0.07)
+                                                    border.width: 1
+                                                    border.color: Qt.alpha(glyph.incorrect ? Colors.error : Colors.primary, glyph.caretHere || glyph.incorrect ? 0.65 : 0.28)
+                                                }
                                                 text: modelData === "\n" ? "↵" : modelData === "\t" ? "⇥" : modelData === " " ? "\u00a0" : modelData
                                                 textFormat: Text.PlainText
                                                 width: root.characterWidth(modelData)
