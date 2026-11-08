@@ -373,7 +373,7 @@ Item {
     readonly property real chapterProgress: chapterEnd > chapterStart
         ? Math.max(0, Math.min(1, (position + characters(displayedInput).length - chapterStart) / (chapterEnd - chapterStart))) : 0
     readonly property var passageWords: pageLayout.words
-    readonly property font readingFont: Qt.font({family: Config.theme.font, pixelSize: Config.theme.fontSize + 2, weight: Font.Normal})
+    readonly property font readingFont: Qt.font({family: Config.theme.font, pixelSize: fullscreen && !readingMode ? Math.max(24, Config.theme.fontSize + 8) : Config.theme.fontSize + 2, weight: Font.Normal})
     FontMetrics { id: typingMetrics; font: root.readingFont }
     readonly property rect highlightBounds: {
         const metricsFont = typingMetrics.font;
@@ -882,7 +882,7 @@ Item {
         id: primaryButton
         implicitHeight: 40
         padding: 12
-        background: StyledRect { id: primarySurface; variant: primaryButton.down ? "primaryfocus" : "primary"; radius: 12 }
+        background: StyledRect { id: primarySurface; variant: primaryButton.down ? "primaryfocus" : "primary"; radius: Config.roundness }
         contentItem: StyledText { text: primaryButton.text; color: primarySurface.item; opacity: primaryButton.enabled ? 1 : 0.4; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
     }
     component ReaderNavButton: TextButton {
@@ -926,7 +926,7 @@ Item {
         }
         background: StyledRect {
             variant: "pane"
-            radius: 12
+            radius: Config.roundness
             backgroundOpacity: 0.35
             border.width: 1
             border.color: select.activeFocus ? Colors.primary : Qt.alpha(Colors.outlineVariant, 0.55)
@@ -955,7 +955,7 @@ Item {
             modal: true
             dim: false
             closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
-            background: StyledRect { variant: "popup"; radius: 12 }
+            background: StyledRect { variant: "popup"; radius: Config.roundness }
             contentItem: ListView {
                 id: options
                 clip: true
@@ -1196,7 +1196,7 @@ Item {
                     objectName: "typing-word-panel-surface"
                     anchors.fill: parent
                     variant: "bg"
-                    radius: 16
+                    radius: Config.roundness
                     border.width: 1
                     border.color: Qt.alpha(Colors.primary, 0.28)
                 }
@@ -1325,7 +1325,7 @@ Item {
                                         Layout.fillWidth: true
                                         implicitHeight: Math.max(root.fullscreen ? 120 : 86, entryContent.implicitHeight + 28)
                                         variant: "pane"
-                                        radius: 12
+                                        radius: Config.roundness
                                         backgroundOpacity: entryHover.hovered || activeFocus ? 0.75 : 0.4
                                         border.width: 1
                                         border.color: entryHover.hovered || activeFocus ? Qt.alpha(Colors.primary, 0.6) : Qt.alpha(Colors.outlineVariant, 0.35)
@@ -1502,7 +1502,7 @@ Item {
                 : Math.max(0, parent.height - anchors.topMargin - anchors.bottomMargin)
             anchors.topMargin: root.fullscreen ? 24 : (root.practicing ? 12 : 20)
             anchors.bottomMargin: root.fullscreen ? 24 : (root.practicing ? 12 : 20)
-            width: root.fullscreen ? Math.min(720, Math.max(1, parent.width - 80)) : Math.max(1, parent.width - (root.practicing ? 48 : 40))
+            width: root.fullscreen ? Math.min(root.readingMode ? 720 : 840, Math.max(1, parent.width - 80)) : Math.max(1, parent.width - (root.practicing ? 48 : 40))
             spacing: 12
             RowLayout {
                 Layout.fillWidth: true
@@ -1563,7 +1563,7 @@ Item {
                     Layout.fillWidth: true
                     implicitHeight: deleteContent.implicitHeight + 24
                     variant: "pane"
-                    radius: 12
+                    radius: Config.roundness
                     border.width: 1
                     border.color: Qt.alpha(Colors.error, 0.5)
                     ColumnLayout {
@@ -1605,7 +1605,7 @@ Item {
                         onClicked: root.openBook(modelData.id)
                         background: StyledRect {
                             variant: "pane"
-                            radius: 12
+                            radius: Config.roundness
                             backgroundOpacity: bookCard.hovered || bookCard.activeFocus ? 0.65 : 0.35
                             border.width: 1
                             border.color: bookCard.modelData.id === root.bookId || bookCard.activeFocus ? Colors.primary : Qt.alpha(Colors.outlineVariant, 0.4)
@@ -1747,7 +1747,7 @@ Item {
                         Layout.fillWidth: true
                         implicitHeight: chapterCardText.implicitHeight + 28
                         variant: "pane"
-                        radius: 16
+                        radius: Config.roundness
                         enableBorder: true
                         ColumnLayout {
                             id: chapterCardText
@@ -1798,11 +1798,11 @@ Item {
                             anchors.top: parent.top
                             anchors.left: parent.left
                             anchors.right: parent.right
-                            height: Math.max(0, passageVisuals.centerPadding - 12)
+                            height: Math.max(0, Math.min(root.fullscreen ? 112 : Infinity, passageVisuals.centerPadding - 12))
                             visible: !root.readingMode && root.bookKind === "book" && root.currentChapterIndex >= 0 && height >= 48
                             z: 4
                             variant: "pane"
-                            radius: 16
+                            radius: Config.roundness
                             border.width: 1
                             border.color: Qt.alpha(Colors.primary, 0.28)
                             ColumnLayout {
@@ -1823,7 +1823,7 @@ Item {
                                     objectName: "typing-chapter-card-title"
                                     text: root.chapterTitle
                                     textFormat: Text.PlainText
-                                    font.pixelSize: 18
+                                    font.pixelSize: root.fullscreen ? Styling.fontSize(8) : Styling.fontSize(4)
                                     font.weight: Font.DemiBold
                                     color: Colors.overSurface
                                     elide: Text.ElideRight
@@ -2240,7 +2240,7 @@ Item {
                         Layout.fillWidth: true
                         implicitHeight: readerHelpText.implicitHeight + 24
                         variant: "pane"
-                        radius: 12
+                        radius: Config.roundness
                         StyledText {
                             id: readerHelpText
                             anchors.left: parent.left

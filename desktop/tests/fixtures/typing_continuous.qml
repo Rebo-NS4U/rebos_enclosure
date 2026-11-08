@@ -53,8 +53,14 @@ ShellRoot {
                     if (practice.chapterProgress <= practice.progress) throw Error("Chapter progress is not independent");
                     if (practice.pageSource.length > 8192 || practice.pageLayout.lines > 36)
                         throw Error("Rolling window grew unbounded");
+                    practice.fullscreen = true;
+                    phase++; return;
+                }
+                if (phase === 3) {
+                    if (practice.position !== expectedPosition || input.text !== expectedInput)
+                        throw Error("Fullscreen font reflow lost saved progress");
                     practice.saveProgress();
-                    console.log("PASS: bounded continuous windows preserve context, input, chapter progress and page transitions");
+                    console.log("PASS: bounded continuous windows preserve context, input, chapter progress, page transitions and fullscreen font reflow");
                     Qt.quit();
                 }
             } catch (error) { console.error(error); Qt.exit(1); }

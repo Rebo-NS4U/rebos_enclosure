@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import qs.config
 ShellRoot {
     PanelWindow {
         implicitWidth: 640
@@ -13,10 +14,14 @@ ShellRoot {
     }
     Timer {
         property int step: 0
+        property string retainedInput: "A gentle morning"
+        property int retainedPosition: 123
         interval: 500; running: true; repeat: true
         onTriggered: {
             if (step === 0) {
                 menu.practicing = true;
+                menu.position = retainedPosition;
+                find(menu, "typing-input").text = retainedInput;
                 menu.pageSource = "A gentle morning with many words to read. ".repeat(100);
             } else if (step <= 4) {
                 const reading = step > 2;
@@ -28,10 +33,14 @@ ShellRoot {
                 if (find(menu, "typing-input").visible === reading) throw Error("Wrong typing visibility");
                 const reader = find(menu, "reader-page-text");
                 if (reader.visible !== reading) throw Error("Wrong reading visibility");
+                const expectedSize = large && !reading ? Math.max(24, Config.theme.fontSize + 8) : Config.theme.fontSize + 2;
+                if (menu.readingFont.pixelSize !== expectedSize) throw Error("Wrong passage font size");
+                if (find(menu, "typing-input").text !== retainedInput || menu.position !== retainedPosition)
+                    throw Error("Size or activity change lost typing progress");
                 if (!menu.passage.length) throw Error("Empty passage");
                 if (reading && reader.contentHeight > reader.height) throw Error("Reader clipped");
                 if (large) { menu.handleEscape(); if (menu.fullscreen || menu.readingMode !== reading) throw Error("Escape changed activity"); }
-            } else { console.log("PASS: both activities support both sizes and Escape preserves activity"); Qt.quit(); }
+            } else { console.log("PASS: fullscreen typing enlarges text; both sizes retain input and position; Escape preserves activity"); Qt.quit(); }
             step++;
         }
     }

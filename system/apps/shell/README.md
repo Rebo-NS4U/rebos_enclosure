@@ -97,6 +97,12 @@ later. See [LICENSE](./LICENSE).
 
 ### Continuous typing dropdown
 
+Fullscreen typing uses a centered column up to 840px wide and a passage font
+of at least 24px, derived from the configured shell font size. Compact typing
+and reading keep their usual text size. Library cards, chapter headers, notes
+and menus share the shell palette and configured corner radius. F11 switches
+sizes; Escape leaves fullscreen while keeping the current activity.
+
 Open typing with its keyboard shortcut or `qs ipc call typing toggle`. Typing
 replaces the expanded bar contents, using the same input and dismissal behavior
 as its other panels. The compact typing surface uses a faint glass fill, soft blur and a subtle rim;
