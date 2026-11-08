@@ -332,6 +332,12 @@ Item {
         return widthCache[text];
     }
     property bool slidingWindow: false
+    property string fittedSource: ""
+    property string fittedGeometry: ""
+    function pageGeometry() {
+        return [passageFlow.width, layoutLineLimit, fullscreen ? readerText.height : 0,
+            readingFont.family, readingFont.pixelSize].join("|");
+    }
     property int pageFits: 0
     function fitPage(keepViewport = false) {
         pageFits++;
@@ -354,6 +360,8 @@ Item {
             }
         }
         pageLayout = fitted;
+        fittedSource = pageSource;
+        fittedGeometry = pageGeometry();
         Qt.callLater(refreshPageCaret);
     }
     function followPageCaret() {
@@ -376,7 +384,13 @@ Item {
     Timer {
         id: fitDelay
         interval: 150
-        onTriggered: { if (root.visible && root.practicing && passageArea.width > 0 && passageArea.height > 0 && !root.restoring && root.pageSource.length) { root.fitPage(); if (!root.fullscreen && root.bookId && root.characters(answer.text).length >= root.characters(root.passage).length) root.advance(); } }
+        onTriggered: {
+            if (!root.visible || !root.practicing || passageArea.width <= 0 || passageArea.height <= 0
+                    || root.restoring || !root.pageSource.length) return;
+            if (root.fittedSource !== root.pageSource || root.fittedGeometry !== root.pageGeometry()) root.fitPage();
+            if (!root.fullscreen && root.bookId && root.characters(answer.text).length >= root.characters(root.passage).length)
+                root.advance();
+        }
     }
     property string effectKind: ""
     property int effectLine: -1
@@ -583,6 +597,12 @@ Item {
         if (busy || filePickerActive) return;
         if (draft && paste.text.trim().length) { practicing = false; return; }
         samplesExpanded = false;
+        // A hidden view already retains its saved position, input and glyphs.
+        // Reopening must not reload and rebuild them during the panel morph.
+        if (practicing && bookId && pageSource.length) {
+            Qt.callLater(root.focusPassage);
+            return;
+        }
         send({action: "resume"});
     }
     Timer {

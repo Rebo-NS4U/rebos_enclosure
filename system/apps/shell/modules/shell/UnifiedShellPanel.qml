@@ -166,6 +166,7 @@ PanelWindow {
 
         MouseArea {
             id: backdropArea
+            objectName: "shell-outside-click-backdrop"
             anchors.fill: parent
             visible: unifiedPanel.needsFullScreenInput
             // Outside clicks dismiss the open surface.
@@ -173,6 +174,10 @@ PanelWindow {
             acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
 
             onClicked: {
+                // Typing is a persistent workspace; only its explicit controls
+                // dismiss it. Incidental outside clicks must not end a session.
+                if (barContent.typingActive)
+                    return;
                 if (notesPopup.open)
                     QuickNotes.close();
                 FocusGrabManager.clearTopGrab();

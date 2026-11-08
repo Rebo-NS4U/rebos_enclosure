@@ -241,3 +241,7 @@ Typing IPC status includes the latest animation frame timing sample (up to 120
 frames), live glyph/word counts, layout-fit count, loaded text size, and motion
 duration for investigating slow sessions. Sampling runs only during active typing
 effects; it keeps one sample in memory and does not log keystrokes or text.
+
+The typing workspace stays open on outside clicks; use Close, Escape, or the
+typing shortcut to leave it. Reopening an already loaded session reuses its text
+and layout; resizing or switching reading mode still refits the page.

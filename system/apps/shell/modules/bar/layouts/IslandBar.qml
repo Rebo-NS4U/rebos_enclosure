@@ -1024,8 +1024,10 @@ Item {
                 // Revealing live, shrinking text made opening look like a reflow.
                 anchors.top: parent.top
                 anchors.horizontalCenter: parent.horizontalCenter
-                width: root.targetWidth
-                height: root.targetHeight
+                // Match the typing destination independently of currentMode.
+                // Collapsing the bar must not shrink the parked text viewport.
+                width: fullscreen ? Math.min(960, root.width - 64) : Math.min(640, root.width - 32)
+                height: fullscreen ? root.height : Math.min(implicitHeight, root.height - 32)
                 visible: root.currentMode === "typing"
                 opacity: visible && !root.retractingToHidden ? 1 : 0
                 Behavior on opacity {
