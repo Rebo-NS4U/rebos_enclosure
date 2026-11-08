@@ -645,8 +645,7 @@ Item {
             id: islandBody
             anchors.fill: parent
             variant: "bg"
-            styleOverride: root.currentMode === "typing" ? "glass" : ""
-            backgroundOpacity: root.currentMode === "typing" ? Math.min(0.4, BarAppearance.opacity * 0.35) : BarAppearance.panelOpacity(root.isExpanded)
+            backgroundOpacity: BarAppearance.panelOpacity(root.isExpanded)
             topLeftRadius: BarAppearance.polished ? root.cornerRadius : 0
             topRightRadius: BarAppearance.polished ? root.cornerRadius : 0
             border.width: root.currentMode === "typing" ? 1 : (BarAppearance.polished || Styling.shellStyle === "dithered" ? 1 : 0)

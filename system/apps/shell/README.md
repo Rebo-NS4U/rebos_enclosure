@@ -245,3 +245,7 @@ effects; it keeps one sample in memory and does not log keystrokes or text.
 The typing workspace stays open on outside clicks; use Close, Escape, or the
 typing shortcut to leave it. Reopening an already loaded session reuses its text
 and layout; resizing or switching reading mode still refits the page.
+
+In typing mode the current chapter card stays in the space above the active row,
+without adding height to the workspace. Its surfaces and the typing panel follow
+the selected shell theme. Reading mode keeps its chapter-opening title layout.

@@ -798,7 +798,7 @@ Item {
     Timer { interval: 5000; running: root.backendStarted; repeat: true; onTriggered: root.saveProgress() }
 
     function status() {
-        return JSON.stringify({animationTiming: animationTiming, animationDuration: Motion.base, glyphCount: Object.keys(glyphItems).length, wordCount: pageLayout.words.length, widthCacheSize: Object.keys(widthCache).length, pageFits: pageFits, loadedCharacters: pageSource.length, readingMode: fullscreen, readerAnimationEvents: readerAnimationEvents, readerMotionEnabled: Motion.enabled, chapterCardVisible: chapterCard.visible, chapterTitle: chapterTitle, wordToolsOpen: wordPanel.opened, wordMenuReveal: wordPanel.reveal, wordMenuOpenAnimations: wordPanel.openAnimations, wordMenuCloseAnimations: wordPanel.closeAnimations, noteDirty: noteDirty, noteSaving: noteSaving, wordToolsShortcut: "Ctrl+Space", wordMenuWidth: wordPanel.width, wordMenuHeight: wordPanel.height, typingPanelWidth: menuAnchorItem.width, typingPanelHeight: menuAnchorItem.height, notebookMode: notebookMode, notebookCreating: notebookCreating, notesSection: notebookFilter, definitionsEnabled: definitionsEnabled, notedWordCount: notedTerms.length, practicing: practicing, fullscreen: fullscreen, pageLines: pageLayout.lines, pageLineLimit: pageLineLimit, passageHeight: passageArea.height, renderedHeight: passageFlow.height, fontSize: readingFont.pixelSize, layoutVersion: 9, previousPages: pageHistory.length, activeEffects: activeEffects, effectKind: effectKind, lineTransitions: lineTransitions, pageTransitions: pageTransitions, motionEnabled: Motion.enabled, feedbackEvents: feedbackEvents, focused: answer.activeFocus, turningPage: turningPage, textLength: bookLength,
+        return JSON.stringify({animationTiming: animationTiming, animationDuration: Motion.base, glyphCount: Object.keys(glyphItems).length, wordCount: pageLayout.words.length, widthCacheSize: Object.keys(widthCache).length, pageFits: pageFits, loadedCharacters: pageSource.length, readingMode: fullscreen, readerAnimationEvents: readerAnimationEvents, readerMotionEnabled: Motion.enabled, chapterCardVisible: chapterCard.visible || typingChapterCard.visible, chapterTitle: chapterTitle, wordToolsOpen: wordPanel.opened, wordMenuReveal: wordPanel.reveal, wordMenuOpenAnimations: wordPanel.openAnimations, wordMenuCloseAnimations: wordPanel.closeAnimations, noteDirty: noteDirty, noteSaving: noteSaving, wordToolsShortcut: "Ctrl+Space", wordMenuWidth: wordPanel.width, wordMenuHeight: wordPanel.height, typingPanelWidth: menuAnchorItem.width, typingPanelHeight: menuAnchorItem.height, notebookMode: notebookMode, notebookCreating: notebookCreating, notesSection: notebookFilter, definitionsEnabled: definitionsEnabled, notedWordCount: notedTerms.length, practicing: practicing, fullscreen: fullscreen, pageLines: pageLayout.lines, pageLineLimit: pageLineLimit, passageHeight: passageArea.height, renderedHeight: passageFlow.height, fontSize: readingFont.pixelSize, layoutVersion: 9, previousPages: pageHistory.length, activeEffects: activeEffects, effectKind: effectKind, lineTransitions: lineTransitions, pageTransitions: pageTransitions, motionEnabled: Motion.enabled, feedbackEvents: feedbackEvents, focused: answer.activeFocus, turningPage: turningPage, textLength: bookLength,
             typed: answer.text.length, position: position, rounds: rounds,
             presets: TypingTexts.passages.length, message: message, busy: busy,
             title: bookTitle, chapters: chapters.length, library: library.length, books: libraryBooks.length, wpm: liveWpm, filePickerActive: filePickerActive});
@@ -1646,8 +1646,8 @@ Item {
                     Layout.fillHeight: true
                     StyledRect {
                         id: chapterCard
-                        objectName: "typing-chapter-card"
-                        visible: root.atChapterStart
+                        objectName: "reader-chapter-card"
+                        visible: root.fullscreen && root.atChapterStart
                         Layout.fillWidth: true
                         implicitHeight: chapterCardText.implicitHeight + (root.fullscreen ? 48 : 28)
                         variant: root.fullscreen ? "transparent" : "pane"
@@ -1670,7 +1670,7 @@ Item {
                                 Layout.fillWidth: true
                             }
                             StyledText {
-                                objectName: "typing-chapter-card-title"
+                                objectName: "reader-chapter-card-title"
                                 text: root.chapterTitle
                                 textFormat: Text.PlainText
                                 font.family: Config.theme.font
@@ -1696,6 +1696,46 @@ Item {
                         onWidthChanged: {
                             if (root.pageSource.length) fitDelay.restart();
                             Qt.callLater(() => { if (smoothCaret.targetGlyph) smoothCaret.follow(smoothCaret.targetGlyph); });
+                        }
+                        StyledRect {
+                            id: typingChapterCard
+                            objectName: "typing-chapter-card"
+                            anchors.top: parent.top
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            height: Math.max(0, passageVisuals.centerPadding - 12)
+                            visible: !root.fullscreen && root.bookKind === "book" && root.currentChapterIndex >= 0 && height >= 48
+                            z: 4
+                            variant: "pane"
+                            radius: 16
+                            border.width: 1
+                            border.color: Qt.alpha(Colors.primary, 0.28)
+                            ColumnLayout {
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                                anchors.verticalCenter: parent.verticalCenter
+                                anchors.margins: 16
+                                spacing: 4
+                                StyledText {
+                                    text: "CHAPTER · " + (root.currentChapterIndex + 1) + " / " + root.chapters.length
+                                    textFormat: Text.PlainText
+                                    font.pixelSize: 11
+                                    font.letterSpacing: 1.2
+                                    color: Colors.primary
+                                    Layout.fillWidth: true
+                                }
+                                StyledText {
+                                    objectName: "typing-chapter-card-title"
+                                    text: root.chapterTitle
+                                    textFormat: Text.PlainText
+                                    font.pixelSize: 18
+                                    font.weight: Font.DemiBold
+                                    color: Colors.overSurface
+                                    elide: Text.ElideRight
+                                    Layout.fillWidth: true
+                                    Layout.minimumWidth: 0
+                                }
+                            }
                         }
                         Flickable {
                             id: passageVisuals
