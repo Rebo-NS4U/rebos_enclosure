@@ -55,20 +55,22 @@ function surface(style, variant, p, ditherStrength) {
     var tint = colorful ? 0.10 : (quiet ? 0.015 : 0.035);
     var base = mix(p.background, p.foreground, dithered ? 0.025 : 0.035);
     var fill = mix(base, p.primary, tint), item = p.foreground;
+    // One glass opacity for menus, panels and their popup surfaces.
+    var glassOpacity = 0.78;
     var opacity = quiet ? 1 : 0.92;
     var border = [mix(base, p.primary, dithered ? 0.24 : (colorful ? 0.32 : 0.18)), 0];
     switch (variant) {
     case "transparent": opacity = 0; break;
     case "barbg": opacity = dithered && strength > 0 ? 1 : 0; break;
     case "bg":
-        opacity = quiet ? 1 : (colorful ? 0.82 : 0.86);
+        opacity = quiet ? 1 : glassOpacity;
         border[1] = 1; break;
     case "popup":
-        opacity = quiet ? 1 : 0.94;
+        opacity = quiet ? 1 : glassOpacity;
         border[1] = 1; break;
     case "bar": case "pane": case "surface": case "surfaceContainer":
         fill = mix(base, p.primary, tint + (dithered ? 0.045 : 0.02));
-        opacity = quiet ? 1 : 0.90; break;
+        opacity = quiet ? 1 : glassOpacity; break;
     case "internalbg":
         fill = mix(p.background, p.primary, tint * 0.6);
         opacity = quiet ? 1 : 0.72; break;

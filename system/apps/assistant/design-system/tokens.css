@@ -18,8 +18,8 @@
   --dw-onTertiary: #402d04;
   --dw-error: #ffb4ab;
   --dw-onError: #690005;
-  --dw-bg: color-mix(in srgb, #382827 82%, transparent);
-  --dw-pane: color-mix(in srgb, #3d2b2a 90%, transparent);
+  --dw-bg: color-mix(in srgb, #382827 78%, transparent);
+  --dw-pane: color-mix(in srgb, #3d2b2a 78%, transparent);
   --dw-texture: none;
   --dw-texture-size: 1px;
   --dw-focus: color-mix(in srgb, #604342 92%, transparent);
@@ -36,8 +36,8 @@
   --dw-onTertiary: #402d04;
   --dw-error: #ffb4ab;
   --dw-onError: #690005;
-  --dw-bg: color-mix(in srgb, #2a1d1d 86%, transparent);
-  --dw-pane: color-mix(in srgb, #2e2120 90%, transparent);
+  --dw-bg: color-mix(in srgb, #2a1d1d 78%, transparent);
+  --dw-pane: color-mix(in srgb, #2e2120 78%, transparent);
   --dw-texture: none;
   --dw-texture-size: 1px;
   --dw-focus: color-mix(in srgb, #453130 92%, transparent);
@@ -91,8 +91,8 @@
   --dw-onTertiary: #000000;
   --dw-error: #eeeeee;
   --dw-onError: #000000;
-  --dw-bg: color-mix(in srgb, #1f1f1f 82%, transparent);
-  --dw-pane: color-mix(in srgb, #242424 90%, transparent);
+  --dw-bg: color-mix(in srgb, #1f1f1f 78%, transparent);
+  --dw-pane: color-mix(in srgb, #242424 78%, transparent);
   --dw-texture: none;
   --dw-texture-size: 1px;
   --dw-focus: color-mix(in srgb, #484848 92%, transparent);
@@ -109,8 +109,8 @@
   --dw-onTertiary: #000000;
   --dw-error: #eeeeee;
   --dw-onError: #000000;
-  --dw-bg: color-mix(in srgb, #101010 86%, transparent);
-  --dw-pane: color-mix(in srgb, #151515 90%, transparent);
+  --dw-bg: color-mix(in srgb, #101010 78%, transparent);
+  --dw-pane: color-mix(in srgb, #151515 78%, transparent);
   --dw-texture: none;
   --dw-texture-size: 1px;
   --dw-focus: color-mix(in srgb, #2d2d2d 92%, transparent);
@@ -164,8 +164,8 @@
   --dw-onTertiary: #ffffff;
   --dw-error: #161616;
   --dw-onError: #ffffff;
-  --dw-bg: color-mix(in srgb, #e1e1e1 82%, transparent);
-  --dw-pane: color-mix(in srgb, #dcdcdc 90%, transparent);
+  --dw-bg: color-mix(in srgb, #e1e1e1 78%, transparent);
+  --dw-pane: color-mix(in srgb, #dcdcdc 78%, transparent);
   --dw-texture: none;
   --dw-texture-size: 1px;
   --dw-focus: color-mix(in srgb, #b8b8b8 92%, transparent);
@@ -182,8 +182,8 @@
   --dw-onTertiary: #ffffff;
   --dw-error: #161616;
   --dw-onError: #ffffff;
-  --dw-bg: color-mix(in srgb, #efefef 86%, transparent);
-  --dw-pane: color-mix(in srgb, #ebebeb 90%, transparent);
+  --dw-bg: color-mix(in srgb, #efefef 78%, transparent);
+  --dw-pane: color-mix(in srgb, #ebebeb 78%, transparent);
   --dw-texture: none;
   --dw-texture-size: 1px;
   --dw-focus: color-mix(in srgb, #d3d3d3 92%, transparent);

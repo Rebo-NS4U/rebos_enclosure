@@ -14,7 +14,7 @@ Singleton {
     readonly property real accent: Math.max(0, Math.min(100, Config.bar?.islandAccent ?? BarDefaults.data.islandAccent)) / 100
 
     function panelOpacity(expanded: bool): real {
-        return Styling.shellStyle === "quiet" || Styling.shellStyle === "dithered" ? 1 : (polished ? (expanded ? Math.max(0.94, opacity) : opacity) : 1);
+        return Styling.shellStyle === "quiet" || Styling.shellStyle === "dithered" ? 1 : (polished ? (expanded ? Styling.getStyledRectConfig("popup").opacity : opacity) : 1);
     }
     function panelTint(expanded: bool): color {
         // The background surface already supplies the active theme color.
