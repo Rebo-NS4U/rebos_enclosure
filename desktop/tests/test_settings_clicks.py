@@ -15,6 +15,8 @@ import QtQuick.Layouts
 import QtTest
 import Quickshell
 import qs.modules.widgets.dashboard.controls
+import qs.config
+import qs.modules.theme
 ShellRoot {
  FloatingWindow {
   id: window; visible: true; implicitWidth: 1050; implicitHeight: 760
@@ -114,6 +116,23 @@ ShellRoot {
         tester.wait(20);
         tester.mouseClick(target);
         fixture.check(page.currentSection !== "", name + " section responds to click: " + target.objectName);
+       }
+       if (name === "ThemePanel") {
+        page.currentSection = "blur";
+        tester.wait(30);
+        let transparency = fixture.find(page, "transparency-slider");
+        let blur = fixture.find(page, "blur-strength-slider");
+        fixture.check(transparency && blur && transparency.visible, "Glass sliders reachable");
+        transparency.value = 0.65;
+        fixture.check(Config.theme.shellTransparency === 65, "Transparency slider saves percentage");
+        fixture.check(Math.abs(Styling.getStyledRectConfig("bg").opacity - 0.35) < 0.001, "Background opacity responds");
+        fixture.check(Math.abs(Styling.getStyledRectConfig("popup").opacity - 0.35) < 0.001, "Popup opacity responds");
+        blur.value = 0.8;
+        fixture.check(Config.performance.blurStrength === 80, "Blur slider saves percentage");
+        Config.performance.desktopBlur = "off";
+        tester.wait(20);
+        fixture.check(!blur.enabled, "Blur strength disabled when off");
+        Config.theme.shellTransparency = -1;
        }
        page.destroy();
        tester.wait(20);

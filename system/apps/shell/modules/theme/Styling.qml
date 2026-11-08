@@ -43,14 +43,16 @@ Singleton {
     }
 
     function styleConfig(style: string, variant: string): var {
-        if (style === "custom") return customRectConfig(variant);
-        return ShellStyles.surface(style, variant, {
+        const result = style === "custom" ? customRectConfig(variant) : ShellStyles.surface(style, variant, {
             background: Colors.background.toString(), foreground: Colors.overBackground.toString(),
             primary: Colors.primary.toString(), onPrimary: Colors.overPrimary.toString(),
             secondary: Colors.secondary.toString(), onSecondary: Colors.overSecondary.toString(),
             tertiary: Colors.tertiary.toString(), onTertiary: Colors.overTertiary.toString(),
             error: Colors.error.toString(), onError: Colors.overError.toString()
         }, Config.theme.ditherStrength);
+        if ((variant === "bg" || variant === "popup") && Config.theme.shellTransparency >= 0)
+            result.opacity = 1 - Config.theme.shellTransparency / 100;
+        return result;
     }
 
     function customRectConfig(variant: string): var {

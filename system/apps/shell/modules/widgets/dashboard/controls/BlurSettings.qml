@@ -8,8 +8,64 @@ import qs.modules.theme
 
 SettingsGroup {
     id: root
-    title: "Desktop blur"
+    title: "Transparency and blur"
     description: "Choose where glass blur appears. Less blur can reduce GPU use during video playback. Changes apply immediately."
+    StyledText { text: "Shell background transparency"; font.bold: true }
+    RowLayout {
+        Layout.fillWidth: true
+        StyledSlider {
+            id: transparencySlider
+            objectName: "transparency-slider"
+            Layout.fillWidth: true
+            Layout.preferredHeight: 28
+
+            stepSize: 0.01
+            snapMode: "always"
+            smoothDrag: false
+            property bool ready: false
+            readonly property real configValue: (Config.theme.shellTransparency < 0 ? (Styling.shellStyle === "glass" || Styling.shellStyle === "colorful" ? 22 : 0) : Config.theme.shellTransparency) / 100
+            onConfigValueChanged: value = configValue
+            Component.onCompleted: { value = configValue; ready = true; }
+            onValueChanged: {
+                const percent = Math.round(value * 100);
+                if (ready && percent !== Config.theme.shellTransparency) Config.theme.shellTransparency = percent;
+            }
+        }
+        StyledText { text: Math.round(transparencySlider.value * 100) + "%"; Layout.preferredWidth: 50 }
+    }
+    StyledText { text: "Blur strength"; font.bold: true }
+    RowLayout {
+        Layout.fillWidth: true
+        StyledSlider {
+            id: blurstrengthSlider
+            objectName: "blur-strength-slider"
+            Layout.fillWidth: true
+            Layout.preferredHeight: 28
+            enabled: Config.performance.desktopBlur !== "off"
+            stepSize: 0.01
+            snapMode: "always"
+            smoothDrag: false
+            property bool ready: false
+            readonly property real configValue: (Config.performance.blurStrength) / 100
+            onConfigValueChanged: value = configValue
+            Component.onCompleted: { value = configValue; ready = true; }
+            onValueChanged: {
+                const percent = Math.round(value * 100);
+                if (ready && percent !== Config.performance.blurStrength) Config.performance.blurStrength = percent;
+            }
+        }
+        StyledText { text: Math.round(blurstrengthSlider.value * 100) + "%"; Layout.preferredWidth: 50 }
+    }
+    SettingsButton {
+        text: "Use theme transparency"
+        onClicked: Config.theme.shellTransparency = -1
+    }
+    StyledText {
+        Layout.fillWidth: true
+        wrapMode: Text.WordWrap
+        text: "Transparency affects shell menu and panel backgrounds, keeping text solid. 0% is opaque. Blur strength applies wherever the selected mode enables blur; 0% is the softest blur."
+        color: Colors.overSurfaceVariant
+    }
     GridLayout {
         Layout.fillWidth: true
         columns: root.width < Styling.fontSize(0) * 30 ? 1 : 2

@@ -3,6 +3,7 @@
 var data = {
     "oledMode": false,
     "shellStyle": "glass",
+    "shellTransparency": -1,
     "ditherPalette": "original",
     "ditherTintColor": "#4c9cbd",
     "ditherBorder": "band",

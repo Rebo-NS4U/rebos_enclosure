@@ -2,6 +2,7 @@
 
 var data = {
     "desktopBlur": "medium",
+    "blurStrength": 50,
     "blurTransition": true,
     "windowPreview": true,
     "wavyLine": true,

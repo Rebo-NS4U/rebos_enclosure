@@ -40,7 +40,8 @@ function validate(current, defaults, keyName) {
     if (keyName === "ditherTintColor") return /^#[0-9a-f]{6}$/i.test(current) ? current.toLowerCase() : defaults;
     if (keyName === "ditherBorder" && ["band", "dotted", "double"].indexOf(current) === -1) return defaults;
     if (keyName === "wallpaperDitherStrength" && ["normal", "strong", "intense"].indexOf(current) === -1) return defaults;
-    if (keyName === "ditherStrength") {
+    if (keyName === "shellTransparency") return Number.isFinite(current) ? Math.round(Math.max(-1, Math.min(100, current))) : defaults;
+    if (keyName === "blurStrength" || keyName === "ditherStrength") {
         return Number.isFinite(current) ? Math.round(Math.max(0, Math.min(100, current))) : defaults;
     }
 

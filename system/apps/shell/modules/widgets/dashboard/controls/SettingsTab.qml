@@ -18,7 +18,7 @@ Item {
     // Section IDs stay stable for saved selections and search links, including GitHub (10).
 
     property int currentSection: GlobalStates.settingsCurrentTab
-    property int selectedIndex: GlobalStates.settingsCurrentTab
+    property int selectedIndex: sectionModel.findIndex(item => item.section === GlobalStates.settingsCurrentTab)
     property string searchQuery: ""
 
     onFilteredSectionsChanged: {
@@ -208,6 +208,36 @@ Item {
     // Original sections model
     readonly property var sectionModel: [
         {
+            icon: Icons.paintBrush,
+            label: "Appearance",
+            section: 4,
+            isIcon: true
+        },
+        {
+            icon: Icons.gear,
+            label: "Shell",
+            section: 6,
+            isIcon: true
+        },
+        {
+            icon: Icons.layout,
+            label: "Display",
+            section: 9,
+            isIcon: true
+        },
+        {
+            icon: Icons.keyboard,
+            label: "Keyboard shortcuts",
+            section: 7,
+            isIcon: true
+        },
+        {
+            icon: Icons.layout,
+            label: "Window rules",
+            section: 8,
+            isIcon: true
+        },
+        {
             icon: Icons.wifiHigh,
             label: "Network",
             section: 0,
@@ -226,45 +256,15 @@ Item {
             isIcon: true
         },
         {
-            icon: Icons.robot,
-            label: "Assistant",
-            section: 3,
-            isIcon: true
-        },
-        {
-            icon: Icons.paintBrush,
-            label: "Appearance",
-            section: 4,
-            isIcon: true
-        },
-        {
             icon: Icons.circuitry,
             label: "System",
             section: 5,
             isIcon: true
         },
         {
-            icon: Icons.gear,
-            label: "Shell",
-            section: 6,
-            isIcon: true
-        },
-        {
-            icon: Icons.keyboard,
-            label: "Keyboard shortcuts",
-            section: 7,
-            isIcon: true
-        },
-        {
-            icon: Icons.layout,
-            label: "Window rules",
-            section: 8,
-            isIcon: true
-        },
-        {
-            icon: Icons.layout,
-            label: "Display",
-            section: 9,
+            icon: Icons.robot,
+            label: "Assistant",
+            section: 3,
             isIcon: true
         },
         {

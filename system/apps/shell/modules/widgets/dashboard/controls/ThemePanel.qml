@@ -134,7 +134,7 @@ Item {
                     id: titlebar
                     width: root.contentWidth
                     anchors.horizontalCenter: parent.horizontalCenter
-                    title: ({style: "Theme style", general: "Fonts and corners", motion: "Motion", blur: "Blur", shadow: "Shadows", colors: "Wallpaper colors", variants: "Backgrounds and borders"})[root.currentSection] || "Appearance"
+                    title: ({style: "Theme style", general: "Fonts and corners", motion: "Motion", blur: "Transparency and blur", shadow: "Shadows", colors: "Wallpaper colors", variants: "Backgrounds and borders"})[root.currentSection] || "Appearance"
                     description: root.currentSection === "" ? "Theme style, colors, fonts and backgrounds." : ""
 
                     actions: {
@@ -183,8 +183,8 @@ Item {
                         }
                         SectionButton {
                             sectionId: "blur"
-                            text: "Blur"
-                            description: "Glass strength, shell-only blur and GPU use."
+                            text: "Transparency and blur"
+                            description: "Shell transparency, blur strength and where blur appears."
                             glyph: Icons.drop
                         }
                         SectionButton {
@@ -230,7 +230,7 @@ Item {
                     }
 
                     ShellStyleSettings {
-                        visible: root.currentSection === "style" || root.currentSection === "general"
+                        visible: root.currentSection === "style"
                         Layout.fillWidth: true
                     }
 
@@ -726,7 +726,7 @@ Item {
                                 StyledText {
                                     renderType: Text.NativeRendering
                                     font.hintingPreference: Font.PreferFullHinting
-                                    text: "Blur"
+                                    text: "Transparency and blur"
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(0)
                                     color: Colors.overBackground

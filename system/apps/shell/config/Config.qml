@@ -105,6 +105,7 @@ Singleton {
 
         adapter: JsonAdapter {
             property string shellStyle: "glass"
+            property int shellTransparency: -1
             property string ditherPalette: "original"
             property string ditherTintColor: "#4c9cbd"
             property string ditherBorder: "band"
@@ -553,6 +554,7 @@ Singleton {
 
         adapter: JsonAdapter {
             property string desktopBlur: "medium"
+            property int blurStrength: 50
             property bool blurTransition: true
             property bool windowPreview: true
             property bool wavyLine: true
