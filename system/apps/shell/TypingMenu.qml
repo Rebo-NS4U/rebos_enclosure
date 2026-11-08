@@ -1404,7 +1404,10 @@ Item {
             id: typingLayout
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.top: parent.top
-            anchors.bottom: parent.bottom
+            // Compact typing uses its content height; stretching this layout
+            // to the bottom distributes blank space above the chapter card.
+            height: root.practicing && !root.fullscreen ? implicitHeight
+                : Math.max(0, parent.height - anchors.topMargin - anchors.bottomMargin)
             anchors.topMargin: root.fullscreen ? 32 : (root.practicing ? 12 : 20)
             anchors.bottomMargin: root.fullscreen ? 28 : (root.practicing ? 12 : 20)
             width: root.fullscreen ? Math.min(720, Math.max(1, parent.width - 80)) : Math.max(1, parent.width - (root.practicing ? 48 : 40))
