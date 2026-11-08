@@ -59,6 +59,42 @@ Singleton {
         }
     }
 
+    // Playback keys select Spotify and reveal the same panel as the bar's media button.
+    IpcHandler {
+        target: "media"
+
+        function reveal(): bool {
+            const island = Visibilities.getIslandForActive();
+            if (!island) return false;
+            island.expand("media");
+            return true;
+        }
+
+        function control(action: string): bool {
+            if (["PlayPause", "Pause", "Next", "Previous", "Stop"].indexOf(action) === -1)
+                return false;
+            const player = MprisController.filteredPlayers.find(p =>
+                (p.dbusName || "").toLowerCase().includes("spotify"));
+            if (!player) return false;
+            MprisController.setActivePlayer(player);
+            // Keep playback commands on D-Bus, including Stop which has no QML helper.
+            Quickshell.execDetached(["busctl", "--user", "call", player.dbusName,
+                "/org/mpris/MediaPlayer2", "org.mpris.MediaPlayer2.Player", action]);
+            const island = Visibilities.getIslandForActive();
+            if (island) island.expand("media");
+            return true;
+        }
+
+        function status(): string {
+            return JSON.stringify({
+                mode: Visibilities.getIslandForActive()?.currentMode || "",
+                player: MprisController.activePlayer?.dbusName || "",
+                title: MprisController.trackTitle,
+                playing: MprisController.isPlaying
+            });
+        }
+    }
+
     function run(command) {
         console.log("IPC run command received:", command);
         const barAccentPrefix = "bar-accent ";
