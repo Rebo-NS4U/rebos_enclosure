@@ -34,6 +34,7 @@ ShellRoot {
                 if (practice.passage.length >= practice.pageSource.length) throw Error("Entire long section was laid out");
                 if (count > practice.passage.length) throw Error("Glyph count exceeds bounded page");
                 const viewport = find(practice, "typing-page-visuals");
+                if (practice.implicitHeight >= 600 || practice.implicitHeight <= viewport.height) throw Error("Typing panel did not shrink around its seven rows and controls");
                 if (Math.abs(viewport.height - 7 * practice.passageLineHeight) > 1) throw Error("Typing viewport must show exactly seven rows total");
                 if (Math.abs(viewport.centerPadding - 3 * practice.passageLineHeight) > 1) throw Error("Blank centering rows must fit inside the seven-row viewport");
                 const glyph = practice.glyphItems[practice.visualCursor];

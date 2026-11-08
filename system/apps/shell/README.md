@@ -100,7 +100,7 @@ later. See [LICENSE](./LICENSE).
 Open the island bar's control panel and choose **Typing practice →**. Typing
 replaces the expanded bar contents, using the same input and dismissal behavior
 as its other panels. The compact typing surface uses a faint glass fill, soft blur and a subtle rim;
-controls are text only. Practice shows seven rows total, including blank rows above and below the text, with only
+controls are text only. The typing panel fits around seven rows total, including blank rows above and below the text, with only
 Library, Import and Close in the header. Setup controls stay hidden while typing. Panel
 resizing, passage reveals and typed characters animate smoothly, respecting the
 Appearance motion setting (zero disables animations). Upcoming characters are faint, and typed characters become opaque

@@ -425,7 +425,7 @@ Item {
     function undoQueuedKey() {
         if (turningPage) pendingKeys = characters(pendingKeys).slice(0, -1).join("");
     }
-    implicitHeight: 600
+    implicitHeight: practicing && !fullscreen ? typingLayout.implicitHeight + 24 : 600
     onPracticingChanged: { resetSpeed(); syncCaret(); }
     onVisibleChanged: {
         if (visible) { backendStarted = true; if (ready) send({action: "list"}, false); }
@@ -1308,6 +1308,7 @@ Item {
     Item {
         anchors.fill: parent
         ColumnLayout {
+            id: typingLayout
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.top: parent.top
             anchors.bottom: parent.bottom
@@ -1594,8 +1595,10 @@ Item {
                     Item {
                         id: passageArea
                         Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        Layout.minimumHeight: Math.min(3 * root.passageLineHeight, root.height / 3)
+                        implicitHeight: root.fullscreen ? 0 : 7 * root.passageLineHeight
+                        Layout.fillHeight: root.fullscreen
+                        Layout.minimumHeight: root.fullscreen ? Math.min(3 * root.passageLineHeight, root.height / 3) : implicitHeight
+                        Layout.maximumHeight: root.fullscreen ? Infinity : implicitHeight
                         clip: true
                         onWidthChanged: {
                             if (root.pageSource.length) fitDelay.restart();

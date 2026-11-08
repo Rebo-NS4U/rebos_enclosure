@@ -118,7 +118,7 @@ ShellRoot {
                     find(practice, "typing-sample-select").activated(0); phase++; return;
                 }
                 if (practice.busy || !practice.passage.length) return;
-                if (practice.practicing && (practice.pageLayout.lines > practice.layoutLineLimit || practice.implicitHeight !== 600)) throw Error("Practice viewport height changed");
+                if (practice.practicing && (practice.pageLayout.lines > practice.layoutLineLimit || (!practice.fullscreen && practice.implicitHeight >= 600))) throw Error("Practice viewport height changed");
                 const input = find(practice, "typing-input");
                 let first = find(practice, "typing-character-0");
                 if (!input) throw Error("Typing input missing");
