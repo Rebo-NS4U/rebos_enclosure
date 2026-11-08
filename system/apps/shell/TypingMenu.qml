@@ -332,7 +332,9 @@ Item {
         return widthCache[text];
     }
     property bool slidingWindow: false
+    property int pageFits: 0
     function fitPage(keepViewport = false) {
+        pageFits++;
         // A direct fit also satisfies any pending resize/font fit.
         fitDelay.stop();
         stopFeedback();
@@ -384,6 +386,35 @@ Item {
         if (effectKind === "line") Qt.callLater(followPageCaret);
     }
     readonly property int activeEffects: (feedbackAnimation.running ? 1 : 0) + glowingGlyphs.length
+    // Sample only while an effect is already animating; do not request frames
+    // during idle typing. Keep one bounded sample, without per-frame logs.
+    property var animationTiming: ({frames: 0, averageMs: 0, maxMs: 0, over50Ms: 0})
+    FrameAnimation {
+        id: animationProbe
+        running: root.visible && root.practicing && !root.fullscreen && root.activeEffects > 0
+        property bool skipFrame: true
+        property int samples: 0
+        property real totalMs: 0
+        property real maximumMs: 0
+        property int slowFrames: 0
+        function publish() {
+            if (samples) root.animationTiming = {frames: samples, averageMs: Math.round(totalMs / samples * 10) / 10,
+                maxMs: Math.round(maximumMs * 10) / 10, over50Ms: slowFrames};
+        }
+        onRunningChanged: {
+            skipFrame = true;
+            if (!running) publish();
+        }
+        onTriggered: {
+            // The first frame after a pause is not an animation stall.
+            if (skipFrame) { skipFrame = false; return; }
+            if (samples >= 120) { samples = 0; totalMs = 0; maximumMs = 0; slowFrames = 0; }
+            const ms = frameTime * 1000;
+            samples++; totalMs += ms; maximumMs = Math.max(maximumMs, ms);
+            if (ms > 50) slowFrames++;
+            if (samples % 30 === 0) publish();
+        }
+    }
     function forgetGlyph(glyph) {
         glowingGlyphs = glowingGlyphs.filter(item => item !== glyph);
     }
@@ -742,7 +773,7 @@ Item {
     Timer { interval: 5000; running: root.backendStarted; repeat: true; onTriggered: root.saveProgress() }
 
     function status() {
-        return JSON.stringify({readingMode: fullscreen, readerAnimationEvents: readerAnimationEvents, readerMotionEnabled: Motion.enabled, chapterCardVisible: chapterCard.visible, chapterTitle: chapterTitle, wordToolsOpen: wordPanel.opened, wordMenuReveal: wordPanel.reveal, wordMenuOpenAnimations: wordPanel.openAnimations, wordMenuCloseAnimations: wordPanel.closeAnimations, noteDirty: noteDirty, noteSaving: noteSaving, wordToolsShortcut: "Ctrl+Space", wordMenuWidth: wordPanel.width, wordMenuHeight: wordPanel.height, typingPanelWidth: menuAnchorItem.width, typingPanelHeight: menuAnchorItem.height, notebookMode: notebookMode, notebookCreating: notebookCreating, notesSection: notebookFilter, definitionsEnabled: definitionsEnabled, notedWordCount: notedTerms.length, practicing: practicing, fullscreen: fullscreen, pageLines: pageLayout.lines, pageLineLimit: pageLineLimit, passageHeight: passageArea.height, renderedHeight: passageFlow.height, fontSize: readingFont.pixelSize, layoutVersion: 9, previousPages: pageHistory.length, activeEffects: activeEffects, effectKind: effectKind, lineTransitions: lineTransitions, pageTransitions: pageTransitions, motionEnabled: Motion.enabled, feedbackEvents: feedbackEvents, focused: answer.activeFocus, turningPage: turningPage, textLength: bookLength,
+        return JSON.stringify({animationTiming: animationTiming, animationDuration: Motion.base, glyphCount: Object.keys(glyphItems).length, wordCount: pageLayout.words.length, widthCacheSize: Object.keys(widthCache).length, pageFits: pageFits, loadedCharacters: pageSource.length, readingMode: fullscreen, readerAnimationEvents: readerAnimationEvents, readerMotionEnabled: Motion.enabled, chapterCardVisible: chapterCard.visible, chapterTitle: chapterTitle, wordToolsOpen: wordPanel.opened, wordMenuReveal: wordPanel.reveal, wordMenuOpenAnimations: wordPanel.openAnimations, wordMenuCloseAnimations: wordPanel.closeAnimations, noteDirty: noteDirty, noteSaving: noteSaving, wordToolsShortcut: "Ctrl+Space", wordMenuWidth: wordPanel.width, wordMenuHeight: wordPanel.height, typingPanelWidth: menuAnchorItem.width, typingPanelHeight: menuAnchorItem.height, notebookMode: notebookMode, notebookCreating: notebookCreating, notesSection: notebookFilter, definitionsEnabled: definitionsEnabled, notedWordCount: notedTerms.length, practicing: practicing, fullscreen: fullscreen, pageLines: pageLayout.lines, pageLineLimit: pageLineLimit, passageHeight: passageArea.height, renderedHeight: passageFlow.height, fontSize: readingFont.pixelSize, layoutVersion: 9, previousPages: pageHistory.length, activeEffects: activeEffects, effectKind: effectKind, lineTransitions: lineTransitions, pageTransitions: pageTransitions, motionEnabled: Motion.enabled, feedbackEvents: feedbackEvents, focused: answer.activeFocus, turningPage: turningPage, textLength: bookLength,
             typed: answer.text.length, position: position, rounds: rounds,
             presets: TypingTexts.passages.length, message: message, busy: busy,
             title: bookTitle, chapters: chapters.length, library: library.length, books: libraryBooks.length, wpm: liveWpm, filePickerActive: filePickerActive});

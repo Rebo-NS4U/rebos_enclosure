@@ -236,3 +236,8 @@ without changing the absolute position in the book.
 
 Reading mode displays the imported paragraph breaks with a full empty line between paragraphs and an indented first line.
 Bookmarks and typing positions continue to use the original normalized text.
+
+Typing IPC status includes the latest animation frame timing sample (up to 120
+frames), live glyph/word counts, layout-fit count, loaded text size, and motion
+duration for investigating slow sessions. Sampling runs only during active typing
+effects; it keeps one sample in memory and does not log keystrokes or text.
