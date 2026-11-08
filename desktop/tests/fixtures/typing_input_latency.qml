@@ -1,9 +1,11 @@
 import QtQuick
+import QtQuick.Window
 import Quickshell
 import "TypingPaging.js" as Pages
 ShellRoot {
-    PanelWindow {
-        implicitWidth: 640; implicitHeight: 600
+    Window {
+        visible: true
+        width: 640; height: 600
         TypingMenu { id: practice; anchors.fill: parent }
     }
     function find(item, name) {

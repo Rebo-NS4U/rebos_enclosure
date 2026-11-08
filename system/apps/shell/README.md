@@ -287,3 +287,9 @@ and section filters pinned above the results. Cards show title, category, and a
 two-line preview. The editor gives the note more room while keeping Save and
 Cancel visible; Ctrl+S or Ctrl+Enter saves. Popup sizes stay within the typing
 workspace, and long lists scroll.
+
+Typing begins near the top and scrolls once the active row reaches the vertical
+midpoint, keeping that row centered in both sizes. The chapter-opening card sits
+above the compact passage until typing starts. Rapid keys, Tab, Return, and
+Backspace are buffered during page handoffs; glyph updates avoid duplicate work
+and use a native prefix check for appended input.

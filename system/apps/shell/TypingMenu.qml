@@ -543,10 +543,12 @@ Item {
         function onEnabledChanged() { if (!Motion.enabled) root.stopFeedback(); }
     }
     function queueTyping(text) {
-        if (turningPage) pendingKeys = characters(pendingKeys + text).slice(0, 4096).join("");
+        if (!turningPage) return;
+        const next = pendingKeys + text;
+        pendingKeys = next.length <= 4096 ? next : characters(next).slice(0, 4096).join("");
     }
     function undoQueuedKey() {
-        if (turningPage) pendingKeys = characters(pendingKeys).slice(0, -1).join("");
+        if (turningPage) pendingKeys = pendingKeys.slice(0, pendingKeys.codePointAt(pendingKeys.length - 2) > 0xffff ? -2 : -1);
     }
     implicitHeight: practicing && !fullscreen ? typingLayout.implicitHeight + 24 : 600
     onPracticingChanged: { resetSpeed(); syncCaret(); }
@@ -614,16 +616,11 @@ Item {
             // Same-row keystrokes must not fight manual scrolling or churn delegates.
             const rowY = line * passageLineHeight;
             const caretY = rowY + passageVisuals.centerPadding;
-            if (fullscreen) {
-                const margin = Math.min(passageLineHeight * 2, passageVisuals.height / 4);
-                if (caretY + passageLineHeight > passageVisuals.contentY + passageVisuals.height - margin)
-                    passageVisuals.contentY = Math.max(0, Math.min(passageVisuals.contentHeight - passageVisuals.height,
-                        caretY + passageLineHeight - passageVisuals.height + margin));
-                else if (caretY < passageVisuals.contentY)
-                    passageVisuals.contentY = Math.max(0, caretY - margin);
-            } else if (line !== scrollLine || caretY < passageVisuals.contentY
+            const middle = Math.max(0, (passageVisuals.height - passageLineHeight) / 2);
+            if (line !== scrollLine || caretY < passageVisuals.contentY
                     || caretY + passageLineHeight > passageVisuals.contentY + passageVisuals.height)
-                passageVisuals.contentY = Math.max(0, Math.min(rowY, passageVisuals.contentHeight - passageVisuals.height));
+                passageVisuals.contentY = Math.max(0, Math.min(caretY - middle,
+                    passageVisuals.contentHeight - passageVisuals.height));
             scrollLine = line;
         }
         renderedCaret = practicing ? visualCursor : -1;
@@ -637,9 +634,12 @@ Item {
         // Read the QML string once, rather than converting its property value
         // back into JavaScript on every iteration of the prefix scan.
         const previous = renderedInput;
-        let first = 0;
+        if (current === previous) { syncCaret(); return; }
+        // Appends are the hot path. Use the native prefix check rather than
+        // walking the entire typed prefix in JavaScript on every key.
+        let first = current.startsWith(previous) ? previous.length : 0;
         const shared = Math.min(current.length, previous.length);
-        while (first < shared && current[first] === previous[first]) first++;
+        if (!first) while (first < shared && current[first] === previous[first]) first++;
         let last = Math.max(current.length, previous.length);
         while (last > first && current[last - 1] === previous[last - 1]) last--;
         for (let index = first; index < last; index++)
@@ -870,7 +870,7 @@ Item {
     Timer { interval: 5000; running: root.backendStarted; repeat: true; onTriggered: root.saveProgress() }
 
     function status() {
-        return JSON.stringify({animationTiming: animationTiming, animationDuration: Motion.base, glyphCount: Object.keys(glyphItems).length, wordCount: pageLayout.words.length, widthCacheSize: Object.keys(widthCache).length, pageFits: pageFits, loadedCharacters: pageSource.length, readingMode: readingMode, readerAnimationEvents: readerAnimationEvents, readerMotionEnabled: Motion.enabled, chapterCardVisible: chapterCard.visible || typingChapterCard.visible, chapterTitle: chapterTitle, wordToolsOpen: wordPanel.opened, wordMenuReveal: wordPanel.reveal, wordMenuOpenAnimations: wordPanel.openAnimations, wordMenuCloseAnimations: wordPanel.closeAnimations, noteDirty: noteDirty, noteSaving: noteSaving, progressRevision: bookRevision, progressConflict: progressConflict, wordToolsShortcut: "Ctrl+Space", wordMenuWidth: wordPanel.width, wordMenuHeight: wordPanel.height, typingPanelWidth: menuAnchorItem.width, typingPanelHeight: menuAnchorItem.height, notebookMode: notebookMode, notebookCreating: notebookCreating, notesSection: notebookFilter, definitionsEnabled: definitionsEnabled, notedWordCount: notedTerms.length, practicing: practicing, fullscreen: fullscreen, pageLines: pageLayout.lines, pageLineLimit: pageLineLimit, passageHeight: passageArea.height, renderedHeight: passageFlow.height, fontSize: readingFont.pixelSize, layoutVersion: 9, previousPages: pageHistory.length, activeEffects: activeEffects, effectKind: effectKind, lineTransitions: lineTransitions, pageTransitions: pageTransitions, motionEnabled: Motion.enabled, feedbackEvents: feedbackEvents, focused: answer.activeFocus, turningPage: turningPage, textLength: bookLength,
+        return JSON.stringify({animationTiming: animationTiming, animationDuration: Motion.base, glyphCount: Object.keys(glyphItems).length, wordCount: pageLayout.words.length, widthCacheSize: Object.keys(widthCache).length, pageFits: pageFits, loadedCharacters: pageSource.length, readingMode: readingMode, readerAnimationEvents: readerAnimationEvents, readerMotionEnabled: Motion.enabled, chapterCardVisible: chapterCard.visible, chapterTitle: chapterTitle, wordToolsOpen: wordPanel.opened, wordMenuReveal: wordPanel.reveal, wordMenuOpenAnimations: wordPanel.openAnimations, wordMenuCloseAnimations: wordPanel.closeAnimations, noteDirty: noteDirty, noteSaving: noteSaving, progressRevision: bookRevision, progressConflict: progressConflict, wordToolsShortcut: "Ctrl+Space", wordMenuWidth: wordPanel.width, wordMenuHeight: wordPanel.height, typingPanelWidth: menuAnchorItem.width, typingPanelHeight: menuAnchorItem.height, notebookMode: notebookMode, notebookCreating: notebookCreating, notesSection: notebookFilter, definitionsEnabled: definitionsEnabled, notedWordCount: notedTerms.length, practicing: practicing, fullscreen: fullscreen, pageLines: pageLayout.lines, pageLineLimit: pageLineLimit, passageHeight: passageArea.height, renderedHeight: passageFlow.height, fontSize: readingFont.pixelSize, layoutVersion: 9, previousPages: pageHistory.length, activeEffects: activeEffects, effectKind: effectKind, lineTransitions: lineTransitions, pageTransitions: pageTransitions, motionEnabled: Motion.enabled, feedbackEvents: feedbackEvents, focused: answer.activeFocus, turningPage: turningPage, textLength: bookLength,
             typed: answer.text.length, selectedCharacters: answer.selectedText.length, position: position, rounds: rounds,
             presets: TypingTexts.passages.length, message: message, busy: busy,
             title: bookTitle, chapters: chapters.length, library: library.length, books: libraryBooks.length, wpm: liveWpm, filePickerActive: filePickerActive});
@@ -1030,6 +1030,10 @@ Item {
         // Selection is invisible in this capture editor; never let it replace
         // the whole typed prefix when a printable key arrives.
         if (event.key === Qt.Key_A && (event.modifiers & (Qt.ControlModifier | Qt.MetaModifier))) return true;
+        if (turningPage && !(event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier))) {
+            if (event.key === Qt.Key_Backspace) { undoQueuedKey(); return true; }
+            if (event.text.length && event.text.charCodeAt(0) >= 32) { queueTyping(event.text); return true; }
+        }
         if (busy || restoring || readingMode || (event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier))) return false;
         if (event.text.length && event.text.charCodeAt(0) >= 32) {
             const cursor = answer.selectionStart !== answer.selectionEnd ? answer.selectionEnd : answer.cursorPosition;
@@ -1050,7 +1054,7 @@ Item {
         return false;
     }
     function handleWhitespaceKey(event) {
-        if (busy || (event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier))) return false;
+        if ((busy && !turningPage) || (event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier))) return false;
         if (event.key === Qt.Key_Tab || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
             const entered = event.key === Qt.Key_Tab ? "\t" : "\n";
             if (turningPage) { queueTyping(entered); return true; }
@@ -1801,8 +1805,8 @@ Item {
                     Layout.fillHeight: true
                     StyledRect {
                         id: chapterCard
-                        objectName: "reader-chapter-card"
-                        visible: (root.readingMode && root.atChapterStart) || (root.fullscreen && !root.readingMode && root.bookKind === "book" && root.currentChapterIndex >= 0)
+                        objectName: root.readingMode || root.fullscreen ? "reader-chapter-card" : "typing-chapter-card"
+                        visible: (root.atChapterStart && (root.readingMode || (!root.fullscreen && !root.displayedInput.length))) || (root.fullscreen && !root.readingMode && root.bookKind === "book" && root.currentChapterIndex >= 0)
                         Layout.fillWidth: true
                         implicitHeight: chapterCardText.implicitHeight + 28
                         variant: "pane"
@@ -1824,7 +1828,7 @@ Item {
                                 Layout.fillWidth: true
                             }
                             StyledText {
-                                objectName: "reader-chapter-card-title"
+                                objectName: root.readingMode || root.fullscreen ? "reader-chapter-card-title" : "typing-chapter-card-title"
                                 text: root.chapterTitle
                                 textFormat: Text.PlainText
                                 font.family: Config.theme.font
@@ -1851,52 +1855,11 @@ Item {
                             if (root.pageSource.length) fitDelay.restart();
                             Qt.callLater(() => { if (smoothCaret.targetGlyph) smoothCaret.follow(smoothCaret.targetGlyph); });
                         }
-                        StyledRect {
-                            id: typingChapterCard
-                            objectName: "typing-chapter-card"
-                            anchors.top: parent.top
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            height: Math.max(0, Math.min(root.fullscreen ? 112 : Infinity, passageVisuals.centerPadding - 12))
-                            visible: !root.readingMode && root.bookKind === "book" && root.currentChapterIndex >= 0
-                                && (root.fullscreen || (root.atChapterStart && root.displayedInput.length === 0)) && height >= 48
-                            z: 4
-                            variant: "pane"
-                            radius: Config.roundness
-                            border.width: 1
-                            border.color: Qt.alpha(Colors.primary, 0.28)
-                            ColumnLayout {
-                                anchors.left: parent.left
-                                anchors.right: parent.right
-                                anchors.verticalCenter: parent.verticalCenter
-                                anchors.margins: 16
-                                spacing: 4
-                                StyledText {
-                                    text: "CHAPTER · " + (root.currentChapterIndex + 1) + " / " + root.chapters.length
-                                    textFormat: Text.PlainText
-                                    font.pixelSize: 11
-                                    font.letterSpacing: 1.2
-                                    color: Colors.primary
-                                    Layout.fillWidth: true
-                                }
-                                StyledText {
-                                    objectName: "typing-chapter-card-title"
-                                    text: root.chapterTitle
-                                    textFormat: Text.PlainText
-                                    font.pixelSize: Styling.fontSize(4)
-                                    font.weight: Font.DemiBold
-                                    color: Colors.overSurface
-                                    elide: Text.ElideRight
-                                    Layout.fillWidth: true
-                                    Layout.minimumWidth: 0
-                                }
-                            }
-                        }
                         Flickable {
                             id: passageVisuals
                             objectName: "typing-page-visuals"
-                            readonly property real centerPadding: root.fullscreen ? 4 : Math.max(4, (height - root.passageLineHeight) / 2)
-                            contentHeight: passageFlow.height + 2 * centerPadding
+                            readonly property real centerPadding: 4
+                            contentHeight: passageFlow.height + centerPadding + Math.max(4, (height - root.passageLineHeight) / 2)
                             onHeightChanged: Qt.callLater(root.refreshPageCaret)
                             contentWidth: width
                             boundsBehavior: Flickable.StopAtBounds
@@ -2291,7 +2254,7 @@ Item {
                             // The invisible editor only captures input; custom glyphs do the wrapping.
                             wrapMode: TextEdit.NoWrap
                             inputMethodHints: Qt.ImhNoPredictiveText
-                            onTextChanged: { root.advance(); root.syncGlyphs(); }
+                            onTextChanged: root.advance()
                             onCursorPositionChanged: root.syncCaret()
                             onActiveFocusChanged: {
                                 root.speedNow = Date.now();
