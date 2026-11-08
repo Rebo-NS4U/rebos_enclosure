@@ -31,3 +31,5 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=. python3 -m unittest discover -s tests
 ```
 
 Derived QML is covered by the included AGPL-3.0 license inherited from Enclosure's shell. Preserve upstream notices when modifying bundled sources.
+
+The menu follows the shell wallpaper palette at `~/.cache/rebos_shell/colors.json` and watches for color changes. Built-in colors are used only when a palette role is unavailable.

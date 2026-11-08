@@ -31,8 +31,19 @@ def main():
         # A deterministic chooser stand-in exercises success and cancellation.
         picker.write_text("#!/usr/bin/env python3\nimport pathlib, sys, time\nflag = pathlib.Path(" + repr(str(target / 'picked')) + ")\nif flag.exists():\n    time.sleep(2)\n    sys.exit(1)\nflag.touch()\nassert any('*.epub' in arg for arg in sys.argv)\ntime.sleep(4)\nprint(" + repr(str(book)) + ")\n")
         picker.chmod(0o755)
+        # Theme singletons can export application palettes. Keep every writer
+        # inside the fixture home, never the user's live desktop configuration.
+        fixture_home = target / 'home'
+        fixture_home.mkdir()
+        fixture_env = dict(os.environ, HOME=str(fixture_home),
+                           XDG_CONFIG_HOME=str(fixture_home / '.config'),
+                           XDG_CACHE_HOME=str(fixture_home / '.cache'),
+                           XDG_DATA_HOME=str(fixture_home / '.local/share'),
+                           XDG_STATE_HOME=str(fixture_home / '.local/state'),
+                           GSETTINGS_BACKEND='memory',
+                           PATH=str(binaries) + os.pathsep + os.environ['PATH'])
         try:
-            result = subprocess.run(["qs", "-p", str(target / "shell.qml")], capture_output=True, text=True, timeout=65, env=dict(os.environ, XDG_DATA_HOME=str(target / "data"), PATH=str(binaries) + os.pathsep + os.environ['PATH']))
+            result = subprocess.run(["qs", "-p", str(target / "shell.qml")], capture_output=True, text=True, timeout=65, env=fixture_env)
         except subprocess.TimeoutExpired as error:
             print((error.stdout or b" ").decode(errors="replace"))
             print((error.stderr or b" ").decode(errors="replace"))
