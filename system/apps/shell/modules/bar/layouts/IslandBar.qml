@@ -836,9 +836,10 @@ Item {
                             id: dateTimeRow
                             anchors.centerIn: parent
                             // Digits and uppercase AM/PM share the capital-height band.
-                            // Keep its center stable as the time changes.
+                            // Keep its center stable; native hinting needs one pixel below
+                            // the mathematical capital-height center.
                             anchors.verticalCenterOffset: Math.round(height / 2
-                                - baselineOffset + clockMetrics.capitalHeight / 2)
+                                - baselineOffset + clockMetrics.capitalHeight / 2) + 1
                             text: root.formattedTime
                             font.family: Config.theme.monoFont
                             font.pixelSize: Styling.fontSize(-1)
