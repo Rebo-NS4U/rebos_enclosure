@@ -214,7 +214,7 @@ Item {
         triggeredOnStart: true
         onTriggered: {
             const now = new Date();
-            const format = Config.bar?.use12hFormat ? "hh:mm ap" : "HH:mm";
+            const format = Config.bar?.use12hFormat ? "hh:mm AP" : "HH:mm";
             root.formattedTime = Qt.formatTime(now, format);
         }
     }
@@ -827,21 +827,18 @@ Item {
                             }
                         }
 
-                        TextMetrics {
+                        FontMetrics {
                             id: clockMetrics
                             font: dateTimeRow.font
-                            text: dateTimeRow.text
-                            renderType: dateTimeRow.renderType
                         }
 
                         StyledText {
                             id: dateTimeRow
                             anchors.centerIn: parent
-                            // Center the painted glyphs rather than the font's
-                            // asymmetric ascent/descent whitespace.
-                            readonly property rect glyphBounds: clockMetrics.tightBoundingRect
+                            // Digits and uppercase AM/PM share the capital-height band.
+                            // Keep its center stable as the time changes.
                             anchors.verticalCenterOffset: Math.round(height / 2
-                                - baselineOffset - glyphBounds.y - glyphBounds.height / 2)
+                                - baselineOffset + clockMetrics.capitalHeight / 2)
                             text: root.formattedTime
                             font.family: Config.theme.monoFont
                             font.pixelSize: Styling.fontSize(-1)
