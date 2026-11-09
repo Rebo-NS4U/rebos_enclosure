@@ -826,9 +826,11 @@ Item {
                             }
                         }
 
-                        FontMetrics {
+                        TextMetrics {
                             id: clockMetrics
                             font: dateTimeRow.font
+                            text: dateTimeRow.text
+                            renderType: dateTimeRow.renderType
                         }
 
                         StyledText {
@@ -836,7 +838,7 @@ Item {
                             anchors.centerIn: parent
                             // Center the painted glyphs rather than the font's
                             // asymmetric ascent/descent whitespace.
-                            readonly property rect glyphBounds: clockMetrics.tightBoundingRect(text)
+                            readonly property rect glyphBounds: clockMetrics.tightBoundingRect
                             anchors.verticalCenterOffset: Math.round(height / 2
                                 - baselineOffset - glyphBounds.y - glyphBounds.height / 2)
                             text: root.formattedTime
