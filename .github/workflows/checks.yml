@@ -19,10 +19,10 @@ jobs:
       - name: Install native test dependencies
         run: >-
           pacman -Syu --noconfirm --needed
-          git python python-pip python-pillow python-gobject gtk4 ruff
-          gcc pkgconf fish fontconfig
+          git python python-pip python-pillow python-gobject python-charset-normalizer gtk4 ruff
+          gcc pkgconf fish fontconfig poppler yt-dlp
           niri quickshell qt6-multimedia-ffmpeg ttf-dejavu nodejs lua51
-          ffmpeg vlc vlc-plugin-ffmpeg vlc-plugin-freetype vlc-plugin-lua
+          ffmpeg vlc vlc-plugin-ffmpeg vlc-plugin-freetype vlc-plugin-lua vlc-plugin-dvb
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false

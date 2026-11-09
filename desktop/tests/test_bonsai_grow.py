@@ -707,8 +707,8 @@ class BonsaiGrowTests(unittest.TestCase):
 
     def test_new_launches_use_fresh_seeds_and_explicit_seed_is_repeatable(self):
         from unittest.mock import patch, Mock
-        with patch('sys.stdout', Mock(isatty=lambda: True)), \
-             patch('sys.stdin', Mock(isatty=lambda: True)), \
+        with patch('sys.stdout', Mock(isatty=lambda: True, fileno=lambda: 1)), \
+             patch('sys.stdin', Mock(isatty=lambda: True, fileno=lambda: 0)), \
              patch.dict(os.environ, {'TERM': 'xterm-256color'}), \
              patch.object(bonsai.shutil, 'get_terminal_size', return_value=os.terminal_size((100, 40))), \
              patch.object(bonsai.random, 'SystemRandom') as entropy, \
