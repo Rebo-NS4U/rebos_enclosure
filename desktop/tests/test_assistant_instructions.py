@@ -42,6 +42,15 @@ ShellRoot {
             check(session.codexPreset === "coding", "new chats select dweebo-Do");
             let defaultMode = session.codexPresets.find(item => item.id === session.codexPreset);
             check(defaultMode.name === "dweebo-Do" && defaultMode.model === "gpt-6.1-sol" && defaultMode.effort === "medium", "default selects the Do model and effort");
+            let symphony = session.codexPresets.find(item => item.id === "symphony");
+            check(symphony && symphony.model === defaultMode.model, "Symphony uses the existing Codex backend");
+            session.currentSessionId = "symphony-test";
+            session.codexPreset = "symphony";
+            let guidance = session.standingInstructions(symphony, false);
+            check(guidance[0].text.includes("WORKFLOW.md") && guidance[0].text.includes("Human review"), "Symphony workflow and handoff reach the prompt");
+            session.instructionSessionId = session.currentSessionId;
+            session.instructionModeGuidance = symphony.guidance;
+            check(!session.standingInstructions(defaultMode, false).some(item => item.text.includes("Symphony coding profile")), "switching away does not resend Symphony guidance");
             session.sessionReady = true;
             session.codexPreset = "";
             session.currentSessionId = "github-session";

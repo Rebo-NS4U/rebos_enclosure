@@ -133,3 +133,19 @@ VM, boot into Niri, check output scaling/input/audio/network, suspend and resume
 where supported, and preview/apply an update retaining personal settings before
 declaring that hardware tested. No release should imply a machine matrix was
 physically tested when only synthetic fixtures were used.
+
+## Symphony assistant profile
+
+Choose **dweebo-Symphony** in the Codex profile picker. It uses the same Sol
+model and medium reasoning as dweebo-Do, with issue execution guidance adapted
+from [Symphony SPEC.md](https://github.com/openai/symphony/blob/main/SPEC.md).
+It reads repository instructions and WORKFLOW.md when available, checks issue
+eligibility, uses isolated issue worktrees, validates changes, bounds transient
+retries and reports a review handoff. Existing permissions and publication rules
+still apply. Selection and guidance use the existing per-chat persistence and
+mode-switching path; the default profile stays dweebo-Do.
+
+This is an interactive profile, not an implementation of the Symphony service:
+there is no background tracker polling, concurrent scheduler, automatic cleanup
+or restart recovery. Workflow runtime settings require a separate service.
+Tracker actions require available authenticated tools and user authorization.
