@@ -128,9 +128,10 @@ Item {
 
         onFilteredAppsChanged: {
             resultsList.enableScrollAnimation = false;
-            resultsList.contentY = 0;
+            resultsList.positionViewAtBeginning();
             updateAppsModel();
             Qt.callLater(() => {
+                resultsList.positionViewAtBeginning();
                 resultsList.enableScrollAnimation = true;
             });
         }
@@ -206,7 +207,7 @@ Item {
 
         onSelectedIndexChanged: {
             if (selectedIndex === -1 && resultsList.count > 0) {
-                resultsList.contentY = 0;
+                resultsList.positionViewAtBeginning();
             }
 
             // Close expanded options when selection changes to a different item
@@ -230,35 +231,9 @@ Item {
             if (index < 0 || index >= appsModel.count)
                 return;
 
-            // Calculate Y position of the item
-            var itemY = 0;
-            for (var i = 0; i < index; i++) {
-                itemY += 48; // All items before are collapsed (base height)
-            }
-
-            // Calculate expanded item height - 2 options (Launch, Create Shortcut)
-            var listHeight = 36 * 2;
-            var expandedHeight = 48 + 4 + listHeight + 8;
-
-
-            // Calculate max valid scroll position
-            var maxContentY = Math.max(0, resultsList.contentHeight - resultsList.height);
-
-            // Current viewport bounds
-            var viewportTop = resultsList.contentY;
-            var viewportBottom = viewportTop + resultsList.height;
-
-            // Only scroll if item is not fully visible
-            var itemBottom = itemY + expandedHeight;
-
-            if (itemY < viewportTop) {
-                // Item top is above viewport - scroll up to show it
-                resultsList.contentY = itemY;
-            } else if (itemBottom > viewportBottom) {
-                // Item bottom is below viewport - scroll down to show it
-                resultsList.contentY = Math.min(itemBottom - resultsList.height, maxContentY);
-            }
-        // Otherwise, item is already fully visible - no scroll needed
+            // ListView owns the row positions, including origin shifts after
+            // filtering/reuse and animated expanded heights.
+            resultsList.positionViewAtIndex(index, ListView.Contain);
         }
 
         Behavior on height {
@@ -297,13 +272,13 @@ Item {
                         appLauncher.selectedIndex = 0;
                         resultsList.currentIndex = 0;
 
-                        resultsList.contentY = 0;
+                        resultsList.positionViewAtBeginning();
                     } else {
                         GlobalStates.launcherSelectedIndex = -1;
                         appLauncher.selectedIndex = -1;
                         resultsList.currentIndex = -1;
 
-                        resultsList.contentY = 0;
+                        resultsList.positionViewAtBeginning();
                     }
 
                     Qt.callLater(() => {
@@ -548,35 +523,8 @@ Item {
                         appLauncher.selectedIndex = currentIndex;
                     }
 
-                    // Manual smooth auto-scroll accounting for variable height items
-                    if (currentIndex >= 0) {
-                        var itemY = 0;
-                        for (var i = 0; i < currentIndex && i < appsModel.count; i++) {
-                            var itemHeight = 48;
-                            if (i === appLauncher.expandedItemIndex) {
-                                var listHeight = 36 * 2;
-                                itemHeight = 48 + 4 + listHeight + 8;
-                            }
-                            itemY += itemHeight;
-                        }
-
-                        var currentItemHeight = 48;
-                        if (currentIndex === appLauncher.expandedItemIndex) {
-                            var listHeight = 36 * 2;
-                            currentItemHeight = 48 + 4 + listHeight + 8;
-                        }
-
-                        var viewportTop = resultsList.contentY;
-                        var viewportBottom = viewportTop + resultsList.height;
-
-                        if (itemY < viewportTop) {
-                            // Item is above viewport, scroll up
-                            resultsList.contentY = itemY;
-                        } else if (itemY + currentItemHeight > viewportBottom) {
-                            // Item is below viewport, scroll down
-                            resultsList.contentY = itemY + currentItemHeight - resultsList.height;
-                        }
-                    }
+                    if (currentIndex >= 0)
+                        resultsList.positionViewAtIndex(currentIndex, ListView.Contain);
                 }
 
                 delegate: Item {
@@ -949,48 +897,10 @@ Item {
 
                 highlight: Item {
                     width: resultsList.width
-                    height: {
-                        let baseHeight = 48;
-                        if (resultsList.currentIndex === appLauncher.expandedItemIndex) {
-                            var listHeight = 36 * 2;
-                            return baseHeight + 4 + listHeight + 8;
-                        }
-                        return baseHeight;
-                    }
-
-                    // Calculate Y position based on index, accounting for expanded items
-                    y: {
-                        var yPos = 0;
-                        for (var i = 0; i < resultsList.currentIndex && i < appsModel.count; i++) {
-                            var itemHeight = 48;
-                            if (i === appLauncher.expandedItemIndex) {
-                                var listHeight = 36 * 2;
-                                itemHeight = 48 + 4 + listHeight + 8;
-                            }
-                            yPos += itemHeight;
-                        }
-                        return yPos;
-                    }
-
-
-                    Behavior on y {
-                        enabled: Config.animDuration > 0
-                        NumberAnimation {
-                            duration: Config.animDuration / 2
-                            easing.type: Easing.OutCubic
-                        }
-                    }
-
-                    Behavior on height {
-                        enabled: Config.animDuration > 0
-                        NumberAnimation {
-                            duration: Config.animDuration
-                            easing.type: Easing.OutQuart
-                        }
-                    }
-
+                    // Let ListView track the selected delegate's actual geometry.
+                    // Summing row heights loses the view's origin after model moves.
                     onHeightChanged: {
-                        if (appLauncher.expandedItemIndex >= 0 && height > 48) {
+                        if (appLauncher.expandedItemIndex >= 0) {
                             Qt.callLater(() => {
                                 appLauncher.adjustScrollForExpandedItem(appLauncher.expandedItemIndex);
                             });
@@ -1011,7 +921,11 @@ Item {
                     }
                 }
 
-                highlightFollowsCurrentItem: false
+                highlightFollowsCurrentItem: true
+                highlightMoveDuration: Config.animDuration > 0 ? Config.animDuration / 2 : 0
+                highlightMoveVelocity: -1
+                highlightResizeDuration: Config.animDuration > 0 ? Config.animDuration : 0
+                highlightResizeVelocity: -1
             }
         }
 
