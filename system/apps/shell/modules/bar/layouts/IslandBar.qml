@@ -102,6 +102,12 @@ Item {
     readonly property bool typingDialogActive: typingView.filePickerActive
     readonly property bool typingFullscreen: currentMode === "typing" && typingView.fullscreen
     function expand(mode: string) {
+        if (mode === "typing" && typingView.pinned) {
+            for (const client of NiriService.clients.values) {
+                if (client.title === readerWindow.title) { NiriService.focusWindow(client.id); break; }
+            }
+            return;
+        }
         FocusGrabManager.clearTopGrab();
         Visibilities.closeActiveBarPopup();
         if (root.retractingToHidden) {
@@ -1016,26 +1022,47 @@ Item {
             // ═══════════════════════════════════════════════════════════════
             // EXPANDED STATE 1: MAIN DASHBOARD HUB
             // ═══════════════════════════════════════════════════════════════
+            FloatingWindow {
+                id: readerWindow
+                screen: root.screen
+                title: "rebos_shell Reader"
+                implicitWidth: 720
+                implicitHeight: 900
+                minimumSize: Qt.size(540, 400)
+                color: Colors.surface
+                visible: typingView.pinned
+                onClosed: { typingView.pinned = false; root.collapse(); }
+            }
+
             ShellWidgets.TypingMenu {
                 id: typingView
-                menuAnchorItem: islandBody
+                parent: pinned ? readerWindow.contentItem : islandBody
+                menuAnchorItem: pinned ? readerWindow.contentItem : islandBody
                 // Lay out once at the destination size while the body morphs.
                 // Revealing live, shrinking text made opening look like a reflow.
                 anchors.top: parent.top
                 anchors.horizontalCenter: parent.horizontalCenter
                 // Match the typing destination independently of currentMode.
                 // Collapsing the bar must not shrink the parked text viewport.
-                width: fullscreen ? Math.min(960, root.width - 64) : Math.min(640, root.width - 32)
-                height: fullscreen ? root.height : Math.min(implicitHeight, root.height - 32)
-                visible: root.currentMode === "typing"
-                opacity: visible && !root.retractingToHidden ? 1 : 0
+                width: pinned ? parent.width : fullscreen ? Math.min(960, root.width - 64) : Math.min(640, root.width - 32)
+                height: pinned ? parent.height : fullscreen ? root.height : Math.min(implicitHeight, root.height - 32)
+                visible: pinned || root.currentMode === "typing"
+                opacity: visible && (pinned || !root.retractingToHidden) ? 1 : 0
                 Behavior on opacity {
                     enabled: Motion.enabled
                     // Reveal with the panel rather than waiting for its morph.
                     NumberAnimation { duration: Math.min(140, Motion.enter); easing.type: Easing.OutCubic }
                 }
-                enabled: visible && !root.retractingToHidden
-                onBackRequested: root.collapse()
+                enabled: visible && (pinned || !root.retractingToHidden)
+                onPinRequested: {
+                    readerMenu.close();
+                    wordTools.close();
+                    pinned = !pinned;
+                    if (pinned) root.collapse();
+                    else root.expand("typing");
+                    Qt.callLater(() => typingView.focusPassage());
+                }
+                onBackRequested: { pinned = false; root.collapse(); }
             }
 
             IslandDashboard {

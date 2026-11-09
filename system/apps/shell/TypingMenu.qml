@@ -16,6 +16,8 @@ import qs.config
 Item {
     id: root
     signal backRequested()
+    signal pinRequested()
+    property bool pinned: false
     property bool practicing: false
     property bool readingMode: false
     readonly property alias modeShortcut: modeSwitchShortcut
@@ -1665,6 +1667,7 @@ Item {
                     onClicked: root.toggleSpeech()
                 }
                 TextButton { visible: root.readingMode; text: "Type"; onClicked: root.toggleReadingMode() }
+                TextButton { objectName: "reader-pin"; text: root.pinned ? "Unpin" : "Pin"; Accessible.name: root.pinned ? "Return reader to panel" : "Tile reader window"; onClicked: root.pinRequested() }
                 TextButton { text: "Close"; onClicked: { root.stopSpeech(); root.saveProgress(); root.backRequested(); } }
             }
             Rectangle { visible: root.readingMode; Layout.fillWidth: true; implicitHeight: 1; color: Qt.alpha(Colors.outlineVariant, 0.4) }
