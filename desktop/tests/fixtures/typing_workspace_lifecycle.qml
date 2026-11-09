@@ -53,6 +53,9 @@ ShellRoot {
                     typing.pageSource = "A retained typing workspace with words to practice. ".repeat(100);
                     typing.fitPage();
                 } else if (phase === 2) {
+                    // The fixture seeded text before the opening morph laid out.
+                    // Settle that initial geometry before measuring reopen reuse.
+                    if (island.typingPractice.fittedGeometry !== island.typingPractice.pageGeometry()) { island.typingPractice.fitPage(); return; }
                     const backdrop = find(panel.contentItem, "shell-outside-click-backdrop");
                     backdrop.clicked(null);
                     if (island.currentMode !== "typing") throw Error("Outside click closed typing");

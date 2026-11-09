@@ -102,6 +102,5 @@ python-charset-normalizer
 # Local PDF text extraction for continuous typing
 poppler
 
-# Offline fallback for the book reader; Python provides the optional Piper voice setup.
-espeak-ng
+# Nicole voice setup uses an isolated Python environment.
 python-pip

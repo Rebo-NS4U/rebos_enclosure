@@ -3,10 +3,11 @@ import QtQuick.Window
 import QtTest
 import Quickshell
 ShellRoot {
-    Window {
+    PanelWindow {
         visible: true
-        width: 960; height: 720
-        TypingMenu { id: practice; anchors.fill: parent }
+        implicitWidth: 960; implicitHeight: 720
+        Item { id: compactAnchor; width: 640; height: 180 }
+        TypingMenu { id: practice; anchors.fill: parent; menuAnchorItem: compactAnchor }
     }
     TestCase { id: keys; when: false }
     function find(item, name) {
@@ -25,13 +26,16 @@ ShellRoot {
                 const search = find(panel.contentItem, "typing-word-term");
                 const editor = find(panel.contentItem, "typing-word-note");
                 if (phase === 0) {
+                    practice.wordTools.grabFocus = false; // QtTest has no native Wayland input serial.
                     practice.send({action: "add", title: "Notebook test", text: "Words for a notebook. ".repeat(80)});
                     phase++; return;
                 }
-                if (practice.busy || practice.noteSaving) return;
+                if (practice.busy || practice.noteSaving || !practice.bookId) return;
                 if (phase === 1) { practice.openNotebook(); phase++; return; }
                 if (phase === 2) {
                     if (!practice.notebookBrowsing || panel.width > 640 || panel.height > 480) throw Error("Browser bounds incorrect");
+                    if (panel.anchor.item !== compactAnchor || panel.anchor.rect.x !== 0 || panel.anchor.rect.y !== compactAnchor.height + 6) throw Error("Compact notes lost their original position");
+                    if (panel.surface.variant !== "popup") throw Error("Notes do not use the themed popup surface");
                     const scroll = find(panel.contentItem, "typing-word-scroll");
                     if (search.mapToItem(panel.contentItem, 0, 0).y >= scroll.mapToItem(panel.contentItem, 0, 0).y) throw Error("Search is not pinned above results");
                     practice.notebookFilter = "People";
@@ -43,13 +47,17 @@ ShellRoot {
                 if (phase === 3) {
                     if (!practice.noteLoaded) return;
                     if (!practice.editingWordNote || practice.noteCategory !== "People") throw Error("Creation did not enter categorized editor");
+                    find(panel.contentItem, "typing-notes-sheet").grabToImage(result => result.saveToFile("/tmp/enclosure-notes-top.png"));
                     editor.text = "A careful observer.";
                     editor.forceActiveFocus();
-                    keys.keyClick(Qt.Key_S, Qt.ControlModifier);
+                    const save = find(panel.contentItem, "typing-save-word-note");
+                    const pos = save.mapToItem(panel.contentItem, 0, 0);
+                    if (!panel.visible || pos.y < 0 || pos.y + save.height > panel.height || panel.height < 400) throw Error("Save is clipped by compact parent");
+                    keys.mouseClick(save, save.width / 2, save.height / 2);
                     phase++; return;
                 }
                 if (phase === 4) {
-                    if (practice.editingWordNote || practice.savedWordNote !== "A careful observer.") throw Error("Shortcut did not save note");
+                    if (practice.editingWordNote || practice.savedWordNote !== "A careful observer.") throw Error("Save button did not save note");
                     practice.openNotebook(); phase++; return;
                 }
                 if (phase === 5) {
@@ -59,17 +67,22 @@ ShellRoot {
                     practice.notebookFilter = "Plot";
                     if (practice.visibleNoteEntries.length) throw Error("Section filtering failed");
                     practice.notebookFilter = "People";
-                    const card = find(panel.contentItem, "typing-notebook-entry-elliot");
-                    if (!card || card.height > 100) throw Error("Compact note card missing or too tall");
-                    practice.openNotebookEntry("elliot"); phase++; return;
+                    phase++; return;
                 }
                 if (phase === 6) {
+                    const card = find(panel.contentItem, "typing-notebook-entry-elliot");
+                    if (!card || card.height > 100) throw Error("Compact note card missing or too tall");
+                    keys.mouseClick(card, card.width / 2, card.height / 2, Qt.LeftButton, Qt.NoModifier, 50); phase++; return;
+                }
+                if (phase === 7) {
                     if (!practice.noteLoaded) return;
-                    find(panel.contentItem, "typing-edit-word-note").clicked();
+                    const edit = find(panel.contentItem, "typing-edit-word-note");
+                    keys.mouseClick(edit, edit.width / 2, edit.height / 2);
                     editor.text = "Unsaved draft";
-                    find(panel.contentItem, "typing-cancel-note-edit").clicked();
+                    const cancel = find(panel.contentItem, "typing-cancel-note-edit");
+                    keys.mouseClick(cancel, cancel.width / 2, cancel.height / 2);
                     if (editor.text !== "A careful observer." || practice.noteDirty) throw Error("Cancel lost saved note");
-                    console.log("PASS: compact notes bounds, pinned search, create, shortcut save, search/filter, dense cards, cancel");
+                    console.log("PASS: compact notes bounds, pinned search, create, mouse save, search/filter, dense cards, cancel");
                     Qt.quit();
                 }
             } catch (error) { console.error(error); Qt.exit(1); }

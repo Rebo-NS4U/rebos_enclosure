@@ -18,6 +18,9 @@ Item {
     implicitHeight: mainCol.implicitHeight + 28
 
     signal backRequested()
+    signal openReaderRequested()
+    property var reader: null
+    readonly property bool readerActive: reader !== null && reader.speaking
 
     readonly property bool hasPlayer: MprisController.activePlayer !== null
     readonly property bool isPlaying: MprisController.isPlaying
@@ -67,6 +70,34 @@ Item {
         anchors.fill: parent
         anchors.margins: 14
         spacing: 12
+
+        StyledRect {
+            objectName: "typer-media-card"
+            visible: root.readerActive
+            Layout.fillWidth: true
+            implicitHeight: readerControls.implicitHeight + 24
+            radius: 16
+            variant: "common"
+            ColumnLayout {
+                id: readerControls
+                anchors.fill: parent
+                anchors.margins: 12
+                StyledText {
+                    Layout.fillWidth: true
+                    text: root.readerActive ? "Typer · " + (root.reader.bookTitle || "Read aloud") : ""
+                    elide: Text.ElideRight
+                }
+                RowLayout {
+                    ThemeButton { text: "Open Typer"; onClicked: root.openReaderRequested() }
+                    ThemeButton {
+                        objectName: "typer-media-playback"
+                        text: root.readerActive && root.reader.speechPaused ? "Resume" : "Pause"
+                        onClicked: root.reader.toggleSpeechPlayback()
+                    }
+                    ThemeButton { objectName: "typer-media-stop"; text: "Stop"; onClicked: root.reader.stopSpeech() }
+                }
+            }
+        }
 
         // ═══════════════════════════════════════════════════════════════
         // HEADER: Back button + Title + (Right) Player Switcher + Close

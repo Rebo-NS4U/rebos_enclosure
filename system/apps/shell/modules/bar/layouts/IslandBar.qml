@@ -129,6 +129,7 @@ Item {
             root.previousMode = root.currentMode;
         }
         root.currentMode = mode || "dashboard";
+        if (root.currentMode === "typing") Qt.callLater(() => { if (root.currentMode === "typing") typingView.reopen(); });
         if (wasHidden) {
             slideDownAnim.from = -root.targetHeight;
             slideDownAnim.to = 0;
@@ -1357,6 +1358,8 @@ Item {
             // ═══════════════════════════════════════════════════════════════
             IslandMediaCenterPanel {
                 id: mediaCenterView
+                reader: typingView
+                onOpenReaderRequested: root.expand("typing")
                 anchors.top: parent.top
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: root.targetWidth

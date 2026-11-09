@@ -328,10 +328,14 @@ class Library:
         return self.db.execute('SELECT substr(text, ?, ?) FROM book_content WHERE id=?',
                                (start + 1, max(0, end - start), key)).fetchone()[0]
 
-    def page(self, key, include_chapters=True):
+    def page(self, key, include_chapters=True, position=None):
         row = self.db.execute('SELECT c.id,c.title,c.kind,c.size AS length,c.chapters,p.position,p.typed,p.loops,p.revision,p.typed_format FROM book_catalogue c JOIN book_progress p ON p.id=c.id WHERE c.id=?', (key,)).fetchone()
         if row is None: raise ValueError('Book is no longer in the library.')
         data = dict(row)
+        if position is not None:
+            if not isinstance(position, int) or not 0 <= position < data['length']:
+                raise ValueError('Invalid book position.')
+            data.update(position=position, typed='', typed_format=0)
         chapters = json.loads(data['chapters'])
         end = min([data['position'] + self.window] + [chapter['position'] for chapter in chapters
                   if chapter['position'] > data['position']])
@@ -411,7 +415,7 @@ class Library:
         self.paragraph_mode = bool(request.get('paragraphs', False))
         self.typing_format = bool(request.get('typing_format', False))
         self.window = max(WINDOW, min(4096, int(request.get('window', WINDOW))))
-        handlers = {'delete': '_handle_delete', 'list': '_handle_list', 'resume': '_handle_resume', 'import': '_handle_import', 'add': '_handle_add', 'open': '_handle_open', 'chapter': '_handle_chapter', 'save': '_handle_save', 'seek': '_handle_save', 'next': '_handle_save', 'previous': '_handle_previous', 'words': '_handle_words', 'word': '_handle_word', 'note': '_handle_note', 'word_settings': '_handle_word_settings'}
+        handlers = {'peek': '_handle_peek', 'delete': '_handle_delete', 'list': '_handle_list', 'resume': '_handle_resume', 'import': '_handle_import', 'add': '_handle_add', 'open': '_handle_open', 'chapter': '_handle_chapter', 'save': '_handle_save', 'seek': '_handle_save', 'next': '_handle_save', 'previous': '_handle_previous', 'words': '_handle_words', 'word': '_handle_word', 'note': '_handle_note', 'word_settings': '_handle_word_settings', 'reader_state': '_handle_reader_state'}
         handler = handlers.get(request['action'])
         if handler is None:
             raise ValueError('Unknown library action.')
@@ -454,6 +458,38 @@ class Library:
                 self.db.execute('DELETE FROM word_notes WHERE book_id=? AND term=?', (key, term))
         return self._handle_word(request)
 
+    def _handle_reader_state(self, request):
+        if 'state' in request:
+            state = request['state']
+            if not isinstance(state, dict):
+                raise ValueError('Invalid reader settings.')
+            checks = {
+                'readingMode': lambda v: isinstance(v, bool),
+                'fullscreen': lambda v: isinstance(v, bool),
+                'practicing': lambda v: isinstance(v, bool),
+                'bookId': lambda v: isinstance(v, str) and len(v) <= 128,
+                'speechProfile': lambda v: v in ('kokoro-nicole', 'kokoro-heart', 'kokoro-bella', 'kokoro-sarah', 'kokoro-kore'),
+                'speechRate': lambda v: type(v) in (int, float) and 0.75 <= v <= 1.5,
+                'speechLimitMode': lambda v: v in ('none', 'page', 'chapter', 'chapters', 'time'),
+                'speechChapterCount': lambda v: type(v) is int and 1 <= v <= 100,
+                'speechMinutes': lambda v: type(v) is int and 1 <= v <= 240,
+                'notebookFilter': lambda v: v in ('All', *NOTE_CATEGORIES),
+            }
+            if any(key not in checks or not checks[key](value) for key, value in state.items()):
+                raise ValueError('Invalid reader settings.')
+            with self.db:
+                self.db.execute("INSERT INTO app_state VALUES ('reader_ui',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", (json.dumps(state),))
+        row = self.db.execute("SELECT value FROM app_state WHERE key='reader_ui'").fetchone()
+        try:
+            state = json.loads(row[0]) if row else {}
+            if not isinstance(state, dict): state = {}
+        except (ValueError, TypeError):
+            state = {}
+        if state.get('bookId') and not self.db.execute('SELECT 1 FROM book_catalogue WHERE id=?', (state['bookId'],)).fetchone():
+            state = dict(state, bookId='', practicing=False)
+        return {'state': state}
+
+
     def _handle_word_settings(self, request):
         if 'enabled' in request:
             if not isinstance(request['enabled'], bool):
@@ -482,6 +518,10 @@ class Library:
     def _handle_resume(self, request):
         key = self.last_id()
         return self.page(key) if key else {'empty': True}
+
+    def _handle_peek(self, request):
+        # Speech lookahead must never move progress or increment its revision.
+        return self.page(request['id'], False, request['position'])
 
 
     def _handle_import(self, request):

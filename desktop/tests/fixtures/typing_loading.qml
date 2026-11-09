@@ -36,11 +36,12 @@ ShellRoot {
                 const viewport = find(practice, "typing-page-visuals");
                 if (practice.implicitHeight >= 600 || practice.implicitHeight <= viewport.height) throw Error("Typing panel did not shrink around its seven rows and controls");
                 if (Math.abs(viewport.height - 7 * practice.passageLineHeight) > 1) throw Error("Typing viewport must show exactly seven rows total");
-                if (Math.abs(viewport.centerPadding - 3 * practice.passageLineHeight) > 1) throw Error("Blank centering rows must fit inside the seven-row viewport");
+                if (viewport.centerPadding !== 4) throw Error("Typing must begin near the top before midpoint scrolling");
                 const glyph = practice.glyphItems[practice.visualCursor];
                 if (!glyph) throw Error("Cursor glyph missing after jump");
                 const point = glyph.mapToItem(viewport.contentItem, 0, 0);
-                if (Math.abs(point.y + practice.passageLineHeight / 2 - viewport.contentY - viewport.height / 2) > 1) throw Error("Cursor not centered");
+                const expectedY = phase === 2 ? viewport.height / 2 : viewport.centerPadding + practice.passageLineHeight / 2;
+                if (Math.abs(point.y + practice.passageLineHeight / 2 - viewport.contentY - expectedY) > 1) throw Error("Cursor did not follow midpoint scrolling");
                 if (phase === 1) {
                     console.log("Long passage ready: " + count + " live glyphs / " + practice.passage.length + " characters; " + (Date.now() - started) + " ms including timer wait");
                     input.text = practice.passage.slice(0, -1); input.cursorPosition = input.length;

@@ -20,6 +20,37 @@ def main():
             else:
                 shutil.copyfile(source / name, target / name)
         shutil.copyfile(ROOT / "desktop/tests/fixtures" / (sys.argv[1] if len(sys.argv) > 1 else "typing_practice.qml"), target / "shell.qml")
+        if len(sys.argv) > 1 and sys.argv[1] in ("typing_speech.qml", "typing_reader_settings.qml"):
+            (target / "scripts/reader_speech.py").write_text(
+                "import json,sys,time\n"
+                "if '--status' in sys.argv: print(json.dumps({'kokoro': True, 'voices': [{'id': 'kokoro-' + v.lower(), 'title': v} for v in ['Nicole','Heart','Bella','Sarah','Kore']]}))\n"
+                "else: time.sleep(30)\n")
+        if len(sys.argv) > 1 and sys.argv[1] in ("typing_speech_continuous.qml", "typing_speech_limits.qml", "typing_speech_pause.qml"):
+            # Exercise real book navigation with deterministic completed/failed
+            # speech, without waiting for minutes of audible narration.
+            (target / "scripts/reader_speech.py").write_text(
+                "import json,sys,time\n"
+                "if '--status' in sys.argv: print(json.dumps({'natural': True, 'kokoro': True}))\n"
+                "else:\n time.sleep(0.4)\n sys.exit(1 if sys.argv[-1] == 'FAIL_PLAYBACK' else 0)\n")
+        if len(sys.argv) > 1 and sys.argv[1] == "typing_speech_highlight.qml":
+            (target / "scripts/reader_speech.py").write_text(
+                "import json,re,sys,time\n"
+                "if '--status' in sys.argv: print(json.dumps({'kokoro': True}))\n"
+                "else:\n"
+                " for word in list(re.finditer(r'\\S+',sys.argv[-1]))[:20]:\n"
+                "  start=len(sys.argv[-1][:word.start()].encode('utf-16-le'))//2\n"
+                "  end=len(sys.argv[-1][:word.end()].encode('utf-16-le'))//2\n"
+                "  print(json.dumps({'start':start,'end':end}),flush=True)\n"
+                "  time.sleep(0.06)\n")
+        if len(sys.argv) > 1 and sys.argv[1] in ("typing_speech_prefetch.qml", "typing_speech_seek.qml", "typing_media_lifecycle.qml"):
+            (target / "scripts/reader_speech.py").write_text(
+                "import json,sys,time\n"
+                "if '--status' in sys.argv: print(json.dumps({'kokoro': True}))\n"
+                "elif '--prepare' in sys.argv: time.sleep(0.05)\n"
+                "else:\n"
+                " print(json.dumps({'ready':True}),flush=True)\n"
+                " print(json.dumps({'start':0,'end':1}),flush=True)\n"
+                " time.sleep(1.2)\n")
         book = target / 'picker test book.epub'
         with zipfile.ZipFile(book, 'w') as archive:
             archive.writestr('META-INF/container.xml', '<container><rootfile full-path="book.opf"/></container>')

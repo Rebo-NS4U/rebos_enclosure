@@ -226,3 +226,13 @@ Not exercised: real pacman installation or upgrade, AUR downloads/builds, system
 ## v1.5.0 — 2026-11-02
 
 All 91 desktop tests passed; the four OpenRouter checks passed again after the final network-default adjustment. Payload verification passed for 113 installation entries. See [release notes](../docs/RELEASE-v1.5.0.md) for the system comparison, preserved local state and live-inference/UI/hardware verification limits.
+
+On 2026-11-08 the live shell crash report identified Quickshell 0.3.2 / Qt 6.12.0, SIGSEGV in `QPlatformScreen::screen()` called by `QWaylandWindow::calculateScreenFromSurfaceEvents()` / `handleScreensChanged()`. Quickshell restarted automatically. This identifies the native screen-event failure path; the originating display event was not established, and no native Qt crash fix is claimed. Reader-state persistence is tested separately from crash recovery so it does not rely on a clean shutdown.
+
+
+## Reader publication checks — 2026-11-08
+
+- The 15 speech and 33 book-library Python tests passed. All 36 typing QML fixtures passed across the verification runs, including the comprehensive import/resume/notes/navigation flow after correcting stale layout and control expectations.
+- Speech/settings fixtures use deterministic voice stand-ins in their isolated homes; these checks do not verify real Kokoro audio quality or model downloads. Native desktop access was required for the QML fixtures.
+- Restored empty-page Backspace navigation, queued Backspace handling during page turns, and Unicode deletion without unintended forward scrolling. Synthetic animation probes avoid background autosave races, and speech checks retain background narration when the reader is hidden.
+- Changed shell source files match the installed copies. Payload checksum and whitespace verification passed. No desktop service was manually restarted.

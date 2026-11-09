@@ -1,12 +1,9 @@
 import QtQuick
-import QtQuick.Window
 import Quickshell
-import "TypingPaging.js" as Pages
 ShellRoot {
     property string sent: ""
-    Window {
-        visible: true
-        width: 640; height: 600
+    PanelWindow {
+        implicitWidth: 640; implicitHeight: 600
         TypingMenu { id: practice; anchors.fill: parent }
     }
     function find(item, name) {
@@ -20,13 +17,8 @@ ShellRoot {
         onTriggered: {
             try {
                 if (phase++ === 0) {
-                    const text = "The bank approved a loan. " + "Other words. ".repeat(60) + "They sat on the bank of the river.";
-                    const snippet = Pages.wordContext(text, "bank", text.lastIndexOf("bank"));
-                    if (snippet.indexOf("river") < 0 || snippet.indexOf("loan") >= 0 || snippet.length > 1000)
-                        throw Error("Wrong occurrence or excessive context");
-                    if (Pages.wordContext("A riverbank.", "bank", 0) !== "") throw Error("Matched a word fragment");
-                    practice.practicing = true; practice.bookId = "meaning-fixture";
-                    practice.pageSource = "They sat on the bank of the river. ".repeat(40); practice.fitPage();
+                    practice.wordTools.grabFocus = false; // QtTest has no native Wayland input serial.
+                    practice.practicing = true; practice.bookId = "dictionary-fixture";
                     practice.createDictionaryRequest = () => ({
                         readyState: 0, status: 200,
                         responseText: JSON.stringify([{meanings: [{partOfSpeech: "noun", definitions: [{definition: "Land beside a river."}]}]}]),
@@ -34,23 +26,15 @@ ShellRoot {
                         abort: function() {},
                         send: function() { this.readyState = XMLHttpRequest.DONE; this.onreadystatechange(); }
                     });
-                    practice.openWord("bank", 16); return;
+                    practice.openWord("bank"); return;
                 }
-                if (phase === 2) {
-                    const action = find(practice.wordTools.contentItem, "typing-context-meaning");
-                    if (!action.visible || !action.enabled) throw Error("Context action is not available independently of dictionary toggle");
-                    action.clicked();
-                    if (!sent.endsWith("/bank") || !practice.definitionText.includes("Land beside a river") || !find(practice.wordTools.contentItem, "typing-context-meaning-result").text.includes("river"))
-                        throw Error("Context answer missing in word popup");
-                    if (practice.wordTools.width > 520 || practice.wordTools.height >= practice.height)
-                        throw Error("Definition popup did not shrink to its content");
-                    if (action.text !== "Definition & context") throw Error("Lookup action label is not concise");
-                    practice.wordTools.close();
-                    if (practice.definitionRequest) throw Error("Close did not cancel context lookup");
-                    practice.openWord("They", 0);
-                    if (practice.meaningText) throw Error("Stale explanation retained for new word");
-                    console.log("PASS: bounded occurrence context, direct dictionary lookup without AI, inline passage and definitions, cancellation, stale clearing"); Qt.quit();
-                }
+                if (find(practice.wordTools.contentItem, "typing-context-meaning") || find(practice.wordTools.contentItem, "typing-context-meaning-result")) throw Error("Context UI still present");
+                practice.lookupDefinition(true);
+                if (!sent.endsWith("/bank") || !practice.definitionText.includes("Land beside a river")) throw Error("Dictionary lookup broken");
+                practice.wordTools.close();
+                if (practice.definitionRequest) throw Error("Close did not cancel dictionary lookup");
+                console.log("PASS: context removed; dictionary lookup remains available independently of notes");
+                Qt.quit();
             } catch (error) { console.error(error); Qt.exit(1); }
         }
     }

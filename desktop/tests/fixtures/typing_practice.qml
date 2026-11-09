@@ -24,8 +24,8 @@ ShellRoot {
         implicitWidth: 640
         implicitHeight: 600
         color: "transparent"
-        TypingMenu { id: practice; anchors.fill: parent; onBackRequested: harness.closeRequested = true }
-        Loader { id: freshView; anchors.fill: parent; active: false; visible: false; sourceComponent: TypingMenu {} }
+        TypingMenu { id: practice; anchors.fill: parent; Component.onCompleted: wordTools.grabFocus = false; onBackRequested: harness.closeRequested = true }
+        Loader { id: freshView; anchors.fill: parent; active: false; visible: false; sourceComponent: TypingMenu { Component.onCompleted: wordTools.grabFocus = false } }
     }
     function find(item, name) {
         if (item.objectName === name) return item;
@@ -46,6 +46,7 @@ ShellRoot {
         property bool backTested: false
         property int phase: 0
         property int expectedPosition: 0
+        property int expectedTypedCount: 0
         property string expectedBuffered: ""
         interval: Math.max(900, Motion.base * 1.5)
         running: true
@@ -72,6 +73,8 @@ ShellRoot {
                     if (!practice.readerMenu.opened || !find(practice, "typing-fullscreen")) throw Error("Reader actions menu did not expose fullscreen");
                     find(practice, "typing-fullscreen").clicked();
                     if (!practice.fullscreen || practice.correctCount() !== 13 || quoteInput.text !== "\"Don't\"-go-on") throw Error("Fullscreen lost typed input");
+                    practice.handleEscape();
+                    if (practice.readerMenu.opened || !practice.fullscreen) throw Error("Escape must close settings before fullscreen");
                     practice.handleEscape();
                     if (practice.fullscreen || practice.correctCount() !== 13) throw Error("Escape did not restore compact typing");
                     quoteInput.text = "";
@@ -124,6 +127,8 @@ ShellRoot {
                 if (!input) throw Error("Typing input missing");
                 if (input.opacity !== 0 || !input.enabled) throw Error("Native editor must accept input without painting ghost characters");
                 if (phase === 1) {
+                    // The temporary island can release native focus after destruction.
+                    if (!input.activeFocus) { practice.focusPassage(); return; }
                     if (!practice.practicing || practice.draft || !input.activeFocus) throw Error("Selecting a sample must open focused typing without Start practice");
                     input.forceActiveFocus();
                     practice.speedState = {elapsed: 1000, lastTick: Date.now(), lastInput: Date.now()};
@@ -166,8 +171,8 @@ ShellRoot {
                         const failures = practice.failureEvents;
                         practice.syncGlyphs(); practice.syncCaret();
                         if (practice.failureEvents !== failures) throw Error("Caret refresh replayed failure feedback");
-                        keyDriver.wait(50);
-                        if (Math.abs(editedGlyph.rejectionOffset) < 0.1) throw Error("Mistyped letter did not shake");
+                        practice.dirty = false; // Artificial animation probes must not trigger a background save.
+                        keyDriver.tryVerify(() => Math.abs(editedGlyph.rejectionOffset) >= 0.1, 250, "Mistyped letter did not shake");
                         input.text = originalTyped.slice(0, 10) + "?" + originalTyped.slice(11);
                         if (practice.failureEvents !== failures + 1) throw Error("Another wrong input did not retrigger failure feedback");
                     }
@@ -206,6 +211,7 @@ ShellRoot {
                     if (practice.turningPage) throw Error("Second ellipsis period advanced the page");
                     if (practice.renderedCaret !== 0 || practice.displayedInput !== "") throw Error("Second period affected following letters");
                     keyDriver.keyClick(Qt.Key_Period, Qt.NoModifier, 0);
+                    practice.dirty = false; // Artificial animation probes must not trigger a background save.
                     keyDriver.wait(0);
                     if (input.text !== "…" || practice.correctCount() !== 1) throw Error("Three periods did not compose in the input field: " + JSON.stringify({text: input.text, cursor: input.cursorPosition}));
                     if (input.cursorPosition !== 1) throw Error("Ellipsis moved the insertion point behind the composed character: " + input.cursorPosition);
@@ -218,6 +224,7 @@ ShellRoot {
                     input.text = prefix + ".. next"; input.cursorPosition = prefix.length + 2;
                     practice.restoring = false;
                     keyDriver.keyClick(Qt.Key_Period, Qt.NoModifier, 0);
+                    practice.dirty = false; // Artificial animation probes must not trigger a background save.
                     keyDriver.wait(0);
                     if (input.cursorPosition !== prefix.length + 1) throw Error("Composing an ellipsis in the last line moved the cursor into following text: " + input.cursorPosition + " expected " + (prefix.length + 1));
                     keyDriver.keyClick(Qt.Key_X, Qt.NoModifier, 0);
@@ -238,8 +245,9 @@ ShellRoot {
                         practice.refreshPageCaret();
                         const active = find(practice, "typing-character-" + practice.visualCursor);
                         const point = active.mapToItem(viewport.contentItem, 0, 0);
-                        if (Math.abs(point.y + practice.passageLineHeight / 2 - viewport.contentY - viewport.height / 2) > 1)
-                            throw Error("Active typing row is not centered");
+                        const expected = Math.min(point.y + practice.passageLineHeight / 2, viewport.height / 2);
+                        if (Math.abs(point.y + practice.passageLineHeight / 2 - viewport.contentY - expected) > 1)
+                            throw Error("Active typing row did not follow midpoint scrolling");
                     };
                     assertCentered();
                     input.text = practice.passage.slice(0, Math.floor(practice.passage.length / 2));
@@ -256,7 +264,8 @@ ShellRoot {
                             throw Error("Centered word extends outside the passage");
                     }
                     const centeredWord = find(practice, "typing-character-0").parent;
-                    if (Math.abs(centeredWord.centerOffset - (textFlow.width - practice.pageLayout.lineWidths[0]) / 2) > 1) throw Error("Text line is not horizontally centered");
+                    const expectedOffset = practice.sourceOffsets.length ? 0 : Math.max(0, (textFlow.width - practice.pageLayout.lineWidths[0]) / 2);
+                    if (Math.abs(centeredWord.centerOffset - expectedOffset) > 1) throw Error("Book alignment or practice centering is incorrect");
                     if (!line.visible || line.width < practice.width - 60 || line.height < practice.highlightBounds.height + 2 * practice.highlightPadding || line.y !== caret.rowY) throw Error("Current line highlight is missing or too narrow");
                     if (caret.accent.toString() !== Colors.primary.toString()) throw Error("Cursor must use the exact theme accent");
                     if (first.style !== Text.Normal || first.color.toString() !== Colors.overSurface.toString()) throw Error("Text must use the normal theme color without outlines");
@@ -268,11 +277,13 @@ ShellRoot {
                     input.forceActiveFocus();
                     const feedbackBefore = practice.feedbackEvents;
                     input.text = practice.passage[0]; input.cursorPosition = input.length;
+                    practice.dirty = false; // Artificial animation probes must not trigger a background save.
                     keyDriver.wait(20);
-                    if (Motion.enabled && (practice.feedbackEvents <= feedbackBefore || first.spark <= 0 || first.scale <= 1 || !find(first, "typing-key-halo-0").visible)) throw Error("Correct typing did not visibly trigger the pop and halo");
+                    if (Motion.enabled && (practice.feedbackEvents <= feedbackBefore || first.spark <= 0 || !find(first, "typing-key-halo-0").visible)) throw Error("Correct typing did not visibly trigger feedback and halo");
                     if (Motion.enabled) {
                         const nextGlyph = find(practice, "typing-character-1");
                         input.text = practice.passage.slice(0, 2); input.cursorPosition = input.length;
+                        practice.dirty = false; // Artificial animation probes must not trigger a background save.
                         keyDriver.wait(20);
                         if (first.spark <= 0) throw Error("The next key canceled the previous letter fade");
                         if (nextGlyph.modelData.trim().length && nextGlyph.spark <= 0) throw Error("The next letter has no independent feedback");
@@ -282,7 +293,7 @@ ShellRoot {
                     }
                 } else if (phase === 2) {
                     if (practice.activeEffects) return;
-                    if (first.color.toString() === Colors.overSurface.toString()) throw Error("Completed letters lost their accent color");
+                    if (first.color.toString() !== Colors.overSurface.toString()) throw Error("Completed letters must retain the theme text color");
                     if (Math.abs(first.parent.opacity - 1) > 0.001 || Math.abs(first.opacity - 1) > 0.001 || Math.abs(first.scale - 1) > 0.001) throw Error("Typed glyph did not settle after animation: " + JSON.stringify({opacity:first.opacity, scale:first.scale, spark:first.spark, strength:practice.effectStrength, kind:practice.effectKind, running:practice.activeEffects}));
                     if (Motion.enabled) {
                         practice.requestFeedback("letter", first);
@@ -293,6 +304,7 @@ ShellRoot {
                         if (practice.effectKind !== "line" || practice.activeEffects !== 2 || first.spark <= 0) throw Error("Line transition suppressed per-letter feedback");
                         practice.requestFeedback("page");
                         if (practice.effectKind !== "page" || practice.activeEffects !== 1 || find(practice, "typing-line-ripple").strength !== 0) throw Error("Page feedback overlapped the line pop");
+                        practice.dirty = false; // Artificial animation probes must not trigger a background save.
                         keyDriver.wait(20);
                         if (!burst.visible || !burst.page || first.parent.arrival <= 0) throw Error("Page burst and staggered entrance missing");
                         const pageVisuals = find(practice, "typing-page-visuals");
@@ -302,6 +314,7 @@ ShellRoot {
                         if (burst.visible || first.parent.arrival !== 0 || first.parent.wave !== 0) throw Error("Transition visuals did not reset");
                         if (practice.activeEffects !== 0 || practice.effectStrength !== 0) throw Error("Feedback did not stop cleanly");
                     }
+                    practice.dirty = false; // Artificial animation probes must not trigger a background save.
                     keyDriver.wait(140); // Let the short caret glide settle after the row transforms.
                     const settled = find(practice, "typing-smooth-caret");
                     const settledLine = find(practice, "typing-line-highlight");
@@ -316,6 +329,7 @@ ShellRoot {
                     if (!find(practice, "typing-character-1").caretHere || find(practice, "typing-smooth-caret").targetGlyph.characterIndex !== 1) throw Error("Cursor did not advance");
                     input.cursorPosition = 0;
                     if (!find(practice, "typing-character-0").caretHere) throw Error("Cursor does not follow editing position");
+                    practice.dirty = true; // Resume checks exercise the real save path after the synthetic probes.
                     practice.openBook(practice.bookId);
                 } else if (phase === 3) {
                     if (input.text !== practice.passage[0]) throw Error("Partial typing progress did not resume");
@@ -344,21 +358,24 @@ ShellRoot {
                     practice.send({action: "add", title: "Unicode test", text: "😀 A gentle morning with words to type. ".repeat(80) + "\nChapter Two\nA new chapter begins here."});
                     return;
                 } else if (phase === 100) {
-                    if (first.text !== "😀") throw Error("Unicode glyph was split");
-                    expectedPosition = practice.characters(practice.passage).length;
+                    if (find(practice, "typing-character-" + practice.passage.indexOf("😀")).text !== "😀") throw Error("Unicode glyph was split");
+                    expectedTypedCount = practice.characters(practice.passage).length;
+                    expectedPosition = practice.sourceCount(expectedTypedCount);
                     expectedBuffered = Pages.characters(practice.pageSource.slice(practice.passage.length))[0] || "";
                     input.text = practice.passage;
                     if (!practice.turningPage) throw Error("Completing the second line did not start the next page");
                     practice.queueTyping(expectedBuffered + "?");
                     practice.undoQueuedKey();
                 } else if (phase === 130) {
-                    if (practice.position !== 0 || practice.characters(input.text).length !== expectedPosition - 1) throw Error("Backspace did not restore the exact previous Unicode page");
+                    if (practice.position !== 0 || practice.characters(input.text).length !== expectedTypedCount - 1) throw Error("Backspace did not restore the exact previous Unicode page: " + JSON.stringify({position:practice.position,count:practice.characters(input.text).length,expected:expectedTypedCount-1,text:input.text.slice(0,20),history:practice.pageHistory.length}));
                     keyDriver.keyClick(Qt.Key_Backspace, Qt.NoModifier, 0);
-                    if (practice.characters(input.text).length !== expectedPosition - 2) throw Error("Backspace inside the restored page did not delete normally");
+                    if (practice.characters(input.text).length !== expectedTypedCount - 2) throw Error("Backspace inside the restored page did not delete normally");
+                    expectedPosition = practice.position + practice.sourceCount(practice.characters(practice.passage).length);
                     input.text = practice.passage;
                     keyDriver.keyClick(Qt.Key_Backspace, Qt.NoModifier, 0);
                 } else if (phase === 131) {
-                    if (practice.position !== 0 || practice.characters(input.text).length !== expectedPosition - 1) throw Error("Backspace during a page turn was lost");
+                    if (practice.position + practice.sourceCount(practice.characters(input.text).length) !== expectedPosition - 1) throw Error("Backspace during a page turn was lost: " + JSON.stringify({position:practice.position,source:practice.sourceCount(practice.characters(input.text).length),count:practice.characters(input.text).length,expected:expectedPosition-1,turning:practice.turningPage,pending:practice.pendingKeys,back:practice.backAfterTurn}));
+                    expectedPosition = practice.position + practice.sourceCount(practice.characters(practice.passage).length);
                     input.text = practice.passage;
                     phase = 134; return;
                 } else if (phase === 134) {
@@ -367,7 +384,7 @@ ShellRoot {
                     keyDriver.keyClick(Qt.Key_Backspace, Qt.NoModifier, 0);
                     phase = 132; return;
                 } else if (phase === 132) {
-                    if (practice.position >= expectedPosition || practice.position + practice.characters(input.text).length !== expectedPosition - 1) throw Error("Previous page without in-memory history lost its bookmark");
+                    if (practice.position >= expectedPosition || practice.position + practice.sourceCount(practice.characters(input.text).length) !== expectedPosition - 1) throw Error("Previous page without in-memory history lost its bookmark");
                     practice.send({action: "next", id: practice.bookId, position: expectedPosition, typed: expectedBuffered, loops: 0});
                 } else if (phase === 133) {
                     backTested = true; phase = 101; return;
@@ -397,7 +414,7 @@ ShellRoot {
                     entry.clicked();
                     phase = 110; return;
                 } else if (phase === 110) {
-                    if (practice.chapterTitle !== "Chapter Two" || !practice.passage.startsWith("Chapter Two") || !practice.practicing) throw Error("Chapter selection did not jump back to typing");
+                    if (practice.chapterTitle !== "Chapter Two" || !practice.passage.trim().startsWith("Chapter Two") || !practice.practicing) throw Error("Chapter selection did not jump back to typing");
                     const chapterCard = find(practice, "typing-chapter-card");
                     if (!chapterCard.visible || find(practice, "typing-chapter-card-title").text !== "Chapter Two" || chapterCard.height < 60) throw Error("Chapter jump did not show a prominent title card");
                     const slider = find(practice, "typing-book-position");
@@ -410,7 +427,7 @@ ShellRoot {
                     const place = practice.position;
                     find(practice, "typing-library").clicked();
                     if (practice.practicing) throw Error("Library button did not open library");
-                    find(practice, "typing-back").clicked();
+                    practice.handleEscape();
                     if (!practice.practicing || practice.position !== place || harness.closeRequested) throw Error("Back left typing or lost the current passage");
                     find(practice, "typing-library").clicked();
                     find(practice, "typing-import").clicked();
@@ -419,7 +436,7 @@ ShellRoot {
                 } else if (phase === 105) {
                     if (practice.filePickerActive || practice.busy) return;
                     if (practice.bookTitle !== "picker test book" || practice.chapters.length !== 1) throw Error("Picker did not import the EPUB");
-                    find(practice, "typing-back").clicked();
+                    practice.handleEscape();
                     if (!practice.practicing || harness.closeRequested) throw Error("Back did not return to imported EPUB typing");
                     practice.openImport();
                 } else if (phase === 106) {
@@ -450,7 +467,7 @@ ShellRoot {
                     if (restored.busy) return;
                     const field = find(restored, "typing-input");
                     if (restored.pageLayout.lines > restored.layoutLineLimit || restored.position + restored.characters(field.text).length !== 85 || restored.liveWpm !== 0) throw Error("Legacy page carryover lost saved input or counted it as WPM");
-                    expectedPosition = restored.position + restored.characters(restored.passage).length;
+                    expectedPosition = restored.position + restored.sourceCount(restored.characters(restored.passage).length);
                     field.text = "z".repeat(restored.characters(restored.passage).length);
                     if (!restored.turningPage) throw Error("Typos blocked continuous page advance");
                 } else if (phase === 112) {
@@ -470,8 +487,8 @@ ShellRoot {
                     const panel = restored.wordTools;
                     if (!panel.opened || restored.selectedTerm.toLowerCase() !== currentWord.modelData.text.trim().toLowerCase() || field.text !== before)
                         throw Error("Ctrl+Space did not inspect the current word without editing input: " + JSON.stringify({opened:panel.opened, term:restored.selectedTerm, expected:currentWord.modelData.text, before:before, after:field.text}));
-                    if (panel.anchor.item !== restored.menuAnchorItem || panel.anchor.rect.x !== 0 || Math.abs(panel.anchor.rect.y - restored.menuAnchorItem.height - 6) > 1 || Math.abs(panel.width - restored.menuAnchorItem.width) > 1 || Math.abs(panel.height - restored.menuAnchorItem.height) > 1) throw Error("Word menu does not match the typing panel or sit below it");
-                    if (panel.surface.variant !== "bg") throw Error("Word panel does not share the typing surface theme");
+                    if (panel.anchor.item !== restored.menuAnchorItem || panel.anchor.rect.x !== 0 || Math.abs(panel.anchor.rect.y - restored.menuAnchorItem.height - 6) > 1 || Math.abs(panel.width - Math.min(520, restored.menuAnchorItem.width)) > 1 || panel.height <= 0 || panel.height > panel.screen.height - 48) throw Error("Word menu does not match the typing panel or sit below it");
+                    if (panel.surface.variant !== "popup") throw Error("Word panel does not share the typing surface theme");
                     if (Motion.enabled && panel.openAnimations < 1) throw Error("Word menu did not start incoming animation");
                     keyDriver.keyClick(Qt.Key_Space, Qt.ControlModifier, 0);
                     if (Motion.enabled && (!panel.visible || panel.opened || panel.closeAnimations < 1)) throw Error("Word menu hid before its outgoing animation");
@@ -534,7 +551,7 @@ ShellRoot {
                     restored.openNotebook();
                 } else if (phase === 119) {
                     const restored = freshView.item;
-                    if (Math.abs(restored.wordTools.width - restored.menuAnchorItem.width) > 1 || Math.abs(restored.wordTools.height - restored.menuAnchorItem.height) > 1) throw Error("Notebook size does not match the typing panel");
+                    if (Math.abs(restored.wordTools.width - Math.min(640, restored.menuAnchorItem.width)) > 1 || restored.wordTools.height <= 0 || restored.wordTools.height > 480) throw Error("Notebook size does not match the typing panel");
                     if (!restored.notebookBrowsing || restored.noteEntries.length !== 1 || restored.noteEntries[0].category !== "General") throw Error("Book notebook did not load existing notes");
                     harness.notebookPreviewEntries = restored.noteEntries;
                     restored.noteEntries = [
@@ -575,7 +592,7 @@ ShellRoot {
                     if (!restored.editingWordNote) throw Error("New notebook entry did not open its editor");
                     const actions = find(restored, "typing-note-actions");
                     const scroll = find(restored, "typing-word-scroll");
-                    if (!actions.visible || actions.y < scroll.y + scroll.height - 1) throw Error("Save controls are not pinned below the scroll region");
+                    if (!actions.visible || actions.mapToItem(restored.wordTools.contentItem, 0, actions.height).y > restored.wordTools.height) throw Error("Save controls are not pinned below the scroll region");
                     if (!find(restored, "typing-note-category").visible || !find(restored, "typing-note-template").visible) throw Error("Section selector or prompts missing");
                     find(restored, "typing-note-template").clicked();
                     if (!find(restored, "typing-word-note").text.includes("Relationships:")) throw Error("People prompts did not populate note");

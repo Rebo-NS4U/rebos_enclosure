@@ -21,6 +21,18 @@ class Books(unittest.TestCase):
         self.library.db.close()
         self.temp.cleanup()
 
+    def test_speech_lookahead_does_not_move_progress(self):
+        text = normalize('First 😀 paragraph.\n\n' + 'The story continues. ' * 100)
+        book = self.library.add('Lookahead', text, [])
+        self.library.save(book['id'], 3, 'saved input', 2)
+        before = self.library.handle({'action': 'open', 'id': book['id']})
+        next_page = self.library.handle({'action': 'peek', 'id': book['id'], 'position': 20, 'window': 512})
+        self.assertEqual(next_page['position'], 20)
+        self.assertTrue(str(text)[20:].startswith(next_page['passage']))
+        self.assertEqual(next_page['typed'], '')
+        self.assertLessEqual(len(next_page['passage']), 512)
+        self.assertEqual(self.library.handle({'action': 'open', 'id': book['id']}), before)
+
     def test_typing_format_maps_whitespace_to_existing_bookmarks(self):
         text = normalize('First 😀 paragraph.\n\nSecond paragraph.')
         book = self.library.add('Format', text, [])
@@ -162,6 +174,30 @@ class Books(unittest.TestCase):
             self.library.handle({'action': 'word', 'id': 'missing', 'term': 'Macy'})
         self.library.handle({'action': 'note', 'id': first['id'], 'term': 'Macy', 'note': ''})
         self.assertEqual(self.library.handle({'action': 'words', 'id': first['id']})['terms'], [])
+
+    def test_reader_settings_survive_a_new_library_process(self):
+        book = self.library.add('Saved reader', normalize('A durable passage. ' * 100), [])
+        state = {'bookId': book['id'], 'practicing': True, 'readingMode': True,
+                 'fullscreen': True, 'speechProfile': 'kokoro-heart', 'speechRate': 1.25,
+                 'speechLimitMode': 'time', 'speechMinutes': 20, 'speechChapterCount': 3,
+                 'notebookFilter': 'People'}
+        self.library.handle({'action': 'reader_state', 'state': state})
+        self.library.db.close()
+        self.library = Library(self.path)
+        self.assertEqual(self.library.handle({'action': 'reader_state'})['state'], state)
+
+    def test_invalid_reader_settings_do_not_replace_saved_state(self):
+        state = {'readingMode': True, 'speechRate': 1.1}
+        self.library.handle({'action': 'reader_state', 'state': state})
+        for invalid in ({'speechRate': float('nan')}, {'speechMinutes': 0}, {'speechMinutes': True},
+                        {'speechProfile': 'missing'}, {'speechLimitMode': 'invalid'}, {'unexpected': 'x'}):
+            with self.subTest(invalid=invalid), self.assertRaises(ValueError):
+                self.library.handle({'action': 'reader_state', 'state': invalid})
+        self.assertEqual(self.library.handle({'action': 'reader_state'})['state'], state)
+
+    def test_reader_restore_falls_back_when_saved_book_is_gone(self):
+        self.library.handle({'action': 'reader_state', 'state': {'bookId': 'missing', 'practicing': True}})
+        self.assertEqual(self.library.handle({'action': 'reader_state'})['state'], {'bookId': '', 'practicing': False})
 
     def test_dictionary_can_be_disabled_and_stays_disabled(self):
         self.assertTrue(self.library.handle({'action': 'word_settings'})['enabled'])

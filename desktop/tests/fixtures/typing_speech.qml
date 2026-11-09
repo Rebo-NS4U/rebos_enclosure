@@ -21,11 +21,12 @@ ShellRoot {
                 menu.pageSource = "A gentle morning with many words to read. ".repeat(100);
                 menu.fitPage();
             } else if (step === 1) {
-                if (Quickshell.env("ENCLOSURE_READER_SPEECH_DIR") && !menu.naturalVoiceReady) throw Error("Natural voice was not detected");
+                if (Quickshell.env("ENCLOSURE_READER_SPEECH_DIR") && !menu.kokoroVoiceReady) throw Error("Nicole was not detected");
+                if (menu.speechProfile !== "kokoro-nicole" || menu.speechRate < 1) throw Error("Nicole/default pace incorrect");
                 menu.toggleSpeech();
             } else if (step === 2) {
                 if (!menu.speaking || menu.speechText !== menu.passage.trim()) throw Error("Page speech did not start");
-                if (find(menu, "reader-speech").text !== "Stop") throw Error("Stop control missing");
+                if (find(menu, "reader-speech-stop").text !== "Stop") throw Error("Stop control missing");
                 menu.toggleSpeech();
             } else if (step === 3) {
                 if (menu.speaking || menu.errorMessage) throw Error("Stop failed: " + menu.errorMessage);
@@ -33,6 +34,7 @@ ShellRoot {
                 menu.toggleSpeech();
             } else if (step === 4) {
                 if (!menu.speaking || menu.speechText !== menu.passage.slice(0, 15)) throw Error("Selection not spoken");
+                menu.speechRate = 1.1;
                 menu.readingMode = false;
             } else if (step === 5) {
                 if (menu.speaking) throw Error("Mode switch did not stop speech");
@@ -47,8 +49,9 @@ ShellRoot {
             } else if (step === 8) {
                 menu.visible = false;
             } else {
-                if (menu.speaking || menu.errorMessage) throw Error("Reader hide did not stop speech: " + menu.errorMessage);
-                console.log("PASS: page and selection speech, stop control, mode/page/hide cancellation");
+                if (!menu.speaking || menu.errorMessage) throw Error("Reader hide interrupted speech: " + menu.errorMessage);
+                menu.stopSpeech();
+                console.log("PASS: page and selection speech, stop control, mode/page cancellation and background playback");
                 Qt.quit();
             }
             step++;

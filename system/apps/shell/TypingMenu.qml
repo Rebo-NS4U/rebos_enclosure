@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
+import QtQuick.Window
 import "TypingTexts.js" as TypingTexts
 import "TypingSpeed.js" as TypingSpeed
 import "TypingPaging.js" as TypingPaging
@@ -19,12 +20,67 @@ Item {
     signal pinRequested()
     property bool pinned: false
     onPinnedChanged: { if (pinned) fullscreen = true; }
+    property bool readerStateLoaded: false
+    property bool applyingReaderState: false
+    property bool readerViewRestored: false
+    property bool pendingReaderRestore: false
+    property var savedReaderState: ({})
+    property string lastReaderStateJson: ""
+    function readerStateSnapshot() {
+        return {readingMode: readingMode, fullscreen: fullscreen, practicing: practicing,
+            bookId: bookId, speechProfile: speechProfile, speechRate: speechRate,
+            speechLimitMode: speechLimitMode, speechChapterCount: speechChapterCount,
+            speechMinutes: speechMinutes, notebookFilter: notebookFilter};
+    }
+    function scheduleReaderState() {
+        if (readerStateLoaded && !applyingReaderState && (readerViewRestored || !savedReaderState.bookId)) readerStateSave.restart();
+    }
+    function rememberReaderState() {
+        readerStateSave.stop();
+        if (!readerStateLoaded || applyingReaderState || (!readerViewRestored && savedReaderState.bookId)) return;
+        const state = readerStateSnapshot(), encoded = JSON.stringify(state);
+        if (encoded === lastReaderStateJson) return;
+        lastReaderStateJson = encoded;
+        send({action: "reader_state", state: state}, false);
+    }
+    function restoreReaderView() {
+        readerViewRestored = true;
+        if (!savedReaderState.bookId) {
+            if (savedReaderState.practicing === false) { send({action: "list"}, false); return true; }
+            return false;
+        }
+        resumeOnOpen = !!savedReaderState.practicing;
+        send({action: "open", id: savedReaderState.bookId});
+        return true;
+    }
+    function loadReaderState(state) {
+        state = state || {};
+        applyingReaderState = true;
+        savedReaderState = state || {};
+        if (typeof state.readingMode === "boolean") readingMode = state.readingMode;
+        if (typeof state.fullscreen === "boolean") fullscreen = state.fullscreen;
+        if (["kokoro-nicole", "kokoro-heart", "kokoro-bella", "kokoro-sarah", "kokoro-kore"].includes(state.speechProfile)) speechProfile = state.speechProfile;
+        if (state.speechRate >= 0.75 && state.speechRate <= 1.5) speechRate = state.speechRate;
+        if (speechLimitModes.some(mode => mode.value === state.speechLimitMode)) speechLimitMode = state.speechLimitMode;
+        if (state.speechChapterCount >= 1 && state.speechChapterCount <= 100) speechChapterCount = state.speechChapterCount;
+        if (state.speechMinutes >= 1 && state.speechMinutes <= 240) speechMinutes = state.speechMinutes;
+        if (["All"].concat(noteCategories).includes(state.notebookFilter)) notebookFilter = state.notebookFilter;
+        readerStateLoaded = true;
+        applyingReaderState = false;
+        if (pendingReaderRestore) {
+            pendingReaderRestore = false;
+            if (!restoreReaderView()) reopen();
+        }
+    }
+    Timer { id: readerStateSave; interval: 250; onTriggered: root.rememberReaderState() }
+
     property bool practicing: false
     property bool readingMode: false
     readonly property alias modeShortcut: modeSwitchShortcut
     property bool fullscreen: false
     onFullscreenChanged: {
         if (pinned && !fullscreen) { fullscreen = true; return; }
+        scheduleReaderState();
         readerPageHistory = [];
         stopFeedback();
         fitDelay.restart();
@@ -46,6 +102,7 @@ Item {
     property int readerAnimationEvents: 0
     property bool readerHelp: false
     onReadingModeChanged: {
+        scheduleReaderState();
         stopSpeech();
         readerPageHistory = [];
         stopFeedback();
@@ -55,52 +112,269 @@ Item {
         if (readingMode) Qt.callLater(() => animateReaderPage(1));
     }
     readonly property string speechHelper: decodeURIComponent(Qt.resolvedUrl("scripts/reader_speech.py").toString().replace("file://", ""))
-    property bool naturalVoiceReady: false
+    property bool kokoroVoiceReady: false
+    property string speechProfile: "kokoro-nicole"
+    property var speechVoices: []
+    readonly property string speechVoiceName: (speechVoices.find(voice => voice.id === speechProfile) || {title: "Nicole"}).title
+    onSpeechProfileChanged: { stopSpeech(); scheduleReaderState(); }
+    property real speechRate: 1.05
+    property bool speechAutoAdvance: true
+    property string speechLimitMode: "none"
+    property int speechChapterCount: 2
+    property int speechMinutes: 15
+    property int speechStopPosition: 0
+    property double speechDeadline: 0
+    property double speechNow: 0
+    property real settingsDropdownBottom: 0
+    readonly property var speechLimitModes: [
+        {title: "Until stopped", value: "none"},
+        {title: "Current page", value: "page"},
+        {title: "Next chapter", value: "chapter"},
+        {title: "Chapter count", value: "chapters"},
+        {title: "Time limit", value: "time"}
+    ]
+    onSpeechLimitModeChanged: { stopSpeech(); speechAutoAdvance = speechLimitMode !== "page"; scheduleReaderState(); }
+    onSpeechChapterCountChanged: { stopSpeech(); scheduleReaderState(); }
+    onSpeechMinutesChanged: { stopSpeech(); scheduleReaderState(); }
+    function speechChapterBoundary(count) {
+        const following = chapters.filter(chapter => chapter.position > position);
+        return following.length >= count ? following[count - 1].position : bookLength;
+    }
+    function startSpeechLimit(selected) {
+        speechStopPosition = bookLength;
+        speechDeadline = 0;
+        if (selected) return;
+        if (speechLimitMode === "chapter" || speechLimitMode === "chapters")
+            speechStopPosition = speechChapterBoundary(speechLimitMode === "chapter" ? 1 : speechChapterCount);
+        if (speechLimitMode === "time") {
+            speechNow = Date.now();
+            speechDeadline = speechNow + speechMinutes * 60000;
+        }
+    }
+    Timer {
+        interval: 250; repeat: true
+        running: root.speechActive && !root.speechPaused && root.speechDeadline > 0
+        onTriggered: { root.speechNow = Date.now(); if (root.speechNow >= root.speechDeadline) root.stopSpeech(); }
+    }
+    readonly property alias readerActionsMenu: readerActions
+    onSpeechRateChanged: { stopSpeech(); scheduleReaderState(); }
     Process {
         id: speechStatus
         command: ["python3", "-B", root.speechHelper, "--status"]
         running: true
         stdout: StdioCollector {
             onStreamFinished: {
-                try { root.naturalVoiceReady = JSON.parse(text).natural; }
-                catch (error) { root.naturalVoiceReady = false; }
+                try { const state = JSON.parse(text); root.kokoroVoiceReady = !!state.kokoro; root.speechVoices = state.voices || []; }
+                catch (error) { root.kokoroVoiceReady = false; }
             }
         }
     }
     Process {
-        id: speechSetup
+        id: kokoroSetup
         command: ["python3", "-B", root.speechHelper, "--setup"]
         onExited: (code, status) => {
             if (code !== 0) root.errorMessage = "Voice setup failed. Check your internet connection and try again.";
             speechStatus.running = true;
         }
     }
-    readonly property bool speaking: speechProcess.running
+    property bool speechPaused: false
+    property bool speechControlReady: false
+    property double speechPausedAt: 0
+    property int speechSeekOffset: -1
+    property int speechRestartOffset: -1
+    property int speechRestartEnd: -1
+    property bool speechActive: false
+    property bool speechContinuous: false
+    property bool speechAdvancing: false
+    property bool speechAdvancePending: false
+    property int speechPageEnd: 0
+    property int speechPrefetchRequest: -1
+    property bool speechPrefetchRequested: false
+    property string speechPrefetchText: ""
+    property string speechPrefetchParagraphs: "[]"
+    property string speechPrefetchGeometry: ""
+    property bool speechPrefetchReady: false
+    readonly property bool speaking: speechActive || speechProcess.running
     property bool speechCancelled: false
     property string speechText: ""
+    property int speechSourceOffset: -1
+    readonly property string speechParagraphs: JSON.stringify(speechSourceOffset < 0 ? [] : paragraphStarts
+        .filter(offset => offset > speechSourceOffset && offset < speechSourceOffset + speechText.length)
+        .map(offset => offset - speechSourceOffset))
+    property int speechHighlightStart: -1
+    property int speechHighlightEnd: -1
+    property real readerWordColumn: -1
+    function clearSpeechHighlight() { speechHighlightStart = -1; speechHighlightEnd = -1; readerWordColumn = -1; }
+    function updateSpeechHighlight(cue) {
+        if (!speechActive || speechPaused || speechAdvancing || speechRestartOffset >= 0 || speechSourceOffset < 0 || !readingMode || !visible) return;
+        if (cue.start < 0 || cue.end <= cue.start || cue.end > speechText.length) { clearSpeechHighlight(); return; }
+        speechHighlightStart = speechSourceOffset + cue.start;
+        speechHighlightEnd = speechSourceOffset + cue.end;
+        readerWordColumn = -1;
+    }
     function stopSpeech() {
-        if (speechProcess.running) {
-            speechCancelled = true;
-            speechProcess.running = false;
-        }
+        speechSeekOffset = -1; speechRestartOffset = -1; speechRestartEnd = -1;
+        speechPrefetchRequest = -1; speechPrefetchRequested = false; speechPrefetchReady = false;
+        if (speechPrefetch.running) speechPrefetch.running = false;
+        speechPaused = false; speechPausedAt = 0; speechControlReady = false;
+        speechDeadline = 0;
+        speechStopPosition = 0;
+        clearSpeechHighlight();
+        speechSourceOffset = -1;
+        speechActive = false;
+        speechContinuous = false;
+        speechAdvancing = false; speechAdvancePending = false;
+        speechResume.stop();
+        speechCancelled = true;
+        if (speechProcess.running) speechProcess.running = false;
+    }
+    function speakPage(text, sourceOffset = -1) {
+        speechSeekOffset = -1;
+        clearSpeechHighlight();
+        speechText = text.trim();
+        speechSourceOffset = sourceOffset < 0 ? -1 : sourceOffset + text.indexOf(speechText);
+        if (!speechText.length) { stopSpeech(); return; }
+        speechPageEnd = position + characters(passage).length;
+        speechCancelled = false;
+        speechControlReady = false;
+        speechPrefetchRequested = false;
+        speechProcess.running = true;
+    }
+    function prefetchSpeechPage() {
+        if (speechPrefetchRequested || !speechContinuous || !speechActive || speechAdvancing || speechRestartOffset >= 0
+                || speechPageEnd >= bookLength || (speechStopPosition > 0 && speechPageEnd >= speechStopPosition)) return;
+        speechPrefetchRequested = true;
+        speechPrefetchRequest = requestId + 1;
+        speechPrefetchGeometry = pageGeometry();
+        send({action: "peek", id: bookId, position: speechPageEnd}, false, true);
     }
     function toggleSpeech() {
         if (speaking) { stopSpeech(); return; }
         if (!readingMode || !practicing || busy || !passage.trim().length) return;
-        speechText = (readerText.selectedText || passage).trim();
-        if (!speechText.length) return;
-        speechCancelled = false;
+        startSpeechLimit(!!readerText.selectedText.trim().length);
+        speechActive = true;
+        // A selection is a bounded request; whole-page reading continues.
+        speechContinuous = speechAutoAdvance && !readerText.selectedText.trim().length;
         errorMessage = "";
-        speechProcess.running = true;
+        speakPage(readerText.selectedText || passage, readerText.selectedText ? readerText.selectionStart : 0);
     }
-    onPassageChanged: stopSpeech()
+    function toggleSpeechPlayback() {
+        if (!readingMode || !practicing || wordPanel.opened || readerActions.opened) return;
+        if (!speaking) {
+            if (!kokoroVoiceReady) { errorMessage = "Download a voice from Settings to enable Read aloud."; return; }
+            toggleSpeech(); return;
+        }
+        if (!speechActive) return;
+        if (speechPaused) {
+            if (speechDeadline > 0) speechDeadline += Date.now() - speechPausedAt;
+            speechPaused = false; speechPausedAt = 0; speechNow = Date.now();
+            if (speechSeekOffset >= 0) {
+                speechRestartOffset = speechSeekOffset;
+                // Keep selected-text playback bounded when its end is ahead.
+                const previousEnd = speechSourceOffset + speechText.length;
+                speechRestartEnd = !speechContinuous && previousEnd > speechSeekOffset ? previousEnd : passage.length;
+                speechSeekOffset = -1;
+                speechCancelled = true; speechControlReady = false;
+                speechAdvancing = false; speechAdvancePending = false; speechResume.stop();
+                // Wait for the old player to exit before launching its replacement.
+                if (speechProcess.running) speechProcess.running = false;
+                else restartSpeechAtWord();
+                return;
+            }
+            if (speechControlReady && speechProcess.running) speechProcess.write("resume\n");
+            if (speechAdvancePending) advanceSpeechPage();
+            else if (speechAdvancing) speechResume.restart();
+        } else {
+            speechPaused = true; speechPausedAt = Date.now(); speechNow = speechPausedAt;
+            if (speechControlReady && speechProcess.running) speechProcess.write("pause\n");
+        }
+    }
+    function restartSpeechAtWord() {
+        if (speechRestartOffset < 0 || !speechActive) return;
+        const offset = speechRestartOffset, end = speechRestartEnd;
+        speechRestartOffset = -1; speechRestartEnd = -1;
+        speakPage(passage.slice(offset, end), offset);
+    }
+    function previewSpeech() {
+        if (speaking) { stopSpeech(); return; }
+        if (!kokoroVoiceReady || kokoroSetup.running) return;
+        speechActive = true;
+        speechContinuous = false;
+        errorMessage = "";
+        speakPage("The morning light fell across the open book as she turned to the next page, ready to discover what the story would bring.");
+    }
+    function speechFinished(code) {
+        if (speechRestartOffset >= 0 && speechActive) { restartSpeechAtWord(); return; }
+        if (speechPaused && speechSeekOffset >= 0 && speechActive && code === 0) return;
+        clearSpeechHighlight();
+        if (speechCancelled || !speechActive) return;
+        if (code !== 0) {
+            stopSpeech();
+            errorMessage = "Speech playback failed. Check your audio output or repair the natural voice from Reader actions.";
+            return;
+        }
+        if (!speechPaused && speechDeadline > 0 && Date.now() >= speechDeadline) { stopSpeech(); return; }
+        if (speechContinuous && speechStopPosition > 0 && speechStopPosition < bookLength && speechPageEnd >= speechStopPosition) {
+            const boundary = speechStopPosition;
+            stopSpeech();
+            // Leave the next chapter ready to start, without speaking it.
+            readerPageHistory = readerPageHistory.concat([position]);
+            send({action: "next", id: bookId, position: boundary, typed: "", loops: rounds});
+            return;
+        }
+        if (!speechContinuous || !readingMode || !practicing || speechPageEnd >= bookLength) {
+            stopSpeech();
+            return;
+        }
+        speechAdvancing = true;
+        if (speechPaused) { speechAdvancePending = true; return; }
+        advanceSpeechPage();
+    }
+    function advanceSpeechPage() {
+        speechAdvancePending = false;
+        readerPageHistory = readerPageHistory.concat([position]);
+        // Exact next-page offsets avoid manual seek's word-boundary snapping.
+        send({action: "next", id: bookId, position: speechPageEnd, typed: "", loops: rounds}, true, true);
+    }
+    onPassageChanged: { if (!speechAdvancing) stopSpeech(); }
+    onBookIdChanged: { stopSpeech(); scheduleReaderState(); }
+    Timer {
+        id: speechResume
+        interval: 200
+        onTriggered: {
+            if (!root.speechActive || !root.speechAdvancing) return;
+            if (root.speechPaused || root.busy || fitDelay.running) { restart(); return; }
+            if (root.speechDeadline > 0 && Date.now() >= root.speechDeadline) { root.stopSpeech(); return; }
+            root.speechAdvancing = false;
+            root.speakPage(root.passage, 0);
+        }
+    }
     Process {
         id: speechProcess
-        command: ["python3", "-B", root.speechHelper, "--", root.speechText]
-        onExited: (code, status) => {
-            if (!root.speechCancelled && code !== 0)
-                root.errorMessage = "Speech playback failed. Check your audio output or set up the natural voice again from Reader actions.";
+        stdinEnabled: true
+        command: ["python3", "-B", root.speechHelper, "--profile", root.speechProfile, "--speed", root.speechRate.toFixed(2), "--paragraphs", root.speechParagraphs, "--", root.speechText]
+        stdout: SplitParser {
+            onRead: line => {
+                try {
+                    const cue = JSON.parse(line);
+                    if (cue.ready) {
+                        root.speechControlReady = true;
+                        if (root.speechPaused) speechProcess.write("pause\n");
+                    } else {
+                        root.updateSpeechHighlight(cue);
+                        if (cue.start >= 0) root.prefetchSpeechPage();
+                    }
+                }
+                catch (error) { /* Ignore non-cue output from the runtime. */ }
+            }
         }
+        onExited: (code, status) => root.speechFinished(code)
+    }
+    Process {
+        id: speechPrefetch
+        command: ["python3", "-B", root.speechHelper, "--prepare", "--profile", root.speechProfile,
+            "--speed", root.speechRate.toFixed(2), "--paragraphs", root.speechPrefetchParagraphs, "--", root.speechPrefetchText]
+        onExited: (code, status) => { root.speechPrefetchReady = code === 0 && root.speechActive; }
     }
     function animateReaderPage(direction) {
         readerRevealAnimation.stop();
@@ -124,10 +398,12 @@ Item {
     function readerKey(event) {
         if (event.key === Qt.Key_F11) toggleFullscreen();
         else if (event.key === Qt.Key_Escape) handleEscape();
+        else if ((event.modifiers & Qt.ControlModifier) && !(event.modifiers & (Qt.AltModifier | Qt.MetaModifier))
+                && [Qt.Key_H, Qt.Key_J, Qt.Key_K, Qt.Key_L].includes(event.key)) return moveReaderWord(event.key);
         else if (event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier)) return false;
         else if (event.key === Qt.Key_L || event.key === Qt.Key_Right || event.key === Qt.Key_PageDown) readNextPage();
         else if (event.key === Qt.Key_H || event.key === Qt.Key_Left || event.key === Qt.Key_PageUp) readPreviousPage();
-        else if (event.key === Qt.Key_Space) { if (event.modifiers & Qt.ShiftModifier) readPreviousPage(); else readNextPage(); }
+        else if (event.key === Qt.Key_Space) { if (event.isAutoRepeat) return true; if (event.modifiers & Qt.ShiftModifier) readPreviousPage(); else toggleSpeechPlayback(); }
         else if ((event.key === Qt.Key_J || event.key === Qt.Key_BracketRight) && currentChapterIndex + 1 < chapters.length) jumpChapter(currentChapterIndex + 1);
         else if ((event.key === Qt.Key_K || event.key === Qt.Key_BracketLeft) && currentChapterIndex > 0) jumpChapter(currentChapterIndex - 1);
         else if (event.key === Qt.Key_N) openNotebook();
@@ -149,6 +425,7 @@ Item {
         fullscreen = !fullscreen;
     }
     function focusPassage() {
+        if (wordPanel.opened || readerActions.opened) return;
         if (readingMode) readerText.forceActiveFocus();
         else answer.forceActiveFocus();
     }
@@ -170,16 +447,56 @@ Item {
             send({action: "previous", id: bookId, position: position, loops: 0});
         }
     }
-    function readerHtml(value) {
-        return TypingPaging.readerHtml(value, paragraphStarts, readerLineHeight, readingFont.pixelSize * 2);
+    function readerHtml(value, starts = paragraphStarts) {
+        return TypingPaging.readerHtml(value, starts, readerLineHeight, readingFont.pixelSize * 2);
     }
     function readingWordAt(index) {
         const start = passage.lastIndexOf(" ", Math.max(0, index - 1)) + 1;
         const end = passage.indexOf(" ", index);
         return passage.slice(start, end < 0 ? passage.length : end);
     }
+    function moveReaderWord(key) {
+        if (!readingMode || !practicing || busy || wordPanel.opened || readerActions.opened) return false;
+        const words = [];
+        const pattern = /\S+/g;
+        let match;
+        while ((match = pattern.exec(passage)) !== null) words.push({start: match.index, end: match.index + match[0].length});
+        if (!words.length) return true;
+        const cursor = speechHighlightStart >= 0 ? speechHighlightStart : readerText.cursorPosition;
+        let current = words.findIndex(word => word.end > cursor);
+        if (current < 0) current = words.length - 1;
+        let target = current;
+        if (key === Qt.Key_H || key === Qt.Key_L) {
+            target = Math.max(0, Math.min(words.length - 1, current + (key === Qt.Key_H ? -1 : 1)));
+            readerWordColumn = -1;
+        } else {
+            const origin = readerText.positionToRectangle(words[current].start);
+            const end = readerText.positionToRectangle(words[current].end);
+            if (readerWordColumn < 0) readerWordColumn = end.y === origin.y ? (origin.x + end.x) / 2 : origin.x;
+            let nearestRow = Infinity, nearestColumn = Infinity;
+            for (let index = 0; index < words.length; index++) {
+                const rect = readerText.positionToRectangle(words[index].start);
+                const distance = (rect.y - origin.y) * (key === Qt.Key_J ? 1 : -1);
+                if (distance < origin.height / 2) continue;
+                const last = readerText.positionToRectangle(words[index].end);
+                const center = last.y === rect.y ? (rect.x + last.x) / 2 : rect.x;
+                const column = Math.abs(center - readerWordColumn);
+                if (distance < nearestRow - 1 || (Math.abs(distance - nearestRow) <= 1 && column < nearestColumn)) {
+                    target = index; nearestRow = distance; nearestColumn = column;
+                }
+            }
+        }
+        readerText.deselect();
+        readerText.cursorPosition = words[target].start;
+        if (speechActive && speechPaused && speechSourceOffset >= 0 && words[target].start !== speechHighlightStart)
+            speechSeekOffset = words[target].start;
+        speechHighlightStart = words[target].start;
+        speechHighlightEnd = words[target].end;
+        return true;
+    }
     function handleEscape() {
-        if (wordPanel.opened) { if (!noteDirty && !noteSaving) wordPanel.close(); else wordMessage = "Save or cancel your changes before returning to reading."; return; }
+        if (wordPanel.opened) { wordPanel.close(); return; }
+        if (readerActions.opened) { readerActions.close(); return; }
         if (readingMode && readerHelp) { readerHelp = false; return; }
         if (fullscreen && !pinned) { fullscreen = false; }
         else goBack();
@@ -249,22 +566,18 @@ Item {
     readonly property bool atChapterStart: bookKind === "book" && currentChapterIndex >= 0
         && position === chapters[currentChapterIndex].position
     property alias wordTools: wordPanel
+    Shortcut {
+        sequence: "Escape"
+        context: Qt.ApplicationShortcut
+        enabled: root.visible && (wordPanel.opened || readerActions.opened)
+        onActivated: root.handleEscape()
+    }
     property alias readerMenu: readerActions
     property string selectedTerm: ""
     property string wordBookId: ""
     property string savedWordNote: ""
     property string wordMessage: ""
     property string definitionText: ""
-    property string meaningContext: ""
-    property string meaningText: ""
-    function cancelMeaning() {
-        cancelDefinition();
-    }
-    function lookupMeaning() {
-        if (!selectedTerm || !meaningContext) return;
-        meaningText = meaningContext;
-        lookupDefinition(true);
-    }
     property var notedTerms: []
     property bool noteLoaded: false
     property bool noteSaving: false
@@ -276,9 +589,11 @@ Item {
     property bool notebookBrowsing: false
     property bool notebookCreating: false
     property string notebookFilter: "All"
+    onNotebookFilterChanged: scheduleReaderState()
     property string noteCategory: "General"
     property string savedNoteCategory: "General"
     property string newNoteCategory: "General"
+    property real noteDropdownBottom: 0
     readonly property var visibleNoteEntries: noteEntries.filter(entry =>
         (notebookFilter === "All" || entry.category === notebookFilter) &&
         (!termInput.text.trim() || (entry.term + " " + entry.note).toLowerCase().includes(termInput.text.trim().toLowerCase())))
@@ -308,7 +623,12 @@ Item {
     }
     function openCurrentWord() {
         if (wordPanel.opened) { handleEscape(); return; }
-        if (readingMode) { openWord(readerText.selectedText || readingWordAt(readerText.cursorPosition), readerText.selectedText ? readerText.selectionStart : readerText.cursorPosition); return; }
+        if (readingMode) {
+            if (speechHighlightStart >= 0 && speechHighlightEnd > speechHighlightStart)
+                openWord(passage.slice(speechHighlightStart, speechHighlightEnd), speechHighlightStart);
+            else openWord(readerText.selectedText || readingWordAt(readerText.cursorPosition), readerText.selectedText ? readerText.selectionStart : readerText.cursorPosition);
+            return;
+        }
         const item = currentWordItem();
         if (item) openWord(item.modelData.text, item.modelData.start);
     }
@@ -327,7 +647,7 @@ Item {
         onActivated: root.toggleReadingMode()
     }
     function openNotebook() {
-        if (wordPanel.opened && (noteDirty || noteSaving)) return;
+        if (noteDirty || noteSaving) { wordPanel.open(); return; }
         openWord(""); notebookMode = true; notebookBrowsing = true; wordOptionsExpanded = false;
         cancelDefinition();
     }
@@ -351,12 +671,10 @@ Item {
         cancelDefinition();
     }
     function openWord(value, offset = -1) {
-        if (!bookId || (wordPanel.opened && (noteDirty || noteSaving))) return;
-        cancelDefinition(); cancelMeaning();
-        meaningText = "";
+        if (!bookId) return;
+        if (noteDirty || noteSaving) { wordPanel.open(); return; }
+        cancelDefinition();
         selectedTerm = value.trim().replace(/^[\s.,!?;:"“”‘’'()[\]{}—–]+|[\s.,!?;:"“”‘’'()[\]{}—–]+$/g, "");
-        meaningContext = TypingPaging.wordContext(passage, selectedTerm,
-            offset >= 0 ? offset : (readingMode ? readerText.cursorPosition : visualCursor));
         notedTerms = []; noteEntries = [];
         notebookMode = false; notebookBrowsing = false; notebookCreating = false;
         noteCategory = "General"; savedNoteCategory = "General"; newNoteCategory = "General";
@@ -390,7 +708,7 @@ Item {
     }
     function lookupDefinition(explicitLookup = false) {
         cancelDefinition(); definitionText = "";
-        if ((!definitionsEnabled && !explicitLookup && !meaningText) || !selectedTerm || !wordPanel.opened || notebookMode) return;
+        if ((!definitionsEnabled && !explicitLookup) || !selectedTerm || !wordPanel.opened || notebookMode) return;
         definitionText = "Looking up definition…";
         const xhr = createDictionaryRequest(); definitionRequest = xhr;
         xhr.open("GET", "https://api.dictionaryapi.dev/api/v2/entries/en/" + encodeURIComponent(selectedTerm));
@@ -458,21 +776,25 @@ Item {
             scrollLine = -1;
             passageVisuals.contentY = 0;
         }
-        let limit = layoutLineLimit;
-        let fitted = TypingPaging.layout(pageSource, Math.max(1, passageFlow.width), characterWidth, limit);
-        if (readingMode && readerText.height > 0) {
-            // Qt rich-text wrapping can differ from the typing word rows.
-            // Measure the actual renderer before accepting a page.
-            readerMeasure.text = readerHtml(fitted.text);
-            while (readerMeasure.contentHeight > readerText.height - 3 && limit > 1) {
-                fitted = TypingPaging.layout(pageSource, Math.max(1, readerText.width), characterWidth, --limit);
-                readerMeasure.text = readerHtml(fitted.text);
-            }
-        }
+        const fitted = measureReaderPage(pageSource, paragraphStarts);
         pageLayout = fitted;
         fittedSource = pageSource;
         fittedGeometry = pageGeometry();
         Qt.callLater(refreshPageCaret);
+    }
+    function measureReaderPage(source, starts) {
+        let limit = layoutLineLimit;
+        let fitted = TypingPaging.layout(source, Math.max(1, passageFlow.width), characterWidth, limit);
+        if (readingMode && readerText.height > 0) {
+            // Qt rich-text wrapping can differ from the typing word rows.
+            // Measure the actual renderer before accepting a page.
+            readerMeasure.text = readerHtml(fitted.text, starts);
+            while (readerMeasure.contentHeight > readerText.height - 3 && limit > 1) {
+                fitted = TypingPaging.layout(source, Math.max(1, readerText.width), characterWidth, --limit);
+                readerMeasure.text = readerHtml(fitted.text, starts);
+            }
+        }
+        return fitted;
     }
     function followPageCaret() {
         smoothCaret.follow(glyphItems[renderedCaret]);
@@ -603,23 +925,27 @@ Item {
         pendingKeys = next.length <= 4096 ? next : characters(next).slice(0, 4096).join("");
     }
     function undoQueuedKey() {
-        if (turningPage) pendingKeys = pendingKeys.slice(0, pendingKeys.codePointAt(pendingKeys.length - 2) > 0xffff ? -2 : -1);
+        if (!turningPage) return;
+        if (pendingKeys.length) pendingKeys = pendingKeys.slice(0, pendingKeys.codePointAt(pendingKeys.length - 2) > 0xffff ? -2 : -1);
+        else backAfterTurn = true;
     }
     implicitHeight: practicing && !fullscreen ? typingLayout.implicitHeight + 24 : 600
-    onPracticingChanged: { if (!practicing) stopSpeech(); resetSpeed(); syncCaret(); }
+    onPracticingChanged: { if (!practicing) stopSpeech(); resetSpeed(); syncCaret(); scheduleReaderState(); }
     onVisibleChanged: {
         if (visible) { backendStarted = true; if (ready) send({action: "list"}, false); }
-        else { stopSpeech(); saveProgress(); stopFeedback(); cancelMeaning(); }
+        else { rememberReaderState(); readerActions.close(); saveProgress(); stopFeedback(); cancelDefinition(); }
         resetSpeed();
         if (visible && practicing) { fitDelay.restart(); Qt.callLater(() => root.focusPassage()); }
     }
     Component.onCompleted: { if (visible) backendStarted = true; }
-    function send(data, page = true) {
-        if (page) stopSpeech();
+    function send(data, page = true, preserveSpeech = false) {
+        if (page && !preserveSpeech) stopSpeech();
         // Load bounded windows, including during continuous chapter typing.
+        // Reading can open before fullscreen geometry settles. Buffer a full
+        // reading page so later fitting is not limited to the initial few lines.
         const narrowWidth = Math.min(characterWidth("i"), characterWidth(" "));
         data.window = Math.max(512, Math.min(4096,
-            Math.ceil(Math.max(640, passageFlow.width) / narrowWidth) * layoutLineLimit + 72));
+            Math.ceil(Math.max(640, passageFlow.width) / narrowWidth) * (readingMode ? 36 : layoutLineLimit) + 72));
         data.paragraphs = false;
         data.typing_format = !readingMode;
         if (data.id === bookId && bookRevision >= 0 && ["save", "next", "seek", "chapter", "previous"].indexOf(data.action) >= 0
@@ -718,13 +1044,15 @@ Item {
         speedBaseline = correctCount(); speedNow = Date.now();
     }
     function reopen() {
+        if (!readerStateLoaded) { pendingReaderRestore = true; backendStarted = true; return; }
+        if (!readerViewRestored && restoreReaderView()) return;
         if (busy || filePickerActive) return;
         if (draft && paste.text.trim().length) { practicing = false; return; }
         samplesExpanded = false;
         // A hidden view already retains its saved position, input and glyphs.
         // Reopening must not reload and rebuild them during the panel morph.
-        if (practicing && bookId && pageSource.length) {
-            Qt.callLater(root.focusPassage);
+        if (bookId && pageSource.length) {
+            if (practicing) Qt.callLater(root.focusPassage);
             return;
         }
         send({action: "resume"});
@@ -788,6 +1116,26 @@ Item {
     function receive(line) {
         try {
             const data = JSON.parse(line);
+            if (data.action === "peek") {
+                if (data.error || data.request !== speechPrefetchRequest || !speechActive || !speechContinuous
+                        || data.id !== bookId || data.position !== speechPageEnd || speechPrefetchGeometry !== pageGeometry()) return;
+                const starts = data.paragraphStarts || [];
+                const fitted = measureReaderPage(data.passage, starts).text;
+                const trimmed = fitted.trim();
+                if (!trimmed.length) return;
+                const offset = fitted.indexOf(trimmed);
+                if (speechPrefetch.running) speechPrefetch.running = false;
+                speechPrefetchText = trimmed;
+                speechPrefetchParagraphs = JSON.stringify(starts.filter(value => value > offset && value < offset + trimmed.length).map(value => value - offset));
+                speechPrefetchReady = false;
+                speechPrefetch.running = true;
+                return;
+            }
+            if (data.action === "reader_state") {
+                if (data.error) { lastReaderStateJson = ""; errorMessage = "Could not save or restore reader settings. Check the local book database."; if (!readerStateLoaded) loadReaderState({}); return; }
+                if (!readerStateLoaded) loadReaderState(data.state || {});
+                return;
+            }
             if (data.action === "delete") {
                 if (data.request !== deleteRequest) return;
                 busy = false;
@@ -832,7 +1180,7 @@ Item {
                 return;
             }
             if (data.action === "list") { if (data.books) library = data.books; return; }
-            if (data.error) { if (data.id && bookId && data.id !== bookId) return; if (String(data.error).indexOf("Progress changed in another view") >= 0) progressConflict = true; if (data.request === pageRequest) { busy = false; turningPage = false; slidingWindow = false; historyBack = false; backAfterTurn = false; } if (data.action === "save") dirty = true; message = data.error; errorMessage = data.error; return; }
+            if (data.error) { if (data.id && bookId && data.id !== bookId) return; if (String(data.error).indexOf("Progress changed in another view") >= 0) progressConflict = true; if (data.request === pageRequest) { stopSpeech(); busy = false; turningPage = false; slidingWindow = false; historyBack = false; backAfterTurn = false; } if (data.action === "save") dirty = true; message = data.error; errorMessage = data.error; return; }
             if (data.request !== pageRequest) return;
             if (data.atBeginning) { busy = false; turningPage = false; return; }
             if (data.previousText !== undefined) {
@@ -900,6 +1248,7 @@ Item {
             answer.text = data.typed; answer.cursorPosition = answer.length;
             if (continuingWindow) speedBaseline = correctCount();
             dirty = false; draft = false; busy = false; restoring = false;
+            readerViewRestored = true; scheduleReaderState();
             turningPage = false;
             if (readingMode && readerMoved) animateReaderPage(revealDirection);
             if (data.action === "next" || data.action === "previous") {
@@ -910,7 +1259,13 @@ Item {
                     if (!root.visible || !root.practicing) root.saveProgress();
                 });
             } else { pendingKeys = ""; stopFeedback(); }
-            if (backAfterTurn && data.action === "next") { backAfterTurn = false; Qt.callLater(previousPage); }
+            if (backAfterTurn && data.action === "next") {
+                backAfterTurn = false;
+                if (answer.text.length) {
+                    const retained = characters(answer.text);
+                    answer.text = retained.slice(0, -1).join(""); answer.cursorPosition = answer.length;
+                } else Qt.callLater(previousPage);
+            }
             message = "Ready to resume. Your place is saved on this device.";
             if (data.kind === "book") samplesExpanded = false;
             if (data.action === "add") { paste.text = ""; practicing = true; }
@@ -919,8 +1274,9 @@ Item {
             if (data.action === "open" && resumeOnOpen) { resumeOnOpen = false; practicing = true; }
             if (data.action !== "next") resetSpeed();
             if (practicing && visible) Qt.callLater(() => root.focusPassage());
+            if (speechAdvancing) speechResume.restart();
             if (data.action !== "next") send({action: "list"}, false);
-        } catch (error) { busy = false; message = "Could not read the book service response."; }
+        } catch (error) { stopSpeech(); busy = false; message = "Could not read the book service response."; }
     }
     Timer { id: saveDelay; interval: 650; onTriggered: root.saveProgress() }
     Timer { interval: 5000; running: root.backendStarted; repeat: true; onTriggered: root.saveProgress() }
@@ -966,16 +1322,33 @@ Item {
             radius: Config.roundness
         }
     }
-    component ReaderAction: MenuItem {
-        id: action
-        implicitHeight: 40
-        contentItem: StyledText {
-            text: action.text
-            opacity: action.enabled ? 1 : 0.35
-            color: action.highlighted ? Colors.primary : Colors.overSurface
+    component ReaderNumber: SpinBox {
+        id: number
+        editable: true
+        implicitWidth: 136; implicitHeight: 36
+        leftPadding: 34; rightPadding: 34
+        contentItem: TextInput {
+            text: number.textFromValue(number.value, number.locale)
+            font: Qt.font({family: Config.theme.font, pixelSize: 14})
+            color: Colors.overSurface
+            horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
+            readOnly: !number.editable
+            validator: number.validator
+            inputMethodHints: Qt.ImhDigitsOnly
+            selectionColor: Qt.alpha(Colors.primary, 0.3)
         }
-        background: StyledRect { variant: action.highlighted ? "focus" : "transparent"; radius: 8 }
+        background: StyledRect { variant: "pane"; radius: 8 }
+        up.indicator: StyledRect {
+            x: number.width - width; width: 32; height: number.height
+            variant: number.up.pressed ? "focus" : "pane"; radius: 8
+            StyledText { anchors.centerIn: parent; text: "+"; color: Colors.primary }
+        }
+        down.indicator: StyledRect {
+            width: 32; height: number.height
+            variant: number.down.pressed ? "focus" : "pane"; radius: 8
+            StyledText { anchors.centerIn: parent; text: "−"; color: Colors.primary }
+        }
     }
     component ThemeSelect: ComboBox {
         id: select
@@ -1039,6 +1412,15 @@ Item {
                     background: Item {}
                 }
             }
+            // An item popup cannot extend past the native notes surface.
+            // Reserve room while it is open, then restore the compact sheet.
+            onAboutToShow: {
+                if (select.Window.window === wordPanel.contentItem.Window.window)
+                    root.noteDropdownBottom = select.mapToItem(wordPanel.contentItem, 0, select.height + 4).y + Math.min(select.count * 40, 260) + 12;
+                else if (select.Window.window === readerActions.contentItem.Window.window)
+                    root.settingsDropdownBottom = select.mapToItem(readerActions.contentItem, 0, select.height + 4).y + Math.min(select.count * 40, 260) + 12;
+            }
+            onClosed: { root.noteDropdownBottom = 0; root.settingsDropdownBottom = 0; }
             onOpened: Qt.callLater(() => options.positionViewAtIndex(Math.max(0, select.currentIndex), ListView.Contain))
         }
     }
@@ -1058,6 +1440,8 @@ Item {
         practicing = false;
     }
     function goBack() {
+        if (!readerStateLoaded) { pendingReaderRestore = true; backendStarted = true; return; }
+        if (!readerViewRestored && restoreReaderView()) return;
         if (busy || filePickerActive) return;
         if (practicing) { showLibrary(); return; }
         if (bookId) { practicing = true; root.focusPassage(); }
@@ -1098,13 +1482,20 @@ Item {
             answer.cursorPosition = cursor + event.text.length;
             return true;
         }
-        if (event.key === Qt.Key_Backspace && answer.selectionStart !== answer.selectionEnd) {
-            const cursor = answer.selectionEnd;
+        if (event.key === Qt.Key_Backspace && !answer.text.length && (position > 0 || rounds > 0)) {
+            previousPage();
+            return true;
+        }
+        if (event.key === Qt.Key_Backspace && answer.text.length) {
+            const cursor = answer.selectionStart !== answer.selectionEnd ? answer.selectionEnd : answer.cursorPosition;
             const preceding = characters(answer.text.slice(0, cursor));
             const length = preceding.length ? preceding[preceding.length - 1].length : 0;
             answer.deselect();
+            restoring = true;
             if (length) answer.remove(cursor - length, cursor);
             answer.cursorPosition = Math.max(0, cursor - length);
+            restoring = false;
+            dirty = true; saveDelay.restart(); syncGlyphs();
             return true;
         }
         return false;
@@ -1235,11 +1626,13 @@ Item {
             root.ready = true;
             for (const data of root.queued) backend.write(JSON.stringify(data) + "\n");
             root.queued = [];
+            root.send({action: "reader_state"}, false);
             root.send({action: "list"}, false);
             root.send({action: "word_settings"}, false);
         }
         stdout: SplitParser { onRead: line => root.receive(line) }
         onExited: {
+            root.stopSpeech();
             root.ready = false; root.backendStarted = false; root.busy = false;
             root.message = "Book service stopped. Reopen typing to reconnect."; root.errorMessage = root.message;
         }
@@ -1247,16 +1640,19 @@ Item {
     PopupWindow {
         id: wordPanel
         objectName: "typing-word-panel"
-        anchor.item: root.menuAnchorItem
-        anchor.rect.x: 0
-        anchor.rect.y: root.menuAnchorItem.height + 6
+        grabFocus: true
+        anchor.item: root.fullscreen && root.Window.window ? root.Window.window.contentItem : root.menuAnchorItem
+        readonly property real sideSpace: (anchor.item.width - Math.min(720, Math.max(1, root.width - 80))) / 2 - 48
+        readonly property bool sideNotes: root.fullscreen && sideSpace >= 320
+        anchor.rect.x: sideNotes ? (root.notebookMode ? anchor.item.width - width - 24 : 24) : root.fullscreen ? (anchor.item.width - width) / 2 : 0
+        anchor.rect.y: root.fullscreen ? 24 : root.menuAnchorItem.height + 6
         anchor.rect.width: 0
         anchor.rect.height: 0
-        implicitWidth: Math.max(1, Math.min(root.notebookMode ? (root.fullscreen ? 900 : 640) : 520, root.menuAnchorItem.width))
-        implicitHeight: Math.max(1, Math.min(root.menuAnchorItem.height,
-            root.editingWordNote ? (root.fullscreen ? 640 : 440)
+        implicitWidth: sideNotes ? Math.min(440, sideSpace) : Math.max(1, Math.min(root.notebookMode ? (root.fullscreen ? 900 : 640) : 520, root.menuAnchorItem.width))
+        implicitHeight: Math.max(1, Math.min(wordPanel.screen ? wordPanel.screen.height - 48 : 640,
+            root.editingWordNote ? (sideNotes ? 800 : root.fullscreen ? 640 : 440)
             : Math.min(root.notebookMode ? (root.fullscreen ? 640 : 480) : Infinity,
-                wordPanelHeader.implicitHeight + notebookToolbar.implicitHeight + wordContent.implicitHeight + 36)))
+                Math.max(root.noteDropdownBottom, wordPanelHeader.implicitHeight + notebookToolbar.implicitHeight + wordContent.implicitHeight + 48))))
         color: "transparent"
         visible: false
         property bool opened: false
@@ -1272,15 +1668,16 @@ Item {
         mask: Region { item: panelViewport }
         function open() {
             const wasOpen = opened;
+            answer.focus = false; readerText.focus = false;
             panelMotion.stop(); opened = true; visible = true;
             if (!wasOpen && Motion.enabled) {
                 openAnimations++; panelMotion.to = 1; panelMotion.duration = Motion.enter; panelMotion.start();
             } else reveal = 1;
-            Qt.callLater(() => { if (root.wordOptionsExpanded || root.notebookCreating) termInput.forceActiveFocus(); else contentItem.forceActiveFocus(); });
+            Qt.callLater(() => { if (root.editingWordNote && root.noteLoaded) wordNote.forceActiveFocus(); else if (root.notebookBrowsing || root.wordOptionsExpanded || root.notebookCreating) termInput.forceActiveFocus(); else contentItem.forceActiveFocus(); });
         }
         function close() {
             if (!opened) return;
-            opened = false; panelMotion.stop(); root.cancelDefinition(); root.cancelMeaning();
+            opened = false; panelMotion.stop(); root.cancelDefinition(); root.cancelDefinition();
             if (root.practicing) root.focusPassage();
             if (Motion.enabled) {
                 closeAnimations++; panelMotion.to = 0; panelMotion.duration = Motion.exit; panelMotion.start();
@@ -1322,15 +1719,13 @@ Item {
                     id: wordPanelSurface
                     objectName: "typing-word-panel-surface"
                     anchors.fill: parent
-                    variant: "bg"
+                    variant: "popup"
                     radius: Config.roundness
-                    border.width: 1
-                    border.color: Qt.alpha(Colors.primary, 0.28)
                 }
                 ColumnLayout {
                     anchors.fill: parent
                     anchors.margins: 12
-                    spacing: 6
+                    spacing: 10
                     RowLayout {
                         id: wordPanelHeader
                         Layout.fillWidth: true
@@ -1364,17 +1759,17 @@ Item {
                                     objectName: "typing-word-term"
                                     Layout.fillWidth: true
                                     maximumLength: 120
-                                    implicitHeight: 40
-                                    padding: 10
+                                    implicitHeight: 48
+                                    padding: 12
                                     placeholderText: root.notebookBrowsing ? "Search your notes" : (root.notebookCreating ? "Note title" : "Word to look up")
                                     color: Colors.overSurface
-                                    font: Qt.font({family: Config.theme.font, pixelSize: root.fullscreen ? 16 : root.readingFont.pixelSize})
+                                    font: Qt.font({family: Config.theme.font, pixelSize: Config.theme.fontSize + (root.fullscreen ? 2 : 0)})
                                     placeholderTextColor: Qt.alpha(Colors.overSurface, 0.35)
                                     selectionColor: Qt.alpha(Colors.primary, 0.3)
                                     selectedTextColor: Colors.overSurface
                                     selectByMouse: true
                                     enabled: !root.noteDirty && !root.noteSaving
-                                    background: StyledRect { variant: "pane"; radius: 8; border.width: 1; border.color: termInput.activeFocus ? Colors.primary : Colors.outlineVariant }
+                                    background: StyledRect { variant: termInput.activeFocus ? "focus" : "pane"; radius: Config.roundness }
                                     onAccepted: { if (!root.notebookBrowsing) { if (root.notebookCreating) root.openNotebookEntry(text); else root.openWord(text); } }
                                 }
                                 PrimaryTextButton {
@@ -1385,6 +1780,7 @@ Item {
                                 }
                             }
                             ThemeSelect {
+                                objectName: "typing-new-note-category"
                                 visible: root.notebookCreating
                                 Layout.fillWidth: true
                                 textRole: ""
@@ -1448,11 +1844,8 @@ Item {
                                         objectName: "typing-notebook-entry-" + modelData.term
                                         Layout.fillWidth: true
                                         implicitHeight: entryContent.implicitHeight + 20
-                                        variant: "pane"
+                                        variant: entryHover.hovered || activeFocus ? "focus" : "pane"
                                         radius: Config.roundness
-                                        backgroundOpacity: entryHover.hovered || activeFocus ? 0.75 : 0.4
-                                        border.width: 1
-                                        border.color: entryHover.hovered || activeFocus ? Qt.alpha(Colors.primary, 0.6) : Qt.alpha(Colors.outlineVariant, 0.35)
                                         HoverHandler { id: entryHover }
                                         activeFocusOnTab: true
                                         Accessible.name: modelData.term
@@ -1487,29 +1880,6 @@ Item {
                                 onActivated: index => root.openWord(root.notedTerms[index])
                             }
                             TextButton {
-                                objectName: "typing-context-meaning"
-                                visible: !root.notebookMode && root.selectedTerm.length > 0
-                                text: "Definition & context"
-                                enabled: root.meaningContext.length > 0
-                                onClicked: root.lookupMeaning()
-                            }
-                            ScrollView {
-                                visible: !root.notebookMode && root.meaningText.length > 0
-                                Layout.fillWidth: true
-                                Layout.preferredHeight: Math.min(180, meaningLabel.implicitHeight)
-                                clip: true
-                                StyledText {
-                                    id: meaningLabel
-                                    objectName: "typing-context-meaning-result"
-                                    width: wordPanel.availableWidth - 12
-                                    text: root.meaningText
-                                    textFormat: Text.PlainText
-                                    wrapMode: Text.Wrap
-                                    font.pixelSize: 12
-                                    color: Colors.overSurface
-                                }
-                            }
-                            TextButton {
                                 objectName: "typing-definitions-toggle"
                                 visible: !root.notebookMode && root.wordOptionsExpanded
                                 text: "Online definitions: " + (root.definitionsEnabled ? "On" : "Off")
@@ -1522,12 +1892,12 @@ Item {
                             ScrollView {
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: Math.min(160, definitionLabel.implicitHeight)
-                                visible: !root.notebookMode && (root.definitionsEnabled || root.meaningText.length > 0) && root.selectedTerm.length > 0
+                                visible: !root.notebookMode && root.definitionsEnabled && root.selectedTerm.length > 0
                                 clip: true
                                 StyledText { id: definitionLabel; width: wordPanel.availableWidth - 12; text: root.definitionText; textFormat: Text.PlainText; wrapMode: Text.Wrap; font.pixelSize: 12 }
                             }
                             RowLayout {
-                                visible: !root.notebookMode && ((root.wordOptionsExpanded && root.definitionsEnabled) || root.meaningText.length > 0)
+                                visible: !root.notebookMode && (root.wordOptionsExpanded && root.definitionsEnabled)
                                 StyledText { text: "Dictionary API"; font.pixelSize: 11; opacity: 0.65 }
                                 TextButton { text: "Retry"; enabled: root.selectedTerm.length > 0; onClicked: root.lookupDefinition() }
                             }
@@ -1546,7 +1916,7 @@ Item {
                                 visible: !root.editingWordNote && root.selectedTerm.length > 0
                                 enabled: root.noteLoaded
                                 text: root.savedWordNote.length ? "Edit note" : "Add note"
-                                onClicked: { root.editingWordNote = true; wordNote.forceActiveFocus(); }
+                                onClicked: { root.editingWordNote = true; Qt.callLater(() => wordNote.forceActiveFocus()); }
                             }
                             StyledText { visible: root.savedWordNote.length > 0 && !root.editingWordNote; text: root.savedNoteCategory; color: Colors.primary; font.pixelSize: 11 }
                             ThemeSelect {
@@ -1567,6 +1937,7 @@ Item {
                             }
                             ScrollView {
                                 id: noteEditorScroll
+                                objectName: "typing-note-editor-scroll"
                                 contentWidth: availableWidth
                                 visible: root.editingWordNote
                                 Layout.fillWidth: true
@@ -1584,12 +1955,12 @@ Item {
                                     wrapMode: TextEdit.Wrap
                                     selectByMouse: true
                                     color: Colors.overSurface
-                                    font: Qt.font({family: Config.theme.font, pixelSize: root.fullscreen ? 18 : root.readingFont.pixelSize})
+                                    font: Qt.font({family: Config.theme.font, pixelSize: Config.theme.fontSize + (root.fullscreen ? 2 : 0)})
                                     placeholderTextColor: Qt.alpha(Colors.overSurface, 0.35)
                                     selectionColor: Qt.alpha(Colors.primary, 0.3)
                                     selectedTextColor: Colors.overSurface
-                                    background: StyledRect { variant: "pane"; radius: 8 }
-                                    Accessible.name: "Note for selected word or name"
+                                    background: StyledRect { variant: wordNote.activeFocus ? "focus" : "pane"; radius: Config.roundness }
+                                    Accessible.name: "Note text"
                                 }
                             }
                             StyledText { visible: text.length > 0; text: wordNote.length > 10000 ? "Notes can contain up to 10,000 characters." : (root.noteSaving ? "" : root.wordMessage); textFormat: Text.PlainText; wrapMode: Text.Wrap; Layout.fillWidth: true; font.pixelSize: 11 }
@@ -1613,6 +1984,138 @@ Item {
             }
         }
     }
+    PopupWindow {
+        id: readerActions
+        BackgroundEffect.blurRegion: BlurRegion {
+            target: readerSettingsSheet
+            radius: Config.roundness
+        }
+        objectName: "reader-settings"
+        anchor.item: readerActionsButton
+        anchor.rect.y: readerActionsButton.height + 6
+        implicitWidth: Math.min(360, screen ? screen.width - 32 : 360)
+        implicitHeight: Math.min(Math.max(root.settingsDropdownBottom, settingsContent.implicitHeight + 32), screen ? screen.height - 48 : 600)
+        color: "transparent"
+        visible: false
+        property bool opened: false
+        function open() { opened = true; visible = true; }
+        function close() { visible = false; opened = false; }
+        onVisibleChanged: { if (!visible) opened = false; }
+        Services.FocusGrab { active: readerActions.opened; windows: [readerActions]; onCleared: readerActions.close() }
+        Item {
+            id: readerSettingsSheet
+            objectName: "reader-settings-sheet"
+            anchors.fill: parent
+            StyledRect { anchors.fill: parent; variant: "bg"; radius: Config.roundness; border.width: 1; border.color: Qt.alpha(Colors.outlineVariant, 0.5) }
+            ScrollView {
+                id: readerSettingsScroll
+                anchors.fill: parent
+                anchors.margins: 16
+                contentWidth: availableWidth
+                clip: true
+                ColumnLayout {
+                    id: settingsContent
+                    width: readerSettingsScroll.availableWidth
+                    spacing: 12
+                    RowLayout {
+                        Layout.fillWidth: true
+                        StyledText { text: "Reader settings"; font.pixelSize: 16; font.weight: Font.DemiBold; Layout.fillWidth: true }
+                        TextButton { objectName: "reader-settings-close"; text: "Done"; onClicked: readerActions.close() }
+                    }
+                    ColumnLayout {
+                        spacing: 4
+                        StyledText { objectName: "reader-voice-name"; text: "Voice"; font.weight: Font.DemiBold }
+                        StyledText { text: root.kokoroVoiceReady ? "American voice · natural pitch" : "Download voice to enable Read aloud"; font.pixelSize: 11; opacity: 0.65 }
+                    }
+                    RowLayout {
+                        Layout.fillWidth: true
+                        ThemeSelect {
+                            objectName: "reader-voice-select"
+                            Layout.fillWidth: true
+                            model: root.speechVoices
+                            currentIndex: Math.max(0, root.speechVoices.findIndex(voice => voice.id === root.speechProfile))
+                            enabled: root.kokoroVoiceReady && !kokoroSetup.running
+                            Accessible.name: "Reading voice"
+                            onActivated: index => root.speechProfile = root.speechVoices[index].id
+                        }
+                        TextButton {
+                            objectName: "reader-voice-preview"
+                            text: root.speaking ? "Stop" : "Preview"
+                            enabled: root.speaking || (root.kokoroVoiceReady && !kokoroSetup.running)
+                            onClicked: root.previewSpeech()
+                        }
+                    }
+                    RowLayout {
+                        Layout.fillWidth: true
+                        StyledText { text: "Speed"; Layout.fillWidth: true }
+                        StyledText { objectName: "reader-speed-value"; text: Math.round(root.speechRate * 100) + "%"; color: Colors.primary }
+                    }
+                    ThemeSlider {
+                        id: readerSpeedControl
+                        objectName: "reader-speed"
+                        Layout.fillWidth: true
+                        from: 0.75; to: 1.5; stepSize: 0.05
+                        value: root.speechRate
+                        Accessible.name: "Reading speed"
+                        onMoved: root.speechRate = value
+                    }
+                    StyledText { text: "Stop after" }
+                    ThemeSelect {
+                        objectName: "reader-limit"
+                        Layout.fillWidth: true
+                        model: root.speechLimitModes
+                        currentIndex: root.speechLimitModes.findIndex(mode => mode.value === root.speechLimitMode)
+                        Accessible.name: "Read-aloud stopping point"
+                        onActivated: index => root.speechLimitMode = root.speechLimitModes[index].value
+                    }
+                    RowLayout {
+                        visible: root.speechLimitMode === "chapters" || root.speechLimitMode === "time"
+                        Layout.fillWidth: true
+                        StyledText { text: root.speechLimitMode === "time" ? "Minutes" : "Chapters"; Layout.fillWidth: true }
+                        ReaderNumber {
+                            objectName: "reader-limit-count"
+                            from: 1; to: root.speechLimitMode === "time" ? 240 : 100
+                            value: root.speechLimitMode === "time" ? root.speechMinutes : root.speechChapterCount
+                            Accessible.name: root.speechLimitMode === "time" ? "Reading minutes" : "Chapter count"
+                            onValueModified: {
+                                if (root.speechLimitMode === "time") root.speechMinutes = value;
+                                else root.speechChapterCount = value;
+                            }
+                        }
+                    }
+                    StyledText {
+                        objectName: "reader-limit-description"
+                        Layout.fillWidth: true
+                        font.pixelSize: 11; opacity: 0.65; wrapMode: Text.Wrap
+                        text: root.speechDeadline > 0 ? "Time left: " + Math.max(0, Math.ceil((root.speechDeadline - root.speechNow) / 60000)) + " min"
+                            : root.speechLimitMode === "chapter" ? "Stops before the next chapter starts."
+                            : root.speechLimitMode === "chapters" ? "Includes the chapter you are reading now."
+                            : root.speechLimitMode === "time" ? "Stops when time expires, including loading time."
+                            : root.speechLimitMode === "page" ? "Reads the current page once."
+                            : "Continues until Stop or the end of the book."
+                    }
+                    Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: Qt.alpha(Colors.outlineVariant, 0.4) }
+                    RowLayout {
+                        Layout.fillWidth: true
+                        TextButton { objectName: "typing-mode"; Layout.fillWidth: true; text: root.readingMode ? "Typing mode" : "Reading mode"; onClicked: root.toggleReadingMode() }
+                        TextButton { objectName: "typing-fullscreen"; visible: !root.pinned; Layout.fillWidth: true; text: root.fullscreen ? "Compact" : "Fullscreen"; onClicked: root.toggleFullscreen() }
+                    }
+                    RowLayout {
+                        Layout.fillWidth: true
+                        TextButton { objectName: "typing-library"; Layout.fillWidth: true; text: "Book library"; enabled: root.practicing; onClicked: { readerActions.close(); root.showLibrary(); } }
+                        TextButton { objectName: "typing-reader-import"; Layout.fillWidth: true; text: "Import book…"; enabled: !root.busy; onClicked: { readerActions.close(); root.openImport(); } }
+                    }
+                    TextButton {
+                        objectName: "reader-kokoro-setup"
+                        Layout.fillWidth: true
+                        text: kokoroSetup.running ? "Downloading voice…" : (root.kokoroVoiceReady ? "Repair voice" : "Download voices")
+                        enabled: !kokoroSetup.running && !root.speaking
+                        onClicked: { root.errorMessage = ""; kokoroSetup.running = true; }
+                    }
+                }
+            }
+        }
+    }
     Item {
         anchors.fill: parent
         ColumnLayout {
@@ -1629,49 +2132,26 @@ Item {
             spacing: 12
             RowLayout {
                 Layout.fillWidth: true
-                Layout.maximumHeight: 36
+                spacing: 6
                 StyledText { text: root.practicing ? root.bookTitle : "Your book library"; textFormat: Text.PlainText; elide: Text.ElideRight; Layout.minimumWidth: 0; font.pixelSize: Styling.fontSize(0); font.weight: Font.DemiBold; Layout.fillWidth: true }
-                TextButton { objectName: "typing-book-notebook"; text: "Notes"; visible: root.practicing; enabled: !!root.bookId && !root.busy; onClicked: root.openNotebook() }
+                PrimaryTextButton {
+                    objectName: "reader-speech"
+                    visible: root.readingMode && root.practicing
+                    text: root.speaking ? (root.speechPaused ? "Resume" : "Pause") : "Read aloud"
+                    enabled: root.speaking || (root.kokoroVoiceReady && !root.busy && !kokoroSetup.running && root.passage.trim().length > 0)
+                    Accessible.name: root.speaking ? (root.speechPaused ? "Resume reading aloud" : "Pause reading aloud") : "Read selection or book aloud with " + root.speechVoiceName
+                    onClicked: root.toggleSpeechPlayback()
+                }
+                TextButton { objectName: "reader-speech-stop"; text: "Stop"; visible: root.speaking && root.readingMode && root.practicing; onClicked: root.stopSpeech() }
+                TextButton { objectName: "typing-book-notebook"; text: "Notes"; visible: root.practicing; enabled: !!root.bookId && !root.busy; onClicked: { readerActions.close(); root.openNotebook(); } }
                 TextButton {
                     id: readerActionsButton
                     objectName: "typing-reader-actions"
-                    text: "⋯"
-                    implicitWidth: 36
-                    Accessible.name: "Reader actions"
-                    onClicked: readerActions.open()
-                    Menu {
-                        id: readerActions
-                        x: readerActionsButton.width - width
-                        y: readerActionsButton.height + 4
-                        width: 280
-                        padding: 6
-                        background: StyledRect { variant: "popup"; radius: Config.roundness }
-                        ReaderAction { objectName: "typing-mode"; text: root.readingMode ? "Typing mode · Ctrl+Tab" : "Reading mode · Ctrl+Tab"; onClicked: { readerActions.close(); root.toggleReadingMode(); } }
-                        ReaderAction { objectName: "typing-fullscreen"; visible: !root.pinned; text: root.fullscreen ? "Compact window · F11" : "Fullscreen · F11"; onClicked: { readerActions.close(); root.toggleFullscreen(); } }
-                        ReaderAction { objectName: "typing-library"; text: "Book library"; enabled: root.practicing; onClicked: { readerActions.close(); root.showLibrary(); } }
-                        ReaderAction {
-                            objectName: "reader-voice-setup"
-                            text: speechSetup.running ? "Downloading natural voice…" : (root.naturalVoiceReady ? "Repair natural voice…" : "Download natural voice…")
-                            enabled: !speechSetup.running && !root.speaking
-                            onClicked: { root.errorMessage = ""; speechSetup.running = true; }
-                        }
-                        ReaderAction { objectName: "typing-reader-import"; text: "Import book…"; enabled: !root.busy; onClicked: { readerActions.close(); root.openImport(); } }
-                    }
+                    text: "Settings"
+                    onClicked: { if (readerActions.opened) readerActions.close(); else readerActions.open(); }
                 }
-                TextButton { objectName: "typing-back"; visible: !root.practicing; text: "Back"; enabled: !root.busy && (root.bookId.length > 0 || root.draft || root.library.length > 0); onClicked: root.goBack() }
-                TextButton {
-                    objectName: "reader-speech"
-                    visible: root.readingMode && root.practicing
-                    text: root.speaking ? "Stop" : "Read aloud"
-                    enabled: root.speaking || (!root.busy && !speechSetup.running && root.passage.trim().length > 0)
-                    Accessible.name: root.speaking ? "Stop reading aloud" : "Read selection or current page aloud"
-                    ToolTip.visible: hovered
-                    ToolTip.text: root.naturalVoiceReady ? "Natural offline voice · Lessac (US English)" : "Basic offline voice · download the natural voice from Reader actions"
-                    onClicked: root.toggleSpeech()
-                }
-                TextButton { visible: root.readingMode; text: "Type"; onClicked: root.toggleReadingMode() }
                 TextButton { objectName: "reader-pin"; text: root.pinned ? "Unpin" : "Pin"; Accessible.name: root.pinned ? "Return reader to panel" : "Tile reader window"; onClicked: root.pinRequested() }
-                TextButton { text: "Close"; onClicked: { root.stopSpeech(); root.saveProgress(); root.backRequested(); } }
+                TextButton { text: "Close"; onClicked: { readerActions.close(); root.rememberReaderState(); root.saveProgress(); root.backRequested(); } }
             }
             Rectangle { visible: root.readingMode; Layout.fillWidth: true; implicitHeight: 1; color: Qt.alpha(Colors.outlineVariant, 0.4) }
             StyledText {
@@ -2274,12 +2754,29 @@ Item {
                             color: Colors.overSurface
                             selectionColor: Qt.alpha(Colors.primary, 0.3)
                             selectedTextColor: Colors.overSurface
+                            onSelectedTextChanged: if (selectedText.length && !root.speechActive) root.clearSpeechHighlight()
                             wrapMode: TextEdit.Wrap
                             cursorVisible: false
                             Accessible.name: "Book passage"
                             TapHandler {
                                 acceptedButtons: Qt.RightButton
                                 onTapped: point => { const index = readerText.positionAt(point.position.x, point.position.y); root.openWord(root.readingWordAt(index), index); }
+                            }
+                            Repeater {
+                                model: root.speechHighlightStart >= 0 ? Math.max(0, root.speechHighlightEnd - root.speechHighlightStart) : 0
+                                delegate: Rectangle {
+                                    required property int index
+                                    readonly property int sourceIndex: root.speechHighlightStart + index
+                                    readonly property rect beginRect: readerText.positionToRectangle(sourceIndex)
+                                    readonly property rect endRect: readerText.positionToRectangle(sourceIndex + 1)
+                                    objectName: "reader-spoken-highlight-" + index
+                                    x: beginRect.x; y: beginRect.y
+                                    width: Math.max(0, endRect.y === beginRect.y ? endRect.x - beginRect.x : root.characterWidth(root.passage.charAt(sourceIndex)))
+                                    height: beginRect.height
+                                    radius: 3
+                                    color: Qt.alpha(Colors.primary, 0.3)
+                                    z: -1
+                                }
                             }
                             Keys.onPressed: event => { event.accepted = root.readerKey(event); }
                         }
@@ -2355,7 +2852,7 @@ Item {
                             anchors.right: parent.right
                             anchors.top: parent.top
                             anchors.margins: 12
-                            text: "Next: l / → / Page Down / Space   Previous: h / ← / Page Up / Shift+Space\nChapter: k / j or [ / ]   Notes: N   Word lookup: Ctrl+Space\nSwitch typing / reading: Ctrl+Tab\nShortcut guide: ?   Window size: F11   Close / leave fullscreen: Esc"
+                            text: "Voice: Space to play / pause / resume\nNext: l / → / Page Down   Previous: h / ← / Page Up / Shift+Space\nChapter: k / j or [ / ]   Notes: N\nWord: Ctrl+h/j/k/l   Look up highlighted word: Ctrl+Space\nSwitch typing / reading: Ctrl+Tab\nShortcut guide: ?   Window size: F11   Close / leave fullscreen: Esc"
                             wrapMode: Text.Wrap
                             font.pixelSize: 12
                         }
