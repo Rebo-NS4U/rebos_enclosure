@@ -25,6 +25,10 @@ ShellRoot {
                     practice.bookTitle = "A book to practice";
                     practice.chapters = [{title: "The quiet beginning", position: 0}, {title: "A new discovery", position: 1000}];
                     practice.bookLength = 2000;
+                    practice.completedRanges = [[0, 500], [1000, 1250]];
+                    if (practice.chapterCompletion(0) !== 0.5 || practice.chapterCompletion(1) !== 0.25) throw Error("Incorrect chapter coverage");
+                    const select = find(practice, "typing-chapter-select");
+                    if (select.displayText.indexOf("50.0%") < 0) throw Error("Chapter percentage missing");
                     practice.pageSource = "A gentle morning with words to read and type. ".repeat(100);
                     practice.fitPage(); phase++; return;
                 }

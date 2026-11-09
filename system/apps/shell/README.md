@@ -295,3 +295,5 @@ midpoint, keeping that row centered in both sizes. The chapter-opening card sits
 above the compact passage until typing starts. Rapid keys, Tab, Return, and
 Backspace are buffered during page handoffs; glyph updates avoid duplicate work
 and use a native prefix check for appended input.
+
+Chapter selection shows durable completion percentages and progress bars. Completion tracks the union of typed text ranges from this version onward; chapter jumps and reading mode do not mark skipped text complete. Older bookmarks are preserved but cannot reconstruct historical typing coverage.

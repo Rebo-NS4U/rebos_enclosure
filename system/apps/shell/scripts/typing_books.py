@@ -282,6 +282,8 @@ class Library:
         for name in ('revision', 'typed_format'):
             if name not in columns:
                 self.db.execute(f'ALTER TABLE book_progress ADD COLUMN {name} INTEGER NOT NULL DEFAULT 0')
+        if 'completed' not in columns:
+            self.db.execute("ALTER TABLE book_progress ADD COLUMN completed TEXT NOT NULL DEFAULT '[]'")
         if 'category' not in {row[1] for row in self.db.execute('PRAGMA table_info(word_notes)')}:
             self.db.execute("ALTER TABLE word_notes ADD COLUMN category TEXT NOT NULL DEFAULT 'General'")
         if 'kind' not in {row[1] for row in self.db.execute('PRAGMA table_info(book_catalogue)')}:
@@ -380,13 +382,14 @@ class Library:
         return end
 
     def page(self, key, include_chapters=True, position=None):
-        row = self.db.execute('SELECT c.id,c.title,c.kind,c.size AS length,c.chapters,p.position,p.typed,p.loops,p.revision,p.typed_format FROM book_catalogue c JOIN book_progress p ON p.id=c.id WHERE c.id=?', (key,)).fetchone()
+        row = self.db.execute('SELECT c.id,c.title,c.kind,c.size AS length,c.chapters,p.position,p.typed,p.loops,p.revision,p.typed_format,p.completed FROM book_catalogue c JOIN book_progress p ON p.id=c.id WHERE c.id=?', (key,)).fetchone()
         if row is None: raise ValueError('Book is no longer in the library.')
         data = dict(row)
         if position is not None:
             if not isinstance(position, int) or not 0 <= position < data['length']:
                 raise ValueError('Invalid book position.')
             data.update(position=position, typed='', typed_format=0)
+        data['completed'] = json.loads(data['completed'])
         chapters = json.loads(data['chapters'])
         end = self.page_end(key, data, chapters)
         chunk = self.text_slice(key, data['position'], end)
@@ -416,7 +419,7 @@ class Library:
         else: data.pop('chapters')
         return data
 
-    def save(self, key, position, typed, loops, expected_revision=None):
+    def save(self, key, position, typed, loops, expected_revision=None, completed=None):
         row = self.db.execute('SELECT size FROM book_catalogue WHERE id=?', (key,)).fetchone()
         if row is None: raise ValueError('Book is no longer in the library.')
         if not isinstance(position, int) or not 0 <= position < row[0]: raise ValueError('Invalid book position.')
@@ -425,6 +428,22 @@ class Library:
                                      (position, typed[:8192], max(0, int(loops)), time.time(), int(self.typing_format), key, expected_revision, expected_revision))
             if cursor.rowcount != 1:
                 raise ValueError('Progress changed in another view. Reopen this book before saving again.')
+            if completed is not None:
+                ranges = json.loads(self.db.execute('SELECT completed FROM book_progress WHERE id=?', (key,)).fetchone()[0])
+                for pair in completed:
+                    if (not isinstance(pair, list) or len(pair) != 2
+                            or any(type(n) is not int for n in pair)
+                            or not 0 <= pair[0] <= pair[1] <= row[0]):
+                        raise ValueError('Invalid completed text range.')
+                    ranges.append(pair)
+                merged = []
+                for start, end in sorted(ranges):
+                    if start == end: continue
+                    if merged and start <= merged[-1][1]:
+                        merged[-1][1] = max(merged[-1][1], end)
+                    else:
+                        merged.append([start, end])
+                self.db.execute('UPDATE book_progress SET completed=? WHERE id=?', (json.dumps(merged), key))
             self.db.execute("INSERT INTO app_state VALUES ('last_book',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", (key,))
 
     def handle(self, request):
@@ -606,8 +625,8 @@ class Library:
                     boundary = context.find(' ', 1)
                     if boundary >= 0:
                         request['position'] = min(position + boundary, current['length'] - 1)
-        self.save(request['id'], request['position'], request.get('typed', ''), request.get('loops', 0), request.get('revision'))
-        return self.page(request['id'], action != 'next') if action != 'save' else {'saved': True}
+        self.save(request['id'], request['position'], request.get('typed', ''), request.get('loops', 0), request.get('revision'), request.get('completed'))
+        return self.page(request['id'], action != 'next') if action != 'save' else {'saved': True, 'id': request['id'], 'completed': json.loads(self.db.execute('SELECT completed FROM book_progress WHERE id=?', (request['id'],)).fetchone()[0])}
 
 
 def main():

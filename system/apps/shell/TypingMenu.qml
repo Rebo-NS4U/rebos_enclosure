@@ -531,6 +531,16 @@ Item {
     property int failureEvents: 0
     property int lineTransitions: 0
     property int pageTransitions: 0
+    property var completedRanges: []
+    function chapterCompletion(index) {
+        if (index < 0 || index >= chapters.length) return 0;
+        const start = chapters[index].position;
+        const end = index + 1 < chapters.length ? chapters[index + 1].position : bookLength;
+        let total = 0;
+        for (const range of completedRanges)
+            total += Math.max(0, Math.min(end, range[1]) - Math.max(start, range[0]));
+        return end > start ? Math.min(1, total / (end - start)) : 0;
+    }
     property var chapters: []
     property var library: []
     property bool backendStarted: false
@@ -939,6 +949,10 @@ Item {
     }
     Component.onCompleted: { if (visible) backendStarted = true; }
     function send(data, page = true, preserveSpeech = false) {
+        if (!readingMode && data.id === bookId && ["save", "next"].indexOf(data.action) >= 0) {
+            const end = Math.min(bookLength, position + sourceCount(characters(displayedInput).length));
+            data.completed = [[position, end]];
+        }
         if (page && !preserveSpeech) stopSpeech();
         // Load bounded windows, including during continuous chapter typing.
         // Reading can open before fullscreen geometry settles. Buffer a full
@@ -1110,6 +1124,7 @@ Item {
     function jumpChapter(index) {
         if (!bookId || busy || index < 0 || index >= chapters.length) return;
         readerPageHistory = [];
+        saveProgress();
         dirty = false;
         send({action: "chapter", id: bookId, index: index, loops: rounds});
     }
@@ -1181,6 +1196,7 @@ Item {
             }
             if (data.action === "list") { if (data.books) library = data.books; return; }
             if (data.error) { if (data.id && bookId && data.id !== bookId) return; if (String(data.error).indexOf("Progress changed in another view") >= 0) progressConflict = true; if (data.request === pageRequest) { stopSpeech(); busy = false; turningPage = false; slidingWindow = false; historyBack = false; backAfterTurn = false; } if (data.action === "save") dirty = true; message = data.error; errorMessage = data.error; return; }
+            if (!data.error && data.completed !== undefined && data.id === bookId) completedRanges = data.completed;
             if (data.request !== pageRequest) return;
             if (data.atBeginning) { busy = false; turningPage = false; return; }
             if (data.previousText !== undefined) {
@@ -1238,6 +1254,7 @@ Item {
             restoring = true;
             bookId = data.id; bookTitle = data.title; bookKind = data.kind || "book"; bookLength = data.length;
             progressConflict = false;
+            completedRanges = data.completed || [];
             position = data.position; rounds = data.loops; sourceOffsets = data.sourceOffsets || []; bookRevision = data.revision === undefined ? -1 : data.revision; if (data.chapters) chapters = data.chapters;
             resetPageCaret();
             paragraphStarts = data.paragraphStarts || [];
@@ -1404,7 +1421,7 @@ Item {
             contentItem: ListView {
                 id: options
                 clip: true
-                implicitHeight: Math.min(select.count * 40, 260)
+                implicitHeight: Math.min(select.count * (select === chapterSelect ? 60 : 40), 260)
                 model: select.delegateModel
                 currentIndex: select.highlightedIndex
                 ScrollBar.vertical: ScrollBar {
@@ -1416,9 +1433,9 @@ Item {
             // Reserve room while it is open, then restore the compact sheet.
             onAboutToShow: {
                 if (select.Window.window === wordPanel.contentItem.Window.window)
-                    root.noteDropdownBottom = select.mapToItem(wordPanel.contentItem, 0, select.height + 4).y + Math.min(select.count * 40, 260) + 12;
+                    root.noteDropdownBottom = select.mapToItem(wordPanel.contentItem, 0, select.height + 4).y + Math.min(select.count * (select === chapterSelect ? 60 : 40), 260) + 12;
                 else if (select.Window.window === readerActions.contentItem.Window.window)
-                    root.settingsDropdownBottom = select.mapToItem(readerActions.contentItem, 0, select.height + 4).y + Math.min(select.count * 40, 260) + 12;
+                    root.settingsDropdownBottom = select.mapToItem(readerActions.contentItem, 0, select.height + 4).y + Math.min(select.count * (select === chapterSelect ? 60 : 40), 260) + 12;
             }
             onClosed: { root.noteDropdownBottom = 0; root.settingsDropdownBottom = 0; }
             onOpened: Qt.callLater(() => options.positionViewAtIndex(Math.max(0, select.currentIndex), ListView.Contain))
@@ -2264,7 +2281,7 @@ Item {
                 ColumnLayout {
                     visible: !root.practicing && root.bookId.length > 0 && !root.draft
                     Layout.fillWidth: true
-                    StyledText { text: "Jump to chapter"; color: Colors.overSurfaceVariant; font.pixelSize: 12 }
+                    StyledText { text: "Chapters · completion"; color: Colors.overSurfaceVariant; font.pixelSize: 12 }
                     RowLayout {
                         Layout.fillWidth: true
                         TextButton { text: "‹"; enabled: !root.busy && root.currentChapterIndex > 0; onClicked: root.jumpChapter(root.currentChapterIndex - 1) }
@@ -2276,7 +2293,28 @@ Item {
                             model: root.chapters
                             currentIndex: root.currentChapterIndex
                             enabled: !root.busy
-                            displayText: root.chapterTitle
+                            displayText: root.chapterTitle + " · " + (root.chapterCompletion(root.currentChapterIndex) * 100).toFixed(1) + "%"
+                            delegate: ItemDelegate {
+                                id: chapterOption
+                                required property int index
+                                width: chapterSelect.width - 12
+                                implicitHeight: 60
+                                highlighted: chapterSelect.highlightedIndex === index
+                                contentItem: ColumnLayout {
+                                    spacing: 6
+                                    RowLayout {
+                                        Layout.fillWidth: true
+                                        StyledText { text: root.chapters[chapterOption.index].title; Layout.fillWidth: true; Layout.minimumWidth: 0; elide: Text.ElideRight }
+                                        StyledText { text: (root.chapterCompletion(chapterOption.index) * 100).toFixed(1) + "%"; color: Colors.primary; font.pixelSize: 12 }
+                                    }
+                                    Rectangle {
+                                        Layout.fillWidth: true; implicitHeight: 3; radius: 2
+                                        color: Qt.alpha(Colors.primary, 0.15)
+                                        Rectangle { width: parent.width * root.chapterCompletion(chapterOption.index); height: parent.height; radius: 2; color: Colors.primary }
+                                    }
+                                }
+                                background: Rectangle { radius: 8; color: chapterOption.highlighted ? Qt.alpha(Colors.primary, 0.16) : "transparent" }
+                            }
                             onActivated: index => root.jumpChapter(index)
                         }
                         TextButton { text: "›"; enabled: !root.busy && root.currentChapterIndex + 1 < root.chapters.length; onClicked: root.jumpChapter(root.currentChapterIndex + 1) }
@@ -2870,7 +2908,7 @@ Item {
                         Layout.fillWidth: true
                         StyledText { text: root.errorMessage || (root.busy ? "Loading…" : (!root.readingMode && !answer.activeFocus ? "Click the passage to continue typing" : root.chapterTitle)); textFormat: Text.PlainText; color: root.errorMessage ? Colors.error : Colors.overSurface; opacity: root.errorMessage ? 1 : 0.7; font.pixelSize: 11; elide: Text.ElideRight; Layout.fillWidth: true; Layout.minimumWidth: 0 }
                         StyledText { objectName: "typing-live-wpm"; visible: !root.readingMode; text: root.liveWpm + " WPM"; color: Colors.primary; font.pixelSize: 12 }
-                        StyledText { text: (root.progress * 100).toFixed(1) + "%"; opacity: 0.5; font.pixelSize: 11 }
+                        StyledText { text: "Chapter " + (root.chapterCompletion(root.currentChapterIndex) * 100).toFixed(1) + "% · Book " + (root.progress * 100).toFixed(1) + "%"; opacity: 0.5; font.pixelSize: 11 }
                     }
                     Rectangle {
                         Layout.fillWidth: true

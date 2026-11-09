@@ -21,6 +21,23 @@ class Books(unittest.TestCase):
         self.library.db.close()
         self.temp.cleanup()
 
+    def test_chapter_completion_survives_jumps_and_merges_overlaps(self):
+        book = self.library.add('Completion', 'a ' * 100, [{'title': 'One', 'position': 0}, {'title': 'Two', 'position': 100}])
+        key = book['id']
+        self.library.handle({'action': 'save', 'id': key, 'position': 0, 'completed': [[0, 40]]})
+        self.library.handle({'action': 'chapter', 'id': key, 'index': 1})
+        self.assertEqual(self.library.page(key)['completed'], [[0, 40]])
+        self.library.handle({'action': 'save', 'id': key, 'position': 100, 'completed': [[100, 120], [20, 60]]})
+        self.assertEqual(self.library.page(key)['completed'], [[0, 60], [100, 120]])
+        self.library.handle({'action': 'seek', 'id': key, 'position': 150})
+        self.assertEqual(self.library.page(key)['completed'], [[0, 60], [100, 120]])
+        revision = self.library.page(key)['revision']
+        with self.assertRaises(ValueError):
+            self.library.save(key, 0, '', 0, revision - 1, [[60, 100]])
+        self.library.db.close()
+        self.library = Library(self.path)
+        self.assertEqual(self.library.page(key)['completed'], [[0, 60], [100, 120]])
+
     def test_speech_lookahead_does_not_move_progress(self):
         text = normalize('First 😀 paragraph.\n\n' + 'The story continues. ' * 100)
         book = self.library.add('Lookahead', text, [])
