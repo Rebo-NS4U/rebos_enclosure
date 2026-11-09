@@ -116,7 +116,7 @@ class SpeechTests(unittest.TestCase):
     def test_bounded_chunks_do_not_drop_or_duplicate_text(self):
         text = ('A long sentence with commas, and words that must stay in order; ' * 40).strip()
         units = speech.narration_units(text)
-        self.assertTrue(all(len(body) <= 240 for _, body, _ in units))
+        self.assertTrue(all(len(body) <= 180 for _, body, _ in units))
         self.assertEqual(' '.join(body for _, body, _ in units).split(), text.split())
         self.assertEqual(units[-1][2], 0)
 
@@ -133,6 +133,23 @@ class SpeechTests(unittest.TestCase):
         with patch.object(speech.subprocess, 'Popen', return_value=player):
             speech.play_audio(chunks(), 24000)
         self.assertEqual(player.stdin.write.call_count, 2)
+
+    def test_paragraph_silence_does_not_block_speech_lookahead(self):
+        prepared = threading.Event()
+        def chunks():
+            yield speech.TimedAudio(b'\1\0', [])
+            yield b'\0\0'
+            yield speech.TimedAudio(b'\2\0', [])
+            yield b'\0\0'
+            prepared.set()
+            yield speech.TimedAudio(b'\3\0', [])
+        player = Mock()
+        player.wait.return_value = 0
+        player.poll.return_value = 0
+        player.stdin.write.side_effect = lambda data: self.assertTrue(prepared.wait(2), 'Paragraph silence blocked synthesis lookahead')
+        with patch.object(speech.subprocess, 'Popen', return_value=player):
+            speech.play_audio(chunks(), 24000)
+        self.assertEqual(player.stdin.write.call_count, 5)
 
     def test_short_opener_waits_for_following_speech_before_playback(self):
         generated = []

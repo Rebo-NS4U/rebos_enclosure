@@ -184,7 +184,7 @@ def narration_chunk_end(text, begin, end, limit):
     return stop, sentence_boundary
 
 
-def narration_units(text, paragraphs=None, limit=240):
+def narration_units(text, paragraphs=None, limit=180):
     """Keep punctuation/context together; split only paragraphs or bounded chunks."""
     utf16 = [0]
     for char in text:
@@ -263,8 +263,7 @@ def kokoro_chunks(text, directory, profile, speed, paragraphs):
     for start, sentence, pause in narration_units(text, paragraphs):
         # Soft line wraps must not become pauses in the model's input. Keeping
         # one character per whitespace preserves the source word-cue offsets.
-        spoken = re.sub(r'\s', ' ', sentence)
-        samples, rate = voice.create(spoken, voice=PROFILES[profile][0], speed=speed, lang='en-us')
+        samples, rate = voice.create(re.sub(r'\s', ' ', sentence), voice=PROFILES[profile][0], speed=speed, lang='en-us')
         if rate != 24000:
             raise RuntimeError('Unexpected Kokoro sample rate.')
         audio = (np.clip(samples, -1, 1) * 32767).astype('<i2').tobytes()
