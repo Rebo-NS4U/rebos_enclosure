@@ -23,7 +23,7 @@ def main():
         if len(sys.argv) > 1 and sys.argv[1] in ("typing_speech.qml", "typing_reader_settings.qml"):
             (target / "scripts/reader_speech.py").write_text(
                 "import json,sys,time\n"
-                "if '--status' in sys.argv: print(json.dumps({'kokoro': True, 'voices': [{'id': 'kokoro-' + v.lower(), 'title': v} for v in ['Heart','Bella','Michael','Fenrir']]}))\n"
+                "if '--status' in sys.argv: print(json.dumps({'kokoro': True, 'voices': [{'id': 'kokoro-' + v.lower(), 'title': v} for v in ['Heart','Bella','Michael','Puck']]}))\n"
                 "else: time.sleep(30)\n")
         if len(sys.argv) > 1 and sys.argv[1] in ("typing_speech_continuous.qml", "typing_speech_limits.qml", "typing_speech_pause.qml"):
             # Exercise real book navigation with deterministic completed/failed

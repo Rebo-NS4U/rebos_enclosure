@@ -24,7 +24,7 @@ PROFILES = {
     'kokoro-heart': ('af_heart', 'Heart'),
     'kokoro-bella': ('af_bella', 'Bella'),
     'kokoro-michael': ('am_michael', 'Michael'),
-    'kokoro-fenrir': ('am_fenrir', 'Fenrir'),
+    'kokoro-puck': ('am_puck', 'Puck'),
 }
 KOKORO = 'kokoro-onnx==0.4.7'
 KOKORO_ASSETS = {

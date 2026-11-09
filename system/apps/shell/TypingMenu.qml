@@ -67,7 +67,7 @@ Item {
         savedReaderState = state || {};
         if (typeof state.readingMode === "boolean") readingMode = state.readingMode;
         if (typeof state.fullscreen === "boolean") fullscreen = state.fullscreen;
-        if (["kokoro-heart", "kokoro-bella", "kokoro-michael", "kokoro-fenrir"].includes(state.speechProfile)) speechProfile = state.speechProfile;
+        if (["kokoro-heart", "kokoro-bella", "kokoro-michael", "kokoro-puck"].includes(state.speechProfile)) speechProfile = state.speechProfile;
         if (state.speechRate >= 0.75 && state.speechRate <= 1.5) speechRate = state.speechRate;
         if (speechLimitModes.some(mode => mode.value === state.speechLimitMode)) speechLimitMode = state.speechLimitMode;
         if (state.speechChapterCount >= 1 && state.speechChapterCount <= 100) speechChapterCount = state.speechChapterCount;
