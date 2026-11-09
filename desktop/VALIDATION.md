@@ -240,3 +240,11 @@ On 2026-11-08 the live shell crash report identified Quickshell 0.3.2 / Qt 6.12.
 ## Repository check repair — 2026-11-08
 
 Refactored EPUB chapter extraction, page formatting, speech chunking/playback, and administrator-dialog window setup to satisfy the existing design limits. Removed an unused lookup exception binding and one obsolete design exception; no warning ceilings were increased. The speech renderer groups optional playback settings in `RenderOptions`; its CLI remains unchanged. All 436 desktop and 87 media tests passed, along with Ruff, the pinned Pylint 4.1.3 design/exception gate, native helper builds, installer shell syntax, and payload verification. Changed shell scripts match the installed copies; no desktop services were restarted.
+
+
+## Speech startup buffering — 2026-11-08
+
+- Reproduced the short-opener starvation pattern with the installed Nicole model: a 12-character heading synthesized in 0.67 seconds and lasted 1.24 seconds, while a following 360-character section required 9.30 seconds to synthesize.
+- Added a six-second startup audio reserve (bounded to 12 chunks), six-slot streaming lookahead, and 180-character synthesis chunks. Soft wraps become spaces for the voice while source offsets remain intact. Updated the prepared-page cache version so old audio is regenerated.
+- A real-model run with a heading and five repeated prose sentences prepared its first audio reserve in 6.73 seconds. Based on measured synthesis arrival times and generated audio durations, its playback schedule had zero predicted buffer underruns. This was a silent synthesis/scheduling measurement, not an acoustic or audible-playback measurement; slower CPUs can still take longer to prepare audio.
+- All 19 focused speech tests passed, including short openers, bounded startup reserves, paragraph lookahead, wrapped-line cues, pause/resume, cancellation, and cached narration. Existing active playback was preserved; subsequent speech launches load the updated helper.
