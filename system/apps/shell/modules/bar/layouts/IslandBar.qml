@@ -58,6 +58,14 @@ Item {
         }
     }
 
+    function closePopupsForTransition(from, to) {
+        // Passive alerts must not dismiss notes belonging to a pinned reader.
+        const passive = ["collapsed", "notification", "osd"];
+        if (passive.indexOf(from) >= 0 && passive.indexOf(to) >= 0) return;
+        FocusGrabManager.clearTopGrab();
+        Visibilities.closeActiveBarPopup();
+    }
+
     function collapse() {
         if (root.currentMode === "collapsed" && !root.retractingToHidden && Visibilities.currentActiveModule === "")
             return;
@@ -75,8 +83,7 @@ Item {
         if (Visibilities.currentActiveModule !== "") {
             Visibilities.currentActiveModule = "";
         }
-        Visibilities.closeActiveBarPopup();
-        FocusGrabManager.clearTopGrab();
+        closePopupsForTransition(root.currentMode, "collapsed");
 
         if (root.openedFromHidden && !root.barAlwaysVisible && root.currentMode !== "collapsed") {
             root.retractingToHidden = true;
@@ -109,8 +116,7 @@ Item {
             }
             return;
         }
-        FocusGrabManager.clearTopGrab();
-        Visibilities.closeActiveBarPopup();
+        closePopupsForTransition(root.currentMode, mode || "dashboard");
         if (root.retractingToHidden) {
             root.retractingToHidden = false;
             retractFinishTimer.stop();
@@ -401,8 +407,7 @@ Item {
     }
 
     onCurrentModeChanged: {
-        FocusGrabManager.clearTopGrab();
-        Visibilities.closeActiveBarPopup();
+        closePopupsForTransition(root.previousMode, root.currentMode);
         GlobalStates.islandOpen = (currentMode !== "collapsed" && currentMode !== "notification" && currentMode !== "osd" && !root.retractingToHidden);
         GlobalStates.islandLauncherOpen = ((currentMode === "apps" || currentMode === "projects") && !root.retractingToHidden);
         GlobalStates.islandStatsOpen = (currentMode === "stats" && !root.retractingToHidden);
