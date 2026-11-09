@@ -182,7 +182,13 @@ StyledRect {
                     Loader {
                         id: wifiLoader
                         anchors.fill: parent
-                        active: root.expandedPanel === 0
+                        // Create once on first use; closing only hides the item.
+                        property bool visited: false
+                        readonly property bool selected: root.expandedPanel === 0
+                        onSelectedChanged: { if (selected) visited = true; }
+                        Component.onCompleted: { if (selected) visited = true; }
+                        active: visited
+                        visible: selected
                         source: "../controls/WifiPanel.qml"
                         asynchronous: true
 
@@ -202,7 +208,13 @@ StyledRect {
                     Loader {
                         id: bluetoothLoader
                         anchors.fill: parent
-                        active: root.expandedPanel === 1
+                        // Create once on first use; closing only hides the item.
+                        property bool visited: false
+                        readonly property bool selected: root.expandedPanel === 1
+                        onSelectedChanged: { if (selected) visited = true; }
+                        Component.onCompleted: { if (selected) visited = true; }
+                        active: visited
+                        visible: selected
                         source: "../controls/BluetoothPanel.qml"
                         asynchronous: true
 
@@ -222,7 +234,13 @@ StyledRect {
                     Loader {
                         id: gpuLoader
                         anchors.fill: parent
-                        active: root.expandedPanel === 2
+                        // Create once on first use; closing only hides the item.
+                        property bool visited: false
+                        readonly property bool selected: root.expandedPanel === 2
+                        onSelectedChanged: { if (selected) visited = true; }
+                        Component.onCompleted: { if (selected) visited = true; }
+                        active: visited
+                        visible: selected
                         source: "../controls/GpuPanel.qml"
                         asynchronous: true
 

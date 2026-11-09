@@ -32,6 +32,11 @@ Item {
         onTriggered: BluetoothService.updateDevices()
     }
 
+    // A cached panel is hidden rather than destroyed when dismissed.
+    onVisibleChanged: {
+        if (!visible) BluetoothService.stopDiscovery();
+    }
+
     Component.onDestruction: {
         BluetoothService.stopDiscovery();
     }

@@ -174,7 +174,8 @@ Item {
                     id: wallpapersTabLoader
                     width: parent.width
                     height: parent.height
-                    active: root.currentTab === 1 || (Config.performance.dashboardPersistTabs && Config.performance.dashboardMaxPersistentTabs > 1) || opacity > 0
+                    // Retain tab state across switches and menu close/open.
+                    active: true
                     sourceComponent: wallpapersComponent
                     visible: root.currentTab === 1
                     opacity: root.currentTab === 1 ? 1 : 0
