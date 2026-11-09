@@ -42,6 +42,20 @@ ShellRoot {
             check(session.codexPreset === "coding", "new chats select dweebo-Do");
             let defaultMode = session.codexPresets.find(item => item.id === session.codexPreset);
             check(defaultMode.name === "dweebo-Do" && defaultMode.model === "gpt-6.1-sol" && defaultMode.effort === "medium", "default selects the Do model and effort");
+            let deep = session.codexPresets.find(item => item.id === "deep");
+            check(deep && deep.model === defaultMode.model && deep.effort === "high", "Deep offers Sol with high reasoning");
+            session.sessionConfigOptions = [
+                {id: "model", currentValue: deep.model},
+                {id: "reasoning_effort", currentValue: "medium"}
+            ];
+            check(!session.codexPresetMatches(deep), "medium reasoning does not match Deep");
+            session.sessionConfigOptions = [
+                {id: "model", currentValue: deep.model},
+                {id: "reasoning_effort", currentValue: "high"}
+            ];
+            check(session.codexPresetMatches(deep), "confirmed high reasoning matches Deep");
+            let deepGuidance = session.standingInstructions(deep, false);
+            check(deepGuidance.some(item => item.text.includes("primary sources") && item.text.includes("verify the requested behavior")), "Deep coding and research guidance reaches the prompt");
             let symphony = session.codexPresets.find(item => item.id === "symphony");
             check(symphony && symphony.model === defaultMode.model, "Symphony uses the existing Codex backend");
             session.currentSessionId = "symphony-test";
