@@ -299,3 +299,5 @@ and use a native prefix check for appended input.
 Chapter selection shows durable completion percentages and progress bars. Completion tracks the union of typed text ranges from this version onward; chapter jumps and reading mode do not mark skipped text complete. Older bookmarks are preserved but cannot reconstruct historical typing coverage.
 
 MOBI import uses Calibre’s `ebook-convert` locally to preserve book metadata and chapter navigation through the EPUB importer. Install `calibre` (included in the core package selection). DRM-protected books are unsupported. Conversion uses temporary files, cleaned up after import, and has a two-minute timeout.
+
+The typer adapts to each output’s logical resolution (Qt handles DPI scaling). Compact and fullscreen panel widths scale within screen bounds; compact row counts shrink on short displays, fullscreen passage text grows up to 1.5×, and narrow-window actions wrap. Pinned reader defaults and minimum sizes are capped to the output. Resizing reflows the passage without navigating or changing its bookmark.

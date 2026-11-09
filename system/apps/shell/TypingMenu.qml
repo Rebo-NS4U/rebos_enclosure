@@ -18,6 +18,14 @@ Item {
     id: root
     signal backRequested()
     signal pinRequested()
+    // Logical pixels: Qt already applies the output's DPI scaling.
+    property real viewportWidth: width
+    property real viewportHeight: height
+    readonly property real displayScale: Math.max(0.8, Math.min(1.5, viewportWidth / 1920))
+    readonly property real contentScale: fullscreen ? Math.max(1, Math.min(displayScale, width / 900, height / 650)) : 1
+    readonly property int compactLineCount: Math.max(2, Math.min(7, Math.floor((viewportHeight - 360) / Math.max(1, passageLineHeight))))
+    readonly property real horizontalInset: fullscreen ? Math.min(40 * contentScale, width * 0.05) : Math.min(24, width * 0.04)
+    readonly property real verticalInset: Math.min(fullscreen ? 24 * contentScale : (practicing ? 12 : 20), height * 0.04)
     property bool pinned: false
     onPinnedChanged: { if (pinned) fullscreen = true; }
     property bool readerStateLoaded: false
@@ -91,7 +99,7 @@ Item {
     readonly property real readerLineHeight: Math.ceil(typingMetrics.height * 1.55)
     readonly property int pageLineLimit: readingMode
         ? Math.max(1, Math.floor(Math.max(0, passageArea.height - 8) / Math.max(1, readerLineHeight)))
-        : fullscreen ? Math.max(1, Math.floor((passageArea.height - 8) / Math.max(1, passageLineHeight))) : 7
+        : fullscreen ? Math.max(1, Math.floor((passageArea.height - 8) / Math.max(1, passageLineHeight))) : compactLineCount
     // Keep both layout and delivery bounded; typing rolls overlapping windows.
     readonly property int layoutLineLimit: readingMode ? Math.max(1, Math.min(36, pageLineLimit)) : Math.max(36, Math.min(72, pageLineLimit + 16))
     onPageLineLimitChanged: fitDelay.restart()
@@ -752,7 +760,7 @@ Item {
     readonly property real chapterProgress: chapterEnd > chapterStart
         ? Math.max(0, Math.min(1, (position + sourceCount(characters(displayedInput).length) - chapterStart) / (chapterEnd - chapterStart))) : 0
     readonly property var passageWords: pageLayout.words
-    readonly property font readingFont: Qt.font({family: Config.theme.font, pixelSize: Config.theme.fontSize + 2, weight: Font.Normal})
+    readonly property font readingFont: Qt.font({family: Config.theme.font, pixelSize: Math.round((Config.theme.fontSize + 2) * contentScale), weight: Font.Normal})
     FontMetrics { id: typingMetrics; font: root.readingFont }
     readonly property rect highlightBounds: {
         const metricsFont = typingMetrics.font;
@@ -1299,7 +1307,7 @@ Item {
     Timer { interval: 5000; running: root.backendStarted; repeat: true; onTriggered: root.saveProgress() }
 
     function status() {
-        return JSON.stringify({animationTiming: animationTiming, animationDuration: Motion.base, glyphCount: Object.keys(glyphItems).length, wordCount: pageLayout.words.length, widthCacheSize: Object.keys(widthCache).length, pageFits: pageFits, loadedCharacters: pageSource.length, readingMode: readingMode, readerAnimationEvents: readerAnimationEvents, readerMotionEnabled: Motion.enabled, chapterCardVisible: chapterCard.visible, chapterTitle: chapterTitle, wordToolsOpen: wordPanel.opened, wordMenuReveal: wordPanel.reveal, wordMenuOpenAnimations: wordPanel.openAnimations, wordMenuCloseAnimations: wordPanel.closeAnimations, noteDirty: noteDirty, noteSaving: noteSaving, progressRevision: bookRevision, progressConflict: progressConflict, wordToolsShortcut: "Ctrl+Space", wordMenuWidth: wordPanel.width, wordMenuHeight: wordPanel.height, typingPanelWidth: menuAnchorItem.width, typingPanelHeight: menuAnchorItem.height, notebookMode: notebookMode, notebookCreating: notebookCreating, notesSection: notebookFilter, definitionsEnabled: definitionsEnabled, notedWordCount: notedTerms.length, practicing: practicing, fullscreen: fullscreen, pageLines: pageLayout.lines, pageLineLimit: pageLineLimit, passageHeight: passageArea.height, renderedHeight: passageFlow.height, fontSize: readingFont.pixelSize, layoutVersion: 9, previousPages: pageHistory.length, activeEffects: activeEffects, effectKind: effectKind, lineTransitions: lineTransitions, pageTransitions: pageTransitions, motionEnabled: Motion.enabled, feedbackEvents: feedbackEvents, focused: answer.activeFocus, turningPage: turningPage, textLength: bookLength,
+        return JSON.stringify({animationTiming: animationTiming, animationDuration: Motion.base, glyphCount: Object.keys(glyphItems).length, wordCount: pageLayout.words.length, widthCacheSize: Object.keys(widthCache).length, pageFits: pageFits, loadedCharacters: pageSource.length, readingMode: readingMode, readerAnimationEvents: readerAnimationEvents, readerMotionEnabled: Motion.enabled, chapterCardVisible: chapterCard.visible, chapterTitle: chapterTitle, wordToolsOpen: wordPanel.opened, wordMenuReveal: wordPanel.reveal, wordMenuOpenAnimations: wordPanel.openAnimations, wordMenuCloseAnimations: wordPanel.closeAnimations, noteDirty: noteDirty, noteSaving: noteSaving, progressRevision: bookRevision, progressConflict: progressConflict, wordToolsShortcut: "Ctrl+Space", wordMenuWidth: wordPanel.width, wordMenuHeight: wordPanel.height, typingPanelWidth: menuAnchorItem.width, typingPanelHeight: menuAnchorItem.height, notebookMode: notebookMode, notebookCreating: notebookCreating, notesSection: notebookFilter, definitionsEnabled: definitionsEnabled, notedWordCount: notedTerms.length, practicing: practicing, fullscreen: fullscreen, pageLines: pageLayout.lines, pageLineLimit: pageLineLimit, passageHeight: passageArea.height, renderedHeight: passageFlow.height, fontSize: readingFont.pixelSize, layoutVersion: 10, contentScale: contentScale, compactLineCount: compactLineCount, viewportWidth: viewportWidth, viewportHeight: viewportHeight, previousPages: pageHistory.length, activeEffects: activeEffects, effectKind: effectKind, lineTransitions: lineTransitions, pageTransitions: pageTransitions, motionEnabled: Motion.enabled, feedbackEvents: feedbackEvents, focused: answer.activeFocus, turningPage: turningPage, textLength: bookLength,
             typed: answer.text.length, selectedCharacters: answer.selectedText.length, position: position, rounds: rounds,
             presets: TypingTexts.passages.length, message: message, busy: busy,
             title: bookTitle, chapters: chapters.length, library: library.length, books: libraryBooks.length, wpm: liveWpm, filePickerActive: filePickerActive});
@@ -1766,7 +1774,7 @@ Item {
                     ColumnLayout {
                         id: notebookToolbar
                         Layout.fillWidth: true
-                        spacing: 6
+                    spacing: 6
                             RowLayout {
                                 objectName: "typing-word-search"
                                 visible: root.notebookBrowsing || root.notebookCreating || (root.wordOptionsExpanded && !root.notebookMode)
@@ -2137,20 +2145,21 @@ Item {
         anchors.fill: parent
         ColumnLayout {
             id: typingLayout
+            objectName: "typing-responsive-layout"
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.top: parent.top
             // Compact typing uses its content height; stretching this layout
             // to the bottom distributes blank space above the chapter card.
-            height: root.practicing && !root.fullscreen ? implicitHeight
+            height: root.practicing && !root.fullscreen ? Math.min(implicitHeight, Math.max(0, parent.height - anchors.topMargin - anchors.bottomMargin))
                 : Math.max(0, parent.height - anchors.topMargin - anchors.bottomMargin)
-            anchors.topMargin: root.fullscreen ? 24 : (root.practicing ? 12 : 20)
-            anchors.bottomMargin: root.fullscreen ? 24 : (root.practicing ? 12 : 20)
-            width: root.fullscreen ? Math.min(720, Math.max(1, parent.width - 80)) : Math.max(1, parent.width - (root.practicing ? 48 : 40))
+            anchors.topMargin: root.verticalInset
+            anchors.bottomMargin: root.verticalInset
+            width: root.fullscreen ? Math.min(960 * root.contentScale, Math.max(1, parent.width - 2 * root.horizontalInset)) : Math.max(1, parent.width - 2 * root.horizontalInset)
             spacing: 12
-            RowLayout {
+            Flow {
                 Layout.fillWidth: true
                 spacing: 6
-                StyledText { text: root.practicing ? root.bookTitle : "Your book library"; textFormat: Text.PlainText; elide: Text.ElideRight; Layout.minimumWidth: 0; font.pixelSize: Styling.fontSize(0); font.weight: Font.DemiBold; Layout.fillWidth: true }
+                StyledText { text: root.practicing ? root.bookTitle : "Your book library"; textFormat: Text.PlainText; elide: Text.ElideRight; width: parent.width; font.pixelSize: Styling.fontSize(0); font.weight: Font.DemiBold }
                 PrimaryTextButton {
                     objectName: "reader-speech"
                     visible: root.readingMode && root.practicing
@@ -2187,9 +2196,10 @@ Item {
                 Layout.fillHeight: true
                 spacing: 12
                 StyledText { visible: !root.practicing && (root.errorMessage.length > 0 || !root.bookId); opacity: root.errorMessage ? 1 : 0.7; color: root.errorMessage ? Colors.error : Colors.overSurface; textFormat: Text.PlainText; text: root.message; Layout.fillWidth: true; wrapMode: Text.Wrap }
-                RowLayout {
+                Flow {
                     visible: !root.practicing
-                    Layout.maximumHeight: 36
+                    Layout.fillWidth: true
+                    spacing: 6
                     TextButton { text: root.busy ? "Loading…" : "Import EPUB / MOBI / PDF"; objectName: "typing-import"; enabled: !root.busy; onClicked: root.openImport() }
                     TextButton { text: "Paste text"; enabled: !root.busy; onClicked: { root.saveProgress(); root.draft = true; root.draftTitle = "Pasted text"; root.draftKind = "book"; paste.text = ""; paste.forceActiveFocus(); } }
                     TextButton { text: root.bookId && !root.draft ? "Resume" : "Start practice"; enabled: !root.busy && (root.draft ? paste.text.trim().length > 0 : root.bookId.length > 0); onClicked: root.start() }
@@ -2425,7 +2435,7 @@ Item {
                     Item {
                         id: passageArea
                         Layout.fillWidth: true
-                        implicitHeight: root.fullscreen ? 0 : 7 * root.passageLineHeight
+                        implicitHeight: root.fullscreen ? 0 : root.compactLineCount * root.passageLineHeight
                         Layout.fillHeight: root.fullscreen
                         Layout.minimumHeight: root.fullscreen ? Math.min(3 * root.passageLineHeight, root.height / 3) : implicitHeight
                         Layout.maximumHeight: root.fullscreen ? Infinity : implicitHeight
@@ -2449,7 +2459,7 @@ Item {
                             anchors.left: parent.left
                             anchors.right: parent.right
                             anchors.verticalCenter: parent.verticalCenter
-                            height: root.fullscreen ? parent.height : Math.min(parent.height, 7 * root.passageLineHeight)
+                            height: root.fullscreen ? parent.height : Math.min(parent.height, root.compactLineCount * root.passageLineHeight)
                             clip: true
                             readonly property real pagePop: root.effectKind === "page" ? root.effectStrength : 0
                             opacity: 1 - pagePop * 0.10

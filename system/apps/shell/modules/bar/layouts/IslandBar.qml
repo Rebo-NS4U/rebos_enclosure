@@ -335,9 +335,13 @@ Item {
     readonly property int contentFadeInDuration: Motion.contentIn
     readonly property int contentFadeOutDuration: Motion.contentOut
 
+    readonly property real typingScale: Math.max(0.8, Math.min(1.5, root.width / 1920))
+    readonly property int typingCompactWidth: Math.max(1, Math.min(640 * typingScale, root.width - 32))
+    readonly property int typingFullscreenWidth: Math.max(1, Math.min(960 * typingScale, root.width - 32))
+
     readonly property int targetWidth: {
         if (root.isExpanded || root.retractingToHidden) {
-            if (root.currentMode === "typing") return root.typingFullscreen ? Math.min(960, root.width - 64) : Math.min(640, root.width - 32);
+            if (root.currentMode === "typing") return root.typingFullscreen ? root.typingFullscreenWidth : root.typingCompactWidth;
             if (root.currentMode === "osd") {
                 return Math.min(270, root.width - 32);
             }
@@ -1028,9 +1032,9 @@ Item {
                 id: readerWindow
                 screen: root.screen
                 title: "rebos_shell Reader"
-                implicitWidth: 720
-                implicitHeight: 900
-                minimumSize: Qt.size(540, 400)
+                implicitWidth: Math.min(720 * root.typingScale, root.width - 32)
+                implicitHeight: Math.min(900 * root.typingScale, root.height - 32)
+                minimumSize: Qt.size(Math.min(360, root.width - 32), Math.min(320, root.height - 32))
                 color: "transparent"
                 BackgroundEffect.blurRegion: BlurRegion { target: readerSurface }
                 StyledRect {
@@ -1050,6 +1054,8 @@ Item {
             ShellWidgets.TypingMenu {
                 id: typingView
                 parent: pinned ? readerWindow.contentItem : islandBody
+                viewportWidth: root.width
+                viewportHeight: root.height
                 menuAnchorItem: pinned ? readerWindow.contentItem : islandBody
                 // Lay out once at the destination size while the body morphs.
                 // Revealing live, shrinking text made opening look like a reflow.
@@ -1057,7 +1063,7 @@ Item {
                 anchors.horizontalCenter: parent.horizontalCenter
                 // Match the typing destination independently of currentMode.
                 // Collapsing the bar must not shrink the parked text viewport.
-                width: pinned ? parent.width : fullscreen ? Math.min(960, root.width - 64) : Math.min(640, root.width - 32)
+                width: pinned ? parent.width : fullscreen ? root.typingFullscreenWidth : root.typingCompactWidth
                 height: pinned ? parent.height : fullscreen ? root.height : Math.min(implicitHeight, root.height - 32)
                 visible: pinned || root.currentMode === "typing"
                 opacity: visible && (pinned || !root.retractingToHidden) ? 1 : 0
