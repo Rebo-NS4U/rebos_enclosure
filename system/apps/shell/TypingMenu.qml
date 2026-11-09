@@ -67,7 +67,7 @@ Item {
         savedReaderState = state || {};
         if (typeof state.readingMode === "boolean") readingMode = state.readingMode;
         if (typeof state.fullscreen === "boolean") fullscreen = state.fullscreen;
-        if (["kokoro-nicole", "kokoro-heart", "kokoro-bella", "kokoro-sarah", "kokoro-kore"].includes(state.speechProfile)) speechProfile = state.speechProfile;
+        if (["kokoro-heart", "kokoro-bella", "kokoro-michael", "kokoro-fenrir"].includes(state.speechProfile)) speechProfile = state.speechProfile;
         if (state.speechRate >= 0.75 && state.speechRate <= 1.5) speechRate = state.speechRate;
         if (speechLimitModes.some(mode => mode.value === state.speechLimitMode)) speechLimitMode = state.speechLimitMode;
         if (state.speechChapterCount >= 1 && state.speechChapterCount <= 100) speechChapterCount = state.speechChapterCount;
@@ -121,9 +121,9 @@ Item {
     }
     readonly property string speechHelper: decodeURIComponent(Qt.resolvedUrl("scripts/reader_speech.py").toString().replace("file://", ""))
     property bool kokoroVoiceReady: false
-    property string speechProfile: "kokoro-nicole"
+    property string speechProfile: "kokoro-heart"
     property var speechVoices: []
-    readonly property string speechVoiceName: (speechVoices.find(voice => voice.id === speechProfile) || {title: "Nicole"}).title
+    readonly property string speechVoiceName: (speechVoices.find(voice => voice.id === speechProfile) || {title: "Heart"}).title
     onSpeechProfileChanged: { stopSpeech(); scheduleReaderState(); }
     property real speechRate: 1.05
     property bool speechAutoAdvance: true

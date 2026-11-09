@@ -19,13 +19,12 @@ import sys
 import venv
 import tempfile
 
-VOICE = 'af_nicole'
+VOICE = 'af_heart'
 PROFILES = {
-    'kokoro-nicole': ('af_nicole', 'Nicole'),
     'kokoro-heart': ('af_heart', 'Heart'),
     'kokoro-bella': ('af_bella', 'Bella'),
-    'kokoro-sarah': ('af_sarah', 'Sarah'),
-    'kokoro-kore': ('af_kore', 'Kore'),
+    'kokoro-michael': ('am_michael', 'Michael'),
+    'kokoro-fenrir': ('am_fenrir', 'Fenrir'),
 }
 KOKORO = 'kokoro-onnx==0.4.7'
 KOKORO_ASSETS = {
@@ -42,7 +41,7 @@ def data_dir():
     return Path(os.environ.get('XDG_DATA_HOME', str(Path.home() / '.local/share'))) / 'enclosure/reader-speech'
 
 
-def ready(directory, profile="kokoro-nicole"):
+def ready(directory, profile="kokoro-heart"):
     return (directory / 'venv/bin/python').is_file() and all(
         (directory / 'kokoro' / name).is_file() for name in KOKORO_ASSETS)
 
@@ -68,7 +67,7 @@ def download_model(target, digest):
         temporary.unlink(missing_ok=True)
 
 
-def setup(directory, profile="kokoro-nicole"):
+def setup(directory, profile="kokoro-heart"):
     directory.mkdir(parents=True, exist_ok=True)
     environment = directory / 'venv'
     if not (environment / 'bin/python').exists():
@@ -300,7 +299,7 @@ class RenderOptions:
     prepare: bool = False
 
 
-def render_kokoro(text, directory, output=None, profile="kokoro-nicole", options=None):
+def render_kokoro(text, directory, output=None, profile="kokoro-heart", options=None):
     options = options or RenderOptions()
     cache = cached_page(text, profile, options.speed, options.paragraphs) if options.prepare or output is None else None
     cached = read_cached_page(cache) if cache is not None else None
@@ -434,7 +433,7 @@ def speaking_speed(value):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--profile', choices=tuple(PROFILES), default='kokoro-nicole')
+    parser.add_argument('--profile', choices=tuple(PROFILES), default='kokoro-heart')
     parser.add_argument('--paragraphs', type=json.loads, default=[])
     parser.add_argument('--speed', type=speaking_speed, default=1.05)
     parser.add_argument('--setup', action='store_true')
@@ -470,7 +469,7 @@ def main():
             if args.prepare: command += ['--prepare']
             os.execv(command[0], command + ['--', args.text])
         else:
-            raise RuntimeError('Download Nicole from Reader settings before using Read aloud.')
+            raise RuntimeError('Download voices from Reader settings before using Read aloud.')
 
 
 if __name__ == '__main__':

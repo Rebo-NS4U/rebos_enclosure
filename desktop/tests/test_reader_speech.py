@@ -37,12 +37,12 @@ class SpeechTests(unittest.TestCase):
             self.assertEqual(chunks[0].data, b'\x01\x00' * 100)
             self.assertEqual(len(chunks[1].data), round(24000 * .12 / 1.05) * 2)
             self.assertEqual(chunks[2].cues[0][1], len('First page.\n\n'))
-            key = speech.cached_page(text, 'kokoro-nicole', 1.05, [])
-            for other in [speech.cached_page(text, 'kokoro-heart', 1.05, []), speech.cached_page(text, 'kokoro-nicole', 1.2, []), speech.cached_page(text + 'changed', 'kokoro-nicole', 1.05, []), speech.cached_page(text, 'kokoro-nicole', 1.05, [4])]:
+            key = speech.cached_page(text, 'kokoro-heart', 1.05, [])
+            for other in [speech.cached_page(text, 'kokoro-bella', 1.05, []), speech.cached_page(text, 'kokoro-heart', 1.2, []), speech.cached_page(text + 'changed', 'kokoro-heart', 1.05, []), speech.cached_page(text, 'kokoro-heart', 1.05, [4])]:
                 self.assertNotEqual(key, other)
                 self.assertIsNone(speech.read_cached_page(other))
             for i in range(5):
-                speech.store_cached_page(speech.cached_page(str(i), 'kokoro-nicole', 1.05, []), chunks)
+                speech.store_cached_page(speech.cached_page(str(i), 'kokoro-heart', 1.05, []), chunks)
             self.assertEqual(len(list(key.parent.glob('*.json'))), 3)
 
     def test_ready_requires_runtime_and_both_assets(self):
@@ -71,7 +71,7 @@ class SpeechTests(unittest.TestCase):
 
     def test_missing_voice_does_not_download_or_fallback(self):
         with patch.object(sys, 'argv', ['reader_speech.py', '--', 'Hello']), patch.object(speech, 'ready', return_value=False), patch.object(speech, 'setup') as setup:
-            with self.assertRaisesRegex(RuntimeError, 'Download Nicole'):
+            with self.assertRaisesRegex(RuntimeError, 'Download voices'):
                 speech.main()
         setup.assert_not_called()
 
@@ -188,8 +188,8 @@ class SpeechTests(unittest.TestCase):
         numpy.clip.return_value.__mul__.return_value.astype.return_value.tobytes.return_value = b'\x01\x00' * 100
         text = '😀 First line\ncontinues here.'
         with patch.dict(sys.modules, {'kokoro_onnx': module, 'numpy': numpy}):
-            chunk = list(speech.kokoro_chunks(text, Path('/unused'), 'kokoro-nicole', 1.05, []))[0]
-        engine.create.assert_called_once_with(text.replace('\n', ' '), voice='af_nicole', speed=1.05, lang='en-us')
+            chunk = list(speech.kokoro_chunks(text, Path('/unused'), 'kokoro-heart', 1.05, []))[0]
+        engine.create.assert_called_once_with(text.replace('\n', ' '), voice='af_heart', speed=1.05, lang='en-us')
         self.assertEqual(chunk.cues, speech.word_cues(text, 100 / 24000))
 
     def test_pause_freezes_clock_and_signals_only_the_audio_player(self):

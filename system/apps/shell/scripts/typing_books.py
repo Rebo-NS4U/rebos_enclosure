@@ -522,7 +522,7 @@ class Library:
                 'fullscreen': lambda v: isinstance(v, bool),
                 'practicing': lambda v: isinstance(v, bool),
                 'bookId': lambda v: isinstance(v, str) and len(v) <= 128,
-                'speechProfile': lambda v: v in ('kokoro-nicole', 'kokoro-heart', 'kokoro-bella', 'kokoro-sarah', 'kokoro-kore'),
+                'speechProfile': lambda v: v in ('kokoro-heart', 'kokoro-bella', 'kokoro-michael', 'kokoro-fenrir'),
                 'speechRate': lambda v: type(v) in (int, float) and 0.75 <= v <= 1.5,
                 'speechLimitMode': lambda v: v in ('none', 'page', 'chapter', 'chapters', 'time'),
                 'speechChapterCount': lambda v: type(v) is int and 1 <= v <= 100,

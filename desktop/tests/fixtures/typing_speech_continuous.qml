@@ -29,7 +29,7 @@ ShellRoot {
                 }
                 if (phase === 1) {
                     if (menu.busy || !menu.bookId || !menu.passage.length || ++hold < 5) return;
-                    if (menu.speechProfile !== "kokoro-nicole") throw Error("Kokoro Nicole preset is not default");
+                    if (menu.speechProfile !== "kokoro-heart") throw Error("Kokoro Heart preset is not default");
                     menu.toggleSpeech(); phase++; return;
                 }
                 if (phase === 2) {
@@ -91,7 +91,7 @@ ShellRoot {
                 if (phase === 11) {
                     if (++hold < 8) return;
                     if (menu.speaking) throw Error("Page-load failure did not cancel continuous narration");
-                    console.log("PASS: Kokoro Nicole default; continuous pages and chapters without skips, end-of-book stop, gap stop, manual navigation, selection-only playback, playback/load error cancellation");
+                    console.log("PASS: Kokoro Heart default; continuous pages and chapters without skips, end-of-book stop, gap stop, manual navigation, selection-only playback, playback/load error cancellation");
                     Qt.quit();
                 }
             } catch (error) { console.error(error); Qt.exit(1); }

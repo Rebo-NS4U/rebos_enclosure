@@ -21,8 +21,8 @@ ShellRoot {
                 menu.pageSource = "A gentle morning with many words to read. ".repeat(100);
                 menu.fitPage();
             } else if (step === 1) {
-                if (Quickshell.env("ENCLOSURE_READER_SPEECH_DIR") && !menu.kokoroVoiceReady) throw Error("Nicole was not detected");
-                if (menu.speechProfile !== "kokoro-nicole" || menu.speechRate < 1) throw Error("Nicole/default pace incorrect");
+                if (Quickshell.env("ENCLOSURE_READER_SPEECH_DIR") && !menu.kokoroVoiceReady) throw Error("Heart was not detected");
+                if (menu.speechProfile !== "kokoro-heart" || menu.speechRate < 1) throw Error("Heart/default pace incorrect");
                 menu.toggleSpeech();
             } else if (step === 2) {
                 if (!menu.speaking || menu.speechText !== menu.passage.trim()) throw Error("Page speech did not start");

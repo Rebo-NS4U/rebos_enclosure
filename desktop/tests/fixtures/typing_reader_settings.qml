@@ -20,7 +20,7 @@ ShellRoot {
             try {
                 if (phase === 0) {
                     menu.practicing = true; menu.readingMode = true;
-                    menu.pageSource = "A cleaner reader with Nicole. ".repeat(100); menu.fitPage();
+                    menu.pageSource = "A cleaner reader with Heart. ".repeat(100); menu.fitPage();
                 } else if (phase === 1) {
                     const button = find(menu, "typing-reader-actions");
                     input.mouseClick(button, button.width / 2, button.height / 2);
@@ -35,17 +35,17 @@ ShellRoot {
                     }
                     if (menu.speechRate !== 1.05) throw Error("Default speed is not faster");
                     const select = find(settings.contentItem, "reader-voice-select");
-                    if (select.count !== 5 || select.currentText !== "Nicole") throw Error("Quality voice list/default incorrect");
+                    if (select.count !== 4 || select.currentText !== "Heart") throw Error("Quality voice list/default incorrect");
                     input.mouseClick(select, select.width / 2, select.height / 2);
                 } else if (phase === 3) {
                     const select = find(menu.readerMenu.contentItem, "reader-voice-select");
                     const list = select.popup.contentItem;
                     if (!select.popup.visible || list.mapToItem(menu.readerMenu.contentItem, 0, 0).y + list.height > menu.readerMenu.height) throw Error("Voice dropdown is clipped: y=" + list.mapToItem(menu.readerMenu.contentItem, 0, 0).y + " height=" + list.height + " window=" + menu.readerMenu.height);
-                    const heart = list.itemAtIndex(1);
+                    const heart = list.itemAtIndex(2);
                     input.mouseClick(heart, heart.width / 2, heart.height / 2);
                 } else if (phase === 4) {
                     if (!menu.readerMenu.visible) throw Error("Voice change dismissed settings");
-                    if (menu.speechProfile !== "kokoro-heart") throw Error("Voice selection did not work");
+                    if (menu.speechProfile !== "kokoro-michael") throw Error("Voice selection did not work");
                     find(menu.readerMenu.contentItem, "reader-voice-preview").clicked();
                     if (!menu.speaking || menu.speechContinuous) throw Error("Preview did not start bounded playback");
                     find(menu.readerMenu.contentItem, "reader-voice-preview").clicked();
