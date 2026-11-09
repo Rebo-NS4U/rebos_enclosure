@@ -71,7 +71,7 @@ class Prompt:  # pylint: disable=too-many-instance-attributes
 
     # Quality exception: Declarative widget construction is kept in layout order; statement count is not control-flow complexity.
     # Numeric ceilings are enforced by desktop/scripts/quality.py.
-    def activate(self, app):  # pylint: disable=too-many-statements
+    def create_window(self, app):
         self.window = Gtk.ApplicationWindow(application=app)
         self.window.set_title("Administrator password" if self.args.mode == "password" else "Administrator approval")
         self.window.set_default_size(600 if self.args.mode == "approve" else 440, -1)
@@ -82,6 +82,9 @@ class Prompt:  # pylint: disable=too-many-instance-attributes
         keyboard = Gtk.EventControllerKey()
         keyboard.connect("key-pressed", self.key_pressed)
         self.window.add_controller(keyboard)
+
+    def activate(self, app):
+        self.create_window(app)
         overlay = Gtk.Overlay()
         overlay.add_css_class("panel")
         overlay.set_overflow(Gtk.Overflow.HIDDEN)

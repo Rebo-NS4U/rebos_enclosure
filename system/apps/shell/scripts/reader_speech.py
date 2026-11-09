@@ -162,7 +162,29 @@ def word_cues(text, duration, offset=0):
     return cues
 
 
-def narration_units(text, paragraphs=None, limit=450):
+def narration_chunk_end(text, begin, end, limit):
+    """Prefer sentence boundaries, then whitespace, for a bounded speech chunk."""
+    stop = end
+    sentence_boundary = False
+    if end - begin > limit:
+        window = text[begin:begin + limit]
+        candidates = []
+        for match in re.finditer(r'[.!?]["\'”’)]*(?=\s)', window):
+            prefix = window[:match.end()].rstrip('"\'”’)')
+            if re.search(r'(?:\b(?:Mr|Mrs|Ms|Dr|Prof|Sr|Jr|St|vs|etc)|\b[A-Z])\.$', prefix):
+                continue
+            if match.end() >= limit // 3:
+                candidates.append(match.end())
+        if candidates:
+            stop = begin + candidates[-1]
+            sentence_boundary = True
+        else:
+            space = window.rfind(' ')
+            stop = begin + (space if space > 0 else limit)
+    return stop, sentence_boundary
+
+
+def narration_units(text, paragraphs=None, limit=240):
     """Keep punctuation/context together; split only paragraphs or bounded chunks."""
     utf16 = [0]
     for char in text:
@@ -180,23 +202,7 @@ def narration_units(text, paragraphs=None, limit=450):
             begin += 1
         end = len(text[:end].rstrip())
         while begin < end:
-            stop = end
-            sentence_boundary = False
-            if end - begin > limit:
-                window = text[begin:begin + limit]
-                candidates = []
-                for match in re.finditer(r'[.!?]["\'”’)]*(?=\s)', window):
-                    prefix = window[:match.end()].rstrip('"\'”’)')
-                    if re.search(r'(?:\b(?:Mr|Mrs|Ms|Dr|Prof|Sr|Jr|St|vs|etc)|\b[A-Z])\.$', prefix):
-                        continue
-                    if match.end() >= limit // 3:
-                        candidates.append(match.end())
-                if candidates:
-                    stop = begin + candidates[-1]
-                    sentence_boundary = True
-                else:
-                    space = window.rfind(' ')
-                    stop = begin + (space if space > 0 else limit)
+            stop, sentence_boundary = narration_chunk_end(text, begin, end, limit)
             units.append((begin, text[begin:stop], 0.18 if sentence_boundary else 0.04))
             begin = stop
             while begin < end and text[begin].isspace():
@@ -216,7 +222,7 @@ def cached_page(text, profile, speed, paragraphs):
     base.mkdir(mode=0o700, exist_ok=True)
     if base.is_symlink() or base.stat().st_uid != os.getuid() or base.stat().st_mode & 0o077:
         raise RuntimeError('Reader audio cache must be private.')
-    key = json.dumps([1, text, profile, speed, paragraphs or []], ensure_ascii=True)
+    key = json.dumps([2, text, profile, speed, paragraphs or []], ensure_ascii=True)
     return base / (hashlib.sha256(key.encode()).hexdigest() + '.json')
 
 
@@ -247,49 +253,130 @@ def store_cached_page(path, chunks):
         if temporary is not None: temporary.unlink(missing_ok=True)
 
 
-def render_kokoro(text, directory, output=None, profile="kokoro-nicole", speed=1.05, paragraphs=None, control=None, prepare=False):
-    cache = cached_page(text, profile, speed, paragraphs) if prepare or output is None else None
-    cached = read_cached_page(cache) if cache is not None else None
-    if cached is not None:
-        if not prepare: return play_audio(cached, 24000, output, control)
-        return
+def kokoro_chunks(text, directory, profile, speed, paragraphs):
     import numpy as np
     from kokoro_onnx import Kokoro
     models = directory / 'kokoro'
     voice = Kokoro(str(models / 'kokoro-v1.0.onnx'), str(models / 'voices-v1.0.bin'))
-    name = PROFILES[profile][0]
-    def chunks():
-        # Multiple sentences share one model call for natural punctuation and
-        # abbreviations. Explicit silence is only for actual chunk/paragraph joins.
-        for start, sentence, pause in narration_units(text, paragraphs):
-            samples, rate = voice.create(sentence, voice=name, speed=speed, lang='en-us')
-            if rate != 24000:
-                raise RuntimeError('Unexpected Kokoro sample rate.')
-            audio = (np.clip(samples, -1, 1) * 32767).astype('<i2').tobytes()
-            offset = len(text[:start].encode('utf-16-le')) // 2
-            yield TimedAudio(audio, word_cues(sentence, len(audio) / (2 * rate), offset))
-            if pause:
-                yield bytes(round(rate * pause / speed) * 2)
-    if prepare:
-        store_cached_page(cache, chunks())
+    # Multiple sentences share one model call for natural punctuation and
+    # abbreviations. Explicit silence is only for actual chunk/paragraph joins.
+    for start, sentence, pause in narration_units(text, paragraphs):
+        # Soft line wraps must not become pauses in the model's input. Keeping
+        # one character per whitespace preserves the source word-cue offsets.
+        spoken = re.sub(r'\s', ' ', sentence)
+        samples, rate = voice.create(spoken, voice=PROFILES[profile][0], speed=speed, lang='en-us')
+        if rate != 24000:
+            raise RuntimeError('Unexpected Kokoro sample rate.')
+        audio = (np.clip(samples, -1, 1) * 32767).astype('<i2').tobytes()
+        yield TimedAudio(audio, word_cues(sentence, len(audio) / (2 * rate),
+                                         len(text[:start].encode('utf-16-le')) // 2))
+        if pause:
+            yield bytes(round(rate * pause / speed) * 2)
+
+
+def buffered_start(chunks, rate, seconds=6.0, max_chunks=12):
+    """Prepare a speech reserve before a short heading can start playback.
+
+    The rest stays streaming: a bounded queue prepares several chunks ahead
+    while PipeWire plays, rather than using a paragraph pause as a queue slot.
+    """
+    chunks = iter(chunks)
+    initial = []
+    duration = 0.0
+    for chunk in chunks:
+        initial.append(chunk)
+        data = chunk.data if isinstance(chunk, TimedAudio) else chunk
+        duration += len(data) / (2 * rate)
+        if duration >= seconds or len(initial) >= max_chunks:
+            break
+    yield from initial
+    yield from chunks
+
+
+@dataclass(frozen=True)
+class RenderOptions:
+    speed: float = 1.05
+    paragraphs: list | None = None
+    control: PlaybackControl | None = None
+    prepare: bool = False
+
+
+def render_kokoro(text, directory, output=None, profile="kokoro-nicole", options=None):
+    options = options or RenderOptions()
+    cache = cached_page(text, profile, options.speed, options.paragraphs) if options.prepare or output is None else None
+    cached = read_cached_page(cache) if cache is not None else None
+    if cached is not None:
+        if not options.prepare: return play_audio(cached, 24000, output, options.control)
+        return
+    if options.prepare:
+        store_cached_page(cache, kokoro_chunks(text, directory, profile, options.speed, options.paragraphs))
     else:
-        return play_audio(chunks(), 24000, output, control)
+        chunks = kokoro_chunks(text, directory, profile, options.speed, options.paragraphs)
+        return play_audio(chunks if output else buffered_start(chunks, 24000), 24000, output, options.control)
+
+
+def write_audio_file(chunks, rate, output):
+    import wave
+    with wave.open(str(output), 'wb') as wav:
+        wav.setnchannels(1)
+        wav.setsampwidth(2)
+        wav.setframerate(rate)
+        for chunk in chunks:
+            wav.writeframes(chunk.data if isinstance(chunk, TimedAudio) else chunk)
+
+
+def stream_audio(stream, timeline, control, player, rate):
+    buffered, finished = stream
+    audio_end = 0.0
+    while True:
+        chunk = buffered.get()
+        if chunk is finished:
+            break
+        if isinstance(chunk, Exception):
+            raise chunk
+        data = chunk.data if isinstance(chunk, TimedAudio) else chunk
+        # Account for synthesis gaps, the pipe's backpressure, and the
+        # player's 100 ms buffer instead of timing from process startup.
+        origin = max(audio_end, control.now() + 0.1)
+        if isinstance(chunk, TimedAudio):
+            timeline.put((origin, chunk.cues))
+        audio_end = origin + len(data) / (2 * rate)
+        player.stdin.write(data)
+        player.stdin.flush()
+
+
+def emit_audio_words(timeline, control, cancelled):
+    while not cancelled.is_set():
+        try:
+            item = timeline.get(timeout=0.1)
+        except queue.Empty:
+            continue
+        origin, cues = item
+        for at, start, end in cues:
+            if not control.wait_until(origin + at, cancelled):
+                return
+            print(json.dumps({'start': start, 'end': end}), flush=True)
+
+
+def stop_audio_player(player, control):
+    if player is not None and player.poll() is None:
+        control.set_paused(False)
+        player.terminate()
+        try:
+            player.wait(timeout=2)
+        except subprocess.TimeoutExpired:
+            player.kill()
+            player.wait()
 
 
 def play_audio(chunks, rate, output=None, control=None):
     control = control or PlaybackControl()
     if output:
-        import wave
-        with wave.open(str(output), 'wb') as wav:
-            wav.setnchannels(1)
-            wav.setsampwidth(2)
-            wav.setframerate(rate)
-            for chunk in chunks:
-                wav.writeframes(chunk.data if isinstance(chunk, TimedAudio) else chunk)
+        write_audio_file(chunks, rate, output)
         return
     player = None
     cancelled = threading.Event()
-    buffered = queue.Queue(maxsize=1)
+    buffered = queue.Queue(maxsize=6)
     finished = object()
     def produce_audio():
         try:
@@ -315,18 +402,7 @@ def play_audio(chunks, rate, output=None, control=None):
                 pass
     producer = threading.Thread(target=produce_audio, daemon=True)
     timeline = queue.Queue()
-    def emit_words():
-        while not cancelled.is_set():
-            try:
-                item = timeline.get(timeout=0.1)
-            except queue.Empty:
-                continue
-            origin, cues = item
-            for at, start, end in cues:
-                if not control.wait_until(origin + at, cancelled):
-                    return
-                print(json.dumps({'start': start, 'end': end}), flush=True)
-    clock = threading.Thread(target=emit_words, daemon=True)
+    clock = threading.Thread(target=emit_audio_words, args=(timeline, control, cancelled), daemon=True)
     clock.start()
     previous = signal.getsignal(signal.SIGTERM)
     def cancel(signum, frame):
@@ -338,35 +414,13 @@ def play_audio(chunks, rate, output=None, control=None):
                                    '--channels', '1', '--format', 's16',
                                    '--media-role', 'Accessibility', '-'], stdin=subprocess.PIPE)
         control.attach(player)
-        audio_end = 0.0
-        while True:
-            chunk = buffered.get()
-            if chunk is finished:
-                break
-            if isinstance(chunk, Exception):
-                raise chunk
-            data = chunk.data if isinstance(chunk, TimedAudio) else chunk
-            # Account for synthesis gaps, the pipe's backpressure, and the
-            # player's 100 ms buffer instead of timing from process startup.
-            origin = max(audio_end, control.now() + 0.1)
-            if isinstance(chunk, TimedAudio):
-                timeline.put((origin, chunk.cues))
-            audio_end = origin + len(data) / (2 * rate)
-            player.stdin.write(data)
-            player.stdin.flush()
+        stream_audio((buffered, finished), timeline, control, player, rate)
         player.stdin.close()
         if player.wait() != 0:
             raise RuntimeError('Audio playback failed. Check the audio output.')
     finally:
         cancelled.set()
-        if player is not None and player.poll() is None:
-            control.set_paused(False)
-            player.terminate()
-            try:
-                player.wait(timeout=2)
-            except subprocess.TimeoutExpired:
-                player.kill()
-                player.wait()
+        stop_audio_player(player, control)
         clock.join(timeout=0.5)
         if producer.is_alive(): producer.join(timeout=0.5)
         signal.signal(signal.SIGTERM, previous)
@@ -406,7 +460,8 @@ def main():
             if not args.wav and not args.prepare:
                 threading.Thread(target=control.read_commands, daemon=True).start()
                 print(json.dumps({'ready': True}), flush=True)
-            render_kokoro(args.text, directory, args.wav, args.profile, args.speed, args.paragraphs, control, prepare=args.prepare)
+            render_kokoro(args.text, directory, args.wav, args.profile,
+                          RenderOptions(args.speed, args.paragraphs, control, args.prepare))
             if args.prepare: print(json.dumps({'prepared': True}), flush=True)
         elif ready(directory, args.profile):
             # Replace the launcher so Stop targets the actual synthesis process.

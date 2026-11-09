@@ -182,6 +182,40 @@ def epub_labels(read, package, manifest):
     return labels
 
 
+def epub_anchor_chapters(text, offsets, targets, label):
+    """Map valid EPUB anchors to normalized bookmark positions."""
+    normalized = normalize(text)
+    local = {}
+    for anchor, title in targets:
+        if not anchor:
+            position = 0
+        elif anchor in offsets:
+            # Normalize prefixes without changing existing book IDs/bookmarks.
+            position = len(normalize(text[:offsets[anchor]]))
+            if normalized[position:position + 1] == ' ':
+                position += 1
+        else:
+            continue  # Broken anchors must not create bogus chapter jumps.
+        if position < len(normalized):
+            local.setdefault(position, title)
+    return sorted(local.items()) if local else [(0, label)]
+
+
+def epub_section(raw, member, labels, number):
+    """Extract one spine document and its chapter labels."""
+    parser = AnchoredText(); parser.feed(raw); parser.close()
+    text = ''.join(parser.parts)
+    heading = re.search(r'<h[1-3]\b[^>]*>(.*?)</h[1-3]>', raw, re.S | re.I)
+    heading_text = HeadingText()
+    if heading:
+        heading_text.feed(heading.group(1))
+    targets = [(target.partition('#')[2], label) for target, label in labels.items()
+               if target.partition('#')[0] == member]
+    label = (labels.get(member) or next((label for _, label in targets), '')
+             or normalize(''.join(heading_text.parts)) or f'Section {number}')
+    return (label, text), epub_anchor_chapters(text, parser.offsets(), targets, label)
+
+
 def epub_sections(opf, index, read):
     sections, chapter_groups = [], []
     size = 0
@@ -190,40 +224,14 @@ def epub_sections(opf, index, read):
         entry = index.manifest[item.attrib['idref']]
         if entry.get('media-type') not in ('application/xhtml+xml', 'text/html'): continue
         member = resolve_epub_href(index.package, entry['href'])
-        raw = read(member).decode('utf-8-sig')
-        parser = AnchoredText(); parser.feed(raw); parser.close()
-        text = ''.join(parser.parts)
-        size += len(text)
+        section, group = epub_section(read(member).decode('utf-8-sig'), member,
+                                      index.labels, len(sections) + 1)
+        size += len(section[1])
         if size > LIMIT: raise ValueError('Book exceeds 20 million characters.')
-        heading = re.search(r'<h[1-3]\b[^>]*>(.*?)</h[1-3]>', raw, re.S | re.I)
-        heading_text = HeadingText()
-        if heading: heading_text.feed(heading.group(1))
-        targets = [(target.partition('#')[2], label) for target, label in index.labels.items()
-                   if target.partition('#')[0] == member]
-        label = (index.labels.get(member) or next((label for _, label in targets), '')
-                 or normalize(''.join(heading_text.parts)) or f'Section {len(sections) + 1}')
-        normalized = normalize(text)
-        if not normalized:
+        if not normalize(section[1]):
             continue
-        offsets = parser.offsets()
-        local = {}
-        for anchor, title in targets:
-            if not anchor:
-                position = 0
-            elif anchor in offsets:
-                # Normalize prefixes with the same rules as the complete text.
-                # Keep the complete text intact so existing book IDs and bookmarks survive.
-                position = len(normalize(text[:offsets[anchor]]))
-                if normalized[position:position + 1] == ' ':
-                    position += 1
-            else:
-                continue  # Broken anchors must not create bogus chapter jumps.
-            if position < len(normalized):
-                local.setdefault(position, title)
-        if not local:
-            local[0] = label
-        sections.append((label, text))
-        chapter_groups.append(sorted(local.items()))
+        sections.append(section)
+        chapter_groups.append(group)
     text, file_chapters = join_sections(sections)
     chapters = [{'title': title[:160], 'position': base['position'] + position}
                 for base, group in zip(file_chapters, chapter_groups)
@@ -328,6 +336,49 @@ class Library:
         return self.db.execute('SELECT substr(text, ?, ?) FROM book_content WHERE id=?',
                                (start + 1, max(0, end - start), key)).fetchone()[0]
 
+    @staticmethod
+    def format_typing_page(data, chunk, starts, chapters):
+        # Insert required typing whitespace without moving durable source offsets.
+        boundaries = set(starts)
+        formatted, offsets = [], [0]
+        def append(letter, consumed):
+            formatted.append(letter)
+            offsets.append(consumed)
+        if data['position'] == 0 or data['position'] in boundaries or any(
+                item['position'] == data['position'] for item in chapters):
+            append('\t', 0)
+        for index, letter in enumerate(chunk):
+            if letter == ' ' and index + 1 < len(chunk) and data['position'] + index + 1 in boundaries:
+                append('\n', index + 1)
+                append('\n', index + 1)
+                append('\t', index + 1)
+            else:
+                append(letter, index + 1)
+        if data['typed'] and not data['typed_format']:
+            legacy = data['typed']
+            data['typed'] = ''.join(letter if offsets[index + 1] == offsets[index]
+                                   or (letter == '\n' and legacy[offsets[index]] == ' ')
+                                   else legacy[offsets[index]]
+                                   for index, letter in enumerate(formatted)
+                                   if offsets[index] < len(legacy))
+            if len(legacy) > len(chunk):
+                tail = legacy[len(chunk):]
+                data['typed'] += '\n' if tail == ' ' else tail
+        data['passage'] = ''.join(formatted)
+        data['sourceOffsets'] = offsets
+        data['paragraphStarts'] = []  # The typing target now carries explicit separators.
+
+    def page_end(self, key, data, chapters):
+        end = min([data['position'] + self.window] + [chapter['position'] for chapter in chapters
+                  if chapter['position'] > data['position']])
+        if self.paragraph_mode:
+            row = self.db.execute('SELECT starts FROM book_paragraphs WHERE id=?', (key,)).fetchone()
+            if row:
+                following = [offset for offset in json.loads(row[0]) if offset > data['position']]
+                if following:
+                    end = min(end, following[0])
+        return end
+
     def page(self, key, include_chapters=True, position=None):
         row = self.db.execute('SELECT c.id,c.title,c.kind,c.size AS length,c.chapters,p.position,p.typed,p.loops,p.revision,p.typed_format FROM book_catalogue c JOIN book_progress p ON p.id=c.id WHERE c.id=?', (key,)).fetchone()
         if row is None: raise ValueError('Book is no longer in the library.')
@@ -337,14 +388,7 @@ class Library:
                 raise ValueError('Invalid book position.')
             data.update(position=position, typed='', typed_format=0)
         chapters = json.loads(data['chapters'])
-        end = min([data['position'] + self.window] + [chapter['position'] for chapter in chapters
-                  if chapter['position'] > data['position']])
-        if self.paragraph_mode:
-            row = self.db.execute('SELECT starts FROM book_paragraphs WHERE id=?', (key,)).fetchone()
-            if row:
-                following = [offset for offset in json.loads(row[0]) if offset > data['position']]
-                if following:
-                    end = min(end, following[0])
+        end = self.page_end(key, data, chapters)
         chunk = self.text_slice(key, data['position'], end)
         boundary = chunk.rfind(' ')
         if end == data['position'] + self.window and end < data['length'] and boundary > 40:
@@ -363,35 +407,7 @@ class Library:
                 chunk = self.text_slice(key, data['position'], data['position'] + len(data['typed']))
             if len(chunk) > 1 and chunk.endswith(' ') and data['position'] + len(chunk) in starts:
                 chunk = chunk[:-1]
-            # Insert required typing whitespace without moving durable source offsets.
-            boundaries = set(starts)
-            formatted, offsets = [], [0]
-            def append(letter, consumed):
-                formatted.append(letter)
-                offsets.append(consumed)
-            if data['position'] == 0 or data['position'] in boundaries or any(
-                    item['position'] == data['position'] for item in chapters):
-                append('\t', 0)
-            for index, letter in enumerate(chunk):
-                if letter == ' ' and index + 1 < len(chunk) and data['position'] + index + 1 in boundaries:
-                    append('\n', index + 1)
-                    append('\n', index + 1)
-                    append('\t', index + 1)
-                else:
-                    append(letter, index + 1)
-            if data['typed'] and not data['typed_format']:
-                legacy = data['typed']
-                data['typed'] = ''.join(letter if offsets[index + 1] == offsets[index]
-                                       or (letter == '\n' and legacy[offsets[index]] == ' ')
-                                       else legacy[offsets[index]]
-                                       for index, letter in enumerate(formatted)
-                                       if offsets[index] < len(legacy))
-                if len(legacy) > len(chunk):
-                    tail = legacy[len(chunk):]
-                    data['typed'] += '\n' if tail == ' ' else tail
-            data['passage'] = ''.join(formatted)
-            data['sourceOffsets'] = offsets
-            data['paragraphStarts'] = []  # The typing target now carries explicit separators.
+            self.format_typing_page(data, chunk, starts, chapters)
         else:
             if data['typed_format']:
                 data['typed'] = data['typed'].replace('\t', '').replace('\n\n', ' ').replace('\n', ' ')

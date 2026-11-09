@@ -19,9 +19,10 @@ def ipc(action, value, runner=subprocess.run):
 def lookup(payload, runner=subprocess.run, call=ipc, sleep=time.sleep, clock=time.monotonic):
     if not isinstance(payload, dict): raise ValueError('Expected a lookup request.')
     token = payload.get('token', '')
+    valid_text = all(isinstance(payload.get(key), str) and 0 < len(payload[key]) <= limit
+                     for key, limit in (('term', 128), ('context', 1000)))
     if (not isinstance(token, str) or not re.fullmatch(r'[A-Za-z0-9_-]{1,48}', token)
-            or not isinstance(payload.get('term'), str) or not 0 < len(payload['term']) <= 128
-            or not isinstance(payload.get('context'), str) or not 0 < len(payload['context']) <= 1000):
+            or not valid_text):
         raise ValueError('Select a word in the current passage first.')
     runner(['systemctl', '--user', 'start', 'rebos-assistant-ui.service'],
            check=True, capture_output=True, timeout=10)
@@ -52,7 +53,7 @@ def main():
     try:
         payload = json.loads(sys.stdin.readline(12000))
         result = lookup(payload)
-    except (ValueError, AttributeError, subprocess.SubprocessError, OSError) as error:
+    except (ValueError, AttributeError, subprocess.SubprocessError, OSError):
         result = {'error': 'Could not complete the assistant lookup. Check the assistant connection.'}
     print(json.dumps(result), flush=True)
 

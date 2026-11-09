@@ -28,7 +28,7 @@ class SpeechTests(unittest.TestCase):
         numpy.clip.return_value.__mul__.return_value.astype.return_value.tobytes.return_value = b'\x01\x00' * 100
         text = 'First page.\n\nNext 😀 paragraph.'
         with tempfile.TemporaryDirectory() as tmp, patch.dict(os.environ, {'XDG_RUNTIME_DIR': tmp}), patch.dict(sys.modules, {'kokoro_onnx': module, 'numpy': numpy}), patch.object(speech, 'play_audio') as play:
-            speech.render_kokoro(text, Path('/unused'), prepare=True)
+            speech.render_kokoro(text, Path('/unused'), options=speech.RenderOptions(prepare=True))
             play.assert_not_called()
             self.assertEqual(engine.create.call_count, 2)
             module.Kokoro.side_effect = AssertionError('Cached playback loaded the model')
@@ -86,7 +86,7 @@ class SpeechTests(unittest.TestCase):
                 numpy.clip.return_value.__mul__.return_value.astype.return_value.tobytes.return_value = b'\x01\x00' * 100
                 with tempfile.TemporaryDirectory() as tmp, patch.dict(sys.modules, {'kokoro_onnx': module, 'numpy': numpy}):
                     output = Path(tmp) / 'voice.wav'
-                    speech.render_kokoro('A sentence.', Path('/unused'), output, profile, speed=1.15)
+                    speech.render_kokoro('A sentence.', Path('/unused'), output, profile, options=speech.RenderOptions(speed=1.15))
                     with wave.open(str(output)) as wav:
                         self.assertEqual(wav.getframerate(), 24000)
                         self.assertEqual(wav.getnframes(), 100)
@@ -116,7 +116,7 @@ class SpeechTests(unittest.TestCase):
     def test_bounded_chunks_do_not_drop_or_duplicate_text(self):
         text = ('A long sentence with commas, and words that must stay in order; ' * 40).strip()
         units = speech.narration_units(text)
-        self.assertTrue(all(len(body) <= 450 for _, body, _ in units))
+        self.assertTrue(all(len(body) <= 240 for _, body, _ in units))
         self.assertEqual(' '.join(body for _, body, _ in units).split(), text.split())
         self.assertEqual(units[-1][2], 0)
 
@@ -133,6 +133,47 @@ class SpeechTests(unittest.TestCase):
         with patch.object(speech.subprocess, 'Popen', return_value=player):
             speech.play_audio(chunks(), 24000)
         self.assertEqual(player.stdin.write.call_count, 2)
+
+    def test_short_opener_waits_for_following_speech_before_playback(self):
+        generated = []
+        def chunks():
+            for index, seconds in enumerate((0.5, 0.12, 8, 8)):
+                generated.append(index)
+                yield speech.TimedAudio(b'\0\0' * round(100 * seconds), [])
+        stream = speech.buffered_start(chunks(), 100)
+        next(stream)
+        self.assertEqual(generated, [0, 1, 2])
+        list(stream)
+        self.assertEqual(generated, [0, 1, 2, 3])
+
+    def test_startup_reserve_is_bounded_and_preserves_short_selection(self):
+        tiny = [speech.TimedAudio(b'\0\0', []) for _ in range(100)]
+        generated = []
+        def chunks():
+            for chunk in tiny:
+                generated.append(chunk)
+                yield chunk
+        stream = speech.buffered_start(chunks(), 24000)
+        next(stream)
+        self.assertEqual(len(generated), 12)
+        self.assertEqual(list(speech.buffered_start(tiny[:1], 24000)), tiny[:1])
+        with self.assertRaisesRegex(RuntimeError, 'synthesis failed'):
+            def broken():
+                yield tiny[0]
+                raise RuntimeError('synthesis failed')
+            next(speech.buffered_start(broken(), 24000))
+
+    def test_wrapped_lines_are_spoken_as_spaces_with_original_word_cues(self):
+        engine = Mock()
+        engine.create.return_value = ('samples', 24000)
+        module = types.SimpleNamespace(Kokoro=Mock(return_value=engine))
+        numpy = MagicMock()
+        numpy.clip.return_value.__mul__.return_value.astype.return_value.tobytes.return_value = b'\x01\x00' * 100
+        text = '😀 First line\ncontinues here.'
+        with patch.dict(sys.modules, {'kokoro_onnx': module, 'numpy': numpy}):
+            chunk = list(speech.kokoro_chunks(text, Path('/unused'), 'kokoro-nicole', 1.05, []))[0]
+        engine.create.assert_called_once_with(text.replace('\n', ' '), voice='af_nicole', speed=1.05, lang='en-us')
+        self.assertEqual(chunk.cues, speech.word_cues(text, 100 / 24000))
 
     def test_pause_freezes_clock_and_signals_only_the_audio_player(self):
         control = speech.PlaybackControl()

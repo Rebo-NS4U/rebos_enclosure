@@ -236,3 +236,7 @@ On 2026-11-08 the live shell crash report identified Quickshell 0.3.2 / Qt 6.12.
 - Speech/settings fixtures use deterministic voice stand-ins in their isolated homes; these checks do not verify real Kokoro audio quality or model downloads. Native desktop access was required for the QML fixtures.
 - Restored empty-page Backspace navigation, queued Backspace handling during page turns, and Unicode deletion without unintended forward scrolling. Synthetic animation probes avoid background autosave races, and speech checks retain background narration when the reader is hidden.
 - Changed shell source files match the installed copies. Payload checksum and whitespace verification passed. No desktop service was manually restarted.
+
+## Repository check repair — 2026-11-08
+
+Refactored EPUB chapter extraction, page formatting, speech chunking/playback, and administrator-dialog window setup to satisfy the existing design limits. Removed an unused lookup exception binding and one obsolete design exception; no warning ceilings were increased. The speech renderer groups optional playback settings in `RenderOptions`; its CLI remains unchanged. All 436 desktop and 87 media tests passed, along with Ruff, the pinned Pylint 4.1.3 design/exception gate, native helper builds, installer shell syntax, and payload verification. Changed shell scripts match the installed copies; no desktop services were restarted.

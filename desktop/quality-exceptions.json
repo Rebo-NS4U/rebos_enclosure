@@ -332,13 +332,6 @@
       "reason": "These fields are widget references, caches, locks or previous samples with distinct names and lifetimes."
     },
     {
-      "path": "system/apps/shell/scripts/assistant_sudo_dialog.py",
-      "object": "Prompt.activate",
-      "symbol": "too-many-statements",
-      "ceiling": 58,
-      "reason": "Declarative widget construction is kept in layout order; statement count is not control-flow complexity."
-    },
-    {
       "path": "system/apps/shell/scripts/bluetooth_pair.py",
       "object": "KeyboardAgent.handle",
       "symbol": "too-many-arguments",
