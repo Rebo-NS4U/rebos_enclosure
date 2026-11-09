@@ -9,6 +9,8 @@ import posixpath
 import re
 import sqlite3
 import sys
+import subprocess
+import tempfile
 import time
 from urllib.parse import unquote, urlparse
 import xml.etree.ElementTree as ET
@@ -253,6 +255,23 @@ def read_epub_details(path):
         labels = epub_labels(read, package, manifest)
         text, chapters = epub_sections(opf, EpubIndex(package, manifest, labels), read)
     return text, chapters, title
+
+def read_mobi_details(path):
+    """Convert locally to EPUB so metadata and chapter navigation share one parser."""
+    with tempfile.TemporaryDirectory(prefix='typing-mobi-') as directory:
+        output = Path(directory) / 'book.epub'
+        try:
+            result = subprocess.run(
+                ['ebook-convert', str(path.resolve()), str(output)],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=120)
+        except FileNotFoundError:
+            raise ValueError('MOBI import requires Calibre (ebook-convert). Install the calibre package.') from None
+        except subprocess.TimeoutExpired:
+            raise ValueError('MOBI conversion timed out. Try a smaller book.') from None
+        if result.returncode or not output.is_file():
+            raise ValueError('Could not read MOBI. The book may be damaged or DRM-protected.')
+        return read_epub_details(output)
+
 
 def read_epub(path):
     text, chapters, _ = read_epub_details(path)
@@ -566,6 +585,8 @@ class Library:
             raise ValueError('Choose a book under 100 MB.')
         if path.suffix.lower() == '.epub':
             text, chapters, title = read_epub_details(path)
+        elif path.suffix.lower() == '.mobi':
+            text, chapters, title = read_mobi_details(path)
         else:
             text, chapters = sections_document(extract_raw(str(path)))
             title = path.stem

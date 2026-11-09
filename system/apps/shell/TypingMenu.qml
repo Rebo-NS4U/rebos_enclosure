@@ -1618,8 +1618,8 @@ Item {
     }
     Process {
         id: pickerProcess
-        command: ["zenity", "--file-selection", "--title=Import EPUB or PDF",
-            "--file-filter=Books | *.epub *.EPUB *.pdf *.docx *.odt *.html *.htm *.xml *.txt *.md *.csv *.json *.log",
+        command: ["zenity", "--file-selection", "--title=Import EPUB, MOBI or PDF",
+            "--file-filter=Books | *.epub *.EPUB *.mobi *.MOBI *.pdf *.docx *.odt *.html *.htm *.xml *.txt *.md *.csv *.json *.log",
             "--file-filter=All files | *"]
         onStarted: pickerWatchdog.stop()
         stdout: StdioCollector {
@@ -2190,7 +2190,7 @@ Item {
                 RowLayout {
                     visible: !root.practicing
                     Layout.maximumHeight: 36
-                    TextButton { text: root.busy ? "Loading…" : "Import EPUB / PDF"; objectName: "typing-import"; enabled: !root.busy; onClicked: root.openImport() }
+                    TextButton { text: root.busy ? "Loading…" : "Import EPUB / MOBI / PDF"; objectName: "typing-import"; enabled: !root.busy; onClicked: root.openImport() }
                     TextButton { text: "Paste text"; enabled: !root.busy; onClicked: { root.saveProgress(); root.draft = true; root.draftTitle = "Pasted text"; root.draftKind = "book"; paste.text = ""; paste.forceActiveFocus(); } }
                     TextButton { text: root.bookId && !root.draft ? "Resume" : "Start practice"; enabled: !root.busy && (root.draft ? paste.text.trim().length > 0 : root.bookId.length > 0); onClicked: root.start() }
                 }
@@ -2273,7 +2273,7 @@ Item {
                 }
                 StyledText {
                     visible: !root.practicing && !root.draft && !root.libraryBooks.length
-                    text: "Your books will appear here. Import an EPUB or PDF to begin."
+                    text: "Your books will appear here. Import an EPUB, MOBI or PDF to begin."
                     Layout.fillWidth: true
                     wrapMode: Text.Wrap
                     opacity: 0.6
@@ -2369,7 +2369,7 @@ Item {
                         id: paste
                         textFormat: TextEdit.PlainText
                         Accessible.name: "Text to practice"
-                        placeholderText: "Paste a book or text here, or import EPUB / PDF…"
+                        placeholderText: "Paste a book or text here, or import EPUB / MOBI / PDF…"
                         onTextChanged: { if (activeFocus && !root.restoring) { root.draft = true; root.draftTitle = "Pasted text"; root.draftKind = "book"; } }
                         background: Item {}
                         placeholderTextColor: Qt.alpha(Colors.overSurface, 0.35)

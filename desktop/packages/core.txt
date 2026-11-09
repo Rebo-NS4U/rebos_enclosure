@@ -99,8 +99,9 @@ ttf-nerd-fonts-symbols
 
 python-charset-normalizer
 
-# Local PDF text extraction for continuous typing
+# Local PDF and MOBI extraction for continuous typing
 poppler
+calibre
 
 # Nicole voice setup uses an isolated Python environment.
 python-pip

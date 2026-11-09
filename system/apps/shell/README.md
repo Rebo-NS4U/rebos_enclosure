@@ -140,7 +140,7 @@ saves after a short pause, every five seconds during typing, when a passage is
 completed, and when the view is closed. Re-importing identical text resumes its
 existing location instead of duplicating the book.
 
-Book mode supports EPUB as well as the existing document formats, up to 100 MB
+Book mode supports EPUB and MOBI as well as the existing document formats, up to 100 MB
 and 20 million extracted characters. EPUB chapters follow the book's spine;
 chapter/part/book/section headings, prologues and epilogues, isolated numbered or
 Roman-numeral headings, and Markdown headings are detected in other formats
@@ -164,7 +164,7 @@ the text in the editor; pasting and document import remain available.
 
 Open typing practice with `t` in a terminal. The shell IPC
 command `rebos_shell run t` also opens it. Repeating `t` closes the panel; reopening resumes the saved book.
-Choose **Import** while typing, or **Import EPUB / PDF** in the library, to open
+Choose **Import** while typing, or **Import EPUB / MOBI / PDF** in the library, to open
 the native file chooser. The bar temporarily releases keyboard and pointer input
 until you select a document or cancel. EPUB and other document formats are
 included in the Books filter. Niri focuses this import dialog automatically.
@@ -297,3 +297,5 @@ Backspace are buffered during page handoffs; glyph updates avoid duplicate work
 and use a native prefix check for appended input.
 
 Chapter selection shows durable completion percentages and progress bars. Completion tracks the union of typed text ranges from this version onward; chapter jumps and reading mode do not mark skipped text complete. Older bookmarks are preserved but cannot reconstruct historical typing coverage.
+
+MOBI import uses Calibre’s `ebook-convert` locally to preserve book metadata and chapter navigation through the EPUB importer. Install `calibre` (included in the core package selection). DRM-protected books are unsupported. Conversion uses temporary files, cleaned up after import, and has a two-minute timeout.

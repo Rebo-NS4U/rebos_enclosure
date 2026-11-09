@@ -5,6 +5,9 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
+import subprocess
+import shutil
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -20,6 +23,51 @@ class Books(unittest.TestCase):
     def tearDown(self):
         self.library.db.close()
         self.temp.cleanup()
+
+    @unittest.skipUnless(shutil.which('ebook-convert'), 'Calibre is not installed')
+    def test_real_mobi_import(self):
+        html = Path(self.temp.name) / 'original.html'
+        html.write_text('<html><head><title>Mobi regression book</title></head><body><h1>Chapter One</h1><p>Hello from a real MOBI book.</p><h1>Chapter Two</h1><p>The next chapter begins here.</p></body></html>')
+        mobi = Path(self.temp.name) / 'real book.mobi'
+        subprocess.run(['ebook-convert', str(html), str(mobi)], check=True,
+                       stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, timeout=120)
+        imported = self.library.handle({'action': 'import', 'path': str(mobi)})
+        self.assertEqual(imported['title'], 'Mobi regression book')
+        self.assertIn('Hello from a real MOBI book.', imported['passage'])
+        self.assertGreaterEqual(len(imported['chapters']), 2)
+
+    def test_mobi_import_preserves_metadata_and_chapters(self):
+        source = Path(self.temp.name) / 'book with spaces.MOBI'
+        source.write_bytes(b'placeholder')
+        outputs = []
+        def convert(args, **kwargs):
+            self.assertEqual(args[:2], ['ebook-convert', str(source.resolve())])
+            output = Path(args[2])
+            outputs.append(output)
+            with zipfile.ZipFile(output, 'w') as book:
+                book.writestr('META-INF/container.xml', '<container><rootfile full-path="book.opf"/></container>')
+                book.writestr('book.opf', '<package xmlns="http://www.idpf.org/2007/opf" xmlns:dc="http://purl.org/dc/elements/1.1/"><metadata><dc:title>Mobi title</dc:title></metadata><manifest><item id="a" href="a.xhtml" media-type="application/xhtml+xml"/></manifest><spine><itemref idref="a"/></spine></package>')
+                book.writestr('a.xhtml', '<h1>Opening chapter</h1><p>Hello MOBI reader.</p>')
+            return subprocess.CompletedProcess(args, 0)
+        with patch('typing_books.subprocess.run', side_effect=convert):
+            imported = self.library.handle({'action': 'import', 'path': source.as_uri()})
+        self.assertEqual(imported['title'], 'Mobi title')
+        self.assertIn('Hello MOBI reader.', imported['passage'])
+        self.assertTrue(imported['chapters'])
+        self.assertFalse(outputs[0].exists())
+        self.assertEqual(source.read_bytes(), b'placeholder')
+
+    def test_mobi_conversion_errors_do_not_add_books(self):
+        source = Path(self.temp.name) / 'bad.mobi'
+        source.write_bytes(b'bad')
+        for failure in (FileNotFoundError(), subprocess.TimeoutExpired('ebook-convert', 120),
+                        subprocess.CompletedProcess([], 1)):
+            with self.subTest(failure=failure):
+                kwargs = {'return_value': failure} if isinstance(failure, subprocess.CompletedProcess) else {'side_effect': failure}
+                with patch('typing_books.subprocess.run', **kwargs):
+                    with self.assertRaises(ValueError):
+                        self.library.handle({'action': 'import', 'path': str(source)})
+        self.assertEqual(self.library.db.execute('SELECT count(*) FROM book_catalogue').fetchone()[0], 0)
 
     def test_chapter_completion_survives_jumps_and_merges_overlaps(self):
         book = self.library.add('Completion', 'a ' * 100, [{'title': 'One', 'position': 0}, {'title': 'Two', 'position': 100}])
