@@ -19,6 +19,12 @@ ShellRoot {
                 if (phase === 2) {
                     if (!reader.pinned || !reader.visible || !reader.enabled || bar.currentMode !== "collapsed") throw Error("Pin did not detach reader");
                     if (reader.Window.window.title !== "rebos_shell Reader") throw Error("Reader did not move to desktop window");
+                    if (!reader.fullscreen) throw Error("Pinned reader must use fullscreen format");
+                    reader.toggleFullscreen();
+                    if (!reader.fullscreen) throw Error("Pinned reader allowed compact format");
+                    reader.fullscreen = false;
+                    if (!reader.fullscreen) throw Error("Restored settings allowed compact pinned format");
+                    if (reader.Window.window.color.a !== 0) throw Error("Pinned window obscures blur");
                     bar.expand("typing");
                     if (bar.currentMode !== "collapsed") throw Error("Opening pinned reader also opened panel");
                     reader.pinRequested(); phase++; return;

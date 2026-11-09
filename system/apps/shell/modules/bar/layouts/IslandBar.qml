@@ -4,6 +4,7 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Widgets
+import Quickshell.Wayland._BackgroundEffect
 import qs.config
 import qs.modules.bar.clock
 import qs.modules.bar.systray
@@ -1031,7 +1032,18 @@ Item {
                 implicitWidth: 720
                 implicitHeight: 900
                 minimumSize: Qt.size(540, 400)
-                color: Colors.surface
+                color: "transparent"
+                BackgroundEffect.blurRegion: BlurRegion { target: readerSurface }
+                StyledRect {
+                    id: readerSurface
+                    objectName: "reader-window-surface"
+                    anchors.fill: parent
+                    variant: "bg"
+                    backgroundOpacity: BarAppearance.panelOpacity(true)
+                    radius: root.cornerRadius
+                    border.width: 1
+                    border.color: Qt.alpha(Colors.primary, 0.28)
+                }
                 visible: typingView.pinned
                 onClosed: { typingView.pinned = false; root.collapse(); }
             }

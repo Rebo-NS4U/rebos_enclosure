@@ -18,11 +18,13 @@ Item {
     signal backRequested()
     signal pinRequested()
     property bool pinned: false
+    onPinnedChanged: { if (pinned) fullscreen = true; }
     property bool practicing: false
     property bool readingMode: false
     readonly property alias modeShortcut: modeSwitchShortcut
     property bool fullscreen: false
     onFullscreenChanged: {
+        if (pinned && !fullscreen) { fullscreen = true; return; }
         readerPageHistory = [];
         stopFeedback();
         fitDelay.restart();
@@ -143,6 +145,7 @@ Item {
         if (practicing) Qt.callLater(() => root.focusPassage());
     }
     function toggleFullscreen() {
+        if (pinned) return;
         fullscreen = !fullscreen;
     }
     function focusPassage() {
@@ -178,7 +181,7 @@ Item {
     function handleEscape() {
         if (wordPanel.opened) { if (!noteDirty && !noteSaving) wordPanel.close(); else wordMessage = "Save or cancel your changes before returning to reading."; return; }
         if (readingMode && readerHelp) { readerHelp = false; return; }
-        if (fullscreen) { fullscreen = false; }
+        if (fullscreen && !pinned) { fullscreen = false; }
         else goBack();
     }
     property bool filePickerActive: false
@@ -1644,7 +1647,7 @@ Item {
                         padding: 6
                         background: StyledRect { variant: "popup"; radius: Config.roundness }
                         ReaderAction { objectName: "typing-mode"; text: root.readingMode ? "Typing mode · Ctrl+Tab" : "Reading mode · Ctrl+Tab"; onClicked: { readerActions.close(); root.toggleReadingMode(); } }
-                        ReaderAction { objectName: "typing-fullscreen"; text: root.fullscreen ? "Compact window · F11" : "Fullscreen · F11"; onClicked: { readerActions.close(); root.toggleFullscreen(); } }
+                        ReaderAction { objectName: "typing-fullscreen"; visible: !root.pinned; text: root.fullscreen ? "Compact window · F11" : "Fullscreen · F11"; onClicked: { readerActions.close(); root.toggleFullscreen(); } }
                         ReaderAction { objectName: "typing-library"; text: "Book library"; enabled: root.practicing; onClicked: { readerActions.close(); root.showLibrary(); } }
                         ReaderAction {
                             objectName: "reader-voice-setup"
