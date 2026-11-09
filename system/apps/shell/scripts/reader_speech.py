@@ -2,6 +2,7 @@
 """Offline reader speech; network access happens only with --setup."""
 import argparse
 import base64
+import difflib
 import json
 import math
 from dataclasses import dataclass
@@ -27,6 +28,7 @@ PROFILES = {
     'kokoro-puck': ('am_puck', 'Puck'),
 }
 KOKORO = 'kokoro-onnx==0.4.7'
+ONNX = 'onnx==1.20.1'
 KOKORO_ASSETS = {
     'kokoro-v1.0.onnx': '7d5df8ecf7d4b1878015a32686053fd0eebe2bc377234608764cc0ef3636a6c5',
     'voices-v1.0.bin': 'bca610b8308e8d99f32e6fe4197e7ec01679264efed0cac9140fe9c29f1fbf7d',
@@ -73,7 +75,7 @@ def setup(directory, profile="kokoro-heart"):
     if not (environment / 'bin/python').exists():
         venv.EnvBuilder(with_pip=True).create(environment)
     python = str(environment / 'bin/python')
-    subprocess.run([python, '-m', 'pip', 'install', KOKORO], check=True)
+    subprocess.run([python, '-m', 'pip', 'install', KOKORO, ONNX], check=True)
     models = directory / 'kokoro'
     models.mkdir(exist_ok=True)
     for name, digest in KOKORO_ASSETS.items():
@@ -145,20 +147,60 @@ class TimedAudio:
     cues: list
 
 
-def word_cues(text, duration, offset=0):
-    """Estimate UTF-16 word boundaries within actual synthesized audio duration."""
+def aligned_cues(text, phonemes, durations, phonemize, offset=0):
+    """Map source words onto the phonemes actually synthesized (40 frames/sec)."""
     words = list(re.finditer(r'\S+', text))
-    weights = [max(1, len(re.sub(r'\W', '', word.group()))) ** 0.65 for word in words]
-    total = sum(weights)
-    elapsed = 0.0
+    pieces = [phonemize(w.group()) for w in words]
+    expected = ' '.join(pieces)
+    # Sentence-context pronunciation can differ from isolated words. Map those
+    # boundaries onto the full utterance without changing its pronunciation.
+    boundaries = {}
+    for tag, a, b, c, d in difflib.SequenceMatcher(None, expected, phonemes, autojunk=False).get_opcodes():
+        for i in range(a, b + 1):
+            boundaries[i] = c + round((d - c) * (i - a) / max(1, b - a))
+    frames = [0.0]
+    for duration in durations:
+        frames.append(frames[-1] + float(duration) / 40)
+    if len(durations) != len(phonemes) + 2:
+        raise RuntimeError('Unexpected Kokoro phoneme timing shape.')
     cues = []
-    for word, weight in zip(words, weights):
-        start = len(text[:word.start()].encode('utf-16-le')) // 2 + offset
-        end = len(text[:word.end()].encode('utf-16-le')) // 2 + offset
-        cues.append((elapsed, start, end))
-        elapsed += duration * weight / total
-    cues.append((duration, -1, -1))
+    at = 0
+    for word, piece in zip(words, pieces):
+        begin = boundaries.get(at, 0)
+        end = boundaries.get(at + len(piece), begin)
+        start16 = len(text[:word.start()].encode('utf-16-le')) // 2 + offset
+        end16 = len(text[:word.end()].encode('utf-16-le')) // 2 + offset
+        if end > begin:
+            # Token zero is the leading silence; punctuation/whitespace stays
+            # unhighlighted until the next spoken word.
+            cues.append((frames[1 + begin], start16, end16))
+            cues.append((frames[1 + end], -1, -1))
+        at += len(piece) + 1
+    cues.append((frames[-1], -1, -1))
     return cues
+
+
+def timing_model(directory):
+    import onnx
+    original = directory / 'kokoro/kokoro-v1.0.onnx'
+    target = directory / 'kokoro/exedus-timed-v1.onnx'
+    if not target.exists():
+        model = onnx.load(str(original))
+        name = '/encoder/Clip_output_0'
+        if not any(name in node.output for node in model.graph.node):
+            raise RuntimeError('This Kokoro export does not expose phoneme durations.')
+        model.graph.output.append(onnx.helper.make_tensor_value_info(name, onnx.TensorProto.FLOAT, None))
+        # Reader views can prepare pages concurrently; publish only a complete
+        # model and give each builder its own temporary file.
+        with tempfile.NamedTemporaryFile(dir=target.parent, suffix='.onnx', delete=False) as stream:
+            temporary = Path(stream.name)
+        try:
+            onnx.save(model, str(temporary))
+            temporary.replace(target)
+        finally:
+            temporary.unlink(missing_ok=True)
+    return target
+
 
 
 def narration_chunk_end(text, begin, end, limit):
@@ -221,7 +263,7 @@ def cached_page(text, profile, speed, paragraphs):
     base.mkdir(mode=0o700, exist_ok=True)
     if base.is_symlink() or base.stat().st_uid != os.getuid() or base.stat().st_mode & 0o077:
         raise RuntimeError('Reader audio cache must be private.')
-    key = json.dumps([2, text, profile, speed, paragraphs or []], ensure_ascii=True)
+    key = json.dumps([3, text, profile, speed, paragraphs or []], ensure_ascii=True)
     return base / (hashlib.sha256(key.encode()).hexdigest() + '.json')
 
 
@@ -255,21 +297,24 @@ def store_cached_page(path, chunks):
 def kokoro_chunks(text, directory, profile, speed, paragraphs):
     import numpy as np
     from kokoro_onnx import Kokoro
-    models = directory / 'kokoro'
-    voice = Kokoro(str(models / 'kokoro-v1.0.onnx'), str(models / 'voices-v1.0.bin'))
-    # Multiple sentences share one model call for natural punctuation and
-    # abbreviations. Explicit silence is only for actual chunk/paragraph joins.
+    engine = Kokoro(str(timing_model(directory)), str(directory / 'kokoro/voices-v1.0.bin'))
     for start, sentence, pause in narration_units(text, paragraphs):
-        # Soft line wraps must not become pauses in the model's input. Keeping
-        # one character per whitespace preserves the source word-cue offsets.
-        samples, rate = voice.create(re.sub(r'\s', ' ', sentence), voice=PROFILES[profile][0], speed=speed, lang='en-us')
-        if rate != 24000:
-            raise RuntimeError('Unexpected Kokoro sample rate.')
+        phonemes = engine.tokenizer.phonemize(re.sub(r'\s', ' ', sentence), 'en-us')
+        tokens = engine.tokenizer.tokenize(phonemes)
+        if len(tokens) > 510:
+            raise RuntimeError('Narration chunk exceeds Kokoro context length.')
+        samples, durations = engine.sess.run(None, {
+            'tokens': [[0, *tokens, 0]],
+            'style': engine.get_voice_style(PROFILES[profile][0])[len(tokens)],
+            'speed': np.array([speed], dtype=np.float32),
+        })
+        cues = aligned_cues(sentence, phonemes, durations.flatten(), engine.tokenizer.phonemize,
+                            len(text[:start].encode('utf-16-le')) // 2)
         audio = (np.clip(samples, -1, 1) * 32767).astype('<i2').tobytes()
-        yield TimedAudio(audio, word_cues(sentence, len(audio) / (2 * rate),
-                                         len(text[:start].encode('utf-16-le')) // 2))
+        yield TimedAudio(audio, cues)
         if pause:
-            yield bytes(round(rate * pause / speed) * 2)
+            yield bytes(round(24000 * pause / speed) * 2)
+
 
 
 def buffered_start(chunks, rate, seconds=6.0, max_chunks=12):

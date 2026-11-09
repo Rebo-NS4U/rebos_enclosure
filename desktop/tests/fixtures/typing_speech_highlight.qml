@@ -57,7 +57,7 @@ ShellRoot {
                 if (phase === 4) {
                     if (menu.speechHighlightStart < 0) return;
                     if (menu.speechHighlightStart < 3 || menu.speechHighlightEnd > 18 || !reader.selectedText) throw Error("Selected-text highlighting lost its source range");
-                    menu.speechProfile = "kokoro-heart";
+                    menu.speechProfile = "kokoro-bella";
                     if (menu.speechHighlightStart !== -1) throw Error("Voice change retained highlight");
                     hold = 0; phase++; return;
                 }

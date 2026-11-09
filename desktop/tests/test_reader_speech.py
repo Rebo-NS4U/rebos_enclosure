@@ -19,10 +19,27 @@ spec = importlib.util.spec_from_file_location('reader_speech', SOURCE)
 speech = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(speech)
 
+def fake_engine():
+    engine = Mock()
+    engine.tokenizer.phonemize.side_effect = lambda text, *args: text
+    engine.tokenizer.tokenize.side_effect = lambda text: list(range(len(text)))
+    engine.get_voice_style.return_value = MagicMock()
+    def run(names, inputs):
+        duration = Mock()
+        duration.flatten.return_value = [1] * len(inputs['tokens'][0])
+        return 'samples', duration
+    engine.sess.run.side_effect = run
+    return engine
+
+
 class SpeechTests(unittest.TestCase):
+    def setUp(self):
+        model = patch.object(speech, 'timing_model', return_value=Path('/unused/timed.onnx'))
+        model.start()
+        self.addCleanup(model.stop)
+
     def test_preloaded_audio_reuses_synthesis_and_retains_word_cues(self):
-        engine = Mock()
-        engine.create.return_value = ('samples', 24000)
+        engine = fake_engine()
         module = types.SimpleNamespace(Kokoro=Mock(return_value=engine))
         numpy = MagicMock()
         numpy.clip.return_value.__mul__.return_value.astype.return_value.tobytes.return_value = b'\x01\x00' * 100
@@ -30,7 +47,7 @@ class SpeechTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp, patch.dict(os.environ, {'XDG_RUNTIME_DIR': tmp}), patch.dict(sys.modules, {'kokoro_onnx': module, 'numpy': numpy}), patch.object(speech, 'play_audio') as play:
             speech.render_kokoro(text, Path('/unused'), options=speech.RenderOptions(prepare=True))
             play.assert_not_called()
-            self.assertEqual(engine.create.call_count, 2)
+            self.assertEqual(engine.sess.run.call_count, 2)
             module.Kokoro.side_effect = AssertionError('Cached playback loaded the model')
             speech.render_kokoro(text, Path('/unused'))
             chunks = play.call_args.args[0]
@@ -79,8 +96,7 @@ class SpeechTests(unittest.TestCase):
         import wave
         for profile, (voice, _) in speech.PROFILES.items():
             with self.subTest(profile=profile):
-                engine = Mock()
-                engine.create.return_value = ('samples', 24000)
+                engine = fake_engine()
                 module = types.SimpleNamespace(Kokoro=Mock(return_value=engine))
                 numpy = MagicMock()
                 numpy.clip.return_value.__mul__.return_value.astype.return_value.tobytes.return_value = b'\x01\x00' * 100
@@ -90,16 +106,9 @@ class SpeechTests(unittest.TestCase):
                     with wave.open(str(output)) as wav:
                         self.assertEqual(wav.getframerate(), 24000)
                         self.assertEqual(wav.getnframes(), 100)
-                engine.create.assert_called_once_with('A sentence.', voice=voice, speed=1.15, lang='en-us')
-
-    def test_word_cues_are_monotonic_utf16_offsets(self):
-        text = '😀 Quiet words, spoken clearly.'
-        cues = speech.word_cues(text, 3.0, offset=7)
-        self.assertEqual(cues[0], (0.0, 7, 9))
-        self.assertEqual(cues[1][1:3], (10, 15))
-        self.assertEqual(cues[-1], (3.0, -1, -1))
-        self.assertEqual([cue[0] for cue in cues], sorted(cue[0] for cue in cues))
-        self.assertTrue(all(0 <= cue[0] <= 3 for cue in cues))
+                engine.get_voice_style.assert_called_once_with(voice)
+                numpy.array.assert_called_once_with([1.15], dtype=numpy.float32)
+                engine.tokenizer.phonemize.assert_any_call('A sentence.', 'en-us')
 
     def test_connected_sentences_abbreviations_and_decimals_stay_together(self):
         text = 'Dr. Smith paid $3.50. "Really?" she asked. Yes, he replied.'
@@ -181,16 +190,15 @@ class SpeechTests(unittest.TestCase):
             next(speech.buffered_start(broken(), 24000))
 
     def test_wrapped_lines_are_spoken_as_spaces_with_original_word_cues(self):
-        engine = Mock()
-        engine.create.return_value = ('samples', 24000)
+        engine = fake_engine()
         module = types.SimpleNamespace(Kokoro=Mock(return_value=engine))
         numpy = MagicMock()
         numpy.clip.return_value.__mul__.return_value.astype.return_value.tobytes.return_value = b'\x01\x00' * 100
         text = '😀 First line\ncontinues here.'
         with patch.dict(sys.modules, {'kokoro_onnx': module, 'numpy': numpy}):
             chunk = list(speech.kokoro_chunks(text, Path('/unused'), 'kokoro-heart', 1.05, []))[0]
-        engine.create.assert_called_once_with(text.replace('\n', ' '), voice='af_heart', speed=1.05, lang='en-us')
-        self.assertEqual(chunk.cues, speech.word_cues(text, 100 / 24000))
+        engine.tokenizer.phonemize.assert_any_call(text.replace('\n', ' '), 'en-us')
+        self.assertEqual(chunk.cues, speech.aligned_cues(text, text.replace('\n', ' '), [1] * (len(text) + 2), lambda word: word))
 
     def test_pause_freezes_clock_and_signals_only_the_audio_player(self):
         control = speech.PlaybackControl()

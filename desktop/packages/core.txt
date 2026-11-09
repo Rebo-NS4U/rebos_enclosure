@@ -103,5 +103,5 @@ python-charset-normalizer
 poppler
 calibre
 
-# Nicole voice setup uses an isolated Python environment.
+# Kokoro voice and ONNX timing setup use an isolated Python environment.
 python-pip

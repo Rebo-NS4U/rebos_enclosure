@@ -664,7 +664,7 @@
   "system/apps/shell/scripts/qs-screen-guard": "395b232bc72def77b4edb6e416f77bf9faad9e025da5f339143b9ef13558bad1",
   "system/apps/shell/scripts/qt_screen_guard.cpp": "5035fb3859f9ff6e2c0b686b91836d2a39904a7134d0e0bd59ceb93cb0225e0a",
   "system/apps/shell/scripts/reader_meaning.py": "9d3a10584fe7ef458bbbffd0c3671291ace582acd6783eb7a08f07af4c564d33",
-  "system/apps/shell/scripts/reader_speech.py": "5302f0ac849ca67f2b568e27e9f9148c4a8cde32b0d6a65b4d33290735a01cba",
+  "system/apps/shell/scripts/reader_speech.py": "46cd9613b2347031725c40b51c3455716d11718e59cbb7c116d8a245236dce4f",
   "system/apps/shell/scripts/rebos-assistant.service": "a8a1e86d172d5a1ad55fe8af7739c6aac11a77924ad1b0cf90d24cdacbcf5de0",
   "system/apps/shell/scripts/rebos-assistant@.service": "dfeabb0ec66abe5b4e1e7a0bf2347201c582a7b3bfbef2563208c763bae93621",
   "system/apps/shell/scripts/rebos-nightlight.service": "88947a3a71b73c96daa5651a1d4e617e29c2fc4de2e6526b83a2d8d730e22c57",
