@@ -129,8 +129,10 @@ local function handle(_, query)
     return encoded
 end
 
-local endpoint = http:file("/session.json", "application/json", "", settings.password, handle, nil)
--- The interface thread only waits; object access belongs to the callback.
-while endpoint do
-    vlc.misc.mwait(vlc.misc.mdate() + 1000000)
-end
+-- Keep the host and endpoint rooted after setup returns, as VLC's stock HTTP
+-- interface does. A Lua timer loop races the HTTP callback's shared Lua state
+-- (including its garbage collector) and can crash inside vlc.misc.mwait.
+media_browser_http = {
+    host = http,
+    endpoint = http:file("/session.json", "application/json", "", settings.password, handle, nil)
+}

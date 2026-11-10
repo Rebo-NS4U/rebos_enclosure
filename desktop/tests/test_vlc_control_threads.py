@@ -18,7 +18,8 @@ package.preload.dkjson = function() return {
 config={port=12345,password="test",fullscreen=true}
 vlc={
  httpd=function() return {file=function(_,_,_,_,_,fn) handler=fn; return {} end} end,
- misc={mdate=function() return 0 end, mwait=function() error("test-wait") end},
+ misc={mdate=function() error("Interface must return after HTTP setup") end,
+       mwait=function() error("Interface must not race HTTP callbacks") end},
  object={input=function() return nil end, vout=function()
   assert(callback, "Interface thread must not acquire VLC objects")
   if available then return {} end
@@ -28,8 +29,8 @@ vlc={
  strings={decode_uri=function(value) return value end},
  var={set=function(_,name,value) assert(callback and name=="fullscreen" and value); fullscreen=fullscreen+1 end}
 }
-local ok,err=pcall(dofile,arg[1])
-assert(not ok and tostring(err):find("test%-wait"), tostring(err))
+dofile(arg[1])
+assert(media_browser_http.host and media_browser_http.endpoint, "HTTP objects must stay rooted")
 callback=true
 assert(handler(nil,"command=load").ok)
 assert(fullscreen==0)

@@ -272,7 +272,7 @@
   "system/apps/media/ui/modules/widgets/dashboard/controls/SettingsComboBox.qml": "126842b46e121d869775923c6215af5d5c170235572ae54046330e38bdd73ae5",
   "system/apps/media/ui/shell.qml": "08264238aba5d6a3379e675e11a637199757b8c1d17855b6f6edc59828db184b",
   "system/apps/media/vendor/ani-cli": "585ecc18d36104053d55ebabde905af207ca12cca19c43d3457920925f3959be",
-  "system/apps/media/vlc_control.lua": "347cbff01b98c1fb3ae0ddeea63b2d8d583f4422a026c9d20e87326724ecd4d3",
+  "system/apps/media/vlc_control.lua": "1275a1f466a34cf4af16dafc827781abc0a01ddab3616ba8c0f08909a86aa365",
   "system/apps/media/vlc_session.py": "8a3d13d93982a8ac37c269c284eefe9072d4776119c618bb51981624090c745e",
   "system/apps/media/vlc_theme.py": "d1758fbf8ea76bb6cd80b6d0de5dcb9957934fd649d79c8d52c4b883a334a08d",
   "system/apps/media/youtube_account.py": "865c663273f66eadf9f0779ec24135a32e922fcf395d958163d0ffb8b64ea259",
