@@ -3,3 +3,4 @@ zen-browser-bin
 spicetify-cli
 visual-studio-code-bin
 mpvpaper
+vlc-pause-click-plugin

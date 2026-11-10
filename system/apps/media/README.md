@@ -22,6 +22,8 @@ npm install --prefix ~/.local/share/anime-streamer/browser playwright
 
 Live transcription is optional and requires the existing Whisper/model setup. Accounts, progress, settings and caches remain in the existing `anime-streamer` user data directories; none are bundled. TorBox credentials and YouTube browser accounts are connected through Settings.
 
+A single left click on the VLC video toggles pause/play when `vlc-pause-click-plugin` is installed. Double-click still toggles fullscreen. Enclosure’s optional media group installs this plugin; standalone installations need to install it separately. Streamer enables the plugin automatically when VLC reports it available.
+
 ## Development
 
 `ui/shell.qml` is the standalone UI entry point. `ui/modules` contains the Dweebo visual components and defaults needed by this app; it does not import the installed shell. `vendor/ani-cli` preserves Enclosure's resolver version. `backend_server.py` and `menu_client.py` communicate over the existing per-user runtime socket.
