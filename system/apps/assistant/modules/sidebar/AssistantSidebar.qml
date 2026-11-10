@@ -2334,8 +2334,10 @@ Item {
                                         }
 
                                         Accessible.name: "Add image"
-                                        ToolTip.visible: hovered
-                                        ToolTip.text: "Choose a picture, paste with Ctrl+V, or drop it here"
+                                        StyledToolTip {
+                                            show: parent.hovered
+                                            tooltipText: "Choose a picture, paste with Ctrl+V, or drop it here"
+                                        }
                                         onClicked: zenityProcess.running = true
                                     }
                                     Button {
