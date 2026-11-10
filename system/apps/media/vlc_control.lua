@@ -111,9 +111,7 @@ local function handle(_, query)
             vlc.misc.quit()
         end
     end)
-    -- HTTP callbacks and the interface loop share one Lua state. Keep VLC
-    -- object references here so callback GC cannot release the loop's vout
-    -- while it is being used on the other thread.
+    -- Apply fullscreen from the HTTP callback once the video output exists.
     if fullscreen_pending then
         local vout = vlc.object.vout()
         if vout then
