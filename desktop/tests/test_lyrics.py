@@ -24,7 +24,10 @@ import qs.modules.services
 import qs.modules.components
 import "modules/services/Lyrics.js" as Parser
 ShellRoot {
- Item { LyricsSection { width: 216 } }
+ Item {
+  LyricsSection { id: menuSection; width: 216 }
+  LyricsSection { id: pinnedSection; width: 540; compact: true }
+ }
  Timer { interval: 600; running: true; onTriggered: {
   try {
    function check(ok, message) { if (!ok) throw Error(message); }
@@ -61,8 +64,27 @@ ShellRoot {
    check(LyricsService.status.includes('No lyrics') && !LyricsService.plain, 'Missing lyrics clears previous song');
    LyricsService.apply('', 'LRCLIB', true);
    check(LyricsService.status.includes('Instrumental'), 'Instrumental state');
-   console.log('PASS: lyrics parsing, priority, fallback, cache, stale requests, seeking and pin controls'); Qt.quit();
+   console.log('PASS: lyrics parsing, priority, fallback, cache, stale requests, seeking and pin controls'); idleCheck.start();
   } catch (error) { console.error(error); Qt.exit(1); }
+ } }
+ Timer { id: idleCheck; interval: 3300; repeat: true; property int phase: 0
+ onTriggered: {
+  try {
+   if (phase === 0) {
+    if (pinnedSection.controlsVisible || pinnedSection.backgroundOpacity !== 0 || !menuSection.controlsVisible)
+     throw Error('Idle view must show lyrics only; menu must remain usable');
+    pinnedSection.revealControls();
+    if (!pinnedSection.controlsVisible) throw Error('Interaction did not reveal options');
+    phase++; return;
+   }
+   if (phase === 1) {
+    if (pinnedSection.controlsVisible) throw Error('Controls did not hide again');
+    pinnedSection.autoHideControls = false;
+    phase++; return;
+   }
+   if (!pinnedSection.controlsVisible || pinnedSection.backgroundOpacity === 0) throw Error('Auto-hide opt-out failed');
+   console.log('PASS: real idle timer, interaction reveal, repeat hide and opt-out'); Qt.quit();
+  } catch(error) { console.error(error); Qt.exit(1); }
  } }
 }
 '''

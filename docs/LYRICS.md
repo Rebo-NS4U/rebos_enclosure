@@ -6,6 +6,13 @@ Unpin closes that card. The card uses the menu's screen, follows the active
 player, hides on the lockscreen, and falls back to the first screen if its
 monitor disconnects. Pin placement lasts for the current shell session.
 
+The pinned card hides its controls, title, attribution and background after
+three seconds without pointer or keyboard activity, leaving only lyrics with
+an outline for contrast. Move the pointer over the card to reveal its options.
+Turn off **Auto-hide** to keep the full card visible. The media menu itself
+always keeps its controls visible. The overlay keeps its size so lyrics do not
+jump when controls disappear; Auto-hide resets when the shell starts.
+
 Player-supplied lyrics take priority, including Spotify lyrics when exposed in
 MPRIS metadata (`xesam:asText`, `xesam:lyrics`, `lyrics`, or `spotify:lyrics`).
 Spotify does not necessarily expose lyrics through its desktop player. No
