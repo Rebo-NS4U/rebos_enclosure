@@ -14,6 +14,7 @@ import qs.modules.shell.osd
 import qs.modules.widgets.dashboard.wallpapers
 import qs.modules.widgets.config
 import qs.config
+import qs.modules.components
 
 ShellRoot {
     id: root
@@ -47,6 +48,8 @@ ShellRoot {
                 id: unifiedPanel
                 targetScreen: screenShellContainer.modelData
             }
+
+            PinnedLyrics { targetScreen: screenShellContainer.modelData }
 
             // Exclusive zone reservations
             ReservationWindows {

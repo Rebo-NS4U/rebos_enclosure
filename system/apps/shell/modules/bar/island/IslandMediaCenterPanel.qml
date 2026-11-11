@@ -641,5 +641,6 @@ Item {
                 }
             }
         }
+        LyricsSection { Layout.fillWidth: true }
     }
 }

@@ -20,7 +20,7 @@ StyledRect {
     visible: true
     radius: playerRadius
 
-    implicitHeight: 400
+    implicitHeight: 400 + lyricsSection.implicitHeight + 12
 
     readonly property bool isDragging: realSeekBar.isDragging
 
@@ -184,7 +184,9 @@ StyledRect {
     // Playback Controls
 
     ColumnLayout {
-        anchors.centerIn: parent
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.top: parent.top
+        anchors.topMargin: Math.max(12, (parent.height - lyricsSection.implicitHeight - implicitHeight) / 2)
         width: parent.width - 32
         spacing: 8
 
@@ -548,6 +550,13 @@ StyledRect {
             font.family: Config.theme.font
             opacity: 0.5
         }
+    }
+
+    LyricsSection {
+        id: lyricsSection
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
     }
 
     // Players List Overlay
