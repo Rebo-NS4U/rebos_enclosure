@@ -62,7 +62,7 @@ layout {
         width 3
     }
     shadow {
-        on
+        off
         softness 50
         spread 12
         offset x=0 y=8
