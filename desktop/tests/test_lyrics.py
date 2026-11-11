@@ -105,7 +105,7 @@ ShellRoot {
    const label = findItem(pinnedSection, 'lyrics-text');
    check(!!label, 'Shared lyrics label exists');
    Config.theme.font = 'monospace'; Config.theme.fontSize = 19;
-   check(label.font.family === Config.theme.font && label.font.pixelSize === 19
+   check(label.font.family === Config.theme.font && label.font.pixelSize === 22
      && label.renderType === Text.NativeRendering, 'Lyrics follow shell font and rendering');
    console.log('PASS: lyrics parsing, priority, fallback, cache, stale requests, seeking and pin controls'); idleCheck.start();
   } catch (error) { console.error(error); Qt.exit(1); }
@@ -187,7 +187,8 @@ ShellRoot {
      throw Error('Backward seek or reduced motion failed');
     LyricsService.apply('Unsynced lyrics stay scrollable', 'Test', false); phase++; return;
    }
-   if (view.synced || !findItem(view, 'lyrics-text').visible) throw Error('Plain lyrics fallback failed');
+   if (view.synced || !findItem(view, 'lyrics-text').visible || !view.hasRows
+     || findItem(view, 'lyric-row-0').current) throw Error('Untimed lyrics must use styled rows without a fabricated current line');
    console.log('PASS: animated forward scroll, row highlighting, manual browsing, backward seek and reduced motion'); Qt.quit();
   } catch (error) { console.error(error); Qt.exit(1); }
  } }

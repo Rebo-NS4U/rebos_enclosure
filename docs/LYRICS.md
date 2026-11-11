@@ -33,7 +33,10 @@ Row colors, scale and control opacity animate using the shell's Motion settings.
 Turning motion off makes scrolling and highlights immediate. Manual scrolling
 pauses auto-follow until four seconds after the gesture ends. Forward and
 backward seeks update the highlighted row. Long lines wrap to fit the card.
-Unsynced lyrics remain scrollable without a fabricated current-line highlight. Missing, instrumental and offline results have explicit states and
+Untimed lyrics use the same larger row typography, tinted row backgrounds and
+animated hover accents. A **TEXT ONLY** badge and a “No timing — scroll to read”
+caption distinguish them from synced lyrics. They remain manually scrollable;
+playback-following highlights require timestamps. Missing, instrumental and offline results have explicit states and
 a Retry button. Requests expire after 12 seconds; old track responses are
 ignored. Successful lookups are cached in memory for up to 40 songs.
 

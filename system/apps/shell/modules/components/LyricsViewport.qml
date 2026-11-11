@@ -8,6 +8,9 @@ Item {
     id: root
     property bool compact: false
     readonly property bool synced: LyricsService.lines.length > 0
+    readonly property var plainRows: LyricsService.plain.split(/\r?\n/)
+        .map(text => ({text: text.trim()})).filter(row => row.text.length > 0)
+    readonly property bool hasRows: synced || plainRows.length > 0
     readonly property int activeIndex: LyricsService.currentLine
     readonly property real followPosition: scroller.contentY
     readonly property bool animating: followAnimation.running
@@ -62,7 +65,7 @@ Item {
         anchors.fill: parent
         clip: true
         contentWidth: width
-        contentHeight: root.synced ? lyricColumn.height : plainText.implicitHeight + 24
+        contentHeight: root.hasRows ? lyricColumn.height : statusText.implicitHeight + 24
         flickableDirection: Flickable.VerticalFlick
         boundsBehavior: Flickable.StopAtBounds
         onMovementStarted: {
@@ -76,29 +79,31 @@ Item {
         }
         Column {
             id: lyricColumn
-            visible: root.synced
+            visible: root.hasRows
             width: scroller.width
-            spacing: 8
-            Item { width: 1; height: root.height / 2 }
+            spacing: root.synced ? 8 : 12
+            Item { width: 1; height: root.synced ? root.height / 2 : 8 }
             Repeater {
                 id: rows
-                model: LyricsService.lines
+                model: root.synced ? LyricsService.lines : root.plainRows
                 delegate: Item {
                     id: row
                     required property var modelData
                     required property int index
-                    readonly property bool current: root.activeIndex === index
+                    readonly property bool current: root.synced && root.activeIndex === index
+                    readonly property bool emphasized: current || (!root.synced && rowHover.hovered)
                     objectName: "lyric-row-" + index
                     width: lyricColumn.width
                     height: Math.max(48, lyricText.implicitHeight + 28)
                     onHeightChanged: Qt.callLater(() => root.followCurrent(false))
 
+                    HoverHandler { id: rowHover }
                     Rectangle {
                         anchors.fill: parent
                         anchors.leftMargin: 4
                         anchors.rightMargin: 4
                         radius: Styling.radius(0)
-                        opacity: row.current ? 1 : 0
+                        opacity: row.emphasized ? 1 : (root.synced ? 0 : 0.18)
                         gradient: Gradient {
                             orientation: Gradient.Horizontal
                             GradientStop { position: 0; color: Styling.withOpacity(Colors.primary, 0.23) }
@@ -113,14 +118,14 @@ Item {
                         anchors.leftMargin: 10
                         anchors.verticalCenter: parent.verticalCenter
                         width: 3
-                        height: row.current ? Math.min(26, parent.height - 16) : 0
+                        height: row.emphasized ? Math.min(26, parent.height - 16) : 0
                         radius: 1.5
                         color: Colors.primary
                         Behavior on height { NumberAnimation { duration: Motion.enter; easing.type: Easing.OutCubic } }
                     }
                     StyledText {
                         id: lyricText
-                        objectName: "lyric-line-" + row.index
+                        objectName: !root.synced && row.index === 0 ? "lyrics-text" : "lyric-line-" + row.index
                         anchors.centerIn: parent
                         width: Math.max(0, parent.width - 44)
                         text: row.modelData.text || "♪"
@@ -129,27 +134,27 @@ Item {
                         horizontalAlignment: Text.AlignHCenter
                         font.pixelSize: Styling.fontSize(root.compact ? 3 : 1)
                         font.weight: Font.DemiBold
-                        color: row.current ? Colors.primary : Colors.overBackground
-                        opacity: row.current ? 1 : (Math.abs(row.index - root.activeIndex) <= 1 ? 0.62 : 0.3)
-                        scale: row.current ? 1 : 0.94
+                        color: row.emphasized ? Colors.primary : Colors.overBackground
+                        opacity: !root.synced ? 0.9 : (row.current ? 1 : (Math.abs(row.index - root.activeIndex) <= 1 ? 0.62 : 0.3))
+                        scale: row.emphasized || !root.synced ? 1 : 0.94
                         Behavior on color { ColorAnimation { duration: Motion.enter } }
                         Behavior on opacity { NumberAnimation { duration: Motion.enter } }
                         Behavior on scale { NumberAnimation { duration: Motion.enter; easing.type: Easing.OutCubic } }
                     }
                 }
             }
-            Item { width: 1; height: root.height / 2 }
+            Item { width: 1; height: root.synced ? root.height / 2 : 8 }
         }
         StyledText {
-            id: plainText
-            objectName: "lyrics-text"
-            visible: !root.synced
+            id: statusText
+            objectName: "lyrics-status"
+            visible: !root.hasRows
             x: 16
             y: 12
             width: Math.max(0, scroller.width - 32)
             textFormat: Text.PlainText
             wrapMode: Text.WordWrap
-            text: LyricsService.plain || LyricsService.status
+            text: LyricsService.status
             horizontalAlignment: Text.AlignHCenter
             lineHeight: 1.4
         }

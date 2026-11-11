@@ -78,7 +78,7 @@ StyledRect {
                 Layout.fillWidth: true
             }
             Rectangle {
-                visible: LyricsService.lines.length > 0
+                visible: LyricsService.hasLyrics
                 implicitWidth: syncedLabel.implicitWidth + 20
                 implicitHeight: 24
                 radius: 12
@@ -86,7 +86,7 @@ StyledRect {
                 StyledText {
                     id: syncedLabel
                     anchors.centerIn: parent
-                    text: "● SYNCED"
+                    text: LyricsService.lines.length ? "● SYNCED" : "TEXT ONLY"
                     color: Colors.primary
                     font.pixelSize: Styling.fontSize(-3)
                     font.letterSpacing: 1
@@ -140,7 +140,7 @@ StyledRect {
             Layout.fillWidth: true
             StyledText {
                 Layout.fillWidth: true
-                text: LyricsService.provider ? LyricsService.provider + (LyricsService.lines.length ? " · Synced" : " · Unsynced") : ""
+                text: LyricsService.provider ? LyricsService.provider + (LyricsService.lines.length ? " · Synced" : " · No timing — scroll to read") : ""
                 color: Colors.overSurfaceVariant
                 elide: Text.ElideRight
             }
