@@ -42,6 +42,11 @@ ShellRoot {
    function check(ok, message) { if (!ok) throw Error(message); }
    check(LyricsService.lines.length === 2 && LyricsService.currentLine === 0 && LyricsService.provider === 'Spotify', 'Player priority');
    check(LyricsService.hasLyrics, 'Supplied lyrics available');
+   const originalFactory = LyricsService.createRequest;
+   LyricsService.createRequest = () => { throw Error('Spotify-provided lyrics must not start LRCLIB'); };
+   LyricsService.refresh();
+   check(LyricsService.provider === 'Spotify' && LyricsService.lines.length === 2, 'Spotify lyrics retain priority');
+   LyricsService.createRequest = originalFactory;
    MprisController.position = 3.5;
    check(Parser.activeLine(LyricsService.lines, 3.5) === 1, 'Seek forward');
    check(Parser.activeLine(LyricsService.lines, 0) === -1, 'Seek backward');

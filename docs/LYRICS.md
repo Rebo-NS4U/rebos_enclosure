@@ -1,5 +1,10 @@
 # Media lyrics
 
+**Mod+M** toggles the media menu instead of launching Spotify. It keeps the
+menu open rather than using the two-second playback-key preview, and leaves
+the active player and playback unchanged. **Mod+Shift+T** separately toggles
+the pinned lyrics overlay.
+
 The island Media Center and dashboard player include a Lyrics section. Choose
 Top or Bottom to keep a lyrics card over the desktop after closing the menu;
 Unpin closes that card. **Mod+Shift+T** toggles the pinned overlay on and off.

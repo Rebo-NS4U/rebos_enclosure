@@ -80,6 +80,19 @@ Singleton {
         }
     }
 
+    function toggleMedia() {
+        // Explicitly opening the menu must cancel the playback-key preview timeout.
+        mediaFeedbackTimer.stop();
+        mediaFeedbackTimer.island = null;
+        const island = Visibilities.getIslandForActive();
+        if (island) {
+            if (island.currentMode === "media" && !island.retractingToHidden) island.collapse();
+            else island.expand("media");
+        } else {
+            Visibilities.getDashboardControllerForActive()?.toggleCenterMenu();
+        }
+    }
+
     function revealMediaFeedback(): bool {
         const island = Visibilities.getIslandForActive();
         if (!island) return false;
@@ -92,6 +105,8 @@ Singleton {
     // Playback keys select Spotify and reveal the same panel as the bar's media button.
     IpcHandler {
         target: "media"
+
+        function toggle(): void { root.toggleMedia(); }
 
         function reveal(): bool {
             return root.revealMediaFeedback();
