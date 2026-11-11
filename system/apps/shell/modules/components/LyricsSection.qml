@@ -22,7 +22,7 @@ StyledRect {
     variant: controlsVisible ? "common" : "transparent"
     backgroundOpacity: controlsVisible ? -1 : 0
     enableBorder: controlsVisible
-    radius: 16
+    radius: Styling.radius(0)
     implicitHeight: content.implicitHeight + 24
     onVisibleChanged: {
         revealControls();
@@ -46,6 +46,20 @@ StyledRect {
         onPointChanged: root.revealControls()
     }
     Keys.onPressed: event => { root.revealControls(); event.accepted = false; }
+
+    // Keep a small themed surface behind the lyrics when the chrome is hidden.
+    // The outer window stays stable, so revealing controls never shifts the text.
+    StyledRect {
+        objectName: "idle-lyrics-background"
+        x: content.x + scroll.x - 6
+        y: content.y + scroll.y - 6
+        width: scroll.width + 12
+        height: scroll.height + 12
+        visible: root.compact && !root.controlsVisible
+        variant: "common"
+        backgroundOpacity: 0.65
+        radius: Styling.radius(0)
+    }
 
     ColumnLayout {
         id: content
@@ -95,7 +109,8 @@ StyledRect {
             Layout.preferredHeight: root.compact ? 80 : 130
             clip: true
             contentWidth: availableWidth
-            Text {
+            StyledText {
+                objectName: "lyrics-text"
                 width: scroll.availableWidth
                 textFormat: Text.PlainText
                 wrapMode: Text.WordWrap
@@ -103,10 +118,6 @@ StyledRect {
                     ? (LyricsService.currentLine >= 0 ? LyricsService.lines[LyricsService.currentLine].text || "♪" : "♪")
                         + "\n" + (LyricsService.lines[LyricsService.currentLine + 1]?.text || "")
                     : LyricsService.plain || LyricsService.status
-                color: Colors.overSurface
-                style: root.compact ? Text.Outline : Text.Normal
-                styleColor: Colors.scrim
-                font: lyricFont.font
                 horizontalAlignment: Text.AlignHCenter
             }
         }
@@ -123,5 +134,4 @@ StyledRect {
             ThemeButton { text: "Retry"; visible: !LyricsService.plain && !LyricsService.request; onClicked: LyricsService.refresh() }
         }
     }
-    StyledText { id: lyricFont; visible: false }
 }

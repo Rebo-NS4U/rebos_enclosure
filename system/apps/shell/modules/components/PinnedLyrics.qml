@@ -8,7 +8,7 @@ PanelWindow {
     id: root
     property ShellScreen targetScreen
     screen: targetScreen
-    visible: LyricsService.pinEdge !== "" && !GlobalStates.lockscreenVisible
+    visible: LyricsService.pinEdge !== "" && LyricsService.hasLyrics && !GlobalStates.lockscreenVisible
         && (LyricsService.pinScreen === targetScreen.name
             || (!Quickshell.screens.some(s => s.name === LyricsService.pinScreen) && targetScreen === Quickshell.screens[0]))
     anchors.top: LyricsService.pinEdge === "top"

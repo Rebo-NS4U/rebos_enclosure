@@ -22,8 +22,17 @@ HARNESS = '''import QtQuick
 import Quickshell
 import qs.modules.services
 import qs.modules.components
+import qs.config
 import "modules/services/Lyrics.js" as Parser
 ShellRoot {
+ function findItem(item, name) {
+  if (item.objectName === name) return item;
+  for (const child of item.children || []) {
+   const found = findItem(child, name);
+   if (found) return found;
+  }
+  return null;
+ }
  Item {
   LyricsSection { id: menuSection; width: 216 }
   LyricsSection { id: pinnedSection; width: 540; compact: true }
@@ -32,6 +41,7 @@ ShellRoot {
   try {
    function check(ok, message) { if (!ok) throw Error(message); }
    check(LyricsService.lines.length === 2 && LyricsService.currentLine === 0 && LyricsService.provider === 'Spotify', 'Player priority');
+   check(LyricsService.hasLyrics, 'Supplied lyrics available');
    MprisController.position = 3.5;
    check(Parser.activeLine(LyricsService.lines, 3.5) === 1, 'Seek forward');
    check(Parser.activeLine(LyricsService.lines, 0) === -1, 'Seek backward');
@@ -51,19 +61,32 @@ ShellRoot {
    LyricsService.refresh();
    const old = requests[0];
    check(!!old, 'Online fallback');
-   MprisController.trackTitle = 'Next song'; LyricsService.refresh();
+   MprisController.trackTitle = 'Next song';
+   check(!LyricsService.hasLyrics, 'Previous song hidden immediately');
+   LyricsService.refresh();
    old.readyState = XMLHttpRequest.DONE; old.status = 200;
    old.responseText = JSON.stringify({plainLyrics: 'Stale'}); old.onreadystatechange();
    check(LyricsService.plain === '', 'Stale response discarded');
    const current = requests[1]; current.readyState = XMLHttpRequest.DONE; current.status = 200;
    current.responseText = JSON.stringify({plainLyrics: 'Plain lyrics'}); current.onreadystatechange();
    check(LyricsService.plain === 'Plain lyrics' && LyricsService.provider === 'LRCLIB', 'Plain fallback');
+   check(LyricsService.hasLyrics, 'Plain lyrics available');
    LyricsService.refresh(); check(requests.length === 2, 'Cached result reused');
    MprisController.trackTitle = 'Missing'; LyricsService.refresh();
    const missing = requests[2]; missing.readyState = XMLHttpRequest.DONE; missing.status = 404; missing.onreadystatechange();
    check(LyricsService.status.includes('No lyrics') && !LyricsService.plain, 'Missing lyrics clears previous song');
    LyricsService.apply('', 'LRCLIB', true);
-   check(LyricsService.status.includes('Instrumental'), 'Instrumental state');
+   check(LyricsService.status.includes('Instrumental') && !LyricsService.hasLyrics, 'Instrumental state');
+   LyricsService.apply('[00:01.00]   ', 'Player', false);
+   check(!LyricsService.hasLyrics, 'Empty timed lyrics hidden');
+   LyricsService.pin('bottom', 'test');
+   LyricsService.apply('Lyrics return', 'Player', false);
+   check(LyricsService.hasLyrics && LyricsService.pinEdge === 'bottom', 'Pin retained when lyrics return');
+   const label = findItem(pinnedSection, 'lyrics-text');
+   check(!!label, 'Shared lyrics label exists');
+   Config.theme.font = 'monospace'; Config.theme.fontSize = 19;
+   check(label.font.family === Config.theme.font && label.font.pixelSize === 19
+     && label.renderType === Text.NativeRendering, 'Lyrics follow shell font and rendering');
    console.log('PASS: lyrics parsing, priority, fallback, cache, stale requests, seeking and pin controls'); idleCheck.start();
   } catch (error) { console.error(error); Qt.exit(1); }
  } }
@@ -72,7 +95,10 @@ ShellRoot {
   try {
    if (phase === 0) {
     if (pinnedSection.controlsVisible || pinnedSection.backgroundOpacity !== 0 || !menuSection.controlsVisible)
-     throw Error('Idle view must show lyrics only; menu must remain usable');
+     throw Error('Idle view must hide chrome; menu must remain usable');
+    const backing = findItem(pinnedSection, 'idle-lyrics-background');
+    if (!backing || !backing.visible || backing.backgroundOpacity <= 0 || backing.backgroundOpacity >= 1)
+     throw Error('Idle lyrics must retain a subtle themed background');
     pinnedSection.revealControls();
     if (!pinnedSection.controlsVisible) throw Error('Interaction did not reveal options');
     phase++; return;

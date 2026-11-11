@@ -13,6 +13,8 @@ Singleton {
     readonly property string supplied: Lyrics.playerLyrics(player?.metadata)
     readonly property string trackKey: JSON.stringify([player?.dbusName, MprisController.trackTitle,
         MprisController.trackArtists, player?.trackAlbum, Math.round(MprisController.length)])
+    property string lyricsKey: ""
+    readonly property bool hasLyrics: player !== null && lyricsKey === trackKey && plain.trim().length > 0
     property string plain: ""
     property var lines: []
     property string status: "Play a song to see lyrics."
@@ -33,8 +35,9 @@ Singleton {
         if (pending) pending.abort();
     }
     function apply(text, source, instrumental) {
-        lines = Lyrics.parseLrc(text);
-        plain = lines.length ? lines.map(line => line.text).join("\n") : text;
+        lyricsKey = trackKey;
+        lines = instrumental ? [] : Lyrics.parseLrc(text);
+        plain = instrumental ? "" : (lines.length ? lines.map(line => line.text).join("\n") : text);
         provider = source;
         status = instrumental ? "Instrumental — no lyrics." : (plain ? "" : "No lyrics found for this song.");
     }
