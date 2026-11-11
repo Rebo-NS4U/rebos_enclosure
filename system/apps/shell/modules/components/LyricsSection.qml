@@ -68,12 +68,34 @@ StyledRect {
         spacing: 8
         RowLayout {
             opacity: root.controlsVisible ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: Motion.contentIn } }
             enabled: root.controlsVisible
             Layout.fillWidth: true
-            StyledText { text: "Lyrics"; font.bold: true; Layout.fillWidth: true }
+            StyledText {
+                text: "Lyrics"
+                font.bold: true
+                font.letterSpacing: 0.8
+                Layout.fillWidth: true
+            }
+            Rectangle {
+                visible: LyricsService.lines.length > 0
+                implicitWidth: syncedLabel.implicitWidth + 20
+                implicitHeight: 24
+                radius: 12
+                color: Styling.withOpacity(Colors.primary, 0.14)
+                StyledText {
+                    id: syncedLabel
+                    anchors.centerIn: parent
+                    text: "● SYNCED"
+                    color: Colors.primary
+                    font.pixelSize: Styling.fontSize(-3)
+                    font.letterSpacing: 1
+                }
+            }
         }
         Flow {
             opacity: root.controlsVisible ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: Motion.contentIn } }
             enabled: root.controlsVisible
             Layout.fillWidth: true
             spacing: 4
@@ -100,29 +122,20 @@ StyledRect {
             Layout.fillWidth: true
             visible: root.compact
             opacity: root.controlsVisible ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: Motion.contentIn } }
             text: MprisController.trackTitle || "No media playing"
             elide: Text.ElideRight
         }
-        ScrollView {
+        LyricsViewport {
             id: scroll
+            objectName: "lyrics-viewport"
+            compact: root.compact
             Layout.fillWidth: true
-            Layout.preferredHeight: root.compact ? 80 : 130
-            clip: true
-            contentWidth: availableWidth
-            StyledText {
-                objectName: "lyrics-text"
-                width: scroll.availableWidth
-                textFormat: Text.PlainText
-                wrapMode: Text.WordWrap
-                text: LyricsService.lines.length
-                    ? (LyricsService.currentLine >= 0 ? LyricsService.lines[LyricsService.currentLine].text || "♪" : "♪")
-                        + "\n" + (LyricsService.lines[LyricsService.currentLine + 1]?.text || "")
-                    : LyricsService.plain || LyricsService.status
-                horizontalAlignment: Text.AlignHCenter
-            }
+            Layout.preferredHeight: root.compact ? 190 : 210
         }
         RowLayout {
             opacity: root.controlsVisible ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: Motion.contentIn } }
             enabled: root.controlsVisible
             Layout.fillWidth: true
             StyledText {

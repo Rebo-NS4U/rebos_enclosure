@@ -135,15 +135,80 @@ ShellRoot {
 }
 '''
 
+ANIMATION_HARNESS = '''import QtQuick
+import QtQuick.Window
+import Quickshell
+import qs.modules.services
+import qs.modules.components
+import qs.modules.theme
+import qs.config
+ShellRoot {
+ function findItem(item, name) {
+  if (item.objectName === name) return item;
+  for (const child of item.children || []) { const found = findItem(child, name); if (found) return found; }
+  return null;
+ }
+ Window { visible: true; width: 420; height: 210; LyricsViewport { id: view; anchors.fill: parent } }
+ Timer { interval: 400; running: true; repeat: true; property int phase: 0; property real initialY: 0
+ onTriggered: {
+  try {
+   if (phase === 0) {
+    Config.theme.animDuration = 300;
+    LyricsService.apply('[00:00]First line\\n[00:02]Second line\\n[00:04]Current third line\\n[00:06]Fourth line\\n[00:08]Fifth line', 'Test', false);
+    MprisController.position = 0; phase++; return;
+   }
+   if (phase === 1) {
+    initialY = view.followPosition;
+    MprisController.position = 4.5;
+    interval = 40; phase++; return;
+   }
+   if (phase === 2) {
+    if (!view.animating) throw Error('Scrolling animation did not start');
+    interval = 600; phase++; return;
+   }
+   if (phase === 3) {
+    const row = findItem(view, 'lyric-row-2');
+    const label = findItem(view, 'lyric-line-2');
+    if (!row || !row.current || view.followPosition <= initialY || view.animating || label.color.toString() !== Colors.primary.toString())
+     throw Error('Forward scroll/highlight did not settle');
+    view.browsing = true;
+    initialY = view.followPosition;
+    MprisController.position = 8.5; phase++; return;
+   }
+   if (phase === 4) {
+    if (view.followPosition !== initialY) throw Error('Auto-follow interrupted manual browsing');
+    view.browsing = false;
+    Config.theme.animDuration = 0;
+    MprisController.position = 0;
+    interval = 80; phase++; return;
+   }
+   if (phase === 5) {
+    if (view.animating || view.followPosition >= initialY || !findItem(view, 'lyric-row-0').current)
+     throw Error('Backward seek or reduced motion failed');
+    LyricsService.apply('Unsynced lyrics stay scrollable', 'Test', false); phase++; return;
+   }
+   if (view.synced || !findItem(view, 'lyrics-text').visible) throw Error('Plain lyrics fallback failed');
+   console.log('PASS: animated forward scroll, row highlighting, manual browsing, backward seek and reduced motion'); Qt.quit();
+  } catch (error) { console.error(error); Qt.exit(1); }
+ } }
+}
+'''
+
 @unittest.skipUnless(shutil.which('quickshell'), 'Quickshell required')
 class Lyrics(unittest.TestCase):
     def test_lyrics(self):
+        self.run_harness(HARNESS)
+
+    def test_animated_rows(self):
+        self.run_harness(ANIMATION_HARNESS)
+
+    def run_harness(self, harness):
         with tempfile.TemporaryDirectory(prefix='lyrics-test-') as directory:
             root = Path(directory)
             for name in ('modules', 'config', 'assets'):
                 shutil.copytree(APP / name, root / name)
             (root / 'modules/services/MprisController.qml').write_text(PLAYER)
-            (root / 'shell.qml').write_text(HARNESS)
+            (root / 'shell.qml').write_text(harness)
             (root / 'runtime').mkdir(mode=0o700)
             env = dict(os.environ, HOME=str(root), XDG_RUNTIME_DIR=str(root / 'runtime'),
                        QT_QPA_PLATFORM='offscreen', QT_QUICK_BACKEND='software', QT_QPA_PLATFORMTHEME='basic')

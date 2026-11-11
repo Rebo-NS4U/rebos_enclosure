@@ -26,9 +26,14 @@ Spotify does not necessarily expose lyrics through its desktop player. No
 Spotify account credentials or private APIs are used.
 
 Otherwise, opening lyrics or keeping them pinned sends the current song title,
-artist, album and duration to [LRCLIB](https://lrclib.net/docs). Timed lyrics show
-the current and next line, following playback and seeks. Unsynced lyrics are
-scrollable. Missing, instrumental and offline results have explicit states and
+artist, album and duration to [LRCLIB](https://lrclib.net/docs). Timed lyrics use
+a scrolling stack of rows: the active line centers smoothly with a tinted
+accent gradient, an edge marker and larger text; nearby lines stay subdued.
+Row colors, scale and control opacity animate using the shell's Motion settings.
+Turning motion off makes scrolling and highlights immediate. Manual scrolling
+pauses auto-follow until four seconds after the gesture ends. Forward and
+backward seeks update the highlighted row. Long lines wrap to fit the card.
+Unsynced lyrics remain scrollable without a fabricated current-line highlight. Missing, instrumental and offline results have explicit states and
 a Retry button. Requests expire after 12 seconds; old track responses are
 ignored. Successful lookups are cached in memory for up to 40 songs.
 
