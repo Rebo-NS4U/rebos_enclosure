@@ -32,5 +32,16 @@ scrollable. Missing, instrumental and offline results have explicit states and
 a Retry button. Requests expire after 12 seconds; old track responses are
 ignored. Successful lookups are cached in memory for up to 40 songs.
 
+LRCLIB lookup first uses `/api/get` with the player's track signature. If that
+returns no match, invalid parameters, or an empty lyrics record, `/api/search`
+tries title and primary artist without requiring the same album. Search results
+must match the title and artist (ignoring punctuation and spacing) and stay
+within five seconds of the known track duration. The closest matching synced
+record is preferred; plain lyrics and instrumental records are supported too.
+Unrelated songs and recordings outside that duration tolerance are rejected.
+Rate limits and network errors show a retry message without automatic retry
+loops. Requests identify Enclosure using LRCLIB's `Lrclib-Client` header; no API
+key or additional packages are required.
+
 The feature uses Qt's HTTP support and adds no package dependencies. Regression
 check: `python3 -m unittest discover -s desktop/tests -p test_lyrics.py`.

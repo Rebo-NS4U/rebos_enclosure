@@ -58,27 +58,49 @@ Singleton {
         if (!MprisController.trackArtists) {
             status = "Artist information is needed to find lyrics."; return;
         }
-        status = "Finding lyrics…";
+        status = "Finding lyrics on LRCLIB…";
+        lookup(key, false);
+    }
+    function lookup(key, searching) {
+        const title = MprisController.trackTitle;
+        const artists = MprisController.trackArtists;
+        const album = player?.trackAlbum || "";
+        const duration = MprisController.length;
         const xhr = createRequest();
         request = xhr;
-        let url = "https://lrclib.net/api/get?track_name=" + encodeURIComponent(MprisController.trackTitle)
-            + "&artist_name=" + encodeURIComponent(MprisController.trackArtists);
-        if (player.trackAlbum) url += "&album_name=" + encodeURIComponent(player.trackAlbum);
-        if (MprisController.length > 0) url += "&duration=" + Math.round(MprisController.length);
+        let url = "https://lrclib.net/api/" + (searching ? "search" : "get")
+            + "?track_name=" + encodeURIComponent(title)
+            + "&artist_name=" + encodeURIComponent(searching ? Lyrics.primaryArtist(artists) : artists);
+        if (!searching) {
+            if (album) url += "&album_name=" + encodeURIComponent(album);
+            // LRCLIB rejects durations outside this documented range.
+            if (duration >= 1 && duration <= 3600) url += "&duration=" + Math.round(duration);
+        }
         xhr.open("GET", url);
         xhr.setRequestHeader("Lrclib-Client", "Enclosure v1 (https://github.com/Rebo-NS4U/rebos_enclosure)");
         xhr.onreadystatechange = () => {
             if (xhr.readyState !== XMLHttpRequest.DONE || root.request !== xhr || root.trackKey !== key) return;
             root.request = null; timeout.stop();
-            if (xhr.status === 404) { root.status = "No lyrics found for this song."; return; }
-            if (xhr.status !== 200) { root.status = "Lyrics unavailable. Try again shortly."; return; }
+            if (!searching && (xhr.status === 404 || xhr.status === 400)) {
+                root.lookup(key, true); return;
+            }
+            if (xhr.status === 404) { root.status = "No lyrics found on LRCLIB for this song."; return; }
+            if (xhr.status === 429) { root.status = "LRCLIB is busy. Try again shortly."; return; }
+            if (xhr.status !== 200) { root.status = "LRCLIB unavailable. Try again shortly."; return; }
             try {
-                const data = JSON.parse(xhr.responseText);
-                const hit = {text: data.syncedLyrics || data.plainLyrics || "", instrumental: !!data.instrumental};
+                const response = JSON.parse(xhr.responseText);
+                const data = searching ? Lyrics.bestMatch(response, title, artists, album, duration) : response;
+                const synced = typeof data?.syncedLyrics === "string" ? data.syncedLyrics.trim() : "";
+                const plainText = typeof data?.plainLyrics === "string" ? data.plainLyrics.trim() : "";
+                if (!data || (!synced && !plainText && !data.instrumental)) {
+                    if (!searching) { root.lookup(key, true); return; }
+                    root.status = "No lyrics found on LRCLIB for this song."; return;
+                }
+                const hit = {text: synced || plainText, instrumental: !!data.instrumental};
                 if (Object.keys(root.cache).length >= 40) root.cache = ({});
                 root.cache[key] = hit;
                 root.apply(hit.text, "LRCLIB", hit.instrumental);
-            } catch (error) { root.status = "Could not read lyrics. Try again."; }
+            } catch (error) { root.status = "Could not read LRCLIB lyrics. Try again."; }
         };
         timeout.start(); xhr.send();
     }

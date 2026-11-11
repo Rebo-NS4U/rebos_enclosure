@@ -54,13 +54,13 @@ ShellRoot {
    LyricsService.pinEdge = '';
    let requests = [];
    LyricsService.createRequest = () => {
-    const xhr = {readyState: 0, status: 0, responseText: '', abort: () => {}, open: () => {}, setRequestHeader: () => {}, send: () => {}};
+    const xhr = {readyState: 0, status: 0, responseText: '', abort: () => {}, open: (method, url) => { xhr.url = url; }, setRequestHeader: (name, value) => { xhr.header = name; }, send: () => {}};
     requests.push(xhr); return xhr;
    };
    MprisController.activePlayer = {dbusName: 'test', identity: 'Spotify', metadata: {}, trackAlbum: ''};
    LyricsService.refresh();
    const old = requests[0];
-   check(!!old, 'Online fallback');
+   check(!!old && old.url.includes('/api/get?') && old.header === 'Lrclib-Client', 'Identified LRCLIB exact lookup');
    MprisController.trackTitle = 'Next song';
    check(!LyricsService.hasLyrics, 'Previous song hidden immediately');
    LyricsService.refresh();
@@ -74,7 +74,27 @@ ShellRoot {
    LyricsService.refresh(); check(requests.length === 2, 'Cached result reused');
    MprisController.trackTitle = 'Missing'; LyricsService.refresh();
    const missing = requests[2]; missing.readyState = XMLHttpRequest.DONE; missing.status = 404; missing.onreadystatechange();
-   check(LyricsService.status.includes('No lyrics') && !LyricsService.plain, 'Missing lyrics clears previous song');
+   check(!LyricsService.plain && requests[3].url.includes('/api/search?'), 'Exact miss starts search');
+   const search = requests[3]; search.readyState = XMLHttpRequest.DONE; search.status = 200;
+   search.responseText = JSON.stringify([
+    {trackName: 'Missing', artistName: 'Other Artist', duration: 10, syncedLyrics: '[00:01]Wrong'},
+    {trackName: 'Missing', artistName: 'Artist', albumName: 'Another release', duration: 11, syncedLyrics: '[00:01]Found via search'},
+    {trackName: 'Missing', artistName: 'Artist', duration: 120, syncedLyrics: '[00:01]Wrong recording'}
+   ]); search.onreadystatechange();
+   check(LyricsService.provider === 'LRCLIB' && LyricsService.lines.length === 1
+     && LyricsService.plain === 'Found via search', 'Search fallback selects matching synced recording');
+   check(Parser.bestMatch([{trackName: 'Else', artistName: 'Artist', duration: 10, plainLyrics: 'Wrong'}], 'Missing', 'Artist', '', 10) === null, 'Unrelated title rejected');
+   check(Parser.bestMatch([{trackName: 'Missing', artistName: 'Artist', duration: 100, plainLyrics: 'Wrong'}], 'Missing', 'Artist', '', 10) === null, 'Duration mismatch rejected');
+   MprisController.trackTitle = 'Unavailable'; LyricsService.refresh();
+   const next = requests[4]; next.readyState = XMLHttpRequest.DONE; next.status = 404; next.onreadystatechange();
+   const empty = requests[5]; empty.readyState = XMLHttpRequest.DONE; empty.status = 200; empty.responseText = '[]'; empty.onreadystatechange();
+   check(LyricsService.status.includes('No lyrics') && !LyricsService.hasLyrics, 'Empty search hides overlay');
+   MprisController.trackTitle = 'Rate limited'; LyricsService.refresh();
+   const limited = requests[6]; limited.readyState = XMLHttpRequest.DONE; limited.status = 429; limited.onreadystatechange();
+   check(!LyricsService.request && LyricsService.status.includes('busy') && requests.length === 7, 'No automatic retries on rate limit');
+   MprisController.length = 4000; MprisController.trackTitle = 'Long recording'; LyricsService.refresh();
+   check(!requests[7].url.includes('&duration='), 'Out-of-range API duration omitted');
+   LyricsService.cancel();
    LyricsService.apply('', 'LRCLIB', true);
    check(LyricsService.status.includes('Instrumental') && !LyricsService.hasLyrics, 'Instrumental state');
    LyricsService.apply('[00:01.00]   ', 'Player', false);

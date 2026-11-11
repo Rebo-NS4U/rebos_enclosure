@@ -27,3 +27,32 @@ function playerLyrics(metadata) {
     }
     return "";
 }
+
+function normalizedName(value) {
+    return String(value || "").toLowerCase().replace(/[\s.,!?"'’“”:;()[\]_-]+/g, "");
+}
+
+function primaryArtist(artists) {
+    return String(artists || "").split(/,|;| & | feat\.? | ft\.? /i)[0].trim();
+}
+
+// Search is broader than /get: never accept an unrelated song or recording.
+function bestMatch(records, title, artists, album, duration) {
+    if (!Array.isArray(records)) return null;
+    const artist = normalizedName(primaryArtist(artists));
+    let best = null;
+    let bestScore = -Infinity;
+    for (const record of records) {
+        if (!record || normalizedName(record.trackName) !== normalizedName(title)
+            || normalizedName(primaryArtist(record.artistName)) !== artist) continue;
+        const difference = Math.abs(Number(record.duration) - duration);
+        if (duration > 0 && (!isFinite(difference) || difference > 5)) continue;
+        const synced = typeof record.syncedLyrics === "string" && record.syncedLyrics.trim();
+        const plain = typeof record.plainLyrics === "string" && record.plainLyrics.trim();
+        if (!synced && !plain && !record.instrumental) continue;
+        const score = (synced ? 5 : plain ? 1 : 0) - (duration > 0 ? difference * 2 : 0)
+            + (album && normalizedName(record.albumName) === normalizedName(album) ? 0.5 : 0);
+        if (score > bestScore) { best = record; bestScore = score; }
+    }
+    return best;
+}
