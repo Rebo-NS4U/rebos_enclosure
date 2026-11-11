@@ -2,7 +2,10 @@
 
 The island Media Center and dashboard player include a Lyrics section. Choose
 Top or Bottom to keep a lyrics card over the desktop after closing the menu;
-Unpin closes that card. The card uses the menu's screen, follows the active
+Unpin closes that card. **Mod+Shift+T** toggles the pinned overlay on and off.
+It opens on the focused monitor, reuses the last chosen edge, and defaults to
+Bottom before a placement is chosen. Holding the key does not repeatedly toggle.
+The shortcut uses `qs ipc -p ~/.config/quickshell call lyrics toggle`. The card uses the menu's screen, follows the active
 player, hides on the lockscreen, and falls back to the first screen if its
 monitor disconnects. Pin placement lasts for the current shell session.
 

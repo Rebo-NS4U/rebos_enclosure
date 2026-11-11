@@ -6,6 +6,7 @@ import "Lyrics.js" as Lyrics
 Singleton {
     id: root
     property string pinEdge: ""
+    property string lastPinEdge: "bottom"
     property string pinScreen: ""
     property int viewers: 0
     readonly property bool wanted: viewers > 0 || pinEdge !== ""
@@ -24,7 +25,12 @@ Singleton {
     property var cache: ({})
     readonly property int currentLine: Lyrics.activeLine(lines, MprisController.position)
 
+    function toggle(screenName) {
+        if (pinEdge !== "") pinEdge = "";
+        else pin(lastPinEdge, screenName);
+    }
     function pin(edge, screenName) {
+        lastPinEdge = edge;
         pinScreen = screenName || Quickshell.screens[0]?.name || "";
         pinEdge = edge;
     }

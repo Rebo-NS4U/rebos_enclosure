@@ -51,6 +51,12 @@ ShellRoot {
    check(LyricsService.pinEdge === 'bottom' && LyricsService.pinScreen === 'test', 'Bottom pin');
    LyricsService.pin('top', 'test');
    check(LyricsService.pinEdge === 'top', 'Move pin');
+   LyricsService.toggle('other');
+   check(LyricsService.pinEdge === '', 'Shortcut closes existing pin');
+   LyricsService.toggle('other');
+   check(LyricsService.pinEdge === 'top' && LyricsService.pinScreen === 'other', 'Shortcut restores edge on focused screen');
+   LyricsService.toggle('other');
+   check(LyricsService.pinEdge === '', 'Second shortcut press closes');
    LyricsService.pinEdge = '';
    let requests = [];
    LyricsService.createRequest = () => {

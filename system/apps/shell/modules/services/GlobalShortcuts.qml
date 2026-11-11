@@ -59,6 +59,16 @@ Singleton {
         }
     }
 
+    IpcHandler {
+        target: "lyrics"
+        function toggle(): void { root.run("lyrics"); }
+        function status(): string {
+            return JSON.stringify({opened: LyricsService.pinEdge !== "",
+                edge: LyricsService.pinEdge, screen: LyricsService.pinScreen,
+                hasLyrics: LyricsService.hasLyrics});
+        }
+    }
+
     Timer {
         id: mediaFeedbackTimer
         interval: 2000
@@ -125,6 +135,9 @@ Singleton {
         if (command !== "notes" && QuickNotes.visible)
             QuickNotes.close();
         switch (command) {
+            case "lyrics":
+                LyricsService.toggle(NiriService.focusedMonitor?.name || "");
+                break;
             case "t":
             case "typing":
                 const typingIsland = Visibilities.getIslandForActive();
