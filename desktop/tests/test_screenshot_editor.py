@@ -69,6 +69,35 @@ class ScreenshotExportTest(unittest.TestCase):
         self.assertIn('area|edit|screen|output|window)', script)
 
 
+class ScreenshotLauncherTest(unittest.TestCase):
+    def test_warm_capture_uses_ipc_and_cold_capture_starts_once(self):
+        import subprocess
+        with tempfile.TemporaryDirectory() as directory:
+            folder = Path(directory)
+            qs = folder/'qs'
+            qs.write_text("""#!/usr/bin/env bash
+printf '%s\\n' "$*" >> "$TEST_LOG"
+if [[ "$1" == -d ]]; then touch "$TEST_READY"; exit 0; fi
+[[ -f "$TEST_READY" ]]
+""")
+            qs.chmod(0o755)
+            env = {**os.environ, 'PATH':str(folder)+':'+os.environ['PATH'],
+                   'HOME':directory, 'TEST_LOG':str(folder/'calls'), 'TEST_READY':str(folder/'ready')}
+            launcher = ROOT/'system/bin/wayland-screenshot'
+            subprocess.run(['bash',str(launcher),'screen'],env=env,check=True)
+            calls = (folder/'calls').read_text().splitlines()
+            self.assertEqual(sum(call.startswith('-d -n') for call in calls),1)
+            self.assertTrue(calls[-1].endswith('call screenshot capture screen'))
+            (folder/'calls').write_text('')
+            subprocess.run(['bash',str(launcher),'area'],env=env,check=True)
+            calls = (folder/'calls').read_text().splitlines()
+            self.assertEqual(len(calls),1)
+            self.assertTrue(calls[0].endswith('call screenshot capture area'))
+            (folder/'calls').write_text('')
+            subprocess.run(['bash',str(launcher),'--warm'],env=env,check=True)
+            self.assertTrue((folder/'calls').read_text().startswith('-d -n'))
+
+
 
 class ScreenshotQmlTest(unittest.TestCase):
     @unittest.skipUnless(os.environ.get("ENCLOSURE_SCREENSHOT_UI_TEST") == "1", "Requires an explicitly selected Wayland test session")

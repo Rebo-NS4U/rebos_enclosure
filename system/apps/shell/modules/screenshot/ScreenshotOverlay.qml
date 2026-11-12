@@ -48,6 +48,7 @@ PanelWindow {
     onVisibleChanged: {
         if (visible) {
             operations = []; redoStack = []; draft = null; tool = "crop";
+            textEntry.visible = false; textInput.text = "";
             crop = {x: 0, y: 0, width: 0, height: 0};
             hint = "Drag to select an area";
             keyboard.forceActiveFocus();

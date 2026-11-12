@@ -1,16 +1,29 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Open the on-demand selector and editor with the shared shell theme.
+# Reuse the warm editor; start it lazily if login prewarming has not run.
+CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/quickshell/screenshot.qml"
 MODE="${1:-area}"
 case "$MODE" in
+    --warm) exec qs -d -n -p "$CONFIG" ;;
     area|edit|screen|output|window)
         [ "$MODE" != output ] || MODE=screen
-        export ENCLOSURE_SCREENSHOT_MODE="$MODE"
-        exec qs -n -p "$HOME/.config/quickshell/screenshot.qml"
+        if qs ipc -p "$CONFIG" call screenshot capture "$MODE" 2>/dev/null; then
+            exit 0
+        fi
+        qs -d -n -p "$CONFIG"
+        # IPC registers before startup finishes. Retry only while it is unavailable.
+        for ((attempt=0; attempt<100; attempt++)); do
+            if qs ipc -p "$CONFIG" call screenshot capture "$MODE" 2>/dev/null; then
+                exit 0
+            fi
+            sleep 0.05
+        done
+        notify-send "Screenshot failed" "The screenshot editor did not become ready."
+        exit 1
         ;;
     ocr) ;; # Preserve the existing text extraction shortcut.
-    *) printf 'Usage: %s [area|screen|window|edit|output|ocr]\n' "$0" >&2; exit 2 ;;
+    *) printf 'Usage: %s [area|screen|window|edit|output|ocr|--warm]\n' "$0" >&2; exit 2 ;;
 esac
 
 TEMP=$(mktemp --suffix=.png)

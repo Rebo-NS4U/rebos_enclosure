@@ -433,3 +433,6 @@ window-rule {
     open-floating true
     open-focused true
 }
+
+// Keep screenshot theme and graphics resources ready before the first shortcut.
+spawn-at-startup "wayland-screenshot" "--warm"

@@ -61,7 +61,7 @@ def capture(mode):
         if mode == 'window':
             subprocess.run(['niri', 'msg', 'action', 'screenshot-window', '--path', str(path)], check=True, stdout=subprocess.DEVNULL)
         else:
-            subprocess.run(['grim', '-o', output['name'], str(path)], check=True)
+            subprocess.run(['grim', '-l', '0', '-o', output['name'], str(path)], check=True)
         for _ in range(100):
             if path.exists():
                 try:

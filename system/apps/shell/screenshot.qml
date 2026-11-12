@@ -5,7 +5,7 @@ import Quickshell
 import qs.modules.screenshot
 ShellRoot {
     ScreenshotController {
-        exitOnClose: true
-        Component.onCompleted: capture(Quickshell.env("ENCLOSURE_SCREENSHOT_MODE") || "area")
+        // Retain theme, QML and graphics resources between captures.
+        exitOnClose: false
     }
 }
