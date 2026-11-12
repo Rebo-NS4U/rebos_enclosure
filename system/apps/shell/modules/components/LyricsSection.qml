@@ -7,6 +7,8 @@ import qs.modules.theme
 
 StyledRect {
     id: root
+    visible: LyricsService.hasLyrics
+    readonly property bool requested: (parent?.visible ?? true) && (Window.window?.visible ?? true)
     property bool compact: false
     property bool autoHideControls: true
     property bool idle: false
@@ -23,17 +25,18 @@ StyledRect {
     backgroundOpacity: controlsVisible ? -1 : 0
     enableBorder: controlsVisible
     radius: Styling.radius(0)
-    implicitHeight: content.implicitHeight + 24
-    onVisibleChanged: {
-        revealControls();
+    implicitHeight: visible ? content.implicitHeight + 24 : 0
+    onVisibleChanged: revealControls()
+    // Demand follows the host, not our own visibility: a hidden section must
+    // still discover timed lyrics when its menu opens.
+    onRequestedChanged: {
         if (!registered) return;
-        if (visible) LyricsService.viewers++;
+        if (requested) LyricsService.viewers++;
         else LyricsService.viewers = Math.max(0, LyricsService.viewers - 1);
     }
-    // Register once after creation; visibility changes account for hidden menus.
     property bool registered: false
-    Component.onCompleted: { registered = true; if (visible) LyricsService.viewers++; revealControls(); }
-    Component.onDestruction: { if (registered && visible) LyricsService.viewers = Math.max(0, LyricsService.viewers - 1); }
+    Component.onCompleted: { registered = true; if (requested) LyricsService.viewers++; revealControls(); }
+    Component.onDestruction: { if (registered && requested) LyricsService.viewers = Math.max(0, LyricsService.viewers - 1); }
 
     Timer {
         id: idleTimer
@@ -87,7 +90,7 @@ StyledRect {
                     id: syncedLabel
                     anchors.centerIn: parent
                     objectName: "lyrics-timing-badge"
-                    text: LyricsService.lines.length ? "● SYNCED" : "TEXT ONLY"
+                    text: "● SYNCED"
                     color: Colors.primary
                     font.pixelSize: Styling.fontSize(-3)
                     font.letterSpacing: 1
@@ -141,7 +144,7 @@ StyledRect {
             Layout.fillWidth: true
             StyledText {
                 Layout.fillWidth: true
-                text: LyricsService.provider ? LyricsService.provider + (LyricsService.lines.length ? " · Synced" : " · No timing — scroll to read") : ""
+                text: LyricsService.provider ? LyricsService.provider + " · Synced" : ""
                 color: Colors.overSurfaceVariant
                 elide: Text.ElideRight
             }

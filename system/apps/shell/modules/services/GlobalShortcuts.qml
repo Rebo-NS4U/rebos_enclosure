@@ -61,6 +61,9 @@ Singleton {
 
     IpcHandler {
         target: "lyrics"
+        function pin(edge: string, screenName: string): void {
+            if (edge === "top" || edge === "bottom") LyricsService.pin(edge, screenName);
+        }
         function timing(): string {
             return JSON.stringify({position: MprisController.position, playing: MprisController.isPlaying,
                 activeLine: LyricsService.currentLine, followLine: LyricsService.followLine,

@@ -15,7 +15,8 @@ Singleton {
     readonly property string trackKey: JSON.stringify([player?.dbusName, MprisController.trackTitle,
         MprisController.trackArtists, player?.trackAlbum, Math.round(MprisController.length)])
     property string lyricsKey: ""
-    readonly property bool hasLyrics: player !== null && lyricsKey === trackKey && plain.trim().length > 0
+    readonly property bool hasText: player !== null && lyricsKey === trackKey && plain.trim().length > 0
+    readonly property bool hasLyrics: hasText && lines.length > 0
     property string plain: ""
     property var lines: []
     readonly property var displayLines: lines
@@ -58,6 +59,7 @@ Singleton {
         status = instrumental ? "Instrumental — no lyrics." : (plain ? "" : "No lyrics found for this song.");
     }
     function refresh() {
+        debounce.stop();
         cancel();
         plain = ""; lines = []; provider = "";
         if (!player || !MprisController.trackTitle) {
@@ -81,13 +83,11 @@ Singleton {
     onPlainChanged: timingUpgrade.restart()
     Timer { id: timingUpgrade; interval: 0; onTriggered: root.upgradeTiming() }
     function upgradeTiming() {
-        if (!wanted || !hasLyrics || lines.length || request || !MprisController.trackArtists) return;
+        if (!wanted || !hasText || lines.length || request || !MprisController.trackArtists) return;
         const hit = cache[trackKey];
-        if (hit) {
-            if (Lyrics.parseLrc(hit.text).length) apply(hit.text, "LRCLIB", false);
-            return;
-        }
-        lookup(trackKey, false, true);
+        if (hit && Lyrics.parseLrc(hit.text).length) { apply(hit.text, "LRCLIB", false); return; }
+        if (hit?.timingChecked) return;
+        lookup(trackKey, !!hit, true);
     }
     function lookup(key, searching, preferSynced = false) {
         const title = MprisController.trackTitle;
@@ -125,7 +125,7 @@ Singleton {
                 if (!searching && preferSynced && !synced) { root.lookup(key, true, true); return; }
                 if (!data || (!synced && !plainText && !data.instrumental)) {
                     if (!searching) { root.lookup(key, true, preferSynced); return; }
-                    if (preferSynced && root.plain) { root.cache[key] = {text: "", instrumental: false}; root.status = ""; return; }
+                    if (preferSynced && root.plain) { root.cache[key] = {text: "", instrumental: false, timingChecked: true}; root.status = ""; return; }
                     root.status = "No lyrics found on LRCLIB for this song."; return;
                 }
                 const hit = {text: synced || plainText, instrumental: !!data.instrumental};

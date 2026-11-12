@@ -82,7 +82,7 @@ ShellRoot {
    const current = requests[1]; current.readyState = XMLHttpRequest.DONE; current.status = 200;
    current.responseText = JSON.stringify({plainLyrics: 'Plain lyrics'}); current.onreadystatechange();
    check(LyricsService.plain === 'Plain lyrics' && LyricsService.provider === 'LRCLIB', 'Plain fallback');
-   check(LyricsService.hasLyrics, 'Plain lyrics available');
+   check(!LyricsService.hasLyrics && !menuSection.visible && !pinnedSection.visible, 'Untimed lyrics sections hidden');
    LyricsService.refresh(); check(requests.length === 2, 'Cached result reused');
    MprisController.trackTitle = 'Missing'; LyricsService.refresh();
    const missing = requests[2]; missing.readyState = XMLHttpRequest.DONE; missing.status = 404; missing.onreadystatechange();
@@ -112,9 +112,9 @@ ShellRoot {
    LyricsService.apply('[00:01.00]   ', 'Player', false);
    check(!LyricsService.hasLyrics, 'Empty timed lyrics hidden');
    LyricsService.pin('bottom', 'test');
-   LyricsService.apply('Lyrics return', 'Player', false);
+   LyricsService.apply('[00:01]Lyrics return', 'Player', false);
    check(LyricsService.hasLyrics && LyricsService.pinEdge === 'bottom', 'Pin retained when lyrics return');
-   const label = findItem(pinnedSection, 'lyrics-text');
+   const label = findItem(pinnedSection, 'lyric-line-0');
    check(!!label, 'Shared lyrics label exists');
    Config.theme.font = 'monospace'; Config.theme.fontSize = 19;
    check(label.font.family === Config.theme.font && label.font.pixelSize === 22
@@ -199,9 +199,9 @@ ShellRoot {
      throw Error('Backward seek or reduced motion failed');
     LyricsService.apply('Unsynced lyrics stay scrollable', 'Test', false); phase++; return;
    }
-   if (view.synced || view.followsPlayback || LyricsService.currentLine !== -1
-     || !findItem(view, 'lyrics-text').visible || !view.hasRows)
-     throw Error('Untimed lyrics must remain manual without fabricated timing');
+   if (view.synced || view.followsPlayback || LyricsService.currentLine !== -1 || view.hasRows
+     || findItem(view, 'lyric-row-0'))
+     throw Error('Untimed lyrics must have no displayed rows');
    console.log('PASS: animated forward scroll, row highlighting, manual browsing, backward seek and reduced motion'); Qt.quit();
   } catch (error) { console.error(error); Qt.exit(1); }
  } }

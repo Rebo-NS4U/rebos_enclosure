@@ -23,10 +23,12 @@ Turn off **Auto-hide** to keep the full card visible. The media menu itself
 always keeps its controls visible. The overlay keeps its size so lyrics do not
 jump when controls disappear; Auto-hide resets when the shell starts.
 
-The pinned overlay hides while loading or whenever the current song has no
-nonempty lyrics (including instrumental, missing, offline and no-player
-states). Its pin placement is retained so it returns automatically when lyrics
-become available. Loading messages and Retry remain accessible in the media menu.
+Lyrics sections in the media menu and dashboard, and the pinned overlay, appear
+only when the current song has nonempty timestamped lyrics. They disappear for
+text-only, loading, missing, instrumental and offline results, without a manual
+text-only mode or empty lyrics card. Pin placement is retained so the overlay
+returns automatically when timed lyrics become available. Opening the media
+menu still requests lyrics while its lyrics section is hidden.
 
 Player-supplied lyrics take priority, including Spotify lyrics when exposed in
 MPRIS metadata (`xesam:asText`, `xesam:lyrics`, `lyrics`, or `spotify:lyrics`).
@@ -41,18 +43,17 @@ Row colors, scale and control opacity animate using the shell's Motion settings.
 Turning motion off makes scrolling and highlights immediate. Manual scrolling
 pauses auto-follow until **Follow playback** is pressed. Forward and
 backward seeks update the highlighted row. Long lines wrap to fit the card.
-Untimed lyrics remain manually scrollable with a **TEXT ONLY** badge and a
-“No timing — scroll to read” caption. Playback following and highlights require
-real timestamps; song duration and word counts are not used to guess vocal timing. Missing, instrumental and offline results have explicit states and
-a Retry button. Requests expire after 12 seconds; old track responses are
-ignored. Successful lookups are cached in memory for up to 40 songs.
+Untimed lyrics are hidden. Playback following and highlights require real
+timestamps; song duration and word counts are not used to guess vocal timing.
+Requests expire after 12 seconds; old track responses are ignored. Successful
+lookups are cached in memory for up to 40 songs.
 
 LRCLIB lookup first uses `/api/get` with the player's track signature. If that
 returns no match, invalid parameters, or an empty lyrics record, `/api/search`
 tries title and primary artist without requiring the same album. Search results
 must match the title and artist (ignoring punctuation and spacing) and stay
 within five seconds of the known track duration. The closest matching synced
-record is preferred; plain lyrics and instrumental records are supported too.
+record is preferred; plain and instrumental results keep the view hidden.
 Unrelated songs and recordings outside that duration tolerance are rejected.
 Rate limits and network errors show a retry message without automatic retry
 loops. Requests identify Enclosure using LRCLIB's `Lrclib-Client` header; no API
@@ -73,13 +74,13 @@ Player position updates correct differences larger than 120 ms.
 The scroll target is separate from the sung line: it moves toward the next row
 160–400 ms before its timestamp, based on the spacing between lines. A critically
 damped spring preserves velocity when retargeting. Highlighting starts at the
-actual timestamp. Text-only lyrics remain manual until genuine timestamps
+actual timestamp. Text-only lyrics stay hidden until genuine timestamps
 become available. This uses
 the Dux timing approach with the existing Enclosure typography, palette and Motion setting.
 
-A plain-text provider result stays visible while the shell checks LRCLIB for
+A plain-text provider result stays internal while the shell checks LRCLIB for
 timed lyrics, including search when the exact result is untimed. Failed timing
-lookups retain the original text. `qs ipc -p ~/.config/quickshell call lyrics timing`
+lookups keep the lyrics view hidden. `qs ipc -p ~/.config/quickshell call lyrics timing`
 reports the clock and active/follow indices without lyric text.
 
 Regression checks: `python3 -m unittest discover -s desktop/tests -p 'test_lyrics*.py'`.

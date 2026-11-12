@@ -9,9 +9,7 @@ Item {
     property bool compact: false
     readonly property bool synced: LyricsService.lines.length > 0
     readonly property bool followsPlayback: LyricsService.displayLines.length > 0
-    readonly property var plainRows: LyricsService.plain.split(/\r?\n/)
-        .map(text => ({text: text.trim()})).filter(row => row.text.length > 0)
-    readonly property bool hasRows: synced || plainRows.length > 0
+    readonly property bool hasRows: synced && LyricsService.hasLyrics
     readonly property int activeIndex: LyricsService.currentLine
     readonly property int followIndex: LyricsService.followLine
     readonly property real followPosition: scroller.contentY
@@ -106,7 +104,7 @@ Item {
             Item { width: 1; height: root.followsPlayback ? root.height / 2 : 8 }
             Repeater {
                 id: rows
-                model: root.followsPlayback ? LyricsService.displayLines : root.plainRows
+                model: root.hasRows ? LyricsService.displayLines : []
                 delegate: Item {
                     id: row
                     required property var modelData
@@ -146,7 +144,7 @@ Item {
                     }
                     StyledText {
                         id: lyricText
-                        objectName: !root.synced && row.index === 0 ? "lyrics-text" : "lyric-line-" + row.index
+                        objectName: "lyric-line-" + row.index
                         anchors.centerIn: parent
                         width: Math.max(0, parent.width - 44)
                         text: row.modelData.text || "♪"

@@ -86,13 +86,13 @@ ShellRoot {
      LyricsService.refresh(); phase++; return;
     }
     if (phase === 1) {
-     check(!view.followsPlayback && !view.synced, 'Plain source must remain manual');
-     check(findItem(section, 'lyrics-timing-badge').text === 'TEXT ONLY', 'Text-only badge missing');
+     check(!view.followsPlayback && !view.synced && !section.visible && section.implicitHeight === 0, 'Plain source must hide the section');
+     check(!LyricsService.hasLyrics && !view.hasRows && LyricsService.viewers > 0, 'Hidden section must retain lookup demand without showing text');
      startY = view.followPosition;
      MprisController.isPlaying = true; interval = 800; phase++; return;
     }
     if (phase === 2) {
-     check(LyricsService.currentLine === -1 && view.followPosition === startY, 'Plain lyrics must not auto-scroll or highlight during playback');
+     check(LyricsService.currentLine === -1 && view.followPosition === startY, 'Hidden plain lyrics must not scroll or highlight during playback');
      MprisController.position = 0.5; MprisController.isPlaying = false;
      interval = 400; phase++; return;
     }
@@ -101,8 +101,8 @@ ShellRoot {
      MprisController.length = 0;
      check(!view.followsPlayback, 'Unknown duration must remain manual');
      LyricsService.apply('[00:00]Exact\\n[00:02]Timed', 'Test', false);
-     check(view.synced && LyricsService.displayLines[1].time === 2, 'Genuine timestamps must take priority');
-     console.log('PASS: text-only lyrics stay manual during playback; real timestamps enable following'); Qt.quit();
+     check(view.synced && section.visible && section.implicitHeight > 0 && LyricsService.displayLines[1].time === 2, 'Timed lyrics must restore the section automatically');
+     console.log('PASS: text-only lyrics hidden; real timestamps restore the section and following'); Qt.quit();
     }
    } catch(error) { console.error(error); Qt.exit(1); }
   }
@@ -147,7 +147,7 @@ ShellRoot {
 
 @unittest.skipUnless(shutil.which('quickshell'), 'Quickshell required')
 class Timing(unittest.TestCase):
-    def test_text_only_stays_manual(self):
+    def test_text_only_hidden(self):
         fixtures.Lyrics.run_harness(self, TEXT_ONLY)
 
     def test_timed_upgrade(self):
