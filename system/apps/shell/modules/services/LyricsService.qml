@@ -18,6 +18,9 @@ Singleton {
     readonly property bool hasLyrics: player !== null && lyricsKey === trackKey && plain.trim().length > 0
     property string plain: ""
     property var lines: []
+    readonly property bool estimated: hasLyrics && lines.length === 0 && MprisController.length > 0
+    readonly property var displayLines: lines.length ? lines
+        : (estimated ? Lyrics.estimateLines(plain, MprisController.length) : [])
     property string status: "Play a song to see lyrics."
     property string provider: ""
     property var createRequest: () => new XMLHttpRequest()
@@ -26,7 +29,7 @@ Singleton {
     readonly property int currentLine: playbackClock.activeIndex
     readonly property int followLine: playbackClock.followIndex
     property LyricsClock playbackClock: LyricsClock {
-        lines: root.lines
+        lines: root.displayLines
         position: MprisController.position
         playing: MprisController.isPlaying
         rate: root.player?.rate ?? 1
@@ -76,7 +79,19 @@ Singleton {
         status = "Finding lyrics on LRCLIB…";
         lookup(key, false);
     }
-    function lookup(key, searching) {
+    // A plain-text provider must not prevent a timed result from another source.
+    onPlainChanged: timingUpgrade.restart()
+    Timer { id: timingUpgrade; interval: 0; onTriggered: root.upgradeTiming() }
+    function upgradeTiming() {
+        if (!wanted || !hasLyrics || lines.length || request || !MprisController.trackArtists) return;
+        const hit = cache[trackKey];
+        if (hit) {
+            if (Lyrics.parseLrc(hit.text).length) apply(hit.text, "LRCLIB", false);
+            return;
+        }
+        lookup(trackKey, false, true);
+    }
+    function lookup(key, searching, preferSynced = false) {
         const title = MprisController.trackTitle;
         const artists = MprisController.trackArtists;
         const album = player?.trackAlbum || "";
@@ -97,23 +112,28 @@ Singleton {
             if (xhr.readyState !== XMLHttpRequest.DONE || root.request !== xhr || root.trackKey !== key) return;
             root.request = null; timeout.stop();
             if (!searching && (xhr.status === 404 || xhr.status === 400)) {
-                root.lookup(key, true); return;
+                root.lookup(key, true, preferSynced); return;
             }
             if (xhr.status === 404) { root.status = "No lyrics found on LRCLIB for this song."; return; }
             if (xhr.status === 429) { root.status = "LRCLIB is busy. Try again shortly."; return; }
             if (xhr.status !== 200) { root.status = "LRCLIB unavailable. Try again shortly."; return; }
             try {
                 const response = JSON.parse(xhr.responseText);
-                const data = searching ? Lyrics.bestMatch(response, title, artists, album, duration) : response;
+                const candidates = searching && preferSynced && Array.isArray(response)
+                    ? response.filter(record => typeof record?.syncedLyrics === "string" && record.syncedLyrics.trim()) : response;
+                const data = searching ? Lyrics.bestMatch(candidates, title, artists, album, duration) : response;
                 const synced = typeof data?.syncedLyrics === "string" ? data.syncedLyrics.trim() : "";
                 const plainText = typeof data?.plainLyrics === "string" ? data.plainLyrics.trim() : "";
+                if (!searching && preferSynced && !synced) { root.lookup(key, true, true); return; }
                 if (!data || (!synced && !plainText && !data.instrumental)) {
-                    if (!searching) { root.lookup(key, true); return; }
+                    if (!searching) { root.lookup(key, true, preferSynced); return; }
+                    if (preferSynced && root.plain) { root.cache[key] = {text: "", instrumental: false}; root.status = ""; return; }
                     root.status = "No lyrics found on LRCLIB for this song."; return;
                 }
                 const hit = {text: synced || plainText, instrumental: !!data.instrumental};
                 if (Object.keys(root.cache).length >= 40) root.cache = ({});
                 root.cache[key] = hit;
+                if (preferSynced && !synced && root.plain) { root.status = ""; return; }
                 root.apply(hit.text, "LRCLIB", hit.instrumental);
             } catch (error) { root.status = "Could not read LRCLIB lyrics. Try again."; }
         };

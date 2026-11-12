@@ -199,8 +199,9 @@ ShellRoot {
      throw Error('Backward seek or reduced motion failed');
     LyricsService.apply('Unsynced lyrics stay scrollable', 'Test', false); phase++; return;
    }
-   if (view.synced || !findItem(view, 'lyrics-text').visible || !view.hasRows
-     || findItem(view, 'lyric-row-0').current) throw Error('Untimed lyrics must use styled rows without a fabricated current line');
+   if (view.synced || !LyricsService.estimated || !view.followsPlayback
+     || !findItem(view, 'lyrics-text').visible || !view.hasRows)
+     throw Error('Untimed lyrics with a duration must use approximate playback following');
    console.log('PASS: animated forward scroll, row highlighting, manual browsing, backward seek and reduced motion'); Qt.quit();
   } catch (error) { console.error(error); Qt.exit(1); }
  } }

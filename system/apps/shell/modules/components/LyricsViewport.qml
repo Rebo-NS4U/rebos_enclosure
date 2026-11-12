@@ -8,6 +8,7 @@ Item {
     id: root
     property bool compact: false
     readonly property bool synced: LyricsService.lines.length > 0
+    readonly property bool followsPlayback: LyricsService.displayLines.length > 0
     readonly property var plainRows: LyricsService.plain.split(/\r?\n/)
         .map(text => ({text: text.trim()})).filter(row => row.text.length > 0)
     readonly property bool hasRows: synced || plainRows.length > 0
@@ -24,7 +25,7 @@ Item {
     }
 
     function followCurrent(animate) {
-        if (!synced || browsing || !visible) return;
+        if (!followsPlayback || browsing || !visible) return;
         const row = rows.itemAt(Math.max(0, followIndex));
         if (!row) return;
         const destination = Math.max(0, Math.min(scroller.contentHeight - scroller.height,
@@ -94,24 +95,24 @@ Item {
             root.browsing = true;
         }
         ScrollBar.vertical: ScrollBar {
-            policy: root.browsing || !root.synced ? ScrollBar.AsNeeded : ScrollBar.AlwaysOff
+            policy: root.browsing || !root.followsPlayback ? ScrollBar.AsNeeded : ScrollBar.AlwaysOff
             onPressedChanged: if (pressed) root.browsing = true
         }
         Column {
             id: lyricColumn
             visible: root.hasRows
             width: scroller.width
-            spacing: root.synced ? 8 : 12
-            Item { width: 1; height: root.synced ? root.height / 2 : 8 }
+            spacing: root.followsPlayback ? 8 : 12
+            Item { width: 1; height: root.followsPlayback ? root.height / 2 : 8 }
             Repeater {
                 id: rows
-                model: root.synced ? LyricsService.lines : root.plainRows
+                model: root.followsPlayback ? LyricsService.displayLines : root.plainRows
                 delegate: Item {
                     id: row
                     required property var modelData
                     required property int index
-                    readonly property bool current: root.synced && root.activeIndex === index
-                    readonly property bool emphasized: current || (!root.synced && rowHover.hovered)
+                    readonly property bool current: root.followsPlayback && root.activeIndex === index
+                    readonly property bool emphasized: current || (!root.followsPlayback && rowHover.hovered)
                     objectName: "lyric-row-" + index
                     width: lyricColumn.width
                     height: Math.max(48, lyricText.implicitHeight + 28)
@@ -123,7 +124,7 @@ Item {
                         anchors.leftMargin: 4
                         anchors.rightMargin: 4
                         radius: Styling.radius(0)
-                        opacity: row.emphasized ? 1 : (root.synced ? 0 : 0.18)
+                        opacity: row.emphasized ? 1 : (root.followsPlayback ? 0 : 0.18)
                         gradient: Gradient {
                             orientation: Gradient.Horizontal
                             GradientStop { position: 0; color: Styling.withOpacity(Colors.primary, 0.23) }
@@ -155,15 +156,15 @@ Item {
                         font.pixelSize: Styling.fontSize(root.compact ? 3 : 1)
                         font.weight: Font.DemiBold
                         color: row.emphasized ? Colors.primary : Colors.overBackground
-                        opacity: !root.synced ? 0.9 : (row.current ? 1 : (Math.abs(row.index - root.activeIndex) <= 1 ? 0.62 : 0.3))
-                        scale: row.emphasized || !root.synced ? 1 : 0.94
+                        opacity: !root.followsPlayback ? 0.9 : (row.current ? 1 : (Math.abs(row.index - root.activeIndex) <= 1 ? 0.62 : 0.3))
+                        scale: row.emphasized || !root.followsPlayback ? 1 : 0.94
                         Behavior on color { ColorAnimation { duration: Motion.enter } }
                         Behavior on opacity { NumberAnimation { duration: Motion.enter } }
                         Behavior on scale { NumberAnimation { duration: Motion.enter; easing.type: Easing.OutCubic } }
                     }
                 }
             }
-            Item { width: 1; height: root.synced ? root.height / 2 : 8 }
+            Item { width: 1; height: root.followsPlayback ? root.height / 2 : 8 }
         }
         StyledText {
             id: statusText
@@ -184,7 +185,7 @@ Item {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom
         anchors.bottomMargin: 8
-        visible: root.synced && root.browsing
+        visible: root.followsPlayback && root.browsing
         text: "Follow playback"
         onClicked: root.resume()
     }

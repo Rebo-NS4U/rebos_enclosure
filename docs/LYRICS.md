@@ -41,10 +41,12 @@ Row colors, scale and control opacity animate using the shell's Motion settings.
 Turning motion off makes scrolling and highlights immediate. Manual scrolling
 pauses auto-follow until **Follow playback** is pressed. Forward and
 backward seeks update the highlighted row. Long lines wrap to fit the card.
-Untimed lyrics use the same larger row typography, tinted row backgrounds and
-animated hover accents. A **TEXT ONLY** badge and a “No timing — scroll to read”
-caption distinguish them from synced lyrics. They remain manually scrollable;
-playback-following highlights require timestamps. Missing, instrumental and offline results have explicit states and
+Untimed lyrics use **APPROXIMATE** playback following when the song duration is
+known. Estimated line times spread that duration across nonempty lines, weighted
+by word count; intros, instrumental breaks and vocal delivery can make these
+estimates inaccurate. The badge and “Estimated timing” caption distinguish this
+from synced lyrics. Without a known duration, the **TEXT ONLY** badge remains
+and lyrics scroll manually. Missing, instrumental and offline results have explicit states and
 a Retry button. Requests expire after 12 seconds; old track responses are
 ignored. Successful lookups are cached in memory for up to 40 songs.
 
@@ -74,7 +76,13 @@ Player position updates correct differences larger than 120 ms.
 The scroll target is separate from the sung line: it moves toward the next row
 160–400 ms before its timestamp, based on the spacing between lines. A critically
 damped spring preserves velocity when retargeting. Highlighting starts at the
-actual timestamp. Untimed lyrics remain manually scrollable. This uses the Dux
-timing approach with the existing Enclosure typography, palette and Motion setting.
+actual timestamp. Text-only lyrics use clearly marked approximate timing when
+the song duration is known. Genuine timestamps always take priority. This uses
+the Dux timing approach with the existing Enclosure typography, palette and Motion setting.
+
+A plain-text provider result stays visible while the shell checks LRCLIB for
+timed lyrics, including search when the exact result is untimed. Failed timing
+lookups retain the original text. `qs ipc -p ~/.config/quickshell call lyrics timing`
+reports the clock, active/follow indices and approximate mode without lyric text.
 
 Regression checks: `python3 -m unittest discover -s desktop/tests -p 'test_lyrics*.py'`.
