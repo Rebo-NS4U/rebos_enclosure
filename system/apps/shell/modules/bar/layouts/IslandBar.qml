@@ -944,7 +944,7 @@ Item {
                         RowLayout {
                             id: alertsRow
                             anchors.fill: parent
-                            spacing: 4
+                            spacing: Styling.spacing(4)
 
                             BarSymbol {
                                 Layout.alignment: Qt.AlignVCenter

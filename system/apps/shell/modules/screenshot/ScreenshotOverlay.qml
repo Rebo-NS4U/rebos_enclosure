@@ -185,12 +185,12 @@ PanelWindow {
             anchors.top: parent.top; anchors.topMargin: 20
             anchors.horizontalCenter: parent.horizontalCenter
             width: Math.min(parent.width - 40, topRow.implicitWidth + 32); height: 52
-            variant: "bg"; radius: 16
+            variant: "bg"; radius: Styling.radius(0)
             RowLayout {
                 id: topRow
                 anchors.centerIn: parent
                 StyledText { text: "Screenshot"; font.bold: true }
-                StyledText { text: root.busy ? "Exporting…" : root.controller.error || root.hint; font.pixelSize: 12 }
+                StyledText { text: root.busy ? "Exporting…" : root.controller.error || root.hint; font.pixelSize: Styling.fontSize(-2) }
                 Action { text: "Full image"; onClicked: { root.fullImage(); root.repaint(); } }
                 Action { text: "Cancel"; onClicked: root.controller.close(); enabled: !root.busy }
             }
@@ -200,12 +200,12 @@ PanelWindow {
             anchors.horizontalCenter: parent.horizontalCenter
             width: tools.width + 24
             height: tools.implicitHeight + 20
-            variant: "bg"; radius: 16
+            variant: "bg"; radius: Styling.radius(0)
             Flow {
                 id: tools
                 anchors.centerIn: parent
                 width: Math.min(820, root.width - 48)
-                spacing: 6
+                spacing: Styling.spacing(6)
                 Repeater {
                     model: [{label:"Crop",tool:"crop"},{label:"Draw",tool:"pen"},{label:"Arrow",tool:"arrow"},{label:"Box",tool:"rectangle"},{label:"Text",tool:"text"},{label:"Redact",tool:"redact"}]
                     Action {
@@ -237,7 +237,7 @@ PanelWindow {
             visible: false
             anchors.centerIn: parent
             width: Math.min(500, parent.width-40); height: 110
-            variant: "bg"; radius: 16
+            variant: "bg"; radius: Styling.radius(0)
             ColumnLayout {
                 anchors.fill: parent; anchors.margins: 12
                 StyledText { text: "Annotation text · Enter to place" }

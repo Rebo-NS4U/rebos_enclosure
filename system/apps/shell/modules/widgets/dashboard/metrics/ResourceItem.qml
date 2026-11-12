@@ -15,7 +15,7 @@ Item {
 
     RowLayout {
         anchors.fill: parent
-        spacing: 8
+        spacing: Styling.spacing(8)
 
         // Icon
         Text {
@@ -23,7 +23,7 @@ Item {
             font.hintingPreference: Font.PreferFullHinting
             text: root.icon
             font.family: Icons.font
-            font.pixelSize: 18
+            font.pixelSize: Styling.fontSize(4)
             color: Colors.overBackground
             Layout.alignment: Qt.AlignVCenter
             Layout.preferredWidth: 20

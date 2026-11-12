@@ -50,13 +50,13 @@ Item {
         anchors.leftMargin: 16
         anchors.rightMargin: 16
         anchors.topMargin: 16
-        spacing: 8
+        spacing: Styling.spacing(8)
 
         // Main row with device info
         RowLayout {
             Layout.fillWidth: true
             Layout.preferredHeight: 32
-            spacing: 12
+            spacing: Styling.spacing(12)
 
             // Device icon
             Text {
@@ -85,14 +85,14 @@ Item {
                     return Icons.bluetooth;
                 }
                 font.family: Icons.font
-                font.pixelSize: 20
+                font.pixelSize: Styling.fontSize(6)
                 color: root.device?.connected ? Styling.srItem("overprimary") : Colors.overBackground
             }
 
             // Device name and status
             ColumnLayout {
                 Layout.fillWidth: true
-                spacing: 0
+                spacing: Styling.spacing(0)
 
                 Text {
                     renderType: Text.NativeRendering
@@ -144,7 +144,7 @@ Item {
             // Battery indicator
             Row {
                 visible: root.device?.batteryAvailable ?? false
-                spacing: 4
+                spacing: Styling.spacing(4)
 
                 Text {
                     renderType: Text.NativeRendering
@@ -162,7 +162,7 @@ Item {
                         return Icons.batteryEmpty;
                     }
                     font.family: Icons.font
-                    font.pixelSize: 18
+                    font.pixelSize: Styling.fontSize(4)
                     color: {
                         const battery = root.device?.battery ?? 0;
                         if (battery > 60)
@@ -181,7 +181,7 @@ Item {
         RowLayout {
             Layout.fillWidth: true
             visible: root.expanded
-            spacing: 8
+            spacing: Styling.spacing(8)
             opacity: root.expanded ? 1 : 0
 
             Behavior on opacity {

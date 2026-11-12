@@ -282,7 +282,7 @@ Item {
             border.width: 1
             ColumnLayout {
                 anchors.fill: parent
-                spacing: 0
+                spacing: Styling.spacing(0)
 
                 Item {
                     Layout.fillWidth: true
@@ -292,7 +292,7 @@ Item {
                         anchors.fill: parent
                         anchors.leftMargin: 12
                         anchors.rightMargin: 12
-                        spacing: 4
+                        spacing: Styling.spacing(4)
 
                         Button {
                             Layout.preferredWidth: 32
@@ -509,7 +509,7 @@ Item {
                     }
                     Row {
                         id: sessionRow
-                        spacing: 6
+                        spacing: Styling.spacing(6)
                         Repeater {
                             id: sessionRepeater
                             model: Ai.sessionModel
@@ -544,7 +544,7 @@ Item {
                                     Behavior on border.color { ColorAnimation { duration: Config.animDuration / 4 } }
                                 }
                                 contentItem: RowLayout {
-                                    spacing: 7
+                                    spacing: Styling.spacing(7)
                                     StyledRect {
                                         Layout.preferredWidth: 5
                                         Layout.preferredHeight: 5
@@ -799,7 +799,7 @@ Item {
                             ColumnLayout {
                                 anchors.fill: parent
                                 anchors.margins: 16
-                                spacing: 8
+                                spacing: Styling.spacing(8)
 
                                 StyledText {
                                     renderType: Text.NativeRendering
@@ -817,7 +817,7 @@ Item {
                                     Layout.fillHeight: true
                                     clip: true
                                     model: mainChatArea.session.chatHistory
-                                    spacing: 4
+                                    spacing: Styling.spacing(4)
 
                                     delegate: Button {
                                         width: historyList.width
@@ -828,7 +828,7 @@ Item {
                                             anchors.fill: parent
                                             anchors.leftMargin: 12
                                             anchors.rightMargin: 12
-                                            spacing: 8
+                                            spacing: Styling.spacing(8)
 
                                             Column {
                                                 Layout.fillWidth: true
@@ -1022,7 +1022,7 @@ Item {
                             anchors.bottomMargin: 24
                             anchors.horizontalCenter: parent.horizontalCenter
                             visible: mainChatArea.isWelcome
-                            spacing: 8
+                            spacing: Styling.spacing(8)
 
                             StyledText {
                                 renderType: Text.NativeRendering
@@ -1039,7 +1039,7 @@ Item {
 
                         ColumnLayout {
                             anchors.fill: parent
-                            spacing: 8
+                            spacing: Styling.spacing(8)
 
                             RowLayout {
                                 Layout.fillWidth: true
@@ -1106,7 +1106,7 @@ Item {
                                     x: 4
                                     y: 16
                                     width: Math.max(0, chatView.width - 8)
-                                    spacing: 16
+                                    spacing: Styling.spacing(16)
 
                                     Repeater {
                                         // Keep message widgets alive while their streamed text changes.
@@ -1155,7 +1155,7 @@ Item {
                                                 anchors.right: parent.right
                                                 anchors.margins: 10
                                                 layoutDirection: (isUser && !isSystem) ? Qt.RightToLeft : Qt.LeftToRight
-                                                spacing: 12
+                                                spacing: Styling.spacing(12)
 
                                                 MouseArea {
                                                     id: bubbleArea
@@ -1179,7 +1179,7 @@ Item {
                                                         anchors.right: isUser ? bubble.left : undefined
                                                         anchors.leftMargin: 8
                                                         anchors.rightMargin: 8
-                                                        spacing: 4
+                                                        spacing: Styling.spacing(4)
                                                         flow: horizontal ? Grid.LeftToRight : Grid.TopToBottom
                                                         layoutDirection: isUser ? Qt.RightToLeft : Qt.LeftToRight
                                                         visible: bubbleArea.containsMouse || messageDelegate.isEditing
@@ -1302,13 +1302,13 @@ Item {
                                                             id: bubbleContent
                                                             anchors.centerIn: parent
                                                             width: parent.width - 32
-                                                            spacing: 8
+                                                            spacing: Styling.spacing(8)
 
                                                             // ── Tool result: compact chip (expand for raw output) ──
                                                             ColumnLayout {
                                                                 Layout.fillWidth: true
                                                                 visible: messageDelegate.isToolResult
-                                                                spacing: 6
+                                                                spacing: Styling.spacing(6)
 
                                                                 MouseArea {
                                                                     Layout.fillWidth: true
@@ -1320,7 +1320,7 @@ Item {
                                                                         id: toolChipRow
                                                                         anchors.left: parent.left
                                                                         anchors.right: parent.right
-                                                                        spacing: 8
+                                                                        spacing: Styling.spacing(8)
 
                                                                         StyledText {
                                                                             text: Icons.terminal
@@ -1331,7 +1331,7 @@ Item {
 
                                                                         ColumnLayout {
                                                                             Layout.fillWidth: true
-                                                                            spacing: 1
+                                                                            spacing: Styling.spacing(1)
 
                                                                             StyledText {
                                                                                 renderType: Text.NativeRendering
@@ -1393,7 +1393,7 @@ Item {
                                                                                 ? (modelData.content || "") : ""
                                                                             textFormat: Text.PlainText
                                                                             color: Colors.outline
-                                                                            font.family: "Monospace"
+                                                                            font.family: Config.theme.monoFont
                                                                             font.pixelSize: Styling.fontSize(-3)
                                                                             wrapMode: Text.WrapAnywhere
                                                                             readOnly: true
@@ -1409,7 +1409,7 @@ Item {
                                                                 objectName: "messageBody"
                                                                 Layout.fillWidth: true
                                                                 visible: !messageDelegate.isToolResult && !messageDelegate.isEditing && !bubbleContentText.visible
-                                                                spacing: 8
+                                                                spacing: Styling.spacing(8)
 
                                                                 readonly property bool streaming: mainChatArea.session.isBusy && mainChatArea.session.activeAssistantIndex === messageDelegate.index
                                                                 readonly property list<var> segments: {
@@ -1519,7 +1519,7 @@ Item {
                                                                 }
                                                                 contentItem: ColumnLayout {
                                                                     id: toolApprovalContent
-                                                                    spacing: 10
+                                                                    spacing: Styling.spacing(10)
 
                                                                     readonly property string toolName: modelData.functionCall ? (modelData.functionCall.name || "") : ""
                                                                     readonly property string toolDetail: {
@@ -1554,7 +1554,7 @@ Item {
 
                                                                     RowLayout {
                                                                         Layout.fillWidth: true
-                                                                        spacing: 8
+                                                                        spacing: Styling.spacing(8)
 
                                                                         StyledText {
                                                                             text: Icons.terminal
@@ -1565,7 +1565,7 @@ Item {
 
                                                                         ColumnLayout {
                                                                             Layout.fillWidth: true
-                                                                            spacing: 1
+                                                                            spacing: Styling.spacing(1)
 
                                                                             StyledText {
                                                                                 renderType: Text.NativeRendering
@@ -1584,7 +1584,7 @@ Item {
                                                                                 visible: toolApprovalContent.toolDetail.length > 0
                                                                                 text: toolApprovalContent.toolDetail
                                                                                 color: Colors.outline
-                                                                                font.family: "Monospace"
+                                                                                font.family: Config.theme.monoFont
                                                                                 font.pixelSize: Styling.fontSize(-2)
                                                                                 wrapMode: Text.WrapAnywhere
                                                                                 maximumLineCount: 5
@@ -1596,7 +1596,7 @@ Item {
                                                                     RowLayout {
                                                                         visible: modelData.functionPending === true
                                                                         Layout.alignment: Qt.AlignRight
-                                                                        spacing: 8
+                                                                        spacing: Styling.spacing(8)
 
                                                                         Button {
                                                                             text: "Reject"
@@ -1710,10 +1710,10 @@ Item {
                                             id: busyStatusRow
                                             anchors.centerIn: parent
                                             width: Math.max(0, parent.width - 24)
-                                            spacing: 12
+                                            spacing: Styling.spacing(12)
 
                                             Row {
-                                                spacing: 4
+                                                spacing: Styling.spacing(4)
 
                                                 Repeater {
                                                     model: 3
@@ -1786,7 +1786,7 @@ Item {
                                                 onClicked: mainChatArea.session.cancelGeneration(true)
 
                                                 contentItem: Row {
-                                                    spacing: 4
+                                                    spacing: Styling.spacing(4)
                                                     StyledText {
                                                         text: Icons.stop
                                                         font.family: Icons.font
@@ -1886,7 +1886,7 @@ Item {
 
                                 ColumnLayout {
                                     anchors.fill: parent
-                                    spacing: 6
+                                    spacing: Styling.spacing(6)
 
                                     Flickable {
                                         id: attachmentPreview
@@ -1907,7 +1907,7 @@ Item {
                                         Flow {
                                             id: attachmentsFlow
                                             width: attachmentPreview.width
-                                            spacing: 6
+                                            spacing: Styling.spacing(6)
 
                                             Repeater {
                                                 model: mainChatArea.pendingAttachments
@@ -2196,7 +2196,7 @@ Item {
                                             anchors.fill: parent
                                             anchors.leftMargin: 12
                                             anchors.rightMargin: 12
-                                            spacing: 8
+                                            spacing: Styling.spacing(8)
 
                                             StyledText {
                                                 renderType: Text.NativeRendering

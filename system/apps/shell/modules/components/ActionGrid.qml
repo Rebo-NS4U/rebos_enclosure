@@ -13,7 +13,7 @@ FocusScope {
     property string layout: "row" // "row" or "grid"
     property int buttonSize: 48
     property int iconSize: 20
-    property int spacing: 4
+    property int spacing: Styling.spacing(4)
     property int columns: 3 // para layout grid
     property int textSpacing: 8
 

@@ -182,7 +182,7 @@ ColumnLayout {
         title: "Action result"
         Caption { objectName: "github-action-result"; text: worker.running ? "Working on " + root.activePath + "…" : root.feedback; color: root.failed ? Colors.error : Colors.overSurfaceVariant }
     }
-    ColumnLayout { id: overviewSlot; Layout.fillWidth: true; spacing: 12 }
+    ColumnLayout { id: overviewSlot; Layout.fillWidth: true; spacing: Styling.spacing(12) }
     SettingsGroup {
         title: "Update installed desktop"
         visible: root.selectedPath === "" || root.activePath === root.desktopPath
@@ -260,7 +260,7 @@ ColumnLayout {
                 : "Push publishes the current branch to origin. Its difference from the default branch is a separate comparison."
         }
         Flow {
-            Layout.fillWidth: true; spacing: 8
+            Layout.fillWidth: true; spacing: Styling.spacing(8)
             SettingsButton {
                 objectName: "github-push-button"
                 text: root.project.upstream_ahead > 0 ? "Push " + root.project.upstream_ahead + " commit" + (root.project.upstream_ahead === 1 ? "" : "s") + "…" : "Push branch…"
@@ -278,7 +278,7 @@ ColumnLayout {
         summary: "Connect another local folder or browse your GitHub repositories."
         Field { id: localPath; placeholderText: "Existing project folder, e.g. ~/code/project"; enabled: !root.busy }
         Flow {
-            Layout.fillWidth: true; spacing: 8
+            Layout.fillWidth: true; spacing: Styling.spacing(8)
             SettingsButton { text: "Add local project"; enabled: !root.busy && localPath.text.trim() !== ""; onClicked: { root.pending = {action: "add"}; root.act("add", {path: localPath.text}, false); } }
             SettingsButton { text: "Refresh projects"; enabled: !root.busy; onClicked: root.start("catalog") }
             SettingsButton { text: "Browse my GitHub projects"; enabled: !root.busy; onClicked: root.start("remote") }
@@ -297,7 +297,7 @@ ColumnLayout {
         Field { id: repositoryName; placeholderText: "GitHub owner/repository or URL"; enabled: !root.busy }
         Field { id: cloneDestination; placeholderText: "New clone folder, e.g. ~/code/project"; enabled: !root.busy }
         Flow {
-            Layout.fillWidth: true; spacing: 8
+            Layout.fillWidth: true; spacing: Styling.spacing(8)
             SettingsButton {
                 text: "Clone project"
                 enabled: !root.busy && repositoryName.text.trim() !== "" && cloneDestination.text.trim() !== ""
@@ -330,7 +330,7 @@ ColumnLayout {
         actionsEnabled: root.canEdit
         Caption { text: "Branch: " + (root.project.branch || "Unknown") + "   •   Tracks: " + (root.project.upstream || "No upstream") }
         Flow {
-            Layout.fillWidth: true; spacing: 8
+            Layout.fillWidth: true; spacing: Styling.spacing(8)
             SettingsButton { text: "Fetch origin"; onClicked: root.act("fetch", {}, false) }
             SettingsButton { text: "Pull current branch"; onClicked: root.act("pull", {}, false) }
             SettingsButton { text: "Issues"; onClicked: Qt.openUrlExternally(root.project.repository + "/issues") }
@@ -375,7 +375,7 @@ ColumnLayout {
             }
         }
         Flow {
-            Layout.fillWidth: true; spacing: 8
+            Layout.fillWidth: true; spacing: Styling.spacing(8)
             SettingsButton { text: "View selected diff"; enabled: root.selectedFiles.length > 0; onClicked: root.act("diff", {files: root.selectedFiles}, false) }
             SettingsButton { text: "Stage selected"; enabled: root.selectedFiles.length > 0; onClicked: root.act("stage", {files: root.selectedFiles}, false) }
             SettingsButton { text: "Unstage selected"; enabled: root.selectedFiles.length > 0; onClicked: root.act("unstage", {files: root.selectedFiles}, false) }

@@ -71,7 +71,7 @@ Item {
         RowLayout {
             anchors.fill: parent
             anchors.margins: 16
-            spacing: 16
+            spacing: Styling.spacing(16)
 
             StyledText {
                 renderType: Text.NativeRendering
@@ -134,7 +134,7 @@ Item {
         }
 
         Layout.fillWidth: true
-        spacing: 8
+        spacing: Styling.spacing(8)
 
         StyledText {
             renderType: Text.NativeRendering
@@ -166,7 +166,7 @@ Item {
         property int minimum: 0
         signal valueEdited(int newValue)
         Layout.fillWidth: true
-        spacing: 8
+        spacing: Styling.spacing(8)
         RowLayout {
             Layout.fillWidth: true
             StyledText {
@@ -214,7 +214,7 @@ Item {
         signal valueEdited(int newValue)
 
         Layout.fillWidth: true
-        spacing: 8
+        spacing: Styling.spacing(8)
 
         StyledText {
             renderType: Text.NativeRendering
@@ -289,7 +289,7 @@ Item {
         signal valueEdited(string newValue)
 
         Layout.fillWidth: true
-        spacing: 8
+        spacing: Styling.spacing(8)
 
         StyledText {
             renderType: Text.NativeRendering
@@ -363,7 +363,7 @@ Item {
         }
 
         Layout.fillWidth: true
-        spacing: 4
+        spacing: Styling.spacing(4)
 
         StyledText {
             renderType: Text.NativeRendering
@@ -378,7 +378,7 @@ Item {
 
         RowLayout {
             Layout.fillWidth: true
-            spacing: 4
+            spacing: Styling.spacing(4)
 
             Repeater {
                 model: selectorRowRoot.options
@@ -446,7 +446,7 @@ Item {
         signal screensChanged(var newList)
 
         Layout.fillWidth: true
-        spacing: 4
+        spacing: Styling.spacing(4)
 
         StyledText {
             renderType: Text.NativeRendering
@@ -470,7 +470,7 @@ Item {
 
         Flow {
             Layout.fillWidth: true
-            spacing: 4
+            spacing: Styling.spacing(4)
 
             Repeater {
                 model: Quickshell.screens
@@ -562,7 +562,7 @@ Item {
         ColumnLayout {
             id: mainColumn
             width: mainFlickable.width
-            spacing: 8
+            spacing: Styling.spacing(8)
 
             // Header wrapper
             Item {
@@ -603,7 +603,7 @@ Item {
                     id: contentColumn
                     width: root.contentWidth
                     anchors.horizontalCenter: parent.horizontalCenter
-                    spacing: 16
+                    spacing: Styling.spacing(16)
 
                     // ═══════════════════════════════════════════════════════════════
                     // MENU SECTION
@@ -612,8 +612,8 @@ Item {
                         visible: root.currentSection === ""
                         Layout.fillWidth: true
                         columns: root.contentWidth < Styling.fontSize(0) * 30 ? 1 : 2
-                        columnSpacing: 12
-                        rowSpacing: 12
+                        columnSpacing: Styling.spacing(12)
+                        rowSpacing: Styling.spacing(12)
                         SectionButton {
                             text: "Bar"
                             description: "Layout, transparency and visible monitors."
@@ -723,7 +723,7 @@ Item {
                         ColumnLayout {
                             visible: (Config.bar?.style ?? "default") === "island"
                             Layout.fillWidth: true
-                            spacing: 12
+                            spacing: Styling.spacing(12)
 
                             SelectorRow {
                                 objectName: "bar-appearance"

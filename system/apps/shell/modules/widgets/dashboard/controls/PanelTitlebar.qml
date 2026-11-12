@@ -27,11 +27,11 @@ ColumnLayout {
     readonly property int horizontalMargin: 12
     Layout.fillWidth: true
     Layout.preferredHeight: implicitHeight
-    spacing: 8
+    spacing: Styling.spacing(8)
     RowLayout {
         Layout.fillWidth: true
         Layout.preferredHeight: Styling.fontSize(0) * 3.5
-        spacing: 8
+        spacing: Styling.spacing(8)
         StyledText {
             Layout.fillWidth: true
             Layout.maximumWidth: implicitWidth

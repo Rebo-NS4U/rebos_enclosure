@@ -116,13 +116,13 @@ Item {
                     Layout.fillWidth: true
                     implicitHeight: Math.max(onlyNotification ? 48 : 32, textColumn.implicitHeight)
                     height: implicitHeight
-                    spacing: 8
+                    spacing: Styling.spacing(8)
                     visible: onlyNotification
 
                     // Contenido principal
                     RowLayout {
                         Layout.fillWidth: true
-                        spacing: 8
+                        spacing: Styling.spacing(8)
 
                         // App icon
                         NotificationAppIcon {
@@ -149,14 +149,14 @@ Item {
                             // Fila del summary, app name y timestamp
                             RowLayout {
                                 width: parent.width
-                                spacing: 4
+                                spacing: Styling.spacing(4)
 
                                 // Contenedor izquierdo para summary y app name
                                 Row {
                                     id: leftTextsContainer
                                     Layout.fillWidth: true
                                     Layout.minimumWidth: 0
-                                    spacing: 4
+                                    spacing: Styling.spacing(4)
 
                                     Text {
                                         renderType: Text.NativeRendering
@@ -255,13 +255,13 @@ Item {
                 // Grouped notification layout (original)
                 RowLayout {
                     Layout.fillWidth: true
-                    spacing: 8
+                    spacing: Styling.spacing(8)
                     visible: !onlyNotification
 
                     // Contenido principal
                     RowLayout {
                         Layout.fillWidth: true
-                        spacing: 8
+                        spacing: Styling.spacing(8)
 
                         NotificationAppIcon {
                             id: groupedAppIcon
@@ -284,17 +284,17 @@ Item {
                             RowLayout {
                                 id: columnLayout
                                 width: parent.width
-                                spacing: 8
+                                spacing: Styling.spacing(8)
                                 visible: expanded
 
                                 Column {
                                     Layout.fillWidth: true
-                                    spacing: 4
+                                    spacing: Styling.spacing(4)
 
                                     // Fila del summary y timestamp
                                     RowLayout {
                                         width: parent.width
-                                        spacing: 4
+                                        spacing: Styling.spacing(4)
 
                                         Text {
                                             renderType: Text.NativeRendering
@@ -325,7 +325,7 @@ Item {
                                     // Mostrar todos los body ordenados antiguo a reciente con spacing 4
                                     Column {
                                         width: parent.width
-                                        spacing: 4
+                                        spacing: Styling.spacing(4)
 
                                         Repeater {
                                             model: root.sortedNotifications
@@ -352,7 +352,7 @@ Item {
                             RowLayout {
                                 id: rowLayout
                                 width: parent.width
-                                spacing: 4
+                                spacing: Styling.spacing(4)
                                 visible: !expanded
 
                                 Text {
@@ -422,7 +422,7 @@ Item {
 
             RowLayout {
                 anchors.fill: parent
-                spacing: 4
+                spacing: Styling.spacing(4)
 
                 Repeater {
                     model: root.validActions

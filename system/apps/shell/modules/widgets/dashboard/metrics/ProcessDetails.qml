@@ -10,7 +10,7 @@ import qs.modules.theme
 ColumnLayout {
     id: root
     objectName: "monitor-process-details"
-    spacing: 8
+    spacing: Styling.spacing(8)
     property int expandedPpid: -1
     readonly property string metric: SystemResources.detailMetric
     readonly property string gpuDevice: metric.startsWith("gpu:") ? metric.slice(4) : ""
@@ -75,7 +75,7 @@ ColumnLayout {
         Layout.fillWidth: true
         Layout.preferredHeight: Math.min(340, Math.max(100, contentHeight))
         clip: true
-        spacing: 6
+        spacing: Styling.spacing(6)
         model: ScriptModel { values: root.groups; objectProp: "ppid" }
         ScrollBar.vertical: ScrollBar { }
         delegate: StyledRect {
@@ -89,7 +89,7 @@ ColumnLayout {
                 id: groupColumn
                 anchors.fill: parent
                 anchors.margins: 8
-                spacing: 6
+                spacing: Styling.spacing(6)
                 Item {
                     Layout.fillWidth: true
                     implicitHeight: groupLabel.implicitHeight

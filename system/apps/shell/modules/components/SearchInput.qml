@@ -57,14 +57,14 @@ StyledRect {
     RowLayout {
         anchors.fill: parent
         anchors.margins: 8
-        spacing: 8
+        spacing: Styling.spacing(8)
 
         Text {
             renderType: Text.NativeRendering
             font.hintingPreference: Font.PreferFullHinting
             text: root.iconText
             font.family: Icons.font
-            font.pixelSize: 20
+            font.pixelSize: Styling.fontSize(6)
             color: Styling.srItem("overprimary")
             visible: root.iconText.length > 0
         }

@@ -29,6 +29,11 @@ Singleton {
         return Math.max(Config.roundness, 0);
     }
 
+    // Keep layout density in step with the configured UI type size.
+    function spacing(value: real): real {
+        return Math.max(0, Math.round(value * Config.theme.fontSize / 14));
+    }
+
     function fontSize(offset: real): real {
         return Math.max(Config.theme.fontSize + offset, 8);
     }

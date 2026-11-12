@@ -185,7 +185,7 @@ WlSessionLockSurface {
 
         Row {
             id: clockRow
-            spacing: 0
+            spacing: Styling.spacing(0)
             anchors.top: parent.top
 
             Text {
@@ -193,8 +193,8 @@ WlSessionLockSurface {
                 font.hintingPreference: Font.PreferFullHinting
                 id: hoursText
                 text: Config.bar.use12hFormat ? (clockContainer.currentTime.getHours() % 12 || 12).toString() : Qt.formatTime(clockContainer.currentTime, "hh")
-                font.family: "League Gothic"
-                font.pixelSize: 240
+                font.family: Config.theme.font
+                font.pixelSize: Styling.fontSize(226)
                 color: Colors.primaryFixed
                 antialiasing: true
                 opacity: startAnim ? 1 : 0
@@ -227,8 +227,8 @@ WlSessionLockSurface {
                 font.hintingPreference: Font.PreferFullHinting
                 id: minutesText
                 text: Qt.formatTime(clockContainer.currentTime, "mm")
-                font.family: "League Gothic"
-                font.pixelSize: 240
+                font.family: Config.theme.font
+                font.pixelSize: Styling.fontSize(226)
                 color: Colors.primaryFixedDim
                 antialiasing: true
                 anchors.verticalCenter: undefined
@@ -264,8 +264,8 @@ WlSessionLockSurface {
                 font.hintingPreference: Font.PreferFullHinting
                 id: amPmText
                 text: Config.bar.use12hFormat ? Qt.formatTime(clockContainer.currentTime, "ap").toLowerCase() : ""
-                font.family: "League Gothic"
-                font.pixelSize: 100
+                font.family: Config.theme.font
+                font.pixelSize: Styling.fontSize(86)
                 color: hoursText.color
                 antialiasing: true
                 anchors.top: hoursText.top
@@ -408,7 +408,7 @@ WlSessionLockSurface {
                 anchors.fill: parent
                 anchors.leftMargin: 16
                 anchors.rightMargin: 16
-                spacing: 8
+                spacing: Styling.spacing(8)
 
                 Text {
                     renderType: Text.NativeRendering
@@ -416,7 +416,7 @@ WlSessionLockSurface {
                     id: userIcon
                     text: authenticating ? Icons.circleNotch : Icons.user
                     font.family: Icons.font
-                    font.pixelSize: 24
+                    font.pixelSize: Styling.fontSize(10)
                     color: passwordInputBox.item
                     Layout.preferredWidth: 24
                     Layout.preferredHeight: 24

@@ -25,7 +25,7 @@ Item {
             id: contentColumn
             width: root.contentWidth
             x: root.sideMargin
-            spacing: 12
+            spacing: Styling.spacing(12)
 
             PanelTitlebar {
                 title: "Assistant"
@@ -52,11 +52,11 @@ Item {
                 RowLayout {
                     anchors.fill: parent
                     anchors.margins: 16
-                    spacing: 12
+                    spacing: Styling.spacing(12)
 
                     ColumnLayout {
                         Layout.fillWidth: true
-                        spacing: 2
+                        spacing: Styling.spacing(2)
 
                         StyledText {
                             text: "Enable assistant"
@@ -110,7 +110,7 @@ Item {
                     id: workingDirectoryColumn
                     anchors.fill: parent
                     anchors.margins: 16
-                    spacing: 8
+                    spacing: Styling.spacing(8)
 
                     StyledText {
                         text: "Working folder"

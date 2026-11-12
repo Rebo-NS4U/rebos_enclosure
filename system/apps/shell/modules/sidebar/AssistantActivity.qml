@@ -79,7 +79,7 @@ StyledRect {
         anchors.right: parent.right
         anchors.top: parent.top
         anchors.margins: 8
-        spacing: 6
+        spacing: Styling.spacing(6)
 
         Button {
             id: toggle
@@ -158,7 +158,7 @@ StyledRect {
             ColumnLayout {
                 id: steps
                 width: stepsView.width
-                spacing: 7
+                spacing: Styling.spacing(7)
                 Repeater {
                     id: stepRepeater
                     model: root.session.activitySegments
@@ -166,7 +166,7 @@ StyledRect {
                         required property var modelData
                         required property int index
                         Layout.fillWidth: true
-                        spacing: 4
+                        spacing: Styling.spacing(4)
                         Button {
                             id: activityButton
                             readonly property string entryKey: root.entryKey(modelData, index)
@@ -185,7 +185,7 @@ StyledRect {
                                 border.color: Colors.primary
                             }
                             contentItem: RowLayout {
-                                spacing: 8
+                                spacing: Styling.spacing(8)
                                 Text {
                                     Layout.alignment: Qt.AlignTop
                                     text: modelData.status === "completed" ? "✓" : String(index + 1) + "."
@@ -226,7 +226,7 @@ StyledRect {
                             sourceComponent: Component {
                                 ColumnLayout {
                                     Layout.fillWidth: true
-                                    spacing: 6
+                                    spacing: Styling.spacing(6)
 
                                     RowLayout {
                                         Layout.fillWidth: true

@@ -37,12 +37,12 @@ Item {
             anchors.fill: parent
             anchors.leftMargin: 12
             anchors.rightMargin: 12
-            spacing: 10
+            spacing: Styling.spacing(10)
 
             StyledText {
                 text: action.icon
                 font.family: Icons.font
-                font.pixelSize: 16
+                font.pixelSize: Styling.fontSize(2)
                 color: action.item
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
@@ -63,7 +63,7 @@ Item {
                 visible: action.selected
                 text: Icons.accept
                 font.family: Icons.font
-                font.pixelSize: 14
+                font.pixelSize: Styling.fontSize(0)
                 color: action.item
             }
         }
@@ -89,7 +89,7 @@ Item {
             id: contentColumn
             width: root.contentWidth
             anchors.horizontalCenter: parent.horizontalCenter
-            spacing: 4
+            spacing: Styling.spacing(4)
 
             PanelTitlebar {
                 Layout.fillWidth: true

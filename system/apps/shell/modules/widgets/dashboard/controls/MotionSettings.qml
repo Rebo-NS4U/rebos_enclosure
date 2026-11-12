@@ -13,7 +13,7 @@ SettingsGroup {
 
     RowLayout {
         Layout.fillWidth: true
-        spacing: 8
+        spacing: Styling.spacing(8)
         Repeater {
             model: [ { label: "Smooth", ms: 300 }, { label: "Quick", ms: 180 }, { label: "Off", ms: 0 } ]
             delegate: SettingsButton {

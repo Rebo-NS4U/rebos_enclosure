@@ -109,7 +109,7 @@ Item {
         property color accentColor: Colors.secondary
 
         width: parent ? parent.width : implicitWidth
-        spacing: 4
+        spacing: Styling.spacing(4)
 
         Text {
             renderType: Text.NativeRendering
@@ -164,7 +164,7 @@ Item {
     Column {
         id: body
         width: parent.width
-        spacing: 10
+        spacing: Styling.spacing(10)
         MetricAction {
             width: parent.width
             visible: SystemResources.detailMetric !== "window"
@@ -193,11 +193,11 @@ Item {
             visible: SystemResources.detailMetric === ""
 
             width: parent.width
-            spacing: 12
+            spacing: Styling.spacing(12)
 
             Column {
                 width: parent.width
-                spacing: 4
+                spacing: Styling.spacing(4)
 
                 HoverHandler { cursorShape: Qt.PointingHandCursor }
                 TapHandler { onTapped: SystemResources.showProcesses("cpu", "CPU processes") }
@@ -218,7 +218,7 @@ Item {
 
             Column {
                 width: parent.width
-                spacing: 4
+                spacing: Styling.spacing(4)
 
                 HoverHandler { cursorShape: Qt.PointingHandCursor }
                 TapHandler { onTapped: SystemResources.showProcesses("ram", "Memory processes") }
@@ -253,7 +253,7 @@ Item {
                     readonly property color accentColor: Colors.primary
 
                     width: parent.width
-                    spacing: 4
+                    spacing: Styling.spacing(4)
 
                     ResourceItem {
                         width: parent.width
@@ -281,7 +281,7 @@ Item {
                     HoverHandler { cursorShape: Qt.PointingHandCursor }
                     TapHandler { onTapped: SystemResources.showProcesses("disk", "Disk activity · " + diskColumn.modelData) }
                     width: parent.width
-                    spacing: 4
+                    spacing: Styling.spacing(4)
 
                     ResourceItem {
                         width: parent.width
@@ -309,7 +309,7 @@ Item {
 
             Column {
                 width: parent.width
-                spacing: 4
+                spacing: Styling.spacing(4)
 
                 HoverHandler { cursorShape: Qt.PointingHandCursor }
                 TapHandler { onTapped: SystemResources.showProcesses("network", "Network processes") }
@@ -322,7 +322,7 @@ Item {
 
                 RowLayout {
                     width: parent.width
-                    spacing: 4
+                    spacing: Styling.spacing(4)
 
                     Text {
                         renderType: Text.NativeRendering

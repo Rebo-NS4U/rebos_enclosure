@@ -38,12 +38,12 @@ Item {
         id: volumeContent
         anchors.fill: parent
         anchors.margins: 16
-        spacing: 4
+        spacing: Styling.spacing(4)
 
         // First row: Icon + Slider
         RowLayout {
             Layout.fillWidth: true
-            spacing: 8
+            spacing: Styling.spacing(8)
 
             // Mute button with icon
             Button {
@@ -73,7 +73,7 @@ Item {
                             return Icons.speakerHigh;
                         }
                         font.family: Icons.font
-                        font.pixelSize: 16
+                        font.pixelSize: Styling.fontSize(2)
                         color: root.isMuted ? Colors.error : Colors.overBackground
 
                         Behavior on color {
@@ -130,7 +130,7 @@ Item {
         // Second row: Name + Separator + Percentage
         RowLayout {
             Layout.fillWidth: true
-            spacing: 8
+            spacing: Styling.spacing(8)
 
             // Source name
             Text {
@@ -154,7 +154,7 @@ Item {
                 visible: Audio.protectionTriggered && root.isMainDevice
                 text: Icons.shieldCheck
                 font.family: Icons.font
-                font.pixelSize: 12
+                font.pixelSize: Styling.fontSize(-2)
                 color: Colors.warning
 
                 StyledToolTip {

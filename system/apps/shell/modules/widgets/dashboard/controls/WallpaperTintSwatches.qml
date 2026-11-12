@@ -58,7 +58,7 @@ ColumnLayout {
     }
     Flow {
         Layout.fillWidth: true
-        spacing: 8
+        spacing: Styling.spacing(8)
         Repeater {
             model: root.colors
             delegate: Button {

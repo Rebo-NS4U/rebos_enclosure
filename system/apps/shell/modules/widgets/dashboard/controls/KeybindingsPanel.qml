@@ -367,7 +367,7 @@ Item {
                 Layout.fillWidth: true
                 Layout.preferredHeight: Math.max(280, root.height - 400)
                 clip: true
-                spacing: 12
+                spacing: Styling.spacing(12)
                 model: root.filteredBindings
                 boundsBehavior: Flickable.StopAtBounds
                 reuseItems: true
@@ -387,7 +387,7 @@ Item {
                         id: rowLayout
                         anchors.fill: parent
                         anchors.margins: 16
-                        spacing: 12
+                        spacing: Styling.spacing(12)
                         ColumnLayout {
                             Layout.fillWidth: true
                             spacing: root.layoutSpacing / 4

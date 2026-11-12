@@ -9,7 +9,7 @@ import qs.modules.theme
 
 ColumnLayout {
     id: root
-    spacing: 8
+    spacing: Styling.spacing(8)
     readonly property var info: SystemResources.windowInfo
     readonly property var windowData: info.window ?? ({})
     readonly property var processData: info.process ?? ({})
@@ -24,7 +24,7 @@ ColumnLayout {
         Layout.fillWidth: true
         visible: !!root.info.window && !SystemResources.pickingWindow
         enabled: !SystemResources.windowActionBusy && !SystemResources.windowKilled
-        spacing: 6
+        spacing: Styling.spacing(6)
         MetricAction { text: "Close window"; onClicked: SystemResources.controlWindow("close") }
         MetricAction {
             text: "Terminate"

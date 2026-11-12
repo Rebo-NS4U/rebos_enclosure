@@ -13,7 +13,7 @@ ColumnLayout {
     property string language: "txt"
     property alias implicitWidth: root.width
 
-    spacing: 0
+    spacing: Styling.spacing(0)
 
     // Repository { id: highlightRepo }
 
@@ -35,7 +35,7 @@ ColumnLayout {
             anchors.fill: parent
             anchors.leftMargin: 12
             anchors.rightMargin: 8
-            spacing: 8
+            spacing: Styling.spacing(8)
 
             Text {
                 renderType: Text.NativeRendering
@@ -43,7 +43,7 @@ ColumnLayout {
                 text: root.language || "text"
                 color: Colors.outline
                 font.family: Config.theme.font
-                font.pixelSize: 12
+                font.pixelSize: Styling.fontSize(-2)
                 font.weight: Font.Bold
             }
 
@@ -63,7 +63,7 @@ ColumnLayout {
                     text: Icons.copy
                     font.family: Icons.font
                     color: parent.hovered ? Styling.srItem("overprimary") : Colors.outline
-                    font.pixelSize: 14
+                    font.pixelSize: Styling.fontSize(0)
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
@@ -89,7 +89,7 @@ ColumnLayout {
                     id: copyFeedback
                     text: "Copied!"
                     font.family: Config.theme.font
-                    font.pixelSize: 10
+                    font.pixelSize: Styling.fontSize(-4)
                     color: Colors.success
                     visible: false
                     anchors.right: parent.left
@@ -126,8 +126,8 @@ ColumnLayout {
             anchors.fill: parent
             anchors.margins: 8
             text: root.code
-            font.family: "Monospace"
-            font.pixelSize: 13
+            font.family: Config.theme.monoFont
+            font.pixelSize: Styling.fontSize(-1)
             color: Colors.overSurface
             readOnly: true
             selectByMouse: true

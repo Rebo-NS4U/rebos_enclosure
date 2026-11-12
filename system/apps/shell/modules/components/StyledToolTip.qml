@@ -28,7 +28,7 @@ Basic.ToolTip {
     }
 
     contentItem: ColumnLayout {
-        spacing: 0
+        spacing: Styling.spacing(0)
 
         StyledText {
             text: root.tooltipText

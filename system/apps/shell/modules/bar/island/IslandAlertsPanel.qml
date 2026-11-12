@@ -117,7 +117,7 @@ Item {
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 14
-        spacing: 10
+        spacing: Styling.spacing(10)
 
         // ═══════════════════════════════════════════════════════════════
         // UNIFIED HEADER: Back + Title + Count + Spacer + DND + Clear All
@@ -125,13 +125,13 @@ Item {
         RowLayout {
             id: headerRow
             Layout.fillWidth: true
-            spacing: 8
+            spacing: Styling.spacing(8)
 
             // Back button
             StyledRect {
                 implicitWidth: 28
                 implicitHeight: 28
-                radius: 14
+                radius: Styling.radius(0)
                 variant: backMouse.containsMouse ? "focus" : "common"
                 scale: backMouse.pressed ? 0.92 : 1.0
 
@@ -148,7 +148,7 @@ Item {
                     font.hintingPreference: Font.PreferFullHinting
                     text: Icons.arrowLeft
                     font.family: Icons.font
-                    font.pixelSize: 14
+                    font.pixelSize: Styling.fontSize(0)
                     color: Colors.overBackground
                 }
 
@@ -177,7 +177,7 @@ Item {
                 visible: root.totalCount > 0
                 implicitWidth: countText.implicitWidth + 12
                 implicitHeight: 20
-                radius: 10
+                radius: Styling.radius(0)
                 variant: "primary"
 
                 Text {
@@ -216,7 +216,7 @@ Item {
                     font.hintingPreference: Font.PreferFullHinting
                     text: Notifications.silent ? Icons.bellZ : Icons.bell
                     font.family: Icons.font
-                    font.pixelSize: 15
+                    font.pixelSize: Styling.fontSize(1)
                     color: Notifications.silent ? Colors.overPrimary : Colors.overBackground
                 }
 
@@ -251,7 +251,7 @@ Item {
                     font.hintingPreference: Font.PreferFullHinting
                     text: Icons.broom
                     font.family: Icons.font
-                    font.pixelSize: 15
+                    font.pixelSize: Styling.fontSize(1)
                     color: root.isClearing ? Colors.overSurfaceVariant : (broomMouse.containsMouse ? Colors.overError : Colors.overBackground)
                 }
 
@@ -279,7 +279,7 @@ Item {
             // Empty state
             ColumnLayout {
                 anchors.centerIn: parent
-                spacing: 8
+                spacing: Styling.spacing(8)
                 visible: Notifications.appNameList.length === 0
 
                 Text {
@@ -288,7 +288,7 @@ Item {
                     font.hintingPreference: Font.PreferFullHinting
                     text: Icons.bell
                     font.family: Icons.font
-                    font.pixelSize: 32
+                    font.pixelSize: Styling.fontSize(18)
                     color: Colors.overSurfaceVariant
                     opacity: 0.5
                 }
@@ -309,7 +309,7 @@ Item {
                 id: notificationList
                 anchors.fill: parent
                 anchors.margins: 8
-                spacing: 6
+                spacing: Styling.spacing(6)
                 model: Notifications.appNameList
                 clip: true
                 boundsBehavior: Flickable.StopAtBounds

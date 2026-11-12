@@ -54,7 +54,7 @@ Item {
         anchors.fill: parent
         anchors.topMargin: pairingPrompt.visible ? pairingPrompt.implicitHeight + 12 : 0
         clip: true
-        spacing: 12
+        spacing: Styling.spacing(12)
         cacheBuffer: 1000
         reuseItems: true
 

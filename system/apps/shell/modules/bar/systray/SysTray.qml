@@ -1,3 +1,4 @@
+import qs.modules.theme
 import QtQuick
 import QtQuick.Layouts
 import Quickshell.Services.SystemTray
@@ -26,7 +27,7 @@ StyledRect {
         id: rowLayout
         anchors.fill: parent
         anchors.margins: 8
-        spacing: 8
+        spacing: Styling.spacing(8)
 
         Repeater {
             id: rowRepeater

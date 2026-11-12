@@ -6,7 +6,7 @@ import qs.modules.theme
 
 ColumnLayout {
     visible: BluetoothService.pairingCode.length > 0
-    spacing: 4
+    spacing: Styling.spacing(4)
 
     StyledText {
         Layout.fillWidth: true

@@ -55,7 +55,7 @@ Button {
     }
 
     contentItem: RowLayout {
-        spacing: 8
+        spacing: Styling.spacing(8)
         visible: !root.isSeparator
 
         // Add margins for content
@@ -87,7 +87,7 @@ Button {
                     visible: root.checkState !== Qt.Unchecked
                     text: root.checkState === Qt.PartiallyChecked ? "\u2212" : "\u2713"
                     color: Colors.overPrimary
-                    font.pixelSize: 10
+                    font.pixelSize: Styling.fontSize(-4)
                     font.bold: true
                 }
             }
@@ -128,7 +128,7 @@ Button {
                     font.hintingPreference: Font.PreferFullHinting
                     text: root.iconSource
                     font.family: Icons.font
-                    font.pixelSize: 14
+                    font.pixelSize: Styling.fontSize(0)
                     color: Colors.overBackground
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter

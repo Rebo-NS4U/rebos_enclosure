@@ -88,12 +88,12 @@ Item {
             top: parent.top
             margins: 12
         }
-        spacing: 6
+        spacing: Styling.spacing(6)
 
         // Header: App icon / Bell + App Name + Count Badge + Dismiss Button
         RowLayout {
             Layout.fillWidth: true
-            spacing: 8
+            spacing: Styling.spacing(8)
 
             Item {
                 Layout.preferredWidth: 20
@@ -118,7 +118,7 @@ Item {
                     anchors.centerIn: parent
                     text: root.isCritical ? Icons.alert : Icons.bell
                     font.family: Icons.font
-                    font.pixelSize: 15
+                    font.pixelSize: Styling.fontSize(1)
                     color: root.isCritical ? Colors.error : Styling.srItem("overprimary")
                 }
             }
@@ -165,7 +165,7 @@ Item {
 
                 StyledRect {
                     anchors.fill: parent
-                    radius: 11
+                    radius: Styling.radius(0)
                     variant: "focus"
                     visible: closeMouse.containsMouse
                 }
@@ -176,7 +176,7 @@ Item {
                     anchors.centerIn: parent
                     text: Icons.cancel
                     font.family: Icons.font
-                    font.pixelSize: 13
+                    font.pixelSize: Styling.fontSize(-1)
                     color: closeMouse.containsMouse ? Colors.overBackground : Colors.outline
                 }
 

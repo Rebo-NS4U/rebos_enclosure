@@ -21,7 +21,7 @@ StyledRect {
         anchors.right: parent.right
         anchors.top: parent.top
         anchors.margins: 16
-        spacing: 12
+        spacing: Styling.spacing(12)
         StyledText { visible: root.title.length > 0; text: root.title; font.bold: true }
         StyledText {
             visible: root.description.length > 0
@@ -31,6 +31,6 @@ StyledRect {
             color: Colors.overSurfaceVariant
             font.pixelSize: Styling.fontSize(-1)
         }
-        ColumnLayout { id: body; Layout.fillWidth: true; spacing: 12 }
+        ColumnLayout { id: body; Layout.fillWidth: true; spacing: Styling.spacing(12) }
     }
 }

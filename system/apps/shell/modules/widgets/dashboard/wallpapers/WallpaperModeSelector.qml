@@ -134,7 +134,7 @@ Item {
         ColumnLayout {
             anchors.fill: parent
             anchors.margins: 4
-            spacing: 0
+            spacing: Styling.spacing(0)
 
             Button {
                 id: modeButton
@@ -209,7 +209,7 @@ Item {
                     anchors.fill: parent
                     anchors.leftMargin: 8
                     anchors.rightMargin: 8
-                    spacing: 4
+                    spacing: Styling.spacing(4)
 
                     Text {
                         Layout.fillWidth: true
@@ -227,7 +227,7 @@ Item {
                         text: Icons.caretDown
                         color: Colors.overSurface
                         font.family: Icons.font
-                        font.pixelSize: 14
+                        font.pixelSize: Styling.fontSize(0)
                         renderType: Text.NativeRendering
                         font.hintingPreference: Font.PreferFullHinting
                     }

@@ -30,7 +30,7 @@ Item {
         ColumnLayout {
             id: contentColumn
             width: flickable.width
-            spacing: 8
+            spacing: Styling.spacing(8)
 
             // Header wrapper
             Item {
@@ -74,13 +74,13 @@ Item {
                     id: innerContent
                     width: root.contentWidth
                     anchors.horizontalCenter: parent.horizontalCenter
-                    spacing: 12
+                    spacing: Styling.spacing(12)
 
                     GridLayout {
                         Layout.fillWidth: true
                         columns: root.contentWidth < Styling.fontSize(0) * 30 ? 1 : 2
-                        columnSpacing: 12
-                        rowSpacing: 12
+                        columnSpacing: Styling.spacing(12)
+                        rowSpacing: Styling.spacing(12)
                         SettingsSectionCard {
                             text: "Output"
                             description: "Speakers and headphones."
@@ -111,7 +111,7 @@ Item {
                     // Device list
                     ColumnLayout {
                         Layout.fillWidth: true
-                        spacing: 4
+                        spacing: Styling.spacing(4)
 
                         Repeater {
                             model: root.showOutput ? Audio.outputDevices : Audio.inputDevices

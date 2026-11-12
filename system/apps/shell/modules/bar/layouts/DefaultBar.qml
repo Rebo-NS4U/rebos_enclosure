@@ -107,7 +107,7 @@ Item {
                         anchors.right: parent.right
                         anchors.verticalCenter: parent.verticalCenter
                         height: 36
-                        spacing: 4
+                        spacing: Styling.spacing(4)
 
                         AudioFormatBadge {
                             enableShadow: root.shadowsEnabled

@@ -75,7 +75,7 @@ Item {
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 14
-        spacing: 10
+        spacing: Styling.spacing(10)
 
         // ═══════════════════════════════════════════════════════════════
         // UNIFIED HEADER: Back + Title + Screen Pill + Spacer + Search
@@ -83,13 +83,13 @@ Item {
         RowLayout {
             id: headerRow
             Layout.fillWidth: true
-            spacing: 8
+            spacing: Styling.spacing(8)
 
             // Back button
             StyledRect {
                 implicitWidth: 28
                 implicitHeight: 28
-                radius: 14
+                radius: Styling.radius(0)
                 variant: backMouse.containsMouse ? "focus" : "common"
 
                 Text {
@@ -98,7 +98,7 @@ Item {
                     font.hintingPreference: Font.PreferFullHinting
                     text: Icons.arrowLeft
                     font.family: Icons.font
-                    font.pixelSize: 14
+                    font.pixelSize: Styling.fontSize(0)
                     color: Colors.overBackground
                 }
 
@@ -126,13 +126,13 @@ Item {
             StyledRect {
                 implicitWidth: screenRow.implicitWidth + 14
                 implicitHeight: 22
-                radius: 11
+                radius: Styling.radius(0)
                 variant: (root.allScreens && root.allScreens.length > 1 && screenMouse.containsMouse) ? "focus" : "common"
 
                 RowLayout {
                     id: screenRow
                     anchors.centerIn: parent
-                    spacing: 4
+                    spacing: Styling.spacing(4)
 
                     Text {
                         id: screenText
@@ -151,7 +151,7 @@ Item {
                         font.hintingPreference: Font.PreferFullHinting
                         text: Icons.caretDown
                         font.family: Icons.font
-                        font.pixelSize: 10
+                        font.pixelSize: Styling.fontSize(-4)
                         color: Colors.overSurfaceVariant
                     }
                 }
@@ -183,14 +183,14 @@ Item {
                     anchors.fill: parent
                     anchors.leftMargin: 8
                     anchors.rightMargin: 8
-                    spacing: 6
+                    spacing: Styling.spacing(6)
 
                     Text {
                         renderType: Text.NativeRendering
                         font.hintingPreference: Font.PreferFullHinting
                         text: Icons.magnifyingGlass
                         font.family: Icons.font
-                        font.pixelSize: 13
+                        font.pixelSize: Styling.fontSize(-1)
                         color: Colors.overSurfaceVariant
                     }
 
@@ -215,7 +215,7 @@ Item {
                         font.hintingPreference: Font.PreferFullHinting
                         text: Icons.cancel
                         font.family: Icons.font
-                        font.pixelSize: 12
+                        font.pixelSize: Styling.fontSize(-2)
                         color: clearSearchMouse.containsMouse ? Colors.overBackground : Colors.overSurfaceVariant
 
                         MouseArea {
@@ -240,7 +240,7 @@ Item {
             id: controlsRow
             Layout.fillWidth: true
             Layout.preferredHeight: 48
-            spacing: 8
+            spacing: Styling.spacing(8)
             z: 100
 
             // Per-Screen Monitor toggle
@@ -258,7 +258,7 @@ Item {
                     RowLayout {
                         anchors.fill: parent
                         anchors.margins: 4
-                        spacing: 4
+                        spacing: Styling.spacing(4)
 
                         Rectangle {
                             Layout.fillWidth: true
@@ -292,7 +292,7 @@ Item {
                                 text: Icons.accept
                                 color: root.isPerScreen ? Styling.srItem("primary") : Colors.overSurfaceVariant
                                 font.family: Icons.font
-                                font.pixelSize: 20
+                                font.pixelSize: Styling.fontSize(6)
                                 opacity: root.isPerScreen ? 1.0 : 0.2
                             }
                         }
@@ -370,7 +370,7 @@ Item {
             // Empty state
             ColumnLayout {
                 anchors.centerIn: parent
-                spacing: 8
+                spacing: Styling.spacing(8)
                 visible: root.filteredWallpapers.length === 0
 
                 Text {
@@ -379,7 +379,7 @@ Item {
                     font.hintingPreference: Font.PreferFullHinting
                     text: Icons.image
                     font.family: Icons.font
-                    font.pixelSize: 32
+                    font.pixelSize: Styling.fontSize(18)
                     color: Colors.overSurfaceVariant
                     opacity: 0.5
                 }

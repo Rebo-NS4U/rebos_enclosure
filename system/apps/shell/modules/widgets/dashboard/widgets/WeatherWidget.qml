@@ -940,7 +940,7 @@ ClippingRectangle {
             font.hintingPreference: Font.PreferFullHinting
             anchors.centerIn: parent
             text: "D"
-            font.pixelSize: 10
+            font.pixelSize: Styling.fontSize(-4)
             font.bold: true
             color: Colors.overSurface
         }

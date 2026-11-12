@@ -40,7 +40,7 @@ Item {
         id: mainColumn
         anchors.fill: parent
         anchors.margins: 14
-        spacing: 10
+        spacing: Styling.spacing(10)
 
         // ═══════════════════════════════════════════════════════════════
         // UNIFIED HEADER: Back + Title
@@ -48,7 +48,7 @@ Item {
         RowLayout {
             id: headerRow
             Layout.fillWidth: true
-            spacing: 8
+            spacing: Styling.spacing(8)
 
             // Back button
             StyledRect {
@@ -71,7 +71,7 @@ Item {
                     font.hintingPreference: Font.PreferFullHinting
                     text: Icons.arrowLeft
                     font.family: Icons.font
-                    font.pixelSize: 14
+                    font.pixelSize: Styling.fontSize(0)
                     color: Colors.overBackground
                 }
 
@@ -138,23 +138,23 @@ Item {
                 id: statsContentColumn
                 anchors.fill: parent
                 anchors.margins: 12
-                spacing: 10
+                spacing: Styling.spacing(10)
 
                     // 1. CPU Row
                     ColumnLayout {
                         HoverHandler { cursorShape: Qt.PointingHandCursor }
                         TapHandler { onTapped: SystemResources.showProcesses("cpu", "CPU processes") }
                         Layout.fillWidth: true
-                        spacing: 6
+                        spacing: Styling.spacing(6)
 
                         RowLayout {
                             Layout.fillWidth: true
-                            spacing: 8
+                            spacing: Styling.spacing(8)
 
                             StyledRect {
                                 implicitWidth: 26
                                 implicitHeight: 26
-                                radius: 13
+                                radius: Styling.radius(0)
                                 variant: "primary"
 
                                 Text {
@@ -163,14 +163,14 @@ Item {
                                     font.hintingPreference: Font.PreferFullHinting
                                     text: Icons.cpu
                                     font.family: Icons.font
-                                    font.pixelSize: 13
+                                    font.pixelSize: Styling.fontSize(-1)
                                     color: Colors.overPrimary
                                 }
                             }
 
                             ColumnLayout {
                                 Layout.fillWidth: true
-                                spacing: 1
+                                spacing: Styling.spacing(1)
 
                                 Text {
                                     Layout.fillWidth: true
@@ -214,14 +214,14 @@ Item {
                             id: cpuTrack
                             Layout.fillWidth: true
                             Layout.preferredHeight: 4
-                            radius: 2
+                            radius: Styling.radius(0)
                             variant: "common"
                             clip: true
 
                             StyledRect {
                                 height: parent.height
                                 width: (SystemResources.cpuUsage > 0) ? Math.max(2, cpuTrack.width * Math.min(1.0, SystemResources.cpuUsage / 100)) : 0
-                                radius: 2
+                                radius: Styling.radius(0)
                                 variant: "primary"
 
                                 Behavior on width {
@@ -244,16 +244,16 @@ Item {
                         HoverHandler { cursorShape: Qt.PointingHandCursor }
                         TapHandler { onTapped: SystemResources.showProcesses("ram", "Memory processes") }
                         Layout.fillWidth: true
-                        spacing: 6
+                        spacing: Styling.spacing(6)
 
                         RowLayout {
                             Layout.fillWidth: true
-                            spacing: 8
+                            spacing: Styling.spacing(8)
 
                             StyledRect {
                                 implicitWidth: 26
                                 implicitHeight: 26
-                                radius: 13
+                                radius: Styling.radius(0)
                                 variant: "primary"
 
                                 Text {
@@ -262,14 +262,14 @@ Item {
                                     font.hintingPreference: Font.PreferFullHinting
                                     text: Icons.ram
                                     font.family: Icons.font
-                                    font.pixelSize: 13
+                                    font.pixelSize: Styling.fontSize(-1)
                                     color: Colors.overPrimary
                                 }
                             }
 
                             ColumnLayout {
                                 Layout.fillWidth: true
-                                spacing: 1
+                                spacing: Styling.spacing(1)
 
                                 Text {
                                     Layout.fillWidth: true
@@ -308,14 +308,14 @@ Item {
                             id: ramTrack
                             Layout.fillWidth: true
                             Layout.preferredHeight: 4
-                            radius: 2
+                            radius: Styling.radius(0)
                             variant: "common"
                             clip: true
 
                             StyledRect {
                                 height: parent.height
                                 width: (SystemResources.ramUsage > 0) ? Math.max(2, ramTrack.width * Math.min(1.0, SystemResources.ramUsage / 100)) : 0
-                                radius: 2
+                                radius: Styling.radius(0)
                                 variant: "primary"
 
                                 Behavior on width {
@@ -343,18 +343,18 @@ Item {
                             TapHandler { onTapped: SystemResources.showProcesses("gpu:" + (SystemResources.gpuPciIds[gpuDelegate.index] ?? ""), (SystemResources.gpuNames[gpuDelegate.index] ?? "GPU") + " processes") }
                             required property int index
                             Layout.fillWidth: true
-                            spacing: 6
+                            spacing: Styling.spacing(6)
 
                             readonly property real gpuUsageVal: SystemResources.gpuUsages[gpuDelegate.index] || 0
 
                             RowLayout {
                                 Layout.fillWidth: true
-                                spacing: 8
+                                spacing: Styling.spacing(8)
 
                                 StyledRect {
                                     implicitWidth: 26
                                     implicitHeight: 26
-                                    radius: 13
+                                    radius: Styling.radius(0)
                                     variant: "primary"
 
                                     Text {
@@ -363,14 +363,14 @@ Item {
                                         font.hintingPreference: Font.PreferFullHinting
                                         text: Icons.gpu
                                         font.family: Icons.font
-                                        font.pixelSize: 13
+                                        font.pixelSize: Styling.fontSize(-1)
                                         color: Colors.overPrimary
                                     }
                                 }
 
                                 ColumnLayout {
                                     Layout.fillWidth: true
-                                    spacing: 1
+                                    spacing: Styling.spacing(1)
 
                                     Text {
                                         Layout.fillWidth: true
@@ -415,14 +415,14 @@ Item {
                                 id: gpuTrack
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: 4
-                                radius: 2
+                                radius: Styling.radius(0)
                                 variant: "common"
                                 clip: true
 
                                 StyledRect {
                                     height: parent.height
                                     width: (gpuDelegate.gpuUsageVal > 0) ? Math.max(2, gpuTrack.width * Math.min(1.0, gpuDelegate.gpuUsageVal / 100)) : 0
-                                    radius: 2
+                                    radius: Styling.radius(0)
                                     variant: "primary"
 
                                     Behavior on width {
@@ -450,18 +450,18 @@ Item {
                             TapHandler { onTapped: SystemResources.showProcesses("disk", "Disk activity · " + diskDelegate.modelData) }
                             required property string modelData
                             Layout.fillWidth: true
-                            spacing: 6
+                            spacing: Styling.spacing(6)
 
                             readonly property real diskUsageVal: SystemResources.diskUsage[diskDelegate.modelData] || 0
 
                             RowLayout {
                                 Layout.fillWidth: true
-                                spacing: 8
+                                spacing: Styling.spacing(8)
 
                                 StyledRect {
                                     implicitWidth: 26
                                     implicitHeight: 26
-                                    radius: 13
+                                    radius: Styling.radius(0)
                                     variant: "primary"
 
                                     Text {
@@ -470,14 +470,14 @@ Item {
                                         font.hintingPreference: Font.PreferFullHinting
                                         text: Icons.disk
                                         font.family: Icons.font
-                                        font.pixelSize: 13
+                                        font.pixelSize: Styling.fontSize(-1)
                                         color: Colors.overPrimary
                                     }
                                 }
 
                                 ColumnLayout {
                                     Layout.fillWidth: true
-                                    spacing: 1
+                                    spacing: Styling.spacing(1)
 
                                     Text {
                                         Layout.fillWidth: true
@@ -516,14 +516,14 @@ Item {
                                 id: diskTrack
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: 4
-                                radius: 2
+                                radius: Styling.radius(0)
                                 variant: "common"
                                 clip: true
 
                                 StyledRect {
                                     height: parent.height
                                     width: (diskDelegate.diskUsageVal > 0) ? Math.max(2, diskTrack.width * Math.min(1.0, diskDelegate.diskUsageVal / 100)) : 0
-                                    radius: 2
+                                    radius: Styling.radius(0)
                                     variant: "primary"
 
                                     Behavior on width {
@@ -546,12 +546,12 @@ Item {
                         HoverHandler { cursorShape: Qt.PointingHandCursor }
                         TapHandler { onTapped: SystemResources.showProcesses("network", "Network processes") }
                         Layout.fillWidth: true
-                        spacing: 8
+                        spacing: Styling.spacing(8)
 
                         StyledRect {
                             implicitWidth: 26
                             implicitHeight: 26
-                            radius: 13
+                            radius: Styling.radius(0)
                             variant: "primary"
 
                             Text {
@@ -560,14 +560,14 @@ Item {
                                 font.hintingPreference: Font.PreferFullHinting
                                 text: NetworkService.vpnConnected ? Icons.vpnKey : (NetworkService.wifiEnabled ? Icons.wifiHigh : Icons.ethernet)
                                 font.family: Icons.font
-                                font.pixelSize: 13
+                                font.pixelSize: Styling.fontSize(-1)
                                 color: Colors.overPrimary
                             }
                         }
 
                         ColumnLayout {
                             Layout.fillWidth: true
-                            spacing: 1
+                            spacing: Styling.spacing(1)
 
                             Text {
                                 Layout.fillWidth: true

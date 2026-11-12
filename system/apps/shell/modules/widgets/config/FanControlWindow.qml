@@ -65,7 +65,7 @@ FloatingWindow {
         ColumnLayout {
             anchors.fill: parent
             anchors.margins: 24
-            spacing: 16
+            spacing: Styling.spacing(16)
             RowLayout {
                 Layout.fillWidth: true
                 StyledText { text: "Cooling"; font.pixelSize: Styling.fontSize(6); font.bold: true; Layout.fillWidth: true }

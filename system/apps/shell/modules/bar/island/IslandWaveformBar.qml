@@ -85,7 +85,7 @@ Item {
 
     ColumnLayout {
         anchors.fill: parent
-        spacing: 4
+        spacing: Styling.spacing(4)
 
         // Wavy progress bar area (wave + unplayed track + playhead)
         Item {

@@ -33,7 +33,7 @@ Item {
         ColumnLayout {
             id: mainColumn
             width: mainFlickable.width
-            spacing: 8
+            spacing: Styling.spacing(8)
 
             // Header wrapper
             Item {
@@ -74,7 +74,7 @@ Item {
                     id: contentColumn
                     width: root.contentWidth
                     anchors.horizontalCenter: parent.horizontalCenter
-                    spacing: 16
+                    spacing: Styling.spacing(16)
 
                     // ═══════════════════════════════════════════════════════════════
                     // MENU SECTION
@@ -83,8 +83,8 @@ Item {
                         visible: root.currentSection === ""
                         Layout.fillWidth: true
                         columns: root.contentWidth < Styling.fontSize(0) * 30 ? 1 : 2
-                        columnSpacing: 12
-                        rowSpacing: 12
+                        columnSpacing: Styling.spacing(12)
+                        rowSpacing: Styling.spacing(12)
                         SectionButton {
                             text: "Weather"
                             description: "Location and temperature units."
@@ -128,7 +128,7 @@ Item {
                         // Location
                         RowLayout {
                             Layout.fillWidth: true
-                            spacing: 8
+                            spacing: Styling.spacing(8)
 
                             StyledText {
                                 renderType: Text.NativeRendering
@@ -189,7 +189,7 @@ Item {
                         // Unit selector
                         RowLayout {
                             Layout.fillWidth: true
-                            spacing: 8
+                            spacing: Styling.spacing(8)
 
                             StyledText {
                                 renderType: Text.NativeRendering
@@ -202,7 +202,7 @@ Item {
                             }
 
                             Row {
-                                spacing: 8
+                                spacing: Styling.spacing(8)
 
                                 Repeater {
                                     model: [
@@ -361,7 +361,7 @@ Item {
                         // Disks list
                         ColumnLayout {
                             Layout.fillWidth: true
-                            spacing: 4
+                            spacing: Styling.spacing(4)
 
                             Repeater {
                                 id: disksRepeater
@@ -373,7 +373,7 @@ Item {
                                     required property int index
 
                                     Layout.fillWidth: true
-                                    spacing: 8
+                                    spacing: Styling.spacing(8)
 
                                     StyledRect {
                                         variant: "common"
@@ -428,7 +428,7 @@ Item {
                                             anchors.centerIn: parent
                                             text: Icons.trash
                                             font.family: Icons.font
-                                            font.pixelSize: 14
+                                            font.pixelSize: Styling.fontSize(0)
                                             color: Colors.error
                                         }
 
@@ -463,14 +463,14 @@ Item {
                                 Row {
                                     id: addDiskContent
                                     anchors.centerIn: parent
-                                    spacing: 6
+                                    spacing: Styling.spacing(6)
 
                                     StyledText {
                                         renderType: Text.NativeRendering
                                         font.hintingPreference: Font.PreferFullHinting
                                         text: Icons.plus
                                         font.family: Icons.font
-                                        font.pixelSize: 14
+                                        font.pixelSize: Styling.fontSize(0)
                                         color: addDiskButton.item
                                         anchors.verticalCenter: parent.verticalCenter
                                     }
@@ -527,7 +527,7 @@ Item {
         signal valueEdited(int newValue)
 
         Layout.fillWidth: true
-        spacing: 8
+        spacing: Styling.spacing(8)
 
         StyledText {
             renderType: Text.NativeRendering
@@ -602,7 +602,7 @@ Item {
         signal valueEdited(string newValue)
 
         Layout.fillWidth: true
-        spacing: 8
+        spacing: Styling.spacing(8)
 
         StyledText {
             renderType: Text.NativeRendering
@@ -667,7 +667,7 @@ Item {
         property string description: ""
         property bool checked: false
         signal toggled(bool checked)
-        spacing: 12
+        spacing: Styling.spacing(12)
         ColumnLayout {
             Layout.fillWidth: true
             StyledText { text: toggleRow.label; Layout.fillWidth: true; wrapMode: Text.WordWrap }

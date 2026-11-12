@@ -27,7 +27,7 @@ Item {
         id: mainColumn
         anchors.fill: parent
         anchors.margins: 14
-        spacing: 10
+        spacing: Styling.spacing(10)
 
         // ═══════════════════════════════════════════════════════════════
         // HEADER: Back button + Title (with capitalized city) + Refresh
@@ -35,12 +35,12 @@ Item {
         RowLayout {
             id: headerRow
             Layout.fillWidth: true
-            spacing: 8
+            spacing: Styling.spacing(8)
 
             StyledRect {
                 implicitWidth: 28
                 implicitHeight: 28
-                radius: 14
+                radius: Styling.radius(0)
                 variant: backMouse.containsMouse ? "focus" : "common"
                 scale: backMouse.pressed ? 0.92 : 1.0
                 Behavior on scale {
@@ -56,7 +56,7 @@ Item {
                     font.hintingPreference: Font.PreferFullHinting
                     text: Icons.arrowLeft
                     font.family: Icons.font
-                    font.pixelSize: 14
+                    font.pixelSize: Styling.fontSize(0)
                     color: Colors.overBackground
                 }
 
@@ -75,7 +75,7 @@ Item {
             }
 
             RowLayout {
-                spacing: 6
+                spacing: Styling.spacing(6)
 
                 StyledText {
                     renderType: Text.NativeRendering
@@ -110,7 +110,7 @@ Item {
             StyledRect {
                 implicitWidth: 28
                 implicitHeight: 28
-                radius: 14
+                radius: Styling.radius(0)
                 variant: refreshMouse.containsMouse ? "focus" : "common"
                 scale: refreshMouse.pressed ? 0.92 : 1.0
                 Behavior on scale {
@@ -126,7 +126,7 @@ Item {
                     font.hintingPreference: Font.PreferFullHinting
                     text: Icons.arrowsClockwise
                     font.family: Icons.font
-                    font.pixelSize: 14
+                    font.pixelSize: Styling.fontSize(0)
                     color: WeatherService.isLoading ? Colors.primary : Colors.overBackground
 
                     RotationAnimation on rotation {
@@ -213,7 +213,7 @@ Item {
 
                         ColumnLayout {
                             anchors.centerIn: parent
-                            spacing: 3
+                            spacing: Styling.spacing(3)
 
                             // Day name ("Today", "Mon", "Tue", etc.)
                             StyledText {
@@ -234,7 +234,7 @@ Item {
                                 font.hintingPreference: Font.PreferFullHinting
                                 text: dayCol.modelData.emoji || "☀️"
                                 font.family: Config.theme.font
-                                font.pixelSize: 18
+                                font.pixelSize: Styling.fontSize(4)
                             }
 
                             // Max temperature (+30°)

@@ -50,7 +50,7 @@ Item {
         anchors.rightMargin: 12
         anchors.topMargin: 8
         anchors.bottomMargin: 8
-        spacing: 12
+        spacing: Styling.spacing(12)
 
         // Device icon
         Text {
@@ -58,7 +58,7 @@ Item {
             font.hintingPreference: Font.PreferFullHinting
             text: root.isOutput ? Icons.speakerHigh : Icons.mic
             font.family: Icons.font
-            font.pixelSize: 18
+            font.pixelSize: Styling.fontSize(4)
             color: root.isSelected ? Styling.srItem("primary") : Colors.overBackground
         }
 
@@ -82,7 +82,7 @@ Item {
             visible: root.isSelected
             text: Icons.accept
             font.family: Icons.font
-            font.pixelSize: 16
+            font.pixelSize: Styling.fontSize(2)
             color: Styling.srItem("primary")
         }
     }

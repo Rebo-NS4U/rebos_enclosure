@@ -27,17 +27,17 @@ Item {
         id: mainColumn
         anchors.fill: parent
         anchors.margins: 14
-        spacing: 12
+        spacing: Styling.spacing(12)
 
         // Header: Back button + Title + Live Status Pill
         RowLayout {
             Layout.fillWidth: true
-            spacing: 8
+            spacing: Styling.spacing(8)
 
             StyledRect {
                 implicitWidth: 28
                 implicitHeight: 28
-                radius: 14
+                radius: Styling.radius(0)
                 variant: backMouse.containsMouse ? "focus" : "common"
 
                 Text {
@@ -46,7 +46,7 @@ Item {
                     font.hintingPreference: Font.PreferFullHinting
                     text: Icons.arrowLeft
                     font.family: Icons.font
-                    font.pixelSize: 14
+                    font.pixelSize: Styling.fontSize(0)
                     color: Colors.overBackground
                 }
 
@@ -75,13 +75,13 @@ Item {
             StyledRect {
                 implicitWidth: statusRow.implicitWidth + 14
                 implicitHeight: 22
-                radius: 11
+                radius: Styling.radius(0)
                 variant: Battery.isCharging ? "primary" : "common"
 
                 RowLayout {
                     id: statusRow
                     anchors.centerIn: parent
-                    spacing: 5
+                    spacing: Styling.spacing(5)
 
                     Text {
                         renderType: Text.NativeRendering
@@ -108,17 +108,17 @@ Item {
             ColumnLayout {
                 anchors.fill: parent
                 anchors.margins: 12
-                spacing: 8
+                spacing: Styling.spacing(8)
 
                 RowLayout {
                     Layout.fillWidth: true
-                    spacing: 12
+                    spacing: Styling.spacing(12)
 
                     // Big Battery Icon
                     StyledRect {
                         implicitWidth: 44
                         implicitHeight: 44
-                        radius: 22
+                        radius: Styling.radius(0)
                         variant: "common"
 
                         Text {
@@ -127,7 +127,7 @@ Item {
                             font.hintingPreference: Font.PreferFullHinting
                             text: Battery.available ? Battery.getBatteryIcon() : Icons.lightning
                             font.family: Icons.font
-                            font.pixelSize: 22
+                            font.pixelSize: Styling.fontSize(8)
                             color: root.getBatteryColor()
                         }
                     }
@@ -135,7 +135,7 @@ Item {
                     // Percentage and Status Text
                     ColumnLayout {
                         Layout.fillWidth: true
-                        spacing: 2
+                        spacing: Styling.spacing(2)
 
                         Text {
                             renderType: Text.NativeRendering
@@ -170,13 +170,13 @@ Item {
                     visible: Battery.available
                     Layout.fillWidth: true
                     Layout.preferredHeight: 6
-                    radius: 3
+                    radius: Styling.radius(0)
                     variant: "common"
 
                     StyledRect {
                         width: Math.max(6, Math.min(parent.width, parent.width * (Battery.percentage / 100)))
                         height: parent.height
-                        radius: 3
+                        radius: Styling.radius(0)
                         variant: Battery.percentage <= 20 ? "error" : "primary"
 
                         Behavior on width {
@@ -198,7 +198,7 @@ Item {
             ColumnLayout {
                 anchors.fill: parent
                 anchors.margins: 10
-                spacing: 8
+                spacing: Styling.spacing(8)
 
                 Text {
                     renderType: Text.NativeRendering
@@ -212,7 +212,7 @@ Item {
 
                 RowLayout {
                     Layout.fillWidth: true
-                    spacing: 8
+                    spacing: Styling.spacing(8)
 
                     // 1. Power Saver
                     StyledRect {
@@ -226,14 +226,14 @@ Item {
 
                         RowLayout {
                             anchors.centerIn: parent
-                            spacing: 6
+                            spacing: Styling.spacing(6)
 
                             Text {
                                 renderType: Text.NativeRendering
                                 font.hintingPreference: Font.PreferFullHinting
                                 text: Icons.powerSave
                                 font.family: Icons.font
-                                font.pixelSize: 14
+                                font.pixelSize: Styling.fontSize(0)
                                 color: PowerProfile.currentProfile === "power-saver" ? Colors.overPrimary : Colors.overBackground
                             }
 
@@ -269,14 +269,14 @@ Item {
 
                         RowLayout {
                             anchors.centerIn: parent
-                            spacing: 6
+                            spacing: Styling.spacing(6)
 
                             Text {
                                 renderType: Text.NativeRendering
                                 font.hintingPreference: Font.PreferFullHinting
                                 text: Icons.balanced
                                 font.family: Icons.font
-                                font.pixelSize: 14
+                                font.pixelSize: Styling.fontSize(0)
                                 color: PowerProfile.currentProfile === "balanced" ? Colors.overPrimary : Colors.overBackground
                             }
 
@@ -312,14 +312,14 @@ Item {
 
                         RowLayout {
                             anchors.centerIn: parent
-                            spacing: 6
+                            spacing: Styling.spacing(6)
 
                             Text {
                                 renderType: Text.NativeRendering
                                 font.hintingPreference: Font.PreferFullHinting
                                 text: Icons.performance
                                 font.family: Icons.font
-                                font.pixelSize: 14
+                                font.pixelSize: Styling.fontSize(0)
                                 color: PowerProfile.currentProfile === "performance" ? Colors.overPrimary : Colors.overBackground
                             }
 

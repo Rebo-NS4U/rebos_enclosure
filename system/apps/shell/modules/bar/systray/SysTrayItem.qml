@@ -66,7 +66,7 @@ MouseArea {
             ColumnLayout {
                 id: itemsColumn
                 width: parent.width
-                spacing: 2
+                spacing: Styling.spacing(2)
 
                 Repeater {
                     model: menuOpener.children ? menuOpener.children.values : []
@@ -75,7 +75,7 @@ MouseArea {
                         required property var modelData
 
                         Layout.fillWidth: true
-                        spacing: 2
+                        spacing: Styling.spacing(2)
 
                         property bool submenuExpanded: false
 
@@ -109,7 +109,7 @@ MouseArea {
                         ColumnLayout {
                             visible: submenuExpanded && modelData.hasChildren
                             Layout.fillWidth: true
-                            spacing: 2
+                            spacing: Styling.spacing(2)
 
                             QsMenuOpener {
                                 id: subMenuOpener

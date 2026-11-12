@@ -39,7 +39,7 @@ Item {
     Column {
         id: toastColumn
         width: parent.width
-        spacing: 8
+        spacing: Styling.spacing(8)
 
         Repeater {
             model: root.popupCount
@@ -204,12 +204,12 @@ Item {
                             top: parent.top
                             margins: toastRoot.contentPad
                         }
-                        spacing: 6
+                        spacing: Styling.spacing(6)
 
                         // Header: matching left/right chrome so edge inset stays even.
                         RowLayout {
                             Layout.fillWidth: true
-                            spacing: 10
+                            spacing: Styling.spacing(10)
 
                             Item {
                                 Layout.preferredWidth: toastRoot.chromeSize
@@ -222,7 +222,7 @@ Item {
                                     anchors.centerIn: parent
                                     text: toastRoot.isCritical ? Icons.alert : Icons.bell
                                     font.family: Icons.font
-                                    font.pixelSize: 16
+                                    font.pixelSize: Styling.fontSize(2)
                                     color: toastRoot.isCritical ? Colors.error : Styling.srItem("overprimary")
                                 }
                             }
@@ -260,7 +260,7 @@ Item {
                                     anchors.centerIn: parent
                                     text: Icons.cancel
                                     font.family: Icons.font
-                                    font.pixelSize: 14
+                                    font.pixelSize: Styling.fontSize(0)
                                     color: cardMa.containsMouse && !toastRoot.closing ? Colors.overBackground : Colors.outline
                                 }
                             }

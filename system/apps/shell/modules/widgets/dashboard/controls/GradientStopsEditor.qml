@@ -93,12 +93,12 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
-        spacing: 8
+        spacing: Styling.spacing(8)
 
         // Title row: "Gradient Stops (X)" + Separator + "Stop X"
         RowLayout {
             Layout.fillWidth: true
-            spacing: 8
+            spacing: Styling.spacing(8)
 
             Text {
                 renderType: Text.NativeRendering
@@ -130,7 +130,7 @@ Item {
         RowLayout {
             Layout.fillWidth: true
             Layout.preferredHeight: 40
-            spacing: 16
+            spacing: Styling.spacing(16)
 
             // Add button
             StyledRect {
@@ -150,7 +150,7 @@ Item {
                     anchors.centerIn: parent
                     text: Icons.plus
                     font.family: Icons.font
-                    font.pixelSize: 16
+                    font.pixelSize: Styling.fontSize(2)
                     color: addButton.item
                 }
 
@@ -395,7 +395,7 @@ Item {
                     anchors.centerIn: parent
                     text: Icons.broom
                     font.family: Icons.font
-                    font.pixelSize: 16
+                    font.pixelSize: Styling.fontSize(2)
                     color: resetButton.item
                 }
 
@@ -422,7 +422,7 @@ Item {
         RowLayout {
             id: stopEditor
             Layout.fillWidth: true
-            spacing: 8
+            spacing: Styling.spacing(8)
 
             // Current stop info
             readonly property var currentStop: root.selectedStopIndex >= 0 && root.selectedStopIndex < root.stops.length ? root.stops[root.selectedStopIndex] : null
@@ -464,7 +464,7 @@ Item {
                 ColumnLayout {
                     anchors.fill: parent
                     anchors.margins: 6
-                    spacing: 4
+                    spacing: Styling.spacing(4)
 
                     // Position label
                     Text {
@@ -482,7 +482,7 @@ Item {
                     // Input + Delete row
                     RowLayout {
                         Layout.fillWidth: true
-                        spacing: 4
+                        spacing: Styling.spacing(4)
 
                         // Position input
                         StyledRect {
@@ -504,7 +504,7 @@ Item {
 
                                 text: currentStop ? displayPosition.toFixed(3) : ""
 
-                                font.family: "monospace"
+                                font.family: Config.theme.monoFont
                                 font.pixelSize: Styling.fontSize(-1)
                                 color: positionInputContainer.item
                                 horizontalAlignment: Text.AlignHCenter
@@ -545,7 +545,7 @@ Item {
                                 anchors.centerIn: parent
                                 text: Icons.trash
                                 font.family: Icons.font
-                                font.pixelSize: 12
+                                font.pixelSize: Styling.fontSize(-2)
                                 color: deleteStopButton.item
                             }
 

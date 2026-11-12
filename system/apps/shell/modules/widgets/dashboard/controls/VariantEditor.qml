@@ -55,14 +55,14 @@ Item {
         id: mainColumn
         anchors.left: parent.left
         anchors.right: parent.right
-        spacing: 8
+        spacing: Styling.spacing(8)
         enabled: root.variantConfig !== null
 
         // === GRADIENT TYPE SELECTOR ===
         Row {
             id: typeSelector
             Layout.fillWidth: true
-            spacing: 4
+            spacing: Styling.spacing(4)
 
             readonly property int currentIndex: {
                 if (!root.variantConfig)
@@ -108,7 +108,7 @@ Item {
                             }
                         }
                         font.family: Icons.font
-                        font.pixelSize: 14
+                        font.pixelSize: Styling.fontSize(0)
                         color: typeButton.itemColor
                     }
 
@@ -140,7 +140,7 @@ Item {
         // === MAIN PROPERTIES ROW ===
         RowLayout {
             Layout.fillWidth: true
-            spacing: 8
+            spacing: Styling.spacing(8)
 
             // Item Color
             ColorButton {
@@ -162,7 +162,7 @@ Item {
             RowLayout {
                 Layout.fillWidth: true
                 Layout.preferredWidth: 1
-                spacing: 8
+                spacing: Styling.spacing(8)
 
                 // Opacity Control
                 StyledRect {
@@ -176,7 +176,7 @@ Item {
                         anchors.fill: parent
                         anchors.leftMargin: 4
                         anchors.rightMargin: 12
-                        spacing: 8
+                        spacing: Styling.spacing(8)
 
                         // CircularControl
                         CircularControl {
@@ -192,7 +192,7 @@ Item {
                         // Label + Value
                         ColumnLayout {
                             Layout.fillWidth: true
-                            spacing: 2
+                            spacing: Styling.spacing(2)
 
                             Text {
                                 renderType: Text.NativeRendering
@@ -232,7 +232,7 @@ Item {
                         anchors.fill: parent
                         anchors.leftMargin: 4
                         anchors.rightMargin: 12
-                        spacing: 8
+                        spacing: Styling.spacing(8)
 
                         // CircularControl with ColorButton as center
                         Item {
@@ -281,7 +281,7 @@ Item {
                         // Label + Value
                         ColumnLayout {
                             Layout.fillWidth: true
-                            spacing: 2
+                            spacing: Styling.spacing(2)
 
                             Text {
                                 renderType: Text.NativeRendering
@@ -335,14 +335,14 @@ Item {
             RowLayout {
                 anchors.fill: parent
                 anchors.margins: 12
-                spacing: 16
+                spacing: Styling.spacing(16)
 
                 Text {
                     renderType: Text.NativeRendering
                     font.hintingPreference: Font.PreferFullHinting
                     text: Icons.arrowDown
                     font.family: Icons.font
-                    font.pixelSize: 20
+                    font.pixelSize: Styling.fontSize(6)
                     color: Styling.srItem("overprimary")
                     rotation: root.variantConfig ? root.variantConfig.gradientAngle : 0
 
@@ -356,7 +356,7 @@ Item {
                 }
 
                 ColumnLayout {
-                    spacing: 2
+                    spacing: Styling.spacing(2)
 
                     Text {
                         renderType: Text.NativeRendering
@@ -417,12 +417,12 @@ Item {
             ColumnLayout {
                 anchors.fill: parent
                 anchors.margins: 12
-                spacing: 12
+                spacing: Styling.spacing(12)
 
                 // X Position
                 RowLayout {
                     Layout.fillWidth: true
-                    spacing: 12
+                    spacing: Styling.spacing(12)
 
                     Text {
                         renderType: Text.NativeRendering
@@ -472,7 +472,7 @@ Item {
                 // Y Position
                 RowLayout {
                     Layout.fillWidth: true
-                    spacing: 12
+                    spacing: Styling.spacing(12)
 
                     Text {
                         renderType: Text.NativeRendering
@@ -524,13 +524,13 @@ Item {
         // === HALFTONE SETTINGS ===
         ColumnLayout {
             Layout.fillWidth: true
-            spacing: 8
+            spacing: Styling.spacing(8)
             visible: root.variantConfig && root.variantConfig.gradientType === "halftone"
 
             // Colors row
             RowLayout {
                 Layout.fillWidth: true
-                spacing: 8
+                spacing: Styling.spacing(8)
 
                 // Dot Color
                 ColorButton {
@@ -574,12 +574,12 @@ Item {
                 ColumnLayout {
                     anchors.fill: parent
                     anchors.margins: 12
-                    spacing: 12
+                    spacing: Styling.spacing(12)
 
                     // Angle
                     RowLayout {
                         Layout.fillWidth: true
-                        spacing: 12
+                        spacing: Styling.spacing(12)
 
                         Item {
                             Layout.preferredWidth: 24
@@ -591,7 +591,7 @@ Item {
                                 anchors.centerIn: parent
                                 text: Icons.arrowDown
                                 font.family: Icons.font
-                                font.pixelSize: 18
+                                font.pixelSize: Styling.fontSize(4)
                                 color: Styling.srItem("overprimary")
                                 rotation: root.variantConfig ? root.variantConfig.gradientAngle : 0
 
@@ -655,14 +655,14 @@ Item {
                     // Dot Size Range
                     RowLayout {
                         Layout.fillWidth: true
-                        spacing: 12
+                        spacing: Styling.spacing(12)
 
                         Text {
                             renderType: Text.NativeRendering
                             font.hintingPreference: Font.PreferFullHinting
                             text: Icons.circle
                             font.family: Icons.font
-                            font.pixelSize: 18
+                            font.pixelSize: Styling.fontSize(4)
                             color: Styling.srItem("overprimary")
                             Layout.preferredWidth: 24
                         }
@@ -758,14 +758,14 @@ Item {
                     // Gradient Range
                     RowLayout {
                         Layout.fillWidth: true
-                        spacing: 12
+                        spacing: Styling.spacing(12)
 
                         Text {
                             renderType: Text.NativeRendering
                             font.hintingPreference: Font.PreferFullHinting
                             text: Icons.range
                             font.family: Icons.font
-                            font.pixelSize: 18
+                            font.pixelSize: Styling.fontSize(4)
                             color: Styling.srItem("overprimary")
                             Layout.preferredWidth: 24
                         }

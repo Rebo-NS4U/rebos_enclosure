@@ -113,8 +113,8 @@ SettingsGroup {
     GridLayout {
         Layout.fillWidth: true
         columns: root.width < Styling.fontSize(0) * 30 ? 1 : 2
-        columnSpacing: 12
-        rowSpacing: 12
+        columnSpacing: Styling.spacing(12)
+        rowSpacing: Styling.spacing(12)
         Repeater {
             model: [
                 {strength: 22, id: "light", label: "Lighter glass", detail: "Set blur strength to 22% for softer glass."},

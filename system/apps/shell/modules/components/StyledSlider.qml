@@ -120,7 +120,7 @@ Item {
         anchors.fill: parent
         anchors.leftMargin: root.iconPos === "start" && root.icon !== "" ? iconText.width + spacing : 0
         anchors.rightMargin: root.iconPos === "end" && root.icon !== "" ? iconText.width + spacing : 0
-        spacing: 4
+        spacing: Styling.spacing(4)
 
         Item {
             id: hSliderItem
@@ -215,7 +215,7 @@ Item {
         anchors.fill: parent
         anchors.topMargin: root.iconPos === "start" && root.icon !== "" ? iconText.height + spacing : 0
         anchors.bottomMargin: root.iconPos === "end" && root.icon !== "" ? iconText.height + spacing : 0
-        spacing: 4
+        spacing: Styling.spacing(4)
 
         Item {
             id: vSliderItem
@@ -316,7 +316,7 @@ Item {
         visible: root.icon !== ""
         text: root.icon
         font.family: Icons.font
-        font.pixelSize: 18
+        font.pixelSize: Styling.fontSize(4)
         color: Colors.overBackground
         rotation: root.iconRotation
         scale: root.iconScale

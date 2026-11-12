@@ -16,7 +16,7 @@ ColumnLayout {
     readonly property PanelWindow manager: GlobalStates.wallpaperManager
     readonly property bool busy: manager?.paletteBusy ?? false
     readonly property string preset: manager?.activeColorPreset ?? ""
-    spacing: 12
+    spacing: Styling.spacing(12)
 
     component Caption: Text {
         Layout.fillWidth: true

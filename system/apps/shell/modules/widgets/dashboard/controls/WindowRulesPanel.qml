@@ -181,7 +181,7 @@ Item {
             Layout.fillHeight: true
             model: root.filteredRules
             clip: true
-            spacing: 12
+            spacing: Styling.spacing(12)
             reuseItems: true
             ScrollBar.vertical: ScrollBar {}
             delegate: StyledRect {

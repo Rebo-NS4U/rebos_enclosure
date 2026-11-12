@@ -443,7 +443,7 @@ Item {
                 anchors.right: parent.right
                 anchors.bottom: parent.bottom
                 height: 24
-                spacing: 12
+                spacing: Styling.spacing(12)
 
                 Text {
                     Layout.fillWidth: true
@@ -465,7 +465,7 @@ Item {
             Column {
                 anchors.centerIn: resultsList
                 width: resultsList.width - 32
-                spacing: 8
+                spacing: Styling.spacing(8)
                 visible: appsModel.count === 0
 
                 Text {
@@ -615,7 +615,7 @@ Item {
                         anchors.top: parent.top
                         anchors.margins: 8
                         height: 32
-                        spacing: 12
+                        spacing: Styling.spacing(12)
 
                         // App icon
                         Item {
@@ -645,7 +645,7 @@ Item {
 
                         Column {
                             Layout.fillWidth: true
-                            spacing: 0
+                            spacing: Styling.spacing(0)
 
                             Text {
                                 renderType: Text.NativeRendering
@@ -713,7 +713,7 @@ Item {
                         anchors.leftMargin: 8
                         anchors.rightMargin: 8
                         anchors.bottomMargin: 8
-                        spacing: 4
+                        spacing: Styling.spacing(4)
                         visible: isExpanded
                         opacity: isExpanded ? 1 : 0
 
@@ -814,14 +814,14 @@ Item {
 
                                             anchors.fill: parent
                                             anchors.margins: 8
-                                            spacing: 8
+                                            spacing: Styling.spacing(8)
 
                                             Text {
                                                 renderType: Text.NativeRendering
                                                 font.hintingPreference: Font.PreferFullHinting
                                                 text: modelData && modelData.icon ? modelData.icon : ""
                                                 font.family: Icons.font
-                                                font.pixelSize: 14
+                                                font.pixelSize: Styling.fontSize(0)
                                                 font.weight: Font.Bold
                                                 textFormat: Text.RichText
                                                 color: {

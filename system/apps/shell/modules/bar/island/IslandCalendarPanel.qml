@@ -29,19 +29,19 @@ Item {
         id: mainCol
         anchors.fill: parent
         anchors.margins: 14
-        spacing: 10
+        spacing: Styling.spacing(10)
 
         // ═══════════════════════════════════════════════════════════════
         // HEADER: Back button + Title
         // ═══════════════════════════════════════════════════════════════
         RowLayout {
             Layout.fillWidth: true
-            spacing: 8
+            spacing: Styling.spacing(8)
 
             StyledRect {
                 implicitWidth: 28
                 implicitHeight: 28
-                radius: 14
+                radius: Styling.radius(0)
                 variant: backMouse.containsMouse ? "focus" : "common"
                 scale: backMouse.pressed ? 0.92 : 1.0
                 Behavior on scale {
@@ -57,7 +57,7 @@ Item {
                     font.hintingPreference: Font.PreferFullHinting
                     text: Icons.arrowLeft
                     font.family: Icons.font
-                    font.pixelSize: 14
+                    font.pixelSize: Styling.fontSize(0)
                     color: Colors.overBackground
                 }
 

@@ -18,6 +18,8 @@ import qs.modules.widgets.dashboard.wallpapers
 ShellRoot {
  FloatingWindow {
   visible: true; implicitWidth: 600; implicitHeight: 500
+  StyledText { id: themedLabel; text:"Theme preview" }
+  TestCase { id: typeTester; when:false }
   SettingsComboBox { id: combo; width: 240; model: [{label:"First",value:1},{label:"Second",value:2}]; textRole:"label"; valueRole:"value" }
   WallpaperChoice { id: wallpaper; y:80; width:240; model:[{label:"Wallpaper"}]; textRole:"label" }
   OptionsMenu { id: menu; items:[{text:"Action",onTriggered:()=>{}},{isSeparator:true},{text:"Disabled",enabled:false}] }
@@ -28,6 +30,13 @@ ShellRoot {
      if (Styling.radius(offset) !== Config.roundness) throw Error("Inconsistent shared radius");
     for (const child of menu.background.children)
      if (child.radius !== undefined && child.radius !== Config.roundness) throw Error("Menu corner radius");
+    for (const size of [12, 18]) {
+     Config.theme.fontSize = size; typeTester.wait(30);
+     if (themedLabel.font.pixelSize !== size) throw Error("Text did not follow theme size");
+     if (Styling.spacing(14) !== size) throw Error("Spacing did not follow type size");
+    }
+    Config.theme.fontSize = 13;
+    Config.theme.roundness = 4;
     combo.popup.open(); tester.wait(80);
     if (!combo.popup.visible || combo.currentValue !== 1) throw Error("Combo popup/value");
     combo.forceActiveFocus(); tester.keyClick(Qt.Key_Down); tester.keyClick(Qt.Key_Return); tester.wait(50);

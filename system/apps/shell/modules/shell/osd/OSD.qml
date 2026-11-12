@@ -88,7 +88,7 @@ PanelWindow {
                 anchors.rightMargin: 24
                 anchors.topMargin: 8
                 anchors.bottomMargin: 8
-                spacing: 14
+                spacing: Styling.spacing(14)
 
                 DynamicSunIcon {
                     visible: GlobalStates.osdIndicator === "brightness"
@@ -112,7 +112,7 @@ PanelWindow {
                         return "";
                     }
                     font.family: Icons.font
-                    font.pixelSize: 22
+                    font.pixelSize: Styling.fontSize(8)
                     color: Colors.overBackground
                     Layout.alignment: Qt.AlignVCenter
                 }
@@ -120,11 +120,11 @@ PanelWindow {
                 ColumnLayout {
                     Layout.fillWidth: true
                     Layout.alignment: Qt.AlignVCenter
-                    spacing: 0
+                    spacing: Styling.spacing(0)
 
                     RowLayout {
                         Layout.fillWidth: true
-                        spacing: 0
+                        spacing: Styling.spacing(0)
 
                         Text {
                             renderType: Text.NativeRendering
@@ -139,7 +139,7 @@ PanelWindow {
                                 return "";
                             }
                             font.family: Config.theme.font
-                            font.pixelSize: 15
+                            font.pixelSize: Styling.fontSize(1)
                             font.bold: false
                             color: Colors.overBackground
                             Layout.alignment: Qt.AlignBottom
@@ -154,7 +154,7 @@ PanelWindow {
                             font.hintingPreference: Font.PreferFullHinting
                             text: Math.round(root.osdValue * 100)
                             font.family: Config.theme.font
-                            font.pixelSize: 15
+                            font.pixelSize: Styling.fontSize(1)
                             font.bold: false
                             color: Colors.overBackground
                             Layout.alignment: Qt.AlignBottom

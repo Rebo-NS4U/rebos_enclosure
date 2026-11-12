@@ -111,13 +111,13 @@ Popup {
     }
 
     contentItem: ColumnLayout {
-        spacing: 12
+        spacing: Styling.spacing(12)
 
         // Search Header
         RowLayout {
             Layout.fillWidth: true
             Layout.preferredHeight: 48
-            spacing: 8
+            spacing: Styling.spacing(8)
 
             SearchInput {
                 id: searchInput
@@ -197,7 +197,7 @@ Popup {
                 contentItem: RowLayout {
                     anchors.fill: parent
                     anchors.margins: 8
-                    spacing: 8
+                    spacing: Styling.spacing(8)
 
                     // Icon (Left Aligned)
                     Item {
@@ -212,7 +212,7 @@ Popup {
                             anchors.centerIn: parent
                             text: Ai.activeSession.fetchingModels ? Icons.circleNotch : (refreshBtn.confirming ? Icons.sync : Icons.arrowCounterClockwise)
                             font.family: Icons.font
-                            font.pixelSize: 20
+                            font.pixelSize: Styling.fontSize(6)
                             color: refreshBtn.confirming ? Styling.srItem("primary") : Styling.srItem("overprimary")
 
                             RotationAnimation on rotation {
@@ -246,7 +246,7 @@ Popup {
                         verticalAlignment: Text.AlignVCenter
                         text: "Refresh?"
                         font.family: Config.theme.font
-                        font.pixelSize: 13
+                        font.pixelSize: Styling.fontSize(-1)
                         font.weight: Font.Bold
                         color: Styling.srItem("primary")
 
@@ -372,7 +372,7 @@ Popup {
                     anchors.fill: parent
                     anchors.leftMargin: delegateBtn.leftPadding
                     anchors.rightMargin: delegateBtn.rightPadding
-                    spacing: 12
+                    spacing: Styling.spacing(12)
 
                     // Icon
                     StyledRect {
@@ -442,7 +442,7 @@ Popup {
                                 }
                             }
                             font.family: Icons.font
-                            font.pixelSize: 18
+                            font.pixelSize: Styling.fontSize(4)
                             visible: iconRect.finalIconSource.length === 0
                             color: iconRect.item
 
@@ -467,7 +467,7 @@ Popup {
                     ColumnLayout {
                         Layout.fillWidth: true
                         Layout.alignment: Qt.AlignVCenter
-                        spacing: 2
+                        spacing: Styling.spacing(2)
 
                         Text {
                             renderType: Text.NativeRendering
@@ -475,7 +475,7 @@ Popup {
                             text: modelData.name
                             color: delegateBtn.isSelected ? Styling.srItem("primary") : (delegateBtn.isActiveModel ? Styling.srItem("overprimary") : Colors.overBackground)
                             font.family: Config.theme.font
-                            font.pixelSize: 14
+                            font.pixelSize: Styling.fontSize(0)
                             font.weight: Font.Medium
                             Layout.fillWidth: true
                             elide: Text.ElideRight
@@ -495,7 +495,7 @@ Popup {
                             text: "ACP • " + modelData.command.join(" ")
                             color: delegateBtn.isSelected ? Styling.srItem("primary") : Colors.outline
                             font.family: Config.theme.font
-                            font.pixelSize: 11
+                            font.pixelSize: Styling.fontSize(-3)
                             Layout.fillWidth: true
                             elide: Text.ElideRight
 
@@ -521,7 +521,7 @@ Popup {
                             anchors.centerIn: parent
                             text: Icons.accept
                             font.family: Icons.font
-                            font.pixelSize: 16
+                            font.pixelSize: Styling.fontSize(2)
                             // On primary highlight, color should be readable. srPrimary itemColor usually contrasts well.
                             color: delegateBtn.isSelected ? Styling.srItem("primary") : Styling.srItem("overprimary")
                             visible: delegateBtn.isActiveModel

@@ -188,7 +188,7 @@ StyledRect {
         anchors.top: parent.top
         anchors.topMargin: Math.max(12, (parent.height - lyricsSection.implicitHeight - implicitHeight) / 2)
         width: parent.width - 32
-        spacing: 8
+        spacing: Styling.spacing(8)
 
         // Disc Area (SeekBar + Cover Art)
 
@@ -372,7 +372,7 @@ StyledRect {
         ColumnLayout {
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignHCenter
-            spacing: 2
+            spacing: Styling.spacing(2)
 
             Text {
                 renderType: Text.NativeRendering
@@ -425,7 +425,7 @@ StyledRect {
 
         RowLayout {
             Layout.alignment: Qt.AlignHCenter
-            spacing: 8
+            spacing: Styling.spacing(8)
 
         // Player Selector
         MediaIconButton {
@@ -492,7 +492,7 @@ StyledRect {
                 anchors.centerIn: parent
                 text: !player.hasActivePlayer ? Icons.stop : (player.isPlaying ? Icons.pause : Icons.play)
                 font.family: Icons.font
-                font.pixelSize: 22
+                font.pixelSize: Styling.fontSize(8)
                 color: playPauseBtn.item
             }
 
@@ -610,14 +610,14 @@ StyledRect {
                     RowLayout {
                         anchors.fill: parent
                         anchors.margins: 8
-                        spacing: 8
+                        spacing: Styling.spacing(8)
 
                         Text {
                             renderType: Text.NativeRendering
                             font.hintingPreference: Font.PreferFullHinting
                             text: player.getPlayerIcon(modelData)
                             font.family: Icons.font
-                            font.pixelSize: 18
+                            font.pixelSize: Styling.fontSize(4)
                             color: Colors.overBackground
                         }
 
@@ -654,7 +654,7 @@ StyledRect {
 
         text: icon
         font.family: Icons.font
-        font.pixelSize: 20
+        font.pixelSize: Styling.fontSize(6)
         color: mouseArea.containsMouse ? Colors.primary : Colors.overBackground
         scale: mouseArea.pressed ? 0.92 : 1.0
 

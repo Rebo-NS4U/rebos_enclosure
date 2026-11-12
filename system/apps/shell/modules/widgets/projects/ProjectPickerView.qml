@@ -105,7 +105,7 @@ Item {
 
     ColumnLayout {
         anchors.fill: parent
-        spacing: 8
+        spacing: Styling.spacing(8)
 
         SearchInput {
             id: searchInput
@@ -170,7 +170,7 @@ Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
             clip: true
-            spacing: 0
+            spacing: Styling.spacing(0)
             model: root.filteredProjects
             currentIndex: root.selectedIndex
             boundsBehavior: Flickable.StopAtBounds
@@ -228,7 +228,7 @@ Item {
                 RowLayout {
                     anchors.fill: parent
                     anchors.margins: 8
-                    spacing: 12
+                    spacing: Styling.spacing(12)
 
                     Item {
                         Layout.preferredWidth: 32
@@ -251,7 +251,7 @@ Item {
                             visible: projectIconImage.status !== Image.Ready
                             text: Icons.folder
                             font.family: Icons.font
-                            font.pixelSize: 20
+                            font.pixelSize: Styling.fontSize(6)
                             color: root.selectedIndex === index
                                 ? Styling.srItem("primary")
                                 : Colors.outline
@@ -268,7 +268,7 @@ Item {
 
                     Column {
                         Layout.fillWidth: true
-                        spacing: 0
+                        spacing: Styling.spacing(0)
 
                         Text {
                             renderType: Text.NativeRendering
@@ -320,7 +320,7 @@ Item {
                         visible: root.selectedIndex === index
                         text: Icons.copy
                         font.family: Icons.font
-                        font.pixelSize: 16
+                        font.pixelSize: Styling.fontSize(2)
                         color: Styling.srItem("primary")
                         Layout.alignment: Qt.AlignVCenter
                         opacity: 0.75

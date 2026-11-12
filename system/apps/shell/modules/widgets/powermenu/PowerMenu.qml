@@ -12,7 +12,7 @@ ActionGrid {
     layout: "row"
     buttonSize: 48
     iconSize: 20
-    spacing: 8
+    spacing: Styling.spacing(8)
     focus: true
 
     Component.onCompleted: {

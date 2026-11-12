@@ -63,12 +63,12 @@ StyledRect {
         id: rowLayout
         anchors.fill: parent
         anchors.margins: root.flat ? 0 : 8
-        spacing: 6
+        spacing: Styling.spacing(6)
 
         StyledText {
             text: AudioFormat.kindIcon
             font.family: Icons.font
-            font.pixelSize: 14
+            font.pixelSize: Styling.fontSize(0)
             color: BarAppearance.foregroundColor
             Layout.alignment: Qt.AlignVCenter
         }

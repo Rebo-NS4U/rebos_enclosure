@@ -179,11 +179,11 @@ Item {
             id: mainLayout
             anchors.fill: parent
             anchors.margins: 4
-            spacing: 0
+            spacing: Styling.spacing(0)
 
             RowLayout {
                 Layout.fillWidth: true
-                spacing: 4
+                spacing: Styling.spacing(4)
 
                 Button {
                     id: schemeButton
@@ -306,7 +306,7 @@ Item {
                             text: Icons.sun
                             color: Config.theme.lightMode ? Styling.srItem("primary") : Colors.overBackground
                             font.family: Icons.font
-                            font.pixelSize: 20
+                            font.pixelSize: Styling.fontSize(6)
                         }
 
                         Text {
@@ -319,7 +319,7 @@ Item {
                             text: Icons.moon
                             color: Config.theme.lightMode ? Colors.overBackground : Styling.srItem("primary")
                             font.family: Icons.font
-                            font.pixelSize: 20
+                            font.pixelSize: Styling.fontSize(6)
                         }
 
                         StyledRect {

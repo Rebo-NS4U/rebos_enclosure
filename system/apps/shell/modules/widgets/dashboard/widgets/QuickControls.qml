@@ -38,7 +38,7 @@ StyledRect {
         id: columnLayout
         anchors.fill: parent
         anchors.margins: 4
-        spacing: 0
+        spacing: Styling.spacing(0)
 
         StyledRect {
             id: internalBgRect
@@ -51,7 +51,7 @@ StyledRect {
             RowLayout {
                 id: buttonRow
                 anchors.centerIn: parent
-                spacing: 4
+                spacing: Styling.spacing(4)
 
                 ControlButton {
                     Layout.preferredWidth: 48

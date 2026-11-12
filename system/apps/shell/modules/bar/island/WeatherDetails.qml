@@ -8,7 +8,7 @@ import qs.modules.theme
 
 ColumnLayout {
     id: root
-    spacing: 10
+    spacing: Styling.spacing(10)
 
     readonly property bool fahrenheit: Config.weather.unit === "F"
     readonly property string speedUnit: fahrenheit ? "mph" : "km/h"
@@ -40,8 +40,8 @@ ColumnLayout {
             anchors.fill: parent
             anchors.margins: 10
             columns: 3
-            columnSpacing: 8
-            rowSpacing: 12
+            columnSpacing: Styling.spacing(8)
+            rowSpacing: Styling.spacing(12)
 
             Repeater {
                 model: [
@@ -56,7 +56,7 @@ ColumnLayout {
                     id: metric
                     required property var modelData
                     Layout.fillWidth: true
-                    spacing: 3
+                    spacing: Styling.spacing(3)
                     StyledText {
                         text: metric.modelData.label
                         font.pixelSize: Styling.fontSize(-2)
@@ -85,7 +85,7 @@ ColumnLayout {
             id: hoursColumn
             anchors.fill: parent
             anchors.margins: 10
-            spacing: 8
+            spacing: Styling.spacing(8)
             StyledText {
                 text: "Next hours"
                 font.pixelSize: Styling.fontSize(-2)
@@ -93,7 +93,7 @@ ColumnLayout {
             }
             RowLayout {
                 Layout.fillWidth: true
-                spacing: 4
+                spacing: Styling.spacing(4)
                 Repeater {
                     model: WeatherService.hourlyForecast
                     ColumnLayout {
@@ -101,7 +101,7 @@ ColumnLayout {
                         required property var modelData
                         Layout.fillWidth: true
                         Layout.preferredWidth: (hoursColumn.width - 20) / 6
-                        spacing: 3
+                        spacing: Styling.spacing(3)
                         StyledText {
                             Layout.alignment: Qt.AlignHCenter
                             text: root.timeLabel(hour.modelData.time).replace(":00", "")

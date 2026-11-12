@@ -84,7 +84,7 @@ Menu {
     // Configuración del menú
     width: menuWidth  // Use fixed width instead of calculated to avoid binding loop
     padding: 8
-    spacing: 0
+    spacing: Styling.spacing(0)
 
     // Estilo del menú principal
     background: Item {
@@ -253,7 +253,7 @@ Menu {
                                     return root.normalTextColor;
                                 }
                                 font.family: Icons.font
-                                font.pixelSize: 14
+                                font.pixelSize: Styling.fontSize(0)
                                 font.weight: Font.Normal
                                 anchors.centerIn: parent
                                 textFormat: Text.RichText

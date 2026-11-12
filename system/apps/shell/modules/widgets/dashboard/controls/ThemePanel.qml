@@ -123,7 +123,7 @@ Item {
         ColumnLayout {
             id: mainColumn
             width: mainFlickable.width
-            spacing: 8
+            spacing: Styling.spacing(8)
 
             // Header wrapper
             Item {
@@ -164,7 +164,7 @@ Item {
                     id: contentColumn
                     width: root.contentWidth
                     anchors.horizontalCenter: parent.horizontalCenter
-                    spacing: 12
+                    spacing: Styling.spacing(12)
 
                     // ═══════════════════════════════════════════════════════════════
                     // MENU SECTION
@@ -173,8 +173,8 @@ Item {
                         visible: root.currentSection === ""
                         Layout.fillWidth: true
                         columns: root.contentWidth < Styling.fontSize(0) * 30 ? 1 : 2
-                        columnSpacing: 12
-                        rowSpacing: 12
+                        columnSpacing: Styling.spacing(12)
+                        rowSpacing: Styling.spacing(12)
                         SectionButton {
                             sectionId: "style"
                             text: "Theme style"
@@ -250,7 +250,7 @@ Item {
                             anchors.left: parent.left
                             anchors.right: parent.right
                             anchors.top: parent.top
-                            spacing: 8
+                            spacing: Styling.spacing(8)
 
                             StyledText {
                                 renderType: Text.NativeRendering
@@ -266,7 +266,7 @@ Item {
                             // Wallpaper Path
                             RowLayout {
                                 Layout.fillWidth: true
-                                spacing: 8
+                                spacing: Styling.spacing(8)
 
                                 StyledText {
                                     renderType: Text.NativeRendering
@@ -319,7 +319,7 @@ Item {
                             // Tint Icons toggle
                             RowLayout {
                                 Layout.fillWidth: true
-                                spacing: 8
+                                spacing: Styling.spacing(8)
 
                                 StyledText {
                                     renderType: Text.NativeRendering
@@ -370,7 +370,7 @@ Item {
                             // UI Font row
                             RowLayout {
                                 Layout.fillWidth: true
-                                spacing: 8
+                                spacing: Styling.spacing(8)
 
                                 StyledText {
                                     renderType: Text.NativeRendering
@@ -475,7 +475,7 @@ Item {
                             // Mono Font row
                             RowLayout {
                                 Layout.fillWidth: true
-                                spacing: 8
+                                spacing: Styling.spacing(8)
 
                                 StyledText {
                                     renderType: Text.NativeRendering
@@ -594,7 +594,7 @@ Item {
 
                             RowLayout {
                                 Layout.fillWidth: true
-                                spacing: 8
+                                spacing: Styling.spacing(8)
 
                                 StyledSlider {
                                     id: roundnessSlider
@@ -651,7 +651,7 @@ Item {
                             anchors.left: parent.left
                             anchors.right: parent.right
                             anchors.top: parent.top
-                            spacing: 8
+                            spacing: Styling.spacing(8)
 
                             StyledText {
                                 renderType: Text.NativeRendering
@@ -686,7 +686,7 @@ Item {
                             // Opacity row
                             RowLayout {
                                 Layout.fillWidth: true
-                                spacing: 8
+                                spacing: Styling.spacing(8)
 
                                 StyledText {
                                     renderType: Text.NativeRendering
@@ -745,7 +745,7 @@ Item {
                             // Blur row
                             RowLayout {
                                 Layout.fillWidth: true
-                                spacing: 8
+                                spacing: Styling.spacing(8)
 
                                 StyledText {
                                     renderType: Text.NativeRendering
@@ -805,7 +805,7 @@ Item {
                             // Offset row (X and Y)
                             RowLayout {
                                 Layout.fillWidth: true
-                                spacing: 8
+                                spacing: Styling.spacing(8)
 
                                 StyledText {
                                     renderType: Text.NativeRendering
@@ -864,7 +864,7 @@ Item {
 
                             RowLayout {
                                 Layout.fillWidth: true
-                                spacing: 8
+                                spacing: Styling.spacing(8)
 
                                 StyledText {
                                     renderType: Text.NativeRendering
@@ -924,7 +924,7 @@ Item {
                             // Color row
                             RowLayout {
                                 Layout.fillWidth: true
-                                spacing: 8
+                                spacing: Styling.spacing(8)
 
                                 StyledText {
                                     renderType: Text.NativeRendering
@@ -949,7 +949,7 @@ Item {
                                         anchors.fill: parent
                                         anchors.leftMargin: 8
                                         anchors.rightMargin: 8
-                                        spacing: 8
+                                        spacing: Styling.spacing(8)
 
                                         Rectangle {
                                             Layout.preferredWidth: 16
@@ -1028,7 +1028,7 @@ Item {
                             anchors.left: parent.left
                             anchors.right: parent.right
                             anchors.top: parent.top
-                            spacing: 8
+                            spacing: Styling.spacing(8)
 
                             StyledText {
                                 Layout.fillWidth: true
@@ -1051,13 +1051,13 @@ Item {
 
                             RowLayout {
                                 Layout.fillWidth: true
-                                spacing: 8
+                                spacing: Styling.spacing(8)
                                 Layout.alignment: Qt.AlignTop
 
                                 // Collapsed mode: horizontal scrollable row with scrollbar
                                 ColumnLayout {
                                     Layout.fillWidth: true
-                                    spacing: 4
+                                    spacing: Styling.spacing(4)
                                     visible: !variantSelectorPane.variantExpanded
 
                                     Flickable {
@@ -1071,7 +1071,7 @@ Item {
 
                                         Row {
                                             id: variantRow
-                                            spacing: 4
+                                            spacing: Styling.spacing(4)
 
                                             Repeater {
                                                 model: root.allVariants
@@ -1230,7 +1230,7 @@ Item {
                                 Flow {
                                     id: variantsFlow
                                     Layout.fillWidth: true
-                                    spacing: 4
+                                    spacing: Styling.spacing(4)
                                     visible: variantSelectorPane.variantExpanded
 
                                     Repeater {
@@ -1400,7 +1400,7 @@ Item {
                             anchors.left: parent.left
                             anchors.right: parent.right
                             anchors.top: parent.top
-                            spacing: 8
+                            spacing: Styling.spacing(8)
 
                             StyledText {
                                 renderType: Text.NativeRendering

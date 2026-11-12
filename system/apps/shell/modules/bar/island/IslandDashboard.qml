@@ -124,7 +124,7 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.margins: 14
-        spacing: 10
+        spacing: Styling.spacing(10)
 
         // ═══════════════════════════════════════════════════════════════
         // HEADER: CLOCK, WEATHER & UTILITIES
@@ -138,7 +138,7 @@ Item {
             RowLayout {
                 anchors.fill: parent
                 anchors.margins: 14
-                spacing: 12
+                spacing: Styling.spacing(12)
 
                 Item {
                     id: clockDateBtn
@@ -159,7 +159,7 @@ Item {
                         id: clockDateCol
                         anchors.left: parent.left
                         anchors.verticalCenter: parent.verticalCenter
-                        spacing: 3
+                        spacing: Styling.spacing(3)
 
                         StyledText {
                             id: clockText
@@ -226,7 +226,7 @@ Item {
                     RowLayout {
                         id: weatherRow
                         anchors.centerIn: parent
-                        spacing: 6
+                        spacing: Styling.spacing(6)
 
                         StyledText {
                             renderType: Text.NativeRendering
@@ -276,7 +276,7 @@ Item {
 
         RowLayout {
             Layout.fillWidth: true
-            spacing: 8
+            spacing: Styling.spacing(8)
 
             // Alerts / Notifications button
             StyledRect {
@@ -297,14 +297,14 @@ Item {
                 RowLayout {
                     id: alertsRow
                     anchors.centerIn: parent
-                    spacing: 6
+                    spacing: Styling.spacing(6)
 
                     StyledText {
                         renderType: Text.NativeRendering
                         font.hintingPreference: Font.PreferFullHinting
                         text: Notifications.silent ? Icons.bellZ : Icons.bell
                         font.family: Icons.font
-                        font.pixelSize: 15
+                        font.pixelSize: Styling.fontSize(1)
                         color: Notifications.silent ? Colors.primary : Colors.overBackground
                     }
 
@@ -317,7 +317,7 @@ Item {
                         visible: root.alertsCount > 0
                         implicitWidth: alertBadgeText.implicitWidth + 8
                         implicitHeight: 16
-                        radius: 8
+                        radius: Styling.radius(0)
                         variant: "primary"
 
                         StyledText {
@@ -368,7 +368,7 @@ Item {
                     font.hintingPreference: Font.PreferFullHinting
                     text: Icons.gear
                     font.family: Icons.font
-                    font.pixelSize: 15
+                    font.pixelSize: Styling.fontSize(1)
                     color: Colors.overBackground
                 }
 
@@ -419,7 +419,7 @@ Item {
                     font.hintingPreference: Font.PreferFullHinting
                     text: Icons.shutdown
                     font.family: Icons.font
-                    font.pixelSize: 15
+                    font.pixelSize: Styling.fontSize(1)
                     color: powerMouse.containsMouse ? Colors.overError : Colors.red
                 }
 
@@ -448,7 +448,7 @@ Item {
         // ═══════════════════════════════════════════════════════════════
         RowLayout {
             Layout.fillWidth: true
-            spacing: 12
+            spacing: Styling.spacing(12)
 
             // 1. Wi-Fi Capsule
             StyledRect {
@@ -473,7 +473,7 @@ Item {
                     anchors.fill: parent
                     anchors.leftMargin: 12
                     anchors.rightMargin: 12
-                    spacing: 8
+                    spacing: Styling.spacing(8)
 
                     // Both halves open the menu; right-click toggles Wi-Fi.
                     Item {
@@ -491,7 +491,7 @@ Item {
                                 return root.wifiConnected ? NetworkService.wifiIconForStrength(NetworkService.networkStrength) : Icons.wifiHigh;
                             }
                             font.family: Icons.font
-                            font.pixelSize: 22
+                            font.pixelSize: Styling.fontSize(8)
                             color: NetworkService.wifiEnabled ? Colors.overPrimary : Colors.overBackground
                         }
 
@@ -537,7 +537,7 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                             anchors.left: parent.left
                             anchors.right: parent.right
-                            spacing: 3
+                            spacing: Styling.spacing(3)
                             StyledText {
                                 text: "Wi-Fi"
                                 font.pixelSize: Styling.fontSize(-2)
@@ -603,7 +603,7 @@ Item {
                     anchors.fill: parent
                     anchors.leftMargin: 12
                     anchors.rightMargin: 12
-                    spacing: 8
+                    spacing: Styling.spacing(8)
 
                     // Both halves open the menu; right-click toggles Bluetooth.
                     Item {
@@ -617,7 +617,7 @@ Item {
                             font.hintingPreference: Font.PreferFullHinting
                             text: root.btConnected ? Icons.bluetoothConnected : (BluetoothService.enabled ? Icons.bluetooth : Icons.bluetoothOff)
                             font.family: Icons.font
-                            font.pixelSize: 22
+                            font.pixelSize: Styling.fontSize(8)
                             color: BluetoothService.enabled ? Colors.overPrimary : Colors.overBackground
                         }
 
@@ -663,7 +663,7 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                             anchors.left: parent.left
                             anchors.right: parent.right
-                            spacing: 3
+                            spacing: Styling.spacing(3)
                             StyledText {
                                 text: "Bluetooth"
                                 font.pixelSize: Styling.fontSize(-2)
@@ -716,8 +716,8 @@ Item {
             Layout.fillWidth: true
             columns: 3
             readonly property real tileButtonSize: Styling.fontSize(0) * 2.7
-            columnSpacing: 8
-            rowSpacing: 8
+            columnSpacing: Styling.spacing(8)
+            rowSpacing: Styling.spacing(8)
 
             // 1. Sound (Vol)
             StyledRect {
@@ -734,7 +734,7 @@ Item {
                     z: 1
                     anchors.fill: parent
                     anchors.margins: 8
-                    spacing: 4
+                    spacing: Styling.spacing(4)
                     IslandGaugeButton {
                         id: shortcutControl0
                         objectName: "dashboardSoundGauge"
@@ -805,7 +805,7 @@ Item {
                     z: 1
                     anchors.fill: parent
                     anchors.margins: 8
-                    spacing: 4
+                    spacing: Styling.spacing(4)
                     IslandGaugeButton {
                         id: shortcutControl1
                         objectName: "dashboardMicrophoneGauge"
@@ -878,7 +878,7 @@ Item {
                     z: 1
                     anchors.fill: parent
                     anchors.margins: 8
-                    spacing: 4
+                    spacing: Styling.spacing(4)
                     IslandGaugeButton {
                         id: shortcutControl2
                         objectName: "dashboardBatteryGauge"
@@ -938,7 +938,7 @@ Item {
                     z: 1
                     anchors.fill: parent
                     anchors.margins: 8
-                    spacing: 4
+                    spacing: Styling.spacing(4)
                     IslandGaugeButton {
                         id: shortcutControl3
                         objectName: "dashboardDoNotDisturbGauge"
@@ -1004,7 +1004,7 @@ Item {
                     z: 1
                     anchors.fill: parent
                     anchors.margins: 8
-                    spacing: 4
+                    spacing: Styling.spacing(4)
                     IslandGaugeButton {
                         id: shortcutControl4
                         objectName: "dashboardSystemGauge"
@@ -1060,7 +1060,7 @@ Item {
                     z: 1
                     anchors.fill: parent
                     anchors.margins: 8
-                    spacing: 4
+                    spacing: Styling.spacing(4)
                     IslandGaugeButton {
                         id: shortcutControl5
                         objectName: "dashboardWallpapersGauge"
@@ -1115,7 +1115,7 @@ Item {
                 anchors.fill: parent
                 anchors.leftMargin: 12
                 anchors.rightMargin: 8
-                spacing: 10
+                spacing: Styling.spacing(10)
 
                 // Sun icon
                 DynamicSunIcon {
@@ -1171,14 +1171,14 @@ Item {
                     RowLayout {
                         id: nlContentRow
                         anchors.centerIn: parent
-                        spacing: 5
+                        spacing: Styling.spacing(5)
 
                         StyledText {
                             renderType: Text.NativeRendering
                             font.hintingPreference: Font.PreferFullHinting
                             text: Icons.moon
                             font.family: Icons.font
-                            font.pixelSize: 14
+                            font.pixelSize: Styling.fontSize(0)
                             color: NightLightService.active ? Colors.overPrimary : Colors.overBackground
                         }
 
@@ -1243,7 +1243,7 @@ Item {
                 anchors.fill: parent
                 anchors.leftMargin: 12
                 anchors.rightMargin: 12
-                spacing: 8
+                spacing: Styling.spacing(8)
 
                 StyledText {
                     renderType: Text.NativeRendering

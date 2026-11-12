@@ -78,17 +78,17 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.margins: 14
-        spacing: 12
+        spacing: Styling.spacing(12)
 
         // Header
         RowLayout {
             Layout.fillWidth: true
-            spacing: 8
+            spacing: Styling.spacing(8)
 
             StyledRect {
                 implicitWidth: 28
                 implicitHeight: 28
-                radius: 14
+                radius: Styling.radius(0)
                 variant: backMouse.containsMouse ? "focus" : "common"
                 scale: backMouse.pressed ? 0.92 : 1.0
 
@@ -105,7 +105,7 @@ Item {
                     font.hintingPreference: Font.PreferFullHinting
                     text: Icons.arrowLeft
                     font.family: Icons.font
-                    font.pixelSize: 14
+                    font.pixelSize: Styling.fontSize(0)
                     color: Colors.overBackground
                 }
 
@@ -134,7 +134,7 @@ Item {
         // Action Buttons Row (icon-only, arrow-key navigable)
         RowLayout {
             Layout.fillWidth: true
-            spacing: 8
+            spacing: Styling.spacing(8)
 
             // Sleep
             StyledRect {
@@ -158,7 +158,7 @@ Item {
                     font.hintingPreference: Font.PreferFullHinting
                     text: Icons.suspend
                     font.family: Icons.font
-                    font.pixelSize: 20
+                    font.pixelSize: Styling.fontSize(6)
                     color: Colors.overBackground
                 }
 
@@ -193,7 +193,7 @@ Item {
                     font.hintingPreference: Font.PreferFullHinting
                     text: Icons.lock
                     font.family: Icons.font
-                    font.pixelSize: 20
+                    font.pixelSize: Styling.fontSize(6)
                     color: Colors.overBackground
                 }
 
@@ -228,7 +228,7 @@ Item {
                     font.hintingPreference: Font.PreferFullHinting
                     text: Icons.logout
                     font.family: Icons.font
-                    font.pixelSize: 20
+                    font.pixelSize: Styling.fontSize(6)
                     color: Colors.overBackground
                 }
 
@@ -263,7 +263,7 @@ Item {
                     font.hintingPreference: Font.PreferFullHinting
                     text: Icons.reboot
                     font.family: Icons.font
-                    font.pixelSize: 20
+                    font.pixelSize: Styling.fontSize(6)
                     color: Colors.overBackground
                 }
 
@@ -298,7 +298,7 @@ Item {
                     font.hintingPreference: Font.PreferFullHinting
                     text: Icons.shutdown
                     font.family: Icons.font
-                    font.pixelSize: 20
+                    font.pixelSize: Styling.fontSize(6)
                     color: Colors.red
                 }
 

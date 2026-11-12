@@ -85,7 +85,7 @@ Item {
             id: column
             width: Math.min(Math.max(0, root.width - 16), root.maxContentWidth)
             x: Math.max(0, (root.width - width) / 2)
-            spacing: 12
+            spacing: Styling.spacing(12)
             PanelTitlebar {
                 title: "GitHub"
                 description: "Manage GitHub projects, local changes, branches, commits and pull requests."
@@ -105,7 +105,7 @@ Item {
                     title: "Compare with default branch"
                     RowLayout {
                         Layout.fillWidth: true
-                        spacing: 10
+                        spacing: Styling.spacing(10)
                         Rectangle {
                             width: 10; height: 10; radius: 5
                             color: root.statusColor
@@ -136,7 +136,7 @@ Item {
                     }
                     Flow {
                         Layout.fillWidth: true
-                        spacing: 8
+                        spacing: Styling.spacing(8)
                         SettingsButton {
                             text: checker.running ? "Checking…" : "Check for updates"
                             enabled: !checker.running

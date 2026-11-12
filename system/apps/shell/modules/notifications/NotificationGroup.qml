@@ -214,7 +214,7 @@ Item {
                         anchors.left: parent.left
                         anchors.right: expandButton.left
                         anchors.verticalCenter: parent.verticalCenter
-                        spacing: 5
+                        spacing: Styling.spacing(5)
                         visible: root.multipleNotifications
 
                         // Small app icon similar to NotificationAppIcon's overlay
@@ -237,7 +237,7 @@ Item {
                             text: Icons.info
                             textFormat: Text.RichText
                             font.family: Icons.font
-                            font.pixelSize: 16
+                            font.pixelSize: Styling.fontSize(2)
                             color: topRow.showAppName ? Colors.outline : Styling.srItem("overprimary")
                             visible: !groupSmallAppIcon.visible
                         }

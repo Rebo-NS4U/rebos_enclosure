@@ -14,7 +14,7 @@ RowLayout {
     required property Item bar
 
     Layout.alignment: Qt.AlignVCenter
-    spacing: 2
+    spacing: Styling.spacing(2)
 
     readonly property string iconFont: "Material Symbols Rounded"
 

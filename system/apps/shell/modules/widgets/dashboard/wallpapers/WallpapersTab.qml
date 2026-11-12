@@ -256,14 +256,14 @@ FocusScope {
 
     ColumnLayout {
         anchors.fill: parent
-        spacing: 8
+        spacing: Styling.spacing(8)
 
         // Header: search / wallpaper mode / scheme. Selector lists render as
         // overlays, so expanding one does not change the grid layout.
         RowLayout {
             Layout.fillWidth: true
             Layout.preferredHeight: Math.max(48, schemeSelector.implicitHeight, wallpaperModeSelector.implicitHeight)
-            spacing: 8
+            spacing: Styling.spacing(8)
             z: 1000
 
             StyledRect {
@@ -281,7 +281,7 @@ FocusScope {
                     text: Icons.arrowLeft
                     color: backButton.item
                     font.family: Icons.font
-                    font.pixelSize: 18
+                    font.pixelSize: Styling.fontSize(4)
                 }
 
                 MouseArea {
@@ -402,7 +402,7 @@ FocusScope {
                     RowLayout {
                         anchors.fill: parent
                         anchors.margins: 4
-                        spacing: 4
+                        spacing: Styling.spacing(4)
 
                         Rectangle {
                             Layout.fillWidth: true
@@ -497,7 +497,7 @@ FocusScope {
                                         text: Icons.accept
                                         color: Styling.srItem("primary")
                                         font.family: Icons.font
-                                        font.pixelSize: 20
+                                        font.pixelSize: Styling.fontSize(6)
                                         scale: perScreenCheckbox.checked ? 1.0 : 0.0
 
                                         Behavior on scale {
@@ -928,7 +928,7 @@ FocusScope {
                                         anchors.centerIn: parent
                                         text: Icons.circleNotch
                                         font.family: Icons.font
-                                        font.pixelSize: 24
+                                        font.pixelSize: Styling.fontSize(10)
                                         color: Colors.overSurfaceVariant
                                         rotation: 0
 

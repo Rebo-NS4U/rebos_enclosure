@@ -42,17 +42,17 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.margins: 14
-        spacing: 10
+        spacing: Styling.spacing(10)
 
         // Header: Back button + Title + Audio Format Badge
         RowLayout {
             Layout.fillWidth: true
-            spacing: 8
+            spacing: Styling.spacing(8)
 
             StyledRect {
                 implicitWidth: 28
                 implicitHeight: 28
-                radius: 14
+                radius: Styling.radius(0)
                 variant: backMouse.containsMouse ? "focus" : "common"
                 scale: backMouse.pressed ? 0.92 : 1.0
 
@@ -69,7 +69,7 @@ Item {
                     font.hintingPreference: Font.PreferFullHinting
                     text: Icons.arrowLeft
                     font.family: Icons.font
-                    font.pixelSize: 14
+                    font.pixelSize: Styling.fontSize(0)
                     color: Colors.overBackground
                 }
 
@@ -104,20 +104,20 @@ Item {
                 visible: AudioFormat.connected
                 implicitHeight: 26
                 implicitWidth: fmtRow.implicitWidth + 16
-                radius: 13
+                radius: Styling.radius(0)
                 variant: "internalbg"
 
                 RowLayout {
                     id: fmtRow
                     anchors.centerIn: parent
-                    spacing: 6
+                    spacing: Styling.spacing(6)
 
                     Text {
                         renderType: Text.NativeRendering
                         font.hintingPreference: Font.PreferFullHinting
                         text: AudioFormat.kindIcon
                         font.family: Icons.font
-                        font.pixelSize: 13
+                        font.pixelSize: Styling.fontSize(-1)
                         color: Colors.primary
                     }
 
@@ -137,7 +137,7 @@ Item {
         // Master Volume Slider row
         RowLayout {
             Layout.fillWidth: true
-            spacing: 10
+            spacing: Styling.spacing(10)
 
             Item {
                 implicitWidth: 22
@@ -150,7 +150,7 @@ Item {
                     font.hintingPreference: Font.PreferFullHinting
                     text: root.isMuted ? Icons.speakerSlash : (root.volume > 0.5 ? Icons.speakerHigh : (root.volume > 0 ? Icons.speakerLow : Icons.speakerSlash))
                     font.family: Icons.font
-                    font.pixelSize: 18
+                    font.pixelSize: Styling.fontSize(4)
                     color: root.isMuted ? Colors.red : Colors.overBackground
                 }
 
@@ -200,7 +200,7 @@ Item {
                 ColumnLayout {
                     id: scrollContent
                     width: parent.width
-                    spacing: 8
+                    spacing: Styling.spacing(8)
 
                     // Section 1: Output Devices
                     Text {
@@ -240,14 +240,14 @@ Item {
                                     anchors.fill: parent
                                     anchors.leftMargin: 10
                                     anchors.rightMargin: 10
-                                    spacing: 8
+                                    spacing: Styling.spacing(8)
 
                                     Text {
                                         renderType: Text.NativeRendering
                                         font.hintingPreference: Font.PreferFullHinting
                                         text: Icons.speakerHigh
                                         font.family: Icons.font
-                                        font.pixelSize: 16
+                                        font.pixelSize: Styling.fontSize(2)
                                         color: delegateRoot.isCurrent ? Colors.overPrimary : Colors.overBackground
                                     }
 
@@ -269,7 +269,7 @@ Item {
                                         font.hintingPreference: Font.PreferFullHinting
                                         text: Icons.check
                                         font.family: Icons.font
-                                        font.pixelSize: 16
+                                        font.pixelSize: Styling.fontSize(2)
                                         color: Colors.overPrimary
                                     }
                                 }
@@ -342,11 +342,11 @@ Item {
                                     anchors.rightMargin: 14
                                     anchors.topMargin: 9
                                     anchors.bottomMargin: 10
-                                    spacing: 6
+                                    spacing: Styling.spacing(6)
 
                                     RowLayout {
                                         Layout.fillWidth: true
-                                        spacing: 6
+                                        spacing: Styling.spacing(6)
 
                                         Item {
                                             implicitWidth: 16
@@ -359,7 +359,7 @@ Item {
                                                 font.hintingPreference: Font.PreferFullHinting
                                                 text: appDelegate.isAppMuted ? Icons.speakerSlash : (appDelegate.appVolume > 0.5 ? Icons.speakerHigh : (appDelegate.appVolume > 0 ? Icons.speakerLow : Icons.speakerSlash))
                                                 font.family: Icons.font
-                                                font.pixelSize: 13
+                                                font.pixelSize: Styling.fontSize(-1)
                                                 color: appDelegate.isAppMuted ? Colors.red : Colors.overBackground
                                             }
 

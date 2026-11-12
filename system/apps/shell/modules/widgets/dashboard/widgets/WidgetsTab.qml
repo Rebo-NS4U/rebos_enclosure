@@ -16,7 +16,7 @@ Rectangle {
 
     RowLayout {
         anchors.fill: parent
-        spacing: 8
+        spacing: Styling.spacing(8)
 
         FullPlayer {
             Layout.preferredWidth: 216
@@ -48,7 +48,7 @@ Rectangle {
                 ColumnLayout {
                     id: scrollColumn
                     width: parent.width
-                    spacing: 8
+                    spacing: Styling.spacing(8)
 
                     QuickControls {
                         id: quickControls

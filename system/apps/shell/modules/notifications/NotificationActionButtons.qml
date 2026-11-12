@@ -22,7 +22,7 @@ Item {
 
     RowLayout {
         anchors.fill: parent
-        spacing: 4
+        spacing: Styling.spacing(4)
 
         Repeater {
             model: root.validActions

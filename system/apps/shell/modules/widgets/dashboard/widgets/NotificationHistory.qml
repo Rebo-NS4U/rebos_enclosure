@@ -105,7 +105,7 @@ Item {
 
     ColumnLayout {
         anchors.fill: parent
-        spacing: 0
+        spacing: Styling.spacing(0)
 
         StyledRect {
             id: notificationPane
@@ -118,12 +118,12 @@ Item {
             ColumnLayout {
                 anchors.fill: parent
                 anchors.margins: 4
-                spacing: 4
+                spacing: Styling.spacing(4)
 
                 RowLayout {
                     Layout.fillWidth: true
                     Layout.maximumHeight: 32
-                    spacing: 4
+                    spacing: Styling.spacing(4)
 
                     StyledRect {
                         id: titleRect
@@ -161,7 +161,7 @@ Item {
                             text: Notifications.silent ? Icons.bellZ : Icons.bell
                             textFormat: Text.RichText
                             font.family: Icons.font
-                            font.pixelSize: 18
+                            font.pixelSize: Styling.fontSize(4)
                             color: dndToggle.dndItem
                         }
 
@@ -190,7 +190,7 @@ Item {
                             text: Icons.broom
                             textFormat: Text.RichText
                             font.family: Icons.font
-                            font.pixelSize: 18
+                            font.pixelSize: Styling.fontSize(4)
                             color: clearButton.clearItem
                         }
 
@@ -230,7 +230,7 @@ Item {
                             id: notificationList
                             width: parent.width
                             height: contentHeight
-                            spacing: 4
+                            spacing: Styling.spacing(4)
                             model: Notifications.appNameList
                             interactive: false
                             cacheBuffer: 200
@@ -251,7 +251,7 @@ Item {
 
             Column {
                 anchors.centerIn: parent
-                spacing: 16
+                spacing: Styling.spacing(16)
                 visible: Notifications.appNameList.length === 0
 
                 Image {

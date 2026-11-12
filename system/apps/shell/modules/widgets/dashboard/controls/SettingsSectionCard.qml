@@ -25,7 +25,7 @@ Button {
         border.color: root.activeFocus || root.selected ? Colors.primary : Qt.alpha(Colors.outline, 0.3)
     }
     contentItem: ColumnLayout {
-        spacing: 10
+        spacing: Styling.spacing(10)
         RowLayout {
             Layout.fillWidth: true
             StyledText {

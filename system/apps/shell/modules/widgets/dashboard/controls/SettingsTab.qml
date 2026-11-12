@@ -334,14 +334,14 @@ Item {
 
     RowLayout {
         anchors.fill: parent
-        spacing: 24
+        spacing: Styling.spacing(24)
 
         // Sidebar area: search + list
         ColumnLayout {
             Layout.preferredWidth: 250
             Layout.maximumWidth: 250
             Layout.fillHeight: true
-            spacing: 4
+            spacing: Styling.spacing(4)
 
             StyledText {
                 text: "Settings"
@@ -450,7 +450,7 @@ Item {
                     Column {
                         id: sidebar
                         width: parent.width
-                        spacing: 0
+                        spacing: Styling.spacing(0)
                         z: 1
 
                         Repeater {
@@ -471,7 +471,7 @@ Item {
                                 background: Item {}
 
                                 contentItem: Row {
-                                    spacing: 8
+                                    spacing: Styling.spacing(8)
 
                                     // Icon on the left (font icon)
                                     StyledText {
@@ -655,7 +655,7 @@ Item {
                 id: categoryTabs
                 objectName: "settings-category-tabs"
                 width: parent.width
-                spacing: 8
+                spacing: Styling.spacing(8)
                 visible: root.categoryPages.length > 1
                 Repeater {
                     model: root.categoryPages

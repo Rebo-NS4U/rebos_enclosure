@@ -39,7 +39,7 @@ Item {
 
     ColumnLayout {
         anchors.fill: parent
-        spacing: 0
+        spacing: Styling.spacing(0)
 
         StyledRect {
             id: calendarPane
@@ -52,12 +52,12 @@ Item {
             ColumnLayout {
                 anchors.fill: parent
                 anchors.margins: 4
-                spacing: 4
+                spacing: Styling.spacing(4)
 
                 RowLayout {
                     Layout.fillWidth: true
                     Layout.maximumHeight: 32
-                    spacing: 4
+                    spacing: Styling.spacing(4)
 
                     StyledRect {
                         id: titleRect
@@ -102,7 +102,7 @@ Item {
                             anchors.centerIn: parent
                             text: Icons.caretLeft
                             font.family: Icons.font
-                            font.pixelSize: 16
+                            font.pixelSize: Styling.fontSize(2)
                             color: leftButton.buttonItem
                         }
 
@@ -138,7 +138,7 @@ Item {
                             anchors.centerIn: parent
                             text: Icons.caretRight
                             font.family: Icons.font
-                            font.pixelSize: 16
+                            font.pixelSize: Styling.fontSize(2)
                             color: rightButton.buttonItem
                         }
 
@@ -161,7 +161,7 @@ Item {
                     ColumnLayout {
                         anchors.fill: parent
                         anchors.margins: 8
-                        spacing: 0
+                        spacing: Styling.spacing(0)
 
                         RowLayout {
                             Layout.fillWidth: true
@@ -201,7 +201,7 @@ Item {
 
                                 RowLayout {
                                     anchors.fill: parent
-                                    spacing: 0
+                                    spacing: Styling.spacing(0)
 
                                     Repeater {
                                         model: 7

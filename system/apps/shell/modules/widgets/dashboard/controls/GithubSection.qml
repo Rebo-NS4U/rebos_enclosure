@@ -24,7 +24,7 @@ StyledRect {
         anchors.right: parent.right
         anchors.top: parent.top
         anchors.margins: 12
-        spacing: 10
+        spacing: Styling.spacing(10)
         SettingsButton {
             objectName: root.objectName + "-toggle"
             Layout.fillWidth: true
@@ -46,6 +46,6 @@ StyledRect {
             color: Colors.overSurfaceVariant
             wrapMode: Text.Wrap
         }
-        ColumnLayout { id: body; Layout.fillWidth: true; visible: root.expanded; enabled: root.actionsEnabled; spacing: 12 }
+        ColumnLayout { id: body; Layout.fillWidth: true; visible: root.expanded; enabled: root.actionsEnabled; spacing: Styling.spacing(12) }
     }
 }

@@ -31,7 +31,7 @@ Button {
 
     contentItem: Row {
         id: contentRow
-        spacing: 2
+        spacing: Styling.spacing(2)
         anchors.centerIn: parent
 
         Text {

@@ -1,13 +1,13 @@
 {
     "oledMode": false,
     "lightMode": false,
-    "roundness": 16,
+    "roundness": 4,
     "font": "JetBrains Mono",
-    "fontSize": 14,
+    "fontSize": 13,
     "monoFont": "JetBrains Mono",
-    "monoFontSize": 14,
+    "monoFontSize": 13,
     "tintIcons": false,
-    "animDuration": 300,
+    "animDuration": 160,
     "shadowOpacity": 0.5,
     "shadowColor": "shadow",
     "shadowXOffset": 0,
@@ -488,5 +488,5 @@
         "itemColor": "error",
         "opacity": 1
     },
-    "shellStyle": "glass"
+    "shellStyle": "quiet"
 }

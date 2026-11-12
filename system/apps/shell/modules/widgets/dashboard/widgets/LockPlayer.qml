@@ -138,7 +138,7 @@ StyledRect {
         anchors.fill: parent
         anchors.margins: 16
         anchors.rightMargin: 28
-        spacing: 16
+        spacing: Styling.spacing(16)
         visible: MprisController.activePlayer || wallpaperPath !== ""
 
         // Album artwork con botón de play/pause superpuesto
@@ -214,7 +214,7 @@ StyledRect {
                 text: lockPlayer.isPlaying ? Icons.pause : Icons.play
                 textFormat: Text.RichText
                 color: Styling.srItem("overprimary")
-                font.pixelSize: 24
+                font.pixelSize: Styling.fontSize(10)
                 font.family: Icons.font
                 opacity: playPauseHover.hovered ? 1.0 : 0.0
                 visible: MprisController.canTogglePlaying
@@ -244,12 +244,12 @@ StyledRect {
         ColumnLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            spacing: 4
+            spacing: Styling.spacing(4)
 
             // Título y artista
             ColumnLayout {
                 Layout.fillWidth: true
-                spacing: 0
+                spacing: Styling.spacing(0)
 
                 Text {
                     renderType: Text.NativeRendering
@@ -286,7 +286,7 @@ StyledRect {
             // Controles
             RowLayout {
                 Layout.fillWidth: true
-                spacing: 8
+                spacing: Styling.spacing(8)
 
                 Text {
                     renderType: Text.NativeRendering
@@ -295,7 +295,7 @@ StyledRect {
                     text: Icons.previous
                     textFormat: Text.RichText
                     color: previousHover.hovered ? Styling.srItem("overprimary") : Colors.overBackground
-                    font.pixelSize: 20
+                    font.pixelSize: Styling.fontSize(6)
                     font.family: Icons.font
                     opacity: MprisController.canGoPrevious ? 1.0 : 0.3
 
@@ -337,7 +337,7 @@ StyledRect {
                     text: Icons.next
                     textFormat: Text.RichText
                     color: nextHover.hovered ? Styling.srItem("overprimary") : Colors.overBackground
-                    font.pixelSize: 20
+                    font.pixelSize: Styling.fontSize(6)
                     font.family: Icons.font
                     opacity: MprisController.canGoNext ? 1.0 : 0.3
 
@@ -379,7 +379,7 @@ StyledRect {
                     }
                     textFormat: Text.RichText
                     color: modeHover.hovered ? Styling.srItem("overprimary") : Colors.overBackground
-                    font.pixelSize: 20
+                    font.pixelSize: Styling.fontSize(6)
                     font.family: Icons.font
                     opacity: {
                         if (!(MprisController.shuffleSupported || MprisController.loopSupported))
@@ -443,7 +443,7 @@ StyledRect {
                     }
                     textFormat: Text.RichText
                     color: playerIconHover.hovered ? Styling.srItem("overprimary") : Colors.overBackground
-                    font.pixelSize: 20
+                    font.pixelSize: Styling.fontSize(6)
                     font.family: Icons.font
                     opacity: MprisController.activePlayer ? 1.0 : 0.3
 

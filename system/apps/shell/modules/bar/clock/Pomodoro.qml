@@ -171,7 +171,7 @@ Item {
         id: content
         anchors.fill: parent
         anchors.margins: 12
-        spacing: 12
+        spacing: Styling.spacing(12)
 
         // Editable countdown.
         Item {
@@ -182,10 +182,10 @@ Item {
             ColumnLayout {
                 id: timerInputs
                 anchors.centerIn: parent
-                spacing: 4
+                spacing: Styling.spacing(4)
 
                 RowLayout {
-                    spacing: 4
+                    spacing: Styling.spacing(4)
                     Layout.alignment: Qt.AlignHCenter
                     
                     TimerInput {
@@ -229,7 +229,7 @@ Item {
                 anchors.horizontalCenter: parent.horizontalCenter
                 height: 4
                 width: 180
-                radius: 2
+                radius: Styling.radius(0)
                 opacity: root.isRunning || root.alarmActive || root.visualProgress < 1.0 ? 1.0 : 0.3
                 
                 Rectangle {
@@ -245,7 +245,7 @@ Item {
         // Start expands into equal pause/resume and reset actions.
         RowLayout {
             Layout.fillWidth: true
-            spacing: 4
+            spacing: Styling.spacing(4)
 
             StyledRect {
                 id: playBtn

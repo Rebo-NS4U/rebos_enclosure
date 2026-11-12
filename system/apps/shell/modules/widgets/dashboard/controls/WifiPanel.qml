@@ -33,7 +33,7 @@ Item {
         id: networkList
         anchors.fill: parent
         clip: true
-        spacing: 12
+        spacing: Styling.spacing(12)
         cacheBuffer: 1000
         reuseItems: true
 

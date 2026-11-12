@@ -60,13 +60,13 @@ Item {
         anchors.leftMargin: 16
         anchors.rightMargin: 16
         anchors.topMargin: 16
-        spacing: 8
+        spacing: Styling.spacing(8)
 
         // Main row with network info
         RowLayout {
             Layout.fillWidth: true
             Layout.preferredHeight: 32
-            spacing: 12
+            spacing: Styling.spacing(12)
 
             // Wi-Fi signal icon with security indicator
             Item {
@@ -88,7 +88,7 @@ Item {
                         return Icons.wifiNone;
                     }
                     font.family: Icons.font
-                    font.pixelSize: 20
+                    font.pixelSize: Styling.fontSize(6)
                     color: root.network?.active ? Styling.srItem("overprimary") : Colors.overBackground
                 }
 
@@ -102,7 +102,7 @@ Item {
                     visible: root.network?.isSecure ?? false
                     text: Icons.lock
                     font.family: Icons.font
-                    font.pixelSize: 10
+                    font.pixelSize: Styling.fontSize(-4)
                     color: Colors.overSurfaceVariant
                 }
             }
@@ -110,7 +110,7 @@ Item {
             // Network name and status
             ColumnLayout {
                 Layout.fillWidth: true
-                spacing: 0
+                spacing: Styling.spacing(0)
 
                 Text {
                     renderType: Text.NativeRendering
@@ -164,7 +164,7 @@ Item {
                     anchors.centerIn: parent
                     text: "5G"
                     font.family: Config.theme.font
-                    font.pixelSize: 10
+                    font.pixelSize: Styling.fontSize(-4)
                     font.weight: Font.Bold
                     color: Colors.overSurfaceVariant
                 }
@@ -175,7 +175,7 @@ Item {
         ColumnLayout {
             Layout.fillWidth: true
             visible: root.expanded
-            spacing: 8
+            spacing: Styling.spacing(8)
             opacity: root.expanded ? 1 : 0
 
             Behavior on opacity {
@@ -201,7 +201,7 @@ Item {
             // Action buttons
             RowLayout {
                 Layout.fillWidth: true
-                spacing: 8
+                spacing: Styling.spacing(8)
 
                 Item {
                     Layout.fillWidth: true

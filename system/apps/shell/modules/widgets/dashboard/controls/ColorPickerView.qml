@@ -46,12 +46,12 @@ Item {
     ColumnLayout {
         id: mainColumn
         anchors.fill: parent
-        spacing: 8
+        spacing: Styling.spacing(8)
 
         // Header with back button and title (FIXED)
         RowLayout {
             Layout.fillWidth: true
-            spacing: 8
+            spacing: Styling.spacing(8)
 
             StyledRect {
                 id: backButton
@@ -67,7 +67,7 @@ Item {
                     anchors.centerIn: parent
                     text: Icons.arrowLeft
                     font.family: Icons.font
-                    font.pixelSize: 16
+                    font.pixelSize: Styling.fontSize(2)
                     color: backButton.item
                 }
 
@@ -102,7 +102,7 @@ Item {
             RowLayout {
                 anchors.fill: parent
                 anchors.margins: 10
-                spacing: 8
+                spacing: Styling.spacing(8)
 
                 Rectangle {
                     Layout.preferredWidth: 28
@@ -117,7 +117,7 @@ Item {
                     renderType: Text.NativeRendering
                     font.hintingPreference: Font.PreferFullHinting
                     text: "#"
-                    font.family: "monospace"
+                    font.family: Config.theme.monoFont
                     font.pixelSize: Styling.fontSize(0)
                     color: Colors.overBackground
                     opacity: 0.6
@@ -137,7 +137,7 @@ Item {
                         }
                     }
 
-                    font.family: "monospace"
+                    font.family: Config.theme.monoFont
                     font.pixelSize: Styling.fontSize(0)
                     color: Colors.overBackground
                     verticalAlignment: Text.AlignVCenter
@@ -202,7 +202,7 @@ Item {
                         anchors.centerIn: parent
                         text: Icons.picker
                         font.family: Icons.font
-                        font.pixelSize: 14
+                        font.pixelSize: Styling.fontSize(0)
                         color: pickerButton.item
                     }
 
@@ -262,7 +262,7 @@ Item {
                     RowLayout {
                         anchors.fill: parent
                         anchors.margins: 6
-                        spacing: 6
+                        spacing: Styling.spacing(6)
 
                         Rectangle {
                             Layout.preferredWidth: 20

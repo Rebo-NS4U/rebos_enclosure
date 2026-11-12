@@ -68,7 +68,7 @@ StyledRect {
         id: content
         anchors.fill: parent
         anchors.margins: 12
-        spacing: 8
+        spacing: Styling.spacing(8)
         RowLayout {
             opacity: root.controlsVisible ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: Motion.contentIn } }
@@ -102,7 +102,7 @@ StyledRect {
             Behavior on opacity { NumberAnimation { duration: Motion.contentIn } }
             enabled: root.controlsVisible
             Layout.fillWidth: true
-            spacing: 4
+            spacing: Styling.spacing(4)
             ThemeButton {
                 text: "Top"
                 checked: LyricsService.pinEdge === "top"

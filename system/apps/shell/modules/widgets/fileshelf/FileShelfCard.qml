@@ -75,7 +75,7 @@ StyledRect {
         }
         ColumnLayout {
             Layout.fillWidth: true
-            spacing: 4
+            spacing: Styling.spacing(4)
             StyledText {
                 Layout.fillWidth: true
                 text: root.fileName

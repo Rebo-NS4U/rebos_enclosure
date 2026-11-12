@@ -12,7 +12,7 @@ import "../../../theme/ShellStyles.js" as ShellStyles
 ColumnLayout {
     id: root
     property string settingsSection: "style"
-    spacing: 12
+    spacing: Styling.spacing(12)
 
     StyledText {
         text: "Theme style"
@@ -29,8 +29,8 @@ ColumnLayout {
     GridLayout {
         columns: root.width < Styling.fontSize(0) * 26 ? 1 : 2
         Layout.fillWidth: true
-        columnSpacing: 10
-        rowSpacing: 10
+        columnSpacing: Styling.spacing(10)
+        rowSpacing: Styling.spacing(10)
         Repeater {
             model: ShellStyles.styles
             delegate: Button {
@@ -50,7 +50,7 @@ ColumnLayout {
                     border.color: card.selected || card.activeFocus ? Colors.primary : Qt.alpha(Colors.outline, 0.3)
                 }
                 contentItem: ColumnLayout {
-                    spacing: 8
+                    spacing: Styling.spacing(8)
                     StyledRect {
                         Layout.fillWidth: true
                         Layout.preferredHeight: Styling.fontSize(0) * 5.5
@@ -61,7 +61,7 @@ ColumnLayout {
                         ColumnLayout {
                             anchors.fill: parent
                             anchors.margins: 8
-                            spacing: 6
+                            spacing: Styling.spacing(6)
                             RowLayout {
                                 Layout.fillWidth: true
                                 StyledText { text: Icons.layout; font.family: Icons.font; color: Colors.primary }
@@ -123,7 +123,7 @@ ColumnLayout {
             id: ditherSettings
             anchors.fill: parent
             anchors.margins: 12
-            spacing: 8
+            spacing: Styling.spacing(8)
             StyledText { text: "Shell dithering"; font.bold: true }
             StyledText { text: "Border style" }
             SettingsComboBox {
@@ -268,7 +268,7 @@ ColumnLayout {
             id: coverage
             anchors.fill: parent
             anchors.margins: 16
-            spacing: 8
+            spacing: Styling.spacing(8)
             StyledText { text: "App themes"; font.bold: true; color: Colors.primary }
             StyledText {
                 Layout.fillWidth: true

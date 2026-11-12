@@ -23,7 +23,7 @@ Item {
         anchors.rightMargin: 16
         anchors.topMargin: 6
         anchors.bottomMargin: 6
-        spacing: 12
+        spacing: Styling.spacing(12)
 
         // Left Icon
         Item {
@@ -55,7 +55,7 @@ Item {
                 font.hintingPreference: Font.PreferFullHinting
                 text: root.muted ? Icons.micSlash : Icons.mic
                 font.family: Icons.font
-                font.pixelSize: 20
+                font.pixelSize: Styling.fontSize(6)
                 color: root.muted ? Colors.error : Colors.overBackground
             }
         }
@@ -64,11 +64,11 @@ Item {
         ColumnLayout {
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignVCenter
-            spacing: 4
+            spacing: Styling.spacing(4)
 
             RowLayout {
                 Layout.fillWidth: true
-                spacing: 0
+                spacing: Styling.spacing(0)
 
                 Text {
                     renderType: Text.NativeRendering

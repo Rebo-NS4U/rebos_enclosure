@@ -37,18 +37,18 @@ Item {
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 14
-        spacing: 10
+        spacing: Styling.spacing(10)
 
         // Header: Back button + Title + Actions (Settings, Rescan, Switch)
         RowLayout {
             Layout.fillWidth: true
-            spacing: 8
+            spacing: Styling.spacing(8)
 
             // Back button
             StyledRect {
                 implicitWidth: 28
                 implicitHeight: 28
-                radius: 14
+                radius: Styling.radius(0)
                 variant: backMouse.containsMouse ? "focus" : "common"
                 scale: backMouse.pressed ? 0.92 : 1.0
 
@@ -65,7 +65,7 @@ Item {
                     font.hintingPreference: Font.PreferFullHinting
                     text: Icons.arrowLeft
                     font.family: Icons.font
-                    font.pixelSize: 14
+                    font.pixelSize: Styling.fontSize(0)
                     color: Colors.overBackground
                 }
 
@@ -113,7 +113,7 @@ Item {
             StyledRect {
                 implicitWidth: 28
                 implicitHeight: 28
-                radius: 14
+                radius: Styling.radius(0)
                 variant: settingsMouse.containsMouse ? "focus" : "common"
                 scale: settingsMouse.pressed ? 0.92 : 1.0
 
@@ -130,7 +130,7 @@ Item {
                     font.hintingPreference: Font.PreferFullHinting
                     text: Icons.popOpen
                     font.family: Icons.font
-                    font.pixelSize: 14
+                    font.pixelSize: Styling.fontSize(0)
                     color: Colors.overBackground
                 }
 
@@ -152,7 +152,7 @@ Item {
             StyledRect {
                 implicitWidth: 28
                 implicitHeight: 28
-                radius: 14
+                radius: Styling.radius(0)
                 variant: rescanMouse.containsMouse ? "focus" : "common"
                 enabled: BluetoothService.enabled
                 scale: rescanMouse.pressed ? 0.92 : 1.0
@@ -171,7 +171,7 @@ Item {
                     font.hintingPreference: Font.PreferFullHinting
                     text: Icons.arrowsClockwise
                     font.family: Icons.font
-                    font.pixelSize: 14
+                    font.pixelSize: Styling.fontSize(0)
                     color: (BluetoothService.discovering || BluetoothService.isUpdating) ? Styling.srItem("overprimary") : (BluetoothService.enabled ? Colors.overBackground : Colors.outline)
 
                     RotationAnimation on rotation {
@@ -272,7 +272,7 @@ Item {
                 id: deviceList
                 anchors.fill: parent
                 clip: true
-                spacing: 6
+                spacing: Styling.spacing(6)
                 model: BluetoothService.deviceModel
 
                 delegate: Item {
@@ -306,12 +306,12 @@ Item {
             RowLayout {
                 anchors.centerIn: parent
                 visible: deviceList.count === 0 && BluetoothService.discovering
-                spacing: 8
+                spacing: Styling.spacing(8)
 
                 Text {
                     text: Icons.arrowsClockwise
                     font.family: Icons.font
-                    font.pixelSize: 16
+                    font.pixelSize: Styling.fontSize(2)
                     color: Styling.srItem("overprimary")
 
                     RotationAnimation on rotation {

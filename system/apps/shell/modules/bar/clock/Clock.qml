@@ -115,7 +115,7 @@ Item {
         RowLayout {
             id: rowLayout
             anchors.centerIn: parent
-            spacing: 8
+            spacing: Styling.spacing(8)
 
             Item {
                 Layout.preferredWidth: weatherDisplay.implicitWidth
@@ -303,7 +303,7 @@ Item {
         // Main popup column
         Column {
             id: popupColumn
-            spacing: 4
+            spacing: Styling.spacing(4)
 
             // Weather Wrapper StyledRect
             StyledRect {
@@ -319,7 +319,7 @@ Item {
                 Column {
                     id: popupContent
                     anchors.centerIn: parent
-                    spacing: 4
+                    spacing: Styling.spacing(4)
 
                     // Weather widget with sun arc
                     WeatherWidget {
@@ -351,7 +351,7 @@ Item {
                             Row {
                                 id: forecastRow
                                 anchors.centerIn: parent
-                                spacing: 4
+                                spacing: Styling.spacing(4)
 
                                 Repeater {
                                     model: WeatherService.forecast.slice(0, 5)
@@ -360,11 +360,11 @@ Item {
                                         id: forecastDayRow
                                         required property var modelData
                                         required property int index
-                                        spacing: 4
+                                        spacing: Styling.spacing(4)
 
                                         Column {
                                             id: forecastDay
-                                            spacing: 2
+                                            spacing: Styling.spacing(2)
                                             width: (weatherWidget.width - 16 - (4 * 4) - (4 * 6)) / 5
 
                                             // Day name
@@ -437,7 +437,7 @@ Item {
                         ColumnLayout {
                             id: debugContent
                             anchors.fill: parent
-                            spacing: 4
+                            spacing: Styling.spacing(4)
 
                             // Time slider pane
                             StyledRect {
@@ -582,7 +582,7 @@ Item {
                                                 font.hintingPreference: Font.PreferFullHinting
                                                 anchors.centerIn: parent
                                                 text: weatherBtn.modelData.icon
-                                                font.pixelSize: 14
+                                                font.pixelSize: Styling.fontSize(0)
                                             }
 
                                             MouseArea {

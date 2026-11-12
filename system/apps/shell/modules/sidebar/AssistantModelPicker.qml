@@ -8,7 +8,7 @@ import qs.config
 
 ColumnLayout {
     id: root
-    spacing: 8
+    spacing: Styling.spacing(8)
     property bool expanded: false
     readonly property bool canSwitch: Ai.activeSession.sessionReady && !Ai.activeSession.isBusy && !Ai.activeSession.switchingSessionModel
     readonly property var filteredModels: {
@@ -32,7 +32,7 @@ ColumnLayout {
             border.width: 1
         }
         contentItem: RowLayout {
-            spacing: 8
+            spacing: Styling.spacing(8)
             Text {
                 text: "Model"
                 font.family: Config.theme.font
@@ -76,7 +76,7 @@ ColumnLayout {
             anchors.right: parent.right
             anchors.top: parent.top
             anchors.margins: 10
-            spacing: 8
+            spacing: Styling.spacing(8)
             Text {
                 Layout.fillWidth: true
                 text: Ai.activeSession.isBusy ? "You can change models after this reply finishes."
@@ -112,7 +112,7 @@ ColumnLayout {
                 Layout.fillWidth: true
                 Layout.preferredHeight: Math.min(220, contentHeight)
                 clip: true
-                spacing: 4
+                spacing: Styling.spacing(4)
                 model: root.filteredModels
                 ScrollBar.vertical: ScrollBar {}
                 delegate: Button {
@@ -131,11 +131,11 @@ ColumnLayout {
                         border.color: Qt.alpha(Colors.primary, 0.4)
                     }
                     contentItem: RowLayout {
-                        spacing: 8
+                        spacing: Styling.spacing(8)
                         ColumnLayout {
                             id: modelTexts
                             Layout.fillWidth: true
-                            spacing: 3
+                            spacing: Styling.spacing(3)
                             Text {
                                 Layout.fillWidth: true
                                 text: modelButton.modelData.name || modelButton.modelData.modelId

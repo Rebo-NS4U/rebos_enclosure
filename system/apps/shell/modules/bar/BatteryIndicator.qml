@@ -206,7 +206,7 @@ Item {
         ColumnLayout {
             id: mainColumn
             anchors.fill: parent
-            spacing: 4
+            spacing: Styling.spacing(4)
 
             StyledRect {
                 id: batteryDetailsContainer
@@ -224,7 +224,7 @@ Item {
                     anchors.rightMargin: 12
                     anchors.topMargin: 8
                     anchors.bottomMargin: 8
-                    spacing: 12
+                    spacing: Styling.spacing(12)
 
                     Text {
                         renderType: Text.NativeRendering
@@ -232,7 +232,7 @@ Item {
                         Layout.alignment: Qt.AlignVCenter
                         text: Battery.getBatteryIcon()
                         font.family: Icons.font
-                        font.pixelSize: 24
+                        font.pixelSize: Styling.fontSize(10)
                         color: root.getBatteryColor()
                     }
 
@@ -240,7 +240,7 @@ Item {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         Layout.alignment: Qt.AlignVCenter
-                        spacing: 2
+                        spacing: Styling.spacing(2)
 
                         Text {
                             renderType: Text.NativeRendering
@@ -285,7 +285,7 @@ Item {
                 id: profilesRow
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                spacing: 4
+                spacing: Styling.spacing(4)
 
                 Repeater {
                     model: PowerProfile.availableProfiles
@@ -321,7 +321,7 @@ Item {
                             anchors.centerIn: parent
                             text: PowerProfile.getProfileIcon(profileButton.modelData)
                             font.family: Icons.font
-                            font.pixelSize: 18
+                            font.pixelSize: Styling.fontSize(4)
                             color: profileButton.item
                         }
 

@@ -71,12 +71,12 @@ StyledRect {
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 12
-        spacing: 8
+        spacing: Styling.spacing(8)
 
         // Top row: Circular photo + metadata + playback buttons
         RowLayout {
             Layout.fillWidth: true
-            spacing: 10
+            spacing: Styling.spacing(10)
 
             // Inline circular face / album artwork photo + metadata (clickable)
             Item {
@@ -86,7 +86,7 @@ StyledRect {
 
                 RowLayout {
                     anchors.fill: parent
-                    spacing: 10
+                    spacing: Styling.spacing(10)
 
                     Item {
                         implicitWidth: 40
@@ -131,7 +131,7 @@ StyledRect {
                                     font.hintingPreference: Font.PreferFullHinting
                                     text: Icons.player
                                     font.family: Icons.font
-                                    font.pixelSize: 18
+                                    font.pixelSize: Styling.fontSize(4)
                                     color: Colors.overBackground
                                 }
                             }
@@ -142,7 +142,7 @@ StyledRect {
                     ColumnLayout {
                         Layout.fillWidth: true
                         Layout.alignment: Qt.AlignVCenter
-                        spacing: 2
+                        spacing: Styling.spacing(2)
 
                         Text {
                             renderType: Text.NativeRendering
@@ -180,7 +180,7 @@ StyledRect {
 
             // Playback controls
             RowLayout {
-                spacing: 6
+                spacing: Styling.spacing(6)
                 Layout.alignment: Qt.AlignVCenter
 
                 // Previous button
@@ -204,7 +204,7 @@ StyledRect {
                         font.hintingPreference: Font.PreferFullHinting
                         text: Icons.previous
                         font.family: Icons.font
-                        font.pixelSize: 15
+                        font.pixelSize: Styling.fontSize(1)
                         color: Colors.overBackground
                     }
 
@@ -239,7 +239,7 @@ StyledRect {
                         font.hintingPreference: Font.PreferFullHinting
                         text: root.isPlaying ? Icons.pause : Icons.play
                         font.family: Icons.font
-                        font.pixelSize: 18
+                        font.pixelSize: Styling.fontSize(4)
                         color: Colors.overPrimary
                     }
 
@@ -273,7 +273,7 @@ StyledRect {
                         font.hintingPreference: Font.PreferFullHinting
                         text: Icons.next
                         font.family: Icons.font
-                        font.pixelSize: 15
+                        font.pixelSize: Styling.fontSize(1)
                         color: Colors.overBackground
                     }
 

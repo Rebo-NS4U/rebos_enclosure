@@ -104,7 +104,7 @@ Singleton {
         }
 
         adapter: JsonAdapter {
-            property string shellStyle: "glass"
+            property string shellStyle: "quiet"
             property int shellTransparency: -1
             property string ditherPalette: "original"
             property string ditherTintColor: "#4c9cbd"
@@ -113,13 +113,13 @@ Singleton {
             property int ditherStrength: 20
             property bool oledMode: false
             property bool lightMode: false
-            property int roundness: 16
+            property int roundness: 4
             property string font: "JetBrains Mono"
-            property int fontSize: 14
+            property int fontSize: 13
             property string monoFont: "JetBrains Mono"
-            property int monoFontSize: 14
+            property int monoFontSize: 13
             property bool tintIcons: false
-            property int animDuration: 300
+            property int animDuration: 160
             property real shadowOpacity: 0.5
             property string shadowColor: "shadow"
             property int shadowXOffset: 0
@@ -792,9 +792,9 @@ Singleton {
     property bool oledMode: lightMode ? false : theme.oledMode
     property bool lightMode: theme.lightMode
 
-    property int roundness: theme.roundness
+    property int roundness: 4
     property string defaultFont: theme.font
-    property int animDuration: theme.animDuration
+    property int animDuration: 160
     property bool tintIcons: theme.tintIcons
 
     // Handle lightMode changes

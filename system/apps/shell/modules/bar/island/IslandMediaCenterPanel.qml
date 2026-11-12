@@ -69,14 +69,14 @@ Item {
         id: mainCol
         anchors.fill: parent
         anchors.margins: 14
-        spacing: 12
+        spacing: Styling.spacing(12)
 
         StyledRect {
             objectName: "typer-media-card"
             visible: root.readerActive
             Layout.fillWidth: true
             implicitHeight: readerControls.implicitHeight + 24
-            radius: 16
+            radius: Styling.radius(0)
             variant: "common"
             ColumnLayout {
                 id: readerControls
@@ -104,13 +104,13 @@ Item {
         // ═══════════════════════════════════════════════════════════════
         RowLayout {
             Layout.fillWidth: true
-            spacing: 8
+            spacing: Styling.spacing(8)
 
             // Back button
             StyledRect {
                 implicitWidth: 28
                 implicitHeight: 28
-                radius: 14
+                radius: Styling.radius(0)
                 variant: backMouse.containsMouse ? "focus" : "common"
                 scale: backMouse.pressed ? 0.92 : 1.0
                 Behavior on scale {
@@ -126,7 +126,7 @@ Item {
                     font.hintingPreference: Font.PreferFullHinting
                     text: Icons.arrowLeft
                     font.family: Icons.font
-                    font.pixelSize: 14
+                    font.pixelSize: Styling.fontSize(0)
                     color: Colors.overBackground
                 }
 
@@ -161,7 +161,7 @@ Item {
                 id: switchPlayerBtn
                 implicitWidth: 28
                 implicitHeight: 28
-                radius: 14
+                radius: Styling.radius(0)
                 variant: playerMouse.containsMouse ? "focus" : "common"
                 scale: playerMouse.pressed ? 0.88 : (playerMouse.containsMouse ? 1.06 : 1.0)
                 Behavior on scale { NumberAnimation { duration: Motion.feedback; easing.type: Easing.OutQuad } }
@@ -173,7 +173,7 @@ Item {
                     font.hintingPreference: Font.PreferFullHinting
                     text: Icons.disc
                     font.family: Icons.font
-                    font.pixelSize: 14
+                    font.pixelSize: Styling.fontSize(0)
                     color: Colors.primary
 
                     Behavior on rotation {
@@ -220,7 +220,7 @@ Item {
         // ═══════════════════════════════════════════════════════════════
         RowLayout {
             Layout.fillWidth: true
-            spacing: 16
+            spacing: Styling.spacing(16)
 
             // ── ROTATING VINYL DISC CONTAINER ──
             Item {
@@ -363,7 +363,7 @@ Item {
                                 font.hintingPreference: Font.PreferFullHinting
                                 text: Icons.player
                                 font.family: Icons.font
-                                font.pixelSize: 20
+                                font.pixelSize: Styling.fontSize(6)
                                 color: Colors.overBackground
                             }
 
@@ -399,7 +399,7 @@ Item {
             ColumnLayout {
                 Layout.fillWidth: true
                 Layout.alignment: Qt.AlignVCenter
-                spacing: 3
+                spacing: Styling.spacing(3)
 
                 Text {
                     renderType: Text.NativeRendering
@@ -457,13 +457,13 @@ Item {
         RowLayout {
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignHCenter
-            spacing: 12
+            spacing: Styling.spacing(12)
 
             // Shuffle button
             StyledRect {
                 implicitWidth: 34
                 implicitHeight: 34
-                radius: 17
+                radius: Styling.radius(0)
                 variant: MprisController.hasShuffle ? "primary" : (shuffleMouse.containsMouse ? "focus" : "common")
                 opacity: MprisController.shuffleSupported ? 1.0 : 0.4
                 scale: shuffleMouse.pressed ? 0.92 : 1.0
@@ -480,7 +480,7 @@ Item {
                     font.hintingPreference: Font.PreferFullHinting
                     text: Icons.shuffle
                     font.family: Icons.font
-                    font.pixelSize: 15
+                    font.pixelSize: Styling.fontSize(1)
                     color: MprisController.hasShuffle ? Colors.overPrimary : Colors.overBackground
                 }
 
@@ -500,7 +500,7 @@ Item {
             StyledRect {
                 implicitWidth: 38
                 implicitHeight: 38
-                radius: 19
+                radius: Styling.radius(0)
                 variant: prevMouse.containsMouse ? "focus" : "common"
                 opacity: MprisController.canGoPrevious ? 1.0 : 0.4
                 scale: prevMouse.pressed ? 0.92 : 1.0
@@ -517,7 +517,7 @@ Item {
                     font.hintingPreference: Font.PreferFullHinting
                     text: Icons.previous
                     font.family: Icons.font
-                    font.pixelSize: 16
+                    font.pixelSize: Styling.fontSize(2)
                     color: Colors.overBackground
                 }
 
@@ -535,7 +535,7 @@ Item {
             StyledRect {
                 implicitWidth: 46
                 implicitHeight: 46
-                radius: 23
+                radius: Styling.radius(0)
                 variant: "primary"
                 opacity: playMouse.containsMouse ? 0.9 : 1.0
                 scale: playMouse.pressed ? 0.92 : 1.0
@@ -552,7 +552,7 @@ Item {
                     font.hintingPreference: Font.PreferFullHinting
                     text: root.isPlaying ? Icons.pause : Icons.play
                     font.family: Icons.font
-                    font.pixelSize: 20
+                    font.pixelSize: Styling.fontSize(6)
                     color: Colors.overPrimary
                 }
 
@@ -569,7 +569,7 @@ Item {
             StyledRect {
                 implicitWidth: 38
                 implicitHeight: 38
-                radius: 19
+                radius: Styling.radius(0)
                 variant: nextMouse.containsMouse ? "focus" : "common"
                 opacity: MprisController.canGoNext ? 1.0 : 0.4
                 scale: nextMouse.pressed ? 0.92 : 1.0
@@ -586,7 +586,7 @@ Item {
                     font.hintingPreference: Font.PreferFullHinting
                     text: Icons.next
                     font.family: Icons.font
-                    font.pixelSize: 16
+                    font.pixelSize: Styling.fontSize(2)
                     color: Colors.overBackground
                 }
 
@@ -606,7 +606,7 @@ Item {
             StyledRect {
                 implicitWidth: 34
                 implicitHeight: 34
-                radius: 17
+                radius: Styling.radius(0)
                 variant: MprisController.loopState !== 0 ? "primary" : (loopMouse.containsMouse ? "focus" : "common")
                 opacity: MprisController.loopSupported ? 1.0 : 0.4
                 scale: loopMouse.pressed ? 0.92 : 1.0
@@ -623,7 +623,7 @@ Item {
                     font.hintingPreference: Font.PreferFullHinting
                     text: MprisController.loopState === 2 ? Icons.repeatOnce : Icons.repeat
                     font.family: Icons.font
-                    font.pixelSize: 15
+                    font.pixelSize: Styling.fontSize(1)
                     color: MprisController.loopState !== 0 ? Colors.overPrimary : Colors.overBackground
                 }
 

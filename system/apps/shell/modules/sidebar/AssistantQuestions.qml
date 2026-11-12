@@ -10,7 +10,7 @@ Column {
     id: root
     property AiSession session: Ai.activeSession
     objectName: "assistantQuestions"
-    spacing: 12
+    spacing: Styling.spacing(12)
 
     component SecondaryButton: Button {
         id: control
@@ -49,7 +49,7 @@ Column {
                 anchors.right: parent.right
                 anchors.top: parent.top
                 anchors.margins: 12
-                spacing: 10
+                spacing: Styling.spacing(10)
 
                 Text {
                     Layout.fillWidth: true
@@ -75,7 +75,7 @@ Column {
                         required property var modelData
                         readonly property var value: card.draft[modelData.key]
                         Layout.fillWidth: true
-                        spacing: 6
+                        spacing: Styling.spacing(6)
                         Text {
                             Layout.fillWidth: true
                             text: field.modelData.title + (field.modelData.required ? " *" : "")
@@ -126,7 +126,7 @@ Column {
                                     border.color: Qt.alpha(Colors.primary, 0.6)
                                 }
                                 contentItem: ColumnLayout {
-                                    spacing: 3
+                                    spacing: Styling.spacing(3)
                                     Text {
                                         Layout.fillWidth: true
                                         text: (choice.selected ? "● " : "○ ") + choice.modelData.label
@@ -185,7 +185,7 @@ Column {
                 }
                 RowLayout {
                     Layout.fillWidth: true
-                    spacing: 8
+                    spacing: Styling.spacing(8)
                     SecondaryButton {
                         objectName: "questionDecline"
                         text: "Decline"
