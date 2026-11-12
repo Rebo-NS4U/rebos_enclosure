@@ -1,55 +1,21 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SCREENSHOT_DIR="${HOME}/Pictures/Screenshots"
-MODE="${1:-screen}"
-STAMP=$(date '+%Y-%m-%d %H%M%S')
-OUTPUT="${SCREENSHOT_DIR}/Screenshot ${STAMP}.png"
+# Open the on-demand selector and editor with the shared shell theme.
+MODE="${1:-area}"
+case "$MODE" in
+    area|edit|screen|output|window)
+        [ "$MODE" != output ] || MODE=screen
+        export ENCLOSURE_SCREENSHOT_MODE="$MODE"
+        exec qs -n -p "$HOME/.config/quickshell/screenshot.qml"
+        ;;
+    ocr) ;; # Preserve the existing text extraction shortcut.
+    *) printf 'Usage: %s [area|screen|window|edit|output|ocr]\n' "$0" >&2; exit 2 ;;
+esac
+
 TEMP=$(mktemp --suffix=.png)
 trap 'rm -f "$TEMP"' EXIT
-
-mkdir -p "$SCREENSHOT_DIR"
-
-capture() {
-    local target=$1
-    local geometry output
-
-    case "$MODE" in
-        screen)
-            grim "$target"
-            ;;
-        area|ocr|edit)
-            geometry=$(slurp) || exit 0
-            grim -g "$geometry" "$target"
-            ;;
-        output)
-            output=$(slurp -o -f '%o') || exit 0
-            grim -o "$output" "$target"
-            ;;
-        *)
-            printf 'Usage: %s [screen|area|output|edit|ocr]\n' "$0" >&2
-            exit 2
-            ;;
-    esac
-}
-
-case "$MODE" in
-    ocr)
-        capture "$TEMP"
-        tesseract -l eng "$TEMP" stdout | wl-copy
-        notify-send "Text copied" "OCR result is on the clipboard."
-        ;;
-    edit)
-        capture "$TEMP"
-        satty \
-            --filename "$TEMP" \
-            --output-filename "$OUTPUT" \
-            --copy-command wl-copy \
-            --early-exit all
-        ;;
-    *)
-        capture "$OUTPUT"
-        wl-copy --type image/png < "$OUTPUT"
-        notify-send "Screenshot saved" "$OUTPUT"
-        ;;
-esac
+geometry=$(slurp) || exit 0
+grim -g "$geometry" "$TEMP"
+tesseract -l eng "$TEMP" stdout | wl-copy
+notify-send "Text copied" "OCR result is on the clipboard."

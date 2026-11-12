@@ -151,9 +151,9 @@ binds {
     Mod+G      { toggle-window-floating; }
     Mod+Shift+G { switch-focus-between-floating-and-tiling; }
 
-    Print { screenshot; }
-    Ctrl+Print { screenshot-screen; }
-    Alt+Print { screenshot-window; }
+    Print { spawn "wayland-screenshot" "area"; }
+    Ctrl+Print { spawn "wayland-screenshot" "screen"; }
+    Alt+Print { spawn "wayland-screenshot" "window"; }
     // Capture the complete layout at native output scale and copy it as PNG.
     Mod+Shift+Print hotkey-overlay-title=null { spawn-sh "grim - | wl-copy --type image/png"; }
     Mod+Print hotkey-overlay-title="Copy Latest Screenshot Path" { spawn ".config/scripts/copy-latest-screenshot-path.sh"; }

@@ -47,7 +47,6 @@ wl-clipboard
 cliphist
 grim
 slurp
-satty
 brightnessctl
 ddcutil
 matugen
