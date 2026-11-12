@@ -17,11 +17,13 @@ The `wayland-screenshot` launcher accepts `area` (default), `edit`, `screen`,
 slurp/tesseract clipboard flow. Personal Niri overrides take precedence over
 shipped defaults and should call the launcher to use the editor.
 
-The UI stays loaded, with its windows hidden between captures, from `system/apps/shell/screenshot.qml`, sharing the shell's
+The UI process stays loaded between captures, using `system/apps/shell/screenshot.qml`, sharing the shell's
 QML theme and components. Niri prewarms it at login with `wayland-screenshot --warm`;
 the launcher starts it lazily if needed, then uses IPC for each capture. Cancel,
-Copy and Save hide the editor and clean the private capture without unloading
-the theme. This avoids paying QML/theme startup costs on every shortcut. It does
+Copy and Save release the capture surface and clean the private capture without
+unloading the theme. Each capture creates a fresh Wayland overlay and image/Canvas
+items, avoiding black textures after reusing a hidden window. An explicit full-screen
+input region keeps selection clicks from passing through to underlying applications. This avoids paying QML/theme startup costs on every shortcut. It does
 not restart the panel or assistant. Temporary screen captures use uncompressed
 PNG to avoid compression latency; saved images remain compressed PNG. Capture
 uses grim for the focused output and Niri for the focused window. Pillow renders

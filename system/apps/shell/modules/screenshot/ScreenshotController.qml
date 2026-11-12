@@ -11,6 +11,7 @@ Scope {
     property string mode: "area"
     property string error: ""
     property bool opened: false
+    property var overlay: null
     property string helper: Qt.resolvedUrl("../../scripts/screenshot_editor.py").toString().replace("file://", "")
     function capture(requested) {
         if (captureProcess.running || exportProcess.running || opened || GlobalStates.lockscreenVisible) return;
@@ -75,12 +76,21 @@ Scope {
     }
     Variants {
         model: Quickshell.screens
-        ScreenshotOverlay {
+        Scope {
             required property ShellScreen modelData
-            screen: modelData
-            controller: root
-            visible: root.opened && root.screenName === modelData.name && !GlobalStates.lockscreenVisible
-            busy: exportProcess.running
+            // A fresh surface avoids reusing image/Canvas textures released when
+            // a Wayland window was hidden. Shared theme resources stay warm.
+            Loader {
+                active: root.opened && root.screenName === modelData.name && !GlobalStates.lockscreenVisible
+                sourceComponent: ScreenshotOverlay {
+                    Component.onCompleted: root.overlay = this
+                    Component.onDestruction: if (root.overlay === this) root.overlay = null
+                    screen: modelData
+                    controller: root
+                    visible: true
+                    busy: exportProcess.running
+                }
+            }
         }
     }
 }

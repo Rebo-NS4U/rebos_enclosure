@@ -150,3 +150,66 @@ ShellRoot {
             self.assertIn('SCREENSHOT_QML_PASS', output)
             self.assertNotIn('TypeError:', output)
             self.assertNotIn('ReferenceError:', output)
+
+    @unittest.skipUnless(os.environ.get('ENCLOSURE_SCREENSHOT_UI_TEST') == '1', 'Requires an explicitly selected Wayland test session')
+    def test_resident_reopen_pixels_and_pointer_selection(self):
+        import json
+        import subprocess
+        app = ROOT/'system/apps/shell'
+        with tempfile.TemporaryDirectory(prefix='screenshot-reopen-') as directory:
+            folder = Path(directory)
+            for name in ['modules','config','scripts','assets','version']:
+                (folder/name).symlink_to(app/name)
+            Image.new('RGB',(1600,1000),(0,240,0)).save(folder/'source.png')
+            (folder/'capture.py').write_text("""import json, os, sys
+if sys.argv[1] == 'capture':
+    print(json.dumps({'path':os.environ['TEST_SOURCE'], 'screen':os.environ['TEST_SCREEN']}))
+""")
+            (folder/'shell.qml').write_text('''import QtQuick
+import QtTest
+import Quickshell
+import qs.modules.screenshot
+ShellRoot {
+ id: harness
+ property int cycle: 0
+ Timer { interval: 4000; running: true; onTriggered: { console.log("REOPEN_FAIL Watchdog"); Qt.quit(); } }
+ ScreenshotController { id: controller; helper: "HELPER" }
+ TestCase { id: input; name: "ScreenshotPointer"; when: false }
+ Component.onCompleted: controller.capture('area')
+ Timer { id: waitForFrame; interval: 350; running: true; onTriggered: {
+  try {
+   const overlay = controller.overlay;
+   if (!overlay) throw Error('Capture surface not created');
+   if (!overlay.mask.item || overlay.mask.item.width !== overlay.width) throw Error('Input region must cover the screen');
+   input.mousePress(overlay.contentItem, 200, 200, Qt.LeftButton);
+   input.mouseMove(overlay.contentItem, 300, 300);
+   input.mouseRelease(overlay.contentItem, 300, 300, Qt.LeftButton);
+   if (overlay.crop.width < 95 || overlay.crop.height < 95) throw Error('Pointer selection not received');
+   overlay.fullImage(); overlay.repaint();
+   frameGrab.restart();
+  } catch(error) { console.log('REOPEN_FAIL '+error); Qt.quit(); }
+ } }
+ Timer { id: frameGrab; interval: 100; onTriggered: {
+  const overlay = controller.overlay;
+  overlay.mask.item.grabToImage(result => {
+   result.saveToFile('FOLDER/frame'+harness.cycle+'.png');
+   controller.close();
+   harness.cycle++;
+   if (controller.overlay) { console.log('REOPEN_FAIL Surface not released'); Qt.quit(); return; }
+   if (harness.cycle === 3) { console.log('REOPEN_PASS'); Qt.quit(); }
+   else nextCapture.restart();
+  });
+ } }
+ Timer { id: nextCapture; interval: 100; onTriggered: { controller.capture('area'); waitForFrame.restart(); } }
+}
+'''.replace('HELPER',str(folder/'capture.py')).replace('FOLDER',str(folder)))
+            screen=json.loads(subprocess.check_output(['niri','msg','-j','focused-output']))['name']
+            env={**os.environ,'QT_QPA_PLATFORM':'wayland','QS_DISABLE_FILE_WATCHER':'1',
+                 'TEST_SOURCE':str(folder/'source.png'),'TEST_SCREEN':screen}
+            result=subprocess.run(['qs','-p',str(folder/'shell.qml')],env=env,capture_output=True,text=True,timeout=15)
+            output=result.stdout+result.stderr
+            self.assertIn('REOPEN_PASS',output)
+            for index in range(3):
+                with Image.open(folder/f'frame{index}.png') as image:
+                    pixel=image.getpixel((image.width//2,image.height//2))
+                    self.assertGreater(pixel[1],200, f'Black screenshot after reopen {index}: {pixel}')

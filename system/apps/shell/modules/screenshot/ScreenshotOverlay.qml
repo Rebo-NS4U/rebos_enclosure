@@ -8,6 +8,7 @@ import qs.modules.theme
 
 PanelWindow {
     id: root
+    objectName: "screenshotOverlay"
     required property var controller
     property bool busy: false
     anchors { top: true; bottom: true; left: true; right: true }
@@ -15,6 +16,7 @@ PanelWindow {
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "enclosure:screenshot"
     WlrLayershell.keyboardFocus: visible ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+    mask: Region { item: keyboard }
     color: "#181818"
     property bool selectionInitialized: false
     property string tool: "crop"
