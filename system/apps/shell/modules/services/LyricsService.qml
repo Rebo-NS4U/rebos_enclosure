@@ -23,7 +23,16 @@ Singleton {
     property var createRequest: () => new XMLHttpRequest()
     property var request: null
     property var cache: ({})
-    readonly property int currentLine: Lyrics.activeLine(lines, MprisController.position)
+    readonly property int currentLine: playbackClock.activeIndex
+    readonly property int followLine: playbackClock.followIndex
+    property LyricsClock playbackClock: LyricsClock {
+        lines: root.lines
+        position: MprisController.position
+        playing: MprisController.isPlaying
+        rate: root.player?.rate ?? 1
+        enabled: root.wanted && root.hasLyrics
+        trackKey: root.trackKey
+    }
 
     function toggle(screenName) {
         if (pinEdge !== "") pinEdge = "";

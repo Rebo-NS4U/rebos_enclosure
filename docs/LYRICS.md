@@ -39,7 +39,7 @@ a scrolling stack of rows: the active line centers smoothly with a tinted
 accent gradient, an edge marker and larger text; nearby lines stay subdued.
 Row colors, scale and control opacity animate using the shell's Motion settings.
 Turning motion off makes scrolling and highlights immediate. Manual scrolling
-pauses auto-follow until four seconds after the gesture ends. Forward and
+pauses auto-follow until **Follow playback** is pressed. Forward and
 backward seeks update the highlighted row. Long lines wrap to fit the card.
 Untimed lyrics use the same larger row typography, tinted row backgrounds and
 animated hover accents. A **TEXT ONLY** badge and a “No timing — scroll to read”
@@ -61,3 +61,20 @@ key or additional packages are required.
 
 The feature uses Qt's HTTP support and adds no package dependencies. Regression
 check: `python3 -m unittest discover -s desktop/tests -p test_lyrics.py`.
+
+## Playback timing and scrolling
+
+Lyrics Plus remains the lyrics provider; the shell computes highlights from
+line timestamps and its own playback clock, rather than copying Spotify's UI
+highlight. The clock anchors to MPRIS position and respects pause, seeks and
+playback speed. A one-shot timer schedules each lyric cue and the preceding
+centering cue, so transitions do not wait for the panel's 250 ms position tick.
+Player position updates correct differences larger than 120 ms.
+
+The scroll target is separate from the sung line: it moves toward the next row
+160–400 ms before its timestamp, based on the spacing between lines. A critically
+damped spring preserves velocity when retargeting. Highlighting starts at the
+actual timestamp. Untimed lyrics remain manually scrollable. This uses the Dux
+timing approach with the existing Enclosure typography, palette and Motion setting.
+
+Regression checks: `python3 -m unittest discover -s desktop/tests -p 'test_lyrics*.py'`.

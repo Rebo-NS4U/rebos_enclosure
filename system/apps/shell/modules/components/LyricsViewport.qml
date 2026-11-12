@@ -12,33 +12,47 @@ Item {
         .map(text => ({text: text.trim()})).filter(row => row.text.length > 0)
     readonly property bool hasRows: synced || plainRows.length > 0
     readonly property int activeIndex: LyricsService.currentLine
+    readonly property int followIndex: LyricsService.followLine
     readonly property real followPosition: scroller.contentY
     readonly property bool animating: followAnimation.running
     property bool browsing: false
 
+    function resume() {
+        browsing = false;
+        scroller.cancelFlick();
+        followCurrent(true);
+    }
+
     function followCurrent(animate) {
         if (!synced || browsing || !visible) return;
-        const row = rows.itemAt(Math.max(0, activeIndex));
+        const row = rows.itemAt(Math.max(0, followIndex));
         if (!row) return;
         const destination = Math.max(0, Math.min(scroller.contentHeight - scroller.height,
             row.y + row.height / 2 - scroller.height / 2));
-        followAnimation.stop();
         if (animate && Motion.enabled) {
-            followAnimation.from = scroller.contentY;
-            followAnimation.to = destination;
-            followAnimation.start();
-        } else scroller.contentY = destination;
+            // Retarget without discarding velocity when cues arrive close together.
+            followAnimation.destination = destination;
+            followAnimation.running = true;
+        } else {
+            followAnimation.running = false;
+            followAnimation.velocity = 0;
+            scroller.contentY = destination;
+        }
     }
-    onActiveIndexChanged: Qt.callLater(() => root.followCurrent(true))
+    onFollowIndexChanged: Qt.callLater(() => root.followCurrent(true))
     onHeightChanged: Qt.callLater(() => root.followCurrent(false))
     onWidthChanged: Qt.callLater(() => root.followCurrent(false))
-    onVisibleChanged: if (visible) Qt.callLater(() => root.followCurrent(false))
+    onVisibleChanged: {
+        if (visible) Qt.callLater(() => root.followCurrent(false));
+        else followAnimation.running = false;
+    }
+    onBrowsingChanged: if (browsing) { followAnimation.running = false; followAnimation.velocity = 0; }
     Connections {
         target: LyricsService
         function onLinesChanged() {
-            followAnimation.stop();
+            followAnimation.running = false;
+            followAnimation.velocity = 0;
             root.browsing = false;
-            resumeFollow.stop();
             scroller.contentY = 0;
             Qt.callLater(() => root.followCurrent(false));
         }
@@ -47,17 +61,25 @@ Item {
         target: Motion
         function onEnabledChanged() { if (!Motion.enabled) root.followCurrent(false); }
     }
-    NumberAnimation {
+    FrameAnimation {
         id: followAnimation
-        target: scroller
-        property: "contentY"
-        duration: Motion.enabled ? Math.max(240, Math.round(Motion.enter * 1.4)) : 0
-        easing.type: Easing.InOutCubic
-    }
-    Timer {
-        id: resumeFollow
-        interval: 4000
-        onTriggered: { root.browsing = false; root.followCurrent(true); }
+        property real destination: 0
+        property real velocity: 0
+        onTriggered: {
+            // Exact critically damped spring step: stable even after a slow frame.
+            const dt = Math.min(0.1, Math.max(0, frameTime));
+            const omega = 10000 / 650;
+            const offset = scroller.contentY - destination;
+            const step = velocity + omega * offset;
+            const decay = Math.exp(-omega * dt);
+            velocity = (velocity - omega * step * dt) * decay;
+            scroller.contentY = destination + (offset + step * dt) * decay;
+            if (Math.abs(scroller.contentY - destination) < 0.5 && Math.abs(velocity) < 10) {
+                scroller.contentY = destination;
+                velocity = 0;
+                running = false;
+            }
+        }
     }
     Flickable {
         id: scroller
@@ -69,13 +91,11 @@ Item {
         flickableDirection: Flickable.VerticalFlick
         boundsBehavior: Flickable.StopAtBounds
         onMovementStarted: {
-            followAnimation.stop();
             root.browsing = true;
-            resumeFollow.stop();
         }
-        onMovementEnded: resumeFollow.restart()
         ScrollBar.vertical: ScrollBar {
             policy: root.browsing || !root.synced ? ScrollBar.AsNeeded : ScrollBar.AlwaysOff
+            onPressedChanged: if (pressed) root.browsing = true
         }
         Column {
             id: lyricColumn
@@ -158,5 +178,14 @@ Item {
             horizontalAlignment: Text.AlignHCenter
             lineHeight: 1.4
         }
+    }
+    ThemeButton {
+        objectName: "lyrics-follow-playback"
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: 8
+        visible: root.synced && root.browsing
+        text: "Follow playback"
+        onClicked: root.resume()
     }
 }

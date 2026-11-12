@@ -15,6 +15,7 @@ Singleton {
  property string trackTitle: 'Test'
  property string trackArtists: 'Artist'
  property real position: 1.5
+ property bool isPlaying: false
  property real length: 10
 }
 '''
