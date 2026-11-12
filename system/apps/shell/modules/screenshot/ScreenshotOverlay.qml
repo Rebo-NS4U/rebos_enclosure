@@ -221,6 +221,7 @@ PanelWindow {
                         required property string modelData
                         width: 24; height: 36
                         Accessible.name: "Ink " + modelData
+                        contentItem: Item {}
                         background: Rectangle { anchors.centerIn: parent; width: 20; height: 20; radius: 10; color: parent.modelData; border.color: root.ink === parent.modelData ? Colors.primary : Colors.outline; border.width: root.ink === parent.modelData ? 3 : 1 }
                         onClicked: root.ink = modelData
                     }

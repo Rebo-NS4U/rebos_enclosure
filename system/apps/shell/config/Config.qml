@@ -104,7 +104,7 @@ Singleton {
         }
 
         adapter: JsonAdapter {
-            property string shellStyle: "quiet"
+            property string shellStyle: "instrument"
             property int shellTransparency: -1
             property string ditherPalette: "original"
             property string ditherTintColor: "#4c9cbd"
@@ -115,9 +115,9 @@ Singleton {
             property bool lightMode: false
             property int roundness: 4
             property string font: "JetBrains Mono"
-            property int fontSize: 13
+            property int fontSize: 14
             property string monoFont: "JetBrains Mono"
-            property int monoFontSize: 13
+            property int monoFontSize: 14
             property bool tintIcons: false
             property int animDuration: 160
             property real shadowOpacity: 0.5

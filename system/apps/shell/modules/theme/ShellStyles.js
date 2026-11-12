@@ -1,6 +1,7 @@
 .pragma library
 
 var styles = [
+    {id: "instrument", label: "Instrument", description: "Layered graphite surfaces with restrained status accents."},
     {id: "glass", label: "Transparent", description: "Dark transparent backgrounds with light wallpaper colors."},
     {id: "quiet", label: "Opaque", description: "Solid backgrounds with less wallpaper color."},
     {id: "colorful", label: "Tinted", description: "Transparent backgrounds with more wallpaper color."},
@@ -87,6 +88,21 @@ function surface(style, variant, p, ditherStrength) {
     case "overtertiary": item = p.tertiary; break;
     case "error": case "errorfocus": fill = p.error; item = p.onError; opacity = 1; break;
     case "overerror": item = p.error; break;
+    }
+    // Instrument panels separate depth with neutral luminance, reserving
+    // saturated fills for deliberate actions and semantic status indicators.
+    if (style === "instrument") {
+        var depth = 0.075;
+        if (["internalbg", "barbg"].indexOf(variant) !== -1) depth = 0.035;
+        if (["pane", "bar", "surface", "surfaceContainer", "common"].indexOf(variant) !== -1) depth = 0.12;
+        if (["focus", "surfaceVariant"].indexOf(variant) !== -1) depth = 0.19;
+        if (["bg", "popup", "internalbg", "barbg", "pane", "bar", "surface", "surfaceContainer", "common", "focus", "surfaceVariant", "transparent"].indexOf(variant) !== -1) {
+            fill = mix(mix(p.background, p.foreground, depth), p.primary, 0.025);
+            item = p.foreground;
+            opacity = variant === "transparent" || variant === "barbg" ? 0 : 1;
+            border = [mix(fill, p.foreground, 0.12), ["bg", "popup", "focus", "surfaceVariant"].indexOf(variant) !== -1 ? 1 : 0];
+            if (variant === "focus" || variant === "surfaceVariant") border[0] = mix(fill, p.primary, 0.48);
+        }
     }
     var containers = ["bg", "popup", "pane", "surface", "surfaceContainer", "common", "internalbg", "focus", "surfaceVariant", "bar", "barbg"];
     var controls = ["primary", "primaryfocus", "overprimary", "secondary", "secondaryfocus", "oversecondary", "tertiary", "tertiaryfocus", "overtertiary", "error", "errorfocus", "overerror"];

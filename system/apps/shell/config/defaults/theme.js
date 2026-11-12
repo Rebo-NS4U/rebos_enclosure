@@ -2,7 +2,7 @@
 
 var data = {
     "oledMode": false,
-    "shellStyle": "quiet",
+    "shellStyle": "instrument",
     "shellTransparency": -1,
     "ditherPalette": "original",
     "ditherTintColor": "#4c9cbd",
@@ -12,9 +12,9 @@ var data = {
     "lightMode": false,
     "roundness": 4,
     "font": "JetBrains Mono",
-    "fontSize": 13,
+    "fontSize": 14,
     "monoFont": "JetBrains Mono",
-    "monoFontSize": 13,
+    "monoFontSize": 14,
     "tintIcons": false,
     "animDuration": 160,
     "shadowOpacity": 0.5,

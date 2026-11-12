@@ -32,7 +32,7 @@ function validate(current, defaults, keyName) {
         return defaults;
     }
 
-    if (keyName === "shellStyle" && ["glass", "quiet", "colorful", "dithered", "custom"].indexOf(current) === -1) {
+    if (keyName === "shellStyle" && ["glass", "quiet", "colorful", "dithered", "custom", "instrument"].indexOf(current) === -1) {
         return defaults;
     }
     if (keyName === "desktopBlur" && ["medium", "light", "shell", "off"].indexOf(current) === -1) return defaults;

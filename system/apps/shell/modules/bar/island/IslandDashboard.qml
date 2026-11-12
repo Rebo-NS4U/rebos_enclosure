@@ -24,8 +24,8 @@ Item {
         onTriggered: root.currentDate = new Date()
     }
 
-    implicitWidth: 420
-    implicitHeight: mainColumn.implicitHeight + 28
+    implicitWidth: 440
+    implicitHeight: mainColumn.implicitHeight + 36
 
     signal openPower()
     signal openSound()
@@ -123,8 +123,8 @@ Item {
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.margins: 14
-        spacing: Styling.spacing(10)
+        anchors.margins: 18
+        spacing: Styling.spacing(14)
 
         // ═══════════════════════════════════════════════════════════════
         // HEADER: CLOCK, WEATHER & UTILITIES
@@ -137,7 +137,7 @@ Item {
             radius: Styling.radius(4)
             RowLayout {
                 anchors.fill: parent
-                anchors.margins: 14
+                anchors.margins: 18
                 spacing: Styling.spacing(12)
 
                 Item {
@@ -214,7 +214,7 @@ Item {
                     implicitWidth: weatherRow.implicitWidth + 24
                     radius: Styling.radius(3)
                     variant: weatherMouse.containsMouse ? "focus" : "internalbg"
-                    scale: weatherMouse.pressed ? 0.92 : 1.0
+                    scale: weatherMouse.pressed ? 0.98 : 1.0
 
                     Behavior on scale {
                         NumberAnimation {
@@ -285,7 +285,7 @@ Item {
                 Layout.minimumWidth: alertsRow.implicitWidth + 20
                 radius: Styling.radius(2)
                 variant: alertsMouse.containsMouse ? "focus" : "internalbg"
-                scale: alertsMouse.pressed ? 0.92 : 1.0
+                scale: alertsMouse.pressed ? 0.98 : 1.0
 
                 Behavior on scale {
                     NumberAnimation {
@@ -351,7 +351,7 @@ Item {
                 Layout.minimumWidth: settingsLabel.implicitWidth + 44
                 radius: Styling.radius(2)
                 variant: settingsMouse.containsMouse ? "focus" : "internalbg"
-                scale: settingsMouse.pressed ? 0.92 : 1.0
+                scale: settingsMouse.pressed ? 0.98 : 1.0
 
                 Behavior on scale {
                     NumberAnimation {
@@ -401,7 +401,7 @@ Item {
                 Layout.minimumWidth: powerLabel.implicitWidth + 44
                 radius: Styling.radius(2)
                 variant: powerMouse.containsMouse ? "error" : "internalbg"
-                scale: powerMouse.pressed ? 0.92 : 1.0
+                scale: powerMouse.pressed ? 0.98 : 1.0
 
                 Behavior on scale {
                     NumberAnimation {
@@ -459,7 +459,7 @@ Item {
                 Layout.preferredHeight: 64
                 radius: Styling.radius(3)
                 readonly property bool isHovered: wifiMouse.containsMouse || wifiIconMouse.containsMouse
-                variant: NetworkService.wifiEnabled ? (isHovered ? "primaryfocus" : "primary") : (isHovered ? "focus" : "internalbg")
+                variant: Styling.shellStyle === "instrument" ? (isHovered ? "focus" : "pane") : (NetworkService.wifiEnabled ? (isHovered ? "primaryfocus" : "primary") : (isHovered ? "focus" : "internalbg"))
                 scale: (wifiMouse.pressed || wifiIconMouse.pressed) ? 0.94 : 1.0
 
                 Behavior on scale {
@@ -492,7 +492,7 @@ Item {
                             }
                             font.family: Icons.font
                             font.pixelSize: Styling.fontSize(8)
-                            color: NetworkService.wifiEnabled ? Colors.overPrimary : Colors.overBackground
+                            color: NetworkService.wifiEnabled ? (Styling.shellStyle === "instrument" ? Colors.primary : Colors.overPrimary) : Colors.overBackground
                         }
 
                         MouseArea {
@@ -524,7 +524,7 @@ Item {
                         Layout.preferredWidth: 1
                         Layout.preferredHeight: 22
                         Layout.alignment: Qt.AlignVCenter
-                        color: NetworkService.wifiEnabled ? Styling.withOpacity(Colors.overPrimary, 0.18) : Styling.withOpacity(Colors.overSurface, 0.15)
+                        color: Styling.withOpacity(Colors.overSurface, 0.15)
                     }
 
                     // Right: Text (click opens Wi-Fi panel)
@@ -541,7 +541,7 @@ Item {
                             StyledText {
                                 text: "Wi-Fi"
                                 font.pixelSize: Styling.fontSize(-2)
-                                color: NetworkService.wifiEnabled ? Colors.overPrimary : Colors.overSurfaceVariant
+                                color: Styling.shellStyle === "instrument" ? Colors.overSurfaceVariant : (NetworkService.wifiEnabled ? Colors.overPrimary : Colors.overSurfaceVariant)
                             }
                             StyledText {
                                 Layout.fillWidth: true
@@ -552,7 +552,7 @@ Item {
                                 font.family: Config.theme.font
                                 font.pixelSize: Styling.fontSize(-2)
                                 font.bold: true
-                                color: NetworkService.wifiEnabled ? Colors.overPrimary : Colors.overBackground
+                                color: NetworkService.wifiEnabled ? (Styling.shellStyle === "instrument" ? Colors.primary : Colors.overPrimary) : Colors.overBackground
                                 elide: Text.ElideRight
                             }
                         }
@@ -589,7 +589,7 @@ Item {
                 Layout.preferredHeight: 64
                 radius: Styling.radius(3)
                 readonly property bool isHovered: btMouse.containsMouse || btIconMouse.containsMouse
-                variant: BluetoothService.enabled ? (isHovered ? "primaryfocus" : "primary") : (isHovered ? "focus" : "internalbg")
+                variant: Styling.shellStyle === "instrument" ? (isHovered ? "focus" : "pane") : (BluetoothService.enabled ? (isHovered ? "primaryfocus" : "primary") : (isHovered ? "focus" : "internalbg"))
                 scale: (btMouse.pressed || btIconMouse.pressed) ? 0.94 : 1.0
 
                 Behavior on scale {
@@ -618,7 +618,7 @@ Item {
                             text: root.btConnected ? Icons.bluetoothConnected : (BluetoothService.enabled ? Icons.bluetooth : Icons.bluetoothOff)
                             font.family: Icons.font
                             font.pixelSize: Styling.fontSize(8)
-                            color: BluetoothService.enabled ? Colors.overPrimary : Colors.overBackground
+                            color: BluetoothService.enabled ? (Styling.shellStyle === "instrument" ? Colors.primary : Colors.overPrimary) : Colors.overBackground
                         }
 
                         MouseArea {
@@ -650,7 +650,7 @@ Item {
                         Layout.preferredWidth: 1
                         Layout.preferredHeight: 22
                         Layout.alignment: Qt.AlignVCenter
-                        color: BluetoothService.enabled ? Styling.withOpacity(Colors.overPrimary, 0.18) : Styling.withOpacity(Colors.overSurface, 0.15)
+                        color: Styling.withOpacity(Colors.overSurface, 0.15)
                     }
 
                     // Right: Text (click opens Bluetooth panel)
@@ -667,7 +667,7 @@ Item {
                             StyledText {
                                 text: "Bluetooth"
                                 font.pixelSize: Styling.fontSize(-2)
-                                color: BluetoothService.enabled ? Colors.overPrimary : Colors.overSurfaceVariant
+                                color: Styling.shellStyle === "instrument" ? Colors.overSurfaceVariant : (BluetoothService.enabled ? Colors.overPrimary : Colors.overSurfaceVariant)
                             }
                             StyledText {
                                 Layout.fillWidth: true
@@ -678,7 +678,7 @@ Item {
                                 font.family: Config.theme.font
                                 font.pixelSize: Styling.fontSize(-2)
                                 font.bold: true
-                                color: BluetoothService.enabled ? Colors.overPrimary : Colors.overBackground
+                                color: BluetoothService.enabled ? (Styling.shellStyle === "instrument" ? Colors.primary : Colors.overPrimary) : Colors.overBackground
                                 elide: Text.ElideRight
                             }
                         }
@@ -711,6 +711,14 @@ Item {
         // ═══════════════════════════════════════════════════════════════
         // QUICK CONTROLS
         // ═══════════════════════════════════════════════════════════════
+        StyledText {
+            text: "CONTROLS"
+            font.pixelSize: Styling.fontSize(-3)
+            font.weight: Font.DemiBold
+            font.letterSpacing: 1.5
+            color: Colors.overSurfaceVariant
+            Layout.topMargin: 4
+        }
         GridLayout {
             id: quickTilesRow
             Layout.fillWidth: true
