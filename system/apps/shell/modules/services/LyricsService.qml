@@ -18,9 +18,7 @@ Singleton {
     readonly property bool hasLyrics: player !== null && lyricsKey === trackKey && plain.trim().length > 0
     property string plain: ""
     property var lines: []
-    readonly property bool estimated: hasLyrics && lines.length === 0 && MprisController.length > 0
-    readonly property var displayLines: lines.length ? lines
-        : (estimated ? Lyrics.estimateLines(plain, MprisController.length) : [])
+    readonly property var displayLines: lines
     property string status: "Play a song to see lyrics."
     property string provider: ""
     property var createRequest: () => new XMLHttpRequest()
@@ -33,7 +31,7 @@ Singleton {
         position: MprisController.position
         playing: MprisController.isPlaying
         rate: root.player?.rate ?? 1
-        enabled: root.wanted && root.hasLyrics
+        enabled: root.wanted && root.hasLyrics && root.lines.length > 0
         trackKey: root.trackKey
     }
 

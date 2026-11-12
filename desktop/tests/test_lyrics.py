@@ -199,9 +199,9 @@ ShellRoot {
      throw Error('Backward seek or reduced motion failed');
     LyricsService.apply('Unsynced lyrics stay scrollable', 'Test', false); phase++; return;
    }
-   if (view.synced || !LyricsService.estimated || !view.followsPlayback
+   if (view.synced || view.followsPlayback || LyricsService.currentLine !== -1
      || !findItem(view, 'lyrics-text').visible || !view.hasRows)
-     throw Error('Untimed lyrics with a duration must use approximate playback following');
+     throw Error('Untimed lyrics must remain manual without fabricated timing');
    console.log('PASS: animated forward scroll, row highlighting, manual browsing, backward seek and reduced motion'); Qt.quit();
   } catch (error) { console.error(error); Qt.exit(1); }
  } }

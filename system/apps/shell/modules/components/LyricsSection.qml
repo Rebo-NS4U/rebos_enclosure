@@ -87,7 +87,7 @@ StyledRect {
                     id: syncedLabel
                     anchors.centerIn: parent
                     objectName: "lyrics-timing-badge"
-                    text: LyricsService.estimated ? "APPROXIMATE" : (LyricsService.lines.length ? "● SYNCED" : "TEXT ONLY")
+                    text: LyricsService.lines.length ? "● SYNCED" : "TEXT ONLY"
                     color: Colors.primary
                     font.pixelSize: Styling.fontSize(-3)
                     font.letterSpacing: 1
@@ -141,7 +141,7 @@ StyledRect {
             Layout.fillWidth: true
             StyledText {
                 Layout.fillWidth: true
-                text: LyricsService.provider ? LyricsService.provider + (LyricsService.estimated ? " · Estimated timing" : (LyricsService.lines.length ? " · Synced" : " · No timing — scroll to read")) : ""
+                text: LyricsService.provider ? LyricsService.provider + (LyricsService.lines.length ? " · Synced" : " · No timing — scroll to read") : ""
                 color: Colors.overSurfaceVariant
                 elide: Text.ElideRight
             }

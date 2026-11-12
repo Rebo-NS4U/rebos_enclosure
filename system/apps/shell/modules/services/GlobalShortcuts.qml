@@ -62,8 +62,7 @@ Singleton {
     IpcHandler {
         target: "lyrics"
         function timing(): string {
-            return JSON.stringify({estimated: LyricsService.estimated,
-                position: MprisController.position, playing: MprisController.isPlaying,
+            return JSON.stringify({position: MprisController.position, playing: MprisController.isPlaying,
                 activeLine: LyricsService.currentLine, followLine: LyricsService.followLine,
                 displayLineCount: LyricsService.displayLines.length,
                 clockEnabled: LyricsService.playbackClock.enabled});

@@ -61,7 +61,7 @@ VIEW = fixtures.ANIMATION_HARNESS.replace(
     if (view.browsing || follow.visible) throw Error('Follow playback did not resume');
     Config.theme.animDuration = 0;""")
 
-APPROXIMATE = '''import QtQuick
+TEXT_ONLY = '''import QtQuick
 import QtQuick.Window
 import Quickshell
 import qs.modules.services
@@ -86,23 +86,23 @@ ShellRoot {
      LyricsService.refresh(); phase++; return;
     }
     if (phase === 1) {
-     check(LyricsService.estimated && !view.synced, 'Plain source must be explicitly approximate');
-     check(findItem(section, 'lyrics-timing-badge').text === 'APPROXIMATE', 'Approximate badge missing');
+     check(!view.followsPlayback && !view.synced, 'Plain source must remain manual');
+     check(findItem(section, 'lyrics-timing-badge').text === 'TEXT ONLY', 'Text-only badge missing');
      startY = view.followPosition;
      MprisController.isPlaying = true; interval = 800; phase++; return;
     }
     if (phase === 2) {
-     check(LyricsService.currentLine >= 1 && view.followPosition > startY, 'Plain lyrics did not actually auto-scroll during playback');
+     check(LyricsService.currentLine === -1 && view.followPosition === startY, 'Plain lyrics must not auto-scroll or highlight during playback');
      MprisController.position = 0.5; MprisController.isPlaying = false;
      interval = 400; phase++; return;
     }
     if (phase === 3) {
-     check(LyricsService.currentLine === 1, 'Approximate playback must pause');
+     check(LyricsService.currentLine === -1, 'Plain lyrics must not gain timing on pause');
      MprisController.length = 0;
-     check(!LyricsService.estimated && !view.followsPlayback, 'Unknown duration must remain manual');
+     check(!view.followsPlayback, 'Unknown duration must remain manual');
      LyricsService.apply('[00:00]Exact\\n[00:02]Timed', 'Test', false);
-     check(!LyricsService.estimated && view.synced && LyricsService.displayLines[1].time === 2, 'Genuine timestamps must take priority');
-     console.log('PASS: plain-text auto-scroll, approximate badge, pause, unknown duration and exact timing priority'); Qt.quit();
+     check(view.synced && LyricsService.displayLines[1].time === 2, 'Genuine timestamps must take priority');
+     console.log('PASS: text-only lyrics stay manual during playback; real timestamps enable following'); Qt.quit();
     }
    } catch(error) { console.error(error); Qt.exit(1); }
   }
@@ -129,13 +129,13 @@ ShellRoot {
      LyricsService.refresh(); phase++; return;
     }
     if (phase === 1) {
-     check(LyricsService.plain === 'Plain source' && LyricsService.estimated && requests.length > 0, 'Keep plain source while seeking timing');
+     check(LyricsService.plain === 'Plain source' && LyricsService.displayLines.length === 0 && requests.length > 0, 'Keep plain source while seeking timing');
      const xhr = requests[requests.length - 1]; xhr.status = 200; xhr.readyState = XMLHttpRequest.DONE;
      xhr.responseText = JSON.stringify({plainLyrics:'Untimed exact match'}); xhr.onreadystatechange();
      check(LyricsService.plain === 'Plain source' && LyricsService.request, 'Untimed exact match must continue to timed search');
      const search = requests[requests.length - 1]; search.status = 200; search.readyState = XMLHttpRequest.DONE;
      search.responseText = JSON.stringify([{trackName:'Test',artistName:'Artist',duration:10,syncedLyrics:'[00:01]Timed fallback'}]); search.onreadystatechange();
-     check(!LyricsService.estimated && LyricsService.provider === 'LRCLIB' && LyricsService.lines[0].time === 1, 'Timed search must replace approximate source');
+     check(LyricsService.provider === 'LRCLIB' && LyricsService.lines[0].time === 1, 'Timed search must enable exact following');
      console.log('PASS: plain provider preserved while timed fallback is found'); Qt.quit();
     }
    } catch(error) { console.error(error); Qt.exit(1); }
@@ -147,8 +147,8 @@ ShellRoot {
 
 @unittest.skipUnless(shutil.which('quickshell'), 'Quickshell required')
 class Timing(unittest.TestCase):
-    def test_approximate_scroll(self):
-        fixtures.Lyrics.run_harness(self, APPROXIMATE)
+    def test_text_only_stays_manual(self):
+        fixtures.Lyrics.run_harness(self, TEXT_ONLY)
 
     def test_timed_upgrade(self):
         fixtures.Lyrics.run_harness(self, UPGRADE)
