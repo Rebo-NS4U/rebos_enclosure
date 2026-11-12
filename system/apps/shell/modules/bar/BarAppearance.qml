@@ -8,7 +8,9 @@ import "../../config/defaults/bar.js" as BarDefaults
 Singleton {
     id: root
     readonly property color foregroundColor: Colors.overBackground
-    readonly property color activeWorkspaceOutline: foregroundColor
+    readonly property bool instrument: Styling.shellStyle === "instrument"
+    readonly property bool framed: polished || instrument
+    readonly property color activeWorkspaceOutline: instrument ? Colors.primary : foregroundColor
     readonly property bool polished: (Config.bar?.islandAppearance ?? BarDefaults.data.islandAppearance) === "glass"
     readonly property var themeSurface: Styling.getStyledRectConfig("bg")
     readonly property color highlightColor: Config.resolveColor(Styling.getStyledRectConfig("focus").gradient[0][0])
@@ -29,6 +31,8 @@ Singleton {
         return Config.resolveColor(Styling.getStyledRectConfig(expanded ? "popup" : "bg").border[0]);
     }
     function clockTint(hovered: bool): color {
+        if (instrument)
+            return Config.resolveColor(Styling.getStyledRectConfig(hovered ? "focus" : "pane").gradient[0][0]);
         return polished ? Qt.alpha(highlightColor, hovered ? 0.95 : 0.65) : "transparent";
     }
     function reset(): void {

@@ -106,7 +106,7 @@ Item {
                     radius: width / 2
                     // Shape distinguishes empty spaces without dimming their centerline.
                     color: "transparent"
-                    border.color: BarAppearance.foregroundColor
+                    border.color: BarAppearance.activeWorkspaceOutline
                     border.width: Math.max(1, Math.round(width / 6))
                 }
 

@@ -19,3 +19,7 @@ Use `StyledRect` semantic variants rather than fixed fills. `Styling.fontSize()`
 The Instrument surface hierarchy is exported through `ShellStyles.appPalette()` to native theme integrations. Tests cover distinct depth levels, 4.5:1 foreground contrast in dark and light palettes, transparent roles and matching application exports.
 
 This pass establishes the shared surfaces and dashboard composition. Launcher row composition, settings navigation, notifications and other individual views can be refined further against the same direction. QML and personal settings hot reload; no service restart is required.
+
+## Bar
+
+Instrument mode gives the island bar the same 4px corners, opaque background and subtle frame as its dashboard. A 40px height leaves room around the clock and status controls. The clock uses a raised card surface; hover controls use matching corners and restrained press feedback. Active workspace outlines and charging indicators use the primary accent, low battery uses the error role, and muted audio recedes. Other bar appearances retain their existing shape and behavior.

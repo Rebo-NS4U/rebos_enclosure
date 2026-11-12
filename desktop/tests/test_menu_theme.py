@@ -11,6 +11,7 @@ HARNESS = '''import QtQuick
 import QtTest
 import Quickshell
 import qs.modules.theme
+import qs.modules.bar
 import qs.config
 import qs.modules.components
 import qs.modules.widgets.dashboard.controls
@@ -26,6 +27,13 @@ ShellRoot {
   TestCase { id: tester; when:false }
   Timer { interval:600; running:true; onTriggered: {
    try {
+    Config.theme.shellStyle = "instrument"; tester.wait(30);
+    if (!BarAppearance.framed || BarAppearance.panelOpacity(false) !== 1) throw Error("Instrument bar frame/opacity");
+    if (BarAppearance.clockTint(false).a !== 1) throw Error("Instrument clock surface missing");
+    if (BarAppearance.activeWorkspaceOutline !== Colors.primary) throw Error("Workspace accent missing");
+    Config.theme.shellStyle = "quiet"; Config.bar.islandAppearance = "classic"; tester.wait(30);
+    if (BarAppearance.instrument || BarAppearance.clockTint(false).a !== 0) throw Error("Classic bar style changed");
+    Config.theme.shellStyle = "instrument";
     for (const offset of [-8, 0, 4, 12])
      if (Styling.radius(offset) !== Config.roundness) throw Error("Inconsistent shared radius");
     for (const child of menu.background.children)

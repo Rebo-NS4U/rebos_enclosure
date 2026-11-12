@@ -34,7 +34,7 @@ Item {
         Visibilities.unregisterIsland(root.screen.name, root);
     }
 
-    readonly property int islandHeight: 36
+    readonly property int islandHeight: BarAppearance.instrument ? 40 : 36
     readonly property int triggerHeight: 8
     readonly property real cornerRadius: Styling.radius(4)
 
@@ -663,17 +663,17 @@ Item {
             anchors.fill: parent
             variant: "bg"
             backgroundOpacity: BarAppearance.panelOpacity(root.isExpanded)
-            topLeftRadius: BarAppearance.polished ? root.cornerRadius : 0
-            topRightRadius: BarAppearance.polished ? root.cornerRadius : 0
-            border.width: root.currentMode === "typing" ? 1 : (BarAppearance.polished || Styling.shellStyle === "dithered" ? 1 : 0)
+            topLeftRadius: BarAppearance.framed ? root.cornerRadius : 0
+            topRightRadius: BarAppearance.framed ? root.cornerRadius : 0
+            border.width: root.currentMode === "typing" ? 1 : (BarAppearance.framed || Styling.shellStyle === "dithered" ? 1 : 0)
             border.color: root.currentMode === "typing" ? Qt.alpha(Colors.primary, 0.28) : BarAppearance.panelBorder(root.isExpanded)
 
             Behavior on backgroundOpacity {
                 enabled: Config.animDuration > 0
                 NumberAnimation { duration: Config.animDuration; easing.type: Motion.enterCurve }
             }
-            bottomLeftRadius: (root.currentMode === "osd") ? (root.targetHeight / 2) : ((root.isExpanded || root.retractingToHidden) ? root.cornerRadius : (root.islandHeight / 2))
-            bottomRightRadius: (root.currentMode === "osd") ? (root.targetHeight / 2) : ((root.isExpanded || root.retractingToHidden) ? root.cornerRadius : (root.islandHeight / 2))
+            bottomLeftRadius: BarAppearance.instrument ? root.cornerRadius : (root.currentMode === "osd") ? (root.targetHeight / 2) : ((root.isExpanded || root.retractingToHidden) ? root.cornerRadius : (root.islandHeight / 2))
+            bottomRightRadius: BarAppearance.instrument ? root.cornerRadius : (root.currentMode === "osd") ? (root.targetHeight / 2) : ((root.isExpanded || root.retractingToHidden) ? root.cornerRadius : (root.islandHeight / 2))
 
             Behavior on bottomLeftRadius {
                 enabled: Config.animDuration > 0
@@ -814,7 +814,7 @@ Item {
                         Layout.alignment: Qt.AlignVCenter
                         implicitHeight: root.islandHeight
                         implicitWidth: dateTimeRow.implicitWidth + Styling.fontSize(0)
-                        scale: dateMouse.pressed ? 0.94 : 1.0
+                        scale: dateMouse.pressed ? (BarAppearance.instrument ? 0.98 : 0.94) : 1.0
 
                         Behavior on scale {
                             NumberAnimation {
@@ -829,7 +829,7 @@ Item {
                             anchors.bottomMargin: anchors.topMargin
                             variant: "transparent"
                             enableBorder: false
-                            radius: height / 2
+                            radius: BarAppearance.instrument ? Styling.radius(0) : height / 2
                             color: BarAppearance.clockTint(dateMouse.containsMouse)
                             Behavior on color {
                                 enabled: Config.animDuration > 0

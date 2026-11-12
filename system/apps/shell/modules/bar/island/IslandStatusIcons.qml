@@ -45,14 +45,14 @@ RowLayout {
 
         StyledRect {
             anchors.fill: parent
-            radius: height / 2
+            radius: BarAppearance.instrument ? Styling.radius(0) : height / 2
             variant: "focus"
             opacity: brightMouse.containsMouse ? 1 : 0
             Behavior on opacity {
                 enabled: Config.animDuration > 0
                 NumberAnimation { duration: Math.min(Config.animDuration, 150); easing.type: Easing.OutCubic }
             }
-            scale: brightMouse.pressed ? 0.92 : 1.0
+            scale: brightMouse.pressed ? (BarAppearance.instrument ? 0.98 : 0.92) : 1.0
             Behavior on scale {
                 NumberAnimation {
                     duration: Config.animDuration > 0 ? Math.min(Config.animDuration, brightMouse.pressed ? 80 : 160) : 0
@@ -127,18 +127,18 @@ RowLayout {
             return "volume_up";
         }
 
-        readonly property color iconColor: BarAppearance.foregroundColor
+        readonly property color iconColor: BarAppearance.instrument && isMuted ? Colors.overSurfaceVariant : BarAppearance.foregroundColor
 
         StyledRect {
             anchors.fill: parent
-            radius: height / 2
+            radius: BarAppearance.instrument ? Styling.radius(0) : height / 2
             variant: "focus"
             opacity: volMouse.containsMouse ? 1 : 0
             Behavior on opacity {
                 enabled: Config.animDuration > 0
                 NumberAnimation { duration: Math.min(Config.animDuration, 150); easing.type: Easing.OutCubic }
             }
-            scale: volMouse.pressed ? 0.92 : 1.0
+            scale: volMouse.pressed ? (BarAppearance.instrument ? 0.98 : 0.92) : 1.0
             Behavior on scale {
                 NumberAnimation {
                     duration: Config.animDuration > 0 ? Math.min(Config.animDuration, volMouse.pressed ? 80 : 160) : 0
@@ -200,18 +200,18 @@ RowLayout {
         readonly property int percent: Battery.percent
         readonly property bool charging: Battery.charging
 
-        readonly property color iconColor: BarAppearance.foregroundColor
+        readonly property color iconColor: BarAppearance.instrument ? (charging ? Colors.primary : (percent <= 15 ? Colors.error : BarAppearance.foregroundColor)) : BarAppearance.foregroundColor
 
         StyledRect {
             anchors.fill: parent
-            radius: height / 2
+            radius: BarAppearance.instrument ? Styling.radius(0) : height / 2
             variant: "focus"
             opacity: batMouse.containsMouse ? 1 : 0
             Behavior on opacity {
                 enabled: Config.animDuration > 0
                 NumberAnimation { duration: Math.min(Config.animDuration, 150); easing.type: Easing.OutCubic }
             }
-            scale: batMouse.pressed ? 0.92 : 1.0
+            scale: batMouse.pressed ? (BarAppearance.instrument ? 0.98 : 0.92) : 1.0
             Behavior on scale {
                 NumberAnimation {
                     duration: Config.animDuration > 0 ? Math.min(Config.animDuration, batMouse.pressed ? 80 : 160) : 0
