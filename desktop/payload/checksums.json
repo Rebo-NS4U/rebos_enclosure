@@ -739,7 +739,7 @@
   "system/etc/greetd/config.toml": "dc0c601fe824e98af520e249d245515f49d7cf2ca4045e5944e3f36bceeb612a",
   "system/etc/greetd/regreet.toml": "eeca9d7c05971ecbf9177ea42fddb6b54c09c79523bb0de57c4cb3c0a44fda19",
   "system/etc/pam.d/greetd": "5d58e2fc44d6fc98a1fdb0386d2f27750231477fb1763162ca01af6029580a45",
-  "system/etc/rebos-greeter/cage-cursor.c": "46c10a355abbd2a377217281d845a824e2ae7ca9450550d6b0fa41c1c3796cbd",
+  "system/etc/rebos-greeter/cage-cursor.c": "109d909050017c2a9a7597da84d6023cbbe44c904ab80bc243b67908993c688e",
   "system/etc/rebos-greeter/icons/default/index.theme": "585476eb1dcd7c282eda9075e3a24ac0b009a08f90541439c7f9cfb0859c41a1",
   "system/etc/rebos-greeter/layout.c": "aa73e814995146e86e7843cdab92c32acf62c3828ac611caa641b879aa9c9243",
   "system/etc/rebos-greeter/theme/background.png": "744fb3fe3ed6ad6f90eb6fe7a676a4ed393e697b73658d071ff11910359ee447",

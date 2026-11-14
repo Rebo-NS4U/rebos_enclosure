@@ -19,7 +19,7 @@ jobs:
       - name: Install native test dependencies
         run: >-
           pacman -Syu --noconfirm --needed
-          git python python-pip python-pillow python-gobject python-charset-normalizer gtk4 ruff
+          git python python-pip python-pillow python-gobject python-charset-normalizer gtk4 cage ruff
           gcc pkgconf fish fontconfig poppler yt-dlp
           niri quickshell qt6-multimedia-ffmpeg ttf-dejavu nodejs lua51
           ffmpeg vlc vlc-plugin-ffmpeg vlc-plugin-freetype vlc-plugin-lua vlc-plugin-dvb

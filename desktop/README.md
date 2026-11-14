@@ -129,6 +129,10 @@ ReGreet configuration lives in `system/etc/greetd/`; the matching
 layout, cursor extension and theme assets live in `system/etc/rebos-greeter/`.
 The greeter uses a private cursor search path with a GoogleDot `default` fallback,
 so unnamed cursor requests also match the theme without changing the system default.
+The Cage helper also supplies cursor-shape-v1 on older Cage builds, routing GTK
+Wayland pointer, text and hand cursors through GoogleDot instead of GTK built-ins.
+Build it against Cage’s installed wlroots development headers; the build script
+selects the matching ABI from Cage’s linked library.
 The former `install/ly/` configuration and patches have been removed.
 
 Base packages and optional application groups are editable in `desktop/packages/core.txt` and `desktop/packages/groups.json`. Driver packages are selected by the installer. A full system upgrade precedes package installation. The installer uses configured repositories and does not add Chaotic-AUR, replace the kernel, or copy this computer's GPU driver settings. Intel/AMD microcode and graphics userspace packages are detected from the destination. **NVIDIA:** the setup menu offers open DKMS and legacy 580 DKMS branches, matching kernel headers, hybrid offload and optional mkinitcpio early KMS. Choose the branch appropriate to the GPU; the installer does not guess NVIDIA generations or remove conflicting installed driver families automatically. Consult [Arch's NVIDIA guide](https://wiki.archlinux.org/title/NVIDIA). Existing network service enablement changes take effect on reboot so installation does not disconnect the active link. If using a custom network stack, use `--keep-network`.
@@ -297,7 +301,8 @@ done
 ```
 
 The native build check compiles both greeter extensions in a
-temporary directory, then removes its output. It never installs or loads them.
+temporary directory, then tests cursor-shape handling with real wlroots seats and
+serial validation before removing its output. It never changes the active desktop.
 
 Media settings requests validate a candidate settings object and save it before
 updating the playback engine. Invalid values or failed saves leave the previous

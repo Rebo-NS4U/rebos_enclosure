@@ -151,7 +151,7 @@ fi
 for dependency in cc fish fc-cache; do command -v "$dependency" >/dev/null || die "Missing dependency: $dependency"; done
 work_dir=$(mktemp -d)
 if ((!files_only)) && [[ $login == regreet ]]; then
-    cc -O2 -shared -fPIC "$ROOT/../system/etc/rebos-greeter/cage-cursor.c" -ldl -o "$work_dir/cage-cursor.so"
+    bash "$ROOT/scripts/build-greeter-cursor.sh" "$work_dir/cage-cursor.so"
     cc -O2 -shared -fPIC "$ROOT/../system/etc/rebos-greeter/layout.c" $(pkg-config --cflags --libs gtk4) -o "$work_dir/layout.so"
 fi
 # Validate the exact customized Niri configuration before changing user files.
