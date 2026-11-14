@@ -926,23 +926,27 @@ class BonsaiGrowTests(unittest.TestCase):
             bonsai.space_bark_shading(again, seed)
             self.assertEqual(again, canvas)
 
-    def test_lower_shoots_removed_and_blossoms_are_occasional(self):
-        blooming = plain = 0
+    def test_lower_shoots_removed_and_blossoms_are_spaced_and_stable(self):
         for seed in range(64):
             self.assertFalse(any(branch.get('lower') for branch in bonsai.branch_graph(seed)))
             sites = bonsai.blossom_sites(seed)
             self.assertEqual(sites, bonsai.blossom_sites(seed))
-            if sites:
-                blooming += 1
-                self.assertTrue(2 <= len(sites) <= 4)
-                for x,y,born in sites:
-                    self.assertTrue(21 <= born <= 26)
-                for i,(x,y,born) in enumerate(sites):
-                    self.assertTrue(all(max(abs(x-px),abs(y-py)) >= 3 for px,py,_ in sites[i+1:]))
-            else:
-                plain += 1
-        self.assertGreater(blooming, 10)
-        self.assertGreater(plain, 20)
+            self.assertTrue(2 <= len(sites) <= 4)
+            for x,y,born in sites:
+                self.assertTrue(21 <= born <= 26)
+            for i,(x,y,born) in enumerate(sites):
+                self.assertTrue(all(max(abs(x-px),abs(y-py)) >= 3 for px,py,_ in sites[i+1:]))
+
+    def test_flowers_use_the_exact_secondary_color(self):
+        from unittest.mock import patch
+        for accent in ('#57aae6', '#e5bcc4', '#15121b'):
+            theme = ['#85b470', accent, '#67bca3']
+            expected = '\033[0;38;2;{};{};{}m'.format(
+                *(int(accent[i:i+2], 16) for i in (1, 3, 5)))
+            self.assertEqual(bonsai.specimen_palette(42, theme)['blossom'], expected)
+            with patch.object(bonsai, 'terminal_leaf_palette', return_value=theme):
+                image = bonsai.render(30, 42, True, 59)
+            self.assertIn(expected + '✿', image)
 
     def test_blossoms_only_replace_existing_foliage_late_in_growth(self):
         for seed in range(48):
@@ -970,8 +974,11 @@ class BonsaiGrowTests(unittest.TestCase):
             count = mature.count('✿')
             self.assertLessEqual(count,4)
             flowering += count > 0
-        self.assertGreater(flowering,10)
-        self.assertLess(flowering,35)
+        self.assertEqual(flowering,48)
+        for style in ('natural', 'slant', 'semi-cascade'):
+            for seed in range(12):
+                image = bonsai.render(30,seed,False,59,style=style)
+                self.assertTrue(1 <= image.count('✿') <= 4, (style,seed))
 
     def test_occasional_knurling_is_stable_sparse_and_only_on_bark(self):
         textured = plain = 0

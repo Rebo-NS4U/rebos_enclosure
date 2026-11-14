@@ -1299,17 +1299,15 @@ def space_bark_shading(canvas, seed):
 
 
 @functools.lru_cache(maxsize=64)
-def blossom_sites(seed):
-    """Only some specimens bloom; sites remain fixed throughout growth."""
+def blossom_sites(seed, style="informal"):
+    """A few spaced flowers per specimen, fixed throughout growth."""
     rng = random.Random(f"{seed}:blossoms")
-    if rng.random() >= 0.4:
-        return ()
     candidates = sorted(
         {
             (x, y)
-            for x, y, born, glyph, ink in natural_specimen(seed, 30)
+            for x, y, born, glyph, ink in specimen(seed, 30, style)
             if ink.startswith("leaf")
-            and glyph in "●◆"
+            and glyph in "●◆♣"
             and born <= 31
             and 0 <= x < 57
             and 0 <= y < 19
@@ -1326,8 +1324,8 @@ def blossom_sites(seed):
     return tuple(chosen)
 
 
-def add_blossoms(canvas, seed, days):
-    for x, y, born in blossom_sites(seed):
+def add_blossoms(canvas, seed, days, style="informal"):
+    for x, y, born in blossom_sites(seed, style):
         if days >= born and canvas[y][x][1].startswith("leaf"):
             canvas[y][x] = ("✧" if days < born + 1 else "✿", "blossom")
 
@@ -1546,7 +1544,6 @@ def specimen_palette(seed, leaves=None):
         "": "\033[0m",
         "pot": ink(hue, chroma * 0.25, 0.43),
         "pot_shadow": ink(hue, chroma * 0.2, 0.3),
-        "blossom": ink(hue + 0.025, chroma * 0.5, 0.66),
         "pot_rim": ink(hue, chroma * 0.22, 0.56),
         "pot_glaze": ink(hue, chroma * 0.28, 0.45),
         "pot_edge": ink(hue, chroma * 0.24, 0.31),
@@ -1581,6 +1578,7 @@ def specimen_palette(seed, leaves=None):
     for role, color in zip(("pot_inlay", "pot_pattern"), leaves[:2]):
         rgb = [int(color[i:i + 2], 16) for i in (1, 3, 5)]
         palette[role] = "\033[0;38;2;{};{};{}m".format(*rgb)
+    palette["blossom"] = palette["pot_pattern"]
     palette.update(ceramic_palette(tuple(leaves)))
     return palette
 
@@ -1603,7 +1601,7 @@ def specimen_canvas(days, seed, style="informal", pot_seed=None):
         space_bark_shading(canvas, seed)
         add_trunk_scar(canvas, seed, days)
         add_knurling(canvas, seed, days)
-        add_blossoms(canvas, seed, days)
+    add_blossoms(canvas, seed, days, style)
     rows = pot_rows(seed if pot_seed is None else pot_seed)
     has_details = any(char in POT_ACCENT_MARKS for row in rows[1:3] for char in row.strip()[1:-1])
     for y, row in enumerate(rows, 19):
