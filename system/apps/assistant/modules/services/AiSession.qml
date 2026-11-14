@@ -2150,8 +2150,12 @@ Scope {
     }
 
     function checkTurnInactivity() {
-        if (questionRequests.length === 0 && Object.keys(pendingPermissions).length === 0)
-            failActiveTurn("Possible stalled task.", "Hung");
+        if (!agentTurnActive || turnFailureHandled || questionRequests.length > 0
+                || Object.keys(pendingPermissions).length > 0)
+            return;
+        // ACP has no progress heartbeat. Silence during reasoning or a long tool
+        // call is not evidence of failure; keep accepting the eventual response.
+        statusText = "Waiting for task progress… Long operations can take several minutes.";
     }
 
     property var currentChat: []

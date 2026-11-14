@@ -353,3 +353,12 @@ Refactored EPUB chapter extraction, page formatting, speech chunking/playback, a
 - Added a six-second startup audio reserve (bounded to 12 chunks), six-slot streaming lookahead, and 180-character synthesis chunks. Soft wraps become spaces for the voice while source offsets remain intact. Updated the prepared-page cache version so old audio is regenerated.
 - A real-model run with a heading and five repeated prose sentences prepared its first audio reserve in 6.73 seconds. Based on measured synthesis arrival times and generated audio durations, its playback schedule had zero predicted buffer underruns. This was a silent synthesis/scheduling measurement, not an acoustic or audible-playback measurement; slower CPUs can still take longer to prepare audio.
 - All 19 focused speech tests passed, including short openers, bounded startup reserves, paragraph lookahead, wrapped-line cues, pause/resume, cancellation, and cached narration. Existing active playback was preserved; subsequent speech launches load the updated helper.
+
+- Long assistant tasks: inactivity after two minutes now shows a waiting status
+  while retaining the active ACP turn and accepting late responses. Actual
+  backend failures and explicit cancellation retain their existing handling.
+  All 17 assistant tests passed, including silent intervals, late updates and
+  pending question/permission guards in both shipped sessions. Payload verification
+  passed for 102 entries in an isolated tracked-source copy with this fix;
+  unrelated music-panel edits prevent full working-tree payload verification.
+  Installed assistant and shell paths resolve to the updated checkout files.
