@@ -308,6 +308,22 @@ class BonsaiGrowTests(unittest.TestCase):
                 self.assertTrue(all(len(row) <= columns for row in rows))
                 self.assertNotIn('\033', image)
 
+    def test_seeded_wood_palette_has_variety_and_readable_shading(self):
+        import re
+        palettes = set()
+        for seed in range(100):
+            palette = bonsai.wood_palette(seed)
+            self.assertEqual(palette, bonsai.wood_palette(seed))
+            palettes.add(tuple(palette.values()))
+            brightness = []
+            for name in ('scar', 'bark', 'wood', 'woodlight'):
+                rgb = list(map(int, re.findall(r'\d+', palette[name])[-3:]))
+                self.assertTrue(all(0 <= value <= 255 for value in rgb))
+                brightness.append(sum(rgb))
+            self.assertEqual(brightness, sorted(brightness))
+            self.assertIn(palette['wood'], bonsai.render(30, seed, True))
+        self.assertGreater(len(palettes), 90)
+
     def test_terminal_colors_follow_theme_without_rewriting_state(self):
         import json
         from unittest.mock import patch
@@ -328,11 +344,11 @@ class BonsaiGrowTests(unittest.TestCase):
                     self.assertEqual(seed, 123)
                     self.assertEqual(palette, [accent] * 3)
                     image = bonsai.render(30, seed, True, 80, palette)
-                    self.assertIn('\033[38;2;185;158;119m', image)
+                    self.assertIn(bonsai.wood_palette(seed)['wood'], image)
                     pot_inlay = '\033[38;2;0;224;0m' if accent == '#00ff00' else '\033[38;2;0;0;224m'
                     self.assertIn(pot_inlay, image)
                     self.assertNotIn('\033[48;', image)
-                    self.assertIn('\033[38;2;151;135;112m', image)
+                    self.assertIn(bonsai.wood_palette(seed)['bark'], image)
                     self.assertEqual(state.read_text(), original)
 
     def test_branch_plans_vary_and_repeat_by_seed(self):

@@ -55,4 +55,6 @@ Frosted bar corners follow the saved radius while collapsed and expanded, includ
 
 Bar menus share a 36px back action with keyboard focus, an accessible name and a tooltip. Clearer titles, inset gutters and a fine header divider distinguish navigation from menu content. Menu widths and gutters follow the configured type size; Wi-Fi, Bluetooth and Alerts leave more room for scrollable lists. Sound and Microphone use 44px device rows with neutral labels, accented selection outlines and check marks rather than solid accent fills. All surfaces, focus outlines, fonts and corners continue to use the active theme settings.
 
-The terminal bonsai uses the terminal’s ANSI palette for foliage, with its original warm wood colors and wallpaper-accented ceramics, with no background fill or visible frame. Whitespace centers the tree; reserved blank rows keep greeting animation and prompt placement stable. Kitty theme changes recolor the foliage with other terminal text.
+The terminal bonsai uses the terminal’s ANSI palette for foliage, with seed-specific wood colors and wallpaper-accented ceramics, with no background fill or visible frame. Whitespace centers the tree; reserved blank rows keep greeting animation and prompt placement stable. Kitty theme changes recolor the foliage with other terminal text.
+
+Wood palettes repeat for the same seed across growth and theme changes. Seeds choose coordinated copper, silver birch, rosewood, olive, cedar or violet ash tones, with subtle color variation and distinct bark shadows and highlights.

@@ -1344,6 +1344,29 @@ def outline_exposed_wood(canvas):
         canvas[y][x] = (glyph, "wood")
 
 
+def wood_palette(seed):
+    """Give each seed stable, coordinated bark, heartwood and highlight tones."""
+    # Copper, silver birch, rosewood, olive, cedar and violet ash.
+    families = (
+        ((122, 77, 61), (191, 132, 93), (236, 189, 137)),
+        ((112, 122, 134), (180, 185, 186), (225, 226, 211)),
+        ((118, 77, 101), (184, 126, 139), (230, 184, 179)),
+        ((101, 112, 76), (163, 166, 112), (213, 211, 159)),
+        ((127, 83, 69), (197, 141, 113), (239, 196, 157)),
+        ((101, 96, 129), (162, 151, 183), (212, 201, 220)),
+    )
+    rng = random.Random(f"{seed}:wood-palette")
+    family = rng.choice(families)
+    tint = [rng.randint(-8, 8) for _ in range(3)]
+    colors = {
+        name: tuple(value + shift for value, shift in zip(rgb, tint))
+        for name, rgb in zip(("bark", "wood", "woodlight"), family)
+    }
+    colors["scar"] = tuple(round(value * 0.72) for value in colors["bark"])
+    return {name: "\033[0;38;2;{};{};{}m".format(*rgb)
+            for name, rgb in colors.items()}
+
+
 def render(
     days,
     seed,
@@ -1382,7 +1405,7 @@ def render(
     if style == "informal":
         outline_exposed_wood(canvas)
     occupied = [y for y, row in enumerate(canvas) if any(c != " " for c, _ in row)]
-    # Foliage inherits the terminal theme; wood and ceramics keep their original colors.
+    # Foliage follows the terminal; wood varies by seed and ceramics by theme.
     # No background color: the tree sits directly on the terminal surface.
     palette = {
         "wood": "\033[38;2;174;132;91m",
@@ -1397,14 +1420,8 @@ def render(
         "blossom": "\033[0;35m",
         "": "\033[0m",
     }
-    if style == "informal":
-        palette.update(
-            wood="\033[38;2;185;158;119m",
-            bark="\033[38;2;151;135;112m",
-            woodlight="\033[38;2;214;195;155m",
-        )
+    palette.update(wood_palette(seed))
     palette["shoot"] = palette["wood"]
-    palette["scar"] = "\033[38;2;98;88;73m"
     accents = accents if valid_palette(accents) else wallpaper_palette()
     for name, accent, brightness in (
         ("pot", accents[1], 0.85),
