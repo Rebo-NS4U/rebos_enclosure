@@ -81,6 +81,29 @@ class MusicLibraryTests(unittest.TestCase):
             self.assertIsNone(self.library.dispatch('folder', {}))
         self.assertEqual(self.library.state['folders'], [str(self.folder)])
 
+    def test_folder_playlists_refresh_without_changing_saved_playlists(self):
+        folder = self.folder / 'Road trip'
+        nested = folder / 'Disc 1'
+        nested.mkdir(parents=True)
+        song = nested / 'track.flac'
+        shutil.copyfile(self.song, song)
+        (self.folder / 'Empty').mkdir()
+        manual = dict(id='manual', name='My mix', paths=[str(self.song)])
+        self.library.dispatch('save', dict(playlists=[manual]))
+        playlists = self.library.scan()['state']['playlists']
+        self.assertEqual([p['name'] for p in playlists], ['My mix', 'Road trip'])
+        generated = playlists[1]
+        self.assertTrue(generated['folder'])
+        self.assertEqual(generated['paths'], [str(song)])
+        self.assertEqual(self.library.scan()['state']['playlists'][1]['id'], generated['id'])
+        self.library.dispatch('save', dict(playlists=playlists))
+        self.assertEqual(music.Library(self.home).state['playlists'], [manual])
+        renamed = nested / 'renamed.flac'
+        song.rename(renamed)
+        self.assertEqual(self.library.scan()['state']['playlists'][1]['paths'], [str(renamed)])
+        renamed.unlink()
+        self.assertEqual(self.library.scan()['state']['playlists'], [manual])
+
     def test_json_line_protocol(self):
         result = subprocess.run([sys.executable,str(SCRIPT)], input=json.dumps(dict(id=1,cmd='scan',args={}))+'\n',
                                 capture_output=True,text=True,timeout=30,

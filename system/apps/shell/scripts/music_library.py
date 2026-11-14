@@ -109,7 +109,21 @@ class Library:
             except (OSError, ValueError, subprocess.SubprocessError) as error:
                 errors.append(str(error))
         self.write(self.cache_dir / 'index.json', self.cache)
-        return dict(tracks=tracks, state=self.state, errors=errors)
+        # Folder playlists are derived on every scan, so moved/deleted songs and
+        # folders never leave stale saved playlists behind.
+        folder_playlists = []
+        if self.music.is_dir():
+            for folder in sorted(self.music.iterdir(), key=lambda p: (p.name.casefold(), p.name)):
+                if not folder.is_dir():
+                    continue
+                root = folder.resolve()
+                members = [t['path'] for t in tracks if Path(t['path']).is_relative_to(root)]
+                if members:
+                    folder_playlists.append(dict(
+                        id='folder:' + hashlib.sha256(str(folder.absolute()).encode()).hexdigest(),
+                        name=folder.name, paths=members, folder=True))
+        state = dict(self.state, playlists=self.state['playlists'] + folder_playlists)
+        return dict(tracks=tracks, state=state, errors=errors)
 
     def dispatch(self, cmd, args):
         if cmd == 'scan':
@@ -117,7 +131,8 @@ class Library:
         if cmd == 'save':
             for key in ('favorites', 'playlists'):
                 if key in args:
-                    self.state[key] = args[key]
+                    self.state[key] = ([p for p in args[key] if not p.get('folder')]
+                                       if key == 'playlists' else args[key])
             self.write(self.state_dir / 'library.json', self.state)
             return True
         if cmd == 'folder':
