@@ -20,13 +20,13 @@ class ScreenTextTest(unittest.TestCase):
             source = Path(directory) / 'screen.png'
             Image.new('RGB', (800, 600), 'white').save(source)
             crops = []
-            def recognize(args, **kwargs):
-                crops.append(Path(args[1]))
+            def recognize(crop, **kwargs):
+                crops.append(crop)
                 with Image.open(crops[-1]) as image:
                     self.assertEqual(image.size, (640, 340))
-                return subprocess.CompletedProcess(args, 0, ' Text & <symbols>\n')
+                return 'Text & <symbols>', 95
             region = dict(x=10, y=20, width=100, height=50, viewWidth=400, viewHeight=300)
-            with patch.object(ocr.subprocess, 'run', side_effect=recognize):
+            with patch.object(ocr, 'read_text', side_effect=recognize):
                 self.assertEqual(ocr.recognize(source, region)['text'], 'Text & <symbols>')
             self.assertFalse(crops[0].exists())
 
@@ -80,15 +80,42 @@ class ScreenTextTest(unittest.TestCase):
             for alternative, expected in [('', initial), ('Reading', initial),
                                            (initial.upper(), initial.upper())]:
                 with self.subTest(alternative=alternative):
-                    results = [subprocess.CompletedProcess([], 0, text)
-                               for text in [initial, alternative]]
-                    with patch.object(ocr.subprocess, 'run', side_effect=results) as run:
+                    results = [(text, 95) for text in [initial, alternative]]
+                    with patch.object(ocr, 'read_text', side_effect=results) as run:
                         region = dict(x=0, y=0, width=100, height=100,
                                       viewWidth=100, viewHeight=100)
                         self.assertEqual(ocr.recognize(source, region)['text'], expected)
-                        self.assertIn('load_system_dawg=0', run.call_args_list[0].args[0])
-                        self.assertNotIn('load_system_dawg=0', run.call_args_list[1].args[0])
-                        self.assertEqual(run.call_args_list[1].args[0][-2:], ['--psm', '3'])
+                        self.assertEqual(run.call_args_list[1].kwargs,
+                                         dict(mode='3', dictionaries=True))
+
+    def test_small_filename_with_real_tesseract(self):
+        font_path = Path('/usr/share/fonts/noto/NotoSansMono-Regular.ttf')
+        if not shutil.which('tesseract') or not font_path.exists():
+            self.skipTest('Requires Tesseract and Noto Sans Mono')
+        expected = 'modules/bar/island/IslandDashboard.qml'
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / 'screen.png'
+            for background, foreground in [('white', 'black'), ('#202020', '#dddddd')]:
+                image = Image.new('RGB', (400, 25), background)
+                font = ImageFont.truetype(str(font_path), 13)
+                ImageDraw.Draw(image).text((2, 2), expected, font=font, fill=foreground)
+                image.save(source)
+                region = dict(x=0, y=0, width=400, height=25, viewWidth=400, viewHeight=25)
+                self.assertEqual(ocr.recognize(source, region)['text'], expected)
+
+    def test_confidence_retry_keeps_content_and_avoids_spelling_rewrites(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / 'screen.png'
+            Image.new('RGB', (100, 30), 'white').save(source)
+            initial = 'custom/filename.qmi'
+            for candidate, score, expected in [('custom/filename.qml', 80, 'custom/filename.qml'),
+                                                ('custom/filename.qml', 49, initial),
+                                                ('qml', 99, initial)]:
+                with self.subTest(candidate=candidate, score=score):
+                    with patch.object(ocr, 'read_text', side_effect=[(initial, 50), (candidate, score)]):
+                        region = dict(x=0, y=0, width=100, height=30, viewWidth=100, viewHeight=30)
+                        self.assertEqual(ocr.recognize(source, region)['text'], expected)
+
 
     def test_preprocessing_normalizes_polarity_and_bounds_size(self):
         for background in ['white', 'black']:

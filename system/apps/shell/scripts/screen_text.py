@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Private frozen-screen OCR session. JSON lines in/out; EOF deletes captures."""
+import csv
 import json
 import math
 from pathlib import Path
@@ -29,7 +30,7 @@ def selection_box(image, values):
     return box
 
 
-def prepare_text(image):
+def prepare_text(image, scale=3, binary=False):
     """Retain antialiasing and punctuation while enlarging screen text."""
     image = ImageOps.grayscale(image)
     # Screen selections normally contain more background than foreground.
@@ -37,11 +38,32 @@ def prepare_text(image):
         image = ImageOps.invert(image)
     image = ImageOps.autocontrast(image)
     # Bound enlargement for full-screen selections to avoid excessive memory.
-    scale = max(1, min(3, 6000 / max(image.size)))
+    scale = max(1, min(scale, 6000 / max(image.size)))
     if scale > 1:
         image = image.resize(tuple(round(size * scale) for size in image.size),
                              Image.Resampling.LANCZOS)
+    if binary:
+        image = image.point(lambda value: 255 if value > 160 else 0)
     return ImageOps.expand(image, border=20, fill=255)
+
+
+def read_text(crop, mode='6', dictionaries=False):
+    """Collect exact text and word confidence from the same recognition pass."""
+    output = crop.with_suffix('')
+    command = ['tesseract', str(crop), str(output), '-l', 'eng',
+               '--dpi', '300', '--psm', mode]
+    if not dictionaries:
+        command += ['-c', 'load_system_dawg=0', '-c', 'load_freq_dawg=0',
+                    '-c', 'preserve_interword_spaces=1']
+    subprocess.run(command + ['txt', 'tsv'], check=True, capture_output=True, text=True)
+    text = output.with_suffix('.txt').read_text().strip()
+    with output.with_suffix('.tsv').open(newline='') as handle:
+        words = [(float(row['conf']), len(row['text'].strip()))
+                 for row in csv.DictReader(handle, delimiter='\t', quoting=csv.QUOTE_NONE)
+                 if row['level'] == '5' and row['text'].strip()]
+    weight = sum(length for _, length in words)
+    confidence = sum(score * length for score, length in words) / weight if weight else 0
+    return text, confidence
 
 
 def recognize(path, region):
@@ -51,26 +73,23 @@ def recognize(path, region):
         box = selection_box(image, values)
         with tempfile.TemporaryDirectory(prefix='enclosure-ocr-region-') as directory:
             crop = Path(directory) / 'region.png'
-            prepare_text(image.crop(box)).save(crop)
-            command = ['tesseract', str(crop), 'stdout', '-l', 'eng', '--dpi', '300']
-            result = subprocess.run(command + ['--psm', '6',
-                                    '-c', 'load_system_dawg=0',
-                                    '-c', 'load_freq_dawg=0',
-                                    '-c', 'preserve_interword_spaces=1'],
-                                    check=True, capture_output=True, text=True)
-            text = result.stdout.strip()
-            # Use English word dictionaries for prose, leaving codes and numeric
-            # snippets on the dictionary-free pass. Automatic layout preserves
-            # paragraph/column reading order instead of merging adjacent columns.
+            selection = image.crop(box)
+            prepare_text(selection).save(crop)
+            text, confidence = read_text(crop)
+            count = lambda value: sum(character.isalnum() for character in value)
+            # A second rendering can separate tiny dots/stems that antialiasing
+            # merges. Never guess an extension or rewrite identifiers by spelling.
+            if confidence < 85:
+                alternate = Path(directory) / 'contrast.png'
+                prepare_text(selection, scale=4, binary=True).save(alternate)
+                candidate, score = read_text(alternate)
+                if candidate and score > confidence + 2 and count(candidate) >= count(text) * 0.9:
+                    text, confidence = candidate, score
             words = text.split()
             prose_words = sum(word.strip('.,!?;:\"\'()-').isalpha() for word in words)
             if len(words) >= 4 and prose_words / len(words) >= 0.7:
                 mode = '3' if len(text.splitlines()) > 1 else '6'
-                regular = subprocess.run(command + ['--psm', mode],
-                                         check=True, capture_output=True, text=True).stdout.strip()
-                # Layout analysis can discard small UI labels. Keep the first
-                # pass when automatic segmentation loses substantial content.
-                count = lambda value: sum(character.isalnum() for character in value)
+                regular, _ = read_text(crop, mode=mode, dictionaries=True)
                 if regular and count(regular) >= count(text) * 0.8:
                     text = regular
     return {'text': text, 'error': '' if text else 'No text found. Try larger text or a tighter selection.'}
