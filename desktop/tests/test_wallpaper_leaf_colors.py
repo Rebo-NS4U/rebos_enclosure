@@ -67,7 +67,8 @@ class WallpaperLeafColors(unittest.TestCase):
                 return (struct.pack('>I', len(data)) + kind + data
                         + struct.pack('>I', zlib.crc32(kind + data)))
             # Large blue/gold regions, then a near-duplicate blue pair.
-            for right, distinct in [((220, 160, 40), True), ((45, 85, 190), False)]:
+            for right, distinct in [((220, 160, 40), True), ((40, 170, 70), True),
+                                    ((45, 85, 190), False)]:
                 image = folder / 'pair.png'
                 row = bytes((35, 80, 180))*32 + bytes(right)*32
                 image.write_bytes(b'\x89PNG\r\n\x1a\n'
@@ -84,7 +85,7 @@ class WallpaperLeafColors(unittest.TestCase):
                     h1, h2 = hsv(p['primary'])[0], hsv(p['secondary'])[0]
                     distance = min(abs(h1-h2), 1-abs(h1-h2))*360
                     if distinct:
-                        self.assertGreater(distance, 120)
+                        self.assertGreater(distance, 35)
                         # Containers must follow the secondary, rather than the primary.
                         h3 = hsv(p['secondaryContainer'])[0]
                         self.assertLess(min(abs(h2-h3), 1-abs(h2-h3))*360, 20)

@@ -51,7 +51,7 @@ def hsv(color):
     return colorsys.rgb_to_hsv(*(int(color[i:i + 2], 16) / 255 for i in (1, 3, 5)))
 
 # Matugen ranks actual image colors. Ignore near-neutral/dark candidates and
-# prefer analogous (35–65°) or split/complementary (120–180°) pairings.
+# allow distinct analogous through complementary pairings (35–180°).
 # Keep the existing single-hue scheme when no suitable second color exists.
 secondary = None
 primary_hue, primary_saturation, _ = hsv(palette['primary'])
@@ -64,7 +64,7 @@ try:
         hue, saturation, value = hsv(candidate)
         distance = min(abs(hue - primary_hue), 1 - abs(hue - primary_hue)) * 360
         if (primary_saturation >= 0.08 and saturation >= 0.25 and value >= 0.25
-                and (35 <= distance <= 65 or 120 <= distance <= 180)):
+                and 35 <= distance <= 180):
             config_path = Path(sys.argv[5])
             second_path = config_path.parent / 'secondary.json'
             second_config = config_path.parent / 'secondary.toml'

@@ -1431,13 +1431,18 @@ def specimen_palette(seed, leaves=None):
     })
     palette["shoot"] = palette["wood"]
     palette["leaf"] = ink(hue, chroma, 0.9)
+    second_hue, second_saturation, _ = hsv[1]
+    separation = min(abs(hue - second_hue), 1 - abs(hue - second_hue))
+    paired = saturation >= 0.08 and second_saturation >= 0.08 and separation >= 35 / 360
     for i, shift in enumerate((-0.025, 0, 0.025)):
+        leaf_hue = second_hue if paired and i == 0 else hue + shift
+        leaf_chroma = max(0.62, second_saturation) if paired and i == 0 else chroma
         for name in ("mid", "tip"):
             palette[f"shoot_{name}{i}"] = ink(hue + shift, chroma * 0.3, 0.55)
         for j, value in enumerate((0.78, 0.9, 0.98)):
-            palette[f"leaf{i * 3 + j}"] = ink(hue + shift, chroma, value)
+            palette[f"leaf{i * 3 + j}"] = ink(leaf_hue, leaf_chroma, value)
     # The ceramic patterns repeat the crown's colors; the pot body stays quiet.
-    palette["pot_inlay"] = palette["leaf4"]
+    palette["pot_inlay"] = palette["leaf1" if paired else "leaf4"]
     palette["pot_shadow"] = palette["leaf0"]
     return palette
 

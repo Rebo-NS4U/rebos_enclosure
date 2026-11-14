@@ -389,6 +389,24 @@ class BonsaiGrowTests(unittest.TestCase):
                     if accent not in ('#eeeeee',):
                         self.assertLess(saturation, min(color[1] for color in leaves))
 
+    def test_two_wallpaper_accents_color_foliage_and_ceramics(self):
+        import colorsys
+        import re
+        def hue(ink):
+            rgb = [int(v) / 255 for v in re.findall(r'\d+', ink)[-3:]]
+            return colorsys.rgb_to_hsv(*rgb)[0]
+        blue_green = ['#57aae6', '#80d657', '#5790e6']
+        palette = bonsai.specimen_palette(42, blue_green)
+        self.assertGreater(hue(palette['leaf4']), .5)
+        self.assertLess(hue(palette['leaf4']), .7)
+        self.assertGreater(hue(palette['leaf1']), .25)
+        self.assertLess(hue(palette['leaf1']), .45)
+        self.assertEqual(palette['pot_inlay'], palette['leaf1'])
+        # A later theme change must replace both colors, independent of tree seed.
+        updated = bonsai.specimen_palette(42, ['#e65773', '#e6bb57', '#e65788'])
+        self.assertNotEqual(palette['leaf4'], updated['leaf4'])
+        self.assertNotEqual(palette['leaf1'], updated['leaf1'])
+
     def test_dark_wood_and_vibrant_pot_patterns(self):
         import colorsys
         import re

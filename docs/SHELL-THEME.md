@@ -59,7 +59,7 @@ The terminal bonsai derives its foliage colors from the terminal palette, with s
 
 Wood palettes repeat for the same seed and leaf palette throughout growth. The wallpaper primary accent guides the choice: green crowns always use brown wood and red crowns always use dark red wood; cool crowns use birch or violet ash, while pink crowns use rosewood. The wood follows the wallpaper primary hue, just like the visible leaves. A subtle reflected leaf tint unifies the wood, with dark bark, wood and restrained highlights. Semantic ANSI colors such as terminal green never determine the wallpaper hue.
 
-The crown is the visual focus: a tight range around the wallpaper primary hue uses the highest saturation and brightness. Ceramic patterns repeat the vibrant crown colors on a muted pot body. Seeded wood, blossoms and shoots use quieter supporting tones below the foliage’s brightness. Neutral terminal palettes retain neutral foliage. All materials use foreground colors without a background fill.
+The crown is the visual focus: the wallpaper primary and any distinct secondary hue use the highest saturation and brightness. Ceramic patterns repeat the vibrant crown colors on a muted pot body. Seeded wood, blossoms and shoots use quieter supporting tones below the foliage’s brightness. Neutral terminal palettes retain neutral foliage. All materials use foreground colors without a background fill.
 
 Trunks use broad, seed-stable grain bands in related dark wood tones. The narrow scar uses a blend of bark and heartwood instead of an extra-dark slit; its existing shape and growth remain intact.
 
@@ -68,8 +68,8 @@ Trunks use broad, seed-stable grain bands in related dark wood tones. The narrow
 Wallpaper-driven Matugen palettes use the terminal bonsai crown’s chroma and
 neighboring leaf hues for dark-mode primary, secondary and tertiary accents.
 Each wallpaper is extracted afresh; neutral themes remain neutral. When Matugen
-finds a distinct, colorful second source, analogous (35–65° apart) or
-split/complementary (120–180° apart) hues become the secondary accent, including
+finds a distinct, colorful second source (35–180° apart), including blue/green
+pairs, it becomes the secondary accent with
 its containers and fixed colors in both modes. Near-neutral, dark and similar
 candidates are ignored; single-hue images keep the neighboring leaf shades.
 This is a deterministic color-harmony heuristic, not a subjective aesthetic judgment. Matugen still
@@ -77,3 +77,8 @@ generates surfaces and light-mode colors. Accent text uses black or white for
 contrast. Static color presets bypass wallpaper generation; select a Matugen
 scheme to resume automatic updates. Wallust remains the fallback when Matugen
 is unavailable.
+
+The terminal bonsai reads the current effective accents on every render. When
+primary and secondary are distinct, its foliage uses both hues and the ceramic
+inlay repeats the secondary. Existing printed terminal output stays as drawn;
+new greetings and animation frames use the current palette.
