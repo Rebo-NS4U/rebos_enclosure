@@ -2,11 +2,11 @@
 binds {
     // Keys consist of modifiers separated by + signs, followed by an XKB key name
 
-    Mod+Ctrl+T repeat=false hotkey-overlay-title="Select screen text" { spawn "wayland-screenshot" "ocr"; }
+    Mod+Shift+T repeat=false hotkey-overlay-title="Select screen text" { spawn "wayland-screenshot" "ocr"; }
 
     // rebos_shell QuickShell actions.
     Mod+T repeat=false hotkey-overlay-title="Open Book Typing" { spawn "qs" "ipc" "-p" "@HOME@/.config/quickshell" "call" "rebos_shell" "run" "t"; }
-    Mod+Shift+T repeat=false hotkey-overlay-title="Toggle Lyrics" { spawn "qs" "ipc" "-p" "@HOME@/.config/quickshell" "call" "lyrics" "toggle"; }
+    Mod+Ctrl+T repeat=false hotkey-overlay-title="Toggle Lyrics" { spawn "qs" "ipc" "-p" "@HOME@/.config/quickshell" "call" "lyrics" "toggle"; }
     Mod+Alt+F hotkey-overlay-title="File Shelf" { spawn "qs" "ipc" "-p" "@HOME@/.config/quickshell" "call" "rebos_shell" "run" "file-shelf"; }
     Mod+Space hotkey-overlay-title="Open App Launcher" { spawn "qs" "ipc" "-p" "@HOME@/.config/quickshell" "call" "rebos_shell" "run" "launcher"; }
     Mod+Alt+N hotkey-overlay-title="Quick Notes" { spawn "qs" "ipc" "-p" "@HOME@/.config/quickshell" "call" "rebos_shell" "run" "notes"; }

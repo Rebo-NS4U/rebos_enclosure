@@ -1,6 +1,6 @@
 # Screen text
 
-Press **Super+Ctrl+T** (or run `wayland-screenshot ocr`) and drag a box around
+Press **Super+Shift+T** (or run `wayland-screenshot ocr`) and drag a box around
 text in any application, image, or video. A full-screen frosted-glass overlay
 freezes each active display. While you drag, an accent outline shows the box
 and its dimensions. Release to morph the glass into the selected region over
