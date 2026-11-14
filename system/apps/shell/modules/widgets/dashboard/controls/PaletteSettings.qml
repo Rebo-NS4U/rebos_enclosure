@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Dialogs
 import Quickshell
 import qs.config
 import qs.modules.globals
@@ -16,6 +17,21 @@ ColumnLayout {
     readonly property PanelWindow manager: GlobalStates.wallpaperManager
     readonly property bool busy: manager?.paletteBusy ?? false
     readonly property string preset: manager?.activeColorPreset ?? ""
+    property var draftColors: manager?.pickedAccentColors ?? ["", ""]
+    property int pickedRole: 0
+    readonly property string pickerWallpaper: manager?.currentWallpaper ?? ""
+    readonly property string pickerSource: manager && pickerWallpaper ? manager.getColorSource(pickerWallpaper) : ""
+    function resetPicks() { draftColors = (manager?.pickedAccentColors ?? ["", ""]).slice(); }
+    function pickColor(color) {
+        const colors = draftColors.slice();
+        colors[pickedRole] = color;
+        draftColors = colors;
+    }
+    onPickerWallpaperChanged: resetPicks()
+    Connections {
+        target: root.manager
+        function onPickedAccentColorsChanged() { root.resetPicks(); }
+    }
     spacing: Styling.spacing(12)
 
     component Caption: Text {
@@ -135,6 +151,94 @@ ColumnLayout {
                 HoverHandler { id: hover }
             }
         }
+    }
+    Text {
+        text: "Pick colors from your wallpaper"
+        font.family: Config.theme.font
+        font.pixelSize: Styling.fontSize(0)
+        font.bold: true
+        color: Colors.overSurface
+    }
+    Caption {
+        text: "Select Main or Accent, then click the wallpaper. Matugen builds your theme from these colors, and the bonsai uses the same pair. Picks are saved for each wallpaper."
+    }
+    RowLayout {
+        Action {
+            text: "Main: " + (root.draftColors[0] || "Auto")
+            selected: root.pickedRole === 0
+            onClicked: root.pickedRole = 0
+        }
+        Action {
+            text: "Accent: " + (root.draftColors[1] || "Auto")
+            selected: root.pickedRole === 1
+            onClicked: root.pickedRole = 1
+        }
+    }
+    StyledRect {
+        Layout.fillWidth: true
+        implicitHeight: 240
+        variant: "common"
+        clip: true
+        WallpaperSampler {
+            id: wallpaperSampler
+            anchors.fill: parent
+            anchors.margins: 6
+            source: root.pickerSource ? "file://" + root.pickerSource.split("/").map(encodeURIComponent).join("/") : ""
+            onPicked: color => root.pickColor(color)
+        }
+        Caption {
+            anchors.centerIn: parent
+            width: parent.width - 24
+            horizontalAlignment: Text.AlignHCenter
+            visible: !wallpaperSampler.ready
+            text: !root.pickerSource ? "Choose a wallpaper to pick its colors." :
+                wallpaperSampler.failed ? "Wallpaper preview is unavailable. You can still choose a custom color." : "Loading wallpaper…"
+        }
+    }
+    RowLayout {
+        Rectangle {
+            implicitWidth: 24
+            implicitHeight: 24
+            radius: Styling.radius(-4)
+            color: wallpaperSampler.hoverColor || root.draftColors[root.pickedRole] ||
+                   (root.pickedRole === 0 ? Colors.primary : Colors.secondary)
+            border.color: Colors.outline
+        }
+        Caption { text: wallpaperSampler.hoverColor || root.draftColors[root.pickedRole] || "Automatic color" }
+        Action {
+            Layout.fillWidth: false
+            text: "Custom color…"
+            onClicked: {
+                customColor.selectedColor = root.draftColors[root.pickedRole] || (root.pickedRole === 0 ? Colors.primary : Colors.secondary);
+                customColor.open();
+            }
+        }
+        Action {
+            Layout.fillWidth: false
+            text: "Auto"
+            onClicked: root.pickColor("")
+        }
+    }
+    RowLayout {
+        Action {
+            text: root.busy ? "Applying…" : "Apply picked colors"
+            enabled: root.manager !== null && !!root.pickerWallpaper && !root.busy && root.draftColors.some(color => color !== "")
+            onClicked: root.manager.setPickedAccentColors(root.draftColors)
+        }
+        Action {
+            text: "Use automatic colors"
+            enabled: root.manager !== null && !!root.pickerWallpaper && !root.busy
+            onClicked: {
+                root.draftColors = ["", ""];
+                root.manager.setPickedAccentColors(root.draftColors);
+            }
+        }
+    }
+    Caption { text: "Use arrow keys on the preview and Enter to pick; Shift moves faster. The bonsai updates in new terminals." }
+    ColorDialog {
+        id: customColor
+        title: root.pickedRole === 0 ? "Choose main color" : "Choose accent color"
+        onAccepted: root.pickColor(selectedColor.toString())
     }
     Caption { text: "Background opacity: " + Math.round(Config.theme.srBg.opacity * 100) + "%" }
     ThemeSlider {

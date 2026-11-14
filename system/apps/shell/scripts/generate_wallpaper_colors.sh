@@ -6,8 +6,20 @@ scheme=${2:-scheme-tonal-spot}
 mode=${3:-dark}
 matugen_config=${4:?matugen config is required}
 output_path=${5:?output path is required}
+primary_color=${6:-}
+secondary_color=${7:-}
+for picked_color in "$primary_color" "$secondary_color"; do
+  if [[ -n "$picked_color" && ! "$picked_color" =~ ^#[[:xdigit:]]{6}$ ]]; then
+    echo '{"error":"Picked colors must be #RRGGBB"}' >&2
+    exit 2
+  fi
+done
+if [[ -n "$primary_color$secondary_color" ]] && ! command -v matugen >/dev/null 2>&1; then
+  echo '{"error":"Matugen is required for picked wallpaper colors"}' >&2
+  exit 127
+fi
 
-# Use a saturated source automatically: no interactive prompt in QuickShell.
+# Picked source colors override automatic extraction without an interactive prompt.
 # Render to an isolated file so failed or interrupted jobs cannot publish a
 # partial palette or report success just because an older cache exists.
 if command -v matugen >/dev/null 2>&1; then
@@ -34,9 +46,13 @@ config = re.sub(r'^output_path\s*=.*$',
                 config, flags=re.M)
 (folder / 'config.toml').write_text(config)
 PYCONFIG
-  if matugen image "$image_path" --prefer "${MATUGEN_PREFER:-saturation}" \
+  source_args=(image "$image_path" --prefer "${MATUGEN_PREFER:-saturation}")
+  if [[ -n "$primary_color" ]]; then
+    source_args=(color hex "$primary_color")
+  fi
+  if matugen "${source_args[@]}" \
       -c "$work_dir/config.toml" -t "$scheme" -m "$mode" && \
-      python3 - "$work_dir/colors.json" "$mode" "$image_path" "$scheme" "$work_dir/config.toml" <<'PYVALIDATE'
+      python3 - "$work_dir/colors.json" "$mode" "$image_path" "$scheme" "$work_dir/config.toml" "$primary_color" "$secondary_color" <<'PYVALIDATE'
 import colorsys
 import json
 import re
@@ -56,15 +72,15 @@ def hsv(color):
 secondary = None
 primary_hue, primary_saturation, _ = hsv(palette['primary'])
 try:
-    result = subprocess.run(['matugen', 'image', sys.argv[3], '--show-source-colors',
-                             '--dry-run'], capture_output=True, text=True, check=True,
-                            timeout=30)
-    candidates = re.findall(r'^#[0-9a-fA-F]{6}$', result.stdout, re.M)
+    result = None if sys.argv[7] else subprocess.run(
+        ['matugen', 'image', sys.argv[3], '--show-source-colors', '--dry-run'],
+        capture_output=True, text=True, check=True, timeout=30)
+    candidates = [sys.argv[7]] if sys.argv[7] else re.findall(r'^#[0-9a-fA-F]{6}$', result.stdout, re.M)
     for candidate in candidates:
         hue, saturation, value = hsv(candidate)
         distance = min(abs(hue - primary_hue), 1 - abs(hue - primary_hue)) * 360
-        if (primary_saturation >= 0.08 and saturation >= 0.25 and value >= 0.25
-                and 35 <= distance <= 180):
+        if sys.argv[7] or (primary_saturation >= 0.08 and saturation >= 0.25
+                           and value >= 0.25 and 35 <= distance <= 180):
             config_path = Path(sys.argv[5])
             second_path = config_path.parent / 'secondary.json'
             second_config = config_path.parent / 'secondary.toml'
@@ -82,14 +98,16 @@ try:
                     palette[key.replace('Primary', 'Secondary').replace('primary', 'secondary')] = value
             break
 except (subprocess.SubprocessError, OSError, ValueError):
+    if sys.argv[7]:
+        raise
     secondary = None
 
 # Match the tree's vivid crown in dark mode, preserving a distinct secondary
 # hue when one was extracted. Light mode retains Matugen's readable tones.
 if sys.argv[2] == 'dark':
-    original_primary = palette['primary']
+    original_primary = sys.argv[6] or palette['primary']
     for role, shift in (('primary', 0), ('secondary', -0.025), ('tertiary', 0.025)):
-        source = secondary['primary'] if role == 'secondary' and secondary else original_primary
+        source = (sys.argv[7] or secondary['primary']) if role == 'secondary' and secondary else original_primary
         hue, saturation, _ = hsv(source)
         chroma = max(0.62, saturation) if saturation >= 0.08 else 0
         offset = 0 if role == 'secondary' and secondary else shift
@@ -111,6 +129,10 @@ PYVALIDATE
   fi
   rm -rf "$work_dir"
   trap - EXIT
+  if [[ -n "$primary_color$secondary_color" ]]; then
+    echo '{"error":"Could not generate the picked palette; keeping previous colors"}' >&2
+    exit 1
+  fi
   echo "Matugen failed; trying Wallust fallback..." >&2
 fi
 

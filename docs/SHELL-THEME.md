@@ -126,3 +126,20 @@ with starter leaves rises into a stalk, thickens, extends limbs, and expands its
 crown. The eased timeline and brief skip transition remain, as do the mature
 branch curves, leaf shading and wallpaper palette. There is no finished-canvas
 reveal overlay.
+
+### Pick wallpaper colors manually
+
+Open **Settings → Appearance → Colors → Pick colors from your wallpaper**.
+Select **Main** or **Accent**, then click the wallpaper preview. The swatch shows
+which pixel you are sampling. You can also use **Custom color…**, or focus the
+preview and use arrow keys (Shift moves faster) and Enter. Click **Apply picked
+colors** to generate the theme; Matugen derives readable containers and text
+colors, while the terminal bonsai follows the same main and accent hues.
+
+Choices are saved separately for each wallpaper and survive scheme and light /
+dark changes. **Auto** clears the selected draft color; **Use automatic colors**
+clears both saved picks for this wallpaper and regenerates the automatic palette.
+Video wallpapers use their still thumbnail. Image margins cannot be sampled.
+Palette generation uses isolated temporary files: invalid picks or a failed
+Matugen job leave the previous palette intact. Bonsai greetings pick up the
+resulting colors when you open a new terminal.

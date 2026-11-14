@@ -31,6 +31,7 @@ PanelWindow {
     property var allSubdirs: []
     property int currentIndex: 0
     property string currentWallpaper: initialLoadCompleted && wallpaperPaths.length > 0 ? wallpaperPaths[currentIndex] : ""
+    readonly property var pickedAccentColors: wallpaperAdapter.wallpaperAccentColors[currentWallpaper] || ["", ""]
     property bool initialLoadCompleted: false
     property bool usingFallback: false
     property bool _wallpaperDirInitialized: false
@@ -594,6 +595,20 @@ PanelWindow {
         Qt.callLater(() => runMatugenForCurrentWallpaper());
     }
 
+    function setPickedAccentColors(colors) {
+        if (!currentWallpaper || colors.length !== 2 ||
+                !colors.every(color => color === "" || /^#[0-9a-fA-F]{6}$/.test(color)))
+            return;
+        const saved = Object.assign({}, wallpaperAdapter.wallpaperAccentColors);
+        if (colors.every(color => color === ""))
+            delete saved[currentWallpaper];
+        else
+            saved[currentWallpaper] = colors.slice();
+        wallpaperAdapter.wallpaperAccentColors = saved;
+        wallpaperAdapter.activeColorPreset = "";
+        Qt.callLater(() => runMatugenForCurrentWallpaper());
+    }
+
     // property string mpvSocket: "/tmp/rebos_shell_mpv_socket"
     property string mpvSocket: "/tmp/rebos_shell_mpv_socket_" + (currentScreenName ? currentScreenName : "ALL")
 
@@ -650,7 +665,9 @@ PanelWindow {
                 wallpaperConfig.adapter.matugenScheme || "scheme-tonal-spot",
                 Config.theme.lightMode ? "light" : "dark",
                 decodeURIComponent(Qt.resolvedUrl("../../../../assets/matugen/config.toml").toString().replace("file://", "")),
-                Quickshell.env("HOME") + "/.cache/rebos_shell/colors.json"
+                Quickshell.env("HOME") + "/.cache/rebos_shell/colors.json",
+                pickedAccentColors[0] || "",
+                pickedAccentColors[1] || ""
             ];
             console.log("Matugen command:", commandWithConfig.join(" "));
             matugenProcessWithConfig.command = commandWithConfig;
@@ -942,6 +959,7 @@ PanelWindow {
             property string currentWall: ""
             property string wallPath: ""
             property string matugenScheme: "scheme-tonal-spot"
+            property var wallpaperAccentColors: ({})
             property string activeColorPreset: ""
             property bool tintEnabled: false
             property string wallpaperMode: "crop"
