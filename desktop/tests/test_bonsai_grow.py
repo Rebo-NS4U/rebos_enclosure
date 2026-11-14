@@ -397,11 +397,18 @@ class BonsaiGrowTests(unittest.TestCase):
             return colorsys.rgb_to_hsv(*rgb)[0]
         blue_green = ['#57aae6', '#80d657', '#5790e6']
         palette = bonsai.specimen_palette(42, blue_green)
-        self.assertGreater(hue(palette['leaf4']), .5)
-        self.assertLess(hue(palette['leaf4']), .7)
-        self.assertGreater(hue(palette['leaf1']), .25)
-        self.assertLess(hue(palette['leaf1']), .45)
-        self.assertEqual(palette['pot_inlay'], palette['leaf1'])
+        # Blue and green mix through teal, without abrupt pure-color blocks.
+        hues = [hue(palette[f'leaf{i}']) for i in (1, 7, 4)]
+        self.assertGreater(hues[0], hues[1])
+        self.assertGreater(hues[1], hues[2])
+        self.assertTrue(all(.25 < h < .65 for h in hues))
+        self.assertLess(max(abs(a-b) for a, b in zip(hues, hues[1:])), .15)
+        for i in range(9):
+            rgb = [int(v) / 255 for v in re.findall(r'\d+', palette[f'leaf{i}'])[-3:]]
+            saturation = colorsys.rgb_to_hsv(*rgb)[1]
+            self.assertGreater(saturation, .2)
+            self.assertLessEqual(saturation, .72 + .01)
+        self.assertEqual(palette['pot_inlay'], palette['leaf4'])
         # A later theme change must replace both colors, independent of tree seed.
         updated = bonsai.specimen_palette(42, ['#e65773', '#e6bb57', '#e65788'])
         self.assertNotEqual(palette['leaf4'], updated['leaf4'])

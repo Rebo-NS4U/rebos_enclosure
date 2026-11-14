@@ -1435,14 +1435,27 @@ def specimen_palette(seed, leaves=None):
     separation = min(abs(hue - second_hue), 1 - abs(hue - second_hue))
     paired = saturation >= 0.08 and second_saturation >= 0.08 and separation >= 35 / 360
     for i, shift in enumerate((-0.025, 0, 0.025)):
-        leaf_hue = second_hue if paired and i == 0 else hue + shift
-        leaf_chroma = max(0.62, second_saturation) if paired and i == 0 else chroma
         for name in ("mid", "tip"):
             palette[f"shoot_{name}{i}"] = ink(hue + shift, chroma * 0.3, 0.55)
         for j, value in enumerate((0.78, 0.9, 0.98)):
+            leaf_hue, leaf_chroma = hue + shift, chroma
+            if paired:
+                # Blend light rather than jumping between two saturated inks.
+                # Every cluster includes both accents; small shade variations
+                # soften boundaries while preserving the tree's leaf texture.
+                weight = (0.25, 0.75, 0.5)[i] + (j - 1) * 0.04
+                endpoints = [colorsys.hsv_to_rgb(h, min(0.72, max(0.62, sat)), 0.9)
+                             for h, sat in ((hue, saturation), (second_hue, second_saturation))]
+                def linear(v):
+                    return v / 12.92 if v <= 0.04045 else ((v + 0.055) / 1.055) ** 2.4
+                def srgb(v):
+                    return 12.92 * v if v <= 0.0031308 else 1.055 * v ** (1 / 2.4) - 0.055
+                mixed = [srgb(linear(a) * (1 - weight) + linear(b) * weight)
+                         for a, b in zip(*endpoints)]
+                leaf_hue, leaf_chroma, _ = colorsys.rgb_to_hsv(*mixed)
             palette[f"leaf{i * 3 + j}"] = ink(leaf_hue, leaf_chroma, value)
     # The ceramic patterns repeat the crown's colors; the pot body stays quiet.
-    palette["pot_inlay"] = palette["leaf1" if paired else "leaf4"]
+    palette["pot_inlay"] = palette["leaf4"]
     palette["pot_shadow"] = palette["leaf0"]
     return palette
 
