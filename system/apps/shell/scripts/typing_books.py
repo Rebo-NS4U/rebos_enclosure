@@ -17,6 +17,11 @@ import xml.etree.ElementTree as ET
 import zipfile
 from typing_import import HTMLText, extract_raw
 
+class SaveOptions(NamedTuple):
+    revision: int | None = None
+    completed: list | None = None
+
+
 LIMIT = 20000000
 WINDOW = 90
 NOTE_CATEGORIES = ("People", "Settings", "Mysteries", "Plot", "General")
@@ -438,18 +443,18 @@ class Library:
         else: data.pop('chapters')
         return data
 
-    def save(self, key, position, typed, loops, expected_revision=None, completed=None):
+    def save(self, key, position, typed, loops, options=SaveOptions()):
         row = self.db.execute('SELECT size FROM book_catalogue WHERE id=?', (key,)).fetchone()
         if row is None: raise ValueError('Book is no longer in the library.')
         if not isinstance(position, int) or not 0 <= position < row[0]: raise ValueError('Invalid book position.')
         with self.db:
             cursor = self.db.execute('UPDATE book_progress SET position=?,typed=?,loops=?,updated=?,typed_format=?,revision=revision+1 WHERE id=? AND (? IS NULL OR revision=?)',
-                                     (position, typed[:8192], max(0, int(loops)), time.time(), int(self.typing_format), key, expected_revision, expected_revision))
+                                     (position, typed[:8192], max(0, int(loops)), time.time(), int(self.typing_format), key, options.revision, options.revision))
             if cursor.rowcount != 1:
                 raise ValueError('Progress changed in another view. Reopen this book before saving again.')
-            if completed is not None:
+            if options.completed is not None:
                 ranges = json.loads(self.db.execute('SELECT completed FROM book_progress WHERE id=?', (key,)).fetchone()[0])
-                for pair in completed:
+                for pair in options.completed:
                     if (not isinstance(pair, list) or len(pair) != 2
                             or any(type(n) is not int for n in pair)
                             or not 0 <= pair[0] <= pair[1] <= row[0]):
@@ -609,7 +614,7 @@ class Library:
         index = request['index']
         if not isinstance(index, int) or not 0 <= index < len(current['chapters']):
             raise ValueError('Choose a valid chapter.')
-        self.save(request['id'], current['chapters'][index]['position'], '', request.get('loops', current['loops']), request.get('revision'))
+        self.save(request['id'], current['chapters'][index]['position'], '', request.get('loops', current['loops']), SaveOptions(request.get('revision')))
         return self.page(request['id'])
 
 
@@ -646,7 +651,7 @@ class Library:
                     boundary = context.find(' ', 1)
                     if boundary >= 0:
                         request['position'] = min(position + boundary, current['length'] - 1)
-        self.save(request['id'], request['position'], request.get('typed', ''), request.get('loops', 0), request.get('revision'), request.get('completed'))
+        self.save(request['id'], request['position'], request.get('typed', ''), request.get('loops', 0), SaveOptions(request.get('revision'), request.get('completed')))
         return self.page(request['id'], action != 'next') if action != 'save' else {'saved': True, 'id': request['id'], 'completed': json.loads(self.db.execute('SELECT completed FROM book_progress WHERE id=?', (request['id'],)).fetchone()[0])}
 
 

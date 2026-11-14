@@ -12,11 +12,9 @@ import time
 from PIL import Image, ImageDraw, ImageFont
 
 
-def render(source, spec):
-    image = source.convert('RGB')
-    sx, sy = image.width / spec['width'], image.height / spec['height']
+def draw_operations(image, operations, sx, sy):
     draw = ImageDraw.Draw(image)
-    for op in spec['operations']:
+    for op in operations:
         points = [(p['x'] * sx, p['y'] * sy) for p in op['points']]
         color = op.get('color', '#ff5252')
         width = max(1, round(op.get('size', 4) * (sx + sy) / 2))
@@ -38,6 +36,12 @@ def render(source, spec):
         elif op['tool'] == 'text' and points:
             font = ImageFont.truetype('DejaVuSans.ttf', max(1, round(22 * sy)))
             draw.text(points[0], op['text'], fill=color, font=font, anchor='lt')
+
+
+def render(source, spec):
+    image = source.convert('RGB')
+    sx, sy = image.width / spec['width'], image.height / spec['height']
+    draw_operations(image, spec['operations'], sx, sy)
     c = spec['crop']
     box = (max(0, round(c['x']*sx)), max(0, round(c['y']*sy)),
            min(image.width, round((c['x']+c['width'])*sx)),

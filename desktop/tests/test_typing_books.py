@@ -81,7 +81,7 @@ class Books(unittest.TestCase):
         self.assertEqual(self.library.page(key)['completed'], [[0, 60], [100, 120]])
         revision = self.library.page(key)['revision']
         with self.assertRaises(ValueError):
-            self.library.save(key, 0, '', 0, revision - 1, [[60, 100]])
+            self.library.handle({'action': 'save', 'id': key, 'position': 0, 'revision': revision - 1, 'completed': [[60, 100]]})
         self.library.db.close()
         self.library = Library(self.path)
         self.assertEqual(self.library.page(key)['completed'], [[0, 60], [100, 120]])

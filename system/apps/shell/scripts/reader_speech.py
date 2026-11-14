@@ -2,6 +2,7 @@
 """Offline reader speech; network access happens only with --setup."""
 import argparse
 import base64
+import itertools
 import difflib
 import json
 import math
@@ -147,20 +148,22 @@ class TimedAudio:
     cues: list
 
 
+def phoneme_boundaries(expected, phonemes):
+    boundaries = {}
+    for _, a, b, c, d in difflib.SequenceMatcher(None, expected, phonemes, autojunk=False).get_opcodes():
+        for i in range(a, b + 1):
+            boundaries[i] = c + round((d - c) * (i - a) / max(1, b - a))
+    return boundaries
+
+
 def aligned_cues(text, phonemes, durations, phonemize, offset=0):
     """Map source words onto the phonemes actually synthesized (40 frames/sec)."""
     words = list(re.finditer(r'\S+', text))
     pieces = [phonemize(w.group()) for w in words]
-    expected = ' '.join(pieces)
     # Sentence-context pronunciation can differ from isolated words. Map those
     # boundaries onto the full utterance without changing its pronunciation.
-    boundaries = {}
-    for tag, a, b, c, d in difflib.SequenceMatcher(None, expected, phonemes, autojunk=False).get_opcodes():
-        for i in range(a, b + 1):
-            boundaries[i] = c + round((d - c) * (i - a) / max(1, b - a))
-    frames = [0.0]
-    for duration in durations:
-        frames.append(frames[-1] + float(duration) / 40)
+    boundaries = phoneme_boundaries(' '.join(pieces), phonemes)
+    frames = [0.0, *itertools.accumulate(float(duration) / 40 for duration in durations)]
     if len(durations) != len(phonemes) + 2:
         raise RuntimeError('Unexpected Kokoro phoneme timing shape.')
     cues = []
@@ -168,12 +171,12 @@ def aligned_cues(text, phonemes, durations, phonemize, offset=0):
     for word, piece in zip(words, pieces):
         begin = boundaries.get(at, 0)
         end = boundaries.get(at + len(piece), begin)
-        start16 = len(text[:word.start()].encode('utf-16-le')) // 2 + offset
-        end16 = len(text[:word.end()].encode('utf-16-le')) // 2 + offset
         if end > begin:
             # Token zero is the leading silence; punctuation/whitespace stays
             # unhighlighted until the next spoken word.
-            cues.append((frames[1 + begin], start16, end16))
+            cues.append((frames[1 + begin],
+                         len(text[:word.start()].encode('utf-16-le')) // 2 + offset,
+                         len(text[:word.end()].encode('utf-16-le')) // 2 + offset))
             cues.append((frames[1 + end], -1, -1))
         at += len(piece) + 1
     cues.append((frames[-1], -1, -1))
@@ -294,24 +297,28 @@ def store_cached_page(path, chunks):
         if temporary is not None: temporary.unlink(missing_ok=True)
 
 
-def kokoro_chunks(text, directory, profile, speed, paragraphs):
+def synthesize_sentence(engine, sentence, profile, speed, offset):
     import numpy as np
+    phonemes = engine.tokenizer.phonemize(re.sub(r'\s', ' ', sentence), 'en-us')
+    tokens = engine.tokenizer.tokenize(phonemes)
+    if len(tokens) > 510:
+        raise RuntimeError('Narration chunk exceeds Kokoro context length.')
+    samples, durations = engine.sess.run(None, {
+        'tokens': [[0, *tokens, 0]],
+        'style': engine.get_voice_style(PROFILES[profile][0])[len(tokens)],
+        'speed': np.array([speed], dtype=np.float32),
+    })
+    cues = aligned_cues(sentence, phonemes, durations.flatten(), engine.tokenizer.phonemize,
+                        offset)
+    return TimedAudio((np.clip(samples, -1, 1) * 32767).astype('<i2').tobytes(), cues)
+
+
+def kokoro_chunks(text, directory, profile, speed, paragraphs):
     from kokoro_onnx import Kokoro
     engine = Kokoro(str(timing_model(directory)), str(directory / 'kokoro/voices-v1.0.bin'))
     for start, sentence, pause in narration_units(text, paragraphs):
-        phonemes = engine.tokenizer.phonemize(re.sub(r'\s', ' ', sentence), 'en-us')
-        tokens = engine.tokenizer.tokenize(phonemes)
-        if len(tokens) > 510:
-            raise RuntimeError('Narration chunk exceeds Kokoro context length.')
-        samples, durations = engine.sess.run(None, {
-            'tokens': [[0, *tokens, 0]],
-            'style': engine.get_voice_style(PROFILES[profile][0])[len(tokens)],
-            'speed': np.array([speed], dtype=np.float32),
-        })
-        cues = aligned_cues(sentence, phonemes, durations.flatten(), engine.tokenizer.phonemize,
-                            len(text[:start].encode('utf-16-le')) // 2)
-        audio = (np.clip(samples, -1, 1) * 32767).astype('<i2').tobytes()
-        yield TimedAudio(audio, cues)
+        yield synthesize_sentence(engine, sentence, profile, speed,
+                                  len(text[:start].encode('utf-16-le')) // 2)
         if pause:
             yield bytes(round(24000 * pause / speed) * 2)
 

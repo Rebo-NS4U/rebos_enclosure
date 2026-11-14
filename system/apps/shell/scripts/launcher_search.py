@@ -119,7 +119,8 @@ def search(query, home=None):
     except ValueError:
         parsed = urlsplit("https://www.google.com")
         url = ""
-    if url and not google and not re.search(r'\s', text) and parsed.hostname and ('.' in parsed.hostname or parsed.hostname == 'localhost'):
+    is_host = bool(parsed.hostname and ('.' in parsed.hostname or parsed.hostname == 'localhost'))
+    if url and not google and not re.search(r'\s', text) and is_host:
         if parsed.scheme in ('http', 'https'):
             rows.append(row('open', 'Open ' + text, 'Default browser', url, 'web-browser'))
     term = google[1].strip() if google else text

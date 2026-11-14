@@ -74,7 +74,9 @@ Singleton {
         function status(): string {
             return JSON.stringify({opened: LyricsService.pinEdge !== "",
                 edge: LyricsService.pinEdge, screen: LyricsService.pinScreen,
-                hasLyrics: LyricsService.hasLyrics});
+                hasLyrics: LyricsService.hasLyrics, provider: LyricsService.provider,
+                synced: LyricsService.lines.length > 0, lineCount: LyricsService.lines.length,
+                bridgeMatched: LyricsService.hasLyricsPlus, status: LyricsService.status});
         }
     }
 

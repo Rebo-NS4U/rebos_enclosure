@@ -54,12 +54,12 @@ ShellRoot {
 
 # Existing animation harness also verifies the actual themed viewport and reduced motion.
 VIEW = fixtures.ANIMATION_HARNESS.replace(
-    "view.browsing = false;\n    Config.theme.animDuration = 0;",
+    "view.browsing = false;\n    Config.animDuration = 0;",
     """const follow = findItem(view, 'lyrics-follow-playback');
     if (!follow || !follow.visible) throw Error('Missing follow playback control');
     view.resume();
     if (view.browsing || follow.visible) throw Error('Follow playback did not resume');
-    Config.theme.animDuration = 0;""")
+    Config.animDuration = 0;""")
 
 TEXT_ONLY = '''import QtQuick
 import QtQuick.Window

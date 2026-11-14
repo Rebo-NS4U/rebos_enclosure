@@ -10,19 +10,30 @@ import tempfile
 from PIL import Image
 
 
-def recognize(path, region):
-    """Map logical selection coordinates to native pixels, including scaled outputs."""
+def selection_values(region):
     values = [float(region[k]) for k in ('x', 'y', 'width', 'height', 'viewWidth', 'viewHeight')]
     x, y, width, height, vw, vh = values
     if not all(math.isfinite(v) for v in values) or min(width, height, vw, vh) <= 0:
         raise ValueError('Select a larger region.')
+    return values
+
+
+def selection_box(image, values):
+    x, y, width, height, vw, vh = values
+    sx, sy = image.width / vw, image.height / vh
+    box = (max(0, math.floor(x * sx)), max(0, math.floor(y * sy)),
+           min(image.width, math.ceil((x + width) * sx)),
+           min(image.height, math.ceil((y + height) * sy)))
+    if box[2] <= box[0] or box[3] <= box[1]:
+        raise ValueError('Selection is outside the screen.')
+    return box
+
+
+def recognize(path, region):
+    """Map logical selection coordinates to native pixels, including scaled outputs."""
+    values = selection_values(region)
     with Image.open(path) as image:
-        sx, sy = image.width / vw, image.height / vh
-        box = (max(0, math.floor(x * sx)), max(0, math.floor(y * sy)),
-               min(image.width, math.ceil((x + width) * sx)),
-               min(image.height, math.ceil((y + height) * sy)))
-        if box[2] <= box[0] or box[3] <= box[1]:
-            raise ValueError('Selection is outside the screen.')
+        box = selection_box(image, values)
         with tempfile.TemporaryDirectory(prefix='enclosure-ocr-region-') as directory:
             crop = Path(directory) / 'region.png'
             image.crop(box).save(crop)

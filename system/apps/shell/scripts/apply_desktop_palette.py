@@ -137,10 +137,7 @@ def opaque_palette(p):
         result[key] = '#' + ''.join(f'{channel:02x}' for channel in channels)
     return result
 
-# Quality exception: Named color/configuration intermediates keep per-application transformations reviewable; numeric packing would obscure them.
-# Numeric ceilings are enforced by desktop/scripts/quality.py.
-def apply(p, home):  # pylint: disable=too-many-branches,too-many-locals,too-many-statements
-    p = opaque_palette(p)
+def validate_palette(p):
     required = ['background', 'surface', 'surfaceBright', 'surfaceContainer',
                 'surfaceContainerHigh', 'surfaceContainerLowest', 'overSurface',
                 'overPrimary', 'outline', 'outlineVariant', 'primary', 'secondary',
@@ -148,6 +145,13 @@ def apply(p, home):  # pylint: disable=too-many-branches,too-many-locals,too-man
     for key in required:
         if not re.fullmatch(r'#[0-9a-fA-F]{6}', p.get(key, '')):
             raise ValueError('Missing or invalid palette color: ' + key)
+
+
+# Quality exception: Named color/configuration intermediates keep per-application transformations reviewable; numeric packing would obscure them.
+# Numeric ceilings are enforced by desktop/scripts/quality.py.
+def apply(p, home):  # pylint: disable=too-many-branches,too-many-locals,too-many-statements
+    p = opaque_palette(p)
+    validate_palette(p)
     cfg = home / '.config'
     bg, fg, surface = p['background'], p['overSurface'], p['surface']
     accent, selected = p['primary'], p['overPrimary']

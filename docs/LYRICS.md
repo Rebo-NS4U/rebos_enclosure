@@ -2,12 +2,12 @@
 
 **Mod+M** toggles the media menu instead of launching Spotify. It keeps the
 menu open rather than using the two-second playback-key preview, and leaves
-the active player and playback unchanged. **Mod+Shift+T** separately toggles
+the active player and playback unchanged. **Mod+Ctrl+T** separately toggles
 the pinned lyrics overlay.
 
 The island Media Center and dashboard player include a Lyrics section. Choose
 Top or Bottom to keep a lyrics card over the desktop after closing the menu;
-Unpin closes that card. **Mod+Shift+T** toggles the pinned overlay on and off.
+Unpin closes that card. **Mod+Ctrl+T** toggles the pinned overlay on and off.
 It opens on the focused monitor, reuses the last chosen edge, and defaults to
 Bottom before a placement is chosen. Holding the key does not repeatedly toggle.
 The shortcut uses `qs ipc -p ~/.config/quickshell call lyrics toggle`. The card uses the menu's screen, follows the active
@@ -84,3 +84,35 @@ lookups keep the lyrics view hidden. `qs ipc -p ~/.config/quickshell call lyrics
 reports the clock and active/follow indices without lyric text.
 
 Regression checks: `python3 -m unittest discover -s desktop/tests -p 'test_lyrics*.py'`.
+
+## Lyrics Plus bridge
+
+The optional Spicetify Lyrics Plus integration runs its installed provider code
+inside Spotify. The shell receives only track URI, provider name, lyric text and
+line timestamps through a loopback bridge at `127.0.0.1:19837`. It accepts the
+Spotify UI origin only; it does not export tokens, cookies or account data.
+Track URI matching prevents another song's lyrics from appearing. Heartbeats
+restore the bridge after a panel reload without reloading Spotify.
+
+Install the media package group (`spicetify-cli`, `spotify-launcher`, `nodejs`),
+then run from the shell source directory:
+
+```sh
+python3 scripts/setup_lyrics_plus.py
+spicetify backup apply -n
+```
+
+The setup assembles the adapter from the package's actual Lyrics Plus provider
+files and enables both the Lyrics Plus custom app and the adapter extension.
+The `-n` flag preserves the running Spotify session. Reload Spotify when ready
+to activate them. Rebuild the adapter after a Spicetify package upgrade. This
+was prepared against Spicetify 2.46.4 and Spotify from spotify-launcher.
+
+The adapter tries Spotify, LRCLIB, Musixmatch (only when a token was configured
+in Lyrics Plus), then NetEase. The existing shell lookup remains available when
+the bridge has no result. Native Spotify lyrics from Lyrics Plus take priority.
+Karaoke word timing is not exported; line timing and plain text are supported.
+Provider availability and account/region restrictions still apply. Configure
+Lyrics Plus inside Spotify for any provider credentials; never put those in
+shell configuration. `qs ipc -p ~/.config/quickshell call lyrics status` reports
+provider and line counts without printing lyrics or credentials.

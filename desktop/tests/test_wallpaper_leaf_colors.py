@@ -43,14 +43,21 @@ class WallpaperLeafColors(unittest.TestCase):
                     if mode == 'dark':
                         inks = tree['specimen_palette'](42, [p[k] for k in
                                                               ('primary', 'secondary', 'tertiary')])
-                        for role, leaf in [('primary', 'leaf4'), ('secondary', 'leaf1'),
-                                           ('tertiary', 'leaf7')]:
-                            actual = '#' + ''.join(f'{int(v):02x}' for v in
-                                                   re.findall(r'\d+', inks[leaf])[-3:])
-                            # Re-reading an 8-bit accent can shift the hue by one channel.
-                            for i in (1, 3, 5):
-                                self.assertLessEqual(abs(int(p[role][i:i+2], 16)
-                                                         - int(actual[i:i+2], 16)), 1)
+                        # The renderer preserves primary and borrows 6%/14% of
+                        # secondary in linear light for neighboring clusters.
+                        def linear(v):
+                            return v / 12.92 if v <= .04045 else ((v + .055) / 1.055) ** 2.4
+                        def srgb(v):
+                            return 12.92 * v if v <= .0031308 else 1.055 * v ** (1 / 2.4) - .055
+                        primary = [int(p['primary'][i:i+2], 16)/255 for i in (1, 3, 5)]
+                        secondary = [int(p['secondary'][i:i+2], 16)/255 for i in (1, 3, 5)]
+                        saturated = colorsys.rgb_to_hsv(*primary)[1] >= .08
+                        for weight, leaf in [(0, 'leaf4'), (.06, 'leaf1'), (.14, 'leaf7')]:
+                            weight = weight if saturated else 0
+                            expected = [round(srgb(linear(a)*(1-weight) + linear(b)*weight)*255)
+                                        for a, b in zip(primary, secondary)]
+                            actual = [int(v) for v in re.findall(r'\d+', inks[leaf])[-3:]]
+                            self.assertEqual(actual, expected)
                         accents.append(p['primary'])
             self.assertEqual(len(set(accents)), 3)
 

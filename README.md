@@ -13,8 +13,8 @@ Source is grouped into **`config/`** (shipped defaults) and **`system/`** (manag
 
 [Download latest release](https://github.com/Rebo-NS4U/rebos_enclosure/releases/latest) · [Installation guide](desktop/README.md) · [Package list](desktop/packages/README.md)
 
-[v1.7.1 release notes](docs/RELEASE-v1.7.1.md): repository review inside GitHub Settings,
-with the standalone development app removed.
+[v1.8.0 release notes](docs/RELEASE-v1.8.0.md): Frosted Glass themes, screen text selection,
+reader improvements, synced lyrics and faster media playback.
 
 ## Screenshots
 
@@ -73,8 +73,8 @@ After installation, reboot and choose **Niri**. **Super+Return** opens Kitty, **
 To install a specific release, use its exact tag:
 
 ```bash
-bash install.sh --release v1.7.1 --interactive --dry-run
-bash install.sh --release v1.7.1
+bash install.sh --release v1.8.0 --interactive --dry-run
+bash install.sh --release v1.8.0
 ```
 
 The selector also works with `desktop/install.sh`. Missing tags stop installation;
@@ -114,8 +114,8 @@ After this one-time refresh, future updates fetch the current engine automatical
 To update to a specific release:
 
 ```bash
-./update.sh --release v1.7.1 --dry-run
-./update.sh --release v1.7.1
+./update.sh --release v1.8.0 --dry-run
+./update.sh --release v1.8.0
 ```
 
 Use the exact tag from [GitHub releases](https://github.com/Rebo-NS4U/rebos_enclosure/releases).

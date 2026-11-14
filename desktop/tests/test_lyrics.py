@@ -43,6 +43,14 @@ ShellRoot {
    function check(ok, message) { if (!ok) throw Error(message); }
    check(LyricsService.lines.length === 2 && LyricsService.currentLine === 0 && LyricsService.provider === 'Spotify', 'Player priority');
    check(LyricsService.hasLyrics, 'Supplied lyrics available');
+   const oldPlayer = MprisController.activePlayer;
+   MprisController.activePlayer = {dbusName: 'test', identity: 'Spotify', metadata: {'xesam:url': 'https://open.spotify.com/track/1234567890123456789012'}, trackAlbum: ''};
+   LyricsService.lyricsPlus = {uri: 'spotify:track:1234567890123456789012', provider: 'Lyrics Plus · Spotify', synced: true, lines: [{time: 1.5, text: 'Native lyrics'}]};
+   check(LyricsService.hasLyricsPlus && LyricsService.provider === 'Lyrics Plus · Spotify' && LyricsService.lines[0].time === 1.5, 'Lyrics Plus supplies native timings');
+   LyricsService.lyricsPlus = {uri: 'spotify:track:0000000000000000000000', synced: true, lines: [{time: 1, text: 'Other song'}]};
+   check(!LyricsService.hasLyricsPlus, 'Bridge lyrics for another song rejected');
+   MprisController.activePlayer = oldPlayer;
+   LyricsService.refresh();
    const originalFactory = LyricsService.createRequest;
    LyricsService.createRequest = () => { throw Error('Spotify-provided lyrics must not start LRCLIB'); };
    LyricsService.refresh();
@@ -165,7 +173,7 @@ ShellRoot {
  onTriggered: {
   try {
    if (phase === 0) {
-    Config.theme.animDuration = 300;
+    Config.animDuration = 300;
     LyricsService.apply('[00:00]First line\\n[00:02]Second line\\n[00:04]Current third line\\n[00:06]Fourth line\\n[00:08]Fifth line', 'Test', false);
     MprisController.position = 0; phase++; return;
    }
@@ -190,7 +198,7 @@ ShellRoot {
    if (phase === 4) {
     if (view.followPosition !== initialY) throw Error('Auto-follow interrupted manual browsing');
     view.browsing = false;
-    Config.theme.animDuration = 0;
+    Config.animDuration = 0;
     MprisController.position = 0;
     interval = 80; phase++; return;
    }
@@ -223,6 +231,8 @@ class Lyrics(unittest.TestCase):
                 shutil.copytree(APP / name, root / name)
             (root / 'modules/services/MprisController.qml').write_text(PLAYER)
             (root / 'shell.qml').write_text(harness)
+            (root / 'scripts').mkdir()
+            (root / 'scripts/lyrics_plus_bridge.py').write_text('import time; time.sleep(60)')
             (root / 'runtime').mkdir(mode=0o700)
             env = dict(os.environ, HOME=str(root), XDG_RUNTIME_DIR=str(root / 'runtime'),
                        QT_QPA_PLATFORM='offscreen', QT_QUICK_BACKEND='software', QT_QPA_PLATFORMTHEME='basic')

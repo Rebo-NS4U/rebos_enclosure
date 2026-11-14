@@ -1,10 +1,34 @@
 pragma Singleton
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import "Lyrics.js" as Lyrics
 
 Singleton {
     id: root
+    property var lyricsPlus: ({})
+    readonly property string spotifyId: {
+        const metadata = player?.metadata || {};
+        const value = String(metadata["xesam:url"] || metadata["mpris:trackid"] || "");
+        const match = /(?:spotify:track:|open.spotify.com\/track\/|\/track\/)([A-Za-z0-9]{22})/.exec(value);
+        return match ? match[1] : "";
+    }
+    readonly property bool hasLyricsPlus: spotifyId !== "" && lyricsPlus.uri === "spotify:track:" + spotifyId
+        && Array.isArray(lyricsPlus.lines) && lyricsPlus.lines.some(line => line.text.trim())
+    Process {
+        command: ["python3", Quickshell.shellPath("scripts/lyrics_plus_bridge.py")]
+        running: true
+        stdout: SplitParser {
+            onRead: data => {
+                try {
+                    const value = JSON.parse(data);
+                    if (JSON.stringify(value) !== JSON.stringify(root.lyricsPlus)) root.lyricsPlus = value;
+                } catch (_) {}
+            }
+        }
+    }
+    onHasLyricsPlusChanged: if (hasLyricsPlus) refresh()
+    onLyricsPlusChanged: if (hasLyricsPlus) refresh()
     property string pinEdge: ""
     property string lastPinEdge: "bottom"
     property string pinScreen: ""
@@ -64,6 +88,14 @@ Singleton {
         plain = ""; lines = []; provider = "";
         if (!player || !MprisController.trackTitle) {
             status = "Play a song to see lyrics."; return;
+        }
+        if (hasLyricsPlus) {
+            lyricsKey = trackKey;
+            lines = lyricsPlus.synced ? lyricsPlus.lines : [];
+            plain = lyricsPlus.lines.map(line => line.text).join("\n");
+            provider = lyricsPlus.provider;
+            status = "";
+            return;
         }
         if (supplied) {
             apply(supplied, player.identity || "Player", false); return;
