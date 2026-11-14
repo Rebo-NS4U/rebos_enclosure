@@ -301,6 +301,31 @@ class BonsaiGrowTests(unittest.TestCase):
                     accents = [char in bonsai.POT_ACCENT_MARKS for char in row]
                     self.assertEqual(accents, accents[::-1])
 
+    def test_trunk_vine_grows_in_bark_without_covering_other_details(self):
+        visible = 0
+        for seed in range(24):
+            path = bonsai.trunk_vine(seed)
+            self.assertEqual(path, bonsai.trunk_vine(seed))
+            for a, b in zip(path, path[1:]):
+                self.assertEqual(a[1] - b[1], 1)
+                self.assertLessEqual(abs(a[0] - b[0]), 1)
+            bark = [[('·', 'bark') for _ in range(57)] for _ in range(24)]
+            early = [row[:] for row in bark]
+            bonsai.add_trunk_vine(early, seed, 10)
+            self.assertEqual(early, bark)
+            bonsai.add_trunk_vine(bark, seed, 30)
+            self.assertTrue(any(ink == 'vine_leaf' for row in bark for glyph, ink in row))
+            blocked = [[('◆', 'leaf1') for _ in range(57)] for _ in range(24)]
+            before = [row[:] for row in blocked]
+            bonsai.add_trunk_vine(blocked, seed, 30)
+            self.assertEqual(blocked, before)
+            canvas = bonsai.specimen_canvas(30, seed)
+            visible += sum(ink.startswith('vine') for row in canvas for glyph, ink in row)
+        self.assertGreater(visible, 24)
+        palette = bonsai.specimen_palette(0)
+        self.assertEqual(palette['vine'], palette['leaf0'])
+        self.assertEqual(palette['vine_leaf'], palette['leaf1'])
+
     def test_background_greeting_uses_original_sprout_growth(self):
         from unittest.mock import patch
         with patch.object(bonsai, 'specimen_canvas', wraps=bonsai.specimen_canvas) as canvas, \

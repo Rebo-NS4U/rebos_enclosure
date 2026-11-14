@@ -1484,6 +1484,48 @@ def add_trunk_scar(canvas, seed, days):
                 break
 
 
+@functools.lru_cache(maxsize=64)
+def trunk_vine(seed):
+    """A fixed climbing tendril follows the mature trunk's sheltered interior."""
+    bark = {(x, y) for x, y, born, glyph, ink in stem(30, seed)
+            if ink == "bark" and 8 <= y <= 17}
+    centers = trunk_path(seed)
+    phase = random.Random(f"{seed}:vine").uniform(0, math.tau)
+    path = []
+    previous = None
+    for index, y in enumerate(range(17, 7, -1)):
+        candidates = [x for x, py in bark if py == y
+                      and (previous is None or abs(x - previous) <= 1)]
+        if not candidates:
+            if path:
+                break
+            continue
+        target = centers[18 - y] + math.sin(phase + index * 0.9)
+        x = min(candidates, key=lambda px: (abs(px - target), px))
+        glyph = "│" if previous is None or x == previous else "╱" if x > previous else "╲"
+        path.append((x, y, glyph, 12 + index * 1.1))
+        previous = x
+    return tuple(path)
+
+
+def add_trunk_vine(canvas, seed, days):
+    """Grow a fine colored vine and alternating tiny leaves inside the bark."""
+    path = trunk_vine(seed)
+    reserved = {(x, y) for x, y, glyph, born in path}
+    for index, (x, y, glyph, born) in enumerate(path):
+        if days < born or canvas[y][x][1] != "bark":
+            continue
+        canvas[y][x] = (glyph, "vine")
+        if index % 3 == 1 and days >= born + 1:
+            # Keep the silhouette intact and leave scars, knots and crown alone.
+            side = 1 if (index // 3) % 2 else -1
+            nx = x + side
+            if (nx, y) not in reserved and canvas[y][nx][1] == "bark":
+                canvas[y][nx] = ("❧", "vine_leaf")
+            else:
+                canvas[y][x] = ("❧", "vine_leaf")
+
+
 def seat_tree_in_pot(canvas, days):
     """Join the root flare to the front rim without a dotted ground texture."""
     base = [
@@ -1649,6 +1691,8 @@ def specimen_palette(seed, leaves=None):
     for role, color in zip(("pot_inlay", "pot_pattern"), leaves[:2]):
         rgb = [int(color[i:i + 2], 16) for i in (1, 3, 5)]
         palette[role] = "\033[0;38;2;{};{};{}m".format(*rgb)
+    palette["vine"] = palette["leaf0"]
+    palette["vine_leaf"] = palette["leaf1"]
     palette["blossom"] = palette["pot_pattern"]
     palette.update(ceramic_palette(tuple(leaves)))
     return palette
@@ -1690,6 +1734,7 @@ def specimen_canvas(days, seed, style="informal", pot_seed=None):
     seat_tree_in_pot(canvas, days)
     if style == "informal":
         outline_exposed_wood(canvas)
+        add_trunk_vine(canvas, seed, days)
     return canvas
 
 
