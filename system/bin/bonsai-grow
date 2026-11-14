@@ -1162,7 +1162,7 @@ def frame_rows(rows, columns, accents, color):
     """The original double-line frame with themed gradient rails and quiet sides."""
     width = 57
     reset = "\033[0m" if color else ""
-    margin = " " * max(0, (min(columns, 90) - width - 2) // 2)
+    margin = " " * max(0, (columns - width - 2) // 2)
 
     def blend(first, second, amount, brightness):
         if not color:
