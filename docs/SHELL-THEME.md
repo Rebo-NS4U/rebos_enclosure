@@ -87,13 +87,13 @@ is unavailable.
 
 The terminal bonsai reads the current effective accents on every render. When
 primary and secondary are distinct, its foliage uses both hues and the ceramic
-inlay uses the exact main color with sparse accent highlights (usually 3:1). The pot body, rim, foot and
-straight separators retain their dark ceramic tones. Existing printed terminal output stays as drawn;
+pot uses a single fine main-color band and one small accent-colored center seal. The pot body, rim and foot
+retain their dark ceramic tones. Existing printed terminal output stays as drawn;
 new greetings and animation frames use the current palette.
 
-Bonsai foliage keeps the main hue on most leaves. Narrow, seed-stable streaks
-and small patches use the accent hue directly, covering roughly 15% of the
-crown. Both colors retain the same leaf lighting and shading; they are no longer
+Bonsai foliage keeps the main hue on most leaves. Irregular, seed-stable
+patches use the accent hue directly, with broken edges and varied sizes instead
+of repeating diagonal streaks. Both colors retain the same leaf lighting and shading; they are no longer
 mixed into a third hue across every cluster.
 
 Mature foliage uses pointed leaf faces around fuller interior clusters, with
