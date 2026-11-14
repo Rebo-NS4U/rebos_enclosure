@@ -1400,14 +1400,20 @@ def wood_palette(seed, leaves=None):
                     for value, shift, leaf in zip(base, tint, rgb))
         for name, base in zip(("bark", "wood", "woodlight"), family)
     }
+    shade = rng.uniform(0.9, 1.0)
     for name, rgb in colors.items():
         h, sat, value = colorsys.rgb_to_hsv(*(channel / 255 for channel in rgb))
         if wood_hue is not None:
             h = wood_hue
             sat = max(sat, 0.55)
         colors[name] = tuple(round(channel * 255) for channel in
-                             colorsys.hsv_to_rgb(h, sat * 0.5 if saturation >= 0.08 else 0, value * 0.48))
-    colors["scar"] = tuple(round(value * 0.72) for value in colors["bark"])
+                             colorsys.hsv_to_rgb(h, sat * 0.5 if saturation >= 0.08 else 0, value * 0.48 * shade))
+    # A colored seam between bark and heartwood, rather than a black groove.
+    colors["scar"] = tuple(round(bark * 0.55 + wood * 0.45)
+                           for bark, wood in zip(colors["bark"], colors["wood"]))
+    for name in ("bark", "wood"):
+        colors[f"{name}_grain"] = tuple(round(base * 0.65 + light * 0.35)
+                                         for base, light in zip(colors[name], colors["woodlight"]))
     return {name: "\033[0;38;2;{};{};{}m".format(*rgb)
             for name, rgb in colors.items()}
 
@@ -1489,9 +1495,14 @@ def render(
     output = []
     visible = canvas if fixed_height else canvas[min(occupied) : max(occupied) + 1]
     first_row = 0 if fixed_height else min(occupied)
+    grain_phase = random.Random(f"{seed}:wood-grain").uniform(0, math.tau)
     for y, row in enumerate(visible, first_row):
         parts, previous = [], None
         for x, (glyph, ink) in enumerate(row):
+            if color and ink in ("wood", "bark"):
+                # Broad stable bands vary the whole trunk without changing its shape.
+                if math.sin(x * 0.85 + y * 0.4 + grain_phase) > 0.25:
+                    ink += "_grain"
             if color and ink != previous:
                 parts.append(palette[ink])
             parts.append(glyph)

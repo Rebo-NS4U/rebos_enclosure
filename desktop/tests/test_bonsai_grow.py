@@ -316,7 +316,7 @@ class BonsaiGrowTests(unittest.TestCase):
             self.assertEqual(palette, bonsai.wood_palette(seed))
             palettes.add(tuple(palette.values()))
             brightness = []
-            for name in ('scar', 'bark', 'wood', 'woodlight'):
+            for name in ('bark', 'scar', 'wood', 'woodlight'):
                 rgb = list(map(int, re.findall(r'\d+', palette[name])[-3:]))
                 self.assertTrue(all(0 <= value <= 255 for value in rgb))
                 brightness.append(sum(rgb))
@@ -398,6 +398,20 @@ class BonsaiGrowTests(unittest.TestCase):
                     rgb = map(int, re.findall(r'\d+', palette[name])[-3:])
                     value = colorsys.rgb_to_hsv(*(channel / 255 for channel in rgb))[2]
                     self.assertLessEqual(value, 0.48)
+
+    def test_trunk_color_variation_is_not_a_black_slit(self):
+        import re
+        def rgb(ink):
+            return list(map(int, re.findall(r'\d+', ink)[-3:]))
+        for seed in range(40):
+            palette = bonsai.specimen_palette(seed, ['#50bb40'] * 3)
+            bark, scar, wood = (rgb(palette[name]) for name in ('bark', 'scar', 'wood'))
+            self.assertTrue(all(b <= s <= w for b, s, w in zip(bark, scar, wood)))
+            self.assertNotEqual(bark, scar)
+            image = bonsai.render(30, seed)
+            self.assertTrue(any(bonsai.specimen_palette(seed)[name] in image
+                                for name in ('wood_grain', 'bark_grain')))
+            self.assertEqual(image, bonsai.render(30, seed))
 
     def test_terminal_colors_follow_theme_without_rewriting_state(self):
         import json
