@@ -349,6 +349,26 @@ class BonsaiGrowTests(unittest.TestCase):
                                  bonsai.wood_palette(42, ['#6080dc'] * 3))
                 self.assertIn(bonsai.wood_palette(42)['wood'], bonsai.render(30, 42))
 
+    def test_green_leaves_get_brown_wood_and_red_leaves_get_red_wood(self):
+        import colorsys
+        import re
+        for seed in range(100):
+            for leaf, brown in (('#40bb30', True), ('#dd3030', False)):
+                palette = bonsai.specimen_palette(seed, [leaf] * 3)
+                for name in ('bark', 'wood', 'woodlight'):
+                    rgb = map(int, re.findall(r'\d+', palette[name])[-3:])
+                    hue, saturation, value = colorsys.rgb_to_hsv(*(v / 255 for v in rgb))
+                    if brown:
+                        self.assertGreater(hue, 0.04)
+                        self.assertLess(hue, 0.1)
+                    else:
+                        self.assertLess(min(hue, 1 - hue), 0.03)
+                    self.assertGreater(saturation, 0.2)
+                    self.assertLessEqual(value, 0.48)
+        mixed = ['#bb9999', '#ee2222', '#408040']
+        self.assertEqual(bonsai.wood_palette(42, mixed),
+                         bonsai.wood_palette(42, ['#ee2222'] * 3))
+
     def test_leaves_have_priority_over_all_supporting_colors(self):
         import colorsys
         import re
