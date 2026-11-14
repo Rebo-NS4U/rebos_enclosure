@@ -87,3 +87,7 @@ Paired bonsai foliage blends both accents in linear RGB light across every
 leaf cluster, with intermediate shades and restrained saturation. The main
 foliage groups retain 85% of their original accent, with a softer midpoint shade. This softens
 color boundaries while retaining leaf highlights and the current wallpaper hues.
+
+Mature foliage uses pointed leaf faces around fuller interior clusters, with
+sparse small tips on the rim. Seed-stable dapple places highlights on the upper
+shoulder and shadows beneath each spray without changing canopy geometry.

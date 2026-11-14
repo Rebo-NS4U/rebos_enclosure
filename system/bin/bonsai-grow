@@ -787,18 +787,20 @@ def natural_specimen(seed, days):
                 ):
                     continue
                 birth = arrival + 0.5 + math.hypot(x - cx, (y - cy) * 1.5) * 0.35
-                # Broad trefoil clusters fill sprays; diamond leaves shape the
-                # rim. Small dots belong to opening buds, not mature foliage.
+                # Pointed leaf faces surround fuller interior clusters. Shared
+                # patches keep their texture coherent rather than speckled.
                 patch = random.Random(
                     f"{seed}:leaf-patch:{index}:{x // 3}:{y // 2}"
                 ).random()
-                weights = (8, 2, 0) if distance < 0.65 and patch < 0.65 else (5, 4, 0)
+                weights = (5, 5, 0) if distance < 0.65 and patch < 0.65 else (2, 8, 0)
                 if distance > 0.85:
-                    weights = (2, 7, 0)
+                    weights = (1, 9, 0)
                 glyph = texture.choices(("♣", "◆", "●"), weights)[0]
                 # Light falls from the upper left, with a continuous dark underside.
-                light = ny + nx * 0.22
-                shade = 2 if light < -0.25 else 0 if light > 0.3 else 1
+                # Broad, seed-stable dapple gives each spray a rounded lit
+                # shoulder instead of a flat stripe of bright leaves.
+                light = ny + nx * 0.22 + 0.12 * math.sin(nx * 5 + index)
+                shade = 2 if light < -0.4 else 0 if light > 0.25 else 1
                 if birth <= days + 1:
                     candidates[(x, y)] = (
                         x,
@@ -840,8 +842,10 @@ def natural_specimen(seed, days):
         )
         if ink.startswith("leaf") and edge and (x, y) not in woody:
             texture = random.Random(f"{seed}:leaf-edge:{x}:{y}")
-            if texture.random() < 0.45:
-                glyph = texture.choice(("•", "·"))
+            if texture.random() < 0.25:
+                # A few small tips soften the outline without dissolving it
+                # into dust-sized dots. Most rim leaves retain a pointed face.
+                glyph = "•"
         result.append((x, y, birth, glyph, ink))
     return result
 
