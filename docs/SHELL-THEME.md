@@ -91,10 +91,10 @@ inlay uses the exact main color with sparse accent highlights (usually 3:1). The
 straight separators retain their dark ceramic tones. Existing printed terminal output stays as drawn;
 new greetings and animation frames use the current palette.
 
-Paired bonsai foliage blends both accents in linear RGB light across every
-leaf cluster, with a main-dominant blend and restrained accent highlights. The main
-color contributes about two thirds of the foliage blend overall; the accent
-adds visible variation while the main hue stays dominant.
+Bonsai foliage keeps the main hue on most leaves. Narrow, seed-stable streaks
+and small patches use the accent hue directly, covering roughly 15% of the
+crown. Both colors retain the same leaf lighting and shading; they are no longer
+mixed into a third hue across every cluster.
 
 Mature foliage uses pointed leaf faces around fuller interior clusters, with
 sparse small tips on the rim. Seed-stable dapple places highlights on the upper
