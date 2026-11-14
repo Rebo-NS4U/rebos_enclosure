@@ -486,7 +486,7 @@
   "system/apps/shell/modules/notifications/NotificationToastStack.qml": "a2f2b333336e687d81724208dd093585e76a30e6cd4734a97973a14a9b86c5f7",
   "system/apps/shell/modules/notifications/notification_utils.js": "2d16e85725a7642c00517919790528247772dc3a2db3e6a5d92b8157a6e6f776",
   "system/apps/shell/modules/screenshot/ScreenshotController.qml": "f613ecdbdc4e7ea42e0eb6121f9d3dd99c15152d2c9ffa21875079eeff9a286b",
-  "system/apps/shell/modules/screenshot/ScreenshotOverlay.qml": "ec221c0cbacd1ba79354d1df434d79370a79d4d55fd87a5121dd36ff53d2ad1b",
+  "system/apps/shell/modules/screenshot/ScreenshotOverlay.qml": "b231f1b1e66bfa4acebdb7b1bd123a3f82e445af6754db43d27a6a26c9158bcd",
   "system/apps/shell/modules/services/Ai.qml": "852af1078e09eef6c08ad3bd606cf856412d9b6f2ced380e2e90f48bc0fd224c",
   "system/apps/shell/modules/services/AiQuestions.js": "a3cc7e2c78e43281cef6f2b54a0863b360714c5b50cd5273060c1f9e70984d8e",
   "system/apps/shell/modules/services/AiSession.qml": "e9c344b0013ea6f9c26eac7e095ad4ca9f5aea86d0dfa59237f975325349e816",

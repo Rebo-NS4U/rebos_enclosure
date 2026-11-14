@@ -1,6 +1,8 @@
 # Screenshots
 
-Print opens the Dweebo-themed Quickshell selector and editor on the focused output.
+Print opens a full-screen frosted-glass selector on the focused output, matching
+the screen-text tool. Release a selection to morph the glass into the selected
+region over 480 ms; a blurred glass annotation toolbar appears beside it.
 Drag an area, then draw, add arrows, boxes or text, or cover sensitive content with
 opaque black redaction. Crop changes the export region; Full image resets it.
 Ink colours, Undo and Redo are available in the floating toolbar.
@@ -14,7 +16,7 @@ Ink colours, Undo and Redo are available in the floating toolbar.
 
 The `wayland-screenshot` launcher accepts `area` (default), `edit`, `screen`,
 `output` (focused screen), `window`, and `ocr`. OCR retains its existing
-slurp/tesseract clipboard flow. Personal Niri overrides take precedence over
+local Tesseract recognition with an editable glass Copy/Search card. Personal Niri overrides take precedence over
 shipped defaults and should call the launcher to use the editor.
 
 The UI process stays loaded between captures, using `system/apps/shell/screenshot.qml`, sharing the shell's

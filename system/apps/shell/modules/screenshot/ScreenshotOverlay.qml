@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Effects
 import Quickshell
 import Quickshell.Wayland
 import qs.modules.components
@@ -17,7 +18,16 @@ PanelWindow {
     WlrLayershell.namespace: "enclosure:screenshot"
     WlrLayershell.keyboardFocus: visible ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     mask: Region { item: keyboard }
-    color: "#181818"
+    color: "transparent"
+    property bool selectionConfirmed: false
+    property bool dragging: false
+    property bool controlsRevealed: false
+    onSelectionConfirmedChanged: {
+        controlsRevealed = false;
+        if (selectionConfirmed) revealControls.restart();
+        else revealControls.stop();
+    }
+    Timer { id: revealControls; interval: 480; onTriggered: root.controlsRevealed = true }
     property bool selectionInitialized: false
     property string tool: "crop"
     property string ink: "#ff5252"
@@ -45,11 +55,13 @@ PanelWindow {
     }
     function fullImage() {
         crop = {x: 0, y: 0, width: scene.width, height: scene.height};
+        selectionConfirmed = true;
         tool = "arrow"; hint = "Annotate, then copy or save";
     }
     onVisibleChanged: {
         if (visible) {
             operations = []; redoStack = []; draft = null; tool = "crop";
+            selectionConfirmed = false; dragging = false;
             textEntry.visible = false; textInput.text = "";
             crop = {x: 0, y: 0, width: 0, height: 0};
             hint = "Drag to select an area";
@@ -87,10 +99,57 @@ PanelWindow {
             source: root.controller.imagePath ? "file://" + root.controller.imagePath : ""
             fillMode: Image.PreserveAspectFit
             cache: false
+            visible: false
             onStatusChanged: {
                 if (status === Image.Ready) {
                     root.repaint();
                 }
+            }
+        }
+        MultiEffect {
+            anchors.fill: parent
+            source: capture
+            blurEnabled: true; blurMax: 32
+            blur: root.selectionConfirmed ? 0.72 : 0.24
+            brightness: root.selectionConfirmed ? -0.12 : -0.04
+            Behavior on blur { NumberAnimation { duration: 480; easing.type: Easing.OutCubic } }
+            Behavior on brightness { NumberAnimation { duration: 480 } }
+        }
+        Rectangle {
+            id: frameMask
+            width: glass.width; height: glass.height; radius: glass.radius
+            color: "white"; visible: false; layer.enabled: true
+        }
+        Rectangle {
+            id: glass
+            x: root.selectionConfirmed ? scene.x + root.crop.x : 14
+            y: root.selectionConfirmed ? scene.y + root.crop.y : 14
+            width: root.selectionConfirmed ? root.crop.width : keyboard.width - 28
+            height: root.selectionConfirmed ? root.crop.height : keyboard.height - 28
+            radius: root.selectionConfirmed ? Math.min(16, height / 5) : 28
+            color: Qt.alpha(Colors.surface, 0.22)
+            layer.enabled: true
+            layer.effect: MultiEffect { maskEnabled: true; maskSource: frameMask }
+            Behavior on x { NumberAnimation { duration: 480; easing.type: Easing.InOutCubic } }
+            Behavior on y { NumberAnimation { duration: 480; easing.type: Easing.InOutCubic } }
+            Behavior on width { NumberAnimation { duration: 480; easing.type: Easing.InOutCubic } }
+            Behavior on height { NumberAnimation { duration: 480; easing.type: Easing.InOutCubic } }
+            Behavior on radius { NumberAnimation { duration: 480 } }
+            Image {
+                x: scene.x - glass.x; y: scene.y - glass.y
+                width: scene.width; height: scene.height
+                source: capture.source; fillMode: Image.Stretch; cache: false
+                opacity: root.selectionConfirmed ? 1 : 0
+                Behavior on opacity { NumberAnimation { duration: 480 } }
+            }
+            Rectangle {
+                anchors.fill: parent; radius: glass.radius
+                gradient: Gradient {
+                    GradientStop { position: 0; color: "#18ffffff" }
+                    GradientStop { position: 0.45; color: "#02ffffff" }
+                    GradientStop { position: 1; color: "#10000000" }
+                }
+                border.color: Qt.alpha(root.selectionConfirmed ? Colors.primary : "white", 0.6)
             }
         }
         Item {
@@ -132,16 +191,15 @@ PanelWindow {
                             ctx.fillText(op.text, a.x, a.y);
                         }
                     }
-                    const c = root.crop;
-                    ctx.fillStyle = "#88000000";
-                    if (c.width < 1 || c.height < 1) ctx.fillRect(0,0,width,height);
-                    else {
-                        ctx.fillRect(0,0,width,c.y); ctx.fillRect(0,c.y+c.height,width,height-c.y-c.height);
-                        ctx.fillRect(0,c.y,c.x,c.height); ctx.fillRect(c.x+c.width,c.y,width-c.x-c.width,c.height);
-                        ctx.strokeStyle = Colors.primary; ctx.lineWidth = 2;
-                        ctx.strokeRect(c.x,c.y,c.width,c.height);
-                    }
+
                 }
+            }
+            Rectangle {
+                x: root.crop.x; y: root.crop.y
+                width: root.crop.width; height: root.crop.height
+                visible: root.dragging && root.tool === "crop"
+                radius: 8; color: Qt.alpha(Colors.primary, 0.08)
+                border.width: 2; border.color: Colors.primary
             }
             MouseArea {
                 anchors.fill: parent
@@ -151,6 +209,7 @@ PanelWindow {
                 function point(mouse) { return {x: Math.max(0, Math.min(width, mouse.x)), y: Math.max(0, Math.min(height, mouse.y))}; }
                 onPressed: mouse => {
                     keyboard.forceActiveFocus();
+                    root.dragging = true;
                     const p = point(mouse); start = Qt.point(p.x, p.y);
                     if (root.tool === "text") {
                         textEntry.at = p; textEntry.visible = true; textInput.forceActiveFocus();
@@ -172,47 +231,75 @@ PanelWindow {
                     root.repaint();
                 }
                 onReleased: mouse => {
+                    root.dragging = false;
                     if (root.draft) { root.commit(root.draft); root.draft = null; }
                     if (root.tool === "crop" && root.crop.width >= 1 && root.crop.height >= 1) {
+                        root.selectionConfirmed = true;
                         root.tool = "arrow"; root.hint = "Annotate, then copy or save";
                     }
                     root.repaint();
                 }
-                onCanceled: { root.draft = null; root.repaint(); }
+                onCanceled: { root.dragging = false; root.draft = null; root.repaint(); }
             }
         }
-        StyledRect {
+        Column {
+            anchors.horizontalCenter: parent.horizontalCenter
+            y: Math.max(90, parent.height * 0.12)
+            spacing: 12
+            opacity: !root.selectionConfirmed && !root.dragging ? 1 : 0
+            visible: opacity > 0
+            Behavior on opacity { NumberAnimation { duration: 200 } }
+            StyledText { anchors.horizontalCenter: parent.horizontalCenter; text: "SCREENSHOT"; font.pixelSize: 12; font.letterSpacing: 5; color: Colors.primary }
+            StyledText { anchors.horizontalCenter: parent.horizontalCenter; text: "Frame the moment."; font.pixelSize: 34; font.bold: true }
+            StyledText { anchors.horizontalCenter: parent.horizontalCenter; text: "Drag to select · Annotate, copy or save"; opacity: 0.75 }
+        }
+        GlassCard {
             anchors.top: parent.top; anchors.topMargin: 20
             anchors.horizontalCenter: parent.horizontalCenter
-            width: Math.min(parent.width - 40, topRow.implicitWidth + 32); height: 52
-            variant: "bg"; radius: Styling.radius(0)
+            width: Math.min(parent.width - 40, topRow.implicitWidth + 32); height: 56
             RowLayout {
                 id: topRow
                 anchors.centerIn: parent
                 StyledText { text: "Screenshot"; font.bold: true }
-                StyledText { text: root.busy ? "Exporting…" : root.controller.error || root.hint; font.pixelSize: Styling.fontSize(-2) }
-                Action { text: "Full image"; onClicked: { root.fullImage(); root.repaint(); } }
-                Action { text: "Cancel"; onClicked: root.controller.close(); enabled: !root.busy }
+                Action { text: "Full image"; enabled: !root.busy; onClicked: { root.fullImage(); root.repaint(); } }
+                Action { text: "Close"; onClicked: root.controller.close(); enabled: !root.busy }
             }
         }
-        StyledRect {
-            anchors.bottom: parent.bottom; anchors.bottomMargin: 24
-            anchors.horizontalCenter: parent.horizontalCenter
-            width: tools.width + 24
-            height: tools.implicitHeight + 20
-            variant: "bg"; radius: Styling.radius(0)
+        GlassCard {
+            id: toolbar
+            width: Math.min(920, parent.width - 48)
+            height: tools.implicitHeight + 80
+            x: Math.max(24, Math.min(parent.width - width - 24, scene.x + root.crop.x + root.crop.width / 2 - width / 2))
+            y: {
+                const below = scene.y + root.crop.y + root.crop.height + 20;
+                return below + height < parent.height - 24 ? below : Math.max(90, parent.height - height - 24);
+            }
+            opacity: root.controlsRevealed ? 1 : 0
+            visible: opacity > 0
+            enabled: root.selectionConfirmed
+            Behavior on opacity { NumberAnimation { duration: 280 } }
+            Behavior on y { NumberAnimation { duration: 480; easing.type: Easing.OutCubic } }
+            RowLayout {
+                anchors.top: parent.top; anchors.topMargin: 18
+                anchors.left: parent.left; anchors.right: parent.right
+                anchors.leftMargin: 20; anchors.rightMargin: 20
+                StyledText { text: root.busy ? "Exporting…" : root.controller.error || root.hint; font.pixelSize: 12; Layout.fillWidth: true; elide: Text.ElideRight }
+                StyledText { text: Math.round(root.crop.width) + " × " + Math.round(root.crop.height); font.pixelSize: 11; color: Colors.primary }
+            }
             Flow {
                 id: tools
-                anchors.centerIn: parent
-                width: Math.min(820, root.width - 48)
-                spacing: Styling.spacing(6)
+                anchors.left: parent.left; anchors.bottom: parent.bottom
+                anchors.margins: 16
+                width: parent.width - 32
+                spacing: 6
+                enabled: !root.busy
                 Repeater {
                     model: [{label:"Crop",tool:"crop"},{label:"Draw",tool:"pen"},{label:"Arrow",tool:"arrow"},{label:"Box",tool:"rectangle"},{label:"Text",tool:"text"},{label:"Redact",tool:"redact"}]
                     Action {
                         required property var modelData
                         text: modelData.label
                         highlighted: root.tool === modelData.tool
-                        onClicked: root.tool = modelData.tool
+                        onClicked: { root.tool = modelData.tool; if (modelData.tool === "crop") root.selectionConfirmed = false; }
                     }
                 }
                 Repeater {
@@ -232,13 +319,12 @@ PanelWindow {
                 Action { text: "Save"; enabled: root.crop.width >= 1 && !root.busy; highlighted: true; onClicked: root.exportImage("save") }
             }
         }
-        StyledRect {
+        GlassCard {
             id: textEntry
             property var at: ({x: 0, y: 0})
             visible: false
             anchors.centerIn: parent
             width: Math.min(500, parent.width-40); height: 110
-            variant: "bg"; radius: Styling.radius(0)
             ColumnLayout {
                 anchors.fill: parent; anchors.margins: 12
                 StyledText { text: "Annotation text · Enter to place" }
@@ -260,12 +346,28 @@ PanelWindow {
             }
         }
     }
-    component Action: Button {
-        id: action
-        implicitHeight: 36
-        implicitWidth: label.implicitWidth + 20
-        opacity: enabled ? 1 : .4
-        contentItem: StyledText { id: label; text: action.text; color: action.highlighted ? Colors.overPrimary : Colors.overBackground; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
-        background: Rectangle { radius: 10; color: action.highlighted ? Colors.primary : action.down ? Colors.surfaceContainerHighest : action.hovered ? Colors.surfaceContainerHigh : "transparent"; border.color: action.activeFocus ? Colors.primary : "transparent" }
+    component Action: ThemeButton {}
+    component GlassCard: Item {
+        id: card
+        Rectangle { id: cardMask; anchors.fill: parent; radius: 24; color: "white"; visible: false; layer.enabled: true }
+        Item {
+            anchors.fill: parent
+            layer.enabled: true
+            layer.effect: MultiEffect { maskEnabled: true; maskSource: cardMask }
+            MultiEffect {
+                x: -card.x; y: -card.y
+                width: keyboard.width; height: keyboard.height
+                source: capture; blurEnabled: true; blurMax: 48; blur: 1
+            }
+            Rectangle { anchors.fill: parent; radius: 24; color: Qt.alpha(Colors.surfaceContainer, 0.68) }
+            Rectangle {
+                anchors.fill: parent; radius: 24
+                gradient: Gradient {
+                    GradientStop { position: 0; color: "#18ffffff" }
+                    GradientStop { position: 1; color: "#04000000" }
+                }
+                border.color: "#40ffffff"
+            }
+        }
     }
 }

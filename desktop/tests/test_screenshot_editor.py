@@ -189,7 +189,8 @@ ShellRoot {
    frameGrab.restart();
   } catch(error) { console.log('REOPEN_FAIL '+error); Qt.quit(); }
  } }
- Timer { id: frameGrab; interval: 100; onTriggered: {
+ // Wait for the 480 ms glass morph before checking settled screenshot pixels.
+ Timer { id: frameGrab; interval: 600; onTriggered: {
   const overlay = controller.overlay;
   overlay.mask.item.grabToImage(result => {
    result.saveToFile('FOLDER/frame'+harness.cycle+'.png');
