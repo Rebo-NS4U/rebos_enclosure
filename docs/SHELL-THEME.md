@@ -84,5 +84,6 @@ inlay repeats the secondary. Existing printed terminal output stays as drawn;
 new greetings and animation frames use the current palette.
 
 Paired bonsai foliage blends both accents in linear RGB light across every
-leaf cluster, with intermediate shades and restrained saturation. This softens
+leaf cluster, with intermediate shades and restrained saturation. The main
+foliage groups retain 85% of their original accent, with a softer midpoint shade. This softens
 color boundaries while retaining leaf highlights and the current wallpaper hues.
