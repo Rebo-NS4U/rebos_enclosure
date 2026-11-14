@@ -661,7 +661,7 @@ Item {
                         StyledText {
                             Layout.fillWidth: true
                             wrapMode: Text.WordWrap
-                            text: "The full-width bar uses expanding island panels and circular brightness, volume and battery controls. Shell corner styling is configured under Theme."
+                            text: "The centered island bar uses expanding panels and circular brightness, volume and battery controls. Shell corner styling is configured under Theme."
                             font.family: Config.theme.font
                             font.pixelSize: Styling.fontSize(-1)
                             color: Colors.overSurfaceVariant

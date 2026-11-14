@@ -26,11 +26,11 @@ StyledRect {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom
         anchors.bottomMargin: Styling.fontSize(0)
-        width: parent.width - Styling.fontSize(0) * 2
+        width: Math.min(parent.width - Styling.fontSize(0) * 2, content.implicitWidth + Styling.fontSize(0) * 2)
         height: Styling.fontSize(0) * 2.6
         variant: "bg"
         backgroundOpacity: BarAppearance.panelOpacity(false)
-        radius: Styling.radius(0)
+        radius: height / 2
         border.width: BarAppearance.polished ? 1 : 0
         border.color: BarAppearance.panelBorder(false)
         StyledRect {

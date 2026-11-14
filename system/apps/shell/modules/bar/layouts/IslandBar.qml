@@ -361,7 +361,7 @@ Item {
             }
             return Math.min(420, root.width - 32);
         }
-        return Math.max(1, root.width);
+        return Math.min(Math.max(collapsedRow.implicitWidth + collapsedRow.anchors.leftMargin + collapsedRow.anchors.rightMargin, 200), Math.max(200, root.width - 32));
     }
 
     readonly property int targetHeight: {
@@ -604,7 +604,7 @@ Item {
         id: triggerStrip
         anchors.horizontalCenter: parent.horizontalCenter
         y: 0
-        width: root.width
+        width: Math.max(200, collapsedRow.implicitWidth + 28)
         height: root.triggerHeight
 
         HoverHandler {
@@ -723,7 +723,7 @@ Item {
                 id: collapsedView
                 anchors.top: parent.top
                 anchors.horizontalCenter: parent.horizontalCenter
-                width: parent.width
+                width: Math.min(parent.width, collapsedRow.implicitWidth + collapsedRow.anchors.leftMargin + collapsedRow.anchors.rightMargin)
                 height: root.islandHeight
                 visible: opacity > 0
                 opacity: (root.currentMode === "collapsed" && !root.retractingToHidden) ? 1.0 : 0.0
@@ -808,8 +808,6 @@ Item {
                         enableBorder: false
                         color: Qt.alpha(Colors.overSurfaceVariant, 0.22)
                     }
-
-                    Item { Layout.fillWidth: true }
 
                     // Clock with a quiet accent surface and a full-height click target
                     Item {
@@ -899,11 +897,6 @@ Item {
                         bar: root
                         showBackground: false
                     }
-
-                    Item { Layout.fillWidth: true }
-
-                    AudioFormatBadge { enableShadow: false }
-                    SysTray { enableShadow: false }
 
                     // Separator before controls
                     StyledRect {

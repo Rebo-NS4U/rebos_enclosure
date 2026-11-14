@@ -1,4 +1,4 @@
-"""Exercise merged bar geometry, circular controls and expanding panels offscreen."""
+"""Exercise centered bar geometry, circular controls and expanding panels offscreen."""
 import os
 from pathlib import Path
 import shutil
@@ -29,20 +29,24 @@ ShellRoot {
      tester.wait(100);
      for (const size of [1920, 1280]) {
       host.width = size; tester.wait(50);
-      if (bar.targetWidth !== size) throw Error(name + " does not span screen: " + bar.targetWidth + " / " + size + " mode=" + bar.currentMode + " width=" + bar.width + "");
+      if (bar.targetWidth <= 200 || bar.targetWidth >= size - 32)
+       throw Error(name + " should stay compact: " + bar.targetWidth);
+      const body = tester.findChild(bar, "typing-island-container");
+      if (!body || Math.abs(body.x + body.width / 2 - size / 2) > 1)
+       throw Error(name + " is not centered");
       for (const id of ["bar-volume", "bar-brightness", "bar-battery"]) {
        const control = tester.findChild(bar, id);
        if (!control || !control.flat || control.width <= 0 || control.height <= 0)
         throw Error(name + " missing circular control " + id);
        const pos = control.mapToItem(bar, 0, 0);
-       if (pos.x < 0 || pos.x + control.width > size) throw Error(id + " outside bar");
+       if (pos.x < body.x || pos.x + control.width > body.x + body.width) throw Error(id + " outside bar");
       }
       for (const mode of ["dashboard", "sound", "battery", "calendar", "apps"]) {
        bar.expand(mode); tester.wait(50);
        if (!bar.islandActive || bar.targetWidth > 540 || bar.targetHeight <= 36)
         throw Error(name + " failed to expand " + mode);
        bar.collapse(); tester.wait(50);
-       if (bar.islandActive || bar.targetWidth !== size) throw Error("Failed to collapse");
+       if (bar.islandActive || (bar.targetWidth <= 200 || bar.targetWidth >= size - 32)) throw Error("Failed to collapse: " + bar.currentMode + " width=" + bar.targetWidth);
       }
      }
      bar.destroy(); tester.wait(50);
