@@ -918,8 +918,8 @@ Item {
                         flat: true
                         meterSize: root.islandHeight
                     }
-                    BrightnessSlider {
-                        objectName: "bar-brightness"
+                    MicSlider {
+                        objectName: "bar-mic"
                         bar: root
                         flat: true
                         meterSize: root.islandHeight
