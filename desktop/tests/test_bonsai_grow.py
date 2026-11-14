@@ -328,10 +328,11 @@ class BonsaiGrowTests(unittest.TestCase):
                     self.assertEqual(seed, 123)
                     self.assertEqual(palette, [accent] * 3)
                     image = bonsai.render(30, seed, True, 80, palette)
-                    self.assertIn('\033[0;37m', image)
-                    self.assertNotIn('\033[38;2;', image)
+                    self.assertIn('\033[38;2;185;158;119m', image)
+                    pot_inlay = '\033[38;2;0;224;0m' if accent == '#00ff00' else '\033[38;2;0;0;224m'
+                    self.assertIn(pot_inlay, image)
                     self.assertNotIn('\033[48;', image)
-                    self.assertIn('\033[0;90m', image)
+                    self.assertIn('\033[38;2;151;135;112m', image)
                     self.assertEqual(state.read_text(), original)
 
     def test_branch_plans_vary_and_repeat_by_seed(self):
