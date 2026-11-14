@@ -14,9 +14,8 @@ class WallpaperPaletteTests(unittest.TestCase):
         root = Path(__file__).resolve().parents[2]
         with tempfile.TemporaryDirectory() as directory:
             target = Path(directory)
-            (target / 'theme').mkdir()
-            shutil.copyfile(root / 'system/apps/media/ui/modules/theme/Colors.qml', target / 'theme/Colors.qml')
-            (target / 'theme/qmldir').write_text('singleton Colors 1.0 Colors.qml\n')
+            shutil.copytree(root / 'system/apps/media/ui/modules/theme', target / 'modules/theme')
+            shutil.copytree(root / 'system/apps/media/ui/config', target / 'config')
             cache = target / '.cache/rebos_shell'
             cache.mkdir(parents=True)
             palette = cache / 'colors.json'
@@ -26,7 +25,7 @@ class WallpaperPaletteTests(unittest.TestCase):
             (target / 'shell.qml').write_text('''import QtQuick
 import Quickshell
 import Quickshell.Io
-import "theme" as Theme
+import qs.modules.theme as Theme
 ShellRoot {
     Process {
         id: writer
@@ -53,7 +52,7 @@ ShellRoot {
 }''')
             result = subprocess.run(['qs', '-p', str(target / 'shell.qml')],
                 env=dict(os.environ, HOME=str(target), XDG_RUNTIME_DIR=str(runtime),
-                         QT_QPA_PLATFORM='offscreen'), capture_output=True, text=True, timeout=15)
+                         XDG_CONFIG_HOME=str(target / '.config'), QT_QPA_PLATFORM='offscreen'), capture_output=True, text=True, timeout=15)
             output = result.stdout + result.stderr
             self.assertEqual(result.returncode, 0, output)
             self.assertIn('PASS: wallpaper palette', output)

@@ -33,3 +33,5 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=system/apps/media python3 -m unittest disco
 Derived QML is covered by the included AGPL-3.0 license inherited from Enclosure's shell. Preserve upstream notices when modifying bundled sources.
 
 The menu follows the shell wallpaper palette at `~/.cache/rebos_shell/colors.json` and watches for color changes. Built-in colors are used only when a palette role is unavailable.
+
+Streamer also watches Enclosure’s `rebos_shell/config/theme.json` under the XDG config directory. OLED backgrounds, surface style, transparency, fonts and other theme preferences update live. Missing settings use portable defaults; Streamer never writes shell preferences. Light mode disables OLED, matching the shell.

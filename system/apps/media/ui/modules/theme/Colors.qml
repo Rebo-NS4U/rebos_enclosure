@@ -2,6 +2,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import qs.config
 Singleton {
     id: root
     property var wallpaperPalette: ({})
@@ -26,7 +27,7 @@ Singleton {
     }
 
 
-        property color background: root.wallpaperPalette.background || "#1a1111"
+        property color background: Config.oledMode ? "#000000" : root.wallpaperPalette.background || "#1a1111"
         property color blue: root.wallpaperPalette.blue || "#cebdfe"
         property color blueContainer: root.wallpaperPalette.blueContainer || "#4c3e76"
         property color blueSource: root.wallpaperPalette.blueSource || "#0000ff"
@@ -101,14 +102,14 @@ Singleton {
         property color secondaryFixed: root.wallpaperPalette.secondaryFixed || "#ffdad7"
         property color secondaryFixedDim: root.wallpaperPalette.secondaryFixedDim || "#e7bdb9"
         property color shadow: root.wallpaperPalette.shadow || "#000000"
-        property color surface: root.wallpaperPalette.surface || "#1a1111"
+        property color surface: Config.oledMode ? Qt.rgba(0.06, 0.06, 0.06, 1) : root.wallpaperPalette.surface || "#1a1111"
         property color surfaceBright: root.wallpaperPalette.surfaceBright || "#423736"
         property color surfaceContainer: root.wallpaperPalette.surfaceContainer || "#271d1d"
         property color surfaceContainerHigh: root.wallpaperPalette.surfaceContainerHigh || "#322827"
         property color surfaceContainerHighest: root.wallpaperPalette.surfaceContainerHighest || "#3d3231"
         property color surfaceContainerLow: root.wallpaperPalette.surfaceContainerLow || "#231919"
-        property color surfaceContainerLowest: root.wallpaperPalette.surfaceContainerLowest || "#140c0c"
-        property color surfaceDim: root.wallpaperPalette.surfaceDim || "#1a1111"
+        property color surfaceContainerLowest: Config.oledMode ? "#000000" : root.wallpaperPalette.surfaceContainerLowest || "#140c0c"
+        property color surfaceDim: Config.oledMode ? "#000000" : root.wallpaperPalette.surfaceDim || "#1a1111"
         property color surfaceTint: root.wallpaperPalette.surfaceTint || "#ffb3ae"
         property color surfaceVariant: root.wallpaperPalette.surfaceVariant || "#534342"
         property color tertiary: root.wallpaperPalette.tertiary || "#e2c28c"
