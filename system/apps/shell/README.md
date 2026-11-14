@@ -331,3 +331,8 @@ and `python3 desktop/tests/check_music_window.py` from the repository root. The
 second check uses a private software-rendered Wayland session and silent audio
 fixtures; it exercises playback, seeking, queue navigation, lyrics and saved
 collections without using the active desktop or library.
+
+Screen text extraction enlarges selected text, normalizes light/dark backgrounds,
+and adds padding before recognition. Tesseract uses block segmentation with word
+dictionaries disabled to better retain numbers, codes and punctuation. English
+OCR can still confuse similar glyphs and does not parse mathematical notation.

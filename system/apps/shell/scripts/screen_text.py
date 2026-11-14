@@ -7,7 +7,7 @@ import signal
 import subprocess
 import sys
 import tempfile
-from PIL import Image
+from PIL import Image, ImageOps, ImageStat
 
 
 def selection_values(region):
@@ -29,6 +29,21 @@ def selection_box(image, values):
     return box
 
 
+def prepare_text(image):
+    """Retain antialiasing and punctuation while enlarging screen text."""
+    image = ImageOps.grayscale(image)
+    # Screen selections normally contain more background than foreground.
+    if ImageStat.Stat(image).median[0] < 128:
+        image = ImageOps.invert(image)
+    image = ImageOps.autocontrast(image)
+    # Bound enlargement for full-screen selections to avoid excessive memory.
+    scale = max(1, min(3, 6000 / max(image.size)))
+    if scale > 1:
+        image = image.resize(tuple(round(size * scale) for size in image.size),
+                             Image.Resampling.LANCZOS)
+    return ImageOps.expand(image, border=20, fill=255)
+
+
 def recognize(path, region):
     """Map logical selection coordinates to native pixels, including scaled outputs."""
     values = selection_values(region)
@@ -36,8 +51,12 @@ def recognize(path, region):
         box = selection_box(image, values)
         with tempfile.TemporaryDirectory(prefix='enclosure-ocr-region-') as directory:
             crop = Path(directory) / 'region.png'
-            image.crop(box).save(crop)
-            result = subprocess.run(['tesseract', str(crop), 'stdout', '-l', 'eng'],
+            prepare_text(image.crop(box)).save(crop)
+            result = subprocess.run(['tesseract', str(crop), 'stdout', '-l', 'eng',
+                                     '--psm', '6', '--dpi', '300',
+                                     '-c', 'load_system_dawg=0',
+                                     '-c', 'load_freq_dawg=0',
+                                     '-c', 'preserve_interword_spaces=1'],
                                     check=True, capture_output=True, text=True)
     text = result.stdout.strip()
     return {'text': text, 'error': '' if text else 'No text found. Try larger text or a tighter selection.'}
