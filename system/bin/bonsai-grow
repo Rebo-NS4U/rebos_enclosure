@@ -1676,8 +1676,9 @@ def specimen_palette(seed, leaves=None):
     for role, color in zip(("pot_inlay", "pot_pattern"), leaves[:2]):
         rgb = [int(color[i:i + 2], 16) for i in (1, 3, 5)]
         palette[role] = "\033[0;38;2;{};{};{}m".format(*rgb)
-    palette["blossom"] = palette["pot_pattern"]
     palette.update(ceramic_palette(tuple(leaves)))
+    # Flowers share the rendered pot enamel, including its brightness adjustment.
+    palette["blossom"] = palette["ceramic_inlay_accent"]
     return palette
 
 

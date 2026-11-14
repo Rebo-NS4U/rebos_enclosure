@@ -976,12 +976,11 @@ class BonsaiGrowTests(unittest.TestCase):
             for i,(x,y,born) in enumerate(sites):
                 self.assertTrue(all(max(abs(x-px),abs(y-py)) >= 3 for px,py,_ in sites[i+1:]))
 
-    def test_flowers_use_the_exact_secondary_color(self):
+    def test_flowers_match_the_rendered_pot_accent(self):
         from unittest.mock import patch
         for accent in ('#57aae6', '#e5bcc4', '#15121b'):
             theme = ['#85b470', accent, '#67bca3']
-            expected = '\033[0;38;2;{};{};{}m'.format(
-                *(int(accent[i:i+2], 16) for i in (1, 3, 5)))
+            expected = bonsai.ceramic_palette(tuple(theme))['ceramic_inlay_accent']
             self.assertEqual(bonsai.specimen_palette(42, theme)['blossom'], expected)
             with patch.object(bonsai, 'terminal_leaf_palette', return_value=theme):
                 image = bonsai.render(30, 42, True, 59)
