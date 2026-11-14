@@ -113,3 +113,10 @@ slowing as it reaches maturity. Temporary juvenile leaves shrink to small tips
 before shedding. Skipping foreground playback settles to maturity over a brief
 220 ms transition instead of replacing the drawing in one final write. Normal
 completion retains the already-rendered final frame.
+
+Animated greetings now construct the mature canvas once, including bark,
+foliage, contours and ornaments, then reveal its cells along a connected
+root-to-tip schedule. Visible cells never move, disappear or receive a later
+shaping pass. Material lighting uses the finished geometry throughout. Growth
+finishes by age 28.5, leaving the final eased frames unchanged. Static age
+previews retain their biological growth model.

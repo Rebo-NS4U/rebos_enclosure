@@ -239,6 +239,36 @@ class BonsaiGrowTests(unittest.TestCase):
             designs.add(rows)
         self.assertGreaterEqual(len(designs), 16)
 
+    def test_animation_grows_final_geometry_without_reshaping(self):
+        for seed in range(24):
+            final = bonsai.specimen_canvas(30, seed)
+            previous = {}
+            for day in (0, 3, 7, 14, 20, 25, 28.5, 30):
+                canvas = bonsai.growing_canvas(day, seed)
+                visible = {(x,y):cell for y,row in enumerate(canvas[:19])
+                           for x,cell in enumerate(row) if cell[0].strip()}
+                # Every visible cell is already its finished glyph and material;
+                # none relocate, disappear, or get replaced by later shaping.
+                for point, cell in previous.items():
+                    self.assertEqual(visible.get(point), cell)
+                for (x,y), cell in visible.items():
+                    self.assertEqual(cell, final[y][x])
+                reached = {(27,18)}
+                pending = list(reached)
+                while pending:
+                    x,y = pending.pop()
+                    for dx in (-1,0,1):
+                        for dy in (-1,0,1):
+                            point = (x+dx,y+dy)
+                            if point in visible and point not in reached:
+                                reached.add(point)
+                                pending.append(point)
+                self.assertEqual(set(visible), reached)
+                previous = visible
+            self.assertEqual(bonsai.growing_canvas(28.5, seed), final)
+            self.assertEqual(bonsai.render(30, seed, True, 80, grow_final_shape=True),
+                             bonsai.render(30, seed, True, 80))
+
     def test_animation_settles_without_a_last_frame_jump(self):
         samples = [bonsai.animation_day(i / 120, 1) for i in range(121)]
         self.assertEqual(samples[0], 0)

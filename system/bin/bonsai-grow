@@ -1497,16 +1497,7 @@ def specimen_palette(seed, leaves=None):
     return palette
 
 
-def render(
-    days,
-    seed,
-    color=True,
-    columns=80,
-    accents=None,
-    style="informal",
-    fixed_height=False,
-    pot_seed=None,
-):
+def specimen_canvas(days, seed, style="informal", pot_seed=None):
     width, height = 57, 24
     canvas = [[(" ", "") for _ in range(width)] for _ in range(height)]
     # Growth starts with a rooted sapling; cells remain as new growth arrives.
@@ -1534,6 +1525,67 @@ def render(
     seat_tree_in_pot(canvas, days)
     if style == "informal":
         outline_exposed_wood(canvas)
+    return canvas
+
+
+@functools.lru_cache(maxsize=64)
+def final_growth(seed, style, pot_seed):
+    """Schedule the finished drawing from the roots; never reshape visible cells."""
+    import heapq
+    final = specimen_canvas(30, seed, style, pot_seed)
+    target = {(x, y) for y, row in enumerate(final[:19])
+              for x, (glyph, ink) in enumerate(row) if glyph.strip()}
+    requested = {}
+    for x, y, born, glyph, ink in specimen(seed, 30, style):
+        if (x, y) in target:
+            requested[x, y] = min(requested.get((x, y), 30), max(0, born - 1))
+    centers = trunk_path(seed, style)
+    for x, y, born, glyph, ink in stem(30, seed, style):
+        if (x, y) in target:
+            depth = max(0, min(len(centers) - 1, 18 - y))
+            requested[x, y] = depth / 0.7 + abs(x - centers[depth]) * 0.7
+    root = (27, 18)
+    arrivals = {root: 0.0}
+    pending = [(0.0, root)]
+    while pending:
+        age, point = heapq.heappop(pending)
+        if age != arrivals[point]:
+            continue
+        x, y = point
+        for dx in (-1, 0, 1):
+            for dy in (-1, 0, 1):
+                neighbor = (x + dx, y + dy)
+                if neighbor == point or neighbor not in target:
+                    continue
+                born = max(age + 0.10, requested.get(neighbor, age + 0.3))
+                if born < arrivals.get(neighbor, float('inf')):
+                    arrivals[neighbor] = born
+                    heapq.heappush(pending, (born, neighbor))
+    # Leave a quiet tail at the end instead of a final mass reveal.
+    scale = 28.5 / max(28.5, max(arrivals.values(), default=0))
+    return tuple(tuple(row) for row in final), {p: age * scale for p, age in arrivals.items()}
+
+
+def growing_canvas(days, seed, style="informal", pot_seed=None):
+    final, arrivals = final_growth(seed, style, pot_seed)
+    return [[cell if y >= 19 or arrivals.get((x, y), float('inf')) <= days
+             else (" ", "") for x, cell in enumerate(row)]
+            for y, row in enumerate(final)]
+
+
+def render(
+    days,
+    seed,
+    color=True,
+    columns=80,
+    accents=None,
+    style="informal",
+    fixed_height=False,
+    pot_seed=None,
+    grow_final_shape=False,
+):
+    canvas = (growing_canvas(days, seed, style, pot_seed) if grow_final_shape
+              else specimen_canvas(days, seed, style, pot_seed))
     occupied = [y for y, row in enumerate(canvas) if any(c != " " for c, _ in row)]
     # One palette gives the leaves priority and keeps every other material quiet.
     palette = specimen_palette(seed)
@@ -1542,9 +1594,10 @@ def render(
     visible = canvas if fixed_height else canvas[min(occupied) : max(occupied) + 1]
     first_row = 0 if fixed_height else min(occupied)
     grain_phase = random.Random(f"{seed}:wood-grain").uniform(0, math.tau)
+    lighting_canvas = final_growth(seed, style, pot_seed)[0] if grow_final_shape else canvas
     for y, row in enumerate(visible, first_row):
         parts, previous = [], None
-        wood_columns = [x for x, (glyph, ink) in enumerate(row)
+        wood_columns = [x for x, (glyph, ink) in enumerate(lighting_canvas[y])
                         if ink in ("wood", "bark", "woodlight", "scar") and glyph.strip()]
         wood_center = (min(wood_columns) + max(wood_columns)) / 2 if wood_columns else 27
         for x, (glyph, ink) in enumerate(row):
@@ -1600,6 +1653,7 @@ def animate_growth(seed, accents, duration=2.0, style="informal"):
             style,
             fixed_height=fixed,
             pot_seed=pot_seed,
+            grow_final_shape=True,
         )
 
     if rows < 28 or os.environ.get("REDUCE_MOTION") == "1":
@@ -1683,6 +1737,7 @@ def animate_background(seed, accents, duration, style):
             style,
             fixed_height=True,
             pot_seed=pot_seed,
+            grow_final_shape=True,
         )
         # One synchronized write saves and restores Fish's editing cursor.
         frame = "\033[?2026h\0337\033[H" + picture + "\0338\033[?2026l"
