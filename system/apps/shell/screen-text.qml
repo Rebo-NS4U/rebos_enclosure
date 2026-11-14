@@ -61,7 +61,7 @@ ShellRoot {
                         root.phase = "selecting";
                     } else {
                         root.resultText = result.text || "";
-                        root.message = result.error || "Ready to copy or search";
+                        root.message = result.error || "";
                         if (!root.selectedScreen) {
                             Quickshell.execDetached(["notify-send", "Screen text", root.message]);
                             root.finish();
@@ -212,17 +212,6 @@ ShellRoot {
                     }
                 }
             }
-            Column {
-                anchors.horizontalCenter: parent.horizontalCenter
-                y: Math.max(40, window.height * 0.12)
-                spacing: 12
-                opacity: root.phase === "selecting" && !window.dragging ? 1 : 0
-                visible: opacity > 0
-                Behavior on opacity { NumberAnimation { duration: 200 } }
-                StyledText { anchors.horizontalCenter: parent.horizontalCenter; text: "SCREEN TEXT"; font.pixelSize: 12; font.letterSpacing: 5; color: root.accent }
-                StyledText { anchors.horizontalCenter: parent.horizontalCenter; text: "Capture a thought."; font.pixelSize: 34; font.bold: true }
-                StyledText { anchors.horizontalCenter: parent.horizontalCenter; text: "Drag around any text to copy or explore it"; opacity: 0.75 }
-            }
             Rectangle {
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.bottom: parent.bottom; anchors.bottomMargin: 36
@@ -273,9 +262,8 @@ ShellRoot {
                 ColumnLayout {
                     anchors.fill: parent; anchors.margins: 22; spacing: 12
                     RowLayout {
-                        StyledText { text: root.phase === "reading" ? "Reading your selection…" : "Your text"; font.pixelSize: 20; font.bold: true }
+                        StyledText { text: root.phase === "reading" ? "Reading…" : "Text"; font.pixelSize: 20; font.bold: true }
                         Item { Layout.fillWidth: true }
-                        StyledText { text: "LOCAL OCR"; font.pixelSize: 10; font.letterSpacing: 2; color: root.accent }
                     }
                     ScrollView {
                         Layout.fillWidth: true; Layout.fillHeight: true
@@ -294,7 +282,7 @@ ShellRoot {
                             background: Rectangle { radius: 12; color: "#24000000"; border.color: "#15ffffff" }
                         }
                     }
-                    StyledText { text: root.phase === "reading" ? "Recognizing text on this device" : root.message; font.pixelSize: 11; opacity: 0.7; Layout.fillWidth: true; wrapMode: Text.Wrap }
+                    StyledText { visible: root.phase === "result" && root.message.length > 0; text: root.message; font.pixelSize: 11; opacity: 0.7; Layout.fillWidth: true; wrapMode: Text.Wrap }
                     RowLayout {
                         ThemeButton { text: "Close"; onClicked: root.finish() }
                         Item { Layout.fillWidth: true }

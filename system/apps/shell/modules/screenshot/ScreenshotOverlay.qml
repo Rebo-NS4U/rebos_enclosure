@@ -242,17 +242,6 @@ PanelWindow {
                 onCanceled: { root.dragging = false; root.draft = null; root.repaint(); }
             }
         }
-        Column {
-            anchors.horizontalCenter: parent.horizontalCenter
-            y: Math.max(90, parent.height * 0.12)
-            spacing: 12
-            opacity: !root.selectionConfirmed && !root.dragging ? 1 : 0
-            visible: opacity > 0
-            Behavior on opacity { NumberAnimation { duration: 200 } }
-            StyledText { anchors.horizontalCenter: parent.horizontalCenter; text: "SCREENSHOT"; font.pixelSize: 12; font.letterSpacing: 5; color: Colors.primary }
-            StyledText { anchors.horizontalCenter: parent.horizontalCenter; text: "Frame the moment."; font.pixelSize: 34; font.bold: true }
-            StyledText { anchors.horizontalCenter: parent.horizontalCenter; text: "Drag to select · Annotate, copy or save"; opacity: 0.75 }
-        }
         GlassCard {
             anchors.top: parent.top; anchors.topMargin: 20
             anchors.horizontalCenter: parent.horizontalCenter
