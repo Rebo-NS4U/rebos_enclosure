@@ -541,3 +541,5 @@ It does not grant permanent input-group membership. These permissions allow
 session applications to read those input devices; remove
 `/etc/udev/rules.d/70-enclosure-input-controls.rules` and reload udev rules to undo
 this optional setup.
+
+Enclosure Music defaults to Qt’s PulseAudio output through PipeWire’s compatibility server. This avoids a playback-start SIGKILL with Qt’s native PipeWire backend on affected builds. `QT_AUDIO_BACKEND` can explicitly override the launcher default. The music acceptance check uses the same default.
