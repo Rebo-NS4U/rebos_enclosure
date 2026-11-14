@@ -1159,56 +1159,13 @@ def pot_rows(seed):
 
 
 def frame_rows(rows, columns, accents, color):
-    """The original double-line frame with themed gradient rails and quiet sides."""
+    """Center the tree in terminal whitespace, retaining animation row count."""
     width = 57
-    reset = "\033[0m" if color else ""
     margin = " " * max(0, (columns - width - 2) // 2)
-
-    def blend(first, second, amount, brightness):
-        if not color:
-            return ""
-        rgb = [
-            round(
-                (
-                    int(first[k : k + 2], 16) * (1 - amount)
-                    + int(second[k : k + 2], 16) * amount
-                )
-                * brightness
-            )
-            for k in (1, 3, 5)
-        ]
-        return "\033[38;2;{};{};{}m".format(*rgb)
-
-    def rail(left, right):
-        return (
-            margin
-            + blend(accents[0], accents[0], 0, 0.9)
-            + left
-            + "".join(
-                blend(accents[0], accents[2], x / (width - 1), 0.65) + "═"
-                for x in range(width)
-            )
-            + blend(accents[2], accents[2], 0, 0.9)
-            + right
-            + reset
-        )
-
-    output = [rail("╔", "╗")]
-    for index, row in enumerate(rows):
-        position = index / max(1, len(rows) - 1)
-        brightness = 0.38 + 0.22 * abs(2 * position - 1)
-        output.append(
-            margin
-            + blend(accents[0], accents[1], position, brightness)
-            + "║"
-            + reset
-            + row
-            + blend(accents[2], accents[1], position, brightness)
-            + "║"
-            + reset
-        )
-    output.append(rail("╚", "╝"))
-    return output
+    # Keep the two reserved rows and side columns so cursor movement stays stable.
+    blank = margin + " " * (width + 2)
+    reset = "\033[0m" if color else ""
+    return [blank] + [margin + " " + row + reset + " " for row in rows] + [blank]
 
 
 def space_bark_shading(canvas, seed):
@@ -1425,79 +1382,34 @@ def render(
     if style == "informal":
         outline_exposed_wood(canvas)
     occupied = [y for y, row in enumerate(canvas) if any(c != " " for c, _ in row)]
+    # ANSI slots inherit Kitty's active theme, including runtime color changes.
+    # No background color: the tree sits directly on the terminal surface.
     palette = {
-        "wood": "\033[38;2;174;132;91m",
-        "leaf": "\033[38;2;133;180;112m",
-        "pot": "\033[38;2;135;155;166m",
-        "bark": "\033[38;2;126;91;62m",
-        "woodlight": "\033[38;2;198;156;106m",
+        "wood": "\033[0;37m",
+        "bark": "\033[0;90m",
+        "woodlight": "\033[0;97m",
+        "leaf": "\033[0;32m",
+        "pot": "\033[0;90m",
+        "pot_inlay": "\033[0;36m",
+        "pot_shadow": "\033[0;2;37m",
+        "shoot": "\033[0;37m",
+        "scar": "\033[0;90m",
+        "blossom": "\033[0;35m",
         "": "\033[0m",
     }
-    if style == "informal":
-        palette.update(
-            wood="\033[38;2;185;158;119m",
-            bark="\033[38;2;151;135;112m",
-            woodlight="\033[38;2;214;195;155m",
-        )
-    palette["shoot"] = palette["wood"]
-    palette["scar"] = "\033[38;2;98;88;73m"
-    accents = accents if valid_palette(accents) else wallpaper_palette()
-    bloom_rgb = [
-        round(int(accents[2][k : k + 2], 16) * 0.8 + 255 * 0.2) for k in (1, 3, 5)
-    ]
-    palette["blossom"] = "\033[38;2;{};{};{}m".format(*bloom_rgb)
-    for name, accent, brightness in (
-        ("pot", accents[1], 0.85),
-        ("pot_inlay", accents[0], 0.88),
-        ("pot_shadow", accents[1], 0.55),
-    ):
-        rgb = [round(int(accent[k : k + 2], 16) * brightness) for k in (1, 3, 5)]
-        palette[name] = "\033[38;2;{};{};{}m".format(*rgb)
-    for i, accent in enumerate(accents):
-        rgb_leaf = [int(accent[k : k + 2], 16) for k in (1, 3, 5)]
-        # Short petioles fade from warm wood into the leaf's saved accent.
-        for name, blend in (("mid", 0.35), ("tip", 0.7)):
-            rgb = [
-                round(wood * (1 - blend) + leaf * blend)
-                for wood, leaf in zip((185, 158, 119), rgb_leaf)
-            ]
-            palette[f"shoot_{name}{i}"] = "\033[38;2;{};{};{}m".format(*rgb)
-        # Cool reflected light in shade; warm, creamy light on the upper leaves.
-        for j, (brightness, tint, blend) in enumerate(
-            (
-                (0.55, (70, 105, 150), 0.18),
-                (0.94, (0, 0, 0), 0),
-                (1.08, (255, 231, 167), 0.23),
-            )
-        ):
-            rgb = [
-                min(255, round(leaf * brightness * (1 - blend) + light * blend))
-                for leaf, light in zip(rgb_leaf, tint)
-            ]
+    for i, slot in enumerate((32, 36, 34)):
+        for name in ("mid", "tip"):
+            palette[f"shoot_{name}{i}"] = f"\033[0;2;{slot}m"
+        for j, intensity in enumerate(("2;", "", "")):
             key = f"leaf{i * 3 + j}"
-            palette[key] = "\033[38;2;{};{};{}m".format(*rgb)
-            for variant, light in (
-                ("warm", (255, 218, 140)),
-                ("cool", (102, 159, 195)),
-            ):
-                tinted = [
-                    round(value * 0.9 + target * 0.1)
-                    for value, target in zip(rgb, light)
-                ]
-                palette[f"{key}_{variant}"] = "\033[38;2;{};{};{}m".format(*tinted)
+            palette[key] = f"\033[0;{intensity}{slot}m"
+    accents = accents if valid_palette(accents) else wallpaper_palette()
     output = []
     visible = canvas if fixed_height else canvas[min(occupied) : max(occupied) + 1]
     first_row = 0 if fixed_height else min(occupied)
     for y, row in enumerate(visible, first_row):
         parts, previous = [], None
         for x, (glyph, ink) in enumerate(row):
-            if color and ink.startswith("leaf"):
-                # Stable patches span neighboring leaves instead of flickering specks.
-                patch = random.Random(f"{seed}:leaf-light:{x // 3}:{y // 2}").random()
-                if patch < 0.22:
-                    ink += "_cool"
-                elif patch > 0.78:
-                    ink += "_warm"
             if color and ink != previous:
                 parts.append(palette[ink])
             parts.append(glyph)

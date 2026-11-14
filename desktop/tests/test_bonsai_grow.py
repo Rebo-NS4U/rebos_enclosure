@@ -140,7 +140,7 @@ class BonsaiGrowTests(unittest.TestCase):
                     self.assertTrue(any(abs(x - tx) + abs(y - ty) == 1
                                         for tx, ty in tips))
 
-    def test_buds_unfold_and_petioles_blend_into_leaf_color(self):
+    def test_buds_unfold_and_petioles_use_muted_terminal_leaf_color(self):
         glyphs = []
         for day in (0, .75, 3):
             cells = bonsai.juvenile_foliage(day, 42)
@@ -151,9 +151,9 @@ class BonsaiGrowTests(unittest.TestCase):
             self.assertTrue(any(cell[3] in '╱╲' for cell in shoots))
         self.assertEqual(glyphs, ['·', '•', '●'])
         image = bonsai.render(3, 42, True, 80, ['#00ff00'] * 3)
-        # Petioles carry intermediate colors rather than a hard wood/leaf jump.
-        self.assertIn('\033[38;2;120;192;77m', image)
-        self.assertIn('\033[38;2;56;226;36m', image)
+        # Petioles use the foliage slot at lower intensity.
+        self.assertIn('\033[0;2;36m', image)
+        self.assertIn('\033[0;36m', image)
 
 
     def test_starting_wood_has_body_and_tapers(self):
@@ -299,13 +299,16 @@ class BonsaiGrowTests(unittest.TestCase):
                                      ['#85b470'] * 3, fixed_height=True)
                 rows = image.splitlines()
                 self.assertEqual(len(rows), 26)
-                self.assertIn('╔', rows[0])
-                self.assertIn('╝', rows[-1])
+                self.assertFalse(rows[0].strip())
+                self.assertFalse(rows[-1].strip())
+                self.assertNotIn('║', image)
+                left = len(rows[0]) - 59
+                self.assertLessEqual(abs(left - (columns - len(rows[0]))), 1)
                 self.assertEqual(len({len(row) for row in rows}), 1)
                 self.assertTrue(all(len(row) <= columns for row in rows))
                 self.assertNotIn('\033', image)
 
-    def test_theme_updates_without_recoloring_wood_or_rewriting_state(self):
+    def test_terminal_colors_follow_theme_without_rewriting_state(self):
         import json
         from unittest.mock import patch
         with tempfile.TemporaryDirectory() as directory:
@@ -325,8 +328,10 @@ class BonsaiGrowTests(unittest.TestCase):
                     self.assertEqual(seed, 123)
                     self.assertEqual(palette, [accent] * 3)
                     image = bonsai.render(30, seed, True, 80, palette)
-                    self.assertIn('\033[38;2;185;158;119m', image)
-                    self.assertIn('\033[38;2;151;135;112m', image)
+                    self.assertIn('\033[0;37m', image)
+                    self.assertNotIn('\033[38;2;', image)
+                    self.assertNotIn('\033[48;', image)
+                    self.assertIn('\033[0;90m', image)
                     self.assertEqual(state.read_text(), original)
 
     def test_branch_plans_vary_and_repeat_by_seed(self):
