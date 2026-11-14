@@ -102,3 +102,8 @@ Terminal twigs have seed-stable individual inflections, with unchanged branch
 origins and endpoints. Their leaf sprays vary between compact tufts, spreading
 fans, sloping pads and hanging forms, with asymmetric clefts and directional
 lean. Connected-spray filtering keeps every cluster rooted in its twig.
+
+Mature major limbs use bends exceeding one terminal row, with stronger
+length-scaled inflections at their tips. Child forks attach to the curved
+parent path. The same skeleton is used during growth and in the final frame;
+curvature is not reduced as wood thickens.

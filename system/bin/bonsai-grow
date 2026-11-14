@@ -575,7 +575,8 @@ def branch_graph(seed):
             if lower
             else rng.uniform(0.1, 0.25)
             if habit == "twisted_juniper"
-            else rng.uniform(0.15, 0.7),
+            else min(length * 0.3, rng.uniform(1.1, 2.0) if level == 0
+                     else rng.uniform(0.65, 1.25)),
             level=level,
             leader=leader,
             lower=lower,
@@ -676,7 +677,8 @@ def branch_graph(seed):
             # Independent randomness keeps existing branch origins and growth
             # timing stable while each terminal twig gets its own inflection.
             tip_rng = random.Random(f"{seed}:tip-character:{index}")
-            branch['tip_bend'] = tip_rng.uniform(-0.45, 0.45)
+            branch['tip_bend'] = (tip_rng.choice((-1, 1))
+                                  * min(branch['length'] * 0.35, tip_rng.uniform(0.8, 1.3)))
     return branches
 
 

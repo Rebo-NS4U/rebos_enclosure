@@ -536,6 +536,35 @@ class BonsaiGrowTests(unittest.TestCase):
                 self.assertNotEqual(children[0]['width'], children[1]['width'])
                 self.assertNotEqual(children[0]['attachment'], children[1]['attachment'])
 
+    def test_mature_limbs_keep_bends_large_enough_for_terminal_cells(self):
+        checked = 0
+        for seed in range(32):
+            if bonsai.growth_pattern(seed)[0] == 'twisted_juniper':
+                continue
+            for branch in bonsai.branch_graph(seed):
+                if branch['level'] or branch['length'] < 4:
+                    continue
+                start, end = branch['start'], branch['end']
+                mid = bonsai.branch_point(branch, .5)
+                straight_mid = (start[1] + end[1]) / 2
+                # A sub-character offset was lost to rasterization in mature
+                # frames. Major limbs must deviate by a whole terminal row.
+                self.assertGreaterEqual(abs(mid[1] - straight_mid), 1.0)
+                checked += 1
+        self.assertGreater(checked, 24)
+        # Completing growth must not substitute a different, straight skeleton.
+        from unittest.mock import patch
+        bonsai.branch_graph(42)
+        for day in (22, 30, 90):
+            with patch.object(bonsai, 'branch_point', wraps=bonsai.branch_point) as point:
+                bonsai.natural_specimen(42, day)
+            positions = {(id(call.args[0]), call.args[1]): call.args[0]['curve']
+                         for call in point.call_args_list}
+            if day == 22:
+                early = positions
+            else:
+                self.assertEqual(positions, early)
+
     def test_terminal_character_is_distinct_stable_and_attached(self):
         bends = []
         for seed in range(12):
