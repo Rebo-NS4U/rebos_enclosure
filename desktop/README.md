@@ -526,3 +526,18 @@ Optional background work runs on demand: the screenshot editor starts for a capt
 The Bluetooth tray no longer starts at login. USB drives continue to mount automatically through udiskie. Bluetooth connections and existing mounts remain available. Open `blueman-manager` to manage Bluetooth; pairing may start its helper on demand. Remove `~/.config/autostart/blueman.desktop` to restore the tray at login. Background resumable assistant agents park after one minute of inactivity; busy sessions and pending approvals are excluded.
 
 Assistant chat pages are constructed only for the visible selected session. Long chats initially render their latest 40 messages; “Load earlier messages” reveals another 40 without deleting history. Drafts and attachments stay in the session while the page is unloaded. The shell also constructs Settings controls only while Settings is visible. These changes reduce retained UI objects; a running process may retain allocator caches, so savings must be measured rather than inferred from object counts.
+
+### Keyboard and touchscreen controls
+
+The bar control panel includes keyboard and touchscreen buttons (Tab then Space
+or Enter also activates them). Only one may be disabled at a time, and both
+must be connected. Input automatically returns after 60 seconds, when the
+fallback device disconnects, or when the helper exits. No disabled state is saved.
+The helper uses Python's standard library and Linux evdev, leaving pointer devices
+alone. If device access is denied, run `bash desktop/scripts/setup-input-controls.sh`
+from the checkout; this uses `assistant-sudo` to install an optional udev rule
+allowing the active local session access to keyboard and touchscreen event nodes.
+It does not grant permanent input-group membership. These permissions allow
+session applications to read those input devices; remove
+`/etc/udev/rules.d/70-enclosure-input-controls.rules` and reload udev rules to undo
+this optional setup.
