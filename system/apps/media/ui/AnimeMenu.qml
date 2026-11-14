@@ -563,9 +563,6 @@ PanelWindow {
         objectName: "media-content-sheet"
         visible: root.presented && !GlobalStates.lockscreenVisible
         variant: "popup"
-        // Content sheets stay readable over busy windows without rewriting shell preferences.
-        styleOverride: "quiet"
-        backgroundOpacity: 1
         radius: Styling.radius(20)
         anchors.horizontalCenter: parent.horizontalCenter
         width: Math.min(root.width - root.unit * 2, root.unit * 110)
