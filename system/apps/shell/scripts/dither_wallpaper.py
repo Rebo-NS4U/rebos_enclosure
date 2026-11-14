@@ -8,7 +8,7 @@ import re
 from pathlib import Path
 import tempfile
 
-VERSION = 4
+VERSION = 5
 STRENGTHS = {'normal': (24, 1), 'strong': (6, 2), 'intense': (4, 3)}
 
 
@@ -41,7 +41,7 @@ def convert(source: Path, cache: Path, palette: str = 'original', strength: str 
         # Ordered RGB quantization retains the whole color cube rather than
         # replacing the image's hues with a handful of dominant swatches.
         from PIL import ImageChops
-        levels, cell = {'normal': (16, 1), 'strong': (8, 2), 'intense': (5, 3)}[strength]
+        levels, cell = {'normal': (8, 2), 'strong': (5, 4), 'intense': (4, 8)}[strength]
         step = 255 / (levels - 1)
         bayer = (0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5)
         tile = Image.new('L', (4, 4))

@@ -7,6 +7,7 @@ import qs.config
 Singleton {
     id: root
     readonly property bool active: Config.theme.shellStyle === "dithered"
+    readonly property string rendererRevision: "5"
     readonly property string palette: Config.theme.ditherPalette
     readonly property string tint: palette === "tint" ? Config.theme.ditherTintColor.toLowerCase() : ""
     readonly property string strength: Config.theme.wallpaperDitherStrength
@@ -23,7 +24,7 @@ Singleton {
     property var failures: ({})
     signal finished(string path)
 
-    function key(path: string): string { return palette + ":" + strength + ":" + tint + ":" + path; }
+    function key(path: string): string { return rendererRevision + ":" + palette + ":" + strength + ":" + tint + ":" + path; }
     function source(path: string): string {
         return active ? (outputs[key(path)] ?? path) : path;
     }
@@ -61,7 +62,7 @@ Singleton {
         stderr: StdioCollector {}
         onExited: (code, status) => {
             const path = root.processing;
-            const cacheKey = root.processingPalette + ":" + root.processingStrength + ":" + root.processingTint + ":" + path;
+            const cacheKey = root.rendererRevision + ":" + root.processingPalette + ":" + root.processingStrength + ":" + root.processingTint + ":" + path;
             let result = {};
             try { result = JSON.parse(response.text); } catch (_) {}
             if (code === 0 && result.path) {

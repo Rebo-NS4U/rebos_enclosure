@@ -19,6 +19,7 @@ class DitherColorsTests(unittest.TestCase):
             Image.new('RGB', (64, 64), color).save(source)
             original = source.read_bytes()
             outputs = []
+            contrasts = []
             for strength in dither.STRENGTHS:
                 output = dither.convert(source, root / 'cache', strength=strength)
                 self.assertEqual(output, dither.convert(source, root / 'cache', strength=strength))
@@ -27,6 +28,9 @@ class DitherColorsTests(unittest.TestCase):
                     self.assertGreater(len(result.getcolors()), 1)
                     for actual, expected in zip(ImageStat.Stat(result).mean, color):
                         self.assertLess(abs(actual - expected), 3)
+                    contrasts.append(sum(ImageStat.Stat(result).var))
                     outputs.append(result.tobytes())
             self.assertEqual(len(set(outputs)), 3)
+            self.assertLess(contrasts[0], contrasts[1])
+            self.assertLess(contrasts[1], contrasts[2])
             self.assertEqual(source.read_bytes(), original)
