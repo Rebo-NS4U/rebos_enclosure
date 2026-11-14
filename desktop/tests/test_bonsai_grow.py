@@ -291,6 +291,16 @@ class BonsaiGrowTests(unittest.TestCase):
             designs.add(rows)
         self.assertGreaterEqual(len(designs), 16)
 
+    def test_all_pot_patterns_and_accents_are_mirrored(self):
+        from unittest.mock import patch
+        mirror = str.maketrans('╭╮╰╯┌┐└┘╱╲╴╶', '╮╭╯╰┐┌┘└╲╱╶╴')
+        for motif in bonsai.POT_MOTIFS:
+            with self.subTest(motif=motif), patch.object(bonsai.random.Random, 'choice', return_value=motif):
+                for row in bonsai.pot_rows(0):
+                    self.assertEqual(row, row[::-1].translate(mirror))
+                    accents = [char in bonsai.POT_ACCENT_MARKS for char in row]
+                    self.assertEqual(accents, accents[::-1])
+
     def test_background_greeting_uses_original_sprout_growth(self):
         from unittest.mock import patch
         with patch.object(bonsai, 'specimen_canvas', wraps=bonsai.specimen_canvas) as canvas, \
