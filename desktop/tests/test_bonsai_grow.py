@@ -553,7 +553,7 @@ class BonsaiGrowTests(unittest.TestCase):
                           for depth,x,y,born in bonsai.branch_layout(seed)[:3]}
             self.assertEqual(directions, {-1,1})
 
-    def test_branch_hierarchy_has_sparse_outward_tapered_forks(self):
+    def test_branch_hierarchy_has_staggered_connected_tapered_forks(self):
         for seed in range(48):
             graph = bonsai.branch_graph(seed)
             descendants = {}
@@ -568,17 +568,19 @@ class BonsaiGrowTests(unittest.TestCase):
                 self.assertGreaterEqual(branch['born'], arrival)
                 self.assertLess(branch['width'], source['width'])
                 descendants.setdefault(parent, []).append(branch)
-            self.assertLessEqual(len(graph), 6)
+            self.assertLessEqual(len(graph), 18)
             self.assertEqual(sum(b['parent'] is None for b in graph), 3)
+            self.assertGreaterEqual(len(descendants), 2)
             for children in descendants.values():
-                self.assertEqual(len(children), 1)
-                self.assertEqual(children[0]['level'], 1)
-                self.assertGreaterEqual(children[0]['attachment'], .58)
-                self.assertLessEqual(children[0]['attachment'], .7)
-                child = children[0]
-                source = graph[child['parent']]
-                self.assertGreater((child['end'][0] - child['start'][0]) *
-                                   (source['end'][0] - source['start'][0]), 0)
+                self.assertLessEqual(len(children), 2)
+                if len(children) == 2:
+                    self.assertGreater(children[1]['attachment'] - children[0]['attachment'], .20)
+                for child in children:
+                    source = graph[child['parent']]
+                    self.assertEqual(child['level'], source['level'] + 1)
+                    self.assertLessEqual(child['level'], 2)
+                    self.assertGreater((child['end'][0] - child['start'][0]) *
+                                       (source['end'][0] - source['start'][0]), 0)
 
     def test_mature_limbs_curve_without_downward_hooks(self):
         checked = 0
@@ -747,14 +749,15 @@ class BonsaiGrowTests(unittest.TestCase):
                 if day == 30:
                     self.assertGreater(sum(char in '♣●◆•·' for row in rows for char in row), 30)
 
-    def test_shallow_main_branches_cannot_form_long_shelves(self):
+    def test_lateral_scaffolds_have_bounded_reach_and_rising_tips(self):
         for seed in range(80):
             for branch in bonsai.branch_graph(seed):
                 if branch['parent'] is not None or branch['leader'] or branch.get('lower'):
                     continue
                 x,y = branch['start']
                 tx,ty = branch['end']
-                self.assertLessEqual(abs(tx-x), 1.5+3*max(0,y-ty)+1e-8)
+                self.assertLessEqual(abs(tx-x), 13+1e-8)
+                self.assertLess(ty,y)
 
     def test_main_branch_keeps_a_tapered_body_beyond_its_base(self):
         from unittest.mock import patch
@@ -1000,8 +1003,7 @@ class BonsaiGrowTests(unittest.TestCase):
             self.assertGreater(max(path)-min(path),3.5)
             graph = bonsai.branch_graph(seed)
             parents = {branch['parent'] for branch in graph if branch['parent'] is not None}
-            pads = [branch for i,branch in enumerate(graph) if i not in parents
-                    and (branch['parent'] is None or branch.get('pad_tip'))]
+            pads = [branch for branch in graph if branch['parent'] is None]
             roots = [branch for branch in graph if branch['parent'] is None]
             self.assertIn(len(pads),(3,4))
             self.assertEqual(len(pads),len(roots))

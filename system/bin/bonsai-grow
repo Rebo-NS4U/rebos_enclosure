@@ -336,8 +336,8 @@ def branch_layout(seed):
         else:
             # Three separated pads follow the main bend and its returning leader.
             controls = [
-                (7, side * rng.uniform(6, 7.5), rng.uniform(8, 8.7)),
-                (10, -side * rng.uniform(5, 7), rng.uniform(7, 7.6)),
+                (5, side * rng.uniform(8, 10), rng.uniform(11.5, 12.2)),
+                (9, -side * rng.uniform(6, 8), rng.uniform(8, 8.6)),
                 (14, side * rng.uniform(1, 2.5), rng.uniform(2.8, 3.5)),
             ]
             if rng.random() < 0.4:
@@ -411,7 +411,7 @@ def branch_layout(seed):
         x = max(11, min(44, centers[depth] + direction * reach))
         y = max(
             3.5,
-            18 - depth - max(2, abs(x - centers[depth]) * 0.3) - rng.uniform(0, 0.6),
+            18 - depth - max(1.2, abs(x - centers[depth]) * 0.16) - rng.uniform(0, 0.6),
         )
         born = max((depth - 1) / 0.7, 11 + index * 2 + rng.uniform(-1, 1))
         # The renderer applies the crown offset once to every limb.
@@ -531,7 +531,7 @@ def branch_tangent(branch, t):
 
 @functools.lru_cache(maxsize=64)
 def branch_graph(seed):
-    """Three scaffolds with sparse outward forks and an uncluttered apex."""
+    """Unequal scaffolds ramify into staggered, progressively finer twigs."""
     rng = random.Random(f"{seed}:branch-graph")
     jitter = random.Random(seed)
     centers = trunk_path(seed)
@@ -576,8 +576,9 @@ def branch_graph(seed):
             ceiling = max(ceiling, 2.8 + (abs(end[0] - crown_center) / 6) ** 1.4)
         end = (max(9, min(47, end[0])), max(ceiling, min(15 if lower else 14, end[1])))
         if level == 0 and not leader and not lower:
-            # A shallow upper limb must stay short; it cannot become a shelf.
-            run_limit = 1.5 + 3 * max(0, start[1] - end[1])
+            # Mature lateral limbs spread under their upward twig fans.
+            # Bound their reach without forcing every branch steeply upward.
+            run_limit = 13
             end = (max(start[0] - run_limit, min(start[0] + run_limit, end[0])), end[1])
         if one_sided and not leader:
             # Taper the swept crown around the trunk instead of stacking
@@ -616,25 +617,24 @@ def branch_graph(seed):
                 branch["departure"] = own + max(
                     -length * 0.6, min(length * 0.6, (inherited - own) * 0.7))
         branches.append(branch)
-        if (
-            lower
-            or level >= 1
-            or length < 5
-            or habit == "twisted_juniper"
-        ):
+        if lower or level >= (1 if habit == "twisted_juniper" else 2) or length < 4:
             return
-        # One sparse outward fork per scaffold. Recursive pairs and random
-        # reversals read as antlers at terminal resolution, especially when
-        # several attachment points collapse into the same character cell.
-        fraction = rng.uniform(0.58, 0.7)
-        origin = branch_point(branch, fraction)
+        # Inner upright shoots fill the shoulder; outer shoots extend the
+        # crown. Staggered insertions avoid the repeated symmetrical Y of an
+        # L-system, while a second generation gives broadleaf trees ramification.
+        fractions = (rng.uniform(0.36, 0.46), rng.uniform(0.70, 0.80)) if level == 0 else (0.64,)
         direction = 1 if end[0] >= start[0] else -1
-        reach = min(3.2, length * rng.uniform(0.27, 0.36))
-        target = (end[0] + direction * reach * 0.55,
-                  end[1] - rng.uniform(1.2, 2.0))
-        arrival = born + length * fraction * 0.55
-        add(origin, target, arrival + rng.uniform(0.3, 0.9),
-            width * 0.45, index, fraction, level + 1, leader)
+        for fork, fraction in enumerate(fractions):
+            origin = branch_point(branch, fraction)
+            reach = length * rng.uniform(0.18, 0.30)
+            rise = rng.uniform(1.8, 3.3) if level == 0 else rng.uniform(1.0, 1.7)
+            target_x = (end[0] + direction * rng.uniform(1.0, 2.3)
+                        if level == 0 and fork == 1
+                        else origin[0] + direction * max(1.2, reach))
+            target = (target_x, origin[1] - rise)
+            arrival = born + length * fraction * 0.55
+            add(origin, target, arrival + rng.uniform(0.3, 0.7),
+                width * (0.48 if fork == 0 else 0.38), index, fraction, level + 1, leader)
 
     for root_index, (depth, tx, ty, born) in enumerate(layout[:3]):
         tx += shift + jitter.uniform(-0.6, 0.6)
@@ -735,6 +735,9 @@ def natural_specimen(seed, days):
                 if cy < 6.5
                 else (rng.uniform(3.5, 4.6), rng.uniform(1.4, 1.9))
             )
+        if branch["level"]:
+            rx *= 0.70 if branch["level"] == 1 else 0.50
+            ry *= 0.82 if branch["level"] == 1 else 0.65
         # Each terminal has a stable spray habit: compact tuft, spreading fan,
         # sloping pad or softer hanging spray, all rooted at the actual twig.
         character = random.Random(f"{seed}:spray-character:{index}")
@@ -763,8 +766,8 @@ def natural_specimen(seed, days):
                 # A scalloped rim and a small lower cleft leave airy branch gaps.
                 rim = (
                     1
-                    + 0.10 * math.sin(nx * 9 + index)
-                    + 0.06 * math.cos(ny * 8 - index)
+                    + 0.19 * math.sin(nx * 7 + index)
+                    + 0.12 * math.cos(ny * 6 - index)
                 )
                 cleft = ny > 0.25 and cleft_start < nx * cleft_side < 0.7 and distance > 0.38
                 texture = random.Random(f"{seed}:leaf-cell:{index}:{x}:{y}")
