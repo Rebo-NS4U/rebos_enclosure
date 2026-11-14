@@ -4,12 +4,14 @@ from collections import OrderedDict
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from http.client import HTTPException
 import ipaddress
+import logging
 import socket
 import re
 import secrets
 import threading
 import time
 from urllib.parse import urlparse, urlsplit, urlunsplit, quote, urljoin
+from urllib.error import HTTPError
 from urllib.request import Request, HTTPRedirectHandler, HTTPCookieProcessor, ProxyHandler, build_opener
 from http.cookiejar import CookieJar
 from contextlib import contextmanager
@@ -21,6 +23,12 @@ from relay_transport import PublicHTTPSHandler
 # Long YouTube HLS playlists include signed URLs for thousands of segments.
 MAX_PLAYLIST_BYTES = 16 * 1024 * 1024
 MAX_ROUTES = 32768
+
+
+def failure_kind(error):
+    reason = getattr(error, 'reason', error)
+    return str(getattr(error, 'code', None) or
+               (type(reason).__name__ + ':' + str(getattr(reason, 'errno', '') or '')))
 
 
 def playlist_lines(playlist, height):
@@ -152,7 +160,7 @@ class RelayRequestHandler(BaseHTTPRequestHandler):
             headers['Range'] = self.headers['Range']
         headers['Accept-Encoding'] = 'identity'
         try:
-            with self.server.relay.opener.open(Request(url, headers=headers, method='GET' if body else 'HEAD'), timeout=20) as upstream:
+            with self.server.relay.open_upstream(Request(url, headers=headers, method='GET' if body else 'HEAD'), timeout=20) as upstream:
                 self.server.relay.validate(upstream.url)
                 content_type = upstream.headers.get('Content-Type', '').lower()
                 prefix = upstream.read(64) if body else b''
@@ -296,10 +304,29 @@ class StreamRelay:  # pylint: disable=too-many-instance-attributes
         entry = self.source_entry(url, headers, height)
         return self.lifetime.register([entry], None, MAX_ROUTES)[0]
 
+    def open_upstream(self, request, timeout=20):
+        """Retry only before response bytes are sent; never duplicate media bytes."""
+        for attempt in range(3):
+            try:
+                return self.opener.open(request, timeout=timeout)
+            except (OSError, HTTPException) as error:
+                retryable = not isinstance(error, HTTPError) or getattr(error, 'code', None) in (408, 429, 500, 502, 503, 504)
+                logging.warning('Media upstream host=%s error=%s attempt=%d retry=%s',
+                                urlsplit(request.full_url).hostname,
+                                failure_kind(error), attempt + 1,
+                                retryable and attempt < 2)
+                if isinstance(error, HTTPError):
+                    error.close()
+                if not retryable or attempt == 2:
+                    raise
+                time.sleep(.5 * (attempt + 1))
+
     def record_failure(self, path, error):
+        logging.warning('Media relay request failed route=%s error=%s', path,
+                        failure_kind(error))
         with self.lock:
             if path in self.sources:
-                self.failures[path] = str(getattr(error, 'code', type(error).__name__))
+                self.failures[path] = str(failure_kind(error))
 
     def rewrite(self, playlist, base, headers, height=None):
         root = urlsplit(self.register(base, headers, height)).path

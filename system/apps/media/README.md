@@ -43,6 +43,15 @@ requests keep their existing behavior. Extremely large manifests and indefinitel
 can reach the cap and fail explicitly; sliding-window live-stream retirement is
 not implemented.
 
+Temporary upstream connection errors and HTTP 408/429/500/502/503/504 responses
+receive up to three connection attempts before a response is forwarded. A failed
+playback refreshes its source and resumes the saved episode position in the same
+VLC window, with at most three recoveries per two minutes. Stop or switching
+videos cancels a pending recovery. Sustained outages still report a failure.
+Upstream diagnostics record the hostname and error type or HTTP code, never
+signed URLs, query parameters or request headers. Connection retries do not splice
+or duplicate bytes after a media response has started.
+
 Settings changes are serialized as patches, with pending feedback until the
 service acknowledges persistence. Rejected changes revert to the service's
 confirmed values while newer queued edits are retained. A disconnect discards

@@ -461,6 +461,28 @@ class Engine(app.Browser):  # pylint: disable=too-many-instance-attributes
         return True
 
 
+    def recover_stream(self, token):
+        """Refresh a failed source in the same player and preserve episode progress."""
+        now = time.monotonic()
+        attempts = [stamp for stamp in getattr(self, 'stream_retries', []) if now - stamp < 120]
+        if len(attempts) >= 3:
+            return False
+        self.stream_retries = attempts + [now]
+        self.save_progress(force=True)
+        self.file_loaded = False
+        self.close_captions()
+        context, session = self.context, self.session
+        show, episodes, index, _ = context
+        key = (show['id'], episodes[index], self.settings['mode'], self.settings['quality'])
+        self.resolved.pop(key, None)
+        self.play_status.set_text('Stream interrupted. Reconnecting…')
+        def retry():
+            if token == self.play_token and self.context is context and self.session is session:
+                self.start_episode(show, episodes, index, token)
+            return False
+        GLib.timeout_add_seconds(2, retry)
+        return True
+
     def player_event(self, event, token):
         if token != self.play_token:
             return False
@@ -500,6 +522,8 @@ class Engine(app.Browser):  # pylint: disable=too-many-instance-attributes
             self.next_requested = self.next_episode_paused = self.episode_ended = False
             self.play_status.set_text('Playback stopped.')
         elif kind == 'end-file' and event.get('reason') == 'error':
+            if self.recover_stream(token):
+                return False
             self.file_loaded = False
             self.next_requested = self.next_episode_paused = self.episode_ended = False
             self.close_captions()
