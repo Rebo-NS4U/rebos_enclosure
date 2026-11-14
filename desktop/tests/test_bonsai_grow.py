@@ -476,7 +476,8 @@ class BonsaiGrowTests(unittest.TestCase):
                     hsv[name] = colorsys.rgb_to_hsv(*(value / 255 for value in rgb))
             leaves = [color for name, color in hsv.items() if name.startswith('leaf')]
             for name, (_, saturation, brightness) in hsv.items():
-                if not name.startswith('leaf') and name not in ('pot_inlay', 'pot_pattern'):
+                if (not name.startswith(('leaf', 'ceramic_inlay_'))
+                        and name not in ('pot_inlay', 'pot_pattern')):
                     self.assertLess(brightness, min(color[2] for color in leaves))
                     if accent not in ('#eeeeee',):
                         self.assertLess(saturation, min(color[1] for color in leaves))
@@ -524,18 +525,22 @@ class BonsaiGrowTests(unittest.TestCase):
             return tuple(map(int, re.findall(r'\d+', ink)[-3:]))
         accents = ('#e65773', '#57c6e6', '#e6bb57')
         palette = bonsai.ceramic_palette(accents)
-        for material in ('rim', 'body', 'inlay', 'foot'):
+        for material in ('inlay',):
             colors = [rgb(palette[f'ceramic_{material}_{i}']) for i in range(23)]
             self.assertEqual(len(set(colors)), 23)
             self.assertGreater(colors[0][0], colors[0][2])
             self.assertGreater(colors[-1][2], colors[-1][0])
-            self.assertTrue(all(max(abs(a-b) for a,b in zip(left,right)) <= 12
+            self.assertTrue(all(max(abs(a-b) for a,b in zip(left,right)) <= 20
                                 for left,right in zip(colors,colors[1:])))
         for column in range(23):
             levels = [max(rgb(palette[f'ceramic_{material}_{column}']))
                       for material in ('foot', 'body', 'rim', 'inlay')]
             self.assertEqual(levels, sorted(levels))
-            self.assertLess(max(levels), 170)
+            self.assertGreater(levels[-1], 180)
+            for material in ('foot', 'body', 'rim'):
+                ceramic = rgb(palette[f'ceramic_{material}_{column}'])
+                self.assertLessEqual(max(ceramic), 87)
+                self.assertLessEqual(max(ceramic) - min(ceramic), 9)
         self.assertNotEqual(palette, bonsai.ceramic_palette(tuple(reversed(accents))))
         neutral = bonsai.ceramic_palette(('#eeeeee', '#111111', '#888888'))
         self.assertTrue(all(len(set(rgb(ink))) == 1 for ink in neutral.values()))

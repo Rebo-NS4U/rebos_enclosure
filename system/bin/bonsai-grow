@@ -1241,13 +1241,13 @@ def pot_rows(seed):
 
 @functools.lru_cache(maxsize=32)
 def ceramic_palette(accents):
-    """A satin two-color glaze, mixed in linear light with a soft left highlight."""
+    """Bright blended inlays on a quiet, nearly neutral ceramic bowl."""
     endpoints = []
     for color in accents[:2]:
         rgb = [int(color[i:i + 2], 16) / 255 for i in (1, 3, 5)]
         hue, saturation, _ = colorsys.rgb_to_hsv(*rgb)
-        # Keep dark and pale wallpaper colors readable without neon inlays.
-        endpoints.append(colorsys.hsv_to_rgb(hue, saturation * 0.72, 1))
+        # Keep the decorative design readable even with dark wallpaper accents.
+        endpoints.append(colorsys.hsv_to_rgb(hue, saturation * 0.9, 1))
 
     def linear(v):
         return v / 12.92 if v <= 0.04045 else ((v + 0.055) / 1.055) ** 2.4
@@ -1262,11 +1262,16 @@ def ceramic_palette(accents):
         mixed = [srgb(linear(a) * (1 - weight) + linear(b) * weight)
                  for a, b in zip(*endpoints)]
         highlight = math.exp(-((t - 0.32) / 0.38) ** 2)
-        for material, value in (("rim", 0.42 + 0.12 * highlight),
-                                ("body", 0.30 + 0.10 * highlight),
-                                ("inlay", 0.55 + 0.10 * highlight),
-                                ("foot", 0.24 + 0.07 * highlight)):
-            rgb = [round(channel / max(mixed) * value * 255) for channel in mixed]
+        for material, value in (("rim", 0.28 + 0.06 * highlight),
+                                ("body", 0.22 + 0.04 * highlight),
+                                ("inlay", 0.72 + 0.12 * highlight),
+                                ("foot", 0.17 + 0.04 * highlight)):
+            # Reserve color and brightness for the ornament, including its
+            # horizontal strokes. The structural ceramic gets only a faint tint.
+            normalized = [channel / max(mixed) for channel in mixed]
+            if material != "inlay":
+                normalized = [0.9 + channel * 0.1 for channel in normalized]
+            rgb = [round(channel * value * 255) for channel in normalized]
             palette[f"ceramic_{material}_{column}"] = "\033[0;38;2;{};{};{}m".format(*rgb)
     return palette
 
@@ -1645,8 +1650,8 @@ def render(
                 if x <= wood_center and grain > -0.3:
                     ink += "_grain"
             if color and ink.startswith("pot"):
-                # One continuous glaze crosses outlines and ornaments; height
-                # controls the material light, never an alternating accent count.
+                # Only decorative strokes receive the bright blended inlay.
+                # Outlines and the foot stay dark with subtle material light.
                 material = ("rim" if y == 19 else "foot" if y == 22 else
                             "inlay" if ink == "pot_inlay" else "body")
                 ink = f"ceramic_{material}_{x - 16}"
