@@ -93,8 +93,8 @@ new greetings and animation frames use the current palette.
 
 Paired bonsai foliage blends both accents in linear RGB light across every
 leaf cluster, with a main-dominant blend and restrained accent highlights. The main
-color contributes about 80% of the foliage blend overall; smaller accent
-variations retain leaf highlights without competing with the main hue.
+color contributes about two thirds of the foliage blend overall; the accent
+adds visible variation while the main hue stays dominant.
 
 Mature foliage uses pointed leaf faces around fuller interior clusters, with
 sparse small tips on the rim. Seed-stable dapple places highlights on the upper

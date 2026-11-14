@@ -1519,7 +1519,7 @@ def specimen_palette(seed, leaves=None):
                 # Blend light rather than jumping between two saturated inks.
                 # Main color dominates every cluster; small accent variations
                 # soften boundaries while preserving the tree's leaf texture.
-                weight = (0.08, 0.35, 0.18)[i] + (j - 1) * 0.025
+                weight = (0.18, 0.46, 0.35)[i] + (j - 1) * 0.025
                 endpoints = [colorsys.hsv_to_rgb(h, min(0.72, max(0.62, sat)), 0.9)
                              for h, sat in ((hue, saturation), (second_hue, second_saturation))]
                 def linear(v):
