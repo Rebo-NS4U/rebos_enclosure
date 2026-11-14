@@ -1,6 +1,8 @@
 .pragma library
 
 var styles = [
+    {id: "instrument", label: "Instrument", description: "Layered graphite surfaces with restrained status accents."},
+    {id: "frosted", label: "Frosted Glass", description: "OCR-inspired frosted panels, soft highlights and rounded glass edges."},
     {id: "glass", label: "Transparent", description: "Dark transparent backgrounds with light wallpaper colors."},
     {id: "quiet", label: "Opaque", description: "Solid backgrounds with less wallpaper color."},
     {id: "colorful", label: "Tinted", description: "Transparent backgrounds with more wallpaper color."},
@@ -44,9 +46,8 @@ function dotColor(fill, text, amount) {
 
 // Every surface uses one hierarchy, with the wallpaper palette supplying all color.
 function ditherCellSize(strength) {
-    var value = Number.isFinite(strength) ? Math.max(0, Math.min(100, strength)) : 20;
-    // A fine shared grid stays restrained even at higher strengths.
-    return 1 + value * 0.04;
+    // Fixed logical-pixel grain avoids chunky patterns and fractional cell sizes.
+    return 1;
 }
 
 function surface(style, variant, p, ditherStrength) {
@@ -55,20 +56,22 @@ function surface(style, variant, p, ditherStrength) {
     var tint = colorful ? 0.10 : (quiet ? 0.015 : 0.035);
     var base = mix(p.background, p.foreground, dithered ? 0.025 : 0.035);
     var fill = mix(base, p.primary, tint), item = p.foreground;
+    // One glass opacity for menus, panels and their popup surfaces.
+    var glassOpacity = 0.78;
     var opacity = quiet ? 1 : 0.92;
     var border = [mix(base, p.primary, dithered ? 0.24 : (colorful ? 0.32 : 0.18)), 0];
     switch (variant) {
     case "transparent": opacity = 0; break;
     case "barbg": opacity = dithered && strength > 0 ? 1 : 0; break;
     case "bg":
-        opacity = quiet ? 1 : (colorful ? 0.82 : 0.86);
+        opacity = quiet ? 1 : glassOpacity;
         border[1] = 1; break;
     case "popup":
-        opacity = quiet ? 1 : 0.94;
+        opacity = quiet ? 1 : glassOpacity;
         border[1] = 1; break;
     case "bar": case "pane": case "surface": case "surfaceContainer":
         fill = mix(base, p.primary, tint + (dithered ? 0.045 : 0.02));
-        opacity = quiet ? 1 : 0.90; break;
+        opacity = quiet ? 1 : glassOpacity; break;
     case "internalbg":
         fill = mix(p.background, p.primary, tint * 0.6);
         opacity = quiet ? 1 : 0.72; break;
@@ -86,22 +89,45 @@ function surface(style, variant, p, ditherStrength) {
     case "error": case "errorfocus": fill = p.error; item = p.onError; opacity = 1; break;
     case "overerror": item = p.error; break;
     }
+    // Instrument panels separate depth with neutral luminance, reserving
+    // saturated fills for deliberate actions and semantic status indicators.
+    if (style === "instrument") {
+        var depth = 0.075;
+        if (["internalbg", "barbg"].indexOf(variant) !== -1) depth = 0.035;
+        if (["pane", "bar", "surface", "surfaceContainer", "common"].indexOf(variant) !== -1) depth = 0.12;
+        if (["focus", "surfaceVariant"].indexOf(variant) !== -1) depth = 0.19;
+        if (["bg", "popup", "internalbg", "barbg", "pane", "bar", "surface", "surfaceContainer", "common", "focus", "surfaceVariant", "transparent"].indexOf(variant) !== -1) {
+            fill = mix(mix(p.background, p.foreground, depth), p.primary, 0.025);
+            item = p.foreground;
+            opacity = variant === "transparent" || variant === "barbg" ? 0 : 1;
+            border = [mix(fill, p.foreground, 0.12), ["bg", "popup", "focus", "surfaceVariant"].indexOf(variant) !== -1 ? 1 : 0];
+            if (variant === "focus" || variant === "surfaceVariant") border[0] = mix(fill, p.primary, 0.48);
+        }
+    }
+    var frostedContainer = false;
+    if (style === "frosted") {
+        var outer = ["bg", "popup", "bar", "pane", "surface", "surfaceContainer"].indexOf(variant) !== -1;
+        var inner = ["common", "internalbg"].indexOf(variant) !== -1;
+        var focused = ["focus", "surfaceVariant"].indexOf(variant) !== -1;
+        frostedContainer = outer || inner || focused;
+        if (frostedContainer) {
+            fill = mix(mix(p.background, p.foreground, outer ? 0.07 : 0.04), p.primary, focused ? 0.14 : 0.035);
+            opacity = outer ? 0.68 : focused ? 0.84 : 0.48;
+            border = [focused ? p.primary : "#40" + p.foreground.slice(-6), 1];
+        }
+    }
     var containers = ["bg", "popup", "pane", "surface", "surfaceContainer", "common", "internalbg", "focus", "surfaceVariant", "bar", "barbg"];
-    var controls = ["primary", "primaryfocus", "overprimary", "secondary", "secondaryfocus", "oversecondary", "tertiary", "tertiaryfocus", "overtertiary", "error", "errorfocus", "overerror"];
-    var dotted = dithered && strength > 0 && (containers.indexOf(variant) !== -1 ||
-        (strength > 20 && controls.indexOf(variant) !== -1));
-    // Strength increases the shared grain scale and contrast smoothly; zero
-    // disables texture. Keep text and selected controls clearly legible.
+    var dotted = dithered && strength > 0 && containers.indexOf(variant) !== -1;
+    // Strength changes contrast only. Buttons and edges stay clean at every level.
     var dotMax = ditherCellSize(strength);
     // Inner dividers recede; outer edges and focused controls retain definition.
     if (dithered && ["pane", "surface", "surfaceContainer", "common", "internalbg"].indexOf(variant) !== -1)
         border[0] = mix(fill, p.primary, 0.12);
-    if (dotted && containers.indexOf(variant) !== -1) border[1] = 1;
     return {
-        gradient: [[fill, 0]], gradientType: dotted ? "halftone" : "linear", gradientAngle: 0,
+        gradient: frostedContainer ? [[mix(fill, p.foreground, 0.08), 0], [fill, 0.45], [mix(fill, p.background, 0.12), 1]] : [[fill, 0]], gradientType: dotted ? "halftone" : "linear", gradientAngle: 0,
         gradientCenterX: 0.5, gradientCenterY: 0.5,
         halftoneDotMin: dotted ? dotMax : 0, halftoneDotMax: dotted ? dotMax : 0, halftoneStart: 0, halftoneEnd: 1,
-        halftoneDotColor: dotted ? dotColor(fill, item, 0.10 + strength * 0.0025) : fill, halftoneBackgroundColor: fill,
+        halftoneDotColor: dotted ? dotColor(fill, item, strength * 0.001) : fill, halftoneBackgroundColor: fill,
         border: border, itemColor: item, opacity: opacity
     };
 }

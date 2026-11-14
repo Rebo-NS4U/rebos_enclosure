@@ -19,9 +19,9 @@ The selection is personal and is not bundled with installer defaults.
 The launcher includes Quick Notes, File Shelf, Calendar, Weather, System Monitor,
 Project Picker, Dashboard, Notifications, Sound Controls, Microphone Controls,
 Network Controls, Bluetooth Controls, Battery and Power, Power Menu, and Shell
-Wallpapers, and Anime Streamer, alongside the existing Settings and Assistant entries. Search by
+Wallpapers, and Rebos Streamer, alongside the existing Settings and Assistant entries. Search by
 name or keywords such as notes, wifi, volume, or cpu. These entries open tools
-in the running shell through `rebos_shell run` (or the `anime-streamer` wrapper); they do not start another shell.
+in the running shell through `rebos_shell run`. Rebos Streamer uses the managed `anime-streamer` wrapper and its own UI process, with playback owned by `anime-streamer.service`.
 
 Desktop entries are shipped as managed files in `system/share/applications` and
 registered in the payload manifest so installation and updates preserve them.

@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
+import QtQuick.Effects
 import Quickshell.Widgets
 import qs.config
 import qs.modules.theme
@@ -59,8 +60,7 @@ ClippingRectangle {
     readonly property bool usesDitherGrid: (styleOverride || Styling.shellStyle) === "dithered"
         && Config.theme.ditherStrength > 0
     readonly property real ditherCellSize: Styling.ditherCellSize
-    readonly property bool ditheredOutline: usesDitherGrid
-        && enableBorder && border.width > 0 && border.color.a > 0
+
 
     // Check if gradient is actually a single color (optimization: treat as solid)
     readonly property bool isSingleColorGradient: gradientStops && gradientStops.length === 1
@@ -229,42 +229,23 @@ ClippingRectangle {
         }
     }
 
-    // enableShadow is kept for API compatibility, but we intentionally do
-    // NOT apply layer.effect/MultiEffect on this item. That path rasterizes
-    // every child (including Text) into an FBO and makes bold bar labels
-    // look soft/hazy. Widget chrome shadows live on dedicated shadow items
-    // instead of on text-bearing containers.
+    // Render a separate shape behind the surface; never capture its text.
+    RectangularShadow {
+        objectName: root.objectName + "-shadow"
+        opacity: root.opacity
+        parent: root.parent
+        x: root.x + Config.theme.shadowXOffset
+        y: root.y + Config.theme.shadowYOffset
+        width: root.width
+        height: root.height
+        z: root.z - 0.01
+        visible: root.visible && root.enableShadow && Config.theme.shadowOpacity > 0
+        color: Qt.alpha(Config.resolveColor(Config.theme.shadowColor), Config.theme.shadowOpacity)
+        blur: Config.theme.shadowBlur * 16
+        radius: root.radius
+    }
 
     border.color: Config.resolveColor(borderData?.[0] ?? "transparent")
     border.width: root.enableBorder ? (borderData?.[1] ?? 0) : 0
 
-    // Parent directly to the root: ClippingRectangle composites its native
-    // border above its contentItem, so a normal child cannot replace that line.
-    // This ring is drawn above the border without capturing any text again.
-    Loader {
-        parent: root
-        anchors.fill: parent
-        z: 100
-        active: root.ditheredOutline && root.visible && width > 0 && height > 0
-        sourceComponent: ShaderEffect {
-            objectName: "dithered-outline"
-            property vector2d size: Qt.vector2d(width, height)
-            property vector4d corners: Qt.vector4d(root.topLeftRadius, root.topRightRadius,
-                root.bottomLeftRadius, root.bottomRightRadius)
-            property real strokeWidth: Config.theme.ditherBorder === "band" ? Styling.ditherEdgeWidth
-                : Config.theme.ditherBorder === "double"
-                ? root.border.width : Math.max(root.border.width, root.ditherCellSize)
-            property real nativeStrokeWidth: root.border.width
-            property real cellSize: root.ditherCellSize
-            property color edgeColor: root.border.color
-            property color baseColor: root.halftoneBackgroundColor
-            property color surfaceDotColor: root.gradientType === "halftone"
-                ? root.halftoneDotColor : root.halftoneBackgroundColor
-            vertexShader: Config.theme.ditherBorder === "band"
-                ? "dither_uniform_edge.vert.qsb" : "dotted_outline.vert.qsb"
-            fragmentShader: Config.theme.ditherBorder === "band" ? "dither_uniform_edge.frag.qsb"
-                : Config.theme.ditherBorder === "double"
-                ? "double_outline.frag.qsb" : "dotted_outline.frag.qsb"
-        }
-    }
 }

@@ -2,7 +2,8 @@
 
 var data = {
     "oledMode": false,
-    "shellStyle": "glass",
+    "shellStyle": "frosted",
+    "shellTransparency": -1,
     "ditherPalette": "original",
     "ditherTintColor": "#4c9cbd",
     "ditherBorder": "band",
@@ -15,7 +16,7 @@ var data = {
     "monoFont": "JetBrains Mono",
     "monoFontSize": 14,
     "tintIcons": false,
-    "animDuration": 300,
+    "animDuration": 160,
     "shadowOpacity": 0.5,
     "shadowColor": "shadow",
     "shadowXOffset": 0,

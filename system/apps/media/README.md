@@ -1,17 +1,14 @@
 # Rebos Streamer
 
-Standalone Quickshell media browser for anime, movies, TV and YouTube, extracted from Rebos Enclosure. The UI runs in its own process; a systemd user service owns playback so closing the UI does not stop a video.
+Enclosure’s Quickshell media browser for anime, movies, TV and YouTube. Source, dependencies, launchers and updates are maintained in `system/apps/media` within the Enclosure repository. The UI runs in its own process; a systemd user service owns playback so closing the UI does not stop a video.
 
 ## Run
 
 Requires Linux with a Wayland session, Quickshell (including its QtQuick Controls, Effects and Wayland modules), Python 3 with PyGObject and GTK 3 introspection, systemd user services, Node.js, mpv, VLC, yt-dlp, ffmpeg, curl, openssl and the JetBrains Mono and Phosphor icon fonts. Niri supplies focus and geometry for the next-episode overlay; other compositors are not yet validated.
 
-```sh
-python3 install.py
-./launch
-```
+Enclosure installs the app, desktop entry and playback service. Open **Rebos Streamer** from the application launcher, press **Mod+Shift+A**, or run `anime-streamer`. Development installations link `~/code/anime-streamer` to this directory; Enclosure updates keep that link and the app current. Do not install the old separate `Rebos_Streamer` checkout over these managed launchers.
 
-The installer writes only user launchers, a desktop entry and `anime-streamer.service`, then reloads systemd definitions. Keep this checkout in place. It never restarts active playback. A previously running service adopts the new code on its next start.
+The UI runs separately from the panel; the service adopts updated Python code on its next start. Updating never restarts active playback.
 
 Primewire verification additionally uses Playwright and Chromium:
 
@@ -26,10 +23,11 @@ A single left click on the VLC video toggles pause/play when `vlc-pause-click-pl
 
 ## Development
 
-`ui/shell.qml` is the standalone UI entry point. `ui/modules` contains the Dweebo visual components and defaults needed by this app; it does not import the installed shell. `vendor/ani-cli` preserves Enclosure's resolver version. `backend_server.py` and `menu_client.py` communicate over the existing per-user runtime socket.
+`ui/shell.qml` is the standalone UI entry point. `ui/modules` contains the current Enclosure/Dweebo controls, surfaces, shadows and theme defaults needed by this app; it does not import the installed shell. `vendor/ani-cli` preserves Enclosure's resolver version. `backend_server.py` and `menu_client.py` communicate over the existing per-user runtime socket.
 
 ```sh
-PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=. python3 -m unittest discover -s tests
+cd ../../..
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=system/apps/media python3 -m unittest discover -s desktop/tests/media
 ```
 
 Derived QML is covered by the included AGPL-3.0 license inherited from Enclosure's shell. Preserve upstream notices when modifying bundled sources.

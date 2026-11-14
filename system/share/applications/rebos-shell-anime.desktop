@@ -1,9 +1,9 @@
 [Desktop Entry]
 Type=Application
-Name=Anime Streamer
-Comment=Browse and play anime in Quickshell
+Name=Rebos Streamer
+Comment=Browse anime, movies, TV and YouTube in Enclosure
 Exec="@HOME@/.local/bin/anime-streamer"
 Icon=video-display
 Terminal=false
 Categories=AudioVideo;Video;
-Keywords=quickshell;enclosure;anime;streaming;media;
+Keywords=quickshell;enclosure;rebos;anime;movies;tv;youtube;streaming;media;
