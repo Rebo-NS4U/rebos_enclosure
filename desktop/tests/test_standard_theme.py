@@ -9,11 +9,23 @@ SCRIPTS = Path(__file__).resolve().parents[2] / 'system/apps/shell/scripts'
 sys.path.insert(0, str(SCRIPTS))
 from standard_theme import apply, metrics, gtk_css, qt_css, browser_css
 from apply_app_palette import read_jsonc
+from apply_desktop_palette import apply as apply_desktop, opaque_palette
 
 PALETTE = json.loads((SCRIPTS.parents[2] / 'cache-defaults/rebos_shell/effective-palette.json').read_text())
 
 
 class StandardThemeTests(unittest.TestCase):
+    def test_frosted_alpha_border_exports_to_fish_and_native_apps(self):
+        palette = {**PALETTE, 'background': '#262724', 'outlineVariant': '#40e3e3dc', 'opacity': 0.68}
+        self.assertEqual(opaque_palette(palette)['outlineVariant'], '#555652')
+        self.assertEqual(palette['outlineVariant'], '#40e3e3dc')
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory)
+            apply_desktop(palette, home)
+            fish = home / '.cache/rebos_shell/fish.fish'
+            self.assertIn('fish_color_command', fish.read_text())
+            self.assertIn('#555652', (home / '.config/gtk-4.0/enclosure-standard.css').read_text())
+
     def test_preserves_custom_css_qt_sheets_and_unrelated_settings(self):
         with tempfile.TemporaryDirectory() as directory:
             home = Path(directory)

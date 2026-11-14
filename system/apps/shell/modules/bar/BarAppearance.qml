@@ -9,7 +9,8 @@ Singleton {
     id: root
     readonly property color foregroundColor: Colors.overBackground
     readonly property bool instrument: Styling.shellStyle === "instrument"
-    readonly property bool framed: polished || instrument || Styling.shellStyle === "frosted"
+    readonly property bool themedCorners: instrument || Styling.shellStyle === "frosted"
+    readonly property bool framed: polished || themedCorners
     readonly property color activeWorkspaceOutline: instrument ? Colors.primary : foregroundColor
     readonly property bool polished: (Config.bar?.islandAppearance ?? BarDefaults.data.islandAppearance) === "glass"
     readonly property var themeSurface: Styling.getStyledRectConfig("bg")

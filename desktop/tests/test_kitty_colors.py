@@ -20,9 +20,12 @@ class KittyColorsTests(unittest.TestCase):
             (root/'shell.qml').write_text('''import QtQuick
 import Quickshell
 import qs.modules.theme
+import qs.config
 ShellRoot {
  KittyGenerator { id: generator }
  Timer { interval:100; running:true; onTriggered: {
+  Config.theme.monoFont = "JetBrains Mono";
+  Config.theme.monoFontSize = 18;
   const p = {};
   for (const role of ["overSurface","background","overPrimary","primary","surfaceContainerLow","outline","red","lightRed","green","lightGreen","yellow","lightYellow","lightBlue","magenta","lightMagenta","cyan","lightCyan","overSurfaceVariant","outlineVariant","error","surface","secondary","overSecondary","tertiary","overTertiary"]) p[role] = "#112233";
   p.background = "#262724"; p.outlineVariant = "#40e3e3dc"; p.opacity = 0.68;
@@ -38,6 +41,7 @@ ShellRoot {
             config = json.loads(line.split('KITTY_CONFIG:',1)[1])
             self.assertIn('inactive_border_color #555652',config)
             self.assertIn('background_opacity 0.68',config)
+            self.assertIn('font_family JetBrains Mono\nfont_size 13.5\n',config)
             self.assertIn('active_border_color #112233',config)
             path = root/'kitty.conf';path.write_text(config)
             code = f'from kitty.config import load_config; bad=[]; load_config({str(path)!r}, accumulate_bad_lines=bad); assert not bad, repr(bad)'

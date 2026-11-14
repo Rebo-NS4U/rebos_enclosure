@@ -121,9 +121,26 @@ def apply_niri_theme(p, home):
           '}\n')
 
 
+
+def opaque_palette(p):
+    """Composite Qt #AARRGGBB colors for adapters that require RGB."""
+    result = dict(p)
+    background = p.get('background', '')
+    if not re.fullmatch(r'#[0-9a-fA-F]{6}', background):
+        raise ValueError('Missing or invalid palette color: background')
+    for key, value in p.items():
+        if not isinstance(value, str) or not re.fullmatch(r'#[0-9a-fA-F]{8}', value):
+            continue
+        alpha = int(value[1:3], 16) / 255
+        channels = [round(int(value[i+2:i+4], 16) * alpha +
+                          int(background[i:i+2], 16) * (1 - alpha)) for i in (1, 3, 5)]
+        result[key] = '#' + ''.join(f'{channel:02x}' for channel in channels)
+    return result
+
 # Quality exception: Named color/configuration intermediates keep per-application transformations reviewable; numeric packing would obscure them.
 # Numeric ceilings are enforced by desktop/scripts/quality.py.
 def apply(p, home):  # pylint: disable=too-many-branches,too-many-locals,too-many-statements
+    p = opaque_palette(p)
     required = ['background', 'surface', 'surfaceBright', 'surfaceContainer',
                 'surfaceContainerHigh', 'surfaceContainerLowest', 'overSurface',
                 'overPrimary', 'outline', 'outlineVariant', 'primary', 'secondary',

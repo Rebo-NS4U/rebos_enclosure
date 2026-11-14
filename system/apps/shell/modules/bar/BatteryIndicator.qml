@@ -166,7 +166,7 @@ Item {
             anchors.centerIn: parent
             text: Battery.available ? (Battery.isPluggedIn ? Icons.plug : Icons.lightning) : PowerProfile.getProfileIcon(PowerProfile.currentProfile)
             font.family: Icons.font
-            font.pixelSize: root.flat ? (Battery.available ? 11 : 14) : (Battery.available ? 14 : 18)
+            font.pixelSize: Styling.fontSize(root.flat ? (Battery.available ? -3 : 0) : (Battery.available ? 0 : 4))
             color: BarAppearance.foregroundColor
 
             Behavior on color {

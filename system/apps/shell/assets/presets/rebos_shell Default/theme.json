@@ -1,7 +1,7 @@
 {
     "oledMode": false,
     "lightMode": false,
-    "roundness": 4,
+    "roundness": 16,
     "font": "JetBrains Mono",
     "fontSize": 14,
     "monoFont": "JetBrains Mono",
@@ -488,5 +488,5 @@
         "itemColor": "error",
         "opacity": 1
     },
-    "shellStyle": "instrument"
+    "shellStyle": "frosted"
 }

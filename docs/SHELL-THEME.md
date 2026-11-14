@@ -1,6 +1,6 @@
-# Instrument shell theme
+# Shell theme
 
-The shell uses an instrument-panel direction: layered graphite surfaces, precise typography and restrained status accents. It retains Dweebo's semantic colors and shared QML components. Select **Instrument** in Theme settings; the other surface styles remain available.
+Frosted Glass is the default for new installations, with 16px corners and shared typography. Existing preferences are preserved during updates. Instrument remains selectable with its layered graphite surfaces, precise typography and restrained status accents. It retains Dweebo's semantic colors and shared QML components. Select **Instrument** in Theme settings; the other surface styles remain available.
 
 ## Visual decisions
 
@@ -46,3 +46,7 @@ the appearance live without restarting the panel or active apps.
 Kitty exports use six-digit RGB colors. Translucent palette colors (including
 Frosted Glass borders) are composited against the terminal background; terminal
 transparency remains in Kitty’s separate `background_opacity` setting.
+
+## Shared sizing and terminal styling
+
+Frosted bar corners follow the saved radius while collapsed and expanded, including zero. Bar height and meter symbols scale with the Appearance font size. Fish uses neutral text, readable muted details and semantic status accents from the effective palette; it reloads colors at each prompt. New Fish sessions load the updated prompt layout. Kitty follows the monospace font and size (converted from pixels to points), alongside its exported theme colors and app opacity. Adjust these in Appearance → Fonts and corners; shell transparency and blur remain under Transparency and blur.

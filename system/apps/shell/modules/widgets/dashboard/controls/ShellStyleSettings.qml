@@ -21,7 +21,7 @@ ColumnLayout {
     }
     StyledText {
         Layout.fillWidth: true
-        text: "Set backgrounds and colors for the shell and supported apps. Dithered also converts still wallpapers automatically."
+        text: "Set backgrounds and colors for the shell, bar, Fish and supported apps. Adjust fonts and corners, transparency, blur and motion in Appearance. Terminal text follows the monospace font settings. Dithered also converts still wallpapers automatically."
         wrapMode: Text.WordWrap
         font.pixelSize: Styling.fontSize(-1)
         color: Colors.overSurfaceVariant

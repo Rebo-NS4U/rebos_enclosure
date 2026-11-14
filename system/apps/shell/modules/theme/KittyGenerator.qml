@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import qs.config
 
 QtObject {
     id: root
@@ -62,7 +63,8 @@ QtObject {
         const color7 = fmt(Colors.overSurfaceVariant);
         const color15 = fmt(Colors.overSurface);
 
-        let conf = "";
+        // Kitty uses points; QML theme typography uses pixels.
+        let conf = `font_family ${Config.theme.monoFont}\nfont_size ${Config.theme.monoFontSize * 0.75}\n`;
         conf += `cursor ${cursor}\n`;
         conf += `cursor_text_color ${cursorText}\n\n`;
 

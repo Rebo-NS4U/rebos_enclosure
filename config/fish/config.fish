@@ -302,7 +302,7 @@ function __forge_git_prompt_segment
     set -l ahead $git_status[5]
     set -l behind $git_status[6]
 
-    set -l muted (__forge_color outline)
+    set -l muted (__forge_color overSurfaceVariant)
     set -l violet (__forge_color primary b)
     set -l lime (__forge_color green b)
     set -l warning (__forge_color yellow b)
@@ -371,7 +371,7 @@ end
 
 function __forge_right_prompt_text --argument-names last_status
     set -l reset (set_color normal)
-    set -l muted (__forge_color outline)
+    set -l muted (__forge_color overSurfaceVariant)
     set -l lilac (__forge_color overSurface)
     set -l warning (__forge_color yellow b)
     set -l red (__forge_color error b)
@@ -405,16 +405,15 @@ function fish_prompt
     set -g __forge_last_status $status
 
     set -l reset (set_color normal)
-    set -l violet (__forge_color primary b)
     set -l lime (__forge_color green b)
-    set -l muted (__forge_color outline)
+    set -l muted (__forge_color overSurfaceVariant)
     set -l status_color $lime
 
     if test $__forge_last_status -ne 0
         set status_color (__forge_color error b)
     end
 
-    set -l first_line "$muted┌ $violet"(__forge_path)"$reset"
+    set -l first_line "$muted┌ "(__forge_color overSurface b)(__forge_path)"$reset"
     set -l right_prompt (__forge_right_prompt_text $__forge_last_status)
     set -l columns 80
 

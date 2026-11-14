@@ -136,7 +136,7 @@ Item {
             anchors.centerIn: parent
             text: root.icon
             font.family: Icons.font
-            font.pixelSize: root.flat ? 11 : 14
+            font.pixelSize: Styling.fontSize(root.flat ? -3 : 0)
             color: BarAppearance.foregroundColor
         }
 
