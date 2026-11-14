@@ -156,6 +156,31 @@ class BonsaiGrowTests(unittest.TestCase):
         self.assertIn(bonsai.specimen_palette(42)['leaf4'], image)
 
 
+    def test_growing_branches_have_leaves_at_the_current_tip(self):
+        import math
+        checked = 0
+        for seed in range(48):
+            for day in (7, 10, 12, 14, 16, 18, 22, 26, 30):
+                plan = bonsai.natural_specimen(seed, day)
+                leaves = {(x,y) for x,y,born,glyph,ink in plan if ink.startswith('leaf')}
+                canvas = bonsai.specimen_canvas(day, seed)
+                for branch in bonsai.branch_graph(seed):
+                    arrival = branch['born'] + branch['length'] * .55
+                    if day+1 >= arrival+.5 or day+1 < branch['born']:
+                        continue
+                    steps = max(1,math.ceil(branch['length']*2))
+                    t = min(1,(day+1-branch['born'])/max(.001,branch['length']*.55))
+                    step = min(steps,math.floor(t*steps+1e-9))
+                    if not step:
+                        continue
+                    x,y = map(round,bonsai.branch_point(branch,step/steps))
+                    self.assertIn((x,y), leaves, (seed,day))
+                    # Verify the composited frame too: stem painting and
+                    # connectivity cleanup must not erase the living tip.
+                    self.assertTrue(canvas[y][x][1].startswith('leaf'), (seed,day,x,y))
+                    checked += 1
+        self.assertGreater(checked,1000)
+
     def test_opening_is_a_tiny_sprout_before_it_develops_bark(self):
         for seed in range(48):
             canvas = bonsai.specimen_canvas(0, seed)

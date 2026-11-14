@@ -786,6 +786,22 @@ def natural_specimen(seed, days):
         filled = (x, y) not in centerline or interior
         glyph = "░" if filled else strokes[(x, y)]
         cells.append((x, y, birth, glyph, "bark" if filled else "wood"))
+    # Keep a living leaf on the actual growth front, not just the eventual
+    # endpoint. The greeting may stop on any frame when a command is entered.
+    # Sample the same curve and step as the wood so tips cannot float ahead.
+    for index, branch in enumerate(graph):
+        arrival = branch["born"] + branch["length"] * 0.55
+        if days + 1 >= arrival + 0.5 or days + 1 < branch["born"]:
+            continue
+        steps = max(1, math.ceil(branch["length"] * 2))
+        progress = min(1, (days + 1 - branch["born"]) / max(0.001, branch["length"] * 0.55))
+        step = min(steps, math.floor(progress * steps + 1e-9))
+        if step < 1:
+            continue
+        t = step / steps
+        x, y = map(round, branch_point(branch, t))
+        birth = branch["born"] + branch["length"] * t * 0.55
+        cells.append((x, y, birth, "◆", f"leaf{index % 3 * 3 + 1}"))
     # Every living endpoint carries foliage, including the continuing parent
     # tip. A bare parent beyond a leafy lateral fork looked like a stray spur.
     for index, branch in enumerate(graph):
