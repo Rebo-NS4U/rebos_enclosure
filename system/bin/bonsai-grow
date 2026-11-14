@@ -1250,39 +1250,31 @@ def pot_rows(seed):
     )
 
 
+# Jewel centers, engraved stems and crossing threads use the accent enamel.
+POT_ACCENT_MARKS = frozenset("◇◆·╳┬┴│╷╴╶╲")
+
+
 @functools.lru_cache(maxsize=32)
 def ceramic_palette(accents):
-    """Bright blended inlays on a quiet, nearly neutral ceramic bowl."""
-    endpoints = []
-    for color in accents[:2]:
+    """Two solid enamels above a dark ceramic body; no color gradient."""
+    palette = {}
+    for name, color in zip(("main", "accent"), accents[:2]):
         rgb = [int(color[i:i + 2], 16) / 255 for i in (1, 3, 5)]
         hue, saturation, _ = colorsys.rgb_to_hsv(*rgb)
-        # Keep the decorative design readable even with dark wallpaper accents.
-        endpoints.append(colorsys.hsv_to_rgb(hue, saturation * 0.9, 1))
+        rgb = [round(channel * 255) for channel in
+               colorsys.hsv_to_rgb(hue, saturation * 0.9, 0.84)]
+        palette[f"ceramic_inlay_{name}"] = "\033[0;38;2;{};{};{}m".format(*rgb)
 
-    def linear(v):
-        return v / 12.92 if v <= 0.04045 else ((v + 0.055) / 1.055) ** 2.4
-
-    def srgb(v):
-        return 12.92 * v if v <= 0.0031308 else 1.055 * v ** (1 / 2.4) - 0.055
-
-    palette = {}
+    # A faint primary tint and restrained lighting give the bowl its volume.
+    primary = [int(accents[0][i:i + 2], 16) / 255 for i in (1, 3, 5)]
+    hue, saturation, _ = colorsys.rgb_to_hsv(*primary)
+    tint = colorsys.hsv_to_rgb(hue, saturation * 0.08, 1)
     for column in range(23):
-        t = column / 22
-        weight = t * t * (3 - 2 * t)
-        mixed = [srgb(linear(a) * (1 - weight) + linear(b) * weight)
-                 for a, b in zip(*endpoints)]
-        highlight = math.exp(-((t - 0.32) / 0.38) ** 2)
+        highlight = math.exp(-((column / 22 - 0.32) / 0.38) ** 2)
         for material, value in (("rim", 0.28 + 0.06 * highlight),
                                 ("body", 0.22 + 0.04 * highlight),
-                                ("inlay", 0.72 + 0.12 * highlight),
                                 ("foot", 0.17 + 0.04 * highlight)):
-            # Reserve color and brightness for the ornament, including its
-            # horizontal strokes. The structural ceramic gets only a faint tint.
-            normalized = [channel / max(mixed) for channel in mixed]
-            if material != "inlay":
-                normalized = [0.9 + channel * 0.1 for channel in normalized]
-            rgb = [round(channel * value * 255) for channel in normalized]
+            rgb = [round(channel * value * 255) for channel in tint]
             palette[f"ceramic_{material}_{column}"] = "\033[0;38;2;{};{};{}m".format(*rgb)
     return palette
 
@@ -1586,7 +1578,7 @@ def specimen_palette(seed, leaves=None):
                 leaf_hue, leaf_chroma, _ = colorsys.rgb_to_hsv(*mixed)
             palette[f"leaf{i * 3 + j}"] = ink(leaf_hue, leaf_chroma, value)
     # Retain the source accent inks for palette inspection; the rendered pot
-    # uses the continuous ceramic ramp below.
+    # uses the two solid enamels below.
     for role, color in zip(("pot_inlay", "pot_pattern"), leaves[:2]):
         rgb = [int(color[i:i + 2], 16) for i in (1, 3, 5)]
         palette[role] = "\033[0;38;2;{};{};{}m".format(*rgb)
@@ -1613,14 +1605,19 @@ def specimen_canvas(days, seed, style="informal", pot_seed=None):
         add_trunk_scar(canvas, seed, days)
         add_knurling(canvas, seed, days)
         add_blossoms(canvas, seed, days)
-    for y, row in enumerate(pot_rows(seed if pot_seed is None else pot_seed), 19):
+    rows = pot_rows(seed if pot_seed is None else pot_seed)
+    has_details = any(char in POT_ACCENT_MARKS for row in rows[1:3] for char in row.strip()[1:-1])
+    for y, row in enumerate(rows, 19):
         left = len(row) - len(row.lstrip())
         right = len(row.rstrip()) - 1
         for column, char in enumerate(row):
             x = column + 16
             ink = "pot"
             if y in (20, 21) and left < column < right and char != " ":
-                ink = "pot_inlay"
+                # Pick out jewels and crossing threads. Flowing scroll designs
+                # without internal details use an accent lower sweep instead.
+                accented = char in POT_ACCENT_MARKS or (not has_details and y == 21)
+                ink = "pot_pattern" if accented else "pot_inlay"
             canvas[y][x] = (char, ink)
     seat_tree_in_pot(canvas, days)
     if style == "informal":
@@ -1660,11 +1657,10 @@ def render(
                 grain = math.sin(x * 0.55 + y * 0.22 + grain_phase)
                 if x <= wood_center and grain > -0.3:
                     ink += "_grain"
-            if color and ink.startswith("pot"):
-                # Only decorative strokes receive the bright blended inlay.
-                # Outlines and the foot stay dark with subtle material light.
-                material = ("rim" if y == 19 else "foot" if y == 22 else
-                            "inlay" if ink == "pot_inlay" else "body")
+            if color and ink in ("pot_inlay", "pot_pattern"):
+                ink = "ceramic_inlay_accent" if ink == "pot_pattern" else "ceramic_inlay_main"
+            elif color and ink == "pot":
+                material = "rim" if y == 19 else "foot" if y == 22 else "body"
                 ink = f"ceramic_{material}_{x - 16}"
             if color and ink != previous:
                 parts.append(palette[ink])

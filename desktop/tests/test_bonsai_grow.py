@@ -517,31 +517,37 @@ class BonsaiGrowTests(unittest.TestCase):
             self.assertEqual(re.sub(r'\x1b\[[0-9;]*m', '', colored), plain)
             self.assertIn(palette['ceramic_rim_11'], colored)
             self.assertIn(palette['ceramic_foot_11'], colored)
-            self.assertIn(palette['ceramic_inlay_11'], colored)
+            self.assertIn(palette['ceramic_inlay_main'], colored)
 
-    def test_ceramic_glaze_blends_both_accents_smoothly(self):
+    def test_ceramic_uses_two_solid_enamels_and_a_subdued_bowl(self):
         import re
+        from unittest.mock import patch
         def rgb(ink):
             return tuple(map(int, re.findall(r'\d+', ink)[-3:]))
         accents = ('#e65773', '#57c6e6', '#e6bb57')
         palette = bonsai.ceramic_palette(accents)
-        for material in ('inlay',):
-            colors = [rgb(palette[f'ceramic_{material}_{i}']) for i in range(23)]
-            self.assertEqual(len(set(colors)), 23)
-            self.assertGreater(colors[0][0], colors[0][2])
-            self.assertGreater(colors[-1][2], colors[-1][0])
-            self.assertTrue(all(max(abs(a-b) for a,b in zip(left,right)) <= 20
-                                for left,right in zip(colors,colors[1:])))
+        main, accent = [rgb(palette[f'ceramic_inlay_{name}']) for name in ('main', 'accent')]
+        self.assertGreater(main[0], main[2])
+        self.assertGreater(accent[2], accent[0])
+        self.assertTrue(all(max(color) > 180 for color in (main, accent)))
         for column in range(23):
             levels = [max(rgb(palette[f'ceramic_{material}_{column}']))
-                      for material in ('foot', 'body', 'rim', 'inlay')]
+                      for material in ('foot', 'body', 'rim')]
             self.assertEqual(levels, sorted(levels))
-            self.assertGreater(levels[-1], 180)
             for material in ('foot', 'body', 'rim'):
                 ceramic = rgb(palette[f'ceramic_{material}_{column}'])
                 self.assertLessEqual(max(ceramic), 87)
                 self.assertLessEqual(max(ceramic) - min(ceramic), 9)
-        self.assertNotEqual(palette, bonsai.ceramic_palette(tuple(reversed(accents))))
+        # Every complete panel uses both inks, and never interpolates between them.
+        for seed in range(80):
+            canvas = bonsai.specimen_canvas(30, seed)
+            inks = {ink for row in canvas[20:22] for glyph, ink in row if glyph.strip()}
+            self.assertTrue({'pot_inlay', 'pot_pattern'} <= inks)
+            with patch.object(bonsai, 'terminal_leaf_palette', return_value=list(accents)):
+                rows = bonsai.render(30, seed, True, 59, fixed_height=True).splitlines()[21:23]
+            bright = {rgb(ink) for row in rows for ink in re.findall(r'\x1b\[[0-9;]*m', row)
+                      if len(re.findall(r'\d+', ink)) >= 5 and max(rgb(ink)) > 100}
+            self.assertEqual(bright, {main, accent})
         neutral = bonsai.ceramic_palette(('#eeeeee', '#111111', '#888888'))
         self.assertTrue(all(len(set(rgb(ink))) == 1 for ink in neutral.values()))
 
@@ -638,7 +644,7 @@ class BonsaiGrowTests(unittest.TestCase):
                     self.assertEqual(palette, [accent] * 3)
                     image = bonsai.render(30, seed, True, 80, palette)
                     self.assertIn(bonsai.wood_palette(seed)['wood'], image)
-                    pot_inlay = bonsai.specimen_palette(seed)['ceramic_inlay_11']
+                    pot_inlay = bonsai.specimen_palette(seed)['ceramic_inlay_main']
                     self.assertIn(pot_inlay, image)
                     self.assertNotIn('\033[48;', image)
                     self.assertIn(bonsai.wood_palette(seed)['bark'], image)
