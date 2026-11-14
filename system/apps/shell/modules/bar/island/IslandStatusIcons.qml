@@ -127,7 +127,7 @@ RowLayout {
             return "volume_up";
         }
 
-        readonly property color iconColor: BarAppearance.instrument && isMuted ? Colors.overSurfaceVariant : BarAppearance.foregroundColor
+        readonly property color iconColor: BarAppearance.controlColor(audioDevice !== null && !isMuted)
 
         StyledRect {
             anchors.fill: parent
@@ -197,10 +197,10 @@ RowLayout {
         implicitHeight: root.bar.islandHeight - 4
         Layout.alignment: Qt.AlignVCenter
 
-        readonly property int percent: Battery.percent
-        readonly property bool charging: Battery.charging
+        readonly property int percent: Battery.percentage
+        readonly property bool charging: Battery.isCharging
 
-        readonly property color iconColor: BarAppearance.instrument ? (charging ? Colors.primary : (percent <= 15 ? Colors.error : BarAppearance.foregroundColor)) : BarAppearance.foregroundColor
+        readonly property color iconColor: BarAppearance.batteryStatusColor(percent, charging)
 
         StyledRect {
             anchors.fill: parent

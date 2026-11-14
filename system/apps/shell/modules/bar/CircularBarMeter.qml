@@ -20,7 +20,7 @@ Item {
     property real endRadius: Styling.radius(0)
     property real value: 0
     property string icon: ""
-    property color progressColor: Styling.srItem("overprimary")
+    property color progressColor: BarAppearance.foregroundColor
     property string tooltipText: ""
     property string tooltipDescription: ""
     property bool clickEnabled: true
@@ -57,7 +57,7 @@ Item {
 
         Rectangle {
             anchors.fill: parent
-            color: Styling.srItem("overprimary")
+            color: BarAppearance.activeColor
             opacity: root.isHovered ? (root.flat ? 0.12 : 0.2) : 0
             radius: root.flat ? (width / 2) : buttonBg.topLeftRadius
             topLeftRadius: root.flat ? (width / 2) : buttonBg.topLeftRadius

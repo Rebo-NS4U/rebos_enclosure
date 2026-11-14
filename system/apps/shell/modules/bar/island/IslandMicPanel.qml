@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import qs.modules.bar
 import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
@@ -85,7 +86,7 @@ Item {
                     text: root.isMuted ? Icons.micSlash : Icons.mic
                     font.family: Icons.font
                     font.pixelSize: Styling.fontSize(4)
-                    color: root.isMuted ? Colors.red : Colors.overBackground
+                    color: BarAppearance.controlColor(!root.isMuted)
                 }
 
                 MouseArea {
@@ -295,7 +296,7 @@ Item {
                                                 text: appDelegate.isAppMuted ? Icons.micSlash : Icons.mic
                                                 font.family: Icons.font
                                                 font.pixelSize: Styling.fontSize(-1)
-                                                color: appDelegate.isAppMuted ? Colors.red : Colors.overBackground
+                                                color: BarAppearance.controlColor(!appDelegate.isAppMuted)
                                             }
 
                                             MouseArea {

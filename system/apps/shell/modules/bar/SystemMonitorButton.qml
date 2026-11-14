@@ -13,7 +13,7 @@ ToggleButton {
     readonly property bool popupOpen: monitorPopup.isOpen
 
     buttonIcon: Icons.heartbeat
-    iconColor: Colors.whiteValue
+    iconColor: popupOpen ? BarAppearance.activeColor : BarAppearance.foregroundColor
     tooltipText: "System Monitor"
     onToggle: function () { root.togglePopup(); }
 

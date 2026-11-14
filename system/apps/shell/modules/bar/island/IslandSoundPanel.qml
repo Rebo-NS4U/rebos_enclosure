@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import qs.modules.bar
 import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
@@ -119,7 +120,7 @@ Item {
                     text: root.isMuted ? Icons.speakerSlash : (root.volume > 0.5 ? Icons.speakerHigh : (root.volume > 0 ? Icons.speakerLow : Icons.speakerSlash))
                     font.family: Icons.font
                     font.pixelSize: Styling.fontSize(4)
-                    color: root.isMuted ? Colors.red : Colors.overBackground
+                    color: BarAppearance.controlColor(!root.isMuted)
                 }
 
                 MouseArea {
@@ -329,7 +330,7 @@ Item {
                                                 text: appDelegate.isAppMuted ? Icons.speakerSlash : (appDelegate.appVolume > 0.5 ? Icons.speakerHigh : (appDelegate.appVolume > 0 ? Icons.speakerLow : Icons.speakerSlash))
                                                 font.family: Icons.font
                                                 font.pixelSize: Styling.fontSize(-1)
-                                                color: appDelegate.isAppMuted ? Colors.red : Colors.overBackground
+                                                color: BarAppearance.controlColor(!appDelegate.isAppMuted)
                                             }
 
                                             MouseArea {

@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import qs.modules.bar
 import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
@@ -752,7 +753,7 @@ Item {
                         value: root.audioMuted ? 0 : root.audioVolume
                         arcColor: root.audioMuted ? Colors.outlineVariant : Colors.primary
                         icon: root.audioMuted ? Icons.speakerSlash : (root.audioVolume > 0.5 ? Icons.speakerHigh : (root.audioVolume > 0 ? Icons.speakerLow : Icons.speakerSlash))
-                        iconColor: root.audioMuted ? Colors.error : Colors.overBackground
+                        iconColor: BarAppearance.controlColor(!root.audioMuted)
                         tooltipText: (root.audioMuted ? "Muted " : "Volume ") + Math.round(root.audioVolume * 100) + "%"
                         tooltipDescription: "Click for sound · Right-click to mute"
                         onClicked: (mouse) => {
@@ -825,7 +826,7 @@ Item {
                         value: micMuted ? 0 : micVol
                         arcColor: micMuted ? Colors.outlineVariant : Colors.primary
                         icon: micMuted ? Icons.micSlash : Icons.mic
-                        iconColor: micMuted ? Colors.error : Colors.overBackground
+                        iconColor: BarAppearance.controlColor(!micMuted)
                         tooltipText: (micMuted ? "Mic Muted " : "Mic ") + Math.round(micVol * 100) + "%"
                         tooltipDescription: "Click for microphone · Right-click to mute"
                         onClicked: (mouse) => {
@@ -894,9 +895,9 @@ Item {
                         buttonSize: quickTilesRow.tileButtonSize
                         showArc: Battery.available
                         value: Battery.available ? (Battery.percentage / 100) : 0
-                        arcColor: Battery.statusColor()
+                        arcColor: BarAppearance.batteryStatusColor(Battery.percentage, Battery.isCharging)
                         icon: Battery.isPluggedIn ? Icons.plug : Battery.getBatteryIcon()
-                        iconColor: Battery.isPluggedIn ? Colors.primary : (Battery.percentage <= 20 ? Colors.error : Colors.overBackground)
+                        iconColor: BarAppearance.batteryStatusColor(Battery.percentage, Battery.isCharging)
                         tooltipText: Battery.available ? `${Math.round(Battery.percentage)}%${Battery.isPluggedIn ? " (Charging)" : ""}` : "No Battery"
                         onClicked: (mouse) => root.openBattery()
                     }

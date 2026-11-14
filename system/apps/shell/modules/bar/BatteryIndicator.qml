@@ -15,7 +15,7 @@ Item {
     property bool layerEnabled: false
     property bool flat: false
     readonly property color trackColor: flat ? Styling.withOpacity(Colors.overSurface, 0.14) : Colors.outlineVariant
-    readonly property color progressColor: Battery.statusColor()
+    readonly property color progressColor: BarAppearance.batteryStatusColor(Battery.percentage, Battery.isCharging)
     property int meterSize: 36
 
     property real radius: 0
@@ -28,7 +28,7 @@ Item {
 
     signal activated
 
-    // Function to interpolate color between green and red based on battery percentage
+    // Use the same semantic battery state as the compact bar.
     function getBatteryColor() {
         return root.progressColor;
     }
@@ -61,7 +61,7 @@ Item {
         // Background highlight on hover
         Rectangle {
             anchors.fill: parent
-            color: Styling.srItem("overprimary")
+            color: BarAppearance.activeColor
             opacity: root.popupOpen ? 0 : (root.isHovered ? (root.flat ? 0.12 : 0.25) : 0)
             radius: root.flat ? (width / 2) : buttonBg.topLeftRadius
             topLeftRadius: root.flat ? (width / 2) : buttonBg.topLeftRadius

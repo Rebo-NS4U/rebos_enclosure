@@ -235,7 +235,7 @@ Item {
     readonly property color batteryColor: {
         let _ = Battery.percentage;
         let __ = Battery.isPluggedIn;
-        return Battery.statusColor();
+        return BarAppearance.batteryStatusColor(Battery.percentage, Battery.isCharging);
     }
 
     readonly property bool audioMuted: Audio.sink?.audio?.muted ?? false

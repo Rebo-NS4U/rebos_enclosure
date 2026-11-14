@@ -8,6 +8,19 @@ import "../../config/defaults/bar.js" as BarDefaults
 Singleton {
     id: root
     readonly property color foregroundColor: Colors.overBackground
+    // Foreground roles are for content on the bar, never on a primary fill.
+    readonly property color mutedColor: Colors.overSurfaceVariant
+    readonly property color activeColor: Colors.primary
+
+    function controlColor(enabled: bool): color {
+        return enabled ? foregroundColor : mutedColor;
+    }
+    function batteryStatusColor(percent: real, charging: bool): color {
+        if (charging) return activeColor;
+        if (percent <= 20) return Colors.error;
+        return foregroundColor;
+    }
+
     readonly property bool instrument: Styling.shellStyle === "instrument"
     readonly property bool themedCorners: instrument || Styling.shellStyle === "frosted"
     readonly property bool framed: polished || themedCorners
