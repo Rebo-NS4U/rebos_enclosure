@@ -405,9 +405,9 @@ function fish_prompt
     set -g __forge_last_status $status
 
     set -l reset (set_color normal)
-    set -l lime (__forge_color green b)
+    set -l accent (__forge_color primary b)
     set -l muted (__forge_color overSurfaceVariant)
-    set -l status_color $lime
+    set -l status_color $accent
 
     if test $__forge_last_status -ne 0
         set status_color (__forge_color error b)
