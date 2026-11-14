@@ -464,23 +464,23 @@ class BonsaiGrowTests(unittest.TestCase):
         self.assertEqual(bonsai.wood_palette(42, mixed),
                          bonsai.wood_palette(42, ['#ee2222'] * 3))
 
-    def test_leaves_have_priority_over_all_supporting_colors(self):
-        import colorsys
+    def test_leaf_base_preserves_actual_theme_colors(self):
         import re
-        for accent in ('#70bb50', '#6080dc', '#db6095', '#eeeeee', '#15121b'):
-            palette = bonsai.specimen_palette(42, [accent] * 3)
-            hsv = {}
-            for name, ink in palette.items():
-                if name:
-                    rgb = map(int, re.findall(r'\d+', ink)[-3:])
-                    hsv[name] = colorsys.rgb_to_hsv(*(value / 255 for value in rgb))
-            leaves = [color for name, color in hsv.items() if name.startswith('leaf')]
-            for name, (_, saturation, brightness) in hsv.items():
-                if (not name.startswith(('leaf', 'ceramic_inlay_'))
-                        and name not in ('pot_inlay', 'pot_pattern')):
-                    self.assertLess(brightness, min(color[2] for color in leaves))
-                    if accent not in ('#eeeeee',):
-                        self.assertLess(saturation, min(color[1] for color in leaves))
+        def rgb(ink):
+            return tuple(map(int, re.findall(r'\d+', ink)[-3:]))
+        # Pastels, dark colors and neutrals must not acquire forced saturation
+        # or brightness; the middle shade is the source color exactly.
+        for color in ('#70bb50', '#6080dc', '#db6095', '#eeeeee', '#15121b', '#e5bcc4', '#000000'):
+            palette = bonsai.specimen_palette(42, [color] * 3)
+            expected = tuple(int(color[i:i+2], 16) for i in (1, 3, 5))
+            self.assertEqual(rgb(palette['leaf4']), expected)
+            self.assertEqual(palette['leaf'], palette['leaf4'])
+            for group in range(3):
+                shadow, base, highlight = [rgb(palette[f'leaf{group*3+j}']) for j in range(3)]
+                self.assertEqual(base, expected)
+                self.assertTrue(all(a <= b <= c for a,b,c in zip(shadow,base,highlight)))
+        neutral = bonsai.specimen_palette(42, ['#888888', '#ff0000', '#00ff00'])
+        self.assertTrue(all(len(set(rgb(neutral[f'leaf{i}']))) == 1 for i in range(9)))
 
     def test_two_wallpaper_accents_color_foliage_and_ceramics(self):
         import colorsys
@@ -491,7 +491,7 @@ class BonsaiGrowTests(unittest.TestCase):
         blue_green = ['#57aae6', '#80d657', '#5790e6']
         palette = bonsai.specimen_palette(42, blue_green)
         # Blue and green mix through teal, without abrupt pure-color blocks.
-        hues = [hue(palette[f'leaf{i}']) for i in (1, 7, 4)]
+        hues = [hue(palette[f'leaf{i}']) for i in (4, 1, 7)]
         self.assertGreater(hues[0], hues[1])
         self.assertGreater(hues[1], hues[2])
         self.assertTrue(all(.25 < h < .65 for h in hues))
@@ -500,7 +500,8 @@ class BonsaiGrowTests(unittest.TestCase):
             rgb = [int(v) / 255 for v in re.findall(r'\d+', palette[f'leaf{i}'])[-3:]]
             saturation = colorsys.rgb_to_hsv(*rgb)[1]
             self.assertGreater(saturation, .2)
-            self.assertLessEqual(saturation, .72 + .01)
+            # A small secondary tint stays near the actual primary saturation.
+            self.assertLessEqual(saturation, .65)
         self.assertEqual(palette['pot_inlay'], '\033[0;38;2;{};{};{}m'.format(
                     *(int(blue_green[0][i:i+2], 16) for i in (1, 3, 5))))
         # A later theme change must replace both colors, independent of tree seed.
@@ -571,7 +572,7 @@ class BonsaiGrowTests(unittest.TestCase):
         for i in range(9):
             red, green, blue = map(int, re.findall(r'\d+', palette[f'leaf{i}'])[-3:])
             self.assertGreater(red, green)
-            self.assertGreater(green, blue)
+            self.assertGreaterEqual(green, blue)
 
     def test_dark_wood_and_vibrant_pot_patterns(self):
         import colorsys
