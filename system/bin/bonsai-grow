@@ -1324,10 +1324,37 @@ def blossom_sites(seed, style="informal"):
     return tuple(chosen)
 
 
+BLOSSOM_FORMS = ("✿", "❀", "✾", "❁")
+
+
 def add_blossoms(canvas, seed, days, style="informal"):
+    """Open small rosette sprays in the foliage, without widening the crown."""
     for x, y, born in blossom_sites(seed, style):
-        if days >= born and canvas[y][x][1].startswith("leaf"):
-            canvas[y][x] = ("✧" if days < born + 1 else "✿", "blossom")
+        if days < born or not canvas[y][x][1].startswith("leaf"):
+            continue
+        rng = random.Random(f"{seed}:{style}:flower:{x}:{y}")
+        flower = rng.choice(BLOSSOM_FORMS)
+        opening = days - born
+        glyph = "✦" if opening < 0.7 else "❀" if opening < 1.6 else flower
+        canvas[y][x] = (glyph, "blossom")
+        if opening < 1.2:
+            continue
+        # Tiny companion florets make an asymmetric spray around the rosette.
+        # They borrow existing leaf cells, leaving wood and open air untouched.
+        offsets = [(-1, 0), (1, 0), (0, -1), (-1, -1), (1, -1), (0, 1)]
+        rng.shuffle(offsets)
+        count, limit = 0, rng.randint(1, 2)
+        for dx, dy in offsets:
+            nx, ny = x + dx, y + dy
+            if not (0 <= nx < 57 and 0 <= ny < 19):
+                continue
+            if not canvas[ny][nx][1].startswith("leaf"):
+                continue
+            glyph = "❀" if count and opening >= 2.5 else "✧"
+            canvas[ny][nx] = (glyph, "blossom")
+            count += 1
+            if count == limit:
+                break
 
 
 @functools.lru_cache(maxsize=64)

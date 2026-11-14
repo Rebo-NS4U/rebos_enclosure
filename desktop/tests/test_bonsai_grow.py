@@ -946,7 +946,7 @@ class BonsaiGrowTests(unittest.TestCase):
             self.assertEqual(bonsai.specimen_palette(42, theme)['blossom'], expected)
             with patch.object(bonsai, 'terminal_leaf_palette', return_value=theme):
                 image = bonsai.render(30, 42, True, 59)
-            self.assertIn(expected + '✿', image)
+            self.assertTrue(any(expected + glyph in image for glyph in bonsai.BLOSSOM_FORMS))
 
     def test_blossoms_only_replace_existing_foliage_late_in_growth(self):
         for seed in range(48):
@@ -960,25 +960,54 @@ class BonsaiGrowTests(unittest.TestCase):
             bonsai.add_blossoms(canvas,seed,30)
             self.assertEqual(occupied, {(x,y) for y,row in enumerate(canvas) for x,(glyph,ink) in enumerate(row) if glyph != ' '})
             for x,y,born in bonsai.blossom_sites(seed):
-                self.assertEqual(canvas[y][x], ('✿','blossom'))
+                self.assertIn(canvas[y][x][0], bonsai.BLOSSOM_FORMS)
+                self.assertEqual(canvas[y][x][1], 'blossom')
             blank = [[(' ', '') for _ in range(57)] for _ in range(24)]
             bonsai.add_blossoms(blank,seed,30)
             self.assertTrue(all(glyph == ' ' for row in blank for glyph,ink in row))
+
+    def test_rosette_sprays_open_in_stages_and_preserve_the_canopy(self):
+        shapes = set()
+        for seed in range(12):
+            sites = bonsai.blossom_sites(seed)
+            x,y,born = sites[0]
+            original = [[('●', 'leaf1') for _ in range(57)] for _ in range(24)]
+            original[y][x-1] = ('│', 'wood')
+            original[y-1][x] = (' ', '')
+            snapshots = []
+            for day in (born, born + 0.8, 30):
+                canvas = [row.copy() for row in original]
+                bonsai.add_blossoms(canvas,seed,day)
+                snapshots.append(canvas)
+                self.assertEqual(canvas[y][x-1], ('│', 'wood'))
+                self.assertEqual(canvas[y-1][x], (' ', ''))
+            self.assertEqual(snapshots[0][y][x][0], '✦')
+            self.assertEqual(snapshots[1][y][x][0], '❀')
+            shapes.add(snapshots[2][y][x][0])
+            flowers = [(px,py) for py,row in enumerate(snapshots[2])
+                       for px,(glyph,ink) in enumerate(row) if ink == 'blossom']
+            self.assertGreater(len(flowers),len(sites))
+            self.assertTrue(all(any(max(abs(px-sx),abs(py-sy)) <= 1 for sx,sy,_ in sites)
+                                for px,py in flowers))
+            again = [row.copy() for row in original]
+            bonsai.add_blossoms(again,seed,30)
+            self.assertEqual(again,snapshots[2])
+        self.assertGreaterEqual(len(shapes),3)
 
     def test_actual_blossom_rendering_keeps_early_growth_clean(self):
         flowering = 0
         for seed in range(48):
             early = bonsai.render(10,seed,False,80,['#85b470']*3)
-            self.assertNotIn('✿',early)
+            self.assertFalse(any(glyph in early for glyph in bonsai.BLOSSOM_FORMS))
             mature = bonsai.render(30,seed,False,80,['#85b470']*3)
-            count = mature.count('✿')
-            self.assertLessEqual(count,4)
+            count = sum(mature.count(glyph) for glyph in bonsai.BLOSSOM_FORMS)
+            self.assertLessEqual(count,12)
             flowering += count > 0
         self.assertEqual(flowering,48)
         for style in ('natural', 'slant', 'semi-cascade'):
             for seed in range(12):
                 image = bonsai.render(30,seed,False,59,style=style)
-                self.assertTrue(1 <= image.count('✿') <= 4, (style,seed))
+                self.assertTrue(1 <= sum(image.count(glyph) for glyph in bonsai.BLOSSOM_FORMS) <= 12, (style,seed))
 
     def test_occasional_knurling_is_stable_sparse_and_only_on_bark(self):
         textured = plain = 0
