@@ -1943,7 +1943,8 @@ Item {
                                     }
 
                                     Item {
-                                        width: chatView.width
+                                        // This item belongs to the centered, width-capped conversation.
+                                        width: messageColumn.width
                                         height: mainChatArea.session.isBusy ? Math.max(56, busyStatusRow.implicitHeight + 24) : 0
                                         visible: mainChatArea.session.isBusy
 
@@ -1996,6 +1997,7 @@ Item {
                                                 id: busyStatusScroll
                                                 objectName: "assistantStatusScroll"
                                                 Layout.fillWidth: true
+                                                Layout.minimumWidth: 0
                                                 Layout.preferredHeight: Math.min(112, busyStatusText.implicitHeight)
                                                 contentWidth: width
                                                 contentHeight: busyStatusText.implicitHeight
@@ -2023,6 +2025,8 @@ Item {
                                             }
 
                                             Button {
+                                                objectName: "assistantStopButton"
+                                                Layout.minimumWidth: implicitWidth
                                                 flat: true
                                                 padding: 6
                                                 onClicked: mainChatArea.session.cancelGeneration(true)
