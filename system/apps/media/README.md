@@ -1,6 +1,6 @@
 # Rebos Streamer
 
-Enclosure’s Quickshell media browser for anime, movies, TV and YouTube. Source, dependencies, launchers and updates are maintained in `system/apps/media` within the Enclosure repository. The UI runs in its own process; a systemd user service owns playback so closing the UI does not stop a video.
+Enclosure’s Quickshell media browser for anime, movies, TV and YouTube. Source, dependencies, launchers and updates are maintained in `system/apps/media` within the Enclosure repository. The UI opens immediately as a floating sheet centered above the bottom edge, without a slide animation. Closing it while idle exits its process after a three-second player-launch grace period. The on-demand systemd playback service exits after five seconds without UI clients or a live player. Active or paused playback and its next-episode overlay stay available until the player closes.
 
 ## Run
 

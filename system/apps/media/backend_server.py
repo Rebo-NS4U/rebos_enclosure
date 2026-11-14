@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""Persistent user service; UI connections never own playback's lifetime."""
+"""On-demand user service; active playback survives UI disconnections."""
 import json
 import os
 from pathlib import Path
 import signal
 import socket
 import threading
+import time
 import uuid
 from gi.repository import GLib
 import menu_backend as backend
@@ -27,6 +28,7 @@ class BackendServer:
         self.lock = threading.RLock()
         self.loop = GLib.MainLoop()
         self.listener = None
+        self.idle_since = None
 
     def send(self, message):
         payload = (json.dumps(message) + '\n').encode()
@@ -84,6 +86,18 @@ class BackendServer:
                     client.send((json.dumps(message) + '\n').encode())
             threading.Thread(target=self.read_client, args=(key, client), daemon=True).start()
 
+    def check_idle(self):
+        # Keep paused players and players still preparing a stream alive too.
+        with self.lock:
+            player = backend.engine.player
+            if self.clients or (player is not None and player.poll() is None):
+                self.idle_since = None
+            elif self.idle_since is None:
+                self.idle_since = time.monotonic()
+            elif time.monotonic() - self.idle_since >= 5:
+                self.loop.quit()
+        return True
+
     def run(self):
         prepare_socket(self.path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -96,9 +110,11 @@ class BackendServer:
         backend.send = self.send
         signal.signal(signal.SIGTERM, lambda *_: self.loop.quit())
         threading.Thread(target=self.accept_clients, daemon=True).start()
+        idle_timer = GLib.timeout_add_seconds(1, self.check_idle)
         try:
             self.loop.run()
         finally:
+            GLib.source_remove(idle_timer)
             backend.engine.stop()
             self.listener.close()
             with self.lock:

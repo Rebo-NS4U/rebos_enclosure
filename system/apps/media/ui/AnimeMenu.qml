@@ -90,18 +90,14 @@ PanelWindow {
 
     screen: Quickshell.screens.find(s => s.name === root.screenName) ?? Quickshell.screens[0]
     readonly property bool active: opened && !GlobalStates.lockscreenVisible
-    property real slideProgress: active ? 1 : 0
-    readonly property bool presented: active || slideProgress > 0 || slideAnimation.running
-    Behavior on slideProgress {
-        enabled: Motion.enabled && !GlobalStates.lockscreenVisible
-        NumberAnimation {
-            id: slideAnimation
-            duration: root.active ? Motion.enter : Motion.exit
-            easing.type: Easing.InOutCubic
-        }
+    readonly property bool presented: active
+    // Release the browser and its transport when neither browsing nor playing.
+    // A short grace period lets an in-flight player launch create its window.
+    Timer {
+        interval: 3000
+        running: !root.opened && !root.playerWindowPresent
+        onTriggered: Quickshell.quit()
     }
-    // Recreate the layer surface on open after an output is disconnected.
-    // Keep it mapped until the closing animation finishes.
     visible: presented && !GlobalStates.lockscreenVisible
     mask: Region {
         item: root.presented && !GlobalStates.lockscreenVisible ? inputArea : null
@@ -471,7 +467,7 @@ PanelWindow {
         function applyFilters(): void { root.applyFilters(); }
         function settings(): void { root.previousPage = root.pageView; root.settingsSection = "general"; root.pageView = "settings"; card.forceActiveFocus(); }
         function status(): string {
-            return JSON.stringify({open: root.opened, presented: root.presented, slideProgress: root.slideProgress,
+            return JSON.stringify({open: root.opened, presented: root.presented,
                 sheetY: card.y, sheetHeight: card.height, screenHeight: root.height,
                 ready: root.ready, view: root.pageView, settingsSection: root.settingsSection, emptyCataloguePages: root.emptyCataloguePages, gridHeight: grid.height, gridColumns: Math.round(grid.width / grid.cellWidth),
                 nextEpisodeAvailable: root.nextEpisodeAvailable, nextEpisodeLabel: root.nextEpisodeLabel, nextEpisodeTitle: root.nextEpisodeTitle,
@@ -574,7 +570,7 @@ PanelWindow {
         anchors.horizontalCenter: parent.horizontalCenter
         width: Math.min(root.width - root.unit * 2, root.unit * 110)
         height: Math.min(root.height - root.unit * 4, root.unit * 78)
-        y: root.height - (height + root.unit) * root.slideProgress
+        y: root.height - height - root.unit
         clip: true
         focus: true
         Keys.onEscapePressed: event => { root.back(); event.accepted = true; }
