@@ -47,7 +47,7 @@ ShellRoot {
    MprisController.activePlayer = {dbusName: 'test', identity: 'Spotify', metadata: {'xesam:url': 'https://open.spotify.com/track/1234567890123456789012'}, trackAlbum: ''};
    LyricsService.lyricsPlus = {uri: 'spotify:track:1234567890123456789012', provider: 'Lyrics Plus · Spotify', synced: true, lines: [{time: 1.5, text: 'Native lyrics'}]};
    check(LyricsService.hasLyricsPlus && LyricsService.provider === 'Lyrics Plus · Spotify' && LyricsService.lines[0].time === 1.5, 'Lyrics Plus supplies native timings');
-   LyricsService.lyricsPlus = {uri: 'spotify:track:0000000000000000000000', synced: true, lines: [{time: 1, text: 'Other song'}]};
+   LyricsService.lyricsPlus = {uri: 'spotify:track:0000000000000000000000', provider: 'Other track', synced: true, lines: [{time: 1, text: 'Other song'}]};
    check(!LyricsService.hasLyricsPlus, 'Bridge lyrics for another song rejected');
    MprisController.activePlayer = oldPlayer;
    LyricsService.refresh();
@@ -230,6 +230,11 @@ class Lyrics(unittest.TestCase):
             for name in ('modules', 'config', 'assets'):
                 shutil.copytree(APP / name, root / name)
             (root / 'modules/services/MprisController.qml').write_text(PLAYER)
+            # Keep real compositor parsing/state, but isolate IPC on headless CI.
+            niri = root / 'modules/services/NiriService.qml'
+            niri.write_text(niri.read_text().replace('running: true', 'running: false')
+                            .replace('outputsProcess.running = true', 'outputsProcess.running = false')
+                            .replace('overviewStateProcess.running = true', 'overviewStateProcess.running = false'))
             (root / 'shell.qml').write_text(harness)
             (root / 'scripts').mkdir()
             (root / 'scripts/lyrics_plus_bridge.py').write_text('import time; time.sleep(60)')
