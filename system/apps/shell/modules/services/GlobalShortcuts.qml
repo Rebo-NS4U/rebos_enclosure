@@ -72,8 +72,8 @@ Singleton {
         }
         function toggle(): void { root.run("lyrics"); }
         function status(): string {
-            return JSON.stringify({opened: LyricsService.pinEdge !== "",
-                edge: LyricsService.pinEdge, screen: LyricsService.pinScreen,
+            return JSON.stringify({opened: LyricsService.stripEnabled,
+                edge: "bar", screen: LyricsService.pinScreen,
                 hasLyrics: LyricsService.hasLyrics, provider: LyricsService.provider,
                 synced: LyricsService.lines.length > 0, lineCount: LyricsService.lines.length,
                 bridgeMatched: LyricsService.hasLyricsPlus, status: LyricsService.status});
@@ -162,7 +162,7 @@ Singleton {
             QuickNotes.close();
         switch (command) {
             case "lyrics":
-                LyricsService.toggle(NiriService.focusedMonitor?.name || "");
+                LyricsService.stripEnabled = !LyricsService.stripEnabled;
                 break;
             case "t":
             case "typing":

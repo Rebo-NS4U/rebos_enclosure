@@ -29,6 +29,7 @@ Singleton {
     }
     onHasLyricsPlusChanged: if (hasLyricsPlus) refresh()
     onLyricsPlusChanged: if (hasLyricsPlus) refresh()
+    property bool stripEnabled: true
     property string pinEdge: ""
     property string lastPinEdge: "bottom"
     property string pinScreen: ""

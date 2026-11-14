@@ -613,6 +613,15 @@ Item {
         }
     }
 
+    BarLyrics {
+        anchors.fill: parent
+        islandLeft: islandContainer.x
+        islandRight: islandContainer.x + islandContainer.width
+        stripHeight: root.islandHeight
+        available: !root.fullscreenOnScreen && !NiriService.overviewOpen
+            && !GlobalStates.lockscreenVisible
+    }
+
     // Island body
     Item {
         id: islandContainer

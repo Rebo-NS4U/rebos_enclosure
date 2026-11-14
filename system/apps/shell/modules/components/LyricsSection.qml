@@ -104,17 +104,6 @@ StyledRect {
             Layout.fillWidth: true
             spacing: Styling.spacing(4)
             ThemeButton {
-                text: "Top"
-                checked: LyricsService.pinEdge === "top"
-                onClicked: LyricsService.pin("top", root.Window.window?.screen?.name)
-            }
-            ThemeButton {
-                text: "Bottom"
-                checked: LyricsService.pinEdge === "bottom"
-                onClicked: LyricsService.pin("bottom", root.Window.window?.screen?.name)
-            }
-            ThemeButton { text: "Unpin"; visible: LyricsService.pinEdge !== ""; onClicked: LyricsService.pinEdge = "" }
-            ThemeButton {
                 visible: root.compact
                 text: "Auto-hide"
                 checkable: true

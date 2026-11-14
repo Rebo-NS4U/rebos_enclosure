@@ -49,8 +49,6 @@ ShellRoot {
                 targetScreen: screenShellContainer.modelData
             }
 
-            PinnedLyrics { targetScreen: screenShellContainer.modelData }
-
             // Exclusive zone reservations
             ReservationWindows {
                 screen: screenShellContainer.modelData

@@ -224,6 +224,45 @@ class Lyrics(unittest.TestCase):
     def test_animated_rows(self):
         self.run_harness(ANIMATION_HARNESS)
 
+    def test_bar_lyrics_geometry_and_visibility(self):
+        self.run_harness('''import QtQuick
+import Quickshell
+import qs.modules.components
+import qs.modules.services
+ShellRoot {
+ Item { width: 1920; height: 1200
+  BarLyrics { id: strip; anchors.fill: parent; islandLeft: 700; islandRight: 1220 }
+ }
+ Timer { interval: 300; running: true; property int phase: 0; repeat: true
+  onTriggered: {
+   try {
+    if (phase === 0) {
+     LyricsService.apply('[00:01]Current line\\n[00:03]Next line', 'Test', false);
+     phase++; return;
+    }
+    if (!strip.visible || strip.currentText !== 'Current line' || strip.nextText !== 'Next line')
+     throw Error('Current/next lyrics missing');
+    function label(item) { if (item.objectName === 'bar-lyrics-text') return item; for (const child of item.children) { const found = label(child); if (found) return found; } return null; }
+    if (label(strip.children[0])?.text !== 'Current line' || label(strip.children[1])?.text !== 'Next line') throw Error('Lyric label binding failed');
+    if (strip.sideWidth !== 676) throw Error('Unexpected side geometry');
+    const left = strip.children[0], right = strip.children[1];
+    if (left.x + left.width > strip.islandLeft || right.x < strip.islandRight
+        || left.height !== 36 || right.x + right.width > strip.width)
+     throw Error('Lyrics overlap bar or exceed screen');
+    strip.islandLeft = 80; strip.islandRight = 1840;
+    if (strip.visible) throw Error('Narrow gaps must hide lyrics');
+    strip.islandLeft = 700; strip.islandRight = 1220;
+    LyricsService.stripEnabled = false;
+    if (strip.visible) throw Error('Toggle must hide lyrics');
+    LyricsService.stripEnabled = true; strip.available = false;
+    if (strip.visible) throw Error('Fullscreen/lockscreen must hide lyrics');
+    console.log('PASS: bar lyrics, current/next text, bounds, narrow screens and visibility'); Qt.quit();
+   } catch(error) { console.error(error); Qt.exit(1); }
+  }
+ }
+}
+''')
+
     def run_harness(self, harness):
         with tempfile.TemporaryDirectory(prefix='lyrics-test-') as directory:
             root = Path(directory)
