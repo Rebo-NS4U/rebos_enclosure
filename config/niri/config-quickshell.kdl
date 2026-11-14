@@ -422,6 +422,7 @@ window-rule {
 }
 
 
+spawn-at-startup "sh" "-c" "exec udiskie --no-notify"
 spawn-at-startup "/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1"
 spawn-at-startup "sh" "-c" "wl-paste --watch cliphist store"
 
