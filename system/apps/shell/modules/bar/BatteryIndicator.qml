@@ -158,13 +158,13 @@ Item {
             }
         }
 
-        // Central icon (Lightning/Plug for battery, PowerProfile icon otherwise)
+        // Show a lightning bolt only while the battery is charging.
         Text {
             renderType: Text.NativeRendering
             font.hintingPreference: Font.PreferFullHinting
             id: batteryIcon
             anchors.centerIn: parent
-            text: Battery.available ? (Battery.isPluggedIn ? Icons.plug : Icons.lightning) : PowerProfile.getProfileIcon(PowerProfile.currentProfile)
+            text: Battery.available ? (Battery.isCharging ? Icons.lightning : Icons.batteryFull) : PowerProfile.getProfileIcon(PowerProfile.currentProfile)
             font.family: Icons.font
             font.pixelSize: Styling.fontSize(root.flat ? (Battery.available ? -3 : 0) : (Battery.available ? 0 : 4))
             color: BarAppearance.foregroundColor
