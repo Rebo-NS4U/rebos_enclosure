@@ -80,17 +80,16 @@ class BonsaiGrowTests(unittest.TestCase):
         bonsai.outline_exposed_wood(again)
         self.assertEqual(again,canvas)
 
-    def test_top_sprays_fill_from_terminal_branches(self):
+    def test_sprays_fill_from_supported_tips_and_inner_shoots(self):
         for seed in range(24):
             leaves = [cell for cell in bonsai.specimen(seed, 30)
                       if cell[4].startswith('leaf') and cell[2] <= 31]
             upper = [cell for cell in leaves if cell[1] <= 6]
             self.assertGreaterEqual(len(upper), 25)
-            graph = bonsai.branch_graph(seed)
-            terminals = [branch['end'] for branch in graph]
+            supports = [spray['end'] for spray in bonsai.foliage_sprays(seed)]
             for x, y, *_ in leaves:
                 self.assertTrue(any(abs(x-tx) <= 5 and abs(y-ty) <= 2.4
-                                    for tx, ty in terminals))
+                                    for tx, ty in supports))
             self.assertGreater(len(set((x, y) for x, y, *_ in upper)), 20)
 
     def test_leafy_juvenile_stages_are_attached_and_retire(self):
@@ -1139,6 +1138,23 @@ class BonsaiGrowTests(unittest.TestCase):
             for depth,x,y,born in bonsai.branch_layout(seed)[:3]:
                 self.assertLessEqual(abs(x+shift-path[depth]),9)
         self.assertGreater(checked,10)
+
+    def test_fan_crowns_fill_the_inner_funnel_with_supported_foliage(self):
+        for seed in (1,7,17,33):
+            canvas = bonsai.specimen_canvas(30,seed)
+            center = round(bonsai.trunk_path(seed)[6])
+            filled = sum(canvas[y][x][1].startswith('leaf') or canvas[y][x][1] == 'blossom'
+                         for y in range(7,12) for x in range(center-3,center+4))
+            self.assertGreaterEqual(filled,20,seed)
+            self.assertTrue(any(ink in ('wood','woodlight','bark','scar')
+                                for row in canvas[15:19] for glyph,ink in row if glyph.strip()))
+            graph = bonsai.branch_graph(seed)
+            shoots = [spray for spray in bonsai.foliage_sprays(seed) if spray.get('inner')]
+            self.assertTrue(shoots)
+            for shoot in shoots:
+                support = graph[shoot['support']]
+                self.assertEqual(shoot['end'], bonsai.branch_point(support,shoot['attachment']))
+                self.assertEqual(shoot['born'],support['born'])
 
     def test_fan_forms_have_curved_wood_and_fuller_lower_shoulders(self):
         # Representative broom and oak crowns previously had a nearly straight

@@ -732,6 +732,36 @@ def branch_graph(seed):
     return branches
 
 
+@functools.lru_cache(maxsize=64)
+def foliage_sprays(seed):
+    """Terminal foliage plus supported inner shoots on fan-shaped trees."""
+    graph = branch_graph(seed)
+    sprays = list(graph)
+    if growth_pattern(seed)[0] not in ("broom", "old_oak", "forked"):
+        return sprays
+    center = trunk_path(seed)[6]
+    candidates = []
+    for index, branch in enumerate(graph):
+        if branch["parent"] is not None or branch["length"] < 4:
+            continue
+        for fraction in (0, 0.2, 0.35, 0.5, 0.65):
+            x, y = branch_point(branch, fraction)
+            if abs(x - center) <= 5 and 7 <= y <= 12:
+                candidates.append((index, fraction, x, y))
+    candidates.sort(key=lambda item: abs(item[3] - 10.5) + abs(item[2] - center) * 0.7)
+    chosen = []
+    for index, fraction, x, y in candidates:
+        if any(max(abs(x - px), abs(y - py)) < 2.3 for px, py in chosen):
+            continue
+        branch = graph[index]
+        sprays.append(dict(branch, end=(x, y), length=branch["length"] * fraction,
+                           inner=True, support=index, attachment=fraction))
+        chosen.append((x, y))
+        if len(chosen) == 3:
+            break
+    return sprays
+
+
 def natural_specimen(seed, days):
     """Render connected tapered wood and leaf sprays at its own terminal tips."""
     graph = branch_graph(seed)
@@ -806,7 +836,7 @@ def natural_specimen(seed, days):
         cells.append((x, y, birth, "◆", f"leaf{index % 3 * 3 + 1}"))
     # Every living endpoint carries foliage, including the continuing parent
     # tip. A bare parent beyond a leafy lateral fork looked like a stray spur.
-    for index, branch in enumerate(graph):
+    for index, branch in enumerate(foliage_sprays(seed)):
         cx, cy = branch["end"]
         rng = random.Random(f"{seed}:terminal:{index}")
         rx, ry = rng.uniform(3.2, 5), rng.uniform(1.6, 2.4)
@@ -844,6 +874,10 @@ def natural_specimen(seed, days):
             # The single apex replaces several crowded upper twigs, so give
             # its foliage enough volume to form a complete crown on its own.
             rx, ry = max(rx, 4.4), max(ry, 2.0)
+        if branch.get("inner"):
+            # Compact shoots on the actual inner limbs close the central
+            # funnel, rather than enlarging only the outside terminal pads.
+            rx, ry = 3.4, 1.9
         lean *= 1 if branch['end'][0] >= branch['start'][0] else -1
         cleft_side = character.choice((-1, 1))
         cleft_start = character.uniform(0.15, 0.4)
