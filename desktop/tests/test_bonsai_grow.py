@@ -282,15 +282,15 @@ class BonsaiGrowTests(unittest.TestCase):
         self.assertEqual(canvas[2][2], ('│', 'wood'))
         self.assertEqual(canvas[2][6], (' ', ''))
 
-    def test_simple_pot_is_consistent_and_fits(self):
+    def test_pushed_pot_patterns_are_stable_and_fit(self):
+        self.assertEqual(len(bonsai.POT_MOTIFS), 16)
         designs = set()
         for seed in range(100):
             rows = bonsai.pot_rows(seed)
             self.assertEqual(rows, bonsai.pot_rows(seed))
             self.assertEqual([len(row) for row in rows], [23] * 4)
             designs.add(rows)
-        self.assertEqual(len(designs), 1)
-        self.assertEqual(sum(row.count('◇') for row in rows), 1)
+        self.assertGreaterEqual(len(designs), 16)
 
     def test_background_greeting_uses_original_sprout_growth(self):
         from unittest.mock import patch
@@ -489,11 +489,12 @@ class BonsaiGrowTests(unittest.TestCase):
             return colorsys.rgb_to_hsv(*rgb)[0]
         blue_green = ['#57aae6', '#80d657', '#5790e6']
         palette = bonsai.specimen_palette(42, blue_green)
-        # Most leaves retain blue; sparse accent marks use green directly.
-        for i in range(9):
-            self.assertLess(abs(hue(palette[f'leaf{i}']) - hue(palette['pot_inlay'])), .01)
-        for i in range(3):
-            self.assertLess(abs(hue(palette[f'leaf_accent{i}']) - hue(palette['pot_pattern'])), .01)
+        # Blue and green mix through teal, without abrupt pure-color blocks.
+        hues = [hue(palette[f'leaf{i}']) for i in (1, 7, 4)]
+        self.assertGreater(hues[0], hues[1])
+        self.assertGreater(hues[1], hues[2])
+        self.assertTrue(all(.25 < h < .65 for h in hues))
+        self.assertLess(max(abs(a-b) for a, b in zip(hues, hues[1:])), .15)
         for i in range(9):
             rgb = [int(v) / 255 for v in re.findall(r'\d+', palette[f'leaf{i}'])[-3:]]
             saturation = colorsys.rgb_to_hsv(*rgb)[1]
@@ -530,16 +531,18 @@ class BonsaiGrowTests(unittest.TestCase):
             self.assertLessEqual(max(rgb), 143)
         for seed in range(80):
             canvas = bonsai.specimen_canvas(30, seed)
-            inks = {ink for row in canvas[20:22] for glyph,ink in row if glyph.strip()}
-            self.assertIn('pot_inlay', inks)
-            self.assertIn('pot_pattern', inks)
-            self.assertEqual(sum(ink == 'pot_pattern' for row in canvas[20:22] for glyph,ink in row), 1)
-            self.assertTrue(all(ink == 'pot' for row in (canvas[19], canvas[22])
-                                for glyph,ink in row if glyph.strip()))
+            for y in (20, 21):
+                inks = {ink for glyph, ink in canvas[y] if glyph.strip()}
+                self.assertIn('pot_inlay', inks, seed)
+                self.assertIn('pot_pattern', inks, seed)
+                for x, (glyph, ink) in enumerate(canvas[y]):
+                    if glyph == '─':
+                        self.assertEqual(ink, 'pot')
             with patch.object(bonsai, 'terminal_leaf_palette', return_value=accents):
                 colored = bonsai.render(30, seed, True, fixed_height=True).splitlines()
-            self.assertIn(palette['pot_inlay'], colored[21])
-            self.assertIn(palette['pot_pattern'], colored[22])
+            for row in colored[21:23]:
+                self.assertIn(palette['pot_inlay'], row)
+                self.assertIn(palette['pot_pattern'], row)
 
     def test_main_color_outweighs_accent_in_pot_and_leaves(self):
         import re
@@ -557,29 +560,7 @@ class BonsaiGrowTests(unittest.TestCase):
         for i in range(9):
             red, green, blue = map(int, re.findall(r'\d+', palette[f'leaf{i}'])[-3:])
             self.assertGreater(red, green)
-            self.assertLess(abs(green - blue), 12)
-
-    def test_leaf_accents_are_irregular_sparse_patches(self):
-        total = accents = neighbors = 0
-        for seed in range(48):
-            canvas = bonsai.specimen_canvas(30, seed)
-            points = {(x,y) for y,row in enumerate(canvas[:19])
-                      for x,(glyph,ink) in enumerate(row) if ink.startswith('leaf_accent')}
-            leaves = sum(ink.startswith('leaf') for row in canvas[:19] for glyph,ink in row)
-            total += leaves
-            accents += len(points)
-            neighbors += sum(any((x+dx,y+dy) in points for dx,dy in
-                                 ((-1,0),(1,0),(0,-1),(0,1))) for x,y in points)
-            self.assertLess(len(points), leaves / 2, seed)
-            self.assertEqual(canvas, bonsai.specimen_canvas(30, seed))
-        self.assertGreater(accents / total, .07)
-        self.assertLess(accents / total, .25)
-        self.assertGreater(neighbors / accents, .65)
-        canvas = [[('◆', 'leaf4'), ('│', 'wood'), ('─', 'pot')]]
-        before = [row.copy() for row in canvas]
-        bonsai.accent_foliage(canvas, 42)
-        self.assertEqual([g for g,ink in canvas[0]], [g for g,ink in before[0]])
-        self.assertEqual(canvas[0][1:], before[0][1:])
+            self.assertGreater(green, blue)
 
     def test_dark_wood_and_vibrant_pot_patterns(self):
         import colorsys

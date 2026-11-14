@@ -1201,12 +1201,49 @@ def cover_crown_wood(canvas):
         canvas[y][x] = (" ", "")
 
 
+# Ceramic inlay designs retained from the original framed greeting.
+POT_MOTIFS = (
+    ("╱─╲", "╲─╱"),
+    ("╭───╮", "╰╮ ╭╯"),
+    ("╲ ╱", " ╳ "),
+    ("╱◇╲", "╲─╱"),
+    ("╭◇╮", "╰─╯"),
+    ("╭┬╮", "╰┴╯"),
+    ("┌┬┐", "└┴┘"),
+    ("╱│╲", "╲│╱"),
+    ("╭─┬─╮", "╰─┴─╯"),
+    ("╱╲ ╱╲", "╲╱ ╲╱"),
+    ("╭╮ ╭╮", "╰╯ ╰╯"),
+    ("╱─┬─╲", "╲─┴─╱"),
+    ("┌─◇─┐", "└───┘"),
+    ("╲│╱", "╱│╲"),
+    ("╭◆╮", "╰─╯"),
+    ("┌◇┐", "└─┘"),
+)
+
+
 def pot_rows(seed):
-    """A consistent shallow ceramic pot with a fine band and small center seal."""
+    """Keep the selected glaze pattern stable throughout a growth sequence."""
+    rng = random.Random(f"{seed}:pot")
+    upper, lower = rng.choice(POT_MOTIFS)
+    gap = 1 if len(upper) == 5 else rng.choice((1, 2))
+    bands = []
+    for motif, half_width in ((upper, 10), (lower, 9)):
+        repeat = motif + "─" * gap
+        band = "".join(
+            repeat[(x + len(motif) // 2) % len(repeat)]
+            for x in range(-half_width, half_width + 1)
+        )
+        band = (
+            "─" * (len(band) - len(band.lstrip()))
+            + band.strip()
+            + "─" * (len(band) - len(band.rstrip()))
+        )
+        bands.append(band)
     return (
         "╭─────────────────────╮",
-        "╲  ─────────────────  ╱",
-        " ╲        ─◇─        ╱ ",
+        "╲" + bands[0] + "╱",
+        " ╲" + bands[1] + "╱ ",
         "  ╰─────────────────╯  ",
     )
 
@@ -1495,49 +1532,26 @@ def specimen_palette(seed, leaves=None):
         for j, value in enumerate((0.70, 0.9, 0.98)):
             leaf_hue, leaf_chroma = hue + shift, chroma
             if paired:
-                # Keep the main hue intact; the accent is placed spatially,
-                # rather than mixed into every leaf's RGB channels.
-                leaf_hue, leaf_chroma = hue + shift * 0.2, min(0.72, chroma)
+                # Blend light rather than jumping between two saturated inks.
+                # Main color dominates every cluster; small accent variations
+                # soften boundaries while preserving the tree's leaf texture.
+                weight = (0.18, 0.46, 0.35)[i] + (j - 1) * 0.025
+                endpoints = [colorsys.hsv_to_rgb(h, min(0.72, max(0.62, sat)), 0.9)
+                             for h, sat in ((hue, saturation), (second_hue, second_saturation))]
+                def linear(v):
+                    return v / 12.92 if v <= 0.04045 else ((v + 0.055) / 1.055) ** 2.4
+                def srgb(v):
+                    return 12.92 * v if v <= 0.0031308 else 1.055 * v ** (1 / 2.4) - 0.055
+                mixed = [srgb(linear(a) * (1 - weight) + linear(b) * weight)
+                         for a, b in zip(*endpoints)]
+                leaf_hue, leaf_chroma, _ = colorsys.rgb_to_hsv(*mixed)
             palette[f"leaf{i * 3 + j}"] = ink(leaf_hue, leaf_chroma, value)
-    for j, value in enumerate((0.70, 0.9, 0.98)):
-        accent_hue = second_hue
-        accent_chroma = min(0.72, max(0.62, second_saturation)) if second_saturation >= 0.08 else 0
-        palette[f"leaf_accent{j}"] = ink(accent_hue, accent_chroma, value)
     # Use the actual main/accent pair on the inlay, rather than the crown's
-    # shaded leaves. Ceramic shadows and the body keep their dark tones.
+    # blended shades. Ceramic shadows and the body keep their dark tones.
     for role, color in zip(("pot_inlay", "pot_pattern"), leaves[:2]):
         rgb = [int(color[i:i + 2], 16) for i in (1, 3, 5)]
         palette[role] = "\033[0;38;2;{};{};{}m".format(*rgb)
     return palette
-
-
-def accent_foliage(canvas, seed):
-    """Irregular, seed-stable patches with softly broken edges, never stripes."""
-    nodes = {}
-
-    def node(x, y):
-        key = (x, y)
-        if key not in nodes:
-            nodes[key] = random.Random(f"{seed}:leaf-mottle:{x}:{y}").random()
-        return nodes[key]
-
-    for y, row in enumerate(canvas[:19]):
-        for x, (glyph, ink) in enumerate(row):
-            if not ink.startswith("leaf") or not glyph.strip():
-                continue
-            gx, gy = x / 3.7, y / 2.3
-            ix, iy = math.floor(gx), math.floor(gy)
-            tx, ty = gx - ix, gy - iy
-            tx, ty = tx * tx * (3 - 2 * tx), ty * ty * (3 - 2 * ty)
-            upper = node(ix, iy) * (1 - tx) + node(ix + 1, iy) * tx
-            lower = node(ix, iy + 1) * (1 - tx) + node(ix + 1, iy + 1) * tx
-            field = upper * (1 - ty) + lower * ty
-            # A little local variation breaks the edges without turning every
-            # leaf into independent confetti. No repeated bands or grid tiles.
-            edge = random.Random(f"{seed}:mottle-edge:{x}:{y}").uniform(-0.045, 0.045)
-            if field + edge > 0.72:
-                shade = int(ink[-1]) % 3 if ink[-1].isdigit() else 1
-                row[x] = (glyph, f"leaf_accent{shade}")
 
 
 def specimen_canvas(days, seed, style="informal", pot_seed=None):
@@ -1553,7 +1567,6 @@ def specimen_canvas(days, seed, style="informal", pot_seed=None):
     for x, y, born, glyph, ink in wood + stem(days, seed, style) + leaves:
         if born <= days + 1 and 0 <= x < width and 0 <= y < 19:
             canvas[y][x] = (glyph, ink)
-    accent_foliage(canvas, seed)
     if style == "informal":
         cover_crown_wood(canvas)
         space_bark_shading(canvas, seed)
@@ -1563,14 +1576,15 @@ def specimen_canvas(days, seed, style="informal", pot_seed=None):
     for y, row in enumerate(pot_rows(seed if pot_seed is None else pot_seed), 19):
         left = len(row) - len(row.lstrip())
         right = len(row.rstrip()) - 1
+        marks = sum(char not in " ─" for char in row[left + 1:right])
+        accent_position = min(3, max(0, marks - 1))
+        decoration = 0
         for column, char in enumerate(row):
             x = column + 16
             ink = "pot"
-            if y in (20, 21) and left < column < right:
-                if char == "─":
-                    ink = "pot_inlay"
-                elif char == "◇":
-                    ink = "pot_pattern"
+            if y in (20, 21) and left < column < right and char not in " ─":
+                ink = "pot_pattern" if decoration % 4 == accent_position else "pot_inlay"
+                decoration += 1
             canvas[y][x] = (char, ink)
     seat_tree_in_pot(canvas, days)
     if style == "informal":
