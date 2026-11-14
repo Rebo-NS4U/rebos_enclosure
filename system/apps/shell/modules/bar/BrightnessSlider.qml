@@ -3,6 +3,8 @@ import QtQuick
 import QtQuick.Layouts
 import qs.modules.components
 import qs.modules.services
+import qs.modules.bar.island
+import qs.config
 import qs.modules.theme
 
 CircularBarMeter {
@@ -22,47 +24,68 @@ CircularBarMeter {
     BarPopup {
         id: brightnessPopup
         anchorItem: root
-        popupPadding: Styling.spacing(16)
-        contentWidth: Styling.spacing(280) + popupPadding * 2
-        contentHeight: controls.implicitHeight + popupPadding * 2
-        ColumnLayout {
-            id: controls
-            anchors.left: parent.left
-            anchors.right: parent.right
-            spacing: Styling.spacing(12)
+        contentWidth: panel.implicitWidth
+        contentHeight: panel.implicitHeight
 
-            RowLayout {
-                Layout.fillWidth: true
-                spacing: Styling.spacing(10)
+        Item {
+            id: panel
+            implicitWidth: Styling.spacing(440)
+            implicitHeight: controls.implicitHeight + Styling.spacing(36)
+            width: implicitWidth
+            height: implicitHeight
 
-                StyledText {
-                    text: Icons.sun
-                    font.family: Icons.font
-                    font.pixelSize: Styling.fontSize(3)
-                    color: Colors.primary
-                }
-                StyledText {
-                    text: "Brightness"
-                    font.bold: true
+            ColumnLayout {
+                id: controls
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.margins: Styling.spacing(18)
+                spacing: Styling.spacing(14)
+
+                RowLayout {
                     Layout.fillWidth: true
+                    spacing: Styling.spacing(8)
+
+                    IslandBackButton {
+                        onClicked: brightnessPopup.close()
+                    }
+                    StyledText {
+                        text: "Brightness"
+                        font.pixelSize: Styling.fontSize(3)
+                        font.bold: true
+                    }
+                    Item { Layout.fillWidth: true }
                 }
-                StyledText {
-                    text: Math.round(root.value * 100) + "%"
-                    color: Colors.overSurfaceVariant
-                }
-            }
-            StyledSlider {
-                Layout.fillWidth: true
-                Layout.leftMargin: Styling.spacing(8)
-                Layout.rightMargin: Styling.spacing(8)
-                Layout.preferredHeight: Styling.spacing(36)
-                resizeParent: false
-                enabled: root.currentMonitor?.ready ?? false
-                stepSize: 0.01
-                value: root.value
-                onValueChanged: {
-                    if (Math.abs(value - root.value) > 0.01)
-                        root.adjusted(Math.max(0.05, value));
+
+                Separator { Layout.fillWidth: true; implicitHeight: 1 }
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: Styling.spacing(10)
+
+                    StyledText {
+                        text: Icons.sun
+                        font.family: Icons.font
+                        font.pixelSize: Styling.fontSize(4)
+                        color: Colors.primary
+                    }
+                    StyledSlider {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 18
+                        enabled: root.currentMonitor?.ready ?? false
+                        stepSize: 0.01
+                        value: root.value
+                        onValueChanged: {
+                            if (Math.abs(value - root.value) > 0.01)
+                                root.adjusted(Math.max(0.05, value));
+                        }
+                    }
+                    StyledText {
+                        text: Math.round(root.value * 100) + "%"
+                        font.family: Config.theme.monoFont
+                        font.pixelSize: Styling.fontSize(0)
+                        font.bold: true
+                    }
                 }
             }
         }
