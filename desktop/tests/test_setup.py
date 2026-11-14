@@ -46,6 +46,21 @@ class SetupTests(unittest.TestCase):
             selected = {p for group in setup.GROUPS.values() for p in group[category]}
             self.assertEqual(selected, set(setup.packages_from(setup.ROOT / 'packages' / filename)))
 
+    def test_spotdl_follows_media_group_and_aur_selection(self):
+        for kwargs, expected in [({}, True),
+                                 ({'profile': 'core', 'groups': 'media'}, True),
+                                 ({'profile': 'core'}, False),
+                                 ({'groups': 'notes'}, False),
+                                 ({'groups': 'media', 'no_aur': True}, False)]:
+            with self.subTest(options=kwargs):
+                plan = setup.build_plan(options(**kwargs), hardware())
+                self.assertEqual('spotdl' in plan['aur_packages'], expected)
+                self.assertNotIn('spotdl', plan['packages'])
+                self.assertNotIn('python-spotdl', plan['aur_packages'])
+                if expected:
+                    self.assertIn('ffmpeg', plan['packages'])
+                setup.validate_plan(plan)
+
     def test_core_and_custom_groups_do_not_install_unselected_apps(self):
         plan = setup.build_plan(options(profile='core'), hardware())
         self.assertNotIn('discord', plan['packages'])

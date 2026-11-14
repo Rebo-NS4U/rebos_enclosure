@@ -45,7 +45,7 @@ For intentional offline previews or testing local edits,
 use `bash install.sh --local-snapshot --dry-run`; `--local-snapshot` deliberately
 bypasses the freshness check. Help is available without network access.
 
-The default **full** profile installs the desktop and applications, then offers normal AUR package review for Zen, Spicetify, VS Code and mpvpaper (video wallpapers). Review package build files as you would for any AUR installation. `--yes` accepts the desktop plan; it does not bypass AUR review. Internet and current Arch mirrors are required; this is a configuration snapshot, not an offline package mirror. Core and `--no-aur` installs support image wallpapers; video wallpapers require mpvpaper separately.
+The default **full** profile installs the desktop and applications, then offers normal AUR package review for Zen, Spicetify, spotDL, VS Code and mpvpaper (video wallpapers). Review package build files as you would for any AUR installation. `--yes` accepts the desktop plan; it does not bypass AUR review. Internet and current Arch mirrors are required; this is a configuration snapshot, not an offline package mirror. Core and `--no-aur` installs support image wallpapers; video wallpapers require mpvpaper separately.
 
 ```bash
 bash install.sh --profile core       # desktop and Neovim, without extra apps or AUR

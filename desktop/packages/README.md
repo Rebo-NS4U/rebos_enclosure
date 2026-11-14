@@ -12,6 +12,18 @@ The default full profile selects every optional group. Core does not install a b
 select the browser group for Zen. Firefox is not installed or used as a fallback. Package changes here
 affect future installations; they do not uninstall anything from this computer.
 
+## spotDL
+
+The `media` group includes the AUR package `spotdl` in full-profile installs or
+when selected with `./install.sh --profile core --groups media`. Core without
+that group and `--no-aur` omit it. The AUR helper resolves its Python and native
+build dependencies; FFmpeg is already in the core selection. Run `spotdl --version`
+after installation to verify it.
+
+Some `python-syncedlyrics` builds fail tests against external lyrics services.
+If this happens, inspect the reported failure before retrying that dependency;
+the installer keeps normal AUR review and checks enabled.
+
 ## Night Light
 
 The shell needs `wl-gammarelay-rs` from the AUR for Night Light. Both profiles
@@ -57,7 +69,7 @@ by the package manager.
   Base-devel builds the native greeter helpers and optional AUR apps.
   The bonsai greeting uses Python’s standard library.
 
-Optional groups retain Zen, Discord, Spotify/Spicetify/imv, Obsidian,
+Optional groups retain Zen, Discord, Spotify/Spicetify/spotDL/imv, Obsidian,
 OBS/scrcpy, development tools, Fastfetch/Flatpak and video wallpapers.
 Select only the groups you want; assistant backends still require separate setup.
 The default Codex backend uses Node/npm from the development group.
