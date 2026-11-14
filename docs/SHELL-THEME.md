@@ -62,3 +62,13 @@ Wood palettes repeat for the same seed and leaf palette throughout growth. The w
 The crown is the visual focus: a tight range around the wallpaper primary hue uses the highest saturation and brightness. Ceramic patterns repeat the vibrant crown colors on a muted pot body. Seeded wood, blossoms and shoots use quieter supporting tones below the foliage’s brightness. Neutral terminal palettes retain neutral foliage. All materials use foreground colors without a background fill.
 
 Trunks use broad, seed-stable grain bands in related dark wood tones. The narrow scar uses a blend of bark and heartwood instead of an extra-dark slit; its existing shape and growth remain intact.
+
+## Wallpaper leaf accents
+
+Wallpaper-driven Matugen palettes use the terminal bonsai crown’s chroma and
+neighboring leaf hues for dark-mode primary, secondary and tertiary accents.
+Each wallpaper is extracted afresh; neutral themes remain neutral. Matugen still
+generates surfaces and light-mode colors. Accent text uses black or white for
+contrast. Static color presets bypass wallpaper generation; select a Matugen
+scheme to resume automatic updates. Wallust remains the fallback when Matugen
+is unavailable.

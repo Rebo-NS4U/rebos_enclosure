@@ -36,7 +36,8 @@ config = re.sub(r'^output_path\s*=.*$',
 PYCONFIG
   if matugen image "$image_path" --prefer "${MATUGEN_PREFER:-saturation}" \
       -c "$work_dir/config.toml" -t "$scheme" -m "$mode" && \
-      python3 - "$work_dir/colors.json" <<'PYVALIDATE'
+      python3 - "$work_dir/colors.json" "$mode" <<'PYVALIDATE'
+import colorsys
 import json
 import re
 import sys
@@ -45,6 +46,22 @@ palette = json.loads(Path(sys.argv[1]).read_text())
 assert all(key in palette for key in ('background', 'primary', 'overBackground', 'surface'))
 assert all(isinstance(value, str) and re.fullmatch(r'#[0-9a-fA-F]{6}', value)
            for value in palette.values())
+# Match bonsai-grow's visible crown: retain the wallpaper hue while giving
+# dark-mode accents the same chroma and three neighboring leaf shades.
+# Light mode keeps Matugen's darker accents for readable controls.
+if sys.argv[2] == 'dark':
+    rgb = [int(palette['primary'][i:i + 2], 16) / 255 for i in (1, 3, 5)]
+    hue, saturation, _ = colorsys.rgb_to_hsv(*rgb)
+    chroma = max(0.62, saturation) if saturation >= 0.08 else 0
+    for role, shift in (('primary', 0), ('secondary', -0.025), ('tertiary', 0.025)):
+        channels = colorsys.hsv_to_rgb((hue + shift) % 1, chroma, 0.9)
+        palette[role] = '#' + ''.join(f'{round(v * 255):02x}' for v in channels)
+        linear = [v / 12.92 if v <= 0.04045 else ((v + 0.055) / 1.055) ** 2.4
+                  for v in channels]
+        luminance = sum(v * w for v, w in zip(linear, (0.2126, 0.7152, 0.0722)))
+        palette['over' + role.capitalize()] = '#000000' if luminance > 0.179 else '#ffffff'
+    palette['surfaceTint'] = palette['primary']
+Path(sys.argv[1]).write_text(json.dumps(palette, indent=2) + '\n')
 PYVALIDATE
   then
     mv -f "$work_dir/colors.json" "$output_path"
