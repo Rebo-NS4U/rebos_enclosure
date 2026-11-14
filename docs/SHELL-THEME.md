@@ -91,3 +91,9 @@ color boundaries while retaining leaf highlights and the current wallpaper hues.
 Mature foliage uses pointed leaf faces around fuller interior clusters, with
 sparse small tips on the rim. Seed-stable dapple places highlights on the upper
 shoulder and shadows beneath each spray without changing canopy geometry.
+
+The finished specimen shares upper-left lighting across the foliage, wood and
+ceramics. Deeper leaf undersides reveal spray depth; slower grain highlights
+the left wood face. A glazed pot rim, shaded sides and foot, and restrained
+inlay glints keep the crown dominant. Growth positions, framing and pot motifs
+remain stable throughout animation.

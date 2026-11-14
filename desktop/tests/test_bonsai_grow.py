@@ -414,6 +414,17 @@ class BonsaiGrowTests(unittest.TestCase):
         self.assertNotEqual(palette['leaf4'], updated['leaf4'])
         self.assertNotEqual(palette['leaf1'], updated['leaf1'])
 
+    def test_material_lighting_preserves_terminal_layout(self):
+        import re
+        palette = bonsai.specimen_palette(42)
+        for day in (0, 10, 30):
+            colored = bonsai.render(day, 42, True, 80)
+            plain = bonsai.render(day, 42, False, 80)
+            self.assertEqual(re.sub(r'\x1b\[[0-9;]*m', '', colored), plain)
+            self.assertIn(palette['pot_rim'], colored)
+            self.assertIn(palette['pot_foot'], colored)
+            self.assertIn(palette['pot_pattern'], colored)
+
     def test_dark_wood_and_vibrant_pot_patterns(self):
         import colorsys
         import re

@@ -1432,6 +1432,11 @@ def specimen_palette(seed, leaves=None):
         "pot_shadow": ink(hue, chroma * 0.2, 0.3),
         "pot_inlay": ink(hue, chroma * 0.35, 0.56),
         "blossom": ink(hue + 0.025, chroma * 0.5, 0.66),
+        "pot_rim": ink(hue, chroma * 0.22, 0.56),
+        "pot_glaze": ink(hue, chroma * 0.28, 0.45),
+        "pot_edge": ink(hue, chroma * 0.24, 0.31),
+        "pot_foot": ink(hue, chroma * 0.2, 0.28),
+        "pot_pattern": ink(hsv[1][0], max(0.3, hsv[1][1]) * 0.5 if chroma else 0, 0.61),
     })
     palette["shoot"] = palette["wood"]
     palette["leaf"] = ink(hue, chroma, 0.9)
@@ -1441,7 +1446,7 @@ def specimen_palette(seed, leaves=None):
     for i, shift in enumerate((-0.025, 0, 0.025)):
         for name in ("mid", "tip"):
             palette[f"shoot_{name}{i}"] = ink(hue + shift, chroma * 0.3, 0.55)
-        for j, value in enumerate((0.78, 0.9, 0.98)):
+        for j, value in enumerate((0.70, 0.9, 0.98)):
             leaf_hue, leaf_chroma = hue + shift, chroma
             if paired:
                 # Blend light rather than jumping between two saturated inks.
@@ -1511,11 +1516,27 @@ def render(
     grain_phase = random.Random(f"{seed}:wood-grain").uniform(0, math.tau)
     for y, row in enumerate(visible, first_row):
         parts, previous = [], None
+        wood_columns = [x for x, (glyph, ink) in enumerate(row)
+                        if ink in ("wood", "bark", "woodlight", "scar") and glyph.strip()]
+        wood_center = (min(wood_columns) + max(wood_columns)) / 2 if wood_columns else 27
         for x, (glyph, ink) in enumerate(row):
             if color and ink in ("wood", "bark"):
-                # Broad stable bands vary the whole trunk without changing its shape.
-                if math.sin(x * 0.85 + y * 0.4 + grain_phase) > 0.25:
+                # Light catches the left face; long, gentle grain follows the
+                # trunk rather than striping every exposed twig equally.
+                grain = math.sin(x * 0.55 + y * 0.22 + grain_phase)
+                if x <= wood_center and grain > -0.3:
                     ink += "_grain"
+            if color and ink in ("pot", "pot_inlay", "pot_shadow"):
+                # A glazed rim and quiet lower edge give the pot volume. Keep
+                # a few full-color inlay glints instead of a luminous full band.
+                if y == 19:
+                    ink = "pot_rim" if x <= 30 else "pot_glaze"
+                elif y == 22:
+                    ink = "pot_foot"
+                elif glyph in "╲╱":
+                    ink = "pot_glaze" if x < 27 else "pot_edge"
+                elif ink in ("pot_inlay", "pot_shadow"):
+                    ink = "pot_inlay" if y == 20 and 24 <= x <= 30 else "pot_pattern"
             if color and ink != previous:
                 parts.append(palette[ink])
             parts.append(glyph)
