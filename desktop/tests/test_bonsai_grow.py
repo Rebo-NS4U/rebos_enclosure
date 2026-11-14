@@ -324,6 +324,31 @@ class BonsaiGrowTests(unittest.TestCase):
             self.assertIn(palette['wood'], bonsai.render(30, seed, True))
         self.assertGreater(len(palettes), 90)
 
+    def test_wood_harmonizes_with_leaf_hue(self):
+        import re
+        def rgb(palette):
+            return list(map(int, re.findall(r'\d+', palette['wood'])[-3:]))
+        for seed in range(40):
+            green = bonsai.wood_palette(seed, ['#70bb50'] * 3)
+            blue = bonsai.wood_palette(seed, ['#6080dc'] * 3)
+            rose = bonsai.wood_palette(seed, ['#db6095'] * 3)
+            self.assertNotEqual(green, blue)
+            self.assertNotEqual(green, rose)
+            r, g, b = rgb(green)
+            self.assertGreater(r, b)
+            self.assertGreater(g, b)
+            self.assertEqual(green, bonsai.wood_palette(seed, ['#70bb50'] * 3))
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'rebos_shell/kitty.conf'
+            path.parent.mkdir()
+            path.write_text('color2 #6080dc\ncolor6 #6080dc\ncolor4 #6080dc\n')
+            with patch.dict(os.environ, {'XDG_CACHE_HOME': directory}):
+                self.assertEqual(bonsai.terminal_leaf_palette(), ['#6080dc'] * 3)
+                self.assertEqual(bonsai.wood_palette(42),
+                                 bonsai.wood_palette(42, ['#6080dc'] * 3))
+                self.assertIn(bonsai.wood_palette(42)['wood'], bonsai.render(30, 42))
+
     def test_terminal_colors_follow_theme_without_rewriting_state(self):
         import json
         from unittest.mock import patch

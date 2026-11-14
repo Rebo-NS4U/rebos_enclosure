@@ -57,4 +57,4 @@ Bar menus share a 36px back action with keyboard focus, an accessible name and a
 
 The terminal bonsai uses the terminal’s ANSI palette for foliage, with seed-specific wood colors and wallpaper-accented ceramics, with no background fill or visible frame. Whitespace centers the tree; reserved blank rows keep greeting animation and prompt placement stable. Kitty theme changes recolor the foliage with other terminal text.
 
-Wood palettes repeat for the same seed across growth and theme changes. Seeds choose coordinated copper, silver birch, rosewood, olive, cedar or violet ash tones, with subtle color variation and distinct bark shadows and highlights.
+Wood palettes repeat for the same seed and leaf palette throughout growth. The generated Kitty foliage colors guide the choice: green crowns use olive, cedar or copper; cool crowns use birch or violet ash; warm and pink crowns use copper or rosewood. A subtle reflected leaf tint unifies the wood, with distinct bark shadows and highlights. Without generated Kitty colors, the desktop accents provide the fallback.
