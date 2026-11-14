@@ -552,7 +552,7 @@ class BonsaiGrowTests(unittest.TestCase):
                 interior = row.strip()[1:-1]
                 self.assertTrue(interior.startswith(' '))
                 self.assertTrue(interior.endswith(' '))
-                self.assertGreaterEqual(interior.count(' '), 4)
+                self.assertGreaterEqual(sum(c != ' ' for c in interior), 13)
             early = bonsai.specimen_canvas(0, seed)
             mature = bonsai.specimen_canvas(30, seed)
             self.assertEqual(early[20:23], mature[20:23])

@@ -1201,40 +1201,51 @@ def cover_crown_wood(canvas):
         canvas[y][x] = (" ", "")
 
 
-# Airy, complete two-row inlays; never crop a motif at the tapered sides.
+# Complete ornamental panels: interwoven bands, medallions, waves and vines.
+# Both rows share a centerline; detail stops before the tapered ceramic edges.
 POT_MOTIFS = (
-    ("╭─╮", "╰─╯"),
-    ("╭───╮", " ╰─╯ "),
-    ("╭╮ ", " ╰╯"),
-    (" ╭╮", "╰╯ "),
-    ("╱◇╲", " ╰╯"),
-    ("╭◇╮", "╰─╯"),
-    (" ╭╮ ", "╰╯╰╯"),
-    ("╭╮╭╮", " ╰╯ "),
-    ("╭─╮  ", "  ╰─╯"),
-    ("  ╭─╮", "╰─╯  "),
-    ("╱╲ ", " ╲╱"),
-    (" ╱╲", "╲╱ "),
-    ("╭─◇─╮", " ╰─╯ "),
-    (" ╭─╮ ", "╰─◇─╯"),
-    ("╭╮·╭╮", "╰╯ ╰╯"),
-    ("╭╮ ╭╮", "╰╯·╰╯"),
+    # Pierced lattice with a central jewel.
+    ("╭─┬─╮ ╭─◇─╮ ╭─┬─╮", "╰─┴─╯ ╰─┬─╯ ╰─┴─╯"),
+    # Interlocking ribbons.
+    ("╭╲╱╲╮·╭╲╱╲╮·╭╲╱╲╮", "╰╱╲╱╯·╰╱╲╱╯·╰╱╲╱╯"),
+    # Overlapping wave crests.
+    ("╭─╮╭─╮╭─╮╭─╮╭─╮", "╰╮╰╯╮╰╯╮╰╯╮╰╯╭╯"),
+    # Petalled rosettes.
+    ("╲╭◇╮╱ ╲╭◆╮╱ ╲╭◇╮╱", "╱╰┬╯╲ ╱╰┴╯╲ ╱╰┬╯╲"),
+    # Greek-key fretwork.
+    ("┌─┐╷┌─┐╷┌─┐╷┌─┐", "└╴└┘└╴└┘└╴└┘└╴┘"),
+    # Diamond chain with twin running borders.
+    ("╭─◇─╮─◇─╭─◇─╮─◇─╮", "╰─┬─╯─┴─╰─┬─╯─┴─╯"),
+    # Mirrored climbing vines.
+    ("╭╴╱╲╮ ╭─◇─╮ ╭╱╲╶╮", "╰╲╱╶╯ ╰─┬─╯ ╰╴╲╱╯"),
+    # Woven chevrons.
+    ("╱╲╱╲╱╲╱╲╱╲╱╲╱╲╱╲╱", "╲╱╲╱╲╱╲╱╲╱╲╱╲╱╲╱╲"),
+    # Linked roundels.
+    ("╭─╮╭─╮·╭─◇─╮·╭─╮", "╰─╯╰─╯·╰─┴─╯·╰─╯"),
+    # Faceted central seal with engraved wings.
+    ("╭┬─┬╮ ╱╲◇╱╲ ╭┬─┬╮", "╰┴─┴╯ ╲╱◆╲╱ ╰┴─┴╯"),
+    # Double scrolls.
+    ("╭╮╭─╮ ╭╮╭─╮ ╭╮╭─╮", "╰─╯╰╯ ╰─╯╰╯ ╰─╯╰╯"),
+    # Stepped brocade.
+    ("┌┬┐╭╮·┌─◇─┐·╭╮┌┬┐", "└┴┘╰╯·└─┬─┘·╰╯└┴┘"),
+    # Floral arabesque.
+    ("╭╲│╱╮·╭╲│╱╮·╭╲│╱╮", "╰╱│╲╯·╰╱│╲╯·╰╱│╲╯"),
+    # Water and mountains.
+    ("╭─╱╲╮·╭╱◇╲╮·╭╱╲─╮", "╰╮╲╱╯·╰╲─╱╯·╰╲╱╭╯"),
+    # Beaded filigree.
+    ("╭◇┬◇╮·╭─◆─╮·╭◇┬◇╮", "╰─┴─╯·╰◇┴◇╯·╰─┴─╯"),
+    # Braided knots.
+    ("╭╱╳╲╮ ╭╱╳╲╮ ╭╱╳╲╮", "╰╲╳╱╯ ╰╲╳╱╯ ╰╲╳╱╯"),
 )
 
 
 def pot_rows(seed):
-    """Center three intact ornaments within a quiet, tapered ceramic bowl."""
-    rng = random.Random(f"{seed}:pot")
-    upper, lower = rng.choice(POT_MOTIFS)
-    gap = rng.choice((1, 2)) if len(upper) < 5 else 1
-    bands = []
-    for motif, width in ((upper, 21), (lower, 19)):
-        band = (" " * gap).join([motif] * 3)
-        bands.append(band.center(width))
+    """Seat a complete, intricate two-row panel inside the tapered bowl."""
+    upper, lower = random.Random(f"{seed}:pot").choice(POT_MOTIFS)
     return (
         "╭─────────────────────╮",
-        "╲" + bands[0] + "╱",
-        " ╲" + bands[1] + "╱ ",
+        "╲" + upper.center(21) + "╱",
+        " ╲" + lower.center(19) + "╱ ",
         "  ╰─────────────────╯  ",
     )
 
