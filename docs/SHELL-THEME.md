@@ -67,7 +67,12 @@ Trunks use broad, seed-stable grain bands in related dark wood tones. The narrow
 
 Wallpaper-driven Matugen palettes use the terminal bonsai crown’s chroma and
 neighboring leaf hues for dark-mode primary, secondary and tertiary accents.
-Each wallpaper is extracted afresh; neutral themes remain neutral. Matugen still
+Each wallpaper is extracted afresh; neutral themes remain neutral. When Matugen
+finds a distinct, colorful second source, analogous (35–65° apart) or
+split/complementary (120–180° apart) hues become the secondary accent, including
+its containers and fixed colors in both modes. Near-neutral, dark and similar
+candidates are ignored; single-hue images keep the neighboring leaf shades.
+This is a deterministic color-harmony heuristic, not a subjective aesthetic judgment. Matugen still
 generates surfaces and light-mode colors. Accent text uses black or white for
 contrast. Static color presets bypass wallpaper generation; select a Matugen
 scheme to resume automatic updates. Wallust remains the fallback when Matugen

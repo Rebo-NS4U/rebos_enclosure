@@ -36,25 +36,64 @@ config = re.sub(r'^output_path\s*=.*$',
 PYCONFIG
   if matugen image "$image_path" --prefer "${MATUGEN_PREFER:-saturation}" \
       -c "$work_dir/config.toml" -t "$scheme" -m "$mode" && \
-      python3 - "$work_dir/colors.json" "$mode" <<'PYVALIDATE'
+      python3 - "$work_dir/colors.json" "$mode" "$image_path" "$scheme" "$work_dir/config.toml" <<'PYVALIDATE'
 import colorsys
 import json
 import re
 import sys
+import subprocess
 from pathlib import Path
 palette = json.loads(Path(sys.argv[1]).read_text())
 assert all(key in palette for key in ('background', 'primary', 'overBackground', 'surface'))
 assert all(isinstance(value, str) and re.fullmatch(r'#[0-9a-fA-F]{6}', value)
            for value in palette.values())
-# Match bonsai-grow's visible crown: retain the wallpaper hue while giving
-# dark-mode accents the same chroma and three neighboring leaf shades.
-# Light mode keeps Matugen's darker accents for readable controls.
+def hsv(color):
+    return colorsys.rgb_to_hsv(*(int(color[i:i + 2], 16) / 255 for i in (1, 3, 5)))
+
+# Matugen ranks actual image colors. Ignore near-neutral/dark candidates and
+# prefer analogous (35–65°) or split/complementary (120–180°) pairings.
+# Keep the existing single-hue scheme when no suitable second color exists.
+secondary = None
+primary_hue, primary_saturation, _ = hsv(palette['primary'])
+try:
+    result = subprocess.run(['matugen', 'image', sys.argv[3], '--show-source-colors',
+                             '--dry-run'], capture_output=True, text=True, check=True,
+                            timeout=30)
+    candidates = re.findall(r'^#[0-9a-fA-F]{6}$', result.stdout, re.M)
+    for candidate in candidates:
+        hue, saturation, value = hsv(candidate)
+        distance = min(abs(hue - primary_hue), 1 - abs(hue - primary_hue)) * 360
+        if (primary_saturation >= 0.08 and saturation >= 0.25 and value >= 0.25
+                and (35 <= distance <= 65 or 120 <= distance <= 180)):
+            config_path = Path(sys.argv[5])
+            second_path = config_path.parent / 'secondary.json'
+            second_config = config_path.parent / 'secondary.toml'
+            config = re.sub(r'^output_path\s*=.*$',
+                            lambda _: 'output_path = ' + json.dumps(str(second_path)),
+                            config_path.read_text(), flags=re.M)
+            second_config.write_text(config)
+            subprocess.run(['matugen', 'color', 'hex', candidate, '-t', sys.argv[4],
+                            '-m', sys.argv[2], '-c', str(second_config)],
+                           capture_output=True, check=True, timeout=30)
+            secondary = json.loads(second_path.read_text())
+            # Copy the full role family so containers and fixed colors agree.
+            for key, value in secondary.items():
+                if 'Primary' in key or key.startswith('primary'):
+                    palette[key.replace('Primary', 'Secondary').replace('primary', 'secondary')] = value
+            break
+except (subprocess.SubprocessError, OSError, ValueError):
+    secondary = None
+
+# Match the tree's vivid crown in dark mode, preserving a distinct secondary
+# hue when one was extracted. Light mode retains Matugen's readable tones.
 if sys.argv[2] == 'dark':
-    rgb = [int(palette['primary'][i:i + 2], 16) / 255 for i in (1, 3, 5)]
-    hue, saturation, _ = colorsys.rgb_to_hsv(*rgb)
-    chroma = max(0.62, saturation) if saturation >= 0.08 else 0
+    original_primary = palette['primary']
     for role, shift in (('primary', 0), ('secondary', -0.025), ('tertiary', 0.025)):
-        channels = colorsys.hsv_to_rgb((hue + shift) % 1, chroma, 0.9)
+        source = secondary['primary'] if role == 'secondary' and secondary else original_primary
+        hue, saturation, _ = hsv(source)
+        chroma = max(0.62, saturation) if saturation >= 0.08 else 0
+        offset = 0 if role == 'secondary' and secondary else shift
+        channels = colorsys.hsv_to_rgb((hue + offset) % 1, chroma, 0.9)
         palette[role] = '#' + ''.join(f'{round(v * 255):02x}' for v in channels)
         linear = [v / 12.92 if v <= 0.04045 else ((v + 0.055) / 1.055) ** 2.4
                   for v in channels]
