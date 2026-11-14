@@ -117,19 +117,34 @@ Item {
         // Animated model for smooth filtering
         property var filteredApps: []
         property var appsById: ({})
+        property var extraResults: []
+        readonly property bool providerOnly: /^(=|(?:g|google|files?)\s|\/|~\/)/i.test(searchText.trim())
+
+        function mergeResults() {
+            const apps = providerOnly ? [] : (searchText.length > 0
+                ? AppSearch.fuzzyQuery(searchText) : AppSearch.getAllApps());
+            const first = extraResults.filter(r => r.kind === "copy" || (r.kind === "open" && r.comment === "Default browser"));
+            const rest = extraResults.filter(r => first.indexOf(r) < 0);
+            filteredApps = first.concat(apps, rest);
+        }
 
         function updateFilteredApps() {
-            if (searchText.length > 0) {
-                filteredApps = AppSearch.fuzzyQuery(searchText);
-            } else {
-                filteredApps = AppSearch.getAllApps();
-            }
+            extraResults = [];
+            expandedItemIndex = -1;
+            mergeResults();
+            providerTimer.restart();
         }
 
         onFilteredAppsChanged: {
             resultsList.enableScrollAnimation = false;
             resultsList.positionViewAtBeginning();
             updateAppsModel();
+            if (searchText.length > 0 && appsModel.count > 0) {
+                const nextIndex = Math.max(0, Math.min(selectedIndex, appsModel.count - 1));
+                GlobalStates.launcherSelectedIndex = nextIndex;
+                selectedIndex = nextIndex;
+                resultsList.currentIndex = nextIndex;
+            }
             Qt.callLater(() => {
                 resultsList.positionViewAtBeginning();
                 resultsList.enableScrollAnimation = true;
@@ -146,7 +161,8 @@ Item {
                 const row = {
                     appId: app.id, appName: app.name, appIcon: app.icon,
                     appComment: app.comment, appExecString: app.execString,
-                    appCategories: app.categories, appRunInTerminal: app.runInTerminal
+                    appCategories: app.categories, appRunInTerminal: app.runInTerminal,
+                    resultKind: app.kind || "app"
                 };
                 if (i < appsModel.count && appsModel.get(i).appId === app.id) {
                     appsModel.set(i, row);
@@ -173,11 +189,19 @@ Item {
 
         function executeApp(appId) {
             let app = appsById[appId];
-            if (app && app.execute) {
+            if (app && app.kind === "hint")
+                return false;
+            if (app && app.kind) {
+                if (app.kind === "open")
+                    Qt.openUrlExternally(app.target);
+                else if (app.kind === "copy")
+                    Quickshell.execDetached(["wl-copy", "--", app.target]);
+            } else if (app && app.execute) {
                 app.execute();
                 // Record usage for sorting priority
                 UsageTracker.recordUsage(appId);
             }
+            return true;
         }
 
         ListModel {
@@ -255,7 +279,7 @@ Item {
                 width: parent.width
                 anchors.top: parent.top
                 text: GlobalStates.launcherSearchText
-                placeholderText: "Type to find an app…"
+                placeholderText: "Apps, Google, = math, files name…"
                 iconText: Icons.magnifyingGlass
                 handleTabNavigation: true
                 clearOnEscape: false
@@ -296,8 +320,8 @@ Item {
                         if (selectedApp) {
                             // Build options array
                             let options = [function () {
-                                    appLauncher.executeApp(selectedApp.appId);
-                                    Visibilities.setActiveModule("");
+                                    if (appLauncher.executeApp(selectedApp.appId))
+                                        Visibilities.setActiveModule("");
                                 }, function () {
                                     // Create shortcut
                                     let desktopDir = Quickshell.env("XDG_DESKTOP_DIR") || Quickshell.env("HOME") + "/Desktop";
@@ -321,15 +345,16 @@ Item {
                         if (appLauncher.selectedIndex >= 0 && appLauncher.selectedIndex < appsModel.count) {
                             let selectedApp = appsModel.get(appLauncher.selectedIndex);
                             if (selectedApp) {
-                                appLauncher.executeApp(selectedApp.appId);
-                                Visibilities.setActiveModule("");
+                                if (appLauncher.executeApp(selectedApp.appId))
+                                    Visibilities.setActiveModule("");
                             }
                         }
                     }
                 }
 
                 onShiftAccepted: {
-                    if (appLauncher.selectedIndex >= 0 && appLauncher.selectedIndex < resultsList.count) {
+                    if (appLauncher.selectedIndex >= 0 && appLauncher.selectedIndex < resultsList.count
+                            && appsModel.get(appLauncher.selectedIndex).resultKind === "app") {
                         // Toggle expanded state
                         if (appLauncher.expandedItemIndex === appLauncher.selectedIndex) {
                             appLauncher.expandedItemIndex = -1;
@@ -455,7 +480,7 @@ Item {
                     font.pixelSize: Styling.fontSize(-2)
                 }
                 Text {
-                    text: "↵ Open   ·   Tab Projects   ·   Esc Back"
+                    text: "↵ Select   ·   Tab Projects   ·   Esc Back"
                     color: Colors.outline
                     font.family: Config.theme.font
                     font.pixelSize: Styling.fontSize(-2)
@@ -470,7 +495,7 @@ Item {
 
                 Text {
                     width: parent.width
-                    text: "No applications found"
+                    text: "No results found"
                     horizontalAlignment: Text.AlignHCenter
                     color: Colors.overBackground
                     font.family: Config.theme.font
@@ -528,6 +553,7 @@ Item {
                 }
 
                 delegate: Item {
+                    required property string resultKind
                     required property string appId
                     required property string appName
                     required property string appIcon
@@ -583,10 +609,10 @@ Item {
                         onClicked: mouse => {
                             if (mouse.button === Qt.LeftButton) {
                                 if (!isExpanded) {
-                                    appLauncher.executeApp(appId);
-                                    Visibilities.setActiveModule("");
+                                    if (appLauncher.executeApp(appId))
+                                        Visibilities.setActiveModule("");
                                 }
-                            } else if (mouse.button === Qt.RightButton) {
+                            } else if (mouse.button === Qt.RightButton && resultKind === "app") {
                                 // Toggle expanded state
                                 if (appLauncher.expandedItemIndex === index) {
                                     appLauncher.expandedItemIndex = -1;
@@ -651,6 +677,7 @@ Item {
                                 renderType: Text.NativeRendering
                                 font.hintingPreference: Font.PreferFullHinting
                                 width: parent.width
+                                textFormat: Text.PlainText
                                 text: appName
                                 color: {
                                     if (isExpanded) {
@@ -679,6 +706,7 @@ Item {
                                 renderType: Text.NativeRendering
                                 font.hintingPreference: Font.PreferFullHinting
                                 width: parent.width
+                                textFormat: Text.PlainText
                                 text: appComment || ""
                                 color: {
                                     if (isExpanded) {
@@ -744,8 +772,8 @@ Item {
                                         highlightColor: Styling.srItem("overprimary"),
                                         textColor: Styling.srItem("primary"),
                                         action: function () {
-                                            appLauncher.executeApp(appId);
-                                            Visibilities.setActiveModule("");
+                                            if (appLauncher.executeApp(appId))
+                                                Visibilities.setActiveModule("");
                                         }
                                     },
                                     {
@@ -926,6 +954,40 @@ Item {
                 highlightMoveVelocity: -1
                 highlightResizeDuration: Config.animDuration > 0 ? Config.animDuration : 0
                 highlightResizeVelocity: -1
+            }
+        }
+
+        Timer {
+            id: providerTimer
+            interval: 120
+            onTriggered: {
+                if (!appLauncher.searchText.trim())
+                    return;
+                if (providerProcess.running) {
+                    restart();
+                    return;
+                }
+                providerProcess.command = ["python3",
+                    Qt.resolvedUrl("../../../scripts/launcher_search.py").toString().replace("file://", ""),
+                    appLauncher.searchText];
+                providerProcess.running = true;
+            }
+        }
+
+        Process {
+            id: providerProcess
+            stdout: StdioCollector {
+                onStreamFinished: {
+                    try {
+                        const response = JSON.parse(text);
+                        if (response.query === appLauncher.searchText) {
+                            appLauncher.extraResults = response.results;
+                            appLauncher.mergeResults();
+                        }
+                    } catch (error) {
+                        console.warn("Launcher search:", error);
+                    }
+                }
             }
         }
 
