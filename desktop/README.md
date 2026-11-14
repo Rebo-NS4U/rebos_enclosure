@@ -516,3 +516,5 @@ across metadata, navigation and spine reads, including repeated members and
 hidden content. The 20 million visible-character limit still applies. This
 bounds ZIP read work; PDF/Calibre processes retain their existing timeouts and
 are not a general sandbox for hostile documents.
+
+Optional background work runs on demand: the screenshot editor starts for a capture and exits when closed (legacy `--warm` is a no-op). ReGreet sync uses file-change watchers immediately, with a 15-minute fallback for wallpaper files edited in place. Explicit assistant shutdown exits its user service; detaching the UI still preserves active work, and idle resumable agents retain their existing parking policy.

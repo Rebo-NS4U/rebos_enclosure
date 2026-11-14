@@ -95,7 +95,7 @@ if [[ "$1" == -d ]]; then touch "$TEST_READY"; exit 0; fi
             self.assertTrue(calls[0].endswith('call screenshot capture area'))
             (folder/'calls').write_text('')
             subprocess.run(['bash',str(launcher),'--warm'],env=env,check=True)
-            self.assertTrue((folder/'calls').read_text().startswith('-d -n'))
+            self.assertEqual((folder/'calls').read_text(), '')
 
 
 

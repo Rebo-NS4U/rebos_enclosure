@@ -54,6 +54,7 @@ class Bridge:  # pylint: disable=too-many-instance-attributes
         self.lock = asyncio.Lock()
         self.stopping = False
         self.parked = False
+        self.shutdown_requested = asyncio.Event()
 
     def send(self, value):
         if self.client is None:
@@ -221,6 +222,7 @@ class Bridge:  # pylint: disable=too-many-instance-attributes
             await self.start(self.launch)
             self.send_attached(None, 0)
             return True
+        self.shutdown_requested.set()
         return False
 
     async def attach(self, reader, writer):
@@ -232,6 +234,7 @@ class Bridge:  # pylint: disable=too-many-instance-attributes
                     if self.client:
                         self.client.close()
                         self.client = None
+                    self.shutdown_requested.set()
                 return
             if frame.get("bridge") != "attach":
                 raise ValueError("Expected assistant attach")
@@ -281,7 +284,7 @@ async def serve(path):
     bridge = Bridge()
     server = await asyncio.start_unix_server(bridge.attach, path=str(path), limit=LIMIT)
     os.chmod(path, 0o600)
-    stopped = asyncio.Event()
+    stopped = bridge.shutdown_requested
     loop = asyncio.get_running_loop()
     for sig in (signal.SIGINT, signal.SIGTERM):
         loop.add_signal_handler(sig, stopped.set)

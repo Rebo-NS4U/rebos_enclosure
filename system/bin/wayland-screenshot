@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Reuse the warm editor; start it lazily if login prewarming has not run.
+# Reuse an open editor; otherwise start it only for a capture.
 CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/quickshell/screenshot.qml"
 MODE="${1:-area}"
 case "$MODE" in
-    --warm) exec qs -d -n -p "$CONFIG" ;;
+    --warm) exit 0 ;; # Compatibility with older login configurations.
     area|edit|screen|output|window)
         [ "$MODE" != output ] || MODE=screen
         if qs ipc -p "$CONFIG" call screenshot capture "$MODE" 2>/dev/null; then
