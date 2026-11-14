@@ -104,14 +104,20 @@ except (subprocess.SubprocessError, OSError, ValueError):
 
 # Match the tree's vivid crown in dark mode, preserving a distinct secondary
 # hue when one was extracted. Light mode retains Matugen's readable tones.
-if sys.argv[2] == 'dark':
+if sys.argv[2] == 'dark' or sys.argv[6] or sys.argv[7]:
     original_primary = sys.argv[6] or palette['primary']
     for role, shift in (('primary', 0), ('secondary', -0.025), ('tertiary', 0.025)):
+        picked = sys.argv[7] if role == 'secondary' else sys.argv[6] if role == 'primary' else ''
+        if sys.argv[2] != 'dark' and not picked:
+            continue
         source = (sys.argv[7] or secondary['primary']) if role == 'secondary' and secondary else original_primary
         hue, saturation, _ = hsv(source)
         chroma = max(0.62, saturation) if saturation >= 0.08 else 0
         offset = 0 if role == 'secondary' and secondary else shift
         channels = colorsys.hsv_to_rgb((hue + offset) % 1, chroma, 0.9)
+        # Explicit picks retain their saturation and brightness, including neutrals.
+        if picked:
+            channels = [int(picked[i:i + 2], 16) / 255 for i in (1, 3, 5)]
         palette[role] = '#' + ''.join(f'{round(v * 255):02x}' for v in channels)
         linear = [v / 12.92 if v <= 0.04045 else ((v + 0.055) / 1.055) ** 2.4
                   for v in channels]

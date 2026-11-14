@@ -67,6 +67,31 @@ class PickedPaletteTests(unittest.TestCase):
             subprocess.run(command, check=True, capture_output=True)
             self.assertEqual(output.read_bytes(), automatic)
 
+    def test_muted_and_neutral_picks_remain_exact_with_readable_text(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            folder = Path(tmp)
+            wallpaper = folder / 'wallpaper.png'
+            image(wallpaper)
+            output = folder / 'colors.json'
+            def luminance(color):
+                channels = [int(color[i:i+2], 16) / 255 for i in (1, 3, 5)]
+                return sum(w * (v / 12.92 if v <= .04045 else ((v + .055) / 1.055) ** 2.4)
+                           for w, v in zip((.2126, .7152, .0722), channels))
+            for mode in ('dark', 'light'):
+                for first, second in (('#817b78', '#707372'), ('#222222', '#eeeeee'),
+                                      ('', '#817b78'), ('#817b78', '')):
+                    subprocess.run(['bash', str(GENERATOR), str(wallpaper), 'scheme-content',
+                                    mode, str(CONFIG), str(output), first, second],
+                                   check=True, capture_output=True)
+                    palette = json.loads(output.read_text())
+                    for role, picked in (('primary', first), ('secondary', second)):
+                        if not picked:
+                            continue
+                        self.assertEqual(palette[role], picked)
+                        a, b = sorted((luminance(palette[role]),
+                                       luminance(palette['over' + role.capitalize()])))
+                        self.assertGreaterEqual((b + .05) / (a + .05), 4.5)
+
     def test_invalid_and_failed_picks_leave_previous_palette_intact(self):
         with tempfile.TemporaryDirectory() as tmp:
             folder = Path(tmp)

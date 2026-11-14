@@ -662,7 +662,7 @@
   "system/apps/shell/scripts/edit_keybinding.py": "2b1aaadef07fdddee996fcaf8fce78d35194c772cde843bf724b3d2fc64f9ea2",
   "system/apps/shell/scripts/file_shelf.py": "a82977043396d104fe86b0412e994c3215ad36ac43ae883b5bada7efe00c9a45",
   "system/apps/shell/scripts/frame_helpers.py": "1bfbdcb66256b96cd2361965ba5f5e794323d06de3150fdd497aabf7db5e90d2",
-  "system/apps/shell/scripts/generate_wallpaper_colors.sh": "3b4a796610bafeb7d4d5246727df1629037c19c53614f46e7707faa29f6e6365",
+  "system/apps/shell/scripts/generate_wallpaper_colors.sh": "b28617d73b16848a6a68bbbaf99217b1dbdd703f238ce8a9c1f084aaa88d5f65",
   "system/apps/shell/scripts/github_connect.py": "36b198254016a344c01f507a88581dd6fa26dd0176e8510c0740850b6113da67",
   "system/apps/shell/scripts/github_projects.py": "9892eb72aaf94c3937f497b5cf1b2a1b4d330d3a539dc916754f2eec349e113f",
   "system/apps/shell/scripts/github_status.py": "d856dde872a836a84eb4d2bd4b24c6781003970488d32cd92d848f12946bb377",
