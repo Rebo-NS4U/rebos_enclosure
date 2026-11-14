@@ -2,11 +2,11 @@
 
 var data = {
     "position": "top",
-    "style": "default",
+    "style": "island",
     "screenList": [],
     "enableFirefoxPlayer": false,
     "use12hFormat": false,
-    "pinned": false,
+    "pinned": true,
     "islandAppearance": "glass",
     "islandOpacity": 80,
     "islandAccent": 55

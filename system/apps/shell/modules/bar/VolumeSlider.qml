@@ -8,6 +8,8 @@ import qs.modules.theme
 CircularBarMeter {
     id: root
 
+    property bool usePopup: true
+
     readonly property var audioDevice: Audio.sink?.audio ?? null
 
     value: audioDevice?.volume ?? 0
@@ -32,7 +34,9 @@ CircularBarMeter {
             audioDevice.volume = newValue;
     }
 
-    onActivated: controlPopup.toggle()
+    onActivated: {
+        if (root.usePopup) controlPopup.toggle();
+    }
 
     onSecondaryActivated: {
         if (audioDevice)

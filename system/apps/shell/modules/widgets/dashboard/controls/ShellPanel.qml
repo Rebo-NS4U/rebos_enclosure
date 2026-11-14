@@ -658,32 +658,10 @@ Item {
                             Layout.bottomMargin: -4
                         }
 
-                        SelectorRow {
-                            label: "Style"
-                            options: [
-                                {
-                                    label: "Continuous bar",
-                                    value: "default",
-                                    icon: Icons.layout
-                                },
-                                {
-                                    label: "Islands",
-                                    value: "island",
-                                    icon: Icons.circle
-                                }
-                            ]
-                            value: Config.bar?.style ?? "default"
-                            onValueSelected: newValue => {
-                                if (newValue !== Config.bar?.style) {
-                                    Config.bar.style = newValue;
-                                }
-                            }
-                        }
-
                         StyledText {
                             Layout.fillWidth: true
                             wrapMode: Text.WordWrap
-                            text: "The bar stays at the top. Windows use 12 px corners and 4 px gaps; shell corner styling is configured under Theme."
+                            text: "The full-width bar uses expanding island panels and circular brightness, volume and battery controls. Shell corner styling is configured under Theme."
                             font.family: Config.theme.font
                             font.pixelSize: Styling.fontSize(-1)
                             color: Colors.overSurfaceVariant

@@ -9,7 +9,7 @@ Item {
 
     required property ShellScreen screen
 
-    readonly property string barStyle: Config.bar?.style ?? "default"
+    readonly property string barStyle: "island"
     readonly property bool isIsland: barStyle === "island"
 
     // Stable fallback hitbox so UnifiedShellPanel.mask never references undefined

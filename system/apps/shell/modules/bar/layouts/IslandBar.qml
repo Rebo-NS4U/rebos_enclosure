@@ -361,7 +361,7 @@ Item {
             }
             return Math.min(420, root.width - 32);
         }
-        return Math.min(Math.max(collapsedRow.implicitWidth + collapsedRow.anchors.leftMargin + collapsedRow.anchors.rightMargin, 200), Math.max(200, root.width - 32));
+        return Math.max(1, root.width);
     }
 
     readonly property int targetHeight: {
@@ -604,7 +604,7 @@ Item {
         id: triggerStrip
         anchors.horizontalCenter: parent.horizontalCenter
         y: 0
-        width: Math.max(200, collapsedRow.implicitWidth + 28)
+        width: root.width
         height: root.triggerHeight
 
         HoverHandler {
@@ -723,7 +723,7 @@ Item {
                 id: collapsedView
                 anchors.top: parent.top
                 anchors.horizontalCenter: parent.horizontalCenter
-                width: Math.min(parent.width, collapsedRow.implicitWidth + collapsedRow.anchors.leftMargin + collapsedRow.anchors.rightMargin)
+                width: parent.width
                 height: root.islandHeight
                 visible: opacity > 0
                 opacity: (root.currentMode === "collapsed" && !root.retractingToHidden) ? 1.0 : 0.0
@@ -808,6 +808,8 @@ Item {
                         enableBorder: false
                         color: Qt.alpha(Colors.overSurfaceVariant, 0.22)
                     }
+
+                    Item { Layout.fillWidth: true }
 
                     // Clock with a quiet accent surface and a full-height click target
                     Item {
@@ -898,6 +900,11 @@ Item {
                         showBackground: false
                     }
 
+                    Item { Layout.fillWidth: true }
+
+                    AudioFormatBadge { enableShadow: false }
+                    SysTray { enableShadow: false }
+
                     // Separator before controls
                     StyledRect {
                         variant: "transparent"
@@ -909,9 +916,28 @@ Item {
                         color: Qt.alpha(Colors.overSurfaceVariant, 0.22)
                     }
 
-                    // Dynamic Material Symbols status icons (Volume, Brightness, Battery)
-                    IslandStatusIcons {
+                    // Continuous bar meters on the shared island surface.
+                    VolumeSlider {
+                        objectName: "bar-volume"
+                        usePopup: false
+                        onActivated: root.expand("sound")
                         bar: root
+                        flat: true
+                        meterSize: root.islandHeight
+                    }
+                    BrightnessSlider {
+                        objectName: "bar-brightness"
+                        bar: root
+                        flat: true
+                        meterSize: root.islandHeight
+                    }
+                    BatteryIndicator {
+                        objectName: "bar-battery"
+                        bar: root
+                        flat: true
+                        meterSize: root.islandHeight
+                        usePopup: false
+                        onActivated: root.expand("battery")
                     }
 
                     // Separator before alerts

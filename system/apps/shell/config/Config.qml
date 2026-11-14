@@ -490,6 +490,12 @@ Singleton {
         onLoaded: {
             if (!root.barReady) {
                 validateModule("bar", barLoader, BarDefaults.data, () => {
+                    // Normalize the former continuous layout to the shared island engine.
+                    if (barLoader.adapter.style !== "island") {
+                        barLoader.adapter.style = "island";
+                        barLoader.adapter.pinned = true;
+                        barSaveTimer.restart();
+                    }
                     root.barReady = true;
                 });
             }
@@ -512,11 +518,11 @@ Singleton {
 
         adapter: JsonAdapter {
             property string position: "top"
-            property string style: "default"
+            property string style: "island"
             property list<string> screenList: []
             property bool enableFirefoxPlayer: false
             property bool use12hFormat: false
-            property bool pinned: false
+            property bool pinned: true
             property string islandAppearance: "glass"
             property int islandOpacity: 80
             property int islandAccent: 55
