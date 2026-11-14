@@ -114,9 +114,8 @@ before shedding. Skipping foreground playback settles to maturity over a brief
 220 ms transition instead of replacing the drawing in one final write. Normal
 completion retains the already-rendered final frame.
 
-Animated greetings now construct the mature canvas once, including bark,
-foliage, contours and ornaments, then reveal its cells along a connected
-root-to-tip schedule: trunk, branching, buds, then opening foliage. Visible cells never move or disappear; leaves unfold from buds in place,
-without a later structural shaping pass. Material lighting uses the finished geometry throughout. Growth
-finishes by age 28.5, leaving the final eased frames unchanged. Static age
-previews retain their biological growth model.
+Animated greetings use the original organic growth model: a tiny rooted sprout
+with starter leaves rises into a stalk, thickens, extends limbs, and expands its
+crown. The eased timeline and brief skip transition remain, as do the mature
+branch curves, leaf shading and wallpaper palette. There is no finished-canvas
+reveal overlay.

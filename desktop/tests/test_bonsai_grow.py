@@ -239,54 +239,28 @@ class BonsaiGrowTests(unittest.TestCase):
             designs.add(rows)
         self.assertGreaterEqual(len(designs), 16)
 
-    def test_animation_grows_final_geometry_without_reshaping(self):
-        for seed in range(24):
-            final = bonsai.specimen_canvas(30, seed)
-            previous = {}
-            for day in (0, 3, 7, 14, 20, 25, 28.5, 30):
-                canvas = bonsai.growing_canvas(day, seed)
-                visible = {(x,y):cell for y,row in enumerate(canvas[:19])
-                           for x,cell in enumerate(row) if cell[0].strip()}
-                # Geometry and materials stay fixed while buds unfold in place.
-                for point, cell in previous.items():
-                    self.assertIn(point, visible)
-                    self.assertEqual(visible[point][1], cell[1])
-                for (x,y), cell in visible.items():
-                    self.assertEqual(cell[1], final[y][x][1])
-                    if cell[0] not in ('·', '•', '●'):
-                        self.assertEqual(cell, final[y][x])
-                reached = {(27,18)}
-                pending = list(reached)
-                while pending:
-                    x,y = pending.pop()
-                    for dx in (-1,0,1):
-                        for dy in (-1,0,1):
-                            point = (x+dx,y+dy)
-                            if point in visible and point not in reached:
-                                reached.add(point)
-                                pending.append(point)
-                self.assertEqual(set(visible), reached)
-                previous = visible
-            self.assertEqual(bonsai.growing_canvas(28.5, seed), final)
-            self.assertEqual(bonsai.render(30, seed, True, 80, grow_final_shape=True),
-                             bonsai.render(30, seed, True, 80))
-
-    def test_final_shape_growth_has_trunk_branch_and_leaf_stages(self):
-        for seed in range(12):
-            def leaves(day):
-                return {(x,y):g for y,row in enumerate(bonsai.growing_canvas(day,seed))
-                        for x,(g,ink) in enumerate(row) if ink.startswith('leaf')}
-            self.assertFalse(leaves(7))
-            final, arrivals = bonsai.final_growth(seed, 'informal', None)
-            site = next((x,y) for y,row in enumerate(final[:19])
-                        for x,(glyph,ink) in enumerate(row) if ink.startswith('leaf'))
-            born = arrivals[site]
-            x,y = site
-            self.assertEqual(bonsai.growing_canvas(born+.1,seed)[y][x][0], '·')
-            self.assertEqual(bonsai.growing_canvas(born+1,seed)[y][x][0], '•')
-            self.assertEqual(bonsai.growing_canvas(born+1.8,seed)[y][x][0], '●')
-            self.assertEqual(bonsai.growing_canvas(born+2.3,seed)[y][x], final[y][x])
-            self.assertLess(len(leaves(18)),len(leaves(28.5)))
+    def test_background_greeting_uses_original_sprout_growth(self):
+        from unittest.mock import patch
+        with patch.object(bonsai, 'specimen_canvas', wraps=bonsai.specimen_canvas) as canvas, \
+             patch.object(bonsai.time, 'monotonic', side_effect=[0, 0, .5, 1]), \
+             patch.object(bonsai.time, 'sleep'), \
+             patch.object(bonsai.shutil, 'get_terminal_size', return_value=os.terminal_size((80,40))), \
+             patch.object(bonsai.os, 'write'), \
+             patch('signal.signal'):
+            bonsai.animate_background(42, ['#70bb50']*3, 1, 'informal')
+        ages = [call.args[0] for call in canvas.call_args_list]
+        self.assertEqual(ages, [0, 15, 30])
+        sprout = bonsai.specimen_canvas(0,42)
+        stalk = bonsai.specimen_canvas(7,42)
+        mature = bonsai.specimen_canvas(30,42)
+        def bounds(drawing):
+            cells = [(x,y) for y,row in enumerate(drawing[:19])
+                     for x,(glyph,ink) in enumerate(row) if glyph.strip()]
+            return min(y for x,y in cells), max(x for x,y in cells)-min(x for x,y in cells)
+        self.assertGreater(bounds(sprout)[0], bounds(stalk)[0])
+        self.assertGreater(bounds(stalk)[0], bounds(mature)[0])
+        self.assertLess(bounds(sprout)[1],bounds(mature)[1])
+        self.assertTrue(any(ink.startswith('leaf') for row in sprout for glyph,ink in row))
 
     def test_animation_settles_without_a_last_frame_jump(self):
         samples = [bonsai.animation_day(i / 120, 1) for i in range(121)]
