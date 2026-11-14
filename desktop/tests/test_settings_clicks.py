@@ -275,6 +275,20 @@ ShellRoot {
       tester.wait(50);
       fixture.check(settings.currentSection === 4 && settings.selectedIndex === 0 && settings.filteredSections.length === 5, "Clearing search preserves page and category");
       settings.destroy();
+      let windowComponent = Qt.createComponent("modules/widgets/config/SettingsWindow.qml");
+      fixture.check(windowComponent.status === Component.Ready, windowComponent.errorString());
+      GlobalStates.settingsWindowVisible = false;
+      let settingsWindow = windowComponent.createObject(fixture);
+      fixture.check(settingsWindow !== null, "Settings window created");
+      let contentLoader = fixture.find(settingsWindow.contentItem, "settingsContentLoader");
+      fixture.check(contentLoader && !contentLoader.active && !contentLoader.item, "Closed settings has no controls");
+      GlobalStates.settingsWindowVisible = true;
+      tester.wait(100);
+      fixture.check(contentLoader.active && contentLoader.item, "Open settings creates controls");
+      GlobalStates.settingsWindowVisible = false;
+      tester.wait(50);
+      fixture.check(!contentLoader.item, "Closing settings destroys controls");
+      settingsWindow.destroy();
       console.log("SETTINGS CLICK TESTS PASSED"); Qt.quit();
      } catch (error) { console.error(error); Qt.exit(1); }
     }

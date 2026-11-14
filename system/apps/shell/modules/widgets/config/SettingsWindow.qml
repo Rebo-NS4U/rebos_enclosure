@@ -75,16 +75,18 @@ FloatingWindow {
         }
     }
 
-    // Use a StyledRect for the background and styling
-    StyledRect {
+    // Construct settings controls only while the window is open.
+    Loader {
+        objectName: "settingsContentLoader"
         anchors.fill: parent
-        variant: "bg"
-        radius: Config.roundness
-
-        // Settings Tab Content
-        SettingsTab {
-            anchors.fill: parent
-            anchors.margins: 16
+        active: settingsWindow.visible
+        sourceComponent: StyledRect {
+            variant: "bg"
+            radius: Config.roundness
+            SettingsTab {
+                anchors.fill: parent
+                anchors.margins: 16
+            }
         }
     }
 

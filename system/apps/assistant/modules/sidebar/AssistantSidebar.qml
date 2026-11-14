@@ -34,6 +34,15 @@ Item {
             return "Unknown backend";
         }
         function closeMenu(): void { backendMenu.close(); }
+        function renderStatus(): string {
+            let pages = [];
+            for (let i = 0; i < chatPages.count; i++) {
+                const page = chatPages.itemAt(i)?.item;
+                if (page) pages.push({channel: page.session.channelId,
+                    messages: page.session.currentChat.length, rendered: Math.min(page.messageLimit, page.session.currentChat.length)});
+            }
+            return JSON.stringify({active: root.active, pages: pages});
+        }
     }
 
     readonly property var dweeboPrompts: [
@@ -837,13 +846,11 @@ Item {
                             required property AiSession sessionObject
                             readonly property AiSession modelData: sessionObject
                             readonly property bool selected: Ai.activeSession === modelData
-                            property bool visited: selected
                             anchors.fill: parent
-                            active: visited
+                            active: selected && root.active
                             visible: selected
                             onSelectedChanged: {
                                 if (selected) {
-                                    visited = true;
                                     if (item) root.currentPage = item;
                                 }
                             }
@@ -855,8 +862,11 @@ Item {
                         readonly property AiSession session: pageLoader.modelData
                         Connections {
                             target: mainChatArea.session
-                            function onCurrentChatIdChanged() { mainChatArea.retryIndex = -1; }
+                            function onCurrentChatIdChanged() { mainChatArea.retryIndex = -1; mainChatArea.messageLimit = 40; }
                         }
+                        property int messageLimit: 40
+                        readonly property int messageStart: Math.max(0, session.currentChat.length - messageLimit)
+                        property bool restoringDraft: true
                         property alias input: inputField
                         property alias chat: chatView
                         objectName: "assistantChatPage_" + session.channelId
@@ -864,6 +874,7 @@ Item {
                         Component.onCompleted: {
                             inputField.text = session.inputDraft;
                             pendingAttachments = session.attachmentDraft.slice();
+                            restoringDraft = false;
                         }
                         Connections {
                             target: mainChatArea.session
@@ -880,6 +891,7 @@ Item {
 
                         property list<var> pendingAttachments: []
                         onPendingAttachmentsChanged: {
+                            if (restoringDraft) return;
                             mainChatArea.session.attachmentDraft = pendingAttachments.slice();
                             mainChatArea.session.bridgeDirty = true;
                         }
@@ -1320,14 +1332,33 @@ Item {
                                     width: Math.max(0, Math.min(1000, chatView.messageLayoutWidth - 32))
                                     spacing: 16
 
+                                    Button {
+                                        objectName: "assistantLoadEarlier"
+                                        text: "Load earlier messages (" + mainChatArea.messageStart + ")"
+                                        visible: mainChatArea.messageStart > 0
+                                        anchors.horizontalCenter: parent.horizontalCenter
+                                        onClicked: {
+                                            const oldHeight = chatView.contentHeight;
+                                            const oldY = chatView.contentY;
+                                            chatView.followBottom = false;
+                                            mainChatArea.messageLimit += 40;
+                                            Qt.callLater(() => chatView.contentY = oldY + chatView.contentHeight - oldHeight);
+                                        }
+                                    }
+
                                     Repeater {
-                                        // Keep message widgets alive while their streamed text changes.
+                                        // Construct recent messages only; keep their widgets stable during streaming.
                                         model: mainChatArea.session.currentChat.length
 
-                                        delegate: Item {
+                                        delegate: Loader {
+                                            id: messageLoader
+                                            required property int index
+                                            active: index >= mainChatArea.messageStart
+                                            visible: active
+                                            sourceComponent: Item {
                                             id: messageDelegate
                                             objectName: "assistantMessage_" + mainChatArea.session.channelId + "_" + index
-                                            required property int index
+                                            readonly property int index: messageLoader.index
                                             readonly property var modelData: mainChatArea.session.currentChat[index] || {}
 
                                             readonly property string interactionKey: JSON.stringify([
@@ -1933,6 +1964,7 @@ Item {
                                             }
                                         }
 
+                                        }
                                     }
 
                                     AssistantQuestions {
