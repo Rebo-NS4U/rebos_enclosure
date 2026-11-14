@@ -1,7 +1,6 @@
 """Preserved-source updates use temporary repositories, never the live desktop."""
 import hashlib
 import json
-import os
 from pathlib import Path
 import subprocess
 import sys

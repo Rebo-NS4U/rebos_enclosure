@@ -6,14 +6,12 @@ from dataclasses import dataclass
 import hashlib
 import importlib.util
 import json
-import os
 from pathlib import Path
 import shutil
 import subprocess
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from layout import (source as source_path, destination_name, checksum_path,
-                    inventory, manifest, entry as source_entry, checkout_for, safe)
+from layout import (source as source_path, destination_name, inventory, manifest, entry as source_entry, checkout_for, safe)
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE_ROOTS = ('.config/quickshell', 'code/rebos-assistant', 'code/anime-streamer')

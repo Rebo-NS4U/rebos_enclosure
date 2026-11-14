@@ -7,6 +7,10 @@ with subsequent contributor changes. The current application source is
 [AGPL-3.0 license](system/apps/shell/LICENSE). Other bundled components retain
 licenses alongside their source, fonts and assets.
 
+The MovieBox protocol adapter retains its upstream
+[provenance record](system/apps/media/vendor/moviebox-tui/SOURCE.md) and
+[MIT notice](system/apps/media/vendor/moviebox-tui/LICENSE-MIT).
+
 The wallpaper collection is under
 [`system/share/wallpapers/`](system/share/wallpapers/), including the original
 rice wallpapers and the prepared Urban/Nature collection. The latter includes

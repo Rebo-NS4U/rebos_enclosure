@@ -25,6 +25,14 @@ A single left click on the VLC video toggles pause/play when `vlc-pause-click-pl
 
 `ui/shell.qml` is the standalone UI entry point. `ui/modules` contains the current Enclosure/Dweebo controls, surfaces, shadows and theme defaults needed by this app; it does not import the installed shell. `vendor/ani-cli` preserves Enclosure's resolver version. `backend_server.py` and `menu_client.py` communicate over the existing per-user runtime socket.
 
+Each backend client has a bounded output queue and a two-second write deadline;
+a stalled UI disconnects without blocking playback or another UI. Requests and
+events are limited to 1 MiB, with at most 16 clients and 16 queued events per
+client. The byte relay retains at most 32,768 routes; retiring old routes also
+releases their error and preload state. Relay paths use random tokens.
+MovieBox adapter provenance and its upstream MIT notice are retained under
+`vendor/moviebox-tui/`.
+
 ```sh
 cd ../../..
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=system/apps/media python3 -m unittest discover -s desktop/tests/media

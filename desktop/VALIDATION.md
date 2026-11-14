@@ -1,5 +1,36 @@
 # Validation record
 
+## 2.0 audit repairs — 2026-11-14
+
+- Full desktop discovery passed: 528 tests, with only the two explicitly
+  opt-in Wayland screenshot tests skipped. All 91 media, 45 shell and
+  3 assistant environment tests passed; three standalone Node regression
+  files and native Lua caption/chapter checks passed. Media includes real
+  VLC decoding/control and the new stalled-client/route-retention checks.
+- Corrected stale bar/connectivity/relay fixtures. CI and tox now include
+  separately located shell, assistant, Node and Lua regressions. Ruff's full
+  Pyflakes family passes after 26 small cleanups. The design gate passes with
+  70 bounded exceptions; dither extraction removed an obsolete waiver and
+  preserved image output without increasing ceilings.
+- Media UI output uses bounded per-client writers and deadlines; source
+  routes/errors/preloads are bounded. Subtitle source/model downloads are
+  digest-verified and model revisions pinned; failure tests preserve previous
+  files. Restored the adapter's missing upstream provenance and MIT notice.
+- All 101 payload entries/987 checksummed files verify. The exact staged
+  payload, Ruff and design checks passed from an isolated index export.
+  Linked deployment preview and installed source-link comparisons passed.
+  Native greeter builds passed without the former GTK warnings; the existing
+  Qt guard's stale/null/live/empty screen-list regression passed on Wayland.
+- Installed rtkit 0.14-2 with the administrator approval helper and verified
+  RealtimeKit's D-Bus MaxRealtimePriority=20. Loaded the assistant unit's guard
+  launch path with a user daemon-reload. Panel, assistant UI and media restart
+  counters remained zero; Niri validates and no user units are failed.
+- No active desktop, playback or assistant backend was restarted. Updated
+  Python loads on the next normal launch; existing greeter libraries were
+  preserved. No GitHub push, tag, release, complete package upgrade or fresh
+  hardware/VM installation was performed. Remaining investigations and release
+  acceptance requirements are in [the audit](../docs/RELEASE-2.0-AUDIT.md).
+
 ## Verified YouTube direct-stream playback — 2026-11-06
 
 - The affected video's HLS manifest loaded, but its first media segment returned

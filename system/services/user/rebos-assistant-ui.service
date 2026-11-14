@@ -1,9 +1,11 @@
 [Unit]
 Description=Independent assistant popup
 After=graphical-session.target
+PartOf=graphical-session.target
 [Service]
 Type=simple
-ExecStart=/usr/bin/qs -n -p %h/code/rebos-assistant
+ExecStartPre=-/usr/bin/bash %h/.config/quickshell/scripts/build_qt_screen_guard.sh
+ExecStart=%h/.config/quickshell/scripts/qs-screen-guard -n -p %h/code/rebos-assistant
 Restart=on-failure
 RestartSec=2
 [Install]

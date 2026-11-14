@@ -1,5 +1,4 @@
 import http.server
-import json
 import re
 from pathlib import Path
 import subprocess
@@ -14,6 +13,24 @@ from stream_relay import StreamRelay
 
 
 class RelayTests(unittest.TestCase):
+    def test_old_routes_release_sources_errors_and_preloads(self):
+        with patch('stream_relay.MAX_ROUTES', 4):
+            first = self.relay.register(self.base + 'old.mp4')
+            path = first.split(str(self.relay.server.server_port), 1)[1]
+            self.relay.record_failure(path, ValueError('test'))
+            self.relay.preloaded[path] = (0, b'old bytes', 9, {})
+            for i in range(8):
+                newest = self.relay.register(self.base + f'video-{i}.mp4')
+            self.assertEqual(len(self.relay.sources), 4)
+            self.assertEqual(len(self.relay.routes), 4)
+            self.assertNotIn(path, self.relay.sources)
+            self.assertNotIn(path, self.relay.failures)
+            self.assertNotIn(path, self.relay.preloaded)
+            self.relay.record_failure(path, OSError('late completion'))
+            self.assertNotIn(path, self.relay.failures)
+            self.assertEqual(self.relay.register(self.base + 'video-7.mp4'), newest)
+            self.assertNotRegex(newest, r'/media/\d+$')
+
     def setUp(self):
         self.folder=tempfile.TemporaryDirectory()
         self.path=Path(self.folder.name)

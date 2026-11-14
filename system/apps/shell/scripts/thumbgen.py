@@ -165,7 +165,7 @@ class ThumbnailGenerator:  # pylint: disable=too-many-instance-attributes
             "-vframes",
             "1",  # Extract only 1 frame
             "-vf",
-            f"scale=140:140:force_original_aspect_ratio=increase,crop=140:140",
+            "scale=140:140:force_original_aspect_ratio=increase,crop=140:140",
             "-q:v",
             "2",  # High quality
             "-f",
@@ -234,7 +234,7 @@ class ThumbnailGenerator:  # pylint: disable=too-many-instance-attributes
                 "-vframes",
                 "1",  # Extract only the first frame
                 "-vf",
-                f"scale=140:140:force_original_aspect_ratio=increase,crop=140:140",
+                "scale=140:140:force_original_aspect_ratio=increase,crop=140:140",
                 "-q:v",
                 "2",  # High quality
                 "-f",

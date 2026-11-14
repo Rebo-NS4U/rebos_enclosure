@@ -90,3 +90,7 @@ portal access stays enabled.
 The emoji picker uses the core Fuzzel launcher in dmenu mode and wl-clipboard. It does not require the X11 dmenu package. Canceling the menu leaves the clipboard unchanged.
 
 - Calibre supplies `ebook-convert` for the typer’s local MOBI import.
+- RealtimeKit (`rtkit`) supplies the D-Bus scheduling service queried by
+  PipeWire, WirePlumber and the portals. Existing installations missing it
+  should install it through the normal package update; no desktop restart
+  is required for file deployment.

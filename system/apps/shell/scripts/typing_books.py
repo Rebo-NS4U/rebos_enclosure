@@ -4,7 +4,7 @@ from typing import NamedTuple
 import hashlib
 import json
 import os
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 import posixpath
 import re
 import sqlite3

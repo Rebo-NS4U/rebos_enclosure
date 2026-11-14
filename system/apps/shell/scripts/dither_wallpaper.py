@@ -12,9 +12,31 @@ VERSION = 5
 STRENGTHS = {'normal': (24, 1), 'strong': (6, 2), 'intense': (4, 3)}
 
 
+def ordered_rgb(image, strength):
+    """Apply the ordered color screen independently of palette quantization."""
+    # Ordered RGB quantization retains the whole color cube rather than
+    # replacing the image's hues with a handful of dominant swatches.
+    from PIL import Image, ImageChops
+    levels, cell = {'normal': (8, 2), 'strong': (5, 4), 'intense': (4, 8)}[strength]
+    step = 255 / (levels - 1)
+    bayer = (0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5)
+    tile = Image.new('L', (4, 4))
+    tile.putdata([round((v + 0.5) * step / 16) for v in bayer])
+    tile = tile.resize((4 * cell, 4 * cell), Image.Resampling.NEAREST)
+    threshold = Image.new('L', image.size)
+    for y in range(0, image.height, tile.height):
+        for x in range(0, image.width, tile.width):
+            threshold.paste(tile, (x, y))
+    lut = [round(round(v / step) * step) for v in range(256)]
+    result = Image.merge('RGB', tuple(
+        ImageChops.add(channel, threshold, offset=-round(step / 2)).point(lut)
+        for channel in image.split()))
+    return result
+
+
 # Quality exception: Named image dimensions and color/dither intermediates describe the pixel transform without opaque containers.
 # Numeric ceilings are enforced by desktop/scripts/quality.py.
-def convert(source: Path, cache: Path, palette: str = 'original', strength: str = 'strong',  # pylint: disable=too-many-locals,too-many-statements
+def convert(source: Path, cache: Path, palette: str = 'original', strength: str = 'strong',  # pylint: disable=too-many-locals
             tint: str = '#4c9cbd') -> Path:
     from PIL import Image, ImageOps
 
@@ -38,23 +60,7 @@ def convert(source: Path, cache: Path, palette: str = 'original', strength: str 
             raise ValueError('Choose a still image; animated wallpapers are kept unchanged.')
         image = ImageOps.exif_transpose(raw).convert('RGB')
     if palette == 'original':
-        # Ordered RGB quantization retains the whole color cube rather than
-        # replacing the image's hues with a handful of dominant swatches.
-        from PIL import ImageChops
-        levels, cell = {'normal': (8, 2), 'strong': (5, 4), 'intense': (4, 8)}[strength]
-        step = 255 / (levels - 1)
-        bayer = (0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5)
-        tile = Image.new('L', (4, 4))
-        tile.putdata([round((v + 0.5) * step / 16) for v in bayer])
-        tile = tile.resize((4 * cell, 4 * cell), Image.Resampling.NEAREST)
-        threshold = Image.new('L', image.size)
-        for y in range(0, image.height, tile.height):
-            for x in range(0, image.width, tile.width):
-                threshold.paste(tile, (x, y))
-        lut = [round(round(v / step) * step) for v in range(256)]
-        result = Image.merge('RGB', tuple(
-            ImageChops.add(channel, threshold, offset=-round(step / 2)).point(lut)
-            for channel in image.split()))
+        result = ordered_rgb(image, strength)
     elif palette == 'tint':
         main = tuple(bytes.fromhex(tint[1:]))
         dark = tuple(round(v * 0.06) for v in main)

@@ -36,6 +36,7 @@ class Bridge(unittest.TestCase):
             with self.assertRaises(HTTPError) as error:
                 urlopen(Request(url, data=data, headers={'Origin': 'https://example.com'}))
             self.assertEqual(error.exception.code, 403)
+            error.exception.close()
             with contextlib.redirect_stdout(io.StringIO()) as output:
                 with urlopen(Request(url, data=data, headers={'Origin': bridge.ORIGIN})) as result:
                     self.assertEqual(result.status, 204)

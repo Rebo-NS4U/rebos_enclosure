@@ -34,14 +34,14 @@ ShellRoot {
       const body = tester.findChild(bar, "typing-island-container");
       if (!body || Math.abs(body.x + body.width / 2 - size / 2) > 1)
        throw Error(name + " is not centered");
-      for (const id of ["bar-volume", "bar-brightness", "bar-battery"]) {
+      for (const id of ["bar-volume", "bar-mic", "bar-battery"]) {
        const control = tester.findChild(bar, id);
        if (!control || !control.flat || control.width <= 0 || control.height <= 0)
         throw Error(name + " missing circular control " + id);
        const pos = control.mapToItem(bar, 0, 0);
        if (pos.x < body.x || pos.x + control.width > body.x + body.width) throw Error(id + " outside bar");
       }
-      for (const mode of ["dashboard", "sound", "battery", "calendar", "apps"]) {
+      for (const mode of ["dashboard", "sound", "mic", "battery", "calendar", "apps"]) {
        bar.expand(mode); tester.wait(50);
        if (!bar.islandActive || bar.targetWidth > 540 || bar.targetHeight <= 36)
         throw Error(name + " failed to expand " + mode);

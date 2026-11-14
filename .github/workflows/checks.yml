@@ -58,3 +58,9 @@ jobs:
         env:
           PYTHONPATH: system/apps/media
         run: runuser -u ci -- python -m unittest discover -s desktop/tests/media -v
+      - name: Run shell, assistant, connectivity and Lua regressions
+        run: |
+          runuser -u ci -- python -m unittest discover -s system/apps/shell/scripts -p 'test_*.py' -v
+          runuser -u ci -- python -m unittest discover -s system/apps/assistant/scripts -p 'test_*.py' -v
+          runuser -u ci -- node --test desktop/tests/*.cjs system/apps/shell/scripts/test_*.cjs
+          runuser -u ci -- lua5.1 desktop/tests/media/test_vlc_caption_anchor.lua

@@ -21,6 +21,7 @@ cage
 power-profiles-daemon
 upower
 pipewire
+rtkit
 pipewire-alsa
 pipewire-pulse
 wireplumber

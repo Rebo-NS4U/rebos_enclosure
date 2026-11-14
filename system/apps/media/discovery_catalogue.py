@@ -17,7 +17,6 @@ import threading
 from datetime import datetime, timezone
 from urllib.parse import quote
 import unicodedata
-import moviebox_source as movies
 
 BASE = 'https://v3-cinemeta.strem.io'
 PAGE_SIZE = 12

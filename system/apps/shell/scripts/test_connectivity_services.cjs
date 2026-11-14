@@ -92,7 +92,7 @@ function setup() {
         };
         const list = isWifi ? 'friendlyWifiNetworks' : 'friendlyDeviceList';
         c[isWifi ? 'wifiNetworks' : 'devices'] = [a, b];
-        c[list] = []; c.updateActive = () => {};
+        c[list] = []; c.updateActive = () => {}; c.wifiConnectTarget = null;
         load(source, 'updateFriendlyList', c);
         c.updateFriendlyList(); const first = c[list];
         assert.equal(first[0], b, 'connected device/network sorts first');

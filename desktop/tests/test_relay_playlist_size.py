@@ -6,6 +6,7 @@ import unittest
 from unittest.mock import patch
 from urllib.error import HTTPError
 from urllib.request import urlopen
+from urllib.parse import urlsplit
 
 SOURCE = Path(__file__).resolve().parents[2] / 'system/apps/media/stream_relay.py'
 spec = importlib.util.spec_from_file_location('playlist_relay', SOURCE)
@@ -33,7 +34,10 @@ class RelayPlaylistTests(unittest.TestCase):
                 self.assertEqual(response.status, 200)
         self.assertTrue(result.startswith(b'#EXTM3U\n'))
         self.assertNotIn(b'segment.ts', result)
-        self.assertIn(b'/media/2', result)
+        segment = urlsplit(result.splitlines()[-1].decode())
+        self.assertEqual(segment.hostname, '127.0.0.1')
+        self.assertEqual(segment.port, self.relay.server.server_port)
+        self.assertEqual(self.relay.sources[segment.path][0], 'http://127.0.0.1:9999/segment.ts')
 
     def test_limit_accepts_exact_size_and_rejects_one_byte_more(self):
         for extra in (0, 1):

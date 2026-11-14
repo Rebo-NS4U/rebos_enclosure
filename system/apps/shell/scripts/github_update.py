@@ -2,9 +2,7 @@
 """Interactive installed-desktop update launched by GitHub Settings."""
 from console_helpers import close_console
 import argparse
-from pathlib import Path
 import subprocess
-import sys
 
 from github_projects import checkout
 

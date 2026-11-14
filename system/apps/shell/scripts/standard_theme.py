@@ -1,7 +1,6 @@
 """Apply the approved component geometry to GTK, Qt widgets and browser chrome."""
 import json
 import re
-from pathlib import Path
 
 from apply_desktop_palette import update_ini, write
 

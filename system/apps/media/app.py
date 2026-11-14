@@ -5,7 +5,6 @@ import hashlib
 import html
 from playback_context import PlaybackContext
 import json
-import os
 from pathlib import Path
 import re
 import socket

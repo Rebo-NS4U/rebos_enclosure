@@ -7,7 +7,6 @@ import time
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError
-from pathlib import Path
 import browser_bridge
 from media_validation import InvalidMedia, validate_duration
 

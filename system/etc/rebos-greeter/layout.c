@@ -8,12 +8,10 @@
 #include <unistd.h>
 
 static void draw(GtkDrawingArea *area, cairo_t *cr, int w, int h, gpointer data) {
-    (void)data;
-    GdkRGBA fg;
-    gtk_style_context_get_color(gtk_widget_get_style_context(GTK_WIDGET(area)), &fg);
+    (void)data; (void)area;
     cairo_set_source_rgba(cr, 0, 0, 0, .32);
     cairo_paint(cr);
-    (void)w; (void)h; (void)fg;
+    (void)w; (void)h;
 }
 
 typedef struct { GtkWidget *clock, *panel, *hud, *time_label, *date_label; int width, height; } Layout;

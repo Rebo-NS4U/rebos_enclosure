@@ -11,6 +11,7 @@ from gi.repository import GLib
 import menu_backend as backend
 import torbox_source
 import youtube_account
+from client_connection import ClientConnection, MAX_FRAME
 
 
 def socket_path():
@@ -33,10 +34,8 @@ class BackendServer:
                 self.latest[message['event']] = message
             target = message.get('client')
             clients = [(target, self.clients[target])] if target in self.clients else [] if target else list(self.clients.items())
-            for key, connection in clients:
-                try:
-                    connection.sendall(payload)
-                except OSError:
+            for key, client in clients:
+                if not client.send(payload):
                     self.clients.pop(key, None)
 
     def ready(self):
@@ -46,10 +45,12 @@ class BackendServer:
                     torbox=torbox_source.status(), youtubeAccount=youtube_account.status(),
                     playerPid=engine.player.pid if engine.player is not None and engine.player.poll() is None else None)
 
-    def read_client(self, key, connection):
+    def read_client(self, key, client):
         try:
-            with connection, connection.makefile('r') as stream:
-                for line in stream:
+            with client.connection.makefile('rb') as stream:
+                while line := stream.readline(MAX_FRAME + 1):
+                    if len(line) > MAX_FRAME:
+                        break
                     try:
                         request = json.loads(line)
                         if not isinstance(request, dict):
@@ -58,9 +59,10 @@ class BackendServer:
                         GLib.idle_add(backend.dispatch, request)
                     except ValueError:
                         self.send(dict(event='error', text='Invalid request', client=key))
-        except OSError:
+        except (OSError, UnicodeError):
             pass
         finally:
+            client.close()
             with self.lock:
                 self.clients.pop(key, None)
 
@@ -71,17 +73,15 @@ class BackendServer:
             except OSError:
                 return
             key = uuid.uuid4().hex
-            # Connections are user-local and continuously read by menu_client.
             with self.lock:
-                self.clients[key] = connection
-                try:
-                    messages = [self.ready()] + list(self.latest.values())
-                    connection.sendall(''.join(json.dumps(message) + '\n' for message in messages).encode())
-                except OSError:
-                    self.clients.pop(key, None)
+                if len(self.clients) >= 16:
                     connection.close()
                     continue
-            threading.Thread(target=self.read_client, args=(key, connection), daemon=True).start()
+                client = ClientConnection(connection)
+                self.clients[key] = client
+                for message in [self.ready()] + list(self.latest.values()):
+                    client.send((json.dumps(message) + '\n').encode())
+            threading.Thread(target=self.read_client, args=(key, client), daemon=True).start()
 
     def run(self):
         if self.path.exists():
@@ -107,12 +107,8 @@ class BackendServer:
             backend.engine.stop()
             self.listener.close()
             with self.lock:
-                for connection in self.clients.values():
-                    try:
-                        connection.shutdown(socket.SHUT_RDWR)
-                    except OSError:
-                        pass
-                    connection.close()
+                for client in self.clients.values():
+                    client.close()
                 self.clients.clear()
             self.path.unlink(missing_ok=True)
             backend.app.POOL.shutdown(wait=False, cancel_futures=True)

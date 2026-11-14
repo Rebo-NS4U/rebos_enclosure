@@ -91,6 +91,9 @@ only. Whisper binaries, Silero VAD and models are not bundled. Run
 `~/.local/share/anime-streamer`. Setup requires CMake, a C++ compiler and ffmpeg;
 it runs as the current user and does not restart playback or desktop services.
 After setup, toggle captions off/on to retry an existing playback.
+Setup pins model revisions and verifies SHA-256 hashes for the Whisper source
+archive and all three models. Corrupt cached downloads are replaced only after
+a complete verified download; a failed download preserves the existing file.
 Short-clip checks found correct detection but mixed French/Italian
 translation and poor German/Japanese/Korean translation with the base model;
 do not treat detection success as evidence of translation accuracy.

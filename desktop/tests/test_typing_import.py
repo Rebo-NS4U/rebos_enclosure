@@ -1,5 +1,5 @@
 """Document import regression checks (run directly with Python)."""
-import importlib.util, tempfile, zipfile, subprocess
+import importlib.util, tempfile, zipfile
 from pathlib import Path
 r=Path(__file__).resolve().parents[2]
 p=r/'system/apps/shell/scripts/typing_import.py'

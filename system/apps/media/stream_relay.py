@@ -6,6 +6,7 @@ from http.client import HTTPException
 import ipaddress
 import socket
 import re
+import secrets
 import threading
 import time
 from urllib.parse import urlparse, urlsplit, urlunsplit, quote, urljoin
@@ -15,6 +16,7 @@ from http.cookiejar import CookieJar
 
 # Long YouTube HLS playlists include signed URLs for thousands of segments.
 MAX_PLAYLIST_BYTES = 16 * 1024 * 1024
+MAX_ROUTES = 32768
 
 
 class RelayRedirects(HTTPRedirectHandler):
@@ -75,7 +77,7 @@ class RelayRequestHandler(BaseHTTPRequestHandler):
             # Headers have already been sent: never append an error page.
             with self.server.relay.lock:
                 self.server.relay.preloaded.pop(self.path, None)
-            self.server.relay.failures[self.path] = str(getattr(error, 'code', type(error).__name__))
+            self.server.relay.record_failure(self.path, error)
             self.close_connection = True
         return True
     def stream_preloaded(self, source, entry, span):
@@ -157,7 +159,7 @@ class RelayRequestHandler(BaseHTTPRequestHandler):
             self.upstream_failure(error, response_started)
 
     def upstream_failure(self, error, response_started):
-        self.server.relay.failures[self.path] = str(getattr(error, 'code', type(error).__name__))
+        self.server.relay.record_failure(self.path, error)
         self.close_connection = True
         # Appending an HTTP error after media headers corrupts the
         # video payload. Closing lets the player detect truncation.
@@ -172,10 +174,9 @@ class StreamRelay:  # pylint: disable=too-many-instance-attributes
     def __init__(self, allow_local=False):
         self.allow_local = allow_local
         self.sources = OrderedDict()
-        self.routes = {}
+        self.routes = OrderedDict()
         self.validated_hosts = OrderedDict()
         self.lock = threading.Lock()
-        self.next_id = 0
         self.failures = {}
         self.preloaded = OrderedDict()
         self.preload_hits = 0
@@ -250,12 +251,22 @@ class StreamRelay:  # pylint: disable=too-many-instance-attributes
             route_key = (url, tuple(sorted((headers or {}).items())), height)
             if route_key in self.routes:
                 return self.routes[route_key]
-            self.next_id += 1
-            path = '/media/' + str(self.next_id)
+            path = '/media/' + secrets.token_urlsafe(24)
             self.sources[path] = (url, {'User-Agent': 'Mozilla/5.0', **(headers or {})}, height)
             local = f'http://127.0.0.1:{self.server.server_port}{path}'
             self.routes[route_key] = local
+            while len(self.routes) > MAX_ROUTES:
+                _, expired = self.routes.popitem(last=False)
+                expired_path = urlsplit(expired).path
+                self.sources.pop(expired_path, None)
+                self.failures.pop(expired_path, None)
+                self.preloaded.pop(expired_path, None)
         return local
+
+    def record_failure(self, path, error):
+        with self.lock:
+            if path in self.sources:
+                self.failures[path] = str(getattr(error, 'code', type(error).__name__))
 
     def rewrite(self, playlist, base, headers, height=None):
         def local(uri):

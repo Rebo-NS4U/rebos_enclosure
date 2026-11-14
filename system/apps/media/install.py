@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Install user launchers and playback unit without restarting any service."""
 from pathlib import Path
-import os, shlex, subprocess, sys
+import shlex, subprocess, sys
 root = Path(__file__).resolve().parent
 home = Path.home()
 def write(relative, text, executable=False):

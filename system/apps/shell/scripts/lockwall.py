@@ -6,8 +6,6 @@ Only processes video and GIF files - skips regular images.
 """
 
 from frame_helpers import render_frame
-import os
-import subprocess
 import sys
 from pathlib import Path
 from typing import Optional, Tuple

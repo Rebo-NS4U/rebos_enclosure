@@ -367,13 +367,6 @@
       "reason": "Named image dimensions and color/dither intermediates describe the pixel transform without opaque containers."
     },
     {
-      "path": "system/apps/shell/scripts/dither_wallpaper.py",
-      "object": "convert",
-      "symbol": "too-many-statements",
-      "ceiling": 51,
-      "reason": "Named image dimensions and color/dither intermediates describe the pixel transform without opaque containers."
-    },
-    {
       "path": "system/apps/shell/scripts/edit_keybinding.py",
       "object": "save",
       "symbol": "too-many-locals",

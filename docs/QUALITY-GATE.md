@@ -1,5 +1,11 @@
 # Design-warning cleanup and quality gate
 
+Current audit (2026-11-14): the registry contains **70** bounded exceptions.
+Ordered RGB dithering has its own helper, removing an obsolete statement
+waiver without raising limits. The counts and completion results below record
+the earlier cleanup, not the current test inventory. See
+[the 2.0 audit](RELEASE-2.0-AUDIT.md) for current findings and acceptance gaps.
+
 The original Pylint design scan reported 136 findings. Structural refactoring reduced the raw count to **72**, a net reduction of **64**. All duplicate-code findings were removed. The remaining 72 observations are **explicit exceptions**, not a claim that their underlying counts have disappeared. They cover 56 named functions/classes and are recorded with reasons and numeric bounds in `desktop/quality-exceptions.json`.
 
 ## Refactoring performed
