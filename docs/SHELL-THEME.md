@@ -97,3 +97,8 @@ ceramics. Deeper leaf undersides reveal spray depth; slower grain highlights
 the left wood face. A glazed pot rim, shaded sides and foot, and restrained
 inlay glints keep the crown dominant. Growth positions, framing and pot motifs
 remain stable throughout animation.
+
+Terminal twigs have seed-stable individual inflections, with unchanged branch
+origins and endpoints. Their leaf sprays vary between compact tufts, spreading
+fans, sloping pads and hanging forms, with asymmetric clefts and directional
+lean. Connected-spray filtering keeps every cluster rooted in its twig.

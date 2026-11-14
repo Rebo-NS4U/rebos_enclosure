@@ -501,7 +501,8 @@ def branch_point(branch, t):
     tx, ty = branch["end"]
     return (
         x + (tx - x) * t,
-        y + (ty - y) * t - math.sin(t * math.pi) * branch["curve"],
+        y + (ty - y) * t - math.sin(t * math.pi) * branch["curve"]
+        + math.sin(t * math.tau) * t * branch.get("tip_bend", 0),
     )
 
 
@@ -669,6 +670,13 @@ def branch_graph(seed):
     if one_sided:
         # Give the swept lower body a distinct vertical continuation and crown.
         add((centers[11], 7), (centers[-1] + wind * 1.2, 2.7), 17, 0.85, leader=True)
+    parents = {branch['parent'] for branch in branches if branch['parent'] is not None}
+    for index, branch in enumerate(branches):
+        if index not in parents:
+            # Independent randomness keeps existing branch origins and growth
+            # timing stable while each terminal twig gets its own inflection.
+            tip_rng = random.Random(f"{seed}:tip-character:{index}")
+            branch['tip_bend'] = tip_rng.uniform(-0.45, 0.45)
     return branches
 
 
@@ -691,6 +699,8 @@ def natural_specimen(seed, days):
                 branch["end"][1]
                 - branch["start"][1]
                 - math.pi * math.cos(t * math.pi) * branch["curve"]
+                + branch.get("tip_bend", 0) * (
+                    math.sin(t * math.tau) + t * math.tau * math.cos(t * math.tau))
             )
             stroke = (
                 "─"
@@ -763,25 +773,39 @@ def natural_specimen(seed, days):
                 if cy < 6.5
                 else (rng.uniform(3.5, 4.6), rng.uniform(1.4, 1.9))
             )
+        # Each terminal has a stable spray habit: compact tuft, spreading fan,
+        # sloping pad or softer hanging spray, all rooted at the actual twig.
+        character = random.Random(f"{seed}:spray-character:{index}")
+        spread, depth, lean = character.choice((
+            (0.82, 1.12, -0.12), (1.12, 0.82, 0.08),
+            (1.02, 0.94, -0.24), (0.92, 1.08, 0.22)))
+        rx, ry = rx * spread, ry * depth
+        lean *= 1 if branch['end'][0] >= branch['start'][0] else -1
+        cleft_side = character.choice((-1, 1))
+        cleft_start = character.uniform(0.15, 0.4)
+        vertical_reach = ry + abs(lean) * rx
         arrival = branch["born"] + branch["length"] * 0.55
         candidates = {}
-        for y in range(max(1, math.floor(cy - ry)), min(18, math.ceil(cy + ry)) + 1):
+        for y in range(max(1, math.floor(cy - vertical_reach)),
+                       min(18, math.ceil(cy + vertical_reach)) + 1):
             for x in range(
                 max(2, math.floor(cx - rx)), min(54, math.ceil(cx + rx)) + 1
             ):
-                distance = ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2
+                nx, ny = (x - cx) / rx, (y - cy - lean * (x - cx)) / ry
+                distance = nx ** 2 + ny ** 2
                 # Shared spray shapes make neighboring leaves read as clusters.
                 # A scalloped rim and a small lower cleft leave airy branch gaps.
-                nx, ny = (x - cx) / rx, (y - cy) / ry
                 rim = (
                     1
                     + 0.10 * math.sin(nx * 9 + index)
                     + 0.06 * math.cos(ny * 8 - index)
                 )
-                cleft = ny > 0.25 and 0.25 < nx < 0.65 and distance > 0.38
+                cleft = ny > 0.25 and cleft_start < nx * cleft_side < 0.7 and distance > 0.38
                 texture = random.Random(f"{seed}:leaf-cell:{index}:{x}:{y}")
                 if (
                     distance > rim
+                    or abs(x - cx) > 5
+                    or abs(y - cy) > 2.4
                     or cleft
                     or texture.random() < (0.025 if distance < 0.7 else 0.14)
                 ):

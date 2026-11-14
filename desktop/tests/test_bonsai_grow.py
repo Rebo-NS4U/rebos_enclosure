@@ -536,6 +536,27 @@ class BonsaiGrowTests(unittest.TestCase):
                 self.assertNotEqual(children[0]['width'], children[1]['width'])
                 self.assertNotEqual(children[0]['attachment'], children[1]['attachment'])
 
+    def test_terminal_character_is_distinct_stable_and_attached(self):
+        bends = []
+        for seed in range(12):
+            graph = bonsai.branch_graph(seed)
+            parents = {b['parent'] for b in graph if b['parent'] is not None}
+            for index, branch in enumerate(graph):
+                if index in parents:
+                    self.assertNotIn('tip_bend', branch)
+                    continue
+                bends.append(branch['tip_bend'])
+                self.assertEqual(bonsai.branch_point(branch, 0), branch['start'])
+                for actual, expected in zip(bonsai.branch_point(branch, 1), branch['end']):
+                    self.assertAlmostEqual(actual, expected)
+            first = bonsai.natural_specimen(seed, 30)
+            self.assertEqual(first, bonsai.natural_specimen(seed, 30))
+            self.assertTrue(all(0 <= x < 57 and 0 <= y < 19
+                                for x, y, born, glyph, ink in first if ink.startswith('leaf')))
+        self.assertGreater(max(bends), .3)
+        self.assertLess(min(bends), -.3)
+        self.assertGreater(len(set(round(b, 2) for b in bends)), 12)
+
     def test_forked_type_replaces_narrow_one_direction_trees(self):
         checked = 0
         for seed in range(120):
