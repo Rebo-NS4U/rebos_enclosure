@@ -199,16 +199,31 @@ ColumnLayout {
         visible: wallpaperSampler.suggestedColors.length > 0
         text: "Wallpaper color options · choose for " + (root.pickedRole === 0 ? "Main" : "Accent")
     }
-    Flow {
+    GridLayout {
         Layout.fillWidth: true
-        spacing: Styling.spacing(6)
+        columns: width >= 560 ? 4 : width >= 320 ? 3 : 2
+        columnSpacing: Styling.spacing(6)
+        rowSpacing: Styling.spacing(6)
         Repeater {
             model: wallpaperSampler.suggestedColors
             delegate: Button {
                 id: suggestedSwatch
                 required property string modelData
-                width: 38
-                height: 38
+                Layout.fillWidth: true
+                Layout.preferredHeight: 100
+                Layout.minimumWidth: 0
+                contentItem: Text {
+                    text: suggestedSwatch.modelData.toUpperCase()
+                    font.family: Config.theme.monoFont
+                    font.pixelSize: Styling.fontSize(-1)
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                    color: {
+                        const c = Qt.color(suggestedSwatch.modelData);
+                        const linear = v => v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+                        return 0.2126 * linear(c.r) + 0.7152 * linear(c.g) + 0.0722 * linear(c.b) > 0.179 ? "#000000" : "#ffffff";
+                    }
+                }
                 Accessible.name: "Use " + modelData + " as " + (root.pickedRole === 0 ? "main" : "accent")
                 onClicked: root.pickColor(modelData)
                 background: Rectangle {

@@ -78,6 +78,14 @@ Item {
                 chosen.push(candidate.rgb);
             if (chosen.length === 24) break;
         }
+        // Keep neutrals together, then progress through hues and lightness.
+        chosen.sort((a, b) => {
+            const ca = Qt.rgba(a[0] / 255, a[1] / 255, a[2] / 255, 1);
+            const cb = Qt.rgba(b[0] / 255, b[1] / 255, b[2] / 255, 1);
+            const ha = ca.hsvSaturation < 0.1 ? -1 : ca.hsvHue;
+            const hb = cb.hsvSaturation < 0.1 ? -1 : cb.hsvHue;
+            return ha - hb || ca.hslLightness - cb.hslLightness;
+        });
         suggestedColors = chosen.map(rgb => "#" + rgb.map(v => v.toString(16).padStart(2, "0")).join(""));
     }
 

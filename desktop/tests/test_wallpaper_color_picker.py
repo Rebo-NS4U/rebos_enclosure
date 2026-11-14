@@ -132,6 +132,8 @@ Item {
             verify(sampler.suggestedColors.includes("#d21e28"));
             verify(sampler.suggestedColors.includes("#1e3cd2"));
             compare(sampler.suggestedColors.length, 2);
+            compare(sampler.suggestedColors[0], "#1e3cd2");
+            compare(sampler.suggestedColors[1], "#d21e28");
             compare(sampler.sampleAt(25, 100), "#d21e28");
             compare(sampler.sampleAt(175, 100), "#1e3cd2");
             compare(sampler.sampleAt(25, 10), "");
