@@ -38,23 +38,51 @@ aur_helper() {
     else return 1; fi
 }
 
-# Keep output visible and preserve the real exit status. Only recognized signing
-# errors get a single retry; never remove locks or overwrite conflicting files.
+# Retain failures for diagnosis and retry only recognized recoverable errors.
 run_packages() {
     if ((dry_run)); then run "$@"; return $?; fi
-    local log status
-    log=$(mktemp) || return 1
-    LC_ALL=C "$@" 2>&1 | tee "$log"
-    status=${PIPESTATUS[0]}
-    if ((status != 0 && status != 130 && status != 143)) &&
-        grep -Eq 'signature from .* is unknown trust|signature from .* is marginal trust|required key missing from keyring' "$log"; then
-        printf '\nRefreshing Arch signing keys, then retrying once…\n'
-        "$ADMIN" pacman -Sy --needed --noconfirm archlinux-keyring
-        status=$?
-        if ((status == 0)); then "$@"; status=$?; fi
+    local log status attempt=0 log_dir
+    log_dir="${XDG_STATE_HOME:-$HOME/.local/state}/enclosure/packages"
+    mkdir -p -- "$log_dir" || return 1
+    log=$(mktemp "$log_dir/operation.XXXXXXXX.log") || return 1
+    chmod 600 "$log"
+    while true; do
+        LC_ALL=C "$@" 2>&1 | tee -a "$log"
+        status=${PIPESTATUS[0]}
+        if ((status == 0 || status == 130 || status == 143 || attempt > 0)); then break; fi
+        attempt=1
+        if grep -Eq 'signature from .* is unknown trust|signature from .* is marginal trust|required key missing from keyring' "$log"; then
+            printf '\nRefreshing Arch signing keys, then retrying once…\n'
+            "$ADMIN" pacman -Sy --needed --noconfirm archlinux-keyring 2>&1 | tee -a "$log"
+            status=${PIPESTATUS[0]}
+            ((status == 0)) || break
+        elif grep -Eqi 'failed retrieving file|Could not resolve host|Connection timed out|Operation too slow|The requested URL returned error: (404|502|503|504)' "$log"; then
+            printf '\nDownload failed; retrying the operation once…\n'
+        else
+            break
+        fi
+    done
+    if ((status != 0)); then
+        printf '\nOperation failed (exit %s). Log: %s\n' "$status" "$log" >&2
+        if grep -q 'failed to lock database' "$log"; then
+            printf 'Another package manager may be running. Finish it before trying again.\n' >&2
+        elif grep -Eq 'exists in filesystem|conflicting dependencies|breaks dependency' "$log"; then
+            printf 'A package or file conflict needs attention; see the exact error above.\n' >&2
+        fi
+    else
+        rm -f -- "$log"
     fi
-    rm -f -- "$log"
     return "$status"
+}
+
+prepare_aur() {
+    local missing
+    # Builds run as the user; only installing prerequisites needs elevation.
+    missing=$(pacman -T base-devel git 2>/dev/null)
+    if [[ -n $missing ]]; then
+        printf '\nInstalling AUR build prerequisites…\n'
+        run_packages "$ADMIN" pacman -Syu --needed --noconfirm base-devel git || return $?
+    fi
 }
 
 helper_options() {
@@ -143,7 +171,8 @@ select_packages() {
     mapfile -t packages <<< "$selection"
     case $mode in
         install) run_packages "$ADMIN" pacman -Syu --needed --noconfirm -- "${packages[@]}" ;;
-        aur) helper_options "$helper"
+        aur) prepare_aur || return $?
+            helper_options "$helper"
             run_packages "$helper" "${helper_flags[@]}" --sudo "$ADMIN" --sudoflags '' --nosudoloop -Syu --needed --noconfirm -- "${packages[@]}" ;;
         uninstall) "$ADMIN" pacman -Rns -- "${packages[@]}" ;;
     esac

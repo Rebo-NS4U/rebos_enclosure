@@ -110,8 +110,12 @@ and updates. Fish `update --dry-run` previews the Arch/AUR, Flatpak and Rust
 update commands. Administrator operations use `assistant-sudo`; package-manager
 prompts are accepted automatically for installs and updates, including AUR review
 menus. Removals still ask for confirmation. Signing-key trust failures refresh
-`archlinux-keyring` and retry once; other failures stop that stage and remain
-visible. Locks and file conflicts require manual resolution. Configuration Browser is also included
+`archlinux-keyring` and retry once. Recognized download failures also retry once.
+AUR installs automatically install missing `base-devel` and `git` prerequisites
+before building as the user. Failed operations retain a private log under
+`~/.local/state/enclosure/packages` (or `$XDG_STATE_HOME/enclosure/packages`).
+Other failures stop that stage and remain visible. Locks and file conflicts
+require manual resolution; the installer never removes locks or overwrites files. Configuration Browser is also included
 as a launcher entry for opening desktop configuration folders.
 
 The assistant's GitHub workflow applies across projects and backends: edit in the

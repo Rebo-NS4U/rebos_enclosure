@@ -43,7 +43,7 @@ class PackageMenuTests(unittest.TestCase):
             helper.write_text('#!/bin/bash\nprintf "helper\\n" >> "$HOME/calls"\necho "$FAILURE"\nexit 1\n')
             helper.chmod(0o755)
             # Restrict discovery to mock helper and the basic utilities it needs.
-            for name in ('bash', 'mktemp', 'tee', 'grep', 'rm', 'dirname'):
+            for name in ('bash', 'mktemp', 'tee', 'grep', 'rm', 'dirname', 'mkdir', 'chmod'):
                 (root / name).symlink_to('/usr/bin/' + name)
             env = dict(os.environ, HOME=folder, PATH=folder)
             for failure, attempts in [('signature from key is unknown trust', 2),
@@ -57,6 +57,61 @@ class PackageMenuTests(unittest.TestCase):
                     lines = calls.read_text().splitlines()
                     self.assertEqual(lines.count('helper'), attempts)
                     self.assertEqual(any('archlinux-keyring' in line for line in lines), attempts == 2)
+
+    def test_download_retry_and_retained_failure_log(self):
+        source = Path(__file__).resolve().parents[2] / 'system/scripts/package-menu.sh'
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            menu = root / 'menu.sh'
+            menu.write_text(source.read_text())
+            helper = root / 'paru'
+            helper.write_text("#!/bin/bash\n"
+                              'echo attempt >> "$HOME/calls"\n'
+                              'if [[ ! -e $HOME/tried ]]; then\n'
+                              '  touch "$HOME/tried"\n'
+                              '  echo "failed retrieving file: Connection timed out"; exit 1\n'
+                              'fi\nexit "${RETRY_STATUS:-0}"\n')
+            helper.chmod(0o755)
+            for name in ('bash', 'mktemp', 'tee', 'grep', 'rm', 'dirname', 'mkdir', 'chmod', 'touch'):
+                (root / name).symlink_to('/usr/bin/' + name)
+            env = dict(os.environ, HOME=folder, PATH=folder, XDG_STATE_HOME=folder + '/state')
+            for status in ('0', '1'):
+                (root / 'tried').unlink(missing_ok=True)
+                (root / 'calls').unlink(missing_ok=True)
+                result = subprocess.run(['/usr/bin/bash', str(menu), '--update'],
+                                        env=dict(env, RETRY_STATUS=status), capture_output=True, text=True)
+                self.assertEqual(result.returncode, int(status), result.stderr)
+                self.assertEqual(len((root / 'calls').read_text().splitlines()), 2)
+                logs = list((root / 'state/enclosure/packages').glob('*.log'))
+                self.assertEqual(len(logs), int(status))
+                if logs:
+                    self.assertEqual(logs[0].stat().st_mode & 0o777, 0o600)
+                    self.assertIn('Connection timed out', logs[0].read_text())
+                    self.assertIn(str(logs[0]), result.stderr)
+
+    def test_aur_prerequisites_are_installed_only_when_missing(self):
+        source = Path(__file__).resolve().parents[2] / 'system/scripts/package-menu.sh'
+        # Load functions without entering the interactive menu.
+        functions = source.read_text().split('if ((update_only));')[0]
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            script = root / 'prepare.sh'
+            script.write_text(functions + '\nprepare_aur\n')
+            admin = root / 'package-admin.sh'
+            admin.write_text('#!/bin/bash\necho "$*" >> "$HOME/calls"\nexit "${ADMIN_STATUS:-0}"\n')
+            admin.chmod(0o755)
+            pacman = root / 'pacman'
+            pacman.write_text('#!/bin/bash\nif [[ ${MISSING:-0} == 1 ]]; then echo base-devel; exit 127; fi\n')
+            pacman.chmod(0o755)
+            env = dict(os.environ, HOME=folder, PATH=folder + ':/usr/bin', XDG_STATE_HOME=folder + '/state')
+            for missing, status in [('0', '0'), ('1', '0'), ('1', '1')]:
+                (root / 'calls').unlink(missing_ok=True)
+                result = subprocess.run(['bash', str(script)], env=dict(env, MISSING=missing, ADMIN_STATUS=status),
+                                        capture_output=True, text=True)
+                self.assertEqual(result.returncode, int(status), result.stderr)
+                self.assertEqual((root / 'calls').exists(), missing == '1')
+                if missing == '1':
+                    self.assertIn('pacman -Syu --needed --noconfirm base-devel git', (root / 'calls').read_text())
 
     def test_compatibility_launchers_find_shared_menu(self):
         scripts = Path(__file__).resolve().parents[2] / 'system/scripts'
