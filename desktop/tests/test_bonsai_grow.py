@@ -152,8 +152,8 @@ class BonsaiGrowTests(unittest.TestCase):
         self.assertEqual(glyphs, ['·', '•', '●'])
         image = bonsai.render(3, 42, True, 80, ['#00ff00'] * 3)
         # Petioles use the foliage slot at lower intensity.
-        self.assertIn('\033[0;2;36m', image)
-        self.assertIn('\033[0;36m', image)
+        self.assertIn(bonsai.specimen_palette(42)['shoot_tip1'], image)
+        self.assertIn(bonsai.specimen_palette(42)['leaf4'], image)
 
 
     def test_starting_wood_has_body_and_tapers(self):
@@ -349,6 +349,23 @@ class BonsaiGrowTests(unittest.TestCase):
                                  bonsai.wood_palette(42, ['#6080dc'] * 3))
                 self.assertIn(bonsai.wood_palette(42)['wood'], bonsai.render(30, 42))
 
+    def test_leaves_have_priority_over_all_supporting_colors(self):
+        import colorsys
+        import re
+        for accent in ('#70bb50', '#6080dc', '#db6095', '#eeeeee', '#15121b'):
+            palette = bonsai.specimen_palette(42, [accent] * 3)
+            hsv = {}
+            for name, ink in palette.items():
+                if name:
+                    rgb = map(int, re.findall(r'\d+', ink)[-3:])
+                    hsv[name] = colorsys.rgb_to_hsv(*(value / 255 for value in rgb))
+            leaves = [color for name, color in hsv.items() if name.startswith('leaf')]
+            for name, (_, saturation, brightness) in hsv.items():
+                if not name.startswith('leaf'):
+                    self.assertLess(brightness, min(color[2] for color in leaves))
+                    if accent not in ('#eeeeee',):
+                        self.assertLess(saturation, min(color[1] for color in leaves))
+
     def test_terminal_colors_follow_theme_without_rewriting_state(self):
         import json
         from unittest.mock import patch
@@ -370,7 +387,7 @@ class BonsaiGrowTests(unittest.TestCase):
                     self.assertEqual(palette, [accent] * 3)
                     image = bonsai.render(30, seed, True, 80, palette)
                     self.assertIn(bonsai.wood_palette(seed)['wood'], image)
-                    pot_inlay = '\033[38;2;0;224;0m' if accent == '#00ff00' else '\033[38;2;0;0;224m'
+                    pot_inlay = bonsai.specimen_palette(seed)['pot_inlay']
                     self.assertIn(pot_inlay, image)
                     self.assertNotIn('\033[48;', image)
                     self.assertIn(bonsai.wood_palette(seed)['bark'], image)
