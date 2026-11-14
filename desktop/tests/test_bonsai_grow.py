@@ -987,12 +987,37 @@ class BonsaiGrowTests(unittest.TestCase):
             flowers = [(px,py) for py,row in enumerate(snapshots[2])
                        for px,(glyph,ink) in enumerate(row) if ink == 'blossom']
             self.assertGreater(len(flowers),len(sites))
-            self.assertTrue(all(any(max(abs(px-sx),abs(py-sy)) <= 1 for sx,sy,_ in sites)
+            self.assertTrue(all(any(max(abs(px-sx),abs(py-sy)) <= 4 for sx,sy,_ in sites)
                                 for px,py in flowers))
             again = [row.copy() for row in original]
             bonsai.add_blossoms(again,seed,30)
             self.assertEqual(again,snapshots[2])
         self.assertGreaterEqual(len(shapes),3)
+
+    def test_every_blossom_stays_spaced_even_as_later_buds_open(self):
+        for style in ('informal', 'natural', 'slant', 'semi-cascade'):
+            for seed in range(32):
+                plan = bonsai.blossom_plan(seed,style)
+                self.assertEqual(plan,bonsai.blossom_plan(seed,style))
+                # Include unopened flowers: companions cannot take their space.
+                for i,(x,y,born,glyph) in enumerate(plan):
+                    self.assertTrue(all(max(abs(x-px),abs(y-py)) >= 3
+                                        for px,py,_,_ in plan[i+1:]), (style,seed))
+                for day in (21,24,27,30):
+                    canvas = [[('●','leaf1') for _ in range(57)] for _ in range(24)]
+                    bonsai.add_blossoms(canvas,seed,day,style)
+                    actual = [(x,y) for y,row in enumerate(canvas)
+                              for x,(glyph,ink) in enumerate(row) if ink == 'blossom']
+                    self.assertEqual(set(actual), {(x,y) for x,y,born,_ in plan if born <= day})
+                    for i,(x,y) in enumerate(actual):
+                        self.assertTrue(all(max(abs(x-px),abs(y-py)) >= 3
+                                            for px,py in actual[i+1:]), (style,seed,day))
+                if seed < 8:
+                    canvas = bonsai.specimen_canvas(30,seed,style)
+                    actual = [(x,y) for y,row in enumerate(canvas)
+                              for x,(glyph,ink) in enumerate(row) if ink == 'blossom']
+                    self.assertTrue(actual)
+                    self.assertTrue(set(actual) <= {(x,y) for x,y,_,_ in plan})
 
     def test_actual_blossom_rendering_keeps_early_growth_clean(self):
         flowering = 0
@@ -1001,13 +1026,13 @@ class BonsaiGrowTests(unittest.TestCase):
             self.assertFalse(any(glyph in early for glyph in bonsai.BLOSSOM_FORMS))
             mature = bonsai.render(30,seed,False,80,['#85b470']*3)
             count = sum(mature.count(glyph) for glyph in bonsai.BLOSSOM_FORMS)
-            self.assertLessEqual(count,12)
+            self.assertLessEqual(count,8)
             flowering += count > 0
         self.assertEqual(flowering,48)
         for style in ('natural', 'slant', 'semi-cascade'):
             for seed in range(12):
                 image = bonsai.render(30,seed,False,59,style=style)
-                self.assertTrue(1 <= sum(image.count(glyph) for glyph in bonsai.BLOSSOM_FORMS) <= 12, (style,seed))
+                self.assertTrue(1 <= sum(image.count(glyph) for glyph in bonsai.BLOSSOM_FORMS) <= 8, (style,seed))
 
     def test_occasional_knurling_is_stable_sparse_and_only_on_bark(self):
         textured = plain = 0
