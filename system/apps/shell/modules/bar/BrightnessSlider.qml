@@ -22,17 +22,43 @@ CircularBarMeter {
     BarPopup {
         id: brightnessPopup
         anchorItem: root
-        contentWidth: controls.implicitWidth
-        contentHeight: controls.implicitHeight
+        popupPadding: Styling.spacing(16)
+        contentWidth: Styling.spacing(280) + popupPadding * 2
+        contentHeight: controls.implicitHeight + popupPadding * 2
         ColumnLayout {
             id: controls
-            width: implicitWidth
-            spacing: Styling.fontSize(0)
-            StyledText { text: "Brightness · " + Math.round(root.value * 100) + "%" }
+            anchors.left: parent.left
+            anchors.right: parent.right
+            spacing: Styling.spacing(12)
+
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: Styling.spacing(10)
+
+                StyledText {
+                    text: Icons.sun
+                    font.family: Icons.font
+                    font.pixelSize: Styling.fontSize(3)
+                    color: Colors.primary
+                }
+                StyledText {
+                    text: "Brightness"
+                    font.bold: true
+                    Layout.fillWidth: true
+                }
+                StyledText {
+                    text: Math.round(root.value * 100) + "%"
+                    color: Colors.overSurfaceVariant
+                }
+            }
             StyledSlider {
-                Layout.preferredWidth: Styling.fontSize(0) * 18
-                Layout.preferredHeight: Styling.fontSize(0) * 1.5
-                size: Styling.fontSize(0) * 18
+                Layout.fillWidth: true
+                Layout.leftMargin: Styling.spacing(8)
+                Layout.rightMargin: Styling.spacing(8)
+                Layout.preferredHeight: Styling.spacing(36)
+                resizeParent: false
+                enabled: root.currentMonitor?.ready ?? false
+                stepSize: 0.01
                 value: root.value
                 onValueChanged: {
                     if (Math.abs(value - root.value) > 0.01)

@@ -376,7 +376,7 @@
   "system/apps/shell/modules/bar/BarContent.qml": "96da8c4f250e398756bec89c7383a1e8f96c20bf9992c38d3770ae2afc15c62d",
   "system/apps/shell/modules/bar/BarSymbol.qml": "32d3c6c120df71d02f025715219b67101fd53c0c19ba40079fb5177eb2689ce1",
   "system/apps/shell/modules/bar/BatteryIndicator.qml": "c793b6d9d73555c4634bfe749c78917bca98a92e92a6c5a86b4d831372bcef69",
-  "system/apps/shell/modules/bar/BrightnessSlider.qml": "aa7f4ff9038238a9e4ce3259d7d24bb7ffe66e069ea8b600966d1725b05891b3",
+  "system/apps/shell/modules/bar/BrightnessSlider.qml": "b91a2378938f1437e29502c8177c1c50c7cdd725392f0e126ad40b92f7a0296b",
   "system/apps/shell/modules/bar/CircularBarMeter.qml": "294c58d202003d2334b36f3f27efad59d3063c6ce528b984976ccb110ef0efa4",
   "system/apps/shell/modules/bar/MicSlider.qml": "ef76bb18a2bcc184e30a576b993023c528c177b20e8e9a7319455b9c85511fd8",
   "system/apps/shell/modules/bar/SystemMonitorButton.qml": "685a2bccb125efa723ceeadea93259272ae02467e91bcd3a076177d0e1c0c658",
