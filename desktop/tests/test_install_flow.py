@@ -136,6 +136,8 @@ class InstallFlowTests(unittest.TestCase):
                 for name in ('config.toml', 'regreet.toml'):
                     self.assertEqual(copied['/etc/greetd/' + name],
                                      (ROOT / 'system/etc/greetd' / name).read_text())
+                self.assertEqual(copied['/usr/local/lib/rebos-greeter/icons/default/index.theme'],
+                                 (ROOT / 'system/etc/rebos-greeter/icons/default/index.theme').read_text())
                 for name in ('layout', 'cage-cursor'):
                     self.assertTrue(any(e['args'] and e['args'][-1] == '/usr/local/lib/rebos-greeter/' + name + '.so'
                                         and e.get('size', 0) > 0 for e in entries))

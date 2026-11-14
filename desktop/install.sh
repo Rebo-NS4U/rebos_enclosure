@@ -203,6 +203,7 @@ if ((!files_only)); then
             sudo install -Dm644 "$ROOT/../system/etc/rebos-greeter/$name.c" "/usr/local/lib/rebos-greeter/$name.c"
             sudo install -Dm755 "$work_dir/$name.so" "/usr/local/lib/rebos-greeter/$name.so"
         done
+        sudo install -Dm644 "$ROOT/../system/etc/rebos-greeter/icons/default/index.theme" "/usr/local/lib/rebos-greeter/icons/default/index.theme"
         sudo install -d -m755 /var/lib/rebos-greeter/theme /usr/share/icons/GoogleDot-Black
         for name in regreet.css background.png glass-texture.png; do
             sudo install -m644 "$ROOT/../system/etc/rebos-greeter/theme/$name" "/var/lib/rebos-greeter/theme/$name"
