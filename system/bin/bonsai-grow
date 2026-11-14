@@ -118,11 +118,11 @@ def trunk_path(seed, style="informal"):
             elif pattern == "bowed":
                 bend = math.sin(t * math.pi * 0.8)
             elif pattern == "old_oak":
-                bend = 0.2 * math.sin(t * math.pi * phase) + 0.08 * t
+                bend = 0.85 * math.sin(t * math.pi * 1.3) - 0.2 * t
             elif pattern == "twisted_juniper":
                 bend = 0.6 * math.sin(t * math.pi) - 0.12 * t
             elif pattern == "broom":
-                bend = 0.25 * math.sin(t * math.pi * phase)
+                bend = 0.95 * math.sin(t * math.pi * 1.2) - 0.18 * t
             elif pattern == "forked":
                 bend = 0.35 * math.sin(t * math.pi * 0.85)
             else:
@@ -330,8 +330,8 @@ def scaffold_layout(seed):
         if pattern == "old_oak":
             # A low massive fork, uneven lateral limbs and a rounded apex.
             controls = (
-                (4, side * rng.uniform(8, 10.5), rng.uniform(7, 8.5)),
-                (5, -side * rng.uniform(7.5, 10), rng.uniform(6, 7.5)),
+                (4, side * rng.uniform(8, 10.5), rng.uniform(9, 10)),
+                (5, -side * rng.uniform(7.5, 10), rng.uniform(7.5, 9)),
                 (7, rng.uniform(-1, 1), rng.uniform(3, 4)),
             )
         else:
@@ -351,8 +351,8 @@ def scaffold_layout(seed):
         shift = (centers[-1] - 27) * 0.6
         result = []
         controls = (
-            (5, side * rng.uniform(7, 9), rng.uniform(5, 6.5)),
-            (6, -side * rng.uniform(7, 9), rng.uniform(5.5, 7)),
+            (5, side * rng.uniform(7, 9), rng.uniform(7, 8)),
+            (6, -side * rng.uniform(7, 9), rng.uniform(8, 9)),
             (6, side * rng.uniform(0.5, 2), rng.uniform(2.8, 3.5)),
         )
         for index, (depth, reach, y) in enumerate(controls):
@@ -667,6 +667,8 @@ def branch_graph(seed):
             if lower
             else rng.uniform(0.1, 0.25)
             if habit == "twisted_juniper"
+            else min(max(0, start[1] - end[1]) * 0.3, rng.uniform(1.4, 2.2))
+            if habit in ("broom", "old_oak") and level == 0
             else min(max(0, start[1] - end[1]) * 0.2,
                      rng.uniform(0.5, 1.1) if level == 0 else rng.uniform(0.2, 0.4)),
             level=level,
@@ -818,18 +820,19 @@ def natural_specimen(seed, days):
             )
         if growth_pattern(seed)[0] == "old_oak":
             rx, ry = (
-                (rng.uniform(4.4, 5), rng.uniform(1.6, 2))
+                (rng.uniform(4.4, 5), rng.uniform(2.1, 2.5))
                 if cy < 6.5
-                else (rng.uniform(3.5, 4.6), rng.uniform(1.4, 1.9))
+                else (rng.uniform(3.8, 4.8), rng.uniform(1.9, 2.5))
             )
         # More scaffolds carry smaller sprays, preserving windows between
         # limbs rather than merging the additional options into a solid blob.
-        if len(branch_layout(seed)) >= 5 and cy >= 4.5:
+        full_fan = growth_pattern(seed)[0] in ("broom", "old_oak")
+        if len(branch_layout(seed)) >= 5 and cy >= 4.5 and not full_fan:
             rx *= 0.78
             ry *= 0.82
         if branch["level"]:
-            rx *= 0.70 if branch["level"] == 1 else 0.50
-            ry *= 0.82 if branch["level"] == 1 else 0.65
+            rx *= (0.85 if branch["level"] == 1 else 0.65) if full_fan else (0.70 if branch["level"] == 1 else 0.50)
+            ry *= (0.92 if branch["level"] == 1 else 0.80) if full_fan else (0.82 if branch["level"] == 1 else 0.65)
         # Each terminal has a stable spray habit: compact tuft, spreading fan,
         # sloping pad or softer hanging spray, all rooted at the actual twig.
         character = random.Random(f"{seed}:spray-character:{index}")

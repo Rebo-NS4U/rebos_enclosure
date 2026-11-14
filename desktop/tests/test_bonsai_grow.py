@@ -1140,6 +1140,23 @@ class BonsaiGrowTests(unittest.TestCase):
                 self.assertLessEqual(abs(x+shift-path[depth]),9)
         self.assertGreater(checked,10)
 
+    def test_fan_forms_have_curved_wood_and_fuller_lower_shoulders(self):
+        # Representative broom and oak crowns previously had a nearly straight
+        # base and narrow, isolated pads above long exposed scaffold arms.
+        for seed in (1,4,7,17):
+            self.assertIn(bonsai.growth_pattern(seed)[0], ('broom', 'old_oak'))
+            canvas = bonsai.specimen_canvas(30,seed)
+            foliage = [(x,y) for y,row in enumerate(canvas[:19])
+                       for x,(glyph,ink) in enumerate(row)
+                       if ink.startswith('leaf') or ink == 'blossom']
+            self.assertGreaterEqual(sum(y >= 8 for x,y in foliage), 40)
+            roots = [branch for branch in bonsai.branch_graph(seed) if branch['parent'] is None]
+            self.assertGreater(max(abs(bonsai.branch_point(branch,.5)[1]
+                                       - (branch['start'][1] + branch['end'][1])/2)
+                                   for branch in roots[:3]), 1.1)
+            base = bonsai.trunk_path(seed)[:7]
+            self.assertGreater(max(base)-min(base), 1.5)
+
     def test_broom_is_retained_and_twin_leader_removed(self):
         broom_count = 0
         for seed in range(120):
