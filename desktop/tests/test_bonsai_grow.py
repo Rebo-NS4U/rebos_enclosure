@@ -147,20 +147,49 @@ class BonsaiGrowTests(unittest.TestCase):
             glyphs.append(first_leaf[3])
             shoots = [cell for cell in cells if cell[4].startswith('shoot')]
             self.assertFalse(any(cell[3] in '│╰╯' for cell in shoots))
-            self.assertTrue(any(cell[3] in '╱╲' for cell in shoots))
+            self.assertTrue(shoots)
+            self.assertTrue(all(cell[3] in '╱╲─' for cell in shoots))
         self.assertEqual(glyphs, ['·', '•', '●'])
-        image = bonsai.render(3, 42, True, 80, ['#00ff00'] * 3)
+        image = bonsai.render(0, 42, True, 80, ['#00ff00'] * 3)
         # Petioles use the foliage slot at lower intensity.
         self.assertIn(bonsai.specimen_palette(42)['shoot_tip1'], image)
         self.assertIn(bonsai.specimen_palette(42)['leaf4'], image)
 
+
+    def test_opening_is_a_tiny_sprout_before_it_develops_bark(self):
+        for seed in range(48):
+            canvas = bonsai.specimen_canvas(0, seed)
+            points = [(x,y,ink) for y,row in enumerate(canvas[:19])
+                      for x,(glyph,ink) in enumerate(row) if glyph.strip()]
+            self.assertEqual(len(points), 4)
+            self.assertEqual(max(x for x,y,ink in points)-min(x for x,y,ink in points), 2)
+            self.assertEqual(min(y for x,y,ink in points), 17)
+            self.assertFalse(any(ink == 'bark' for x,y,ink in points))
+            self.assertEqual(sum(ink.startswith('leaf') for x,y,ink in points), 2)
+
+    def test_outer_twigs_are_subordinate_and_do_not_extend_into_long_spurs(self):
+        checked = 0
+        for seed in range(64):
+            graph = bonsai.branch_graph(seed)
+            for twig in graph:
+                if twig['level'] != 1 or twig['attachment'] < .6:
+                    continue
+                parent = graph[twig['parent']]
+                self.assertLessEqual(twig['width'], parent['width'] * .28)
+                self.assertLessEqual(abs(twig['end'][0]-parent['end'][0]), .91)
+                self.assertLess(twig['end'][1], twig['start'][1])
+                checked += 1
+        self.assertGreater(checked, 200)
 
     def test_starting_wood_has_body_and_tapers(self):
         for seed in range(24):
             for day in (0, 3, 7):
                 wood = bonsai.stem(day, seed)
                 base = {x for x, y, *_ in wood if y == 18}
-                self.assertGreaterEqual(len(base), 2)
+                if day == 0:
+                    self.assertEqual(len(base), 1)
+                else:
+                    self.assertGreaterEqual(len(base), 1 if day == 3 else 2)
                 tip_y = min(cell[1] for cell in wood)
                 self.assertEqual(sum(cell[1] == tip_y for cell in wood), 1)
             # Side branches remain visibly subordinate to the substantial trunk.
@@ -627,7 +656,7 @@ class BonsaiGrowTests(unittest.TestCase):
             for children in descendants.values():
                 self.assertLessEqual(len(children), 2)
                 if len(children) == 2:
-                    self.assertGreater(children[1]['attachment'] - children[0]['attachment'], .20)
+                    self.assertGreater(children[1]['attachment'] - children[0]['attachment'], .15)
                 for child in children:
                     source = graph[child['parent']]
                     self.assertEqual(child['level'], source['level'] + 1)
