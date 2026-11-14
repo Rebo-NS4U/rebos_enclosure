@@ -26,9 +26,5 @@ case "$MODE" in
     *) printf 'Usage: %s [area|screen|window|edit|output|ocr|--warm]\n' "$0" >&2; exit 2 ;;
 esac
 
-TEMP=$(mktemp --suffix=.png)
-trap 'rm -f "$TEMP"' EXIT
-geometry=$(slurp) || exit 0
-grim -g "$geometry" "$TEMP"
-tesseract -l eng "$TEMP" stdout | wl-copy
-notify-send "Text copied" "OCR result is on the clipboard."
+# A dedicated Quickshell instance owns the editable OCR result.
+exec qs -n -p "${XDG_CONFIG_HOME:-$HOME/.config}/quickshell/screen-text.qml"
