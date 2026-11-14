@@ -773,29 +773,38 @@ Item {
                     }
                 }
 
-                AssistantPresetPicker {
+                GridLayout {
+                    id: assistantSelectors
+                    objectName: "assistantSelectors"
                     Layout.fillWidth: true
                     Layout.leftMargin: 12
                     Layout.rightMargin: 12
-                    Layout.topMargin: 12
+                    Layout.topMargin: 8
+                    columns: width >= 640 && !presetPicker.expanded && !modelPicker.expanded ? 2 : 1
+                    columnSpacing: 8
+                    rowSpacing: 6
                     visible: root.active
-                }
-
-                AssistantModelPicker {
-                    Layout.fillWidth: true
-                    Layout.leftMargin: 12
-                    Layout.rightMargin: 12
-                    Layout.topMargin: 12
-                    visible: root.active
+                    AssistantPresetPicker {
+                        id: presetPicker
+                        Layout.fillWidth: true
+                        Layout.minimumWidth: 0
+                        Layout.alignment: Qt.AlignTop
+                    }
+                    AssistantModelPicker {
+                        id: modelPicker
+                        Layout.fillWidth: true
+                        Layout.minimumWidth: 0
+                        Layout.alignment: Qt.AlignTop
+                    }
                 }
 
                 Button {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 32
+                    Layout.preferredHeight: 26
                     Layout.leftMargin: 12
                     Layout.rightMargin: 12
-                    Layout.topMargin: 12
-                    Layout.bottomMargin: 12
+                    Layout.topMargin: 4
+                    Layout.bottomMargin: 8
                     flat: true
                     padding: 8
                     background: StyledRect {
@@ -805,7 +814,7 @@ Item {
                     contentItem: StyledText {
                         text: Ai.activeSession.geminiPlanUsage ? Ai.activeSession.geminiStatusSummary : Ai.activeSession.checkingPlanUsage ? "Checking plan usage…" : Ai.activeSession.planUsageSummary
                         color: Colors.overSurface
-                        font.pixelSize: Styling.fontSize(-3)
+                        font.pixelSize: Styling.fontSize(-2)
                         elide: Text.ElideRight
                         verticalAlignment: Text.AlignVCenter
                     }
@@ -1301,9 +1310,10 @@ Item {
 
                                 Column {
                                     id: messageColumn
-                                    x: 4
+                                    objectName: "assistantConversation"
+                                    x: (chatView.width - width) / 2
                                     y: 16
-                                    width: Math.max(0, chatView.messageLayoutWidth - 8)
+                                    width: Math.max(0, Math.min(1000, chatView.messageLayoutWidth - 32))
                                     spacing: 16
 
                                     Repeater {
@@ -1322,6 +1332,8 @@ Item {
                                             property bool isEditing: false
                                             property bool retryMode: false
                                             property bool toolExpanded: false
+                                            property bool toolDetailsExpanded: false
+                                            readonly property bool compactTool: !!modelData.functionCall && modelData.functionPending !== true && !toolDetailsExpanded
 
                                             readonly property string toolResultTitle: {
                                                 if (!isToolResult)
@@ -1479,8 +1491,8 @@ Item {
                                                         // Wrapped content derives its width from this bubble.
                                                         // Sizing the bubble from that content's implicitWidth
                                                         // creates a layout cycle that can stall ListView polish.
-                                                        width: messageDelegate.width * (isSystem ? 0.92 : 0.78)
-                                                        height: bubbleContent.implicitHeight + 24
+                                                        width: Math.max(0, messageDelegate.width - (isSystem ? 20 : 40))
+                                                        height: bubbleContent.implicitHeight + (messageDelegate.compactTool ? 8 : 24)
 
                                                         anchors.right: isUser ? parent.right : undefined
                                                         anchors.left: isUser ? undefined : parent.left
@@ -1705,7 +1717,7 @@ Item {
                                                             Pane {
                                                                 visible: modelData.functionCall !== undefined && !messageDelegate.isToolResult
                                                                 Layout.fillWidth: true
-                                                                padding: 12
+                                                                padding: messageDelegate.compactTool ? 4 : 8
                                                                 background: Rectangle {
                                                                     radius: Math.max(0, Config.roundness)
                                                                     color: "transparent"
@@ -1713,7 +1725,7 @@ Item {
                                                                 }
                                                                 contentItem: ColumnLayout {
                                                                     id: toolApprovalContent
-                                                                    spacing: 10
+                                                                    spacing: 6
 
                                                                     readonly property string toolName: modelData.functionCall ? (modelData.functionCall.name || "") : ""
                                                                     readonly property string toolDetail: {
@@ -1775,14 +1787,32 @@ Item {
                                                                             StyledText {
                                                                                 renderType: Text.NativeRendering
                                                                                 Layout.fillWidth: true
-                                                                                visible: toolApprovalContent.toolDetail.length > 0
+                                                                                visible: toolApprovalContent.toolDetail.length > 0 && (modelData.functionPending === true || messageDelegate.toolDetailsExpanded)
                                                                                 text: toolApprovalContent.toolDetail
+                                                                                objectName: "assistantToolCommand_" + index
                                                                                 color: Colors.outline
                                                                                 font.family: "Monospace"
                                                                                 font.pixelSize: Styling.fontSize(-2)
                                                                                 wrapMode: Text.WrapAnywhere
-                                                                                maximumLineCount: 5
                                                                                 elide: Text.ElideRight
+                                                                            }
+                                                                        }
+                                                                        Button {
+                                                                            objectName: "assistantToolDetails_" + index
+                                                                            visible: modelData.functionPending !== true && toolApprovalContent.toolDetail.length > 0
+                                                                            flat: true
+                                                                            implicitHeight: 28
+                                                                            padding: 4
+                                                                            text: messageDelegate.toolDetailsExpanded ? "Hide details" : "Details"
+                                                                            onClicked: messageDelegate.toolDetailsExpanded = !messageDelegate.toolDetailsExpanded
+                                                                            contentItem: StyledText {
+                                                                                text: parent.text
+                                                                                color: Colors.primary
+                                                                                font.pixelSize: Styling.fontSize(-2)
+                                                                            }
+                                                                            background: StyledRect {
+                                                                                variant: parent.hovered || parent.activeFocus ? "focus" : "transparent"
+                                                                                radius: Styling.radius(4)
                                                                             }
                                                                         }
                                                                     }
@@ -1850,7 +1880,7 @@ Item {
                                                         renderType: Text.NativeRendering
                                                         font.hintingPreference: Font.PreferFullHinting
                                                         id: modelIndicator
-                                                        visible: !isUser && !isSystem && (modelData.model ? true : false)
+                                                        visible: !isUser && !isSystem && !modelData.functionCall && (modelData.model ? true : false)
                                                         text: retryMode ? "Retry with another model " + Icons.caretRight : (modelData.model || "")
                                                         color: Colors.outline
                                                         font.family: Config.theme.font
@@ -2072,6 +2102,7 @@ Item {
 
                         Item {
                             id: inputContainer
+                            objectName: "assistantComposer"
                             property int attachmentPreviewHeight: attachmentPreview.visible ? Math.min(attachmentPreview.contentHeight, 120) + 8 : 0
                             height: attachmentPreviewHeight + Math.min(150, Math.max(48, inputField.contentHeight + 24))
 
@@ -2080,7 +2111,7 @@ Item {
                             anchors.bottomMargin: mainChatArea.isWelcome ? centerMargin : 20
                             anchors.horizontalCenter: parent.horizontalCenter
 
-                            width: Math.min(600, parent.width - 40)
+                            width: Math.max(0, Math.min(1000, parent.width - 32))
 
                             Behavior on anchors.bottomMargin {
                                 NumberAnimation {

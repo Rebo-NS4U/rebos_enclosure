@@ -520,8 +520,12 @@ PanelWindow {
     MouseArea { id: inputArea; anchors.fill: parent; enabled: root.active; onClicked: root.opened = false }
     StyledRect {
         id: card
+        objectName: "media-content-sheet"
         visible: root.presented && !GlobalStates.lockscreenVisible
         variant: "popup"
+        // Content sheets stay readable over busy windows without rewriting shell preferences.
+        styleOverride: "quiet"
+        backgroundOpacity: 1
         radius: Styling.radius(20)
         anchors.horizontalCenter: parent.horizontalCenter
         width: Math.min(root.width - root.unit * 2, root.unit * 110)
@@ -680,6 +684,7 @@ PanelWindow {
                         required property string image
                         required property string description
                         required property string availabilityLabel
+                        Accessible.name: title
                         width: grid.cellWidth
                         height: grid.cellHeight
                         StyledRect {
@@ -730,10 +735,15 @@ PanelWindow {
                                 }
                             }
                             MouseArea {
+                                id: posterHover
                                 anchors.fill: parent
                                 hoverEnabled: true
                                 onPositionChanged: { if (containsMouse) grid.currentIndex = poster.index; }
                                 onClicked: { grid.currentIndex = poster.index; root.selectShow(shows.get(poster.index)); }
+                            }
+                            StyledToolTip {
+                                show: posterHover.containsMouse || (grid.activeFocus && grid.currentIndex === poster.index)
+                                tooltipText: poster.title
                             }
                             MenuButton {
                                 anchors.top: parent.top
@@ -745,7 +755,7 @@ PanelWindow {
                                 Accessible.name: "Play or resume " + poster.title
                                 StyledToolTip {
                                     show: parent.hovered
-                                    tooltipText: "Play or resume directly · P on a selected card"
+                                    tooltipText: poster.title + " · Play or resume directly · P on a selected card"
                                 }
                                 onClicked: root.playCard(poster.index)
                             }
@@ -1169,12 +1179,14 @@ PanelWindow {
                                 Accessible.name: "Anime audio"
                             }
                         }
-                        CheckBox {
+                        MediaCheckBox {
+                            Layout.fillWidth: true
                             text: "Start fullscreen"
                             checked: root.settings.fullscreen ?? false
                             onToggled: root.updateSetting("fullscreen", checked)
                         }
-                        CheckBox {
+                        MediaCheckBox {
+                            Layout.fillWidth: true
                             text: "Reduce loud audio peaks"
                             checked: root.settings.audio_normalization ?? true
                             onToggled: root.updateSetting("audio_normalization", checked)
@@ -1182,7 +1194,7 @@ PanelWindow {
                         RowLayout {
                             Layout.fillWidth: true
                             StyledText { text: "Starting volume"; Layout.preferredWidth: root.unit * 12 }
-                            Slider {
+                            MediaSlider {
                                 Layout.fillWidth: true
                                 from: 5; to: 100; stepSize: 5; value: root.settings.volume ?? 80
                                 onMoved: root.updateSetting("volume", Math.round(value))
@@ -1195,12 +1207,14 @@ PanelWindow {
                             Layout.fillWidth: true; wrapMode: Text.Wrap; color: Colors.overSurfaceVariant
                         }
                         StyledText { text: "When a video ends"; font.bold: true }
-                        CheckBox {
+                        MediaCheckBox {
+                            Layout.fillWidth: true
                             text: "YouTube: play the next video automatically"
                             checked: root.settings.youtube_auto_next ?? true
                             onToggled: root.updateSetting("youtube_auto_next", checked)
                         }
-                        CheckBox {
+                        MediaCheckBox {
+                            Layout.fillWidth: true
                             text: "Episodes: prepare the next episode and pause"
                             checked: root.settings.auto_next ?? true
                             onToggled: root.updateSetting("auto_next", checked)
@@ -1216,7 +1230,8 @@ PanelWindow {
                         spacing: root.unit
                         enabled: root.ready
                         StyledText { text: "Subtitles"; font.bold: true }
-                        CheckBox {
+                        MediaCheckBox {
+                            Layout.fillWidth: true
                             text: "Generate English subtitles when needed"
                             palette.windowText: Colors.overSurface
                             checked: root.settings.live_subtitles ?? true
@@ -1246,7 +1261,8 @@ PanelWindow {
                             wrapMode: Text.Wrap
                             color: Colors.overSurfaceVariant
                         }
-                        CheckBox {
+                        MediaCheckBox {
+                            Layout.fillWidth: true
                             text: "Translate other languages to English"
                             palette.windowText: Colors.overSurface
                             checked: (root.settings.caption_language ?? "auto") === "auto"
@@ -1255,7 +1271,7 @@ PanelWindow {
                         RowLayout {
                             Layout.fillWidth: true
                             StyledText { text: "Subtitle timing"; Layout.preferredWidth: root.unit * 10 }
-                            Slider {
+                            MediaSlider {
                                 Layout.fillWidth: true
                                 from: -10; to: 10; stepSize: 0.1
                                 value: root.settings.caption_delay ?? 0

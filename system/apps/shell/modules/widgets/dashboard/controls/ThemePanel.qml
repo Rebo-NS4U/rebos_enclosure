@@ -255,110 +255,6 @@ Item {
                             StyledText {
                                 renderType: Text.NativeRendering
                                 font.hintingPreference: Font.PreferFullHinting
-                                text: "Fonts and corners"
-                                font.family: Config.theme.font
-                                font.pixelSize: Styling.fontSize(-1)
-                                font.weight: Font.Medium
-                                color: Colors.overSurfaceVariant
-                                Layout.bottomMargin: -4
-                            }
-
-                            // Wallpaper Path
-                            RowLayout {
-                                Layout.fillWidth: true
-                                spacing: Styling.spacing(8)
-
-                                StyledText {
-                                    renderType: Text.NativeRendering
-                                    font.hintingPreference: Font.PreferFullHinting
-                                    text: "Wallpapers"
-                                    font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(0)
-                                    color: Colors.overBackground
-                                    Layout.preferredWidth: 80
-                                }
-
-                                StyledRect {
-                                    variant: "common"
-                                    Layout.fillWidth: true
-                                    Layout.preferredHeight: 32
-                                    radius: Styling.radius(-2)
-
-                                    TextInput {
-                                        renderType: Text.NativeRendering
-                                        font.hintingPreference: Font.PreferFullHinting
-                                        id: wallPathInput
-                                        anchors.fill: parent
-                                        anchors.margins: 8
-                                        font.family: Config.theme.font
-                                        font.pixelSize: Styling.fontSize(0)
-                                        color: Colors.overBackground
-                                        selectByMouse: true
-                                        clip: true
-                                        verticalAlignment: TextInput.AlignVCenter
-
-                                        // Placeholder for default path
-                                        StyledText {
-                                            anchors.fill: parent
-                                            verticalAlignment: Text.AlignVCenter
-                                            text: "Default"
-                                            font: parent.font
-                                            color: Colors.overSurfaceVariant
-                                            visible: !parent.text && !parent.activeFocus
-                                        }
-
-                                        text: GlobalStates.wallpaperManager?.wallpaperDir ?? ""
-
-                                        onEditingFinished: {
-                                            GlobalStates.wallpaperManager?.setWallpaperDirectory(text);
-                                        }
-                                    }
-                                }
-                            }
-
-                            // Tint Icons toggle
-                            RowLayout {
-                                Layout.fillWidth: true
-                                spacing: Styling.spacing(8)
-
-                                StyledText {
-                                    renderType: Text.NativeRendering
-                                    font.hintingPreference: Font.PreferFullHinting
-                                    text: "Tint Icons"
-                                    font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(0)
-                                    color: Colors.overBackground
-                                    Layout.fillWidth: true
-                                }
-
-                                StyledSwitch {
-                                    id: tintIconsSwitch
-                                    checked: Config.theme.tintIcons
-
-                                    readonly property bool configValue: Config.theme.tintIcons
-
-                                    onConfigValueChanged: {
-                                        if (checked !== configValue) {
-                                            checked = configValue;
-                                        }
-                                    }
-
-                                    onCheckedChanged: {
-                                        if (checked !== Config.theme.tintIcons) {
-                                            Config.theme.tintIcons = checked;
-                                        }
-                                    }
-
-                                }
-                            }
-
-                            Separator {
-                                Layout.fillWidth: true
-                            }
-
-                            StyledText {
-                                renderType: Text.NativeRendering
-                                font.hintingPreference: Font.PreferFullHinting
                                 text: "Fonts"
                                 font.family: Config.theme.font
                                 font.pixelSize: Styling.fontSize(-1)
@@ -654,17 +550,6 @@ Item {
                             spacing: Styling.spacing(8)
 
                             StyledText {
-                                renderType: Text.NativeRendering
-                                font.hintingPreference: Font.PreferFullHinting
-                                text: "Shadow"
-                                font.family: Config.theme.font
-                                font.pixelSize: Styling.fontSize(-1)
-                                font.weight: Font.Medium
-                                color: Colors.overSurfaceVariant
-                                Layout.bottomMargin: -4
-                            }
-
-                            StyledText {
                                 Layout.fillWidth: true
                                 text: "Shadows apply to shell surfaces that enable them. App window shadows are managed separately."
                                 wrapMode: Text.WordWrap
@@ -695,7 +580,7 @@ Item {
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(0)
                                     color: Colors.overBackground
-                                    Layout.preferredWidth: 80
+                                    Layout.preferredWidth: Styling.fontSize(0) * 8
                                 }
 
                                 StyledSlider {
@@ -750,11 +635,12 @@ Item {
                                 StyledText {
                                     renderType: Text.NativeRendering
                                     font.hintingPreference: Font.PreferFullHinting
-                                    text: "Transparency and blur"
+                                    text: "Blur radius"
+                                    objectName: "shadow-blur-label"
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(0)
                                     color: Colors.overBackground
-                                    Layout.preferredWidth: 80
+                                    Layout.preferredWidth: Styling.fontSize(0) * 8
                                 }
 
                                 StyledSlider {
@@ -814,7 +700,7 @@ Item {
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(0)
                                     color: Colors.overBackground
-                                    Layout.preferredWidth: 80
+                                    Layout.preferredWidth: Styling.fontSize(0) * 8
                                 }
 
                                 StyledSlider {
@@ -873,7 +759,7 @@ Item {
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(0)
                                     color: Colors.overBackground
-                                    Layout.preferredWidth: 80
+                                    Layout.preferredWidth: Styling.fontSize(0) * 8
                                 }
 
                                 StyledSlider {
@@ -933,7 +819,7 @@ Item {
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(0)
                                     color: Colors.overBackground
-                                    Layout.preferredWidth: 80
+                                    Layout.preferredWidth: Styling.fontSize(0) * 8
                                 }
 
                                 StyledRect {

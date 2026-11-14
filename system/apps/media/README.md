@@ -42,4 +42,10 @@ Derived QML is covered by the included AGPL-3.0 license inherited from Enclosure
 
 The menu follows the shell wallpaper palette at `~/.cache/rebos_shell/colors.json` and watches for color changes. Built-in colors are used only when a palette role is unavailable.
 
+The content sheet uses the opaque surface variant to keep catalogue and settings
+text readable over other windows. This does not rewrite shell transparency or
+theme preferences. Playback checkboxes and sliders follow the shared colors and
+keyboard focus styling. Hover a catalogue card, or select it with the keyboard,
+to read its full title; Play tooltips also include the title.
+
 Streamer also watches Enclosure’s `rebos_shell/config/theme.json` under the XDG config directory. OLED backgrounds, surface style, transparency, fonts and other theme preferences update live. Missing settings use portable defaults; Streamer never writes shell preferences. Light mode disables OLED, matching the shell.

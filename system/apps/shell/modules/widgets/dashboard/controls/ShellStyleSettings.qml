@@ -15,11 +15,6 @@ ColumnLayout {
     spacing: Styling.spacing(12)
 
     StyledText {
-        text: "Theme style"
-        font.pixelSize: Styling.fontSize(4)
-        font.bold: true
-    }
-    StyledText {
         Layout.fillWidth: true
         text: "Set backgrounds and colors for the shell, bar, Fish and supported apps. Adjust fonts and corners, transparency, blur and motion in Appearance. Terminal text follows the monospace font settings. Dithered also converts still wallpapers automatically."
         wrapMode: Text.WordWrap

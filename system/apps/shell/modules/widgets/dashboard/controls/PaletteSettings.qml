@@ -86,13 +86,98 @@ ColumnLayout {
         }
     }
 
-    Text {
-        text: "Wallpaper colors"
-        font.family: Config.theme.font
-        font.pixelSize: Styling.fontSize(1)
-        font.bold: true
-        color: Colors.overSurface
+    StyledText { text: "Wallpaper folder and icons"; font.bold: true }
+    // Wallpaper Path
+    RowLayout {
+        Layout.fillWidth: true
+        spacing: Styling.spacing(8)
+
+        StyledText {
+            renderType: Text.NativeRendering
+            font.hintingPreference: Font.PreferFullHinting
+            text: "Folder"
+            font.family: Config.theme.font
+            font.pixelSize: Styling.fontSize(0)
+            color: Colors.overBackground
+            Layout.preferredWidth: 80
+        }
+
+        StyledRect {
+            variant: "common"
+            Layout.fillWidth: true
+            Layout.preferredHeight: 32
+            radius: Styling.radius(-2)
+
+            TextInput {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
+                id: wallPathInput
+                objectName: "palette-wallpaper-folder"
+                Accessible.name: "Wallpaper folder"
+                anchors.fill: parent
+                anchors.margins: 8
+                font.family: Config.theme.font
+                font.pixelSize: Styling.fontSize(0)
+                color: Colors.overBackground
+                selectByMouse: true
+                clip: true
+                verticalAlignment: TextInput.AlignVCenter
+
+                // Placeholder for default path
+                StyledText {
+                    anchors.fill: parent
+                    verticalAlignment: Text.AlignVCenter
+                    text: "Default"
+                    font: parent.font
+                    color: Colors.overSurfaceVariant
+                    visible: !parent.text && !parent.activeFocus
+                }
+
+                text: GlobalStates.wallpaperManager?.wallpaperDir ?? ""
+
+                onEditingFinished: {
+                    GlobalStates.wallpaperManager?.setWallpaperDirectory(text);
+                }
+            }
+        }
     }
+
+    // Tint Icons toggle
+    RowLayout {
+        Layout.fillWidth: true
+        spacing: Styling.spacing(8)
+
+        StyledText {
+            renderType: Text.NativeRendering
+            font.hintingPreference: Font.PreferFullHinting
+            text: "Tint Icons"
+            font.family: Config.theme.font
+            font.pixelSize: Styling.fontSize(0)
+            color: Colors.overBackground
+            Layout.fillWidth: true
+        }
+
+        StyledSwitch {
+            id: tintIconsSwitch
+            checked: Config.theme.tintIcons
+
+            readonly property bool configValue: Config.theme.tintIcons
+
+            onConfigValueChanged: {
+                if (checked !== configValue) {
+                    checked = configValue;
+                }
+            }
+
+            onCheckedChanged: {
+                if (checked !== Config.theme.tintIcons) {
+                    Config.theme.tintIcons = checked;
+                }
+            }
+
+        }
+    }
+
     Caption {
         text: "Matugen creates one palette for the desktop and your apps. Neutral is subtle; Tonal spot and Vibrant bring out more wallpaper color."
     }

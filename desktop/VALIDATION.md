@@ -1,5 +1,23 @@
 # Validation record
 
+## Visual review fixes — 2026-11-14
+
+- All 532 desktop tests completed successfully, with the same two opt-in Wayland
+  screenshot tests skipped; all 91 media tests, 45 shell Python tests and three
+  standalone Node regression files passed. Four new regressions cover responsive
+  conversation/header layout, command disclosure and pending approvals, activity
+  Markdown, large-font shadow labels, moved settings and native control behavior.
+- Live assistant and media screenshots confirm automatic UI reload, the compact
+  header/tool cards, wider composer, opaque media sheet and themed controls.
+  Isolated settings rendering confirms the shadow label no longer overlaps.
+  The offscreen media test adapts layer-window plumbing only; live review covers
+  native composition. Saved preferences and original command/value data remain.
+- Installed source links, payload verification, Ruff, the 70-exception design
+  gate and whitespace checks passed. No manual desktop/assistant/playback restart
+  was performed; reviewed media UI visibility was restored without playback
+  commands. Private screenshots are excluded from the repository.
+- See [visual fixes and verification limits](../docs/UI-POLISH.md).
+
 ## 2.0 audit repairs — 2026-11-14
 
 - Full desktop discovery passed: 528 tests, with only the two explicitly

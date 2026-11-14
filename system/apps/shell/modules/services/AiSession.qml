@@ -1391,6 +1391,11 @@ Scope {
 
     function activityText(text) {
         return String(text || "")
+            .replace(/\[([^\]\n]+)\]\([^)]+\)/g, "$1")
+            .replace(/(\*\*|__|~~)([^\n]+?)\1/g, "$2")
+            .replace(/`([^`\n]+)`/g, "$1")
+            .replace(/(^|\s)[*_]([^*_\n]+)[*_](?=\s|[.,!?;:]|$)/g, "$1$2")
+            .replace(/(^|\n)\s{0,3}#{1,6}\s+/g, "$1")
             .replace(/(?:[~.\w-]+\/)*([.\w-]+)\.(?:qml|js|ts|tsx|jsx|py|md|json|toml|yaml|yml|kdl|css|sh|conf|ini)\b/g, function(path, name) {
                 let known = {AssistantActivity: "the activity panel", AiSession: "the assistant session",
                     AssistantSidebar: "the assistant sidebar", test_ai_questions: "the assistant question checks"};
