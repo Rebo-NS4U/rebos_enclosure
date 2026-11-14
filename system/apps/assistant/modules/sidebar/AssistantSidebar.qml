@@ -853,6 +853,10 @@ Item {
                     sourceComponent: Item {
                         id: mainChatArea
                         readonly property AiSession session: pageLoader.modelData
+                        Connections {
+                            target: mainChatArea.session
+                            function onCurrentChatIdChanged() { mainChatArea.retryIndex = -1; }
+                        }
                         property alias input: inputField
                         property alias chat: chatView
                         objectName: "assistantChatPage_" + session.channelId
@@ -1325,6 +1329,17 @@ Item {
                                             objectName: "assistantMessage_" + mainChatArea.session.channelId + "_" + index
                                             required property int index
                                             readonly property var modelData: mainChatArea.session.currentChat[index] || {}
+
+                                            readonly property string interactionKey: JSON.stringify([
+                                                mainChatArea.session.currentChatId,
+                                                modelData.id ?? modelData.messageId ?? index
+                                            ])
+                                            onInteractionKeyChanged: {
+                                                isEditing = false;
+                                                retryMode = false;
+                                                toolExpanded = false;
+                                                toolDetailsExpanded = false;
+                                            }
 
                                             property bool isUser: modelData.role === "user"
                                             property bool isToolResult: modelData.role === "function"

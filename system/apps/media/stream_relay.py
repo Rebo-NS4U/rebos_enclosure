@@ -12,11 +12,37 @@ import time
 from urllib.parse import urlparse, urlsplit, urlunsplit, quote, urljoin
 from urllib.request import Request, HTTPRedirectHandler, HTTPCookieProcessor, build_opener
 from http.cookiejar import CookieJar
+from contextlib import contextmanager
+from typing import NamedTuple
+from relay_routes import RelayRoutes
 
 
 # Long YouTube HLS playlists include signed URLs for thousands of segments.
 MAX_PLAYLIST_BYTES = 16 * 1024 * 1024
 MAX_ROUTES = 32768
+
+
+def playlist_lines(playlist, height):
+    raw = playlist.splitlines()
+    variants = []
+    for index, line in enumerate(raw):
+        if line.startswith('#EXT-X-STREAM-INF') and index + 1 < len(raw):
+            size = re.search(r'RESOLUTION=\d+x(\d+)', line)
+            if size:
+                variants.append((int(size[1]), index))
+    keep = None
+    if variants and height is not None:
+        eligible = [row for row in variants if row[0] <= height] if height else []
+        keep = (max(eligible) if eligible else min(variants))[1]
+    removed = {index for _, index in variants if keep is not None and index != keep}
+    removed |= {index+1 for index in removed}
+    return [line for index, line in enumerate(raw) if index not in removed]
+
+
+class RewriteOptions(NamedTuple):
+    headers: dict
+    height: object
+    root: str
 
 
 class RelayRedirects(HTTPRedirectHandler):
@@ -40,9 +66,13 @@ class RelayRequestHandler(BaseHTTPRequestHandler):
     def log_message(self, *args):
         pass
     def do_HEAD(self):
-        self.serve(False)
+        self.relay_request(False)
     def do_GET(self):
-        self.serve(True)
+        self.relay_request(True)
+    def relay_request(self, body):
+        with self.server.relay.lifetime.hold(self.path, self):
+            self.serve(body)
+
     def serve_preloaded(self, body, source):
         with self.server.relay.lock:
             entry = self.server.relay.preloaded.get(self.path)
@@ -130,7 +160,7 @@ class RelayRequestHandler(BaseHTTPRequestHandler):
                     raw = prefix + upstream.read(MAX_PLAYLIST_BYTES + 1 - len(prefix))
                     if len(raw) > MAX_PLAYLIST_BYTES:
                         raise ValueError('Oversized playlist')
-                    rewritten = self.server.relay.rewrite(raw.decode(), upstream.url, source[1], height).encode()
+                    rewritten = self.server.relay.rewrite_for(self.path, raw.decode(), upstream.url, source).encode()
                     self.send_response(200)
                     self.send_header('Content-Type', 'application/vnd.apple.mpegurl')
                     self.send_header('Content-Length', str(len(rewritten)))
@@ -185,10 +215,18 @@ class StreamRelay:  # pylint: disable=too-many-instance-attributes
         self.server = ThreadingHTTPServer(('127.0.0.1', 0), RelayRequestHandler)
         self.server.relay = self
         self.server.daemon_threads = True
+        self.lifetime = RelayRoutes(self)
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
         self.thread.start()
 
     def preload(self, local, size=4 * 1024 * 1024):
+        path = self.lifetime.local_path(local)
+        if path is None:
+            return False
+        with self.lifetime.hold(path, object()):
+            return self._preload(local, size)
+
+    def _preload(self, local, size):
         """Retain a bounded startup prefix for an already registered file."""
         parsed = urlsplit(local)
         if parsed.hostname != '127.0.0.1' or parsed.port != self.server.server_port:
@@ -243,25 +281,17 @@ class StreamRelay:  # pylint: disable=too-many-instance-attributes
                 while len(self.validated_hosts) > 256:
                     self.validated_hosts.popitem(last=False)
 
-    def register(self, url, headers=None, height=None):
+    def source_entry(self, url, headers, height):
         parts = urlsplit(url)
         url = urlunsplit((parts.scheme, parts.netloc, quote(parts.path, safe="/%:@!$&'()*+,;=-._~"), quote(parts.query, safe="%=&+/:;?@!$'()*,~-._"), ''))
         self.validate(url)
-        with self.lock:
-            route_key = (url, tuple(sorted((headers or {}).items())), height)
-            if route_key in self.routes:
-                return self.routes[route_key]
-            path = '/media/' + secrets.token_urlsafe(24)
-            self.sources[path] = (url, {'User-Agent': 'Mozilla/5.0', **(headers or {})}, height)
-            local = f'http://127.0.0.1:{self.server.server_port}{path}'
-            self.routes[route_key] = local
-            while len(self.routes) > MAX_ROUTES:
-                _, expired = self.routes.popitem(last=False)
-                expired_path = urlsplit(expired).path
-                self.sources.pop(expired_path, None)
-                self.failures.pop(expired_path, None)
-                self.preloaded.pop(expired_path, None)
-        return local
+        canonical = {'User-Agent': 'Mozilla/5.0'}
+        canonical.update({key.title(): value for key, value in (headers or {}).items()})
+        return url, canonical, height
+
+    def register(self, url, headers=None, height=None):
+        entry = self.source_entry(url, headers, height)
+        return self.lifetime.register([entry], None, MAX_ROUTES)[0]
 
     def record_failure(self, path, error):
         with self.lock:
@@ -269,35 +299,34 @@ class StreamRelay:  # pylint: disable=too-many-instance-attributes
                 self.failures[path] = str(getattr(error, 'code', type(error).__name__))
 
     def rewrite(self, playlist, base, headers, height=None):
+        root = urlsplit(self.register(base, headers, height)).path
+        return self._rewrite(playlist, base, RewriteOptions(headers, height, root))
+
+    def rewrite_for(self, path, playlist, base, source):
+        with self.lock:
+            root = self.lifetime.group_for[path]
+        return self._rewrite(playlist, base, RewriteOptions(source[1], source[2], root))
+
+    def _rewrite(self, playlist, base, options):
+        entries = []
+        marker = '__relay_' + secrets.token_hex(16) + '_'
         def local(uri):
             if uri.startswith('data:'):
                 return uri
             target = urljoin(base, uri)
-            forwarded = headers if urlparse(target).hostname == urlparse(base).hostname else {key:value for key,value in headers.items() if key.lower() not in ('cookie','authorization')}
-            return self.register(target, forwarded, height)
-        raw = playlist.splitlines()
-        variants = []
-        for index, line in enumerate(raw):
-            if line.startswith('#EXT-X-STREAM-INF') and index + 1 < len(raw):
-                size = re.search(r'RESOLUTION=\d+x(\d+)', line)
-                if size:
-                    variants.append((int(size[1]), index))
-        keep = None
-        if variants and height is not None:
-            eligible = [row for row in variants if row[0] <= height] if height else []
-            keep = (max(eligible) if eligible else min(variants))[1]
-        removed = {index for _, index in variants if keep is not None and index != keep}
-        removed |= {index+1 for index in removed}
+            forwarded = options.headers if urlparse(target).hostname == urlparse(base).hostname else {key:value for key,value in options.headers.items() if key.lower() not in ('cookie','authorization')}
+            entries.append(self.source_entry(target, forwarded, options.height))
+            return marker + str(len(entries) - 1) + '__'
         lines = []
-        for index, line in enumerate(raw):
-            if index in removed:
-                continue
+        for line in playlist_lines(playlist, options.height):
             if line.startswith('#'):
                 line = re.sub(r'URI="([^"]+)"', lambda match: 'URI="' + local(match[1]) + '"', line)
             elif line.strip():
                 line = local(line.strip())
             lines.append(line)
-        return '\n'.join(lines) + '\n'
+        rewritten = '\n'.join(lines) + '\n'
+        routes = self.lifetime.register(entries, options.root, MAX_ROUTES)
+        return re.sub(re.escape(marker) + r'(\d+)__', lambda match: routes[int(match[1])], rewritten)
 
     def close(self):
         self.server.shutdown()
@@ -319,3 +348,21 @@ def register(url, headers=None, height=None):
 
 def preload(local):
     return _RELAY.preload(local) if _RELAY is not None else False
+
+
+def available(url):
+    return _RELAY is None or _RELAY.lifetime.available(url)
+
+
+def release(owner):
+    if _RELAY is not None:
+        _RELAY.lifetime.release(owner)
+
+
+@contextmanager
+def playback(owner, urls):
+    if _RELAY is None:
+        yield
+    else:
+        with _RELAY.lifetime.playback(owner, urls):
+            yield

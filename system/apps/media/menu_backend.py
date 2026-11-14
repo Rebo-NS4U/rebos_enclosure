@@ -140,7 +140,7 @@ class Engine(app.Browser):  # pylint: disable=too-many-instance-attributes
 
     def resolve(self, key, done, failed, preload=False):
         cached = self.resolved.get(key)
-        if cached and time.monotonic() - cached[0] < 300:
+        if cached and time.monotonic() - cached[0] < 300 and all(stream_relay.available(cached[1][index]) for index in (0, 3)):
             done(cached[1])
             return
         if key in self.resolving:

@@ -4,6 +4,7 @@ import concurrent.futures
 import hashlib
 import html
 from playback_context import PlaybackContext
+import stream_relay
 import json
 from pathlib import Path
 import re
@@ -18,6 +19,11 @@ import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Gdk', '4.0')
 from gi.repository import Gtk, Gdk, GLib
+
+def spawn_player(args, logpath, owner, urls):
+    with stream_relay.playback(owner, urls), logpath.open('w') as log:
+        return subprocess.Popen(args, stdout=log, stderr=log)
+
 
 ROOT = Path.home()
 STATE = ROOT / '.local/state/anime-streamer'
@@ -420,9 +426,8 @@ class Browser(Gtk.Application):  # pylint: disable=too-many-instance-attributes
         logpath = STATE / 'mpv.log'
         STATE.mkdir(parents=True, exist_ok=True)
         try:
-            with logpath.open('w') as log:
-                process = subprocess.Popen(args, stdout=log, stderr=log)
-        except OSError as exc:
+            process = spawn_player(args, logpath, self, [video, audio, subtitles])
+        except (OSError, ValueError) as exc:
             sockdir.cleanup()
             self.error(str(exc))
             return
@@ -467,6 +472,7 @@ class Browser(Gtk.Application):  # pylint: disable=too-many-instance-attributes
         show, episodes, index, token = context
         if token != self.play_token:
             return
+        stream_relay.release(self)
         self.player = None
         self.stop_button.set_sensitive(False)
         if natural_end:
@@ -481,6 +487,7 @@ class Browser(Gtk.Application):  # pylint: disable=too-many-instance-attributes
 
     def stop(self, *_):
         self.play_token += 1
+        stream_relay.release(self)
         if self.player and self.player.poll() is None:
             self.player.terminate()
         self.player = None

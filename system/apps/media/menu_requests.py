@@ -72,8 +72,11 @@ class MenuRequest:
 
     def fail(self, error):
         request = self.request
-        self.send(dict(event='error', action=request.get('action'), request=request.get('request', 0),
-                       text=str(error), client=request.get('_client')))
+        message = dict(event='error', action=request.get('action'), request=request.get('request', 0),
+                       text=str(error), client=request.get('_client'))
+        if request.get('action') == 'settings':
+            message['settings'] = dict(self.engine.settings)
+        self.send(message)
 
     def handle_catalogue(self):
         request = self.request

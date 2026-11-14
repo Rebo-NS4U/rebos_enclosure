@@ -12,6 +12,7 @@ import menu_backend as backend
 import torbox_source
 import youtube_account
 from client_connection import ClientConnection, MAX_FRAME
+from runtime_socket import prepare_socket, socket_identity, unlink_socket
 
 
 def socket_path():
@@ -84,17 +85,11 @@ class BackendServer:
             threading.Thread(target=self.read_client, args=(key, client), daemon=True).start()
 
     def run(self):
-        if self.path.exists():
-            with socket.socket(socket.AF_UNIX) as probe:
-                try:
-                    probe.connect(str(self.path))
-                except OSError:
-                    self.path.unlink(missing_ok=True)
-                else:
-                    raise RuntimeError('Anime service is already running')
+        prepare_socket(self.path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.listener = socket.socket(socket.AF_UNIX)
         self.listener.bind(str(self.path))
+        identity = socket_identity(self.path)
         self.path.chmod(0o600)
         self.listener.listen(8)
         backend.engine = backend.Engine()
@@ -110,7 +105,7 @@ class BackendServer:
                 for client in self.clients.values():
                     client.close()
                 self.clients.clear()
-            self.path.unlink(missing_ok=True)
+            unlink_socket(self.path, identity)
             backend.app.POOL.shutdown(wait=False, cancel_futures=True)
 
 

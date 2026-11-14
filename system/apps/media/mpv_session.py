@@ -8,6 +8,7 @@ import threading
 import time
 from pathlib import Path
 from gi.repository import GLib
+import stream_relay
 
 
 class MpvSession:
@@ -55,7 +56,8 @@ class MpvSession:
             options['alang'] = links.audio_language
         if getattr(links, 'is_hls', False):
             options['demuxer-lavf-o'] = 'allowed_extensions=ALL,allowed_segment_extensions=ALL,extension_picky=0'
-        self.command(['loadfile', video, 'replace', -1, options])
+        with stream_relay.playback(self, [video, audio, subtitles]):
+            self.command(['loadfile', video, 'replace', -1, options])
 
     def emit(self, event):
         GLib.idle_add(self.on_event, event)
@@ -136,9 +138,11 @@ class MpvSession:
             connection.close()
             self.process.wait()
             self.directory.cleanup()
+            stream_relay.release(self)
             self.emit({'event': 'process-exited', 'code': self.process.returncode})
 
     def close(self):
         self.closed.set()
+        stream_relay.release(self)
         if self.process.poll() is None:
             self.process.terminate()

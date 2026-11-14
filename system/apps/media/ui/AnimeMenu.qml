@@ -66,6 +66,12 @@ PanelWindow {
     property var selectedShow: ({})
     property var details: ({})
     property var settings: ({})
+    property var confirmedSettings: ({})
+    property var pendingSettings: ({})
+    property var inFlightSettings: ({})
+    property int settingsSequence: 0
+    property int settingsInFlight: 0
+    property string settingsError: ""
     property var torbox: ({connected: false, text: "TorBox is not connected."})
     property bool torboxBusy: false
     property bool torboxManual: false
@@ -255,16 +261,47 @@ PanelWindow {
         send({action: "quick_play", queue: youtubeQueue(), show: Object.assign({}, shows.get(index), {kind: mediaKind})});
     }
     function updateSetting(key: string, value): void {
-        const updated = Object.assign({}, settings);
-        updated[key] = value;
-        settings = updated;
-        send({action: "settings", settings: updated});
+        if (!ready) {
+            settings = Object.assign({}, confirmedSettings);
+            settingsError = "Reconnect to the playback service before changing settings.";
+            return;
+        }
+        pendingSettings = Object.assign({}, pendingSettings, {[key]: value});
+        settings = Object.assign({}, confirmedSettings, inFlightSettings, pendingSettings);
+        settingsError = "";
+        sendPendingSettings();
+    }
+    function sendPendingSettings(): void {
+        if (!ready || settingsInFlight || Object.keys(pendingSettings).length === 0) return;
+        inFlightSettings = pendingSettings;
+        pendingSettings = ({});
+        settingsInFlight = ++settingsSequence;
+        send({action: "settings", request: settingsInFlight, settings: inFlightSettings});
+    }
+    function settleSettings(data, failed: bool): void {
+        if (settingsInFlight && data.request !== settingsInFlight) return;
+        if (!settingsInFlight && data.request) return;
+        if (failed && !settingsInFlight) return;
+        const canonical = failed ? data.settings : data.data;
+        if (canonical && typeof canonical === "object" && !Array.isArray(canonical))
+            confirmedSettings = Object.assign({}, canonical);
+        settingsInFlight = 0;
+        inFlightSettings = ({});
+        settingsError = failed ? (data.text || "Could not save settings.") : "";
+        settings = Object.assign({}, confirmedSettings, pendingSettings);
+        sendPendingSettings();
     }
     function receive(line: string): void {
         let data;
         try { data = JSON.parse(line); } catch (_) { message = "Could not read the media service response"; return; }
         Qt.callLater(() => {
             if (data.event === "connection-lost") {
+                if (settingsInFlight || Object.keys(pendingSettings).length)
+                    settingsError = "Connection lost before settings were confirmed. Reconnect to check saved values.";
+                settingsInFlight = 0;
+                pendingSettings = ({});
+                inFlightSettings = ({});
+                settings = Object.assign({}, confirmedSettings);
                 ready = false;
                 nextEpisodeAvailable = false;
                 nextEpisodeResumesPlayback = false;
@@ -278,7 +315,12 @@ PanelWindow {
                 ready = true;
                 if (message === "Reconnecting to playback service…" || message.startsWith("Playback menu disconnected"))
                     message = shows.count > 0 ? shows.count + " results" : "Choose a show to see its details";
-                settings = data.settings;
+                confirmedSettings = Object.assign({}, data.settings);
+                settings = Object.assign({}, confirmedSettings);
+                settingsInFlight = 0;
+                pendingSettings = ({});
+                inFlightSettings = ({});
+                settingsError = "";
                 torbox = data.torbox ?? ({connected: false, text: "TorBox is not connected."});
                 torboxBusy = false;
                 filterOptions = data.filterOptions ?? [];
@@ -347,7 +389,7 @@ PanelWindow {
                     if (isYoutube) chooseRecommendation("for-you");
                 }
             } else if (data.event === "settings") {
-                settings = data.data;
+                settleSettings(data, false);
             } else if (data.event === "verification") {
                 opened = false;
                 playback = data.text;
@@ -386,7 +428,9 @@ PanelWindow {
                 }
                 if (selectedShow.id === data.data.id) selectedShow = Object.assign({}, selectedShow, {image: data.data.image});
             } else if (data.event === "error") {
-                if (data.action === "catalogue" && data.request === requestId) {
+                if (data.action === "settings") {
+                    settleSettings(data, true);
+                } else if (data.action === "catalogue" && data.request === requestId) {
                     loading = false; loadFailed = true;
                     if (cataloguePage > 1) cataloguePage--;
                     message = data.text;
@@ -1006,8 +1050,16 @@ PanelWindow {
                     }
                 }
             }
+            StyledText {
+                visible: root.pageView === "settings" && (root.settingsError.length > 0 || root.settingsInFlight !== 0)
+                Layout.fillWidth: true
+                wrapMode: Text.Wrap
+                text: root.settingsError || "Saving settings…"
+                color: root.settingsError ? Colors.error : Colors.overSurfaceVariant
+            }
             ScrollView {
                 id: settingsScroll
+                enabled: root.ready
                 visible: root.pageView === "settings"
                 Layout.fillWidth: true
                 Layout.fillHeight: true

@@ -32,6 +32,7 @@ class SettingsTransactionTests(unittest.TestCase):
         self.assertEqual(self.engine.settings, self.before)
         self.engine.settings_changed.assert_not_called()
         self.assertEqual(self.messages[-1]['event'], 'error')
+        self.assertEqual(self.messages[-1]['settings'], self.before)
 
     def test_non_object_settings_are_rejected_without_changes(self):
         with patch.object(app, 'save_json') as save:

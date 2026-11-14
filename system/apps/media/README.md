@@ -28,8 +28,27 @@ A single left click on the VLC video toggles pause/play when `vlc-pause-click-pl
 Each backend client has a bounded output queue and a two-second write deadline;
 a stalled UI disconnects without blocking playback or another UI. Requests and
 events are limited to 1 MiB, with at most 16 clients and 16 queued events per
-client. The byte relay retains at most 32,768 routes; retiring old routes also
-releases their error and preload state. Relay paths use random tokens.
+client. The byte relay retains at most 32,768 routes. Active and paused players
+own complete source families, including rewritten playlist children; in-flight
+requests, recently read sources and fresh preloads also protect their families.
+Only inactive families are retired, together with their error and preload state.
+Playlist routes are admitted together: capacity exhaustion rejects a new manifest
+without emitting partially evicted links or interrupting existing owned routes.
+An evicted cached source is resolved again before playback. Relay paths use
+random tokens. Extremely large manifests and indefinitely growing live streams
+can reach the cap and fail explicitly; sliding-window live-stream retirement is
+not implemented.
+
+Settings changes are serialized as patches, with pending feedback until the
+service acknowledges persistence. Rejected changes revert to the service's
+confirmed values while newer queued edits are retained. A disconnect discards
+unconfirmed local edits; reconnecting reloads the service's saved values. Settings
+controls are disabled offline.
+
+Startup refuses regular files, symlinks, foreign-owned sockets and live listeners
+at the runtime socket path. Only a confirmed stale socket owned by the current
+user is removed; shutdown also checks that the original socket still occupies
+the path.
 MovieBox adapter provenance and its upstream MIT notice are retained under
 `vendor/moviebox-tui/`.
 

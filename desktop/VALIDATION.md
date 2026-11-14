@@ -1,5 +1,24 @@
 # Validation record
 
+## Final bug repairs — 2026-11-14
+
+- Full desktop discovery passed: 534 tests, with only the two opt-in Wayland
+  screenshot cases skipped. All 103 media tests, 45 shell tests, three assistant
+  tests, three Node regression files and native Lua caption/chapter checks passed.
+- Added relay ownership/capacity and socket-preservation regressions, including
+  real loopback HTTP and failed VLC replacement. Real-QML tests cover settings
+  rejection, coalescing, stale replies and reconnect, plus equal-length chat
+  switches in both sidebars without resetting same-message streaming state.
+- Ruff and the existing 70-exception Pylint design gate pass without increased
+  ceilings. Payload verification and the linked, preference-preserving deployment
+  preview pass. All three installed application directories resolve to the
+  checked source; no separate installed edits need recovery.
+- An approved desktop check confirmed the assistant UI, persistent assistant
+  sessions and media backend remain running. No service, player or assistant
+  backend was restarted. Updated Python is loaded on the next normal backend
+  start. No push, tag or release was created.
+- See [the fixes and remaining limits](../docs/FINAL-BUG-FIXES.md).
+
 ## Visual review fixes — 2026-11-14
 
 - All 532 desktop tests completed successfully, with the same two opt-in Wayland

@@ -343,7 +343,10 @@ class VlcSession:  # pylint: disable=too-many-instance-attributes
         self.requested = True
         self.pause_when_ready = paused
         self.log_offset = self.logpath.stat().st_size
-        self.api('load', data=json.dumps(dict(url=self.public_stream(video, referer), title=title, options=options, generation=self.generation, whisper_only=self.whisper_only)))
+        local = self.public_stream(video, referer)
+        sources = [local] + [option.partition('=')[2] for option in options if option.startswith('input-slave=')]
+        with stream_relay.playback(self, sources):
+            self.api('load', data=json.dumps(dict(url=local, title=title, options=options, generation=self.generation, whisper_only=self.whisper_only)))
         if subtitle:
             self.prepare_subtitle(subtitle, referer)
 
@@ -549,6 +552,7 @@ class VlcSession:  # pylint: disable=too-many-instance-attributes
                 self.emit({'event':'connection-error','error':'VLC could not complete the playback request.'})
                 self.close()
         finally:
+            stream_relay.release(self)
             self.process.wait()
             self.directory.cleanup()
             self.emit({'event':'process-exited','code':self.process.returncode,
@@ -556,6 +560,7 @@ class VlcSession:  # pylint: disable=too-many-instance-attributes
 
     def close(self):
         self.closed.set()
+        stream_relay.release(self)
         if self.process.poll() is None:
             self.process.terminate()
             try:
