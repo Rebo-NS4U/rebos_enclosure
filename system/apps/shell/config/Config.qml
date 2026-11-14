@@ -792,7 +792,7 @@ Singleton {
     property bool oledMode: lightMode ? false : theme.oledMode
     property bool lightMode: theme.lightMode
 
-    property int roundness: 4
+    readonly property int roundness: Math.max(0, theme.roundness)
     property string defaultFont: theme.font
     property int animDuration: 160
     property bool tintIcons: theme.tintIcons

@@ -29,7 +29,14 @@ ShellRoot {
    try {
     Config.theme.shellStyle = "frosted"; Config.theme.shellTransparency = -1; tester.wait(30);
     if (Math.abs(BarAppearance.panelOpacity(false) - 0.68) > 0.001) throw Error("Frosted bar transparency");
-    if (Styling.radius(0) !== 24 || Styling.radius(-12) !== 12) throw Error("Frosted rounded corners");
+    for (const radius of [0, 4, 12, 20]) {
+     Config.theme.roundness = radius; tester.wait(250);
+     for (const offset of [-12, 0, 4])
+      if (Styling.radius(offset) !== radius) throw Error("Frosted radius setting ignored: " + radius);
+     if (menu.menuRadius !== radius || combo.background.radius !== radius)
+      throw Error("Menu/control radius did not follow setting: " + radius);
+    }
+    Config.theme.roundness = 4;
     if (Styling.getStyledRectConfig("bg").gradient.length !== 3) throw Error("Glass highlights missing");
     Config.theme.shellTransparency = 10; tester.wait(10);
     if (Math.abs(Styling.getStyledRectConfig("bg").opacity - 0.9) > 0.001) throw Error("Glass transparency override");

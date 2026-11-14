@@ -26,7 +26,6 @@ Singleton {
 
     function radius(offset: real): real {
         // Keep the argument for existing callers; all corners share one metric.
-        if (shellStyle === "frosted") return Math.max(12, 24 + offset);
         return Math.max(Config.roundness, 0);
     }
 

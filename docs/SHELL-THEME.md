@@ -29,9 +29,10 @@ Instrument mode gives the island bar the same 4px corners, opaque background and
 Choose **Frosted Glass** in Settings → Appearance → Theme style for the OCR
 menu’s glass treatment throughout the shell. Shared menus, panels, bar surfaces
 and controls use a three-stop highlight, translucent tinted surfaces, fine
-foreground borders, 24px outer corners and smaller control corners. Text and
-semantic action colors remain solid. Switching back restores the previous
-styles’ corner settings; the personal corner preference is not overwritten.
+foreground borders and corners controlled by Appearance → Fonts and corners.
+The corner radius setting applies to Frosted Glass just as it does to the other
+styles, including zero for square corners. Text and semantic action colors
+remain solid; switching styles does not overwrite the personal corner preference.
 
 Selecting this style uses 32% background transparency and enables shell blur if
 blur was off. Existing blur strength and enabled scope are preserved; both can
