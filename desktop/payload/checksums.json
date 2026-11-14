@@ -400,7 +400,7 @@
   "system/apps/shell/modules/bar/island/IslandBatteryPanel.qml": "049d003d4457b15900898ab0848f33900a7ae0c28a32efe460ddba1b4d8459bc",
   "system/apps/shell/modules/bar/island/IslandBluetoothPanel.qml": "184146090a7f56555ab52451a63713d9b85631aba9541726f421579fd050b5f8",
   "system/apps/shell/modules/bar/island/IslandCalendarPanel.qml": "355bfc093839bda6a71398d1fb5b2285668b26960eb07dc14337499ab891c94c",
-  "system/apps/shell/modules/bar/island/IslandDashboard.qml": "82480a7e559cdc2d385ee529c16ae609e891dd0894e931d5767413dc7825c810",
+  "system/apps/shell/modules/bar/island/IslandDashboard.qml": "ba8a62311cf3cfa82495d0a8734994bf83ad929547638749dc3ea91603d5178d",
   "system/apps/shell/modules/bar/island/IslandGaugeButton.qml": "9bdc4b36e79ecaf240799a5b9fa86f3c2911ec27537be005368da28fcb3dbef0",
   "system/apps/shell/modules/bar/island/IslandMediaCard.qml": "c41c382095de4498beef3cc667e2b25d3e4b77eade8f443e48faa5bdfd97cf93",
   "system/apps/shell/modules/bar/island/IslandMediaCenterPanel.qml": "35d1f316831fde81c20034f64147c2403dd5447f753550a7e2dcc62c6196a893",

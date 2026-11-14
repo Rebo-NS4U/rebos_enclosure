@@ -389,8 +389,7 @@ Item {
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
-                        Visibilities.closeActiveBarPopup();
-                        GlobalStates.settingsWindowVisible = true;
+                        GlobalShortcuts.run("settings");
                     }
                 }
             }
