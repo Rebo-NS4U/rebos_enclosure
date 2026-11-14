@@ -586,7 +586,7 @@ Scope {
     property bool agentParked: false
     property bool bridgeSupportsParking: false
     property bool foreground: true
-    property int idleReleaseInterval: 300000
+    property int idleReleaseInterval: 60000
     readonly property bool canReleaseIdleAgent: bridgeAttached && !agentParked && sessionReady && !bridgeUpgrade.running
         && !foreground && !isBusy && !queuedPrompt && !pendingSessionAction
         && !switchingDistillPreset && !switchingSessionModel && !connectingDistillAccount

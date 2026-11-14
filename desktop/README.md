@@ -518,3 +518,5 @@ bounds ZIP read work; PDF/Calibre processes retain their existing timeouts and
 are not a general sandbox for hostile documents.
 
 Optional background work runs on demand: the screenshot editor starts for a capture and exits when closed (legacy `--warm` is a no-op). ReGreet sync uses file-change watchers immediately, with a 15-minute fallback for wallpaper files edited in place. Explicit assistant shutdown exits its user service; detaching the UI still preserves active work, and idle resumable agents retain their existing parking policy.
+
+The Bluetooth tray and USB automounter no longer start at login. Bluetooth connections and existing mounts remain available. Open `blueman-manager` to manage Bluetooth; pairing may start its helper on demand. Run `udiskie --no-notify` to enable automatic USB mounting for the current session, or mount a drive through the file manager. Remove `~/.config/autostart/blueman.desktop` to restore the tray at login. Background resumable assistant agents park after one minute of inactivity; busy sessions and pending approvals are excluded.

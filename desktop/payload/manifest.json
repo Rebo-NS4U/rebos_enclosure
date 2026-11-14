@@ -104,7 +104,8 @@
     ".local/share/applications/rebos-shell-battery.desktop",
     ".local/share/applications/rebos-shell-power.desktop",
     ".local/share/applications/rebos-shell-wallpapers.desktop",
-    ".local/share/applications/rebos-shell-anime.desktop"
+    ".local/share/applications/rebos-shell-anime.desktop",
+    ".config/autostart/blueman.desktop"
   ],
   "layout": 2,
   "sources": {
@@ -511,6 +512,10 @@
     ".local/bin/t": {
       "source": "system/bin/t",
       "kind": "managed"
+    },
+    ".config/autostart/blueman.desktop": {
+      "source": "config/autostart/blueman.desktop",
+      "kind": "personal"
     }
   }
 }

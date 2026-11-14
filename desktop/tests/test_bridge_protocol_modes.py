@@ -55,3 +55,16 @@ class BridgeModeTests(unittest.IsolatedAsyncioTestCase):
         await bridge.handle_frame({'bridge': 'park', 'seq': 0, 'state': state})
         bridge.stop.assert_not_awaited()
         bridge.send.assert_called_once_with({'bridge': 'park-rejected'})
+
+    async def test_pending_work_and_user_questions_prevent_parking(self):
+        for key in ('isLoading', 'agentTurnActive', 'queuedPrompt', 'pendingRpc',
+                    'pendingPermissions', 'questionRequests', 'pendingSessionAction',
+                    'pendingSessionModelId', 'pendingDistillPreset'):
+            with self.subTest(key=key):
+                bridge = self.bridge('assistant')
+                bridge.stop, bridge.send = AsyncMock(), Mock()
+                state = {'agentCapabilities': {'loadSession': True}, 'sessionReady': True,
+                         'currentSessionId': 'test', key: True}
+                await bridge.handle_frame({'bridge': 'park', 'seq': 0, 'state': state})
+                bridge.stop.assert_not_awaited()
+                bridge.send.assert_called_once_with({'bridge': 'park-rejected'})
