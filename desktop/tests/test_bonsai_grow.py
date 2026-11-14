@@ -320,6 +320,16 @@ class BonsaiGrowTests(unittest.TestCase):
             bonsai.add_trunk_hollow(early, seed, 20)
             self.assertEqual(early, before)
         self.assertGreater(visible, 5)
+        self.assertLess(visible, 35)
+
+    def test_hollow_chance_is_fixed_per_tree_and_balanced(self):
+        chosen = 0
+        for seed in range(200):
+            sites = bonsai.trunk_hollow(seed)
+            bonsai.trunk_hollow.cache_clear()
+            self.assertEqual(sites, bonsai.trunk_hollow(seed))
+            chosen += bool(sites)
+        self.assertTrue(75 <= chosen <= 125, chosen)
 
     def test_background_greeting_uses_original_sprout_growth(self):
         from unittest.mock import patch

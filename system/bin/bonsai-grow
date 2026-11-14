@@ -1486,7 +1486,9 @@ def add_trunk_scar(canvas, seed, days):
 
 @functools.lru_cache(maxsize=64)
 def trunk_hollow(seed):
-    """Reserve a stable order of sheltered sites in the mature lower trunk."""
+    """Give half the trees a stable set of sheltered hollow sites."""
+    if random.Random(f"{seed}:hollow-chance").random() >= 0.5:
+        return ()
     sites = sorted({(x, y) for x, y, born, glyph, ink in stem(30, seed)
                     if ink == "bark" and 12 <= y <= 16})
     random.Random(f"{seed}:hollow").shuffle(sites)
