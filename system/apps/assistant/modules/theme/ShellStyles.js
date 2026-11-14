@@ -4,7 +4,7 @@ var styles = [
     {id: "glass", label: "Transparent", description: "Dark transparent backgrounds with light wallpaper colors."},
     {id: "quiet", label: "Opaque", description: "Solid backgrounds with less wallpaper color."},
     {id: "colorful", label: "Tinted", description: "Transparent backgrounds with more wallpaper color."},
-    {id: "dithered", label: "Dithered", description: "Dithered wallpapers, fine shell texture and matching app colors."},
+    {id: "dithered", label: "Dithered", description: "Dithered wallpapers, ordered screen texture and matching app colors."},
     {id: "custom", label: "Custom", description: "Use your saved background and border settings."}
 ];
 
@@ -46,7 +46,7 @@ function dotColor(fill, text, amount) {
 function ditherCellSize(strength) {
     var value = Number.isFinite(strength) ? Math.max(0, Math.min(100, strength)) : 20;
     // A fine shared grid stays restrained even at higher strengths.
-    return 1 + value * 0.02;
+    return 1 + value * 0.04;
 }
 
 function surface(style, variant, p, ditherStrength) {
@@ -103,7 +103,7 @@ function surface(style, variant, p, ditherStrength) {
         gradient: [[fill, 0]], gradientType: dotted ? "halftone" : "linear", gradientAngle: 0,
         gradientCenterX: 0.5, gradientCenterY: 0.5,
         halftoneDotMin: dotted ? dotMax : 0, halftoneDotMax: dotted ? dotMax : 0, halftoneStart: 0, halftoneEnd: 1,
-        halftoneDotColor: dotted ? dotColor(fill, item, strength * 0.001) : fill, halftoneBackgroundColor: fill,
+        halftoneDotColor: dotted ? dotColor(fill, item, 0.10 + strength * 0.0025) : fill, halftoneBackgroundColor: fill,
         border: border, itemColor: item, opacity: opacity
     };
 }

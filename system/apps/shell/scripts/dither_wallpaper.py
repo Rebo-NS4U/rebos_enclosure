@@ -8,7 +8,7 @@ import re
 from pathlib import Path
 import tempfile
 
-VERSION = 3
+VERSION = 4
 STRENGTHS = {'normal': (24, 1), 'strong': (6, 2), 'intense': (4, 3)}
 
 
@@ -38,12 +38,23 @@ def convert(source: Path, cache: Path, palette: str = 'original', strength: str 
             raise ValueError('Choose a still image; animated wallpapers are kept unchanged.')
         image = ImageOps.exif_transpose(raw).convert('RGB')
     if palette == 'original':
-        sample = image.copy()
-        sample.thumbnail((512, 512))
-        colors = sample.quantize(colors=color_count, method=Image.Quantize.MEDIANCUT)
-        # An explicit palette enables error diffusion in the working image;
-        # quantize(colors=N) alone does not produce this texture.
-        entries = colors.getpalette()[:color_count * 3]
+        # Ordered RGB quantization retains the whole color cube rather than
+        # replacing the image's hues with a handful of dominant swatches.
+        from PIL import ImageChops
+        levels, cell = {'normal': (16, 1), 'strong': (8, 2), 'intense': (5, 3)}[strength]
+        step = 255 / (levels - 1)
+        bayer = (0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5)
+        tile = Image.new('L', (4, 4))
+        tile.putdata([round((v + 0.5) * step / 16) for v in bayer])
+        tile = tile.resize((4 * cell, 4 * cell), Image.Resampling.NEAREST)
+        threshold = Image.new('L', image.size)
+        for y in range(0, image.height, tile.height):
+            for x in range(0, image.width, tile.width):
+                threshold.paste(tile, (x, y))
+        lut = [round(round(v / step) * step) for v in range(256)]
+        result = Image.merge('RGB', tuple(
+            ImageChops.add(channel, threshold, offset=-round(step / 2)).point(lut)
+            for channel in image.split()))
     elif palette == 'tint':
         main = tuple(bytes.fromhex(tint[1:]))
         dark = tuple(round(v * 0.06) for v in main)
@@ -62,17 +73,18 @@ def convert(source: Path, cache: Path, palette: str = 'original', strength: str 
         entries = [v for index in indices for v in bytes.fromhex(palette_colors[index])]
     else:
         raise ValueError('Unknown palette: ' + palette)
-    swatch = Image.new('P', (1, 1))
-    # Repeat real entries so unused palette slots cannot introduce black.
-    swatch.putpalette((entries * (768 // len(entries) + 1))[:768])
-    original_size = image.size
-    if pixel_size > 1:
-        image = image.resize((max(1, (image.width + pixel_size - 1) // pixel_size),
-                              max(1, (image.height + pixel_size - 1) // pixel_size)),
-                             Image.Resampling.LANCZOS)
-    result = image.quantize(palette=swatch, dither=Image.Dither.FLOYDSTEINBERG)
-    if result.size != original_size:
-        result = result.resize(original_size, Image.Resampling.NEAREST)
+    if palette != "original":
+        swatch = Image.new('P', (1, 1))
+        # Repeat real entries so unused palette slots cannot introduce black.
+        swatch.putpalette((entries * (768 // len(entries) + 1))[:768])
+        original_size = image.size
+        if pixel_size > 1:
+            image = image.resize((max(1, (image.width + pixel_size - 1) // pixel_size),
+                                  max(1, (image.height + pixel_size - 1) // pixel_size)),
+                                 Image.Resampling.LANCZOS)
+        result = image.quantize(palette=swatch, dither=Image.Dither.FLOYDSTEINBERG)
+        if result.size != original_size:
+            result = result.resize(original_size, Image.Resampling.NEAREST)
     fd, temporary = tempfile.mkstemp(prefix='.dither-', suffix='.png', dir=cache)
     try:
         with os.fdopen(fd, 'wb') as stream:
