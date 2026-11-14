@@ -625,6 +625,51 @@ class BonsaiGrowTests(unittest.TestCase):
         self.assertLess(min(bends), -.3)
         self.assertGreater(len(set(round(b, 2) for b in bends)), 12)
 
+    def test_curve_strokes_follow_the_actual_branch_direction(self):
+        # A tangent mismatch makes the final wood look jagged even when the
+        # underlying path is smooth. Check the geometry independently.
+        for seed in range(24):
+            for branch in bonsai.branch_graph(seed):
+                for t in (.001, .25, .5, .75, .999):
+                    before = bonsai.branch_point(branch, t - 1e-5)
+                    after = bonsai.branch_point(branch, t + 1e-5)
+                    tangent = bonsai.branch_tangent(branch, t)
+                    for axis in (0, 1):
+                        self.assertAlmostEqual(
+                            (after[axis] - before[axis]) / 2e-5,
+                            tangent[axis], places=6)
+
+    def test_terminal_bends_do_not_whip_back_at_the_tip(self):
+        import math
+        checked = 0
+        for seed in range(48):
+            for branch in bonsai.branch_graph(seed):
+                if 'tip_bend' not in branch or branch['length'] < .5:
+                    continue
+                plain = dict(branch, tip_bend=0)
+                ax, ay = bonsai.branch_tangent(plain, 1)
+                bx, by = bonsai.branch_tangent(branch, 1)
+                turn = abs(math.atan2(ax * by - ay * bx, ax * bx + ay * by))
+                self.assertLess(turn, math.radians(25))
+                checked += 1
+        self.assertGreater(checked, 100)
+
+    def test_continuing_forks_ease_out_of_the_parent_direction(self):
+        checked = 0
+        for seed in range(24):
+            graph = bonsai.branch_graph(seed)
+            for branch in graph:
+                if 'departure' not in branch:
+                    continue
+                px, py = bonsai.branch_tangent(graph[branch['parent']], branch['attachment'])
+                dx, dy = bonsai.branch_tangent(branch, 0)
+                natural = dict(branch)
+                del natural['departure']
+                _, original = bonsai.branch_tangent(natural, 0)
+                self.assertLess(abs(dy - py * dx / px), abs(original - py * dx / px))
+                checked += 1
+        self.assertGreater(checked, 100)
+
     def test_forked_type_replaces_narrow_one_direction_trees(self):
         checked = 0
         for seed in range(120):

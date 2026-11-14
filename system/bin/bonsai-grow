@@ -499,12 +499,39 @@ def juvenile_foliage(days, seed):
 
 
 def branch_point(branch, t):
+    """A single cubic arc, with a gentle terminal bend and no sinusoidal hook."""
     x, y = branch["start"]
     tx, ty = branch["end"]
+    c1, c2 = branch_controls(branch)
     return (
         x + (tx - x) * t,
-        y + (ty - y) * t - math.sin(t * math.pi) * branch["curve"]
-        + math.sin(t * math.tau) * t * branch.get("tip_bend", 0),
+        (1 - t) ** 3 * y + 3 * (1 - t) ** 2 * t * c1
+        + 3 * (1 - t) * t * t * c2 + t ** 3 * ty,
+    )
+
+
+def branch_controls(branch):
+    y, ty = branch["start"][1], branch["end"][1]
+    lift = branch["curve"] * 4 / 3
+    # Short twigs need proportionally smaller bends; an absolute offset can
+    # otherwise turn even a cubic tip sharply back on itself.
+    tip_limit = math.hypot(branch["end"][0] - branch["start"][0],
+                           ty - y + 4 * branch["curve"]) * 0.1
+    tip = max(-tip_limit, min(tip_limit, branch.get("tip_bend", 0) * 0.25))
+    return (
+        y + branch.get("departure", (ty - y) - 4 * branch["curve"]) / 3,
+        y + (ty - y) * 2 / 3 - lift + tip,
+    )
+
+
+def branch_tangent(branch, t):
+    """Use the same curve for fork departures and terminal glyph direction."""
+    c1, c2 = branch_controls(branch)
+    y, ty = branch["start"][1], branch["end"][1]
+    return (
+        branch["end"][0] - branch["start"][0],
+        3 * ((1 - t) ** 2 * (c1 - y)
+             + 2 * (1 - t) * t * (c2 - c1) + t * t * (ty - c2)),
     )
 
 
@@ -584,6 +611,16 @@ def branch_graph(seed):
             lower=lower,
         )
         index = len(branches)
+        if parent is not None:
+            pdx, pdy = branch_tangent(branches[parent], attachment)
+            dx = end[0] - start[0]
+            if dx * pdx > 0 and abs(pdx) > 0.1:
+                # Continuations inherit the parent's direction, then gently
+                # turn toward their own tip. Opposing lateral forks stay free.
+                own = end[1] - start[1] - 4 * branch["curve"]
+                inherited = pdy * dx / pdx
+                branch["departure"] = own + max(
+                    -length * 0.6, min(length * 0.6, (inherited - own) * 0.7))
         branches.append(branch)
         if (
             lower
@@ -698,14 +735,7 @@ def natural_specimen(seed, days):
             if birth > days + 1:
                 continue
             px, py = branch_point(branch, t)
-            dx = branch["end"][0] - branch["start"][0]
-            dy = (
-                branch["end"][1]
-                - branch["start"][1]
-                - math.pi * math.cos(t * math.pi) * branch["curve"]
-                + branch.get("tip_bend", 0) * (
-                    math.sin(t * math.tau) + t * math.tau * math.cos(t * math.tau))
-            )
+            dx, dy = branch_tangent(branch, t)
             stroke = (
                 "─"
                 if abs(dy) < abs(dx) * 0.25
