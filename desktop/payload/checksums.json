@@ -417,7 +417,7 @@
   "system/apps/shell/modules/bar/island/IslandWifiPanel.qml": "00dc834ce8f735532e3bae8eda207c82ca7e0df1633eb7331f188805f1f0e01f",
   "system/apps/shell/modules/bar/island/WeatherDetails.qml": "7431581cf70c1bdbc5a114f6c9e808bb74d7fb568f6117be8184a77e1cc74457",
   "system/apps/shell/modules/bar/layouts/DefaultBar.qml": "3beb77b9e7eecf603fc3189e755e902c78abc10b300cefbb801edd1994504bea",
-  "system/apps/shell/modules/bar/layouts/IslandBar.qml": "6d84f7fa486b1440063b81fe4ec78ad2bc3878c20b80732308f2891c8d486fb3",
+  "system/apps/shell/modules/bar/layouts/IslandBar.qml": "a0229de4fabea735b34bd6e6c7c798ee9d97aba8aad4d4dd317c4e6bb5b320a1",
   "system/apps/shell/modules/bar/systray/SysTray.qml": "2d7376121152ebc19954d6c528d312d1284905978185fb0510a8f97cc6baaa50",
   "system/apps/shell/modules/bar/systray/SysTrayItem.qml": "03232be1d8ed92dbb6d4ad73d92c5c97d3be797451df65c55aaf74eb7c6a61a9",
   "system/apps/shell/modules/bar/systray/SystrayMenuItem.qml": "e18346c9f7b3bec8103c9dee80ad16b77ba977eec7201f1631e96433ed919d84",

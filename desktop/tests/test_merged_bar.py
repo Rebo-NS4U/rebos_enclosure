@@ -41,11 +41,15 @@ ShellRoot {
        const pos = control.mapToItem(bar, 0, 0);
        if (pos.x < body.x || pos.x + control.width > body.x + body.width) throw Error(id + " outside bar");
       }
-      for (const mode of ["dashboard", "sound", "mic", "battery", "calendar", "apps"]) {
+      for (const mode of ["dashboard", "power", "sound", "mic", "wifi", "bluetooth", "stats", "alerts", "wallpapers", "battery", "weather", "media", "calendar", "apps"]) {
+       const lazy = tester.findChild(bar, "island-lazy-" + mode);
+       if (lazy && lazy.item) throw Error(mode + " eagerly loaded while closed");
        bar.expand(mode); tester.wait(50);
+       if (lazy && (!lazy.active || !lazy.item)) throw Error(mode + " failed to load");
        if (!bar.islandActive || bar.targetWidth > 540 || bar.targetHeight <= 36)
         throw Error(name + " failed to expand " + mode);
        bar.collapse(); tester.wait(50);
+       if (lazy && (lazy.active || lazy.item)) throw Error(mode + " retained controls after close");
        if (bar.islandActive || (bar.targetWidth <= 200 || bar.targetWidth >= size - 32)) throw Error("Failed to collapse: " + bar.currentMode + " width=" + bar.targetWidth);
       }
      }

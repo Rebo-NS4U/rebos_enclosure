@@ -559,13 +559,13 @@ Item {
         }
         if (root.currentMode === "power") {
             if (event.key === Qt.Key_Left) {
-                powerView.moveSelection(-1);
+                powerView.item?.moveSelection(-1);
                 event.accepted = true;
             } else if (event.key === Qt.Key_Right) {
-                powerView.moveSelection(1);
+                powerView.item?.moveSelection(1);
                 event.accepted = true;
             } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-                powerView.activateSelected();
+                powerView.item?.activateSelected();
                 event.accepted = true;
             } else if (event.key === Qt.Key_Escape) {
                 root.expand("dashboard");
@@ -1144,293 +1144,401 @@ Item {
             // ═══════════════════════════════════════════════════════════════
             // EXPANDED STATE 2: POWER MENU (Image 0)
             // ═══════════════════════════════════════════════════════════════
-            IslandPowerPanel {
+            Loader {
                 id: powerView
+                objectName: "island-lazy-power"
                 anchors.top: parent.top
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: root.targetWidth
-                height: implicitHeight
-                visible: opacity > 0
-                opacity: root.currentMode === "power" ? 1.0 : 0.0
-                enabled: root.currentMode === "power" && !root.retractingToHidden
+                height: item?.implicitHeight ?? 0
+                // Keep the outgoing menu only until its fade completes.
+                active: root.currentMode === "power" || (item?.opacity ?? 0) > 0
+                sourceComponent: IslandPowerPanel {
+                    anchors.top: parent.top
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: root.targetWidth
+                    height: implicitHeight
+                    visible: opacity > 0
+                    opacity: root.currentMode === "power" ? 1.0 : 0.0
+                    enabled: root.currentMode === "power" && !root.retractingToHidden
 
-                Behavior on opacity {
-                    enabled: Config.animDuration > 0
-                    NumberAnimation {
-                        duration: root.currentMode === "power" ? root.contentFadeInDuration : root.contentFadeOutDuration
-                        easing.type: root.currentMode === "power" ? Motion.enterCurve : Motion.feedbackCurve
+                    Behavior on opacity {
+                        enabled: Config.animDuration > 0
+                        NumberAnimation {
+                            duration: root.currentMode === "power" ? root.contentFadeInDuration : root.contentFadeOutDuration
+                            easing.type: root.currentMode === "power" ? Motion.enterCurve : Motion.feedbackCurve
+                        }
                     }
-                }
 
-                onBackRequested: root.expand("dashboard")
-                onActionTriggered: root.collapse()
+                    onBackRequested: root.expand("dashboard")
+                    onActionTriggered: root.collapse()
+                }
             }
 
             // ═══════════════════════════════════════════════════════════════
             // EXPANDED STATE 3: SOUND PANEL (Image 1)
             // ═══════════════════════════════════════════════════════════════
-            IslandSoundPanel {
+            Loader {
                 id: soundView
+                objectName: "island-lazy-sound"
                 anchors.top: parent.top
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: root.targetWidth
-                height: implicitHeight
-                visible: opacity > 0
-                opacity: root.currentMode === "sound" ? 1.0 : 0.0
-                enabled: root.currentMode === "sound" && !root.retractingToHidden
+                height: item?.implicitHeight ?? 0
+                // Keep the outgoing menu only until its fade completes.
+                active: root.currentMode === "sound" || (item?.opacity ?? 0) > 0
+                sourceComponent: IslandSoundPanel {
+                    anchors.top: parent.top
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: root.targetWidth
+                    height: implicitHeight
+                    visible: opacity > 0
+                    opacity: root.currentMode === "sound" ? 1.0 : 0.0
+                    enabled: root.currentMode === "sound" && !root.retractingToHidden
 
-                Behavior on opacity {
-                    enabled: Config.animDuration > 0
-                    NumberAnimation {
-                        duration: root.currentMode === "sound" ? root.contentFadeInDuration : root.contentFadeOutDuration
-                        easing.type: root.currentMode === "sound" ? Motion.enterCurve : Motion.feedbackCurve
+                    Behavior on opacity {
+                        enabled: Config.animDuration > 0
+                        NumberAnimation {
+                            duration: root.currentMode === "sound" ? root.contentFadeInDuration : root.contentFadeOutDuration
+                            easing.type: root.currentMode === "sound" ? Motion.enterCurve : Motion.feedbackCurve
+                        }
                     }
-                }
 
-                onBackRequested: root.expand("dashboard")
+                    onBackRequested: root.expand("dashboard")
+                }
             }
 
             // ═══════════════════════════════════════════════════════════════
             // EXPANDED STATE 3.5: MICROPHONE PANEL
             // ═══════════════════════════════════════════════════════════════
-            IslandMicPanel {
+            Loader {
                 id: micView
+                objectName: "island-lazy-mic"
                 anchors.top: parent.top
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: root.targetWidth
-                height: implicitHeight
-                visible: opacity > 0
-                opacity: root.currentMode === "mic" ? 1.0 : 0.0
-                enabled: root.currentMode === "mic" && !root.retractingToHidden
+                height: item?.implicitHeight ?? 0
+                // Keep the outgoing menu only until its fade completes.
+                active: root.currentMode === "mic" || (item?.opacity ?? 0) > 0
+                sourceComponent: IslandMicPanel {
+                    anchors.top: parent.top
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: root.targetWidth
+                    height: implicitHeight
+                    visible: opacity > 0
+                    opacity: root.currentMode === "mic" ? 1.0 : 0.0
+                    enabled: root.currentMode === "mic" && !root.retractingToHidden
 
-                Behavior on opacity {
-                    enabled: Config.animDuration > 0
-                    NumberAnimation {
-                        duration: root.currentMode === "mic" ? root.contentFadeInDuration : root.contentFadeOutDuration
-                        easing.type: root.currentMode === "mic" ? Motion.enterCurve : Motion.feedbackCurve
+                    Behavior on opacity {
+                        enabled: Config.animDuration > 0
+                        NumberAnimation {
+                            duration: root.currentMode === "mic" ? root.contentFadeInDuration : root.contentFadeOutDuration
+                            easing.type: root.currentMode === "mic" ? Motion.enterCurve : Motion.feedbackCurve
+                        }
                     }
-                }
 
-                onBackRequested: root.expand("dashboard")
+                    onBackRequested: root.expand("dashboard")
+                }
             }
 
             // ═══════════════════════════════════════════════════════════════
             // EXPANDED STATE 4: WI-FI NETWORKS PANEL (Image 2)
             // ═══════════════════════════════════════════════════════════════
-            IslandWifiPanel {
+            Loader {
                 id: wifiView
+                objectName: "island-lazy-wifi"
                 anchors.top: parent.top
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: root.targetWidth
-                height: implicitHeight
-                visible: opacity > 0
-                opacity: root.currentMode === "wifi" ? 1.0 : 0.0
-                enabled: root.currentMode === "wifi" && !root.retractingToHidden
+                height: item?.implicitHeight ?? 0
+                // Keep the outgoing menu only until its fade completes.
+                active: root.currentMode === "wifi" || (item?.opacity ?? 0) > 0
+                sourceComponent: IslandWifiPanel {
+                    anchors.top: parent.top
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: root.targetWidth
+                    height: implicitHeight
+                    visible: opacity > 0
+                    opacity: root.currentMode === "wifi" ? 1.0 : 0.0
+                    enabled: root.currentMode === "wifi" && !root.retractingToHidden
 
-                Behavior on opacity {
-                    enabled: Config.animDuration > 0
-                    NumberAnimation {
-                        duration: root.currentMode === "wifi" ? root.contentFadeInDuration : root.contentFadeOutDuration
-                        easing.type: root.currentMode === "wifi" ? Motion.enterCurve : Motion.feedbackCurve
+                    Behavior on opacity {
+                        enabled: Config.animDuration > 0
+                        NumberAnimation {
+                            duration: root.currentMode === "wifi" ? root.contentFadeInDuration : root.contentFadeOutDuration
+                            easing.type: root.currentMode === "wifi" ? Motion.enterCurve : Motion.feedbackCurve
+                        }
                     }
-                }
 
-                onBackRequested: root.expand("dashboard")
+                    onBackRequested: root.expand("dashboard")
+                }
             }
 
             // ═══════════════════════════════════════════════════════════════
             // EXPANDED STATE 4.5: BLUETOOTH PANEL
             // ═══════════════════════════════════════════════════════════════
-            IslandBluetoothPanel {
+            Loader {
                 id: bluetoothView
+                objectName: "island-lazy-bluetooth"
                 anchors.top: parent.top
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: root.targetWidth
-                height: implicitHeight
-                visible: opacity > 0
-                opacity: root.currentMode === "bluetooth" ? 1.0 : 0.0
-                enabled: root.currentMode === "bluetooth" && !root.retractingToHidden
+                height: item?.implicitHeight ?? 0
+                // Keep the outgoing menu only until its fade completes.
+                active: root.currentMode === "bluetooth" || (item?.opacity ?? 0) > 0
+                sourceComponent: IslandBluetoothPanel {
+                    anchors.top: parent.top
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: root.targetWidth
+                    height: implicitHeight
+                    visible: opacity > 0
+                    opacity: root.currentMode === "bluetooth" ? 1.0 : 0.0
+                    enabled: root.currentMode === "bluetooth" && !root.retractingToHidden
 
-                Behavior on opacity {
-                    enabled: Config.animDuration > 0
-                    NumberAnimation {
-                        duration: root.currentMode === "bluetooth" ? root.contentFadeInDuration : root.contentFadeOutDuration
-                        easing.type: root.currentMode === "bluetooth" ? Motion.enterCurve : Motion.feedbackCurve
+                    Behavior on opacity {
+                        enabled: Config.animDuration > 0
+                        NumberAnimation {
+                            duration: root.currentMode === "bluetooth" ? root.contentFadeInDuration : root.contentFadeOutDuration
+                            easing.type: root.currentMode === "bluetooth" ? Motion.enterCurve : Motion.feedbackCurve
+                        }
                     }
-                }
 
-                onBackRequested: root.expand("dashboard")
+                    onBackRequested: root.expand("dashboard")
+                }
             }
 
             // ═══════════════════════════════════════════════════════════════
             // EXPANDED STATE 5: SYSTEM RESOURCES STATS PANEL
             // ═══════════════════════════════════════════════════════════════
-            IslandStatsPanel {
+            Loader {
                 id: statsView
+                objectName: "island-lazy-stats"
                 anchors.top: parent.top
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: root.targetWidth
-                height: implicitHeight
-                visible: opacity > 0
-                opacity: root.currentMode === "stats" ? 1.0 : 0.0
-                enabled: root.currentMode === "stats" && !root.retractingToHidden
+                height: item?.implicitHeight ?? 0
+                // Keep the outgoing menu only until its fade completes.
+                active: root.currentMode === "stats" || (item?.opacity ?? 0) > 0
+                sourceComponent: IslandStatsPanel {
+                    anchors.top: parent.top
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: root.targetWidth
+                    height: implicitHeight
+                    visible: opacity > 0
+                    opacity: root.currentMode === "stats" ? 1.0 : 0.0
+                    enabled: root.currentMode === "stats" && !root.retractingToHidden
 
-                Behavior on opacity {
-                    enabled: Config.animDuration > 0
-                    NumberAnimation {
-                        duration: root.currentMode === "stats" ? root.contentFadeInDuration : root.contentFadeOutDuration
-                        easing.type: root.currentMode === "stats" ? Motion.enterCurve : Motion.feedbackCurve
+                    Behavior on opacity {
+                        enabled: Config.animDuration > 0
+                        NumberAnimation {
+                            duration: root.currentMode === "stats" ? root.contentFadeInDuration : root.contentFadeOutDuration
+                            easing.type: root.currentMode === "stats" ? Motion.enterCurve : Motion.feedbackCurve
+                        }
                     }
-                }
 
-                onBackRequested: root.expand("dashboard")
+                    onBackRequested: root.expand("dashboard")
+                }
             }
 
             // ═══════════════════════════════════════════════════════════════
             // EXPANDED STATE 5.5: ALERTS PANEL
             // ═══════════════════════════════════════════════════════════════
-            IslandAlertsPanel {
+            Loader {
                 id: alertsView
+                objectName: "island-lazy-alerts"
                 anchors.top: parent.top
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: root.targetWidth
-                height: implicitHeight
-                visible: opacity > 0
-                opacity: root.currentMode === "alerts" ? 1.0 : 0.0
-                enabled: root.currentMode === "alerts" && !root.retractingToHidden
+                height: item?.implicitHeight ?? 0
+                // Keep the outgoing menu only until its fade completes.
+                active: root.currentMode === "alerts" || (item?.opacity ?? 0) > 0
+                sourceComponent: IslandAlertsPanel {
+                    anchors.top: parent.top
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: root.targetWidth
+                    height: implicitHeight
+                    visible: opacity > 0
+                    opacity: root.currentMode === "alerts" ? 1.0 : 0.0
+                    enabled: root.currentMode === "alerts" && !root.retractingToHidden
 
-                Behavior on opacity {
-                    enabled: Config.animDuration > 0
-                    NumberAnimation {
-                        duration: root.currentMode === "alerts" ? root.contentFadeInDuration : root.contentFadeOutDuration
-                        easing.type: root.currentMode === "alerts" ? Motion.enterCurve : Motion.feedbackCurve
+                    Behavior on opacity {
+                        enabled: Config.animDuration > 0
+                        NumberAnimation {
+                            duration: root.currentMode === "alerts" ? root.contentFadeInDuration : root.contentFadeOutDuration
+                            easing.type: root.currentMode === "alerts" ? Motion.enterCurve : Motion.feedbackCurve
+                        }
                     }
-                }
 
-                onBackRequested: root.expand("dashboard")
+                    onBackRequested: root.expand("dashboard")
+                }
             }
 
             // ═══════════════════════════════════════════════════════════════
             // EXPANDED STATE 5.6: WALLPAPERS PANEL
             // ═══════════════════════════════════════════════════════════════
-            IslandWallpaperPanel {
+            Loader {
                 id: wallpapersView
-                screen: root.screen
+                objectName: "island-lazy-wallpapers"
                 anchors.top: parent.top
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: root.targetWidth
-                height: implicitHeight
-                visible: opacity > 0
-                opacity: root.currentMode === "wallpapers" ? 1.0 : 0.0
-                enabled: root.currentMode === "wallpapers" && !root.retractingToHidden
+                height: item?.implicitHeight ?? 0
+                // Keep the outgoing menu only until its fade completes.
+                active: root.currentMode === "wallpapers" || (item?.opacity ?? 0) > 0
+                sourceComponent: IslandWallpaperPanel {
+                    screen: root.screen
+                    anchors.top: parent.top
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: root.targetWidth
+                    height: implicitHeight
+                    visible: opacity > 0
+                    opacity: root.currentMode === "wallpapers" ? 1.0 : 0.0
+                    enabled: root.currentMode === "wallpapers" && !root.retractingToHidden
 
-                Behavior on opacity {
-                    enabled: Config.animDuration > 0
-                    NumberAnimation {
-                        duration: root.currentMode === "wallpapers" ? root.contentFadeInDuration : root.contentFadeOutDuration
-                        easing.type: root.currentMode === "wallpapers" ? Motion.enterCurve : Motion.feedbackCurve
+                    Behavior on opacity {
+                        enabled: Config.animDuration > 0
+                        NumberAnimation {
+                            duration: root.currentMode === "wallpapers" ? root.contentFadeInDuration : root.contentFadeOutDuration
+                            easing.type: root.currentMode === "wallpapers" ? Motion.enterCurve : Motion.feedbackCurve
+                        }
                     }
-                }
 
-                onBackRequested: root.expand("dashboard")
+                    onBackRequested: root.expand("dashboard")
+                }
             }
 
             // ═══════════════════════════════════════════════════════════════
             // EXPANDED STATE 5.7: BATTERY & POWER PANEL
             // ═══════════════════════════════════════════════════════════════
-            IslandBatteryPanel {
+            Loader {
                 id: batteryView
+                objectName: "island-lazy-battery"
                 anchors.top: parent.top
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: root.targetWidth
-                height: implicitHeight
-                visible: opacity > 0
-                opacity: root.currentMode === "battery" ? 1.0 : 0.0
-                enabled: root.currentMode === "battery" && !root.retractingToHidden
+                height: item?.implicitHeight ?? 0
+                // Keep the outgoing menu only until its fade completes.
+                active: root.currentMode === "battery" || (item?.opacity ?? 0) > 0
+                sourceComponent: IslandBatteryPanel {
+                    anchors.top: parent.top
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: root.targetWidth
+                    height: implicitHeight
+                    visible: opacity > 0
+                    opacity: root.currentMode === "battery" ? 1.0 : 0.0
+                    enabled: root.currentMode === "battery" && !root.retractingToHidden
 
-                Behavior on opacity {
-                    enabled: Config.animDuration > 0
-                    NumberAnimation {
-                        duration: root.currentMode === "battery" ? root.contentFadeInDuration : root.contentFadeOutDuration
-                        easing.type: root.currentMode === "battery" ? Motion.enterCurve : Motion.feedbackCurve
+                    Behavior on opacity {
+                        enabled: Config.animDuration > 0
+                        NumberAnimation {
+                            duration: root.currentMode === "battery" ? root.contentFadeInDuration : root.contentFadeOutDuration
+                            easing.type: root.currentMode === "battery" ? Motion.enterCurve : Motion.feedbackCurve
+                        }
                     }
-                }
 
-                onBackRequested: root.expand("dashboard")
+                    onBackRequested: root.expand("dashboard")
+                }
             }
 
             // ═══════════════════════════════════════════════════════════════
             // EXPANDED STATE 5.8: WEATHER PANEL
             // ═══════════════════════════════════════════════════════════════
-            IslandWeatherPanel {
+            Loader {
                 id: weatherView
+                objectName: "island-lazy-weather"
                 anchors.top: parent.top
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: root.targetWidth
-                height: implicitHeight
-                visible: opacity > 0
-                opacity: root.currentMode === "weather" ? 1.0 : 0.0
-                enabled: root.currentMode === "weather" && !root.retractingToHidden
+                height: item?.implicitHeight ?? 0
+                // Keep the outgoing menu only until its fade completes.
+                active: root.currentMode === "weather" || (item?.opacity ?? 0) > 0
+                sourceComponent: IslandWeatherPanel {
+                    anchors.top: parent.top
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: root.targetWidth
+                    height: implicitHeight
+                    visible: opacity > 0
+                    opacity: root.currentMode === "weather" ? 1.0 : 0.0
+                    enabled: root.currentMode === "weather" && !root.retractingToHidden
 
-                Behavior on opacity {
-                    enabled: Config.animDuration > 0
-                    NumberAnimation {
-                        duration: root.currentMode === "weather" ? root.contentFadeInDuration : root.contentFadeOutDuration
-                        easing.type: root.currentMode === "weather" ? Motion.enterCurve : Motion.feedbackCurve
+                    Behavior on opacity {
+                        enabled: Config.animDuration > 0
+                        NumberAnimation {
+                            duration: root.currentMode === "weather" ? root.contentFadeInDuration : root.contentFadeOutDuration
+                            easing.type: root.currentMode === "weather" ? Motion.enterCurve : Motion.feedbackCurve
+                        }
                     }
-                }
 
-                onBackRequested: root.expand("dashboard")
+                    onBackRequested: root.expand("dashboard")
+                }
             }
 
             // ═══════════════════════════════════════════════════════════════
             // EXPANDED STATE 5.9: DEDICATED MEDIA CENTER
             // ═══════════════════════════════════════════════════════════════
-            IslandMediaCenterPanel {
+            Loader {
                 id: mediaCenterView
-                reader: typingView
-                onOpenReaderRequested: root.expand("typing")
+                objectName: "island-lazy-media"
                 anchors.top: parent.top
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: root.targetWidth
-                height: implicitHeight
-                visible: opacity > 0
-                opacity: root.currentMode === "media" ? 1.0 : 0.0
-                enabled: root.currentMode === "media" && !root.retractingToHidden
+                height: item?.implicitHeight ?? 0
+                // Keep the outgoing menu only until its fade completes.
+                active: root.currentMode === "media" || (item?.opacity ?? 0) > 0
+                sourceComponent: IslandMediaCenterPanel {
+                    reader: typingView
+                    onOpenReaderRequested: root.expand("typing")
+                    anchors.top: parent.top
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: root.targetWidth
+                    height: implicitHeight
+                    visible: opacity > 0
+                    opacity: root.currentMode === "media" ? 1.0 : 0.0
+                    enabled: root.currentMode === "media" && !root.retractingToHidden
 
-                Behavior on opacity {
-                    enabled: Config.animDuration > 0
-                    NumberAnimation {
-                        duration: root.currentMode === "media" ? root.contentFadeInDuration : root.contentFadeOutDuration
-                        easing.type: root.currentMode === "media" ? Motion.enterCurve : Motion.feedbackCurve
+                    Behavior on opacity {
+                        enabled: Config.animDuration > 0
+                        NumberAnimation {
+                            duration: root.currentMode === "media" ? root.contentFadeInDuration : root.contentFadeOutDuration
+                            easing.type: root.currentMode === "media" ? Motion.enterCurve : Motion.feedbackCurve
+                        }
                     }
-                }
 
-                onBackRequested: root.expand("dashboard")
+                    onBackRequested: root.expand("dashboard")
+                }
             }
 
             // ═══════════════════════════════════════════════════════════════
             // EXPANDED STATE 5.95: DEDICATED CALENDAR & DATE TIME
             // ═══════════════════════════════════════════════════════════════
-            IslandCalendarPanel {
+            Loader {
                 id: calendarView
+                objectName: "island-lazy-calendar"
                 anchors.top: parent.top
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: root.targetWidth
-                height: implicitHeight
-                visible: opacity > 0
-                opacity: root.currentMode === "calendar" ? 1.0 : 0.0
-                enabled: root.currentMode === "calendar" && !root.retractingToHidden
+                height: item?.implicitHeight ?? 0
+                // Keep the outgoing menu only until its fade completes.
+                active: root.currentMode === "calendar" || (item?.opacity ?? 0) > 0
+                sourceComponent: IslandCalendarPanel {
+                    anchors.top: parent.top
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: root.targetWidth
+                    height: implicitHeight
+                    visible: opacity > 0
+                    opacity: root.currentMode === "calendar" ? 1.0 : 0.0
+                    enabled: root.currentMode === "calendar" && !root.retractingToHidden
 
-                Behavior on opacity {
-                    enabled: Config.animDuration > 0
-                    NumberAnimation {
-                        duration: root.currentMode === "calendar" ? root.contentFadeInDuration : root.contentFadeOutDuration
-                        easing.type: root.currentMode === "calendar" ? Motion.enterCurve : Motion.feedbackCurve
+                    Behavior on opacity {
+                        enabled: Config.animDuration > 0
+                        NumberAnimation {
+                            duration: root.currentMode === "calendar" ? root.contentFadeInDuration : root.contentFadeOutDuration
+                            easing.type: root.currentMode === "calendar" ? Motion.enterCurve : Motion.feedbackCurve
+                        }
                     }
-                }
 
-                onBackRequested: root.expand("dashboard")
+                    onBackRequested: root.expand("dashboard")
+                }
             }
 
             // ═══════════════════════════════════════════════════════════════
