@@ -34,15 +34,7 @@ Item {
             return "Unknown backend";
         }
         function closeMenu(): void { backendMenu.close(); }
-        function renderStatus(): string {
-            let pages = [];
-            for (let i = 0; i < chatPages.count; i++) {
-                const page = chatPages.itemAt(i)?.item;
-                if (page) pages.push({channel: page.session.channelId,
-                    messages: page.session.currentChat.length, rendered: Math.min(page.messageLimit, page.session.currentChat.length)});
-            }
-            return JSON.stringify({active: root.active, pages: pages});
-        }
+
     }
 
     readonly property var dweeboPrompts: [
@@ -1962,8 +1954,7 @@ Item {
                                                     }
                                                 }
                                             }
-                                        }
-
+                                            }
                                         }
                                     }
 
