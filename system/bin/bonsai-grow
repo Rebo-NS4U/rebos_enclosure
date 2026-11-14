@@ -1538,12 +1538,15 @@ def final_growth(seed, style, pot_seed):
     requested = {}
     for x, y, born, glyph, ink in specimen(seed, 30, style):
         if (x, y) in target:
-            requested[x, y] = min(requested.get((x, y), 30), max(0, born - 1))
+            # Trunk first, then branching, then buds and unfolding foliage.
+            is_leaf = final[y][x][1].startswith('leaf') or final[y][x][1] == 'blossom'
+            age = max(18, min(25, born)) if is_leaf else min(18, 8 + born * 0.4)
+            requested[x, y] = min(requested.get((x, y), 30), age)
     centers = trunk_path(seed, style)
     for x, y, born, glyph, ink in stem(30, seed, style):
-        if (x, y) in target:
+        if (x, y) in target and not final[y][x][1].startswith('leaf'):
             depth = max(0, min(len(centers) - 1, 18 - y))
-            requested[x, y] = depth / 0.7 + abs(x - centers[depth]) * 0.7
+            requested[x, y] = depth / 1.4 + abs(x - centers[depth]) * 0.5
     root = (27, 18)
     arrivals = {root: 0.0}
     pending = [(0.0, root)]
@@ -1562,15 +1565,30 @@ def final_growth(seed, style, pot_seed):
                     arrivals[neighbor] = born
                     heapq.heappush(pending, (born, neighbor))
     # Leave a quiet tail at the end instead of a final mass reveal.
-    scale = 28.5 / max(28.5, max(arrivals.values(), default=0))
+    scale = 26 / max(26, max(arrivals.values(), default=0))
     return tuple(tuple(row) for row in final), {p: age * scale for p, age in arrivals.items()}
 
 
 def growing_canvas(days, seed, style="informal", pot_seed=None):
     final, arrivals = final_growth(seed, style, pot_seed)
-    return [[cell if y >= 19 or arrivals.get((x, y), float('inf')) <= days
-             else (" ", "") for x, cell in enumerate(row)]
-            for y, row in enumerate(final)]
+    canvas = []
+    for y, row in enumerate(final):
+        current = []
+        for x, cell in enumerate(row):
+            age = days - arrivals.get((x, y), float('inf'))
+            if y < 19 and age < 0:
+                cell = (" ", "")
+            elif y < 19 and (cell[1].startswith('leaf') or cell[1] == 'blossom'):
+                # Buds open in place; the supporting branch never relocates.
+                if age < 0.7:
+                    cell = ("·", cell[1])
+                elif age < 1.5:
+                    cell = ("•", cell[1])
+                elif age < 2.2:
+                    cell = ("●", cell[1])
+            current.append(cell)
+        canvas.append(current)
+    return canvas
 
 
 def render(

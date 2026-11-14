@@ -247,12 +247,14 @@ class BonsaiGrowTests(unittest.TestCase):
                 canvas = bonsai.growing_canvas(day, seed)
                 visible = {(x,y):cell for y,row in enumerate(canvas[:19])
                            for x,cell in enumerate(row) if cell[0].strip()}
-                # Every visible cell is already its finished glyph and material;
-                # none relocate, disappear, or get replaced by later shaping.
+                # Geometry and materials stay fixed while buds unfold in place.
                 for point, cell in previous.items():
-                    self.assertEqual(visible.get(point), cell)
+                    self.assertIn(point, visible)
+                    self.assertEqual(visible[point][1], cell[1])
                 for (x,y), cell in visible.items():
-                    self.assertEqual(cell, final[y][x])
+                    self.assertEqual(cell[1], final[y][x][1])
+                    if cell[0] not in ('·', '•', '●'):
+                        self.assertEqual(cell, final[y][x])
                 reached = {(27,18)}
                 pending = list(reached)
                 while pending:
@@ -268,6 +270,23 @@ class BonsaiGrowTests(unittest.TestCase):
             self.assertEqual(bonsai.growing_canvas(28.5, seed), final)
             self.assertEqual(bonsai.render(30, seed, True, 80, grow_final_shape=True),
                              bonsai.render(30, seed, True, 80))
+
+    def test_final_shape_growth_has_trunk_branch_and_leaf_stages(self):
+        for seed in range(12):
+            def leaves(day):
+                return {(x,y):g for y,row in enumerate(bonsai.growing_canvas(day,seed))
+                        for x,(g,ink) in enumerate(row) if ink.startswith('leaf')}
+            self.assertFalse(leaves(7))
+            final, arrivals = bonsai.final_growth(seed, 'informal', None)
+            site = next((x,y) for y,row in enumerate(final[:19])
+                        for x,(glyph,ink) in enumerate(row) if ink.startswith('leaf'))
+            born = arrivals[site]
+            x,y = site
+            self.assertEqual(bonsai.growing_canvas(born+.1,seed)[y][x][0], '·')
+            self.assertEqual(bonsai.growing_canvas(born+1,seed)[y][x][0], '•')
+            self.assertEqual(bonsai.growing_canvas(born+1.8,seed)[y][x][0], '●')
+            self.assertEqual(bonsai.growing_canvas(born+2.3,seed)[y][x], final[y][x])
+            self.assertLess(len(leaves(18)),len(leaves(28.5)))
 
     def test_animation_settles_without_a_last_frame_jump(self):
         samples = [bonsai.animation_day(i / 120, 1) for i in range(121)]

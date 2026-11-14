@@ -116,7 +116,7 @@ completion retains the already-rendered final frame.
 
 Animated greetings now construct the mature canvas once, including bark,
 foliage, contours and ornaments, then reveal its cells along a connected
-root-to-tip schedule. Visible cells never move, disappear or receive a later
-shaping pass. Material lighting uses the finished geometry throughout. Growth
+root-to-tip schedule: trunk, branching, buds, then opening foliage. Visible cells never move or disappear; leaves unfold from buds in place,
+without a later structural shaping pass. Material lighting uses the finished geometry throughout. Growth
 finishes by age 28.5, leaving the final eased frames unchanged. Static age
 previews retain their biological growth model.
