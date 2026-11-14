@@ -85,6 +85,11 @@ FileView {
 
     property IpcHandler themeIpc: IpcHandler {
         target: "theme"
+        function status(): string {
+            return JSON.stringify({style: colors.appStyle, radius: Styling.radius(0),
+                opacity: Styling.getStyledRectConfig("bg").opacity,
+                blur: Config.performance.desktopBlur, blurStrength: Config.performance.blurStrength});
+        }
         function sync(): void {
             colors.refreshApps();
         }

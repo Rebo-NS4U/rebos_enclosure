@@ -27,6 +27,13 @@ ShellRoot {
   TestCase { id: tester; when:false }
   Timer { interval:600; running:true; onTriggered: {
    try {
+    Config.theme.shellStyle = "frosted"; Config.theme.shellTransparency = -1; tester.wait(30);
+    if (Math.abs(BarAppearance.panelOpacity(false) - 0.68) > 0.001) throw Error("Frosted bar transparency");
+    if (Styling.radius(0) !== 24 || Styling.radius(-12) !== 12) throw Error("Frosted rounded corners");
+    if (Styling.getStyledRectConfig("bg").gradient.length !== 3) throw Error("Glass highlights missing");
+    Config.theme.shellTransparency = 10; tester.wait(10);
+    if (Math.abs(Styling.getStyledRectConfig("bg").opacity - 0.9) > 0.001) throw Error("Glass transparency override");
+    Config.theme.shellTransparency = -1;
     Config.theme.shellStyle = "instrument"; tester.wait(30);
     if (!BarAppearance.framed || BarAppearance.panelOpacity(false) !== 1) throw Error("Instrument bar frame/opacity");
     if (BarAppearance.clockTint(false).a !== 1) throw Error("Instrument clock surface missing");

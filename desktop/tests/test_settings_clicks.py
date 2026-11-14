@@ -187,7 +187,7 @@ ShellRoot {
       Config.bar.islandAppearance = "glass";
       Config.bar.islandOpacity = 20;
       Config.bar.islandAccent = 0;
-      for (let style of ["glass", "quiet", "colorful", "dithered", "custom"]) {
+      for (let style of ["frosted", "glass", "quiet", "colorful", "dithered", "custom"]) {
        Config.theme.shellStyle = style;
        Config.theme.shellTransparency = 65;
        tester.wait(30);

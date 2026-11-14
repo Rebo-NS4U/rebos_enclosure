@@ -37,7 +37,7 @@ SettingsGroup {
             snapMode: "always"
             smoothDrag: false
             property bool ready: false
-            readonly property real configValue: (Config.theme.shellTransparency < 0 ? (Styling.shellStyle === "glass" || Styling.shellStyle === "colorful" ? 22 : 0) : Config.theme.shellTransparency) / 100
+            readonly property real configValue: (Config.theme.shellTransparency < 0 ? (Styling.shellStyle === "frosted" ? 32 : Styling.shellStyle === "glass" || Styling.shellStyle === "colorful" ? 22 : 0) : Config.theme.shellTransparency) / 100
             onConfigValueChanged: { const wasReady = ready; ready = false; value = configValue; ready = wasReady; }
             Component.onCompleted: { value = configValue; ready = true; }
             onValueChanged: {

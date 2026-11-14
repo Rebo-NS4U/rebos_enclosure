@@ -2,6 +2,7 @@
 
 var styles = [
     {id: "instrument", label: "Instrument", description: "Layered graphite surfaces with restrained status accents."},
+    {id: "frosted", label: "Frosted Glass", description: "OCR-inspired frosted panels, soft highlights and rounded glass edges."},
     {id: "glass", label: "Transparent", description: "Dark transparent backgrounds with light wallpaper colors."},
     {id: "quiet", label: "Opaque", description: "Solid backgrounds with less wallpaper color."},
     {id: "colorful", label: "Tinted", description: "Transparent backgrounds with more wallpaper color."},
@@ -104,6 +105,18 @@ function surface(style, variant, p, ditherStrength) {
             if (variant === "focus" || variant === "surfaceVariant") border[0] = mix(fill, p.primary, 0.48);
         }
     }
+    var frostedContainer = false;
+    if (style === "frosted") {
+        var outer = ["bg", "popup", "bar", "pane", "surface", "surfaceContainer"].indexOf(variant) !== -1;
+        var inner = ["common", "internalbg"].indexOf(variant) !== -1;
+        var focused = ["focus", "surfaceVariant"].indexOf(variant) !== -1;
+        frostedContainer = outer || inner || focused;
+        if (frostedContainer) {
+            fill = mix(mix(p.background, p.foreground, outer ? 0.07 : 0.04), p.primary, focused ? 0.14 : 0.035);
+            opacity = outer ? 0.68 : focused ? 0.84 : 0.48;
+            border = [focused ? p.primary : "#40" + p.foreground.slice(-6), 1];
+        }
+    }
     var containers = ["bg", "popup", "pane", "surface", "surfaceContainer", "common", "internalbg", "focus", "surfaceVariant", "bar", "barbg"];
     var controls = ["primary", "primaryfocus", "overprimary", "secondary", "secondaryfocus", "oversecondary", "tertiary", "tertiaryfocus", "overtertiary", "error", "errorfocus", "overerror"];
     var dotted = dithered && strength > 0 && (containers.indexOf(variant) !== -1 ||
@@ -116,7 +129,7 @@ function surface(style, variant, p, ditherStrength) {
         border[0] = mix(fill, p.primary, 0.12);
     if (dotted && containers.indexOf(variant) !== -1) border[1] = 1;
     return {
-        gradient: [[fill, 0]], gradientType: dotted ? "halftone" : "linear", gradientAngle: 0,
+        gradient: frostedContainer ? [[mix(fill, p.foreground, 0.08), 0], [fill, 0.45], [mix(fill, p.background, 0.12), 1]] : [[fill, 0]], gradientType: dotted ? "halftone" : "linear", gradientAngle: 0,
         gradientCenterX: 0.5, gradientCenterY: 0.5,
         halftoneDotMin: dotted ? dotMax : 0, halftoneDotMax: dotted ? dotMax : 0, halftoneStart: 0, halftoneEnd: 1,
         halftoneDotColor: dotted ? dotColor(fill, item, strength * 0.001) : fill, halftoneBackgroundColor: fill,

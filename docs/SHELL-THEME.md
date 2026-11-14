@@ -23,3 +23,21 @@ This pass establishes the shared surfaces and dashboard composition. Launcher ro
 ## Bar
 
 Instrument mode gives the island bar the same 4px corners, opaque background and subtle frame as its dashboard. A 40px height leaves room around the clock and status controls. The clock uses a raised card surface; hover controls use matching corners and restrained press feedback. Active workspace outlines and charging indicators use the primary accent, low battery uses the error role, and muted audio recedes. Other bar appearances retain their existing shape and behavior.
+
+## Frosted Glass
+
+Choose **Frosted Glass** in Settings → Appearance → Theme style for the OCR
+menu’s glass treatment throughout the shell. Shared menus, panels, bar surfaces
+and controls use a three-stop highlight, translucent tinted surfaces, fine
+foreground borders, 24px outer corners and smaller control corners. Text and
+semantic action colors remain solid. Switching back restores the previous
+styles’ corner settings; the personal corner preference is not overwritten.
+
+Selecting this style uses 32% background transparency and enables shell blur if
+blur was off. Existing blur strength and enabled scope are preserved; both can
+be adjusted under Transparency and blur. The compositor provides live backdrop
+blur rather than taking screen captures. Theme transparency overrides still work.
+Native app integrations receive the matching surface palette where supported.
+`qs ipc -p ~/.config/quickshell call theme status` reports the active style,
+opacity, corner radius and blur settings. Selecting an installed theme changes
+the appearance live without restarting the panel or active apps.

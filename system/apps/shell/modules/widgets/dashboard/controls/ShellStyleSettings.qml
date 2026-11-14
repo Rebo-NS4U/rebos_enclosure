@@ -42,7 +42,13 @@ ColumnLayout {
                 Layout.fillWidth: true
                 implicitHeight: Styling.fontSize(0) * 14
                 padding: 12
-                onClicked: Config.theme.shellStyle = modelData.id
+                onClicked: {
+                    Config.theme.shellStyle = modelData.id;
+                    if (modelData.id === "frosted") {
+                        Config.theme.shellTransparency = -1;
+                        if (Config.performance.desktopBlur === "off") Config.performance.desktopBlur = "shell";
+                    }
+                }
                 background: StyledRect {
                     variant: card.hovered ? "focus" : "common"
                     radius: Styling.radius(-2)

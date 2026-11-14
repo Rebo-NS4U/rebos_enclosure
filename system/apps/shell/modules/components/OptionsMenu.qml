@@ -45,9 +45,9 @@ Menu {
 
     // Propiedades de estilo del menú
     property color backgroundColor: Styling.styleConfig(Styling.shellStyle, "popup").gradient[0][0]
-    property color borderColor: Colors.outlineVariant
+    property color borderColor: Styling.shellStyle === "frosted" ? Config.resolveColor(Styling.styleConfig("frosted", "popup").border[0]) : Colors.outlineVariant
     property int borderWidth: 1
-    property int menuRadius: Config.roundness
+    property int menuRadius: Styling.radius(0)
 
     // Propiedades de highlight por defecto
     property color defaultHighlightColor: Styling.styleConfig(Styling.shellStyle, "focus").gradient[0][0]
