@@ -1484,6 +1484,31 @@ def add_trunk_scar(canvas, seed, days):
                 break
 
 
+@functools.lru_cache(maxsize=64)
+def trunk_hollow(seed):
+    """Reserve a stable order of sheltered sites in the mature lower trunk."""
+    sites = sorted({(x, y) for x, y, born, glyph, ink in stem(30, seed)
+                    if ink == "bark" and 12 <= y <= 16})
+    random.Random(f"{seed}:hollow").shuffle(sites)
+    return tuple(sites)
+
+
+def add_trunk_hollow(canvas, seed, days):
+    """An aged hollow and raised grain, without changing the trunk silhouette."""
+    if days < 23:
+        return
+    site = next(((x, y) for x, y in trunk_hollow(seed)
+                 if canvas[y][x][1] == "bark"), None)
+    if site is None:
+        return
+    x, y = site
+    canvas[y][x] = ("○", "woodlight")
+    for px, py, glyph in ((x - 1, y, "╎"), (x + 1, y, "╎"),
+                          (x, y - 1, "╷"), (x, y + 1, "╵")):
+        if canvas[py][px][1] == "bark":
+            canvas[py][px] = (glyph, "woodlight")
+
+
 def seat_tree_in_pot(canvas, days):
     """Join the root flare to the front rim without a dotted ground texture."""
     base = [
@@ -1690,6 +1715,7 @@ def specimen_canvas(days, seed, style="informal", pot_seed=None):
     seat_tree_in_pot(canvas, days)
     if style == "informal":
         outline_exposed_wood(canvas)
+        add_trunk_hollow(canvas, seed, days)
     return canvas
 
 

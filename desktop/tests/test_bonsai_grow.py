@@ -301,6 +301,26 @@ class BonsaiGrowTests(unittest.TestCase):
                     accents = [char in bonsai.POT_ACCENT_MARKS for char in row]
                     self.assertEqual(accents, accents[::-1])
 
+    def test_aged_trunk_hollow_preserves_silhouette_and_existing_details(self):
+        visible = 0
+        from unittest.mock import patch
+        for seed in range(40):
+            self.assertEqual(bonsai.trunk_hollow(seed), bonsai.trunk_hollow(seed))
+            with patch.object(bonsai, 'add_trunk_hollow'):
+                before = bonsai.specimen_canvas(30, seed)
+            after = bonsai.specimen_canvas(30, seed)
+            changed = [(x, y) for y, row in enumerate(after) for x, cell in enumerate(row)
+                       if cell != before[y][x]]
+            visible += bool(changed)
+            for x, y in changed:
+                self.assertEqual(before[y][x][1], 'bark')
+                self.assertTrue(10 <= y <= 18)
+                self.assertEqual(after[y][x][1], 'woodlight')
+            early = [row[:] for row in before]
+            bonsai.add_trunk_hollow(early, seed, 20)
+            self.assertEqual(early, before)
+        self.assertGreater(visible, 5)
+
     def test_background_greeting_uses_original_sprout_growth(self):
         from unittest.mock import patch
         with patch.object(bonsai, 'specimen_canvas', wraps=bonsai.specimen_canvas) as canvas, \
