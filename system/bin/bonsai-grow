@@ -318,7 +318,8 @@ def growth_pattern(seed):
     )
 
 
-def branch_layout(seed):
+@functools.lru_cache(maxsize=64)
+def scaffold_layout(seed):
     """Share each specimen's varied limb plan with its starter leaves."""
     rng = random.Random(f"{seed}:limb-layout")
     pattern, side = growth_pattern(seed)
@@ -421,6 +422,54 @@ def branch_layout(seed):
     result[2] = (12, centers[-1] - (centers[-1] - 27) * 0.6 + side * 0.6,
                  2.8, max(11 / 0.7, 16))
     return result
+
+
+CROWN_FORMS = ("rounded", "spreading", "tiered", "umbrella", "open-vase", "columnar")
+
+
+def crown_form(seed):
+    """Crown architecture varies independently of trunk habit."""
+    return random.Random(f"{seed}:crown-form").choice(CROWN_FORMS)
+
+
+@functools.lru_cache(maxsize=64)
+def branch_layout(seed):
+    """Build five to nine unequal scaffolds rather than three isolated pads."""
+    layout = list(scaffold_layout(seed))
+    rng = random.Random(f"{seed}:crown-scaffolds")
+    form = crown_form(seed)
+    habit, side = growth_pattern(seed)
+    centers = trunk_path(seed)
+    shift = (centers[-1] - 27) * 0.6
+    count = rng.randint(5, 9)
+    max_depth = {"broom": 6, "old_oak": 7}.get(habit, 12)
+    extra_count = count - len(layout)
+    for index in range(extra_count):
+        t = (index + rng.uniform(0.2, 0.8)) / extra_count
+        depth = min(max_depth, round(4 + t * 8))
+        direction = side * (1 if index % 2 == 0 else -1)
+        if form == "tiered":
+            reach = 11 - t * 6
+            y = 18 - depth - rng.uniform(0.8, 1.5)
+        elif form == "umbrella":
+            reach = 4 + t * 8
+            y = 3.5 + (reach / 8) ** 1.8
+        elif form == "open-vase":
+            reach = 7 + t * 4
+            y = 4.5 + rng.uniform(0, 2.5)
+        elif form == "columnar":
+            reach = rng.uniform(3.5, 5.5)
+            y = 18 - depth - rng.uniform(1.8, 3.0)
+        elif form == "spreading":
+            reach = 12 - t * 3
+            y = 7 + rng.uniform(0, 3)
+        else:
+            reach = 11 * math.sqrt(max(0.15, 1 - t * t))
+            y = 11 - t * 7
+        y = min(17 - depth, max(3, y))
+        born = max((depth - 1) / 0.7, 9 + index * 0.8)
+        layout.append((depth, centers[depth] + direction * reach - shift, y, born))
+    return layout
 
 
 def juvenile_foliage(days, seed):
@@ -636,16 +685,16 @@ def branch_graph(seed):
             add(origin, target, arrival + rng.uniform(0.3, 0.7),
                 width * (0.48 if fork == 0 else 0.38), index, fraction, level + 1, leader)
 
-    for root_index, (depth, tx, ty, born) in enumerate(layout[:3]):
+    for root_index, (depth, tx, ty, born) in enumerate(layout):
         tx += shift + jitter.uniform(-0.6, 0.6)
         ty += jitter.uniform(-0.3, 0.3)
         if one_sided and depth >= 11:
             tx = centers[depth] + (tx - centers[depth]) * 0.55
         width = max(0.55, 1.45 * (1 - depth / 24))
         if habit == "old_oak":
-            width = (1.25, 1.1, 0.9)[root_index]
+            width = (1.25, 1.1, 0.9)[min(root_index, 2)]
         add((centers[depth], 18 - depth), (tx, ty), born, width,
-            leader=root_index == 2)
+            leader=ty < 4.5 and abs(tx - centers[-1]) < 4)
     if one_sided:
         # Give the swept lower body a distinct vertical continuation and crown.
         add((centers[11], 7), (centers[-1] + wind * 1.2, 2.7), 17, 0.85, leader=True)
@@ -735,6 +784,11 @@ def natural_specimen(seed, days):
                 if cy < 6.5
                 else (rng.uniform(3.5, 4.6), rng.uniform(1.4, 1.9))
             )
+        # More scaffolds carry smaller sprays, preserving windows between
+        # limbs rather than merging the additional options into a solid blob.
+        if len(branch_layout(seed)) >= 5 and cy >= 4.5:
+            rx *= 0.78
+            ry *= 0.82
         if branch["level"]:
             rx *= 0.70 if branch["level"] == 1 else 0.50
             ry *= 0.82 if branch["level"] == 1 else 0.65

@@ -486,7 +486,9 @@ class BonsaiGrowTests(unittest.TestCase):
             self.assertTrue(all(b <= s <= w for b, s, w in zip(bark, scar, wood)))
             self.assertNotEqual(bark, scar)
             image = bonsai.render(30, seed)
-            self.assertTrue(any(bonsai.specimen_palette(seed)[name] in image
+            # Inspect exposed young wood before the mature crown can shade it.
+            young = bonsai.render(14, seed)
+            self.assertTrue(any(bonsai.specimen_palette(seed)[name] in young
                                 for name in ('wood_grain', 'bark_grain')))
             self.assertEqual(image, bonsai.render(30, seed))
 
@@ -540,7 +542,9 @@ class BonsaiGrowTests(unittest.TestCase):
         layouts = set()
         for seed in range(48):
             layout = bonsai.branch_layout(seed)
-            self.assertEqual(layout, bonsai.branch_layout(seed))
+            expected = tuple(layout)
+            bonsai.branch_layout.cache_clear()
+            self.assertEqual(expected, tuple(bonsai.branch_layout(seed)))
             layouts.add(tuple((depth, round(x), round(y)) for depth, x, y, born in layout))
             self.assertTrue(all(born >= (depth - 1) / .7 for depth, x, y, born in layout))
         self.assertGreater(len(layouts), 40)
@@ -552,6 +556,26 @@ class BonsaiGrowTests(unittest.TestCase):
             directions = {1 if x+shift >= trunk[depth] else -1
                           for depth,x,y,born in bonsai.branch_layout(seed)[:3]}
             self.assertEqual(directions, {-1,1})
+
+    def test_crown_options_vary_independently_and_use_every_scaffold(self):
+        forms = set()
+        counts = set()
+        pairs = set()
+        for seed in range(160):
+            forms.add(bonsai.crown_form(seed))
+            pairs.add((bonsai.growth_pattern(seed)[0], bonsai.crown_form(seed)))
+            layout = bonsai.branch_layout(seed)
+            counts.add(len(layout))
+            self.assertTrue(5 <= len(layout) <= 9)
+            roots = [b for b in bonsai.branch_graph(seed) if b['parent'] is None]
+            self.assertEqual(len(roots), len(layout))
+            expected = tuple(layout)
+            bonsai.branch_layout.cache_clear()
+            self.assertEqual(expected, tuple(bonsai.branch_layout(seed)))
+            self.assertGreater(len({round(b['end'][1]) for b in roots}), 2)
+        self.assertEqual(forms, set(bonsai.CROWN_FORMS))
+        self.assertEqual(counts, {5,6,7,8,9})
+        self.assertGreater(len(pairs), 35)
 
     def test_branch_hierarchy_has_staggered_connected_tapered_forks(self):
         for seed in range(48):
@@ -568,8 +592,8 @@ class BonsaiGrowTests(unittest.TestCase):
                 self.assertGreaterEqual(branch['born'], arrival)
                 self.assertLess(branch['width'], source['width'])
                 descendants.setdefault(parent, []).append(branch)
-            self.assertLessEqual(len(graph), 18)
-            self.assertEqual(sum(b['parent'] is None for b in graph), 3)
+            self.assertLessEqual(len(graph), 5 * len(bonsai.branch_layout(seed)))
+            self.assertEqual(sum(b['parent'] is None for b in graph), len(bonsai.branch_layout(seed)))
             self.assertGreaterEqual(len(descendants), 2)
             for children in descendants.values():
                 self.assertLessEqual(len(children), 2)
@@ -951,7 +975,7 @@ class BonsaiGrowTests(unittest.TestCase):
                 continue
             broom_count += 1
             roots = [branch for branch in bonsai.branch_graph(seed) if branch['parent'] is None]
-            self.assertEqual(len(roots),3)
+            self.assertEqual(len(roots),len(bonsai.branch_layout(seed)))
             self.assertEqual(min(cell[1] for cell in bonsai.stem(30,seed)),12)
             self.assertTrue(all(branch['start'][1] >= 12 for branch in roots))
         self.assertGreater(broom_count,10)
@@ -988,12 +1012,12 @@ class BonsaiGrowTests(unittest.TestCase):
             wood = bonsai.stem(30,seed)
             self.assertEqual(min(cell[1] for cell in wood),11)
             roots = [branch for branch in bonsai.branch_graph(seed) if branch['parent'] is None]
-            self.assertEqual(len(roots),3)
-            self.assertEqual([branch['width'] for branch in roots],[1.25,1.1,.9])
+            self.assertEqual(len(roots),len(bonsai.branch_layout(seed)))
+            self.assertEqual([branch['width'] for branch in roots[:3]],[1.25,1.1,.9])
             self.assertTrue(all(branch['start'][1] >= 11 for branch in roots))
         self.assertGreater(checked,10)
 
-    def test_twisted_juniper_has_three_or_four_supported_pad_groups(self):
+    def test_twisted_juniper_has_multiple_supported_foliage_tiers(self):
         checked = 0
         for seed in range(160):
             if bonsai.growth_pattern(seed)[0] != 'twisted_juniper':
@@ -1002,11 +1026,10 @@ class BonsaiGrowTests(unittest.TestCase):
             path = bonsai.trunk_path(seed)
             self.assertGreater(max(path)-min(path),3.5)
             graph = bonsai.branch_graph(seed)
-            parents = {branch['parent'] for branch in graph if branch['parent'] is not None}
             pads = [branch for branch in graph if branch['parent'] is None]
-            roots = [branch for branch in graph if branch['parent'] is None]
-            self.assertIn(len(pads),(3,4))
-            self.assertEqual(len(pads),len(roots))
+            self.assertTrue(5 <= len(pads) <= 9)
+            self.assertEqual(len(pads),len(bonsai.branch_layout(seed)))
+            self.assertGreater(max(b['start'][1] for b in pads) - min(b['start'][1] for b in pads), 4)
             self.assertLessEqual(max(branch['level'] for branch in graph),1)
         self.assertGreater(checked,10)
 
