@@ -13,6 +13,8 @@ Source is grouped into **`config/`** (shipped defaults) and **`system/`** (manag
 
 [Download latest release](https://github.com/Rebo-NS4U/rebos_enclosure/releases/latest) · [Installation guide](desktop/README.md) · [Package list](desktop/packages/README.md)
 
+[2.0 preparation and remaining acceptance gates](docs/RELEASE-2.0-CHECKLIST.md) · [Draft 2.0 notes](docs/RELEASE-v2.0.0.md)
+
 [v1.8.0 release notes](docs/RELEASE-v1.8.0.md): Frosted Glass themes, screen text selection,
 reader improvements, synced lyrics and faster media playback.
 

@@ -189,3 +189,31 @@ cache reuse and interrupted downloads without fetching models.
 Raw audit logs are local under `/tmp/enclosure-2-audit/`, mode 0700, and may
 contain private machine/session information. Do not package them into a release.
 Final repair verification is recorded in `desktop/VALIDATION.md`.
+
+
+## Follow-up status — local candidate preparation
+
+The baseline counts and findings above remain historical evidence. Subsequent
+repairs fixed the relay lifetime, settings acknowledgement, chat interaction
+identity and socket replacement bugs; see [the repair notes](FINAL-BUG-FIXES.md).
+Connection-time numeric public-address checks now close the relay's independent
+DNS-validation/connection race, retaining normal hostname TLS verification and
+bypassing environment proxies for that transport. EPUB reads now share a
+cumulative decompression budget; XML amplification/external-entity rejection
+and failed-import preservation have dedicated tests. General converter resource
+sandboxing is still not claimed.
+
+The previously skipped screenshot acceptance cases now pass inside an isolated
+software-rendered Niri/Xvfb session, and that runner is included in CI/tox.
+Committed-source archive/checksum and temporary-home install/update/recovery
+acceptance is repeatable, including the actual v1.8.0 source archive. Current
+results are 540 desktop tests (the two ordinary-discovery skips pass separately),
+108 media, 45 shell, three assistant and all Node/Lua/native/lint/design gates.
+The [2.0 checklist](RELEASE-2.0-CHECKLIST.md) replaces the old suggested repair
+order with current local checks and remaining destination acceptance work.
+
+A later approved MemoryCurrent sample showed roughly 3.65 GiB for the active
+assistant UI service. This service-level sample is not comparable to a controlled
+idle/retained-heap benchmark and does not prove a leak. Memory/crash observation
+remains open; the active UI/backend was preserved. No release, tag or push was
+performed, and stable component version metadata was not relabeled as released.

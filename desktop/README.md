@@ -312,7 +312,7 @@ updating the playback engine. Invalid values or failed saves leave the previous
 settings in place. Regression tests cover rejected caption timing, save failures
 and successful requests retaining their client/request identifiers.
 
-`desktop/scripts/snapshot.py --verify` verifies reviewed `config/` and `system/` source. Use `--output /path/to/new.tar.gz` to export committed HEAD. Live-home snapshotting has been removed. Preserve component licenses; artwork rights remain with their authors. See the [filesystem guide](../docs/FILESYSTEM.md) for personal settings, managed defaults, grouping and recovery.
+`desktop/scripts/snapshot.py --verify` verifies reviewed `config/` and `system/` source. Use `--output /path/to/new.tar.gz` to export committed HEAD with an adjacent `.sha256` file. Verify the exact archive with `python desktop/scripts/check_release.py /path/to/new.tar.gz`; add `--previous /path/to/prior.tar.gz` for cross-release file update and recovery checks. Each archive needs its adjacent checksum. These checks use temporary homes and do not install packages or change services. Live-home snapshotting has been removed. Preserve component licenses; artwork rights remain with their authors. See the [filesystem guide](../docs/FILESYSTEM.md) for personal settings, managed defaults, grouping and recovery.
 
 ReGreet follows the current desktop wallpaper and effective color palette through
 `regreet-sync.path`, with a timer to retry failures and detect edits to the image.
@@ -499,3 +499,20 @@ Reading requests buffer enough text for the full 36-line reading budget before f
 In reading mode, **Space** starts narration or pauses/resumes the current audio without restarting its page. Page navigation remains on arrows, Page Up/Down, h/l, and Shift+Space for previous. **Ctrl+Space** looks up the active highlighted word, including the word being narrated. **Ctrl+H/L** moves the highlight left/right by word; **Ctrl+J/K** moves down/up by displayed line while preserving the horizontal column. These word movements stay within the current page. Narration continues to update the highlight while playing. While paused, moving the word highlight sets the point where narration resumes; it reads from that word through the remainder of the page, retaining continuous reading and the remaining timer. A pause with no word movement resumes the original audio in place. Explicit mouse selections remain available for lookup when there is no active narrated word. The main playback button mirrors Pause/Resume; Stop remains separate. Pausing freezes highlight timing and suspends the session countdown; resuming preserves the remaining time. Spaces in note/settings text fields are unaffected, and holding Space does not repeatedly toggle playback.
 
 Typing **Backspace** deletes the preceding Unicode character without advancing the reading window. At an empty page it returns to the previous page; during a page handoff it removes queued input or applies the correction when the next window arrives.
+
+
+## Isolated Wayland release acceptance
+
+`python desktop/scripts/check_wayland.py` runs the two screenshot UI acceptance
+cases (and their export/launcher regressions) inside private Niri and Xvfb
+instances. It requires `xorg-server-xvfb`, Niri, Quickshell and Mesa. Software
+OpenGL renders the actual screenshot effects. The runner uses a temporary home,
+private runtime sockets and no session bus; it never uses Niri's `--session`
+flag or the current desktop. CI and tox run it explicitly, while ordinary
+unittest discovery keeps these two native Wayland tests opt-in.
+
+EPUB import applies the existing 100 MB decompression allowance cumulatively
+across metadata, navigation and spine reads, including repeated members and
+hidden content. The 20 million visible-character limit still applies. This
+bounds ZIP read work; PDF/Calibre processes retain their existing timeouts and
+are not a general sandbox for hostile documents.

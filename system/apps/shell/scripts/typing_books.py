@@ -23,6 +23,7 @@ class SaveOptions(NamedTuple):
 
 
 LIMIT = 20000000
+MAX_EPUB_BYTES = 100 * 1024 * 1024
 WINDOW = 90
 NOTE_CATEGORIES = ("People", "Settings", "Mysteries", "Plot", "General")
 
@@ -248,9 +249,13 @@ def epub_sections(opf, index, read):
 
 def read_epub_details(path):
     with zipfile.ZipFile(path) as archive:
+        remaining = MAX_EPUB_BYTES
         def read(name):
-            if archive.getinfo(name).file_size > 100 * 1024 * 1024:
-                raise ValueError('EPUB member is too large.')
+            nonlocal remaining
+            size = archive.getinfo(name).file_size
+            if size > remaining:
+                raise ValueError('EPUB decompressed content exceeds the 100 MB import budget.')
+            remaining -= size
             return archive.read(name)
         container = ET.fromstring(read('META-INF/container.xml'))
         package = next(e.attrib['full-path'] for e in container.iter() if e.tag.endswith('rootfile'))

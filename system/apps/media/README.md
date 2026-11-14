@@ -35,7 +35,11 @@ Only inactive families are retired, together with their error and preload state.
 Playlist routes are admitted together: capacity exhaustion rejects a new manifest
 without emitting partially evicted links or interrupting existing owned routes.
 An evicted cached source is resolved again before playback. Relay paths use
-random tokens. Extremely large manifests and indefinitely growing live streams
+random tokens. HTTPS connects to numeric DNS answers checked at connection time,
+while certificate verification and SNI use the original hostname. Environment
+HTTP(S) proxies are bypassed for relay upstream requests because their target
+resolution cannot enforce this public-address policy. Other application network
+requests keep their existing behavior. Extremely large manifests and indefinitely growing live streams
 can reach the cap and fail explicitly; sliding-window live-stream retirement is
 not implemented.
 

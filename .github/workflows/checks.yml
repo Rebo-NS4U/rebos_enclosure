@@ -21,7 +21,7 @@ jobs:
           pacman -Syu --noconfirm --needed
           git python python-pip python-pillow python-gobject python-charset-normalizer gtk4 cage ruff
           gcc pkgconf fish fontconfig poppler yt-dlp
-          niri quickshell qt6-multimedia-ffmpeg ttf-dejavu nodejs lua51
+          niri quickshell qt6-multimedia-ffmpeg ttf-dejavu nodejs lua51 xorg-server-xvfb mesa
           ffmpeg vlc vlc-plugin-ffmpeg vlc-plugin-freetype vlc-plugin-lua vlc-plugin-dvb
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -52,8 +52,14 @@ jobs:
           for script in install.sh desktop/install.sh oneline.sh desktop/scripts/finish-apps.sh docs/restore-windows-vm-passthrough.sh docs/windows-vm-passthrough/*.sh; do
             runuser -u ci -- bash -n "$script"
           done
+      - name: Verify committed release archive and file recovery
+        run: |
+          runuser -u ci -- python desktop/scripts/snapshot.py --output /tmp/enclosure-ci.tar.gz
+          runuser -u ci -- python desktop/scripts/check_release.py /tmp/enclosure-ci.tar.gz
       - name: Run desktop tests
         run: runuser -u ci -- python -m unittest discover -s desktop/tests -v
+      - name: Run isolated Wayland screenshot acceptance
+        run: runuser -u ci -- python desktop/scripts/check_wayland.py
       - name: Run media tests
         env:
           PYTHONPATH: system/apps/media

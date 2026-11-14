@@ -1,5 +1,42 @@
 # Validation record
 
+## 2.0 candidate preparation — 2026-11-14
+
+- Full desktop discovery passed: 540 tests with the two native Wayland cases
+  intentionally skipped there. Both cases then passed under the new isolated
+  Niri/Xvfb/Mesa runner (nine screenshot/export/launcher tests, zero skips),
+  including three reopen/pixel/pointer cycles. CI and tox now run this gate.
+- All 108 media, 45 shell and three assistant Python tests, all three standalone
+  Node regression files, Lua caption/chapter checks and native greeter builds
+  passed. Ruff and the 70-exception Pylint gate pass without higher ceilings.
+- Connection-time DNS checks now connect only to the checked numeric public
+  answers; original-host TLS verification is retained. Rebinding, mixed answers,
+  connection fallback, proxy bypass and TLS tests pass, as does a real HTTPS
+  HEAD to python.org (HTTP 200). Environment proxies are bypassed for public-only
+  relay upstream connections; other app networking is unchanged.
+- EPUB metadata/navigation/spine reads share a cumulative 100 MB decompression
+  budget. Repeated hidden content, oversized members, XML amplification/external
+  entities and failed-import state preservation have dedicated regressions.
+  Existing expat rejection is tested; no general document sandbox is claimed.
+- Committed-source export tests prove deterministic bytes, exclusion of dirty
+  personal files, checksum accuracy and preservation of occupied output paths.
+  Candidate and real v1.8.0 archives passed payload verification, temporary-home
+  fresh install, repeat/cross-release update, preference/account preservation,
+  read-only preview and full file/link journal recovery. CI now checks a
+  committed archive too. Package operations and boot are outside this fixture.
+- Source links match, the linked preference-preserving preview passes, relative
+  Markdown targets resolve and the focused portable-source privacy patterns
+  match no paths. The staged payload verifies for all 101 installation groups.
+- Approved live checks report panel, assistant UI and media active with zero
+  restart counters, no failed user units and valid Niri config. Service-level
+  MemoryCurrent samples were about 934 MiB panel, 3.65 GiB assistant UI and
+  113 MiB media. These are not per-process retained-heap measurements or a leak
+  reproduction. Longer memory/crash observation remains an acceptance item.
+- No current player, assistant backend or desktop service was restarted. Python
+  source loads on the next normal start. No push, tag or release was created;
+  draft notes and [remaining destination gates](../docs/RELEASE-2.0-CHECKLIST.md)
+  keep publication and hardware claims explicitly pending.
+
 ## Final bug repairs — 2026-11-14
 
 - Full desktop discovery passed: 534 tests, with only the two opt-in Wayland

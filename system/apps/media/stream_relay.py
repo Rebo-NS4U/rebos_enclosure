@@ -10,11 +10,12 @@ import secrets
 import threading
 import time
 from urllib.parse import urlparse, urlsplit, urlunsplit, quote, urljoin
-from urllib.request import Request, HTTPRedirectHandler, HTTPCookieProcessor, build_opener
+from urllib.request import Request, HTTPRedirectHandler, HTTPCookieProcessor, ProxyHandler, build_opener
 from http.cookiejar import CookieJar
 from contextlib import contextmanager
 from typing import NamedTuple
 from relay_routes import RelayRoutes
+from relay_transport import PublicHTTPSHandler
 
 
 # Long YouTube HLS playlists include signed URLs for thousands of segments.
@@ -211,7 +212,9 @@ class StreamRelay:  # pylint: disable=too-many-instance-attributes
         self.preloaded = OrderedDict()
         self.preload_hits = 0
         self.cookies = CookieJar()
-        self.opener = build_opener(RelayRedirects(self), HTTPCookieProcessor(self.cookies))
+        # Public-only upstreams must not delegate target DNS to an environment proxy.
+        transport = [] if allow_local else [ProxyHandler({}), PublicHTTPSHandler()]
+        self.opener = build_opener(RelayRedirects(self), HTTPCookieProcessor(self.cookies), *transport)
         self.server = ThreadingHTTPServer(('127.0.0.1', 0), RelayRequestHandler)
         self.server.relay = self
         self.server.daemon_threads = True
