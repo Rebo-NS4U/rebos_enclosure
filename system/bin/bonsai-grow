@@ -1560,12 +1560,14 @@ def specimen_canvas(days, seed, style="informal", pot_seed=None):
     for y, row in enumerate(pot_rows(seed if pot_seed is None else pot_seed), 19):
         left = len(row) - len(row.lstrip())
         right = len(row.rstrip()) - 1
+        marks = sum(char not in " ─" for char in row[left + 1:right])
+        accent_position = min(3, max(0, marks - 1))
         decoration = 0
         for column, char in enumerate(row):
             x = column + 16
             ink = "pot"
             if y in (20, 21) and left < column < right and char not in " ─":
-                ink = "pot_inlay" if decoration % 4 != 3 else "pot_pattern"
+                ink = "pot_pattern" if decoration % 4 == accent_position else "pot_inlay"
                 decoration += 1
             canvas[y][x] = (char, ink)
     seat_tree_in_pot(canvas, days)

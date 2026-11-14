@@ -87,14 +87,14 @@ is unavailable.
 
 The terminal bonsai reads the current effective accents on every render. When
 primary and secondary are distinct, its foliage uses both hues and the ceramic
-inlay alternates the exact main and accent colors. The pot body, rim, foot and
+inlay uses the exact main color with sparse accent highlights (usually 3:1). The pot body, rim, foot and
 straight separators retain their dark ceramic tones. Existing printed terminal output stays as drawn;
 new greetings and animation frames use the current palette.
 
 Paired bonsai foliage blends both accents in linear RGB light across every
-leaf cluster, with intermediate shades and restrained saturation. The main
-foliage groups retain 85% of their original accent, with a softer midpoint shade. This softens
-color boundaries while retaining leaf highlights and the current wallpaper hues.
+leaf cluster, with a main-dominant blend and restrained accent highlights. The main
+color contributes about 80% of the foliage blend overall; smaller accent
+variations retain leaf highlights without competing with the main hue.
 
 Mature foliage uses pointed leaf faces around fuller interior clusters, with
 sparse small tips on the rim. Seed-stable dapple places highlights on the upper
@@ -132,7 +132,9 @@ reveal overlay.
 
 Open **Settings → Appearance → Colors → Pick colors from your wallpaper**.
 Select **Main** or **Accent**, then click the wallpaper preview. The swatch shows
-which pixel you are sampling. You can also use **Custom color…**, or focus the
+which pixel you are sampling. Use **+ / −**, the mouse wheel, or **+ / −** keys
+to zoom up to 8×; drag to pan, and choose **Fit** (or press **0**) to reset.
+You can also use **Custom color…**, or focus the
 preview and use arrow keys (Shift moves faster) and Enter. Click **Apply picked
 colors** to generate the theme; Matugen derives readable containers and text
 colors, while the terminal bonsai follows the same main and accent hues.

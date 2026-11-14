@@ -519,6 +519,24 @@ class BonsaiGrowTests(unittest.TestCase):
                 self.assertIn(palette['pot_inlay'], row)
                 self.assertIn(palette['pot_pattern'], row)
 
+    def test_main_color_outweighs_accent_in_pot_and_leaves(self):
+        import re
+        # Count real pattern marks across all motifs, without including the
+        # ceramic body or dark separators in either color's share.
+        for seed in range(80):
+            canvas = bonsai.specimen_canvas(30, seed)
+            inks = [ink for row in canvas[20:22] for glyph, ink in row if glyph.strip()]
+            main, accent = inks.count('pot_inlay'), inks.count('pot_pattern')
+            self.assertGreater(accent, 0)
+            self.assertGreaterEqual(main, accent * 2)
+        palette = bonsai.specimen_palette(42, ['#e64040', '#40e640', '#e64040'])
+        # Opposing red/green inputs expose the blend's actual weighting:
+        # main must remain stronger at every shade, including accent patches.
+        for i in range(9):
+            red, green, blue = map(int, re.findall(r'\d+', palette[f'leaf{i}'])[-3:])
+            self.assertGreater(red, green)
+            self.assertGreater(green, blue)
+
     def test_dark_wood_and_vibrant_pot_patterns(self):
         import colorsys
         import re

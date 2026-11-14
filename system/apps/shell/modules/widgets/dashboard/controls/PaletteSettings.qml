@@ -196,6 +196,21 @@ ColumnLayout {
         }
     }
     RowLayout {
+        Action {
+            text: "−"
+            enabled: wallpaperSampler.ready && wallpaperSampler.zoom > 1
+            onClicked: wallpaperSampler.zoomAt(0.8, wallpaperSampler.width / 2, wallpaperSampler.height / 2)
+        }
+        Caption { text: Math.round(wallpaperSampler.zoom * 100) + "%"; horizontalAlignment: Text.AlignHCenter }
+        Action {
+            text: "+"
+            enabled: wallpaperSampler.ready && wallpaperSampler.zoom < 8
+            onClicked: wallpaperSampler.zoomAt(1.25, wallpaperSampler.width / 2, wallpaperSampler.height / 2)
+        }
+        Action { text: "Fit"; onClicked: wallpaperSampler.resetView() }
+    }
+    Caption { text: "Scroll over the preview to zoom; drag to move around, then click to pick a color." }
+    RowLayout {
         Rectangle {
             implicitWidth: 24
             implicitHeight: 24
