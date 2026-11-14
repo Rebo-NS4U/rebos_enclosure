@@ -131,18 +131,7 @@ ColumnLayout {
             anchors.margins: 12
             spacing: Styling.spacing(8)
             StyledText { text: "Shell dithering"; font.bold: true }
-            StyledText { text: "Border style" }
-            SettingsComboBox {
-                objectName: "dither-border"
-                Layout.fillWidth: true
-                model: [{label: "Dithered edge", value: "band"},
-                        {label: "Round dots", value: "dotted"}, {label: "Double line", value: "double"}]
-                textRole: "label"
-                valueRole: "value"
-                currentIndex: Config.theme.ditherBorder === "dotted" ? 1
-                    : Config.theme.ditherBorder === "double" ? 2 : 0
-                onActivated: Config.theme.ditherBorder = currentValue
-            }
+            StyledText { text: "Texture strength" }
             RowLayout {
                 Layout.fillWidth: true
                 StyledSlider {
@@ -174,7 +163,7 @@ ColumnLayout {
                 wrapMode: Text.WordWrap
                 font.pixelSize: Styling.fontSize(-2)
                 color: Colors.overSurfaceVariant
-                text: "Increase for larger, bolder dots on the bar, panels, menus, buttons and outlines. 20% keeps subtle panel dots; 0% removes shell texture and patterned outlines. Text stays crisp."
+                text: "Adjust the contrast of fine panel texture. 0% turns it off. Buttons, text and borders stay crisp."
             }
             StyledText { text: "Wallpaper conversion"; font.bold: true }
             SettingsComboBox {
