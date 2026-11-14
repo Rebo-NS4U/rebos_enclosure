@@ -63,10 +63,12 @@ The crown is the visual focus: the wallpaper primary and any distinct secondary 
 
 Trunks use broad, seed-stable grain bands in related dark wood tones. The narrow scar uses a blend of bark and heartwood instead of an extra-dark slit; its existing shape and growth remain intact.
 
-Bonsai limbs follow cubic arcs with tapered wood. Continuing forks ease out in
-their parent's direction, and terminal twigs use restrained bends instead of
-curling back into hooks. Wood strokes follow the curve's actual tangent. The
-same seeded skeleton is used throughout growth and in the final greeting.
+Bonsai limbs follow cubic arcs with tapered wood. Three main scaffolds support
+the crown, with at most one outward fork per scaffold and no recursive or
+backward offshoots. The apex has its own foliage pad, and every branch endpoint
+carries leaves. Ordered curve handles prevent rising limbs from hooking
+downward at their tips. Wood strokes follow the curve's actual tangent. The same
+seeded skeleton is used throughout growth and in the final greeting.
 
 ## Wallpaper leaf accents
 

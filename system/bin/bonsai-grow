@@ -416,19 +416,10 @@ def branch_layout(seed):
         born = max((depth - 1) / 0.7, 11 + index * 2 + rng.uniform(-1, 1))
         # The renderer applies the crown offset once to every limb.
         result.append((depth, x - (centers[-1] - 27) * 0.6, y, born))
-    for depth in sorted(rng.sample(range(11, 15), rng.randint(1, 3))):
-        direction = side if pattern == "windswept" else rng.choice((-1, 1))
-        x = centers[depth] + direction * rng.uniform(
-            2, 4 if pattern == "windswept" else 7
-        )
-        result.append(
-            (
-                depth,
-                x - (centers[-1] - 27) * 0.6,
-                rng.uniform(2, 3.5),
-                max((depth - 1) / 0.7, 17),
-            )
-        )
+    # The third scaffold is the upright crown leader. Random extra branches
+    # clustered at the apex made several forks occupy the same terminal row.
+    result[2] = (12, centers[-1] - (centers[-1] - 27) * 0.6 + side * 0.6,
+                 2.8, max(11 / 0.7, 16))
     return result
 
 
@@ -518,10 +509,13 @@ def branch_controls(branch):
     tip_limit = math.hypot(branch["end"][0] - branch["start"][0],
                            ty - y + 4 * branch["curve"]) * 0.1
     tip = max(-tip_limit, min(tip_limit, branch.get("tip_bend", 0) * 0.25))
-    return (
-        y + branch.get("departure", (ty - y) - 4 * branch["curve"]) / 3,
-        y + (ty - y) * 2 / 3 - lift + tip,
-    )
+    c1 = y + branch.get("departure", (ty - y) - 4 * branch["curve"]) / 3
+    c2 = y + (ty - y) * 2 / 3 - lift + tip
+    if ty < y:
+        # Ordered handles keep rising branches rising, including short tips.
+        c1 = max(ty, min(y, c1))
+        c2 = max(ty, min(c1, c2))
+    return c1, c2
 
 
 def branch_tangent(branch, t):
@@ -537,7 +531,7 @@ def branch_tangent(branch, t):
 
 @functools.lru_cache(maxsize=64)
 def branch_graph(seed):
-    """A rooted hierarchy: uneven secondary forks inherit their parent's path."""
+    """Three scaffolds with sparse outward forks and an uncluttered apex."""
     rng = random.Random(f"{seed}:branch-graph")
     jitter = random.Random(seed)
     centers = trunk_path(seed)
@@ -604,8 +598,8 @@ def branch_graph(seed):
             if lower
             else rng.uniform(0.1, 0.25)
             if habit == "twisted_juniper"
-            else min(length * 0.3, rng.uniform(1.1, 2.0) if level == 0
-                     else rng.uniform(0.65, 1.25)),
+            else min(max(0, start[1] - end[1]) * 0.2,
+                     rng.uniform(0.5, 1.1) if level == 0 else rng.uniform(0.2, 0.4)),
             level=level,
             leader=leader,
             lower=lower,
@@ -624,81 +618,25 @@ def branch_graph(seed):
         branches.append(branch)
         if (
             lower
-            or level >= (1 if one_sided or habit == "twisted_juniper" else 2)
-            or length < 3
+            or level >= 1
+            or length < 5
+            or habit == "twisted_juniper"
         ):
             return
-        # One stronger continuation and a shorter lateral fork, at unequal nodes.
-        fractions = (
-            (rng.uniform(0.65, 0.85), rng.uniform(0.4, 0.65))
-            if habit
-            in (
-                "forked",
-                "bowed",
-                "upright",
-                "recurved",
-                "broom",
-                "slant",
-                "old_oak",
-                "twisted_juniper",
-            )
-            else (rng.uniform(0.7, 0.95), rng.uniform(0.4, 0.7))
-        )
-        if habit == "twisted_juniper":
-            fractions = (rng.uniform(0.75, 0.85), rng.uniform(0.6, 0.7))
-        for child, fraction in enumerate(fractions):
-            origin = branch_point(branch, fraction)
-            direction = 1 if end[0] >= start[0] else -1
-            if child and habit != "windswept" and rng.random() < 0.55:
-                direction *= -1
-            if habit == "windswept":
-                direction = wind
-            reach = (
-                length * rng.uniform(0.3, 0.48) * (1 if child == 0 else 0.6)
-                if habit
-                in (
-                    "forked",
-                    "bowed",
-                    "upright",
-                    "recurved",
-                    "broom",
-                    "slant",
-                    "old_oak",
-                    "twisted_juniper",
-                )
-                else length * rng.uniform(0.45, 0.65) * (1 if child == 0 else 0.6)
-            )
-            if habit == "twisted_juniper":
-                direction = 1 if end[0] >= start[0] else -1
-                reach = length * rng.uniform(0.16, 0.23)
-            if leader:
-                # The apex keeps reaching upward instead of becoming another
-                # long horizontal, wind-driven limb.
-                direction = wind if child == 0 else -wind
-                reach = rng.uniform(1.2, 2.8)
-            rise = (
-                rng.uniform(0.3, 0.7)
-                if habit == "twisted_juniper"
-                else rng.uniform(1.8 if leader else 1.3, 3)
-                * (1 if child == 0 else 0.65)
-            )
-            target = (origin[0] + direction * reach, origin[1] - rise)
-            arrival = born + length * fraction * 0.55
-            child_id = len(branches)
-            add(
-                origin,
-                target,
-                arrival + rng.uniform(0.3, 0.9),
-                width * (0.58 if child == 0 else 0.38),
-                index,
-                fraction,
-                level + 1,
-                leader,
-            )
-            if habit == "twisted_juniper":
-                branches[child_id]["pad_tip"] = child == 0
+        # One sparse outward fork per scaffold. Recursive pairs and random
+        # reversals read as antlers at terminal resolution, especially when
+        # several attachment points collapse into the same character cell.
+        fraction = rng.uniform(0.58, 0.7)
+        origin = branch_point(branch, fraction)
+        direction = 1 if end[0] >= start[0] else -1
+        reach = min(3.2, length * rng.uniform(0.27, 0.36))
+        target = (end[0] + direction * reach * 0.55,
+                  end[1] - rng.uniform(1.2, 2.0))
+        arrival = born + length * fraction * 0.55
+        add(origin, target, arrival + rng.uniform(0.3, 0.9),
+            width * 0.45, index, fraction, level + 1, leader)
 
-    for root_index, (depth, tx, ty, born) in enumerate(layout):
+    for root_index, (depth, tx, ty, born) in enumerate(layout[:3]):
         tx += shift + jitter.uniform(-0.6, 0.6)
         ty += jitter.uniform(-0.3, 0.3)
         if one_sided and depth >= 11:
@@ -706,15 +644,15 @@ def branch_graph(seed):
         width = max(0.55, 1.45 * (1 - depth / 24))
         if habit == "old_oak":
             width = (1.25, 1.1, 0.9)[root_index]
-        add((centers[depth], 18 - depth), (tx, ty), born, width)
+        add((centers[depth], 18 - depth), (tx, ty), born, width,
+            leader=root_index == 2)
     if one_sided:
         # Give the swept lower body a distinct vertical continuation and crown.
         add((centers[11], 7), (centers[-1] + wind * 1.2, 2.7), 17, 0.85, leader=True)
     parents = {branch['parent'] for branch in branches if branch['parent'] is not None}
     for index, branch in enumerate(branches):
         if index not in parents:
-            # Independent randomness keeps existing branch origins and growth
-            # timing stable while each terminal twig gets its own inflection.
+            # Give terminal twigs a small, seed-stable individual bend.
             tip_rng = random.Random(f"{seed}:tip-character:{index}")
             branch['tip_bend'] = (tip_rng.choice((-1, 1))
                                   * min(branch['length'] * 0.35, tip_rng.uniform(0.8, 1.3)))
@@ -777,22 +715,12 @@ def natural_specimen(seed, days):
         filled = (x, y) not in centerline or interior
         glyph = "░" if filled else strokes[(x, y)]
         cells.append((x, y, birth, glyph, "bark" if filled else "wood"))
-    parents = {branch["parent"] for branch in graph if branch["parent"] is not None}
-    compact = any(branch["leader"] for branch in graph)
+    # Every living endpoint carries foliage, including the continuing parent
+    # tip. A bare parent beyond a leafy lateral fork looked like a stray spur.
     for index, branch in enumerate(graph):
-        if index in parents or (
-            growth_pattern(seed)[0] == "twisted_juniper"
-            and branch["parent"] is not None
-            and not branch.get("pad_tip")
-        ):
-            continue
         cx, cy = branch["end"]
         rng = random.Random(f"{seed}:terminal:{index}")
-        rx, ry = (
-            (rng.uniform(2.6, 3.8), rng.uniform(1.3, 1.9))
-            if compact
-            else (rng.uniform(3.2, 5), rng.uniform(1.6, 2.4))
-        )
+        rx, ry = rng.uniform(3.2, 5), rng.uniform(1.6, 2.4)
         if branch.get("lower", False):
             rx, ry = rng.uniform(2.5, 3.3), rng.uniform(1, 1.35)
         if growth_pattern(seed)[0] == "twisted_juniper":
@@ -814,6 +742,10 @@ def natural_specimen(seed, days):
             (0.82, 1.12, -0.12), (1.12, 0.82, 0.08),
             (1.02, 0.94, -0.24), (0.92, 1.08, 0.22)))
         rx, ry = rx * spread, ry * depth
+        if branch['level'] == 0 and cy < 4.5:
+            # The single apex replaces several crowded upper twigs, so give
+            # its foliage enough volume to form a complete crown on its own.
+            rx, ry = max(rx, 4.4), max(ry, 2.0)
         lean *= 1 if branch['end'][0] >= branch['start'][0] else -1
         cleft_side = character.choice((-1, 1))
         cleft_start = character.uniform(0.15, 0.4)

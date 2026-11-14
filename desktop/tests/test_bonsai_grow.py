@@ -87,8 +87,7 @@ class BonsaiGrowTests(unittest.TestCase):
             upper = [cell for cell in leaves if cell[1] <= 6]
             self.assertGreaterEqual(len(upper), 25)
             graph = bonsai.branch_graph(seed)
-            parents = {branch['parent'] for branch in graph}
-            terminals = [branch['end'] for i, branch in enumerate(graph) if i not in parents]
+            terminals = [branch['end'] for branch in graph]
             for x, y, *_ in leaves:
                 self.assertTrue(any(abs(x-tx) <= 5 and abs(y-ty) <= 2.4
                                     for tx, ty in terminals))
@@ -554,7 +553,7 @@ class BonsaiGrowTests(unittest.TestCase):
                           for depth,x,y,born in bonsai.branch_layout(seed)[:3]}
             self.assertEqual(directions, {-1,1})
 
-    def test_branch_hierarchy_has_supported_unequal_tapered_forks(self):
+    def test_branch_hierarchy_has_sparse_outward_tapered_forks(self):
         for seed in range(48):
             graph = bonsai.branch_graph(seed)
             descendants = {}
@@ -569,13 +568,19 @@ class BonsaiGrowTests(unittest.TestCase):
                 self.assertGreaterEqual(branch['born'], arrival)
                 self.assertLess(branch['width'], source['width'])
                 descendants.setdefault(parent, []).append(branch)
-            self.assertTrue(descendants)
+            self.assertLessEqual(len(graph), 6)
+            self.assertEqual(sum(b['parent'] is None for b in graph), 3)
             for children in descendants.values():
-                self.assertEqual(len(children), 2)
-                self.assertNotEqual(children[0]['width'], children[1]['width'])
-                self.assertNotEqual(children[0]['attachment'], children[1]['attachment'])
+                self.assertEqual(len(children), 1)
+                self.assertEqual(children[0]['level'], 1)
+                self.assertGreaterEqual(children[0]['attachment'], .58)
+                self.assertLessEqual(children[0]['attachment'], .7)
+                child = children[0]
+                source = graph[child['parent']]
+                self.assertGreater((child['end'][0] - child['start'][0]) *
+                                   (source['end'][0] - source['start'][0]), 0)
 
-    def test_mature_limbs_keep_bends_large_enough_for_terminal_cells(self):
+    def test_mature_limbs_curve_without_downward_hooks(self):
         checked = 0
         for seed in range(32):
             if bonsai.growth_pattern(seed)[0] == 'twisted_juniper':
@@ -586,9 +591,11 @@ class BonsaiGrowTests(unittest.TestCase):
                 start, end = branch['start'], branch['end']
                 mid = bonsai.branch_point(branch, .5)
                 straight_mid = (start[1] + end[1]) / 2
-                # A sub-character offset was lost to rasterization in mature
-                # frames. Major limbs must deviate by a whole terminal row.
-                self.assertGreaterEqual(abs(mid[1] - straight_mid), 1.0)
+                # A whole-row bow on a shallow limb creates an inverted U.
+                # Keep a restrained arc and never descend again near the tip.
+                self.assertGreater(abs(mid[1] - straight_mid), .1)
+                ys = [bonsai.branch_point(branch, i / 32)[1] for i in range(33)]
+                self.assertTrue(all(b <= a + 1e-9 for a, b in zip(ys, ys[1:])))
                 checked += 1
         self.assertGreater(checked, 24)
         # Completing growth must not substitute a different, straight skeleton.
@@ -603,6 +610,14 @@ class BonsaiGrowTests(unittest.TestCase):
                 early = positions
             else:
                 self.assertEqual(positions, early)
+
+    def test_every_mature_branch_tip_has_foliage(self):
+        for seed in range(80):
+            leaves = {(x, y) for x, y, born, glyph, ink in
+                      bonsai.natural_specimen(seed, 30) if ink.startswith('leaf')}
+            for branch in bonsai.branch_graph(seed):
+                x, y = branch['end']
+                self.assertIn((round(x), round(y)), leaves, (seed, branch))
 
     def test_terminal_character_is_distinct_stable_and_attached(self):
         bends = []
@@ -668,7 +683,7 @@ class BonsaiGrowTests(unittest.TestCase):
                 _, original = bonsai.branch_tangent(natural, 0)
                 self.assertLess(abs(dy - py * dx / px), abs(original - py * dx / px))
                 checked += 1
-        self.assertGreater(checked, 100)
+        self.assertGreater(checked, 30)
 
     def test_forked_type_replaces_narrow_one_direction_trees(self):
         checked = 0
