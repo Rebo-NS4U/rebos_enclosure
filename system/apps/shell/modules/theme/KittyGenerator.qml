@@ -1,15 +1,23 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import qs.config
 
 QtObject {
     id: root
 
-    function generate(Colors) {
+    function render(Colors) {
         if (!Colors)
-            return;
-        const fmt = c => c.toString();
+            return "";
+        // Kitty colors are RGB; QColor serializes translucent colors as #AARRGGBB.
+        // Composite alpha against the terminal background rather than exporting it.
+        const base = Qt.color(Colors.background);
+        const fmt = value => {
+            const color = Qt.color(value);
+            const channel = (component, background) => Math.round(
+                (component * color.a + background * (1 - color.a)) * 255
+            ).toString(16).padStart(2, "0");
+            return "#" + channel(color.r, base.r) + channel(color.g, base.g) + channel(color.b, base.b);
+        };
 
         const cursor = fmt(Colors.overSurface);
         const cursorText = fmt(Colors.background);
@@ -113,6 +121,12 @@ QtObject {
         conf += `color7 ${color7}\n`;
         conf += `color15 ${color15}\n`;
 
+        return conf;
+    }
+
+    function generate(Colors) {
+        const conf = render(Colors);
+        if (!conf) return;
         const kittyConfPath = Quickshell.env("HOME") + "/.cache/rebos_shell/kitty.conf";
 
         // Ensure directory exists and write file

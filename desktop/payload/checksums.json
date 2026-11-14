@@ -541,7 +541,7 @@
   "system/apps/shell/modules/theme/DiscordGenerator.qml": "b2ec8c30461b7af4a7f78540a9f2f622d3b8e9614510734a1080fa6665c79b5f",
   "system/apps/shell/modules/theme/GtkGenerator.qml": "f3e803b46371f99954df8511050d078d2adf6c42e91c8b2c19984e98c4c35991",
   "system/apps/shell/modules/theme/Icons.qml": "f588ef059309aa44499446fa5dc1f3ebbc391ae71f86a73d5683752379ad23ea",
-  "system/apps/shell/modules/theme/KittyGenerator.qml": "d4d28577bf989c0bffcbc7f4fb6afc04d78b52e1adf00a3d7431c72da48c7e79",
+  "system/apps/shell/modules/theme/KittyGenerator.qml": "020dfc912895d89a07920f2d43b253c9bf83e1cc77a2a1a9ca0db62ecad78135",
   "system/apps/shell/modules/theme/Motion.qml": "1768059abe7b67966610afb4817a1cfbd1fb55d4534b4634274b5af533a16a3c",
   "system/apps/shell/modules/theme/NvChadGenerator.qml": "b7eb39d9e0b6f87129a7f8c754217c0b6a853c933e1f969644d95aeaa7d15a55",
   "system/apps/shell/modules/theme/PaletteSchemes.js": "d98a413067461241154b890f7c0249512bcec2aa0150453a7b84d8ff744cf41e",

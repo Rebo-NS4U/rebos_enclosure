@@ -42,3 +42,7 @@ Native app integrations receive the matching surface palette where supported.
 `qs ipc -p ~/.config/quickshell call theme status` reports the active style,
 opacity, corner radius and blur settings. Selecting an installed theme changes
 the appearance live without restarting the panel or active apps.
+
+Kitty exports use six-digit RGB colors. Translucent palette colors (including
+Frosted Glass borders) are composited against the terminal background; terminal
+transparency remains in Kitty’s separate `background_opacity` setting.
