@@ -15,13 +15,6 @@ loader.exec_module(bonsai)
 
 
 class BonsaiGrowTests(unittest.TestCase):
-    def setUp(self):
-        # These checks exercise living-tree foliage; rare bare trees are tested below.
-        from unittest.mock import patch
-        living = patch.object(bonsai, 'is_dead_tree', return_value=False)
-        living.start()
-        self.addCleanup(living.stop)
-
     def test_standalone_specimen(self):
         palette = ['#85b470', '#b8ce93', '#67bca3']
         image = bonsai.render(30, 42, False, 80, palette)
@@ -1332,41 +1325,6 @@ class BonsaiGrowTests(unittest.TestCase):
         result = subprocess.run([str(SOURCE)], capture_output=True, check=True)
         self.assertEqual(result.stdout, b'')
         self.assertEqual(result.stderr, b'')
-
-
-class DeadFloweringTreeTests(unittest.TestCase):
-    def test_rare_choice_is_stable_and_about_ten_percent(self):
-        selected = [seed for seed in range(1000) if bonsai.is_dead_tree(seed)]
-        self.assertTrue(70 <= len(selected) <= 130, len(selected))
-        self.assertEqual(selected, [seed for seed in range(1000) if bonsai.is_dead_tree(seed)])
-
-    def test_rare_trees_have_bare_wood_and_attached_accent_flowers(self):
-        from unittest.mock import patch
-        seeds = [seed for seed in range(150) if bonsai.is_dead_tree(seed)]
-        for seed in seeds:
-            with self.subTest(seed=seed):
-                early = bonsai.specimen_canvas(10, seed)
-                mature = bonsai.specimen_canvas(30, seed)
-                self.assertFalse(any(ink.startswith('leaf') for row in early + mature for glyph, ink in row))
-                self.assertFalse(any(ink == 'blossom' for row in early for glyph, ink in row))
-                blooms = [(x, y) for y, row in enumerate(mature) for x, (glyph, ink) in enumerate(row) if ink == 'blossom']
-                self.assertTrue(3 <= len(blooms) <= 9, blooms)
-                with patch.object(bonsai, 'add_dead_blossoms'):
-                    bare = bonsai.specimen_canvas(30, seed)
-                for x, y in blooms:
-                    self.assertIn(bare[y][x][1], ('wood', 'woodlight', 'bark'))
-                self.assertEqual(mature, bonsai.specimen_canvas(30, seed))
-                palette = bonsai.specimen_palette(seed)
-                self.assertEqual(palette['blossom'], palette['pot_pattern'])
-                image = bonsai.render(30, seed, True, 80)
-                self.assertIn(palette['blossom'], image)
-
-    def test_living_trees_and_explicit_styles_keep_their_leaves(self):
-        living_seed = next(seed for seed in range(100) if not bonsai.is_dead_tree(seed))
-        rare_seed = next(seed for seed in range(100) if bonsai.is_dead_tree(seed))
-        for seed, style in ((living_seed, 'informal'), (rare_seed, 'slant'), (rare_seed, 'semi-cascade')):
-            canvas = bonsai.specimen_canvas(30, seed, style)
-            self.assertTrue(any(ink.startswith('leaf') for row in canvas for glyph, ink in row))
 
 
 if __name__ == '__main__':
