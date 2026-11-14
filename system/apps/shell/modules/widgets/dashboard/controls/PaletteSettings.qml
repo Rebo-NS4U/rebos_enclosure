@@ -61,6 +61,31 @@ ColumnLayout {
         }
     }
 
+    component ColorAction: Action {
+        id: colorButton
+        required property color swatchColor
+        readonly property color inkColor: {
+            const linear = v => v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+            const c = swatchColor;
+            return 0.2126 * linear(c.r) + 0.7152 * linear(c.g) + 0.0722 * linear(c.b) > 0.179 ? "#000000" : "#ffffff";
+        }
+        background: Rectangle {
+            color: colorButton.swatchColor
+            radius: Styling.radius(-4)
+            border.width: colorButton.selected || colorButton.activeFocus ? 3 : 1
+            border.color: colorButton.selected || colorButton.activeFocus ? colorButton.inkColor : Colors.outline
+        }
+        contentItem: Text {
+            text: colorButton.text
+            font.family: Config.theme.font
+            font.pixelSize: Styling.fontSize(-1)
+            color: colorButton.inkColor
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+            elide: Text.ElideRight
+        }
+    }
+
     Text {
         text: "Wallpaper colors"
         font.family: Config.theme.font
@@ -163,12 +188,14 @@ ColumnLayout {
         text: "Select Main or Accent, then click the wallpaper. Matugen builds your theme from these colors, and the bonsai uses the same pair. Picks are saved for each wallpaper."
     }
     RowLayout {
-        Action {
+        ColorAction {
+            swatchColor: root.draftColors[0] || Colors.primary
             text: "Main: " + (root.draftColors[0] || "Auto")
             selected: root.pickedRole === 0
             onClicked: root.pickedRole = 0
         }
-        Action {
+        ColorAction {
+            swatchColor: root.draftColors[1] || Colors.secondary
             text: "Accent: " + (root.draftColors[1] || "Auto")
             selected: root.pickedRole === 1
             onClicked: root.pickedRole = 1

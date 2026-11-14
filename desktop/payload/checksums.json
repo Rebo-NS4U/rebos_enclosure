@@ -576,7 +576,7 @@
   "system/apps/shell/modules/widgets/dashboard/controls/GradientStopsEditor.qml": "281faf375c754b3fd7a59a0a446d747fbfbe2408fbdcbdab468f9dd0a7c0ebc0",
   "system/apps/shell/modules/widgets/dashboard/controls/KeybindingsPanel.qml": "29f6e19011fc2b6c9d6bc775ffa276472455ff2b8c3663dc8d87b8b869a794f8",
   "system/apps/shell/modules/widgets/dashboard/controls/MotionSettings.qml": "709a1ad827a300e9793a49f7c3f766b15226a03f97b101e4e5eea1ed1d7590d5",
-  "system/apps/shell/modules/widgets/dashboard/controls/PaletteSettings.qml": "b4e23cddcfa0e4f527fb99e43938c91e77005878bf0153cd44eda93436f156a3",
+  "system/apps/shell/modules/widgets/dashboard/controls/PaletteSettings.qml": "e48252c562372b77229e574068fc3951d954be5f9d4444c57ea825325901e217",
   "system/apps/shell/modules/widgets/dashboard/controls/PanelTitlebar.qml": "ef5c15314df268ae78369ad25b90ba9bfa9a78f780a13a61dbd79ade4f60c0fb",
   "system/apps/shell/modules/widgets/dashboard/controls/SettingsButton.qml": "f80ab06c24aa19ce93e4d74032ac3d55292e5a4f0f7fcc452589888a4e5c8296",
   "system/apps/shell/modules/widgets/dashboard/controls/SettingsComboBox.qml": "126842b46e121d869775923c6215af5d5c170235572ae54046330e38bdd73ae5",
