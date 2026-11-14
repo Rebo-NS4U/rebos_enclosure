@@ -5,6 +5,7 @@ Item {
     id: root
     property url source
     property string hoverColor: ""
+    property var suggestedColors: []
     property real zoom: 1
     property real panX: 0
     property real panY: 0
@@ -53,6 +54,33 @@ Item {
         return "#" + [pixel[0], pixel[1], pixel[2]].map(v => Math.round(v).toString(16).padStart(2, "0")).join("");
     }
 
+    // Read a small, evenly spaced grid once per wallpaper, before any zoom.
+    function suggestColors() {
+        const r = canvas.imageRect;
+        const pixels = canvas.getContext("2d").getImageData(0, 0, width, height).data;
+        const buckets = {};
+        for (let y = 0; y < 32; y++) {
+            for (let x = 0; x < 32; x++) {
+                const px = Math.floor(r.x + (x + 0.5) * r.width / 32);
+                const py = Math.floor(r.y + (y + 0.5) * r.height / 32);
+                const i = (py * Math.floor(width) + px) * 4;
+                if (!pixels[i + 3]) continue;
+                const rgb = [pixels[i], pixels[i + 1], pixels[i + 2]];
+                const key = rgb.map(v => v >> 4).join(",");
+                if (!buckets[key]) buckets[key] = { count: 0, rgb: rgb };
+                buckets[key].count++;
+            }
+        }
+        const chosen = [];
+        const candidates = Object.values(buckets).sort((a, b) => b.count - a.count);
+        for (const candidate of candidates) {
+            if (chosen.every(rgb => Math.hypot(...rgb.map((v, i) => v - candidate.rgb[i])) >= 32))
+                chosen.push(candidate.rgb);
+            if (chosen.length === 24) break;
+        }
+        suggestedColors = chosen.map(rgb => "#" + rgb.map(v => v.toString(16).padStart(2, "0")).join(""));
+    }
+
     Image {
         id: imageInfo
         source: root.source
@@ -70,6 +98,7 @@ Item {
         function loadSource() {
             drawn = false;
             root.hoverColor = "";
+            root.suggestedColors = [];
             if (loadedSource.toString())
                 unloadImage(loadedSource);
             loadedSource = root.source;
@@ -93,6 +122,7 @@ Item {
             imageRect = root.imageBounds();
             ctx.drawImage(root.source, imageRect.x, imageRect.y, imageRect.width, imageRect.height);
             drawn = true;
+            if (!root.suggestedColors.length && root.zoom === 1) root.suggestColors();
         }
     }
     MouseArea {

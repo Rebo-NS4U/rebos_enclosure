@@ -195,6 +195,35 @@ ColumnLayout {
                 wallpaperSampler.failed ? "Wallpaper preview is unavailable. You can still choose a custom color." : "Loading wallpaper…"
         }
     }
+    Caption {
+        visible: wallpaperSampler.suggestedColors.length > 0
+        text: "Wallpaper color options · choose for " + (root.pickedRole === 0 ? "Main" : "Accent")
+    }
+    Flow {
+        Layout.fillWidth: true
+        spacing: Styling.spacing(6)
+        Repeater {
+            model: wallpaperSampler.suggestedColors
+            delegate: Button {
+                id: suggestedSwatch
+                required property string modelData
+                width: 38
+                height: 38
+                Accessible.name: "Use " + modelData + " as " + (root.pickedRole === 0 ? "main" : "accent")
+                onClicked: root.pickColor(modelData)
+                background: Rectangle {
+                    color: suggestedSwatch.modelData
+                    radius: Styling.radius(-4)
+                    border.width: suggestedSwatch.activeFocus || root.draftColors[root.pickedRole] === suggestedSwatch.modelData ? 3 : 1
+                    border.color: suggestedSwatch.activeFocus || root.draftColors[root.pickedRole] === suggestedSwatch.modelData ? Colors.overSurface : Colors.outline
+                }
+                StyledToolTip {
+                    show: suggestedSwatch.hovered
+                    tooltipText: suggestedSwatch.modelData
+                }
+            }
+        }
+    }
     RowLayout {
         Action {
             text: "−"

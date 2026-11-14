@@ -129,6 +129,9 @@ Item {
         when: windowShown
         function test_pixels() {
             tryVerify(() => sampler.ready);
+            verify(sampler.suggestedColors.includes("#d21e28"));
+            verify(sampler.suggestedColors.includes("#1e3cd2"));
+            compare(sampler.suggestedColors.length, 2);
             compare(sampler.sampleAt(25, 100), "#d21e28");
             compare(sampler.sampleAt(175, 100), "#1e3cd2");
             compare(sampler.sampleAt(25, 10), "");
@@ -186,7 +189,10 @@ Item {
             compare(sampler.zoom, 1);
             sampler.zoomAt(100, 100, 100);
             compare(sampler.zoom, 8);
+            const suggestions = sampler.suggestedColors.slice();
+            compare(suggestions.length, 2);
             sampler.source = "missing.png";
+            compare(sampler.suggestedColors.length, 0);
             compare(sampler.zoom, 1);
             tryVerify(() => !sampler.ready);
             compare(sampler.sampleAt(10, 100), "");
