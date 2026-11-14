@@ -527,7 +527,7 @@
   "system/apps/shell/modules/services/WifiAccessPoint.qml": "88d78b96b5ea5058a056e6c0f9cd1e47335cf198526e84dbd40214779bb89fa2",
   "system/apps/shell/modules/shell/EdgeWindowTab.qml": "ce100f4bf7640f9618ad560ae38d9e77b33d5e6dbab915b8e7f4ed55690f7f39",
   "system/apps/shell/modules/shell/ReservationWindows.qml": "3ec1f0dd3d527b89d0ec44e0a67cfa4a236c1ce8e84a1833e96f6ed59a13eeb8",
-  "system/apps/shell/modules/shell/UnifiedShellPanel.qml": "b484f1a36d51ec615a9cc82e0075832c9c6d0eb53533d1aa84e97fff736031ec",
+  "system/apps/shell/modules/shell/UnifiedShellPanel.qml": "382e107ea59bf9aaedf930dad55a29f3b848de68c0aab056043fe99824081dd2",
   "system/apps/shell/modules/shell/osd/LockKeyOSD.qml": "f53ebd4de94a92d073804705995fa1897e186ff804933d37ded06064f90b49a2",
   "system/apps/shell/modules/shell/osd/LockKeyToast.qml": "74083d5ba68063bb9dccc69f1dc30ef02ee803b0cb9fea1d771ec661f63ce65a",
   "system/apps/shell/modules/shell/osd/OSD.qml": "10e05fd2a2815a105845ab5fa27b9509aa8199e8c760ca7561af7062ba438197",
