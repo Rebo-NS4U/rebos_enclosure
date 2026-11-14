@@ -1681,16 +1681,52 @@ def specimen_palette(seed, leaves=None):
     return palette
 
 
+def is_dead_tree(seed):
+    """One in ten specimens keeps a bare, flowering silhouette for its lifetime."""
+    return random.Random(f"{seed}:dead-flowering").random() < 0.1
+
+
+@functools.lru_cache(maxsize=64)
+def dead_blossom_plan(seed):
+    """Space a handful of flowers along bare terminal wood, never in midair."""
+    wood = {(x, y) for x, y, born, glyph, ink in natural_specimen(seed, 30)
+            if ink in ("wood", "woodlight", "bark") and glyph.strip()
+            and 0 <= x < 57 and 0 <= y < 17 and born <= 31}
+    rng = random.Random(f"{seed}:dead-blossoms")
+    branches = [branch for branch in branch_graph(seed) if branch["level"] >= 1]
+    rng.shuffle(branches)
+    chosen = []
+    for branch in branches:
+        tx, ty = branch["end"]
+        nearby = sorted(wood, key=lambda p: ((p[0] - tx) ** 2 + (p[1] - ty) ** 2, p))
+        for x, y in nearby:
+            if math.hypot(x - tx, y - ty) > 2:
+                break
+            if all(max(abs(x - px), abs(y - py)) >= 3 for px, py, born, glyph in chosen):
+                chosen.append((x, y, rng.uniform(21, 26), rng.choice(BLOSSOM_FORMS)))
+                break
+        if len(chosen) == 9:
+            break
+    return tuple(chosen)
+
+
+def add_dead_blossoms(canvas, seed, days):
+    for x, y, born, flower in dead_blossom_plan(seed):
+        if days >= born and canvas[y][x][1] in ("wood", "woodlight", "bark"):
+            canvas[y][x] = ("✦" if days < born + 1 else flower, "blossom")
+
+
 def specimen_canvas(days, seed, style="informal", pot_seed=None):
     width, height = 57, 24
     canvas = [[(" ", "") for _ in range(width)] for _ in range(height)]
     # Growth starts with a rooted sapling; cells remain as new growth arrives.
+    dead = style == "informal" and is_dead_tree(seed)
     plan = specimen(seed, days, style)
-    if style == "informal":
+    if style == "informal" and not dead:
         plan += juvenile_foliage(days, seed)
     # Leaves cover the upper wood while the exposed lower stem keeps its contour.
     wood = [cell for cell in plan if not cell[4].startswith("leaf")]
-    leaves = [cell for cell in plan if cell[4].startswith("leaf")]
+    leaves = [] if dead else [cell for cell in plan if cell[4].startswith("leaf")]
     for x, y, born, glyph, ink in wood + stem(days, seed, style) + leaves:
         if born <= days + 1 and 0 <= x < width and 0 <= y < 19:
             canvas[y][x] = (glyph, ink)
@@ -1699,7 +1735,8 @@ def specimen_canvas(days, seed, style="informal", pot_seed=None):
         space_bark_shading(canvas, seed)
         add_trunk_scar(canvas, seed, days)
         add_knurling(canvas, seed, days)
-    add_blossoms(canvas, seed, days, style)
+    if not dead:
+        add_blossoms(canvas, seed, days, style)
     rows = pot_rows(seed if pot_seed is None else pot_seed)
     has_details = any(char in POT_ACCENT_MARKS for row in rows[1:3] for char in row.strip()[1:-1])
     for y, row in enumerate(rows, 19):
@@ -1718,6 +1755,8 @@ def specimen_canvas(days, seed, style="informal", pot_seed=None):
     if style == "informal":
         outline_exposed_wood(canvas)
         add_trunk_hollow(canvas, seed, days)
+        if dead:
+            add_dead_blossoms(canvas, seed, days)
     return canvas
 
 
