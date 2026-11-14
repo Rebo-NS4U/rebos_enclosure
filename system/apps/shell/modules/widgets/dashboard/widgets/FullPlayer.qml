@@ -190,6 +190,12 @@ StyledRect {
         width: parent.width - 32
         spacing: Styling.spacing(8)
 
+        ThemeButton {
+            Layout.alignment: Qt.AlignHCenter
+            text: "Open music library"
+            onClicked: GlobalStates.openMusic()
+        }
+
         // Disc Area (SeekBar + Cover Art)
 
         Item {

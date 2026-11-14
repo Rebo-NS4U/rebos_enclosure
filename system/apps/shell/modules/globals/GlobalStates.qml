@@ -11,6 +11,11 @@ Singleton {
 
     property var wallpaperManager: null
     property string avatarCacheBuster: ""
+    property bool musicWindowVisible: false
+
+    function openMusic() {
+        Quickshell.execDetached(["bash", Qt.resolvedUrl("../../scripts/open_music.sh").toString().replace("file://", "")]);
+    }
 
     function pickUserAvatar() {
         filePickerProcess.running = true;

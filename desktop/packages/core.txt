@@ -55,6 +55,7 @@ imagemagick
 python
 python-pillow
 python-gobject
+python-dbus
 gtk4
 jq
 curl

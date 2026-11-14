@@ -123,6 +123,11 @@ Item {
 
             Item { Layout.fillWidth: true }
 
+            ThemeButton {
+                text: "Music library"
+                onClicked: GlobalStates.openMusic()
+            }
+
             // Single Icon Player Switcher (placed on the right before the close button)
             StyledRect {
                 id: switchPlayerBtn

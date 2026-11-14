@@ -301,3 +301,33 @@ Chapter selection shows durable completion percentages and progress bars. Comple
 MOBI import uses Calibre’s `ebook-convert` locally to preserve book metadata and chapter navigation through the EPUB importer. Install `calibre` (included in the core package selection). DRM-protected books are unsupported. Conversion uses temporary files, cleaned up after import, and has a two-minute timeout.
 
 The typer adapts to each output’s logical resolution (Qt handles DPI scaling). Compact and fullscreen panel widths scale within screen bounds; compact row counts shrink on short displays, fullscreen passage text grows up to 1.5×, and narrow-window actions wrap. Pinned reader defaults and minimum sizes are capped to the output. Resizing reflows the passage without navigating or changing its bookmark.
+
+## Music library
+
+Open **Enclosure Music** from the application launcher, or use **Music library**
+inside the media center. `bash ~/.config/quickshell/scripts/open_music.sh` opens
+or raises the same window without interrupting its queue. Music runs in its own
+Quickshell instance, so it does not require a panel restart and keeps playing
+when the window is hidden. It uses the shared shell theme, including palette,
+font, density, corner radius and surface style.
+
+The library initially reads the XDG Music directory. **Add folder** includes
+other music directories without copying or modifying audio files. Albums,
+artists, search, favorites, saved queue playlists, shuffle, repeat, seeking,
+volume and embedded or adjacent `.lrc` lyrics are supported. Use **Now playing**
+for the queue and lyrics on narrow windows. Scan again after changing files.
+Metadata and artwork use the existing FFmpeg dependency. `python-dbus` and
+`python-gobject` expose local playback through MPRIS to the shell and media keys.
+No player is started until the user opens Music; playback starts only on request.
+
+Library folders, favorites and playlists are private user state under
+`$XDG_STATE_HOME/enclosure/music` (default `~/.local/state/enclosure/music`).
+The metadata/artwork cache is under `$XDG_CACHE_HOME/enclosure/music`.
+The downloaded reference's online search/download service and tag editor are
+not part of this local-library adaptation; audio files are never rewritten.
+
+Maintainer checks: `python3 -m unittest discover -s desktop/tests -p test_music_library.py`
+and `python3 desktop/tests/check_music_window.py` from the repository root. The
+second check uses a private software-rendered Wayland session and silent audio
+fixtures; it exercises playback, seeking, queue navigation, lyrics and saved
+collections without using the active desktop or library.
