@@ -334,5 +334,7 @@ collections without using the active desktop or library.
 
 Screen text extraction enlarges selected text, normalizes light/dark backgrounds,
 and adds padding before recognition. Tesseract uses block segmentation with word
-dictionaries disabled to better retain numbers, codes and punctuation. English
+dictionaries disabled to better retain numbers, codes and punctuation. Prose gets
+a second pass with English word dictionaries and automatic multiline layout
+analysis; the initial result is retained if that pass drops substantial content. English
 OCR can still confuse similar glyphs and does not parse mathematical notation.

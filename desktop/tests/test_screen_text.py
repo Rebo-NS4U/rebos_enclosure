@@ -49,6 +49,47 @@ class ScreenTextTest(unittest.TestCase):
                         region = dict(x=0, y=0, width=450, height=28, viewWidth=450, viewHeight=28)
                         self.assertEqual(ocr.recognize(source, region)['text'], text)
 
+    def test_regular_text_with_real_tesseract(self):
+        font_path = Path('/usr/share/fonts/noto/NotoSans-Regular.ttf')
+        if not shutil.which('tesseract') or not font_path.exists():
+            self.skipTest('Requires Tesseract English data and Noto Sans')
+        font = ImageFont.truetype(str(font_path), 16)
+        lines = ['Reading ordinary text should be easy.',
+                 'This paragraph stays together.',
+                 'Small letters remain readable.']
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / 'screen.png'
+            for background, foreground in [('white', 'black'), ('#202020', '#dddddd')]:
+                for sample in [lines[:1], lines]:
+                    with self.subTest(background=background, lines=len(sample)):
+                        image = Image.new('RGB', (450, 110), background)
+                        draw = ImageDraw.Draw(image)
+                        for index, line in enumerate(sample):
+                            draw.text((10, 10 + index * 26), line, font=font, fill=foreground)
+                        image.save(source)
+                        region = dict(x=0, y=0, width=450, height=110,
+                                      viewWidth=450, viewHeight=110)
+                        result = ocr.recognize(source, region)['text']
+                        self.assertEqual(result, '\n'.join(sample))
+
+    def test_prose_layout_fallback_preserves_content(self):
+        initial = 'Reading ordinary text should be easy.\nKeep all these words.'
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / 'screen.png'
+            Image.new('RGB', (100, 100), 'white').save(source)
+            for alternative, expected in [('', initial), ('Reading', initial),
+                                           (initial.upper(), initial.upper())]:
+                with self.subTest(alternative=alternative):
+                    results = [subprocess.CompletedProcess([], 0, text)
+                               for text in [initial, alternative]]
+                    with patch.object(ocr.subprocess, 'run', side_effect=results) as run:
+                        region = dict(x=0, y=0, width=100, height=100,
+                                      viewWidth=100, viewHeight=100)
+                        self.assertEqual(ocr.recognize(source, region)['text'], expected)
+                        self.assertIn('load_system_dawg=0', run.call_args_list[0].args[0])
+                        self.assertNotIn('load_system_dawg=0', run.call_args_list[1].args[0])
+                        self.assertEqual(run.call_args_list[1].args[0][-2:], ['--psm', '3'])
+
     def test_preprocessing_normalizes_polarity_and_bounds_size(self):
         for background in ['white', 'black']:
             prepared = ocr.prepare_text(Image.new('RGB', (20, 10), background))

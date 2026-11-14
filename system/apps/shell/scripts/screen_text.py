@@ -52,13 +52,27 @@ def recognize(path, region):
         with tempfile.TemporaryDirectory(prefix='enclosure-ocr-region-') as directory:
             crop = Path(directory) / 'region.png'
             prepare_text(image.crop(box)).save(crop)
-            result = subprocess.run(['tesseract', str(crop), 'stdout', '-l', 'eng',
-                                     '--psm', '6', '--dpi', '300',
-                                     '-c', 'load_system_dawg=0',
-                                     '-c', 'load_freq_dawg=0',
-                                     '-c', 'preserve_interword_spaces=1'],
+            command = ['tesseract', str(crop), 'stdout', '-l', 'eng', '--dpi', '300']
+            result = subprocess.run(command + ['--psm', '6',
+                                    '-c', 'load_system_dawg=0',
+                                    '-c', 'load_freq_dawg=0',
+                                    '-c', 'preserve_interword_spaces=1'],
                                     check=True, capture_output=True, text=True)
-    text = result.stdout.strip()
+            text = result.stdout.strip()
+            # Use English word dictionaries for prose, leaving codes and numeric
+            # snippets on the dictionary-free pass. Automatic layout preserves
+            # paragraph/column reading order instead of merging adjacent columns.
+            words = text.split()
+            prose_words = sum(word.strip('.,!?;:\"\'()-').isalpha() for word in words)
+            if len(words) >= 4 and prose_words / len(words) >= 0.7:
+                mode = '3' if len(text.splitlines()) > 1 else '6'
+                regular = subprocess.run(command + ['--psm', mode],
+                                         check=True, capture_output=True, text=True).stdout.strip()
+                # Layout analysis can discard small UI labels. Keep the first
+                # pass when automatic segmentation loses substantial content.
+                count = lambda value: sum(character.isalnum() for character in value)
+                if regular and count(regular) >= count(text) * 0.8:
+                    text = regular
     return {'text': text, 'error': '' if text else 'No text found. Try larger text or a tighter selection.'}
 
 
