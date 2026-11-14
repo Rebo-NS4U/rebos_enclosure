@@ -361,10 +361,23 @@ class BonsaiGrowTests(unittest.TestCase):
                     hsv[name] = colorsys.rgb_to_hsv(*(value / 255 for value in rgb))
             leaves = [color for name, color in hsv.items() if name.startswith('leaf')]
             for name, (_, saturation, brightness) in hsv.items():
-                if not name.startswith('leaf'):
+                if not name.startswith('leaf') and name not in ('pot_inlay', 'pot_shadow'):
                     self.assertLess(brightness, min(color[2] for color in leaves))
                     if accent not in ('#eeeeee',):
                         self.assertLess(saturation, min(color[1] for color in leaves))
+
+    def test_dark_wood_and_vibrant_pot_patterns(self):
+        import colorsys
+        import re
+        for accent in ('#70bb50', '#6080dc', '#db6095', '#eeeeee'):
+            for seed in range(30):
+                palette = bonsai.specimen_palette(seed, [accent] * 3)
+                self.assertEqual(palette['pot_inlay'], palette['leaf4'])
+                self.assertEqual(palette['pot_shadow'], palette['leaf0'])
+                for name in ('bark', 'wood', 'woodlight', 'scar'):
+                    rgb = map(int, re.findall(r'\d+', palette[name])[-3:])
+                    value = colorsys.rgb_to_hsv(*(channel / 255 for channel in rgb))[2]
+                    self.assertLessEqual(value, 0.48)
 
     def test_terminal_colors_follow_theme_without_rewriting_state(self):
         import json

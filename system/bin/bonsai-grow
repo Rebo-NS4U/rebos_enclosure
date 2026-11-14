@@ -1397,7 +1397,7 @@ def wood_palette(seed, leaves=None):
     for name, rgb in colors.items():
         h, sat, value = colorsys.rgb_to_hsv(*(channel / 255 for channel in rgb))
         colors[name] = tuple(round(channel * 255) for channel in
-                             colorsys.hsv_to_rgb(h, sat * 0.5 if saturation >= 0.08 else 0, value * 0.72))
+                             colorsys.hsv_to_rgb(h, sat * 0.5 if saturation >= 0.08 else 0, value * 0.48))
     colors["scar"] = tuple(round(value * 0.72) for value in colors["bark"])
     return {name: "\033[0;38;2;{};{};{}m".format(*rgb)
             for name, rgb in colors.items()}
@@ -1430,6 +1430,9 @@ def specimen_palette(seed, leaves=None):
             palette[f"shoot_{name}{i}"] = ink(hue + shift, chroma * 0.3, 0.55)
         for j, value in enumerate((0.78, 0.9, 0.98)):
             palette[f"leaf{i * 3 + j}"] = ink(hue + shift, chroma, value)
+    # The ceramic patterns repeat the crown's colors; the pot body stays quiet.
+    palette["pot_inlay"] = palette["leaf4"]
+    palette["pot_shadow"] = palette["leaf0"]
     return palette
 
 
