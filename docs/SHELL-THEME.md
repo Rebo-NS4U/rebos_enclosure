@@ -107,3 +107,9 @@ Mature major limbs use bends exceeding one terminal row, with stronger
 length-scaled inflections at their tips. Child forks attach to the curved
 parent path. The same skeleton is used during growth and in the final frame;
 curvature is not reduced as wood thickens.
+
+Growth playback uses a shared eased timeline at up to 60 frames per second,
+slowing as it reaches maturity. Temporary juvenile leaves shrink to small tips
+before shedding. Skipping foreground playback settles to maturity over a brief
+220 ms transition instead of replacing the drawing in one final write. Normal
+completion retains the already-rendered final frame.

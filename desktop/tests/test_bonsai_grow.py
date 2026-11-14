@@ -239,6 +239,20 @@ class BonsaiGrowTests(unittest.TestCase):
             designs.add(rows)
         self.assertGreaterEqual(len(designs), 16)
 
+    def test_animation_settles_without_a_last_frame_jump(self):
+        samples = [bonsai.animation_day(i / 120, 1) for i in range(121)]
+        self.assertEqual(samples[0], 0)
+        self.assertEqual(samples[-1], 30)
+        self.assertTrue(all(a <= b for a, b in zip(samples, samples[1:])))
+        self.assertLess(samples[-1] - samples[-2], .01)
+        for seed in range(16):
+            almost = bonsai.render(bonsai.animation_day(.999, 1), seed, False, 80,
+                                   fixed_height=True)
+            final = bonsai.render(30, seed, False, 80, fixed_height=True)
+            self.assertLessEqual(sum(a != b for a, b in zip(almost, final)), 2)
+        self.assertEqual(bonsai.animation_day(2, 1), 30)
+        self.assertEqual(bonsai.animation_day(-1, 1), 0)
+
     def test_animation_completes_and_key_skip_restores_terminal(self):
         import fcntl
         import pty
@@ -264,6 +278,7 @@ class BonsaiGrowTests(unittest.TestCase):
                         if select.select([master], [], [], .05)[0]:
                             output += os.read(master, 65536)
                         if skip and not sent and b'\033[26A' in output:
+                            frames_before_skip = output.count(b'\033[26A')
                             if skip == 'signal':
                                 import signal
                                 process.send_signal(signal.SIGTERM)
@@ -285,6 +300,7 @@ class BonsaiGrowTests(unittest.TestCase):
                     self.assertEqual(list(Path(directory).iterdir()), [])
                     if skip:
                         self.assertTrue(sent)
+                        self.assertGreater(output.count(b'\033[26A') - frames_before_skip, 2)
                 finally:
                     if process.poll() is None:
                         process.kill()

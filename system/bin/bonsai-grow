@@ -462,7 +462,9 @@ def juvenile_foliage(days, seed):
             if age < delay or days >= shed:
                 continue
             unfold = age - delay
-            glyph = "·" if unfold < 0.5 else "•" if unfold < 2.5 else "●"
+            remaining = shed - days
+            glyph = ("·" if unfold < 0.5 or remaining < 0.8
+                     else "•" if unfold < 2.5 or remaining < 1.8 else "●")
             tone = (cohort + (side > 0)) % 3
             shade = 2 if dy < 0 else 1
             leaves.append(
@@ -1571,6 +1573,13 @@ def render(
     return "\n".join(frame_rows(output, columns, accents, color)) + "\n"
 
 
+def animation_day(elapsed, duration):
+    """Ease into growth and settle gently without changing the final skeleton."""
+    progress = max(0.0, min(1.0, elapsed / duration))
+    # Smoothstep slows the last cell changes instead of hitting day 30 at speed.
+    return 30 * progress * progress * (3 - 2 * progress)
+
+
 def animate_growth(seed, accents, duration=2.0, style="informal"):
     """Play a bounded, skippable greeting and leave its final tree in scrollback."""
     import select
@@ -1604,6 +1613,7 @@ def animate_growth(seed, accents, duration=2.0, style="informal"):
 
     old_term = signal.signal(signal.SIGTERM, stop)
     reserved = False
+    day = 0.0
     try:
         tty.setcbreak(fd)
         sys.stdout.write("\n" * 26 + "\033[?25l")
@@ -1614,14 +1624,14 @@ def animate_growth(seed, accents, duration=2.0, style="informal"):
             if current_columns < 59 or current_rows < 28:
                 break
             elapsed = time.monotonic() - began
-            day = min(30, elapsed / duration * 30)
+            day = animation_day(elapsed, duration)
             sys.stdout.write(
                 "\033[?2026h\033[26A\r" + picture(day, True) + "\033[?2026l"
             )
             sys.stdout.flush()
             if day >= 30:
                 break
-            if select.select([fd], [], [], max(0, min(1 / 30, duration - elapsed)))[0]:
+            if select.select([fd], [], [], max(0, min(1 / 60, duration - elapsed)))[0]:
                 os.read(fd, 1)
                 break
     except KeyboardInterrupt:
@@ -1630,11 +1640,22 @@ def animate_growth(seed, accents, duration=2.0, style="informal"):
         try:
             current_columns, current_rows = shutil.get_terminal_size()
             if reserved and current_columns >= 59:
-                if current_rows >= 28:
-                    sys.stdout.write(
-                        "\033[?2026h\033[26A\r" + picture(30, True) + "\033[?2026l"
-                    )
-                else:
+                if current_rows >= 28 and day < 30:
+                    # A skipped animation settles from its current age rather
+                    # than replacing the entire drawing with day 30 in one write.
+                    start_day = day
+                    settled_at = time.monotonic()
+                    while True:
+                        progress = min(1.0, (time.monotonic() - settled_at) / 0.22)
+                        eased = progress * progress * (3 - 2 * progress)
+                        day = start_day + (30 - start_day) * eased
+                        sys.stdout.write(
+                            "\033[?2026h\033[26A\r" + picture(day, True) + "\033[?2026l")
+                        sys.stdout.flush()
+                        if progress >= 1:
+                            break
+                        time.sleep(1 / 60)
+                elif current_rows < 28:
                     sys.stdout.write("\n" + picture(30))
             sys.stdout.write("\033[0m\033[?25h\033[?2026l")
             sys.stdout.flush()
@@ -1652,7 +1673,7 @@ def animate_background(seed, accents, duration, style):
     pot_seed = random.SystemRandom().randrange(2**63)
     began = time.monotonic()
     while shutil.get_terminal_size() == size:
-        day = min(30, (time.monotonic() - began) / duration * 30)
+        day = animation_day(time.monotonic() - began, duration)
         picture = render(
             day,
             seed,
@@ -1668,7 +1689,7 @@ def animate_background(seed, accents, duration, style):
         os.write(sys.stdout.fileno(), frame.encode())
         if day >= 30:
             break
-        time.sleep(1 / 30)
+        time.sleep(1 / 60)
 
 
 def main():
