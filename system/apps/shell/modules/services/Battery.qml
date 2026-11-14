@@ -73,11 +73,25 @@ Singleton {
 
         const threshold = percentage <= 2 ? 2 : percentage <= 5 ? 5 : percentage <= 10 ? 10 : percentage <= 20 ? 20 : 0;
         if (threshold === 0 || (lastBatteryAlertThreshold !== 0 && threshold >= lastBatteryAlertThreshold)) {
+            updateBatteryAlertPercentage();
             return;
         }
 
         sendBatteryAlert(threshold, Math.round(percentage));
         lastBatteryAlertThreshold = threshold;
+    }
+
+    function updateBatteryAlertPercentage() {
+        const notification = Notifications.list.find(notif => notif && notif.replaceKey === "battery-low-alert");
+        // Update in place: keep the same popup, actions and dismissal state.
+        if (!notification)
+            return;
+        const summary = notification.summary.replace(/ · .*%$/, " · " + Math.round(percentage) + "%");
+        if (notification.summary === summary)
+            return;
+        notification.summary = summary;
+        Notifications.triggerListChange();
+        Notifications.saveNotifications();
     }
 
     function clearBatteryAlert() {

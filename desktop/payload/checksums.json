@@ -494,7 +494,7 @@
   "system/apps/shell/modules/services/AppSearch.qml": "c96a9362b0ca54388fb8571f0c34e59547c630677cf5799e7538e5814533f988",
   "system/apps/shell/modules/services/Audio.qml": "36d3ce7be9f702ca4d681ea7dd44df447ca9923941234608d2af901dadd7e4da",
   "system/apps/shell/modules/services/AudioFormat.qml": "f81e74fbdf902a02f69c7e9c51ded6e55fbd10296a52146114ba5d87ce2aeb6c",
-  "system/apps/shell/modules/services/Battery.qml": "c44519a5ae6495743a5ee384431fcc682d65f2008c2b7d041cbc4a4c47522585",
+  "system/apps/shell/modules/services/Battery.qml": "a623c573e6943cc5733e665a8a901a7407300303ac95e4e026eb9d428664bbeb",
   "system/apps/shell/modules/services/BluetoothDevice.qml": "b2c2351e38ca34278a239e6a4b1c6ca53d872d53b49f141fd901a49f426c14ee",
   "system/apps/shell/modules/services/BluetoothService.qml": "7b21f807a7b54601a13f813af77c4cfd9e9576a707708c03675abeeac5e58600",
   "system/apps/shell/modules/services/Brightness.qml": "716e2c36479221ca89090a8c194e16e5f3d639d0b213362124df6ad83fdc2b3f",
