@@ -1,6 +1,8 @@
 """Exercise music indexing, persistence and the QML/backend protocol with real audio."""
 import importlib.util
 import json
+import io
+import urllib.error
 import os
 from pathlib import Path
 import shutil
@@ -103,6 +105,43 @@ class MusicLibraryTests(unittest.TestCase):
         self.assertEqual(self.library.scan()['state']['playlists'][1]['paths'], [str(renamed)])
         renamed.unlink()
         self.assertEqual(self.library.scan()['state']['playlists'], [manual])
+
+    def test_automatic_lyrics_prefer_synced_and_cache_offline(self):
+        track = dict(title='Song', artist='Artist', album='Album', duration=120)
+        response = io.BytesIO(json.dumps(dict(syncedLyrics='[00:01]Hello', plainLyrics='Hello')).encode())
+        with patch.object(music.urllib.request, 'urlopen', return_value=response) as fetch:
+            self.assertEqual(self.library.lyrics(track)['text'], '[00:01]Hello')
+            self.assertEqual(self.library.lyrics(track)['text'], '[00:01]Hello')
+            self.assertEqual(fetch.call_count, 1)
+            self.assertIn('track_name=Song', fetch.call_args.args[0].full_url)
+            self.assertEqual(fetch.call_args.kwargs['timeout'], 8)
+
+    def test_lyrics_search_rejects_wrong_recording(self):
+        track = dict(title='Song', artist='Artist', duration=120)
+        records = [dict(trackName='Song', artistName='Other', duration=120, syncedLyrics='Wrong'),
+                   dict(trackName='Song', artistName='Artist', duration=200, syncedLyrics='Wrong'),
+                   dict(trackName='Song', artistName='Artist', duration=121, plainLyrics='Right')]
+        missing = urllib.error.HTTPError('https://lrclib.net', 404, 'Missing', {}, None)
+        with patch.object(music.urllib.request, 'urlopen', side_effect=[missing,
+                io.BytesIO(json.dumps(records).encode())]):
+            self.assertEqual(self.library.lyrics(track)['text'], 'Right')
+
+    def test_lyrics_embedded_priority_and_network_failure(self):
+        with patch.object(music.urllib.request, 'urlopen', side_effect=OSError('offline')) as fetch:
+            self.assertEqual(self.library.lyrics(dict(lyrics='Embedded'))['text'], 'Embedded')
+            fetch.assert_not_called()
+            result = self.library.lyrics(dict(title='Song', artist='Artist'))
+            self.assertEqual(result['text'], '')
+            self.assertIn('online', result['status'])
+            self.assertEqual(list(self.library.cache_dir.glob('lyrics-*.json')), [])
+
+    def test_embedded_ogg_lyrics_and_stream_metadata(self):
+        song = self.folder / 'embedded.ogg'
+        subprocess.run(['ffmpeg', '-v', 'error', '-i', str(self.song),
+                        '-metadata', 'lyrics=Embedded lyrics', str(song)], check=True)
+        track = self.library.inspect(song)
+        self.assertEqual(track['lyrics'], 'Embedded lyrics')
+        self.assertEqual(track['title'], 'Test song')
 
     def test_json_line_protocol(self):
         result = subprocess.run([sys.executable,str(SCRIPT)], input=json.dumps(dict(id=1,cmd='scan',args={}))+'\n',

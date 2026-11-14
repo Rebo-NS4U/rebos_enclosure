@@ -545,3 +545,5 @@ this optional setup.
 Enclosure Music defaults to Qt’s PulseAudio output through PipeWire’s compatibility server. This avoids a playback-start SIGKILL with Qt’s native PipeWire backend on affected builds. `QT_AUDIO_BACKEND` can explicitly override the launcher default. The music acceptance check uses the same default.
 
 Folders directly inside the Music directory appear as playlists after a library refresh. Each contains the indexed songs in that folder and its subfolders; empty folders are omitted. Folder playlists update with each scan and remain separate from manually saved playlists.
+
+Music reads embedded lyrics (including audio-stream tags) first, then automatically looks up missing lyrics on LRCLIB when a song is selected. Synced lyrics are preferred; plain lyrics are displayed when timing is unavailable. Successful lookups are cached locally for offline replay. No separate lyrics file is required; existing `.lrc` files are still supported. Lookup sends song title, artist, album and duration to LRCLIB, never audio or local paths.

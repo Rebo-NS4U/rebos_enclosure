@@ -25,6 +25,9 @@ Window {
     property bool started: false
     property bool busy: false
     property string notice: ""
+    property string lyricText: ""
+    property string lyricStatus: "Choose a song to see lyrics."
+    property int lyricRequest: 0
     property var tracks: []
     property var favorites: []
     property var playlists: []
@@ -72,7 +75,7 @@ Window {
     }
     readonly property string pageTitle: page === "Album" ? detail.split("\n")[0] : page === "Artist" ? detail : page === "Playlist" ? (playlists.find(p => p.id === detail)?.name || "Playlist") : page
     readonly property var lyricLines: {
-        const raw = current?.lyrics || "";
+        const raw = lyricText;
         let result = [];
         raw.split("\n").forEach(line => {
             const stamps = [];
@@ -125,9 +128,22 @@ Window {
     function select(index) {
         if (index < 0 || index >= queue.length) return;
         currentIndex = index;
+        findLyrics();
         player.source = queue[index].url;
         player.play();
         sync();
+    }
+    function findLyrics() {
+        const token = ++lyricRequest;
+        lyricText = current?.lyrics || "";
+        lyricStatus = current ? "Finding lyrics…" : "Choose a song to see lyrics.";
+        if (!current || lyricText) { if (lyricText) lyricStatus = ""; return; }
+        request("lyrics", {track: current}, data => {
+            if (token !== lyricRequest) return;
+            lyricText = data.text;
+            lyricStatus = data.status;
+            sync();
+        });
     }
     function next(automatic) {
         if (!queue.length) return;
@@ -141,7 +157,7 @@ Window {
     function seek(value) { player.position = Math.max(0, Math.min(player.duration, value)); sync(true); }
     function sync(seeked) {
         if (!backend.running) return;
-        request("mpris", { track: current, status: !current || player.playbackState === MediaPlayer.StoppedState ? "Stopped" : playing ? "Playing" : "Paused",
+        request("mpris", { track: current ? Object.assign({}, current, {lyrics: lyricText}) : null, status: !current || player.playbackState === MediaPlayer.StoppedState ? "Stopped" : playing ? "Playing" : "Paused",
             position: Math.round(player.position*1000), length: Math.round(player.duration*1000),
             volume: volume, shuffle: shuffle, loop: repeatMode, canNext: queue.length > 1,
             canPrevious: currentIndex > 0, seeked: !!seeked });
@@ -351,7 +367,7 @@ Window {
                                 font.bold: index === root.lyricIndex
                             }
                             ScrollBar.vertical: ScrollBar {}
-                            StyledText { anchors.fill: parent; visible: root.lyricLines.length === 0; text: "No lyrics for this track.\nAdd an .lrc file beside the audio file, then refresh."; wrapMode: Text.WordWrap; color: Colors.overSurfaceVariant }
+                            StyledText { anchors.fill: parent; visible: root.lyricLines.length === 0; text: root.lyricStatus; wrapMode: Text.WordWrap; color: Colors.overSurfaceVariant }
                         }
                     }
                 }

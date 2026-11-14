@@ -9,6 +9,10 @@ import shutil
 import subprocess
 import sys
 import threading
+import re
+import urllib.error
+import urllib.parse
+import urllib.request
 
 AUDIO = {'.mp3', '.flac', '.ogg', '.opus', '.m4a', '.aac', '.wav', '.wma', '.aiff'}
 LOCK = threading.Lock()
@@ -60,7 +64,7 @@ class Library:
         # Lyrics and folder artwork may change while the audio file stays untouched.
         related = [path.with_suffix('.lrc')] + [path.parent / n for n in
                    ('cover.jpg', 'cover.png', 'folder.jpg', 'folder.png', 'front.jpg')]
-        signature = [stat.st_mtime_ns, stat.st_size] + [
+        signature = [2, stat.st_mtime_ns, stat.st_size] + [
             [str(p), p.stat().st_mtime_ns, p.stat().st_size] for p in related if p.is_file()]
         old = self.cache.get(key, {})
         if old.get('signature') == signature:
@@ -71,7 +75,11 @@ class Library:
             raise ValueError('Unreadable audio: ' + str(path))
         data = json.loads(result.stdout)
         fmt = data.get('format', {})
-        tags = {k.lower(): v for k, v in fmt.get('tags', {}).items()}
+        tags = {}
+        for stream in data.get('streams', []):
+            if stream.get('codec_type') == 'audio':
+                tags.update({k.lower(): v for k, v in stream.get('tags', {}).items()})
+        tags.update({k.lower(): v for k, v in fmt.get('tags', {}).items()})
         art = ''
         for name in ('cover.jpg', 'cover.png', 'folder.jpg', 'folder.png', 'front.jpg'):
             cover = path.parent / name
@@ -85,7 +93,7 @@ class Library:
                                capture_output=True, timeout=20)
             if cover.exists():
                 art = cover.as_uri()
-        lyrics = tags.get('lyrics', '')
+        lyrics = next((v for k, v in tags.items() if k == 'lyrics' or k.startswith('lyrics-') or k.startswith('unsyncedlyrics')), '')
         sidecar = path.with_suffix('.lrc')
         if sidecar.exists():
             lyrics = sidecar.read_text(errors='replace')
@@ -125,7 +133,63 @@ class Library:
         state = dict(self.state, playlists=self.state['playlists'] + folder_playlists)
         return dict(tracks=tracks, state=state, errors=errors)
 
+    def lyrics(self, track):
+        if track.get('lyrics', '').strip():
+            return dict(text=track['lyrics'], status='')
+        title, artist = track.get('title', ''), track.get('artist', '')
+        if not title or not artist or artist == 'Unknown artist':
+            return dict(text='', status='Title and artist are needed to find lyrics.')
+        album, duration = track.get('album', ''), float(track.get('duration') or 0)
+        key = hashlib.sha256(json.dumps([title, artist, album, duration]).encode()).hexdigest()
+        cache = self.cache_dir / ('lyrics-' + key + '.json')
+        cached = self.read(cache, None)
+        if cached:
+            return cached
+
+        def get(endpoint, params):
+            request = urllib.request.Request('https://lrclib.net/api/' + endpoint + '?' +
+                urllib.parse.urlencode(params), headers={
+                    'User-Agent': 'Enclosure Music v1 (https://github.com/Rebo-NS4U/rebos_enclosure)'})
+            with urllib.request.urlopen(request, timeout=8) as response:
+                return json.load(response)
+
+        def normal(value):
+            return re.sub(r"[\W_]+", '', value.casefold())
+
+        def primary(value):
+            return re.split(r',|;| & | feat\.? | ft\.? ', value, flags=re.I)[0].strip()
+
+        try:
+            params = dict(track_name=title, artist_name=artist)
+            if album and album != 'Unknown album':
+                params['album_name'] = album
+            if 1 <= duration <= 3600:
+                params['duration'] = round(duration)
+            try:
+                data = get('get', params)
+            except urllib.error.HTTPError as error:
+                if error.code not in (400, 404):
+                    raise
+                data = None
+            if not data or not (data.get('syncedLyrics') or data.get('plainLyrics') or data.get('instrumental')):
+                records = get('search', dict(track_name=title, artist_name=primary(artist)))
+                matches = [r for r in records if normal(r.get('trackName', '')) == normal(title)
+                    and normal(primary(r.get('artistName', ''))) == normal(primary(artist))
+                    and (duration <= 0 or abs(float(r.get('duration') or 0) - duration) <= 5)]
+                data = max(matches, key=lambda r: (bool(r.get('syncedLyrics')),
+                    -abs(float(r.get('duration') or 0) - duration)), default=None)
+            text = (data.get('syncedLyrics') or data.get('plainLyrics') or '') if data else ''
+            result = dict(text=text, status='Instrumental — no lyrics.' if data and data.get('instrumental')
+                          else '' if text else 'No lyrics found for this song.')
+            if text or (data and data.get('instrumental')):
+                self.write(cache, result)
+            return result
+        except (OSError, ValueError, TypeError, KeyError):
+            return dict(text='', status='Lyrics unavailable. Try this song again when online.')
+
     def dispatch(self, cmd, args):
+        if cmd == 'lyrics':
+            return self.lyrics(args.get('track') or {})
         if cmd == 'scan':
             return self.scan()
         if cmd == 'save':
@@ -251,6 +315,8 @@ def main():
     # Disk work and file dialogs must not block playback updates or media keys.
     worker = concurrent.futures.ThreadPoolExecutor(max_workers=1)
 
+    lyric_worker = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+
     def handle(request):
         try:
             data = library.dispatch(request['cmd'], request.get('args', {}))
@@ -264,10 +330,11 @@ def main():
             if request['cmd'] == 'mpris':
                 mpris(request['args'])
             else:
-                worker.submit(handle, request)
+                (lyric_worker if request['cmd'] == 'lyrics' else worker).submit(handle, request)
         except (ValueError, KeyError) as error:
             print(str(error), file=sys.stderr)
     worker.shutdown(wait=False, cancel_futures=True)
+    lyric_worker.shutdown(wait=False, cancel_futures=True)
 
 
 if __name__ == '__main__':
