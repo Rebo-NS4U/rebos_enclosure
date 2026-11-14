@@ -342,7 +342,10 @@ class BonsaiGrowTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'rebos_shell/kitty.conf'
             path.parent.mkdir()
-            path.write_text('color2 #6080dc\ncolor6 #6080dc\ncolor4 #6080dc\n')
+            path.write_text('color2 #40dd30\ncolor6 #ffffff\ncolor4 #6080dc\n')
+            import json
+            (path.parent / 'effective-palette.json').write_text(json.dumps(
+                dict.fromkeys(('primary', 'secondary', 'tertiary'), '#6080dc')))
             with patch.dict(os.environ, {'XDG_CACHE_HOME': directory}):
                 self.assertEqual(bonsai.terminal_leaf_palette(), ['#6080dc'] * 3)
                 self.assertEqual(bonsai.wood_palette(42),
@@ -365,7 +368,7 @@ class BonsaiGrowTests(unittest.TestCase):
                         self.assertLess(min(hue, 1 - hue), 0.03)
                     self.assertGreater(saturation, 0.2)
                     self.assertLessEqual(value, 0.48)
-        mixed = ['#bb9999', '#ee2222', '#408040']
+        mixed = ['#ee2222', '#bb9999', '#408040']
         self.assertEqual(bonsai.wood_palette(42, mixed),
                          bonsai.wood_palette(42, ['#ee2222'] * 3))
 
@@ -412,6 +415,25 @@ class BonsaiGrowTests(unittest.TestCase):
             self.assertTrue(any(bonsai.specimen_palette(seed)[name] in image
                                 for name in ('wood_grain', 'bark_grain')))
             self.assertEqual(image, bonsai.render(30, seed))
+
+    def test_wallpaper_primary_wins_over_semantic_green_and_other_accents(self):
+        import json
+        import re
+        import colorsys
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as directory:
+            cache = Path(directory) / 'rebos_shell'
+            cache.mkdir()
+            (cache / 'effective-palette.json').write_text(json.dumps({
+                'primary': '#e5bcc4', 'secondary': '#d6c1c4', 'tertiary': '#e5bfa7'}))
+            (cache / 'kitty.conf').write_text('color2 #f0ffcc\ncolor6 #ffffff\ncolor4 #e5bcc4\n')
+            with patch.dict(os.environ, {'XDG_CACHE_HOME': directory}):
+                self.assertEqual(bonsai.terminal_leaf_palette()[0], '#e5bcc4')
+                palette = bonsai.specimen_palette(42)
+                rgb = map(int, re.findall(r'\d+', palette['leaf4'])[-3:])
+                hue, _, _ = colorsys.rgb_to_hsv(*(channel / 255 for channel in rgb))
+                self.assertLess(min(hue, 1 - hue), 0.05)
+                self.assertEqual(palette['pot_inlay'], palette['leaf4'])
 
     def test_terminal_colors_follow_theme_without_rewriting_state(self):
         import json
