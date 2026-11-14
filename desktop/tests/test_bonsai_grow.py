@@ -514,46 +514,46 @@ class BonsaiGrowTests(unittest.TestCase):
             colored = bonsai.render(day, 42, True, 80)
             plain = bonsai.render(day, 42, False, 80)
             self.assertEqual(re.sub(r'\x1b\[[0-9;]*m', '', colored), plain)
-            self.assertIn(palette['pot_rim'], colored)
-            self.assertIn(palette['pot_foot'], colored)
-            self.assertIn(palette['pot_pattern'], colored)
+            self.assertIn(palette['ceramic_rim_11'], colored)
+            self.assertIn(palette['ceramic_foot_11'], colored)
+            self.assertIn(palette['ceramic_inlay_11'], colored)
 
-    def test_pot_inlay_uses_both_exact_accents_and_keeps_dark_ceramics(self):
+    def test_ceramic_glaze_blends_both_accents_smoothly(self):
         import re
-        from unittest.mock import patch
-        accents = ['#e65773', '#57c6e6', '#e6bb57']
-        palette = bonsai.specimen_palette(42, accents)
-        for role, expected in zip(('pot_inlay', 'pot_pattern'), accents):
-            rgb = tuple(map(int, re.findall(r'\d+', palette[role])[-3:]))
-            self.assertEqual(rgb, tuple(int(expected[i:i+2], 16) for i in (1, 3, 5)))
-        for role in ('pot', 'pot_shadow', 'pot_rim', 'pot_glaze', 'pot_edge', 'pot_foot'):
-            rgb = tuple(map(int, re.findall(r'\d+', palette[role])[-3:]))
-            self.assertLessEqual(max(rgb), 143)
-        for seed in range(80):
-            canvas = bonsai.specimen_canvas(30, seed)
-            for y in (20, 21):
-                inks = {ink for glyph, ink in canvas[y] if glyph.strip()}
-                self.assertIn('pot_inlay', inks, seed)
-                self.assertIn('pot_pattern', inks, seed)
-                for x, (glyph, ink) in enumerate(canvas[y]):
-                    if glyph == '─':
-                        self.assertEqual(ink, 'pot')
-            with patch.object(bonsai, 'terminal_leaf_palette', return_value=accents):
-                colored = bonsai.render(30, seed, True, fixed_height=True).splitlines()
-            for row in colored[21:23]:
-                self.assertIn(palette['pot_inlay'], row)
-                self.assertIn(palette['pot_pattern'], row)
+        def rgb(ink):
+            return tuple(map(int, re.findall(r'\d+', ink)[-3:]))
+        accents = ('#e65773', '#57c6e6', '#e6bb57')
+        palette = bonsai.ceramic_palette(accents)
+        for material in ('rim', 'body', 'inlay', 'foot'):
+            colors = [rgb(palette[f'ceramic_{material}_{i}']) for i in range(23)]
+            self.assertEqual(len(set(colors)), 23)
+            self.assertGreater(colors[0][0], colors[0][2])
+            self.assertGreater(colors[-1][2], colors[-1][0])
+            self.assertTrue(all(max(abs(a-b) for a,b in zip(left,right)) <= 12
+                                for left,right in zip(colors,colors[1:])))
+        for column in range(23):
+            levels = [max(rgb(palette[f'ceramic_{material}_{column}']))
+                      for material in ('foot', 'body', 'rim', 'inlay')]
+            self.assertEqual(levels, sorted(levels))
+            self.assertLess(max(levels), 170)
+        self.assertNotEqual(palette, bonsai.ceramic_palette(tuple(reversed(accents))))
+        neutral = bonsai.ceramic_palette(('#eeeeee', '#111111', '#888888'))
+        self.assertTrue(all(len(set(rgb(ink))) == 1 for ink in neutral.values()))
 
-    def test_main_color_outweighs_accent_in_pot_and_leaves(self):
-        import re
-        # Count real pattern marks across all motifs, without including the
-        # ceramic body or dark separators in either color's share.
+    def test_pot_ornaments_have_space_and_hold_still_through_growth(self):
         for seed in range(80):
-            canvas = bonsai.specimen_canvas(30, seed)
-            inks = [ink for row in canvas[20:22] for glyph, ink in row if glyph.strip()]
-            main, accent = inks.count('pot_inlay'), inks.count('pot_pattern')
-            self.assertGreater(accent, 0)
-            self.assertGreaterEqual(main, accent * 2)
+            rows = bonsai.pot_rows(seed)
+            for row in rows[1:3]:
+                interior = row.strip()[1:-1]
+                self.assertTrue(interior.startswith(' '))
+                self.assertTrue(interior.endswith(' '))
+                self.assertGreaterEqual(interior.count(' '), 4)
+            early = bonsai.specimen_canvas(0, seed)
+            mature = bonsai.specimen_canvas(30, seed)
+            self.assertEqual(early[20:23], mature[20:23])
+
+    def test_main_color_outweighs_accent_in_leaves(self):
+        import re
         palette = bonsai.specimen_palette(42, ['#e64040', '#40e640', '#e64040'])
         # Opposing red/green inputs expose the blend's actual weighting:
         # main must remain stronger at every shade, including accent patches.
@@ -633,7 +633,7 @@ class BonsaiGrowTests(unittest.TestCase):
                     self.assertEqual(palette, [accent] * 3)
                     image = bonsai.render(30, seed, True, 80, palette)
                     self.assertIn(bonsai.wood_palette(seed)['wood'], image)
-                    pot_inlay = bonsai.specimen_palette(seed)['pot_inlay']
+                    pot_inlay = bonsai.specimen_palette(seed)['ceramic_inlay_11']
                     self.assertIn(pot_inlay, image)
                     self.assertNotIn('\033[48;', image)
                     self.assertIn(bonsai.wood_palette(seed)['bark'], image)

@@ -1201,51 +1201,74 @@ def cover_crown_wood(canvas):
         canvas[y][x] = (" ", "")
 
 
-# Ceramic inlay designs retained from the original framed greeting.
+# Airy, complete two-row inlays; never crop a motif at the tapered sides.
 POT_MOTIFS = (
-    ("╱─╲", "╲─╱"),
-    ("╭───╮", "╰╮ ╭╯"),
-    ("╲ ╱", " ╳ "),
-    ("╱◇╲", "╲─╱"),
+    ("╭─╮", "╰─╯"),
+    ("╭───╮", " ╰─╯ "),
+    ("╭╮ ", " ╰╯"),
+    (" ╭╮", "╰╯ "),
+    ("╱◇╲", " ╰╯"),
     ("╭◇╮", "╰─╯"),
-    ("╭┬╮", "╰┴╯"),
-    ("┌┬┐", "└┴┘"),
-    ("╱│╲", "╲│╱"),
-    ("╭─┬─╮", "╰─┴─╯"),
-    ("╱╲ ╱╲", "╲╱ ╲╱"),
-    ("╭╮ ╭╮", "╰╯ ╰╯"),
-    ("╱─┬─╲", "╲─┴─╱"),
-    ("┌─◇─┐", "└───┘"),
-    ("╲│╱", "╱│╲"),
-    ("╭◆╮", "╰─╯"),
-    ("┌◇┐", "└─┘"),
+    (" ╭╮ ", "╰╯╰╯"),
+    ("╭╮╭╮", " ╰╯ "),
+    ("╭─╮  ", "  ╰─╯"),
+    ("  ╭─╮", "╰─╯  "),
+    ("╱╲ ", " ╲╱"),
+    (" ╱╲", "╲╱ "),
+    ("╭─◇─╮", " ╰─╯ "),
+    (" ╭─╮ ", "╰─◇─╯"),
+    ("╭╮·╭╮", "╰╯ ╰╯"),
+    ("╭╮ ╭╮", "╰╯·╰╯"),
 )
 
 
 def pot_rows(seed):
-    """Keep the selected glaze pattern stable throughout a growth sequence."""
+    """Center three intact ornaments within a quiet, tapered ceramic bowl."""
     rng = random.Random(f"{seed}:pot")
     upper, lower = rng.choice(POT_MOTIFS)
-    gap = 1 if len(upper) == 5 else rng.choice((1, 2))
+    gap = rng.choice((1, 2)) if len(upper) < 5 else 1
     bands = []
-    for motif, half_width in ((upper, 10), (lower, 9)):
-        repeat = motif + "─" * gap
-        band = "".join(
-            repeat[(x + len(motif) // 2) % len(repeat)]
-            for x in range(-half_width, half_width + 1)
-        )
-        band = (
-            "─" * (len(band) - len(band.lstrip()))
-            + band.strip()
-            + "─" * (len(band) - len(band.rstrip()))
-        )
-        bands.append(band)
+    for motif, width in ((upper, 21), (lower, 19)):
+        band = (" " * gap).join([motif] * 3)
+        bands.append(band.center(width))
     return (
         "╭─────────────────────╮",
         "╲" + bands[0] + "╱",
         " ╲" + bands[1] + "╱ ",
         "  ╰─────────────────╯  ",
     )
+
+
+@functools.lru_cache(maxsize=32)
+def ceramic_palette(accents):
+    """A satin two-color glaze, mixed in linear light with a soft left highlight."""
+    endpoints = []
+    for color in accents[:2]:
+        rgb = [int(color[i:i + 2], 16) / 255 for i in (1, 3, 5)]
+        hue, saturation, _ = colorsys.rgb_to_hsv(*rgb)
+        # Keep dark and pale wallpaper colors readable without neon inlays.
+        endpoints.append(colorsys.hsv_to_rgb(hue, saturation * 0.72, 1))
+
+    def linear(v):
+        return v / 12.92 if v <= 0.04045 else ((v + 0.055) / 1.055) ** 2.4
+
+    def srgb(v):
+        return 12.92 * v if v <= 0.0031308 else 1.055 * v ** (1 / 2.4) - 0.055
+
+    palette = {}
+    for column in range(23):
+        t = column / 22
+        weight = t * t * (3 - 2 * t)
+        mixed = [srgb(linear(a) * (1 - weight) + linear(b) * weight)
+                 for a, b in zip(*endpoints)]
+        highlight = math.exp(-((t - 0.32) / 0.38) ** 2)
+        for material, value in (("rim", 0.42 + 0.12 * highlight),
+                                ("body", 0.30 + 0.10 * highlight),
+                                ("inlay", 0.55 + 0.10 * highlight),
+                                ("foot", 0.24 + 0.07 * highlight)):
+            rgb = [round(channel / max(mixed) * value * 255) for channel in mixed]
+            palette[f"ceramic_{material}_{column}"] = "\033[0;38;2;{};{};{}m".format(*rgb)
+    return palette
 
 
 def frame_rows(rows, columns, accents, color):
@@ -1546,11 +1569,12 @@ def specimen_palette(seed, leaves=None):
                          for a, b in zip(*endpoints)]
                 leaf_hue, leaf_chroma, _ = colorsys.rgb_to_hsv(*mixed)
             palette[f"leaf{i * 3 + j}"] = ink(leaf_hue, leaf_chroma, value)
-    # Use the actual main/accent pair on the inlay, rather than the crown's
-    # blended shades. Ceramic shadows and the body keep their dark tones.
+    # Retain the source accent inks for palette inspection; the rendered pot
+    # uses the continuous ceramic ramp below.
     for role, color in zip(("pot_inlay", "pot_pattern"), leaves[:2]):
         rgb = [int(color[i:i + 2], 16) for i in (1, 3, 5)]
         palette[role] = "\033[0;38;2;{};{};{}m".format(*rgb)
+    palette.update(ceramic_palette(tuple(leaves)))
     return palette
 
 
@@ -1576,15 +1600,11 @@ def specimen_canvas(days, seed, style="informal", pot_seed=None):
     for y, row in enumerate(pot_rows(seed if pot_seed is None else pot_seed), 19):
         left = len(row) - len(row.lstrip())
         right = len(row.rstrip()) - 1
-        marks = sum(char not in " ─" for char in row[left + 1:right])
-        accent_position = min(3, max(0, marks - 1))
-        decoration = 0
         for column, char in enumerate(row):
             x = column + 16
             ink = "pot"
-            if y in (20, 21) and left < column < right and char not in " ─":
-                ink = "pot_pattern" if decoration % 4 == accent_position else "pot_inlay"
-                decoration += 1
+            if y in (20, 21) and left < column < right and char != " ":
+                ink = "pot_inlay"
             canvas[y][x] = (char, ink)
     seat_tree_in_pot(canvas, days)
     if style == "informal":
@@ -1624,14 +1644,12 @@ def render(
                 grain = math.sin(x * 0.55 + y * 0.22 + grain_phase)
                 if x <= wood_center and grain > -0.3:
                     ink += "_grain"
-            if color and ink == "pot":
-                # Light only the ceramic body; both inlay colors stay intact.
-                if y == 19:
-                    ink = "pot_rim" if x <= 30 else "pot_glaze"
-                elif y == 22:
-                    ink = "pot_foot"
-                elif glyph in "╲╱":
-                    ink = "pot_glaze" if x < 27 else "pot_edge"
+            if color and ink.startswith("pot"):
+                # One continuous glaze crosses outlines and ornaments; height
+                # controls the material light, never an alternating accent count.
+                material = ("rim" if y == 19 else "foot" if y == 22 else
+                            "inlay" if ink == "pot_inlay" else "body")
+                ink = f"ceramic_{material}_{x - 16}"
             if color and ink != previous:
                 parts.append(palette[ink])
             parts.append(glyph)
