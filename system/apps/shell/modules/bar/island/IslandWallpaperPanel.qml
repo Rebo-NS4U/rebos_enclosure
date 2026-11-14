@@ -15,7 +15,7 @@ import qs.config
 Item {
     id: root
 
-    implicitWidth: 540
+    implicitWidth: Styling.spacing(540)
     implicitHeight: 520
 
     signal backRequested()
@@ -74,8 +74,8 @@ Item {
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 14
-        spacing: Styling.spacing(10)
+        anchors.margins: Styling.spacing(18)
+        spacing: Styling.spacing(14)
 
         // ═══════════════════════════════════════════════════════════════
         // UNIFIED HEADER: Back + Title + Screen Pill + Spacer + Search
@@ -86,29 +86,8 @@ Item {
             spacing: Styling.spacing(8)
 
             // Back button
-            StyledRect {
-                implicitWidth: 28
-                implicitHeight: 28
-                radius: Styling.radius(0)
-                variant: backMouse.containsMouse ? "focus" : "common"
-
-                Text {
-                    anchors.centerIn: parent
-                    renderType: Text.NativeRendering
-                    font.hintingPreference: Font.PreferFullHinting
-                    text: Icons.arrowLeft
-                    font.family: Icons.font
-                    font.pixelSize: Styling.fontSize(0)
-                    color: Colors.overBackground
-                }
-
-                MouseArea {
-                    id: backMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.backRequested()
-                }
+            IslandBackButton {
+                onClicked: root.backRequested()
             }
 
             // Title
@@ -117,7 +96,7 @@ Item {
                 font.hintingPreference: Font.PreferFullHinting
                 text: "Wallpapers"
                 font.family: Config.theme.font
-                font.pixelSize: Styling.fontSize(1)
+                font.pixelSize: Styling.fontSize(3)
                 font.bold: true
                 color: Colors.overBackground
             }
@@ -232,6 +211,8 @@ Item {
                 }
             }
         }
+
+        Separator { Layout.fillWidth: true; implicitHeight: 1 }
 
         // ═══════════════════════════════════════════════════════════════
         // OPTIONS TOOLBAR: Per-Screen Toggle + Mode Selector + Scheme Selector

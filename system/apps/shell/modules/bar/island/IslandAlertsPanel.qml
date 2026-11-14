@@ -14,8 +14,8 @@ import qs.config
 Item {
     id: root
 
-    implicitWidth: 480
-    implicitHeight: 460
+    implicitWidth: Styling.spacing(480)
+    implicitHeight: Styling.spacing(500)
 
     signal backRequested()
 
@@ -116,8 +116,8 @@ Item {
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 14
-        spacing: Styling.spacing(10)
+        anchors.margins: Styling.spacing(18)
+        spacing: Styling.spacing(14)
 
         // ═══════════════════════════════════════════════════════════════
         // UNIFIED HEADER: Back + Title + Count + Spacer + DND + Clear All
@@ -128,37 +128,8 @@ Item {
             spacing: Styling.spacing(8)
 
             // Back button
-            StyledRect {
-                implicitWidth: 28
-                implicitHeight: 28
-                radius: Styling.radius(0)
-                variant: backMouse.containsMouse ? "focus" : "common"
-                scale: backMouse.pressed ? 0.92 : 1.0
-
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: backMouse.pressed ? Motion.press : Motion.feedback
-                        easing.type: Motion.feedbackCurve
-                    }
-                }
-
-                Text {
-                    anchors.centerIn: parent
-                    renderType: Text.NativeRendering
-                    font.hintingPreference: Font.PreferFullHinting
-                    text: Icons.arrowLeft
-                    font.family: Icons.font
-                    font.pixelSize: Styling.fontSize(0)
-                    color: Colors.overBackground
-                }
-
-                MouseArea {
-                    id: backMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.backRequested()
-                }
+            IslandBackButton {
+                onClicked: root.backRequested()
             }
 
             // Title
@@ -167,7 +138,7 @@ Item {
                 font.hintingPreference: Font.PreferFullHinting
                 text: "Alerts"
                 font.family: Config.theme.font
-                font.pixelSize: Styling.fontSize(1)
+                font.pixelSize: Styling.fontSize(3)
                 font.bold: true
                 color: Colors.overBackground
             }
@@ -265,6 +236,8 @@ Item {
                 }
             }
         }
+
+        Separator { Layout.fillWidth: true; implicitHeight: 1 }
 
         // ═══════════════════════════════════════════════════════════════
         // NATIVE NOTIFICATIONS LIST (Single unified surface)

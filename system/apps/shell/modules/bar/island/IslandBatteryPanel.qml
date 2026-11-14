@@ -10,8 +10,8 @@ import qs.config
 Item {
     id: root
 
-    implicitWidth: 480
-    implicitHeight: mainColumn.implicitHeight + 28
+    implicitWidth: Styling.spacing(480)
+    implicitHeight: mainColumn.implicitHeight + Styling.spacing(36)
 
     signal backRequested()
 
@@ -26,7 +26,7 @@ Item {
     ColumnLayout {
         id: mainColumn
         anchors.fill: parent
-        anchors.margins: 14
+        anchors.margins: Styling.spacing(18)
         spacing: Styling.spacing(12)
 
         // Header: Back button + Title + Live Status Pill
@@ -34,29 +34,8 @@ Item {
             Layout.fillWidth: true
             spacing: Styling.spacing(8)
 
-            StyledRect {
-                implicitWidth: 28
-                implicitHeight: 28
-                radius: Styling.radius(0)
-                variant: backMouse.containsMouse ? "focus" : "common"
-
-                Text {
-                    anchors.centerIn: parent
-                    renderType: Text.NativeRendering
-                    font.hintingPreference: Font.PreferFullHinting
-                    text: Icons.arrowLeft
-                    font.family: Icons.font
-                    font.pixelSize: Styling.fontSize(0)
-                    color: Colors.overBackground
-                }
-
-                MouseArea {
-                    id: backMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.backRequested()
-                }
+            IslandBackButton {
+                onClicked: root.backRequested()
             }
 
             Text {
@@ -64,7 +43,7 @@ Item {
                 font.hintingPreference: Font.PreferFullHinting
                 text: "Battery & Power"
                 font.family: Config.theme.font
-                font.pixelSize: Styling.fontSize(1)
+                font.pixelSize: Styling.fontSize(3)
                 font.bold: true
                 color: Colors.overBackground
             }
@@ -97,6 +76,8 @@ Item {
                 }
             }
         }
+
+        Separator { Layout.fillWidth: true; implicitHeight: 1 }
 
         // 1. Primary Battery Overview Card
         StyledRect {
@@ -203,7 +184,7 @@ Item {
                 Text {
                     renderType: Text.NativeRendering
                     font.hintingPreference: Font.PreferFullHinting
-                    text: "POWER PROFILE"
+                    text: "Power profile"
                     font.family: Config.theme.monoFont
                     font.pixelSize: Styling.fontSize(-3)
                     font.bold: true

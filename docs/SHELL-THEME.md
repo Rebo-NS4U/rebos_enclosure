@@ -50,3 +50,7 @@ transparency remains in Kitty’s separate `background_opacity` setting.
 ## Shared sizing and terminal styling
 
 Frosted bar corners follow the saved radius while collapsed and expanded, including zero. Bar height and meter symbols scale with the Appearance font size. Fish uses neutral text, readable muted details and semantic status accents from the effective palette; it reloads colors at each prompt. New Fish sessions load the updated prompt layout. Kitty follows the monospace font and size (converted from pixels to points), alongside its exported theme colors and app opacity. Adjust these in Appearance → Fonts and corners; shell transparency and blur remain under Transparency and blur.
+
+## Bar menus
+
+Bar menus share a 36px back action with keyboard focus, an accessible name and a tooltip. Clearer titles, inset gutters and a fine header divider distinguish navigation from menu content. Menu widths and gutters follow the configured type size; Wi-Fi, Bluetooth and Alerts leave more room for scrollable lists. Sound and Microphone use 44px device rows with neutral labels, accented selection outlines and check marks rather than solid accent fills. All surfaces, focus outlines, fonts and corners continue to use the active theme settings.

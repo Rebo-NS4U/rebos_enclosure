@@ -12,8 +12,8 @@ import qs.config
 Item {
     id: root
 
-    implicitWidth: 420
-    implicitHeight: mainColumn.implicitHeight + 28
+    implicitWidth: Styling.spacing(440)
+    implicitHeight: mainColumn.implicitHeight + Styling.spacing(36)
 
     signal backRequested()
 
@@ -26,8 +26,8 @@ Item {
     ColumnLayout {
         id: mainColumn
         anchors.fill: parent
-        anchors.margins: 14
-        spacing: Styling.spacing(10)
+        anchors.margins: Styling.spacing(18)
+        spacing: Styling.spacing(14)
 
         // ═══════════════════════════════════════════════════════════════
         // HEADER: Back button + Title (with capitalized city) + Refresh
@@ -37,41 +37,8 @@ Item {
             Layout.fillWidth: true
             spacing: Styling.spacing(8)
 
-            StyledRect {
-                implicitWidth: 28
-                implicitHeight: 28
-                radius: Styling.radius(0)
-                variant: backMouse.containsMouse ? "focus" : "common"
-                scale: backMouse.pressed ? 0.92 : 1.0
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: backMouse.pressed ? Motion.press : Motion.feedback
-                        easing.type: Motion.feedbackCurve
-                    }
-                }
-
-                StyledText {
-                    anchors.centerIn: parent
-                    renderType: Text.NativeRendering
-                    font.hintingPreference: Font.PreferFullHinting
-                    text: Icons.arrowLeft
-                    font.family: Icons.font
-                    font.pixelSize: Styling.fontSize(0)
-                    color: Colors.overBackground
-                }
-
-                MouseArea {
-                    id: backMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.backRequested()
-                }
-
-                StyledToolTip {
-                    show: backMouse.containsMouse
-                    tooltipText: "Back"
-                }
+            IslandBackButton {
+                onClicked: root.backRequested()
             }
 
             RowLayout {
@@ -82,7 +49,7 @@ Item {
                     font.hintingPreference: Font.PreferFullHinting
                     text: "Weather"
                     font.family: Config.theme.font
-                    font.pixelSize: Styling.fontSize(1)
+                    font.pixelSize: Styling.fontSize(3)
                     font.bold: true
                     color: Colors.overBackground
                 }
@@ -153,6 +120,8 @@ Item {
                 }
             }
         }
+
+        Separator { Layout.fillWidth: true; implicitHeight: 1 }
 
         StyledText {
             Layout.fillWidth: true

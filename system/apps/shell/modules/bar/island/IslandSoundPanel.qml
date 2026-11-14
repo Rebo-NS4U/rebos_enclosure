@@ -13,8 +13,8 @@ import qs.config
 Item {
     id: root
 
-    implicitWidth: 400
-    implicitHeight: Math.min(480, mainColumn.implicitHeight + 28)
+    implicitWidth: Styling.spacing(440)
+    implicitHeight: Math.min(480, mainColumn.implicitHeight + Styling.spacing(36))
 
     signal backRequested()
 
@@ -41,50 +41,16 @@ Item {
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.margins: 14
-        spacing: Styling.spacing(10)
+        anchors.margins: Styling.spacing(18)
+        spacing: Styling.spacing(14)
 
         // Header: Back button + Title + Audio Format Badge
         RowLayout {
             Layout.fillWidth: true
             spacing: Styling.spacing(8)
 
-            StyledRect {
-                implicitWidth: 28
-                implicitHeight: 28
-                radius: Styling.radius(0)
-                variant: backMouse.containsMouse ? "focus" : "common"
-                scale: backMouse.pressed ? 0.92 : 1.0
-
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: backMouse.pressed ? Motion.press : Motion.feedback
-                        easing.type: Motion.feedbackCurve
-                    }
-                }
-
-                Text {
-                    anchors.centerIn: parent
-                    renderType: Text.NativeRendering
-                    font.hintingPreference: Font.PreferFullHinting
-                    text: Icons.arrowLeft
-                    font.family: Icons.font
-                    font.pixelSize: Styling.fontSize(0)
-                    color: Colors.overBackground
-                }
-
-                MouseArea {
-                    id: backMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.backRequested()
-                }
-
-                StyledToolTip {
-                    show: backMouse.containsMouse
-                    tooltipText: "Back to dashboard"
-                }
+            IslandBackButton {
+                onClicked: root.backRequested()
             }
 
             Text {
@@ -92,7 +58,7 @@ Item {
                 font.hintingPreference: Font.PreferFullHinting
                 text: "Sound"
                 font.family: Config.theme.font
-                font.pixelSize: Styling.fontSize(1)
+                font.pixelSize: Styling.fontSize(3)
                 font.bold: true
                 color: Colors.overBackground
             }
@@ -133,6 +99,8 @@ Item {
                 }
             }
         }
+
+        Separator { Layout.fillWidth: true; implicitHeight: 1 }
 
         // Master Volume Slider row
         RowLayout {
@@ -206,7 +174,7 @@ Item {
                     Text {
                         renderType: Text.NativeRendering
                         font.hintingPreference: Font.PreferFullHinting
-                        text: "OUTPUT DEVICE"
+                        text: "Output device"
                         font.family: Config.theme.monoFont
                         font.pixelSize: Styling.fontSize(-2)
                         font.bold: true
@@ -226,15 +194,16 @@ Item {
                             }
 
                             Layout.fillWidth: true
-                            implicitHeight: 38
+                            implicitHeight: Styling.spacing(44)
 
                             readonly property bool isCurrent: delegateRoot.modelData === Audio.sink || String(delegateRoot.modelData.id) === root.activeSinkId
 
                             StyledRect {
                                 anchors.fill: parent
                                 radius: Styling.radius(2)
-                                variant: delegateRoot.isCurrent ? "primary" : (devMouse.containsMouse ? "pane" : "internalbg")
-                                enableBorder: delegateRoot.isCurrent
+                                variant: delegateRoot.isCurrent || devMouse.containsMouse ? "focus" : "common"
+                                enableBorder: true
+                                border.color: delegateRoot.isCurrent ? Colors.primary : Qt.alpha(Colors.outline, 0.2)
 
                                 RowLayout {
                                     anchors.fill: parent
@@ -248,7 +217,7 @@ Item {
                                         text: Icons.speakerHigh
                                         font.family: Icons.font
                                         font.pixelSize: Styling.fontSize(2)
-                                        color: delegateRoot.isCurrent ? Colors.overPrimary : Colors.overBackground
+                                        color: Colors.overBackground
                                     }
 
                                     Text {
@@ -259,7 +228,7 @@ Item {
                                         font.family: Config.theme.font
                                         font.pixelSize: Styling.fontSize(0)
                                         font.bold: delegateRoot.isCurrent
-                                        color: delegateRoot.isCurrent ? Colors.overPrimary : Colors.overBackground
+                                        color: Colors.overBackground
                                         elide: Text.ElideRight
                                     }
 
@@ -270,7 +239,7 @@ Item {
                                         text: Icons.check
                                         font.family: Icons.font
                                         font.pixelSize: Styling.fontSize(2)
-                                        color: Colors.overPrimary
+                                        color: Colors.primary
                                     }
                                 }
 
@@ -306,7 +275,7 @@ Item {
                     Text {
                         renderType: Text.NativeRendering
                         font.hintingPreference: Font.PreferFullHinting
-                        text: "APPLICATIONS"
+                        text: "Applications"
                         font.family: Config.theme.monoFont
                         font.pixelSize: Styling.fontSize(-2)
                         font.bold: true
