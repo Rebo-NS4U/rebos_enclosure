@@ -87,7 +87,8 @@ is unavailable.
 
 The terminal bonsai reads the current effective accents on every render. When
 primary and secondary are distinct, its foliage uses both hues and the ceramic
-inlay repeats the secondary. Existing printed terminal output stays as drawn;
+inlay alternates the exact main and accent colors. The pot body, rim, foot and
+straight separators retain their dark ceramic tones. Existing printed terminal output stays as drawn;
 new greetings and animation frames use the current palette.
 
 Paired bonsai foliage blends both accents in linear RGB light across every

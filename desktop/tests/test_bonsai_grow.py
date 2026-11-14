@@ -422,7 +422,7 @@ class BonsaiGrowTests(unittest.TestCase):
                     hsv[name] = colorsys.rgb_to_hsv(*(value / 255 for value in rgb))
             leaves = [color for name, color in hsv.items() if name.startswith('leaf')]
             for name, (_, saturation, brightness) in hsv.items():
-                if not name.startswith('leaf') and name not in ('pot_inlay', 'pot_shadow'):
+                if not name.startswith('leaf') and name not in ('pot_inlay', 'pot_pattern'):
                     self.assertLess(brightness, min(color[2] for color in leaves))
                     if accent not in ('#eeeeee',):
                         self.assertLess(saturation, min(color[1] for color in leaves))
@@ -446,7 +446,8 @@ class BonsaiGrowTests(unittest.TestCase):
             saturation = colorsys.rgb_to_hsv(*rgb)[1]
             self.assertGreater(saturation, .2)
             self.assertLessEqual(saturation, .72 + .01)
-        self.assertEqual(palette['pot_inlay'], palette['leaf4'])
+        self.assertEqual(palette['pot_inlay'], '\033[0;38;2;{};{};{}m'.format(
+                    *(int(blue_green[0][i:i+2], 16) for i in (1, 3, 5))))
         # A later theme change must replace both colors, independent of tree seed.
         updated = bonsai.specimen_palette(42, ['#e65773', '#e6bb57', '#e65788'])
         self.assertNotEqual(palette['leaf4'], updated['leaf4'])
@@ -463,14 +464,41 @@ class BonsaiGrowTests(unittest.TestCase):
             self.assertIn(palette['pot_foot'], colored)
             self.assertIn(palette['pot_pattern'], colored)
 
+    def test_pot_inlay_uses_both_exact_accents_and_keeps_dark_ceramics(self):
+        import re
+        from unittest.mock import patch
+        accents = ['#e65773', '#57c6e6', '#e6bb57']
+        palette = bonsai.specimen_palette(42, accents)
+        for role, expected in zip(('pot_inlay', 'pot_pattern'), accents):
+            rgb = tuple(map(int, re.findall(r'\d+', palette[role])[-3:]))
+            self.assertEqual(rgb, tuple(int(expected[i:i+2], 16) for i in (1, 3, 5)))
+        for role in ('pot', 'pot_shadow', 'pot_rim', 'pot_glaze', 'pot_edge', 'pot_foot'):
+            rgb = tuple(map(int, re.findall(r'\d+', palette[role])[-3:]))
+            self.assertLessEqual(max(rgb), 143)
+        for seed in range(80):
+            canvas = bonsai.specimen_canvas(30, seed)
+            for y in (20, 21):
+                inks = {ink for glyph, ink in canvas[y] if glyph.strip()}
+                self.assertIn('pot_inlay', inks, seed)
+                self.assertIn('pot_pattern', inks, seed)
+                for x, (glyph, ink) in enumerate(canvas[y]):
+                    if glyph == '─':
+                        self.assertEqual(ink, 'pot')
+            with patch.object(bonsai, 'terminal_leaf_palette', return_value=accents):
+                colored = bonsai.render(30, seed, True, fixed_height=True).splitlines()
+            for row in colored[21:23]:
+                self.assertIn(palette['pot_inlay'], row)
+                self.assertIn(palette['pot_pattern'], row)
+
     def test_dark_wood_and_vibrant_pot_patterns(self):
         import colorsys
         import re
         for accent in ('#70bb50', '#6080dc', '#db6095', '#eeeeee'):
             for seed in range(30):
                 palette = bonsai.specimen_palette(seed, [accent] * 3)
-                self.assertEqual(palette['pot_inlay'], palette['leaf4'])
-                self.assertEqual(palette['pot_shadow'], palette['leaf0'])
+                self.assertEqual(palette['pot_inlay'], '\033[0;38;2;{};{};{}m'.format(
+                    *(int(accent[i:i+2], 16) for i in (1, 3, 5))))
+                self.assertNotEqual(palette['pot_shadow'], palette['leaf0'])
                 for name in ('bark', 'wood', 'woodlight', 'scar'):
                     rgb = map(int, re.findall(r'\d+', palette[name])[-3:])
                     value = colorsys.rgb_to_hsv(*(channel / 255 for channel in rgb))[2]
@@ -509,7 +537,8 @@ class BonsaiGrowTests(unittest.TestCase):
                 rgb = map(int, re.findall(r'\d+', palette['leaf4'])[-3:])
                 hue, _, _ = colorsys.rgb_to_hsv(*(channel / 255 for channel in rgb))
                 self.assertLess(min(hue, 1 - hue), 0.05)
-                self.assertEqual(palette['pot_inlay'], palette['leaf4'])
+                self.assertEqual(palette['pot_inlay'], '\033[0;38;2;{};{};{}m'.format(
+                    *(int('#e5bcc4'[i:i+2], 16) for i in (1, 3, 5))))
 
     def test_terminal_colors_follow_theme_without_rewriting_state(self):
         import json
