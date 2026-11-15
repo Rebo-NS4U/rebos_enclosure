@@ -139,7 +139,7 @@ ShellRoot {
        }
        if (name === "ThemePanel") {
         const advancedGrid = fixture.find(page, "theme-advanced-grid");
-        fixture.check(advancedGrid.columns === 2, "Advanced theme options use two columns");
+        fixture.check(advancedGrid.columns === 1, "Advanced theme options use a vertical accordion");
         let styleCards = [];
         function collectStyles(item) {
          if (item.objectName.startsWith("shell-style-")) styleCards.push(item);
@@ -388,6 +388,18 @@ ShellRoot {
        fixture.check(group.parent === sharedGrid && group.visible, "Shell dropdown joins Theme dropdowns: " + section);
       }
       fixture.check(fixture.find(settings, "shell-group-bar").expanded, "Shell search opens a reparented dropdown");
+      let barGroup = fixture.find(settings, "shell-group-bar");
+      let weatherGroup = fixture.find(settings, "shell-group-weather");
+      scroll.contentY = weatherGroup.mapToItem(scroll.contentItem, 0, 0).y;
+      tester.wait(30);
+      tester.mouseClick(fixture.find(weatherGroup, "shell-group-weather-expand")); tester.wait(60);
+      fixture.check(weatherGroup.expanded && !barGroup.expanded, "Opening a group closes its sibling");
+      let headerY = weatherGroup.mapToItem(scroll, 0, 0).y;
+      fixture.check(headerY >= -1 && headerY < scroll.height, "Opened accordion header stays in view");
+      settings.openSection(4, "motion"); tester.wait(100);
+      fixture.check(!weatherGroup.expanded && fixture.find(settings, "theme-group-motion").expanded, "Search enforces one open group across shell and appearance");
+      settings.openSection(6, "bar"); tester.wait(100);
+      fixture.check(barGroup.expanded && !fixture.find(settings, "theme-group-motion").expanded, "Search switches the accordion back to shell controls");
       fixture.check(scroll.contentY > 0, "Search links scroll to the target panel");
       settings.openSection(4, "blur"); tester.wait(200);
       let themePanel = fixture.find(settings, "settings-panel-4").item;
@@ -426,12 +438,12 @@ ShellRoot {
        for (const child of item.children || []) collapseGroups(child);
       }
       collapseGroups(settings); tester.wait(100);
-      fixture.check(sharedGrid.columns === 4, "Fullscreen settings uses four dropdown columns");
+      fixture.check(sharedGrid.columns === 1, "Fullscreen settings keeps a vertical accordion");
       fixture.check(fixture.find(settings, "theme-preview-grid").columns === 6, "Fullscreen theme previews fit in one row");
-      fixture.check(scroll.contentHeight <= scroll.height, "Fullscreen shows every closed dropdown without scrolling");
+      fixture.check(scroll.contentHeight > scroll.height, "Accordion remains scrollable at fullscreen");
       settings.openSection(6, "bar"); tester.wait(80);
       let fullscreenBar = fixture.find(settings, "shell-group-bar");
-      fixture.check(fullscreenBar.expanded && fullscreenBar.width < sharedGrid.width * 0.6, "Expanded controls leave room for other fullscreen settings");
+      fixture.check(fullscreenBar.expanded && Math.abs(fullscreenBar.width - sharedGrid.width) < 1, "Expanded accordion uses the available width");
       settings.width = 600; tester.wait(80);
       fixture.check(sharedGrid.columns === 1, "Narrow settings restores one readable column");
       settings.destroy();

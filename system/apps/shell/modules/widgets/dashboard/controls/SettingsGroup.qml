@@ -10,6 +10,30 @@ StyledRect {
     property string description: ""
     property bool collapsible: false
     property bool expanded: false
+    // Only containers that opt in share expansion state.
+    function enforceAccordion() {
+        if (!expanded || !collapsible || !parent?.exclusiveSettingsGroups) return;
+        for (const sibling of parent.children) {
+            if (sibling !== root && sibling.collapsible && sibling.expanded)
+                sibling.expanded = false;
+        }
+        // Collapsing an earlier group can move this header above the viewport.
+        Qt.callLater(() => {
+            if (!root.expanded) return;
+            let viewport = root.parent;
+            while (viewport) {
+                if (viewport.interactive && viewport.contentY !== undefined && viewport.contentItem) {
+                    const top = root.mapToItem(viewport.contentItem, 0, 0).y;
+                    if (top < viewport.contentY || top + expandButton.height > viewport.contentY + viewport.height)
+                        viewport.contentY = Math.max(0, Math.min(top, viewport.contentHeight - viewport.height));
+                    break;
+                }
+                viewport = viewport.parent;
+            }
+        });
+    }
+    onExpandedChanged: enforceAccordion()
+    onParentChanged: enforceAccordion()
     default property alias content: body.data
     Layout.fillWidth: true
     implicitHeight: column.implicitHeight + (collapsible ? 24 : 32)

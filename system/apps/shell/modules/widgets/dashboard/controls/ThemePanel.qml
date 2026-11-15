@@ -190,7 +190,8 @@ Item {
                         id: advancedGrid
                         objectName: "theme-advanced-grid"
                         Layout.fillWidth: true
-                        columns: width >= 1640 ? 4 : width >= 1160 ? 3 : width >= 620 ? 2 : 1
+                        columns: 1
+                        property bool exclusiveSettingsGroups: true
                         columnSpacing: Styling.spacing(12)
                         rowSpacing: Styling.spacing(12)
                     PaletteSettings {

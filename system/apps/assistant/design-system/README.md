@@ -99,3 +99,5 @@ The collapsed bar uses a dedicated shallow city cornice: a miniature skyline and
 ## Settings navigation
 
 Shell settings use wrapping category tabs at the top, plus page shortcuts above the full-width scrolling controls. Search remains available across categories and shows guidance when there are no matches. Theme previews choose their column count from the available grid width; labels wrap and cards grow to keep longer names visible in narrow windows.
+
+Theme and panel controls share a vertical accordion below the theme previews. Opening a group closes the previous group, including when search opens a section. Expanded controls use the full content width; the page scrolls through collapsed headers. Other settings groups retain independent expansion.
