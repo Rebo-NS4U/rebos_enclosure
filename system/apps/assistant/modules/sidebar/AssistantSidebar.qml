@@ -354,10 +354,10 @@ Item {
         StyledRect {
             id: sidebarBackground
             anchors.fill: parent
-            anchors.topMargin: root.sidebarMargin
-            anchors.bottomMargin: root.sidebarMargin
-            anchors.leftMargin: GlobalStates.assistantPosition === "left" ? root.sidebarMargin : 0
-            anchors.rightMargin: GlobalStates.assistantPosition === "right" ? root.sidebarMargin : 0
+            anchors.topMargin: root.tiled ? 0 : root.sidebarMargin
+            anchors.bottomMargin: root.tiled ? 0 : root.sidebarMargin
+            anchors.leftMargin: !root.tiled && GlobalStates.assistantPosition === "left" ? root.sidebarMargin : 0
+            anchors.rightMargin: !root.tiled && GlobalStates.assistantPosition === "right" ? root.sidebarMargin : 0
             variant: "bg"
             radius: Config.roundness
 
