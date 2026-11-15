@@ -128,7 +128,11 @@ Window {
         favorites = favorites.includes(track.path) ? favorites.filter(p => p !== track.path) : favorites.concat([track.path]); save();
     }
     function navigate(value, arg) { page = value; detail = arg || ""; query = ""; }
-    function play(list, index) { if (!list.length) return; queue = list.slice(); select(index || 0); }
+    function play(list, index) {
+        if (!list.length) return;
+        queue = list.slice();
+        select(index === undefined ? Math.floor(Math.random() * queue.length) : index);
+    }
     function cardTracks(kind, key) {
         if (kind === "Playlists") {
             const playlist = playlists.find(p => p.id === key);
@@ -165,7 +169,7 @@ Window {
         else if (repeatMode === "Playlist") select(0);
     }
     function previous() { if (player.position > 3000) player.position = 0; else select(Math.max(0,currentIndex-1)); }
-    function toggle() { if (playing) player.pause(); else if (current) player.play(); else play(shownTracks,0); }
+    function toggle() { if (playing) player.pause(); else if (current) player.play(); else play(shownTracks); }
     function seek(value) { player.position = Math.max(0, Math.min(player.duration, value)); sync(true); }
     function sync(seeked) {
         if (!backend.running) return;
@@ -292,7 +296,7 @@ Window {
                     RowLayout {
                         Layout.fillWidth: true
                         StyledText { text: root.shownTracks.length + " songs · Your library"; color: Colors.overSurfaceVariant; Layout.fillWidth: true }
-                        ThemeButton { text: "Play all"; highlighted: true; enabled: root.shownTracks.length > 0; onClicked: root.play(root.shownTracks,0) }
+                        ThemeButton { text: "Play all"; highlighted: true; enabled: root.shownTracks.length > 0; onClicked: root.play(root.shownTracks) }
                         ThemeButton { text: "Shuffle"; enabled: root.shownTracks.length > 0; onClicked: { root.shuffle = true; root.play(root.shownTracks,Math.floor(Math.random()*root.shownTracks.length)); } }
                     }
                     // Album shelves and artist cards follow the downloaded reference's library layout.
@@ -318,7 +322,7 @@ Window {
                                         text: "▶"; highlighted: true
                                         Accessible.name: "Play " + card.modelData.title
                                         enabled: card.playableTracks.length > 0
-                                        onClicked: root.play(card.playableTracks, 0)
+                                        onClicked: root.play(card.playableTracks)
                                     }
                                 }
                                 ThemeButton {

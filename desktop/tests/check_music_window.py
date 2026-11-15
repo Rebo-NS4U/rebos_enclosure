@@ -58,6 +58,9 @@ def session():
                     const playCard = findItem(music.contentItem, "music-card-play");
                     if (!playCard) return;
                     playCard.clicked();
+                    if (music.currentIndex < 0 || music.currentIndex >= music.queue.length) { console.error("MUSIC_RANDOM_START_FAILED"); Qt.exit(1); }
+                    music.play(music.queue, 0);
+                    if (music.currentIndex !== 0) { console.error("MUSIC_EXPLICIT_START_FAILED"); Qt.exit(1); }
                     if (music.page !== "Home" || music.queue.length !== 2) { console.error("MUSIC_CARD_PLAY_FAILED"); Qt.exit(1); }
                     phase = 1;
                 } else if (phase === 1 && music.playing) {
@@ -96,6 +99,9 @@ def session():
                     const playCard = findItem(music.contentItem, "music-card-play");
                     if (!playCard) return;
                     playCard.clicked();
+                    if (music.currentIndex < 0 || music.currentIndex >= music.queue.length) { console.error("MUSIC_RANDOM_START_FAILED"); Qt.exit(1); }
+                    music.play(music.queue, 0);
+                    if (music.currentIndex !== 0) { console.error("MUSIC_EXPLICIT_START_FAILED"); Qt.exit(1); }
                     if (music.page !== "Playlists" || music.queue[0].path !== music.tracks[1].path) { console.error("MUSIC_PLAYLIST_CARD_FAILED"); Qt.exit(1); }
                     music.control({action:"Pause"});
                     music.navigate("Downloads");

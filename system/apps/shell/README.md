@@ -311,6 +311,8 @@ Quickshell instance, so it does not require a panel restart and keeps playing
 when the window is hidden. It uses the shared shell theme, including palette,
 font, density, corner radius and surface style.
 
+Play, Play all, and album or playlist Play start with a random song. Selecting a specific song starts that song; Shuffle controls subsequent track selection.
+
 The library initially reads the XDG Music directory. **Add folder** includes
 other music directories without copying or modifying audio files. Albums,
 artists, search, favorites, saved queue playlists, shuffle, repeat, seeking,
