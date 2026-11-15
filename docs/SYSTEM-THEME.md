@@ -25,3 +25,7 @@ This coverage is not a claim that every installed interface is converted. GTK ap
 Use `~/.cache/rebos_shell/theme-standard-status.json` for installed adapter/metric status. Run `desktop/tests/test_standard_theme.py` for preservation and repeatability checks. Validate generated GTK3/GTK4 CSS with each toolkit and Qt QSS with representative widgets before changing the component rules.
 
 References: [Qt stylesheet controls](https://doc.qt.io/qt-6/stylesheet-reference.html), [GTK CSS properties](https://docs.gtk.org/gtk4/css-properties.html).
+
+### Login greeter
+
+ReGreet follows the active shell wallpaper, semantic palette, font and corner radius through `regreet-sync`. Its login card uses a subtle palette-tinted highlight, inset fields, a prominent clock and visible keyboard focus. Power controls retain the same surface hierarchy. Updates appear at the next login; restarting greetd or the desktop is unnecessary. The shipped fallback CSS uses the same layout with portable default colors.
