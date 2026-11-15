@@ -741,7 +741,7 @@
   "system/apps/shell/scripts/thumbgen.py": "9758f5dd453de084c2bad107463930ce8c9b4d0fc52a26eacb11e73f9bae3dfd",
   "system/apps/shell/scripts/typing_books.py": "064c8cee3eb6d5be50233f4dd585e92864a54fb2454ccc9eab4b3fca18b587d8",
   "system/apps/shell/scripts/typing_import.py": "3e13b0ad429018f1f06610ba4e7e96417e5237ac370531d90afec8f1f8be7f9e",
-  "system/apps/shell/scripts/wallpaper_color_index.py": "a653e1fcda26ec9be1936c662a19d8bc1696cdaf55e505d4e4c32467f391961d",
+  "system/apps/shell/scripts/wallpaper_color_index.py": "8ec1155e9dda0db4b4446dfdb6b93e237a3c59852f797bf8959c44e2bfd08356",
   "system/apps/shell/scripts/weather.sh": "3ce06a830ac14f44796db562c1121d6aafc430adeb800de1fd4035404b1823c9",
   "system/apps/shell/scripts/window_rules.py": "fe7525c3c250173ed80a96b1cd46f284782fc1ae59786bc99be1d8b460d3c72c",
   "system/apps/shell/shell.qml": "f648ff90d3d42b02598da00da791d9067d5f8cdfeb4234acc85a002616636298",

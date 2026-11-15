@@ -11,11 +11,12 @@ from concurrent.futures import ThreadPoolExecutor
 from PIL import Image, ImageOps
 
 EXTENSIONS = {'.jpg', '.jpeg', '.png', '.webp', '.tif', '.tiff', '.bmp', '.gif', '.mp4', '.webm', '.mov', '.avi', '.mkv'}
-HUES = ('red', 'orange', 'yellow', 'green', 'cyan', 'blue', 'purple', 'pink')
+CACHE_VERSION = 3
 
 
 def color_info(image):
-    image.thumbnail((64, 64))
+    image = image.copy()
+    image.thumbnail((96, 96), Image.Resampling.BOX)
     pixels = list(image.convert('RGB').get_flattened_data()) if hasattr(image, 'get_flattened_data') else list(image.convert('RGB').getdata())
     buckets = {}
     for r, g, b in pixels:
@@ -23,18 +24,19 @@ def color_info(image):
         hue = h * 360
         if v < .16:
             group = 'black'
-        elif s < .16:
+        elif s < .18 or (max(r, g, b) - min(r, g, b)) / 255 < .06:
             group = 'white' if v > .8 else 'gray'
         else:
             group = ('red' if hue < 15 or hue >= 345 else 'orange' if hue < 45
                      else 'yellow' if hue < 70 else 'green' if hue < 165
                      else 'cyan' if hue < 200 else 'blue' if hue < 260
-                     else 'purple' if hue < 290 else 'pink')
+                     else 'purple' if hue < 320 else 'pink')
         buckets.setdefault(group, []).append((r, g, b))
-    chromatic = {k: v for k, v in buckets.items() if k in HUES}
-    candidates = chromatic if sum(map(len, chromatic.values())) >= len(pixels) * .25 else buckets
-    group = max(candidates, key=lambda k: len(candidates[k]))
-    values = candidates[group]
+    # Area determines the category. A colorful accent must not override a
+    # mostly gray, white or black background. Saturation only breaks area ties.
+    group = max(buckets, key=lambda key: (len(buckets[key]), sum(
+        max(pixel) - min(pixel) for pixel in buckets[key])))
+    values = buckets[group]
     rgb = tuple(round(sum(p[i] for p in values) / len(values)) for i in range(3))
     h, s, v = colorsys.rgb_to_hsv(*(c / 255 for c in rgb))
     return {'group': group, 'hue': round(h * 360, 2), 'brightness': round(sum(.2126 * r + .7152 * g + .0722 * b for r, g, b in pixels) / (255 * len(pixels)), 4),
@@ -48,7 +50,7 @@ def build_index(root, cache_dir):  # pylint: disable=too-many-locals
     cache_file = cache_dir / 'wallpaper-color-index.json'
     try:
         cached = json.loads(cache_file.read_text())
-        old = cached.get('entries', {}) if cached.get('version') == 2 else {}
+        old = cached.get('entries', {}) if cached.get('version') == CACHE_VERSION else {}
     except (OSError, ValueError):
         old = {}
     files = []
@@ -66,9 +68,9 @@ def build_index(root, cache_dir):  # pylint: disable=too-many-locals
             if old.get(key, {}).get('stamp') == stamp:
                 return key, old[key]
             with Image.open(source) as image:
-                image.draft('RGB', (64, 64))
+                image.draft('RGB', (192, 192))
                 # RGB conversion composites transparent images onto a dark desktop.
-                image.thumbnail((64, 64))
+                image.thumbnail((96, 96), Image.Resampling.BOX)
                 if 'A' in image.getbands():
                     bg = Image.new('RGB', image.size, '#202020')
                     bg.paste(image, mask=image.getchannel('A'))
@@ -85,7 +87,7 @@ def build_index(root, cache_dir):  # pylint: disable=too-many-locals
     fd, name = tempfile.mkstemp(prefix='.wallpaper-colors-', dir=cache_dir)
     try:
         with os.fdopen(fd, 'w') as stream:
-            json.dump({'version': 2, 'entries': merged}, stream)
+            json.dump({'version': CACHE_VERSION, 'entries': merged}, stream)
         os.replace(name, cache_file)
     finally:
         if os.path.exists(name):
