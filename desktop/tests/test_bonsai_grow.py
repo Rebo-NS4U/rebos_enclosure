@@ -592,19 +592,21 @@ class BonsaiGrowTests(unittest.TestCase):
         self.assertEqual(pixel(5, 10)[3], 0, 'outside the rounded corner stays transparent')
         self.assertEqual(pixel(295, 10), (240, 130, 80, 255))
         self.assertEqual(pixel(295, 260), (24, 24, 24, 255), 'keep the center quiet')
-        self.assertTrue(any(pixel(x, y)[:3] != (24, 24, 24)
-                            for x in range(10, 36) for y in range(80, 300)),
-                        'reflections and etching catch light along the pane')
+        self.assertEqual(pixel(10, 150), (24, 24, 24, 255), 'no raster glass texture')
         self.assertEqual(pixel(584, 260), (240, 130, 80, 255))
         self.assertEqual(pixel(589, 260)[3], 0)
         self.assertEqual(pixel(295, 519)[3], 0)
 
     def test_glass_varies_between_seeds_and_stays_stable_within_a_session(self):
-        args = (10, 20, 26, (240, 130, 80))
-        first = bonsai.rounded_frame_png(*args, texture_seed=11)
-        second = bonsai.rounded_frame_png(*args, texture_seed=29)
-        self.assertNotEqual(first, second)
-        self.assertEqual(first, bonsai.rounded_frame_png(*args, texture_seed=11))
+        first = bonsai.glass_reflections(11, True)
+        self.assertNotEqual(first, bonsai.glass_reflections(29, True))
+        self.assertEqual(first, bonsai.glass_reflections(11, True))
+        for seed in range(20):
+            for left_corner in (False, True):
+                points = bonsai.glass_reflections(seed, left_corner)
+                self.assertIn(len(points), (2, 3))
+                self.assertTrue(all((51 <= x <= 55 if left_corner else 1 <= x <= 5)
+                                    and 3 <= y <= 15 for x, y in points))
 
     def test_kitty_frame_is_quiet_and_preserves_the_terminal_cursor(self):
         import struct
@@ -649,7 +651,8 @@ class BonsaiGrowTests(unittest.TestCase):
                 if glyph != ' ':
                     self.assertEqual(plain[y + 1][x + 1], glyph)
         self.assertIn("\033[48;2;24;24;24m", image)
-        self.assertEqual(plain[3][3], '╱')
+        self.assertTrue(any(plain[y + 1][x + 1] == '╱'
+                            for x, y in bonsai.glass_reflections(bonsai.GLASS_SEED, False)))
 
     def test_terrarium_keeps_neutral_backing_inside_the_frame(self):
         import re
