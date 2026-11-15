@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Layouts
 import Quickshell.Io
 import qs.modules.services
 import qs.modules.theme
@@ -22,13 +23,15 @@ Item {
     LyricsClock {
         id: estimatedClock
         lines: root.estimatedTiming ? root.displayLines : []
-        position: MprisController.position
+        position: MprisController.position + root.estimatedTimeOffset
         playing: MprisController.isPlaying
         rate: LyricsService.player?.rate ?? 1
         enabled: root.estimatedTiming && root.visible
         trackKey: LyricsService.trackKey
     }
     property int estimatedOffset: 0
+    property real estimatedTimeOffset: 0
+    property bool calibrationOpen: false
     readonly property int estimatedBaseIndex: Math.max(0, estimatedClock.activeIndex)
     readonly property int lineIndex: estimatedTiming
         ? Math.max(0, Math.min(displayLines.length - 1, estimatedBaseIndex + estimatedOffset))
@@ -37,17 +40,27 @@ Item {
     readonly property bool canStepForward: estimatedTiming && lineIndex < displayLines.length - 1
     readonly property Item previousHitbox: visible && estimatedTiming && currentPanel.visible ? currentPanel.control : null
     readonly property Item nextHitbox: visible && estimatedTiming && currentPanel.visible ? currentPanel.forwardControl : null
-    readonly property Item playbackHitbox: visible && nextPanel.visible && MprisController.canTogglePlaying ? nextPanel.control : null
+    readonly property Item calibrationButtonHitbox: visible && estimatedTiming && nextPanel.visible ? nextPanel.control : null
+    readonly property Item calibrationHitbox: calibrationPanel.visible ? calibrationPanel : null
+    function resetCalibration() { estimatedOffset = 0; estimatedTimeOffset = 0; calibrationOpen = false; }
+    function calibrateLine(index) {
+        if (!estimatedTiming || index < 0 || index >= displayLines.length || Math.floor(index) !== index) return;
+        const playbackAt = MprisController.position;
+        estimatedOffset = 0;
+        estimatedTimeOffset = displayLines[index].time - playbackAt;
+        estimatedClock.reanchor();
+        calibrationOpen = false;
+    }
     function stepEstimatedLine(direction) {
         if (!estimatedTiming || !displayLines.length || (direction !== -1 && direction !== 1)) return;
         const target = Math.max(0, Math.min(displayLines.length - 1, lineIndex + direction));
         estimatedOffset = target - estimatedBaseIndex;
     }
-    onEstimatedTimingChanged: if (!estimatedTiming) estimatedOffset = 0
+    onEstimatedTimingChanged: if (!estimatedTiming) resetCalibration()
     Connections {
         target: LyricsService
-        function onTrackKeyChanged() { root.estimatedOffset = 0; }
-        function onPlainChanged() { root.estimatedOffset = 0; }
+        function onTrackKeyChanged() { root.resetCalibration(); }
+        function onPlainChanged() { root.resetCalibration(); }
     }
     readonly property string currentText: !LyricsService.hasText ? "" : displayLines.length
         ? (displayLines[lineIndex]?.text || "")
@@ -55,6 +68,7 @@ Item {
     readonly property string nextText: LyricsService.hasText
         ? displayLines[lineIndex + 1]?.text || "" : ""
     visible: available && LyricsService.stripEnabled && MprisController.trackTitle !== "" && sideWidth >= 120
+    onVisibleChanged: if (!visible) calibrationOpen = false
     property var levels: Array(32).fill(0)
     property real visualizerMix: 1
     property bool modeReady: false
@@ -97,7 +111,7 @@ Item {
         }
         onExited: root.levels = Array(32).fill(0)
     }
-    // Only the line-adjustment and playback buttons enter the input mask.
+    // Only the line controls and open calibration panel enter the input mask.
     // The remaining strip stays decorative and lets clicks pass through.
     Component.onCompleted: { LyricsService.viewers++; modeReady = true; updateMode(); }
     Component.onDestruction: LyricsService.viewers = Math.max(0, LyricsService.viewers - 1)
@@ -146,7 +160,7 @@ Item {
         readonly property alias forwardControl: forwardBadge
         width: root.sideWidth
         height: root.stripHeight
-        visible: lyric.trim() !== "" || root.visualizerMix > 0 || (upcoming && MprisController.canTogglePlaying)
+        visible: lyric.trim() !== "" || root.visualizerMix > 0 || (upcoming && root.estimatedTiming)
         variant: "bg"
         backgroundOpacity: BarAppearance.panelOpacity(false)
         topLeftRadius: BarAppearance.framed ? Styling.radius(4) : 0
@@ -176,16 +190,16 @@ Item {
         }
         PanelControl {
             id: modeBadge
-            objectName: lineSurface.upcoming ? "lyrics-playback-toggle" : "lyrics-step-back"
+            objectName: lineSurface.upcoming ? "lyrics-calibrate" : "lyrics-step-back"
             x: lineSurface.upcoming ? lineSurface.width - width - 7 : 7
             muted: lineSurface.upcoming
-            enabled: lineSurface.upcoming ? MprisController.canTogglePlaying : root.canStepBack
+            enabled: lineSurface.upcoming ? root.estimatedTiming : root.canStepBack
             opacity: (root.estimatedTiming || lineSurface.upcoming) && !enabled ? 0.35 : 1
-            text: lineSurface.upcoming ? (MprisController.isPlaying ? "Ⅱ" : "▶")
+            text: lineSurface.upcoming ? (root.estimatedTiming ? "◎" : "♪")
                 : root.estimatedTiming ? "‹" : root.visualizerMix > 0.5 ? "≋" : "♪"
-            Accessible.name: lineSurface.upcoming ? (MprisController.isPlaying ? "Pause music" : "Resume music") : "Previous estimated lyric line"
+            Accessible.name: lineSurface.upcoming ? "Calibrate estimated lyrics" : "Previous estimated lyric line"
             onClicked: {
-                if (lineSurface.upcoming) MprisController.togglePlaying();
+                if (lineSurface.upcoming) root.calibrationOpen = !root.calibrationOpen;
                 else root.stepEstimatedLine(-1);
             }
         }
@@ -298,4 +312,53 @@ Item {
     }
     Line { id: currentPanel; objectName: "bar-lyrics-current"; x: root.gap; lyric: (root.estimatedTiming && root.currentText ? "≈ " : "") + root.currentText }
     Line { id: nextPanel; objectName: "bar-lyrics-next"; x: root.width - root.sideWidth - root.gap; lyric: (root.estimatedTiming && root.nextText ? "≈ " : "") + root.nextText; upcoming: true }
+    StyledRect {
+        id: calibrationPanel
+        objectName: "lyrics-calibration-panel"
+        visible: root.visible && root.estimatedTiming && root.calibrationOpen
+        x: root.width - width - root.gap
+        y: root.stripHeight + 8
+        width: Math.min(520, root.width - root.gap * 2)
+        height: Math.max(0, Math.min(460, root.height - y - 12))
+        z: 10
+        variant: "popup"
+        radius: Styling.radius(0)
+        onVisibleChanged: if (visible) Qt.callLater(() => calibrationLines.positionViewAtIndex(root.lineIndex, ListView.Center))
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: 14
+            spacing: 10
+            RowLayout {
+                Layout.fillWidth: true
+                StyledText { text: "Align lyrics"; font.bold: true; Layout.fillWidth: true }
+                ThemeButton { text: "Close"; onClicked: root.calibrationOpen = false }
+            }
+            StyledText {
+                text: "Tap the line being sung right now."
+                Layout.fillWidth: true
+                wrapMode: Text.WordWrap
+                color: Colors.overSurfaceVariant
+            }
+            ListView {
+                id: calibrationLines
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                clip: true
+                spacing: 4
+                model: root.displayLines
+                delegate: ThemeButton {
+                    required property var modelData
+                    required property int index
+                    objectName: "lyrics-calibrate-line-" + index
+                    width: calibrationLines.width
+                    text: (index + 1) + "  " + modelData.text
+                    highlighted: index === root.lineIndex
+                    Accessible.name: "Align to " + modelData.text
+                    onClicked: root.calibrateLine(index)
+                }
+                ScrollBar.vertical: ScrollBar {}
+            }
+        }
+    }
+
 }

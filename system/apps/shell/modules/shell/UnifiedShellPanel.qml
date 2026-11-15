@@ -33,6 +33,7 @@ PanelWindow {
     WlrLayershell.keyboardFocus: {
         if (barContent.typingDialogActive)
             return WlrKeyboardFocus.None;
+        if (barContent.lyricsCalibrationHitbox) return WlrKeyboardFocus.OnDemand;
         if (notesPopup.open)
             return WlrKeyboardFocus.Exclusive;
         if (launcherOpen)
@@ -110,7 +111,8 @@ PanelWindow {
             },
             Region { item: barContent.visible ? barContent.lyricsPreviousHitbox : null },
             Region { item: barContent.visible ? barContent.lyricsNextHitbox : null },
-            Region { item: barContent.visible ? barContent.lyricsPlaybackHitbox : null },
+            Region { item: barContent.visible ? barContent.lyricsCalibrationButtonHitbox : null },
+            Region { item: barContent.visible ? barContent.lyricsCalibrationHitbox : null },
             Region {
                 item: barContent.dashboardHitbox
             },

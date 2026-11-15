@@ -35,7 +35,8 @@ Item {
 
     readonly property Item barHitbox: (layoutLoader.item && layoutLoader.item.barHitbox) ? layoutLoader.item.barHitbox : fallbackHitbox
     readonly property Item lyricsPreviousHitbox: layoutLoader.item?.lyricsPreviousHitbox ?? null
-    readonly property Item lyricsPlaybackHitbox: layoutLoader.item?.lyricsPlaybackHitbox ?? null
+    readonly property Item lyricsCalibrationButtonHitbox: layoutLoader.item?.lyricsCalibrationButtonHitbox ?? null
+    readonly property Item lyricsCalibrationHitbox: layoutLoader.item?.lyricsCalibrationHitbox ?? null
     readonly property Item lyricsNextHitbox: layoutLoader.item?.lyricsNextHitbox ?? null
     readonly property Item dashboardHitbox: (layoutLoader.item && layoutLoader.item.dashboardHitbox) ? layoutLoader.item.dashboardHitbox : fallbackHitbox
 

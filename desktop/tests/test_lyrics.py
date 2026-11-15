@@ -454,11 +454,29 @@ ShellRoot {
     check(strip.estimatedTiming && strip.previousHitbox && strip.nextHitbox, 'Estimated controls must have input regions');
     check(!strip.canStepBack && strip.canStepForward, 'First-line bounds');
     check(strip.previousHitbox.parent === strip.nextHitbox.parent, 'Both line controls belong to left panel');
-    check(strip.playbackHitbox && strip.playbackHitbox.parent !== strip.previousHitbox.parent, 'Playback control belongs to right panel');
-    strip.playbackHitbox.clicked();
-    check(MprisController.isPlaying, 'Right control resumes music');
-    strip.playbackHitbox.clicked();
-    check(!MprisController.isPlaying && MprisController.position === 0, 'Right control pauses without seeking');
+    check(strip.calibrationButtonHitbox && strip.calibrationButtonHitbox.parent !== strip.previousHitbox.parent, 'Calibration control belongs to right panel');
+    if (phase === 1) {
+     strip.calibrationButtonHitbox.clicked();
+     check(strip.calibrationOpen && strip.calibrationHitbox, 'Right button opens calibration list');
+     phase = 2; return;
+    }
+    function findItem(item, name) {
+     if (item.objectName === name) return item;
+     for (const child of item.children) { const found = findItem(child, name); if (found) return found; }
+     return null;
+    }
+    const selected = findItem(strip.calibrationHitbox, 'lyrics-calibrate-line-2');
+    check(!!selected, 'Calibration line is available');
+    MprisController.isPlaying = true;
+    selected.clicked();
+    check(strip.currentText === 'Third' && !strip.calibrationOpen, 'Tap aligns selected line and closes list');
+    check(MprisController.position === 0 && MprisController.isPlaying, 'Calibration must not seek or pause playback');
+    MprisController.isPlaying = false;
+    MprisController.position = 5;
+    check(strip.currentText === 'Third', 'Selected cue starts at calibration time');
+    MprisController.position = 11;
+    check(strip.currentText === 'Fourth', 'Following advances from calibrated time');
+    strip.resetCalibration(); MprisController.position = 0;
     strip.nextHitbox.clicked();
     check(strip.currentText === 'Second' && strip.nextText === 'Third', 'Forward button advances exactly one line');
     check(MprisController.position === 0, 'Correction must not seek audio');
@@ -473,13 +491,13 @@ ShellRoot {
     strip.stepEstimatedLine(-1);
     check(strip.currentText === 'Third', 'Back from final line');
     MprisController.trackTitle = 'Different song';
-    check(strip.estimatedOffset === 0, 'Track change resets correction');
+    check(strip.estimatedOffset === 0 && strip.estimatedTimeOffset === 0 && !strip.calibrationOpen, 'Track change resets corrections');
     MprisController.position = 0;
     LyricsService.refresh(); LyricsService.apply('First\\nSecond\\nThird\\nFourth', 'Music', false);
     strip.stepEstimatedLine(1);
     LyricsService.apply('[00:00]Real first\\n[00:10]Real next', 'LRCLIB', false);
     check(strip.estimatedOffset === 0 && strip.currentText === 'Real first', 'Real timing clears correction');
-    check(!strip.previousHitbox && !strip.nextHitbox && strip.playbackHitbox, 'Timed lyrics retain only playback control');
+    check(!strip.previousHitbox && !strip.nextHitbox && !strip.calibrationButtonHitbox && !strip.calibrationHitbox, 'Timed lyrics do not expose calibration controls');
     strip.stepEstimatedLine(1);
     check(strip.currentText === 'Real first' && MprisController.position === 0, 'Manual controls cannot alter timed lyrics');
     console.log('PASS: manual line buttons, bounds, continued following, no audio seek and reset'); Qt.quit();
