@@ -587,7 +587,7 @@ class BonsaiGrowTests(unittest.TestCase):
                 self.assertTrue(all(len(row) <= columns for row in rows))
                 self.assertNotIn('\033', image)
 
-    def test_terrarium_preserves_tree_and_has_a_contained_background(self):
+    def test_terrarium_preserves_tree_and_terminal_background(self):
         import re
         canvas = bonsai.specimen_canvas(30, 42)
         image = bonsai.render(30, 42, True, 59, fixed_height=True, hour=15)
@@ -598,40 +598,24 @@ class BonsaiGrowTests(unittest.TestCase):
             for x, (glyph, ink) in enumerate(row):
                 if glyph != ' ':
                     self.assertEqual(plain[y + 1][x + 1], glyph)
-        self.assertIn("\033[48;2;24;24;24m", image)
+        self.assertNotIn("\033[48;", image)
         self.assertEqual(plain[3][3], '╱')
 
-    def test_terrarium_sky_background_does_not_leak(self):
+    def test_terrarium_leaves_terminal_background_untinted(self):
         import re
-        backgrounds = set()
         for theme in (['#fafafa'] * 3, ['#111111'] * 3, ['#fa4050'] * 3):
             for day in (0, 30):
-                image = bonsai.render(day, 42, True, 80, theme, fixed_height=True)
-                for row in image.splitlines():
-                    background, column = None, 0
-                    for token in re.split(r'(\x1b\[[0-9;]*m)', row):
-                        if token.startswith('\x1b['):
-                            codes = list(map(int, token[2:-1].split(';')))
-                            if codes[0] == 0:
-                                background = None
-                            if codes[:2] == [48, 2]:
-                                background = tuple(codes[2:])
-                        else:
-                            for glyph in token:
-                                if column < 10:
-                                    self.assertIsNone(background)
-                                else:
-                                    self.assertIsNotNone(background)
-                                    backgrounds.add(background)
-                                column += 1
-                    self.assertIsNone(background, 'reset background before the prompt')
-                    self.assertEqual(column, 69)
-        self.assertGreater(len(backgrounds), 1)
+                for hour in (0, 6, 12, 18):
+                    image = bonsai.render(day, 42, True, 80, theme,
+                                          fixed_height=True, hour=hour)
+                    self.assertNotRegex(image, r'\x1b\[(?:48[;:]|4[0-7]m|10[0-7]m)')
+                    rows = re.sub(r'\x1b\[[0-9;]*m', '', image).splitlines()
+                    self.assertEqual(len(rows), 26)
+                    self.assertTrue(all(len(row) == 69 for row in rows))
+                    self.assertTrue(image.endswith('\033[0m\n'))
 
     def test_sky_follows_local_time_and_preserves_specimen(self):
         import re
-        self.assertEqual(bonsai.sky_at_hour(0), bonsai.sky_at_hour(24))
-        self.assertNotEqual(bonsai.sky_at_hour(0), bonsai.sky_at_hour(12))
         for hour in (0, 12):
             image = bonsai.render(0, 42, False, 59, fixed_height=True, hour=hour)
             self.assertIn('·', image)
@@ -902,7 +886,7 @@ class BonsaiGrowTests(unittest.TestCase):
                     self.assertIn(bonsai.wood_palette(seed)['wood'], image)
                     pot_inlay = bonsai.specimen_palette(seed)['ceramic_inlay_main']
                     self.assertIn(pot_inlay, image)
-                    self.assertIn('\033[48;2;24;24;24m', image)
+                    self.assertNotIn('\033[48;', image)
                     self.assertIn(bonsai.wood_palette(seed)['bark'], image)
                     self.assertEqual(state.read_text(), original)
 

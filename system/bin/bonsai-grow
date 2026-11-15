@@ -1329,23 +1329,6 @@ def ceramic_palette(accents):
     return palette
 
 
-def sky_at_hour(hour):
-    """A quiet ink-wash sky, interpolated continuously in local civil time."""
-    stops = (
-        (0, (17, 20, 30)), (5, (24, 25, 36)),
-        (6.5, (47, 37, 39)), (9, (34, 43, 44)),
-        (14, (37, 48, 49)), (17, (48, 39, 34)),
-        (19, (31, 28, 42)), (21, (17, 20, 30)),
-        (24, (17, 20, 30)),
-    )
-    hour %= 24
-    for (start, a), (end, b) in zip(stops, stops[1:]):
-        if start <= hour <= end:
-            t = (hour - start) / (end - start)
-            t = t * t * (3 - 2 * t)
-            return tuple(round(x + (y - x) * t) for x, y in zip(a, b))
-
-
 def sun_palette(hour):
     """Luminous ivory at noon, warm copper at the edges of the day."""
     elevation = max(0, math.sin(math.pi * (hour - 6) / 12))
@@ -1457,8 +1440,8 @@ def backlit_ink(ink, daylight):
         *(round(a * 0.78 + b * 0.22) for a, b in zip(rgb, light)))
 
 
-def frame_rows(rows, columns, accents, color, sky=None):
-    """A fine glass case with a subdued sky wash and lower plinth."""
+def frame_rows(rows, columns, accents, color):
+    """A fine glass case that inherits the terminal background."""
     width = 57
     margin = " " * max(0, (columns - width - 2) // 2)
     reset = "\033[0m" if color else ""
@@ -1468,24 +1451,14 @@ def frame_rows(rows, columns, accents, color, sky=None):
     glass = "\033[0;38;2;{};{};{}m".format(
         *(round(145 * 0.75 + channel * 0.25) for channel in rgb)
     ) if color else ""
-    def pane(text, depth=1):
-        base = sky if sky is not None else (24, 24, 24)
-        # The wash settles back into charcoal beside the pot.
-        fade = min(1.0, depth / max(1, len(rows)))
-        rgb = tuple(round(c * (1 - fade) + 24 * fade) for c in base)
-        background = "\033[48;2;{};{};{}m".format(*rgb) if color else ""
-        # Material inks reset SGR before changing foreground; restore the pane
-        # background after each reset so neither glyphs nor spaces punch holes.
-        if not color:
-            return text
-        text = re.sub(r"\x1b\[[0-9;]*m", lambda match: match[0] + background, text)
-        return background + text + reset
-    def edge(text, depth=1):
-        return pane(glass + text, depth)
-    top = margin + edge("╭" + "─" * width + "╮", 0)
-    bottom = margin + edge("╰" + "━" * width + "╯", len(rows))
-    return [top] + [margin + edge("│", y) + pane(row, y) + edge("│", y)
-                    for y, row in enumerate(rows, 1)] + [bottom]
+    def pane(text):
+        return text + reset
+    def edge(text):
+        return pane(glass + text)
+    top = margin + edge("╭" + "─" * width + "╮")
+    bottom = margin + edge("╰" + "━" * width + "╯")
+    return [top] + [margin + edge("│") + pane(row) + edge("│")
+                    for row in rows] + [bottom]
 
 
 def space_bark_shading(canvas, seed):
@@ -1957,7 +1930,7 @@ def render(
             parts.append(glyph)
             previous = ink
         output.append("".join(parts) + ("\033[0m" if color else ""))
-    return "\n".join(frame_rows(output, columns, accents, color, sky_at_hour(hour))) + "\n"
+    return "\n".join(frame_rows(output, columns, accents, color)) + "\n"
 
 
 def animation_day(elapsed, duration):
