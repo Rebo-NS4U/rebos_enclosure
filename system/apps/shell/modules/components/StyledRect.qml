@@ -474,6 +474,8 @@ ClippingRectangle {
             onAccentChanged: requestPaint()
             onSecondaryAccentChanged: requestPaint()
             readonly property color pigment: root.itemColor
+            readonly property bool inset: root.variant === "internalbg"
+            onInsetChanged: requestPaint()
             readonly property bool outer: root.variant === "bg" || root.variant === "popup"
             opacity: root.rectOpacity
             onCornerRadiusChanged: requestPaint()
@@ -492,47 +494,79 @@ ClippingRectangle {
                 ctx.save();
                 if(root.traceThemeFrame(ctx,0))ctx.clip();
                 if(finish === "canopy"){
-                    // Wide, feathered mist blooms have no visible contour or ribs.
-                    const mist=ctx.createLinearGradient(0,0,width*0.25,height);
-                    mist.addColorStop(0,ink(outer?0.055:0.025));
-                    mist.addColorStop(0.45,ink(0.012));
-                    mist.addColorStop(1,ink(0));
-                    ctx.fillStyle=mist;ctx.fillRect(0,0,width,height);
+                    // Frosted survey plate: an etched map inside a machined bezel.
+                    ctx.strokeStyle=ink(0.28);ctx.lineWidth=1;
+                    if(root.traceThemeFrame(ctx,outer?6:3))ctx.stroke();
+                    ctx.strokeStyle=ink(0.11);
+                    if(root.traceThemeFrame(ctx,outer?10:5))ctx.stroke();
                     if(outer){
-                        const radius=Math.max(width,height)*0.85;
-                        const bloom=ctx.createRadialGradient(width*0.12,height*0.08,0,width*0.12,height*0.08,radius);
-                        bloom.addColorStop(0,ink(0.045));
-                        bloom.addColorStop(0.55,ink(0.016));
-                        bloom.addColorStop(1,ink(0));
-                        ctx.fillStyle=bloom;ctx.fillRect(0,0,width,height);
+                        // Contours remain faint in the center and gather at the edge.
+                        for(let line=0;line<7;line++){
+                            const y=height*(0.25+line*0.10);
+                            ctx.strokeStyle=ink(line%3===0?0.12:0.055);
+                            ctx.beginPath();ctx.moveTo(10,y);
+                            ctx.bezierCurveTo(width*0.28,y-height*0.23,width*0.60,y+height*0.17,width-10,y-height*0.08);ctx.stroke();
+                        }
+                        for(let x=safe;x<width-safe;x+=24){
+                            ctx.strokeStyle=ink(0.4);ctx.beginPath();
+                            ctx.moveTo(x,4);ctx.lineTo(x,9);ctx.moveTo(x,height-4);ctx.lineTo(x,height-9);ctx.stroke();
+                        }
+                        // Survey registration crosses and captive corner fittings.
+                        for(const x of [safe,width-safe])for(const y of [safe,height-safe]){
+                            ctx.strokeStyle=ink(0.45);ctx.beginPath();
+                            ctx.moveTo(x-4,y);ctx.lineTo(x+4,y);ctx.moveTo(x,y-4);ctx.lineTo(x,y+4);ctx.stroke();
+                        }
+                        ctx.fillStyle=ink(0.16);ctx.fillRect(safe,12,Math.max(0,Math.min(54,width-safe*2)),3);
                     }
                 }else if(finish === "orbital"){
-                    const signal=a=>Qt.rgba(accent.r,accent.g,accent.b,a);
-                    // Calibrated instrument rails stay clear of the content area.
-                    ctx.strokeStyle=signal(0.32);ctx.lineWidth=1;
-                    if(root.traceThemeFrame(ctx,5))ctx.stroke();
-                    for(let x=safe;x<width-safe;x+=8){
-                        const major=Math.floor((x-safe)/8)%4===0;
-                        ctx.strokeStyle=signal(major?0.85:0.40);
-                        ctx.beginPath();ctx.moveTo(x,3);ctx.lineTo(x,major?12:7);
-                        ctx.moveTo(x,height-3);ctx.lineTo(x,height-(major?10:6));ctx.stroke();
+                    // Flight-deck housing: bevel, gasket and a recessed display well.
+                    ctx.lineWidth=1;
+                    for(let layer=0;layer<3;layer++){
+                        ctx.strokeStyle=ink([0.30,0.12,0.22][layer]);
+                        if(root.traceThemeFrame(ctx,(outer?4:2)+layer*3))ctx.stroke();
                     }
-                    if(outer && width>100 && height>80){
-                        const radius=Math.min(48,width*0.16,height*0.24);
-                        const cx=width-4,cy=4;
-                        // A clipped corner reticle reads as a navigational instrument.
-                        for(let ring=0;ring<2;ring++){
-                            ctx.strokeStyle=signal(ring?0.35:0.80);ctx.lineWidth=ring?1:2;
-                            ctx.beginPath();ctx.arc(cx,cy,radius-ring*8,Math.PI*0.56,Math.PI*0.96);ctx.stroke();
+                    if(inset){
+                        ctx.fillStyle=ink(0.035);
+                        for(let y=5;y<height-5;y+=4)ctx.fillRect(5,y,Math.max(0,width-10),1);
+                    }
+                    if(outer){
+                        // Four slotted fittings follow the actual rounded corner.
+                        const pad=Math.max(9,cornerRadius*(1-Math.SQRT1_2)+6);
+                        for(const x of [pad,width-pad])for(const y of [pad,height-pad]){
+                            ctx.fillStyle=ink(0.26);ctx.beginPath();ctx.arc(x,y,3,0,Math.PI*2);ctx.fill();
+                            ctx.strokeStyle=ink(0.7);ctx.beginPath();ctx.moveTo(x-1.5,y+1);ctx.lineTo(x+1.5,y-1);ctx.stroke();
                         }
-                        ctx.strokeStyle=signal(0.9);ctx.lineWidth=2;
-                        ctx.beginPath();ctx.moveTo(4,safe);ctx.lineTo(4,Math.min(height-safe,safe+30));ctx.stroke();
-                        ctx.fillStyle=signal(0.75);
-                        for(let i=0;i<3;i++)ctx.fillRect(8,height-safe-4-i*7,3,3);
+                        for(let x=safe+8;x<width-safe-8;x+=10){
+                            const major=Math.floor((x-safe-8)/10)%4===0;
+                            ctx.strokeStyle=ink(major?0.50:0.24);ctx.beginPath();
+                            ctx.moveTo(x,3);ctx.lineTo(x,major?11:7);ctx.stroke();
+                        }
+                        // Recessed connector slots and a reinforced side rail.
+                        ctx.fillStyle=ink(0.30);
+                        for(let y=safe+12;y<Math.min(height-safe,safe+66);y+=7)ctx.fillRect(width-15,y,6,2);
+                        ctx.strokeStyle=ink(0.35);ctx.lineWidth=2;
+                        ctx.beginPath();ctx.moveTo(8,safe);ctx.lineTo(8,height-safe);ctx.stroke();
+                        for(let i=0;i<5 && safe+i*13+8<width-safe;i++){
+                            ctx.strokeStyle=ink(0.32);ctx.lineWidth=1;
+                            ctx.strokeRect(safe+i*13,height-12,8,4);
+                        }
                     }
                 }else{
                     const neon=a=>Qt.rgba(accent.r,accent.g,accent.b,a);
                     const violet=a=>Qt.rgba(secondaryAccent.r,secondaryAccent.g,secondaryAccent.b,a);
+                    // Architectural frame and drafting grid anchor the neon glazing.
+                    ctx.lineWidth=1;ctx.strokeStyle=ink(outer?0.23:0.12);
+                    if(root.traceThemeFrame(ctx,outer?8:3))ctx.stroke();
+                    if(outer){
+                        for(let x=24;x<width-16;x+=24){
+                            ctx.strokeStyle=ink(x%96===0?0.10:0.035);
+                            ctx.beginPath();ctx.moveTo(x,9);ctx.lineTo(x,height-9);ctx.stroke();
+                        }
+                        for(let y=24;y<height-16;y+=24){
+                            ctx.strokeStyle=ink(y%96===0?0.10:0.035);
+                            ctx.beginPath();ctx.moveTo(9,y);ctx.lineTo(width-9,y);ctx.stroke();
+                        }
+                    }
                     // Neon spill falls inward from opposing glass edges.
                     const spill=ctx.createLinearGradient(0,0,width,0);
                     spill.addColorStop(0,neon(outer?0.26:0.10));

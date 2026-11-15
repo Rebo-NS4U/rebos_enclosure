@@ -1,8 +1,8 @@
 .pragma library
 
 var styles = [
-    {id: "canopy", label: "Canopy", font: "Noto Sans", description: "Soft fogged glass, diffuse mist blooms and gently layered translucent surfaces."},
-    {id: "orbital", label: "Orbital", font: "JetBrains Mono", description: "Spacecraft instrument glass, luminous reticles, calibrated rails and recessed displays."},
+    {id: "canopy", label: "Canopy", font: "DejaVu Sans Mono", description: "Field-survey equipment: frosted bezels, contour maps, datum crosses and recessed glass."},
+    {id: "orbital", label: "Orbital", font: "JetBrains Mono", description: "Flight-deck hardware: machined housings, captive fasteners, ruled rails and recessed screens."},
     {id: "metropolis", label: "Metropolis", font: "DejaVu Sans", description: "Neon city glass, luminous vertical fins, reflected light and offset sign bands."},
     {id: "glass-vault", label: "Glass Vault", font: "Noto Sans", description: "Heavy corner clamps, stepped transparent blocks and deep inset controls."},
     {id: "radar-station", label: "Radar Station", font: "DejaVu Sans", description: "Bearing scales, partial range arcs and segmented controls on blurred glass."},
@@ -194,12 +194,12 @@ function surface(style, variant, p, ditherStrength) {
     }
     var canopy=style === "canopy", orbital=style === "orbital", metro=style === "metropolis";
     if (orbital && neutral) {
-        // A dense display body separates luminous instruments from inset wells.
-        fill=mix(p.background,p.foreground,inset?0.005:0.025);
+        fill=mix(p.background,p.foreground,inset?0.005:focused?0.10:outer?0.075:0.045);
         item=p.foreground;
-        opacity=focused?0.96:inset?0.80:outer?0.90:0.74;
-        border=[focused?p.primary:mix(fill,p.primary,outer?0.55:0.24),focused||outer?2:1];
-        renderGradient=[[mix(fill,p.primary,0.035),0],[fill,0.14],[fill,0.88],[mix(fill,p.foreground,0.025),1]];
+        opacity=focused?0.98:inset?0.94:outer?0.97:0.90;
+        border=[focused?p.primary:mix(fill,p.foreground,inset?0.28:0.40),focused||outer?2:1];
+        renderGradient=inset?[[fill,0],[fill,0.94],[mix(fill,p.foreground,0.05),1]]
+            :[[mix(fill,p.foreground,0.07),0],[fill,0.04],[fill,0.90],[mix(fill,p.background,0.55),1]];
     }
     if (metro && neutral) {
         // Smoked glazing catches the palette's two neon accent channels.
@@ -210,12 +210,12 @@ function surface(style, variant, p, ditherStrength) {
         renderGradient=[[mix(fill,p.primary,0.055),0],[fill,0.22],[fill,0.72],[mix(fill,p.tertiary,0.045),1]];
     }
     if (canopy && neutral) {
-        // A milky body holds compositor blur; inner layers remain airy.
-        fill=mix(p.background,p.foreground,inset?0.025:0.06);
+        // Survey equipment combines frosted glazing with a physical frame.
+        fill=mix(p.background,p.foreground,inset?0.025:focused?0.10:0.06);
         item=p.foreground;
-        opacity=focused?0.84:inset?0.38:outer?0.74:0.52;
-        border=[focused?p.primary:mix(fill,p.foreground,0.10),focused?1:0];
-        renderGradient=[[mix(fill,p.foreground,0.025),0],[fill,0.48],[mix(fill,p.background,0.06),1]];
+        opacity=focused?0.94:inset?0.66:outer?0.84:0.76;
+        border=[focused?p.primary:mix(fill,p.foreground,outer?0.32:0.22),focused||outer?2:1];
+        renderGradient=[[mix(fill,p.foreground,0.045),0],[fill,0.05],[fill,0.90],[mix(fill,p.background,0.25),1]];
     }
     var containers = ["bg", "popup", "pane", "surface", "surfaceContainer", "common", "internalbg", "focus", "surfaceVariant", "bar", "barbg"];
     var dotted = dithered && strength > 0 && containers.indexOf(variant) !== -1;
