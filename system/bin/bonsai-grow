@@ -1366,15 +1366,17 @@ def sun_palette(hour):
 
 def celestial_marks(daylight, rising):
     """Original open line art, inspired by classic terminal weather drawings."""
-    sun = (
-        "  ╲   │   ╱  ",
-        "   ╭─────╮   ",
-        "  ╱  ·    ╲  ",
-        "─ │ ·  ·  │ ─",
-        "  ╲    ·  ╱  ",
-        "   ╰─────╯   ",
-        "  ╱   │   ╲  ",
-    )
+    if daylight:
+        sun = (
+            "   ░▒▒▒░   ",
+            " ░▒▒▒▒▒▒▒░ ",
+            "░▒▒▒▒☼▒▒▒▒░",
+            " ░▒▒▒▒▒▒▒░ ",
+            "   ░▒▒▒░   ",
+        )
+        return [(x - 5, y - 2, glyph,
+                 f"sky_orb_sun{min(7, round(math.hypot((x - 5) / 5.4, (y - 2) / 2.45) * 7))}")
+                for y, row in enumerate(sun) for x, glyph in enumerate(row) if glyph != " "]
     moon = (
         "    .-───´   ",
         "  .'   .'    ",
@@ -1386,20 +1388,15 @@ def celestial_marks(daylight, rising):
     )
     mirror = str.maketrans(r"/\╭╮╰╯`´", r"\/╮╭╯╰´`")
     marks = []
-    for y, row in enumerate(sun if daylight else moon):
+    for y, row in enumerate(moon):
         for x, glyph in enumerate(row):
             if glyph == " ":
                 continue
             dx, dy = x - 6, y - 3
-            if daylight:
-                ray = y in (0, 6) or x in (0, 12)
-                band = min(7, round(math.hypot(dx / 5.4, dy / 2.45) * 7))
-                role = "sky_glow" if ray else f"sky_orb_sun{band}"
-            else:
-                band = min(7, max(0, 7 - x + (2 if glyph == "·" else 0)))
-                role = f"sky_orb_moon{band}"
-                if not rising:
-                    dx, glyph = -dx, glyph.translate(mirror)
+            band = min(7, max(0, 7 - x + (2 if glyph == "·" else 0)))
+            role = f"sky_orb_moon{band}"
+            if not rising:
+                dx, glyph = -dx, glyph.translate(mirror)
             marks.append((dx, dy, glyph, role))
     return marks
 
