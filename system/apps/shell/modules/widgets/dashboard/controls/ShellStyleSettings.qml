@@ -1,6 +1,5 @@
 pragma ComponentBehavior: Bound
 import QtQuick
-import QtQuick.Dialogs
 import QtQuick.Controls
 import QtQuick.Layouts
 import qs.config
@@ -16,7 +15,7 @@ ColumnLayout {
 
     StyledText {
         Layout.fillWidth: true
-        text: "Set backgrounds and colors for the shell, bar, Fish and supported apps. Adjust fonts and corners, transparency, blur and motion in Appearance. Terminal text follows the monospace font settings. Dithered also converts still wallpapers automatically."
+        text: "Set backgrounds and colors for the shell, bar, Fish and supported apps. Adjust fonts and corners, transparency, blur and motion in Appearance. Terminal text follows the monospace font settings."
         wrapMode: Text.WordWrap
         font.pixelSize: Styling.fontSize(-1)
         color: Colors.overSurfaceVariant
@@ -112,134 +111,6 @@ ColumnLayout {
                         color: Colors.overSurfaceVariant
                     }
                 }
-            }
-        }
-    }
-    StyledRect {
-        visible: Styling.shellStyle === "dithered"
-        variant: "internalbg"
-        Layout.fillWidth: true
-        implicitHeight: ditherSettings.implicitHeight + 24
-        ColumnLayout {
-            id: ditherSettings
-            anchors.fill: parent
-            anchors.margins: 12
-            spacing: Styling.spacing(8)
-            StyledText { text: "Shell dithering"; font.bold: true }
-            StyledText { text: "Texture strength" }
-            RowLayout {
-                Layout.fillWidth: true
-                StyledSlider {
-                    id: strengthSlider
-                    objectName: "dither-strength"
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 28
-                    stepSize: 0.01
-                    snapMode: "always"
-                    smoothDrag: false
-                    property bool ready: false
-                    readonly property real configValue: Config.theme.ditherStrength / 100
-                    onConfigValueChanged: value = configValue
-                    Component.onCompleted: { value = configValue; ready = true; }
-                    onValueChanged: {
-                        const strength = Math.round(value * 100);
-                        if (ready && strength !== Config.theme.ditherStrength)
-                            Config.theme.ditherStrength = strength;
-                    }
-                }
-                StyledText {
-                    text: Config.theme.ditherStrength + "%"
-                    Layout.preferredWidth: Styling.fontSize(0) * 3
-                    horizontalAlignment: Text.AlignRight
-                }
-            }
-            StyledText {
-                Layout.fillWidth: true
-                wrapMode: Text.WordWrap
-                font.pixelSize: Styling.fontSize(-2)
-                color: Colors.overSurfaceVariant
-                text: "Adjust the contrast of fine panel texture. 0% turns it off. Buttons, text and borders stay crisp."
-            }
-            StyledText { text: "Wallpaper conversion"; font.bold: true }
-            SettingsComboBox {
-                objectName: "wallpaper-dither-strength"
-                Layout.fillWidth: true
-                model: [{label: "Normal · 24 colors", value: "normal"},
-                        {label: "Strong · 6 colors", value: "strong"},
-                        {label: "Intense · 4 colors", value: "intense"}]
-                textRole: "label"
-                valueRole: "value"
-                currentIndex: Config.theme.wallpaperDitherStrength === "normal" ? 0
-                    : Config.theme.wallpaperDitherStrength === "intense" ? 2 : 1
-                onActivated: Config.theme.wallpaperDitherStrength = currentValue
-            }
-            SettingsComboBox {
-                objectName: "dither-palette"
-                Layout.fillWidth: true
-                model: [ {label: "Keep photo colors", value: "original"},
-                         {label: "Teal and orange", value: "teal-orange"},
-                         {label: "Main color", value: "tint"} ]
-                textRole: "label"
-                valueRole: "value"
-                currentIndex: Config.theme.ditherPalette === "tint" ? 2
-                    : Config.theme.ditherPalette === "teal-orange" ? 1 : 0
-                onActivated: Config.theme.ditherPalette = currentValue
-            }
-            WallpaperTintSwatches {
-                visible: Config.theme.ditherPalette === "tint"
-                Layout.fillWidth: true
-            }
-            RowLayout {
-                visible: Config.theme.ditherPalette === "tint"
-                Layout.fillWidth: true
-                SettingsButton {
-                    objectName: "dither-tint-picker"
-                    text: "Choose main color"
-                    onClicked: {
-                        tintDialog.selectedColor = Config.theme.ditherTintColor;
-                        tintDialog.open();
-                    }
-                    icon.name: "color-picker"
-                }
-                StyledRect {
-                    variant: "common"
-                    implicitWidth: Styling.fontSize(0) * 2
-                    implicitHeight: implicitWidth
-                    objectName: "dither-tint-preview"
-                    fillColor: Config.theme.ditherTintColor
-                    backgroundOpacity: 1
-                }
-                SettingsTextField {
-                    objectName: "dither-tint-hex"
-                    Layout.fillWidth: true
-                    text: Config.theme.ditherTintColor
-                    placeholderText: "#RRGGBB"
-                    validator: RegularExpressionValidator { regularExpression: /#[0-9a-fA-F]{6}/ }
-                    onEditingFinished: {
-                        if (acceptableInput) Config.theme.ditherTintColor = text.toLowerCase();
-                        else text = Config.theme.ditherTintColor;
-                    }
-                }
-            }
-            ColorDialog {
-                id: tintDialog
-                title: "Wallpaper main color"
-                onAccepted: Config.theme.ditherTintColor = selectedColor.toString().toLowerCase()
-            }
-            StyledText {
-                Layout.fillWidth: true
-                wrapMode: Text.WordWrap
-                font.pixelSize: Styling.fontSize(-2)
-                color: Colors.overSurfaceVariant
-                text: DitheredWallpapers.busy ? "Converting wallpaper…" :
-                    "Still images convert locally into cached PNG copies. Originals and text stay intact. Videos and animated wallpapers keep their original appearance."
-            }
-            StyledText {
-                visible: DitheredWallpapers.error !== ""
-                Layout.fillWidth: true
-                wrapMode: Text.WordWrap
-                color: Colors.error
-                text: DitheredWallpapers.error
             }
         }
     }

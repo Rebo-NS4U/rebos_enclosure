@@ -1,4 +1,4 @@
-"""Verify fine dithering, clean controls and readable panel texture."""
+"""Verify retired dithering falls back to clean opaque surfaces."""
 from pathlib import Path
 import shutil
 import subprocess
@@ -17,11 +17,13 @@ for (const light of [false, true]) {
  const p = {background:light?'#f5f5f5':'#101010', foreground:light?'#101010':'#eeeeee',
  primary:'#4585a0', onPrimary:'#ffffff', secondary:'#4585a0', onSecondary:'#ffffff',
  tertiary:'#4585a0', onTertiary:'#ffffff', error:'#a03030', onError:'#ffffff'};
+ assert.ok(!styles.some(entry => entry.id === 'dithered'));
  let previous = 0;
  for (const strength of [0, 20, 50, 100]) {
   assert.equal(ditherCellSize(strength), 1);
   const panel = surface('dithered', 'bg', p, strength);
-  assert.equal(panel.gradientType, strength ? 'halftone' : 'linear');
+  assert.equal(panel.gradientType, 'linear');
+  assert.deepEqual(panel, surface('quiet', 'bg', p, strength));
   assert.ok(contrast(panel.halftoneDotColor, panel.itemColor) >= 4.5);
   const difference = contrast(panel.halftoneDotColor, panel.halftoneBackgroundColor);
   assert.ok(difference >= previous);

@@ -6,7 +6,7 @@ import qs.config
 
 Singleton {
     id: root
-    readonly property bool active: Config.theme.shellStyle === "dithered"
+    readonly property bool active: false // Retired; saved wallpapers always use their originals.
     readonly property string rendererRevision: "5"
     readonly property string palette: Config.theme.ditherPalette
     readonly property string tint: palette === "tint" ? Config.theme.ditherTintColor.toLowerCase() : ""

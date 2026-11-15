@@ -19,7 +19,7 @@ Singleton {
         return Qt.rgba(value.r, value.g, value.b, opacity);
     }
 
-    readonly property string shellStyle: Config.theme?.shellStyle ?? "glass"
+    readonly property string shellStyle: Config.theme?.shellStyle === "dithered" ? "quiet" : (Config.theme?.shellStyle ?? "glass")
     readonly property bool unifiedStyle: shellStyle !== "custom"
     readonly property real ditherCellSize: ShellStyles.ditherCellSize(Config.theme.ditherStrength)
     readonly property real ditherEdgeWidth: Math.max(1, Math.round(ditherCellSize * 0.75))

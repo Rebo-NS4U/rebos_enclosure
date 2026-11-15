@@ -4,7 +4,6 @@ var styles = [
     {id: "glass", label: "Transparent", description: "Dark transparent backgrounds with light wallpaper colors."},
     {id: "quiet", label: "Opaque", description: "Solid backgrounds with less wallpaper color."},
     {id: "colorful", label: "Tinted", description: "Transparent backgrounds with more wallpaper color."},
-    {id: "dithered", label: "Dithered", description: "Dithered wallpapers, ordered screen texture and matching app colors."},
     {id: "custom", label: "Custom", description: "Use your saved background and border settings."}
 ];
 
@@ -50,6 +49,7 @@ function ditherCellSize(strength) {
 }
 
 function surface(style, variant, p, ditherStrength) {
+    if (style === "dithered") style = "quiet"; // Compatibility with saved appearances.
     var strength = Number.isFinite(ditherStrength) ? Math.max(0, Math.min(100, ditherStrength)) : 20;
     var colorful = style === "colorful", dithered = style === "dithered", quiet = style === "quiet" || dithered;
     var tint = colorful ? 0.10 : (quiet ? 0.015 : 0.035);
@@ -110,6 +110,7 @@ function surface(style, variant, p, ditherStrength) {
 
 // Export the same surface hierarchy to native and themed applications.
 function appPalette(style, palette, customOpacity) {
+    if (style === "dithered") style = "quiet";
     var result = Object.assign({}, palette);
     result.style = style;
     result.opacity = customOpacity;

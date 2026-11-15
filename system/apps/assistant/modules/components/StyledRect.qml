@@ -56,8 +56,7 @@ ClippingRectangle {
     property color item: itemColor
 
     readonly property real rectOpacity: backgroundOpacity >= 0 ? backgroundOpacity : variantConfig.opacity
-    readonly property bool usesDitherGrid: (styleOverride || Styling.shellStyle) === "dithered"
-        && Config.theme.ditherStrength > 0
+    readonly property bool usesDitherGrid: false
     readonly property real ditherCellSize: Styling.ditherCellSize
     readonly property bool ditheredOutline: usesDitherGrid
         && enableBorder && border.width > 0 && border.color.a > 0

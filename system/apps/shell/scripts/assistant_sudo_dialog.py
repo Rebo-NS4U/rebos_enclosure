@@ -46,7 +46,7 @@ def theme():
     return dict(fg=fg, bg=fill, accent=accent, on_accent=color("overPrimary", bg),
                 inset=mix(bg, accent, tint * .6), border=mix(base, accent, .38 if style == "dithered" else .18),
                 dot=mix(fill, fg, strength * .00175),
-                cell=.75 + strength * .0375 if style == "dithered" and strength > 0 else 0,
+                cell=0,
                 radius=max(0, float(config.get("roundness", 16))),
                 font=str(config.get("font", "sans-serif")), size=max(10, int(config.get("fontSize", 14))))
 
