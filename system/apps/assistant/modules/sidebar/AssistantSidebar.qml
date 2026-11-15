@@ -353,7 +353,7 @@ Item {
 
         StyledRect {
             id: sidebarBackground
-            // Use the quiet fabric finish behind the assistant toolbar.
+            // Concentrate the sculpted fabric finish behind the assistant toolbar.
             barSurface: true
             anchors.fill: parent
             anchors.topMargin: root.tiled ? 0 : root.sidebarMargin

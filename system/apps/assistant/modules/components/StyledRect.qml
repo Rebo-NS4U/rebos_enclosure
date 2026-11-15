@@ -568,16 +568,31 @@ ClippingRectangle {
                     // A tensile fabric roof: broad catenary sweeps, ribs and shaded folds.
                     const fabric=a=>Qt.rgba(accent.r*0.65+secondaryAccent.r*0.35,accent.g*0.65+secondaryAccent.g*0.35,accent.b*0.65+secondaryAccent.b*0.35,a);
                     if(barSurface){
-                        // Keep shallow bars quiet: one fabric sweep, no converging ribs.
-                        const drop=Math.min(8,height*0.14);
-                        const shade=ctx.createLinearGradient(0,0,0,height);
-                        shade.addColorStop(0,fabric(0.08));
-                        shade.addColorStop(0.45,fabric(0.015));
-                        shade.addColorStop(1,fabric(0.035));
-                        ctx.fillStyle=shade;ctx.fillRect(0,0,width,height);
-                        ctx.strokeStyle=fabric(0.14);ctx.lineWidth=1;
-                        ctx.beginPath();ctx.moveTo(safe,3);
-                        ctx.quadraticCurveTo(width*0.5,3+drop,width-safe,3);ctx.stroke();
+                        // A sculpted header canopy; keep the conversation surface quiet.
+                        const roof=Math.min(78,height*0.22);
+                        const glow=ctx.createLinearGradient(0,0,0,roof+24);
+                        glow.addColorStop(0,fabric(0.28));
+                        glow.addColorStop(0.55,fabric(0.10));
+                        glow.addColorStop(1,fabric(0));
+                        ctx.fillStyle=glow;ctx.fillRect(0,0,width,roof+24);
+                        function hem(offset) {
+                            ctx.beginPath();ctx.moveTo(0,12+offset);
+                            ctx.bezierCurveTo(width*0.16,roof+offset,width*0.32,roof+offset,width*0.52,16+offset);
+                            ctx.bezierCurveTo(width*0.70,roof*0.72+offset,width*0.86,roof*0.72+offset,width,12+offset);
+                        }
+                        const cloth=ctx.createLinearGradient(0,0,0,roof);
+                        cloth.addColorStop(0,fabric(0.08));
+                        cloth.addColorStop(1,fabric(0.20));
+                        hem(0);ctx.lineTo(width,0);ctx.lineTo(0,0);ctx.closePath();
+                        ctx.fillStyle=cloth;ctx.fill();
+                        // A broad contact shadow gives the fabric edge depth.
+                        hem(3);ctx.strokeStyle=fabric(0.08);ctx.lineWidth=4;ctx.stroke();
+                        hem(0);ctx.strokeStyle=fabric(0.48);ctx.lineWidth=1;ctx.stroke();
+                        for(const end of [0.22,0.80]){
+                            ctx.beginPath();ctx.moveTo(width*0.52,2);
+                            ctx.quadraticCurveTo(width*end,8,width*end,roof*0.62);
+                            ctx.strokeStyle=fabric(0.16);ctx.lineWidth=1;ctx.stroke();
+                        }
                     }else if(outer){
                         const drop=Math.min(70,height*0.22);
                         // Translucent fabric spans the upper edge with a scalloped hem.
