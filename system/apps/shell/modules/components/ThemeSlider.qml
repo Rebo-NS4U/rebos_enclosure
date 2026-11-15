@@ -9,6 +9,20 @@ Slider {
     focusPolicy: Qt.StrongFocus
     wheelEnabled: false
     opacity: enabled ? 1 : 0.45
+    // A small pointer detent at each quarter; programmatic updates stay exact.
+    function snapQuarter(ratio: real): real {
+        const quarter = Math.round(ratio * 4) / 4;
+        return quarter > 0 && quarter < 1 && Math.abs(ratio - quarter) <= 0.020000001
+            ? quarter : ratio;
+    }
+
+    onMoved: {
+        if (pressed && to !== from) {
+            const ratio = (value - from) / (to - from);
+            const snapped = snapQuarter(ratio);
+            if (snapped !== ratio) value = from + snapped * (to - from);
+        }
+    }
     background: StandardProgressBar {
         x: root.leftPadding
         y: root.topPadding + (root.availableHeight - height) / 2

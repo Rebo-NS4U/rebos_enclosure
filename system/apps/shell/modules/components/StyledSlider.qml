@@ -69,6 +69,13 @@ Item {
     property real stepSize: 0  // 0 means no stepping
     property string snapMode: "none"  // "none", "always", "release"
 
+    // A small pointer detent at each quarter; programmatic updates stay exact.
+    function snapQuarter(ratio: real): real {
+        const quarter = Math.round(ratio * 4) / 4;
+        return quarter > 0 && quarter < 1 && Math.abs(ratio - quarter) <= 0.020000001
+            ? quarter : ratio;
+    }
+
     // Helper function to apply step snapping
     function applyStep(val: real): real {
         if (stepSize <= 0)
@@ -314,7 +321,7 @@ Item {
             if (root.vertical) {
                 ratio = 1 - ratio; // Invert for vertical
             }
-            return ratio;
+            return root.snapQuarter(ratio);
         }
 
         onPressed: mouse => {

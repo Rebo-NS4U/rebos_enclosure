@@ -32,6 +32,18 @@ ShellRoot {
    rail.value = -1; check(fill.width === 0, 'Negative values clamp');
    rail.value = 2; check(fill.width === 200, 'Overflow values clamp');
    rail.value = NaN; check(fill.width === 0, 'Nonfinite values are safe');
+   for (const slider of [horizontal, vertical, themed]) {
+    for (const quarter of [0.25, 0.5, 0.75]) {
+     for (const delta of [-0.02, -0.01, 0, 0.01, 0.02])
+      check(slider.snapQuarter(quarter + delta) === quarter, 'Quarter detent includes both boundaries');
+     for (const delta of [-0.021, 0.021])
+      check(slider.snapQuarter(quarter + delta) === quarter + delta, 'Pointer escapes detent');
+    }
+    check(slider.snapQuarter(0.01) === 0.01 && slider.snapQuarter(0.99) === 0.99, 'Endpoints remain free');
+   }
+   horizontal.editValue(0.5); horizontal.editValue(horizontal.value + 0.01);
+   check(horizontal.value === 0.51, 'Keyboard can leave detent');
+   horizontal.value = 0.49; check(horizontal.value === 0.49, 'External updates remain exact');
    horizontal.editValue(2); check(horizontal.value === 1, 'Slider input clamps');
    vertical.editValue(-1); check(vertical.value === 0, 'Vertical slider input clamps');
    check(themed.background.height === 2, 'Theme slider uses thin shared rail');
