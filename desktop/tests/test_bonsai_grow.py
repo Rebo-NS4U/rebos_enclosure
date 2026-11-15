@@ -363,7 +363,7 @@ class BonsaiGrowTests(unittest.TestCase):
         with patch.object(bonsai, 'specimen_canvas', wraps=bonsai.specimen_canvas) as canvas, \
              patch.object(bonsai.time, 'monotonic', side_effect=[0, 0, .5, 1]), \
              patch.object(bonsai.time, 'sleep'), \
-             patch.object(bonsai.shutil, 'get_terminal_size', return_value=os.terminal_size((80,40))), \
+             patch.object(bonsai.shutil, 'get_terminal_size', side_effect=[os.terminal_size((80,40))]*4 + [os.terminal_size((81,40))]), \
              patch.object(bonsai.os, 'write'), \
              patch('signal.signal'):
             bonsai.animate_background(42, ['#70bb50']*3, 1, 'informal')
@@ -380,6 +380,31 @@ class BonsaiGrowTests(unittest.TestCase):
         self.assertGreater(bounds(stalk)[0], bounds(mature)[0])
         self.assertLess(bounds(sprout)[1],bounds(mature)[1])
         self.assertTrue(any(ink.startswith('leaf') for row in sprout for glyph,ink in row))
+
+    def test_idle_sky_keeps_updating_after_growth(self):
+        size = os.terminal_size((80, 40))
+        local = __import__('time')
+        morning = local.struct_time((2026, 11, 15, 8, 0, 0, 6, 319, -1))
+        afternoon = local.struct_time((2026, 11, 15, 16, 0, 0, 6, 319, -1))
+        with patch.object(bonsai.time, 'monotonic', side_effect=[0, 2, 32]), \
+             patch.object(bonsai.time, 'localtime', side_effect=[morning, afternoon]), \
+             patch.object(bonsai.time, 'sleep') as sleep, \
+             patch.object(bonsai.shutil, 'get_terminal_size', side_effect=[size]*3 + [os.terminal_size((81, 40))]), \
+             patch.object(bonsai.os, 'write') as write, patch('signal.signal'):
+            bonsai.animate_background(42, ['#70bb50']*3, 1, 'informal')
+        self.assertEqual(write.call_count, 2)
+        self.assertNotEqual(write.call_args_list[0].args[1], write.call_args_list[1].args[1])
+        self.assertEqual([c.args[0] for c in sleep.call_args_list], [30, 30])
+        for hours, glyph in (((7, 12, 17), '☼'), ((19, 0, 5), '☾')):
+            positions = []
+            for hour in hours:
+                canvas = [[(' ', '') for _ in range(57)] for _ in range(24)]
+                bonsai.sky_pane(canvas, hour)
+                positions.append(next((x, y) for y, row in enumerate(canvas)
+                                      for x, cell in enumerate(row) if cell[0] == glyph))
+            self.assertLess(positions[0][0], positions[1][0])
+            self.assertLess(positions[1][0], positions[2][0])
+            self.assertLess(positions[1][1], positions[0][1])
 
     def test_animation_settles_without_a_last_frame_jump(self):
         samples = [bonsai.animation_day(i / 120, 1) for i in range(121)]
@@ -511,7 +536,7 @@ class BonsaiGrowTests(unittest.TestCase):
         import re
         self.assertEqual(bonsai.sky_at_hour(0), bonsai.sky_at_hour(24))
         self.assertNotEqual(bonsai.sky_at_hour(0), bonsai.sky_at_hour(12))
-        for hour, orb in ((0, '☾'), (12, '○')):
+        for hour, orb in ((0, '☾'), (12, '☼')):
             image = bonsai.render(0, 42, False, 59, fixed_height=True, hour=hour)
             self.assertIn(orb, image)
             self.assertEqual(len(image.splitlines()), 26)

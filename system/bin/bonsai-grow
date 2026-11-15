@@ -1352,7 +1352,7 @@ def sky_pane(canvas, hour):
     progress = ((hour - 6) if daylight else (hour - 18) % 24) / 12
     cx = round(5 + 46 * progress)
     cy = round(8 - 6 * math.sin(math.pi * progress))
-    marks = [(cx, cy, "○" if daylight else "☾", "sky_orb")]
+    marks = [(cx, cy, "☼" if daylight else "☾", "sky_orb")]
     if not daylight:
         marks += [(x, y, "·", "sky_star") for x, y in
                   ((7, 2), (19, 1), (39, 3), (49, 1), (12, 6), (44, 7))]
@@ -1947,7 +1947,7 @@ def animate_growth(seed, accents, duration=2.0, style="informal"):
 
 
 def animate_background(seed, accents, duration, style):
-    """Paint only the reserved greeting rows, without touching terminal input."""
+    """Grow once, then track the sky until Fish stops us before command output."""
     import signal
 
     signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))
@@ -1969,9 +1969,9 @@ def animate_background(seed, accents, duration, style):
         # One synchronized write saves and restores Fish's editing cursor.
         frame = "\033[?2026h\0337\033[H" + picture + "\0338\033[?2026l"
         os.write(sys.stdout.fileno(), frame.encode())
-        if day >= 30:
-            break
-        time.sleep(1 / 60)
+        # Fish terminates this worker at preexec/exit. Keep the mature scene
+        # alive while the first prompt is idle; resizing also ends the worker.
+        time.sleep(30 if day >= 30 else 1 / 60)
 
 
 def main():
