@@ -1366,10 +1366,12 @@ def sun_palette(hour):
 
 def sky_pane(canvas, hour):
     """Place sparse celestial marks and mist only in unoccupied glass."""
+    hour %= 24
     daylight = 6 <= hour < 18
-    progress = ((hour - 6) if daylight else (hour - 18) % 24) / 12
-    cx = round(5 + 46 * progress)
-    cy = round(8 - 6 * math.sin(math.pi * progress))
+    rising = 6 <= hour < 12 if daylight else hour >= 18
+    # Keep the center for the tree. Morning/evening rise at the left corner;
+    # afternoon/after-midnight settle at the right, with an inset glass margin.
+    cx, cy = (8 if rising else 48), 4
     # Half-blocks give a clean circular silhouette at terminal cell proportions.
     # Cut a second offset disc from the moon to form a continuous crescent.
     marks = []
@@ -1390,7 +1392,9 @@ def sky_pane(canvas, hour):
                     "sky_orb_light" if dx < -0.15 else "sky_orb")
                 if daylight:
                     role = f"sky_orb_sun{min(7, round(distance * 7))}"
-                marks.append((cx + x - 5, cy + y - 2, glyph, role))
+                # The crescent opens toward the garden from either corner.
+                offset = x - 5 if daylight or rising else 5 - x
+                marks.append((cx + offset, cy + y - 2, glyph, role))
     if daylight:
         # Sparse, low-contrast corona stays separate from the solid solar disc.
         marks += [(cx + dx, cy + dy, glyph, "sky_glow")

@@ -405,8 +405,8 @@ class BonsaiGrowTests(unittest.TestCase):
                 positions.append((sum(x for x, y in body) / len(body),
                                   sum(y for x, y in body) / len(body)))
             self.assertLess(positions[0][0], positions[1][0])
-            self.assertLess(positions[1][0], positions[2][0])
-            self.assertLess(positions[1][1], positions[0][1])
+            self.assertEqual(positions[1], positions[2])
+            self.assertEqual(positions[1][1], positions[0][1])
 
     def test_large_sun_and_moon_stay_inside_the_glass(self):
         for hour in range(24):
@@ -420,16 +420,16 @@ class BonsaiGrowTests(unittest.TestCase):
 
     def test_sky_leaves_a_dark_contour_and_lights_the_foreground(self):
         canvas = [[(' ', '') for _ in range(57)] for _ in range(24)]
-        # A thin branch crossing the middle of the noon sun.
-        for y in range(5):
-            canvas[y][28] = ('│', 'wood')
+        # A thin branch crossing the afternoon corner sun.
+        for y in range(2, 7):
+            canvas[y][48] = ('│', 'wood')
         before = [row[:] for row in canvas]
         lit = bonsai.sky_pane(canvas, 12)
         self.assertTrue(lit)
         self.assertTrue(any(ink.startswith('sky_orb') for row in canvas for _, ink in row))
-        for y in range(5):
-            self.assertEqual(canvas[y][28], before[y][28])
-            for x in (27, 29):
+        for y in range(2, 7):
+            self.assertEqual(canvas[y][48], before[y][48])
+            for x in (47, 49):
                 self.assertFalse(canvas[y][x][1].startswith('sky_orb'))
         original = '\033[0;38;2;70;90;60m'
         day = bonsai.backlit_ink(original, True)
@@ -465,6 +465,20 @@ class BonsaiGrowTests(unittest.TestCase):
             roles = {ink for row in canvas for _, ink in row}
             self.assertIn('sky_glow', roles)
             self.assertGreater(len(roles & set(noon)), 5)
+
+    def test_celestial_bodies_remain_in_the_time_selected_corner(self):
+        for hour in (0, 5.999, 6, 11.999, 12, 17.999, 18, 23.999):
+            canvas = [[(' ', '') for _ in range(57)] for _ in range(24)]
+            bonsai.sky_pane(canvas, hour)
+            body = [(x, y) for y, row in enumerate(canvas)
+                    for x, (_, ink) in enumerate(row)
+                    if ink.startswith(('sky_orb', 'sky_glow'))]
+            left = 6 <= hour < 12 or 18 <= hour < 24
+            self.assertTrue(body)
+            self.assertTrue(all((2 <= x <= 14 if left else 42 <= x <= 54)
+                                and 2 <= y <= 6 for x, y in body))
+            # Keep the central tree area free of celestial blocks.
+            self.assertFalse(any(15 <= x <= 41 for x, y in body))
 
     def test_animation_settles_without_a_last_frame_jump(self):
         samples = [bonsai.animation_day(i / 120, 1) for i in range(121)]
