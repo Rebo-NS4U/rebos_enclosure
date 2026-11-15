@@ -33,7 +33,7 @@ try:
                 raise ValueError('A download is already running.')
             mode = int(data.get('mode', 0))
             folder = os.path.expanduser(data.get('folder') or '~/Music')
-            fmt = data.get('format', 'mp3')
+            fmt = data.get('format', 'ogg')
             login = data.get('login', False)
             if data.get('backend') == 'zotify':
                 args = ['--liked', '--no-splash'] if login else build_args(mode, data.get('links', ''), folder, fmt)

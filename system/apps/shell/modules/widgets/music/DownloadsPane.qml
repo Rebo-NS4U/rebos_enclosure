@@ -18,7 +18,7 @@ ColumnLayout {
     property bool loginOnly: false
     property int backendIndex: 0
     property int sourceIndex: 0
-    property string audioFormat: "mp3"
+    property string audioFormat: "ogg"
     readonly property bool needsLinks: backendIndex === 0 || sourceIndex === 0
     readonly property bool canDownload: !busy && service.running && folder.text.trim().length > 0 && (!needsLinks || links.text.trim().length > 0)
     spacing: 16
