@@ -1352,7 +1352,18 @@ def sky_pane(canvas, hour):
     progress = ((hour - 6) if daylight else (hour - 18) % 24) / 12
     cx = round(5 + 46 * progress)
     cy = round(8 - 6 * math.sin(math.pi * progress))
-    marks = [(cx, cy, "☼" if daylight else "☾", "sky_orb")]
+    # Wide terminal cells need an eleven-column, five-row disc to read round.
+    # Broken shading keeps the enlarged bodies in the quiet ink-wash theme.
+    shape = (
+        ("   ░▒▒▒░   ", " ░▒▒▒▒▒▒▒░ ", "░▒▒▒▒☼▒▒▒▒░",
+         " ░▒▒▒▒▒▒▒░ ", "   ░▒▒▒░   ")
+        if daylight else
+        ("   ░▒▒░    ", " ░▒▒░      ", "░▒☾░       ",
+         " ░▒▒░      ", "   ░▒▒░    ")
+    )
+    marks = [(cx + x - 5, cy + y - 2, glyph, "sky_orb")
+             for y, row in enumerate(shape) for x, glyph in enumerate(row)
+             if glyph != " "]
     if not daylight:
         marks += [(x, y, "·", "sky_star") for x, y in
                   ((7, 2), (19, 1), (39, 3), (49, 1), (12, 6), (44, 7))]
@@ -1360,7 +1371,7 @@ def sky_pane(canvas, hour):
     marks += [(x, y, "─", "sky_mist") for x, y in
               ((4, 10), (5, 10), (7, 10), (48, 13), (50, 13), (51, 13))]
     for x, y, glyph, ink in marks:
-        if canvas[y][x] == (" ", ""):
+        if 0 <= y < len(canvas) and 0 <= x < len(canvas[y]) and canvas[y][x] == (" ", ""):
             canvas[y][x] = (glyph, ink)
 
 

@@ -406,6 +406,16 @@ class BonsaiGrowTests(unittest.TestCase):
             self.assertLess(positions[1][0], positions[2][0])
             self.assertLess(positions[1][1], positions[0][1])
 
+    def test_large_sun_and_moon_stay_inside_the_glass(self):
+        for hour in range(24):
+            canvas = [[(' ', '') for _ in range(57)] for _ in range(24)]
+            bonsai.sky_pane(canvas, hour)
+            body = [(x, y) for y, row in enumerate(canvas)
+                    for x, (_, ink) in enumerate(row) if ink == 'sky_orb']
+            self.assertGreaterEqual(len(body), 20)
+            self.assertGreaterEqual(max(x for x, y in body) - min(x for x, y in body), 5)
+            self.assertEqual(max(y for x, y in body) - min(y for x, y in body), 4)
+
     def test_animation_settles_without_a_last_frame_jump(self):
         samples = [bonsai.animation_day(i / 120, 1) for i in range(121)]
         self.assertEqual(samples[0], 0)
