@@ -1,19 +1,18 @@
-/* Enclosure greeter: shared shell palette, typography and geometry. */
-@define-color theme_bg_color {{background}};
+/* Enclosure greeter: OLED black surfaces with shared accents and typography. */
+@define-color theme_bg_color #000000;
 @define-color theme_fg_color {{overBackground}};
-@define-color theme_base_color {{surfaceContainerLowest}};
+@define-color theme_base_color #000000;
 @define-color theme_text_color {{overBackground}};
 @define-color theme_selected_bg_color {{primary}};
 @define-color theme_selected_fg_color {{overPrimary}};
 @define-color accent_bg_color {{primary}};
 @define-color accent_fg_color {{overPrimary}};
 * { font-family: "{{font}}"; font-size: {{fontSize}}px; }
-window { background-color: {{background}}; color: {{overBackground}}; }
+window { background-color: #000000; color: {{overBackground}}; }
 label { color: {{overBackground}}; }
 frame.background, frame.background.noctalia-login {
-  background-color: alpha({{background}}, {{opacity}});
-  background-image: linear-gradient(155deg, alpha({{primary}}, 0.09), transparent 48%),
-                    linear-gradient(alpha({{overBackground}}, 0.035), transparent 30%);
+  background-color: #000000;
+  background-image: none;
   border: 1px solid mix({{outlineVariant}}, {{primary}}, 0.22);
   border-radius: {{radius}}px;
   padding: 32px 36px;
@@ -25,7 +24,7 @@ frame.background > grid > label:first-child {
   font-size: 28px; font-weight: 600; margin-bottom: 24px;
 }
 entry, passwordentry, combobox > box > button {
-  background: alpha({{surfaceContainerLowest}}, 0.92); color: {{overBackground}};
+  background: #000000; color: {{overBackground}};
   border: 1px solid {{outlineVariant}}; border-radius: {{innerRadius}}px;
   min-height: 32px; padding: 8px 14px;
   box-shadow: inset 0 1px 3px alpha(black, 0.12);
@@ -36,7 +35,7 @@ entry:focus-within, passwordentry:focus-within, button:focus-visible {
   outline: 2px solid {{primary}}; outline-offset: -2px;
 }
 button {
-  background: {{surfaceContainer}}; color: {{overBackground}};
+  background: #000000; color: {{overBackground}};
   border: 1px solid {{outlineVariant}}; border-radius: {{innerRadius}}px;
   min-height: 24px; padding: 7px 14px; box-shadow: none;
 }
@@ -54,7 +53,7 @@ button:disabled, entry:disabled, passwordentry:disabled { opacity: 0.4; }
 button.toggle { min-height: 0; padding: 6px 10px; }
 button.destructive-action:hover { border-color: {{error}}; }
 popover contents {
-  background: {{surfaceContainer}}; color: {{overBackground}};
+  background: #000000; color: {{overBackground}};
   border: 1px solid {{outlineVariant}}; border-radius: {{radius}}px;
   padding: 6px; box-shadow: 0 8px 24px alpha(black, 0.25);
 }
@@ -62,7 +61,7 @@ popover modelbutton {
   min-height: 24px; padding: 8px 12px; border-radius: {{innerRadius}}px;
 }
 popover modelbutton:hover { background: {{surfaceContainerHigh}}; }
-infobar { background: {{surfaceContainer}}; color: {{overBackground}}; border-radius: {{radius}}px; }
+infobar { background: #000000; color: {{overBackground}}; border-radius: {{radius}}px; }
 selection { background: {{primary}}; color: {{overPrimary}}; }
 /* Clock header: generous time, a quiet date badge, then a clear sign-in boundary. */
 .noctalia-login .card-time {
@@ -108,7 +107,7 @@ entry:hover, passwordentry:hover, combobox > box > button:hover {
   border-color: alpha({{primary}}, 0.65);
 }
 .noctalia-hud button.destructive-action {
-  background: alpha({{background}}, 0.88);
+  background: #000000;
   border-color: alpha({{overBackground}}, 0.18);
   box-shadow: 0 4px 16px alpha(black, 0.22);
 }
