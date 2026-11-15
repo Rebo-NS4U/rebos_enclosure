@@ -470,6 +470,10 @@ ClippingRectangle {
             objectName: "wallpaper-theme-canvas"
             readonly property string finish: root.styleOverride || Styling.shellStyle
             readonly property real cornerRadius: root.effectiveCornerRadius
+            readonly property color accent: Colors.primary
+            readonly property color secondaryAccent: Colors.tertiary
+            onAccentChanged: requestPaint()
+            onSecondaryAccentChanged: requestPaint()
             readonly property color pigment: root.itemColor
             readonly property bool outer: root.variant === "bg" || root.variant === "popup"
             opacity: root.rectOpacity
@@ -504,33 +508,52 @@ ClippingRectangle {
                         ctx.fillStyle=bloom;ctx.fillRect(0,0,width,height);
                     }
                 }else if(finish === "orbital"){
-                    // Diffuse rim illumination floats around a quiet satin center.
-                    const glow=ctx.createRadialGradient(width*0.78,0,0,width*0.78,0,Math.max(width,height)*0.7);
-                    glow.addColorStop(0,ink(outer?0.065:0.025));
-                    glow.addColorStop(0.35,ink(0.018));
-                    glow.addColorStop(1,ink(0));
-                    ctx.fillStyle=glow;ctx.fillRect(0,0,width,height);
-                    if(outer && width>safe*2){
-                        const rim=ctx.createLinearGradient(safe,0,width-safe,0);
-                        rim.addColorStop(0,ink(0));rim.addColorStop(0.65,ink(0.22));rim.addColorStop(1,ink(0));
-                        ctx.strokeStyle=rim;ctx.lineWidth=1;
-                        ctx.beginPath();ctx.moveTo(safe,2);ctx.lineTo(width-safe,2);ctx.stroke();
+                    const signal=a=>Qt.rgba(accent.r,accent.g,accent.b,a);
+                    // Calibrated instrument rails stay clear of the content area.
+                    ctx.strokeStyle=signal(0.32);ctx.lineWidth=1;
+                    if(root.traceThemeFrame(ctx,5))ctx.stroke();
+                    for(let x=safe;x<width-safe;x+=8){
+                        const major=Math.floor((x-safe)/8)%4===0;
+                        ctx.strokeStyle=signal(major?0.85:0.40);
+                        ctx.beginPath();ctx.moveTo(x,3);ctx.lineTo(x,major?12:7);
+                        ctx.moveTo(x,height-3);ctx.lineTo(x,height-(major?10:6));ctx.stroke();
+                    }
+                    if(outer && width>100 && height>80){
+                        const radius=Math.min(48,width*0.16,height*0.24);
+                        const cx=width-4,cy=4;
+                        // A clipped corner reticle reads as a navigational instrument.
+                        for(let ring=0;ring<2;ring++){
+                            ctx.strokeStyle=signal(ring?0.35:0.80);ctx.lineWidth=ring?1:2;
+                            ctx.beginPath();ctx.arc(cx,cy,radius-ring*8,Math.PI*0.56,Math.PI*0.96);ctx.stroke();
+                        }
+                        ctx.strokeStyle=signal(0.9);ctx.lineWidth=2;
+                        ctx.beginPath();ctx.moveTo(4,safe);ctx.lineTo(4,Math.min(height-safe,safe+30));ctx.stroke();
+                        ctx.fillStyle=signal(0.75);
+                        for(let i=0;i<3;i++)ctx.fillRect(8,height-safe-4-i*7,3,3);
                     }
                 }else{
-                    // Broad reflections suggest a single architectural glass plane.
-                    const reflection=ctx.createLinearGradient(0,0,width,height*0.18);
-                    reflection.addColorStop(0,ink(0.008));
-                    reflection.addColorStop(0.20,ink(outer?0.045:0.018));
-                    reflection.addColorStop(0.40,ink(0.008));
-                    reflection.addColorStop(0.72,ink(outer?0.025:0.01));
-                    reflection.addColorStop(1,ink(0));
-                    ctx.fillStyle=reflection;ctx.fillRect(0,0,width,height);
-                    if(outer && height>safe*2){
-                        // One quiet structural reveal; no repeated facade ornament.
-                        const reveal=ctx.createLinearGradient(0,safe,0,height-safe);
-                        reveal.addColorStop(0,ink(0));reveal.addColorStop(0.4,ink(0.14));reveal.addColorStop(1,ink(0));
-                        ctx.strokeStyle=reveal;ctx.lineWidth=1;
-                        ctx.beginPath();ctx.moveTo(3,safe);ctx.lineTo(3,height-safe);ctx.stroke();
+                    const neon=a=>Qt.rgba(accent.r,accent.g,accent.b,a);
+                    const violet=a=>Qt.rgba(secondaryAccent.r,secondaryAccent.g,secondaryAccent.b,a);
+                    // Neon spill falls inward from opposing glass edges.
+                    const spill=ctx.createLinearGradient(0,0,width,0);
+                    spill.addColorStop(0,neon(outer?0.26:0.10));
+                    spill.addColorStop(0.12,neon(0.025));spill.addColorStop(0.45,neon(0));
+                    spill.addColorStop(0.80,violet(0.015));spill.addColorStop(1,violet(outer?0.24:0.08));
+                    ctx.fillStyle=spill;ctx.fillRect(0,0,width,height);
+                    if(outer){
+                        // Offset illuminated fins and sign bands give a city silhouette.
+                        const top=Math.min(height-safe,safe+height*0.42);
+                        ctx.strokeStyle=neon(0.90);ctx.lineWidth=3;
+                        ctx.beginPath();ctx.moveTo(4,safe);ctx.lineTo(4,top);ctx.stroke();
+                        ctx.strokeStyle=violet(0.85);ctx.lineWidth=2;
+                        ctx.beginPath();ctx.moveTo(width-4,height-safe);ctx.lineTo(width-4,Math.max(safe,height*0.40));ctx.stroke();
+                        if(width>safe*2+20){
+                            ctx.fillStyle=neon(0.8);ctx.fillRect(safe,3,Math.min(64,(width-safe*2)*0.36),3);
+                            ctx.fillStyle=violet(0.75);ctx.fillRect(Math.max(safe,width-safe-88),height-6,Math.min(88,width-safe*2),3);
+                        }
+                        // Faded diagonals suggest reflected signage, not a facade grid.
+                        ctx.strokeStyle=violet(0.12);ctx.lineWidth=5;
+                        ctx.beginPath();ctx.moveTo(width*0.68,0);ctx.lineTo(width*0.85,Math.min(28,height*0.18));ctx.stroke();
                     }
                 }
                 ctx.restore();
