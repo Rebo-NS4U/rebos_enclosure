@@ -48,13 +48,15 @@ for (const id of ids) {
 }
 const p = palettes[0];
 assert.equal(surface('monolith', 'bg', p).border[1], 0);
-assert.equal(surface('monolith', 'bg', p).gradient.length, 4);
+assert.equal(surface('monolith', 'bg', p).gradient.length, 6);
 assert.equal(surface('monolith', 'bg', p).radius, 3);
 assert.equal(surface('monolith', 'internalbg', p).gradient[0][0], p.background);
 assert.equal(surface('blueprint', 'bg', p).radius, 0);
 assert.equal(surface('blueprint', 'primary', p).gradient[0][0], p.background);
 assert.equal(surface('terminal-hardware', 'bg', p).gradient.length, 4);
 assert.equal(surface('terminal-hardware', 'bg', p).border[1], 2);
+assert.equal(surface('terminal-hardware', 'primary', p).gradient.length, 5);
+assert.equal(surface('terminal-hardware', 'internalbg', p).gradient[0][0], p.background);
 for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++)
  assert.notDeepEqual(surface(ids[i], 'bg', p), surface(ids[j], 'bg', p));
 assert.equal(themePalette('custom'), null);

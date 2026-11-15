@@ -1,9 +1,9 @@
 .pragma library
 
 var styles = [
-    {id: "monolith", label: "Monolith", font: "Noto Sans", description: "Carved slabs, stepped edges and deep recessed channels."},
+    {id: "monolith", label: "Monolith", font: "Noto Sans", description: "Sculpted slabs, staggered edge cuts, deep seams and recessed channels."},
     {id: "blueprint", label: "Blueprint", font: "JetBrains Mono", description: "Drafting grids, measurement ticks, registration marks and wire controls."},
-    {id: "terminal-hardware", label: "Terminal Hardware", font: "DejaVu Sans Mono", description: "Beveled housings, inset displays and mechanical controls."},
+    {id: "terminal-hardware", label: "Terminal Hardware", font: "DejaVu Sans Mono", description: "Machined bezels, slotted screws, cooling vents and textured displays."},
     {id: "instrument", label: "Instrument", description: "Layered graphite surfaces with restrained status accents."},
     {id: "frosted", label: "Frosted Glass", description: "OCR-inspired frosted panels, soft highlights and rounded glass edges."},
     {id: "glass", label: "Transparent", description: "Dark transparent backgrounds with light wallpaper colors."},
@@ -140,7 +140,7 @@ function surface(style, variant, p, ditherStrength) {
         if (monolith) {
             border = [mix(fill, p.foreground, 0.18), focused ? 2 : inset ? 1 : 0];
             if (focused) border[0] = p.primary;
-            if (neutral && !inset) renderGradient = [[fill, 0], [fill, 0.92], [mix(fill, p.background, 0.65), 0.94], [mix(fill, p.background, 0.65), 1]];
+            if (neutral && !inset) renderGradient = [[fill, 0], [mix(fill, p.foreground, 0.025), 0.015], [fill, 0.035], [fill, 0.91], [mix(fill, p.background, 0.80), 0.94], [mix(fill, p.background, 0.80), 1]];
         } else if (blueprint) {
             // Wire controls retain the selected accent as their ink color.
             if (!neutral && !outlineRole && opacity > 0) {
@@ -152,7 +152,10 @@ function surface(style, variant, p, ditherStrength) {
             border = [mix(fill, p.foreground, inset ? 0.26 : 0.38), focused || outer ? 2 : 1];
             if (focused) border[0] = p.primary;
             // Narrow highlight and lower lip form a machined bevel.
-            if (neutral) renderGradient = [[mix(fill, p.foreground, inset ? 0.015 : 0.07), 0], [fill, 0.12], [fill, 0.86], [mix(fill, p.background, 0.30), 1]];
+            if (neutral) renderGradient = inset
+                ? [[fill, 0], [mix(fill, p.foreground, 0.015), 0.15], [fill, 0.94], [mix(fill, p.foreground, 0.045), 1]]
+                : [[mix(fill, p.foreground, 0.08), 0], [fill, 0.06], [fill, 0.90], [mix(fill, p.background, 0.55), 1]];
+            else if (!outlineRole && opacity > 0) renderGradient = [[fill, 0], [mix(fill, item, 0.035), 0.08], [fill, 0.20], [fill, 0.85], [mix(fill, p.background, 0.08), 1]];
         }
     }
     var containers = ["bg", "popup", "pane", "surface", "surfaceContainer", "common", "internalbg", "focus", "surfaceVariant", "bar", "barbg"];

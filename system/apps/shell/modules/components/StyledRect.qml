@@ -255,6 +255,42 @@ ClippingRectangle {
             readonly property bool inset: root.variant === "internalbg"
             readonly property color ink: root.itemColor
             opacity: root.rectOpacity
+            // Staggered cuts and a deep inner seam give the slab a silhouette.
+            Rectangle {
+                visible: slab.outer
+                anchors.fill: parent; anchors.margins: 6
+                radius: 0; color: "transparent"
+                border.width: 1; border.color: Qt.alpha(slab.ink, 0.10)
+            }
+            Repeater {
+                model: slab.outer && slab.height > 80 ? 3 : 0
+                Rectangle {
+                    required property int index
+                    x: 1; y: 20 + index * 8
+                    width: 7 + index * 3; height: 3
+                    color: slab.ink; opacity: 0.26 - index * 0.045
+                }
+            }
+            Rectangle {
+                visible: slab.outer
+                anchors.right: parent.right; anchors.top: parent.top
+                width: 7; height: Math.max(0, slab.height * 0.32)
+                color: slab.ink; opacity: 0.14
+            }
+            Repeater {
+                model: slab.outer && slab.width > 100 ? 5 : 0
+                Rectangle {
+                    required property int index
+                    x: slab.width - 54 + index * 7; y: slab.height - 9
+                    width: 2; height: 5; rotation: 35
+                    color: slab.ink; opacity: 0.26
+                }
+            }
+            Rectangle {
+                visible: slab.inset
+                anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top
+                height: 3; color: slab.ink; opacity: 0.12
+            }
             Rectangle {
                 anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right
                 anchors.margins: slab.outer ? 1 : 0
@@ -282,6 +318,65 @@ ClippingRectangle {
                 anchors.rightMargin: 14; anchors.bottomMargin: 10
                 width: 28; height: 2
                 color: slab.ink; opacity: 0.30
+            }
+        }
+    }
+
+    // Hardware housings and recessed displays have their own physical details.
+    Loader {
+        anchors.fill: parent
+        active: !root.hasFillColor && root.rectOpacity > 0 && (root.styleOverride || Styling.shellStyle) === "terminal-hardware"
+            && ["bg", "popup", "pane", "surface", "surfaceContainer", "internalbg", "focus"].indexOf(root.variant) !== -1
+        sourceComponent: Item {
+            id: chassis
+            readonly property bool outer: root.variant === "bg" || root.variant === "popup"
+            readonly property bool screen: root.variant === "internalbg"
+            readonly property color ink: root.itemColor
+            opacity: root.rectOpacity
+            Rectangle {
+                anchors.fill: parent; anchors.margins: chassis.outer ? 4 : 2
+                radius: chassis.outer ? 3 : 1
+                color: "transparent"; border.width: 1
+                border.color: Qt.alpha(chassis.ink, chassis.screen ? 0.20 : 0.15)
+            }
+            Rectangle {
+                anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right
+                anchors.margins: chassis.outer ? 3 : 1
+                height: chassis.outer ? 2 : 1
+                color: chassis.ink; opacity: chassis.screen ? 0.045 : 0.20
+            }
+            Rectangle {
+                anchors.left: parent.left; anchors.top: parent.top; anchors.bottom: parent.bottom
+                anchors.margins: chassis.outer ? 3 : 1
+                width: 1; color: chassis.ink; opacity: chassis.screen ? 0.07 : 0.16
+            }
+            Repeater {
+                model: chassis.outer && chassis.height > 90 ? 6 : 0
+                Rectangle {
+                    required property int index
+                    x: chassis.width - 11; y: 24 + index * 5
+                    width: 5; height: 2; radius: 1
+                    color: chassis.ink; opacity: 0.30
+                }
+            }
+            // Passive display texture, with no animation or invented status lights.
+            Repeater {
+                model: chassis.screen ? Math.min(160, Math.floor(chassis.height / 4)) : 0
+                Rectangle {
+                    required property int index
+                    x: 3; y: 3 + index * 4
+                    width: Math.max(0, chassis.width - 6); height: 1
+                    color: chassis.ink; opacity: 0.035
+                }
+            }
+            Repeater {
+                model: chassis.outer && chassis.width > 100 ? 3 : 0
+                Rectangle {
+                    required property int index
+                    x: 20 + index * 13; y: chassis.height - 8
+                    width: 9; height: 2
+                    color: chassis.ink; opacity: 0.24
+                }
             }
         }
     }
@@ -367,6 +462,11 @@ ClippingRectangle {
                         height: engraving.drafting ? 1 : 5
                         radius: engraving.drafting ? 0 : 2.5
                         color: engraving.ink; opacity: 0.28
+                    }
+                    Rectangle {
+                        visible: !engraving.drafting
+                        x: 1; y: 2; width: 3; height: 1; rotation: -35
+                        color: Config.resolveColor(root.gradientStops?.[1]?.[0] ?? Colors.background); opacity: 0.9
                     }
                     Rectangle {
                         visible: engraving.drafting

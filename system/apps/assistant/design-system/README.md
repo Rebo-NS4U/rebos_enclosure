@@ -48,8 +48,8 @@ Use `StandardProgressBar` for linear progress in QML. Its normalized `value` is 
 ## Rendered desktop themes
 
 All styles use the selected wallpaper or color preset, including application exports.
-Monolith uses carved matte slabs, stepped lower edges, recessed side channels and edge highlights.
+Monolith uses sculpted slabs, staggered edge cuts, deep inset seams, diagonal engraving and stepped lower edges.
 Blueprint uses square corners, wire controls, major and minor drafting grids, perimeter measurement ticks, registration targets and inset frames.
-Terminal Hardware uses beveled housings, inset displays and corner fasteners.
+Terminal Hardware uses double machined bezels, cooling vents, slotted screws, recessed display scanlines and raised mechanical controls.
 Their fonts are Noto Sans, JetBrains Mono and DejaVu Sans Mono respectively.
 Botanical Archive has been removed. Saved selections of removed styles fall back through normal configuration validation.
