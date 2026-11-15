@@ -12,7 +12,7 @@ class ThemeFontTests(unittest.TestCase):
             result = subprocess.run(['node', '-e', source + """
 const assert = require('node:assert/strict');
 const builtins = styles.filter(s => s.id !== 'custom');
-assert.equal(new Set(builtins.map(s => fontForStyle(s.id, 'User Font'))).size, builtins.length);
+for (const s of builtins) assert.ok(fontForStyle(s.id, 'User Font') !== 'User Font');
 if (styles.some(s => s.id === 'instrument')) assert.equal(fontForStyle('instrument', 'User Font'), 'JetBrains Mono');
 if (styles.some(s => s.id === 'frosted')) assert.equal(fontForStyle('frosted', 'User Font'), 'DejaVu Sans Mono');
 assert.equal(fontForStyle('custom', 'User Font'), 'User Font');

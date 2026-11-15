@@ -29,6 +29,7 @@ SettingsGroup {
                 objectName: "shell-style-" + modelData.id
                 StyledToolTip { show: card.hovered; tooltipText: card.modelData.description }
                 readonly property bool selected: Styling.shellStyle === modelData.id
+                readonly property var previewPalette: ShellStyles.themePalette(modelData.id)
                 readonly property var sample: Styling.styleConfig(modelData.id, "bg")
                 Layout.fillWidth: true
                 implicitHeight: 104
@@ -58,11 +59,11 @@ SettingsGroup {
                         RowLayout {
                             anchors.fill: parent
                             anchors.margins: 10
-                            Rectangle { implicitWidth: 26; implicitHeight: 5; radius: 2; color: Colors.primary; opacity: 0.7 }
+                            Rectangle { implicitWidth: 26; implicitHeight: 5; radius: 2; color: card.previewPalette ? card.previewPalette.primary : Colors.primary; opacity: 0.7 }
                             Item { Layout.fillWidth: true }
-                            StyledText { text: "10:24"; font.pixelSize: Styling.fontSize(-3); font.family: Config.theme.monoFont }
+                            StyledText { text: "10:24"; color: card.sample.itemColor; font.pixelSize: Styling.fontSize(-3); font.family: Config.theme.monoFont }
                             Repeater {
-                                model: [Colors.primary, Colors.secondary, Colors.tertiary]
+                                model: card.previewPalette ? [card.previewPalette.primary, card.previewPalette.secondary, card.previewPalette.tertiary] : [Colors.primary, Colors.secondary, Colors.tertiary]
                                 delegate: Rectangle {
                                     required property color modelData
                                     implicitWidth: 7; implicitHeight: 7; radius: 3

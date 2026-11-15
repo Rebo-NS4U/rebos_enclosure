@@ -118,114 +118,115 @@ FileView {
     // OLED only forces pure black for the deepest background. Every other role
     // comes straight from matugen/wallust so chrome tracks the wallpaper hue
     // instead of being crushed into a near-black tint of background.
-    property color background: Config.oledMode ? "#000000" : adapter.background
+    readonly property var curatedPalette: ShellStyles.themePalette(Config.theme.shellStyle)
+    property color background: curatedPalette && curatedPalette.background !== undefined ? curatedPalette.background : (Config.oledMode ? "#000000" : adapter.background)
 
-    property color surface: Config.oledMode ? Qt.rgba(0.06, 0.06, 0.06, 1) : adapter.surface
-    property color surfaceBright: adapter.surfaceBright
-    property color surfaceContainer: adapter.surfaceContainer
-    property color surfaceContainerHigh: adapter.surfaceContainerHigh
-    property color surfaceContainerHighest: adapter.surfaceContainerHighest
-    property color surfaceContainerLow: adapter.surfaceContainerLow
-    property color surfaceContainerLowest: Config.oledMode ? "#000000" : adapter.surfaceContainerLowest
-    property color surfaceDim: Config.oledMode ? "#000000" : adapter.surfaceDim
-    property color surfaceTint: adapter.surfaceTint
-    property color surfaceVariant: adapter.surfaceVariant
+    property color surface: curatedPalette && curatedPalette.surface !== undefined ? curatedPalette.surface : (Config.oledMode ? Qt.rgba(0.06, 0.06, 0.06, 1) : adapter.surface)
+    property color surfaceBright: curatedPalette && curatedPalette.surfaceBright !== undefined ? curatedPalette.surfaceBright : (adapter.surfaceBright)
+    property color surfaceContainer: curatedPalette && curatedPalette.surfaceContainer !== undefined ? curatedPalette.surfaceContainer : (adapter.surfaceContainer)
+    property color surfaceContainerHigh: curatedPalette && curatedPalette.surfaceContainerHigh !== undefined ? curatedPalette.surfaceContainerHigh : (adapter.surfaceContainerHigh)
+    property color surfaceContainerHighest: curatedPalette && curatedPalette.surfaceContainerHighest !== undefined ? curatedPalette.surfaceContainerHighest : (adapter.surfaceContainerHighest)
+    property color surfaceContainerLow: curatedPalette && curatedPalette.surfaceContainerLow !== undefined ? curatedPalette.surfaceContainerLow : (adapter.surfaceContainerLow)
+    property color surfaceContainerLowest: curatedPalette && curatedPalette.surfaceContainerLowest !== undefined ? curatedPalette.surfaceContainerLowest : (Config.oledMode ? "#000000" : adapter.surfaceContainerLowest)
+    property color surfaceDim: curatedPalette && curatedPalette.surfaceDim !== undefined ? curatedPalette.surfaceDim : (Config.oledMode ? "#000000" : adapter.surfaceDim)
+    property color surfaceTint: curatedPalette && curatedPalette.surfaceTint !== undefined ? curatedPalette.surfaceTint : (adapter.surfaceTint)
+    property color surfaceVariant: curatedPalette && curatedPalette.surfaceVariant !== undefined ? curatedPalette.surfaceVariant : (adapter.surfaceVariant)
 
     // Direct color properties from adapter
-    property color blue: adapter.blue
-    property color blueContainer: adapter.blueContainer
-    property color blueSource: adapter.blueSource
-    property color blueValue: adapter.blueValue
-    property color cyan: adapter.cyan
-    property color cyanContainer: adapter.cyanContainer
-    property color cyanSource: adapter.cyanSource
-    property color cyanValue: adapter.cyanValue
-    property color error: adapter.error
-    property color errorContainer: adapter.errorContainer
-    property color green: adapter.green
-    property color greenContainer: adapter.greenContainer
-    property color greenSource: adapter.greenSource
-    property color greenValue: adapter.greenValue
-    property color inverseOnSurface: adapter.inverseOnSurface
-    property color inversePrimary: adapter.inversePrimary
-    property color inverseSurface: adapter.inverseSurface
-    property color lightBlue: adapter.lightBlue
-    property color lightCyan: adapter.lightCyan
-    property color lightGreen: adapter.lightGreen
-    property color lightMagenta: adapter.lightMagenta
-    property color lightRed: adapter.lightRed
-    property color lightYellow: adapter.lightYellow
-    property color magenta: adapter.magenta
-    property color magentaContainer: adapter.magentaContainer
-    property color magentaSource: adapter.magentaSource
-    property color magentaValue: adapter.magentaValue
-    property color overBackground: adapter.overBackground
-    property color overBlue: adapter.overBlue
-    property color overBlueContainer: adapter.overBlueContainer
-    property color overCyan: adapter.overCyan
-    property color overCyanContainer: adapter.overCyanContainer
-    property color overError: adapter.overError
-    property color overErrorContainer: adapter.overErrorContainer
-    property color overGreen: adapter.overGreen
-    property color overGreenContainer: adapter.overGreenContainer
-    property color overMagenta: adapter.overMagenta
-    property color overMagentaContainer: adapter.overMagentaContainer
-    property color overPrimary: adapter.overPrimary
-    property color overPrimaryContainer: adapter.overPrimaryContainer
-    property color overPrimaryFixed: adapter.overPrimaryFixed
-    property color overPrimaryFixedVariant: adapter.overPrimaryFixedVariant
-    property color overRed: adapter.overRed
-    property color overRedContainer: adapter.overRedContainer
-    property color overSecondary: adapter.overSecondary
-    property color overSecondaryContainer: adapter.overSecondaryContainer
-    property color overSecondaryFixed: adapter.overSecondaryFixed
-    property color overSecondaryFixedVariant: adapter.overSecondaryFixedVariant
-    property color overSurface: adapter.overSurface
-    property color overSurfaceVariant: adapter.overSurfaceVariant
-    property color overTertiary: adapter.overTertiary
-    property color overTertiaryContainer: adapter.overTertiaryContainer
-    property color overTertiaryFixed: adapter.overTertiaryFixed
-    property color overTertiaryFixedVariant: adapter.overTertiaryFixedVariant
-    property color overWhite: adapter.overWhite
-    property color overWhiteContainer: adapter.overWhiteContainer
-    property color overYellow: adapter.overYellow
-    property color overYellowContainer: adapter.overYellowContainer
-    property color outline: adapter.outline
-    property color outlineVariant: adapter.outlineVariant
-    property color primary: adapter.primary
-    property color primaryContainer: adapter.primaryContainer
-    property color primaryFixed: adapter.primaryFixed
-    property color primaryFixedDim: adapter.primaryFixedDim
-    property color red: adapter.red
-    property color redContainer: adapter.redContainer
-    property color redSource: adapter.redSource
-    property color redValue: adapter.redValue
-    property color scrim: adapter.scrim
-    property color secondary: adapter.secondary
-    property color secondaryContainer: adapter.secondaryContainer
-    property color secondaryFixed: adapter.secondaryFixed
-    property color secondaryFixedDim: adapter.secondaryFixedDim
-    property color shadow: adapter.shadow
-    property color tertiary: adapter.tertiary
-    property color tertiaryContainer: adapter.tertiaryContainer
-    property color tertiaryFixed: adapter.tertiaryFixed
-    property color tertiaryFixedDim: adapter.tertiaryFixedDim
-    property color white: adapter.white
-    property color whiteContainer: adapter.whiteContainer
-    property color whiteSource: adapter.whiteSource
-    property color whiteValue: adapter.whiteValue
-    property color yellow: adapter.yellow
-    property color yellowContainer: adapter.yellowContainer
-    property color yellowSource: adapter.yellowSource
-    property color yellowValue: adapter.yellowValue
-    property color sourceColor: adapter.sourceColor
+    property color blue: curatedPalette && curatedPalette.blue !== undefined ? curatedPalette.blue : (adapter.blue)
+    property color blueContainer: curatedPalette && curatedPalette.blueContainer !== undefined ? curatedPalette.blueContainer : (adapter.blueContainer)
+    property color blueSource: curatedPalette && curatedPalette.blueSource !== undefined ? curatedPalette.blueSource : (adapter.blueSource)
+    property color blueValue: curatedPalette && curatedPalette.blueValue !== undefined ? curatedPalette.blueValue : (adapter.blueValue)
+    property color cyan: curatedPalette && curatedPalette.cyan !== undefined ? curatedPalette.cyan : (adapter.cyan)
+    property color cyanContainer: curatedPalette && curatedPalette.cyanContainer !== undefined ? curatedPalette.cyanContainer : (adapter.cyanContainer)
+    property color cyanSource: curatedPalette && curatedPalette.cyanSource !== undefined ? curatedPalette.cyanSource : (adapter.cyanSource)
+    property color cyanValue: curatedPalette && curatedPalette.cyanValue !== undefined ? curatedPalette.cyanValue : (adapter.cyanValue)
+    property color error: curatedPalette && curatedPalette.error !== undefined ? curatedPalette.error : (adapter.error)
+    property color errorContainer: curatedPalette && curatedPalette.errorContainer !== undefined ? curatedPalette.errorContainer : (adapter.errorContainer)
+    property color green: curatedPalette && curatedPalette.green !== undefined ? curatedPalette.green : (adapter.green)
+    property color greenContainer: curatedPalette && curatedPalette.greenContainer !== undefined ? curatedPalette.greenContainer : (adapter.greenContainer)
+    property color greenSource: curatedPalette && curatedPalette.greenSource !== undefined ? curatedPalette.greenSource : (adapter.greenSource)
+    property color greenValue: curatedPalette && curatedPalette.greenValue !== undefined ? curatedPalette.greenValue : (adapter.greenValue)
+    property color inverseOnSurface: curatedPalette && curatedPalette.inverseOnSurface !== undefined ? curatedPalette.inverseOnSurface : (adapter.inverseOnSurface)
+    property color inversePrimary: curatedPalette && curatedPalette.inversePrimary !== undefined ? curatedPalette.inversePrimary : (adapter.inversePrimary)
+    property color inverseSurface: curatedPalette && curatedPalette.inverseSurface !== undefined ? curatedPalette.inverseSurface : (adapter.inverseSurface)
+    property color lightBlue: curatedPalette && curatedPalette.lightBlue !== undefined ? curatedPalette.lightBlue : (adapter.lightBlue)
+    property color lightCyan: curatedPalette && curatedPalette.lightCyan !== undefined ? curatedPalette.lightCyan : (adapter.lightCyan)
+    property color lightGreen: curatedPalette && curatedPalette.lightGreen !== undefined ? curatedPalette.lightGreen : (adapter.lightGreen)
+    property color lightMagenta: curatedPalette && curatedPalette.lightMagenta !== undefined ? curatedPalette.lightMagenta : (adapter.lightMagenta)
+    property color lightRed: curatedPalette && curatedPalette.lightRed !== undefined ? curatedPalette.lightRed : (adapter.lightRed)
+    property color lightYellow: curatedPalette && curatedPalette.lightYellow !== undefined ? curatedPalette.lightYellow : (adapter.lightYellow)
+    property color magenta: curatedPalette && curatedPalette.magenta !== undefined ? curatedPalette.magenta : (adapter.magenta)
+    property color magentaContainer: curatedPalette && curatedPalette.magentaContainer !== undefined ? curatedPalette.magentaContainer : (adapter.magentaContainer)
+    property color magentaSource: curatedPalette && curatedPalette.magentaSource !== undefined ? curatedPalette.magentaSource : (adapter.magentaSource)
+    property color magentaValue: curatedPalette && curatedPalette.magentaValue !== undefined ? curatedPalette.magentaValue : (adapter.magentaValue)
+    property color overBackground: curatedPalette && curatedPalette.overBackground !== undefined ? curatedPalette.overBackground : (adapter.overBackground)
+    property color overBlue: curatedPalette && curatedPalette.overBlue !== undefined ? curatedPalette.overBlue : (adapter.overBlue)
+    property color overBlueContainer: curatedPalette && curatedPalette.overBlueContainer !== undefined ? curatedPalette.overBlueContainer : (adapter.overBlueContainer)
+    property color overCyan: curatedPalette && curatedPalette.overCyan !== undefined ? curatedPalette.overCyan : (adapter.overCyan)
+    property color overCyanContainer: curatedPalette && curatedPalette.overCyanContainer !== undefined ? curatedPalette.overCyanContainer : (adapter.overCyanContainer)
+    property color overError: curatedPalette && curatedPalette.overError !== undefined ? curatedPalette.overError : (adapter.overError)
+    property color overErrorContainer: curatedPalette && curatedPalette.overErrorContainer !== undefined ? curatedPalette.overErrorContainer : (adapter.overErrorContainer)
+    property color overGreen: curatedPalette && curatedPalette.overGreen !== undefined ? curatedPalette.overGreen : (adapter.overGreen)
+    property color overGreenContainer: curatedPalette && curatedPalette.overGreenContainer !== undefined ? curatedPalette.overGreenContainer : (adapter.overGreenContainer)
+    property color overMagenta: curatedPalette && curatedPalette.overMagenta !== undefined ? curatedPalette.overMagenta : (adapter.overMagenta)
+    property color overMagentaContainer: curatedPalette && curatedPalette.overMagentaContainer !== undefined ? curatedPalette.overMagentaContainer : (adapter.overMagentaContainer)
+    property color overPrimary: curatedPalette && curatedPalette.overPrimary !== undefined ? curatedPalette.overPrimary : (adapter.overPrimary)
+    property color overPrimaryContainer: curatedPalette && curatedPalette.overPrimaryContainer !== undefined ? curatedPalette.overPrimaryContainer : (adapter.overPrimaryContainer)
+    property color overPrimaryFixed: curatedPalette && curatedPalette.overPrimaryFixed !== undefined ? curatedPalette.overPrimaryFixed : (adapter.overPrimaryFixed)
+    property color overPrimaryFixedVariant: curatedPalette && curatedPalette.overPrimaryFixedVariant !== undefined ? curatedPalette.overPrimaryFixedVariant : (adapter.overPrimaryFixedVariant)
+    property color overRed: curatedPalette && curatedPalette.overRed !== undefined ? curatedPalette.overRed : (adapter.overRed)
+    property color overRedContainer: curatedPalette && curatedPalette.overRedContainer !== undefined ? curatedPalette.overRedContainer : (adapter.overRedContainer)
+    property color overSecondary: curatedPalette && curatedPalette.overSecondary !== undefined ? curatedPalette.overSecondary : (adapter.overSecondary)
+    property color overSecondaryContainer: curatedPalette && curatedPalette.overSecondaryContainer !== undefined ? curatedPalette.overSecondaryContainer : (adapter.overSecondaryContainer)
+    property color overSecondaryFixed: curatedPalette && curatedPalette.overSecondaryFixed !== undefined ? curatedPalette.overSecondaryFixed : (adapter.overSecondaryFixed)
+    property color overSecondaryFixedVariant: curatedPalette && curatedPalette.overSecondaryFixedVariant !== undefined ? curatedPalette.overSecondaryFixedVariant : (adapter.overSecondaryFixedVariant)
+    property color overSurface: curatedPalette && curatedPalette.overSurface !== undefined ? curatedPalette.overSurface : (adapter.overSurface)
+    property color overSurfaceVariant: curatedPalette && curatedPalette.overSurfaceVariant !== undefined ? curatedPalette.overSurfaceVariant : (adapter.overSurfaceVariant)
+    property color overTertiary: curatedPalette && curatedPalette.overTertiary !== undefined ? curatedPalette.overTertiary : (adapter.overTertiary)
+    property color overTertiaryContainer: curatedPalette && curatedPalette.overTertiaryContainer !== undefined ? curatedPalette.overTertiaryContainer : (adapter.overTertiaryContainer)
+    property color overTertiaryFixed: curatedPalette && curatedPalette.overTertiaryFixed !== undefined ? curatedPalette.overTertiaryFixed : (adapter.overTertiaryFixed)
+    property color overTertiaryFixedVariant: curatedPalette && curatedPalette.overTertiaryFixedVariant !== undefined ? curatedPalette.overTertiaryFixedVariant : (adapter.overTertiaryFixedVariant)
+    property color overWhite: curatedPalette && curatedPalette.overWhite !== undefined ? curatedPalette.overWhite : (adapter.overWhite)
+    property color overWhiteContainer: curatedPalette && curatedPalette.overWhiteContainer !== undefined ? curatedPalette.overWhiteContainer : (adapter.overWhiteContainer)
+    property color overYellow: curatedPalette && curatedPalette.overYellow !== undefined ? curatedPalette.overYellow : (adapter.overYellow)
+    property color overYellowContainer: curatedPalette && curatedPalette.overYellowContainer !== undefined ? curatedPalette.overYellowContainer : (adapter.overYellowContainer)
+    property color outline: curatedPalette && curatedPalette.outline !== undefined ? curatedPalette.outline : (adapter.outline)
+    property color outlineVariant: curatedPalette && curatedPalette.outlineVariant !== undefined ? curatedPalette.outlineVariant : (adapter.outlineVariant)
+    property color primary: curatedPalette && curatedPalette.primary !== undefined ? curatedPalette.primary : (adapter.primary)
+    property color primaryContainer: curatedPalette && curatedPalette.primaryContainer !== undefined ? curatedPalette.primaryContainer : (adapter.primaryContainer)
+    property color primaryFixed: curatedPalette && curatedPalette.primaryFixed !== undefined ? curatedPalette.primaryFixed : (adapter.primaryFixed)
+    property color primaryFixedDim: curatedPalette && curatedPalette.primaryFixedDim !== undefined ? curatedPalette.primaryFixedDim : (adapter.primaryFixedDim)
+    property color red: curatedPalette && curatedPalette.red !== undefined ? curatedPalette.red : (adapter.red)
+    property color redContainer: curatedPalette && curatedPalette.redContainer !== undefined ? curatedPalette.redContainer : (adapter.redContainer)
+    property color redSource: curatedPalette && curatedPalette.redSource !== undefined ? curatedPalette.redSource : (adapter.redSource)
+    property color redValue: curatedPalette && curatedPalette.redValue !== undefined ? curatedPalette.redValue : (adapter.redValue)
+    property color scrim: curatedPalette && curatedPalette.scrim !== undefined ? curatedPalette.scrim : (adapter.scrim)
+    property color secondary: curatedPalette && curatedPalette.secondary !== undefined ? curatedPalette.secondary : (adapter.secondary)
+    property color secondaryContainer: curatedPalette && curatedPalette.secondaryContainer !== undefined ? curatedPalette.secondaryContainer : (adapter.secondaryContainer)
+    property color secondaryFixed: curatedPalette && curatedPalette.secondaryFixed !== undefined ? curatedPalette.secondaryFixed : (adapter.secondaryFixed)
+    property color secondaryFixedDim: curatedPalette && curatedPalette.secondaryFixedDim !== undefined ? curatedPalette.secondaryFixedDim : (adapter.secondaryFixedDim)
+    property color shadow: curatedPalette && curatedPalette.shadow !== undefined ? curatedPalette.shadow : (adapter.shadow)
+    property color tertiary: curatedPalette && curatedPalette.tertiary !== undefined ? curatedPalette.tertiary : (adapter.tertiary)
+    property color tertiaryContainer: curatedPalette && curatedPalette.tertiaryContainer !== undefined ? curatedPalette.tertiaryContainer : (adapter.tertiaryContainer)
+    property color tertiaryFixed: curatedPalette && curatedPalette.tertiaryFixed !== undefined ? curatedPalette.tertiaryFixed : (adapter.tertiaryFixed)
+    property color tertiaryFixedDim: curatedPalette && curatedPalette.tertiaryFixedDim !== undefined ? curatedPalette.tertiaryFixedDim : (adapter.tertiaryFixedDim)
+    property color white: curatedPalette && curatedPalette.white !== undefined ? curatedPalette.white : (adapter.white)
+    property color whiteContainer: curatedPalette && curatedPalette.whiteContainer !== undefined ? curatedPalette.whiteContainer : (adapter.whiteContainer)
+    property color whiteSource: curatedPalette && curatedPalette.whiteSource !== undefined ? curatedPalette.whiteSource : (adapter.whiteSource)
+    property color whiteValue: curatedPalette && curatedPalette.whiteValue !== undefined ? curatedPalette.whiteValue : (adapter.whiteValue)
+    property color yellow: curatedPalette && curatedPalette.yellow !== undefined ? curatedPalette.yellow : (adapter.yellow)
+    property color yellowContainer: curatedPalette && curatedPalette.yellowContainer !== undefined ? curatedPalette.yellowContainer : (adapter.yellowContainer)
+    property color yellowSource: curatedPalette && curatedPalette.yellowSource !== undefined ? curatedPalette.yellowSource : (adapter.yellowSource)
+    property color yellowValue: curatedPalette && curatedPalette.yellowValue !== undefined ? curatedPalette.yellowValue : (adapter.yellowValue)
+    property color sourceColor: curatedPalette && curatedPalette.sourceColor !== undefined ? curatedPalette.sourceColor : (adapter.sourceColor)
 
-    property color criticalText: adapter.yellow
-    property color criticalRed: adapter.error
+    property color criticalText: curatedPalette && curatedPalette.criticalText !== undefined ? curatedPalette.criticalText : (adapter.yellow)
+    property color criticalRed: curatedPalette && curatedPalette.criticalRed !== undefined ? curatedPalette.criticalRed : (adapter.error)
 
     // Semantic aliases
-    property color warning: adapter.yellow
-    property color success: adapter.green
+    property color warning: curatedPalette && curatedPalette.warning !== undefined ? curatedPalette.warning : (adapter.yellow)
+    property color success: curatedPalette && curatedPalette.success !== undefined ? curatedPalette.success : (adapter.green)
 
     // List of available color names for color pickers (excludes internal/source colors)
     readonly property list<string> availableColorNames: ["background", "surface", "surfaceBright", "surfaceContainer", "surfaceContainerHigh", "surfaceContainerHighest", "surfaceContainerLow", "surfaceContainerLowest", "surfaceDim", "surfaceTint", "surfaceVariant", "primary", "primaryContainer", "primaryFixed", "primaryFixedDim", "secondary", "secondaryContainer", "secondaryFixed", "secondaryFixedDim", "tertiary", "tertiaryContainer", "tertiaryFixed", "tertiaryFixedDim", "error", "errorContainer", "overBackground", "overSurface", "overSurfaceVariant", "overPrimary", "overPrimaryContainer", "overPrimaryFixed", "overPrimaryFixedVariant", "overSecondary", "overSecondaryContainer", "overSecondaryFixed", "overSecondaryFixedVariant", "overTertiary", "overTertiaryContainer", "overTertiaryFixed", "overTertiaryFixedVariant", "overError", "overErrorContainer", "outline", "outlineVariant", "inversePrimary", "inverseSurface", "inverseOnSurface", "shadow", "scrim", "blue", "blueContainer", "overBlue", "overBlueContainer", "lightBlue", "cyan", "cyanContainer", "overCyan", "overCyanContainer", "lightCyan", "green", "greenContainer", "overGreen", "overGreenContainer", "lightGreen", "magenta", "magentaContainer", "overMagenta", "overMagentaContainer", "lightMagenta", "red", "redContainer", "overRed", "overRedContainer", "lightRed", "yellow", "yellowContainer", "overYellow", "overYellowContainer", "lightYellow", "white", "whiteContainer", "overWhite", "overWhiteContainer"]

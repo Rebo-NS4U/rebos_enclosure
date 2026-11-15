@@ -44,3 +44,7 @@ For consistently themed open menus in Zen/Firefox as well, load `<script src="dr
 ## Progress rails
 
 Use `StandardProgressBar` for linear progress in QML. Its normalized `value` is clamped to 0–1; `activeColor` and `foregroundColor` use semantic theme defaults. The lyrics-style 2px rail includes a gradient, soft bloom, bright leading edge and quarter markers. Slider wrappers retain their existing input and accessibility behavior. Shell, assistant and media package identical copies so each app installs independently; keep these copies synchronized. Vertical sliders rotate the same rail. Shell sliders gently snap pointer drags within three percentage points of the 25%, 50% and 75% positions. Keyboard, wheel and external value updates remain exact so small adjustments can leave those positions.
+
+## Curated desktop themes
+
+The shell Theme style picker also offers Midnight Observatory (navy/brass), Ink & Paper (paper/vermilion), Deep-Sea Station (teal/turquoise), Analog Studio (walnut/orange), Solar Eclipse (black/copper), and Botanical Archive (parchment/forest). These use fixed semantic palettes independent of the wallpaper, including application exports. Serif themes use the existing Liberation Serif family; the others reuse installed sans and mono families. Selecting a card preserves the existing font override workflow.

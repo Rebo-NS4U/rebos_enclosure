@@ -1,6 +1,12 @@
 .pragma library
 
 var styles = [
+    {"id": "midnight-observatory", "label": "Midnight Observatory", "font": "JetBrains Mono", "description": "Navy panels, brass accents and starlit highlights."},
+    {"id": "ink-and-paper", "label": "Ink & Paper", "font": "Liberation Serif", "description": "Warm paper, charcoal ink and vermilion details."},
+    {"id": "deep-sea-station", "label": "Deep-Sea Station", "font": "Noto Sans", "description": "Deep teal surfaces and bioluminescent controls."},
+    {"id": "analog-studio", "label": "Analog Studio", "font": "DejaVu Sans", "description": "Walnut panels, cream labels and warm orange controls."},
+    {"id": "solar-eclipse", "label": "Solar Eclipse", "font": "JetBrains Mono", "description": "Near-black surfaces with copper and golden edges."},
+    {"id": "botanical-archive", "label": "Botanical Archive", "font": "Liberation Serif", "description": "Parchment surfaces, forest ink and sage details."},
     {id: "glass", font: "Noto Sans", label: "Transparent", description: "Dark transparent backgrounds with light wallpaper colors."},
     {id: "quiet", font: "Liberation Sans", label: "Opaque", description: "Solid backgrounds with less wallpaper color."},
     {id: "colorful", font: "DejaVu Sans", label: "Tinted", description: "Transparent backgrounds with more wallpaper color."},
@@ -55,6 +61,8 @@ function ditherCellSize(strength) {
 }
 
 function surface(style, variant, p, ditherStrength) {
+    var curated = themePalette(style);
+    if (curated) return surface("quiet", variant, curated, ditherStrength);
     if (style === "dithered") style = "quiet"; // Compatibility with saved appearances.
     var strength = Number.isFinite(ditherStrength) ? Math.max(0, Math.min(100, ditherStrength)) : 20;
     var colorful = style === "colorful", dithered = style === "dithered", quiet = style === "quiet" || dithered;
@@ -117,6 +125,7 @@ function surface(style, variant, p, ditherStrength) {
 // Export the same surface hierarchy to native and themed applications.
 function appPalette(style, palette, customOpacity) {
     if (style === "dithered") style = "quiet";
+    palette = Object.assign({}, palette, themePalette(style) || {});
     var result = Object.assign({}, palette);
     result.style = style;
     result.opacity = customOpacity;
@@ -138,4 +147,78 @@ function appPalette(style, palette, customOpacity) {
     result.outlineVariant = surface(style, "bg", roles).border[0];
     result.opacity = surface(style, "bg", roles).opacity;
     return result;
+}
+
+
+// Curated palettes stay independent of the wallpaper and retain semantic roles.
+var curatedPalettes = {
+    "midnight-observatory": {
+        "background": "#10182c",
+        "foreground": "#e4e7f1",
+        "primary": "#d8b878",
+        "secondary": "#a6bce6",
+        "tertiary": "#c5addc"
+    },
+    "ink-and-paper": {
+        "background": "#f4eddf",
+        "foreground": "#282722",
+        "primary": "#923c30",
+        "secondary": "#565c52",
+        "tertiary": "#63517b"
+    },
+    "deep-sea-station": {
+        "background": "#071f29",
+        "foreground": "#d2eee9",
+        "primary": "#62dbc8",
+        "secondary": "#8fbacb",
+        "tertiary": "#b9c98c"
+    },
+    "analog-studio": {
+        "background": "#2c201a",
+        "foreground": "#f2dfbf",
+        "primary": "#efac74",
+        "secondary": "#c3c58c",
+        "tertiary": "#d1a5a0"
+    },
+    "solar-eclipse": {
+        "background": "#131316",
+        "foreground": "#eee5d8",
+        "primary": "#edb56e",
+        "secondary": "#c79578",
+        "tertiary": "#c4b0d8"
+    },
+    "botanical-archive": {
+        "background": "#eee9d8",
+        "foreground": "#283c2e",
+        "primary": "#416442",
+        "secondary": "#755138",
+        "tertiary": "#655676"
+    }
+};
+function themePalette(style) {
+    var seed = curatedPalettes[style];
+    if (!seed) return null;
+    var p = Object.assign({}, seed);
+    p.overBackground = p.overSurface = p.overSurfaceVariant = p.foreground;
+    p.surface = p.surfaceContainer = mix(p.background, p.foreground, 0.04);
+    p.surfaceContainerLowest = p.surfaceDim = p.background;
+    p.surfaceContainerLow = p.surface;
+    p.surfaceContainerHigh = p.surfaceContainerHighest = p.surfaceBright = p.surfaceVariant = mix(p.background, p.foreground, 0.10);
+    p.outline = mix(p.background, p.foreground, 0.50);
+    p.outlineVariant = mix(p.background, p.primary, 0.35);
+    p.surfaceTint = p.primary;
+    p.inverseSurface = p.foreground; p.inverseOnSurface = p.background;
+    p.inversePrimary = p.primary;
+    p.error = contrast(p.background, '#ac3028') >= 4.5 ? '#ac3028' : '#ffb4ab';
+    ['primary','secondary','tertiary','error'].forEach(function(role) {
+        var cap = role.charAt(0).toUpperCase() + role.slice(1);
+        p['over' + cap] = contrast(p[role], '#161619') >= 4.5 ? '#161619' : '#ffffff';
+        p[role + 'Container'] = mix(p.background, p[role], 0.14);
+        p['over' + cap + 'Container'] = p.foreground;
+        p[role + 'Fixed'] = p[role + 'FixedDim'] = p[role];
+        p['over' + cap + 'Fixed'] = p['over' + cap + 'FixedVariant'] = p['over' + cap];
+    });
+    p.onPrimary = p.overPrimary; p.onSecondary = p.overSecondary;
+    p.onTertiary = p.overTertiary; p.onError = p.overError;
+    return p;
 }
