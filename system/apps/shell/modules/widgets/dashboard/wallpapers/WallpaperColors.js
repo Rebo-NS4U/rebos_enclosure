@@ -9,6 +9,18 @@ function artist(path, directory) {
     return relative.split("/")[0].split(" - ")[0].trim();
 }
 
+// Compare digit runs numerically, including in Qt's JavaScript engine.
+function compareNames(a, b) {
+    const aa = a.toLowerCase().match(/\d+|\D+/g) || [];
+    const bb = b.toLowerCase().match(/\d+|\D+/g) || [];
+    for (let i = 0; i < Math.min(aa.length, bb.length); i++) {
+        const numeric = /^\d+$/.test(aa[i]) && /^\d+$/.test(bb[i]);
+        const difference = numeric ? Number(aa[i]) - Number(bb[i]) : aa[i].localeCompare(bb[i]);
+        if (difference) return difference;
+    }
+    return aa.length - bb.length || a.localeCompare(b);
+}
+
 function arrange(paths, colors, group, order, directory) {
     const result = paths.filter(path => group === "all" || (colors[path]?.group ?? "unknown") === group);
     if (order === "artist")
@@ -18,11 +30,11 @@ function arrange(paths, colors, group, order, directory) {
                 if (aa) return -1;
                 if (ab) return 1;
             }
-            return aa.localeCompare(ab)
-                || a.split("/").pop().localeCompare(b.split("/").pop()) || a.localeCompare(b);
+            return compareNames(aa, ab)
+                || compareNames(a.split("/").pop(), b.split("/").pop()) || a.localeCompare(b);
         });
     if (order === "name")
-        return result.sort((a, b) => a.split("/").pop().localeCompare(b.split("/").pop()) || a.localeCompare(b));
+        return result.sort((a, b) => compareNames(a.split("/").pop(), b.split("/").pop()) || a.localeCompare(b));
     const groups = ["red", "orange", "yellow", "green", "cyan", "blue", "purple", "pink", "white", "gray", "black", "unknown"];
     return result.sort((a, b) => {
         const ca = colors[a], cb = colors[b];

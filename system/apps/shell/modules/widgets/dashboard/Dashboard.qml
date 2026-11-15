@@ -32,7 +32,7 @@ Item {
     readonly property real nonAnimWidth: currentTab === 0 ? 600 : 400
 
     implicitWidth: nonAnimWidth
-    implicitHeight: 430
+    implicitHeight: currentTab === 1 ? 650 : 430
 
     function focusCurrentTab() {
         const activeLoader = root.currentTab === 1

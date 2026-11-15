@@ -16,7 +16,7 @@ Item {
     id: root
 
     implicitWidth: Styling.spacing(540)
-    implicitHeight: 520
+    implicitHeight: Math.min(740, (root.screen?.height ?? 900) - 100)
 
     signal backRequested()
 

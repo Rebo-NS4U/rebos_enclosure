@@ -94,11 +94,11 @@ ColumnLayout {
             textRole: "label"
             valueRole: "value"
             model: [
-                {label: "Sort: Name", value: "name"},
-                {label: "Sort: Artist", value: "artist"},
-                {label: "Sort: Color", value: "color"},
-                {label: "Dark → Light", value: "dark"},
-                {label: "Light → Dark", value: "light"}
+                {label: "Filename (A–Z)", value: "name"},
+                {label: "Artist folder (A–Z)", value: "artist"},
+                {label: "Dominant color (rainbow)", value: "color"},
+                {label: "Brightness: dark → light", value: "dark"},
+                {label: "Brightness: light → dark", value: "light"}
             ]
             onActivated: root.sortOrder = currentValue
         }
