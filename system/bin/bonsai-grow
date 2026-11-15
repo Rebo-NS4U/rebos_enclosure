@@ -1348,7 +1348,7 @@ def sun_palette(hour):
 
 
 def celestial_marks(daylight, rising):
-    """Original open line art, inspired by classic terminal weather drawings."""
+    """A stippled sun and solid crescent, each kept within its glass corner."""
     if daylight:
         sun = (
             "  ░▒▒▒▒▒░  ",
@@ -1360,27 +1360,25 @@ def celestial_marks(daylight, rising):
         return [(x - 5, y - 2, glyph,
                  f"sky_orb_sun{min(7, round(math.hypot((x - 5) / 5.4, (y - 2) / 2.45) * 7))}")
                 for y, row in enumerate(sun) for x, glyph in enumerate(row) if glyph != " "]
-    moon = (
-        "    .-───´   ",
-        "  .'   .'    ",
-        " /  · /      ",
-        " │    │      ",
-        r" \ ·  \      ",
-        "  `.   `._   ",
-        "    `────´   ",
-    )
-    mirror = str.maketrans(r"/\╭╮╰╯`´", r"\/╮╭╯╰´`")
+    # A solid crescent: two vertical samples per cell keep the tips curved,
+    # while full blocks make the illuminated body opaque and continuous.
     marks = []
-    for y, row in enumerate(moon):
-        for x, glyph in enumerate(row):
-            if glyph == " ":
+    for y in range(-3, 4):
+        for x in range(-6, 7):
+            dx = x / 6.4
+            halves = []
+            for half in range(2):
+                dy = (y + (half + 0.5) / 2 - 0.5) / 3.4
+                inside = dx * dx + dy * dy <= 1
+                shadow = (dx - 0.43) ** 2 + dy * dy < 0.96 ** 2
+                halves.append(inside and not shadow)
+            glyph = {(True, True): "█", (True, False): "▀",
+                     (False, True): "▄"}.get(tuple(halves))
+            if glyph is None:
                 continue
-            dx, dy = x - 6, y - 3
-            band = min(7, max(0, 7 - x + (2 if glyph == "·" else 0)))
-            role = f"sky_orb_moon{band}"
-            if not rising:
-                dx, glyph = -dx, glyph.translate(mirror)
-            marks.append((dx, dy, glyph, role))
+            terminator = max(0, math.hypot(dx - 0.43, y / 3.4) - 0.96)
+            band = min(7, round(terminator / 0.47 * 7))
+            marks.append((x if rising else -x, y, glyph, f"sky_orb_moon{band}"))
     return marks
 
 
@@ -1441,7 +1439,7 @@ def backlit_ink(ink, daylight):
 
 
 def frame_rows(rows, columns, accents, color):
-    """A fine glass case that inherits the terminal background."""
+    """A fine glass case with a neutral backing for transparent terminals."""
     width = 57
     margin = " " * max(0, (columns - width - 2) // 2)
     reset = "\033[0m" if color else ""
@@ -1451,8 +1449,14 @@ def frame_rows(rows, columns, accents, color):
     glass = "\033[0;38;2;{};{};{}m".format(
         *(round(145 * 0.75 + channel * 0.25) for channel in rgb)
     ) if color else ""
+    background = "\033[48;2;24;24;24m" if color else ""
     def pane(text):
-        return text + reset
+        if not color:
+            return text
+        # Foreground inks reset SGR. Reapply the neutral backing after each
+        # change so neither the artwork nor empty cells reveal the wallpaper.
+        text = re.sub(r"\x1b\[[0-9;]*m", lambda match: match[0] + background, text)
+        return background + text + reset
     def edge(text):
         return pane(glass + text)
     top = margin + edge("╭" + "─" * width + "╮")
