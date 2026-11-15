@@ -36,27 +36,45 @@ def session():
     import qs.modules.globals
     ShellRoot {
         MusicWindow { id: music }
+        function findItem(item, name) {
+            if (item.objectName === name) return item;
+            for (const child of item.children) { const found = findItem(child, name); if (found) return found; }
+            return null;
+        }
         Component.onCompleted: GlobalStates.musicWindowVisible = true
         Timer {
             property int attempts: 0
             property int phase: 0
+            property int repeatStart: 0
             interval: 200; running: true; repeat: true
             onTriggered: {
                 attempts++;
                 if (attempts > 90) { console.error("MUSIC_ACCEPTANCE_TIMEOUT " + music.notice); Qt.exit(1); }
                 if (phase === 0 && !music.busy && music.tracks.length === 2) {
                     music.volume = 0;
-                    music.play(music.tracks,0);
+                    const playCard = findItem(music.contentItem, "music-card-play");
+                    if (!playCard) return;
+                    playCard.clicked();
+                    if (music.page !== "Home" || music.queue.length !== 2) { console.error("MUSIC_CARD_PLAY_FAILED"); Qt.exit(1); }
                     phase = 1;
                 } else if (phase === 1 && music.playing) {
                     if (music.lyricLines.length !== 2 || music.estimatedTiming) { console.error("MUSIC_LYRICS_FAILED"); Qt.exit(1); }
                     music.seek(1200);
                     music.favorite(music.current);
-                    music.playlists = [{id:"test",name:"Acceptance",paths:music.queue.map(t=>t.path)}];
+                    music.playlists = [{id:"test",name:"Acceptance",paths:music.queue.map(t=>t.path).reverse()}];
                     music.save();
+                    findItem(music.contentItem, "music-repeat-song").clicked();
+                    if (music.repeatMode !== "Track") { console.error("MUSIC_REPEAT_TOGGLE_FAILED"); Qt.exit(1); }
+                    music.seek(3800);
+                    repeatStart = attempts;
+                    phase = 10;
+                } else if (phase === 10 && attempts >= repeatStart + 4) {
+                    if (!music.playing || music.currentIndex !== 0 || music.lyricIndex !== 0) { console.error("MUSIC_REPEAT_SONG_FAILED"); Qt.exit(1); }
                     music.next(false);
                     phase = 2;
                 } else if (phase === 2 && music.currentIndex === 1 && music.playing) {
+                    findItem(music.contentItem, "music-repeat-song").clicked();
+                    if (music.repeatMode !== "None") { console.error("MUSIC_REPEAT_DISABLE_FAILED"); Qt.exit(1); }
                     music.control({action:"Pause"});
                     music.side = "Lyrics";
                     if (!music.estimatedTiming || music.lyricLines.length !== 4) { console.error("MUSIC_ESTIMATES_FAILED"); Qt.exit(1); }
@@ -69,6 +87,14 @@ def session():
                     if (music.lyricIndex !== 2) { console.error("MUSIC_ESTIMATE_PAUSE_FAILED"); Qt.exit(1); }
                     music.seek(0);
                     if (music.lyricIndex !== 0) { console.error("MUSIC_ESTIMATE_REWIND_FAILED"); Qt.exit(1); }
+                    music.navigate("Playlists");
+                    phase = 4;
+                } else if (phase === 4) {
+                    const playCard = findItem(music.contentItem, "music-card-play");
+                    if (!playCard) return;
+                    playCard.clicked();
+                    if (music.page !== "Playlists" || music.queue[0].path !== music.tracks[1].path) { console.error("MUSIC_PLAYLIST_CARD_FAILED"); Qt.exit(1); }
+                    music.control({action:"Pause"});
                     console.log("MUSIC_ACCEPTANCE_PASSED tracks=" + music.tracks.length + " queue=" + music.queue.length);
                     console.log('MUSIC_GEOMETRY ' + music.contentItem.width + 'x' + music.contentItem.height + ' children=' + music.contentItem.children.length + ' root=' + music.contentItem.children[music.contentItem.children.length-1].width); music.contentItem.grabToImage(result => { result.saveToFile("/tmp/enclosure-music-acceptance.png"); Qt.quit(); });
                     stop();

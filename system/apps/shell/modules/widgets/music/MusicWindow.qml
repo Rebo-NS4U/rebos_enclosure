@@ -128,6 +128,14 @@ Window {
     }
     function navigate(value, arg) { page = value; detail = arg || ""; query = ""; }
     function play(list, index) { if (!list.length) return; queue = list.slice(); select(index || 0); }
+    function cardTracks(kind, key) {
+        if (kind === "Playlists") {
+            const playlist = playlists.find(p => p.id === key);
+            return playlist ? playlist.paths.map(path => tracks.find(t => t.path === path)).filter(Boolean) : [];
+        }
+        if (kind === "Artists") return tracks.filter(t => t.artist === key);
+        return tracks.filter(t => t.album + "\n" + t.artist === key).slice().sort((a,b) => a.number - b.number);
+    }
     function select(index) {
         if (index < 0 || index >= queue.length) return;
         currentIndex = index;
@@ -227,7 +235,7 @@ Window {
         radius: Styling.radius(0)
         RowLayout {
             anchors.fill: parent; anchors.margins: 8; spacing: 12
-            ThemeButton { text: row.selected && root.playing ? "Ⅱ" : "▶"; Accessible.name: "Play " + row.track.title; onClicked: row.playRequested() }
+            ThemeButton { text: row.selected && root.playing ? "Ⅱ" : "▶"; Accessible.name: (row.selected && root.playing ? "Pause " : "Play ") + row.track.title; onClicked: row.playRequested() }
             Cover { artwork: row.track.art; Layout.preferredWidth: 48; Layout.preferredHeight: 48 }
             ColumnLayout {
                 Layout.fillWidth: true; spacing: 3
@@ -291,10 +299,21 @@ Window {
                         delegate: Item {
                             id: card
                             required property var modelData
+                            readonly property var playableTracks: root.cardTracks(root.page, modelData.key)
                             width: cards.cellWidth; height: cards.cellHeight
                             ColumnLayout {
                                 anchors.fill: parent; anchors.margins: 8; spacing: 6
-                                Cover { Layout.fillWidth: true; Layout.preferredHeight: card.width-16; artwork: card.modelData.art }
+                                Cover {
+                                    Layout.fillWidth: true; Layout.preferredHeight: card.width-16; artwork: card.modelData.art
+                                    ThemeButton {
+                                        objectName: "music-card-play"
+                                        anchors.right: parent.right; anchors.bottom: parent.bottom; anchors.margins: 10
+                                        text: "▶"; highlighted: true
+                                        Accessible.name: "Play " + card.modelData.title
+                                        enabled: card.playableTracks.length > 0
+                                        onClicked: root.play(card.playableTracks, 0)
+                                    }
+                                }
                                 ThemeButton {
                                     Layout.fillWidth: true; text: card.modelData.title
                                     onClicked: root.navigate(root.page === "Artists" ? "Artist" : root.page === "Playlists" ? "Playlist" : "Album",card.modelData.key)
@@ -398,7 +417,17 @@ Window {
                         ThemeButton { text: "⏮"; Accessible.name: "Previous track"; enabled: !!root.current; onClicked: root.previous() }
                         ThemeButton { text: root.playing ? "Pause" : "Play"; highlighted: true; enabled: root.queue.length > 0 || root.shownTracks.length > 0; onClicked: root.toggle() }
                         ThemeButton { text: "⏭"; Accessible.name: "Next track"; enabled: root.queue.length > 1; onClicked: root.next(false) }
-                        ThemeButton { text: root.repeatMode === "None" ? "Repeat off" : root.repeatMode === "Track" ? "Repeat one" : "Repeat all"; checked: root.repeatMode !== "None"; onClicked: root.repeatMode = root.repeatMode === "None" ? "Playlist" : root.repeatMode === "Playlist" ? "Track" : "None" }
+                        ThemeButton {
+                            objectName: "music-repeat-song"
+                            text: "Repeat song"; checkable: true; checked: root.repeatMode === "Track"
+                            highlighted: checked
+                            Accessible.name: "Repeat current song"
+                            onClicked: root.repeatMode = root.repeatMode === "Track" ? "None" : "Track"
+                        }
+                        ThemeButton {
+                            text: "Repeat all"; checkable: true; checked: root.repeatMode === "Playlist"
+                            onClicked: root.repeatMode = root.repeatMode === "Playlist" ? "None" : "Playlist"
+                        }
                         ThemeSlider { Layout.preferredWidth: 90; from: 0; to: 1; value: root.volume; Accessible.name: "Volume"; onMoved: root.volume = value }
                     }
                     RowLayout {
