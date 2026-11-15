@@ -377,6 +377,6 @@ Move the cursor to dodge incoming circles. Click the arena to begin; use Play ag
 Escape, leaving the arena, or switching windows pauses the run. Click to resume.
 Easy, Medium and Hard have separate personal bests, stored locally in
 `~/.config/rebos_shell/mousedash.ini`. Quiet visuals removes the cursor trail
-and glow. The native window follows the shell palette, font and surface style.
+and glow. The native window opens maximized and follows the shell palette, font and surface style.
 The player grows from 9 to 18px radius as survival time increases. Enemies accelerate and spawn more frequently over time. After a loss the final arena stays visible until Play again is selected.
 No network service or additional dependency is required.
