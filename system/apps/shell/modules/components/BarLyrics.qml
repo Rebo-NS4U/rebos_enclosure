@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
+import Quickshell
 import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell.Io
@@ -15,8 +16,16 @@ Item {
     property real stripHeight: 36
     property bool available: true
     readonly property real gap: 12
-    readonly property real sideWidth: Math.max(0, Math.min(islandLeft - gap * 2,
-        width - islandRight - gap * 2))
+    // Match the tiled workspace edge while keeping breathing room by the island.
+    readonly property real edgeMargin: 4
+    readonly property real sideWidth: Math.max(0, Math.min(islandLeft - gap - edgeMargin,
+        width - islandRight - gap - edgeMargin))
+    readonly property Region backgroundBlur: Region {
+        regions: [
+            BlurRegion { target: currentPanel; enabled: root.visible },
+            BlurRegion { target: nextPanel; enabled: root.visible }
+        ]
+    }
     readonly property bool estimatedTiming: LyricsService.hasText && !LyricsService.lines.length && MprisController.length > 0
     readonly property var displayLines: estimatedTiming
         ? Lyrics.estimatedLines(LyricsService.plain, MprisController.length) : LyricsService.displayLines
@@ -170,24 +179,6 @@ Item {
         border.width: BarAppearance.framed || Styling.shellStyle === "dithered" ? 1 : 0
         border.color: BarAppearance.panelBorder(false)
 
-        // Light-catching inset frame; all accents follow the active shell palette.
-        Rectangle {
-            anchors.fill: parent
-            anchors.margins: 2
-            radius: Math.min(height / 2, Styling.radius(4))
-            color: "transparent"
-            border.width: 1
-            border.color: Qt.alpha(BarAppearance.foregroundColor, 0.07)
-        }
-        Rectangle {
-            anchors.fill: parent
-            radius: Math.min(height / 2, Styling.radius(4))
-            gradient: Gradient {
-                GradientStop { position: 0; color: Qt.alpha(BarAppearance.foregroundColor, 0.055) }
-                GradientStop { position: 0.45; color: "transparent" }
-                GradientStop { position: 1; color: Qt.alpha(BarAppearance.activeColor, 0.045) }
-            }
-        }
         PanelControl {
             id: modeBadge
             objectName: lineSurface.upcoming ? "lyrics-calibrate" : "lyrics-step-back"
@@ -310,8 +301,8 @@ Item {
             transform: Translate { y: 4 * (1 - lineSurface.progress) }
         }
     }
-    Line { id: currentPanel; objectName: "bar-lyrics-current"; x: root.gap; lyric: (root.estimatedTiming && root.currentText ? "≈ " : "") + root.currentText }
-    Line { id: nextPanel; objectName: "bar-lyrics-next"; x: root.width - root.sideWidth - root.gap; lyric: (root.estimatedTiming && root.nextText ? "≈ " : "") + root.nextText; upcoming: true }
+    Line { id: currentPanel; objectName: "bar-lyrics-current"; x: root.edgeMargin; lyric: (root.estimatedTiming && root.currentText ? "≈ " : "") + root.currentText }
+    Line { id: nextPanel; objectName: "bar-lyrics-next"; x: root.width - root.sideWidth - root.edgeMargin; lyric: (root.estimatedTiming && root.nextText ? "≈ " : "") + root.nextText; upcoming: true }
     StyledRect {
         id: calibrationPanel
         objectName: "lyrics-calibration-panel"

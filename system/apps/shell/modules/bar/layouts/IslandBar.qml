@@ -519,7 +519,12 @@ Item {
     readonly property bool timerInputActive: false
     readonly property bool dashboardInputActive: islandActive && currentMode === "dashboard"
 
-    readonly property Region backgroundBlur: BlurRegion { target: islandBody }
+    readonly property Region backgroundBlur: Region {
+        regions: [
+            BlurRegion { target: islandBody },
+            lyricsStrip.backgroundBlur
+        ]
+    }
 
     property alias barHitbox: activeBarHitbox
 
