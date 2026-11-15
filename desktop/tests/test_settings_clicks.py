@@ -123,6 +123,20 @@ ShellRoot {
        }
        collectSections(page);
        fixture.check(anchors.length >= 6 && anchors.every(item => item.visible), name + " controls share one scrollable page");
+       if (name === "ShellPanel") {
+        for (const sectionId of ["weather", "storage", "bar", "lockscreen", "system", "sidebar"]) {
+         let group = fixture.find(page, "shell-group-" + sectionId);
+         fixture.check(group && group.collapsible && !group.expanded && group.title.length > 0, "Shell group starts as a labeled dropdown: " + sectionId);
+        }
+        let bar = fixture.find(page, "shell-group-bar");
+        let smallHeight = bar.implicitHeight;
+        tester.mouseClick(fixture.find(bar, "shell-group-bar-expand")); tester.wait(40);
+        fixture.check(bar.expanded && bar.implicitHeight > smallHeight + 100, "Shell dropdown expands inline");
+        tester.mouseClick(fixture.find(bar, "shell-group-bar-expand")); tester.wait(40);
+        fixture.check(!bar.expanded && bar.implicitHeight === smallHeight, "Shell dropdown collapses compactly");
+        page.currentSection = "weather"; tester.wait(40);
+        fixture.check(fixture.find(page, "shell-group-weather").expanded, "Weather search opens its dropdown");
+       }
        if (name === "ThemePanel") {
         const advancedGrid = fixture.find(page, "theme-advanced-grid");
         fixture.check(advancedGrid.columns === 2, "Advanced theme options use two columns");

@@ -56,6 +56,7 @@ Item {
             return null;
         }
         const target = find(mainColumn);
+        if (target && target.collapsible) target.expanded = true;
         sectionOffset = target ? target.mapToItem(mainColumn, 0, 0).y : 0;
         mainFlickable.contentY = target ? Math.max(0, Math.min(target.mapToItem(mainColumn, 0, 0).y, mainFlickable.contentHeight - mainFlickable.height)) : 0;
     }
@@ -572,14 +573,25 @@ Item {
 
 
 
-                    WeatherSettings { property string settingsAnchor: "weather" }
-                    StorageSettings { property string settingsAnchor: "storage" }
+                    WeatherSettings {
+                        property string settingsAnchor: "weather"
+                        collapsible: true
+                        objectName: "shell-group-weather"
+                    }
+                    StorageSettings {
+                        property string settingsAnchor: "storage"
+                        collapsible: true
+                        objectName: "shell-group-storage"
+                    }
 
                     // ═══════════════════════════════════════════════════════════════
                     // BAR SECTION
                     // ═══════════════════════════════════════════════════════════════
                     SettingsGroup {
                         property string settingsAnchor: "bar"
+                        collapsible: true
+                        objectName: "shell-group-bar"
+                        title: "Desktop bar"
                         Layout.fillWidth: true
 
                         StyledText {
@@ -687,6 +699,9 @@ Item {
                     // ═══════════════════════════════════════════════════════════════
                     SettingsGroup {
                         property string settingsAnchor: "lockscreen"
+                        collapsible: true
+                        objectName: "shell-group-lockscreen"
+                        title: "Lock screen"
                         Layout.fillWidth: true
 
                         StyledText {
@@ -727,6 +742,9 @@ Item {
                     // ═══════════════════════════════════════════════════════════════
                     SettingsGroup {
                         property string settingsAnchor: "system"
+                        collapsible: true
+                        objectName: "shell-group-system"
+                        title: "About"
                         Layout.fillWidth: true
 
                         StyledText {
@@ -759,6 +777,9 @@ Item {
                     // ═══════════════════════════════════════════════════════════════
                     SettingsGroup {
                         property string settingsAnchor: "sidebar"
+                        collapsible: true
+                        objectName: "shell-group-sidebar"
+                        title: "Assistant panel"
                         Layout.fillWidth: true
 
                         StyledText {

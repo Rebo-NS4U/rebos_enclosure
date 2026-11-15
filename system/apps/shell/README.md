@@ -359,3 +359,5 @@ Settings has four main categories: Theme & appearance, Desktop & system, Devices
 Theme style and basic palette controls stay visible at the top of Appearance. Advanced theme controls and wallpaper tools expand in place; search automatically expands matching theme groups.
 
 Appearance uses compact theme previews, direct palette controls and a responsive two-column grid for advanced options. Expanded advanced groups span the full row; narrow windows use one column. Theme descriptions are available on hover.
+
+Shell settings use compact expandable groups for the desktop bar, assistant panel, lock screen, weather, storage and About. Search opens the matching group automatically.
