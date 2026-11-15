@@ -572,7 +572,7 @@ Item {
                     SettingsSubnav {
                         visible: root.currentSection !== ""
                         currentSection: root.currentSection
-                        sections: [{id: "weather", label: "Weather"}, {id: "storage", label: "Storage"}, {"id": "bar", "label": "Desktop bar"}, {"id": "sidebar", "label": "Assistant panel"}, {"id": "lockscreen", "label": "Lock screen"}, {"id": "system", "label": "About"}]
+                        sections: [{"id": "bar", "label": "Desktop bar"}, {"id": "sidebar", "label": "Assistant panel"}, {"id": "lockscreen", "label": "Lock screen"}, {"id": "system", "label": "About"}, {"id": "weather", "label": "Weather"}, {"id": "storage", "label": "Storage"}]
                         onSelected: section => root.currentSection = section
                     }
 

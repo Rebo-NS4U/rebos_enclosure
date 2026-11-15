@@ -174,7 +174,7 @@ Item {
                     SettingsSubnav {
                         visible: root.currentSection !== ""
                         currentSection: root.currentSection
-                        sections: [{id: "performance", label: "Visual effects"}, {"id": "style", "label": "Theme & app style"}, {"id": "colors", "label": "Wallpaper & palette"}, {"id": "general", "label": "Text & shape"}, {"id": "blur", "label": "Transparency & blur"}, {"id": "shadow", "label": "Shadows"}, {"id": "motion", "label": "Animation"}, {"id": "variants", "label": "Custom surfaces"}]
+                        sections: [{"id": "colors", "label": "Wallpaper & palette"}, {"id": "style", "label": "Theme & app style"}, {"id": "general", "label": "Text & shape"}, {"id": "variants", "label": "Custom surfaces"}, {"id": "blur", "label": "Transparency & blur"}, {"id": "shadow", "label": "Shadows"}, {"id": "motion", "label": "Animation"}, {"id": "performance", "label": "Visual effects"}]
                         onSelected: section => root.currentSection = section
                     }
 
