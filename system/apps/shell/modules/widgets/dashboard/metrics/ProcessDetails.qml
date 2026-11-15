@@ -6,6 +6,7 @@ import QtQuick.Layouts
 import qs.modules.components
 import qs.modules.services
 import qs.modules.theme
+import "ProcessTree.js" as ProcessTree
 
 ColumnLayout {
     id: root
@@ -26,31 +27,20 @@ ColumnLayout {
         if (metric === "network") return v + " sockets";
         return (v / 1024 / 1024).toFixed(1) + (metric === "disk" ? " MiB/s" : " MiB");
     }
-    readonly property list<var> groups: {
-        const rows = SystemResources.processes;
-        const byPid = {};
-        const byParent = {};
-        for (const row of rows) byPid[row.pid] = row;
-        for (const row of rows) {
-            if (root.gpuDevice && !(root.gpuDevice in (row.gpu ?? {}))) continue;
-            if (root.metric === "network" && !row.sockets) continue;
-            const key = row.ppid;
-            if (!byParent[key]) byParent[key] = {ppid: key, name: byPid[key]?.name ?? "Parent exited / unavailable", children: [], cpu: 0, ram: 0, disk: 0, sockets: 0, gpu: {}};
-            const group = byParent[key];
-            group.children.push(row);
-            for (const metric of ["cpu", "ram", "disk", "sockets"]) group[metric] += row[metric] ?? 0;
-            for (const dev of Object.keys(row.gpu ?? {})) group.gpu[dev] = (group.gpu[dev] ?? 0) + row.gpu[dev];
-        }
-        const result = Object.values(byParent);
-        for (const group of result) group.children.sort((a, b) => root.value(b) - root.value(a) || a.pid - b.pid);
-        return result.sort((a, b) => root.value(b) - root.value(a) || a.ppid - b.ppid);
+    readonly property list<var> groups: ProcessTree.groups(SystemResources.processes, root.metric, root.gpuDevice)
+
+    function processStats(row): string {
+        return "CPU " + row.cpu.toFixed(1) + "% · RAM " + (row.ram / 1048576).toFixed(1)
+            + " MiB\nDisk " + (row.io_available ? (row.disk / 1048576).toFixed(2) + " MiB/s" : "unavailable")
+            + " · " + row.sockets + " sockets"
+            + (root.gpuDevice ? " · GPU " + root.formatted(row) : "");
     }
 
     RowLayout {
         Layout.fillWidth: true
         MetricAction { text: "← All stats"; onClicked: SystemResources.detailMetric = "" }
         Item { Layout.fillWidth: true }
-        StyledText { text: "Live · by PPID"; font.pixelSize: Styling.fontSize(-3); color: Colors.overSurfaceVariant }
+        StyledText { text: "Live · process trees"; font.pixelSize: Styling.fontSize(-3); color: Colors.overSurfaceVariant }
     }
     StyledText {
         Layout.fillWidth: true
@@ -66,8 +56,8 @@ ColumnLayout {
         text: root.metric === "network" ? "Sorted by open sockets, including local sockets. Per-process network speeds are unavailable."
             : root.metric === "disk" ? "Read + write activity across all disks; this is not space occupied on the selected disk. Restricted processes may be unavailable."
             : root.gpuDevice ? "GPU engine time reported by the driver. Processes without accessible GPU counters are omitted."
-            : root.metric === "cpu" ? "CPU uses 100% per core. Expand a parent to see its direct children."
-            : "Resident memory of direct children, including shared pages. Expand a parent to see its processes."
+            : root.metric === "cpu" ? "CPU uses 100% per core. Expand a tree to see nested subprocesses and their individual usage."
+            : "Resident memory of each tree, including shared pages. Indentation shows parent/child relationships."
     }
     ListView {
         id: list
@@ -99,8 +89,8 @@ ColumnLayout {
                         font.pixelSize: Styling.fontSize(-2)
                         wrapMode: Text.Wrap
                         text: (root.expandedPpid === groupRow.modelData.ppid ? "▾ " : "▸ ")
-                            + groupRow.modelData.name + " · PPID " + groupRow.modelData.ppid
-                            + "\n" + groupRow.modelData.children.length + " processes · " + root.formatted(groupRow.modelData)
+                            + groupRow.modelData.name + " · PID " + groupRow.modelData.ppid
+                            + "\n" + groupRow.modelData.children.length + " processes in tree · " + root.formatted(groupRow.modelData)
                     }
                     MouseArea {
                         anchors.fill: parent
@@ -113,9 +103,12 @@ ColumnLayout {
                     StyledText {
                         required property var modelData
                         Layout.fillWidth: true
+                        Layout.leftMargin: Math.min(modelData.depth, 8) * 12
                         font.pixelSize: Styling.fontSize(-3)
                         wrapMode: Text.Wrap
-                        text: modelData.name + " · PID " + modelData.pid + " · " + root.formatted(modelData)
+                        text: (modelData.depth ? "↳ " : "") + modelData.name
+                            + " · PID " + modelData.pid + " · PPID " + modelData.ppid
+                            + "\n" + root.processStats(modelData)
                     }
                 }
             }
