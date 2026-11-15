@@ -22,15 +22,6 @@
       "sha256": "34693a7be8a2190f27bb51cdab4135eb71ce5dd381d9b49598b1e96b0e5daf11"
     },
     {
-      "file": "wallpaper-003.jpg",
-      "dimensions": [
-        3840,
-        1080
-      ],
-      "bytes": 752192,
-      "sha256": "8224794118f96388d7c468f4d4749f3f5747d9957c00bbe87328414c51f3f735"
-    },
-    {
       "file": "wallpaper-004.png",
       "dimensions": [
         3840,
@@ -570,5 +561,9 @@
       "bytes": 4807482,
       "sha256": "ddea1fac505df205ce8443242fa4f3d01d676b550c5988094c2e41a1515a9b69"
     }
+  ],
+  "minimum_dimensions": [
+    1920,
+    1200
   ]
 }
