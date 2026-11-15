@@ -1458,12 +1458,12 @@ def frame_rows(rows, columns, accents, color):
         text = re.sub(r"\x1b\[[0-9;]*m", lambda match: match[0] + background, text)
         return background + text + reset
     def edge(text):
-        # Border glyphs occupy full cells, but their strokes sit inside them.
-        # Filling those cells would create a rectangle outside the rounded rim.
         return glass + text + reset
-    top = margin + edge("╭" + "─" * width + "╮")
-    bottom = margin + edge("╰" + "━" * width + "╯")
-    return [top] + [margin + edge("│") + pane(row) + edge("│")
+    # Put strokes at the cell edges facing the fill. Centered box-drawing
+    # strokes leave a half-cell gap, while filling their cells spills outside.
+    top = margin + edge(" " + "▁" * width + " ")
+    bottom = margin + edge(" " + "▔" * width + " ")
+    return [top] + [margin + edge("▕") + pane(row) + edge("▏")
                     for row in rows] + [bottom]
 
 
