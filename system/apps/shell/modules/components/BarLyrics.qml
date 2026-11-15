@@ -49,6 +49,28 @@ Item {
     readonly property int lineIndex: estimatedTiming
         ? Math.max(0, Math.min(displayLines.length - 1, estimatedBaseIndex + estimatedOffset))
         : Math.max(0, LyricsService.currentLine)
+    // Line timestamps are available; word positions are an approximation.
+    property real lyricPosition: 0
+    function updateLyricPosition() {
+        lyricPosition = estimatedTiming ? estimatedClock.currentTime() : LyricsService.playbackClock.currentTime();
+    }
+    Timer {
+        interval: 33
+        running: root.visible && LyricsService.hasText && MprisController.isPlaying && Motion.enabled
+        repeat: true
+        triggeredOnStart: true
+        onTriggered: root.updateLyricPosition()
+    }
+    Connections {
+        target: MprisController
+        function onPositionChanged() { root.updateLyricPosition(); }
+        function onIsPlayingChanged() { root.updateLyricPosition(); }
+    }
+    readonly property real lineStart: displayLines[lineIndex]?.time ?? 0
+    readonly property real lineEnd: displayLines[lineIndex + 1]?.time ?? MprisController.length
+    readonly property real lineProgress: Math.max(0, Math.min(1,
+        (lyricPosition - lineStart) / Math.max(0.1, lineEnd - lineStart)))
+    readonly property int wordCount: Math.max(1, currentText.trim().split(/\s+/).length)
     readonly property bool canStepBack: estimatedTiming && lineIndex > 0
     readonly property bool canStepForward: estimatedTiming && lineIndex < displayLines.length - 1
     readonly property Item previousHitbox: visible && estimatedTiming && currentPanel.visible ? currentPanel.control : null
@@ -305,11 +327,27 @@ Item {
             transform: Translate { y: -4 * lineSurface.progress }
         }
         Label {
+            id: currentLabel
             upcoming: lineSurface.upcoming
             objectName: "bar-lyrics-text"
             text: lineSurface.displayedText
             opacity: lineSurface.progress * (1 - root.visualizerMix)
             transform: Translate { y: 4 * (1 - lineSurface.progress) }
+        }
+        Rectangle {
+            objectName: "bar-lyrics-bouncing-dot"
+            readonly property real textWidth: Math.min(currentLabel.contentWidth, currentLabel.width)
+            readonly property real bounce: Math.abs(Math.sin(root.lineProgress * root.wordCount * Math.PI))
+            visible: !lineSurface.upcoming && root.currentText !== "" && root.displayLines.length > 0
+                && Motion.enabled && root.lyricPosition >= root.lineStart
+            opacity: currentLabel.opacity
+            width: 4
+            height: 4
+            radius: 2
+            color: BarAppearance.activeColor
+            x: currentLabel.x + (currentLabel.width - textWidth) / 2
+                + root.lineProgress * Math.max(0, textWidth - width)
+            y: Math.max(1, (lineSurface.height - currentLabel.implicitHeight) / 2 - height - 1 - bounce * 3)
         }
     }
     Line { id: currentPanel; objectName: "bar-lyrics-current"; x: root.edgeMargin; lyric: (root.estimatedTiming && root.currentText ? "≈ " : "") + root.currentText }

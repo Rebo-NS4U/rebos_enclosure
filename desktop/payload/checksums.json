@@ -423,7 +423,7 @@
   "system/apps/shell/modules/bar/systray/SystrayMenuItem.qml": "e18346c9f7b3bec8103c9dee80ad16b77ba977eec7201f1631e96433ed919d84",
   "system/apps/shell/modules/bar/workspaces/RebosTaskbar.qml": "d22a93e49f8bd9f65b7266e8f1959780682729a08ace974db13ad51e3072bbb6",
   "system/apps/shell/modules/components/ActionGrid.qml": "1062fe0c83ae454eddf3ae941cfd893035624768aa0d1264c6fea3f6ebf8cebd",
-  "system/apps/shell/modules/components/BarLyrics.qml": "dd6d39ff09bb7009be6e8f3f5baa5bc6a5767b93bfd9d60fa931a2995268fbf9",
+  "system/apps/shell/modules/components/BarLyrics.qml": "50044e448b823027d589f27b913cc283f89ac212d177d3cb875cf1c98eed2410",
   "system/apps/shell/modules/components/BarPopup.qml": "1f8187b0d0c152409ae32cd10d1126ec4dadcfb12519fcb3a2215b960ac6d4f0",
   "system/apps/shell/modules/components/BlurRegion.qml": "5de1ef92e484a22b53489709f2a48e3430f97b0e9df91b2ac1f4298f7d7cb202",
   "system/apps/shell/modules/components/CircularControl.qml": "5a62bb55d9d79de022b382c6b9453f22926608d45bd337af482b5a9870fe4fa0",
