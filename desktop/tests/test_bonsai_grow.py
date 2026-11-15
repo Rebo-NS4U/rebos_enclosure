@@ -599,13 +599,13 @@ class BonsaiGrowTests(unittest.TestCase):
 
     def test_glass_varies_between_seeds_and_stays_stable_within_a_session(self):
         first = bonsai.glass_reflections(11, True)
-        self.assertEqual(len({bonsai.glass_reflections(seed, True) for seed in range(60)}), 3)
+        self.assertGreater(len({bonsai.glass_reflections(seed, True) for seed in range(120)}), 40)
         self.assertEqual(first, bonsai.glass_reflections(11, True))
-        for seed in range(20):
+        for seed in range(500):
             for left_corner in (False, True):
                 points = bonsai.glass_reflections(seed, left_corner)
-                self.assertGreaterEqual(len(points), 5)
-                self.assertLessEqual(len(points), 6)
+                self.assertGreaterEqual(len(points), 4)
+                self.assertLessEqual(len(points), 10)
                 self.assertIn(min(y for x, y in points), (3, 7, 14))
                 self.assertEqual(len(points), len(set(points)))
                 self.assertTrue(all((49 <= x <= 55 if left_corner else 1 <= x <= 7)

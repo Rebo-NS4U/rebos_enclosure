@@ -1440,15 +1440,24 @@ def backlit_ink(ink, daylight):
 
 
 def glass_reflections(texture_seed, left_corner):
-    """Pick a composed upper, side or lower glint opposite the celestial body."""
-    # Fixed anchors and matching lengths keep every variation inset from the
-    # rim, away from the pot, and out of the central tree silhouette.
-    presets = ((2, 3, 4, 2), (1, 7, 4, 2), (2, 14, 3, 2))
-    inset, y, length, echo = random.Random(texture_seed).choice(presets)
+    """Randomize one slash-glint composition within a chosen fixed anchor."""
+    rng = random.Random(texture_seed)
+    inset, y = rng.choice(((2, 3), (1, 7), (2, 14)))
     x = 48 + inset if left_corner else inset
-    points = [(length - 1 - step, step) for step in range(length)]
-    points += [(length + 1 - step, step + 1) for step in range(echo)]
-    return tuple((x + dx, y + dy) for dx, dy in points)
+    max_dx, max_dy = 7 - inset, min(5, 17 - y)
+    length = rng.randint(3, min(5, max_dy + 1))
+    points = {(length - 1 - step, step) for step in range(length)}
+    # Vary parallel spacing, vertical stagger and echo length independently.
+    echo_x = min(max_dx, length + rng.randint(0, 1))
+    echo_y = rng.randint(0, 2)
+    echo = rng.randint(1, min(3, max_dy - echo_y + 1))
+    points.update((echo_x - step, echo_y + step) for step in range(echo))
+    if rng.random() < 0.65:
+        fragment_y = rng.randint(2, max_dy)
+        points.add((max_dx, fragment_y))
+        if fragment_y < max_dy and rng.choice((False, True)):
+            points.add((max_dx - 1, fragment_y + 1))
+    return tuple((x + dx, y + dy) for dx, dy in sorted(points, key=lambda p: (p[1], p[0])))
 
 
 @functools.lru_cache(maxsize=8)
