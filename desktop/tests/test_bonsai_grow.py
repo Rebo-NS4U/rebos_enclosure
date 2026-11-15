@@ -417,7 +417,7 @@ class BonsaiGrowTests(unittest.TestCase):
             self.assertGreaterEqual(len(body), 20)
             self.assertGreaterEqual(max(x for x, y in body) - min(x for x, y in body), 5)
             self.assertEqual(max(y for x, y in body) - min(y for x, y in body),
-                             4 if 6 <= hour < 18 else 6)
+                             6)
 
     def test_sky_leaves_a_dark_contour_and_lights_the_foreground(self):
         canvas = [[(' ', '') for _ in range(57)] for _ in range(24)]
@@ -484,9 +484,8 @@ class BonsaiGrowTests(unittest.TestCase):
         for daylight in (True, False):
             marks = bonsai.celestial_marks(daylight, True)
             body = [glyph for x, y, glyph, ink in marks if ink.startswith('sky_orb')]
-            self.assertIn('▓' if daylight else '█', body)
-            if not daylight:
-                self.assertTrue(set(body) <= {'█', '▀', '▄'})
+            self.assertIn('█', body)
+            self.assertTrue(set(body) <= {'█', '▀', '▄'})
             self.assertNotIn('☼', body)
             self.assertGreater(len({ink for x, y, glyph, ink in marks}), 3)
         moon = bonsai.celestial_marks(False, True)
