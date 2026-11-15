@@ -51,9 +51,9 @@ for (const id of ids) {
 const p = palettes[0];
 assert.equal(surface('monolith', 'bg', p).border[1], 0);
 assert.equal(surface('monolith', 'bg', p).gradient.length, 6);
-assert.equal(surface('monolith', 'bg', p).radius, 3);
+assert.equal(surface('monolith', 'bg', p).radius, undefined);
 assert.equal(surface('monolith', 'internalbg', p).gradient[0][0], p.background);
-assert.equal(surface('blueprint', 'bg', p).radius, 0);
+assert.equal(surface('blueprint', 'bg', p).radius, undefined);
 assert.equal(surface('blueprint', 'primary', p).gradient[0][0], p.background);
 assert.equal(surface('terminal-hardware', 'bg', p).gradient.length, 4);
 assert.equal(surface('terminal-hardware', 'bg', p).border[1], 2);
@@ -89,11 +89,11 @@ for (const id of materials) {
  assert.notDeepEqual(surface(id, 'bg', palettes[0]), surface(id, 'bg', palettes[1]));
 }
 assert.equal(surface('clear-glass', 'bg', p).opacity, 0.52);
-assert.equal(surface('clear-glass', 'bg', p).radius, 14);
+assert.equal(surface('clear-glass', 'bg', p).radius, undefined);
 assert.equal(surface('clear-glass', 'pane', p).border[1], 0);
 assert.equal(surface('glass-vault', 'bg', p).radius, undefined);
-assert.equal(surface('radar-station', 'bg', p).radius, 5);
-assert.equal(surface('suspended-film', 'bg', p).radius, 1);
+assert.equal(surface('radar-station', 'bg', p).radius, undefined);
+assert.equal(surface('suspended-film', 'bg', p).radius, undefined);
 for (let i=0; i<materials.length; i++) for (let j=i+1; j<materials.length; j++)
  assert.notDeepEqual(surface(materials[i], 'bg', p), surface(materials[j], 'bg', p));
 assert.equal(themePalette('custom'), null);

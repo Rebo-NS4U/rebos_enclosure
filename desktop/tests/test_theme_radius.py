@@ -27,8 +27,8 @@ class ThemeRadiusTests(unittest.TestCase):
             apply_niri_theme(palette, home)
             self.assertIn('geometry-corner-radius 16', (home / '.cache/rebos_shell/niri-colors.kdl').read_text())
 
-class VaultCornerTests(unittest.TestCase):
-    def test_live_radius_updates_reach_vault_decoration(self):
+class ThemeDecorationCornerTests(unittest.TestCase):
+    def test_live_radius_updates_reach_all_theme_decorations(self):
         import os
         import shutil
         import subprocess
@@ -47,12 +47,17 @@ import qs.config
 import qs.modules.components
 ShellRoot {
  function decoration(node) {
-  if (node.objectName === "structural-glass-canvas") return node;
+  if (["structural-glass-canvas","classic-glass-canvas","drafting-corner-canvas","surface-edge-canvas"].includes(node.objectName)) return node;
   for (const child of node.children || []) { const result = decoration(child); if (result) return result; }
   return null;
  }
- Window { visible: true; width: 96; height: 72
-  StyledRect { id: panel; anchors.fill: parent; variant: "bg"; styleOverride: "glass-vault"; animateRadius: false }
+ Window { visible: true; width: 300; height: 240
+  Grid { columns: 3; spacing: 2
+   Repeater { id: cards
+    model: ["glass-vault","radar-station","suspended-film","monolith","blueprint","terminal-hardware","frosted","colorful","clear-glass"]
+    StyledRect { required property string modelData; width:96; height:72; variant:"bg"; styleOverride:modelData; animateRadius:false }
+   }
+  }
  }
  Timer {
   property int step: 0
@@ -63,10 +68,12 @@ ShellRoot {
    const expected = values[step++];
    Config.theme.roundness = expected;
    Qt.callLater(() => {
-    const canvas = decoration(panel);
-    if (!canvas || panel.radius !== expected || canvas.cornerRadius !== Math.min(expected,36)) {
-     console.error("VAULT_RADIUS_FAILED",expected,panel.radius,canvas ? canvas.cornerRadius : "missing"); Qt.quit();
-    } else console.log("VAULT_RADIUS_OK",expected);
+    for (let i=0;i<cards.count;i++) {
+     const panel=cards.itemAt(i), canvas=decoration(panel);
+     if (panel.radius !== expected || (canvas && canvas.cornerRadius !== Math.min(expected,36))) {
+      console.error("THEME_RADIUS_FAILED",panel.modelData,expected,panel.radius,canvas ? canvas.cornerRadius : "native"); Qt.quit();
+     } else console.log("THEME_RADIUS_OK",panel.modelData,expected);
+    }
    });
   }
  }
@@ -79,7 +86,7 @@ ShellRoot {
                                     text=True, capture_output=True, timeout=15)
             output = result.stdout + result.stderr
             self.assertEqual(result.returncode, 0, output)
-            self.assertNotIn('VAULT_RADIUS_FAILED', output)
-            self.assertEqual(output.count('VAULT_RADIUS_OK'), 4, output)
+            self.assertNotIn('THEME_RADIUS_FAILED', output)
+            self.assertEqual(output.count('THEME_RADIUS_OK'), 36, output)
             for error in ('ReferenceError', 'TypeError', 'Unable to assign', 'Cannot assign'):
                 self.assertNotIn(error, output)

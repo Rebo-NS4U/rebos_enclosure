@@ -190,7 +190,6 @@ function surface(style, variant, p, ditherStrength) {
     if (dithered && ["pane", "surface", "surfaceContainer", "common", "internalbg"].indexOf(variant) !== -1)
         border[0] = mix(fill, p.primary, 0.12);
     return {
-        radius: style === "frosted" ? (outer ? 18 : 10) : colorful ? (outer ? 10 : 6) : clearGlass ? (outer ? 14 : 8) : radar ? (outer ? 5 : 2) : film ? 1 : monolith ? (outer ? 3 : 0) : blueprint ? 0 : hardware ? (outer ? 5 : 2) : undefined,
         gradient: renderGradient ? renderGradient : frostedContainer ? [[mix(fill, p.foreground, 0.08), 0], [fill, 0.45], [mix(fill, p.background, 0.12), 1]] : [[fill, 0]], gradientType: dotted ? "halftone" : "linear", gradientAngle: 0,
         gradientCenterX: 0.5, gradientCenterY: 0.5,
         halftoneDotMin: dotted ? dotMax : 0, halftoneDotMax: dotted ? dotMax : 0, halftoneStart: 0, halftoneEnd: 1,

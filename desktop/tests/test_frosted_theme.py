@@ -22,8 +22,8 @@ for (const light of [false,true]) {
   assert.equal(get(role).border[1],1);
   for (const stop of get(role).gradient) assert.ok(contrast(stop[0],get(role).itemColor)>=4.5,role+' contrast');
  }
- assert.equal(get('bg').radius,18);
- assert.equal(get('pane').radius,10);
+ assert.equal(get('bg').radius, undefined);
+ assert.equal(get('pane').radius, undefined);
  assert.equal(get('common').opacity,0.48);
  assert.equal(get('focus').opacity,0.84);
  assert.equal(get('focus').border[0],p.primary);
@@ -39,8 +39,8 @@ for (const light of [false,true]) {
  assert.equal(palette.background,get('bg').gradient[0][0]);
  assert.equal(palette.surface,get('pane').gradient[0][0]);
  const tinted=role=>surface('colorful',role,p);
- assert.equal(tinted('bg').radius,10);
- assert.equal(tinted('pane').radius,6);
+ assert.equal(tinted('bg').radius, undefined);
+ assert.equal(tinted('pane').radius, undefined);
  assert.equal(tinted('bg').opacity,0.74);
  assert.equal(tinted('internalbg').opacity,0.50);
  assert.equal(tinted('focus').border[0],p.primary);

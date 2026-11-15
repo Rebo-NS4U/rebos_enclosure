@@ -97,6 +97,23 @@ ClippingRectangle {
 
     radius: variantConfig.radius !== undefined ? variantConfig.radius : Styling.radius(0)
 
+    readonly property real effectiveCornerRadius: Math.max(0, Math.min(radius, width / 2, height / 2))
+
+    function themeInsetRadius(inset) {
+        return Math.max(0, Math.min(effectiveCornerRadius - inset, (width - 2 * inset) / 2, (height - 2 * inset) / 2));
+    }
+
+    function traceThemeFrame(ctx, inset) {
+        if (width <= 2 * inset || height <= 2 * inset) return false;
+        const r = themeInsetRadius(inset), right = width - inset, bottom = height - inset;
+        ctx.beginPath();ctx.moveTo(inset+r,inset);ctx.lineTo(right-r,inset);
+        ctx.quadraticCurveTo(right,inset,right,inset+r);ctx.lineTo(right,bottom-r);
+        ctx.quadraticCurveTo(right,bottom,right-r,bottom);ctx.lineTo(inset+r,bottom);
+        ctx.quadraticCurveTo(inset,bottom,inset,bottom-r);ctx.lineTo(inset,inset+r);
+        ctx.quadraticCurveTo(inset,inset,inset+r,inset);
+        return true;
+    }
+
     // Helper to apply opacity to a color via alpha channel
     function applyOpacity(baseColor, opacityValue) {
         return Qt.rgba(baseColor.r, baseColor.g, baseColor.b, baseColor.a * opacityValue);
@@ -263,6 +280,9 @@ ClippingRectangle {
                 readonly property color pigment: classic.ink
                 readonly property color accent: classic.accent
                 readonly property bool ice: classic.ice
+                objectName: "classic-glass-canvas"
+                readonly property real cornerRadius: root.effectiveCornerRadius
+                onCornerRadiusChanged: requestPaint()
                 onPigmentChanged: requestPaint()
                 onAccentChanged: requestPaint()
                 onIceChanged: requestPaint()
@@ -277,7 +297,7 @@ ClippingRectangle {
                     if(ice){
                         // Two soft inset rims and a broken highlight suggest etched ice.
                         for(let layer=0;layer<2;layer++){
-                            const d=3+layer*3,r=Math.min(12,width/5,height/5);
+                            const d=3+layer*3,r=root.themeInsetRadius(d);
                             ctx.strokeStyle=ink(layer?0.07:0.18);
                             ctx.beginPath();ctx.moveTo(d+r,d);ctx.lineTo(width-d-r,d);
                             ctx.quadraticCurveTo(width-d,d,width-d,d+r);ctx.lineTo(width-d,height-d-r);
@@ -285,7 +305,7 @@ ClippingRectangle {
                             ctx.quadraticCurveTo(d,height-d,d,height-d-r);ctx.lineTo(d,d+r);
                             ctx.quadraticCurveTo(d,d,d+r,d);ctx.stroke();
                         }
-                        ctx.strokeStyle=ink(0.32);ctx.beginPath();ctx.moveTo(18,3);ctx.lineTo(Math.max(18,width*0.38),3);ctx.stroke();
+                        ctx.strokeStyle=ink(0.32);ctx.beginPath();ctx.moveTo(Math.max(18,cornerRadius),3);ctx.lineTo(Math.max(18,cornerRadius,width*0.38),3);ctx.stroke();
                         if(classic.outer){
                             // Fixed fine grain at the perimeter; no texture over text.
                             ctx.fillStyle=ink(0.14);
@@ -304,8 +324,11 @@ ClippingRectangle {
                         ctx.fillStyle=tint(0.22);ctx.fillRect(0,12,band,Math.max(0,height-24));
                         ctx.fillStyle=tint(0.12);ctx.fillRect(band+2,22,2,Math.max(0,height-44));
                         ctx.strokeStyle=tint(0.30);ctx.beginPath();
-                        ctx.moveTo(18,5);ctx.lineTo(width-18,5);ctx.lineTo(width-5,18);ctx.lineTo(width-5,Math.max(18,height*0.32));ctx.stroke();
-                        ctx.strokeStyle=ink(0.09);ctx.beginPath();ctx.moveTo(16,11);ctx.lineTo(width-22,11);ctx.stroke();
+                        const r=root.themeInsetRadius(5);
+                        ctx.moveTo(Math.max(18,5+r),5);ctx.lineTo(width-5-r,5);
+                        ctx.quadraticCurveTo(width-5,5,width-5,5+r);
+                        ctx.lineTo(width-5,Math.max(5+r,height*0.32));ctx.stroke();
+                        ctx.strokeStyle=ink(0.09);ctx.beginPath();ctx.moveTo(Math.max(16,11+root.themeInsetRadius(11)),11);ctx.lineTo(width-Math.max(22,11+root.themeInsetRadius(11)),11);ctx.stroke();
                         ctx.fillStyle=tint(0.23);ctx.beginPath();
                         ctx.moveTo(width-34,height-5);ctx.lineTo(width-5,height-5);ctx.lineTo(width-5,height-16);ctx.lineTo(width-23,height-16);ctx.closePath();ctx.fill();
                         if(classic.outer){
@@ -382,10 +405,11 @@ ClippingRectangle {
                         ctx.lineTo(width-lip,Math.max(12,lip+r));ctx.stroke();
                     } else if (finish === "radar-station") {
                         // Fixed bearing scales: no sweep, motion or simulated live data.
-                        ctx.strokeStyle=ink(0.12);ctx.strokeRect(8,8,width-16,height-16);
+                        ctx.strokeStyle=ink(0.12);if(root.traceThemeFrame(ctx,8))ctx.stroke();
                         const radius=Math.min(54,width*0.22,height*0.28);
                         for (const corner of [0,1]) {
-                            const x=corner?width-12:12,y=corner?height-12:12;
+                            const pad=Math.max(12,cornerRadius*0.30+8);
+                            const x=corner?width-pad:pad,y=corner?height-pad:pad;
                             ctx.strokeStyle=ink(0.19);
                             for (const r of [radius*0.55,radius*0.78,radius]) {
                                 ctx.beginPath();ctx.arc(x,y,r,corner?Math.PI:0,corner?Math.PI*1.5:Math.PI*0.5);ctx.stroke();
@@ -407,9 +431,10 @@ ClippingRectangle {
                         // Offset membranes stretch between four tension points.
                         for(let layer=0;layer<3;layer++) {
                             const d=5+layer*3;
-                            ctx.strokeStyle=ink(0.22-layer*0.065);ctx.strokeRect(d,d,width-2*d,height-2*d);
+                            ctx.strokeStyle=ink(0.22-layer*0.065);if(root.traceThemeFrame(ctx,d))ctx.stroke();
                         }
-                        for(const x of [7,width-7])for(const y of [7,height-7]){
+                        const pin=Math.max(7,cornerRadius*(1-Math.SQRT1_2)+5);
+                        for(const x of [pin,width-pin])for(const y of [pin,height-pin]){
                             const sx=x>width/2?-1:1,sy=y>height/2?-1:1;
                             ctx.strokeStyle=ink(0.40);ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+sx*12,y+sy*12);ctx.stroke();
                             ctx.fillStyle=ink(0.32);ctx.fillRect(x-2,y-2,4,4);
@@ -441,7 +466,7 @@ ClippingRectangle {
             Rectangle {
                 visible: slab.outer
                 anchors.fill: parent; anchors.margins: 6
-                radius: 0; color: "transparent"
+                radius: root.themeInsetRadius(6); color: "transparent"
                 border.width: 1; border.color: Qt.alpha(slab.ink, 0.10)
             }
             Repeater {
@@ -473,11 +498,23 @@ ClippingRectangle {
                 anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top
                 height: 3; color: slab.ink; opacity: 0.12
             }
-            Rectangle {
-                anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right
-                anchors.margins: slab.outer ? 1 : 0
-                height: 1
-                color: slab.ink; opacity: slab.inset ? 0.04 : 0.16
+            Canvas {
+                anchors.fill: parent
+                objectName: "surface-edge-canvas"
+                readonly property real cornerRadius: root.effectiveCornerRadius
+                readonly property color pigment: slab.ink
+                onCornerRadiusChanged: requestPaint()
+                onPigmentChanged: requestPaint()
+                onWidthChanged: requestPaint()
+                onHeightChanged: requestPaint()
+                onPaint: {
+                    const ctx=getContext("2d");ctx.clearRect(0,0,width,height);
+                    const d=slab.outer?3:1,r=root.themeInsetRadius(d);
+                    ctx.strokeStyle=Qt.alpha(pigment,0.18);ctx.lineWidth=1;
+                    ctx.beginPath();ctx.moveTo(d,Math.max(d+r,height*0.65));
+                    ctx.lineTo(d,d+r);ctx.quadraticCurveTo(d,d,d+r,d);
+                    ctx.lineTo(Math.max(d+r,width-d-r),d);ctx.stroke();
+                }
             }
             Rectangle {
                 anchors.left: parent.left; anchors.top: parent.top; anchors.bottom: parent.bottom
@@ -517,15 +554,27 @@ ClippingRectangle {
             opacity: root.rectOpacity
             Rectangle {
                 anchors.fill: parent; anchors.margins: chassis.outer ? 4 : 2
-                radius: chassis.outer ? 3 : 1
+                radius: root.themeInsetRadius(chassis.outer ? 4 : 2)
                 color: "transparent"; border.width: 1
                 border.color: Qt.alpha(chassis.ink, chassis.screen ? 0.20 : 0.15)
             }
-            Rectangle {
-                anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right
-                anchors.margins: chassis.outer ? 3 : 1
-                height: chassis.outer ? 2 : 1
-                color: chassis.ink; opacity: chassis.screen ? 0.045 : 0.20
+            Canvas {
+                anchors.fill: parent
+                objectName: "surface-edge-canvas"
+                readonly property real cornerRadius: root.effectiveCornerRadius
+                readonly property color pigment: chassis.ink
+                onCornerRadiusChanged: requestPaint()
+                onPigmentChanged: requestPaint()
+                onWidthChanged: requestPaint()
+                onHeightChanged: requestPaint()
+                onPaint: {
+                    const ctx=getContext("2d");ctx.clearRect(0,0,width,height);
+                    const d=chassis.outer?3:1,r=root.themeInsetRadius(d);
+                    ctx.strokeStyle=Qt.alpha(pigment,0.18);ctx.lineWidth=1;
+                    ctx.beginPath();ctx.moveTo(d,Math.max(d+r,height*0.65));
+                    ctx.lineTo(d,d+r);ctx.quadraticCurveTo(d,d,d+r,d);
+                    ctx.lineTo(Math.max(d+r,width-d-r),d);ctx.stroke();
+                }
             }
             Rectangle {
                 anchors.left: parent.left; anchors.top: parent.top; anchors.bottom: parent.bottom
@@ -616,6 +665,7 @@ ClippingRectangle {
                 visible: engraving.drafting
                 anchors.fill: parent
                 anchors.margins: 10
+                radius: root.themeInsetRadius(10)
                 color: "transparent"
                 border.width: 1
                 border.color: Qt.alpha(engraving.ink, 0.15)
@@ -631,12 +681,35 @@ ClippingRectangle {
                     Rectangle { x: -3; y: -3; width: 7; height: 7; radius: 3.5; color: "transparent"; border.width: 1; border.color: Qt.alpha(engraving.ink, 0.3) }
                 }
             }
+            Canvas {
+                anchors.fill: parent
+                visible: engraving.drafting
+                objectName: "drafting-corner-canvas"
+                readonly property real cornerRadius: root.effectiveCornerRadius
+                readonly property color pigment: engraving.ink
+                onCornerRadiusChanged: requestPaint()
+                onPigmentChanged: requestPaint()
+                onWidthChanged: requestPaint()
+                onHeightChanged: requestPaint()
+                onPaint: {
+                    const ctx=getContext("2d");ctx.clearRect(0,0,width,height);
+                    const r=root.themeInsetRadius(6);
+                    const span=Math.min(Math.max(9,r+6),(width-12)/2,(height-12)/2);
+                    ctx.strokeStyle=Qt.alpha(pigment,0.28);ctx.lineWidth=1;
+                    for(const x of [6,width-6])for(const y of [6,height-6]){
+                        const sx=x>width/2?-1:1,sy=y>height/2?-1:1;
+                        ctx.beginPath();ctx.moveTo(x,y+sy*span);ctx.lineTo(x,y+sy*r);
+                        ctx.quadraticCurveTo(x,y,x+sx*r,y);ctx.lineTo(x+sx*span,y);ctx.stroke();
+                    }
+                }
+            }
             Repeater {
-                model: 4
+                model: engraving.drafting ? 0 : 4
                 Item {
                     required property int index
-                    x: index % 2 ? engraving.width - 15 : 6
-                    y: index >= 2 ? engraving.height - 15 : 6
+                    readonly property real pad: Math.max(6,root.effectiveCornerRadius*(1-Math.SQRT1_2)+4)
+                    x: index % 2 ? engraving.width - pad - 9 : pad
+                    y: index >= 2 ? engraving.height - pad - 9 : pad
                     width: 9; height: 9
                     rotation: engraving.drafting ? (index === 1 ? 90 : index === 2 ? 270 : index === 3 ? 180 : 0) : 0
                     Rectangle {
