@@ -41,6 +41,30 @@ Item {
     // Current morphing state: "collapsed" | "notification" | "osd" | "dashboard" | "power" | "sound" | "mic" | "wifi" | "stats" | "apps" | "projects"
     property string currentMode: "collapsed"
     property string previousMode: "collapsed"
+    // Keep outgoing loaders alive independently of their animated opacity.
+    property var fadingModes: []
+    Timer {
+        id: fadeCleanup
+        interval: root.contentFadeOutDuration + 32
+        onTriggered: root.fadingModes = []
+    }
+    Connections {
+        target: Motion
+        function onEnabledChanged() {
+            if (!Motion.enabled) {
+                fadeCleanup.stop();
+                root.fadingModes = [];
+                revealAnimation.stop();
+                root.revealProgress = Qt.binding(() => root.isExpanded ? 1 : 0);
+            }
+        }
+    }
+    property real revealProgress: isExpanded ? 1 : 0
+    Behavior on revealProgress {
+        enabled: Motion.enabled
+        NumberAnimation { id: revealAnimation; duration: root.morphDuration; easing.type: Easing.InOutCubic }
+    }
+
     property bool openedFromHidden: false
     property bool retractingToHidden: false
     readonly property bool isExpanded: currentMode !== "collapsed" && !retractingToHidden
@@ -338,10 +362,10 @@ Item {
         barHoverAnim.start();
     }
 
-    readonly property int morphDuration: Motion.enter
-    readonly property int morphCollapseDuration: Motion.exit
-    readonly property int contentFadeInDuration: Motion.contentIn
-    readonly property int contentFadeOutDuration: Motion.contentOut
+    readonly property int morphDuration: Math.round(Motion.enter * 1.15)
+    readonly property int morphCollapseDuration: Math.round(Motion.enter)
+    readonly property int contentFadeInDuration: Math.round(Motion.enter * 0.85)
+    readonly property int contentFadeOutDuration: Math.round(Motion.enter * 0.55)
 
     readonly property real typingScale: Math.max(0.8, Math.min(1.5, root.width / 1920))
     readonly property int typingCompactWidth: Math.max(1, Math.min(640 * typingScale, root.width - 32))
@@ -378,29 +402,29 @@ Item {
         case "dashboard":
             return dashboardView.implicitHeight;
         case "power":
-            return powerView.implicitHeight;
+            return Math.max(root.islandHeight, powerView.implicitHeight);
         case "sound":
-            return soundView.implicitHeight;
+            return Math.max(root.islandHeight, soundView.implicitHeight);
         case "mic":
-            return micView.implicitHeight;
+            return Math.max(root.islandHeight, micView.implicitHeight);
         case "wifi":
-            return wifiView.implicitHeight;
+            return Math.max(root.islandHeight, wifiView.implicitHeight);
         case "bluetooth":
-            return bluetoothView.implicitHeight;
+            return Math.max(root.islandHeight, bluetoothView.implicitHeight);
         case "stats":
-            return statsView.implicitHeight;
+            return Math.max(root.islandHeight, statsView.implicitHeight);
         case "alerts":
-            return alertsView.implicitHeight;
+            return Math.max(root.islandHeight, alertsView.implicitHeight);
         case "wallpapers":
-            return wallpapersView.implicitHeight;
+            return Math.max(root.islandHeight, wallpapersView.implicitHeight);
         case "battery":
-            return batteryView.implicitHeight;
+            return Math.max(root.islandHeight, batteryView.implicitHeight);
         case "weather":
-            return weatherView.implicitHeight;
+            return Math.max(root.islandHeight, weatherView.implicitHeight);
         case "media":
-            return mediaCenterView.implicitHeight;
+            return Math.max(root.islandHeight, mediaCenterView.implicitHeight);
         case "calendar":
-            return calendarView.implicitHeight;
+            return Math.max(root.islandHeight, calendarView.implicitHeight);
         case "apps":
         case "projects":
             return launcherViewWrapper.implicitHeight;
@@ -410,6 +434,10 @@ Item {
     }
 
     onCurrentModeChanged: {
+        if (Motion.enabled && root.previousMode !== "collapsed" && root.previousMode !== root.currentMode) {
+            root.fadingModes = root.fadingModes.filter(mode => mode !== root.previousMode).concat([root.previousMode]);
+            fadeCleanup.restart();
+        }
         closePopupsForTransition(root.previousMode, root.currentMode);
         GlobalStates.islandOpen = (currentMode !== "collapsed" && currentMode !== "notification" && currentMode !== "osd" && !root.retractingToHidden);
         GlobalStates.islandLauncherOpen = ((currentMode === "apps" || currentMode === "projects") && !root.retractingToHidden);
@@ -640,28 +668,53 @@ Item {
             && !GlobalStates.lockscreenVisible
     }
 
+    // Quiet boundaries between the lyric wings and central controls.
+    Repeater {
+        model: 2
+        delegate: Rectangle {
+            required property int index
+            objectName: "bar-lyrics-divider-" + index
+            parent: islandContainer
+            z: 2
+            x: index === 0 ? collapsedView.x - 6 : collapsedView.x + collapsedView.width + 5
+            y: (root.islandHeight - height) / 2
+            width: 1
+            height: Styling.fontSize(0)
+            radius: 0.5
+            color: Qt.alpha(BarAppearance.foregroundColor, 0.28)
+            opacity: root.lyricsInBar ? collapsedView.opacity : 0
+            visible: opacity > 0 && lyricsStrip.visible
+        }
+    }
+
     // Island body
     Item {
         id: islandContainer
         objectName: "typing-island-container"
+        transform: Scale {
+            origin.x: islandContainer.width / 2
+            origin.y: 0
+            xScale: 1 + Math.sin(root.revealProgress * Math.PI) * 0.012
+            yScale: 1 - Math.sin(root.revealProgress * Math.PI) * 0.035
+        }
         anchors.horizontalCenter: parent.horizontalCenter
         width: root.targetWidth
         height: root.targetHeight
         y: root.typingFullscreen && root.isExpanded ? Math.max(0, (root.height - islandContainer.height) / 2) : root.containerY
 
         Behavior on width {
-            enabled: Config.animDuration > 0 && root.barNormallyVisible && !root.retractingToHidden
+            enabled: Motion.enabled && (root.barNormallyVisible || root.isExpanded) && !root.retractingToHidden
             NumberAnimation {
                 duration: root.currentMode === "typing" || root.previousMode === "typing" ? Math.min(180, Motion.enter) : (root.isExpanded ? root.morphDuration : root.morphCollapseDuration)
-                easing.type: root.currentMode === "typing" || root.previousMode === "typing" ? Easing.OutQuint : Motion.enterCurve
+                easing.type: root.currentMode === "typing" || root.previousMode === "typing" ? Easing.OutQuint : Easing.InOutCubic
             }
         }
 
         Behavior on height {
-            enabled: Config.animDuration > 0 && root.barNormallyVisible && !root.retractingToHidden
+            enabled: Motion.enabled && (root.barNormallyVisible || root.isExpanded) && !root.retractingToHidden
             NumberAnimation {
                 duration: root.currentMode === "typing" || root.previousMode === "typing" ? Math.min(180, Motion.enter) : (root.isExpanded ? root.morphDuration : root.morphCollapseDuration)
-                easing.type: root.currentMode === "typing" || root.previousMode === "typing" ? Easing.OutQuint : Motion.enterCurve
+                easing.type: root.currentMode === "typing" || root.previousMode === "typing" ? Easing.OutQuint : Easing.InOutCubic
             }
         }
 
@@ -949,11 +1002,27 @@ Item {
                         flat: true
                         meterSize: root.islandHeight
                     }
+                    Rectangle {
+                        objectName: "bar-divider-volume-mic"
+                        Layout.alignment: Qt.AlignVCenter
+                        implicitWidth: 1
+                        implicitHeight: Styling.fontSize(0)
+                        radius: 0.5
+                        color: Qt.alpha(BarAppearance.foregroundColor, 0.24)
+                    }
                     MicSlider {
                         objectName: "bar-mic"
                         bar: root
                         flat: true
                         meterSize: root.islandHeight
+                    }
+                    Rectangle {
+                        objectName: "bar-divider-mic-battery"
+                        Layout.alignment: Qt.AlignVCenter
+                        implicitWidth: 1
+                        implicitHeight: Styling.fontSize(0)
+                        radius: 0.5
+                        color: Qt.alpha(BarAppearance.foregroundColor, 0.24)
                     }
                     BatteryIndicator {
                         objectName: "bar-battery"
@@ -1141,6 +1210,9 @@ Item {
 
             IslandDashboard {
                 id: dashboardView
+                transformOrigin: Item.Top
+                scale: 0.985 + opacity * 0.015
+                transform: Translate { y: (1 - dashboardView.opacity) * Motion.offset }
                 screen: root.screen
                 anchors.top: parent.top
                 anchors.horizontalCenter: parent.horizontalCenter
@@ -1183,14 +1255,21 @@ Item {
                 width: root.targetWidth
                 height: item?.implicitHeight ?? 0
                 // Keep the outgoing menu only until its fade completes.
-                active: root.currentMode === "power" || (item?.opacity ?? 0) > 0
+                active: root.currentMode === "power" || root.fadingModes.indexOf("power") !== -1
                 sourceComponent: IslandPowerPanel {
+                    id: powerContent
+                    property bool revealReady: false
+                    Component.onCompleted: revealReady = true
+                    transformOrigin: Item.Top
+                    scale: 0.985 + opacity * 0.015
+                    transform: Translate { y: (1 - powerContent.opacity) * Motion.offset }
+
                     anchors.top: parent.top
                     anchors.horizontalCenter: parent.horizontalCenter
                     width: root.targetWidth
                     height: implicitHeight
                     visible: opacity > 0
-                    opacity: root.currentMode === "power" ? 1.0 : 0.0
+                    opacity: revealReady && root.currentMode === "power" ? 1.0 : 0.0
                     enabled: root.currentMode === "power" && !root.retractingToHidden
 
                     Behavior on opacity {
@@ -1217,14 +1296,21 @@ Item {
                 width: root.targetWidth
                 height: item?.implicitHeight ?? 0
                 // Keep the outgoing menu only until its fade completes.
-                active: root.currentMode === "sound" || (item?.opacity ?? 0) > 0
+                active: root.currentMode === "sound" || root.fadingModes.indexOf("sound") !== -1
                 sourceComponent: IslandSoundPanel {
+                    id: soundContent
+                    property bool revealReady: false
+                    Component.onCompleted: revealReady = true
+                    transformOrigin: Item.Top
+                    scale: 0.985 + opacity * 0.015
+                    transform: Translate { y: (1 - soundContent.opacity) * Motion.offset }
+
                     anchors.top: parent.top
                     anchors.horizontalCenter: parent.horizontalCenter
                     width: root.targetWidth
                     height: implicitHeight
                     visible: opacity > 0
-                    opacity: root.currentMode === "sound" ? 1.0 : 0.0
+                    opacity: revealReady && root.currentMode === "sound" ? 1.0 : 0.0
                     enabled: root.currentMode === "sound" && !root.retractingToHidden
 
                     Behavior on opacity {
@@ -1250,14 +1336,21 @@ Item {
                 width: root.targetWidth
                 height: item?.implicitHeight ?? 0
                 // Keep the outgoing menu only until its fade completes.
-                active: root.currentMode === "mic" || (item?.opacity ?? 0) > 0
+                active: root.currentMode === "mic" || root.fadingModes.indexOf("mic") !== -1
                 sourceComponent: IslandMicPanel {
+                    id: micContent
+                    property bool revealReady: false
+                    Component.onCompleted: revealReady = true
+                    transformOrigin: Item.Top
+                    scale: 0.985 + opacity * 0.015
+                    transform: Translate { y: (1 - micContent.opacity) * Motion.offset }
+
                     anchors.top: parent.top
                     anchors.horizontalCenter: parent.horizontalCenter
                     width: root.targetWidth
                     height: implicitHeight
                     visible: opacity > 0
-                    opacity: root.currentMode === "mic" ? 1.0 : 0.0
+                    opacity: revealReady && root.currentMode === "mic" ? 1.0 : 0.0
                     enabled: root.currentMode === "mic" && !root.retractingToHidden
 
                     Behavior on opacity {
@@ -1283,14 +1376,21 @@ Item {
                 width: root.targetWidth
                 height: item?.implicitHeight ?? 0
                 // Keep the outgoing menu only until its fade completes.
-                active: root.currentMode === "wifi" || (item?.opacity ?? 0) > 0
+                active: root.currentMode === "wifi" || root.fadingModes.indexOf("wifi") !== -1
                 sourceComponent: IslandWifiPanel {
+                    id: wifiContent
+                    property bool revealReady: false
+                    Component.onCompleted: revealReady = true
+                    transformOrigin: Item.Top
+                    scale: 0.985 + opacity * 0.015
+                    transform: Translate { y: (1 - wifiContent.opacity) * Motion.offset }
+
                     anchors.top: parent.top
                     anchors.horizontalCenter: parent.horizontalCenter
                     width: root.targetWidth
                     height: implicitHeight
                     visible: opacity > 0
-                    opacity: root.currentMode === "wifi" ? 1.0 : 0.0
+                    opacity: revealReady && root.currentMode === "wifi" ? 1.0 : 0.0
                     enabled: root.currentMode === "wifi" && !root.retractingToHidden
 
                     Behavior on opacity {
@@ -1316,14 +1416,21 @@ Item {
                 width: root.targetWidth
                 height: item?.implicitHeight ?? 0
                 // Keep the outgoing menu only until its fade completes.
-                active: root.currentMode === "bluetooth" || (item?.opacity ?? 0) > 0
+                active: root.currentMode === "bluetooth" || root.fadingModes.indexOf("bluetooth") !== -1
                 sourceComponent: IslandBluetoothPanel {
+                    id: bluetoothContent
+                    property bool revealReady: false
+                    Component.onCompleted: revealReady = true
+                    transformOrigin: Item.Top
+                    scale: 0.985 + opacity * 0.015
+                    transform: Translate { y: (1 - bluetoothContent.opacity) * Motion.offset }
+
                     anchors.top: parent.top
                     anchors.horizontalCenter: parent.horizontalCenter
                     width: root.targetWidth
                     height: implicitHeight
                     visible: opacity > 0
-                    opacity: root.currentMode === "bluetooth" ? 1.0 : 0.0
+                    opacity: revealReady && root.currentMode === "bluetooth" ? 1.0 : 0.0
                     enabled: root.currentMode === "bluetooth" && !root.retractingToHidden
 
                     Behavior on opacity {
@@ -1349,14 +1456,21 @@ Item {
                 width: root.targetWidth
                 height: item?.implicitHeight ?? 0
                 // Keep the outgoing menu only until its fade completes.
-                active: root.currentMode === "stats" || (item?.opacity ?? 0) > 0
+                active: root.currentMode === "stats" || root.fadingModes.indexOf("stats") !== -1
                 sourceComponent: IslandStatsPanel {
+                    id: statsContent
+                    property bool revealReady: false
+                    Component.onCompleted: revealReady = true
+                    transformOrigin: Item.Top
+                    scale: 0.985 + opacity * 0.015
+                    transform: Translate { y: (1 - statsContent.opacity) * Motion.offset }
+
                     anchors.top: parent.top
                     anchors.horizontalCenter: parent.horizontalCenter
                     width: root.targetWidth
                     height: implicitHeight
                     visible: opacity > 0
-                    opacity: root.currentMode === "stats" ? 1.0 : 0.0
+                    opacity: revealReady && root.currentMode === "stats" ? 1.0 : 0.0
                     enabled: root.currentMode === "stats" && !root.retractingToHidden
 
                     Behavior on opacity {
@@ -1382,14 +1496,21 @@ Item {
                 width: root.targetWidth
                 height: item?.implicitHeight ?? 0
                 // Keep the outgoing menu only until its fade completes.
-                active: root.currentMode === "alerts" || (item?.opacity ?? 0) > 0
+                active: root.currentMode === "alerts" || root.fadingModes.indexOf("alerts") !== -1
                 sourceComponent: IslandAlertsPanel {
+                    id: alertsContent
+                    property bool revealReady: false
+                    Component.onCompleted: revealReady = true
+                    transformOrigin: Item.Top
+                    scale: 0.985 + opacity * 0.015
+                    transform: Translate { y: (1 - alertsContent.opacity) * Motion.offset }
+
                     anchors.top: parent.top
                     anchors.horizontalCenter: parent.horizontalCenter
                     width: root.targetWidth
                     height: implicitHeight
                     visible: opacity > 0
-                    opacity: root.currentMode === "alerts" ? 1.0 : 0.0
+                    opacity: revealReady && root.currentMode === "alerts" ? 1.0 : 0.0
                     enabled: root.currentMode === "alerts" && !root.retractingToHidden
 
                     Behavior on opacity {
@@ -1415,15 +1536,22 @@ Item {
                 width: root.targetWidth
                 height: item?.implicitHeight ?? 0
                 // Keep the outgoing menu only until its fade completes.
-                active: root.currentMode === "wallpapers" || (item?.opacity ?? 0) > 0
+                active: root.currentMode === "wallpapers" || root.fadingModes.indexOf("wallpapers") !== -1
                 sourceComponent: IslandWallpaperPanel {
+                    id: wallpapersContent
+                    property bool revealReady: false
+                    Component.onCompleted: revealReady = true
+                    transformOrigin: Item.Top
+                    scale: 0.985 + opacity * 0.015
+                    transform: Translate { y: (1 - wallpapersContent.opacity) * Motion.offset }
+
                     screen: root.screen
                     anchors.top: parent.top
                     anchors.horizontalCenter: parent.horizontalCenter
                     width: root.targetWidth
                     height: implicitHeight
                     visible: opacity > 0
-                    opacity: root.currentMode === "wallpapers" ? 1.0 : 0.0
+                    opacity: revealReady && root.currentMode === "wallpapers" ? 1.0 : 0.0
                     enabled: root.currentMode === "wallpapers" && !root.retractingToHidden
 
                     Behavior on opacity {
@@ -1449,14 +1577,21 @@ Item {
                 width: root.targetWidth
                 height: item?.implicitHeight ?? 0
                 // Keep the outgoing menu only until its fade completes.
-                active: root.currentMode === "battery" || (item?.opacity ?? 0) > 0
+                active: root.currentMode === "battery" || root.fadingModes.indexOf("battery") !== -1
                 sourceComponent: IslandBatteryPanel {
+                    id: batteryContent
+                    property bool revealReady: false
+                    Component.onCompleted: revealReady = true
+                    transformOrigin: Item.Top
+                    scale: 0.985 + opacity * 0.015
+                    transform: Translate { y: (1 - batteryContent.opacity) * Motion.offset }
+
                     anchors.top: parent.top
                     anchors.horizontalCenter: parent.horizontalCenter
                     width: root.targetWidth
                     height: implicitHeight
                     visible: opacity > 0
-                    opacity: root.currentMode === "battery" ? 1.0 : 0.0
+                    opacity: revealReady && root.currentMode === "battery" ? 1.0 : 0.0
                     enabled: root.currentMode === "battery" && !root.retractingToHidden
 
                     Behavior on opacity {
@@ -1482,14 +1617,21 @@ Item {
                 width: root.targetWidth
                 height: item?.implicitHeight ?? 0
                 // Keep the outgoing menu only until its fade completes.
-                active: root.currentMode === "weather" || (item?.opacity ?? 0) > 0
+                active: root.currentMode === "weather" || root.fadingModes.indexOf("weather") !== -1
                 sourceComponent: IslandWeatherPanel {
+                    id: weatherContent
+                    property bool revealReady: false
+                    Component.onCompleted: revealReady = true
+                    transformOrigin: Item.Top
+                    scale: 0.985 + opacity * 0.015
+                    transform: Translate { y: (1 - weatherContent.opacity) * Motion.offset }
+
                     anchors.top: parent.top
                     anchors.horizontalCenter: parent.horizontalCenter
                     width: root.targetWidth
                     height: implicitHeight
                     visible: opacity > 0
-                    opacity: root.currentMode === "weather" ? 1.0 : 0.0
+                    opacity: revealReady && root.currentMode === "weather" ? 1.0 : 0.0
                     enabled: root.currentMode === "weather" && !root.retractingToHidden
 
                     Behavior on opacity {
@@ -1515,8 +1657,15 @@ Item {
                 width: root.targetWidth
                 height: item?.implicitHeight ?? 0
                 // Keep the outgoing menu only until its fade completes.
-                active: root.currentMode === "media" || (item?.opacity ?? 0) > 0
+                active: root.currentMode === "media" || root.fadingModes.indexOf("media") !== -1
                 sourceComponent: IslandMediaCenterPanel {
+                    id: mediaContent
+                    property bool revealReady: false
+                    Component.onCompleted: revealReady = true
+                    transformOrigin: Item.Top
+                    scale: 0.985 + opacity * 0.015
+                    transform: Translate { y: (1 - mediaContent.opacity) * Motion.offset }
+
                     reader: typingView
                     onOpenReaderRequested: root.expand("typing")
                     anchors.top: parent.top
@@ -1524,7 +1673,7 @@ Item {
                     width: root.targetWidth
                     height: implicitHeight
                     visible: opacity > 0
-                    opacity: root.currentMode === "media" ? 1.0 : 0.0
+                    opacity: revealReady && root.currentMode === "media" ? 1.0 : 0.0
                     enabled: root.currentMode === "media" && !root.retractingToHidden
 
                     Behavior on opacity {
@@ -1550,14 +1699,21 @@ Item {
                 width: root.targetWidth
                 height: item?.implicitHeight ?? 0
                 // Keep the outgoing menu only until its fade completes.
-                active: root.currentMode === "calendar" || (item?.opacity ?? 0) > 0
+                active: root.currentMode === "calendar" || root.fadingModes.indexOf("calendar") !== -1
                 sourceComponent: IslandCalendarPanel {
+                    id: calendarContent
+                    property bool revealReady: false
+                    Component.onCompleted: revealReady = true
+                    transformOrigin: Item.Top
+                    scale: 0.985 + opacity * 0.015
+                    transform: Translate { y: (1 - calendarContent.opacity) * Motion.offset }
+
                     anchors.top: parent.top
                     anchors.horizontalCenter: parent.horizontalCenter
                     width: root.targetWidth
                     height: implicitHeight
                     visible: opacity > 0
-                    opacity: root.currentMode === "calendar" ? 1.0 : 0.0
+                    opacity: revealReady && root.currentMode === "calendar" ? 1.0 : 0.0
                     enabled: root.currentMode === "calendar" && !root.retractingToHidden
 
                     Behavior on opacity {
@@ -1577,6 +1733,9 @@ Item {
             // ═══════════════════════════════════════════════════════════════
             Item {
                 id: launcherViewWrapper
+                transformOrigin: Item.Top
+                scale: 0.985 + opacity * 0.015
+                transform: Translate { y: (1 - launcherViewWrapper.opacity) * Motion.offset }
                 anchors.top: parent.top
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: root.targetWidth

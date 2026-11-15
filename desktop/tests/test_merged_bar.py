@@ -61,9 +61,76 @@ ShellRoot {
  }
 }'''
 
+MOTION_HARNESS = '''import QtQuick
+import QtTest
+import Quickshell
+import qs.config
+import qs.modules.bar.layouts
+ShellRoot {
+ FloatingWindow {
+  visible: true; implicitWidth: 1920; implicitHeight: 1200
+  Item { id: host; width: 1920; height: 1200 }
+  TestCase { id: tester; when: false }
+  Timer { interval: 600; running: true; onTriggered: {
+   try {
+    Config.animDuration = 400;
+    Config.bar.pinned = true;
+    const component = Qt.createComponent('modules/bar/layouts/IslandBar.qml');
+    if (component.status !== Component.Ready) throw Error(component.errorString());
+    const bar = component.createObject(host, {screen: Quickshell.screens[0]});
+    tester.wait(100);
+    const body = tester.findChild(bar, 'typing-island-container');
+    for (const name of ['bar-divider-volume-mic', 'bar-divider-mic-battery']) {
+     const divider = tester.findChild(bar, name);
+     if (!divider || divider.width !== 1 || divider.height <= 0)
+      throw Error('Missing compact separator: ' + name);
+    }
+    const power = tester.findChild(bar, 'island-lazy-power');
+    const sound = tester.findChild(bar, 'island-lazy-sound');
+    bar.expand('power'); tester.wait(70);
+    if (!power.item || power.item.opacity <= 0 || power.item.opacity >= 1)
+     throw Error('Incoming lazy panel must animate its first reveal');
+    if (bar.revealProgress <= 0 || bar.revealProgress >= 1 || body.height < bar.islandHeight)
+     throw Error('Opening silhouette must animate without collapsing to zero');
+    tester.wait(500);
+    bar.expand('sound'); tester.wait(60);
+    if (!power.item || power.item.enabled || power.item.opacity <= 0 || power.item.opacity >= 1)
+     throw Error('Outgoing panel must crossfade with input disabled');
+    if (!sound.item || !sound.item.enabled || sound.item.opacity <= 0 || sound.item.opacity >= 1)
+     throw Error('Incoming panel must overlap outgoing fade');
+    bar.expand('wifi'); tester.wait(40);
+    bar.expand('sound'); tester.wait(500);
+    if (power.active || !sound.item || sound.item.opacity !== 1)
+     throw Error('Rapid switching must release old loaders and settle current menu');
+    bar.collapse(); tester.wait(60);
+    if (bar.revealProgress <= 0 || bar.revealProgress >= 1)
+     throw Error('Closing silhouette must animate');
+    Config.animDuration = 0; tester.wait(100);
+    if (bar.revealProgress !== 0 || bar.fadingModes.length || power.active || sound.active)
+     throw Error('Reduced motion must release outgoing menus immediately');
+    bar.expand('power'); tester.wait(40);
+    if (bar.revealProgress !== 1 || !power.item || power.item.opacity !== 1)
+     throw Error('Reduced motion must settle directly');
+    bar.collapse(); tester.wait(40);
+    if (bar.revealProgress !== 0 || power.active)
+     throw Error('Reduced motion close must settle directly');
+    console.log('MERGED BAR PASSED'); Qt.quit();
+   } catch(e) { console.error(e); Qt.exit(1); }
+  } }
+ }
+}
+'''
+
 class MergedBarTests(unittest.TestCase):
     @unittest.skipUnless(shutil.which('qs'), 'Quickshell required')
     def test_merged_layout_and_panels(self):
+        self.run_harness(HARNESS)
+
+    @unittest.skipUnless(shutil.which('qs'), 'Quickshell required')
+    def test_menu_crossfade_interruptions_and_reduced_motion(self):
+        self.run_harness(MOTION_HARNESS)
+
+    def run_harness(self, harness):
         with tempfile.TemporaryDirectory(prefix='enclosure-merged-bar-') as directory:
             root = Path(directory)
             for name in ('modules', 'config', 'assets'):
@@ -71,7 +138,7 @@ class MergedBarTests(unittest.TestCase):
             for path in APP.iterdir():
                 if path.suffix in ('.qml', '.js') and path.name != 'shell.qml':
                     (root / path.name).symlink_to(path)
-            (root / 'shell.qml').write_text(HARNESS)
+            (root / 'shell.qml').write_text(harness)
             (root / 'runtime').mkdir(mode=0o700)
             env = dict(os.environ, HOME=directory, XDG_RUNTIME_DIR=str(root/'runtime'),
                        QT_QPA_PLATFORM='offscreen', QT_QUICK_BACKEND='software', QT_QPA_PLATFORMTHEME='basic')
