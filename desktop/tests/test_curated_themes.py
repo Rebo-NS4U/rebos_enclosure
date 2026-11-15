@@ -13,7 +13,7 @@ class CuratedThemeTests(unittest.TestCase):
                 script = source + '''
 const assert = require('node:assert/strict');
 const ids = ['monolith','blueprint','terminal-hardware'];
-assert.deepEqual(styles.slice(0,3).map(s=>s.id), ['glass-vault','radar-station','suspended-film']);
+assert.deepEqual(styles.slice(0,3).map(s=>s.id), ['canopy','orbital','metropolis']);
 assert.deepEqual(styles.map(s => s.id).sort(), [...ids, 'frosted', 'colorful', 'glass-vault', 'radar-station', 'suspended-film', 'canopy', 'orbital', 'metropolis', 'clear-glass'].sort());
 assert.ok(!styles.some(s => ['botanical-archive','condensation','optical-instrument'].includes(s.id)));
 for (const id of ids) {

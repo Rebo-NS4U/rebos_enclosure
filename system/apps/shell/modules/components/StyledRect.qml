@@ -484,62 +484,79 @@ ClippingRectangle {
                 const ink=a=>Qt.rgba(pigment.r,pigment.g,pigment.b,a);
                 ctx.lineWidth=1;
                 const safe=Math.max(18,cornerRadius+6);
+                // Clip every material layer to the shared rounded surface.
+                ctx.save();
+                if(root.traceThemeFrame(ctx,0))ctx.clip();
+                const depth=outer?18:8;
                 if(finish === "canopy"){
-                    // Leaf-vein contours grow along opposite edges, clear of the text.
-                    ctx.strokeStyle=ink(0.12);if(root.traceThemeFrame(ctx,5))ctx.stroke();
-                    for(let side=0;side<2;side++){
-                        const x=side?width-8:8,sx=side?-1:1;
-                        ctx.strokeStyle=ink(0.22);ctx.beginPath();ctx.moveTo(x,safe);
-                        ctx.bezierCurveTo(x+sx*5,height*0.35,x-sx*3,height*0.65,x,height-safe);ctx.stroke();
-                        for(let y=safe+12;y<height-safe-10;y+=26){
-                            ctx.strokeStyle=ink(0.17);ctx.beginPath();ctx.moveTo(x,y+8);
-                            ctx.quadraticCurveTo(x+sx*12,y+5,x+sx*15,y-7);ctx.stroke();
-                            ctx.strokeStyle=ink(0.08);ctx.beginPath();ctx.moveTo(x+sx*5,y+5);ctx.lineTo(x+sx*12,y+3);ctx.stroke();
-                        }
+                    // Broad overlapping laminates replace illustrative leaves.
+                    for(let layer=0;layer<3;layer++){
+                        const d=depth*(1-layer*0.28);
+                        ctx.fillStyle=ink(0.045+layer*0.025);
+                        ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(width,0);
+                        ctx.lineTo(width,d);
+                        ctx.bezierCurveTo(width*0.68,d*0.2,width*0.32,d*2.1,0,d);
+                        ctx.closePath();ctx.fill();
+                        ctx.strokeStyle=ink(0.16-layer*0.035);
+                        ctx.beginPath();ctx.moveTo(0,height-d);
+                        ctx.bezierCurveTo(width*0.30,height-d*2,width*0.70,height-d*0.15,width,height-d);
+                        ctx.stroke();
                     }
-                    if(outer){
-                        ctx.strokeStyle=ink(0.10);
-                        for(let layer=0;layer<2;layer++){
-                            ctx.beginPath();ctx.moveTo(safe,height-8-layer*4);
-                            ctx.bezierCurveTo(width*0.35,height-17-layer*4,width*0.65,height-3-layer*4,width-safe,height-10-layer*4);ctx.stroke();
-                        }
+                    // Tapered ribs give the laminate a flexible structural edge.
+                    ctx.strokeStyle=ink(0.18);ctx.lineWidth=2;
+                    for(let side=0;side<2;side++){
+                        const x=side?width-3:3,dir=side?-1:1;
+                        ctx.beginPath();ctx.moveTo(x,safe);
+                        ctx.bezierCurveTo(x+dir*depth,height*0.35,x+dir*depth,height*0.65,x,height-safe);
+                        ctx.stroke();
                     }
                 }else if(finish === "orbital"){
-                    ctx.strokeStyle=ink(0.12);if(root.traceThemeFrame(ctx,5))ctx.stroke();
-                    const r=Math.min(60,width*0.22,height*0.30),cx=width-safe,cy=safe;
-                    for(let ring=0;ring<3;ring++){
-                        ctx.strokeStyle=ink(0.22-ring*0.05);ctx.beginPath();
-                        ctx.arc(cx,cy,r*(1-ring*0.23),Math.PI*0.42,Math.PI*1.02);ctx.stroke();
+                    // Pressure-hull seals and docking rails; no celestial imagery.
+                    ctx.strokeStyle=ink(0.24);ctx.lineWidth=2;
+                    if(root.traceThemeFrame(ctx,4))ctx.stroke();
+                    ctx.strokeStyle=ink(0.10);ctx.lineWidth=1;
+                    if(root.traceThemeFrame(ctx,8))ctx.stroke();
+                    for(let x=safe;x<width-safe-12;x+=36){
+                        const span=Math.min(24,width-safe-x);
+                        ctx.fillStyle=ink(0.16);ctx.fillRect(x,3,span,3);
+                        ctx.fillStyle=ink(0.10);ctx.fillRect(x,height-7,span,4);
+                        ctx.strokeStyle=ink(0.30);ctx.beginPath();
+                        ctx.moveTo(x,3);ctx.lineTo(x+span,3);ctx.stroke();
                     }
-                    // A static edge constellation, with no animated or fake status data.
-                    const stars=[];
-                    for(let i=0;i<(outer?12:5);i++){
-                        const x=safe+((i*53)%Math.max(1,width-safe*2));
-                        const y=height-7-(i%3)*5;
-                        stars.push([x,y]);ctx.fillStyle=ink(i%3?0.22:0.44);
-                        ctx.beginPath();ctx.arc(x,y,i%3?0.8:1.4,0,Math.PI*2);ctx.fill();
-                    }
-                    ctx.strokeStyle=ink(0.09);
-                    for(let i=1;i<stars.length;i++)if(Math.abs(stars[i][0]-stars[i-1][0])<70){ctx.beginPath();ctx.moveTo(...stars[i-1]);ctx.lineTo(...stars[i]);ctx.stroke();}
-                }else{
-                    // Facade modules form a stepped silhouette around a quiet center.
-                    ctx.strokeStyle=ink(0.18);if(root.traceThemeFrame(ctx,6))ctx.stroke();
-                    if(outer && width>safe*2){
-                        const usable=width-safe*2,units=Math.min(14,Math.floor(usable/14));
-                        for(let i=0;i<units;i++){
-                            const x=safe+i*usable/units,w=usable/units-3,h=5+(i*7%4)*4;
-                            ctx.fillStyle=ink(0.07);ctx.fillRect(x,height-5-h,w,h);
-                            ctx.strokeStyle=ink(0.20);ctx.strokeRect(x,height-5-h,w,h);
-                            ctx.fillStyle=ink(0.25);
-                            for(let y=height-h-1;y<height-7;y+=5)for(let col=x+3;col<x+w-2;col+=5)ctx.fillRect(col,y,1.5,1.5);
+                    if(outer){
+                        for(let side=0;side<2;side++){
+                            const x=side?width-13:6;
+                            for(let y=safe+8;y<height-safe-12;y+=64){
+                                ctx.fillStyle=ink(0.14);ctx.fillRect(x,y,7,24);
+                                ctx.strokeStyle=ink(0.32);ctx.strokeRect(x+2,y+5,3,14);
+                            }
                         }
                     }
-                    ctx.strokeStyle=ink(0.14);
-                    for(let y=safe;y<height-safe;y+=16){
-                        ctx.beginPath();ctx.moveTo(width-7,y);ctx.lineTo(width-7,y+10);ctx.lineTo(width-13,y+10);ctx.stroke();
+                }else{
+                    // Structural reveals and cantilevered bands replace skyline art.
+                    ctx.strokeStyle=ink(0.26);ctx.lineWidth=2;
+                    if(root.traceThemeFrame(ctx,5))ctx.stroke();
+                    ctx.strokeStyle=ink(0.09);ctx.lineWidth=1;
+                    if(root.traceThemeFrame(ctx,9))ctx.stroke();
+                    const bay=outer?72:48;
+                    for(let x=safe;x<width-safe;x+=bay){
+                        const span=Math.min(bay-8,width-safe-x);
+                        ctx.fillStyle=ink(0.13);ctx.fillRect(x,0,span,depth);
+                        ctx.fillStyle=ink(0.24);ctx.fillRect(x,depth-3,span,2);
+                        ctx.fillStyle=ink(0.12);ctx.fillRect(x+4,height-depth,Math.max(0,span-4),depth);
                     }
-                    ctx.strokeStyle=ink(0.25);ctx.beginPath();ctx.moveTo(safe,5);ctx.lineTo(Math.max(safe,width-safe),5);ctx.stroke();
+                    if(outer){
+                        ctx.fillStyle=ink(0.12);
+                        ctx.fillRect(0,safe,7,Math.max(0,height-safe*2));
+                        ctx.fillRect(width-7,safe,7,Math.max(0,height-safe*2));
+                        ctx.strokeStyle=ink(0.28);
+                        for(let y=safe+24;y<height-safe;y+=48){
+                            ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(12,y);
+                            ctx.moveTo(width-12,y);ctx.lineTo(width,y);ctx.stroke();
+                        }
+                    }
                 }
+                ctx.restore();
             }
         }
     }

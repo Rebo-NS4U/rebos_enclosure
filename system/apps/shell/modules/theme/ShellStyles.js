@@ -1,6 +1,9 @@
 .pragma library
 
 var styles = [
+    {id: "canopy", label: "Canopy", font: "Noto Sans", description: "Overlapping botanical laminates, curved ribs and soft translucent layers."},
+    {id: "orbital", label: "Orbital", font: "JetBrains Mono", description: "Spacecraft plating, recessed pressure seals and segmented docking rails."},
+    {id: "metropolis", label: "Metropolis", font: "DejaVu Sans", description: "Architectural bays, deep structural reveals and cantilevered facade bands."},
     {id: "glass-vault", label: "Glass Vault", font: "Noto Sans", description: "Heavy corner clamps, stepped transparent blocks and deep inset controls."},
     {id: "radar-station", label: "Radar Station", font: "DejaVu Sans", description: "Bearing scales, partial range arcs and segmented controls on blurred glass."},
     {id: "suspended-film", label: "Suspended Film", font: "DejaVu Sans Mono", description: "Floating glass sheets, offset edges and quiet contact shadows."},
@@ -9,9 +12,6 @@ var styles = [
     {id: "terminal-hardware", label: "Terminal Hardware", font: "DejaVu Sans Mono", description: "Grooved bezels, recessed cooling louvers and mechanical display housings."},
     {id: "frosted", font: "DejaVu Sans Mono", label: "Frosted Glass", description: "Etched ice rims, fine edge grain and soft frosted highlights."},
     {id: "colorful", font: "DejaVu Sans", label: "Tinted", description: "Layered accent planes, offset frames and translucent color bands."},
-    {id: "canopy", label: "Canopy", font: "Noto Sans", description: "Branching leaf veins, organic edge contours and layered natural surfaces."},
-    {id: "orbital", label: "Orbital", font: "JetBrains Mono", description: "Broken orbital rings, etched constellations and floating observatory panels."},
-    {id: "metropolis", label: "Metropolis", font: "DejaVu Sans", description: "Stepped skyline edges, facade grids and architectural panel divisions."},
     {id: "clear-glass", label: "Clear Glass", font: "Noto Sans", description: "Refined transparent panels, quiet hairline edges and restrained highlights."}
 ];
 
@@ -196,10 +196,10 @@ function surface(style, variant, p, ditherStrength) {
     if ((canopy || orbital || metro) && neutral) {
         fill=mix(mix(p.background,p.foreground,inset?0.015:0.035),p.primary,focused?0.08:0.025);
         item=p.foreground;
-        opacity=focused?0.94:inset?(metro?0.82:0.64):metro?0.88:canopy?0.78:0.70;
-        border=[focused?p.primary:mix(fill,p.foreground,metro?0.30:0.23),outer||focused||inset?1:0];
+        opacity=focused?0.94:inset?(metro?0.78:orbital?0.72:0.48):metro?0.88:canopy?0.66:0.84;
+        border=[focused?p.primary:mix(fill,p.foreground,metro?0.32:orbital?0.27:0.16),focused?2:canopy?0:outer||inset?1:0];
         renderGradient=canopy?[[mix(fill,p.foreground,0.025),0],[fill,0.45],[mix(fill,p.background,0.12),1]]
-            :orbital?[[fill,0]]:[[mix(fill,p.foreground,0.035),0],[fill,0.08],[fill,0.92],[mix(fill,p.background,0.30),1]];
+            :orbital?[[mix(fill,p.foreground,0.035),0],[fill,0.06],[fill,0.88],[mix(fill,p.background,0.22),1]]:[[mix(fill,p.foreground,0.035),0],[fill,0.08],[fill,0.92],[mix(fill,p.background,0.30),1]];
     }
     var containers = ["bg", "popup", "pane", "surface", "surfaceContainer", "common", "internalbg", "focus", "surfaceVariant", "bar", "barbg"];
     var dotted = dithered && strength > 0 && containers.indexOf(variant) !== -1;
