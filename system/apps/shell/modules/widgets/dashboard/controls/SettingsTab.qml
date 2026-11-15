@@ -407,7 +407,7 @@ Item {
             id: searchResults
             objectName: "settings-search-results"
             Layout.fillWidth: true
-            Layout.preferredHeight: Math.min(contentHeight, root.height * 0.3)
+            Layout.preferredHeight: Math.min(contentHeight, root.height * 0.5)
             visible: root.searchQuery.length > 0
             clip: true
             model: visible ? root.filteredSections : []
