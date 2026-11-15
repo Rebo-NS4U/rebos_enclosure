@@ -172,7 +172,7 @@ Item {
         }
     }
 
-    component Label: StyledText {
+    component Label: ContentText {
         property bool upcoming: false
         anchors.fill: parent
         anchors.leftMargin: upcoming ? 18 : root.estimatedTiming ? 72 : 44
@@ -183,6 +183,7 @@ Item {
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
         maximumLineCount: 1
+        textFormat: Text.PlainText
         elide: Text.ElideRight
     }
 

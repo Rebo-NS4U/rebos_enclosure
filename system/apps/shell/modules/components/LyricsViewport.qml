@@ -142,7 +142,7 @@ Item {
                         color: Colors.primary
                         Behavior on height { NumberAnimation { duration: Motion.enter; easing.type: Easing.OutCubic } }
                     }
-                    StyledText {
+                    ContentText {
                         id: lyricText
                         objectName: "lyric-line-" + row.index
                         anchors.centerIn: parent

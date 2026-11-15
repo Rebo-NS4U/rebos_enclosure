@@ -103,7 +103,7 @@ Item {
     // Keep both layout and delivery bounded; typing rolls overlapping windows.
     readonly property int layoutLineLimit: readingMode ? Math.max(1, Math.min(36, pageLineLimit)) : Math.max(36, Math.min(72, pageLineLimit + 16))
     onPageLineLimitChanged: fitDelay.restart()
-    onReadingFontChanged: { widthCache = ({}); fitDelay.restart(); }
+    onReadingFontChanged: fitDelay.restart()
     property var readerPageHistory: []
     property real readerReveal: 1
     property int readerDirection: 1
@@ -760,8 +760,14 @@ Item {
     readonly property real chapterProgress: chapterEnd > chapterStart
         ? Math.max(0, Math.min(1, (position + sourceCount(characters(displayedInput).length) - chapterStart) / (chapterEnd - chapterStart))) : 0
     readonly property var passageWords: pageLayout.words
-    readonly property font readingFont: Qt.font({family: Config.theme.font, pixelSize: Math.round((Config.theme.fontSize + 2) * contentScale), weight: Font.Normal})
-    FontMetrics { id: typingMetrics; font: root.readingFont }
+    readonly property font readingFont: Qt.font({family: Config.theme.font, pixelSize: Math.round((Config.theme.fontSize + 2) * contentScale), weight: Font.Normal, hintingPreference: Font.PreferNoHinting})
+    FontMetrics {
+        id: typingMetrics
+        font: root.readingFont
+        // Invalidate after the metrics adopt the new font. Clearing earlier
+        // lets glyph bindings refill the cache using the previous typeface.
+        onFontChanged: { root.widthCache = ({}); fitDelay.restart(); }
+    }
     readonly property rect highlightBounds: {
         const metricsFont = typingMetrics.font;
         return typingMetrics.tightBoundingRect("Hg");
@@ -773,7 +779,7 @@ Item {
         if (text === "\t") return readingFont.pixelSize * 2;
         if (text === "\n") return Math.ceil(readingFont.pixelSize * 1.6);
         if (widthCache[text] === undefined)
-            widthCache[text] = Math.max(1, Math.ceil(typingMetrics.advanceWidth(text)));
+            widthCache[text] = Math.max(0, typingMetrics.advanceWidth(text));
         return widthCache[text];
     }
     property real pendingScrollShift: 0
@@ -2550,7 +2556,7 @@ Item {
                                         onCenterOffsetChanged: { if (smoothCaret.targetGlyph?.parent === word) Qt.callLater(() => { if (smoothCaret.targetGlyph) smoothCaret.follow(smoothCaret.targetGlyph); }); }
                                         Repeater {
                                             model: word.inRenderWindow ? word.letters : []
-                                            delegate: StyledText {
+                                            delegate: ContentText {
                                                 id: glyph
                                                 required property int index
                                                 required property string modelData
@@ -2638,7 +2644,7 @@ Item {
                                                 text: modelData === "\n" ? "↵" : modelData === "\t" ? "⇥" : modelData === " " ? "\u00a0" : modelData
                                                 textFormat: Text.PlainText
                                                 width: root.characterWidth(modelData)
-                                                font: Qt.font({family: root.readingFont.family, pixelSize: root.readingFont.pixelSize, weight: Font.Normal, underline: glyph.incorrect})
+                                                font: Qt.font({family: root.readingFont.family, pixelSize: root.readingFont.pixelSize, weight: root.readingFont.weight, hintingPreference: root.readingFont.hintingPreference, underline: glyph.incorrect})
                                                 height: root.passageLineHeight
                                                 lineHeight: root.sourceOffsets.length ? 1.55 : 1.45
                                                 property real inkOpacity: caretHere || typed ? 1 : (word?.modelData?.line === root.scrollLine ? 0.85 : 0.65)
@@ -2744,6 +2750,7 @@ Item {
                         }
                         TextEdit {
                             id: readerMeasure
+                            renderType: TextEdit.QtRendering
                             visible: false
                             width: readerText.width
                             font: root.readingFont
@@ -2752,6 +2759,7 @@ Item {
                         }
                         TextEdit {
                             id: readerText
+                            renderType: TextEdit.QtRendering
                             objectName: "reader-page-text"
                             onHeightChanged: if (root.readingMode) fitDelay.restart()
                             onWidthChanged: if (root.readingMode) fitDelay.restart()

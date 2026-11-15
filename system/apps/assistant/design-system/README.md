@@ -20,6 +20,8 @@ These families are supplied by the existing desktop font packages.
 
 Enclosure shell and Dweebo already use `modules/theme/Colors.qml`, `Styling.qml`, and `ShellStyles.js`. Reuse `StyledText`, `SearchInput`, `ToggleButton`, and `StyledRect` from `modules/components` within their Quickshell module context. Use `Styling.srItem()` and surface variants rather than literal colors. These components depend on `qs.config` and the theme/services modules; they are not standalone QML imports.
 
+In the shell, use `ContentText` for animated lyrics and typing glyphs. It follows the selected system/theme font with scalable Qt rendering and unhinted metrics; keep `StyledText` for static labels. Typing pagination preserves fractional glyph advances and clears cached widths after font metrics change, so proportional and monospace fonts use the same measurements as the renderer.
+
 ## Source of truth
 
 The exporter derives font, size, radius, motion and color values from Dweebo's existing sources and computes tinted surfaces using its actual `ShellStyles.surface` function. The web adapter supplies native HTML interaction states; it is not a pixel identical Qt renderer. Regenerate tokens after changing the assistant defaults and review the gallery before adoption.
