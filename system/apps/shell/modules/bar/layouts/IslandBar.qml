@@ -267,6 +267,8 @@ Item {
         return null;
     }
 
+    readonly property bool lyricsInBar: LyricsService.stripEnabled && MprisController.trackTitle !== ""
+
     readonly property bool isMediaPlaying: MprisController.isPlaying && MprisController.activePlayer !== null
 
     readonly property string contextLabel: {
@@ -622,11 +624,14 @@ Item {
     readonly property Item lyricsNextHitbox: lyricsStrip.nextHitbox
     BarLyrics {
         id: lyricsStrip
+        parent: contextContainer
         anchors.fill: parent
-        islandLeft: islandContainer.x
-        islandRight: islandContainer.x + islandContainer.width
+        inlineMode: true
+        calibrationParent: root
+        onOpenMedia: root.expand("media")
         stripHeight: root.islandHeight
-        available: !root.fullscreenOnScreen && !NiriService.overviewOpen
+        available: root.lyricsInBar && root.currentMode === "collapsed" && root.shouldBeRevealed
+            && !root.fullscreenOnScreen && !NiriService.overviewOpen
             && !GlobalStates.lockscreenVisible
     }
 
@@ -765,8 +770,8 @@ Item {
                     Item {
                         id: contextContainer
                         Layout.alignment: Qt.AlignVCenter
-                        Layout.maximumWidth: 200
-                        implicitWidth: Math.min(fluidContextText.implicitWidth, 200)
+                        Layout.maximumWidth: root.lyricsInBar ? Math.min(640, root.width * 0.45) : 200
+                        implicitWidth: root.lyricsInBar ? Math.min(640, root.width * 0.45) : Math.min(fluidContextText.implicitWidth, 200)
                         implicitHeight: root.islandHeight
                         scale: contextMouse.pressed ? 0.94 : 1.0
 
@@ -779,6 +784,7 @@ Item {
 
                         FluidTextProgress {
                             id: fluidContextText
+                            visible: !root.lyricsInBar
                             anchors.left: parent.left
                             anchors.right: parent.right
                             anchors.verticalCenter: parent.verticalCenter
@@ -797,6 +803,7 @@ Item {
 
                         MouseArea {
                             id: contextMouse
+                            enabled: !root.lyricsInBar
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
                             hoverEnabled: true

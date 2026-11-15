@@ -11,14 +11,17 @@ import "../services/Lyrics.js" as Lyrics
 
 Item {
     id: root
+    property bool inlineMode: false
+    property Item calibrationParent: root
+    signal openMedia()
     property real islandLeft: width / 2
     property real islandRight: width / 2
     property real stripHeight: 36
     property bool available: true
     readonly property real gap: 12
     // Match the tiled workspace edge while keeping breathing room by the island.
-    readonly property real edgeMargin: 4
-    readonly property real sideWidth: Math.max(0, Math.min(islandLeft - gap - edgeMargin,
+    readonly property real edgeMargin: inlineMode ? 0 : 4
+    readonly property real sideWidth: inlineMode ? width / 2 : Math.max(0, Math.min(islandLeft - gap - edgeMargin,
         width - islandRight - gap - edgeMargin))
     readonly property Region backgroundBlur: Region {
         regions: [
@@ -120,8 +123,7 @@ Item {
         }
         onExited: root.levels = Array(32).fill(0)
     }
-    // Only the line controls and open calibration panel enter the input mask.
-    // The remaining strip stays decorative and lets clicks pass through.
+    // Inline surfaces share the bar hitbox; line controls retain their own actions.
     Component.onCompleted: { LyricsService.viewers++; modeReady = true; updateMode(); }
     Component.onDestruction: LyricsService.viewers = Math.max(0, LyricsService.viewers - 1)
 
@@ -171,14 +173,20 @@ Item {
         height: root.stripHeight
         visible: lyric.trim() !== "" || root.visualizerMix > 0 || (upcoming && root.estimatedTiming)
         variant: "bg"
-        backgroundOpacity: BarAppearance.panelOpacity(false)
+        backgroundOpacity: root.inlineMode ? 0 : BarAppearance.panelOpacity(false)
         topLeftRadius: BarAppearance.framed ? Styling.radius(4) : 0
         topRightRadius: topLeftRadius
         bottomLeftRadius: BarAppearance.themedCorners ? Styling.radius(4) : height / 2
         bottomRightRadius: bottomLeftRadius
-        border.width: BarAppearance.framed || Styling.shellStyle === "dithered" ? 1 : 0
+        border.width: !root.inlineMode && (BarAppearance.framed || Styling.shellStyle === "dithered") ? 1 : 0
         border.color: BarAppearance.panelBorder(false)
 
+        MouseArea {
+            anchors.fill: parent
+            enabled: root.inlineMode
+            cursorShape: Qt.PointingHandCursor
+            onClicked: root.openMedia()
+        }
         PanelControl {
             id: modeBadge
             objectName: lineSurface.upcoming ? "lyrics-calibrate" : "lyrics-step-back"
@@ -305,12 +313,13 @@ Item {
     Line { id: nextPanel; objectName: "bar-lyrics-next"; x: root.width - root.sideWidth - root.edgeMargin; lyric: (root.estimatedTiming && root.nextText ? "≈ " : "") + root.nextText; upcoming: true }
     StyledRect {
         id: calibrationPanel
+        parent: root.calibrationParent
         objectName: "lyrics-calibration-panel"
         visible: root.visible && root.estimatedTiming && root.calibrationOpen
-        x: root.width - width - root.gap
+        x: root.inlineMode ? (parent.width - width) / 2 : root.width - width - root.gap
         y: root.stripHeight + 8
-        width: Math.min(520, root.width - root.gap * 2)
-        height: Math.max(0, Math.min(460, root.height - y - 12))
+        width: Math.min(520, parent.width - root.gap * 2)
+        height: Math.max(0, Math.min(460, parent.height - y - 12))
         z: 10
         variant: "popup"
         radius: Styling.radius(0)

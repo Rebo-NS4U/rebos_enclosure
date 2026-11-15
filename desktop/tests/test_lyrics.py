@@ -306,6 +306,59 @@ ShellRoot {
     def test_animated_rows(self):
         self.run_harness(ANIMATION_HARNESS)
 
+    def test_inline_lyrics_replace_media_and_open_controls(self):
+        self.run_harness('''import QtQuick
+import Quickshell
+import qs.modules.components
+import qs.modules.services
+ShellRoot {
+ property int opens: 0
+ Item { id: bar; width: 1000; height: 800
+  Item { width: 640; height: 36
+   BarLyrics { id: strip; anchors.fill: parent; inlineMode: true
+    calibrationParent: bar
+    onOpenMedia: opens++
+   }
+  }
+ }
+ Timer { interval: 300; running: true; repeat: true; property int phase: 0
+  onTriggered: {
+   try {
+    if (phase++ === 0) {
+     LyricsService.apply('[00:01]Current line\\n[00:03]Next line', 'Test', false);
+     return;
+    }
+    function find(item, name) {
+     if (item.objectName === name) return item;
+     for (const child of item.children || []) { const hit = find(child, name); if (hit) return hit; }
+     return null;
+    }
+    const current = find(strip, 'bar-lyrics-current');
+    const next = find(strip, 'bar-lyrics-next');
+    if (!strip.visible || current.x !== 0 || current.width !== 320 || next.x !== 320)
+     throw Error('Inline lyrics must fill the media section');
+    for (const panel of [current, next]) {
+     const click = panel.children.find(child => child.cursorShape === Qt.PointingHandCursor);
+     if (!click || !click.enabled) throw Error('Both surfaces must open media');
+     click.clicked(null);
+    }
+    if (opens !== 2) throw Error('Media open signal missing');
+    LyricsService.apply('', 'Test', false);
+    if (!strip.showVisualizer) throw Error('Missing lyrics must use visualizer');
+    const click = current.children.find(child => child.cursorShape === Qt.PointingHandCursor);
+    click.clicked(null);
+    if (opens !== 3) throw Error('Visualizer must open media');
+    LyricsService.apply('First\\nSecond', 'Music', false);
+    strip.calibrationButtonHitbox.clicked();
+    if (!strip.calibrationHitbox || strip.calibrationHitbox.parent !== bar || strip.calibrationHitbox.height <= 0)
+     throw Error('Inline calibration must escape the clipped bar');
+    console.log('PASS: inline geometry, lyrics and visualizer clicks, calibration'); Qt.quit();
+   } catch(error) { console.error(error); Qt.exit(1); }
+  }
+ }
+}
+''')
+
     def test_bar_lyrics_geometry_and_visibility(self):
         self.run_harness('''import QtQuick
 import Quickshell
