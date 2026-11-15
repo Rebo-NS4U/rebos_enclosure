@@ -105,3 +105,5 @@ Theme & appearance has a second row of tabs: Style, Colors, Typography, Effects,
 The terminal bonsai lifts wood and ceramic shading as exported surface opacity falls, keeping the trunk grain and bowl visible over wallpaper. Opaque surfaces retain their subdued materials; foliage and enamel accents keep their theme colors.
 
 The bonsai sits in a glass terrarium with a fine primary-tinted frame, a heavier lower plinth and a few reflections in the empty side panes. A uniform neutral charcoal background fills the case, including glyph cells and empty space, for consistent contrast across wallpapers and transparent terminals. Background color resets outside the frame and before the prompt. Plain output stays uncolored; the case preserves the 59-column, 26-row animation footprint.
+
+Zen browser chrome uses primary containers for selected tabs, URL focus and menu highlights, secondary containers for tab and toolbar hover states, and tertiary accents for workspace/new-tab controls and download progress. These exports preserve the selected glass opacity and apply on the next browser launch.

@@ -279,6 +279,33 @@ def apply_zen_palette(p, home):  # pylint: disable=too-many-locals
 }}
 #navigator-toolbox, #zen-sidebar-web-panel {{ background: {glass} !important; color: {fg} !important; }}
 {inactive}
+/* Use semantic containers for readable colored interaction states. */
+:root {{
+  --toolbarbutton-hover-background: {p['secondaryContainer']} !important;
+  --toolbarbutton-active-background: {p['primaryContainer']} !important;
+  --tab-hover-background-color: {p['secondaryContainer']} !important;
+  --focus-outline-color: {accent} !important;
+  --urlbarView-url-color: {p['tertiary']} !important;
+}}
+.tab-background[selected], .tab-background[multiselected] {{
+  background: {p['primaryContainer']} !important;
+  box-shadow: inset 3px 0 {accent} !important;
+}}
+.tabbrowser-tab:is([selected], [multiselected]) {{
+  color: {p['overPrimaryContainer']} !important;
+}}
+.tabbrowser-tab:not([selected]):hover .tab-background {{
+  background: {p['secondaryContainer']} !important;
+}}
+.tabbrowser-tab:not([selected]):hover {{ color: {p['overSecondaryContainer']} !important; }}
+.toolbarbutton-1:hover {{ --toolbar-color: {p['overSecondaryContainer']} !important; }}
+#urlbar[focused] > #urlbar-background {{
+  border: 1px solid {accent} !important;
+  background-color: {p['primaryContainer']} !important;
+}}
+#urlbar[focused] .urlbar-input {{ color: {p['overPrimaryContainer']} !important; }}
+#zen-workspaces-button, #tabs-newtab-button, #new-tab-button {{ color: {p['tertiary']} !important; }}
+#downloads-indicator-progress-inner {{ fill: {p['tertiary']} !important; }}
 /* Popup variables must be set here: Firefox defines defaults on each popup. */
 menupopup, panel {{
   --panel-background-color: {popup} !important;

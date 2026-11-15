@@ -130,7 +130,7 @@ def browser_css(p, m):
 #navigator-toolbox, menupopup, panel, #urlbar, #searchbar {{ font-family: "{m['font']}" !important; font-size: {m['size']}px !important; }}
 menupopup, panel {{ --panel-background: {p['surface']} !important; --panel-color: {p['overSurface']} !important; --panel-border-color: {p['outlineVariant']} !important; --panel-border-radius: {m['radius']}px !important; }}
 menupopup > menuitem, menupopup > menu, .subviewbutton {{ min-height: 32px !important; padding: 6px 12px !important; border-radius: {m['radius']}px !important; }}
-menupopup > menuitem[_moz-menuactive="true"], menupopup > menu[_moz-menuactive="true"], .subviewbutton:hover {{ background-color: {p['surfaceContainerHigh']} !important; color: {p['overSurface']} !important; }}
+menupopup > menuitem[_moz-menuactive="true"], menupopup > menu[_moz-menuactive="true"], .subviewbutton:hover {{ background-color: {p['primaryContainer']} !important; color: {p['overPrimaryContainer']} !important; }}
 #urlbar-background, #searchbar {{ border-radius: {m['radius']}px !important; }}
 '''
 
