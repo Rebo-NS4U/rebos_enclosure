@@ -613,7 +613,10 @@ Item {
         }
     }
 
+    readonly property Item lyricsPreviousHitbox: lyricsStrip.previousHitbox
+    readonly property Item lyricsNextHitbox: lyricsStrip.nextHitbox
     BarLyrics {
+        id: lyricsStrip
         anchors.fill: parent
         islandLeft: islandContainer.x
         islandRight: islandContainer.x + islandContainer.width

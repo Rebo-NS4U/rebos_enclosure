@@ -108,6 +108,8 @@ PanelWindow {
             Region {
                 item: barContent.visible ? barContent.barHitbox : null
             },
+            Region { item: barContent.visible ? barContent.lyricsPreviousHitbox : null },
+            Region { item: barContent.visible ? barContent.lyricsNextHitbox : null },
             Region {
                 item: barContent.dashboardHitbox
             },

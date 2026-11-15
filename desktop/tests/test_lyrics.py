@@ -429,6 +429,58 @@ ShellRoot {
 }
 ''')
 
+    def test_manual_estimated_line_correction(self):
+        self.run_harness('''import QtQuick
+import Quickshell
+import qs.modules.components
+import qs.modules.services
+ShellRoot {
+ Item { width: 1920; height: 1200
+  BarLyrics { id: strip; anchors.fill: parent; islandLeft: 700; islandRight: 1220 }
+ }
+ Timer { interval: 300; running: true; repeat: true; property int phase: 0
+  onTriggered: {
+   try {
+    function check(ok, message) { if (!ok) throw Error(message); }
+    if (phase === 0) {
+     LyricsService.createRequest = () => ({open:()=>{},setRequestHeader:()=>{},send:()=>{},abort:()=>{}});
+     MprisController.activePlayer = {dbusName:'test', identity:'Music', metadata:{}, trackAlbum:''};
+     MprisController.length = 40; MprisController.position = 0; MprisController.isPlaying = false;
+     LyricsService.refresh(); LyricsService.apply('First\\nSecond\\nThird\\nFourth', 'Music', false);
+     phase++; return;
+    }
+    check(strip.estimatedTiming && strip.previousHitbox && strip.nextHitbox, 'Estimated controls must have input regions');
+    check(!strip.canStepBack && strip.canStepForward, 'First-line bounds');
+    strip.nextHitbox.clicked();
+    check(strip.currentText === 'Second' && strip.nextText === 'Third', 'Forward button advances exactly one line');
+    check(MprisController.position === 0, 'Correction must not seek audio');
+    MprisController.position = 11;
+    check(strip.currentText === 'Third', 'Correction retained as playback advances');
+    strip.previousHitbox.clicked();
+    check(strip.currentText === 'Second', 'Back button moves exactly one line');
+    MprisController.position = 35;
+    check(strip.currentText === 'Fourth' && !strip.canStepForward, 'Last-line bounds');
+    strip.stepEstimatedLine(1);
+    check(strip.currentText === 'Fourth', 'No overflow');
+    strip.stepEstimatedLine(-1);
+    check(strip.currentText === 'Third', 'Back from final line');
+    MprisController.trackTitle = 'Different song';
+    check(strip.estimatedOffset === 0, 'Track change resets correction');
+    MprisController.position = 0;
+    LyricsService.refresh(); LyricsService.apply('First\\nSecond\\nThird\\nFourth', 'Music', false);
+    strip.stepEstimatedLine(1);
+    LyricsService.apply('[00:00]Real first\\n[00:10]Real next', 'LRCLIB', false);
+    check(strip.estimatedOffset === 0 && strip.currentText === 'Real first', 'Real timing clears correction');
+    check(!strip.previousHitbox && !strip.nextHitbox, 'Timed lyrics remain click-through');
+    strip.stepEstimatedLine(1);
+    check(strip.currentText === 'Real first' && MprisController.position === 0, 'Manual controls cannot alter timed lyrics');
+    console.log('PASS: manual line buttons, bounds, continued following, no audio seek and reset'); Qt.quit();
+   } catch(error) { console.error(error); Qt.exit(1); }
+  }
+ }
+}
+''')
+
     def run_harness(self, harness):
         with tempfile.TemporaryDirectory(prefix='lyrics-test-') as directory:
             root = Path(directory)

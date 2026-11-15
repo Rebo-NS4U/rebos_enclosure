@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
+import QtQuick.Controls
 import Quickshell.Io
 import qs.modules.services
 import qs.modules.theme
@@ -27,7 +28,26 @@ Item {
         enabled: root.estimatedTiming && root.visible
         trackKey: LyricsService.trackKey
     }
-    readonly property int lineIndex: Math.max(0, estimatedTiming ? estimatedClock.activeIndex : LyricsService.currentLine)
+    property int estimatedOffset: 0
+    readonly property int estimatedBaseIndex: Math.max(0, estimatedClock.activeIndex)
+    readonly property int lineIndex: estimatedTiming
+        ? Math.max(0, Math.min(displayLines.length - 1, estimatedBaseIndex + estimatedOffset))
+        : Math.max(0, LyricsService.currentLine)
+    readonly property bool canStepBack: estimatedTiming && lineIndex > 0
+    readonly property bool canStepForward: estimatedTiming && lineIndex < displayLines.length - 1
+    readonly property Item previousHitbox: visible && estimatedTiming && currentPanel.visible ? currentPanel.control : null
+    readonly property Item nextHitbox: visible && estimatedTiming && nextPanel.visible ? nextPanel.control : null
+    function stepEstimatedLine(direction) {
+        if (!estimatedTiming || !displayLines.length || (direction !== -1 && direction !== 1)) return;
+        const target = Math.max(0, Math.min(displayLines.length - 1, lineIndex + direction));
+        estimatedOffset = target - estimatedBaseIndex;
+    }
+    onEstimatedTimingChanged: if (!estimatedTiming) estimatedOffset = 0
+    Connections {
+        target: LyricsService
+        function onTrackKeyChanged() { root.estimatedOffset = 0; }
+        function onPlainChanged() { root.estimatedOffset = 0; }
+    }
     readonly property string currentText: !LyricsService.hasText ? "" : displayLines.length
         ? (displayLines[lineIndex]?.text || "")
         : LyricsService.plain.split("\n").find(line => line.trim()) || ""
@@ -76,8 +96,8 @@ Item {
         }
         onExited: root.levels = Array(32).fill(0)
     }
-    // Keep lookup active even before lyrics arrive. This surface is decorative:
-    // it is outside the panel input mask, so clicks pass to the app beneath it.
+    // Only the estimate arrow buttons enter the panel input mask.
+    // The remaining strip stays decorative and lets clicks pass through.
     Component.onCompleted: { LyricsService.viewers++; modeReady = true; updateMode(); }
     Component.onDestruction: LyricsService.viewers = Math.max(0, LyricsService.viewers - 1)
 
@@ -99,6 +119,7 @@ Item {
         id: lineSurface
         property string lyric: ""
         property bool upcoming: false
+        readonly property alias control: modeBadge
         width: root.sideWidth
         height: root.stripHeight
         visible: lyric.trim() !== "" || root.visualizerMix > 0
@@ -129,18 +150,31 @@ Item {
                 GradientStop { position: 1; color: Qt.alpha(BarAppearance.activeColor, 0.045) }
             }
         }
-        Rectangle {
+        ThemeButton {
             id: modeBadge
-            width: 24; height: 24
+            objectName: lineSurface.upcoming ? "lyrics-step-forward" : "lyrics-step-back"
+            width: 24; height: 24; padding: 0
             x: lineSurface.upcoming ? lineSurface.width - width - 7 : 7
             anchors.verticalCenter: parent.verticalCenter
-            radius: 8
-            color: Qt.alpha(BarAppearance.activeColor, lineSurface.upcoming ? 0.09 : 0.16)
-            border.width: 1
-            border.color: Qt.alpha(BarAppearance.activeColor, 0.16)
-            StyledText {
-                anchors.centerIn: parent
-                text: root.visualizerMix > 0.5 ? "≋" : lineSurface.upcoming ? "›" : "♪"
+            enabled: lineSurface.upcoming ? root.canStepForward : root.canStepBack
+            opacity: root.estimatedTiming && !enabled ? 0.35 : 1
+            hoverEnabled: root.estimatedTiming
+            text: root.estimatedTiming ? (lineSurface.upcoming ? "›" : "‹")
+                : root.visualizerMix > 0.5 ? "≋" : lineSurface.upcoming ? "›" : "♪"
+            Accessible.name: lineSurface.upcoming ? "Next estimated lyric line" : "Previous estimated lyric line"
+            ToolTip.visible: hovered && root.estimatedTiming
+            ToolTip.text: Accessible.name
+            onClicked: root.stepEstimatedLine(lineSurface.upcoming ? 1 : -1)
+            background: Rectangle {
+                radius: 8
+                color: Qt.alpha(BarAppearance.activeColor, modeBadge.down ? 0.28 : modeBadge.hovered ? 0.22 : lineSurface.upcoming ? 0.09 : 0.16)
+                border.width: modeBadge.activeFocus ? 2 : 1
+                border.color: Qt.alpha(BarAppearance.activeColor, modeBadge.hovered ? 0.4 : 0.16)
+            }
+            contentItem: StyledText {
+                text: modeBadge.text
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
                 font.pixelSize: Styling.fontSize(2)
                 color: lineSurface.upcoming ? BarAppearance.mutedColor : BarAppearance.activeColor
             }
@@ -242,6 +276,6 @@ Item {
             transform: Translate { y: 4 * (1 - lineSurface.progress) }
         }
     }
-    Line { objectName: "bar-lyrics-current"; x: root.gap; lyric: (root.estimatedTiming && root.currentText ? "≈ " : "") + root.currentText }
-    Line { objectName: "bar-lyrics-next"; x: root.width - root.sideWidth - root.gap; lyric: (root.estimatedTiming && root.nextText ? "≈ " : "") + root.nextText; upcoming: true }
+    Line { id: currentPanel; objectName: "bar-lyrics-current"; x: root.gap; lyric: (root.estimatedTiming && root.currentText ? "≈ " : "") + root.currentText }
+    Line { id: nextPanel; objectName: "bar-lyrics-next"; x: root.width - root.sideWidth - root.gap; lyric: (root.estimatedTiming && root.nextText ? "≈ " : "") + root.nextText; upcoming: true }
 }

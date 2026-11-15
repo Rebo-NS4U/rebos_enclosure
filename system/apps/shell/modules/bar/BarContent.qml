@@ -34,6 +34,8 @@ Item {
     Region { id: emptyBlur }
 
     readonly property Item barHitbox: (layoutLoader.item && layoutLoader.item.barHitbox) ? layoutLoader.item.barHitbox : fallbackHitbox
+    readonly property Item lyricsPreviousHitbox: layoutLoader.item?.lyricsPreviousHitbox ?? null
+    readonly property Item lyricsNextHitbox: layoutLoader.item?.lyricsNextHitbox ?? null
     readonly property Item dashboardHitbox: (layoutLoader.item && layoutLoader.item.dashboardHitbox) ? layoutLoader.item.dashboardHitbox : fallbackHitbox
 
     readonly property bool islandActive: (root.isIsland && layoutLoader.item) ? (layoutLoader.item.islandActive ?? false) : false

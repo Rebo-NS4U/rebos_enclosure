@@ -557,3 +557,5 @@ Bar input controls use compact neutral buttons, with disabled input highlighted 
 When no lyrics are available, both bar strips crossfade into mirrored audio spectrum bars. The visualizer reads the default output monitor through `parec` (provided by the existing core `libpulse` dependency), never the microphone, and sends only levels to the UI. It captures only while the strip is visible and playback is active; pause settles the bars, and reduced motion disables capture and animation. Audio is not stored or transmitted.
 
 The bar lyrics panels use layered theme surfaces, inset highlights, mirrored mode badges and a subtle track-progress accent. Spectrum bars use the active palette with light-catching gradients; both modes retain the existing motion and reduced-motion behavior.
+
+For estimated lyrics, the outer panel badges become Previous/Next line buttons. Each click moves one line without seeking playback; the correction remains as the estimate advances and resets on a new track, changed lyric text or real timestamps. Only these buttons accept pointer input, and bounds disable stepping beyond the first or final line.
