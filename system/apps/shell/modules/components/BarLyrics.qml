@@ -287,6 +287,11 @@ Item {
             // Retain a quiet spectrum behind readable foreground lyrics.
             opacity: 0.24 + root.visualizerMix * 0.76
             visible: opacity > 0
+            // Leave a generous quiet pocket around the actual text, with a
+            // feathered edge so the spectrum does not end in a hard rectangle.
+            readonly property real textPadding: 24
+            readonly property real textHalfWidth: Math.min(currentLabel.contentWidth, currentLabel.width) / 2
+            readonly property real textCenter: currentLabel.x + currentLabel.width / 2 - x
             property real activity: MprisController.isPlaying && Motion.enabled ? 1 : 0
             Behavior on activity {
                 enabled: Motion.enabled
@@ -307,7 +312,11 @@ Item {
                         GradientStop { position: 0.35; color: BarAppearance.activeColor }
                         GradientStop { position: 1; color: Qt.alpha(BarAppearance.activeColor, 0.42) }
                     }
-                    opacity: 0.24 + level * 0.76 * visualizer.activity
+                    readonly property real textDistance: Math.abs(x + width / 2 - visualizer.textCenter)
+                    readonly property real quietMix: lineSurface.lyric.trim() === "" ? 0
+                        : Math.max(0, Math.min(1, (visualizer.textHalfWidth
+                            + visualizer.textPadding + 12 - textDistance) / 12)) * (1 - root.visualizerMix)
+                    opacity: (0.24 + level * 0.76 * visualizer.activity) * (1 - quietMix * 0.92)
                     Behavior on height {
                         enabled: Motion.enabled
                         NumberAnimation { duration: Motion.feedback; easing.type: Easing.OutCubic }
