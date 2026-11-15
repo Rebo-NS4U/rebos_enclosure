@@ -490,26 +490,19 @@ ClippingRectangle {
                 if(root.traceThemeFrame(ctx,0))ctx.clip();
                 const depth=outer?18:8;
                 if(finish === "canopy"){
-                    // Broad overlapping laminates replace illustrative leaves.
-                    for(let layer=0;layer<3;layer++){
-                        const d=depth*(1-layer*0.28);
-                        ctx.fillStyle=ink(0.045+layer*0.025);
-                        ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(width,0);
-                        ctx.lineTo(width,d);
-                        ctx.bezierCurveTo(width*0.68,d*0.2,width*0.32,d*2.1,0,d);
-                        ctx.closePath();ctx.fill();
-                        ctx.strokeStyle=ink(0.16-layer*0.035);
-                        ctx.beginPath();ctx.moveTo(0,height-d);
-                        ctx.bezierCurveTo(width*0.30,height-d*2,width*0.70,height-d*0.15,width,height-d);
-                        ctx.stroke();
-                    }
-                    // Tapered ribs give the laminate a flexible structural edge.
-                    ctx.strokeStyle=ink(0.18);ctx.lineWidth=2;
-                    for(let side=0;side<2;side++){
-                        const x=side?width-3:3,dir=side?-1:1;
-                        ctx.beginPath();ctx.moveTo(x,safe);
-                        ctx.bezierCurveTo(x+dir*depth,height*0.35,x+dir*depth,height*0.65,x,height-safe);
-                        ctx.stroke();
+                    // Wide, feathered mist blooms have no visible contour or ribs.
+                    const mist=ctx.createLinearGradient(0,0,width*0.25,height);
+                    mist.addColorStop(0,ink(outer?0.055:0.025));
+                    mist.addColorStop(0.45,ink(0.012));
+                    mist.addColorStop(1,ink(0));
+                    ctx.fillStyle=mist;ctx.fillRect(0,0,width,height);
+                    if(outer){
+                        const radius=Math.max(width,height)*0.85;
+                        const bloom=ctx.createRadialGradient(width*0.12,height*0.08,0,width*0.12,height*0.08,radius);
+                        bloom.addColorStop(0,ink(0.045));
+                        bloom.addColorStop(0.55,ink(0.016));
+                        bloom.addColorStop(1,ink(0));
+                        ctx.fillStyle=bloom;ctx.fillRect(0,0,width,height);
                     }
                 }else if(finish === "orbital"){
                     // Pressure-hull seals and docking rails; no celestial imagery.

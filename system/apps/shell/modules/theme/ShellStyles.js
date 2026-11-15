@@ -1,7 +1,7 @@
 .pragma library
 
 var styles = [
-    {id: "canopy", label: "Canopy", font: "Noto Sans", description: "Overlapping botanical laminates, curved ribs and soft translucent layers."},
+    {id: "canopy", label: "Canopy", font: "Noto Sans", description: "Soft fogged glass, diffuse mist blooms and gently layered translucent surfaces."},
     {id: "orbital", label: "Orbital", font: "JetBrains Mono", description: "Spacecraft plating, recessed pressure seals and segmented docking rails."},
     {id: "metropolis", label: "Metropolis", font: "DejaVu Sans", description: "Architectural bays, deep structural reveals and cantilevered facade bands."},
     {id: "glass-vault", label: "Glass Vault", font: "Noto Sans", description: "Heavy corner clamps, stepped transparent blocks and deep inset controls."},
@@ -200,6 +200,14 @@ function surface(style, variant, p, ditherStrength) {
         border=[focused?p.primary:mix(fill,p.foreground,metro?0.32:orbital?0.27:0.16),focused?2:canopy?0:outer||inset?1:0];
         renderGradient=canopy?[[mix(fill,p.foreground,0.025),0],[fill,0.45],[mix(fill,p.background,0.12),1]]
             :orbital?[[mix(fill,p.foreground,0.035),0],[fill,0.06],[fill,0.88],[mix(fill,p.background,0.22),1]]:[[mix(fill,p.foreground,0.035),0],[fill,0.08],[fill,0.92],[mix(fill,p.background,0.30),1]];
+    }
+    if (canopy && neutral) {
+        // A milky body holds compositor blur; inner layers remain airy.
+        fill=mix(p.background,p.foreground,inset?0.025:0.06);
+        item=p.foreground;
+        opacity=focused?0.84:inset?0.38:outer?0.74:0.52;
+        border=[focused?p.primary:mix(fill,p.foreground,0.10),focused?1:0];
+        renderGradient=[[mix(fill,p.foreground,0.025),0],[fill,0.48],[mix(fill,p.background,0.06),1]];
     }
     var containers = ["bg", "popup", "pane", "surface", "surfaceContainer", "common", "internalbg", "focus", "surfaceVariant", "bar", "barbg"];
     var dotted = dithered && strength > 0 && containers.indexOf(variant) !== -1;

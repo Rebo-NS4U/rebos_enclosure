@@ -78,7 +78,7 @@ Architectural refinement: Suspended Film now uses floating offset glass sheets a
 ## Material themes
 
 Canopy, Orbital and Metropolis are the first three theme-picker entries, in that order.
-Canopy uses overlapping botanical laminates, soft translucent layers and curved structural ribs.
+Canopy uses fogged glass with a milky translucent body, broad feathered mist blooms and airy inner layers. Its borderless surfaces have no ribs or hard layer contours; keyboard focus retains a fine semantic outline.
 Orbital uses spacecraft plating, recessed pressure seals and segmented docking rails.
 Metropolis uses architectural bays, deep structural reveals and cantilevered facade bands.
 Their materials replace leaf illustrations, orbital constellations and skyline miniatures.
