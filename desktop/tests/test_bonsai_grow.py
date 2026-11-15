@@ -579,8 +579,8 @@ class BonsaiGrowTests(unittest.TestCase):
                                      ['#85b470'] * 3, fixed_height=True)
                 rows = image.splitlines()
                 self.assertEqual(len(rows), 26)
-                self.assertTrue(rows[0].strip() == "▁" * 57)
-                self.assertTrue(rows[-1].strip() == "▔" * 57)
+                self.assertEqual(rows[0].strip(), "▄" * 59)
+                self.assertEqual(rows[-1].strip(), "▀" * 59)
                 self.assertNotIn('║', image)
                 left = len(rows[0]) - 59
                 self.assertLessEqual(abs(left - (columns - len(rows[0]))), 1)
@@ -628,7 +628,7 @@ class BonsaiGrowTests(unittest.TestCase):
                     plain = bonsai.render(day, 42, False, 80, theme, fixed_height=True, hour=hour)
                     self.assertNotIn('\033', plain)
                     for row in plain.splitlines()[1:-1]:
-                        self.assertEqual((row[10], row[-1]), ('▕', '▏'))
+                        self.assertEqual((row[10], row[-1]), ('█', '█'))
 
     def test_sky_follows_local_time_and_preserves_specimen(self):
         import re
