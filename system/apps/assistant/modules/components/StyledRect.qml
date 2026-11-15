@@ -484,61 +484,58 @@ ClippingRectangle {
                 ctx.save();
                 if(root.traceThemeFrame(ctx,0))ctx.clip();
                 if(finish === "canopy"){
-                    // Frosted survey plate: an etched map inside a machined bezel.
-                    ctx.strokeStyle=ink(0.28);ctx.lineWidth=1;
-                    if(root.traceThemeFrame(ctx,outer?6:3))ctx.stroke();
-                    ctx.strokeStyle=ink(0.11);
-                    if(root.traceThemeFrame(ctx,outer?10:5))ctx.stroke();
+                    // Branching stems and paired leaves gather along the canopy edges.
+                    ctx.strokeStyle=ink(0.16);ctx.lineWidth=1;
+                    if(root.traceThemeFrame(ctx,outer?7:3))ctx.stroke();
                     if(outer){
-                        // Contours remain faint in the center and gather at the edge.
-                        for(let line=0;line<7;line++){
-                            const y=height*(0.25+line*0.10);
-                            ctx.strokeStyle=ink(line%3===0?0.12:0.055);
-                            ctx.beginPath();ctx.moveTo(10,y);
-                            ctx.bezierCurveTo(width*0.28,y-height*0.23,width*0.60,y+height*0.17,width-10,y-height*0.08);ctx.stroke();
+                        for(const side of [0,1]){
+                            ctx.save();
+                            if(side){ctx.translate(width,height);ctx.rotate(Math.PI);}
+                            const span=Math.max(0,width-safe*2);
+                            ctx.strokeStyle=Qt.rgba(accent.r,accent.g,accent.b,0.38);
+                            ctx.beginPath();ctx.moveTo(safe,12);
+                            ctx.bezierCurveTo(width*0.35,22,width*0.65,8,width-safe,16);ctx.stroke();
+                            for(let x=safe+12;x<width-safe-8;x+=30){
+                                const y=16+Math.sin((x-safe)/Math.max(1,span)*Math.PI*2)*3;
+                                for(const direction of [-1,1]){
+                                    ctx.fillStyle=Qt.rgba(accent.r,accent.g,accent.b,0.12);
+                                    ctx.beginPath();ctx.moveTo(x,y);
+                                    ctx.bezierCurveTo(x+3,y+direction*10,x+13,y+direction*13,x+18,y+direction*9);
+                                    ctx.quadraticCurveTo(x+11,y+direction*2,x,y);ctx.fill();ctx.stroke();
+                                }
+                            }
+                            ctx.restore();
                         }
-                        for(let x=safe;x<width-safe;x+=24){
-                            ctx.strokeStyle=ink(0.4);ctx.beginPath();
-                            ctx.moveTo(x,4);ctx.lineTo(x,9);ctx.moveTo(x,height-4);ctx.lineTo(x,height-9);ctx.stroke();
-                        }
-                        // Survey registration crosses and captive corner fittings.
-                        for(const x of [safe,width-safe])for(const y of [safe,height-safe]){
-                            ctx.strokeStyle=ink(0.45);ctx.beginPath();
-                            ctx.moveTo(x-4,y);ctx.lineTo(x+4,y);ctx.moveTo(x,y-4);ctx.lineTo(x,y+4);ctx.stroke();
-                        }
-                        ctx.fillStyle=ink(0.16);ctx.fillRect(safe,12,Math.max(0,Math.min(54,width-safe*2)),3);
                     }
                 }else if(finish === "orbital"){
-                    // Flight-deck housing: bevel, gasket and a recessed display well.
-                    ctx.lineWidth=1;
-                    for(let layer=0;layer<3;layer++){
-                        ctx.strokeStyle=ink([0.30,0.12,0.22][layer]);
-                        if(root.traceThemeFrame(ctx,(outer?4:2)+layer*3))ctx.stroke();
-                    }
+                    // Elliptical orbital tracks wrap a quiet, recessed space capsule.
+                    ctx.strokeStyle=ink(0.20);ctx.lineWidth=1;
+                    if(root.traceThemeFrame(ctx,outer?6:3))ctx.stroke();
                     if(inset){
-                        ctx.fillStyle=ink(0.035);
-                        for(let y=5;y<height-5;y+=4)ctx.fillRect(5,y,Math.max(0,width-10),1);
+                        ctx.strokeStyle=ink(0.08);
+                        if(root.traceThemeFrame(ctx,6))ctx.stroke();
                     }
                     if(outer){
-                        // Four slotted fittings follow the actual rounded corner.
-                        const pad=Math.max(9,cornerRadius*(1-Math.SQRT1_2)+6);
-                        for(const x of [pad,width-pad])for(const y of [pad,height-pad]){
-                            ctx.fillStyle=ink(0.26);ctx.beginPath();ctx.arc(x,y,3,0,Math.PI*2);ctx.fill();
-                            ctx.strokeStyle=ink(0.7);ctx.beginPath();ctx.moveTo(x-1.5,y+1);ctx.lineTo(x+1.5,y-1);ctx.stroke();
+                        for(const bottom of [false,true]){
+                            ctx.save();
+                            ctx.translate(bottom?width-safe:safe,bottom?height-8:8);
+                            ctx.rotate(bottom?-0.24:0.24);
+                            ctx.scale(1,0.32);
+                            for(let ring=0;ring<3;ring++){
+                                ctx.strokeStyle=Qt.rgba(accent.r,accent.g,accent.b,0.34-ring*0.07);
+                                ctx.beginPath();ctx.arc(0,0,24+ring*15,0,Math.PI*2);ctx.stroke();
+                            }
+                            ctx.restore();
                         }
-                        for(let x=safe+8;x<width-safe-8;x+=10){
-                            const major=Math.floor((x-safe-8)/10)%4===0;
-                            ctx.strokeStyle=ink(major?0.50:0.24);ctx.beginPath();
-                            ctx.moveTo(x,3);ctx.lineTo(x,major?11:7);ctx.stroke();
+                        // Small satellites and fixed stars stay outside the reading area.
+                        ctx.fillStyle=Qt.rgba(accent.r,accent.g,accent.b,0.8);
+                        for(const point of [[safe+35,14],[width-safe-35,height-14]]){
+                            ctx.beginPath();ctx.arc(point[0],point[1],2.5,0,Math.PI*2);ctx.fill();
                         }
-                        // Recessed connector slots and a reinforced side rail.
-                        ctx.fillStyle=ink(0.30);
-                        for(let y=safe+12;y<Math.min(height-safe,safe+66);y+=7)ctx.fillRect(width-15,y,6,2);
-                        ctx.strokeStyle=ink(0.35);ctx.lineWidth=2;
-                        ctx.beginPath();ctx.moveTo(8,safe);ctx.lineTo(8,height-safe);ctx.stroke();
-                        for(let i=0;i<5 && safe+i*13+8<width-safe;i++){
-                            ctx.strokeStyle=ink(0.32);ctx.lineWidth=1;
-                            ctx.strokeRect(safe+i*13,height-12,8,4);
+                        ctx.fillStyle=ink(0.36);
+                        for(let x=safe+70;x<width-safe-65;x+=37){
+                            ctx.fillRect(x,8+(Math.floor(x/37)%3)*3,1.5,1.5);
+                            ctx.fillRect(width-x,height-11,1,1);
                         }
                     }
                 }else{
@@ -574,9 +571,20 @@ ClippingRectangle {
                             ctx.fillStyle=neon(0.8);ctx.fillRect(safe,3,Math.min(64,(width-safe*2)*0.36),3);
                             ctx.fillStyle=violet(0.75);ctx.fillRect(Math.max(safe,width-safe-88),height-6,Math.min(88,width-safe*2),3);
                         }
-                        // Faded diagonals suggest reflected signage, not a facade grid.
-                        ctx.strokeStyle=violet(0.12);ctx.lineWidth=5;
-                        ctx.beginPath();ctx.moveTo(width*0.68,0);ctx.lineTo(width*0.85,Math.min(28,height*0.18));ctx.stroke();
+                        // A stepped skyline and lit windows root the glass in a city.
+                        for(let x=safe;x<width-safe-10;x+=19){
+                            const floors=2+(Math.floor(x/19)*7)%5;
+                            const roof=height-8-floors*5;
+                            ctx.fillStyle=ink(0.08);ctx.fillRect(x,roof,15,height-8-roof);
+                            ctx.strokeStyle=neon(0.32);ctx.lineWidth=1;
+                            ctx.beginPath();ctx.moveTo(x,height-8);ctx.lineTo(x,roof);
+                            ctx.lineTo(x+15,roof);ctx.lineTo(x+15,height-8);ctx.stroke();
+                            ctx.fillStyle=violet(0.46);
+                            for(let floor=0;floor<floors-1;floor++){
+                                ctx.fillRect(x+4,roof+4+floor*5,2,2);
+                                if(floor%2===0)ctx.fillRect(x+10,roof+4+floor*5,2,2);
+                            }
+                        }
                     }
                 }
                 ctx.restore();

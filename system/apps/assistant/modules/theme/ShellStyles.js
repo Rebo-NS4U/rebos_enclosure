@@ -1,9 +1,9 @@
 .pragma library
 
 var styles = [
-    {id: "canopy", label: "Canopy", font: "DejaVu Sans Mono", description: "Field-survey equipment: frosted bezels, contour maps, datum crosses and recessed glass."},
-    {id: "orbital", label: "Orbital", font: "JetBrains Mono", description: "Flight-deck hardware: machined housings, captive fasteners, ruled rails and recessed screens."},
-    {id: "metropolis", label: "Metropolis", font: "DejaVu Sans", description: "Neon city glass, luminous vertical fins, reflected light and offset sign bands."},
+    {id: "canopy", label: "Canopy", font: "DejaVu Sans Mono", description: "A leafy canopy: branching stems, paired leaves and softly layered glass."},
+    {id: "orbital", label: "Orbital", font: "JetBrains Mono", description: "Orbital space: elliptical tracks, satellite points, fixed stars and recessed glass."},
+    {id: "metropolis", label: "Metropolis", font: "DejaVu Sans", description: "Neon city glass, stepped skylines, illuminated windows and luminous sign bands."},
     {id: "glass-vault", label: "Glass Vault", font: "Noto Sans", description: "Heavy corner clamps, stepped transparent blocks and deep inset controls."},
     {id: "radar-station", label: "Radar Station", font: "DejaVu Sans", description: "Bearing scales, partial range arcs and segmented controls on blurred glass."},
     {id: "suspended-film", label: "Suspended Film", font: "DejaVu Sans Mono", description: "Floating glass sheets, offset edges and quiet contact shadows."},
