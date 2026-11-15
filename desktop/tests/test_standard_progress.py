@@ -34,9 +34,9 @@ ShellRoot {
    rail.value = NaN; check(fill.width === 0, 'Nonfinite values are safe');
    for (const slider of [horizontal, vertical, themed]) {
     for (const quarter of [0.25, 0.5, 0.75]) {
-     for (const delta of [-0.05, -0.02, 0, 0.02, 0.05])
+     for (const delta of [-0.03, -0.02, 0, 0.02, 0.03])
       check(slider.snapQuarter(quarter + delta) === quarter, 'Quarter detent includes both boundaries');
-     for (const delta of [-0.051, 0.051])
+     for (const delta of [-0.031, 0.031])
       check(slider.snapQuarter(quarter + delta) === quarter + delta, 'Pointer escapes detent');
     }
     check(slider.snapQuarter(0.01) === 0.01 && slider.snapQuarter(0.99) === 0.99, 'Endpoints remain free');
