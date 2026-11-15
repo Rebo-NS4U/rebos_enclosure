@@ -78,8 +78,8 @@ Architectural refinement: Suspended Film now uses floating offset glass sheets a
 ## Material themes
 
 Canopy, Orbital and Metropolis are the first three theme-picker entries, in that order.
-Canopy uses branching stems and paired leaves along its softly framed glass edges. It uses DejaVu Sans Mono.
-Orbital uses elliptical orbit tracks, satellite points and fixed stars around recessed glass. It uses JetBrains Mono.
-Metropolis uses neon city glazing, a stepped skyline with lit windows, an architectural grid and luminous sign bands.
+Canopy uses an architectural fabric roof with scalloped catenary spans, curved support ribs, soft palette-tinted shading and a quiet lower shadow. It uses DejaVu Sans Mono.
+Orbital uses elliptical orbit tracks and satellite points around recessed glass, with a deterministic star field distributed across the full panel. Star brightness and size vary subtly; stars remain static behind content. It uses JetBrains Mono.
+Metropolis uses deeper neutral city glazing, a stepped skyline with lit windows, an architectural grid and luminous sign bands. Its primary and tertiary light channels are blended toward each other, with softer edge spill and stronger glass opacity for balanced color and readable content.
 All three use static technical details, semantic palette colors and visible surface hierarchy. Marks are decorative, with no invented telemetry.
 All three preserve selected palette colors, readable centers, compositor blur, native Kitty profiles and the shared corner radius. Material layers clip to rounded surfaces; Clear Glass remains last.

@@ -1,7 +1,7 @@
 .pragma library
 
 var styles = [
-    {id: "canopy", label: "Canopy", font: "DejaVu Sans Mono", description: "A leafy canopy: branching stems, paired leaves and softly layered glass."},
+    {id: "canopy", label: "Canopy", font: "DejaVu Sans Mono", description: "Architectural canopy: sweeping fabric spans, curved support ribs and softly shaded surfaces."},
     {id: "orbital", label: "Orbital", font: "JetBrains Mono", description: "Orbital space: elliptical tracks, satellite points, fixed stars and recessed glass."},
     {id: "metropolis", label: "Metropolis", font: "DejaVu Sans", description: "Neon city glass, stepped skylines, illuminated windows and luminous sign bands."},
     {id: "glass-vault", label: "Glass Vault", font: "Noto Sans", description: "Heavy corner clamps, stepped transparent blocks and deep inset controls."},
@@ -202,20 +202,21 @@ function surface(style, variant, p, ditherStrength) {
             :[[mix(fill,p.foreground,0.07),0],[fill,0.04],[fill,0.90],[mix(fill,p.background,0.55),1]];
     }
     if (metro && neutral) {
-        // Smoked glazing catches the palette's two neon accent channels.
-        fill=mix(p.background,p.foreground,inset?0.015:0.035);
+        // Deeper neutral glazing balances harmonized primary and tertiary light.
+        fill=mix(p.background,p.foreground,inset?0.008:0.018);
         item=p.foreground;
-        opacity=focused?0.92:inset?0.42:outer?0.66:0.54;
-        border=[focused?p.primary:mix(fill,p.tertiary,outer?0.48:0.22),focused||outer?1:0];
-        renderGradient=[[mix(fill,p.primary,0.055),0],[fill,0.22],[fill,0.72],[mix(fill,p.tertiary,0.045),1]];
+        opacity=focused?0.94:inset?0.56:outer?0.80:0.68;
+        border=[focused?p.primary:mix(fill,mix(p.primary,p.tertiary,0.28),outer?0.34:0.18),focused||outer?1:0];
+        renderGradient=[[mix(fill,p.primary,0.035),0],[fill,0.22],[fill,0.78],[mix(fill,mix(p.primary,p.tertiary,0.28),0.025),1]];
     }
     if (canopy && neutral) {
-        // Survey equipment combines frosted glazing with a physical frame.
-        fill=mix(p.background,p.foreground,inset?0.025:focused?0.10:0.06);
+        // Soft fabric shading replaces the former hard glass bezel.
+        var cloth=mix(p.primary,p.secondary,0.35);
+        fill=mix(mix(p.background,p.foreground,inset?0.015:0.035),cloth,inset?0.025:0.055);
         item=p.foreground;
-        opacity=focused?0.94:inset?0.66:outer?0.84:0.76;
-        border=[focused?p.primary:mix(fill,p.foreground,outer?0.32:0.22),focused||outer?2:1];
-        renderGradient=[[mix(fill,p.foreground,0.045),0],[fill,0.05],[fill,0.90],[mix(fill,p.background,0.25),1]];
+        opacity=focused?0.96:inset?0.72:outer?0.91:0.82;
+        border=[focused?p.primary:mix(fill,cloth,outer?0.27:0.16),focused||outer?1:0];
+        renderGradient=[[mix(fill,cloth,0.045),0],[fill,0.30],[fill,0.78],[mix(fill,p.background,0.12),1]];
     }
     var containers = ["bg", "popup", "pane", "surface", "surfaceContainer", "common", "internalbg", "focus", "surfaceVariant", "bar", "barbg"];
     var dotted = dithered && strength > 0 && containers.indexOf(variant) !== -1;

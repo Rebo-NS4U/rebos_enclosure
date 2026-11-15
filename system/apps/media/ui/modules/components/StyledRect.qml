@@ -495,28 +495,41 @@ ClippingRectangle {
                 ctx.save();
                 if(root.traceThemeFrame(ctx,0))ctx.clip();
                 if(finish === "canopy"){
-                    // Branching stems and paired leaves gather along the canopy edges.
-                    ctx.strokeStyle=ink(0.16);ctx.lineWidth=1;
-                    if(root.traceThemeFrame(ctx,outer?7:3))ctx.stroke();
+                    // A tensile fabric roof: broad catenary sweeps, ribs and shaded folds.
+                    const fabric=a=>Qt.rgba(accent.r*0.65+secondaryAccent.r*0.35,accent.g*0.65+secondaryAccent.g*0.35,accent.b*0.65+secondaryAccent.b*0.35,a);
                     if(outer){
-                        for(const side of [0,1]){
-                            ctx.save();
-                            if(side){ctx.translate(width,height);ctx.rotate(Math.PI);}
-                            const span=Math.max(0,width-safe*2);
-                            ctx.strokeStyle=Qt.rgba(accent.r,accent.g,accent.b,0.38);
-                            ctx.beginPath();ctx.moveTo(safe,12);
-                            ctx.bezierCurveTo(width*0.35,22,width*0.65,8,width-safe,16);ctx.stroke();
-                            for(let x=safe+12;x<width-safe-8;x+=30){
-                                const y=16+Math.sin((x-safe)/Math.max(1,span)*Math.PI*2)*3;
-                                for(const direction of [-1,1]){
-                                    ctx.fillStyle=Qt.rgba(accent.r,accent.g,accent.b,0.12);
-                                    ctx.beginPath();ctx.moveTo(x,y);
-                                    ctx.bezierCurveTo(x+3,y+direction*10,x+13,y+direction*13,x+18,y+direction*9);
-                                    ctx.quadraticCurveTo(x+11,y+direction*2,x,y);ctx.fill();ctx.stroke();
-                                }
-                            }
-                            ctx.restore();
+                        const drop=Math.min(70,height*0.22);
+                        // Translucent fabric spans the upper edge with a scalloped hem.
+                        const shade=ctx.createLinearGradient(0,0,0,drop+18);
+                        shade.addColorStop(0,fabric(0.22));
+                        shade.addColorStop(0.7,fabric(0.08));shade.addColorStop(1,fabric(0.015));
+                        ctx.fillStyle=shade;ctx.beginPath();ctx.moveTo(0,0);
+                        ctx.lineTo(width,0);ctx.lineTo(width,10);
+                        ctx.bezierCurveTo(width*0.80,drop,width*0.67,drop,width*0.50,12);
+                        ctx.bezierCurveTo(width*0.30,drop*1.25,width*0.16,drop*1.25,0,10);
+                        ctx.closePath();ctx.fill();
+                        ctx.strokeStyle=fabric(0.46);ctx.lineWidth=1.2;
+                        ctx.beginPath();ctx.moveTo(0,10);
+                        ctx.bezierCurveTo(width*0.16,drop*1.25,width*0.30,drop*1.25,width*0.50,12);
+                        ctx.bezierCurveTo(width*0.67,drop,width*0.80,drop,width,10);ctx.stroke();
+                        // Curved support ribs converge at the raised central mast.
+                        for(const end of [0.12,0.27,0.73,0.88]){
+                            ctx.strokeStyle=ink(0.13);ctx.lineWidth=1;
+                            ctx.beginPath();ctx.moveTo(width*0.50,3);
+                            ctx.quadraticCurveTo(width*end,8,width*end,drop*0.73);ctx.stroke();
                         }
+                        // Ground-level shade echoes the roof without framing the content.
+                        const ground=ctx.createLinearGradient(0,height-24,0,height);
+                        ground.addColorStop(0,fabric(0));ground.addColorStop(1,fabric(0.12));
+                        ctx.fillStyle=ground;ctx.fillRect(0,height-24,width,24);
+                        ctx.strokeStyle=fabric(0.27);ctx.lineWidth=1;
+                        ctx.beginPath();ctx.moveTo(safe,height-7);
+                        ctx.quadraticCurveTo(width*0.5,height-18,width-safe,height-7);ctx.stroke();
+                    }else{
+                        // Inner surfaces retain a simple, softly tensioned seam.
+                        ctx.strokeStyle=fabric(inset?0.10:0.20);ctx.lineWidth=1;
+                        ctx.beginPath();ctx.moveTo(safe,4);
+                        ctx.quadraticCurveTo(width*0.5,Math.min(12,height*0.16),width-safe,4);ctx.stroke();
                     }
                 }else if(finish === "orbital"){
                     // Elliptical orbital tracks wrap a quiet, recessed space capsule.
@@ -525,6 +538,24 @@ ClippingRectangle {
                     if(inset){
                         ctx.strokeStyle=ink(0.08);
                         if(root.traceThemeFrame(ctx,6))ctx.stroke();
+                    }
+                    // Deterministic jitter spreads a stable star field over the entire surface.
+                    // Low opacity keeps stars behind content, with occasional brighter points.
+                    for(let row=0;row<Math.ceil(height/46);row++){
+                        for(let col=0;col<Math.ceil(width/54);col++){
+                            const seed=Math.abs(Math.sin((col+1)*127.1+(row+1)*311.7)*43758.5453);
+                            const fraction=seed-Math.floor(seed);
+                            const x=col*54+7+fraction*38;
+                            const y=row*46+6+((fraction*7.31)%1)*32;
+                            const bright=fraction>0.88;
+                            ctx.fillStyle=ink(bright?0.40:0.14+fraction*0.12);
+                            ctx.beginPath();ctx.arc(x,y,bright?1.15:0.55,0,Math.PI*2);ctx.fill();
+                            if(bright){
+                                ctx.strokeStyle=ink(0.16);ctx.lineWidth=0.7;
+                                ctx.beginPath();ctx.moveTo(x-3,y);ctx.lineTo(x+3,y);
+                                ctx.moveTo(x,y-3);ctx.lineTo(x,y+3);ctx.stroke();
+                            }
+                        }
                     }
                     if(outer){
                         for(const bottom of [false,true]){
@@ -538,20 +569,17 @@ ClippingRectangle {
                             }
                             ctx.restore();
                         }
-                        // Small satellites and fixed stars stay outside the reading area.
+                        // Satellites remain attached to the perimeter orbit tracks.
                         ctx.fillStyle=Qt.rgba(accent.r,accent.g,accent.b,0.8);
                         for(const point of [[safe+35,14],[width-safe-35,height-14]]){
                             ctx.beginPath();ctx.arc(point[0],point[1],2.5,0,Math.PI*2);ctx.fill();
                         }
-                        ctx.fillStyle=ink(0.36);
-                        for(let x=safe+70;x<width-safe-65;x+=37){
-                            ctx.fillRect(x,8+(Math.floor(x/37)%3)*3,1.5,1.5);
-                            ctx.fillRect(width-x,height-11,1,1);
-                        }
+
                     }
                 }else{
-                    const neon=a=>Qt.rgba(accent.r,accent.g,accent.b,a);
-                    const violet=a=>Qt.rgba(secondaryAccent.r,secondaryAccent.g,secondaryAccent.b,a);
+                    // Harmonize both light channels to reduce competing saturated edges.
+                    const neon=a=>Qt.rgba(accent.r*0.82+secondaryAccent.r*0.18,accent.g*0.82+secondaryAccent.g*0.18,accent.b*0.82+secondaryAccent.b*0.18,a);
+                    const violet=a=>Qt.rgba(secondaryAccent.r*0.70+accent.r*0.30,secondaryAccent.g*0.70+accent.g*0.30,secondaryAccent.b*0.70+accent.b*0.30,a);
                     // Architectural frame and drafting grid anchor the neon glazing.
                     ctx.lineWidth=1;ctx.strokeStyle=ink(outer?0.23:0.12);
                     if(root.traceThemeFrame(ctx,outer?8:3))ctx.stroke();
@@ -567,20 +595,20 @@ ClippingRectangle {
                     }
                     // Neon spill falls inward from opposing glass edges.
                     const spill=ctx.createLinearGradient(0,0,width,0);
-                    spill.addColorStop(0,neon(outer?0.26:0.10));
+                    spill.addColorStop(0,neon(outer?0.16:0.06));
                     spill.addColorStop(0.12,neon(0.025));spill.addColorStop(0.45,neon(0));
-                    spill.addColorStop(0.80,violet(0.015));spill.addColorStop(1,violet(outer?0.24:0.08));
+                    spill.addColorStop(0.80,violet(0.015));spill.addColorStop(1,violet(outer?0.12:0.04));
                     ctx.fillStyle=spill;ctx.fillRect(0,0,width,height);
                     if(outer){
                         // Offset illuminated fins and sign bands give a city silhouette.
                         const top=Math.min(height-safe,safe+height*0.42);
-                        ctx.strokeStyle=neon(0.90);ctx.lineWidth=3;
+                        ctx.strokeStyle=neon(0.72);ctx.lineWidth=3;
                         ctx.beginPath();ctx.moveTo(4,safe);ctx.lineTo(4,top);ctx.stroke();
-                        ctx.strokeStyle=violet(0.85);ctx.lineWidth=2;
+                        ctx.strokeStyle=violet(0.58);ctx.lineWidth=2;
                         ctx.beginPath();ctx.moveTo(width-4,height-safe);ctx.lineTo(width-4,Math.max(safe,height*0.40));ctx.stroke();
                         if(width>safe*2+20){
-                            ctx.fillStyle=neon(0.8);ctx.fillRect(safe,3,Math.min(64,(width-safe*2)*0.36),3);
-                            ctx.fillStyle=violet(0.75);ctx.fillRect(Math.max(safe,width-safe-88),height-6,Math.min(88,width-safe*2),3);
+                            ctx.fillStyle=neon(0.66);ctx.fillRect(safe,3,Math.min(64,(width-safe*2)*0.36),3);
+                            ctx.fillStyle=violet(0.54);ctx.fillRect(Math.max(safe,width-safe-88),height-6,Math.min(88,width-safe*2),3);
                         }
                         // A stepped skyline and lit windows root the glass in a city.
                         for(let x=safe;x<width-safe-10;x+=19){
@@ -590,7 +618,7 @@ ClippingRectangle {
                             ctx.strokeStyle=neon(0.32);ctx.lineWidth=1;
                             ctx.beginPath();ctx.moveTo(x,height-8);ctx.lineTo(x,roof);
                             ctx.lineTo(x+15,roof);ctx.lineTo(x+15,height-8);ctx.stroke();
-                            ctx.fillStyle=violet(0.46);
+                            ctx.fillStyle=violet(0.36);
                             for(let floor=0;floor<floors-1;floor++){
                                 ctx.fillRect(x+4,roof+4+floor*5,2,2);
                                 if(floor%2===0)ctx.fillRect(x+10,roof+4+floor*5,2,2);
