@@ -21,7 +21,14 @@ Item {
     readonly property bool showFluidBar: root.isPlaying && root.progress > 0.0
 
     implicitWidth: Math.min(baseText.implicitWidth, 200)
-    implicitHeight: Math.max(baseText.implicitHeight + (root.showFluidBar ? 6 : 0), 20)
+    implicitHeight: Math.max(inkBounds.height + (root.showFluidBar ? 6 : 0), 20)
+
+    FontMetrics {
+        id: textMetrics
+        font: baseText.font
+    }
+    readonly property rect inkBounds: textMetrics.tightBoundingRect(
+        textMetrics.elidedText(root.text, root.elide, Math.max(0, root.width)))
 
     property real phase: 0.0
 
@@ -38,25 +45,26 @@ Item {
 
     Text {
         id: baseText
-        anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.bottom: root.showFluidBar ? wavyCanvas.top : parent.bottom
-        anchors.bottomMargin: root.showFluidBar ? 1 : 0
+        height: implicitHeight
+        // Center the visible text and optional waveform as one group.
+        y: (root.height - root.inkBounds.height - (root.showFluidBar ? 6 : 0)) / 2
+            - root.inkBounds.y - baselineOffset
         text: root.text
         font.family: root.fontFamily
         font.pixelSize: root.pixelSize
         font.bold: root.bold
         color: root.baseColor
         elide: root.elide
-        verticalAlignment: root.verticalAlignment
+        verticalAlignment: Text.AlignTop
         renderType: Text.NativeRendering
         font.hintingPreference: Font.PreferFullHinting
     }
 
     Canvas {
         id: wavyCanvas
-        anchors.bottom: parent.bottom
+        y: (root.height + root.inkBounds.height - height + 1) / 2
         anchors.left: parent.left
         anchors.right: parent.right
         height: 5

@@ -938,11 +938,11 @@ Item {
                         StyledText {
                             id: dateTimeRow
                             anchors.centerIn: parent
-                            // Digits and uppercase AM/PM share the capital-height band.
-                            // Keep its center stable; native hinting needs one pixel below
-                            // the mathematical capital-height center.
-                            anchors.verticalCenterOffset: Math.round(height / 2
-                                - baselineOffset + clockMetrics.capitalHeight / 2) + 1
+                            // Center the visible digits, including the chosen font's bearings.
+                            readonly property rect inkBounds: clockMetrics.tightBoundingRect(text)
+                            anchors.alignWhenCentered: false
+                            anchors.verticalCenterOffset: height / 2 - baselineOffset
+                                - inkBounds.y - inkBounds.height / 2
                             text: root.formattedTime
                             font.family: Config.theme.monoFont
                             font.pixelSize: Styling.fontSize(-1)
