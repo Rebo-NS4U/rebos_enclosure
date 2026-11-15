@@ -54,6 +54,8 @@ def session():
                     const backdrop = findItem(music.contentItem, "music-background");
                     if (music.color.a !== 0 || !backdrop || backdrop.variant !== "bg") { console.error("MUSIC_SHARED_BACKGROUND_FAILED"); Qt.exit(1); }
                     if (music.repeatMode !== "Playlist") { console.error("MUSIC_REPEAT_DEFAULT_FAILED"); Qt.exit(1); }
+                    const favorite = findItem(music.contentItem, "music-favorite-current");
+                    if (!favorite || favorite.enabled) { console.error("MUSIC_FAVORITE_EMPTY_FAILED"); Qt.exit(1); }
                     music.volume = 0;
                     const playCard = findItem(music.contentItem, "music-card-play");
                     if (!playCard) return;
@@ -66,7 +68,12 @@ def session():
                 } else if (phase === 1 && music.playing) {
                     if (music.lyricLines.length !== 2 || music.estimatedTiming) { console.error("MUSIC_LYRICS_FAILED"); Qt.exit(1); }
                     music.seek(1200);
-                    music.favorite(music.current);
+                    const favorite = findItem(music.contentItem, "music-favorite-current");
+                    favorite.clicked();
+                    if (!favorite.checked || !music.favorites.includes(music.current.path)) { console.error("MUSIC_FAVORITE_ADD_FAILED"); Qt.exit(1); }
+                    favorite.clicked();
+                    if (favorite.checked || music.favorites.includes(music.current.path)) { console.error("MUSIC_FAVORITE_REMOVE_FAILED"); Qt.exit(1); }
+                    favorite.clicked();
                     music.playlists = [{id:"test",name:"Acceptance",paths:music.queue.map(t=>t.path).reverse()}];
                     music.save();
                     findItem(music.contentItem, "music-repeat-song").clicked();

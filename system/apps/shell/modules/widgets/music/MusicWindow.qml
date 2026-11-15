@@ -429,6 +429,16 @@ Window {
                             StyledText { Layout.fillWidth: true; text: root.current?.title || "Enclosure Music"; elide: Text.ElideRight }
                             StyledText { Layout.fillWidth: true; text: root.current?.artist || "Local music library"; elide: Text.ElideRight; color: Colors.overSurfaceVariant; font.pixelSize: Styling.fontSize(-2) }
                         }
+                        ThemeButton {
+                            objectName: "music-favorite-current"
+                            enabled: !!root.current
+                            checked: !!root.current && root.favorites.includes(root.current.path)
+                            text: checked ? "♥" : "♡"
+                            Accessible.name: checked ? "Remove current song from favorites" : "Add current song to favorites"
+                            ToolTip.visible: hovered
+                            ToolTip.text: Accessible.name
+                            onClicked: if (root.current) root.favorite(root.current)
+                        }
                         ThemeButton { text: "Shuffle"; checked: root.shuffle; onClicked: root.shuffle = !root.shuffle }
                         ThemeButton { text: "⏮"; Accessible.name: "Previous track"; enabled: !!root.current; onClicked: root.previous() }
                         ThemeButton { text: root.playing ? "Pause" : "Play"; highlighted: true; enabled: root.queue.length > 0 || root.shownTracks.length > 0; onClicked: root.toggle() }
