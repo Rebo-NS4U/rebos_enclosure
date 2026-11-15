@@ -745,7 +745,7 @@ Item {
             backgroundOpacity: BarAppearance.panelOpacity(root.isExpanded)
             topLeftRadius: BarAppearance.framed ? root.cornerRadius : 0
             topRightRadius: BarAppearance.framed ? root.cornerRadius : 0
-            border.width: root.currentMode === "typing" ? 1 : (BarAppearance.framed || Styling.shellStyle === "dithered" ? 1 : 0)
+            border.width: root.currentMode === "typing" ? 1 : (BarAppearance.framed ? 1 : 0)
             border.color: root.currentMode === "typing" ? Qt.alpha(Colors.primary, 0.28) : BarAppearance.panelBorder(root.isExpanded)
 
             Behavior on backgroundOpacity {

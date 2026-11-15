@@ -680,8 +680,8 @@ Item {
                                 objectName: "bar-appearance"
                                 label: "Appearance"
                                 options: [
-                                    { label: "Transparent", value: "glass", icon: Icons.drop },
-                                    { label: "Standard", value: "classic", icon: Icons.circle }
+                                    { label: "Plain", value: "classic", icon: Icons.circle },
+                                    { label: "Bordered", value: "glass", icon: Icons.layout }
                                 ]
                                 value: Config.bar?.islandAppearance ?? "glass"
                                 onValueSelected: newValue => Config.bar.islandAppearance = newValue
@@ -692,7 +692,7 @@ Item {
                             StyledText {
                                 Layout.fillWidth: true
                                 wrapMode: Text.WordWrap
-                                text: "Bar opacity and accent follow your theme automatically. Adjust shell transparency in Theme & appearance → Appearance → Transparency and blur."
+                                text: "Plain uses a simple theme background. Bordered adds an accent outline and highlights the clock and active workspace. Both follow the shell transparency setting."
                                 font.pixelSize: Styling.fontSize(-1)
                                 color: Colors.overSurfaceVariant
                             }

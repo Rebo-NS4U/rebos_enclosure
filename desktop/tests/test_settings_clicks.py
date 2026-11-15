@@ -199,12 +199,19 @@ ShellRoot {
        tester.wait(30);
        fixture.check(Math.abs(BarAppearance.panelOpacity(false) - 0.35) < 0.001, "Bar follows transparency for " + style);
        fixture.check(Math.abs(BarAppearance.panelOpacity(true) - 0.35) < 0.001, "Expanded bar follows transparency for " + style);
-       fixture.check(BarAppearance.panelBorder(false).toString() === Config.resolveColor(Styling.getStyledRectConfig("bg").border[0]).toString(), "Bar border follows theme for " + style);
+       fixture.check(BarAppearance.bordered && BarAppearance.panelBorder(false).toString() === Qt.alpha(Colors.primary, 0.5).toString(), "Bordered bar uses accent outline for " + style);
        fixture.check(BarAppearance.clockTint(false).r === BarAppearance.highlightColor.r, "Clock accent follows theme highlight for " + style);
        Config.theme.shellTransparency = -1;
        tester.wait(30);
        fixture.check(BarAppearance.opacity === Styling.getStyledRectConfig("bg").opacity, "Bar follows default theme opacity for " + style);
       }
+      fixture.check(BarAppearance.workspaceTint(true, false).a > 0 && BarAppearance.workspaceTint(false, false).a === 0, "Bordered bar highlights the active workspace");
+      for (let style of ["instrument", "frosted", "dithered", "quiet"]) {
+       Config.theme.shellStyle = style;
+       Config.bar.islandAppearance = "classic"; tester.wait(20);
+       fixture.check(!BarAppearance.framed && BarAppearance.panelBorder(false).a === 0 && BarAppearance.clockTint(true).a === 0 && BarAppearance.workspaceTint(true, true).a === 0, "Plain bar has no outline or persistent accents in " + style);
+      }
+      Config.bar.islandAppearance = "glass";
       Config.theme.shellTransparency = 100; tester.wait(30);
       fixture.check(BarAppearance.opacity === 0, "Bar supports fully transparent theme");
       Config.theme.shellTransparency = 0; tester.wait(30);

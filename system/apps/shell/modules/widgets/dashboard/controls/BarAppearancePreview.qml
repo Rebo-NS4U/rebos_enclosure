@@ -31,7 +31,7 @@ StyledRect {
         variant: "bg"
         backgroundOpacity: BarAppearance.panelOpacity(false)
         radius: height / 2
-        border.width: BarAppearance.polished ? 1 : 0
+        border.width: BarAppearance.bordered ? 1 : 0
         border.color: BarAppearance.panelBorder(false)
         StyledRect {
             anchors.fill: parent
@@ -44,7 +44,25 @@ StyledRect {
             id: content
             anchors.centerIn: parent
             spacing: Styling.fontSize(0)
-            StyledText { text: "Desktop"; color: Colors.overBackground; font.pixelSize: Styling.fontSize(-1) }
+            RowLayout {
+                spacing: 4
+                Repeater {
+                    model: 2
+                    delegate: Rectangle {
+                        required property int index
+                        implicitWidth: 24
+                        implicitHeight: 24
+                        radius: Styling.radius(-4)
+                        color: BarAppearance.workspaceTint(index === 0, false)
+                        StyledText {
+                            anchors.centerIn: parent
+                            text: parent.index + 1
+                            color: Colors.overBackground
+                            font.pixelSize: Styling.fontSize(-1)
+                        }
+                    }
+                }
+            }
             StyledRect {
                 variant: "transparent"
                 enableBorder: false

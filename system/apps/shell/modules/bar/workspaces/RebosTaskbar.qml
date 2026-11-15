@@ -97,6 +97,17 @@ Item {
                 Layout.alignment: Qt.AlignVCenter
 
                 Rectangle {
+                    objectName: "workspace-highlight-" + workspaceButton.workspaceId
+                    anchors.fill: parent
+                    radius: Styling.radius(-4)
+                    color: BarAppearance.workspaceTint(workspaceButton.active, workspaceMouse.containsMouse)
+                    Behavior on color {
+                        enabled: Config.animDuration > 0
+                        ColorAnimation { duration: Math.min(Config.animDuration, 150) }
+                    }
+                }
+
+                Rectangle {
                     objectName: "workspace-dot-" + workspaceButton.workspaceId
                     anchors.centerIn: parent
                     anchors.alignWhenCentered: false
@@ -106,7 +117,7 @@ Item {
                     radius: width / 2
                     // Shape distinguishes empty spaces without dimming their centerline.
                     color: "transparent"
-                    border.color: BarAppearance.activeWorkspaceOutline
+                    border.color: workspaceButton.active ? BarAppearance.activeWorkspaceOutline : BarAppearance.foregroundColor
                     border.width: Math.max(1, Math.round(width / 6))
                 }
 
@@ -150,7 +161,7 @@ Item {
                     width: 2 * Math.round(root.workspaceHeight / 5)
                     height: Math.max(2, Math.round(Styling.fontSize(0) / 7))
                     radius: height / 2
-                    color: BarAppearance.foregroundColor
+                    color: BarAppearance.activeWorkspaceOutline
                     opacity: workspaceButton.active ? 1 : 0
                     Behavior on opacity {
                         enabled: Config.animDuration > 0

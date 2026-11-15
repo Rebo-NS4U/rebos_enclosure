@@ -24,11 +24,12 @@ Singleton {
 
     readonly property bool instrument: Styling.shellStyle === "instrument"
     readonly property bool themedCorners: instrument || Styling.shellStyle === "frosted"
-    readonly property bool framed: polished || themedCorners
-    readonly property color activeWorkspaceOutline: instrument ? Colors.primary : foregroundColor
-    readonly property bool polished: (Config.bar?.islandAppearance ?? BarDefaults.data.islandAppearance) === "glass"
+    readonly property bool framed: bordered
+    readonly property color activeWorkspaceOutline: bordered ? Colors.primary : foregroundColor
+    // Keep saved glass/classic values compatible with Bordered/Plain.
+    readonly property bool bordered: (Config.bar?.islandAppearance ?? BarDefaults.data.islandAppearance) === "glass"
     readonly property var themeSurface: Styling.getStyledRectConfig("bg")
-    readonly property color highlightColor: Config.resolveColor(Styling.getStyledRectConfig("focus").gradient[0][0])
+    readonly property color highlightColor: Colors.primary
     readonly property color surfaceColor: Config.resolveColor(themeSurface.gradient[0][0])
     readonly property real opacity: themeSurface.opacity
     // Accent intensity comes from the theme's own highlight/background contrast.
@@ -43,12 +44,13 @@ Singleton {
         return "transparent";
     }
     function panelBorder(expanded: bool): color {
-        return Config.resolveColor(Styling.getStyledRectConfig(expanded ? "popup" : "bg").border[0]);
+        return bordered ? Qt.alpha(highlightColor, 0.5) : "transparent";
     }
     function clockTint(hovered: bool): color {
-        if (instrument)
-            return Config.resolveColor(Styling.getStyledRectConfig(hovered ? "focus" : "pane").gradient[0][0]);
-        return polished ? Qt.alpha(highlightColor, hovered ? 0.95 : 0.65) : "transparent";
+        return bordered ? Qt.alpha(highlightColor, hovered ? 0.32 : 0.22) : "transparent";
+    }
+    function workspaceTint(active: bool, hovered: bool): color {
+        return bordered && (active || hovered) ? Qt.alpha(highlightColor, active ? 0.22 : 0.12) : "transparent";
     }
     function reset(): void {
         Config.bar.islandAppearance = BarDefaults.data.islandAppearance;

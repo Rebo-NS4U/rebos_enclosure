@@ -179,7 +179,7 @@ Item {
         topRightRadius: topLeftRadius
         bottomLeftRadius: BarAppearance.themedCorners ? Styling.radius(4) : height / 2
         bottomRightRadius: bottomLeftRadius
-        border.width: !root.inlineMode && (BarAppearance.framed || Styling.shellStyle === "dithered") ? 1 : 0
+        border.width: !root.inlineMode && BarAppearance.framed ? 1 : 0
         border.color: BarAppearance.panelBorder(false)
 
         MouseArea {
