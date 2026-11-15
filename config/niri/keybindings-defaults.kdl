@@ -4,8 +4,8 @@ binds {
 
     Mod+Shift+T repeat=false hotkey-overlay-title="Select screen text" { spawn "wayland-screenshot" "ocr"; }
 
-    // Recovery runs through systemd so it also works when Quickshell is down.
-    Mod+Alt+Q repeat=false hotkey-overlay-title="Recover Quickshell panel" { spawn "sh" "-c" "systemctl --user reset-failed rebos-panel.service; systemctl --user restart rebos-panel.service"; }
+    // End the Niri session directly, even when Quickshell is unavailable.
+    Mod+Alt+Q repeat=false hotkey-overlay-title="End desktop session (closes apps)" { quit skip-confirmation=true; }
 
     // rebos_shell QuickShell actions.
     Mod+T repeat=false hotkey-overlay-title="Open Book Typing" { spawn "qs" "ipc" "-p" "@HOME@/.config/quickshell" "call" "rebos_shell" "run" "t"; }

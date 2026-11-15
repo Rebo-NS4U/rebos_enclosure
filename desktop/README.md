@@ -566,4 +566,4 @@ Music collection cards have a Play button on the artwork: albums, artists and pl
 
 Enclosure Music opens with Repeat all enabled by default. Repeat song and turning repeat off remain available during playback.
 
-Quickshell recovery: press **Super+Alt+Q** to clear the panel service crash limit and restart it, even when the shell is unavailable.
+Desktop session recovery: **Super+Alt+Q** exits Niri immediately and returns to login without rebooting. Save your work first: session apps close without a confirmation prompt. Sign in again to start a fresh desktop. The shortcut works even when Quickshell is unavailable.
