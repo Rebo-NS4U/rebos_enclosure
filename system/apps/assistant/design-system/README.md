@@ -47,4 +47,4 @@ Use `StandardProgressBar` for linear progress in QML. Its normalized `value` is 
 
 ## Curated desktop themes
 
-Botanical Archive is a rendered theme with opaque parchment gradients, forest-ink ruled edges, inset sage wells, compact control corners and softer outer panels. Its fixed semantic palette and Liberation Serif typography stay independent of wallpaper colors, including application exports. The other experimental palette-only styles have been removed.
+Botanical Archive renders opaque paper-like gradients, ruled edges, inset wells, compact control corners and softer outer panels. It uses the selected wallpaper or color preset throughout, including application exports, without imposing a fixed palette. Typography uses Liberation Serif. The other experimental palette-only styles have been removed.

@@ -1,7 +1,7 @@
 .pragma library
 
 var styles = [
-    {"id": "botanical-archive", "label": "Botanical Archive", "font": "Liberation Serif", "description": "Parchment surfaces, forest ink and sage details."},
+    {"id": "botanical-archive", "label": "Botanical Archive", "font": "Liberation Serif", "description": "Paper-like layers, ruled edges and compact corners in your selected colors."},
     {id: "instrument", label: "Instrument", description: "Layered graphite surfaces with restrained status accents."},
     {id: "frosted", label: "Frosted Glass", description: "OCR-inspired frosted panels, soft highlights and rounded glass edges."},
     {id: "glass", label: "Transparent", description: "Dark transparent backgrounds with light wallpaper colors."},
@@ -52,8 +52,6 @@ function ditherCellSize(strength) {
 }
 
 function surface(style, variant, p, ditherStrength) {
-    var curated = themePalette(style);
-    if (curated) p = curated;
     var strength = Number.isFinite(ditherStrength) ? Math.max(0, Math.min(100, ditherStrength)) : 20;
     var colorful = style === "colorful", dithered = style === "dithered", quiet = style === "quiet" || dithered;
     var tint = colorful ? 0.10 : (quiet ? 0.015 : 0.035);
@@ -147,7 +145,7 @@ function surface(style, variant, p, ditherStrength) {
         border[0] = mix(fill, p.primary, 0.12);
     return {
         radius: botanical ? (variant === "bg" || variant === "popup" ? 10 : 4) : undefined,
-        gradient: paperSurface ? [[mix(fill, "#ffffff", 0.08), 0], [fill, 0.55], [mix(fill, p.secondary, 0.035), 1]] : frostedContainer ? [[mix(fill, p.foreground, 0.08), 0], [fill, 0.45], [mix(fill, p.background, 0.12), 1]] : [[fill, 0]], gradientType: dotted ? "halftone" : "linear", gradientAngle: 0,
+        gradient: paperSurface ? [[mix(fill, p.foreground, 0.025), 0], [fill, 0.55], [mix(fill, p.secondary, 0.035), 1]] : frostedContainer ? [[mix(fill, p.foreground, 0.08), 0], [fill, 0.45], [mix(fill, p.background, 0.12), 1]] : [[fill, 0]], gradientType: dotted ? "halftone" : "linear", gradientAngle: 0,
         gradientCenterX: 0.5, gradientCenterY: 0.5,
         halftoneDotMin: dotted ? dotMax : 0, halftoneDotMax: dotted ? dotMax : 0, halftoneStart: 0, halftoneEnd: 1,
         halftoneDotColor: dotted ? dotColor(fill, item, strength * 0.001) : fill, halftoneBackgroundColor: fill,
@@ -157,7 +155,6 @@ function surface(style, variant, p, ditherStrength) {
 
 // Export the same surface hierarchy to native and themed applications.
 function appPalette(style, palette, customOpacity) {
-    palette = Object.assign({}, palette, themePalette(style) || {});
     var result = Object.assign({}, palette);
     result.style = style;
     result.opacity = customOpacity;
@@ -182,40 +179,8 @@ function appPalette(style, palette, customOpacity) {
 }
 
 
-// Curated palettes stay independent of the wallpaper and retain semantic roles.
-var curatedPalettes = {
-    "botanical-archive": {
-        "background": "#eee9d8",
-        "foreground": "#283c2e",
-        "primary": "#416442",
-        "secondary": "#755138",
-        "tertiary": "#655676"
-    }
-};
+// Styles affect rendering only; colors come from the selected palette.
+// Retained for existing palette consumers and preview cards.
 function themePalette(style) {
-    var seed = curatedPalettes[style];
-    if (!seed) return null;
-    var p = Object.assign({}, seed);
-    p.overBackground = p.overSurface = p.overSurfaceVariant = p.foreground;
-    p.surface = p.surfaceContainer = mix(p.background, p.foreground, 0.04);
-    p.surfaceContainerLowest = p.surfaceDim = p.background;
-    p.surfaceContainerLow = p.surface;
-    p.surfaceContainerHigh = p.surfaceContainerHighest = p.surfaceBright = p.surfaceVariant = mix(p.background, p.foreground, 0.10);
-    p.outline = mix(p.background, p.foreground, 0.50);
-    p.outlineVariant = mix(p.background, p.primary, 0.35);
-    p.surfaceTint = p.primary;
-    p.inverseSurface = p.foreground; p.inverseOnSurface = p.background;
-    p.inversePrimary = p.primary;
-    p.error = contrast(p.background, '#ac3028') >= 4.5 ? '#ac3028' : '#ffb4ab';
-    ['primary','secondary','tertiary','error'].forEach(function(role) {
-        var cap = role.charAt(0).toUpperCase() + role.slice(1);
-        p['over' + cap] = contrast(p[role], '#161619') >= 4.5 ? '#161619' : '#ffffff';
-        p[role + 'Container'] = mix(p.background, p[role], 0.14);
-        p['over' + cap + 'Container'] = p.foreground;
-        p[role + 'Fixed'] = p[role + 'FixedDim'] = p[role];
-        p['over' + cap + 'Fixed'] = p['over' + cap + 'FixedVariant'] = p['over' + cap];
-    });
-    p.onPrimary = p.overPrimary; p.onSecondary = p.overSecondary;
-    p.onTertiary = p.overTertiary; p.onError = p.overError;
-    return p;
+    return null;
 }
