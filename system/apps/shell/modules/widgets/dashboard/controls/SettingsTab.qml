@@ -23,6 +23,21 @@ Item {
     property bool syncingSelection: false
     Component.onCompleted: openSection(currentSection, "")
     property string searchQuery: ""
+    property string appearanceTab: "style"
+    function themeTabFor(section, subSection) {
+        if (section === 6) return "panels";
+        if (["colors", "palette", "picker", "presets", "wallpaper", "apps"].includes(subSection)) return "colors";
+        if (subSection === "general") return "typography";
+        if (["performance", "motion", "blur", "shadow", "variants"].includes(subSection)) return "effects";
+        return "style";
+    }
+    readonly property var appearancePages: [
+        {label: "Style", section: 4, subSection: "style", tab: "style"},
+        {label: "Colors", section: 4, subSection: "colors", tab: "colors"},
+        {label: "Typography", section: 4, subSection: "general", tab: "typography"},
+        {label: "Effects", section: 4, subSection: "performance", tab: "effects"},
+        {label: "Panels & widgets", section: 6, subSection: "", tab: "panels"}
+    ]
 
     onFilteredSectionsChanged: {
         if (searchQuery.length > 0) {
@@ -49,6 +64,8 @@ Item {
             section = subSection === "performance" ? 4 : 6;
             subSection = subSection === "system" ? "storage" : subSection || "weather";
         }
+        if (section === 4 || section === 6)
+            appearanceTab = themeTabFor(section, subSection);
         currentSection = section;
         GlobalStates.settingsCurrentTab = section;
         dispatchSubSection(section, subSection);
@@ -197,7 +214,7 @@ Item {
         {label: "Assistant & GitHub", subLabel: "AI preferences and repositories", icon: Icons.robot, isIcon: true, section: 3, sections: [3, 10]}
     ]
     readonly property var activeCategory: categoryModel.find(item => item.sections.includes(currentSection)) || categoryModel[0]
-    readonly property var categoryPages: activeCategory.sections.map(id => sectionModel.find(item => item.section === id))
+    readonly property var categoryPages: activeCategory.section === 4 ? appearancePages : activeCategory.sections.map(id => sectionModel.find(item => item.section === id))
 
     // Original sections model
     readonly property var sectionModel: [
@@ -467,10 +484,10 @@ Item {
                         model: root.categoryPages
                         delegate: SettingsButton {
                             required property var modelData
-                            objectName: "settings-page-" + modelData.section
+                            objectName: modelData.tab ? "settings-theme-tab-" + modelData.tab : "settings-page-" + modelData.section
                             text: modelData.label
-                            highlighted: root.currentSection === modelData.section
-                            onClicked: root.openSection(modelData.section, "")
+                            highlighted: modelData.tab ? root.appearanceTab === modelData.tab : root.currentSection === modelData.section
+                            onClicked: root.openSection(modelData.section, modelData.subSection || "")
                         }
                     }
                 }
@@ -547,6 +564,8 @@ Item {
                             asynchronous: true
                             onLoaded: {
                                 item.maxContentWidth = Qt.binding(() => contentArea.maxContentWidth);
+                                if (sectionId === 4)
+                                    item.navigationTab = Qt.binding(() => root.appearanceTab);
                                 if (expandContent) {
                                     scrollContent.interactive = false;
                                     scrollContent.clip = false;

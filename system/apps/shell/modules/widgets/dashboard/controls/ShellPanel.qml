@@ -578,7 +578,8 @@ Item {
 
                     WeatherSettings {
                         property string settingsAnchor: "weather"
-                        collapsible: true
+                        visible: !root.groupContainer?.tabbedNavigation || root.groupContainer.navigationTab === "panels"
+                        collapsible: !root.groupContainer?.tabbedNavigation
                         objectName: "shell-group-weather"
                         parent: root.groupContainer || contentColumn
                         Layout.columnSpan: root.groupContainer && expanded ? Math.min(2, root.groupContainer.columns) : 1
@@ -586,7 +587,8 @@ Item {
                     }
                     StorageSettings {
                         property string settingsAnchor: "storage"
-                        collapsible: true
+                        visible: !root.groupContainer?.tabbedNavigation || root.groupContainer.navigationTab === "panels"
+                        collapsible: !root.groupContainer?.tabbedNavigation
                         objectName: "shell-group-storage"
                         parent: root.groupContainer || contentColumn
                         Layout.columnSpan: root.groupContainer && expanded ? Math.min(2, root.groupContainer.columns) : 1
@@ -598,7 +600,8 @@ Item {
                     // ═══════════════════════════════════════════════════════════════
                     SettingsGroup {
                         property string settingsAnchor: "bar"
-                        collapsible: true
+                        visible: !root.groupContainer?.tabbedNavigation || root.groupContainer.navigationTab === "panels"
+                        collapsible: !root.groupContainer?.tabbedNavigation
                         objectName: "shell-group-bar"
                         parent: root.groupContainer || contentColumn
                         Layout.columnSpan: root.groupContainer && expanded ? Math.min(2, root.groupContainer.columns) : 1
@@ -711,7 +714,8 @@ Item {
                     // ═══════════════════════════════════════════════════════════════
                     SettingsGroup {
                         property string settingsAnchor: "lockscreen"
-                        collapsible: true
+                        visible: !root.groupContainer?.tabbedNavigation || root.groupContainer.navigationTab === "panels"
+                        collapsible: !root.groupContainer?.tabbedNavigation
                         objectName: "shell-group-lockscreen"
                         parent: root.groupContainer || contentColumn
                         Layout.columnSpan: root.groupContainer && expanded ? Math.min(2, root.groupContainer.columns) : 1
@@ -757,7 +761,8 @@ Item {
                     // ═══════════════════════════════════════════════════════════════
                     SettingsGroup {
                         property string settingsAnchor: "system"
-                        collapsible: true
+                        visible: !root.groupContainer?.tabbedNavigation || root.groupContainer.navigationTab === "panels"
+                        collapsible: !root.groupContainer?.tabbedNavigation
                         objectName: "shell-group-system"
                         parent: root.groupContainer || contentColumn
                         Layout.columnSpan: root.groupContainer && expanded ? Math.min(2, root.groupContainer.columns) : 1
@@ -795,7 +800,8 @@ Item {
                     // ═══════════════════════════════════════════════════════════════
                     SettingsGroup {
                         property string settingsAnchor: "sidebar"
-                        collapsible: true
+                        visible: !root.groupContainer?.tabbedNavigation || root.groupContainer.navigationTab === "panels"
+                        collapsible: !root.groupContainer?.tabbedNavigation
                         objectName: "shell-group-sidebar"
                         parent: root.groupContainer || contentColumn
                         Layout.columnSpan: root.groupContainer && expanded ? Math.min(2, root.groupContainer.columns) : 1

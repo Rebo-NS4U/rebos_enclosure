@@ -387,19 +387,27 @@ ShellRoot {
        let group = fixture.find(settings, "shell-group-" + section);
        fixture.check(group.parent === sharedGrid && group.visible, "Shell dropdown joins Theme dropdowns: " + section);
       }
-      fixture.check(fixture.find(settings, "shell-group-bar").expanded, "Shell search opens a reparented dropdown");
       let barGroup = fixture.find(settings, "shell-group-bar");
-      let weatherGroup = fixture.find(settings, "shell-group-weather");
-      scroll.contentY = weatherGroup.mapToItem(scroll.contentItem, 0, 0).y;
-      tester.wait(30);
-      tester.mouseClick(fixture.find(weatherGroup, "shell-group-weather-expand")); tester.wait(60);
-      fixture.check(weatherGroup.expanded && !barGroup.expanded, "Opening a group closes its sibling");
-      let headerY = weatherGroup.mapToItem(scroll, 0, 0).y;
-      fixture.check(headerY >= -1 && headerY < scroll.height, "Opened accordion header stays in view");
+      fixture.check(settings.appearanceTab === "panels" && !barGroup.collapsible, "Shell links show direct panel controls");
+      const expectedTabs = [
+       {id: "style", anchors: []},
+       {id: "colors", anchors: ["colors"]},
+       {id: "typography", anchors: ["general"]},
+       {id: "effects", anchors: ["performance", "motion", "blur", "shadow", "variants", "variants"]},
+       {id: "panels", anchors: ["weather", "storage", "bar", "lockscreen", "system", "sidebar"]}
+      ];
+      for (const tab of expectedTabs) {
+       const button = fixture.find(settings, "settings-theme-tab-" + tab.id);
+       fixture.check(button && button.visible, "Theme section tab reachable: " + tab.id);
+       tester.mouseClick(button); tester.wait(100);
+       fixture.check(settings.appearanceTab === tab.id && button.highlighted, "Theme tab activates: " + tab.id);
+       const groups = Array.from(sharedGrid.children).filter(child => child.visible && child.settingsAnchor);
+       fixture.check(groups.map(child => child.settingsAnchor).sort().join(",") === tab.anchors.slice().sort().join(","), "Only selected tab controls appear: " + tab.id);
+       fixture.check(groups.every(child => !child.collapsible), "Tab controls have visible headings without dropdowns");
+      }
       settings.openSection(4, "motion"); tester.wait(100);
-      fixture.check(!weatherGroup.expanded && fixture.find(settings, "theme-group-motion").expanded, "Search enforces one open group across shell and appearance");
+      fixture.check(settings.appearanceTab === "effects" && !barGroup.visible && fixture.find(settings, "theme-group-motion").visible, "Deep link activates Effects");
       settings.openSection(6, "bar"); tester.wait(100);
-      fixture.check(barGroup.expanded && !fixture.find(settings, "theme-group-motion").expanded, "Search switches the accordion back to shell controls");
       fixture.check(scroll.contentY > 0, "Search links scroll to the target panel");
       settings.openSection(4, "blur"); tester.wait(200);
       let themePanel = fixture.find(settings, "settings-panel-4").item;
@@ -433,17 +441,12 @@ ShellRoot {
       nestedList.destroy();
       settings.width = 1920; settings.height = 1080;
       settings.openSection(4, ""); tester.wait(100);
-      function collapseGroups(item) {
-       if (item.collapsible) item.expanded = false;
-       for (const child of item.children || []) collapseGroups(child);
-      }
-      collapseGroups(settings); tester.wait(100);
-      fixture.check(sharedGrid.columns === 1, "Fullscreen settings keeps a vertical accordion");
+      fixture.check(settings.appearanceTab === "style", "Appearance opens the Style tab by default");
       fixture.check(fixture.find(settings, "theme-preview-grid").columns === 6, "Fullscreen theme previews fit in one row");
-      fixture.check(scroll.contentHeight > scroll.height, "Accordion remains scrollable at fullscreen");
+      fixture.check(scroll.contentHeight <= scroll.height, "Style page does not include hidden settings groups");
       settings.openSection(6, "bar"); tester.wait(80);
       let fullscreenBar = fixture.find(settings, "shell-group-bar");
-      fixture.check(fullscreenBar.expanded && Math.abs(fullscreenBar.width - sharedGrid.width) < 1, "Expanded accordion uses the available width");
+      fixture.check(!fullscreenBar.collapsible && fullscreenBar.visible && Math.abs(fullscreenBar.width - sharedGrid.width) < 1, "Panel controls use the available width");
       settings.width = 600; tester.wait(80);
       fixture.check(sharedGrid.columns === 1, "Narrow settings restores one readable column");
       settings.destroy();

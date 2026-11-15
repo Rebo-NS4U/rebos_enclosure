@@ -17,6 +17,8 @@ Item {
     readonly property int contentWidth: Math.min(width, maxContentWidth)
     readonly property real sideMargin: (width - contentWidth) / 2
 
+    property string navigationTab: ""
+    readonly property bool tabbedNavigation: navigationTab.length > 0
     property string currentSection: ""
     property real sectionOffset: 0
     onCurrentSectionChanged: Qt.callLater(scrollToSection)
@@ -181,6 +183,7 @@ Item {
 
 
                     ShellStyleSettings {
+                        visible: !root.tabbedNavigation || root.navigationTab === "style"
                         property string settingsAnchor: "style"
                         Layout.fillWidth: true
                     }
@@ -189,21 +192,27 @@ Item {
                     GridLayout {
                         id: advancedGrid
                         objectName: "theme-advanced-grid"
+                        visible: !root.tabbedNavigation || root.navigationTab !== "style"
                         Layout.fillWidth: true
                         columns: 1
-                        property bool exclusiveSettingsGroups: true
+                        readonly property bool tabbedNavigation: root.tabbedNavigation
+                        readonly property string navigationTab: root.navigationTab
+                        property bool exclusiveSettingsGroups: !root.tabbedNavigation
                         columnSpacing: Styling.spacing(12)
                         rowSpacing: Styling.spacing(12)
                     PaletteSettings {
+                        collapsible: !root.tabbedNavigation
                         onCurrentPageChanged: mainFlickable.contentY = 0
+                        visible: !root.tabbedNavigation || root.navigationTab === "colors"
                         property string settingsAnchor: "colors"
                         Layout.fillWidth: true
                         Layout.columnSpan: expanded ? Math.min(2, advancedGrid.columns) : 1
                         Layout.alignment: Qt.AlignTop
                     }
                     PerformanceSettings {
+                        visible: !root.tabbedNavigation || root.navigationTab === "effects"
                         property string settingsAnchor: "performance"
-                        collapsible: true
+                        collapsible: !root.tabbedNavigation
                         Layout.columnSpan: expanded ? Math.min(2, advancedGrid.columns) : 1
                         Layout.alignment: Qt.AlignTop
                         objectName: "theme-group-performance"
@@ -211,8 +220,9 @@ Item {
 
                     MotionSettings {
                         Layout.fillWidth: true
+                        visible: !root.tabbedNavigation || root.navigationTab === "effects"
                         property string settingsAnchor: "motion"
-                        collapsible: true
+                        collapsible: !root.tabbedNavigation
                         Layout.columnSpan: expanded ? Math.min(2, advancedGrid.columns) : 1
                         Layout.alignment: Qt.AlignTop
                         objectName: "theme-group-motion"
@@ -220,8 +230,9 @@ Item {
 
                     BlurSettings {
                         Layout.fillWidth: true
+                        visible: !root.tabbedNavigation || root.navigationTab === "effects"
                         property string settingsAnchor: "blur"
-                        collapsible: true
+                        collapsible: !root.tabbedNavigation
                         Layout.columnSpan: expanded ? Math.min(2, advancedGrid.columns) : 1
                         Layout.alignment: Qt.AlignTop
                         objectName: "theme-group-blur"
@@ -230,8 +241,9 @@ Item {
 
                     // General section
                     SettingsGroup {
+                        visible: !root.tabbedNavigation || root.navigationTab === "typography"
                         property string settingsAnchor: "general"
-                        collapsible: true
+                        collapsible: !root.tabbedNavigation
                         Layout.columnSpan: expanded ? Math.min(2, advancedGrid.columns) : 1
                         Layout.alignment: Qt.AlignTop
                         objectName: "theme-group-general"
@@ -488,8 +500,9 @@ Item {
 
                     // Shadow section
                     SettingsGroup {
+                        visible: !root.tabbedNavigation || root.navigationTab === "effects"
                         property string settingsAnchor: "shadow"
-                        collapsible: true
+                        collapsible: !root.tabbedNavigation
                         Layout.columnSpan: expanded ? Math.min(2, advancedGrid.columns) : 1
                         Layout.alignment: Qt.AlignTop
                         objectName: "theme-group-shadow"
@@ -840,8 +853,9 @@ Item {
 
                     // Variant selector section
                     SettingsGroup {
+                        visible: !root.tabbedNavigation || root.navigationTab === "effects"
                         property string settingsAnchor: "variants"
-                        collapsible: true
+                        collapsible: !root.tabbedNavigation
                         Layout.columnSpan: expanded ? Math.min(2, advancedGrid.columns) : 1
                         Layout.alignment: Qt.AlignTop
                         objectName: "theme-group-variants"
@@ -860,8 +874,9 @@ Item {
 
                     // Editor section
                     SettingsGroup {
+                        visible: !root.tabbedNavigation || root.navigationTab === "effects"
                         property string settingsAnchor: "variants"
-                        collapsible: true
+                        collapsible: !root.tabbedNavigation
                         Layout.columnSpan: expanded ? Math.min(2, advancedGrid.columns) : 1
                         Layout.alignment: Qt.AlignTop
                         objectName: "theme-group-variants"
