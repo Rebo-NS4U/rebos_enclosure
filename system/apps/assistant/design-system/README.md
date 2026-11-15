@@ -89,3 +89,7 @@ All three preserve selected semantic action colors, readable centers, compositor
 The remaining nine themes share the same level of material detail as Canopy, Orbital and Metropolis. Glass Vault adds refractive grazing bands behind its rounded clamps. Radar Station adds soft scope illumination and radial divisions to its etched bearing scales. Suspended Film separates floating sheets with curved grazing reflections. Monolith adds natural stone strata along the lower slab edge. Blueprint includes a small architectural truss drawing within its ruled sheet. Terminal Hardware adds brushed upper-bezel lines and recessed panel seams. Frosted Glass grows branching crystals from the upper rim. Tinted layers fading colored-glass planes at its upper edge. Clear Glass keeps restrained grazing reflections and a lower meniscus.
 
 Details use selected semantic palette colors and static geometry. Glass layers clip to the shared rounded frame; inset surfaces retain simpler decoration. Clear Glass remains the final entry. No theme imposes a new palette, and native application export colors remain derived from the selected palette.
+
+## Metropolis bar
+
+The collapsed bar uses a dedicated shallow city cornice: a miniature skyline and sparse lit windows in the bottom eight pixels, a softly illuminated roofline and stepped end caps. It follows the selected background, primary and tertiary colors. Expanded panels retain the full facade and cloud treatment. The finish is static, clips to the bar corners and repaints when the bar expands or collapses.

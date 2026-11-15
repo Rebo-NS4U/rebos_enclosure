@@ -126,6 +126,14 @@ class MergedBarTests(unittest.TestCase):
         self.run_harness(HARNESS)
 
     @unittest.skipUnless(shutil.which('qs'), 'Quickshell required')
+    def test_metropolis_finish_tracks_bar_expansion(self):
+        harness = HARNESS.replace('for (const size of [1920, 1280]) {', 'Config.theme.shellStyle = "metropolis"; tester.wait(100); for (const size of [1920, 1280]) {')
+        harness = harness.replace('const body = tester.findChild(bar, "typing-island-container");', 'const findFinish = node => { if (node.objectName === "wallpaper-theme-canvas") return node; for (const child of node.children || []) { const result = findFinish(child); if (result) return result; } return null; }; const finish = findFinish(bar);\n      if (!finish || !finish.barSurface) throw Error("Missing collapsed city finish");\n      const body = tester.findChild(bar, "typing-island-container");')
+        harness = harness.replace('bar.expand(mode); tester.wait(50);', 'bar.expand(mode); tester.wait(50); if (finish.barSurface) throw Error("Expanded panel retained compact city finish");')
+        harness = harness.replace('bar.collapse(); tester.wait(50);', 'bar.collapse(); tester.wait(50); if (!finish.barSurface) throw Error("Collapsed bar lost city finish");')
+        self.run_harness(harness)
+
+    @unittest.skipUnless(shutil.which('qs'), 'Quickshell required')
     def test_menu_crossfade_interruptions_and_reduced_motion(self):
         self.run_harness(MOTION_HARNESS)
 

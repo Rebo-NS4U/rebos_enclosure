@@ -14,6 +14,7 @@ ClippingRectangle {
 
     required property string variant
     property string styleOverride: ""
+    property bool barSurface: false
     // Color samples need their exact fill, without a surface shader over it.
     property color fillColor: "transparent"
     readonly property bool hasFillColor: fillColor.a > 0
@@ -528,6 +529,8 @@ ClippingRectangle {
         sourceComponent: Canvas {
             anchors.fill: parent
             objectName: "wallpaper-theme-canvas"
+            readonly property bool barSurface: root.barSurface
+            onBarSurfaceChanged: requestPaint()
             readonly property string finish: root.styleOverride || Styling.shellStyle
             readonly property real cornerRadius: root.effectiveCornerRadius
             readonly property color backdrop: Colors.background
@@ -650,7 +653,40 @@ ClippingRectangle {
                     sky.addColorStop(0,frame(outer?0.12:0.045));
                     sky.addColorStop(0.5,frame(0.025));sky.addColorStop(1,frame(0));
                     ctx.fillStyle=sky;ctx.fillRect(0,0,width,Math.min(height,85));
-                    if(outer){
+                    if(outer && barSurface){
+                        // A city cornice designed for the bar's shallow proportions.
+                        // Architecture occupies only the bottom eight pixels; controls stay clear.
+                        const margin=Math.max(16,cornerRadius+4),base=height-2;
+                        ctx.strokeStyle=frame(0.30);ctx.lineWidth=0.8;
+                        ctx.beginPath();ctx.moveTo(margin,base);ctx.lineTo(width-margin,base);ctx.stroke();
+                        let building=0;
+                        for(let x=margin+5;x<width-margin-8;x+=22,building++){
+                            const roof=base-[4,7,5,8,3,6][building%6];
+                            const right=Math.min(width-margin,x+16);
+                            ctx.fillStyle=facade(0.30);ctx.fillRect(x,roof,right-x,base-roof);
+                            ctx.strokeStyle=frame(building%3===0?0.38:0.20);
+                            ctx.beginPath();ctx.moveTo(x,base);ctx.lineTo(x,roof);
+                            ctx.lineTo(right,roof);ctx.lineTo(right,base);ctx.stroke();
+                            ctx.fillStyle=windowLight(building%3===0?0.58:0.30);
+                            for(let column=0;column<3;column++){
+                                if((building+column)%3!==0 && x+3+column*4<right-1)
+                                    ctx.fillRect(x+3+column*4,base-3,1.5,1.5);
+                            }
+                        }
+                        // A luminous roofline and stepped end caps frame the skyline.
+                        const crown=ctx.createLinearGradient(0,0,width,0);
+                        crown.addColorStop(0,frame(0));crown.addColorStop(0.25,frame(0.22));
+                        crown.addColorStop(0.50,frame(0.38));crown.addColorStop(0.75,frame(0.22));crown.addColorStop(1,frame(0));
+                        ctx.strokeStyle=crown;ctx.lineWidth=1;
+                        ctx.beginPath();ctx.moveTo(margin,3);ctx.lineTo(width-margin,3);ctx.stroke();
+                        for(const side of [0,1]){
+                            ctx.save();if(side){ctx.translate(width,0);ctx.scale(-1,1);}
+                            ctx.strokeStyle=frame(0.36);ctx.lineWidth=1;
+                            ctx.beginPath();ctx.moveTo(5,height*0.66);ctx.lineTo(5,height*0.40);
+                            ctx.lineTo(8,height*0.40);ctx.lineTo(8,height*0.25);
+                            ctx.lineTo(12,height*0.25);ctx.stroke();ctx.restore();
+                        }
+                    }else if(outer){
                         // Soft cloud banks hang from the upper edge, fading before the content.
                         const cloudDepth=Math.min(52,height*0.18);
                         for(let layer=0;layer<2;layer++){

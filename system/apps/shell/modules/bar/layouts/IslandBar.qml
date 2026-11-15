@@ -749,6 +749,7 @@ Item {
         // Island body container
         StyledRect {
             id: islandBody
+            barSurface: !root.isExpanded
             anchors.fill: parent
             variant: "bg"
             backgroundOpacity: BarAppearance.panelOpacity(root.isExpanded)

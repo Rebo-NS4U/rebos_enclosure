@@ -18,6 +18,7 @@ Item {
     StyledRect {
         anchors.fill: parent
         variant: "bg"
+        barSurface: true
         backgroundOpacity: root.bgOpacity
         visible: root.backgroundVisible
         radius: Styling.radius(0)
