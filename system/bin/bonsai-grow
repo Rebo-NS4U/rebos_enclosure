@@ -1440,17 +1440,14 @@ def backlit_ink(ink, daylight):
 
 
 def glass_reflections(texture_seed, left_corner):
-    """One family of staggered slash glints, fixed for this terminal."""
-    rng = random.Random(texture_seed)
-    x = 49 if left_corner else 1
-    y = rng.randint(3, 10)
-    length = rng.randint(3, 5)
-    # A long reflection with a shorter parallel echo and an occasional fragment.
+    """Pick a composed upper, side or lower glint opposite the celestial body."""
+    # Fixed anchors and matching lengths keep every variation inset from the
+    # rim, away from the pot, and out of the central tree silhouette.
+    presets = ((2, 3, 4, 2), (1, 7, 4, 2), (2, 14, 3, 2))
+    inset, y, length, echo = random.Random(texture_seed).choice(presets)
+    x = 48 + inset if left_corner else inset
     points = [(length - 1 - step, step) for step in range(length)]
-    echo = rng.randint(2, 3)
     points += [(length + 1 - step, step + 1) for step in range(echo)]
-    if rng.choice((False, True)):
-        points += [(6, 4), (5, 5)]
     return tuple((x + dx, y + dy) for dx, dy in points)
 
 
