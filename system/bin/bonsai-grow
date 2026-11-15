@@ -1352,18 +1352,25 @@ def sky_pane(canvas, hour):
     progress = ((hour - 6) if daylight else (hour - 18) % 24) / 12
     cx = round(5 + 46 * progress)
     cy = round(8 - 6 * math.sin(math.pi * progress))
-    # Wide terminal cells need an eleven-column, five-row disc to read round.
-    # Broken shading keeps the enlarged bodies in the quiet ink-wash theme.
-    shape = (
-        ("   ░▒▒▒░   ", " ░▒▒▒▒▒▒▒░ ", "░▒▒▒▒☼▒▒▒▒░",
-         " ░▒▒▒▒▒▒▒░ ", "   ░▒▒▒░   ")
-        if daylight else
-        ("   ░▒▒░    ", " ░▒▒░      ", "░▒☾░       ",
-         " ░▒▒░      ", "   ░▒▒░    ")
-    )
-    marks = [(cx + x - 5, cy + y - 2, glyph, "sky_orb")
-             for y, row in enumerate(shape) for x, glyph in enumerate(row)
-             if glyph != " "]
+    # Half-blocks give a clean circular silhouette at terminal cell proportions.
+    # Cut a second offset disc from the moon to form a continuous crescent.
+    marks = []
+    for y in range(5):
+        for x in range(11):
+            dx = (x - 5) / 5.5
+            halves = []
+            for half in range(2):
+                dy = (y * 2 + half - 4.5) / 5
+                inside = dx * dx + dy * dy <= 1
+                shadow = (dx - 0.45) ** 2 + (dy + 0.16) ** 2 < 0.87 ** 2
+                halves.append(inside and (daylight or not shadow))
+            glyph = {(True, True): "█", (True, False): "▀",
+                     (False, True): "▄"}.get(tuple(halves))
+            if glyph:
+                distance = math.hypot(dx, (y - 2) / 2.5)
+                role = "sky_orb_rim" if distance > 0.82 else (
+                    "sky_orb_light" if dx < -0.15 else "sky_orb")
+                marks.append((cx + x - 5, cy + y - 2, glyph, role))
     if not daylight:
         marks += [(x, y, "·", "sky_star") for x, y in
                   ((7, 2), (19, 1), (39, 3), (49, 1), (12, 6), (44, 7))]
@@ -1832,8 +1839,13 @@ def render(
     palette["glass"] = "\033[0;38;2;{};{};{}m".format(
         *(round(105 * 0.85 + channel * 0.15) for channel in glass_rgb)
     )
-    palette["sky_orb"] = "\033[0;38;2;{};{};{}m".format(
-        *((170, 155, 121) if 6 <= hour < 18 else (150, 158, 173)))
+    # Warm porcelain daylight and cool pearl moonlight, with a dim outer rim.
+    body, light, rim = (
+        ((182, 149, 99), (207, 179, 128), (112, 94, 67)) if 6 <= hour < 18
+        else ((156, 169, 177), (193, 202, 203), (90, 108, 121))
+    )
+    for role, rgb in (("sky_orb", body), ("sky_orb_light", light), ("sky_orb_rim", rim)):
+        palette[role] = "\033[0;38;2;{};{};{}m".format(*rgb)
     palette["sky_star"] = "\033[0;38;2;88;94;111m"
     palette["sky_mist"] = "\033[0;38;2;57;62;63m"
     output = []

@@ -395,13 +395,15 @@ class BonsaiGrowTests(unittest.TestCase):
         self.assertEqual(write.call_count, 2)
         self.assertNotEqual(write.call_args_list[0].args[1], write.call_args_list[1].args[1])
         self.assertEqual([c.args[0] for c in sleep.call_args_list], [30, 30])
-        for hours, glyph in (((7, 12, 17), '☼'), ((19, 0, 5), '☾')):
+        for hours in ((7, 12, 17), (19, 0, 5)):
             positions = []
             for hour in hours:
                 canvas = [[(' ', '') for _ in range(57)] for _ in range(24)]
                 bonsai.sky_pane(canvas, hour)
-                positions.append(next((x, y) for y, row in enumerate(canvas)
-                                      for x, cell in enumerate(row) if cell[0] == glyph))
+                body = [(x, y) for y, row in enumerate(canvas)
+                        for x, (_, ink) in enumerate(row) if ink.startswith('sky_orb')]
+                positions.append((sum(x for x, y in body) / len(body),
+                                  sum(y for x, y in body) / len(body)))
             self.assertLess(positions[0][0], positions[1][0])
             self.assertLess(positions[1][0], positions[2][0])
             self.assertLess(positions[1][1], positions[0][1])
@@ -411,7 +413,7 @@ class BonsaiGrowTests(unittest.TestCase):
             canvas = [[(' ', '') for _ in range(57)] for _ in range(24)]
             bonsai.sky_pane(canvas, hour)
             body = [(x, y) for y, row in enumerate(canvas)
-                    for x, (_, ink) in enumerate(row) if ink == 'sky_orb']
+                    for x, (_, ink) in enumerate(row) if ink.startswith('sky_orb')]
             self.assertGreaterEqual(len(body), 20)
             self.assertGreaterEqual(max(x for x, y in body) - min(x for x, y in body), 5)
             self.assertEqual(max(y for x, y in body) - min(y for x, y in body), 4)
@@ -546,9 +548,11 @@ class BonsaiGrowTests(unittest.TestCase):
         import re
         self.assertEqual(bonsai.sky_at_hour(0), bonsai.sky_at_hour(24))
         self.assertNotEqual(bonsai.sky_at_hour(0), bonsai.sky_at_hour(12))
-        for hour, orb in ((0, '☾'), (12, '☼')):
+        for hour in (0, 12):
             image = bonsai.render(0, 42, False, 59, fixed_height=True, hour=hour)
-            self.assertIn(orb, image)
+            self.assertIn('█', image)
+            self.assertNotIn('☼', image)
+            self.assertNotIn('☾', image)
             self.assertEqual(len(image.splitlines()), 26)
             self.assertTrue(all(len(row) == 59 for row in image.splitlines()))
         for hour in range(24):
