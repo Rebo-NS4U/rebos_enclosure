@@ -11,7 +11,9 @@
     ".cache/rebos_shell/kitty.conf",
     ".cache/rebos_shell/niri-colors.kdl",
     ".cache/rebos_shell/wallpapers.json",
+    ".config/autostart/blueman.desktop",
     ".config/btop",
+    ".config/enclosure/theme/widgets.qss",
     ".config/environment.d/90-rebos-desktop.conf",
     ".config/fish",
     ".config/fuzzel",
@@ -56,17 +58,21 @@
     ".local/bin/ani-cli",
     ".local/bin/anime-streamer",
     ".local/bin/assistant-sudo",
+    ".local/bin/bonsai-grow",
     ".local/bin/colorscheme",
     ".local/bin/config-browser",
     ".local/bin/emoji-dmenu",
     ".local/bin/enclosure-dev",
+    ".local/bin/nmtui",
+    ".local/bin/nmtui-connect",
+    ".local/bin/nmtui-edit",
+    ".local/bin/nmtui-hostname",
     ".local/bin/project-picker",
     ".local/bin/rebos-assistant",
     ".local/bin/rebos-clipboard",
     ".local/bin/rebos_shell",
     ".local/bin/regreet-sync",
     ".local/bin/rice",
-    ".local/bin/bonsai-grow",
     ".local/bin/t",
     ".local/bin/thinkpad-fan-control",
     ".local/bin/wallpaper",
@@ -76,42 +82,37 @@
     ".local/share/applications/config-browser.desktop",
     ".local/share/applications/enclosure-development.desktop",
     ".local/share/applications/rebos-assistant.desktop",
+    ".local/share/applications/rebos-shell-anime.desktop",
+    ".local/share/applications/rebos-shell-battery.desktop",
+    ".local/share/applications/rebos-shell-bluetooth.desktop",
+    ".local/share/applications/rebos-shell-calendar.desktop",
+    ".local/share/applications/rebos-shell-dashboard.desktop",
+    ".local/share/applications/rebos-shell-file-shelf.desktop",
+    ".local/share/applications/rebos-shell-microphone.desktop",
+    ".local/share/applications/rebos-shell-music.desktop",
+    ".local/share/applications/rebos-shell-network.desktop",
+    ".local/share/applications/rebos-shell-notes.desktop",
+    ".local/share/applications/rebos-shell-notifications.desktop",
+    ".local/share/applications/rebos-shell-power.desktop",
+    ".local/share/applications/rebos-shell-projects.desktop",
     ".local/share/applications/rebos-shell-settings.desktop",
+    ".local/share/applications/rebos-shell-sound.desktop",
+    ".local/share/applications/rebos-shell-system-monitor.desktop",
+    ".local/share/applications/rebos-shell-wallpapers.desktop",
+    ".local/share/applications/rebos-shell-weather.desktop",
     ".local/share/applications/thinkpad-fan-control.desktop",
     ".local/share/applications/wallpaper-switcher.desktop",
+    ".local/share/applications/zotify-gui.desktop",
     ".local/share/dbus-1/services/rs.wl-gammarelay.service",
     ".local/share/fonts/opendyslexic",
     ".local/share/fonts/phosphor",
     ".local/share/fonts/rebos_shell",
     ".local/share/icons/GoogleDot-Black",
+    ".local/share/wallpapers/Ismail Inceoglu - Seventeenth",
     ".local/share/wallpapers/New-1920x1200",
     ".local/share/wallpapers/default.jpg",
     "code/anime-streamer",
-    "code/rebos-assistant",
-    ".config/enclosure/theme/widgets.qss",
-    ".local/share/applications/rebos-shell-notes.desktop",
-    ".local/share/applications/rebos-shell-file-shelf.desktop",
-    ".local/share/applications/rebos-shell-calendar.desktop",
-    ".local/share/applications/rebos-shell-weather.desktop",
-    ".local/share/applications/rebos-shell-system-monitor.desktop",
-    ".local/share/applications/rebos-shell-projects.desktop",
-    ".local/share/applications/rebos-shell-dashboard.desktop",
-    ".local/share/applications/rebos-shell-notifications.desktop",
-    ".local/share/applications/rebos-shell-sound.desktop",
-    ".local/share/applications/rebos-shell-microphone.desktop",
-    ".local/share/applications/rebos-shell-network.desktop",
-    ".local/share/applications/rebos-shell-bluetooth.desktop",
-    ".local/share/applications/rebos-shell-battery.desktop",
-    ".local/share/applications/rebos-shell-power.desktop",
-    ".local/share/applications/rebos-shell-wallpapers.desktop",
-    ".local/share/applications/rebos-shell-anime.desktop",
-    ".config/autostart/blueman.desktop",
-    ".local/share/applications/rebos-shell-music.desktop",
-    ".local/bin/nmtui",
-    ".local/bin/nmtui-connect",
-    ".local/bin/nmtui-edit",
-    ".local/bin/nmtui-hostname",
-    ".local/share/applications/zotify-gui.desktop"
+    "code/rebos-assistant"
   ],
   "layout": 2,
   "sources": {
@@ -143,8 +144,16 @@
       "source": "system/cache-defaults/rebos_shell/wallpapers.json",
       "kind": "cache"
     },
+    ".config/autostart/blueman.desktop": {
+      "source": "config/autostart/blueman.desktop",
+      "kind": "personal"
+    },
     ".config/btop": {
       "source": "config/btop",
+      "kind": "personal"
+    },
+    ".config/enclosure/theme/widgets.qss": {
+      "source": "config/enclosure/theme/widgets.qss",
       "kind": "personal"
     },
     ".config/environment.d/90-rebos-desktop.conf": {
@@ -323,6 +332,10 @@
       "source": "system/bin/assistant-sudo",
       "kind": "managed"
     },
+    ".local/bin/bonsai-grow": {
+      "source": "system/bin/bonsai-grow",
+      "kind": "managed"
+    },
     ".local/bin/colorscheme": {
       "source": "system/bin/colorscheme",
       "kind": "managed"
@@ -337,6 +350,22 @@
     },
     ".local/bin/enclosure-dev": {
       "source": "system/bin/enclosure-dev",
+      "kind": "managed"
+    },
+    ".local/bin/nmtui": {
+      "source": "system/bin/nmtui",
+      "kind": "managed"
+    },
+    ".local/bin/nmtui-connect": {
+      "source": "system/bin/nmtui",
+      "kind": "managed"
+    },
+    ".local/bin/nmtui-edit": {
+      "source": "system/bin/nmtui",
+      "kind": "managed"
+    },
+    ".local/bin/nmtui-hostname": {
+      "source": "system/bin/nmtui",
       "kind": "managed"
     },
     ".local/bin/project-picker": {
@@ -363,8 +392,8 @@
       "source": "system/bin/rice",
       "kind": "managed"
     },
-    ".local/bin/bonsai-grow": {
-      "source": "system/bin/bonsai-grow",
+    ".local/bin/t": {
+      "source": "system/bin/t",
       "kind": "managed"
     },
     ".local/bin/thinkpad-fan-control": {
@@ -399,8 +428,76 @@
       "source": "system/share/applications/rebos-assistant.desktop",
       "kind": "managed"
     },
+    ".local/share/applications/rebos-shell-anime.desktop": {
+      "source": "system/share/applications/rebos-shell-anime.desktop",
+      "kind": "managed"
+    },
+    ".local/share/applications/rebos-shell-battery.desktop": {
+      "source": "system/share/applications/rebos-shell-battery.desktop",
+      "kind": "managed"
+    },
+    ".local/share/applications/rebos-shell-bluetooth.desktop": {
+      "source": "system/share/applications/rebos-shell-bluetooth.desktop",
+      "kind": "managed"
+    },
+    ".local/share/applications/rebos-shell-calendar.desktop": {
+      "source": "system/share/applications/rebos-shell-calendar.desktop",
+      "kind": "managed"
+    },
+    ".local/share/applications/rebos-shell-dashboard.desktop": {
+      "source": "system/share/applications/rebos-shell-dashboard.desktop",
+      "kind": "managed"
+    },
+    ".local/share/applications/rebos-shell-file-shelf.desktop": {
+      "source": "system/share/applications/rebos-shell-file-shelf.desktop",
+      "kind": "managed"
+    },
+    ".local/share/applications/rebos-shell-microphone.desktop": {
+      "source": "system/share/applications/rebos-shell-microphone.desktop",
+      "kind": "managed"
+    },
+    ".local/share/applications/rebos-shell-music.desktop": {
+      "source": "system/share/applications/rebos-shell-music.desktop",
+      "kind": "managed"
+    },
+    ".local/share/applications/rebos-shell-network.desktop": {
+      "source": "system/share/applications/rebos-shell-network.desktop",
+      "kind": "managed"
+    },
+    ".local/share/applications/rebos-shell-notes.desktop": {
+      "source": "system/share/applications/rebos-shell-notes.desktop",
+      "kind": "managed"
+    },
+    ".local/share/applications/rebos-shell-notifications.desktop": {
+      "source": "system/share/applications/rebos-shell-notifications.desktop",
+      "kind": "managed"
+    },
+    ".local/share/applications/rebos-shell-power.desktop": {
+      "source": "system/share/applications/rebos-shell-power.desktop",
+      "kind": "managed"
+    },
+    ".local/share/applications/rebos-shell-projects.desktop": {
+      "source": "system/share/applications/rebos-shell-projects.desktop",
+      "kind": "managed"
+    },
     ".local/share/applications/rebos-shell-settings.desktop": {
       "source": "system/share/applications/rebos-shell-settings.desktop",
+      "kind": "managed"
+    },
+    ".local/share/applications/rebos-shell-sound.desktop": {
+      "source": "system/share/applications/rebos-shell-sound.desktop",
+      "kind": "managed"
+    },
+    ".local/share/applications/rebos-shell-system-monitor.desktop": {
+      "source": "system/share/applications/rebos-shell-system-monitor.desktop",
+      "kind": "managed"
+    },
+    ".local/share/applications/rebos-shell-wallpapers.desktop": {
+      "source": "system/share/applications/rebos-shell-wallpapers.desktop",
+      "kind": "managed"
+    },
+    ".local/share/applications/rebos-shell-weather.desktop": {
+      "source": "system/share/applications/rebos-shell-weather.desktop",
       "kind": "managed"
     },
     ".local/share/applications/thinkpad-fan-control.desktop": {
@@ -409,6 +506,10 @@
     },
     ".local/share/applications/wallpaper-switcher.desktop": {
       "source": "system/share/applications/wallpaper-switcher.desktop",
+      "kind": "managed"
+    },
+    ".local/share/applications/zotify-gui.desktop": {
+      "source": "system/share/applications/zotify-gui.desktop",
       "kind": "managed"
     },
     ".local/share/dbus-1/services/rs.wl-gammarelay.service": {
@@ -431,6 +532,10 @@
       "source": "system/share/icons/GoogleDot-Black",
       "kind": "managed"
     },
+    ".local/share/wallpapers/Ismail Inceoglu - Seventeenth": {
+      "source": "system/share/wallpapers/Ismail Inceoglu - Seventeenth",
+      "kind": "managed"
+    },
     ".local/share/wallpapers/New-1920x1200": {
       "source": "system/share/wallpapers/New-1920x1200",
       "kind": "managed"
@@ -445,106 +550,6 @@
     },
     "code/rebos-assistant": {
       "source": "system/apps/assistant",
-      "kind": "managed"
-    },
-    ".config/enclosure/theme/widgets.qss": {
-      "source": "config/enclosure/theme/widgets.qss",
-      "kind": "personal"
-    },
-    ".local/share/applications/rebos-shell-notes.desktop": {
-      "source": "system/share/applications/rebos-shell-notes.desktop",
-      "kind": "managed"
-    },
-    ".local/share/applications/rebos-shell-file-shelf.desktop": {
-      "source": "system/share/applications/rebos-shell-file-shelf.desktop",
-      "kind": "managed"
-    },
-    ".local/share/applications/rebos-shell-calendar.desktop": {
-      "source": "system/share/applications/rebos-shell-calendar.desktop",
-      "kind": "managed"
-    },
-    ".local/share/applications/rebos-shell-weather.desktop": {
-      "source": "system/share/applications/rebos-shell-weather.desktop",
-      "kind": "managed"
-    },
-    ".local/share/applications/rebos-shell-system-monitor.desktop": {
-      "source": "system/share/applications/rebos-shell-system-monitor.desktop",
-      "kind": "managed"
-    },
-    ".local/share/applications/rebos-shell-projects.desktop": {
-      "source": "system/share/applications/rebos-shell-projects.desktop",
-      "kind": "managed"
-    },
-    ".local/share/applications/rebos-shell-dashboard.desktop": {
-      "source": "system/share/applications/rebos-shell-dashboard.desktop",
-      "kind": "managed"
-    },
-    ".local/share/applications/rebos-shell-notifications.desktop": {
-      "source": "system/share/applications/rebos-shell-notifications.desktop",
-      "kind": "managed"
-    },
-    ".local/share/applications/rebos-shell-sound.desktop": {
-      "source": "system/share/applications/rebos-shell-sound.desktop",
-      "kind": "managed"
-    },
-    ".local/share/applications/rebos-shell-microphone.desktop": {
-      "source": "system/share/applications/rebos-shell-microphone.desktop",
-      "kind": "managed"
-    },
-    ".local/share/applications/rebos-shell-network.desktop": {
-      "source": "system/share/applications/rebos-shell-network.desktop",
-      "kind": "managed"
-    },
-    ".local/share/applications/rebos-shell-bluetooth.desktop": {
-      "source": "system/share/applications/rebos-shell-bluetooth.desktop",
-      "kind": "managed"
-    },
-    ".local/share/applications/rebos-shell-battery.desktop": {
-      "source": "system/share/applications/rebos-shell-battery.desktop",
-      "kind": "managed"
-    },
-    ".local/share/applications/rebos-shell-power.desktop": {
-      "source": "system/share/applications/rebos-shell-power.desktop",
-      "kind": "managed"
-    },
-    ".local/share/applications/rebos-shell-wallpapers.desktop": {
-      "source": "system/share/applications/rebos-shell-wallpapers.desktop",
-      "kind": "managed"
-    },
-    ".local/share/applications/rebos-shell-anime.desktop": {
-      "source": "system/share/applications/rebos-shell-anime.desktop",
-      "kind": "managed"
-    },
-    ".local/bin/t": {
-      "source": "system/bin/t",
-      "kind": "managed"
-    },
-    ".config/autostart/blueman.desktop": {
-      "source": "config/autostart/blueman.desktop",
-      "kind": "personal"
-    },
-    ".local/share/applications/rebos-shell-music.desktop": {
-      "source": "system/share/applications/rebos-shell-music.desktop",
-      "kind": "managed"
-    },
-    ".local/bin/nmtui": {
-      "source": "system/bin/nmtui",
-      "kind": "managed"
-    },
-    ".local/bin/nmtui-connect": {
-      "source": "system/bin/nmtui",
-      "kind": "managed"
-    },
-    ".local/bin/nmtui-edit": {
-      "source": "system/bin/nmtui",
-      "kind": "managed"
-    },
-    ".local/bin/nmtui-hostname": {
-      "source": "system/bin/nmtui",
-      "kind": "managed"
-    },
-    ".local/share/applications/zotify-gui.desktop": {
-      "source": "system/share/applications/zotify-gui.desktop",
       "kind": "managed"
     }
   }
