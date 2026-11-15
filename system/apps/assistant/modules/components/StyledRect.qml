@@ -572,20 +572,31 @@ ClippingRectangle {
                     const fabric=a=>Qt.rgba(accent.r*0.65+secondaryAccent.r*0.35,accent.g*0.65+secondaryAccent.g*0.35,accent.b*0.65+secondaryAccent.b*0.35,a);
                     if(barSurface){
                         // A sculpted header canopy; keep the conversation surface quiet.
-                        // Four stable silhouettes: balanced, left-swept, right-swept, broad.
-                        const v=((canopyVariation % 4)+4)%4;
-                        const pivot=[0.52,0.34,0.68,0.50][v];
-                        const roof=Math.min([78,90,90,60][v],height*0.22);
-                        const rightDepth=[0.72,0.48,1.10,0.95][v];
+                        // Different span counts and proportions, stable until the next opening.
+                        const profiles=[
+                            [1], [0.46,0.54], [0.28,0.44,0.28],
+                            [0.22,0.28,0.28,0.22], [0.16,0.19,0.30,0.19,0.16],
+                            [0.52,0.30,0.18]
+                        ];
+                        const v=((canopyVariation % profiles.length)+profiles.length)%profiles.length;
+                        const spans=profiles[v];
+                        const roof=Math.min([72,76,68,60,52,78][v],height*0.22);
                         const glow=ctx.createLinearGradient(0,0,0,roof+24);
                         glow.addColorStop(0,fabric(0.28));
                         glow.addColorStop(0.55,fabric(0.10));
                         glow.addColorStop(1,fabric(0));
                         ctx.fillStyle=glow;ctx.fillRect(0,0,width,roof+24);
                         function hem(offset) {
-                            ctx.beginPath();ctx.moveTo(0,12+offset);
-                            ctx.bezierCurveTo(width*pivot*0.31,roof+offset,width*pivot*0.62,roof+offset,width*pivot,16+offset);
-                            ctx.bezierCurveTo(width*(pivot+(1-pivot)*0.38),roof*rightDepth+offset,width*(pivot+(1-pivot)*0.72),roof*rightDepth+offset,width,12+offset);
+                            ctx.beginPath();ctx.moveTo(0,10+offset);
+                            let x=0;
+                            for(let i=0;i<spans.length;i++){
+                                const span=width*spans[i];
+                                // Wider spans hang deeper; alternate folds very gently.
+                                const depth=10+(roof-10)*Math.sqrt(spans[i]/Math.max(...spans))*(i%2?0.86:1);
+                                ctx.bezierCurveTo(x+span*0.28,depth+offset,
+                                    x+span*0.72,depth+offset,x+span,10+offset);
+                                x+=span;
+                            }
                         }
                         const cloth=ctx.createLinearGradient(0,0,0,roof);
                         cloth.addColorStop(0,fabric(0.08));
@@ -595,10 +606,13 @@ ClippingRectangle {
                         // A broad contact shadow gives the fabric edge depth.
                         hem(3);ctx.strokeStyle=fabric(0.08);ctx.lineWidth=4;ctx.stroke();
                         hem(0);ctx.strokeStyle=fabric(0.48);ctx.lineWidth=1;ctx.stroke();
-                        for(const end of [pivot*0.43,pivot+(1-pivot)*0.58]){
-                            ctx.beginPath();ctx.moveTo(width*pivot,2);
-                            ctx.quadraticCurveTo(width*end,8,width*end,roof*0.62);
-                            ctx.strokeStyle=fabric(0.16);ctx.lineWidth=1;ctx.stroke();
+                        // Fine attachment seams meet each peak instead of crossing the folds.
+                        let join=0;
+                        for(let i=0;i<spans.length-1;i++){
+                            join+=spans[i];
+                            ctx.beginPath();ctx.moveTo(width*join,1);
+                            ctx.lineTo(width*join,10);
+                            ctx.strokeStyle=fabric(0.22);ctx.lineWidth=1;ctx.stroke();
                         }
                     }else if(outer){
                         const drop=Math.min(70,height*0.22);

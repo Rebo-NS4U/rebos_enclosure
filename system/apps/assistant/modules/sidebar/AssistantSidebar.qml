@@ -91,7 +91,7 @@ Item {
 
     readonly property int sidebarMargin: 4
     property bool wantsFocus: false
-    property int canopyVariation: Math.floor(Math.random() * 4)
+    property int canopyVariation: Math.floor(Math.random() * 6)
     property bool menuExpanded: false
     property real menuWidth: 250
     property list<var> slashCommands: [
@@ -206,7 +206,7 @@ Item {
 
     onActiveChanged: {
         if (active) {
-            canopyVariation = (canopyVariation + 1 + Math.floor(Math.random() * 3)) % 4;
+            canopyVariation = (canopyVariation + 1 + Math.floor(Math.random() * 5)) % 6;
             Ai.ensureSession();
             Ai.activeSession.refreshPlanUsage(false);
             root.wantsFocus = true;
