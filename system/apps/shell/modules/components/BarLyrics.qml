@@ -84,11 +84,11 @@ Item {
     component Label: StyledText {
         property bool upcoming: false
         anchors.fill: parent
-        anchors.leftMargin: 14
-        anchors.rightMargin: 14
+        anchors.leftMargin: upcoming ? 18 : 44
+        anchors.rightMargin: upcoming ? 44 : 18
         color: upcoming ? BarAppearance.mutedColor : BarAppearance.foregroundColor
         font.pixelSize: Styling.fontSize(-1)
-        font.bold: false
+        font.weight: upcoming ? Font.Normal : Font.Medium
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
         maximumLineCount: 1
@@ -110,6 +110,51 @@ Item {
         bottomRightRadius: bottomLeftRadius
         border.width: BarAppearance.framed || Styling.shellStyle === "dithered" ? 1 : 0
         border.color: BarAppearance.panelBorder(false)
+
+        // Light-catching inset frame; all accents follow the active shell palette.
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: 2
+            radius: Math.min(height / 2, Styling.radius(4))
+            color: "transparent"
+            border.width: 1
+            border.color: Qt.alpha(BarAppearance.foregroundColor, 0.07)
+        }
+        Rectangle {
+            anchors.fill: parent
+            radius: Math.min(height / 2, Styling.radius(4))
+            gradient: Gradient {
+                GradientStop { position: 0; color: Qt.alpha(BarAppearance.foregroundColor, 0.055) }
+                GradientStop { position: 0.45; color: "transparent" }
+                GradientStop { position: 1; color: Qt.alpha(BarAppearance.activeColor, 0.045) }
+            }
+        }
+        Rectangle {
+            id: modeBadge
+            width: 24; height: 24
+            x: lineSurface.upcoming ? lineSurface.width - width - 7 : 7
+            anchors.verticalCenter: parent.verticalCenter
+            radius: 8
+            color: Qt.alpha(BarAppearance.activeColor, lineSurface.upcoming ? 0.09 : 0.16)
+            border.width: 1
+            border.color: Qt.alpha(BarAppearance.activeColor, 0.16)
+            StyledText {
+                anchors.centerIn: parent
+                text: root.visualizerMix > 0.5 ? "≋" : lineSurface.upcoming ? "›" : "♪"
+                font.pixelSize: Styling.fontSize(2)
+                color: lineSurface.upcoming ? BarAppearance.mutedColor : BarAppearance.activeColor
+            }
+        }
+        Rectangle {
+            objectName: "bar-lyrics-playback-accent"
+            x: lineSurface.upcoming ? lineSurface.width - width - 16 : 16
+            y: lineSurface.height - 3
+            width: Math.max(0, lineSurface.width - 32) * (MprisController.length > 0
+                ? Math.min(1, Math.max(0, MprisController.position / MprisController.length)) : 0)
+            height: 1
+            radius: 0.5
+            color: Qt.alpha(BarAppearance.activeColor, 0.5)
+        }
 
         property string displayedText: ""
         property string previousText: ""
@@ -147,8 +192,8 @@ Item {
             id: visualizer
             objectName: "bar-lyrics-visualizer"
             anchors.fill: parent
-            anchors.leftMargin: 16
-            anchors.rightMargin: 16
+            anchors.leftMargin: lineSurface.upcoming ? 16 : 44
+            anchors.rightMargin: lineSurface.upcoming ? 44 : 16
             opacity: root.visualizerMix
             visible: opacity > 0
             transform: Translate { y: (1 - root.visualizerMix) * 6 }
@@ -165,11 +210,15 @@ Item {
                     readonly property real level: root.levels[lineSurface.upcoming ? 31 - index : index] || 0
                     x: index * (visualizer.width / 32)
                     width: Math.max(1, visualizer.width / 32 - 3)
-                    height: 2 + Math.max(0, visualizer.height - 12) * level * visualizer.activity
+                    height: 2 + Math.max(0, visualizer.height - 10) * level * visualizer.activity
                     y: (visualizer.height - height) / 2
                     radius: Math.min(width / 2, 3)
-                    color: BarAppearance.activeColor
-                    opacity: 0.35 + level * 0.6 * visualizer.activity
+                    gradient: Gradient {
+                        GradientStop { position: 0; color: Qt.alpha(BarAppearance.foregroundColor, 0.82) }
+                        GradientStop { position: 0.35; color: BarAppearance.activeColor }
+                        GradientStop { position: 1; color: Qt.alpha(BarAppearance.activeColor, 0.42) }
+                    }
+                    opacity: 0.24 + level * 0.76 * visualizer.activity
                     Behavior on height {
                         enabled: Motion.enabled
                         NumberAnimation { duration: Motion.feedback; easing.type: Easing.OutCubic }
