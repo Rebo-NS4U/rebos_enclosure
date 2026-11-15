@@ -1312,40 +1312,13 @@ Item {
             presets: TypingTexts.passages.length, message: message, busy: busy,
             title: bookTitle, chapters: chapters.length, library: library.length, books: libraryBooks.length, wpm: liveWpm, filePickerActive: filePickerActive});
     }
-    component TextButton: Button {
-        id: textButton
-        implicitHeight: 36
-        padding: 10
-        background: StyledRect {
-            id: buttonSurface
-            variant: textButton.down || textButton.activeFocus ? "focus" : (textButton.hovered ? "overprimary" : "pane")
-            radius: Config.roundness
-        }
-        contentItem: StyledText {
-            text: textButton.text
-            color: buttonSurface.item
-            opacity: textButton.enabled ? 1 : 0.35
-            horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignVCenter
-            font.underline: textButton.activeFocus
-
-        }
-    }
+    // Keep Typer actions consistent with the shell's shared controls.
+    component TextButton: ThemeButton {}
     component PrimaryTextButton: TextButton {
-        id: primaryButton
-        implicitHeight: 40
-        padding: 12
-        background: StyledRect { id: primarySurface; variant: primaryButton.down ? "primaryfocus" : "primary"; radius: Config.roundness }
-        contentItem: StyledText { text: primaryButton.text; color: primarySurface.item; opacity: primaryButton.enabled ? 1 : 0.4; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+        highlighted: true
     }
     component ReaderNavButton: TextButton {
-        id: nav
-        implicitHeight: 36
-        implicitWidth: 100
-        background: StyledRect {
-            variant: nav.hovered || nav.activeFocus ? "focus" : "pane"
-            radius: Config.roundness
-        }
+        implicitWidth: Math.max(100, implicitContentWidth + padding * 2)
     }
     component ReaderNumber: SpinBox {
         id: number
@@ -1354,7 +1327,7 @@ Item {
         leftPadding: 34; rightPadding: 34
         contentItem: TextInput {
             text: number.textFromValue(number.value, number.locale)
-            font: Qt.font({family: Config.theme.font, pixelSize: 14})
+            font: Qt.font({family: Config.theme.font, pixelSize: Styling.fontSize(0)})
             color: Colors.overSurface
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
@@ -1363,15 +1336,15 @@ Item {
             inputMethodHints: Qt.ImhDigitsOnly
             selectionColor: Qt.alpha(Colors.primary, 0.3)
         }
-        background: StyledRect { variant: "pane"; radius: 8 }
+        background: StyledRect { variant: number.activeFocus ? "focus" : "pane"; radius: Styling.radius(-4); border.width: number.activeFocus ? 2 : 1; border.color: number.activeFocus ? Colors.primary : Qt.alpha(Colors.outline, 0.3) }
         up.indicator: StyledRect {
             x: number.width - width; width: 32; height: number.height
-            variant: number.up.pressed ? "focus" : "pane"; radius: 8
+            variant: number.up.pressed || number.up.hovered ? "focus" : "pane"; radius: Styling.radius(-4)
             StyledText { anchors.centerIn: parent; text: "+"; color: Colors.primary }
         }
         down.indicator: StyledRect {
             width: 32; height: number.height
-            variant: number.down.pressed ? "focus" : "pane"; radius: 8
+            variant: number.down.pressed || number.down.hovered ? "focus" : "pane"; radius: Styling.radius(-4)
             StyledText { anchors.centerIn: parent; text: "−"; color: Colors.primary }
         }
     }
@@ -2265,12 +2238,9 @@ Item {
                                 StyledText { objectName: "typing-card-progress"; text: (bookCard.modelData.completion * 100).toFixed(1) + "%"; color: Colors.primary }
                                 TextButton { objectName: "typing-delete-book"; text: "Remove"; enabled: !root.busy; Accessible.name: "Remove " + bookCard.modelData.title; onClicked: root.requestBookDeletion(bookCard.modelData.id, bookCard.modelData.title) }
                             }
-                            Rectangle {
+                            StandardProgressBar {
                                 Layout.fillWidth: true
-                                implicitHeight: 3
-                                radius: 2
-                                color: Qt.alpha(Colors.primary, 0.12)
-                                Rectangle { width: parent.width * bookCard.modelData.completion; height: parent.height; radius: 2; color: Colors.primary }
+                                value: bookCard.modelData.completion
                             }
                             StyledText { text: bookCard.modelData.completion >= 1 ? "Completed · Continue again" : (bookCard.modelData.position > 0 || bookCard.modelData.partial > 0 ? "Continue where you left off" : "Start reading and typing"); opacity: 0.55; font.pixelSize: 11 }
                         }
@@ -2317,10 +2287,9 @@ Item {
                                         StyledText { text: root.chapters[chapterOption.index].title; Layout.fillWidth: true; Layout.minimumWidth: 0; elide: Text.ElideRight }
                                         StyledText { text: (root.chapterCompletion(chapterOption.index) * 100).toFixed(1) + "%"; color: Colors.primary; font.pixelSize: 12 }
                                     }
-                                    Rectangle {
-                                        Layout.fillWidth: true; implicitHeight: 3; radius: 2
-                                        color: Qt.alpha(Colors.primary, 0.15)
-                                        Rectangle { width: parent.width * root.chapterCompletion(chapterOption.index); height: parent.height; radius: 2; color: Colors.primary }
+                                    StandardProgressBar {
+                                        Layout.fillWidth: true
+                                        value: root.chapterCompletion(chapterOption.index)
                                     }
                                 }
                                 background: Rectangle { radius: 8; color: chapterOption.highlighted ? Qt.alpha(Colors.primary, 0.16) : "transparent" }
@@ -2920,18 +2889,9 @@ Item {
                         StyledText { objectName: "typing-live-wpm"; visible: !root.readingMode; text: root.liveWpm + " WPM"; color: Colors.primary; font.pixelSize: 12 }
                         StyledText { text: "Chapter " + (root.chapterCompletion(root.currentChapterIndex) * 100).toFixed(1) + "% · Book " + (root.progress * 100).toFixed(1) + "%"; opacity: 0.5; font.pixelSize: 11 }
                     }
-                    Rectangle {
+                    StandardProgressBar {
                         Layout.fillWidth: true
-                        implicitHeight: root.readingMode ? 1 : 2
-                        radius: 1
-                        color: Qt.alpha(Colors.overSurface, 0.08)
-                        Rectangle {
-                            height: parent.height
-                            width: parent.width * root.chapterProgress
-                            radius: 1
-                            color: Qt.alpha(Colors.primary, 0.65)
-
-                        }
+                        value: root.chapterProgress
                     }
 
                 }
