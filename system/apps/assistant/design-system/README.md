@@ -10,11 +10,10 @@ Copy this directory into the project and load `components.css`. Put `class="dwee
 
 ## Theme typography
 
-Selecting a built-in shell style applies its typeface: Instrument uses JetBrains Mono,
-Frosted Glass uses DejaVu Sans Mono for an OCR-like feel, Transparent uses Noto Sans,
-Opaque uses Liberation Sans, and Tinted uses DejaVu Sans. The style cards preview
-these fonts. Custom preserves the selected font; the font field still allows manual
-changes after choosing a style. Monospace content keeps its separate font setting.
+The theme picker offers Monolith (Noto Sans), Blueprint (JetBrains Mono),
+Terminal Hardware and Frosted Glass (DejaVu Sans Mono), and Tinted (DejaVu Sans).
+Selecting a style applies its typeface; the font field still allows manual changes.
+Legacy styles remain readable for saved configurations but are no longer offered.
 These families are supplied by the existing desktop font packages.
 
 ## QML projects

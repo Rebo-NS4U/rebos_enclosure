@@ -4,10 +4,8 @@ var styles = [
     {id: "monolith", label: "Monolith", font: "Noto Sans", description: "Sculpted slabs, staggered edge cuts, deep seams and recessed channels."},
     {id: "blueprint", label: "Blueprint", font: "JetBrains Mono", description: "Drafting grids, measurement ticks, registration marks and wire controls."},
     {id: "terminal-hardware", label: "Terminal Hardware", font: "DejaVu Sans Mono", description: "Machined bezels, slotted screws, cooling vents and textured displays."},
-    {id: "glass", font: "Noto Sans", label: "Transparent", description: "Dark transparent backgrounds with light wallpaper colors."},
-    {id: "quiet", font: "Liberation Sans", label: "Opaque", description: "Solid backgrounds with less wallpaper color."},
-    {id: "colorful", font: "DejaVu Sans", label: "Tinted", description: "Transparent backgrounds with more wallpaper color."},
-    {id: "custom", label: "Custom", description: "Use your saved background and border settings."}
+    {id: "frosted", font: "DejaVu Sans Mono", label: "Frosted Glass", description: "Frosted panels, soft highlights and rounded glass edges."},
+    {id: "colorful", font: "DejaVu Sans", label: "Tinted", description: "Transparent backgrounds with more wallpaper color."}
 ];
 
 // Custom and unknown styles preserve the user's selected typeface.
@@ -97,6 +95,18 @@ function surface(style, variant, p, ditherStrength) {
     case "error": case "errorfocus": fill = p.error; item = p.onError; opacity = 1; break;
     case "overerror": item = p.error; break;
     }
+    var frostedContainer = false;
+    if (style === "frosted") {
+        var outer = ["bg", "popup", "bar", "pane", "surface", "surfaceContainer"].indexOf(variant) !== -1;
+        var inner = ["common", "internalbg"].indexOf(variant) !== -1;
+        var focused = ["focus", "surfaceVariant"].indexOf(variant) !== -1;
+        frostedContainer = outer || inner || focused;
+        if (frostedContainer) {
+            fill = mix(mix(p.background, p.foreground, outer ? 0.07 : 0.04), p.primary, focused ? 0.14 : 0.035);
+            opacity = outer ? 0.68 : focused ? 0.84 : 0.48;
+            border = [focused ? p.primary : "#40" + p.foreground.slice(-6), 1];
+        }
+    }
     // Render treatments use semantic palette roles without choosing a color scheme.
     var monolith = style === "monolith", blueprint = style === "blueprint", hardware = style === "terminal-hardware";
     var rendered = monolith || blueprint || hardware;
@@ -149,7 +159,7 @@ function surface(style, variant, p, ditherStrength) {
     if (dotted && containers.indexOf(variant) !== -1) border[1] = 1;
     return {
         radius: monolith ? (outer ? 3 : 0) : blueprint ? 0 : hardware ? (outer ? 5 : 2) : undefined,
-        gradient: renderGradient ? renderGradient : [[fill, 0]], gradientType: dotted ? "halftone" : "linear", gradientAngle: 0,
+        gradient: renderGradient ? renderGradient : frostedContainer ? [[mix(fill, p.foreground, 0.08), 0], [fill, 0.45], [mix(fill, p.background, 0.12), 1]] : [[fill, 0]], gradientType: dotted ? "halftone" : "linear", gradientAngle: 0,
         gradientCenterX: 0.5, gradientCenterY: 0.5,
         halftoneDotMin: dotted ? dotMax : 0, halftoneDotMax: dotted ? dotMax : 0, halftoneStart: 0, halftoneEnd: 1,
         halftoneDotColor: dotted ? dotColor(fill, item, 0.10 + strength * 0.0025) : fill, halftoneBackgroundColor: fill,

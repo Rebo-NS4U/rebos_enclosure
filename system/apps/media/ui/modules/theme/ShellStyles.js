@@ -4,13 +4,8 @@ var styles = [
     {id: "monolith", label: "Monolith", font: "Noto Sans", description: "Sculpted slabs, staggered edge cuts, deep seams and recessed channels."},
     {id: "blueprint", label: "Blueprint", font: "JetBrains Mono", description: "Drafting grids, measurement ticks, registration marks and wire controls."},
     {id: "terminal-hardware", label: "Terminal Hardware", font: "DejaVu Sans Mono", description: "Machined bezels, slotted screws, cooling vents and textured displays."},
-    {id: "instrument", label: "Instrument", description: "Layered graphite surfaces with restrained status accents."},
     {id: "frosted", label: "Frosted Glass", description: "OCR-inspired frosted panels, soft highlights and rounded glass edges."},
-    {id: "glass", label: "Transparent", description: "Dark transparent backgrounds with light wallpaper colors."},
-    {id: "quiet", label: "Opaque", description: "Solid backgrounds with less wallpaper color."},
-    {id: "colorful", label: "Tinted", description: "Transparent backgrounds with more wallpaper color."},
-    {id: "dithered", label: "Dithered", description: "Dithered wallpapers, ordered screen texture and matching app colors."},
-    {id: "custom", label: "Custom", description: "Use your saved background and border settings."}
+    {id: "colorful", label: "Tinted", description: "Transparent backgrounds with more wallpaper color."}
 ];
 
 function mix(a, b, amount) {

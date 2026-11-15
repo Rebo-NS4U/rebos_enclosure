@@ -2,7 +2,7 @@
 
 var data = {
     "oledMode": false,
-    "shellStyle": "glass",
+    "shellStyle": "frosted",
     "ditherPalette": "original",
     "ditherTintColor": "#4c9cbd",
     "ditherBorder": "band",

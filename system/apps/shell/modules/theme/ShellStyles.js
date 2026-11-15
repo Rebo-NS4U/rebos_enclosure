@@ -4,12 +4,8 @@ var styles = [
     {id: "monolith", label: "Monolith", font: "Noto Sans", description: "Sculpted slabs, staggered edge cuts, deep seams and recessed channels."},
     {id: "blueprint", label: "Blueprint", font: "JetBrains Mono", description: "Drafting grids, measurement ticks, registration marks and wire controls."},
     {id: "terminal-hardware", label: "Terminal Hardware", font: "DejaVu Sans Mono", description: "Machined bezels, slotted screws, cooling vents and textured displays."},
-    {id: "instrument", font: "JetBrains Mono", label: "Instrument", description: "Layered graphite surfaces with restrained status accents."},
     {id: "frosted", font: "DejaVu Sans Mono", label: "Frosted Glass", description: "OCR-inspired frosted panels, soft highlights and rounded glass edges."},
-    {id: "glass", font: "Noto Sans", label: "Transparent", description: "Dark transparent backgrounds with light wallpaper colors."},
-    {id: "quiet", font: "Liberation Sans", label: "Opaque", description: "Solid backgrounds with less wallpaper color."},
-    {id: "colorful", font: "DejaVu Sans", label: "Tinted", description: "Transparent backgrounds with more wallpaper color."},
-    {id: "custom", label: "Custom", description: "Use your saved background and border settings."}
+    {id: "colorful", font: "DejaVu Sans", label: "Tinted", description: "Transparent backgrounds with more wallpaper color."}
 ];
 
 // Custom and unknown styles preserve the user's selected typeface.

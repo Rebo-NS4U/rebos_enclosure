@@ -108,7 +108,7 @@ Singleton {
             onShellStyleChanged: {
                 if (root.themeReady) font = ShellStyles.fontForStyle(shellStyle, font);
             }
-            property string shellStyle: "glass"
+            property string shellStyle: "frosted"
             property string ditherPalette: "original"
             property string ditherTintColor: "#4c9cbd"
             property string ditherBorder: "band"
