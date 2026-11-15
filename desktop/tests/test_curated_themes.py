@@ -98,12 +98,12 @@ for (let i=0; i<materials.length; i++) for (let j=i+1; j<materials.length; j++)
  assert.notDeepEqual(surface(materials[i], 'bg', p), surface(materials[j], 'bg', p));
 // A neutral selected palette must stay neutral through every material theme.
 // This catches fixed blue glass or amber accents leaking into palette-derived surfaces.
-for (const id of ['canopy','orbital','metropolis']) {
+for (const {id} of styles) {
  const gray = {background:'#181818',foreground:'#eeeeee',primary:'#bbbbbb',secondary:'#aaaaaa',tertiary:'#999999'};
  for (const role of ['bg','popup','pane','internalbg','focus']) {
   const material = surface(id, role, gray);
   for (const color of [...material.gradient.map(stop => stop[0]),material.border[0]]) {
-   const channels=color.slice(1).match(/../g);
+   const channels=color.slice(-6).match(/../g);
    assert.ok(channels.every(c => c === channels[0]), id + ' injected a hue into ' + role);
   }
  }

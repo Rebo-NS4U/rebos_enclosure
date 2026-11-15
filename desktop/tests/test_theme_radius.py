@@ -47,7 +47,7 @@ import qs.config
 import qs.modules.components
 ShellRoot {
  function decoration(node) {
-  if (["structural-glass-canvas","classic-glass-canvas","drafting-corner-canvas","surface-edge-canvas","wallpaper-theme-canvas"].includes(node.objectName)) return node;
+  if (["structural-glass-canvas","classic-glass-canvas","drafting-corner-canvas","surface-edge-canvas","wallpaper-theme-canvas","clear-glass-canvas"].includes(node.objectName)) return node;
   for (const child of node.children || []) { const result = decoration(child); if (result) return result; }
   return null;
  }

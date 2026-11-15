@@ -278,6 +278,8 @@ ClippingRectangle {
             Canvas {
                 anchors.fill: parent
                 readonly property color pigment: classic.ink
+                readonly property bool outer: classic.outer
+                onOuterChanged: requestPaint()
                 readonly property color accent: classic.accent
                 readonly property bool ice: classic.ice
                 objectName: "classic-glass-canvas"
@@ -293,6 +295,7 @@ ClippingRectangle {
                     if(width<24 || height<24)return;
                     const ink=a=>Qt.rgba(pigment.r,pigment.g,pigment.b,a);
                     const tint=a=>Qt.rgba(accent.r,accent.g,accent.b,a);
+                    ctx.save();if(root.traceThemeFrame(ctx,0))ctx.clip();
                     ctx.lineWidth=1;
                     if(ice){
                         // Two soft inset rims and a broken highlight suggest etched ice.
@@ -314,6 +317,18 @@ ClippingRectangle {
                                 const y=i%2?height-5-(i%5):4+(i%5);
                                 ctx.fillRect(x,y,1,1);
                             }
+                            // Branching frost crystals grow inward from the cold upper rim.
+                            for(let x=Math.max(22,cornerRadius+8);x<width-22;x+=43){
+                                const length=12+(Math.floor(x/43)%3)*5;
+                                ctx.strokeStyle=ink(0.12);ctx.lineWidth=0.7;
+                                ctx.beginPath();ctx.moveTo(x,3);ctx.lineTo(x+5,length);
+                                for(let twig=0;twig<3;twig++){
+                                    const y=6+twig*4,stem=x+(y-3)*5/(length-3);
+                                    ctx.moveTo(stem,y);ctx.lineTo(stem-4,y+2);
+                                    ctx.moveTo(stem,y);ctx.lineTo(stem+4,y-2);
+                                }
+                                ctx.stroke();
+                            }
                             const bloom=ctx.createRadialGradient(width,0,0,width,0,Math.min(100,width/3,height/2));
                             bloom.addColorStop(0,ink(0.075));bloom.addColorStop(1,ink(0));
                             ctx.fillStyle=bloom;ctx.fillRect(0,0,width,height);
@@ -332,10 +347,20 @@ ClippingRectangle {
                         ctx.fillStyle=tint(0.23);ctx.beginPath();
                         ctx.moveTo(width-34,height-5);ctx.lineTo(width-5,height-5);ctx.lineTo(width-5,height-16);ctx.lineTo(width-23,height-16);ctx.closePath();ctx.fill();
                         if(classic.outer){
+                            // Layered colored glass planes recede into the upper and lower margins.
+                            for(let plane=0;plane<3;plane++){
+                                const depth=12+plane*8;
+                                const wash=ctx.createLinearGradient(0,0,0,depth+10);
+                                wash.addColorStop(0,tint(0.10-plane*0.02));wash.addColorStop(1,tint(0));
+                                ctx.fillStyle=wash;ctx.beginPath();ctx.moveTo(width*0.36+plane*18,0);
+                                ctx.lineTo(width,0);ctx.lineTo(width,depth);
+                                ctx.lineTo(width*0.51+plane*14,depth);ctx.closePath();ctx.fill();
+                            }
                             ctx.fillStyle=tint(0.35);
                             for(let i=0;i<3;i++)ctx.fillRect(18+i*9,height-7,5,2);
                         }
                     }
+                    ctx.restore();
                 }
             }
         }
@@ -356,6 +381,8 @@ ClippingRectangle {
             Canvas {
                 anchors.fill: parent
                 readonly property color pigment: material.ink
+                readonly property bool outer: material.outer
+                onOuterChanged: requestPaint()
                 readonly property string finish: material.finish
                 objectName: "structural-glass-canvas"
                 readonly property real cornerRadius: Math.max(0, Math.min(root.radius, width / 2, height / 2))
@@ -368,6 +395,7 @@ ClippingRectangle {
                     const ctx=getContext("2d"); ctx.clearRect(0,0,width,height);
                     if (width<24 || height<24) return;
                     const ink=a=>Qt.rgba(pigment.r,pigment.g,pigment.b,a);
+                    ctx.save();if(root.traceThemeFrame(ctx,0))ctx.clip();
                     ctx.lineWidth=1;
                     if (finish === "glass-vault") {
                         const radiusAt = inset => Math.max(0, Math.min(cornerRadius-inset, (width-inset*2)/2, (height-inset*2)/2));
@@ -396,6 +424,18 @@ ClippingRectangle {
                             ctx.beginPath();ctx.moveTo(ix,y+sy*span);ctx.lineTo(ix,iy+sy*inner);
                             ctx.quadraticCurveTo(ix,iy,ix+sx*inner,iy);ctx.lineTo(x+sx*span,iy);ctx.stroke();
                         }
+                        if(material.outer){
+                            // Thick glass splits grazing light into narrow refractive bands.
+                            for(let band=0;band<3;band++){
+                                const d=12+band*3;
+                                const refraction=ctx.createLinearGradient(0,0,width,0);
+                                refraction.addColorStop(0,ink(0));refraction.addColorStop(0.28,ink(0.08-band*0.02));
+                                refraction.addColorStop(0.64,ink(0.025));refraction.addColorStop(1,ink(0));
+                                ctx.strokeStyle=refraction;ctx.lineWidth=2;
+                                ctx.beginPath();ctx.moveTo(Math.max(24,cornerRadius),d);
+                                ctx.bezierCurveTo(width*0.30,d+5,width*0.70,d-3,width-24,d+2);ctx.stroke();
+                            }
+                        }
                         // The lower glass lip bends around the same rounded corner.
                         const lip=6,r=radiusAt(lip);
                         ctx.lineWidth=3;ctx.strokeStyle=ink(0.13);
@@ -421,6 +461,17 @@ ClippingRectangle {
                             }
                         }
                         if(material.outer) {
+                            // Static scope phosphor and radial divisions enrich the bearing plate.
+                            const scopeRadius=Math.min(78,width*0.26,height*0.32);
+                            const pad=Math.max(14,cornerRadius*0.30+8);
+                            const glow=ctx.createRadialGradient(pad,pad,0,pad,pad,scopeRadius);
+                            glow.addColorStop(0,ink(0.015));glow.addColorStop(0.72,ink(0.055));glow.addColorStop(1,ink(0));
+                            ctx.fillStyle=glow;ctx.fillRect(0,0,scopeRadius+pad,scopeRadius+pad);
+                            ctx.strokeStyle=ink(0.08);
+                            for(const angle of [Math.PI/8,Math.PI/4,Math.PI*3/8]){
+                                ctx.beginPath();ctx.moveTo(pad+12*Math.cos(angle),pad+12*Math.sin(angle));
+                                ctx.lineTo(pad+scopeRadius*Math.cos(angle),pad+scopeRadius*Math.sin(angle));ctx.stroke();
+                            }
                             ctx.strokeStyle=ink(0.30);
                             for(let x=76;x<width-76;x+=12){ctx.beginPath();ctx.moveTo(x,5);ctx.lineTo(x,x%36===4?11:8);ctx.stroke();}
                             for(const x of [8,width-8]){ctx.beginPath();ctx.moveTo(x-4,height/2);ctx.lineTo(x+4,height/2);ctx.moveTo(x,height/2-4);ctx.lineTo(x,height/2+4);ctx.stroke();}
@@ -450,10 +501,19 @@ ClippingRectangle {
                         ctx.lineTo(Math.max(safe,width-safe),height-gap-2);ctx.stroke();
                         ctx.lineWidth=1;ctx.strokeStyle=ink(0.23);
                         ctx.beginPath();ctx.moveTo(safe,3);ctx.lineTo(Math.max(safe,width*0.58),3);ctx.stroke();
+                        if(material.outer){
+                            // Curved grazing reflections separate the suspended sheets.
+                            for(let layer=0;layer<3;layer++){
+                                ctx.strokeStyle=ink(0.09-layer*0.02);ctx.lineWidth=1;
+                                ctx.beginPath();ctx.moveTo(width*0.24,5+layer*4);
+                                ctx.bezierCurveTo(width*0.46,18+layer*4,width*0.73,2+layer*3,width-12,18+layer*5);ctx.stroke();
+                            }
+                        }
                         const sheen=ctx.createLinearGradient(0,0,width,height);
                         sheen.addColorStop(0,ink(0.035));sheen.addColorStop(0.38,ink(0.01));sheen.addColorStop(1,ink(0));
                         ctx.fillStyle=sheen;ctx.fillRect(0,0,width,height);
                     }
+                    ctx.restore();
                 }
             }
         }
@@ -653,6 +713,44 @@ ClippingRectangle {
         }
     }
 
+    // Clear Glass keeps only grazing reflections and a tiny lower meniscus.
+    Loader {
+        anchors.fill: parent
+        active: !root.hasFillColor && root.rectOpacity > 0
+            && (root.styleOverride || Styling.shellStyle) === "clear-glass"
+            && ["bg","popup","pane","surface","internalbg","focus"].indexOf(root.variant) !== -1
+        sourceComponent: Canvas {
+            anchors.fill: parent
+            objectName: "clear-glass-canvas"
+            readonly property real cornerRadius: root.effectiveCornerRadius
+            readonly property color pigment: root.itemColor
+            readonly property bool outer: root.variant === "bg" || root.variant === "popup"
+            opacity: root.rectOpacity
+            onCornerRadiusChanged: requestPaint()
+            onPigmentChanged: requestPaint()
+            onOuterChanged: requestPaint()
+            onWidthChanged: requestPaint()
+            onHeightChanged: requestPaint()
+            onPaint: {
+                const ctx=getContext("2d");ctx.clearRect(0,0,width,height);
+                if(width<24||height<24)return;
+                const ink=a=>Qt.rgba(pigment.r,pigment.g,pigment.b,a);
+                ctx.save();if(root.traceThemeFrame(ctx,0))ctx.clip();
+                const reflection=ctx.createLinearGradient(0,0,0,Math.min(height,outer?32:12));
+                reflection.addColorStop(0,ink(outer?0.07:0.025));reflection.addColorStop(1,ink(0));
+                ctx.fillStyle=reflection;ctx.fillRect(0,0,width,Math.min(height,outer?32:12));
+                if(outer){
+                    const safe=Math.max(18,cornerRadius+5);
+                    ctx.strokeStyle=ink(0.20);ctx.lineWidth=0.8;
+                    ctx.beginPath();ctx.moveTo(safe,3);ctx.lineTo(Math.max(safe,width*0.44),3);ctx.stroke();
+                    ctx.strokeStyle=ink(0.08);
+                    ctx.beginPath();ctx.moveTo(width*0.56,height-4);ctx.lineTo(Math.max(width*0.56,width-safe),height-4);ctx.stroke();
+                }
+                ctx.restore();
+            }
+        }
+    }
+
     // Architectural Monolith: a continuous slab with a broad carved chamfer.
     Loader {
         anchors.fill: parent
@@ -691,6 +789,18 @@ ClippingRectangle {
                 ctx.beginPath();ctx.moveTo(Math.max(d+r,16),height-d);
                 ctx.lineTo(width-d-r,height-d);ctx.quadraticCurveTo(width-d,height-d,width-d,height-d-r);
                 ctx.lineTo(width-d,Math.max(d+r,height*0.40));ctx.stroke();
+                if(outer){
+                    // Natural strata terminate at the slab edge, leaving its face quiet.
+                    ctx.save();if(root.traceThemeFrame(ctx,0))ctx.clip();
+                    for(let vein=0;vein<4;vein++){
+                        const y=height-10-vein*5;
+                        ctx.strokeStyle=ink(0.055+vein*0.008);ctx.lineWidth=vein===0?1.5:0.7;
+                        ctx.beginPath();ctx.moveTo(0,y);
+                        ctx.bezierCurveTo(width*0.21,y-9,width*0.32,y+5,width*0.52,y-3);
+                        ctx.bezierCurveTo(width*0.71,y-10,width*0.86,y+4,width,y-6);ctx.stroke();
+                    }
+                    ctx.restore();
+                }
                 // Quiet mineral grain instead of mechanical engraving or indicators.
                 ctx.fillStyle=ink(0.025);
                 const count=Math.min(260,Math.floor(width*height/600));
@@ -745,6 +855,19 @@ ClippingRectangle {
                             ctx.fillStyle=Qt.alpha(pigment,0.26);ctx.fillRect(width-14,y,7,2);
                             ctx.fillStyle=Qt.alpha(pigment,0.07);ctx.fillRect(width-14,y+2,7,1);
                         }
+                        // Brushed metal stays within the upper bezel, with recessed seams.
+                        ctx.save();if(root.traceThemeFrame(ctx,0))ctx.clip();
+                        for(let line=0;line<4;line++){
+                            ctx.strokeStyle=Qt.alpha(pigment,line%2?0.025:0.055);ctx.lineWidth=0.7;
+                            ctx.beginPath();ctx.moveTo(safe,3+line*1.5);
+                            ctx.lineTo(width-safe,3+line*1.5);ctx.stroke();
+                        }
+                        for(const x of [safe,width-safe]){
+                            ctx.strokeStyle=Qt.alpha(pigment,0.18);ctx.lineWidth=1;
+                            ctx.beginPath();ctx.moveTo(x,height-5);ctx.lineTo(x,height-15);
+                            ctx.lineTo(x+(x<width/2?12:-12),height-15);ctx.stroke();
+                        }
+                        ctx.restore();
                         if(width>safe*2+30){
                             ctx.strokeStyle=Qt.alpha(pigment,0.24);ctx.beginPath();
                             ctx.moveTo(safe,10);ctx.lineTo(width-safe,10);ctx.stroke();
@@ -857,6 +980,21 @@ ClippingRectangle {
                     const ctx=getContext("2d");ctx.clearRect(0,0,width,height);
                     const r=root.themeInsetRadius(6);
                     const span=Math.min(Math.max(9,r+6),(width-12)/2,(height-12)/2);
+                    // A small drafted truss detail gives the sheet architectural purpose.
+                    ctx.save();if(root.traceThemeFrame(ctx,0))ctx.clip();
+                    const safe=Math.max(24,cornerRadius+10);
+                    if(width>safe*2+64){
+                        const left=safe,right=Math.min(width-safe,left+160),bottom=28;
+                        ctx.strokeStyle=Qt.alpha(pigment,0.16);ctx.lineWidth=0.8;
+                        ctx.beginPath();ctx.moveTo(left,bottom);ctx.lineTo(right,bottom);
+                        ctx.moveTo(left,bottom);ctx.quadraticCurveTo((left+right)/2,0,right,bottom);ctx.stroke();
+                        for(let x=left+12;x<right;x+=16){
+                            const t=(x-left)/(right-left),top=bottom-56*t*(1-t);
+                            ctx.beginPath();ctx.moveTo(x,top);ctx.lineTo(x,bottom);
+                            ctx.lineTo(Math.min(right,x+16),bottom-56*Math.min(1,t+16/(right-left))*(1-Math.min(1,t+16/(right-left))));ctx.stroke();
+                        }
+                    }
+                    ctx.restore();
                     ctx.strokeStyle=Qt.alpha(pigment,0.28);ctx.lineWidth=1;
                     for(const x of [6,width-6])for(const y of [6,height-6]){
                         const sx=x>width/2?-1:1,sy=y>height/2?-1:1;

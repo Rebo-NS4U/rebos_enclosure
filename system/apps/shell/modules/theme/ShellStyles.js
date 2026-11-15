@@ -4,15 +4,15 @@ var styles = [
     {id: "canopy", label: "Canopy", font: "DejaVu Sans Mono", description: "Architectural canopy: sweeping fabric spans, curved support ribs and softly shaded surfaces."},
     {id: "orbital", label: "Orbital", font: "JetBrains Mono", description: "Orbital space: elliptical tracks, satellite points, fixed stars and recessed glass."},
     {id: "metropolis", label: "Metropolis", font: "DejaVu Sans", description: "City glass: layered facades, architectural reflections and illuminated windows in your selected colors."},
-    {id: "glass-vault", label: "Glass Vault", font: "Noto Sans", description: "Heavy corner clamps, stepped transparent blocks and deep inset controls."},
-    {id: "radar-station", label: "Radar Station", font: "DejaVu Sans", description: "Bearing scales, partial range arcs and segmented controls on blurred glass."},
-    {id: "suspended-film", label: "Suspended Film", font: "DejaVu Sans Mono", description: "Floating glass sheets, offset edges and quiet contact shadows."},
-    {id: "monolith", label: "Monolith", font: "Noto Sans", description: "Sculpted stone-like slabs, broad chamfers and subtle mineral grain."},
-    {id: "blueprint", label: "Blueprint", font: "JetBrains Mono", description: "Drafting grids, measurement ticks, registration marks and wire controls."},
-    {id: "terminal-hardware", label: "Terminal Hardware", font: "DejaVu Sans Mono", description: "Grooved bezels, recessed cooling louvers and mechanical display housings."},
-    {id: "frosted", font: "DejaVu Sans Mono", label: "Frosted Glass", description: "Etched ice rims, fine edge grain and soft frosted highlights."},
-    {id: "colorful", font: "DejaVu Sans", label: "Tinted", description: "Layered accent planes, offset frames and translucent color bands."},
-    {id: "clear-glass", label: "Clear Glass", font: "Noto Sans", description: "Refined transparent panels, quiet hairline edges and restrained highlights."}
+    {id: "glass-vault", label: "Glass Vault", font: "Noto Sans", description: "Thick glass blocks, rounded clamps, refractive light bands and deep inset controls."},
+    {id: "radar-station", label: "Radar Station", font: "DejaVu Sans", description: "Etched bearing scales, radial divisions and softly illuminated scope glass."},
+    {id: "suspended-film", label: "Suspended Film", font: "DejaVu Sans Mono", description: "Suspended glass sheets, curved grazing reflections and separated contact edges."},
+    {id: "monolith", label: "Monolith", font: "Noto Sans", description: "Carved stone slabs, broad chamfers, natural strata and fine mineral grain."},
+    {id: "blueprint", label: "Blueprint", font: "JetBrains Mono", description: "Architectural drafting sheets, truss details, ruled scales and wire controls."},
+    {id: "terminal-hardware", label: "Terminal Hardware", font: "DejaVu Sans Mono", description: "Brushed metal bezels, recessed louvers, panel seams and machined controls."},
+    {id: "frosted", font: "DejaVu Sans Mono", label: "Frosted Glass", description: "Branching frost crystals, etched ice rims, fine grain and soft corner bloom."},
+    {id: "colorful", font: "DejaVu Sans", label: "Tinted", description: "Layered colored glass planes, offset frames and fading accent reflections."},
+    {id: "clear-glass", label: "Clear Glass", font: "Noto Sans", description: "Clear glazing with grazing reflections, fine highlights and a subtle lower meniscus."}
 ];
 
 // Custom and unknown styles preserve the user's selected typeface.
