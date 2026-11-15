@@ -263,6 +263,48 @@ ShellRoot {
 }
 ''')
 
+    def test_bar_lyrics_transition_and_reduced_motion(self):
+        self.run_harness('''import QtQuick
+import Quickshell
+import qs.modules.components
+import qs.modules.services
+import qs.modules.bar
+import qs.config
+ShellRoot {
+ Item { width: 1920; height: 1200
+  BarLyrics { id: strip; anchors.fill: parent; islandLeft: 700; islandRight: 1220 }
+ }
+ Timer { interval: 60; running: true; repeat: true; property int phase: 0
+  onTriggered: {
+   try {
+    const line = strip.children[0];
+    if (phase === 0) {
+     Config.animDuration = 0;
+     LyricsService.apply('[00:01]First\\n[00:03]Second', 'Test', false);
+     phase++; return;
+    }
+    if (phase === 1) {
+     if (line.variant !== 'bg' || line.backgroundOpacity !== BarAppearance.panelOpacity(false)) throw Error('Bar surface mismatch');
+     Config.animDuration = 1000;
+     LyricsService.apply('[00:01]Changed\\n[00:03]Following', 'Test', false);
+     phase++; return;
+    }
+    if (phase === 2) {
+     if (!line.transitioning || line.progress <= 0 || line.progress >= 1 || line.previousText !== 'First' || line.displayedText !== 'Changed') throw Error('Expected intermediate crossfade');
+     LyricsService.apply('[00:01]Seeked', 'Test', false);
+     Config.animDuration = 0;
+     phase++; return;
+    }
+    if (line.transitioning || line.progress !== 1 || line.displayedText !== 'Seeked') throw Error('Reduced motion must finish immediately');
+    LyricsService.apply('[00:01]Immediate', 'Test', false);
+    if (line.transitioning || line.progress !== 1 || line.displayedText !== 'Immediate') throw Error('Reduced motion must avoid new animation');
+    console.log('PASS: bar theme, crossfade, interrupted seek and reduced motion'); Qt.quit();
+   } catch(error) { console.error(error); Qt.exit(1); }
+  }
+ }
+}
+''')
+
     def run_harness(self, harness):
         with tempfile.TemporaryDirectory(prefix='lyrics-test-') as directory:
             root = Path(directory)

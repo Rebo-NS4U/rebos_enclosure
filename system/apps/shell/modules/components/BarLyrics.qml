@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import qs.modules.services
 import qs.modules.theme
+import qs.modules.bar
 
 Item {
     id: root
@@ -24,6 +25,20 @@ Item {
     Component.onCompleted: LyricsService.viewers++
     Component.onDestruction: LyricsService.viewers = Math.max(0, LyricsService.viewers - 1)
 
+    component Label: StyledText {
+        property bool upcoming: false
+        anchors.fill: parent
+        anchors.leftMargin: 14
+        anchors.rightMargin: 14
+        color: upcoming ? BarAppearance.mutedColor : BarAppearance.foregroundColor
+        font.pixelSize: Styling.fontSize(-1)
+        font.bold: false
+        horizontalAlignment: Text.AlignHCenter
+        verticalAlignment: Text.AlignVCenter
+        maximumLineCount: 1
+        elide: Text.ElideRight
+    }
+
     component Line: StyledRect {
         id: lineSurface
         property string lyric: ""
@@ -31,20 +46,61 @@ Item {
         width: root.sideWidth
         height: root.stripHeight
         visible: lyric.trim() !== ""
-        variant: "common"
-        radius: Styling.radius(4)
-        StyledText {
-            anchors.fill: parent
-            anchors.leftMargin: 14
-            anchors.rightMargin: 14
+        variant: "bg"
+        backgroundOpacity: BarAppearance.panelOpacity(false)
+        topLeftRadius: BarAppearance.framed ? Styling.radius(4) : 0
+        topRightRadius: topLeftRadius
+        bottomLeftRadius: BarAppearance.themedCorners ? Styling.radius(4) : height / 2
+        bottomRightRadius: bottomLeftRadius
+        border.width: BarAppearance.framed || Styling.shellStyle === "dithered" ? 1 : 0
+        border.color: BarAppearance.panelBorder(false)
+
+        property string displayedText: ""
+        property string previousText: ""
+        property real progress: 1
+        property bool ready: false
+        readonly property bool transitioning: lyricTransition.running
+        function updateText() {
+            if (lyric === displayedText) return;
+            // Keep the dominant label when a seek interrupts a transition.
+            if (progress >= 0.5) previousText = displayedText;
+            displayedText = lyric;
+            lyricTransition.stop();
+            if (ready && Motion.enabled && lineSurface.visible && previousText) {
+                progress = 0;
+                lyricTransition.start();
+            } else progress = 1;
+        }
+        onLyricChanged: updateText()
+        Component.onCompleted: { updateText(); ready = true; }
+        Connections {
+            target: Motion
+            function onEnabledChanged() {
+                if (!Motion.enabled) { lyricTransition.stop(); lineSurface.progress = 1; }
+            }
+        }
+        NumberAnimation {
+            id: lyricTransition
+            target: lineSurface
+            property: "progress"
+            to: 1
+            duration: Motion.enter
+            easing.type: Motion.enterCurve
+        }
+        Label {
+            upcoming: lineSurface.upcoming
+            objectName: "bar-lyrics-previous-text"
+            text: lineSurface.previousText
+            opacity: 1 - lineSurface.progress
+            visible: opacity > 0
+            transform: Translate { y: -4 * lineSurface.progress }
+        }
+        Label {
+            upcoming: lineSurface.upcoming
             objectName: "bar-lyrics-text"
-            text: lineSurface.lyric
-            color: lineSurface.upcoming ? Colors.overSurfaceVariant : Colors.primary
-            font.bold: !lineSurface.upcoming
-            horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignVCenter
-            maximumLineCount: 1
-            elide: Text.ElideRight
+            text: lineSurface.displayedText
+            opacity: lineSurface.progress
+            transform: Translate { y: 4 * (1 - lineSurface.progress) }
         }
     }
     Line { objectName: "bar-lyrics-current"; x: root.gap; lyric: root.currentText }
