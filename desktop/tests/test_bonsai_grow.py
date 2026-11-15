@@ -416,7 +416,8 @@ class BonsaiGrowTests(unittest.TestCase):
                     for x, (_, ink) in enumerate(row) if ink.startswith('sky_orb')]
             self.assertGreaterEqual(len(body), 20)
             self.assertGreaterEqual(max(x for x, y in body) - min(x for x, y in body), 5)
-            self.assertEqual(max(y for x, y in body) - min(y for x, y in body), 4)
+            self.assertEqual(max(y for x, y in body) - min(y for x, y in body),
+                             4 if 6 <= hour < 18 else 6)
 
     def test_sky_leaves_a_dark_contour_and_lights_the_foreground(self):
         canvas = [[(' ', '') for _ in range(57)] for _ in range(24)]
@@ -480,18 +481,26 @@ class BonsaiGrowTests(unittest.TestCase):
             # Keep the central tree area free of celestial blocks.
             self.assertFalse(any(15 <= x <= 41 for x, y in body))
 
-    def test_celestial_curves_use_fine_edges_and_solid_interiors(self):
+    def test_celestial_line_art_has_open_centers_and_mirrored_curves(self):
         for daylight in (True, False):
             marks = bonsai.celestial_marks(daylight, True)
             body = [glyph for x, y, glyph, ink in marks if ink.startswith('sky_orb')]
-            self.assertIn('█', body)
-            self.assertTrue(any(0x2800 < ord(glyph) <= 0x28ff for glyph in body))
-            self.assertGreater(len({ink for x, y, glyph, ink in marks}), 4)
+            self.assertNotIn('█', body)
+            self.assertIn('·', body)
+            self.assertGreater(len({ink for x, y, glyph, ink in marks}), 3)
         moon = bonsai.celestial_marks(False, True)
         reflected = bonsai.celestial_marks(False, False)
         self.assertEqual({(-x, y, ink) for x, y, glyph, ink in moon},
                          {(x, y, ink) for x, y, glyph, ink in reflected})
         self.assertEqual(len(set(bonsai.moon_palette().values())), 8)
+
+    def test_crescent_negative_space_is_clear_of_stars(self):
+        for hour in (3, 21):
+            canvas = [[(' ', '') for _ in range(57)] for _ in range(24)]
+            bonsai.sky_pane(canvas, hour)
+            cx = 8 if hour == 21 else 48
+            self.assertFalse(any(ink == 'sky_star' and abs(x - cx) <= 7 and abs(y - 4) <= 4
+                                 for y, row in enumerate(canvas) for x, (_, ink) in enumerate(row)))
 
     def test_animation_settles_without_a_last_frame_jump(self):
         samples = [bonsai.animation_day(i / 120, 1) for i in range(121)]
@@ -581,7 +590,7 @@ class BonsaiGrowTests(unittest.TestCase):
     def test_terrarium_preserves_tree_and_has_a_contained_background(self):
         import re
         canvas = bonsai.specimen_canvas(30, 42)
-        image = bonsai.render(30, 42, True, 59, fixed_height=True)
+        image = bonsai.render(30, 42, True, 59, fixed_height=True, hour=15)
         plain = re.sub(r'\x1b\[[0-9;]*m', '', image).splitlines()
         self.assertEqual(len(plain), 26)
         self.assertTrue(all(len(row) == 59 for row in plain))
@@ -625,7 +634,7 @@ class BonsaiGrowTests(unittest.TestCase):
         self.assertNotEqual(bonsai.sky_at_hour(0), bonsai.sky_at_hour(12))
         for hour in (0, 12):
             image = bonsai.render(0, 42, False, 59, fixed_height=True, hour=hour)
-            self.assertIn('█', image)
+            self.assertIn('·', image)
             self.assertNotIn('☼', image)
             self.assertNotIn('☾', image)
             self.assertEqual(len(image.splitlines()), 26)

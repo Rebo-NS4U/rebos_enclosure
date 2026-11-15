@@ -1360,44 +1360,47 @@ def sun_palette(hour):
         rgb = tuple(round(c * brightness) for c in center)
         palette[f"sky_orb_sun{band}"] = "\033[0;38;2;{};{};{}m".format(*rgb)
     palette["sky_glow"] = "\033[0;38;2;{};{};{}m".format(
-        *(round(c * 0.28) for c in center))
+        *(round(c * 0.55) for c in center))
     return palette
 
 
 def celestial_marks(daylight, rising):
-    """Rasterize curves at 2×4 dots per cell, with solid interiors."""
+    """Original open line art, inspired by classic terminal weather drawings."""
+    sun = (
+        "  ╲   │   ╱  ",
+        "   ╭─────╮   ",
+        "  ╱  ·    ╲  ",
+        "─ │ ·  ·  │ ─",
+        "  ╲    ·  ╱  ",
+        "   ╰─────╯   ",
+        "  ╱   │   ╲  ",
+    )
+    moon = (
+        "    .-───´   ",
+        "  .'   .'    ",
+        " /  · /      ",
+        " │    │      ",
+        r" \ ·  \      ",
+        "  `.   `._   ",
+        "    `────´   ",
+    )
+    mirror = str.maketrans(r"/\╭╮╰╯`´", r"\/╮╭╯╰´`")
     marks = []
-    dots = ((1, 8), (2, 16), (4, 32), (64, 128))
-    for y in range(-3, 4):
-        for x in range(-6, 7):
-            body, glow = 0, 0
-            for sy, row in enumerate(dots):
-                for sx, bit in enumerate(row):
-                    dx = (x + (sx + 0.5) / 2 - 0.5) / 5.4
-                    dy = (y + (sy + 0.5) / 4 - 0.5) / 2.45
-                    radius = math.hypot(dx, dy)
-                    shadow = math.hypot(dx - 0.43, dy) < 0.96
-                    if radius <= 1 and (daylight or not shadow):
-                        body |= bit
-                    elif daylight and 1 < radius <= 1.18:
-                        glow |= bit
-            if body:
-                # Keep full areas solid, reserving fine dots for curved edges.
-                if not daylight and not rising:
-                    body = sum((right if body & left else 0) | (left if body & right else 0)
-                               for left, right in dots)
-                glyph = {255: "█", 27: "▀", 228: "▄"}.get(body, chr(0x2800 + body))
-                distance = math.hypot(x / 5.4, y / 2.45)
-                if daylight:
-                    role = f"sky_orb_sun{min(7, round(distance * 7))}"
-                else:
-                    # Silver outer limb fades toward the crescent's terminator.
-                    terminator = max(0, math.hypot(x / 5.4 - 0.43, y / 2.45) - 0.96)
-                    band = min(7, round(terminator / 0.47 * 7))
-                    role = f"sky_orb_moon{band}"
-                marks.append((x if daylight or rising else -x, y, glyph, role))
-            elif glow:
-                marks.append((x, y, chr(0x2800 + glow), "sky_glow"))
+    for y, row in enumerate(sun if daylight else moon):
+        for x, glyph in enumerate(row):
+            if glyph == " ":
+                continue
+            dx, dy = x - 6, y - 3
+            if daylight:
+                ray = y in (0, 6) or x in (0, 12)
+                band = min(7, round(math.hypot(dx / 5.4, dy / 2.45) * 7))
+                role = "sky_glow" if ray else f"sky_orb_sun{band}"
+            else:
+                band = min(7, max(0, 7 - x + (2 if glyph == "·" else 0)))
+                role = f"sky_orb_moon{band}"
+                if not rising:
+                    dx, glyph = -dx, glyph.translate(mirror)
+            marks.append((dx, dy, glyph, role))
     return marks
 
 
@@ -1437,6 +1440,9 @@ def sky_pane(canvas, hour):
     marks += [(x, y, "─", "sky_mist") for x, y in
               ((4, 10), (5, 10), (7, 10), (48, 13), (50, 13), (51, 13))]
     for x, y, glyph, ink in marks:
+        # Leave the drawing's negative space quiet: no stars inside the crescent.
+        if ink == "sky_star" and abs(x - cx) <= 7 and abs(y - cy) <= 4:
+            continue
         if 0 <= y < len(canvas) and 0 <= x < len(canvas[y]) and canvas[y][x] == (" ", ""):
             if ink.startswith(("sky_orb", "sky_glow")) and any(
                 (x + dx, y + dy) in foreground for dx, dy in offsets
@@ -1900,7 +1906,10 @@ def render(
     canvas = specimen_canvas(days, seed, style, pot_seed)
     backlit = sky_pane(canvas, hour)
     # Reflections sit in the empty side panes, never over foliage or wood.
-    for x, y in ((2, 2), (3, 3), (2, 3), (53, 6), (54, 7)):
+    # Keep glass slashes on the opposite pane, clear of the celestial outline.
+    left_corner = 6 <= hour < 12 or 18 <= hour < 24
+    reflections = ((53, 6), (54, 7)) if left_corner else ((2, 2), (3, 3), (2, 3))
+    for x, y in reflections:
         if canvas[y][x][0] == " ":
             canvas[y][x] = ("╱", "glass")
     occupied = [y for y, row in enumerate(canvas) if any(c != " " for c, _ in row)]
