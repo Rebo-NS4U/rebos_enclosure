@@ -56,3 +56,7 @@ Botanical Archive has been removed. Saved selections of removed styles fall back
 ## Terminal rendering
 
 Kitty follows the exported surface palette and opacity as well as the selected style's native controls. Monolith uses broad padding, borderless slabs and solid cursors; Blueprint uses fine borders, underlined cursors and ruled tab separators; Terminal Hardware uses heavier borders, inset margins, solid cursors and powerline tabs. Frosted Glass uses fine edges and fading tabs; Tinted uses slanted tabs. Switching styles explicitly resets all managed geometry and cursor settings. The dedicated monospace font and size remain user configurable. Niri continues to supply background blur according to the desktop blur settings. Kitty receives a configuration reload without closing terminal sessions.
+
+## Translucent materials
+
+Smoked Acrylic uses polished edge reflections, translucent sheets and recessed wells. Condensation uses rounded misted surfaces, soft layered rims and small perimeter beads. Optical Instrument combines translucent glass with double bezels, corner reticles and etched calibration marks. Each keeps the selected palette and has a matching native Kitty profile. Selecting one resets the manual transparency override to its material default and enables shell blur if blur was off. Existing desktop blur location and strength choices are preserved; Niri supplies the actual background blur. The global transparency slider remains available after selection.

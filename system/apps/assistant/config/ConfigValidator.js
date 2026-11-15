@@ -33,7 +33,7 @@ function validate(current, defaults, keyName) {
     }
 
     if (keyName === "shellStyle" && current === "dithered") return "quiet";
-    if (keyName === "shellStyle" && ["glass", "quiet", "colorful", "custom", "frosted", "monolith", "blueprint", "terminal-hardware"].indexOf(current) === -1) {
+    if (keyName === "shellStyle" && ["glass", "quiet", "colorful", "custom", "frosted", "monolith", "blueprint", "terminal-hardware", "smoked-acrylic", "condensation", "optical-instrument"].indexOf(current) === -1) {
         return defaults;
     }
     if (keyName === "desktopBlur" && ["medium", "light", "shell", "off"].indexOf(current) === -1) return defaults;

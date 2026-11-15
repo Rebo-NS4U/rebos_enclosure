@@ -245,6 +245,76 @@ ClippingRectangle {
         radius: root.radius
     }
 
+    // Passive material details: loaded only on the relevant visible surfaces.
+    Loader {
+        anchors.fill: parent
+        active: !root.hasFillColor && root.rectOpacity > 0
+            && ["bg", "popup", "pane", "surface", "internalbg"].indexOf(root.variant) !== -1
+            && ["smoked-acrylic", "condensation", "optical-instrument"].indexOf(root.styleOverride || Styling.shellStyle) !== -1
+        sourceComponent: Item {
+            id: material
+            readonly property string style: root.styleOverride || Styling.shellStyle
+            readonly property bool outer: root.variant === "bg" || root.variant === "popup"
+            readonly property bool acrylic: style === "smoked-acrylic"
+            readonly property bool mist: style === "condensation"
+            readonly property bool optical: style === "optical-instrument"
+            readonly property color ink: root.itemColor
+            opacity: root.rectOpacity
+            Rectangle {
+                anchors.fill: parent; anchors.margins: material.optical ? 5 : 2
+                radius: Math.max(0, root.radius - (material.optical ? 5 : 2))
+                color: "transparent"
+                border.width: material.mist ? 3 : 1
+                border.color: Qt.alpha(material.ink, material.optical ? 0.23 : material.mist ? 0.045 : 0.14)
+            }
+            Rectangle {
+                visible: material.acrylic
+                anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right
+                anchors.topMargin: 3; anchors.leftMargin: 12; anchors.rightMargin: 12
+                height: 1; color: material.ink; opacity: 0.30
+            }
+            Rectangle {
+                visible: material.acrylic && material.outer
+                anchors.right: parent.right; anchors.top: parent.top; anchors.bottom: parent.bottom
+                anchors.margins: 4; width: 2
+                color: material.ink; opacity: 0.09
+            }
+            Repeater {
+                model: material.mist && material.outer ? 28 : 0
+                Rectangle {
+                    required property int index
+                    // Deterministic edge beads; the reading area stays clear.
+                    x: 12 + ((index * 71) % Math.max(1, material.width - 24))
+                    y: index % 2 ? material.height - 7 - (index % 4) * 3 : 5 + (index % 4) * 3
+                    width: 2 + index % 3; height: width; radius: width / 2
+                    color: "transparent"; border.width: 1
+                    border.color: Qt.alpha(material.ink, 0.12)
+                }
+            }
+            Repeater {
+                model: material.optical && material.outer ? 4 : 0
+                Item {
+                    required property int index
+                    x: index % 2 ? material.width - 22 : 8
+                    y: index >= 2 ? material.height - 22 : 8
+                    width: 14; height: 14
+                    Rectangle { anchors.fill: parent; radius: 7; color: "transparent"; border.width: 1; border.color: Qt.alpha(material.ink, 0.35) }
+                    Rectangle { x: -3; y: 6; width: 20; height: 1; color: material.ink; opacity: 0.22 }
+                    Rectangle { x: 6; y: -3; width: 1; height: 20; color: material.ink; opacity: 0.22 }
+                }
+            }
+            Repeater {
+                model: material.optical && material.outer && material.width > 120 ? 9 : 0
+                Rectangle {
+                    required property int index
+                    x: material.width / 2 - 24 + index * 6; y: material.height - 9
+                    width: 1; height: index % 4 === 0 ? 5 : 2
+                    color: material.ink; opacity: 0.38
+                }
+            }
+        }
+    }
+
     // Monolith: a carved perimeter and a recessed channel along the slab.
     Loader {
         anchors.fill: parent

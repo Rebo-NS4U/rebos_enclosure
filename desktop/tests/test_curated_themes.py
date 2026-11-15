@@ -13,7 +13,7 @@ class CuratedThemeTests(unittest.TestCase):
                 script = source + '''
 const assert = require('node:assert/strict');
 const ids = ['monolith','blueprint','terminal-hardware'];
-assert.deepEqual(styles.map(s => s.id).sort(), [...ids, 'frosted', 'colorful'].sort());
+assert.deepEqual(styles.map(s => s.id).sort(), [...ids, 'frosted', 'colorful', 'smoked-acrylic', 'condensation', 'optical-instrument'].sort());
 assert.ok(!styles.some(s => s.id === 'botanical-archive'));
 for (const id of ids) {
  assert.ok(styles.some(s => s.id === id));
@@ -60,6 +60,37 @@ assert.equal(surface('terminal-hardware', 'primary', p).gradient.length, 5);
 assert.equal(surface('terminal-hardware', 'internalbg', p).gradient[0][0], p.background);
 for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++)
  assert.notDeepEqual(surface(ids[i], 'bg', p), surface(ids[j], 'bg', p));
+const materials = ['smoked-acrylic','condensation','optical-instrument'];
+for (const id of materials) {
+ assert.equal(themePalette(id), null);
+ for (const palette of palettes) {
+  const original = JSON.stringify(palette);
+  const panel = surface(id, 'bg', palette);
+  assert.ok(panel.opacity > 0 && panel.opacity < 1);
+  for (const role of ['bg','popup','pane','surface','internalbg','focus']) {
+   const s = surface(id, role, palette);
+   assert.ok(s.opacity > 0 && s.opacity < 1);
+   assert.equal(s.itemColor, palette.foreground);
+   for (const stop of s.gradient) assert.ok(contrast(stop[0], s.itemColor) >= 4.5, id + ' ' + role);
+  }
+  for (const role of ['primary','secondary','tertiary','error']) {
+   const s = surface(id, role, palette);
+   assert.equal(s.gradient[0][0], palette[role]);
+   assert.equal(s.opacity, 1);
+  }
+  for (const role of ['transparent','barbg']) assert.equal(surface(id, role, palette).opacity, 0);
+  const exported = appPalette(id, {...palette, overBackground:palette.foreground, overPrimary:palette.onPrimary, overSecondary:palette.onSecondary, overTertiary:palette.onTertiary, overError:palette.onError}, 1);
+  assert.equal(exported.opacity, panel.opacity);
+  assert.equal(exported.primary, palette.primary);
+  assert.equal(JSON.stringify(palette), original);
+ }
+ assert.notDeepEqual(surface(id, 'bg', palettes[0]), surface(id, 'bg', palettes[1]));
+}
+assert.equal(surface('smoked-acrylic', 'bg', p).radius, 14);
+assert.equal(surface('condensation', 'bg', p).radius, 20);
+assert.equal(surface('optical-instrument', 'bg', p).border[1], 2);
+for (let i=0; i<materials.length; i++) for (let j=i+1; j<materials.length; j++)
+ assert.notDeepEqual(surface(materials[i], 'bg', p), surface(materials[j], 'bg', p));
 assert.equal(themePalette('custom'), null);
 '''
                 result = subprocess.run(['node', '-e', script], capture_output=True, text=True)
