@@ -99,7 +99,7 @@ ShellRoot {
       fixture.check(ai.status === Component.Ready, ai.errorString());
       keys.visible = false;
       samples.visible = false;
-      for (let name of ["SystemPanel", "ShellPanel", "ThemePanel"]) {
+      for (let name of ["ShellPanel", "ThemePanel"]) {
        let component = Qt.createComponent("modules/widgets/dashboard/controls/" + name + ".qml");
        if (name === "ThemePanel") {
         Config.performance.desktopBlur = "light"; Config.performance.blurStrength = 50;
@@ -252,8 +252,16 @@ ShellRoot {
       fixture.check(settings !== null, "Grouped settings created");
       tester.wait(100);
       fixture.check(settings.filteredSections.length === 4, "Four sidebar categories");
-      fixture.check([].concat.apply([], settings.categoryModel.map(group => group.sections)).sort((a,b) => a-b).join(",") === "0,1,2,3,4,5,6,7,8,9,10", "Every page belongs to exactly one category");
-      fixture.check(settings.categoryModel[1].sections.join(",") === "9,7,8,5", "Desktop combines displays, input, window rules, widgets and performance");
+      fixture.check([].concat.apply([], settings.categoryModel.map(group => group.sections)).sort((a,b) => a-b).join(",") === "0,1,2,3,4,6,7,8,9,10", "Every page belongs to exactly one category");
+      fixture.check(settings.categoryModel[1].sections.join(",") === "9,7,8", "Desktop contains displays, input and window rules");
+      let firstTab = fixture.find(settings, "settings-category-4");
+      let nextTab = fixture.find(settings, "settings-category-9");
+      fixture.check(firstTab && nextTab && nextTab.x > firstTab.x && nextTab.y === firstTab.y, "Main categories are horizontal tabs");
+      for (let legacy of [{sub: "weather", page: 6, target: "weather"}, {sub: "system", page: 6, target: "storage"}, {sub: "performance", page: 4, target: "performance"}]) {
+       settings.openSection(5, legacy.sub); tester.wait(100);
+       let activeLoader = fixture.find(settings, "settings-panel-loader");
+       fixture.check(settings.currentSection === legacy.page && activeLoader.item.currentSection === legacy.target, "Old links open the relocated controls: " + legacy.sub);
+      }
       for (let group of settings.categoryModel) {
        settings.openSection(group.section, "");
        tester.wait(60);
@@ -281,6 +289,7 @@ ShellRoot {
       settings.searchQuery = "";
       tester.wait(50);
       fixture.check(settings.currentSection === 4 && settings.selectedIndex === 0 && settings.filteredSections.length === 4, "Clearing search preserves page and category");
+      settings.width = 850;
       settings.openSection(4, "colors"); tester.wait(150);
       let colorOverview = fixture.find(loader.item, "palette-open-palette");
       fixture.check(colorOverview && colorOverview.visible, "Color menu opens with grouped option cards");
@@ -291,7 +300,7 @@ ShellRoot {
       settings.width = 1700; tester.wait(100);
       fixture.check(loader.item.contentWidth > narrowWidth + 500, "Loaded settings page expands with the window");
       fixture.check(paletteGrid.columns === 2, "Color sections use two columns in wide windows");
-      settings.width = 850; tester.wait(100);
+      settings.width = 750; tester.wait(100);
       fixture.check(paletteGrid.columns === 1 && loader.item.contentWidth < narrowWidth, "Color sections reflow when shrinking");
       let paletteNavigation = fixture.find(loader.item, "palette-navigation");
       for (let pageId of ["picker", "presets", "wallpaper", "apps", "palette"]) {

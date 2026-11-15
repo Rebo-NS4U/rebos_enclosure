@@ -22,10 +22,9 @@ QtObject {
 
         { label: "Custom surfaces", keywords: "variant gradient border halftone shell colors", section: 4, subSection: "variants", subLabel: "Appearance > Custom surfaces", icon: Icons.palette, isIcon: true },
 
-        { label: "System", keywords: "hardware info resources cpu ram weather performance", section: 5, subSection: "", subLabel: "System", icon: Icons.circuitry, isIcon: true },
-        { label: "Weather", keywords: "location temperature celsius fahrenheit", section: 5, subSection: "weather", subLabel: "System > Weather", icon: Icons.mapPin, isIcon: true },
-        { label: "Effects", keywords: "performance animations preview effects dashboard", section: 5, subSection: "performance", subLabel: "System > Effects", icon: Icons.lightning, isIcon: true },
-        { label: "Storage", keywords: "cpu ram memory disk usage monitor", section: 5, subSection: "system", subLabel: "System > Storage", icon: Icons.circuitry, isIcon: true },
+        { label: "Weather", keywords: "location temperature celsius fahrenheit", section: 6, subSection: "weather", subLabel: "Panels & widgets > Weather", icon: Icons.mapPin, isIcon: true },
+        { label: "Effects", keywords: "performance animations preview effects dashboard", section: 4, subSection: "performance", subLabel: "Appearance > Visual effects", icon: Icons.lightning, isIcon: true },
+        { label: "Storage", keywords: "cpu ram memory disk usage monitor", section: 6, subSection: "storage", subLabel: "Panels & widgets > Storage", icon: Icons.circuitry, isIcon: true },
 
         { label: "Shell", keywords: "bar sidebar lockscreen settings", section: 6, subSection: "", subLabel: "Shell", icon: Icons.gear, isIcon: true },
         { label: "Bar", keywords: "panel taskbar clock player screen glass classic appearance transparency opacity accent reset", section: 6, subSection: "bar", subLabel: "Shell > Bar", icon: Icons.layout, isIcon: true },

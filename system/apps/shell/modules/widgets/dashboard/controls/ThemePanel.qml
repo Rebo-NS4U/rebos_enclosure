@@ -136,7 +136,7 @@ Item {
                     id: titlebar
                     width: root.contentWidth
                     anchors.horizontalCenter: parent.horizontalCenter
-                    title: ({style: "Theme & app style", general: "Text & shape", motion: "Motion", blur: "Transparency and blur", shadow: "Shadows", colors: "Wallpaper & palette", variants: "Custom surfaces"})[root.currentSection] || "Appearance"
+                    title: ({style: "Theme & app style", general: "Text & shape", motion: "Motion", performance: "Visual effects", blur: "Transparency and blur", shadow: "Shadows", colors: "Wallpaper & palette", variants: "Custom surfaces"})[root.currentSection] || "Appearance"
                     description: root.currentSection === "" ? "Theme & app style, colors, fonts and backgrounds." : ""
 
                     actions: {
@@ -174,7 +174,7 @@ Item {
                     SettingsSubnav {
                         visible: root.currentSection !== ""
                         currentSection: root.currentSection
-                        sections: [{"id": "style", "label": "Theme & app style"}, {"id": "colors", "label": "Wallpaper & palette"}, {"id": "general", "label": "Text & shape"}, {"id": "blur", "label": "Transparency & blur"}, {"id": "shadow", "label": "Shadows"}, {"id": "motion", "label": "Animation"}, {"id": "variants", "label": "Custom surfaces"}]
+                        sections: [{id: "performance", label: "Visual effects"}, {"id": "style", "label": "Theme & app style"}, {"id": "colors", "label": "Wallpaper & palette"}, {"id": "general", "label": "Text & shape"}, {"id": "blur", "label": "Transparency & blur"}, {"id": "shadow", "label": "Shadows"}, {"id": "motion", "label": "Animation"}, {"id": "variants", "label": "Custom surfaces"}]
                         onSelected: section => root.currentSection = section
                     }
 
@@ -206,11 +206,14 @@ Item {
                             entries: [
                                 {"id": "blur", "label": "Transparency and blur", "description": "Shell transparency, blur strength and where blur appears.", "glyph": Icons.drop},
                                 {"id": "shadow", "label": "Shadows", "description": "Shadow size, opacity and position.", "glyph": Icons.drop},
-                                {"id": "motion", "label": "Animation", "description": "Panel transitions, selection and button feedback.", "glyph": Icons.lightning}
+                                {"id": "motion", "label": "Animation", "description": "Panel transitions, selection and button feedback.", "glyph": Icons.lightning},
+                                {id: "performance", label: "Visual effects", description: "Window previews, animated blur and artwork effects.", glyph: Icons.lightning}
                             ]
                             onSelected: section => root.currentSection = section
                         }
                     }
+
+                    PerformanceSettings { visible: root.currentSection === "performance" }
 
                     MotionSettings {
                         Layout.fillWidth: true

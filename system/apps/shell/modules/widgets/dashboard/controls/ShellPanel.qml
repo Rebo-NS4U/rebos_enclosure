@@ -534,8 +534,8 @@ Item {
                     id: titlebar
                     width: root.contentWidth
                     anchors.horizontalCenter: parent.horizontalCenter
-                    title: ({bar: "Bar", sidebar: "Assistant panel", lockscreen: "Lock screen", system: "About"})[root.currentSection] || "Shell"
-                    description: root.currentSection === "" ? "Bar, assistant panel and lock screen settings." : ""
+                    title: ({bar: "Bar", sidebar: "Assistant panel", lockscreen: "Lock screen", system: "About", weather: "Weather", storage: "Storage monitor"})[root.currentSection] || "Shell"
+                    description: root.currentSection === "" ? "Bar, assistant panel, lock screen and information widgets." : ""
 
                     actions: {
                         if (root.currentSection !== "") {
@@ -572,7 +572,7 @@ Item {
                     SettingsSubnav {
                         visible: root.currentSection !== ""
                         currentSection: root.currentSection
-                        sections: [{"id": "bar", "label": "Desktop bar"}, {"id": "sidebar", "label": "Assistant panel"}, {"id": "lockscreen", "label": "Lock screen"}, {"id": "system", "label": "About"}]
+                        sections: [{id: "weather", label: "Weather"}, {id: "storage", label: "Storage"}, {"id": "bar", "label": "Desktop bar"}, {"id": "sidebar", "label": "Assistant panel"}, {"id": "lockscreen", "label": "Lock screen"}, {"id": "system", "label": "About"}]
                         onSelected: section => root.currentSection = section
                     }
 
@@ -598,7 +598,20 @@ Item {
                             ]
                             onSelected: section => root.currentSection = section
                         }
+                        SettingsMenuGroup {
+                            title: "Information widgets"
+                            description: "Configure the information shown by desktop widgets."
+                            entries: [
+                                {id: "weather", label: "Weather", description: "Location and temperature units.", glyph: Icons.mapPin},
+                                {id: "storage", label: "Storage monitor", description: "Disks shown in the system monitor.", glyph: Icons.circuitry}
+                            ]
+                            onSelected: section => root.currentSection = section
+                        }
+
                     }
+
+                    WeatherSettings { visible: root.currentSection === "weather" }
+                    StorageSettings { visible: root.currentSection === "storage" }
 
                     // ═══════════════════════════════════════════════════════════════
                     // BAR SECTION

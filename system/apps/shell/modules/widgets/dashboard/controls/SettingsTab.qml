@@ -20,7 +20,7 @@ Item {
     property int currentSection: GlobalStates.settingsCurrentTab
     property int selectedIndex: -1
     property bool syncingSelection: false
-    Component.onCompleted: syncSelection()
+    Component.onCompleted: openSection(currentSection, "")
     property string searchQuery: ""
 
     onFilteredSectionsChanged: {
@@ -44,6 +44,10 @@ Item {
     }
 
     function openSection(section, subSection) {
+        if (section === 5) {
+            section = subSection === "performance" ? 4 : 6;
+            subSection = subSection === "system" ? "storage" : subSection || "weather";
+        }
         currentSection = section;
         GlobalStates.settingsCurrentTab = section;
         dispatchSubSection(section, subSection);
@@ -158,19 +162,8 @@ Item {
 
     // Scroll sidebar to ensure visible selection
     function scrollSidebarToSelection() {
-        if (sidebarFlickable.height <= 0)
-            return;
-
-        const tabHeight = root.searchQuery.length ? 48 : 76;
-        const tabSpacing = 0;
-        const itemY = root.selectedIndex * (tabHeight + tabSpacing);
-
-        // Check bounds and scroll if needed
-        if (itemY < sidebarFlickable.contentY) {
-            sidebarFlickable.contentY = itemY;
-        } else if (itemY + tabHeight > sidebarFlickable.contentY + sidebarFlickable.height) {
-            sidebarFlickable.contentY = itemY + tabHeight - sidebarFlickable.height;
-        }
+        if (searchResults.visible && selectedIndex >= 0)
+            searchResults.positionViewAtIndex(selectedIndex, ListView.Contain);
     }
 
     // Fuzzy match: checks if all characters of query appear in order in target
@@ -221,7 +214,7 @@ Item {
 
     readonly property var categoryModel: [
         {label: "Theme & appearance", subLabel: "Colors, wallpaper and shell style", icon: Icons.paintBrush, isIcon: true, section: 4, sections: [4, 6]},
-        {label: "Desktop & system", subLabel: "Displays, input, widgets and performance", icon: Icons.layout, isIcon: true, section: 9, sections: [9, 7, 8, 5]},
+        {label: "Desktop & system", subLabel: "Displays, shortcuts and window rules", icon: Icons.layout, isIcon: true, section: 9, sections: [9, 7, 8]},
         {label: "Devices & connections", subLabel: "Wi-Fi, Bluetooth and audio", icon: Icons.wifiHigh, isIcon: true, section: 0, sections: [0, 1, 2]},
         {label: "Assistant & GitHub", subLabel: "AI preferences and repositories", icon: Icons.robot, isIcon: true, section: 3, sections: [3, 10]}
     ]
@@ -279,12 +272,6 @@ Item {
             isIcon: true
         },
         {
-            icon: Icons.circuitry,
-            label: "Weather & performance",
-            section: 5,
-            isIcon: true
-        },
-        {
             icon: Icons.robot,
             label: "Assistant",
             section: 3,
@@ -331,32 +318,15 @@ Item {
         return -1;
     }
 
-    RowLayout {
+    ColumnLayout {
         anchors.fill: parent
-        spacing: Styling.spacing(24)
-
-        // Sidebar area: search + list
-        ColumnLayout {
-            Layout.preferredWidth: root.width < 900 ? 235 : 300
-            Layout.maximumWidth: root.width < 900 ? 235 : 300
-            Layout.fillHeight: true
-            spacing: Styling.spacing(4)
-
-            StyledText {
-                text: "Settings"
-                font.pixelSize: Styling.fontSize(14)
-                font.bold: true
-                Layout.topMargin: 12
-            }
-            StyledText {
-                text: "System and app settings"
-                color: Colors.overSurfaceVariant
-                Layout.bottomMargin: 18
-            }
-            // Search input (separate from panel list)
+        spacing: 16
+        RowLayout {
+            Layout.fillWidth: true
+            StyledText { text: "Settings"; font.pixelSize: Styling.fontSize(14); font.bold: true; Layout.fillWidth: true }
             SearchInput {
                 id: searchInput
-                Layout.fillWidth: true
+                Layout.preferredWidth: Math.min(380, root.width * 0.5)
                 placeholderText: "Find a setting…"
                 clearOnEscape: true
 
@@ -393,197 +363,42 @@ Item {
                     }
                 }
             }
-
-            // Sidebar container with background
-            StyledRect {
-                id: sidebarContainer
-                variant: "common"
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-
-                Flickable {
-                    id: sidebarFlickable
-                    anchors.fill: parent
-                    anchors.margins: 4
-                    contentWidth: width
-                    contentHeight: sidebar.height
-                    clip: true
-                    boundsBehavior: Flickable.StopAtBounds
-
-                    Behavior on contentY {
-                        enabled: Config.animDuration > 0 && !sidebarFlickable.moving
-                        NumberAnimation {
-                            duration: Motion.feedback
-                            easing.type: Easing.OutCubic
-                        }
-                    }
-
-                    // Sliding highlight behind tabs
-                    StyledRect {
-                        id: tabHighlight
-                        variant: "focus"
-                        width: parent.width
-                        height: root.searchQuery.length ? 48 : 76
-                        radius: Styling.radius(-6)
-                        z: 0
-
-                        readonly property int tabHeight: root.searchQuery.length ? 48 : 76
-                        readonly property int tabSpacing: 0
-
-                        x: 0
-                        y: {
-                            const idx = root.selectedIndex;
-                            return idx >= 0 ? idx * (tabHeight + tabSpacing) : 0;
-                        }
-                        visible: root.selectedIndex >= 0 && root.selectedIndex < root.filteredSections.length
-
-                        Behavior on y {
-                            enabled: Config.animDuration > 0
-                            NumberAnimation {
-                                duration: Motion.feedback
-                                easing.type: Easing.OutCubic
-                            }
-                        }
-                    }
-
-                    Column {
-                        id: sidebar
-                        width: parent.width
-                        spacing: Styling.spacing(0)
-                        z: 1
-
-                        Repeater {
-                            model: root.filteredSections
-
-                            delegate: Button {
-                                id: sidebarButton
-                                required property var modelData
-                                required property int index
-
-                                width: sidebar.width
-                                height: root.searchQuery.length ? 48 : 76
-                                flat: true
-                                hoverEnabled: true
-
-                                property bool isActive: index === root.selectedIndex
-
-                                background: Item {}
-
-                                contentItem: Row {
-                                    spacing: Styling.spacing(8)
-
-                                    // Icon on the left (font icon)
-                                    StyledText {
-                                        renderType: Text.NativeRendering
-                                        font.hintingPreference: Font.PreferFullHinting
-                                        id: iconText
-                                        text: sidebarButton.modelData.isIcon ? sidebarButton.modelData.icon : ""
-                                        font.family: Icons.font
-                                        font.pixelSize: Styling.fontSize(6)
-                                        color: sidebarButton.isActive ? Styling.srItem("overprimary") : Styling.srItem("common")
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        leftPadding: 10
-                                        visible: sidebarButton.modelData.isIcon && (root.searchQuery.length === 0 || !sidebarButton.modelData.subSection)
-
-                                        Behavior on color {
-                                            enabled: Config.animDuration > 0
-                                            ColorAnimation {
-                                                duration: Config.animDuration
-                                                easing.type: Easing.OutCubic
-                                            }
-                                        }
-                                    }
-
-                                    // SVG icon
-                                    Item {
-                                        width: 30
-                                        height: 20
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        visible: !sidebarButton.modelData.isIcon && (root.searchQuery.length === 0 || !sidebarButton.modelData.subSection)
-
-                                        Image {
-                                            id: svgIcon
-                                            width: 20
-                                            height: 20
-                                            anchors.centerIn: parent
-                                            anchors.horizontalCenterOffset: 5
-                                            source: !sidebarButton.modelData.isIcon ? sidebarButton.modelData.icon : ""
-                                            sourceSize: Qt.size(width * 2, height * 2)
-                                            fillMode: Image.PreserveAspectFit
-                                            smooth: true
-                                            asynchronous: true
-                                            layer.enabled: true
-                                            layer.effect: MultiEffect {
-                                                brightness: 1.0
-                                                colorization: 1.0
-                                                colorizationColor: sidebarButton.isActive ? Styling.srItem("overprimary") : Styling.srItem("common")
-                                            }
-                                        }
-                                    }
-
-                                    // Text
-                                    Column {
-                                        width: sidebarButton.width - 55
-                                        spacing: 4
-                                        anchors.verticalCenter: parent.verticalCenter
-
-                                        StyledText {
-                                            renderType: Text.NativeRendering
-                                            font.hintingPreference: Font.PreferFullHinting
-                                            text: sidebarButton.modelData.label
-                                            width: parent.width
-                                            wrapMode: Text.WordWrap
-                                            font.family: Config.theme.font
-                                            font.pixelSize: Styling.fontSize(0)
-                                            font.weight: sidebarButton.isActive ? Font.Bold : Font.Normal
-                                            color: sidebarButton.isActive ? Styling.srItem("overprimary") : Styling.srItem("common")
-
-                                            Behavior on color {
-                                                enabled: Config.animDuration > 0
-                                                ColorAnimation {
-                                                    duration: Config.animDuration
-                                                    easing.type: Easing.OutCubic
-                                                }
-                                            }
-                                        }
-
-                                        StyledText {
-                                            renderType: Text.NativeRendering
-                                            font.hintingPreference: Font.PreferFullHinting
-                                            visible: !!sidebarButton.modelData.subLabel
-                                            text: sidebarButton.modelData.subLabel || ""
-                                            width: parent.width
-                                            wrapMode: Text.WordWrap
-                                            font.family: Config.theme.font
-                                            font.pixelSize: Styling.fontSize(-2)
-                                            color: Colors.overSurfaceVariant
-                                        }
-                                    }
-                                }
-
-                                onClicked: {
-                                    root.openSection(modelData.section, modelData.subSection);
-                                }
-                            }
-                        }
-                    }
-
-                    // Scroll wheel navigation between sections
-                    WheelHandler {
-                        enabled: sidebarFlickable.contentHeight <= sidebarFlickable.height
-                        acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
-                        onWheel: event => {
-                            if (event.angleDelta.y > 0 && root.selectedIndex > 0) {
-                                root.selectedIndex--;
-                            } else if (event.angleDelta.y < 0 && root.selectedIndex < root.filteredSections.length - 1) {
-                                root.selectedIndex++;
-                            }
-                        }
-                    }
+        }
+        Flow {
+            id: mainTabs
+            objectName: "settings-main-tabs"
+            Layout.fillWidth: true
+            spacing: 8
+            Repeater {
+                model: root.categoryModel
+                delegate: SettingsButton {
+                    required property var modelData
+                    objectName: "settings-category-" + modelData.section
+                    text: modelData.label
+                    highlighted: modelData.sections.includes(root.currentSection)
+                    onClicked: root.openSection(modelData.section, "")
                 }
             }
         }
-
+        ListView {
+            id: searchResults
+            objectName: "settings-search-results"
+            Layout.fillWidth: true
+            Layout.preferredHeight: Math.min(contentHeight, root.height * 0.3)
+            visible: root.searchQuery.length > 0
+            clip: true
+            model: visible ? root.filteredSections : []
+            currentIndex: root.selectedIndex
+            ScrollBar.vertical: ScrollBar {}
+            delegate: SettingsButton {
+                required property var modelData
+                required property int index
+                width: searchResults.width
+                text: modelData.label + (modelData.subLabel ? " · " + modelData.subLabel : "")
+                highlighted: index === root.selectedIndex
+                onClicked: root.openSection(modelData.section, modelData.subSection)
+            }
+        }
         // Content area with animated transitions
         Item {
             id: contentArea
