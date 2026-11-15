@@ -305,6 +305,50 @@ ShellRoot {
 }
 ''')
 
+    def test_visualizer_fallback_transition(self):
+        self.run_harness('''import QtQuick
+import Quickshell
+import qs.modules.components
+import qs.modules.services
+import qs.config
+ShellRoot {
+ Item { width: 1920; height: 1200
+  BarLyrics { id: strip; anchors.fill: parent; islandLeft: 700; islandRight: 1220 }
+ }
+ Timer { interval: 60; running: true; repeat: true; property int phase: 0
+  onTriggered: {
+   try {
+    if (phase === 0) {
+     Config.animDuration = 0;
+     LyricsService.refresh();
+     LyricsService.apply('[00:01]Lyrics', 'Test', false);
+     phase++; return;
+    }
+    if (phase === 1) {
+     if (strip.visualizerMix !== 0) throw Error('Lyrics must hide visualizer');
+     Config.animDuration = 1000;
+     LyricsService.apply('', 'Test', true);
+     phase++; return;
+    }
+    if (phase === 2) {
+     if (strip.visualizerMix <= 0 || strip.visualizerMix >= 1) throw Error('Fallback must crossfade');
+     if (strip.captureAudio) throw Error('Paused playback must not capture audio');
+     Config.animDuration = 0;
+     phase++; return;
+    }
+    if (phase === 3) {
+     if (strip.visualizerMix !== 1 || strip.currentText || strip.nextText) throw Error('No lyrics must show visualizer without status labels: ' + JSON.stringify([strip.visualizerMix, strip.currentText, strip.nextText, LyricsService.hasText, LyricsService.status]));
+     LyricsService.apply('[00:01]Returned', 'Test', false);
+     phase++; return;
+    }
+    if (strip.visualizerMix !== 0 || strip.currentText !== 'Returned') throw Error('Lyrics must replace visualizer when available');
+    console.log('PASS: visualizer fallback, crossfade, pause, reduced motion and restored lyrics'); Qt.quit();
+   } catch(error) { console.error(error); Qt.exit(1); }
+  }
+ }
+}
+''')
+
     def run_harness(self, harness):
         with tempfile.TemporaryDirectory(prefix='lyrics-test-') as directory:
             root = Path(directory)

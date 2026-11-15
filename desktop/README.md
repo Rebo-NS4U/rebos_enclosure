@@ -553,3 +553,5 @@ Lyrics now use the empty strip on both sides of the island bar: current line on 
 Bar lyrics share the island’s background, opacity, border, corner treatment and text roles. Line changes crossfade with a small vertical movement using the shell motion setting; disabling animations immediately settles the text. Layout width follows the bar directly so transitions never overlap it.
 
 Bar input controls use compact neutral buttons, with disabled input highlighted and safety details in tooltips. Slider wheel adjustments use two percentage points per notch, accumulating small trackpad movements.
+
+When no lyrics are available, both bar strips crossfade into mirrored audio spectrum bars. The visualizer reads the default output monitor through `parec` (provided by the existing core `libpulse` dependency), never the microphone, and sends only levels to the UI. It captures only while the strip is visible and playback is active; pause settles the bars, and reduced motion disables capture and animation. Audio is not stored or transmitted.
