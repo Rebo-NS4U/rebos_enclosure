@@ -103,3 +103,5 @@ Shell settings use wrapping category tabs at the top, plus page shortcuts above 
 Theme & appearance has a second row of tabs: Style, Colors, Typography, Effects, and Panels & widgets. Each tab shows its own controls directly under visible headings, without accordion headers. Search and legacy links select the matching tab and scroll to the requested controls. The full-width content area scrolls independently beneath the tabs; theme previews appear only in Style. Standalone panels used for indexing keep all sections available.
 
 The terminal bonsai lifts wood and ceramic shading as exported surface opacity falls, keeping the trunk grain and bowl visible over wallpaper. Opaque surfaces retain their subdued materials; foliage and enamel accents keep their theme colors.
+
+The bonsai sits in a glass terrarium with a fine primary-tinted frame, a heavier lower plinth and a few reflections in the empty side panes. The center has no background fill; the case preserves the 59-column, 26-row animation footprint.

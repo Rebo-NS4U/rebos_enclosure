@@ -457,14 +457,28 @@ class BonsaiGrowTests(unittest.TestCase):
                                      ['#85b470'] * 3, fixed_height=True)
                 rows = image.splitlines()
                 self.assertEqual(len(rows), 26)
-                self.assertFalse(rows[0].strip())
-                self.assertFalse(rows[-1].strip())
+                self.assertTrue(rows[0].strip().startswith("╭─"))
+                self.assertTrue(rows[-1].strip().startswith("╰━"))
                 self.assertNotIn('║', image)
                 left = len(rows[0]) - 59
                 self.assertLessEqual(abs(left - (columns - len(rows[0]))), 1)
                 self.assertEqual(len({len(row) for row in rows}), 1)
                 self.assertTrue(all(len(row) <= columns for row in rows))
                 self.assertNotIn('\033', image)
+
+    def test_terrarium_preserves_tree_and_uses_only_foreground_ink(self):
+        import re
+        canvas = bonsai.specimen_canvas(30, 42)
+        image = bonsai.render(30, 42, True, 59, fixed_height=True)
+        plain = re.sub(r'\x1b\[[0-9;]*m', '', image).splitlines()
+        self.assertEqual(len(plain), 26)
+        self.assertTrue(all(len(row) == 59 for row in plain))
+        for y, row in enumerate(canvas):
+            for x, (glyph, ink) in enumerate(row):
+                if glyph != ' ':
+                    self.assertEqual(plain[y + 1][x + 1], glyph)
+        self.assertNotIn(';48;', image)
+        self.assertEqual(plain[3][3], '╱')
 
     def test_seeded_wood_palette_has_variety_and_readable_shading(self):
         import re
@@ -616,7 +630,8 @@ class BonsaiGrowTests(unittest.TestCase):
                 rows = bonsai.render(30, seed, True, 59, fixed_height=True).splitlines()[21:23]
             bright = {rgb(ink) for row in rows for ink in re.findall(r'\x1b\[[0-9;]*m', row)
                       if len(re.findall(r'\d+', ink)) >= 5 and max(rgb(ink)) > 100}
-            self.assertEqual(bright, {main, accent})
+            frame_ink = rgb(re.findall(r"\x1b\[[0-9;]*m", rows[0])[0])
+            self.assertEqual(bright - {frame_ink}, {main, accent})
         neutral = bonsai.ceramic_palette(('#eeeeee', '#111111', '#888888'))
         self.assertTrue(all(len(set(rgb(ink))) == 1 for ink in neutral.values()))
 
@@ -939,8 +954,11 @@ class BonsaiGrowTests(unittest.TestCase):
             for day in (0, 3, 7, 14, 22, 30):
                 rows = bonsai.render(day, seed, False, 59, ['#85b470']*3,
                                     fixed_height=True).splitlines()[1:20]
+                canvas = bonsai.specimen_canvas(day, seed)
+                # Glass reflections are separate from the living silhouette.
                 points = {(x,y) for y,row in enumerate(rows)
-                          for x,char in enumerate(row[1:-1]) if char != ' '}
+                          for x,char in enumerate(row[1:-1])
+                          if char != ' ' and canvas[y][x][0] != ' '}
                 reached = {(x,y) for x,y in points if y == 18}
                 pending = list(reached)
                 while pending:
