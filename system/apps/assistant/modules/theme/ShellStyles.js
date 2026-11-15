@@ -1,7 +1,9 @@
 .pragma library
 
 var styles = [
-    {"id": "botanical-archive", "label": "Botanical Archive", "font": "Liberation Serif", "description": "Paper-like layers, ruled edges and compact corners in your selected colors."},
+    {id: "monolith", label: "Monolith", font: "Noto Sans", description: "Unbroken matte slabs, minimal seams and recessed inputs."},
+    {id: "blueprint", label: "Blueprint", font: "JetBrains Mono", description: "Construction grids, corner brackets and outlined controls."},
+    {id: "terminal-hardware", label: "Terminal Hardware", font: "DejaVu Sans Mono", description: "Beveled housings, inset displays and mechanical controls."},
     {id: "glass", font: "Noto Sans", label: "Transparent", description: "Dark transparent backgrounds with light wallpaper colors."},
     {id: "quiet", font: "Liberation Sans", label: "Opaque", description: "Solid backgrounds with less wallpaper color."},
     {id: "colorful", font: "DejaVu Sans", label: "Tinted", description: "Transparent backgrounds with more wallpaper color."},
@@ -95,24 +97,40 @@ function surface(style, variant, p, ditherStrength) {
     case "error": case "errorfocus": fill = p.error; item = p.onError; opacity = 1; break;
     case "overerror": item = p.error; break;
     }
-    // Botanical uses opaque paper layers, ruled ink edges and pressed controls.
-    var botanical = style === "botanical-archive";
-    var paperSurface = botanical && ["bg", "popup", "bar", "pane", "surface", "surfaceContainer", "common", "internalbg", "focus", "surfaceVariant", "overprimary", "oversecondary", "overtertiary", "overerror"].indexOf(variant) !== -1;
-    if (botanical) {
-        var inset = variant === "internalbg";
-        var focused = variant === "focus" || variant === "surfaceVariant";
-        if (paperSurface) {
-            fill = mix(p.background, inset ? p.primary : p.foreground, inset ? 0.09 : focused ? 0.12 : 0.025);
-            item = p.foreground;
-            if (variant === "overprimary") item = p.primary;
-            if (variant === "oversecondary") item = p.secondary;
-            if (variant === "overtertiary") item = p.tertiary;
-            if (variant === "overerror") item = p.error;
-            border = [mix(p.background, p.primary, focused ? 0.72 : 0.38), 1];
-        } else if (variant !== "transparent" && variant !== "barbg") {
-            border = [mix(fill, item, 0.22), 1];
-        }
+    // Render treatments use semantic palette roles without choosing a color scheme.
+    var monolith = style === "monolith", blueprint = style === "blueprint", hardware = style === "terminal-hardware";
+    var rendered = monolith || blueprint || hardware;
+    var outer = variant === "bg" || variant === "popup";
+    var inset = variant === "internalbg";
+    var focused = variant === "focus" || variant === "surfaceVariant";
+    var neutral = ["bg", "popup", "bar", "pane", "surface", "surfaceContainer", "common", "internalbg", "focus", "surfaceVariant"].indexOf(variant) !== -1;
+    var outlineRole = variant.indexOf("over") === 0;
+    var renderGradient;
+    if (rendered) {
         opacity = variant === "transparent" || variant === "barbg" ? 0 : 1;
+        if (neutral || outlineRole) {
+            var depth = monolith ? (inset ? 0 : focused ? 0.10 : outer ? 0.055 : 0.035)
+                : blueprint ? (inset ? 0.015 : focused ? 0.065 : 0.025)
+                : (inset ? 0 : focused ? 0.12 : outer ? 0.085 : 0.045);
+            fill = mix(p.background, p.foreground, depth);
+            if (!outlineRole) item = p.foreground;
+        }
+        if (monolith) {
+            border = [mix(fill, p.foreground, 0.18), focused ? 2 : inset ? 1 : 0];
+            if (focused) border[0] = p.primary;
+        } else if (blueprint) {
+            // Wire controls retain the selected accent as their ink color.
+            if (!neutral && !outlineRole && opacity > 0) {
+                item = fill;
+                fill = p.background;
+            }
+            border = [focused ? p.primary : neutral ? mix(p.background, p.foreground, 0.35) : item, focused ? 2 : 1];
+        } else {
+            border = [mix(fill, p.foreground, inset ? 0.26 : 0.38), focused || outer ? 2 : 1];
+            if (focused) border[0] = p.primary;
+            // Narrow highlight and lower lip form a machined bevel.
+            if (neutral) renderGradient = [[mix(fill, p.foreground, inset ? 0.015 : 0.07), 0], [fill, 0.12], [fill, 0.86], [mix(fill, p.background, 0.30), 1]];
+        }
     }
     var containers = ["bg", "popup", "pane", "surface", "surfaceContainer", "common", "internalbg", "focus", "surfaceVariant", "bar", "barbg"];
     var controls = ["primary", "primaryfocus", "overprimary", "secondary", "secondaryfocus", "oversecondary", "tertiary", "tertiaryfocus", "overtertiary", "error", "errorfocus", "overerror"];
@@ -126,8 +144,8 @@ function surface(style, variant, p, ditherStrength) {
         border[0] = mix(fill, p.primary, 0.12);
     if (dotted && containers.indexOf(variant) !== -1) border[1] = 1;
     return {
-        radius: botanical ? (variant === "bg" || variant === "popup" ? 10 : 4) : undefined,
-        gradient: paperSurface ? [[mix(fill, p.foreground, 0.025), 0], [fill, 0.55], [mix(fill, p.secondary, 0.035), 1]] : [[fill, 0]], gradientType: dotted ? "halftone" : "linear", gradientAngle: 0,
+        radius: monolith ? (outer ? 6 : 2) : blueprint ? 0 : hardware ? (outer ? 5 : 2) : undefined,
+        gradient: renderGradient ? renderGradient : [[fill, 0]], gradientType: dotted ? "halftone" : "linear", gradientAngle: 0,
         gradientCenterX: 0.5, gradientCenterY: 0.5,
         halftoneDotMin: dotted ? dotMax : 0, halftoneDotMax: dotted ? dotMax : 0, halftoneStart: 0, halftoneEnd: 1,
         halftoneDotColor: dotted ? dotColor(fill, item, 0.10 + strength * 0.0025) : fill, halftoneBackgroundColor: fill,

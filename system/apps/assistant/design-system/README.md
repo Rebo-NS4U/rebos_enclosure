@@ -45,6 +45,11 @@ For consistently themed open menus in Zen/Firefox as well, load `<script src="dr
 
 Use `StandardProgressBar` for linear progress in QML. Its normalized `value` is clamped to 0–1; `activeColor` and `foregroundColor` use semantic theme defaults. The lyrics-style 2px rail includes a gradient, soft bloom, bright leading edge and quarter markers. Slider wrappers retain their existing input and accessibility behavior. Shell, assistant and media package identical copies so each app installs independently; keep these copies synchronized. Vertical sliders rotate the same rail. Shell sliders gently snap pointer drags within three percentage points of the 25%, 50% and 75% positions. Keyboard, wheel and external value updates remain exact so small adjustments can leave those positions.
 
-## Curated desktop themes
+## Rendered desktop themes
 
-Botanical Archive renders opaque paper-like gradients, ruled edges, inset wells, compact control corners and softer outer panels. It uses the selected wallpaper or color preset throughout, including application exports, without imposing a fixed palette. Typography uses Liberation Serif. The other experimental palette-only styles have been removed.
+All styles use the selected wallpaper or color preset, including application exports.
+Monolith uses continuous matte surfaces, minimal borders and recessed inputs.
+Blueprint uses square corners, outlined controls, fine construction grids and corner brackets.
+Terminal Hardware uses beveled housings, inset displays and corner fasteners.
+Their fonts are Noto Sans, JetBrains Mono and DejaVu Sans Mono respectively.
+Botanical Archive has been removed. Saved selections of removed styles fall back through normal configuration validation.

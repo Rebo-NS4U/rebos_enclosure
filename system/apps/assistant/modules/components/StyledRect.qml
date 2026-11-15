@@ -234,6 +234,58 @@ ClippingRectangle {
     // look soft/hazy. Widget chrome shadows live on dedicated shadow items
     // instead of on text-bearing containers.
 
+    // Non-interactive drafting marks and case fasteners, behind content.
+    Loader {
+        anchors.fill: parent
+        active: !root.hasFillColor && root.rectOpacity > 0 && (root.variant === "bg" || root.variant === "popup")
+            && ["blueprint", "terminal-hardware"].indexOf(root.styleOverride || Styling.shellStyle) !== -1
+        sourceComponent: Item {
+            id: engraving
+            readonly property bool drafting: (root.styleOverride || Styling.shellStyle) === "blueprint"
+            readonly property color ink: root.itemColor
+            opacity: root.rectOpacity
+            Repeater {
+                model: engraving.drafting ? Math.floor(engraving.width / 24) : 0
+                Rectangle {
+                    required property int index
+                    x: (index + 1) * 24
+                    width: 1; height: engraving.height
+                    color: engraving.ink; opacity: 0.035
+                }
+            }
+            Repeater {
+                model: engraving.drafting ? Math.floor(engraving.height / 24) : 0
+                Rectangle {
+                    required property int index
+                    y: (index + 1) * 24
+                    height: 1; width: engraving.width
+                    color: engraving.ink; opacity: 0.035
+                }
+            }
+            Repeater {
+                model: 4
+                Item {
+                    required property int index
+                    x: index % 2 ? engraving.width - 15 : 6
+                    y: index >= 2 ? engraving.height - 15 : 6
+                    width: 9; height: 9
+                    rotation: engraving.drafting ? (index === 1 ? 90 : index === 2 ? 270 : index === 3 ? 180 : 0) : 0
+                    Rectangle {
+                        width: engraving.drafting ? 9 : 5
+                        height: engraving.drafting ? 1 : 5
+                        radius: engraving.drafting ? 0 : 2.5
+                        color: engraving.ink; opacity: 0.28
+                    }
+                    Rectangle {
+                        visible: engraving.drafting
+                        width: 1; height: 9
+                        color: engraving.ink; opacity: 0.28
+                    }
+                }
+            }
+        }
+    }
+
     border.color: Config.resolveColor(borderData?.[0] ?? "transparent")
     border.width: root.enableBorder ? (borderData?.[1] ?? 0) : 0
 
