@@ -281,6 +281,9 @@ ShellRoot {
       tester.wait(50);
       fixture.check(settings.currentSection === 4 && settings.selectedIndex === 0 && settings.filteredSections.length === 5, "Clearing search preserves page and category");
       settings.openSection(4, "colors"); tester.wait(150);
+      let colorOverview = fixture.find(loader.item, "palette-open-palette");
+      fixture.check(colorOverview && colorOverview.visible, "Color menu opens with grouped option cards");
+      tester.mouseClick(colorOverview); tester.wait(40);
       let narrowWidth = loader.item.contentWidth;
       let paletteGrid = fixture.find(loader.item, "palette-sections");
       fixture.check(paletteGrid && paletteGrid.columns === 1, "Color sections stack in normal windows");

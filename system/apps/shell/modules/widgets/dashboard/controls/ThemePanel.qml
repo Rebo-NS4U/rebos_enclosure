@@ -182,77 +182,33 @@ Item {
                         visible: root.currentSection === ""
                         Layout.fillWidth: true
                         spacing: Styling.spacing(20)
-                        SettingsGroup {
+                        SettingsMenuGroup {
                             title: "Wallpaper & color"
                             description: "Choose a wallpaper, build your palette and save appearances."
-                            GridLayout {
-                                Layout.fillWidth: true
-                                columns: root.contentWidth < 680 ? 1 : 2
-                                columnSpacing: 12
-                                rowSpacing: 12
-                                SectionButton {
-                                    text: "Wallpaper & palette"
-                                    description: "Palette, wallpaper color picker and saved appearance presets."
-                                    glyph: Icons.palette
-                                    sectionId: "colors"
-                                }
-                                SectionButton {
-                                    sectionId: "style"
-                                    text: "Theme & app style"
-                                    description: "Choose the shell style and its appearance."
-                                    glyph: Icons.palette
-                                }
-                            }
+                            entries: [
+                                {"id": "colors", "label": "Wallpaper & palette", "description": "Palette, wallpaper color picker and saved appearance presets.", "glyph": Icons.palette},
+                                {"id": "style", "label": "Theme & app style", "description": "Choose the shell style and its appearance.", "glyph": Icons.palette}
+                            ]
+                            onSelected: section => root.currentSection = section
                         }
-                        SettingsGroup {
+                        SettingsMenuGroup {
                             title: "Text & surfaces"
                             description: "Fonts, corner shape and custom background details."
-                            GridLayout {
-                                Layout.fillWidth: true
-                                columns: root.contentWidth < 680 ? 1 : 2
-                                columnSpacing: 12
-                                rowSpacing: 12
-                                SectionButton {
-                                    text: "Text & shape"
-                                    description: "Text size, fonts and corner roundness."
-                                    glyph: Icons.gear
-                                    sectionId: "general"
-                                }
-                                SectionButton {
-                                    text: "Custom surfaces"
-                                    description: "Set colors, gradients and outlines."
-                                    glyph: Icons.paintBrush
-                                    sectionId: "variants"
-                                }
-                            }
+                            entries: [
+                                {"id": "general", "label": "Text & shape", "description": "Text size, fonts and corner roundness.", "glyph": Icons.gear},
+                                {"id": "variants", "label": "Custom surfaces", "description": "Set colors, gradients and outlines.", "glyph": Icons.paintBrush}
+                            ]
+                            onSelected: section => root.currentSection = section
                         }
-                        SettingsGroup {
+                        SettingsMenuGroup {
                             title: "Depth & movement"
                             description: "Transparency, shadows and animation behavior."
-                            GridLayout {
-                                Layout.fillWidth: true
-                                columns: root.contentWidth < 680 ? 1 : 3
-                                columnSpacing: 12
-                                rowSpacing: 12
-                                SectionButton {
-                                    sectionId: "blur"
-                                    text: "Transparency and blur"
-                                    description: "Shell transparency, blur strength and where blur appears."
-                                    glyph: Icons.drop
-                                }
-                                SectionButton {
-                                    text: "Shadows"
-                                    description: "Shadow size, opacity and position."
-                                    glyph: Icons.drop
-                                    sectionId: "shadow"
-                                }
-                                SectionButton {
-                                    sectionId: "motion"
-                                    text: "Motion"
-                                    description: "Panel transitions, selection and button feedback."
-                                    glyph: Icons.lightning
-                                }
-                            }
+                            entries: [
+                                {"id": "blur", "label": "Transparency and blur", "description": "Shell transparency, blur strength and where blur appears.", "glyph": Icons.drop},
+                                {"id": "shadow", "label": "Shadows", "description": "Shadow size, opacity and position.", "glyph": Icons.drop},
+                                {"id": "motion", "label": "Animation", "description": "Panel transitions, selection and button feedback.", "glyph": Icons.lightning}
+                            ]
+                            onSelected: section => root.currentSection = section
                         }
                     }
 

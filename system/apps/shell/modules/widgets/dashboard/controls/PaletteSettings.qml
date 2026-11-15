@@ -19,7 +19,7 @@ ColumnLayout {
     readonly property string preset: manager?.activeColorPreset ?? ""
     property var draftColors: manager?.pickedAccentColors ?? ["", ""]
     property int pickedRole: 0
-    property string currentPage: "palette"
+    property string currentPage: ""
     readonly property string pickerWallpaper: manager?.currentWallpaper ?? ""
     readonly property string pickerSource: manager && pickerWallpaper ? manager.getColorSource(pickerWallpaper) : ""
     function resetPicks() { draftColors = (manager?.pickedAccentColors ?? ["", ""]).slice(); }
@@ -76,10 +76,46 @@ ColumnLayout {
 
     component ColorSection: SettingsGroup { Layout.minimumWidth: 0; Layout.alignment: Qt.AlignTop }
 
+    ColumnLayout {
+        visible: root.currentPage === ""
+        Layout.fillWidth: true
+        spacing: Styling.spacing(20)
+        SettingsMenuGroup {
+            entryPrefix: "palette-open-"
+            title: "Palette & wallpaper"
+            description: "Choose your color scheme and fine-tune wallpaper colors."
+            entries: [
+                {"id": "palette", "label": "Palette & mode", "description": "Light, dark and OLED modes, wallpaper schemes and palette preview.", "glyph": Icons.palette},
+                {"id": "picker", "label": "Pick wallpaper colors", "description": "Choose main and accent colors from your wallpaper.", "glyph": Icons.paintBrush}
+            ]
+            onSelected: section => root.currentPage = section
+        }
+        SettingsMenuGroup {
+            entryPrefix: "palette-open-"
+            title: "Saved appearances & sources"
+            description: "Manage reusable looks and your wallpaper library."
+            entries: [
+                {"id": "presets", "label": "Saved appearances", "description": "Save, apply and manage wallpaper and color combinations.", "glyph": Icons.gear},
+                {"id": "wallpaper", "label": "Wallpaper source", "description": "Choose the folder used for your wallpaper library.", "glyph": Icons.layout}
+            ]
+            onSelected: section => root.currentPage = section
+        }
+        SettingsMenuGroup {
+            entryPrefix: "palette-open-"
+            title: "App appearance"
+            description: "Keep supported applications coordinated with the desktop."
+            entries: [
+                {"id": "apps", "label": "App backgrounds & theme sync", "description": "Icon tint, background opacity and application theme refresh.", "glyph": Icons.circuitry}
+            ]
+            onSelected: section => root.currentPage = section
+        }
+    }
+
     SettingsSubnav {
+        visible: root.currentPage !== ""
         objectName: "palette-navigation"
         currentSection: root.currentPage
-        sections: [{id: "palette", label: "Palette & mode"}, {id: "picker", label: "Pick wallpaper colors"},
+        sections: [{id: "", label: "All color settings"}, {id: "palette", label: "Palette & mode"}, {id: "picker", label: "Pick wallpaper colors"},
                    {id: "presets", label: "Saved appearances"}, {id: "wallpaper", label: "Wallpaper source"},
                    {id: "apps", label: "App appearance"}]
         onSelected: section => root.currentPage = section

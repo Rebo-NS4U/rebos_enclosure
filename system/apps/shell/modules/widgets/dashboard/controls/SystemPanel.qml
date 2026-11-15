@@ -88,29 +88,26 @@ Item {
                         onSelected: section => root.currentSection = section
                     }
 
-                    GridLayout {
+                    ColumnLayout {
                         visible: root.currentSection === ""
                         Layout.fillWidth: true
-                        columns: root.contentWidth < Styling.fontSize(0) * 30 ? 1 : 2
-                        columnSpacing: Styling.spacing(12)
-                        rowSpacing: Styling.spacing(12)
-                        SectionButton {
-                            text: "Weather"
-                            description: "Location and temperature units."
-                            glyph: Icons.mapPin
-                            sectionId: "weather"
+                        spacing: Styling.spacing(20)
+                        SettingsMenuGroup {
+                            title: "Desktop widgets"
+                            description: "Choose the information shown on your desktop."
+                            entries: [
+                                {"id": "weather", "label": "Weather", "description": "Location and temperature units.", "glyph": Icons.mapPin},
+                                {"id": "system", "label": "Storage monitor", "description": "Select the disks shown in the system monitor.", "glyph": Icons.circuitry}
+                            ]
+                            onSelected: section => root.currentSection = section
                         }
-                        SectionButton {
-                            text: "Effects"
-                            description: "Animations, previews and cover artwork."
-                            glyph: Icons.lightning
-                            sectionId: "performance"
-                        }
-                        SectionButton {
-                            text: "Storage"
-                            description: "Disks shown in the system monitor."
-                            glyph: Icons.circuitry
-                            sectionId: "system"
+                        SettingsMenuGroup {
+                            title: "Performance & feedback"
+                            description: "Control resource usage and visual behavior."
+                            entries: [
+                                {"id": "performance", "label": "Visual effects", "description": "Animations, window previews and cover artwork.", "glyph": Icons.lightning}
+                            ]
+                            onSelected: section => root.currentSection = section
                         }
                     }
 

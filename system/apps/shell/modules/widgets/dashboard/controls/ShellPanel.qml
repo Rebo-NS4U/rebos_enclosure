@@ -576,35 +576,27 @@ Item {
                         onSelected: section => root.currentSection = section
                     }
 
-                    GridLayout {
+                    ColumnLayout {
                         visible: root.currentSection === ""
                         Layout.fillWidth: true
-                        columns: root.contentWidth < Styling.fontSize(0) * 30 ? 1 : 2
-                        columnSpacing: Styling.spacing(12)
-                        rowSpacing: Styling.spacing(12)
-                        SectionButton {
-                            text: "Bar"
-                            description: "Layout, transparency and visible monitors."
-                            glyph: Icons.layout
-                            sectionId: "bar"
+                        spacing: Styling.spacing(20)
+                        SettingsMenuGroup {
+                            title: "Panels & interaction"
+                            description: "Configure the desktop bar and assistant panel."
+                            entries: [
+                                {"id": "bar", "label": "Desktop bar", "description": "Clock, media controls, appearance and visible monitors.", "glyph": Icons.layout},
+                                {"id": "sidebar", "label": "Assistant panel", "description": "Position, width and startup behavior.", "glyph": Icons.robot}
+                            ]
+                            onSelected: section => root.currentSection = section
                         }
-                        SectionButton {
-                            text: "Assistant panel"
-                            description: "Position, width and startup behavior."
-                            glyph: Icons.robot
-                            sectionId: "sidebar"
-                        }
-                        SectionButton {
-                            text: "Lock screen"
-                            description: "Lock screen layout and controls."
-                            glyph: Icons.lock
-                            sectionId: "lockscreen"
-                        }
-                        SectionButton {
-                            text: "About"
-                            description: "Shell version and project information."
-                            glyph: Icons.gear
-                            sectionId: "system"
+                        SettingsMenuGroup {
+                            title: "Session & information"
+                            description: "Lock screen preferences and shell information."
+                            entries: [
+                                {"id": "lockscreen", "label": "Lock screen", "description": "Choose the lock screen layout and controls.", "glyph": Icons.lock},
+                                {"id": "system", "label": "About the shell", "description": "Version, project information and support.", "glyph": Icons.gear}
+                            ]
+                            onSelected: section => root.currentSection = section
                         }
                     }
 
