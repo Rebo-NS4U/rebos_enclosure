@@ -124,6 +124,21 @@ ShellRoot {
        collectSections(page);
        fixture.check(anchors.length >= 6 && anchors.every(item => item.visible), name + " controls share one scrollable page");
        if (name === "ThemePanel") {
+        const shadows = fixture.find(page, "theme-group-shadow");
+        fixture.check(shadows.collapsible && !shadows.expanded, "Advanced theme controls start collapsed");
+        const collapsedHeight = shadows.implicitHeight;
+        for (let ancestor = shadows.parent; ancestor; ancestor = ancestor.parent) {
+         if (ancestor.contentY !== undefined && ancestor.contentItem) {
+          ancestor.contentY = Math.max(0, shadows.mapToItem(ancestor.contentItem, 0, 0).y - 40);
+         }
+        }
+        tester.wait(40);
+        tester.mouseClick(fixture.find(shadows, "theme-group-shadow-expand")); tester.wait(40);
+        fixture.check(shadows.expanded && shadows.implicitHeight > collapsedHeight + 100, "Advanced controls expand inline");
+        tester.mouseClick(fixture.find(shadows, "theme-group-shadow-expand")); tester.wait(40);
+        fixture.check(!shadows.expanded && shadows.implicitHeight === collapsedHeight, "Collapsing restores compact group height");
+        page.currentSection = "shadow"; tester.wait(40);
+        fixture.check(shadows.expanded, "Search opens the requested advanced controls");
         fixture.check(Config.theme.shadowOpacity === 0.7 && Config.theme.shadowBlur === 2 && Config.theme.shadowXOffset === -5 && Config.theme.shadowYOffset === 8, "Opening shadows preserves saved values");
         page.currentSection = "shadow"; tester.wait(30);
         let shadowOpacity = fixture.find(page, "shadow-opacity");

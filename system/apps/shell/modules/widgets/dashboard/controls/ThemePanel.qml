@@ -22,9 +22,13 @@ Item {
     onCurrentSectionChanged: Qt.callLater(scrollToSection)
     function scrollToSection() {
         function find(item) {
-            if (item.settingsAnchor === root.currentSection) return item;
-            for (const child of item.children || []) { const match = find(child); if (match) return match; }
-            return null;
+            let target = item.settingsAnchor === root.currentSection ? item : null;
+            if (target && item.collapsible) item.expanded = true;
+            for (const child of item.children || []) {
+                const match = find(child);
+                if (!target && match) target = match;
+            }
+            return target;
         }
         const target = find(mainColumn);
         sectionOffset = target ? target.mapToItem(mainColumn, 0, 0).y : 0;
@@ -173,18 +177,6 @@ Item {
 
 
 
-                    PerformanceSettings { property string settingsAnchor: "performance" }
-
-                    MotionSettings {
-                        Layout.fillWidth: true
-                        property string settingsAnchor: "motion"
-                    }
-
-                    BlurSettings {
-                        Layout.fillWidth: true
-                        property string settingsAnchor: "blur"
-                    }
-
                     ShellStyleSettings {
                         property string settingsAnchor: "style"
                         Layout.fillWidth: true
@@ -196,9 +188,32 @@ Item {
                         Layout.fillWidth: true
                     }
 
+                    PerformanceSettings {
+                        property string settingsAnchor: "performance"
+                        collapsible: true
+                        objectName: "theme-group-performance"
+                    }
+
+                    MotionSettings {
+                        Layout.fillWidth: true
+                        property string settingsAnchor: "motion"
+                        collapsible: true
+                        objectName: "theme-group-motion"
+                    }
+
+                    BlurSettings {
+                        Layout.fillWidth: true
+                        property string settingsAnchor: "blur"
+                        collapsible: true
+                        objectName: "theme-group-blur"
+                    }
+
+
                     // General section
                     SettingsGroup {
                         property string settingsAnchor: "general"
+                        collapsible: true
+                        objectName: "theme-group-general"
                         title: "Typography & shape"
 
 
@@ -473,6 +488,8 @@ Item {
                     // Shadow section
                     SettingsGroup {
                         property string settingsAnchor: "shadow"
+                        collapsible: true
+                        objectName: "theme-group-shadow"
                         title: "Shadow appearance"
 
 
@@ -821,6 +838,8 @@ Item {
                     // Variant selector section
                     SettingsGroup {
                         property string settingsAnchor: "variants"
+                        collapsible: true
+                        objectName: "theme-group-variants"
                         title: "Surface to edit"
                         description: Styling.unifiedStyle ? "Choose Custom under Theme & app style to apply individual surface changes." : "Changes apply to the selected surface."
                         SettingsComboBox {
@@ -837,6 +856,8 @@ Item {
                     // Editor section
                     SettingsGroup {
                         property string settingsAnchor: "variants"
+                        collapsible: true
+                        objectName: "theme-group-variants"
                         title: "Custom surface editor"
                         property string settingsSection: "variants"
 

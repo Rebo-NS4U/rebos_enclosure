@@ -74,7 +74,7 @@ ColumnLayout {
         }
     }
 
-    component ColorSection: SettingsGroup { Layout.minimumWidth: 0; Layout.alignment: Qt.AlignTop }
+    component ColorSection: SettingsGroup { collapsible: true; Layout.minimumWidth: 0; Layout.alignment: Qt.AlignTop }
 
 
 
@@ -90,6 +90,7 @@ ColumnLayout {
         ColorSection {
             title: "Palette & color mode"
             objectName: "palette-page-palette"
+            collapsible: false
             property string settingsAnchor: "palette"
             Layout.columnSpan: paletteGrid.columns
             Caption {
