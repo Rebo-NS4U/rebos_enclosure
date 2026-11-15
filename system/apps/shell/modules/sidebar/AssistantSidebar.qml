@@ -1031,7 +1031,7 @@ Item {
                             StyledText {
                                 renderType: Text.NativeRendering
                                 font.hintingPreference: Font.PreferFullHinting
-                                text: "Hello, <font color='" + Styling.srItem("overprimary") + "'>" + mainChatArea.username + "</font>."
+                                text: "Assistant"
                                 font.family: Config.theme.font
                                 font.pixelSize: Styling.fontSize(18)
                                 font.weight: Font.Bold

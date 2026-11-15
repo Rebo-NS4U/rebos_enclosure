@@ -1291,7 +1291,7 @@ Item {
                     answer.text = retained.slice(0, -1).join(""); answer.cursorPosition = answer.length;
                 } else Qt.callLater(previousPage);
             }
-            message = "Ready to resume. Your place is saved on this device.";
+            message = "Reading position restored.";
             if (data.kind === "book") samplesExpanded = false;
             if (data.action === "add") { paste.text = ""; practicing = true; }
             if (data.action === "import") { paste.text = ""; practicing = false; }
@@ -2283,7 +2283,7 @@ Item {
                 }
                 StyledText {
                     visible: !root.practicing && !root.draft && !root.libraryBooks.length
-                    text: "Your books will appear here. Import an EPUB, MOBI or PDF to begin."
+                    text: "No books imported. Import an EPUB, MOBI or PDF."
                     Layout.fillWidth: true
                     wrapMode: Text.Wrap
                     opacity: 0.6

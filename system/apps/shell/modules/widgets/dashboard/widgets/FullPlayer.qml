@@ -385,7 +385,7 @@ StyledRect {
                 font.hintingPreference: Font.PreferFullHinting
                 Layout.fillWidth: true
                 Layout.preferredHeight: visible ? implicitHeight : 0
-                text: player.hasActivePlayer ? (MprisController.activePlayer?.trackTitle ?? "") : "Nothing Playing"
+                text: player.hasActivePlayer ? (MprisController.activePlayer?.trackTitle ?? "") : "Nothing playing"
                 color: Colors.overBackground
                 font.pixelSize: Config.theme.fontSize + 2
                 font.weight: Font.Bold
@@ -401,7 +401,7 @@ StyledRect {
                 font.hintingPreference: Font.PreferFullHinting
                 Layout.fillWidth: true
                 Layout.preferredHeight: visible ? implicitHeight : 0
-                text: player.hasActivePlayer ? (MprisController.activePlayer?.trackAlbum ?? "") : "Enjoy the silence"
+                text: player.hasActivePlayer ? (MprisController.activePlayer?.trackAlbum ?? "") : "No active media player"
                 color: Colors.overBackground
                 font.pixelSize: Config.theme.fontSize
                 font.family: Config.theme.font
@@ -417,7 +417,7 @@ StyledRect {
                 font.hintingPreference: Font.PreferFullHinting
                 Layout.fillWidth: true
                 Layout.preferredHeight: visible ? implicitHeight : 0
-                text: player.hasActivePlayer ? (MprisController.activePlayer?.trackArtist ?? "") : "¯\\_(ツ)_/¯"
+                text: player.hasActivePlayer ? (MprisController.activePlayer?.trackArtist ?? "") : ""
                 color: Colors.overBackground
                 font.pixelSize: Config.theme.fontSize
                 font.family: Config.theme.font

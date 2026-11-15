@@ -164,7 +164,7 @@ FocusScope {
                         spacing: root.unit
                         visible: FileShelf.count === 0
                         StyledText { anchors.horizontalCenter: parent.horizontalCenter; text: Icons.folder; font.family: Icons.font; font.pixelSize: Styling.fontSize(25); color: Colors.primary }
-                        StyledText { width: parent.width; text: FileShelf.busy ? "Reading files…" : "Your shelf is empty"; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap }
+                        StyledText { width: parent.width; text: FileShelf.busy ? "Reading files…" : "No files on shelf"; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap }
                         StyledText { width: parent.width; text: "Drag files or folders onto the left handle."; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap; color: Colors.overSurfaceVariant; font.pixelSize: Styling.fontSize(-1) }
                     }
                 }

@@ -279,12 +279,12 @@ Window {
                     RowLayout {
                         Layout.fillWidth: true
                         StyledText { text: root.pageTitle; font.pixelSize: Styling.fontSize(14); font.bold: true; Layout.fillWidth: true; elide: Text.ElideRight }
-                        SearchInput { id: search; Layout.preferredWidth: Math.min(300, root.width*0.25); placeholderText: "Search your music"; text: root.query; onSearchTextChanged: text => root.query = text }
+                        SearchInput { id: search; Layout.preferredWidth: Math.min(300, root.width*0.25); placeholderText: "Search music"; text: root.query; onSearchTextChanged: text => root.query = text }
                     }
                     StyledText { Layout.fillWidth: true; visible: root.notice !== ""; text: root.notice; wrapMode: Text.WordWrap; color: Colors.error }
                     RowLayout {
                         Layout.fillWidth: true
-                        StyledText { text: root.page === "Home" ? "Your music, close at hand" : root.shownTracks.length + " songs"; color: Colors.overSurfaceVariant; Layout.fillWidth: true }
+                        StyledText { text: root.shownTracks.length + " songs"; color: Colors.overSurfaceVariant; Layout.fillWidth: true }
                         ThemeButton { text: "Play all"; highlighted: true; enabled: root.shownTracks.length > 0; onClicked: root.play(root.shownTracks,0) }
                         ThemeButton { text: "Shuffle"; enabled: root.shownTracks.length > 0; onClicked: { root.shuffle = true; root.play(root.shownTracks,Math.floor(Math.random()*root.shownTracks.length)); } }
                     }
@@ -322,7 +322,7 @@ Window {
                             }
                         }
                         ScrollBar.vertical: ScrollBar {}
-                        StyledText { anchors.centerIn: parent; width: parent.width-48; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap; visible: cards.count === 0; text: root.busy ? "Reading your music…" : root.page === "Playlists" ? "Create a playlist from the queue below." : "Your library starts here.\nAdd a music folder to see albums and artists."; color: Colors.overSurfaceVariant }
+                        StyledText { anchors.centerIn: parent; width: parent.width-48; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap; visible: cards.count === 0; text: root.busy ? "Scanning music…" : root.page === "Playlists" ? "Create a playlist from the queue below." : "No music found.\nAdd a folder or change the search."; color: Colors.overSurfaceVariant }
                     }
                     ListView {
                         id: songs
@@ -337,7 +337,7 @@ Window {
                             onEnqueueRequested: root.queue = root.queue.concat([track])
                         }
                         ScrollBar.vertical: ScrollBar {}
-                        StyledText { anchors.centerIn: parent; visible: songs.count === 0; text: root.query ? "No matching songs" : "No songs here yet"; color: Colors.overSurfaceVariant }
+                        StyledText { anchors.centerIn: parent; visible: songs.count === 0; text: root.query ? "No matching songs" : "No songs"; color: Colors.overSurfaceVariant }
                     }
                     RowLayout {
                         Layout.fillWidth: true
@@ -358,8 +358,8 @@ Window {
                     ColumnLayout {
                         anchors.fill: parent; anchors.margins: 14; spacing: 12
                         Cover { Layout.fillWidth: true; Layout.preferredHeight: 230; artwork: root.current?.art || "" }
-                        StyledText { Layout.fillWidth: true; text: root.current?.title || "Nothing playing yet"; wrapMode: Text.WordWrap; font.bold: true; font.pixelSize: Styling.fontSize(4) }
-                        StyledText { Layout.fillWidth: true; text: root.current?.artist || "Choose a song to get started"; elide: Text.ElideRight; color: Colors.overSurfaceVariant }
+                        StyledText { Layout.fillWidth: true; text: root.current?.title || "Nothing playing"; wrapMode: Text.WordWrap; font.bold: true; font.pixelSize: Styling.fontSize(4) }
+                        StyledText { Layout.fillWidth: true; text: root.current?.artist || "Select a song to play"; elide: Text.ElideRight; color: Colors.overSurfaceVariant }
                         RowLayout {
                             ThemeButton { text: "Queue"; highlighted: root.side === "Queue"; onClicked: root.side = "Queue" }
                             ThemeButton { text: "Lyrics"; highlighted: root.side === "Lyrics"; onClicked: root.side = "Lyrics" }
@@ -411,7 +411,7 @@ Window {
                         ColumnLayout {
                             Layout.fillWidth: true
                             StyledText { Layout.fillWidth: true; text: root.current?.title || "Enclosure Music"; elide: Text.ElideRight }
-                            StyledText { Layout.fillWidth: true; text: root.current?.artist || "Your local music library"; elide: Text.ElideRight; color: Colors.overSurfaceVariant; font.pixelSize: Styling.fontSize(-2) }
+                            StyledText { Layout.fillWidth: true; text: root.current?.artist || "Local music library"; elide: Text.ElideRight; color: Colors.overSurfaceVariant; font.pixelSize: Styling.fontSize(-2) }
                         }
                         ThemeButton { text: "Shuffle"; checked: root.shuffle; onClicked: root.shuffle = !root.shuffle }
                         ThemeButton { text: "⏮"; Accessible.name: "Previous track"; enabled: !!root.current; onClicked: root.previous() }

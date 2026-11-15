@@ -76,7 +76,7 @@ Item {
                             font.bold: true
                         }
                         StyledText {
-                            text: "A little space for your thoughts"
+                            text: "Plain text notes"
                             color: Colors.overSurfaceVariant
                             font.pixelSize: Styling.fontSize(-2)
                         }
