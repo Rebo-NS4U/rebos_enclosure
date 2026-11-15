@@ -20,7 +20,7 @@ Item {
     property real endRadius: Styling.radius(0)
     property real value: 0
     property string icon: ""
-    property color progressColor: BarAppearance.foregroundColor
+    property color progressColor: BarAppearance.controlColor(true)
     property string tooltipText: ""
     property string tooltipDescription: ""
     property bool clickEnabled: true
@@ -137,7 +137,7 @@ Item {
             text: root.icon
             font.family: Icons.font
             font.pixelSize: Styling.fontSize(root.flat ? -3 : 0)
-            color: BarAppearance.foregroundColor
+            color: root.progressColor
         }
 
         MouseArea {

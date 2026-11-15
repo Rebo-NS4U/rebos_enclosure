@@ -82,8 +82,7 @@ ShellRoot {
     const body = tester.findChild(bar, 'typing-island-container');
     for (const name of ['bar-divider-volume-mic', 'bar-divider-mic-battery']) {
      const divider = tester.findChild(bar, name);
-     if (!divider || divider.width !== 1 || divider.height <= 0)
-      throw Error('Missing compact separator: ' + name);
+     if (divider) throw Error('Unexpected separator between meters: ' + name);
     }
     const power = tester.findChild(bar, 'island-lazy-power');
     const sound = tester.findChild(bar, 'island-lazy-sound');

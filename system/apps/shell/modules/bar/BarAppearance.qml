@@ -13,7 +13,8 @@ Singleton {
     readonly property color activeColor: Colors.primary
 
     function controlColor(enabled: bool): color {
-        return enabled ? foregroundColor : mutedColor;
+        // Main color for active controls; accent for muted or disabled controls.
+        return enabled ? Colors.primary : Colors.secondary;
     }
     function batteryStatusColor(percent: real, charging: bool): color {
         if (charging) return activeColor;

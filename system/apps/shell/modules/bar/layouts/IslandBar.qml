@@ -1002,27 +1002,11 @@ Item {
                         flat: true
                         meterSize: root.islandHeight
                     }
-                    Rectangle {
-                        objectName: "bar-divider-volume-mic"
-                        Layout.alignment: Qt.AlignVCenter
-                        implicitWidth: 1
-                        implicitHeight: Styling.fontSize(0)
-                        radius: 0.5
-                        color: Qt.alpha(BarAppearance.foregroundColor, 0.24)
-                    }
                     MicSlider {
                         objectName: "bar-mic"
                         bar: root
                         flat: true
                         meterSize: root.islandHeight
-                    }
-                    Rectangle {
-                        objectName: "bar-divider-mic-battery"
-                        Layout.alignment: Qt.AlignVCenter
-                        implicitWidth: 1
-                        implicitHeight: Styling.fontSize(0)
-                        radius: 0.5
-                        color: Qt.alpha(BarAppearance.foregroundColor, 0.24)
                     }
                     BatteryIndicator {
                         objectName: "bar-battery"

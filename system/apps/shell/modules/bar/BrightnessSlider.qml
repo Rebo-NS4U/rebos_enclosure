@@ -14,7 +14,7 @@ CircularBarMeter {
 
     value: currentMonitor?.brightness ?? 0.5
     icon: Icons.sun
-    progressColor: BarAppearance.foregroundColor
+    progressColor: BarAppearance.controlColor(!NightLightService.active)
     tooltipText: "Brightness " + Math.round(value * 100) + "%"
     clickEnabled: true
     tooltipDescription: "Scroll to adjust · Click for controls · Right-click for night light"
