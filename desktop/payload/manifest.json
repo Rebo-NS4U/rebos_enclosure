@@ -109,6 +109,7 @@
     ".local/share/fonts/rebos_shell",
     ".local/share/icons/GoogleDot-Black",
     ".local/share/wallpapers/Ismail Inceoglu - Seventeenth",
+    ".local/share/wallpapers/Cycle Circle - Zombie012",
     "code/anime-streamer",
     "code/rebos-assistant"
   ],
@@ -540,6 +541,10 @@
     },
     "code/rebos-assistant": {
       "source": "system/apps/assistant",
+      "kind": "managed"
+    },
+    ".local/share/wallpapers/Cycle Circle - Zombie012": {
+      "source": "system/share/wallpapers/Cycle Circle - Zombie012",
       "kind": "managed"
     }
   }
