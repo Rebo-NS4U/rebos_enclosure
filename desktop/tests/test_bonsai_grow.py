@@ -604,8 +604,10 @@ class BonsaiGrowTests(unittest.TestCase):
         for seed in range(20):
             for left_corner in (False, True):
                 points = bonsai.glass_reflections(seed, left_corner)
-                self.assertIn(len(points), (2, 3))
-                self.assertTrue(all((51 <= x <= 55 if left_corner else 1 <= x <= 5)
+                self.assertGreaterEqual(len(points), 5)
+                self.assertLessEqual(len(points), 10)
+                self.assertEqual(len(points), len(set(points)))
+                self.assertTrue(all((49 <= x <= 55 if left_corner else 1 <= x <= 7)
                                     and 3 <= y <= 15 for x, y in points))
 
     def test_kitty_frame_is_quiet_and_preserves_the_terminal_cursor(self):
