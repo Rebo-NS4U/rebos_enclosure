@@ -334,6 +334,9 @@ ClippingRectangle {
                 anchors.fill: parent
                 readonly property color pigment: material.ink
                 readonly property string finish: material.finish
+                objectName: "structural-glass-canvas"
+                readonly property real cornerRadius: Math.max(0, Math.min(root.radius, width / 2, height / 2))
+                onCornerRadiusChanged: requestPaint()
                 onPigmentChanged: requestPaint()
                 onFinishChanged: requestPaint()
                 onWidthChanged: requestPaint()
@@ -344,20 +347,39 @@ ClippingRectangle {
                     const ink=a=>Qt.rgba(pigment.r,pigment.g,pigment.b,a);
                     ctx.lineWidth=1;
                     if (finish === "glass-vault") {
+                        const radiusAt = inset => Math.max(0, Math.min(cornerRadius-inset, (width-inset*2)/2, (height-inset*2)/2));
+                        const frame = inset => {
+                            if (width <= inset*2 || height <= inset*2) return;
+                            const r=radiusAt(inset),right=width-inset,bottom=height-inset;
+                            ctx.beginPath();ctx.moveTo(inset+r,inset);ctx.lineTo(right-r,inset);
+                            ctx.quadraticCurveTo(right,inset,right,inset+r);ctx.lineTo(right,bottom-r);
+                            ctx.quadraticCurveTo(right,bottom,right-r,bottom);ctx.lineTo(inset+r,bottom);
+                            ctx.quadraticCurveTo(inset,bottom,inset,bottom-r);ctx.lineTo(inset,inset+r);
+                            ctx.quadraticCurveTo(inset,inset,inset+r,inset);ctx.stroke();
+                        };
                         const step=material.outer ? 10 : 4;
-                        ctx.strokeStyle=ink(0.18); ctx.strokeRect(step,step,width-step*2,height-step*2);
-                        ctx.strokeStyle=ink(0.08); ctx.strokeRect(step+3,step+3,width-step*2-6,height-step*2-6);
-                        // Massive corner clamps hold a continuous clear block.
-                        const span=Math.min(material.outer ? 26 : 12,width/4,height/4);
+                        ctx.strokeStyle=ink(0.18);frame(step);
+                        ctx.strokeStyle=ink(0.08);frame(step+3);
+                        // Clamps follow the same inset arc as the clipped surface.
                         for (const x of [3,width-3]) for (const y of [3,height-3]) {
-                            const sx=x>width/2 ? -1 : 1, sy=y>height/2 ? -1 : 1;
+                            const sx=x>width/2 ? -1 : 1,sy=y>height/2 ? -1 : 1;
+                            const r=radiusAt(3),inner=radiusAt(5);
+                            const span=Math.min(Math.max(material.outer?26:12,r+6),(width-6)/2,(height-6)/2);
                             ctx.strokeStyle=ink(0.32);ctx.lineWidth=material.outer?5:2;
-                            ctx.beginPath();ctx.moveTo(x,y+sy*span);ctx.lineTo(x,y);ctx.lineTo(x+sx*span,y);ctx.stroke();
+                            ctx.beginPath();ctx.moveTo(x,y+sy*span);ctx.lineTo(x,y+sy*r);
+                            ctx.quadraticCurveTo(x,y,x+sx*r,y);ctx.lineTo(x+sx*span,y);ctx.stroke();
                             ctx.lineWidth=1;ctx.strokeStyle=ink(0.55);
-                            ctx.beginPath();ctx.moveTo(x+sx*2,y+sy*span);ctx.lineTo(x+sx*2,y+sy*2);ctx.lineTo(x+sx*span,y+sy*2);ctx.stroke();
+                            const ix=x+sx*2,iy=y+sy*2;
+                            ctx.beginPath();ctx.moveTo(ix,y+sy*span);ctx.lineTo(ix,iy+sy*inner);
+                            ctx.quadraticCurveTo(ix,iy,ix+sx*inner,iy);ctx.lineTo(x+sx*span,iy);ctx.stroke();
                         }
-                        ctx.fillStyle=ink(0.10);ctx.fillRect(12,height-8,Math.max(0,width-24),5);
-                        ctx.fillStyle=ink(0.18);ctx.fillRect(width-8,12,4,Math.max(0,height-24));
+                        // The lower glass lip bends around the same rounded corner.
+                        const lip=6,r=radiusAt(lip);
+                        ctx.lineWidth=3;ctx.strokeStyle=ink(0.13);
+                        ctx.beginPath();ctx.moveTo(Math.max(12,lip+r),height-lip);
+                        ctx.lineTo(width-lip-r,height-lip);
+                        ctx.quadraticCurveTo(width-lip,height-lip,width-lip,height-lip-r);
+                        ctx.lineTo(width-lip,Math.max(12,lip+r));ctx.stroke();
                     } else if (finish === "radar-station") {
                         // Fixed bearing scales: no sweep, motion or simulated live data.
                         ctx.strokeStyle=ink(0.12);ctx.strokeRect(8,8,width-16,height-16);

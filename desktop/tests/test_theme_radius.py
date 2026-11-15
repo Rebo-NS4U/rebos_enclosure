@@ -26,3 +26,60 @@ class ThemeRadiusTests(unittest.TestCase):
             theme.unlink()
             apply_niri_theme(palette, home)
             self.assertIn('geometry-corner-radius 16', (home / '.cache/rebos_shell/niri-colors.kdl').read_text())
+
+class VaultCornerTests(unittest.TestCase):
+    def test_live_radius_updates_reach_vault_decoration(self):
+        import os
+        import shutil
+        import subprocess
+        if not shutil.which('qs'):
+            self.skipTest('Requires Quickshell')
+        app = SCRIPTS.parent
+        with tempfile.TemporaryDirectory(prefix='vault-radius-') as directory:
+            root = Path(directory)
+            for name in ('modules', 'config', 'assets', 'scripts', 'version'):
+                (root / name).symlink_to(app / name)
+            (root / 'runtime').mkdir(mode=0o700)
+            (root / 'shell.qml').write_text('''import QtQuick
+import QtQuick.Window
+import Quickshell
+import qs.config
+import qs.modules.components
+ShellRoot {
+ function decoration(node) {
+  if (node.objectName === "structural-glass-canvas") return node;
+  for (const child of node.children || []) { const result = decoration(child); if (result) return result; }
+  return null;
+ }
+ Window { visible: true; width: 96; height: 72
+  StyledRect { id: panel; anchors.fill: parent; variant: "bg"; styleOverride: "glass-vault"; animateRadius: false }
+ }
+ Timer {
+  property int step: 0
+  interval: 150; running: true; repeat: true
+  onTriggered: {
+   const values = [0,16,40,100];
+   if (step === values.length) { Qt.quit(); return; }
+   const expected = values[step++];
+   Config.theme.roundness = expected;
+   Qt.callLater(() => {
+    const canvas = decoration(panel);
+    if (!canvas || panel.radius !== expected || canvas.cornerRadius !== Math.min(expected,36)) {
+     console.error("VAULT_RADIUS_FAILED",expected,panel.radius,canvas ? canvas.cornerRadius : "missing"); Qt.quit();
+    } else console.log("VAULT_RADIUS_OK",expected);
+   });
+  }
+ }
+}''')
+            env = dict(os.environ, HOME=directory, XDG_RUNTIME_DIR=str(root / 'runtime'),
+                       QT_QPA_PLATFORM='offscreen', QT_QPA_PLATFORMTHEME='basic')
+            for key in ('WAYLAND_DISPLAY', 'DISPLAY', 'DBUS_SESSION_BUS_ADDRESS', 'NIRI_SOCKET'):
+                env.pop(key, None)
+            result = subprocess.run(['qs', '-p', str(root / 'shell.qml')], env=env,
+                                    text=True, capture_output=True, timeout=15)
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            self.assertNotIn('VAULT_RADIUS_FAILED', output)
+            self.assertEqual(output.count('VAULT_RADIUS_OK'), 4, output)
+            for error in ('ReferenceError', 'TypeError', 'Unable to assign', 'Cannot assign'):
+                self.assertNotIn(error, output)

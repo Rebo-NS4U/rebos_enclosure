@@ -91,7 +91,7 @@ for (const id of materials) {
 assert.equal(surface('clear-glass', 'bg', p).opacity, 0.52);
 assert.equal(surface('clear-glass', 'bg', p).radius, 14);
 assert.equal(surface('clear-glass', 'pane', p).border[1], 0);
-assert.equal(surface('glass-vault', 'bg', p).radius, 4);
+assert.equal(surface('glass-vault', 'bg', p).radius, undefined);
 assert.equal(surface('radar-station', 'bg', p).radius, 5);
 assert.equal(surface('suspended-film', 'bg', p).radius, 1);
 for (let i=0; i<materials.length; i++) for (let j=i+1; j<materials.length; j++)
