@@ -15,7 +15,7 @@ Button {
     property bool selected: false
     Layout.fillWidth: true
     Layout.minimumWidth: 0
-    implicitHeight: Math.max(Styling.fontSize(0) * 9, contentItem.implicitHeight + padding * 2)
+    implicitHeight: Math.max(80, contentItem.implicitHeight + padding * 2)
     padding: 16
     hoverEnabled: true
     background: StyledRect {
@@ -24,31 +24,33 @@ Button {
         border.width: root.activeFocus || root.selected ? 2 : 1
         border.color: root.activeFocus || root.selected ? Colors.primary : Qt.alpha(Colors.outline, 0.3)
     }
-    contentItem: ColumnLayout {
-        spacing: Styling.spacing(10)
-        RowLayout {
+    contentItem: RowLayout {
+        spacing: 16
+        StyledText {
+            visible: root.glyph.length > 0
+            text: root.glyph
+            font.family: Icons.font
+            font.pixelSize: Styling.fontSize(6)
+            color: Colors.primary
+        }
+        ColumnLayout {
             Layout.fillWidth: true
-            StyledText {
-                visible: root.glyph.length > 0
-                text: root.glyph
-                font.family: Icons.font
-                font.pixelSize: Styling.fontSize(6)
-                color: Colors.primary
-            }
+            spacing: 6
             StyledText {
                 Layout.fillWidth: true
                 text: root.text
                 font.bold: true
                 wrapMode: Text.WordWrap
             }
-            StyledText { text: Icons.caretRight; font.family: Icons.font; color: Colors.overSurfaceVariant }
+            StyledText {
+                Layout.fillWidth: true
+                text: root.description
+                visible: text.length > 0
+                wrapMode: Text.WordWrap
+                color: Colors.overSurfaceVariant
+                font.pixelSize: Styling.fontSize(-1)
+            }
         }
-        StyledText {
-            Layout.fillWidth: true
-            text: root.description
-            wrapMode: Text.WordWrap
-            color: Colors.overSurfaceVariant
-            font.pixelSize: Styling.fontSize(-1)
-        }
+        StyledText { text: Icons.caretRight; font.family: Icons.font; color: Colors.overSurfaceVariant }
     }
 }

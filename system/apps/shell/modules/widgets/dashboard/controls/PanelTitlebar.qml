@@ -24,7 +24,7 @@ ColumnLayout {
 
     signal toggleChanged(bool checked)
 
-    readonly property int horizontalMargin: 12
+    readonly property int horizontalMargin: 0
     Layout.fillWidth: true
     Layout.preferredHeight: implicitHeight
     spacing: Styling.spacing(8)
@@ -38,7 +38,7 @@ ColumnLayout {
             Layout.minimumWidth: 0
             leftPadding: root.horizontalMargin
             text: root.title
-            font.pixelSize: Styling.fontSize(6)
+            font.pixelSize: Styling.fontSize(8)
             font.weight: Font.DemiBold
             elide: Text.ElideRight
         }

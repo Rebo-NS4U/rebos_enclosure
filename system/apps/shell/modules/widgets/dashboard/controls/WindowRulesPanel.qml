@@ -133,7 +133,7 @@ Item {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: parent.top
         anchors.bottom: parent.bottom
-        spacing: Styling.fontSize(-3)
+        spacing: Styling.spacing(16)
         PanelTitlebar {
             title: "Window rules"
             description: "Set how windows open and appear."

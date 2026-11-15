@@ -33,6 +33,7 @@ Item {
         id: networkList
         anchors.fill: parent
         clip: true
+        ScrollBar.vertical: ScrollBar {}
         spacing: Styling.spacing(12)
         cacheBuffer: 1000
         reuseItems: true
@@ -41,7 +42,7 @@ Item {
 
         header: Item {
             width: networkList.width
-            height: titlebar.height + 8 + (errorText.visible ? errorText.implicitHeight + 8 : 0)
+            height: titlebar.height + 48 + (errorText.visible ? errorText.implicitHeight + 8 : 0)
 
             StyledText {
                 id: errorText
@@ -55,6 +56,16 @@ Item {
                 wrapMode: Text.Wrap
                 maximumLineCount: 3
                 elide: Text.ElideRight
+            }
+
+            StyledText {
+                width: root.contentWidth
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.bottom: parent.bottom
+                bottomPadding: 12
+                text: "Available networks"
+                font.bold: true
+                font.pixelSize: Styling.fontSize(1)
             }
 
             PanelTitlebar {

@@ -29,12 +29,13 @@ Item {
         anchors.fill: parent
         contentHeight: mainColumn.implicitHeight
         clip: true
+        ScrollBar.vertical: ScrollBar {}
         boundsBehavior: Flickable.StopAtBounds
 
         ColumnLayout {
             id: mainColumn
             width: mainFlickable.width
-            spacing: Styling.spacing(8)
+            spacing: Styling.spacing(16)
 
             // Header wrapper
             Item {
@@ -550,7 +551,7 @@ Item {
         StyledRect {
             variant: "common"
             Layout.preferredWidth: 60
-            Layout.preferredHeight: 32
+            Layout.preferredHeight: 48
             radius: Styling.radius(-2)
 
             TextInput {
@@ -625,7 +626,7 @@ Item {
         StyledRect {
             variant: "common"
             Layout.fillWidth: true
-            Layout.preferredHeight: 32
+            Layout.preferredHeight: 48
             radius: Styling.radius(-2)
 
             TextInput {
@@ -669,25 +670,5 @@ Item {
 
 
     // ToggleRow component for boolean toggles
-    component ToggleRow: RowLayout {
-        id: toggleRow
-        property string label: ""
-        property string description: ""
-        property bool checked: false
-        signal toggled(bool checked)
-        spacing: Styling.spacing(12)
-        ColumnLayout {
-            Layout.fillWidth: true
-            StyledText { text: toggleRow.label; Layout.fillWidth: true; wrapMode: Text.WordWrap }
-            StyledText {
-                visible: toggleRow.description.length > 0
-                text: toggleRow.description
-                Layout.fillWidth: true
-                wrapMode: Text.WordWrap
-                color: Colors.overSurfaceVariant
-                font.pixelSize: Styling.fontSize(-2)
-            }
-        }
-        StyledSwitch { checked: toggleRow.checked; onToggled: toggleRow.toggled(checked) }
-    }
+    component ToggleRow: SettingsToggleRow {}
 }

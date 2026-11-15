@@ -115,7 +115,7 @@ Item {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: parent.top
         anchors.bottom: parent.bottom
-        spacing: Styling.fontSize(-3)
+        spacing: Styling.spacing(16)
         PanelTitlebar {
             title: "Display"
             description: "Set monitor resolution, scale, rotation and position."
@@ -134,7 +134,7 @@ Item {
             contentWidth: availableWidth
             ColumnLayout {
                 width: parent.width
-                spacing: Styling.fontSize(-3)
+                spacing: Styling.spacing(16)
                 enabled: !writer.running && !reader.running && root.outputs.length > 0
                 SettingsGroup {
                     title: "Monitor"

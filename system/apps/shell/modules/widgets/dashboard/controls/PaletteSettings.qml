@@ -43,23 +43,10 @@ ColumnLayout {
         color: Colors.overSurfaceVariant
     }
 
-    component Action: Button {
-        id: button
+    component Action: SettingsButton {
         property bool selected: false
-        implicitHeight: 38
+        highlighted: selected
         Layout.fillWidth: true
-        background: StyledRect {
-            variant: button.selected ? "primary" : (button.hovered ? "focus" : "common")
-        }
-        contentItem: Text {
-            text: button.text
-            font.family: Config.theme.font
-            font.pixelSize: Styling.fontSize(-1)
-            color: button.selected ? Colors.overPrimary : Colors.overSurface
-            horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignVCenter
-            elide: Text.ElideRight
-        }
     }
 
     component ColorAction: Action {
@@ -87,23 +74,7 @@ ColumnLayout {
         }
     }
 
-    component ColorSection: StyledRect {
-        default property alias content: body.data
-        Layout.fillWidth: true
-        Layout.minimumWidth: 0
-        Layout.alignment: Qt.AlignTop
-        implicitHeight: body.implicitHeight + 40
-        variant: "common"
-        border.width: 1
-        border.color: Qt.alpha(Colors.outline, 0.35)
-        ColumnLayout {
-            id: body
-            x: 20
-            y: 20
-            width: parent.width - 40
-            spacing: Styling.spacing(12)
-        }
-    }
+    component ColorSection: SettingsGroup { Layout.minimumWidth: 0; Layout.alignment: Qt.AlignTop }
 
     SettingsSubnav {
         objectName: "palette-navigation"
@@ -122,10 +93,10 @@ ColumnLayout {
         columnSpacing: Styling.spacing(24)
         rowSpacing: Styling.spacing(24)
         ColorSection {
+            title: "Palette & color mode"
             objectName: "palette-page-palette"
             visible: root.currentPage === "palette"
             Layout.columnSpan: paletteGrid.columns
-            StyledText { text: "Palette & color mode"; font.bold: true }
             Caption {
                 text: "Matugen creates one palette for the desktop and your apps. Neutral is subtle; Tonal spot and Vibrant bring out more wallpaper color."
             }
@@ -212,16 +183,10 @@ ColumnLayout {
             }
         }
         ColorSection {
+            title: "Pick wallpaper colors"
             objectName: "palette-page-picker"
             visible: root.currentPage === "picker"
             Layout.columnSpan: paletteGrid.columns
-            Text {
-                text: "Pick colors from your wallpaper"
-                font.family: Config.theme.font
-                font.pixelSize: Styling.fontSize(0)
-                font.bold: true
-                color: Colors.overSurface
-            }
             Caption {
                 text: "Select Main or Accent, then click the wallpaper. Matugen builds your theme from these colors, and the bonsai uses the same pair. Picks are saved for each wallpaper."
             }
@@ -366,10 +331,10 @@ ColumnLayout {
             }
         }
         ColorSection {
+            title: "Saved appearances"
             objectName: "palette-page-presets"
             visible: root.currentPage === "presets"
             Layout.columnSpan: paletteGrid.columns
-            StyledText { text: "Saved wallpaper and color presets"; font.bold: true }
             Caption { text: "Save your current wallpaper, monitor overrides, colors and shell appearance together. Apply picked colors before saving." }
             SettingsTextField {
                 id: presetName
@@ -408,10 +373,10 @@ ColumnLayout {
 
         }
         ColorSection {
+            title: "Wallpaper library"
             objectName: "palette-page-wallpaper"
             visible: root.currentPage === "wallpaper"
             Layout.columnSpan: paletteGrid.columns
-            StyledText { text: "Wallpaper library"; font.bold: true }
             // Wallpaper Path
             RowLayout {
                 Layout.fillWidth: true
@@ -470,45 +435,17 @@ ColumnLayout {
 
         }
         ColorSection {
+            title: "App appearance"
             objectName: "palette-page-apps"
             visible: root.currentPage === "apps"
             Layout.columnSpan: paletteGrid.columns
-            StyledText { text: "App backgrounds & theme sync"; font.bold: true }
-            // Tint Icons toggle
-            RowLayout {
-                Layout.fillWidth: true
-                spacing: Styling.spacing(8)
-
-                StyledText {
-                    renderType: Text.NativeRendering
-                    font.hintingPreference: Font.PreferFullHinting
-                    text: "Tint Icons"
-                    font.family: Config.theme.font
-                    font.pixelSize: Styling.fontSize(0)
-                    color: Colors.overBackground
-                    Layout.fillWidth: true
-                }
-
-                StyledSwitch {
-                    id: tintIconsSwitch
-                    checked: Config.theme.tintIcons
-
-                    readonly property bool configValue: Config.theme.tintIcons
-
-                    onConfigValueChanged: {
-                        if (checked !== configValue) {
-                            checked = configValue;
-                        }
-                    }
-
-                    onCheckedChanged: {
-                        if (checked !== Config.theme.tintIcons) {
-                            Config.theme.tintIcons = checked;
-                        }
-                    }
-
-                }
+            SettingsToggleRow {
+                label: "Tint icons"
+                description: "Use the theme palette for supported icons."
+                checked: Config.theme.tintIcons
+                onToggled: checked => Config.theme.tintIcons = checked
             }
+
 
             Caption { text: "Background opacity: " + Math.round(Config.theme.srBg.opacity * 100) + "%" }
             ThemeSlider {

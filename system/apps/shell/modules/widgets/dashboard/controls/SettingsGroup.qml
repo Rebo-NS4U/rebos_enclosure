@@ -10,7 +10,7 @@ StyledRect {
     property string description: ""
     default property alias content: body.data
     Layout.fillWidth: true
-    implicitHeight: column.implicitHeight + 32
+    implicitHeight: column.implicitHeight + 40
     variant: "common"
     radius: Styling.radius(-2)
     border.width: 1
@@ -20,9 +20,9 @@ StyledRect {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
-        anchors.margins: 16
-        spacing: Styling.spacing(12)
-        StyledText { visible: root.title.length > 0; text: root.title; font.bold: true }
+        anchors.margins: 20
+        spacing: Styling.spacing(16)
+        StyledText { visible: root.title.length > 0; text: root.title; font.bold: true; font.pixelSize: Styling.fontSize(1); Layout.fillWidth: true; wrapMode: Text.WordWrap }
         StyledText {
             visible: root.description.length > 0
             Layout.fillWidth: true
@@ -31,6 +31,6 @@ StyledRect {
             color: Colors.overSurfaceVariant
             font.pixelSize: Styling.fontSize(-1)
         }
-        ColumnLayout { id: body; Layout.fillWidth: true; spacing: Styling.spacing(12) }
+        ColumnLayout { id: body; Layout.fillWidth: true; spacing: Styling.spacing(16) }
     }
 }

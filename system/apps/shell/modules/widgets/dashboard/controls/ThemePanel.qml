@@ -95,6 +95,7 @@ Item {
         anchors.fill: parent
         contentHeight: mainColumn.implicitHeight
         clip: true
+        ScrollBar.vertical: ScrollBar {}
         boundsBehavior: Flickable.StopAtBounds
         interactive: !root.colorPickerActive
 
@@ -124,7 +125,7 @@ Item {
         ColumnLayout {
             id: mainColumn
             width: mainFlickable.width
-            spacing: Styling.spacing(8)
+            spacing: Styling.spacing(16)
 
             // Header wrapper
             Item {
@@ -277,1074 +278,670 @@ Item {
                     }
 
                     // General section
-                    Item {
+                    SettingsGroup {
                         visible: root.currentSection === "general"
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: generalContent.implicitHeight
+                        title: "Typography & shape"
 
-                        ColumnLayout {
-                            id: generalContent
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            anchors.top: parent.top
+
+                        StyledText {
+                            renderType: Text.NativeRendering
+                            font.hintingPreference: Font.PreferFullHinting
+                            text: "Fonts"
+                            font.family: Config.theme.font
+                            font.pixelSize: Styling.fontSize(-1)
+                            font.weight: Font.Medium
+                            color: Colors.overSurfaceVariant
+                            Layout.bottomMargin: -4
+                        }
+
+                        // UI Font row
+                        RowLayout {
+                            Layout.fillWidth: true
                             spacing: Styling.spacing(8)
 
                             StyledText {
                                 renderType: Text.NativeRendering
                                 font.hintingPreference: Font.PreferFullHinting
-                                text: "Fonts"
+                                text: "UI Font"
                                 font.family: Config.theme.font
-                                font.pixelSize: Styling.fontSize(-1)
-                                font.weight: Font.Medium
-                                color: Colors.overSurfaceVariant
-                                Layout.bottomMargin: -4
+                                font.pixelSize: Styling.fontSize(0)
+                                color: Colors.overBackground
+                                Layout.preferredWidth: 80
                             }
 
-                            // UI Font row
-                            RowLayout {
+                            SettingsTextField {
                                 Layout.fillWidth: true
-                                spacing: Styling.spacing(8)
 
-                                StyledText {
-                                    renderType: Text.NativeRendering
-                                    font.hintingPreference: Font.PreferFullHinting
-                                    text: "UI Font"
-                                    font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(0)
-                                    color: Colors.overBackground
-                                    Layout.preferredWidth: 80
-                                }
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
+                                id: fontInput
 
-                                StyledRect {
-                                    variant: "common"
-                                    Layout.fillWidth: true
-                                    Layout.preferredHeight: 32
-                                    radius: Styling.radius(-2)
 
-                                    TextInput {
-                                        renderType: Text.NativeRendering
-                                        font.hintingPreference: Font.PreferFullHinting
-                                        id: fontInput
-                                        anchors.fill: parent
-                                        anchors.margins: 8
-                                        font.family: Config.theme.font
-                                        font.pixelSize: Styling.fontSize(0)
-                                        color: Colors.overBackground
-                                        selectByMouse: true
-                                        clip: true
-                                        verticalAlignment: TextInput.AlignVCenter
+                                font.family: Config.theme.font
+                                font.pixelSize: Styling.fontSize(0)
+                                color: Colors.overBackground
+                                selectByMouse: true
+                                clip: true
+                                verticalAlignment: TextInput.AlignVCenter
 
-                                        readonly property string configValue: Config.theme.font
+                                readonly property string configValue: Config.theme.font
 
-                                        onConfigValueChanged: {
-                                            if (text !== configValue) {
-                                                text = configValue;
-                                            }
-                                        }
-
-                                        Component.onCompleted: text = configValue
-
-                                        onEditingFinished: {
-                                            if (text !== Config.theme.font && text.trim() !== "") {
-                                                Config.theme.font = text.trim();
-                                            }
-                                        }
+                                onConfigValueChanged: {
+                                    if (text !== configValue) {
+                                        text = configValue;
                                     }
                                 }
 
-                                StyledRect {
-                                    variant: "common"
-                                    Layout.preferredWidth: 60
-                                    Layout.preferredHeight: 32
-                                    radius: Styling.radius(-2)
+                                Component.onCompleted: text = configValue
 
-                                    TextInput {
-                                        renderType: Text.NativeRendering
-                                        font.hintingPreference: Font.PreferFullHinting
-                                        id: fontSizeInput
-                                        anchors.fill: parent
-                                        anchors.margins: 8
-                                        font.family: Config.theme.font
-                                        font.pixelSize: Styling.fontSize(0)
-                                        color: Colors.overBackground
-                                        selectByMouse: true
-                                        clip: true
-                                        verticalAlignment: TextInput.AlignVCenter
-                                        horizontalAlignment: TextInput.AlignHCenter
-                                        validator: IntValidator {
-                                            bottom: 8
-                                            top: 32
-                                        }
-
-                                        readonly property int configValue: Config.theme.fontSize
-
-                                        onConfigValueChanged: {
-                                            if (text !== configValue.toString()) {
-                                                text = configValue.toString();
-                                            }
-                                        }
-
-                                        Component.onCompleted: text = configValue.toString()
-
-                                        onEditingFinished: {
-                                            let newSize = parseInt(text);
-                                            if (!isNaN(newSize) && newSize >= 8 && newSize <= 32 && newSize !== Config.theme.fontSize) {
-                                                Config.theme.fontSize = newSize;
-                                            }
-                                        }
+                                onEditingFinished: {
+                                    if (text !== Config.theme.font && text.trim() !== "") {
+                                        Config.theme.font = text.trim();
                                     }
                                 }
 
-                                StyledText {
-                                    renderType: Text.NativeRendering
-                                    font.hintingPreference: Font.PreferFullHinting
-                                    text: "px"
-                                    font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(0)
-                                    color: Colors.overSurfaceVariant
-                                }
                             }
 
-                            // Mono Font row
-                            RowLayout {
-                                Layout.fillWidth: true
-                                spacing: Styling.spacing(8)
+                            SettingsTextField {
+                                Layout.preferredWidth: 80
 
-                                StyledText {
-                                    renderType: Text.NativeRendering
-                                    font.hintingPreference: Font.PreferFullHinting
-                                    text: "Mono Font"
-                                    font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(0)
-                                    color: Colors.overBackground
-                                    Layout.preferredWidth: 80
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
+                                id: fontSizeInput
+
+
+                                font.family: Config.theme.font
+                                font.pixelSize: Styling.fontSize(0)
+                                color: Colors.overBackground
+                                selectByMouse: true
+                                clip: true
+                                verticalAlignment: TextInput.AlignVCenter
+                                horizontalAlignment: TextInput.AlignHCenter
+                                validator: IntValidator {
+                                    bottom: 8
+                                    top: 32
                                 }
 
-                                StyledRect {
-                                    variant: "common"
-                                    Layout.fillWidth: true
-                                    Layout.preferredHeight: 32
-                                    radius: Styling.radius(-2)
+                                readonly property int configValue: Config.theme.fontSize
 
-                                    TextInput {
-                                        renderType: Text.NativeRendering
-                                        font.hintingPreference: Font.PreferFullHinting
-                                        id: monoFontInput
-                                        anchors.fill: parent
-                                        anchors.margins: 8
-                                        font.family: Config.theme.monoFont
-                                        font.pixelSize: Styling.monoFontSize(0)
-                                        color: Colors.overBackground
-                                        selectByMouse: true
-                                        clip: true
-                                        verticalAlignment: TextInput.AlignVCenter
-
-                                        readonly property string configValue: Config.theme.monoFont
-
-                                        onConfigValueChanged: {
-                                            if (text !== configValue) {
-                                                text = configValue;
-                                            }
-                                        }
-
-                                        Component.onCompleted: text = configValue
-
-                                        onEditingFinished: {
-                                            if (text !== Config.theme.monoFont && text.trim() !== "") {
-                                                Config.theme.monoFont = text.trim();
-                                            }
-                                        }
+                                onConfigValueChanged: {
+                                    if (text !== configValue.toString()) {
+                                        text = configValue.toString();
                                     }
                                 }
 
-                                StyledRect {
-                                    variant: "common"
-                                    Layout.preferredWidth: 60
-                                    Layout.preferredHeight: 32
-                                    radius: Styling.radius(-2)
+                                Component.onCompleted: text = configValue.toString()
 
-                                    TextInput {
-                                        renderType: Text.NativeRendering
-                                        font.hintingPreference: Font.PreferFullHinting
-                                        id: monoFontSizeInput
-                                        anchors.fill: parent
-                                        anchors.margins: 8
-                                        font.family: Config.theme.monoFont
-                                        font.pixelSize: Styling.monoFontSize(0)
-                                        color: Colors.overBackground
-                                        selectByMouse: true
-                                        clip: true
-                                        verticalAlignment: TextInput.AlignVCenter
-                                        horizontalAlignment: TextInput.AlignHCenter
-                                        validator: IntValidator {
-                                            bottom: 8
-                                            top: 32
-                                        }
-
-                                        readonly property int configValue: Config.theme.monoFontSize
-
-                                        onConfigValueChanged: {
-                                            if (text !== configValue.toString()) {
-                                                text = configValue.toString();
-                                            }
-                                        }
-
-                                        Component.onCompleted: text = configValue.toString()
-
-                                        onEditingFinished: {
-                                            let newSize = parseInt(text);
-                                            if (!isNaN(newSize) && newSize >= 8 && newSize <= 32 && newSize !== Config.theme.monoFontSize) {
-                                                Config.theme.monoFontSize = newSize;
-                                            }
-                                        }
+                                onEditingFinished: {
+                                    let newSize = parseInt(text);
+                                    if (!isNaN(newSize) && newSize >= 8 && newSize <= 32 && newSize !== Config.theme.fontSize) {
+                                        Config.theme.fontSize = newSize;
                                     }
                                 }
 
-                                StyledText {
-                                    renderType: Text.NativeRendering
-                                    font.hintingPreference: Font.PreferFullHinting
-                                    text: "px"
-                                    font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(0)
-                                    color: Colors.overSurfaceVariant
-                                }
-                            }
-
-                            Separator {
-                                Layout.fillWidth: true
                             }
 
                             StyledText {
                                 renderType: Text.NativeRendering
                                 font.hintingPreference: Font.PreferFullHinting
-                                text: "Shell corner radius"
+                                text: "px"
                                 font.family: Config.theme.font
-                                font.pixelSize: Styling.fontSize(-1)
-                                font.weight: Font.Medium
+                                font.pixelSize: Styling.fontSize(0)
                                 color: Colors.overSurfaceVariant
-                                Layout.bottomMargin: -4
-                            }
-
-                            RowLayout {
-                                Layout.fillWidth: true
-                                spacing: Styling.spacing(8)
-
-                                StyledSlider {
-                                    id: roundnessSlider
-                                    Layout.fillWidth: true
-                                    Layout.preferredHeight: 20
-                                    progressColor: Styling.srItem("overprimary")
-                                    tooltipText: `${Math.round(value * 20)}`
-                                    scroll: true
-                                    stepSize: 0.05  // 1/20 = 0.05 for integer steps in 0-20 range
-                                    snapMode: "always"
-
-                                    // Use a computed property that always reads from Config
-                                    readonly property real configValue: Config.theme.roundness / 20
-
-                                    // Sync value when configValue changes (e.g., after discard)
-                                    onConfigValueChanged: {
-                                        if (Math.abs(value - configValue) > 0.001) {
-                                            value = configValue;
-                                        }
-                                    }
-
-                                    Component.onCompleted: value = configValue
-
-                                    onValueChanged: {
-                                        let newRoundness = Math.round(value * 20);
-                                        if (newRoundness !== Config.theme.roundness) {
-                                            Config.theme.roundness = newRoundness;
-                                        }
-                                    }
-                                }
-
-                                StyledText {
-                                    renderType: Text.NativeRendering
-                                    font.hintingPreference: Font.PreferFullHinting
-                                    text: Math.round(roundnessSlider.value * 20)
-                                    font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(0)
-                                    color: Colors.overBackground
-                                    horizontalAlignment: Text.AlignRight
-                                    Layout.preferredWidth: 24
-                                }
                             }
                         }
+
+                        // Mono Font row
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: Styling.spacing(8)
+
+                            StyledText {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
+                                text: "Mono Font"
+                                font.family: Config.theme.font
+                                font.pixelSize: Styling.fontSize(0)
+                                color: Colors.overBackground
+                                Layout.preferredWidth: 80
+                            }
+
+                            SettingsTextField {
+                                Layout.fillWidth: true
+
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
+                                id: monoFontInput
+
+
+                                font.family: Config.theme.monoFont
+                                font.pixelSize: Styling.monoFontSize(0)
+                                color: Colors.overBackground
+                                selectByMouse: true
+                                clip: true
+                                verticalAlignment: TextInput.AlignVCenter
+
+                                readonly property string configValue: Config.theme.monoFont
+
+                                onConfigValueChanged: {
+                                    if (text !== configValue) {
+                                        text = configValue;
+                                    }
+                                }
+
+                                Component.onCompleted: text = configValue
+
+                                onEditingFinished: {
+                                    if (text !== Config.theme.monoFont && text.trim() !== "") {
+                                        Config.theme.monoFont = text.trim();
+                                    }
+                                }
+
+                            }
+
+                            SettingsTextField {
+                                Layout.preferredWidth: 80
+
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
+                                id: monoFontSizeInput
+
+
+                                font.family: Config.theme.monoFont
+                                font.pixelSize: Styling.monoFontSize(0)
+                                color: Colors.overBackground
+                                selectByMouse: true
+                                clip: true
+                                verticalAlignment: TextInput.AlignVCenter
+                                horizontalAlignment: TextInput.AlignHCenter
+                                validator: IntValidator {
+                                    bottom: 8
+                                    top: 32
+                                }
+
+                                readonly property int configValue: Config.theme.monoFontSize
+
+                                onConfigValueChanged: {
+                                    if (text !== configValue.toString()) {
+                                        text = configValue.toString();
+                                    }
+                                }
+
+                                Component.onCompleted: text = configValue.toString()
+
+                                onEditingFinished: {
+                                    let newSize = parseInt(text);
+                                    if (!isNaN(newSize) && newSize >= 8 && newSize <= 32 && newSize !== Config.theme.monoFontSize) {
+                                        Config.theme.monoFontSize = newSize;
+                                    }
+                                }
+
+                            }
+
+                            StyledText {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
+                                text: "px"
+                                font.family: Config.theme.font
+                                font.pixelSize: Styling.fontSize(0)
+                                color: Colors.overSurfaceVariant
+                            }
+                        }
+
+                        Separator {
+                            Layout.fillWidth: true
+                        }
+
+                        StyledText {
+                            renderType: Text.NativeRendering
+                            font.hintingPreference: Font.PreferFullHinting
+                            text: "Shell corner radius"
+                            font.family: Config.theme.font
+                            font.pixelSize: Styling.fontSize(-1)
+                            font.weight: Font.Medium
+                            color: Colors.overSurfaceVariant
+                            Layout.bottomMargin: -4
+                        }
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: Styling.spacing(8)
+
+                            StyledSlider {
+                                id: roundnessSlider
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: 20
+                                progressColor: Styling.srItem("overprimary")
+                                tooltipText: `${Math.round(value * 20)}`
+                                scroll: true
+                                stepSize: 0.05  // 1/20 = 0.05 for integer steps in 0-20 range
+                                snapMode: "always"
+
+                                // Use a computed property that always reads from Config
+                                readonly property real configValue: Config.theme.roundness / 20
+
+                                // Sync value when configValue changes (e.g., after discard)
+                                onConfigValueChanged: {
+                                    if (Math.abs(value - configValue) > 0.001) {
+                                        value = configValue;
+                                    }
+                                }
+
+                                Component.onCompleted: value = configValue
+
+                                onValueChanged: {
+                                    let newRoundness = Math.round(value * 20);
+                                    if (newRoundness !== Config.theme.roundness) {
+                                        Config.theme.roundness = newRoundness;
+                                    }
+                                }
+                            }
+
+                            StyledText {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
+                                text: Math.round(roundnessSlider.value * 20)
+                                font.family: Config.theme.font
+                                font.pixelSize: Styling.fontSize(0)
+                                color: Colors.overBackground
+                                horizontalAlignment: Text.AlignRight
+                                Layout.preferredWidth: 24
+                            }
+                        }
+
                     }
 
                     // Shadow section
-                    Item {
+                    SettingsGroup {
                         visible: root.currentSection === "shadow"
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: shadowContent.implicitHeight
+                        title: "Shadow appearance"
 
-                        ColumnLayout {
-                            id: shadowContent
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            anchors.top: parent.top
+
+                        StyledText {
+                            Layout.fillWidth: true
+                            text: "Shadows apply to shell surfaces that enable them. App window shadows are managed separately."
+                            wrapMode: Text.WordWrap
+                            color: Colors.overSurfaceVariant
+                        }
+                        Item {
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 160
+                            StyledRect {
+                                objectName: "shadow-preview"
+                                anchors.centerIn: parent
+                                width: Math.min(240, parent.width - 80)
+                                height: 70
+                                variant: "bg"
+                                enableShadow: true
+                                StyledText { anchors.centerIn: parent; text: "Shadow preview" }
+                            }
+                        }
+                        // Opacity row
+                        RowLayout {
+                            Layout.fillWidth: true
                             spacing: Styling.spacing(8)
 
                             StyledText {
-                                Layout.fillWidth: true
-                                text: "Shadows apply to shell surfaces that enable them. App window shadows are managed separately."
-                                wrapMode: Text.WordWrap
-                                color: Colors.overSurfaceVariant
-                            }
-                            Item {
-                                Layout.fillWidth: true
-                                Layout.preferredHeight: 160
-                                StyledRect {
-                                    objectName: "shadow-preview"
-                                    anchors.centerIn: parent
-                                    width: Math.min(240, parent.width - 80)
-                                    height: 70
-                                    variant: "bg"
-                                    enableShadow: true
-                                    StyledText { anchors.centerIn: parent; text: "Shadow preview" }
-                                }
-                            }
-                            // Opacity row
-                            RowLayout {
-                                Layout.fillWidth: true
-                                spacing: Styling.spacing(8)
-
-                                StyledText {
-                                    renderType: Text.NativeRendering
-                                    font.hintingPreference: Font.PreferFullHinting
-                                    text: "Opacity"
-                                    font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(0)
-                                    color: Colors.overBackground
-                                    Layout.preferredWidth: Styling.fontSize(0) * 8
-                                }
-
-                                StyledSlider {
-                                    id: shadowOpacitySlider
-                                    objectName: "shadow-opacity"
-                                    Layout.fillWidth: true
-                                    Layout.preferredHeight: 32
-                                    progressColor: Styling.srItem("overprimary")
-                                    tooltipText: `${Math.round(value * 100)}%`
-                                    scroll: true
-                                    stepSize: 0.01
-                                    snapMode: "always"
-
-                                    readonly property real configValue: Config.theme.shadowOpacity
-
-                                    onConfigValueChanged: {
-                                        const wasReady = ready; ready = false;
-                                        if (Math.abs(value - configValue) > 0.001) {
-                                            value = configValue;
-                                        }
-                                        ready = wasReady;
-                                    }
-
-                                    Component.onCompleted: { value = configValue; ready = true; }
-                                    property bool ready: false
-
-                                    onValueChanged: {
-                                        if (!ready) return;
-                                        if (Math.abs(value - Config.theme.shadowOpacity) > 0.001) {
-                                            Config.theme.shadowOpacity = value;
-                                        }
-                                    }
-                                }
-
-                                StyledText {
-                                    renderType: Text.NativeRendering
-                                    font.hintingPreference: Font.PreferFullHinting
-                                    text: Math.round(shadowOpacitySlider.value * 100) + "%"
-                                    font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(0)
-                                    color: Colors.overBackground
-                                    horizontalAlignment: Text.AlignRight
-                                    Layout.preferredWidth: 40
-                                }
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
+                                text: "Opacity"
+                                font.family: Config.theme.font
+                                font.pixelSize: Styling.fontSize(0)
+                                color: Colors.overBackground
+                                Layout.preferredWidth: Styling.fontSize(0) * 8
                             }
 
-                            // Blur row
-                            RowLayout {
+                            StyledSlider {
+                                id: shadowOpacitySlider
+                                objectName: "shadow-opacity"
                                 Layout.fillWidth: true
-                                spacing: Styling.spacing(8)
+                                Layout.preferredHeight: 48
+                                progressColor: Styling.srItem("overprimary")
+                                tooltipText: `${Math.round(value * 100)}%`
+                                scroll: true
+                                stepSize: 0.01
+                                snapMode: "always"
 
-                                StyledText {
-                                    renderType: Text.NativeRendering
-                                    font.hintingPreference: Font.PreferFullHinting
-                                    text: "Blur radius"
-                                    objectName: "shadow-blur-label"
-                                    font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(0)
-                                    color: Colors.overBackground
-                                    Layout.preferredWidth: Styling.fontSize(0) * 8
+                                readonly property real configValue: Config.theme.shadowOpacity
+
+                                onConfigValueChanged: {
+                                    const wasReady = ready; ready = false;
+                                    if (Math.abs(value - configValue) > 0.001) {
+                                        value = configValue;
+                                    }
+                                    ready = wasReady;
                                 }
 
-                                StyledSlider {
-                                    id: shadowBlurSlider
-                                    objectName: "shadow-blur"
-                                    Layout.fillWidth: true
-                                    Layout.preferredHeight: 32
-                                    progressColor: Styling.srItem("overprimary")
-                                    tooltipText: `${(value * 4).toFixed(1)}`
-                                    scroll: true
-                                    stepSize: 0.01
-                                    snapMode: "always"
+                                Component.onCompleted: { value = configValue; ready = true; }
+                                property bool ready: false
 
-                                    readonly property real configValue: Config.theme.shadowBlur / 4
-
-                                    onConfigValueChanged: {
-                                        const wasReady = ready; ready = false;
-                                        if (Math.abs(value - configValue) > 0.001) {
-                                            value = configValue;
-                                        }
-                                        ready = wasReady;
-                                    }
-
-                                    Component.onCompleted: { value = configValue; ready = true; }
-                                    property bool ready: false
-
-                                    onValueChanged: {
-                                        if (!ready) return;
-                                        let newBlur = value * 4;
-                                        if (Math.abs(newBlur - Config.theme.shadowBlur) > 0.01) {
-                                            Config.theme.shadowBlur = newBlur;
-                                        }
+                                onValueChanged: {
+                                    if (!ready) return;
+                                    if (Math.abs(value - Config.theme.shadowOpacity) > 0.001) {
+                                        Config.theme.shadowOpacity = value;
                                     }
                                 }
-
-                                StyledText {
-                                    renderType: Text.NativeRendering
-                                    font.hintingPreference: Font.PreferFullHinting
-                                    text: Config.theme.shadowBlur.toFixed(1)
-                                    font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(0)
-                                    color: Colors.overBackground
-                                    horizontalAlignment: Text.AlignRight
-                                    Layout.preferredWidth: 40
-                                }
-                            }
-
-                            // Offset row (X and Y)
-                            RowLayout {
-                                Layout.fillWidth: true
-                                spacing: Styling.spacing(8)
-
-                                StyledText {
-                                    renderType: Text.NativeRendering
-                                    font.hintingPreference: Font.PreferFullHinting
-                                    text: "Offset X"
-                                    font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(0)
-                                    color: Colors.overBackground
-                                    Layout.preferredWidth: Styling.fontSize(0) * 8
-                                }
-
-                                StyledSlider {
-                                    id: shadowXOffsetSlider
-                                    objectName: "shadow-x"
-                                    Layout.fillWidth: true
-                                    Layout.preferredHeight: 32
-                                    progressColor: Styling.srItem("overprimary")
-                                    tooltipText: `${Math.round((value - 0.5) * 40)}`
-                                    scroll: true
-                                    stepSize: 0.025  // 1/40 for integer steps in -20 to +20 range
-                                    snapMode: "always"
-
-                                    readonly property real configValue: (Config.theme.shadowXOffset + 20) / 40
-
-                                    onConfigValueChanged: {
-                                        const wasReady = ready; ready = false;
-                                        if (Math.abs(value - configValue) > 0.001) {
-                                            value = configValue;
-                                        }
-                                        ready = wasReady;
-                                    }
-
-                                    Component.onCompleted: { value = configValue; ready = true; }
-                                    property bool ready: false
-
-                                    onValueChanged: {
-                                        if (!ready) return;
-                                        let newOffset = Math.round((value - 0.5) * 40);
-                                        if (newOffset !== Config.theme.shadowXOffset) {
-                                            Config.theme.shadowXOffset = newOffset;
-                                        }
-                                    }
-                                }
-
-                                StyledText {
-                                    renderType: Text.NativeRendering
-                                    font.hintingPreference: Font.PreferFullHinting
-                                    text: Config.theme.shadowXOffset
-                                    font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(0)
-                                    color: Colors.overBackground
-                                    horizontalAlignment: Text.AlignRight
-                                    Layout.preferredWidth: 40
-                                }
-                            }
-
-                            RowLayout {
-                                Layout.fillWidth: true
-                                spacing: Styling.spacing(8)
-
-                                StyledText {
-                                    renderType: Text.NativeRendering
-                                    font.hintingPreference: Font.PreferFullHinting
-                                    text: "Offset Y"
-                                    font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(0)
-                                    color: Colors.overBackground
-                                    Layout.preferredWidth: Styling.fontSize(0) * 8
-                                }
-
-                                StyledSlider {
-                                    id: shadowYOffsetSlider
-                                    objectName: "shadow-y"
-                                    Layout.fillWidth: true
-                                    Layout.preferredHeight: 32
-                                    progressColor: Styling.srItem("overprimary")
-                                    tooltipText: `${Math.round((value - 0.5) * 40)}`
-                                    scroll: true
-                                    stepSize: 0.025  // 1/40 for integer steps in -20 to +20 range
-                                    snapMode: "always"
-
-                                    readonly property real configValue: (Config.theme.shadowYOffset + 20) / 40
-
-                                    onConfigValueChanged: {
-                                        const wasReady = ready; ready = false;
-                                        if (Math.abs(value - configValue) > 0.001) {
-                                            value = configValue;
-                                        }
-                                        ready = wasReady;
-                                    }
-
-                                    Component.onCompleted: { value = configValue; ready = true; }
-                                    property bool ready: false
-
-                                    onValueChanged: {
-                                        if (!ready) return;
-                                        let newOffset = Math.round((value - 0.5) * 40);
-                                        if (newOffset !== Config.theme.shadowYOffset) {
-                                            Config.theme.shadowYOffset = newOffset;
-                                        }
-                                    }
-                                }
-
-                                StyledText {
-                                    renderType: Text.NativeRendering
-                                    font.hintingPreference: Font.PreferFullHinting
-                                    text: Config.theme.shadowYOffset
-                                    font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(0)
-                                    color: Colors.overBackground
-                                    horizontalAlignment: Text.AlignRight
-                                    Layout.preferredWidth: 40
-                                }
-                            }
-
-                            // Color row
-                            RowLayout {
-                                Layout.fillWidth: true
-                                spacing: Styling.spacing(8)
-
-                                StyledText {
-                                    renderType: Text.NativeRendering
-                                    font.hintingPreference: Font.PreferFullHinting
-                                    text: "Color"
-                                    font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(0)
-                                    color: Colors.overBackground
-                                    Layout.preferredWidth: Styling.fontSize(0) * 8
-                                }
-
-                                StyledRect {
-                                    id: shadowColorButton
-                                    variant: "common"
-                                    Layout.fillWidth: true
-                                    Layout.preferredHeight: 32
-                                    radius: Styling.radius(-2)
-
-                                    property bool isHovered: false
-
-                                    RowLayout {
-                                        anchors.fill: parent
-                                        anchors.leftMargin: 8
-                                        anchors.rightMargin: 8
-                                        spacing: Styling.spacing(8)
-
-                                        Rectangle {
-                                            Layout.preferredWidth: 16
-                                            Layout.preferredHeight: 16
-                                            radius: 4
-                                            color: Config.resolveColor(Config.theme.shadowColor)
-                                            border.width: 1
-                                            border.color: Colors.outline
-                                        }
-
-                                        StyledText {
-                                            renderType: Text.NativeRendering
-                                            font.hintingPreference: Font.PreferFullHinting
-                                            Layout.fillWidth: true
-                                            text: Config.theme.shadowColor
-                                            font.family: Config.theme.font
-                                            font.pixelSize: Styling.fontSize(0)
-                                            color: shadowColorButton.item
-                                            elide: Text.ElideRight
-                                        }
-                                    }
-
-                                    Rectangle {
-                                        anchors.fill: parent
-                                        color: Styling.srItem("overprimary")
-                                        radius: shadowColorButton.radius ?? 0
-                                        opacity: shadowColorButton.isHovered ? 0.15 : 0
-
-                                        Behavior on opacity {
-                                            enabled: (Config.animDuration ?? 0) > 0
-                                            NumberAnimation {
-                                                duration: (Config.animDuration ?? 0) / 2
-                                            }
-                                        }
-                                    }
-
-                                    MouseArea {
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        cursorShape: Qt.PointingHandCursor
-
-                                        onEntered: shadowColorButton.isHovered = true
-                                        onExited: shadowColorButton.isHovered = false
-
-                                        onClicked: {
-                                            root.openColorPicker(Colors.availableColorNames, Config.theme.shadowColor, "Select Shadow Color", function (color) {
-                                                Config.theme.shadowColor = color;
-                                            });
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // Variant selector section
-                    Item {
-                        id: variantSelectorPane
-                        visible: root.currentSection === "variants"
-                        property string settingsSection: "variants"
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: variantSelectorContent.implicitHeight
-
-                        property bool variantExpanded: false
-
-                        Behavior on Layout.preferredHeight {
-                            enabled: (Config.animDuration ?? 0) > 0
-                            NumberAnimation {
-                                duration: (Config.animDuration ?? 0) / 2
-                                easing.type: Easing.OutCubic
-                            }
-                        }
-
-                        ColumnLayout {
-                            id: variantSelectorContent
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            anchors.top: parent.top
-                            spacing: Styling.spacing(8)
-
-                            StyledText {
-                                Layout.fillWidth: true
-                                text: Styling.unifiedStyle ? "Choose Custom under Theme & app style to edit backgrounds and borders." : "Custom background and border settings are active."
-                                wrapMode: Text.WordWrap
-                                color: Colors.overSurfaceVariant
-                                font.pixelSize: Styling.fontSize(-1)
                             }
 
                             StyledText {
                                 renderType: Text.NativeRendering
                                 font.hintingPreference: Font.PreferFullHinting
-                                text: "Variant"
+                                text: Math.round(shadowOpacitySlider.value * 100) + "%"
                                 font.family: Config.theme.font
-                                font.pixelSize: Styling.fontSize(-1)
-                                font.weight: Font.Medium
-                                color: Colors.overSurfaceVariant
-                                Layout.bottomMargin: -4
+                                font.pixelSize: Styling.fontSize(0)
+                                color: Colors.overBackground
+                                horizontalAlignment: Text.AlignRight
+                                Layout.preferredWidth: 40
+                            }
+                        }
+
+                        // Blur row
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: Styling.spacing(8)
+
+                            StyledText {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
+                                text: "Blur radius"
+                                objectName: "shadow-blur-label"
+                                font.family: Config.theme.font
+                                font.pixelSize: Styling.fontSize(0)
+                                color: Colors.overBackground
+                                Layout.preferredWidth: Styling.fontSize(0) * 8
                             }
 
-                            RowLayout {
+                            StyledSlider {
+                                id: shadowBlurSlider
+                                objectName: "shadow-blur"
                                 Layout.fillWidth: true
-                                spacing: Styling.spacing(8)
-                                Layout.alignment: Qt.AlignTop
+                                Layout.preferredHeight: 48
+                                progressColor: Styling.srItem("overprimary")
+                                tooltipText: `${(value * 4).toFixed(1)}`
+                                scroll: true
+                                stepSize: 0.01
+                                snapMode: "always"
 
-                                // Collapsed mode: horizontal scrollable row with scrollbar
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: Styling.spacing(4)
-                                    visible: !variantSelectorPane.variantExpanded
+                                readonly property real configValue: Config.theme.shadowBlur / 4
 
-                                    Flickable {
-                                        id: variantFlickable
-                                        Layout.fillWidth: true
-                                        Layout.preferredHeight: 32
-                                        contentWidth: variantRow.width
-                                        flickableDirection: Flickable.HorizontalFlick
-                                        clip: true
-                                        boundsBehavior: Flickable.StopAtBounds
-
-                                        Row {
-                                            id: variantRow
-                                            spacing: Styling.spacing(4)
-
-                                            Repeater {
-                                                model: root.allVariants
-
-                                                delegate: StyledRect {
-                                                    id: variantTagRow
-                                                    required property var modelData
-                                                    required property int index
-
-                                                    property bool isSelected: root.selectedVariant === modelData.id
-                                                    property bool isHovered: false
-
-                                                    variant: modelData.id
-                                                    enableShadow: false
-
-                                                    width: tagContentRow.width + 24 + (isSelected ? checkIconRow.width + 4 : 0)
-                                                    height: 32
-                                                    radius: Styling.radius(0)
-
-                                                    Behavior on width {
-                                                        enabled: (Config.animDuration ?? 0) > 0
-                                                        NumberAnimation {
-                                                            duration: (Config.animDuration ?? 0) / 3
-                                                            easing.type: Easing.OutCubic
-                                                        }
-                                                    }
-
-                                                    Item {
-                                                        anchors.fill: parent
-                                                        anchors.margins: 8
-
-                                                        Row {
-                                                            anchors.centerIn: parent
-                                                            spacing: variantTagRow.isSelected ? 4 : 0
-
-                                                            Item {
-                                                                width: checkIconRow.visible ? checkIconRow.width : 0
-                                                                height: checkIconRow.height
-                                                                clip: true
-
-                                                                StyledText {
-                                                                    renderType: Text.NativeRendering
-                                                                    font.hintingPreference: Font.PreferFullHinting
-                                                                    id: checkIconRow
-                                                                    text: Icons.accept
-                                                                    font.family: Icons.font
-                                                                    font.pixelSize: Styling.fontSize(2)
-                                                                    color: variantTagRow.item
-                                                                    visible: variantTagRow.isSelected
-                                                                    opacity: variantTagRow.isSelected ? 1 : 0
-
-                                                                    Behavior on opacity {
-                                                                        enabled: (Config.animDuration ?? 0) > 0
-                                                                        NumberAnimation {
-                                                                            duration: (Config.animDuration ?? 0) / 3
-                                                                            easing.type: Easing.OutCubic
-                                                                        }
-                                                                    }
-                                                                }
-
-                                                                Behavior on width {
-                                                                    enabled: (Config.animDuration ?? 0) > 0
-                                                                    NumberAnimation {
-                                                                        duration: (Config.animDuration ?? 0) / 3
-                                                                        easing.type: Easing.OutCubic
-                                                                    }
-                                                                }
-                                                            }
-
-                                                            StyledText {
-                                                                renderType: Text.NativeRendering
-                                                                font.hintingPreference: Font.PreferFullHinting
-                                                                id: tagContentRow
-                                                                text: variantTagRow.modelData.label
-                                                                font.family: Config.theme.font
-                                                                font.pixelSize: Config.theme.fontSize
-                                                                font.bold: true
-                                                                color: variantTagRow.item
-
-                                                                Behavior on color {
-                                                                    enabled: (Config.animDuration ?? 0) > 0
-                                                                    ColorAnimation {
-                                                                        duration: (Config.animDuration ?? 0) / 3
-                                                                        easing.type: Easing.OutCubic
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-
-                                                    Rectangle {
-                                                        anchors.fill: parent
-                                                        color: Styling.srItem("overprimary")
-                                                        radius: variantTagRow.radius ?? 0
-                                                        opacity: variantTagRow.isHovered ? 0.15 : 0
-
-                                                        Behavior on opacity {
-                                                            enabled: (Config.animDuration ?? 0) > 0
-                                                            NumberAnimation {
-                                                                duration: (Config.animDuration ?? 0) / 2
-                                                            }
-                                                        }
-                                                    }
-
-                                                    MouseArea {
-                                                        anchors.fill: parent
-                                                        hoverEnabled: true
-                                                        cursorShape: Qt.PointingHandCursor
-
-                                                        onEntered: variantTagRow.isHovered = true
-                                                        onExited: variantTagRow.isHovered = false
-
-                                                        onClicked: root.selectedVariant = variantTagRow.modelData.id
-                                                    }
-                                                }
-                                            }
-                                        }
+                                onConfigValueChanged: {
+                                    const wasReady = ready; ready = false;
+                                    if (Math.abs(value - configValue) > 0.001) {
+                                        value = configValue;
                                     }
-
-                                    ScrollBar {
-                                        id: variantScrollBar
-                                        Layout.fillWidth: true
-                                        Layout.preferredHeight: 8
-                                        orientation: Qt.Horizontal
-
-                                        position: variantFlickable.contentWidth > 0 ? variantFlickable.contentX / variantFlickable.contentWidth : 0
-                                        size: variantFlickable.contentWidth > 0 ? variantFlickable.width / variantFlickable.contentWidth : 1
-
-                                        property bool scrollBarPressed: false
-
-                                        background: Rectangle {
-                                            implicitHeight: 8
-                                            color: Colors.surface
-                                            radius: 4
-                                        }
-
-                                        contentItem: Rectangle {
-                                            implicitHeight: 8
-                                            color: Styling.srItem("overprimary")
-                                            radius: 4
-                                        }
-
-                                        onPressedChanged: {
-                                            scrollBarPressed = pressed;
-                                        }
-
-                                        onPositionChanged: {
-                                            if (scrollBarPressed && variantFlickable.contentWidth > variantFlickable.width) {
-                                                variantFlickable.contentX = position * variantFlickable.contentWidth;
-                                            }
-                                        }
-                                    }
+                                    ready = wasReady;
                                 }
 
-                                // Expanded mode: Flow grid
-                                Flow {
-                                    id: variantsFlow
-                                    Layout.fillWidth: true
-                                    spacing: Styling.spacing(4)
-                                    visible: variantSelectorPane.variantExpanded
+                                Component.onCompleted: { value = configValue; ready = true; }
+                                property bool ready: false
 
-                                    Repeater {
-                                        model: root.allVariants
-
-                                        delegate: StyledRect {
-                                            id: variantTag
-                                            required property var modelData
-                                            required property int index
-
-                                            property bool isSelected: root.selectedVariant === modelData.id
-                                            property bool isHovered: false
-
-                                            variant: modelData.id
-                                            enableShadow: false
-
-                                            width: tagContent.width + 24 + (isSelected ? checkIcon.width + 4 : 0)
-                                            height: 32
-                                            radius: Styling.radius(0)
-
-                                            Behavior on width {
-                                                enabled: (Config.animDuration ?? 0) > 0
-                                                NumberAnimation {
-                                                    duration: (Config.animDuration ?? 0) / 3
-                                                    easing.type: Easing.OutCubic
-                                                }
-                                            }
-
-                                            Item {
-                                                anchors.fill: parent
-                                                anchors.margins: 8
-
-                                                Row {
-                                                    anchors.centerIn: parent
-                                                    spacing: variantTag.isSelected ? 4 : 0
-
-                                                    Item {
-                                                        width: checkIcon.visible ? checkIcon.width : 0
-                                                        height: checkIcon.height
-                                                        clip: true
-
-                                                        StyledText {
-                                                            renderType: Text.NativeRendering
-                                                            font.hintingPreference: Font.PreferFullHinting
-                                                            id: checkIcon
-                                                            text: Icons.accept
-                                                            font.family: Icons.font
-                                                            font.pixelSize: Styling.fontSize(2)
-                                                            color: variantTag.item
-                                                            visible: variantTag.isSelected
-                                                            opacity: variantTag.isSelected ? 1 : 0
-
-                                                            Behavior on opacity {
-                                                                enabled: (Config.animDuration ?? 0) > 0
-                                                                NumberAnimation {
-                                                                    duration: (Config.animDuration ?? 0) / 3
-                                                                    easing.type: Easing.OutCubic
-                                                                }
-                                                            }
-                                                        }
-
-                                                        Behavior on width {
-                                                            enabled: (Config.animDuration ?? 0) > 0
-                                                            NumberAnimation {
-                                                                duration: (Config.animDuration ?? 0) / 3
-                                                                easing.type: Easing.OutCubic
-                                                            }
-                                                        }
-                                                    }
-
-                                                    StyledText {
-                                                        renderType: Text.NativeRendering
-                                                        font.hintingPreference: Font.PreferFullHinting
-                                                        id: tagContent
-                                                        text: variantTag.modelData.label
-                                                        font.family: Config.theme.font
-                                                        font.pixelSize: Config.theme.fontSize
-                                                        font.bold: true
-                                                        color: variantTag.item
-
-                                                        Behavior on color {
-                                                            enabled: (Config.animDuration ?? 0) > 0
-                                                            ColorAnimation {
-                                                                duration: (Config.animDuration ?? 0) / 3
-                                                                easing.type: Easing.OutCubic
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-
-                                            Rectangle {
-                                                id: hoverOverlay
-                                                anchors.fill: parent
-                                                color: Styling.srItem("overprimary")
-                                                radius: variantTag.radius ?? 0
-                                                opacity: variantTag.isHovered ? 0.15 : 0
-
-                                                Behavior on opacity {
-                                                    enabled: (Config.animDuration ?? 0) > 0
-                                                    NumberAnimation {
-                                                        duration: (Config.animDuration ?? 0) / 2
-                                                    }
-                                                }
-                                            }
-
-                                            MouseArea {
-                                                anchors.fill: parent
-                                                hoverEnabled: true
-                                                cursorShape: Qt.PointingHandCursor
-
-                                                onEntered: variantTag.isHovered = true
-                                                onExited: variantTag.isHovered = false
-
-                                                onClicked: root.selectedVariant = variantTag.modelData.id
-                                            }
-                                        }
+                                onValueChanged: {
+                                    if (!ready) return;
+                                    let newBlur = value * 4;
+                                    if (Math.abs(newBlur - Config.theme.shadowBlur) > 0.01) {
+                                        Config.theme.shadowBlur = newBlur;
                                     }
                                 }
+                            }
 
-                                // Toggle expand/collapse button
-                                StyledRect {
-                                    id: expandToggleButton
-                                    variant: isHovered ? "focus" : "common"
-                                    width: 32
-                                    height: 32
-                                    radius: Styling.radius(-2)
-                                    Layout.alignment: Qt.AlignTop
-                                    enableShadow: false
+                            StyledText {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
+                                text: Config.theme.shadowBlur.toFixed(1)
+                                font.family: Config.theme.font
+                                font.pixelSize: Styling.fontSize(0)
+                                color: Colors.overBackground
+                                horizontalAlignment: Text.AlignRight
+                                Layout.preferredWidth: 40
+                            }
+                        }
 
-                                    property bool isHovered: false
+                        // Offset row (X and Y)
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: Styling.spacing(8)
+
+                            StyledText {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
+                                text: "Offset X"
+                                font.family: Config.theme.font
+                                font.pixelSize: Styling.fontSize(0)
+                                color: Colors.overBackground
+                                Layout.preferredWidth: Styling.fontSize(0) * 8
+                            }
+
+                            StyledSlider {
+                                id: shadowXOffsetSlider
+                                objectName: "shadow-x"
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: 48
+                                progressColor: Styling.srItem("overprimary")
+                                tooltipText: `${Math.round((value - 0.5) * 40)}`
+                                scroll: true
+                                stepSize: 0.025  // 1/40 for integer steps in -20 to +20 range
+                                snapMode: "always"
+
+                                readonly property real configValue: (Config.theme.shadowXOffset + 20) / 40
+
+                                onConfigValueChanged: {
+                                    const wasReady = ready; ready = false;
+                                    if (Math.abs(value - configValue) > 0.001) {
+                                        value = configValue;
+                                    }
+                                    ready = wasReady;
+                                }
+
+                                Component.onCompleted: { value = configValue; ready = true; }
+                                property bool ready: false
+
+                                onValueChanged: {
+                                    if (!ready) return;
+                                    let newOffset = Math.round((value - 0.5) * 40);
+                                    if (newOffset !== Config.theme.shadowXOffset) {
+                                        Config.theme.shadowXOffset = newOffset;
+                                    }
+                                }
+                            }
+
+                            StyledText {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
+                                text: Config.theme.shadowXOffset
+                                font.family: Config.theme.font
+                                font.pixelSize: Styling.fontSize(0)
+                                color: Colors.overBackground
+                                horizontalAlignment: Text.AlignRight
+                                Layout.preferredWidth: 40
+                            }
+                        }
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: Styling.spacing(8)
+
+                            StyledText {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
+                                text: "Offset Y"
+                                font.family: Config.theme.font
+                                font.pixelSize: Styling.fontSize(0)
+                                color: Colors.overBackground
+                                Layout.preferredWidth: Styling.fontSize(0) * 8
+                            }
+
+                            StyledSlider {
+                                id: shadowYOffsetSlider
+                                objectName: "shadow-y"
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: 48
+                                progressColor: Styling.srItem("overprimary")
+                                tooltipText: `${Math.round((value - 0.5) * 40)}`
+                                scroll: true
+                                stepSize: 0.025  // 1/40 for integer steps in -20 to +20 range
+                                snapMode: "always"
+
+                                readonly property real configValue: (Config.theme.shadowYOffset + 20) / 40
+
+                                onConfigValueChanged: {
+                                    const wasReady = ready; ready = false;
+                                    if (Math.abs(value - configValue) > 0.001) {
+                                        value = configValue;
+                                    }
+                                    ready = wasReady;
+                                }
+
+                                Component.onCompleted: { value = configValue; ready = true; }
+                                property bool ready: false
+
+                                onValueChanged: {
+                                    if (!ready) return;
+                                    let newOffset = Math.round((value - 0.5) * 40);
+                                    if (newOffset !== Config.theme.shadowYOffset) {
+                                        Config.theme.shadowYOffset = newOffset;
+                                    }
+                                }
+                            }
+
+                            StyledText {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
+                                text: Config.theme.shadowYOffset
+                                font.family: Config.theme.font
+                                font.pixelSize: Styling.fontSize(0)
+                                color: Colors.overBackground
+                                horizontalAlignment: Text.AlignRight
+                                Layout.preferredWidth: 40
+                            }
+                        }
+
+                        // Color row
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: Styling.spacing(8)
+
+                            StyledText {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
+                                text: "Color"
+                                font.family: Config.theme.font
+                                font.pixelSize: Styling.fontSize(0)
+                                color: Colors.overBackground
+                                Layout.preferredWidth: Styling.fontSize(0) * 8
+                            }
+
+                            StyledRect {
+                                id: shadowColorButton
+                                variant: "common"
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: 48
+                                radius: Styling.radius(-2)
+
+                                property bool isHovered: false
+
+                                RowLayout {
+                                    anchors.fill: parent
+                                    anchors.leftMargin: 8
+                                    anchors.rightMargin: 8
+                                    spacing: Styling.spacing(8)
+
+                                    Rectangle {
+                                        Layout.preferredWidth: 16
+                                        Layout.preferredHeight: 16
+                                        radius: 4
+                                        color: Config.resolveColor(Config.theme.shadowColor)
+                                        border.width: 1
+                                        border.color: Colors.outline
+                                    }
 
                                     StyledText {
                                         renderType: Text.NativeRendering
                                         font.hintingPreference: Font.PreferFullHinting
-                                        anchors.centerIn: parent
-                                        text: variantSelectorPane.variantExpanded ? Icons.caretUp : Icons.caretDown
-                                        font.family: Icons.font
-                                        font.pixelSize: Styling.fontSize(2)
-                                        color: expandToggleButton.item
+                                        Layout.fillWidth: true
+                                        text: Config.theme.shadowColor
+                                        font.family: Config.theme.font
+                                        font.pixelSize: Styling.fontSize(0)
+                                        color: shadowColorButton.item
+                                        elide: Text.ElideRight
                                     }
+                                }
 
-                                    MouseArea {
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        cursorShape: Qt.PointingHandCursor
+                                Rectangle {
+                                    anchors.fill: parent
+                                    color: Styling.srItem("overprimary")
+                                    radius: shadowColorButton.radius ?? 0
+                                    opacity: shadowColorButton.isHovered ? 0.15 : 0
 
-                                        onEntered: expandToggleButton.isHovered = true
-                                        onExited: expandToggleButton.isHovered = false
+                                    Behavior on opacity {
+                                        enabled: (Config.animDuration ?? 0) > 0
+                                        NumberAnimation {
+                                            duration: (Config.animDuration ?? 0) / 2
+                                        }
+                                    }
+                                }
 
-                                        onClicked: variantSelectorPane.variantExpanded = !variantSelectorPane.variantExpanded
+                                MouseArea {
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+
+                                    onEntered: shadowColorButton.isHovered = true
+                                    onExited: shadowColorButton.isHovered = false
+
+                                    onClicked: {
+                                        root.openColorPicker(Colors.availableColorNames, Config.theme.shadowColor, "Select Shadow Color", function (color) {
+                                            Config.theme.shadowColor = color;
+                                        });
                                     }
                                 }
                             }
+                        }
+
+                    }
+
+                    // Variant selector section
+                    SettingsGroup {
+                        visible: root.currentSection === "variants"
+                        title: "Surface to edit"
+                        description: Styling.unifiedStyle ? "Choose Custom under Theme & app style to apply individual surface changes." : "Changes apply to the selected surface."
+                        SettingsComboBox {
+                            objectName: "surface-selector"
+                            Layout.fillWidth: true
+                            model: root.allVariants
+                            textRole: "label"
+                            valueRole: "id"
+                            currentIndex: root.allVariants.findIndex(item => item.id === root.selectedVariant)
+                            onActivated: root.selectedVariant = currentValue
                         }
                     }
 
                     // Editor section
-                    Item {
+                    SettingsGroup {
                         visible: root.currentSection === "variants"
+                        title: "Custom surface editor"
                         property string settingsSection: "variants"
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: editorContent.implicitHeight
 
-                        ColumnLayout {
-                            id: editorContent
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            anchors.top: parent.top
-                            spacing: Styling.spacing(8)
 
-                            StyledText {
-                                renderType: Text.NativeRendering
-                                font.hintingPreference: Font.PreferFullHinting
-                                text: "Editor - " + root.getVariantLabel(root.selectedVariant)
-                                font.family: Config.theme.font
-                                font.pixelSize: Styling.fontSize(-1)
-                                font.weight: Font.Medium
-                                color: Colors.overSurfaceVariant
-                                Layout.bottomMargin: -4
-                            }
+                        StyledText {
+                            renderType: Text.NativeRendering
+                            font.hintingPreference: Font.PreferFullHinting
+                            text: "Editor - " + root.getVariantLabel(root.selectedVariant)
+                            font.family: Config.theme.font
+                            font.pixelSize: Styling.fontSize(-1)
+                            font.weight: Font.Medium
+                            color: Colors.overSurfaceVariant
+                            Layout.bottomMargin: -4
+                        }
 
-                            VariantEditor {
-                                Layout.fillWidth: true
-                                variantId: root.selectedVariant
-                                onClose: {}
-                                onOpenColorPickerRequested: (colorNames, currentColor, dialogTitle, callback) => {
-                                    root.openColorPicker(colorNames, currentColor, dialogTitle, callback);
-                                }
+                        VariantEditor {
+                            Layout.fillWidth: true
+                            variantId: root.selectedVariant
+                            onClose: {}
+                            onOpenColorPickerRequested: (colorNames, currentColor, dialogTitle, callback) => {
+                                root.openColorPicker(colorNames, currentColor, dialogTitle, callback);
                             }
                         }
+
                     }
                 }
             }

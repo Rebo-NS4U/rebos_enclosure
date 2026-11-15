@@ -6,7 +6,7 @@ import qs.modules.theme
 
 TextField {
     id: root
-    implicitHeight: Styling.fontSize(0) * 3
+    implicitHeight: Math.max(48, Styling.fontSize(0) * 3)
     padding: 12
     font.family: Config.theme.font
     font.pixelSize: Styling.fontSize(0)

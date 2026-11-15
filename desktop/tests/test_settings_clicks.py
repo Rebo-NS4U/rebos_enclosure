@@ -29,6 +29,7 @@ ShellRoot {
    property int clicks: 0
    ColumnLayout {
     id: samples; width: 300
+    SettingsToggleRow { id: sharedToggle; label: "Shared toggle"; checked: true; onToggled: value => checked = value }
     SettingsButton { id: button; text: "Test action"; onClicked: parent.parent.clicks++ }
     SettingsSectionCard { id: card; text: "Section"; onClicked: parent.parent.clicks++ }
     PanelTitlebar { id: titlebar; title: "Test"; actions: [{tooltip: "Refresh", onClicked: function() { button.clicked(); }}] }
@@ -65,6 +66,11 @@ ShellRoot {
       github.result = Object.assign({}, github.result, {upstream_ahead: 2});
       fixture.check(pushStatus.text.includes("2 commits waiting to push to origin/linux-desktop"), "Push count must use upstream, not default branch");
       fixture.check(comparison.text.includes("19 commits ahead"), "Default comparison remains separate");
+      fixture.check(sharedToggle.checked, "Opening a standard toggle preserves the saved value");
+      let toggleControl = fixture.find(sharedToggle, "settings-toggle-control");
+      tester.mouseClick(toggleControl); fixture.check(!sharedToggle.checked, "Standard toggle saves a click");
+      sharedToggle.checked = true; tester.wait(20);
+      fixture.check(toggleControl.checked, "Standard toggle follows external changes");
       tester.mouseClick(button); fixture.check(button.parent.parent.clicks === 1, "Settings button click");
       tester.mouseClick(card); fixture.check(button.parent.parent.clicks === 2, "Section card click");
       let action = fixture.find(titlebar, "settings-titlebar-action-0");

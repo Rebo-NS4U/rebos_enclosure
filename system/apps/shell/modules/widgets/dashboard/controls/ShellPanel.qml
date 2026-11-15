@@ -117,48 +117,7 @@ Item {
     }
 
     // Inline component for toggle rows
-    component ToggleRow: RowLayout {
-        id: toggleRowRoot
-        property string label: ""
-        property bool checked: false
-        signal toggled(bool value)
-
-        // Track if we're updating from external binding
-        property bool _updating: false
-
-        onCheckedChanged: {
-            if (!_updating && toggleSwitch.checked !== checked) {
-                _updating = true;
-                toggleSwitch.checked = checked;
-                _updating = false;
-            }
-        }
-
-        Layout.fillWidth: true
-        spacing: Styling.spacing(8)
-
-        StyledText {
-            renderType: Text.NativeRendering
-            font.hintingPreference: Font.PreferFullHinting
-            text: toggleRowRoot.label
-            font.family: Config.theme.font
-            font.pixelSize: Styling.fontSize(0)
-            color: Colors.overBackground
-            Layout.fillWidth: true
-        }
-
-        StyledSwitch {
-            id: toggleSwitch
-            checked: toggleRowRoot.checked
-
-            onCheckedChanged: {
-                if (!toggleRowRoot._updating && checked !== toggleRowRoot.checked) {
-                    toggleRowRoot.toggled(checked);
-                }
-            }
-
-        }
-    }
+    component ToggleRow: SettingsToggleRow {}
 
     component AppearanceSliderRow: ColumnLayout {
         id: sliderRow
@@ -230,7 +189,7 @@ Item {
         StyledRect {
             variant: "common"
             Layout.preferredWidth: 60
-            Layout.preferredHeight: 32
+            Layout.preferredHeight: 48
             radius: Styling.radius(-2)
 
             TextInput {
@@ -305,7 +264,7 @@ Item {
         StyledRect {
             variant: "common"
             Layout.fillWidth: true
-            Layout.preferredHeight: 32
+            Layout.preferredHeight: 48
             radius: Styling.radius(-2)
 
             TextInput {
@@ -535,6 +494,7 @@ Item {
         anchors.fill: parent
         contentHeight: mainColumn.implicitHeight
         clip: true
+        ScrollBar.vertical: ScrollBar {}
         boundsBehavior: Flickable.StopAtBounds
         interactive: !root.colorPickerActive
 
@@ -563,7 +523,7 @@ Item {
         ColumnLayout {
             id: mainColumn
             width: mainFlickable.width
-            spacing: Styling.spacing(8)
+            spacing: Styling.spacing(16)
 
             // Header wrapper
             Item {

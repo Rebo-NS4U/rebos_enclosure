@@ -14,10 +14,10 @@ ComboBox {
     font.family: Config.theme.font
     font.pixelSize: Styling.fontSize(0)
     background: StyledRect {
-        variant: root.hovered ? "focus" : "pane"
-        radius: Config.roundness
+        variant: root.hovered ? "focus" : "internalbg"
+        radius: Styling.radius(-4)
         border.width: root.activeFocus || root.popup.visible ? 2 : 1
-        border.color: root.activeFocus || root.popup.visible ? Colors.primary : Colors.outlineVariant
+        border.color: root.activeFocus || root.popup.visible ? Colors.primary : Qt.alpha(Colors.outline, 0.3)
     }
     contentItem: StyledText {
         text: root.displayText
@@ -69,6 +69,6 @@ ComboBox {
             boundsBehavior: Flickable.StopAtBounds
             ScrollIndicator.vertical: ScrollIndicator {}
         }
-        background: StyledRect { variant: "popup"; radius: Config.roundness }
+        background: StyledRect { variant: "popup"; radius: Styling.radius(-4) }
     }
 }

@@ -26,11 +26,12 @@ Item {
         anchors.fill: parent
         contentHeight: contentColumn.implicitHeight
         clip: true
+        ScrollBar.vertical: ScrollBar {}
 
         ColumnLayout {
             id: contentColumn
             width: flickable.width
-            spacing: Styling.spacing(8)
+            spacing: Styling.spacing(16)
 
             // Header wrapper
             Item {
@@ -76,38 +77,16 @@ Item {
                     anchors.horizontalCenter: parent.horizontalCenter
                     spacing: Styling.spacing(12)
 
-                    GridLayout {
-                        Layout.fillWidth: true
-                        columns: root.contentWidth < Styling.fontSize(0) * 30 ? 1 : 2
-                        columnSpacing: Styling.spacing(12)
-                        rowSpacing: Styling.spacing(12)
-                        SettingsSectionCard {
-                            text: "Output"
-                            description: "Speakers and headphones."
-                            glyph: Icons.speakerHigh
-                            selected: root.showOutput
-                            onClicked: root.showOutput = true
-                        }
-                        SettingsSectionCard {
-                            text: "Input"
-                            description: "Microphones and recording."
-                            glyph: Icons.mic
-                            selected: !root.showOutput
-                            onClicked: root.showOutput = false
-                        }
+                    SettingsSubnav {
+                        currentSection: root.showOutput ? "output" : "input"
+                        sections: [{id: "output", label: "Output devices"}, {id: "input", label: "Input devices"}]
+                        onSelected: section => root.showOutput = section === "output"
                     }
 
-                    // Section: Devices
-                    StyledText {
-                        renderType: Text.NativeRendering
-                        font.hintingPreference: Font.PreferFullHinting
-                        text: root.showOutput ? "Output Device" : "Input Device"
-                        font.family: Config.theme.font
-                        font.pixelSize: Styling.fontSize(-1)
-                        font.weight: Font.Medium
-                        color: Colors.overSurfaceVariant
-                    }
 
+                    SettingsGroup {
+                        title: root.showOutput ? "Output devices" : "Input devices"
+                        description: "Select the device to use by default."
                     // Device list
                     ColumnLayout {
                         Layout.fillWidth: true
@@ -126,25 +105,10 @@ Item {
                         }
                     }
 
-                    // Separator
-                    Separator {
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 2
-                        Layout.topMargin: 8
-                        Layout.bottomMargin: 8
                     }
-
-                    // Section: Volume Mixer
-                    StyledText {
-                        renderType: Text.NativeRendering
-                        font.hintingPreference: Font.PreferFullHinting
-                        text: "Volume Mixer"
-                        font.family: Config.theme.font
-                        font.pixelSize: Styling.fontSize(-1)
-                        font.weight: Font.Medium
-                        color: Colors.overSurfaceVariant
-                    }
-
+                    SettingsGroup {
+                        title: "Volume mixer"
+                        description: "Adjust the selected device and individual applications."
                     // Main volume control
                     AudioVolumeEntry {
                         Layout.fillWidth: true
@@ -176,6 +140,7 @@ Item {
                         color: Colors.outline
                         Layout.alignment: Qt.AlignHCenter
                         Layout.topMargin: 16
+                    }
                     }
                 }
             }

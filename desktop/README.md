@@ -189,7 +189,7 @@ its [include documentation](https://niri-wm.github.io/niri/Configuration%3A-Incl
 | Super+W / E | Browser / file manager |
 | Super+Shift+/ | Keybinding help |
 
-Open Settings from the launcher to adjust weather location, displays and theme. Appearance groups wallpaper and color, text and surfaces, and depth and movement. Within Wallpaper & palette, use the tabs for palette mode, picking wallpaper colors, saved appearances, wallpaper source and app appearance. Shell and system pages also provide direct subsection navigation. Choose any wallpaper to generate a fresh palette. Open Zen once to create its profile and Spotify Launcher once to install its client and sign in. Close Spotify, then run:
+Open Settings from the launcher to adjust weather location, displays and theme. Appearance groups wallpaper and color, text and surfaces, and depth and movement. Within Wallpaper & palette, use the tabs for palette mode, picking wallpaper colors, saved appearances, wallpaper source and app appearance. Shell and system pages also provide direct subsection navigation. Settings pages share section cards, title spacing, labeled toggle rows, 48px fields and dropdowns, and scrolling affordances. Use `SettingsGroup`, `SettingsToggleRow`, `SettingsTextField`, `SettingsComboBox` and `SettingsSubnav` when adding settings so new pages follow the same layout. Choose any wallpaper to generate a fresh palette. Open Zen once to create its profile and Spotify Launcher once to install its client and sign in. Close Spotify, then run:
 
 ```bash
 bash desktop/scripts/finish-apps.sh

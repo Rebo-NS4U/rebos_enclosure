@@ -8,10 +8,11 @@ import qs.modules.theme
 import qs.modules.services
 import "../../../theme/ShellStyles.js" as ShellStyles
 
-ColumnLayout {
+SettingsGroup {
     id: root
+    title: "Theme style"
+    description: "Choose a shared appearance for the shell and supported apps."
     property string settingsSection: "style"
-    spacing: Styling.spacing(12)
 
     StyledText {
         Layout.fillWidth: true
