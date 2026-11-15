@@ -1003,6 +1003,8 @@ Item {
                         color: Qt.alpha(Colors.overSurfaceVariant, 0.22)
                     }
 
+                    ReleaseUpdateButton {}
+
                     // Continuous bar meters on the shared island surface.
                     VolumeSlider {
                         objectName: "bar-volume"

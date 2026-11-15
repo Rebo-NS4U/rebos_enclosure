@@ -26,7 +26,6 @@ ColumnLayout {
     property bool failed: false
     property string updateFeedback: ""
     property bool updateFailed: false
-    property var releaseUpdate: ({available: false})
     property var pending: ({})
     readonly property string activePath: selectedPath || desktopPath
     readonly property bool busy: worker.running || checking
@@ -58,7 +57,7 @@ ColumnLayout {
         if (!busy && selectedPath === "" && desktopPath !== "" && project.path !== desktopPath)
             root.projectSelected(desktopPath);
     }
-    onVisibleChanged: { initialize(); checkRelease(); }
+    onVisibleChanged: initialize()
     onWidthChanged: initialize()
     onBusyChanged: if (!busy) { initialize(); selectDesktopProject(); }
     Component.onCompleted: initialize()
@@ -129,37 +128,12 @@ ColumnLayout {
             }
         }
     }
-    function checkRelease() {
-        if (!releaseChecker.running && visible && width > 0)
-            releaseChecker.running = true;
-    }
-    onCheckingChanged: if (checking) checkRelease()
-    Timer {
-        interval: 900000
-        running: root.visible && root.width > 0
-        triggeredOnStart: true
-        repeat: true
-        onTriggered: root.checkRelease()
-    }
-    Process {
-        id: releaseChecker
-        command: ["python3", Quickshell.shellPath("scripts/github_update.py"), "--check"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                try { root.releaseUpdate = JSON.parse(text); }
-                catch (error) { root.releaseUpdate = {available: false}; }
-            }
-        }
-        onExited: (code, status) => {
-            if (code !== 0) root.releaseUpdate = {available: false};
-        }
-    }
     Process {
         id: updateLauncher
         property bool started: false
         onStarted: {
             started = true;
-            root.updateFeedback = "Update window is open. Installing the release; progress is shown there.";
+            root.updateFeedback = "Update window is open. Installing main; progress is shown there.";
         }
         onRunningChanged: {
             if (!running && !started) {
@@ -173,7 +147,7 @@ ColumnLayout {
         onExited: (code, status) => {
             root.updateFailed = code !== 0;
             if (code !== 0) root.updateFeedback = "Could not open the update window (exit " + code + "). " + root.updateFeedback;
-            else { root.updateFeedback = "Update window closed. Review its results."; root.checkRelease(); }
+            else { root.updateFeedback = "Update window closed. Review its results."; }
         }
     }
     component Caption: StyledText { Layout.fillWidth: true; wrapMode: Text.Wrap; color: Colors.overSurfaceVariant }
@@ -212,18 +186,17 @@ ColumnLayout {
     ColumnLayout {
         Layout.fillWidth: true
         visible: (root.selectedPath === "" || root.activePath === root.desktopPath)
-            && (root.releaseUpdate.available || updateLauncher.running || root.updateFeedback !== "")
+
         SettingsButton {
             objectName: "github-update-installed-button"
-            visible: root.releaseUpdate.available || updateLauncher.running
-            text: updateLauncher.running ? "Update window is open…" : "Update Enclosure to " + (root.releaseUpdate.tag || "")
+            text: updateLauncher.running ? "Update window is open…" : "Update Enclosure from main"
             enabled: !updateLauncher.running && root.desktopPath !== ""
             onClicked: {
                 updateLauncher.command = ["kitty", "--title", "Enclosure update progress", "python3",
                     Quickshell.shellPath("scripts/github_update.py"), "--path", root.desktopPath,
-                    "--release", root.releaseUpdate.tag];
+                    "--regular"];
                 updateLauncher.started = false;
-                root.updateFeedback = "Starting release update…";
+                root.updateFeedback = "Starting main-branch update…";
                 root.updateFailed = false;
                 updateLauncher.running = true;
             }
@@ -339,7 +312,7 @@ ColumnLayout {
         title: "Branches & sync"
         summary: "Fetch, pull, create or switch branches."
         description: root.canEdit
-            ? "Actions apply to the selected local project. Pull requires a clean checkout and fast-forwards only. Pull updates the checkout. The release update button appears above when a newer published release is available."
+            ? "Actions apply to the selected local project. Pull requires a clean checkout and fast-forwards only. Pull updates the checkout. Use Update Enclosure from main above to apply desktop files. New releases appear in the top bar."
             : root.busy ? "Checking the project. Git actions will be available when the check finishes."
             : "Select or add a local Git checkout under Project or Add or clone projects to enable Git actions."
         actionsEnabled: root.canEdit

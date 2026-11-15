@@ -433,15 +433,20 @@ With no local checkout available, the page can still compare the installed
 revision, but Git editing controls stay disabled. After updating these controls,
 use **Check for updates** once to refresh an already-open GitHub page.
 
-In Settings → GitHub, Enclosure shows a single **Update Enclosure to …** button
-only when a newer stable GitHub release is available. It checks when the page
-opens, when status is refreshed and every 15 minutes while visible. Branch
-commits, drafts, prereleases and failed checks do not offer an update.
-Clicking applies that exact release immediately in a progress terminal, without
-a second confirmation. Updates preserve personal preferences and create recovery
-backups; local-change protection and payload verification remain enforced.
-The button updates desktop files only. Terminal `./update.sh` options remain
-available for package upgrades and branch-based maintenance.
+Settings → GitHub has an always-available **Update Enclosure from main** button.
+It applies the latest main-branch desktop files, including changes between releases.
+
+The top bar separately shows a highlighted **Update available** button when a
+newer stable GitHub release is available. Hover to see the release tag; click to
+install that exact release with terminal progress. A shared checker runs at
+startup, every 15 minutes, and when GitHub status is refreshed. Current/ahead
+versions, drafts, prereleases and failed checks do not display a release alert.
+
+Both buttons apply immediately without a second confirmation, preserve personal
+preferences and create recovery backups. Local-change protection and payload
+verification remain enforced. They update desktop files only; terminal
+`./update.sh` options remain available for package upgrades.
+
 
 ### Settings navigation and shortcut search
 

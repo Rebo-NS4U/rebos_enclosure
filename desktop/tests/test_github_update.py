@@ -16,6 +16,13 @@ class UpdateTests(unittest.TestCase):
             self.assertEqual(updater.update_command('/repo', 'v2.0.0'),
                              ['bash', '/repo/update.sh', '--files-only', '--release', 'v2.0.0'])
 
+    def test_regular_update_tracks_main_without_release_check(self):
+        run = Mock(return_value=subprocess.CompletedProcess([], 0))
+        with patch.object(updater, 'checkout', return_value=(Path('/repo'), 'Rebo-NS4U/rebos_enclosure')), patch.object(Path, 'is_file', return_value=True), patch.object(updater, 'release_status') as check:
+            self.assertEqual(updater.perform('/repo', run=run), 0)
+        run.assert_called_once_with(['bash', '/repo/update.sh', '--files-only', '--branch', 'main'])
+        check.assert_not_called()
+
     def test_other_repository_is_rejected(self):
         with patch.object(updater, 'checkout', return_value=(Path('/repo'), 'other/repo')):
             with self.assertRaises(ValueError):

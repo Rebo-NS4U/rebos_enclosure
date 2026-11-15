@@ -1,5 +1,23 @@
 # Validation record
 
+## Regular updates and top-bar release alert — 2026-11-15
+
+- Restored the always-available main-branch desktop update button in GitHub
+  Settings. The separate highlighted top-bar release button is shown only for
+  a newer stable release; its tooltip identifies the tag and its click applies
+  that release immediately with terminal progress.
+- One shared singleton checks at startup and every 15 minutes, independently
+  of Settings visibility and monitor count. GitHub status refresh also checks
+  releases. Terminal startup errors remain available in the alert tooltip.
+- Nine updater/helper/UI tests pass, including main-branch pinning without a
+  release prerequisite, bar alert availability, click/progress behavior, and
+  the regular button remaining available without a new release. Three merged
+  bar tests pass for the current and compatibility layouts. Ruff and the
+  unchanged 70-exception design gate pass.
+- Payload checksums are refreshed; the installed shell resolves into the
+  checkout. No update was applied and no desktop/backend restart was performed.
+  Changes are committed locally only.
+
 ## Release-only update button — 2026-11-15
 
 - Settings → GitHub now offers one Enclosure update button only for a newer

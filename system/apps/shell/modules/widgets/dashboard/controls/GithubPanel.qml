@@ -6,6 +6,7 @@ import Quickshell
 import Quickshell.Io
 import qs.modules.components
 import qs.modules.theme
+import qs.modules.services
 
 Item {
     id: root
@@ -40,6 +41,7 @@ Item {
         return isNaN(date.getTime()) ? value : date.toLocaleString();
     }
     function check() {
+        EnclosureUpdates.check();
         if (!checker.running)
             checker.running = true;
     }

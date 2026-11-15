@@ -11,6 +11,8 @@ HARNESS = '''import QtQuick
 import QtTest
 import Quickshell
 import qs.modules.widgets.dashboard.controls
+import qs.modules.bar
+import qs.modules.services
 ShellRoot {
  FloatingWindow {
   id: window; visible: true; implicitWidth: 1100; implicitHeight: 1000
@@ -57,6 +59,8 @@ class UpdateButtonTests(unittest.TestCase):
     @unittest.skipUnless(shutil.which('qs'), 'Quickshell is required')
     def test_terminal_outcomes(self):
         cases = {
+            'bar-release': ('#!/bin/sh\nsleep 3\n', ''),
+            'bar-current': ('#!/bin/sh\nexit 99\n', ''),
             'current': ('#!/bin/sh\nexit 99\n', ''),
             'offline': ('#!/bin/sh\nexit 99\n', ''),
             'open': ('#!/bin/sh\nsleep 3\n', '''
@@ -78,7 +82,7 @@ class UpdateButtonTests(unittest.TestCase):
                 (root / 'scripts/github_projects.py').write_text(
                     'print(\'{"ok":true,"desktop_path":"/repo","projects":[],"message":"Ready"}\')\n')
                 (root / 'scripts/github_update.py').write_text(
-                    'print(\'{"available":' + ('false' if name in ('current', 'offline') else 'true')
+                    'print(\'{"available":' + ('false' if name in ('current', 'offline', 'bar-current') else 'true')
                     + ',"tag":"v2.0.0"}\')\n'
                     + ('raise SystemExit(1)\n' if name == 'offline' else ''))
                 (root / 'bin').mkdir()
@@ -88,7 +92,18 @@ class UpdateButtonTests(unittest.TestCase):
                 (root / 'runtime').mkdir(mode=0o700)
                 harness = HARNESS.replace('EXPECTATIONS', expectations)
                 if name in ('current', 'offline'):
-                    harness = harness.replace('window.check(button.enabled,', 'window.check(!button.visible, "No release means no update button"); console.log("UPDATE BUTTON PASSED"); Qt.quit(); return; window.check(button.enabled,')
+                    harness = harness.replace('window.check(button.enabled,', 'window.check(button.visible, "Regular update remains available without a release"); console.log("UPDATE BUTTON PASSED"); Qt.quit(); return; window.check(button.enabled,')
+                if name.startswith('bar-'):
+                    harness = HARNESS.replace('GithubPanel { id: panel; anchors.fill: parent }',
+                        'ReleaseUpdateButton { id: panel }')
+                    start = harness.index('     let button =')
+                    end = harness.index('     console.log("UPDATE BUTTON PASSED")')
+                    body = ('     window.check(!panel.visible, "No release means no bar alert");\n'
+                            if name == 'bar-current' else
+                            '     window.check(panel.visible && panel.text === "Update available", "Release alert is prominent");\n'
+                            '     tester.mouseClick(panel); tester.wait(250);\n'
+                            '     window.check(EnclosureUpdates.running && !panel.enabled, "Click starts release update");\n')
+                    harness = harness[:start] + body + harness[end:]
                 (root / 'shell.qml').write_text(harness)
                 env = dict(os.environ, HOME=temporary, XDG_RUNTIME_DIR=str(root / 'runtime'),
                            QT_QPA_PLATFORM='offscreen', QT_QUICK_BACKEND='software',
