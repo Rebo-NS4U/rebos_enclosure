@@ -653,37 +653,48 @@ ClippingRectangle {
                     sky.addColorStop(0.5,frame(0.025));sky.addColorStop(1,frame(0));
                     ctx.fillStyle=sky;ctx.fillRect(0,0,width,Math.min(height,85));
                     if(outer && barSurface){
-                        // A city cornice designed for the bar's shallow proportions.
-                        // Architecture occupies only the bottom eight pixels; controls stay clear.
-                        const margin=Math.max(16,cornerRadius+4),base=height-2;
-                        ctx.strokeStyle=frame(0.30);ctx.lineWidth=0.8;
-                        ctx.beginPath();ctx.moveTo(margin,base);ctx.lineTo(width-margin,base);ctx.stroke();
-                        let building=0;
-                        for(let x=margin+5;x<width-margin-8;x+=22,building++){
-                            const roof=base-[4,7,5,8,3,6][building%6];
-                            const right=Math.min(width-margin,x+16);
-                            ctx.fillStyle=facade(0.30);ctx.fillRect(x,roof,right-x,base-roof);
-                            ctx.strokeStyle=frame(building%3===0?0.38:0.20);
-                            ctx.beginPath();ctx.moveTo(x,base);ctx.lineTo(x,roof);
-                            ctx.lineTo(right,roof);ctx.lineTo(right,base);ctx.stroke();
-                            ctx.fillStyle=windowLight(building%3===0?0.58:0.30);
-                            for(let column=0;column<3;column++){
-                                if((building+column)%3!==0 && x+3+column*4<right-1)
-                                    ctx.fillRect(x+3+column*4,base-3,1.5,1.5);
+                        // A structural lintel and a few skyline clusters, rather than
+                        // repeating tiny towers across the entire reading area.
+                        const margin=Math.max(16,cornerRadius+4);
+                        const base=Math.floor(height-3)+0.5;
+                        const span=Math.max(0,width-margin*2);
+                        ctx.lineWidth=1;
+                        ctx.strokeStyle=frame(0.42);
+                        ctx.beginPath();ctx.moveTo(margin,base);
+                        ctx.lineTo(width-margin,base);ctx.stroke();
+                        ctx.strokeStyle=frame(0.30);
+                        ctx.beginPath();ctx.moveTo(margin,3.5);
+                        ctx.lineTo(width-margin,3.5);ctx.stroke();
+
+                        // Keep the silhouette shallow and leave open spans between
+                        // clusters. Whole-pixel edges read clearly at bar scale.
+                        const clusters=Math.max(1,Math.min(3,Math.floor(span/180)));
+                        const clusterWidth=Math.min(58,span*0.34);
+                        for(let group=0;group<clusters;group++){
+                            const left=Math.floor(margin+(span-clusterWidth)*(clusters===1?0.5:group/(clusters-1)))+0.5;
+                            const unit=clusterWidth/4;
+                            const heights=[3,6,4,2];
+                            ctx.fillStyle=facade(0.38);
+                            ctx.strokeStyle=frame(0.46);
+                            ctx.beginPath();ctx.moveTo(left,base);
+                            for(let tower=0;tower<4;tower++){
+                                const x=Math.floor(left+tower*unit)+0.5;
+                                const right=Math.floor(left+(tower+1)*unit)+0.5;
+                                const roof=base-heights[(tower+group)%4];
+                                ctx.lineTo(x,roof);ctx.lineTo(right,roof);
                             }
+                            ctx.lineTo(left+clusterWidth,base);ctx.closePath();
+                            ctx.fill();ctx.stroke();
+                            // One lit window per cluster keeps the city cue quiet.
+                            ctx.fillStyle=windowLight(0.55);
+                            ctx.fillRect(Math.floor(left+unit*1.5),Math.floor(base-3),2,1);
                         }
-                        // A luminous roofline and stepped end caps frame the skyline.
-                        const crown=ctx.createLinearGradient(0,0,width,0);
-                        crown.addColorStop(0,frame(0));crown.addColorStop(0.25,frame(0.22));
-                        crown.addColorStop(0.50,frame(0.38));crown.addColorStop(0.75,frame(0.22));crown.addColorStop(1,frame(0));
-                        ctx.strokeStyle=crown;ctx.lineWidth=1;
-                        ctx.beginPath();ctx.moveTo(margin,3);ctx.lineTo(width-margin,3);ctx.stroke();
+                        // Vertical end piers give the glass a defined structure.
                         for(const side of [0,1]){
-                            ctx.save();if(side){ctx.translate(width,0);ctx.scale(-1,1);}
-                            ctx.strokeStyle=frame(0.36);ctx.lineWidth=1;
-                            ctx.beginPath();ctx.moveTo(5,height*0.66);ctx.lineTo(5,height*0.40);
-                            ctx.lineTo(8,height*0.40);ctx.lineTo(8,height*0.25);
-                            ctx.lineTo(12,height*0.25);ctx.stroke();ctx.restore();
+                            const x=side?width-6.5:6.5;
+                            ctx.strokeStyle=frame(0.42);
+                            ctx.beginPath();ctx.moveTo(x,8);
+                            ctx.lineTo(x,height-8);ctx.stroke();
                         }
                     }else if(outer){
                         // Soft cloud banks hang from the upper edge, fading before the content.
