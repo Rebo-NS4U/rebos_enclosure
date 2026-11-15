@@ -11,8 +11,8 @@ QtObject {
     function appearance(style) {
         const profiles = {
             "smoked-acrylic": {padding: "14 16", border: "1pt", margin: 0, cursor: "beam", tabs: "fade", separator: "  ", blink: 0.55, trail: 60},
-            "liquid-glass": {padding: "16 18", border: "0.5pt", margin: 0, cursor: "beam", tabs: "fade", separator: "  ", blink: 0.55, trail: 40},
-            "prism-glass": {padding: "14 18", border: "2pt", margin: 2, cursor: "underline", tabs: "separator", separator: "  ┆  ", blink: 0, trail: 0},
+            "glass-console": {padding: "16 18", border: "2pt", margin: 3, cursor: "block", tabs: "powerline", separator: " │ ", blink: 0, trail: 0},
+            "circuit-glass": {padding: "14 18", border: "2pt", margin: 2, cursor: "underline", tabs: "separator", separator: "  ┆  ", blink: 0, trail: 0},
             "monolith": {padding: "16 20", border: "0pt", margin: 0, cursor: "block", tabs: "separator", separator: "  ┃  ", blink: 0, trail: 0},
             "blueprint": {padding: "12 16", border: "1pt", margin: 2, cursor: "underline", tabs: "separator", separator: "  │  ", blink: 0, trail: 0},
             "terminal-hardware": {padding: "14 18", border: "2pt", margin: 3, cursor: "block", tabs: "powerline", separator: " │ ", blink: 0, trail: 0},

@@ -250,14 +250,14 @@ ClippingRectangle {
         anchors.fill: parent
         active: !root.hasFillColor && root.rectOpacity > 0
             && ["bg", "popup", "pane", "surface", "internalbg"].indexOf(root.variant) !== -1
-            && ["smoked-acrylic", "liquid-glass", "prism-glass"].indexOf(root.styleOverride || Styling.shellStyle) !== -1
+            && ["smoked-acrylic", "glass-console", "circuit-glass"].indexOf(root.styleOverride || Styling.shellStyle) !== -1
         sourceComponent: Item {
             id: material
             readonly property string style: root.styleOverride || Styling.shellStyle
             readonly property bool outer: root.variant === "bg" || root.variant === "popup"
             readonly property bool acrylic: style === "smoked-acrylic"
-            readonly property bool liquid: style === "liquid-glass"
-            readonly property bool prism: style === "prism-glass"
+            readonly property bool chassis: style === "glass-console"
+            readonly property bool circuit: style === "circuit-glass"
             readonly property color ink: root.itemColor
             opacity: root.rectOpacity
             // Material optics stay static and subtle across the reading area.
@@ -295,59 +295,66 @@ ClippingRectangle {
                             ctx.lineTo(18, height - 16 + i * 2);
                             ctx.stroke();
                         }
-                    } else if (material.prism) {
-                        // Cut crystal facets alternate broad planes with razor edge highlights.
-                        const bevel = Math.min(18, width / 7, height / 7);
-                        const facets = [
-                            [[0,0],[width,0],[width-bevel,bevel],[bevel,bevel]],
-                            [[width,0],[width,height],[width-bevel,height-bevel],[width-bevel,bevel]],
-                            [[width,height],[0,height],[bevel,height-bevel],[width-bevel,height-bevel]],
-                            [[0,height],[0,0],[bevel,bevel],[bevel,height-bevel]]
-                        ];
-                        facets.forEach((points, index) => {
-                            ctx.fillStyle = ink([0.12,0.035,0.065,0.02][index]);
-                            ctx.beginPath(); ctx.moveTo(points[0][0], points[0][1]);
-                            points.slice(1).forEach(p => ctx.lineTo(p[0],p[1])); ctx.closePath(); ctx.fill();
-                        });
-                        ctx.strokeStyle = ink(0.28);
-                        ctx.strokeRect(bevel,bevel,width-bevel*2,height-bevel*2);
-                        ctx.strokeStyle = ink(0.12);
-                        for (const x of [0,width]) for (const y of [0,height]) {
-                            ctx.beginPath(); ctx.moveTo(x,y);
-                            ctx.lineTo(x ? width-bevel : bevel,y ? height-bevel : bevel); ctx.stroke();
+                    } else if (material.circuit) {
+                        // Printed routes, right-angle junctions and solder pads.
+                        ctx.strokeStyle = ink(0.055);
+                        for (let x=24; x<width; x+=24) for (let y=24; y<height; y+=24) {
+                            ctx.fillStyle=ink(0.09); ctx.fillRect(x,y,1,1);
                         }
-                        // A pair of fractured reflections stays on the perimeter.
-                        ctx.strokeStyle = ink(0.38); ctx.beginPath();
-                        ctx.moveTo(bevel+12,bevel); ctx.lineTo(width*0.42,bevel);
-                        ctx.moveTo(width-bevel,height*0.62); ctx.lineTo(width-bevel,height-bevel-12); ctx.stroke();
-                    } else if (material.liquid) {
-                        // Curved meniscus bands suggest a thick, smoothly poured lens.
-                        const rim = Math.min(24, width / 5, height / 5);
-                        ctx.lineCap = "round";
-                        for (let layer=0; layer<3; layer++) {
-                            const d = 4 + layer*3;
-                            ctx.strokeStyle = ink([0.26,0.10,0.045][layer]);
-                            ctx.lineWidth = [2,3,4][layer];
-                            ctx.beginPath(); ctx.moveTo(rim,d);
-                            ctx.bezierCurveTo(width*0.36,d+6,width*0.65,d-1,width-rim,d);
-                            ctx.quadraticCurveTo(width-d,d,width-d,rim); ctx.stroke();
-                            ctx.strokeStyle = ink([0.13,0.08,0.035][layer]);
-                            ctx.beginPath(); ctx.moveTo(d,height-rim);
-                            ctx.quadraticCurveTo(d,height-d,rim,height-d);
-                            ctx.bezierCurveTo(width*0.40,height-d-5,width*0.70,height-d+1,width-rim,height-d); ctx.stroke();
+                        const count=material.outer ? 4 : 2;
+                        for (let route=0; route<count; route++) {
+                            const edge=5+route*4;
+                            const run=Math.min(width*0.38,42+route*22);
+                            ctx.strokeStyle=ink(0.34-route*0.045); ctx.lineWidth=1;
+                            ctx.beginPath(); ctx.moveTo(edge,height*0.28+route*8);
+                            ctx.lineTo(edge,edge+12); ctx.lineTo(edge+12,edge);
+                            ctx.lineTo(run,edge); ctx.lineTo(run+10,edge+10); ctx.stroke();
+                            ctx.beginPath(); ctx.arc(run+10,edge+10,2.5,0,Math.PI*2); ctx.stroke();
+                            ctx.beginPath(); ctx.moveTo(width-edge,height*0.72-route*8);
+                            ctx.lineTo(width-edge,height-edge-12); ctx.lineTo(width-edge-12,height-edge);
+                            ctx.lineTo(width-run,height-edge); ctx.lineTo(width-run-10,height-edge-10); ctx.stroke();
+                            ctx.beginPath(); ctx.arc(width-run-10,height-edge-10,2.5,0,Math.PI*2); ctx.stroke();
                         }
-                        const shine = ctx.createRadialGradient(width*0.20,0,1,width*0.20,0,Math.min(width,height)*0.7);
-                        shine.addColorStop(0,ink(0.075)); shine.addColorStop(1,ink(0));
-                        ctx.fillStyle=shine; ctx.fillRect(0,0,width,height);
+                        // Connector teeth and clipped corner terminals.
+                        ctx.fillStyle=ink(0.30);
+                        if (material.outer && width>100) for (let i=0;i<7;i++) {
+                            ctx.fillRect(width/2-19+i*6,2,3,5);
+                            ctx.fillRect(width/2-19+i*6,height-7,3,5);
+                        }
+                    } else if (material.chassis) {
+                        // Separate structural rails enclose a translucent display well.
+                        const frame = Qt.color(root.gradientStops[1][0]);
+                        ctx.fillStyle=Qt.rgba(frame.r,frame.g,frame.b,0.80);
+                        const rail=material.outer ? 11 : 4;
+                        ctx.fillRect(0,0,width,rail); ctx.fillRect(0,height-rail,width,rail);
+                        ctx.fillRect(0,0,rail,height); ctx.fillRect(width-rail,0,rail,height);
+                        ctx.strokeStyle=ink(0.24); ctx.strokeRect(rail,rail,width-rail*2,height-rail*2);
+                        ctx.strokeStyle=ink(0.09); ctx.strokeRect(rail+3,rail+3,width-rail*2-6,height-rail*2-6);
+                        if (material.outer) {
+                            ctx.fillStyle=ink(0.28);
+                            for (let i=0;i<6;i++) {
+                                ctx.fillRect(width-9,24+i*6,5,2);
+                                ctx.fillRect(20+i*6,height-8,3,4);
+                            }
+                            for (const x of [5,width-5]) for (const y of [5,height-5]) {
+                                ctx.strokeStyle=ink(0.42); ctx.beginPath(); ctx.arc(x,y,2,0,Math.PI*2); ctx.stroke();
+                                ctx.beginPath(); ctx.moveTo(x-1,y+1); ctx.lineTo(x+1,y-1); ctx.stroke();
+                            }
+                        }
+                        // Fine screen texture is passive and only visible in inset wells.
+                        if (root.variant === "internalbg") {
+                            ctx.fillStyle=ink(0.035);
+                            for (let y=rail+4;y<height-rail;y+=4) ctx.fillRect(rail+2,y,width-rail*2-4,1);
+                        }
                     }
                 }
             }
             Rectangle {
-                anchors.fill: parent; anchors.margins: material.prism ? 3 : 2
-                radius: Math.max(0, root.radius - (material.prism ? 3 : 2))
+                anchors.fill: parent; anchors.margins: material.circuit ? 3 : 2
+                radius: Math.max(0, root.radius - (material.circuit ? 3 : 2))
                 color: "transparent"
-                border.width: material.liquid ? 2 : 1
-                border.color: Qt.alpha(material.ink, material.prism ? 0.18 : material.liquid ? 0.08 : 0.14)
+                border.width: material.chassis ? 2 : 1
+                border.color: Qt.alpha(material.ink, material.circuit ? 0.18 : material.chassis ? 0.08 : 0.14)
             }
             Rectangle {
                 visible: material.acrylic

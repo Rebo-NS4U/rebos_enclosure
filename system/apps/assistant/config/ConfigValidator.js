@@ -32,10 +32,12 @@ function validate(current, defaults, keyName) {
         return defaults;
     }
 
-    if (keyName === "shellStyle" && current === "condensation") return "liquid-glass";
-    if (keyName === "shellStyle" && current === "optical-instrument") return "prism-glass";
+    if (keyName === "shellStyle" && current === "liquid-glass") return "glass-console";
+    if (keyName === "shellStyle" && current === "prism-glass") return "circuit-glass";
+    if (keyName === "shellStyle" && current === "condensation") return "glass-console";
+    if (keyName === "shellStyle" && current === "optical-instrument") return "circuit-glass";
     if (keyName === "shellStyle" && current === "dithered") return "quiet";
-    if (keyName === "shellStyle" && ["glass", "quiet", "colorful", "custom", "frosted", "monolith", "blueprint", "terminal-hardware", "smoked-acrylic", "liquid-glass", "prism-glass"].indexOf(current) === -1) {
+    if (keyName === "shellStyle" && ["glass", "quiet", "colorful", "custom", "frosted", "monolith", "blueprint", "terminal-hardware", "smoked-acrylic", "glass-console", "circuit-glass"].indexOf(current) === -1) {
         return defaults;
     }
     if (keyName === "desktopBlur" && ["medium", "light", "shell", "off"].indexOf(current) === -1) return defaults;

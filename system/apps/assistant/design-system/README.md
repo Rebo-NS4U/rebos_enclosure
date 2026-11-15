@@ -59,6 +59,6 @@ Kitty follows the exported surface palette and opacity as well as the selected s
 
 ## Translucent materials
 
-Smoked Acrylic uses diagonal reflection bands, laminated edge hairlines, translucent sheets and recessed wells. Liquid Glass uses rounded poured-lens surfaces with curved meniscus bands and broad, soft highlights. Prism Glass uses angular crystal facets, flat bevel planes and fractured edge reflections. Each keeps the selected palette and has a matching native Kitty profile. Selecting one resets the manual transparency override to its material default and enables shell blur if blur was off. Existing desktop blur location and strength choices are preserved; Niri supplies the actual background blur. The global transparency slider remains available after selection.
+Smoked Acrylic uses diagonal reflection bands, laminated edge hairlines, translucent sheets and recessed wells. Glass Console uses segmented chassis rails, vented housings, slotted fasteners and translucent inset display wells. Circuit Glass uses printed circuit routes, junction pads, connector teeth and a subtle dot lattice on blurred glass. Each keeps the selected palette and has a matching native Kitty profile. Selecting one resets the manual transparency override to its material default and enables shell blur if blur was off. Existing desktop blur location and strength choices are preserved; Niri supplies the actual background blur. The global transparency slider remains available after selection.
 
-Condensation and Optical Instrument have been replaced; saved selections migrate to Liquid Glass and Prism Glass respectively.
+Condensation and Liquid Glass selections migrate to Glass Console; Optical Instrument and Prism Glass selections migrate to Circuit Glass.
