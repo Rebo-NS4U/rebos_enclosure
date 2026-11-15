@@ -217,7 +217,7 @@ Window {
     }
     Timer { interval: 500; running: root.playing; repeat: true; onTriggered: root.sync() }
     Shortcut { sequence: "Space"; enabled: root.page !== "Downloads" && !search.inputActiveFocus && !playlistName.inputActiveFocus; onActivated: root.toggle() }
-    Shortcut { sequence: "Ctrl+F"; onActivated: search.focusInput() }
+    Shortcut { sequence: "Ctrl+F"; enabled: root.page !== "Downloads"; onActivated: search.focusInput() }
     Shortcut { sequence: "Escape"; onActivated: GlobalStates.musicWindowVisible = false }
 
     component Cover: ClippingRectangle {
@@ -263,8 +263,8 @@ Window {
                 StyledRect {
                     Layout.preferredWidth: 180; Layout.fillHeight: true; variant: "pane"
                     ColumnLayout {
-                        anchors.fill: parent; anchors.margins: 16; spacing: 10
-                        StyledText { text: "MUSIC"; color: Colors.primary; font.bold: true; font.letterSpacing: 3; font.pixelSize: Styling.fontSize(5); Layout.topMargin: 12; Layout.bottomMargin: 18 }
+                        anchors.fill: parent; anchors.margins: 12; spacing: 6
+                        StyledText { text: "MUSIC"; color: Colors.primary; font.bold: true; font.letterSpacing: 2; font.pixelSize: Styling.fontSize(5); Layout.topMargin: 8; Layout.bottomMargin: 12 }
                         Repeater {
                             model: ["Home", "Songs", "Albums", "Artists", "Favorites", "Playlists", "Downloads", "Now playing"]
                             delegate: ThemeButton {
@@ -290,7 +290,7 @@ Window {
                     StyledText { Layout.fillWidth: true; visible: root.notice !== ""; text: root.notice; wrapMode: Text.WordWrap; color: Colors.error }
                     RowLayout {
                         Layout.fillWidth: true
-                        StyledText { text: root.shownTracks.length + " songs"; color: Colors.overSurfaceVariant; Layout.fillWidth: true }
+                        StyledText { text: root.shownTracks.length + " songs · Your library"; color: Colors.overSurfaceVariant; Layout.fillWidth: true }
                         ThemeButton { text: "Play all"; highlighted: true; enabled: root.shownTracks.length > 0; onClicked: root.play(root.shownTracks,0) }
                         ThemeButton { text: "Shuffle"; enabled: root.shownTracks.length > 0; onClicked: { root.shuffle = true; root.play(root.shownTracks,Math.floor(Math.random()*root.shownTracks.length)); } }
                     }

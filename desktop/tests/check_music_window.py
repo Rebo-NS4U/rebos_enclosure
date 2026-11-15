@@ -97,6 +97,14 @@ def session():
                     if (music.page !== "Playlists" || music.queue[0].path !== music.tracks[1].path) { console.error("MUSIC_PLAYLIST_CARD_FAILED"); Qt.exit(1); }
                     music.control({action:"Pause"});
                     music.navigate("Downloads");
+                    const downloads = findItem(music.contentItem, "music-downloads");
+                    const start = findItem(music.contentItem, "music-download-start");
+                    if (!downloads || start.enabled) { console.error("MUSIC_DOWNLOAD_EMPTY_LINKS_FAILED"); Qt.exit(1); }
+                    downloads.backendIndex = 1;
+                    downloads.sourceIndex = 1;
+                    if (downloads.needsLinks) { console.error("MUSIC_DOWNLOAD_SOURCE_FAILED"); Qt.exit(1); }
+                    downloads.backendIndex = 0;
+                    if (!downloads.needsLinks || downloads.canDownload) { console.error("MUSIC_DOWNLOAD_BACKEND_RESET_FAILED"); Qt.exit(1); }
                     console.log("MUSIC_ACCEPTANCE_PASSED tracks=" + music.tracks.length + " queue=" + music.queue.length);
                     console.log('MUSIC_GEOMETRY ' + music.contentItem.width + 'x' + music.contentItem.height + ' children=' + music.contentItem.children.length + ' root=' + music.contentItem.children[music.contentItem.children.length-1].width); music.contentItem.grabToImage(result => { result.saveToFile("/tmp/enclosure-music-acceptance.png"); Qt.quit(); });
                     stop();
