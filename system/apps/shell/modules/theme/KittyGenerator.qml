@@ -11,9 +11,9 @@ QtObject {
     function appearance(style) {
         const profiles = {
             "clear-glass": {padding: "14 16", border: "0.5pt", margin: 0, cursor: "beam", tabs: "fade", separator: "  ", blink: 0.55, trail: 0},
-            "smoked-acrylic": {padding: "14 16", border: "1pt", margin: 0, cursor: "beam", tabs: "fade", separator: "  ", blink: 0.55, trail: 60},
-            "glass-console": {padding: "16 18", border: "2pt", margin: 3, cursor: "block", tabs: "powerline", separator: " │ ", blink: 0, trail: 0},
-            "circuit-glass": {padding: "14 18", border: "2pt", margin: 2, cursor: "underline", tabs: "separator", separator: "  ┆  ", blink: 0, trail: 0},
+            "glass-vault": {padding: "18 20", border: "2pt", margin: 2, cursor: "block", tabs: "separator", separator: "  ┃  ", blink: 0, trail: 0},
+            "radar-station": {padding: "14 18", border: "1pt", margin: 1, cursor: "underline", tabs: "separator", separator: "  ┆  ", blink: 0, trail: 0},
+            "suspended-film": {padding: "14 18", border: "0.5pt", margin: 0, cursor: "beam", tabs: "fade", separator: "  ", blink: 0.55, trail: 0},
             "monolith": {padding: "16 20", border: "0pt", margin: 0, cursor: "block", tabs: "separator", separator: "  ┃  ", blink: 0, trail: 0},
             "blueprint": {padding: "12 16", border: "1pt", margin: 2, cursor: "underline", tabs: "separator", separator: "  │  ", blink: 0, trail: 0},
             "terminal-hardware": {padding: "14 18", border: "2pt", margin: 3, cursor: "block", tabs: "powerline", separator: " │ ", blink: 0, trail: 0},

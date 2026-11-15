@@ -245,128 +245,88 @@ ClippingRectangle {
         radius: root.radius
     }
 
-    // Passive material details: loaded only on the relevant visible surfaces.
+    // Structural glass: perimeter details leave the central reading area clear.
     Loader {
         anchors.fill: parent
         active: !root.hasFillColor && root.rectOpacity > 0
-            && ["bg", "popup", "pane", "surface", "internalbg"].indexOf(root.variant) !== -1
-            && ["smoked-acrylic", "glass-console", "circuit-glass"].indexOf(root.styleOverride || Styling.shellStyle) !== -1
+            && ["bg", "popup", "pane", "surface", "surfaceContainer", "internalbg", "focus"].indexOf(root.variant) !== -1
+            && ["glass-vault", "radar-station", "suspended-film"].indexOf(root.styleOverride || Styling.shellStyle) !== -1
         sourceComponent: Item {
             id: material
-            readonly property string style: root.styleOverride || Styling.shellStyle
+            readonly property string finish: root.styleOverride || Styling.shellStyle
             readonly property bool outer: root.variant === "bg" || root.variant === "popup"
-            readonly property bool acrylic: style === "smoked-acrylic"
-            readonly property bool chassis: style === "glass-console"
-            readonly property bool circuit: style === "circuit-glass"
             readonly property color ink: root.itemColor
             opacity: root.rectOpacity
-            // Material optics stay static and subtle across the reading area.
             Canvas {
                 anchors.fill: parent
                 readonly property color pigment: material.ink
-                readonly property string finish: material.style
+                readonly property string finish: material.finish
                 onPigmentChanged: requestPaint()
                 onFinishChanged: requestPaint()
                 onWidthChanged: requestPaint()
                 onHeightChanged: requestPaint()
                 onPaint: {
-                    const ctx = getContext("2d");
-                    ctx.clearRect(0, 0, width, height);
-                    if (width < 24 || height < 24) return;
-                    const ink = alpha => Qt.rgba(pigment.r, pigment.g, pigment.b, alpha);
-                    ctx.lineWidth = 1;
-                    if (material.acrylic) {
-                        // Broad diagonal reflection, split into a fine polished glint.
-                        const sheen = ctx.createLinearGradient(0, 0, width, height * 0.5);
-                        sheen.addColorStop(0, ink(0));
-                        sheen.addColorStop(0.24, ink(0.015));
-                        sheen.addColorStop(0.30, ink(0.075));
-                        sheen.addColorStop(0.32, ink(0.015));
-                        sheen.addColorStop(0.50, ink(0));
-                        sheen.addColorStop(1, ink(0));
-                        ctx.fillStyle = sheen;
-                        ctx.fillRect(0, 0, width, height);
-                        // Laminated edge: offset hairlines form an apparent glass thickness.
-                        for (let i = 0; i < 3; i++) {
-                            ctx.strokeStyle = ink(0.19 - i * 0.045);
-                            ctx.beginPath();
-                            ctx.moveTo(width - 5 - i * 2, 18);
-                            ctx.lineTo(width - 5 - i * 2, height - 16 + i * 2);
-                            ctx.lineTo(18, height - 16 + i * 2);
-                            ctx.stroke();
+                    const ctx=getContext("2d"); ctx.clearRect(0,0,width,height);
+                    if (width<24 || height<24) return;
+                    const ink=a=>Qt.rgba(pigment.r,pigment.g,pigment.b,a);
+                    ctx.lineWidth=1;
+                    if (finish === "glass-vault") {
+                        const step=material.outer ? 10 : 4;
+                        ctx.strokeStyle=ink(0.18); ctx.strokeRect(step,step,width-step*2,height-step*2);
+                        ctx.strokeStyle=ink(0.08); ctx.strokeRect(step+3,step+3,width-step*2-6,height-step*2-6);
+                        // Massive corner clamps hold a continuous clear block.
+                        const span=Math.min(material.outer ? 26 : 12,width/4,height/4);
+                        for (const x of [3,width-3]) for (const y of [3,height-3]) {
+                            const sx=x>width/2 ? -1 : 1, sy=y>height/2 ? -1 : 1;
+                            ctx.strokeStyle=ink(0.32);ctx.lineWidth=material.outer?5:2;
+                            ctx.beginPath();ctx.moveTo(x,y+sy*span);ctx.lineTo(x,y);ctx.lineTo(x+sx*span,y);ctx.stroke();
+                            ctx.lineWidth=1;ctx.strokeStyle=ink(0.55);
+                            ctx.beginPath();ctx.moveTo(x+sx*2,y+sy*span);ctx.lineTo(x+sx*2,y+sy*2);ctx.lineTo(x+sx*span,y+sy*2);ctx.stroke();
                         }
-                    } else if (material.circuit) {
-                        // Printed routes, right-angle junctions and solder pads.
-                        ctx.strokeStyle = ink(0.055);
-                        for (let x=24; x<width; x+=24) for (let y=24; y<height; y+=24) {
-                            ctx.fillStyle=ink(0.09); ctx.fillRect(x,y,1,1);
-                        }
-                        const count=material.outer ? 4 : 2;
-                        for (let route=0; route<count; route++) {
-                            const edge=5+route*4;
-                            const run=Math.min(width*0.38,42+route*22);
-                            ctx.strokeStyle=ink(0.34-route*0.045); ctx.lineWidth=1;
-                            ctx.beginPath(); ctx.moveTo(edge,height*0.28+route*8);
-                            ctx.lineTo(edge,edge+12); ctx.lineTo(edge+12,edge);
-                            ctx.lineTo(run,edge); ctx.lineTo(run+10,edge+10); ctx.stroke();
-                            ctx.beginPath(); ctx.arc(run+10,edge+10,2.5,0,Math.PI*2); ctx.stroke();
-                            ctx.beginPath(); ctx.moveTo(width-edge,height*0.72-route*8);
-                            ctx.lineTo(width-edge,height-edge-12); ctx.lineTo(width-edge-12,height-edge);
-                            ctx.lineTo(width-run,height-edge); ctx.lineTo(width-run-10,height-edge-10); ctx.stroke();
-                            ctx.beginPath(); ctx.arc(width-run-10,height-edge-10,2.5,0,Math.PI*2); ctx.stroke();
-                        }
-                        // Connector teeth and clipped corner terminals.
-                        ctx.fillStyle=ink(0.30);
-                        if (material.outer && width>100) for (let i=0;i<7;i++) {
-                            ctx.fillRect(width/2-19+i*6,2,3,5);
-                            ctx.fillRect(width/2-19+i*6,height-7,3,5);
-                        }
-                    } else if (material.chassis) {
-                        // Separate structural rails enclose a translucent display well.
-                        const frame = Qt.color(root.gradientStops[1][0]);
-                        ctx.fillStyle=Qt.rgba(frame.r,frame.g,frame.b,0.80);
-                        const rail=material.outer ? 11 : 4;
-                        ctx.fillRect(0,0,width,rail); ctx.fillRect(0,height-rail,width,rail);
-                        ctx.fillRect(0,0,rail,height); ctx.fillRect(width-rail,0,rail,height);
-                        ctx.strokeStyle=ink(0.24); ctx.strokeRect(rail,rail,width-rail*2,height-rail*2);
-                        ctx.strokeStyle=ink(0.09); ctx.strokeRect(rail+3,rail+3,width-rail*2-6,height-rail*2-6);
-                        if (material.outer) {
-                            ctx.fillStyle=ink(0.28);
-                            for (let i=0;i<6;i++) {
-                                ctx.fillRect(width-9,24+i*6,5,2);
-                                ctx.fillRect(20+i*6,height-8,3,4);
+                        ctx.fillStyle=ink(0.10);ctx.fillRect(12,height-8,Math.max(0,width-24),5);
+                        ctx.fillStyle=ink(0.18);ctx.fillRect(width-8,12,4,Math.max(0,height-24));
+                    } else if (finish === "radar-station") {
+                        // Fixed bearing scales: no sweep, motion or simulated live data.
+                        ctx.strokeStyle=ink(0.12);ctx.strokeRect(8,8,width-16,height-16);
+                        const radius=Math.min(54,width*0.22,height*0.28);
+                        for (const corner of [0,1]) {
+                            const x=corner?width-12:12,y=corner?height-12:12;
+                            ctx.strokeStyle=ink(0.19);
+                            for (const r of [radius*0.55,radius*0.78,radius]) {
+                                ctx.beginPath();ctx.arc(x,y,r,corner?Math.PI:0,corner?Math.PI*1.5:Math.PI*0.5);ctx.stroke();
                             }
-                            for (const x of [5,width-5]) for (const y of [5,height-5]) {
-                                ctx.strokeStyle=ink(0.42); ctx.beginPath(); ctx.arc(x,y,2,0,Math.PI*2); ctx.stroke();
-                                ctx.beginPath(); ctx.moveTo(x-1,y+1); ctx.lineTo(x+1,y-1); ctx.stroke();
+                            for (let tick=0;tick<=12;tick++) {
+                                const a=(corner?Math.PI:0)+tick*Math.PI/24;
+                                const r=radius+(tick%3===0?5:2);
+                                ctx.beginPath();ctx.moveTo(x+radius*Math.cos(a),y+radius*Math.sin(a));ctx.lineTo(x+r*Math.cos(a),y+r*Math.sin(a));ctx.stroke();
                             }
                         }
-                        // Fine screen texture is passive and only visible in inset wells.
-                        if (root.variant === "internalbg") {
-                            ctx.fillStyle=ink(0.035);
-                            for (let y=rail+4;y<height-rail;y+=4) ctx.fillRect(rail+2,y,width-rail*2-4,1);
+                        if(material.outer) {
+                            ctx.strokeStyle=ink(0.30);
+                            for(let x=76;x<width-76;x+=12){ctx.beginPath();ctx.moveTo(x,5);ctx.lineTo(x,x%36===4?11:8);ctx.stroke();}
+                            for(const x of [8,width-8]){ctx.beginPath();ctx.moveTo(x-4,height/2);ctx.lineTo(x+4,height/2);ctx.moveTo(x,height/2-4);ctx.lineTo(x,height/2+4);ctx.stroke();}
+                            ctx.fillStyle=ink(0.25);
+                            for(let i=0;i<5;i++)ctx.fillRect(width/2-19+i*8,height-7,5,2);
                         }
+                    } else {
+                        // Offset membranes stretch between four tension points.
+                        for(let layer=0;layer<3;layer++) {
+                            const d=5+layer*3;
+                            ctx.strokeStyle=ink(0.22-layer*0.065);ctx.strokeRect(d,d,width-2*d,height-2*d);
+                        }
+                        for(const x of [7,width-7])for(const y of [7,height-7]){
+                            const sx=x>width/2?-1:1,sy=y>height/2?-1:1;
+                            ctx.strokeStyle=ink(0.40);ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+sx*12,y+sy*12);ctx.stroke();
+                            ctx.fillStyle=ink(0.32);ctx.fillRect(x-2,y-2,4,4);
+                        }
+                        ctx.strokeStyle=ink(0.14);
+                        for(let y=24;y<height-24;y+=5){ctx.beginPath();ctx.moveTo(3,y);ctx.lineTo(7,y+2);ctx.moveTo(width-7,y);ctx.lineTo(width-3,y+2);ctx.stroke();}
+                        // A quiet diagonal fold gives the membrane tension without clutter.
+                        const sheen=ctx.createLinearGradient(0,0,width,height);
+                        sheen.addColorStop(0,ink(0));sheen.addColorStop(0.40,ink(0));sheen.addColorStop(0.42,ink(0.025));sheen.addColorStop(0.60,ink(0));sheen.addColorStop(1,ink(0));
+                        ctx.fillStyle=sheen;ctx.fillRect(0,0,width,height);
                     }
                 }
-            }
-            Rectangle {
-                anchors.fill: parent; anchors.margins: material.circuit ? 3 : 2
-                radius: Math.max(0, root.radius - (material.circuit ? 3 : 2))
-                color: "transparent"
-                border.width: material.chassis ? 2 : 1
-                border.color: Qt.alpha(material.ink, material.circuit ? 0.18 : material.chassis ? 0.08 : 0.14)
-            }
-            Rectangle {
-                visible: material.acrylic
-                anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right
-                anchors.topMargin: 3; anchors.leftMargin: 12; anchors.rightMargin: 12
-                height: 1; color: material.ink; opacity: 0.30
-            }
-            Rectangle {
-                visible: material.acrylic && material.outer
-                anchors.right: parent.right; anchors.top: parent.top; anchors.bottom: parent.bottom
-                anchors.margins: 4; width: 2
-                color: material.ink; opacity: 0.09
             }
         }
     }

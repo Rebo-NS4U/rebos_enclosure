@@ -1,9 +1,9 @@
 .pragma library
 
 var styles = [
-    {id: "smoked-acrylic", label: "Smoked Acrylic", font: "Noto Sans", description: "Laminated glass edges, diagonal reflections and recessed controls."},
-    {id: "glass-console", label: "Glass Console", font: "DejaVu Sans", description: "Segmented chassis rails, vented frames and translucent inset displays."},
-    {id: "circuit-glass", label: "Circuit Glass", font: "DejaVu Sans Mono", description: "Etched circuit routes, junction pads and edge connectors on blurred glass."},
+    {id: "glass-vault", label: "Glass Vault", font: "Noto Sans", description: "Heavy corner clamps, stepped transparent blocks and deep inset controls."},
+    {id: "radar-station", label: "Radar Station", font: "DejaVu Sans", description: "Bearing scales, partial range arcs and segmented controls on blurred glass."},
+    {id: "suspended-film", label: "Suspended Film", font: "DejaVu Sans Mono", description: "Tension points, offset membrane layers and fine ribbed frame edges."},
     {id: "monolith", label: "Monolith", font: "Noto Sans", description: "Sculpted slabs, staggered edge cuts, deep seams and recessed channels."},
     {id: "blueprint", label: "Blueprint", font: "JetBrains Mono", description: "Drafting grids, measurement ticks, registration marks and wire controls."},
     {id: "terminal-hardware", label: "Terminal Hardware", font: "DejaVu Sans Mono", description: "Machined bezels, slotted screws, cooling vents and textured displays."},
@@ -164,20 +164,15 @@ function surface(style, variant, p, ditherStrength) {
             else if (!outlineRole && opacity > 0) renderGradient = [[fill, 0], [mix(fill, item, 0.035), 0.08], [fill, 0.20], [fill, 0.85], [mix(fill, p.background, 0.08), 1]];
         }
     }
-    // Translucent materials keep the selected semantic palette and compositor blur.
-    var acrylic = style === "smoked-acrylic", console = style === "glass-console", circuit = style === "circuit-glass";
-    var translucent = acrylic || console || circuit;
-    if (translucent && neutral) {
-        fill = mix(p.background, p.foreground, inset ? 0.015 : focused ? 0.075 : 0.035);
-        item = p.foreground;
-        opacity = acrylic ? (inset ? 0.84 : focused ? 0.90 : 0.72)
-            : console ? (inset ? 0.72 : focused ? 0.94 : 0.66)
-            : (inset ? 0.82 : focused ? 0.94 : 0.70);
-        border = [focused ? p.primary : mix(fill, p.foreground, circuit ? 0.46 : console ? 0.40 : 0.32), console ? 2 : 1];
-        renderGradient = acrylic
-            ? [[mix(fill, p.foreground, 0.055), 0], [fill, 0.07], [fill, 0.88], [mix(fill, p.background, 0.20), 1]]
-            : console ? [[mix(fill, p.foreground, 0.065), 0], [fill, 0.07], [fill, 0.92], [mix(fill, p.background, 0.40), 1]]
-            : [[fill, 0]];
+    // Three distinct structural treatments with translucent centers.
+    var vault=style === "glass-vault", radar=style === "radar-station", film=style === "suspended-film";
+    if ((vault || radar || film) && neutral) {
+        fill=mix(p.background,p.foreground,inset?0.012:focused?0.07:0.03);
+        item=p.foreground;
+        opacity=vault?(inset?0.82:focused?0.94:0.70):radar?(inset?0.76:focused?0.92:0.64):(inset?0.60:focused?0.86:0.48);
+        border=[focused?p.primary:mix(fill,p.foreground,vault?0.36:radar?0.34:0.24),vault?2:1];
+        renderGradient=vault?[[mix(fill,p.foreground,0.05),0],[fill,0.06],[fill,0.92],[mix(fill,p.background,0.40),1]]
+            :radar?[[fill,0]]:[[mix(fill,p.foreground,0.015),0],[fill,0.25],[fill,1]];
     }
     var clearGlass = style === "clear-glass";
     if (clearGlass && neutral) {
@@ -195,8 +190,8 @@ function surface(style, variant, p, ditherStrength) {
     if (dithered && ["pane", "surface", "surfaceContainer", "common", "internalbg"].indexOf(variant) !== -1)
         border[0] = mix(fill, p.primary, 0.12);
     return {
-        radius: clearGlass ? (outer ? 14 : 8) : acrylic ? (outer ? 14 : 7) : console ? (outer ? 6 : 2) : circuit ? 0 : monolith ? (outer ? 3 : 0) : blueprint ? 0 : hardware ? (outer ? 5 : 2) : undefined,
-        gradient: renderGradient ? renderGradient : frostedContainer ? [[mix(fill, p.foreground, 0.08), 0], [fill, 0.45], [mix(fill, p.background, 0.12), 1]] : [[fill, 0]], gradientType: dotted ? "halftone" : "linear", gradientAngle: acrylic ? 18 : 0,
+        radius: clearGlass ? (outer ? 14 : 8) : vault ? (outer ? 4 : 2) : radar ? (outer ? 5 : 2) : film ? 1 : monolith ? (outer ? 3 : 0) : blueprint ? 0 : hardware ? (outer ? 5 : 2) : undefined,
+        gradient: renderGradient ? renderGradient : frostedContainer ? [[mix(fill, p.foreground, 0.08), 0], [fill, 0.45], [mix(fill, p.background, 0.12), 1]] : [[fill, 0]], gradientType: dotted ? "halftone" : "linear", gradientAngle: 0,
         gradientCenterX: 0.5, gradientCenterY: 0.5,
         halftoneDotMin: dotted ? dotMax : 0, halftoneDotMax: dotted ? dotMax : 0, halftoneStart: 0, halftoneEnd: 1,
         halftoneDotColor: dotted ? dotColor(fill, item, strength * 0.001) : fill, halftoneBackgroundColor: fill,

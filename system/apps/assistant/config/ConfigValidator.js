@@ -32,12 +32,15 @@ function validate(current, defaults, keyName) {
         return defaults;
     }
 
-    if (keyName === "shellStyle" && current === "liquid-glass") return "glass-console";
-    if (keyName === "shellStyle" && current === "prism-glass") return "circuit-glass";
-    if (keyName === "shellStyle" && current === "condensation") return "glass-console";
-    if (keyName === "shellStyle" && current === "optical-instrument") return "circuit-glass";
+    if (keyName === "shellStyle" && current === "smoked-acrylic") return "glass-vault";
+    if (keyName === "shellStyle" && current === "glass-console") return "radar-station";
+    if (keyName === "shellStyle" && current === "circuit-glass") return "suspended-film";
+    if (keyName === "shellStyle" && current === "liquid-glass") return "radar-station";
+    if (keyName === "shellStyle" && current === "prism-glass") return "suspended-film";
+    if (keyName === "shellStyle" && current === "condensation") return "radar-station";
+    if (keyName === "shellStyle" && current === "optical-instrument") return "suspended-film";
     if (keyName === "shellStyle" && current === "dithered") return "quiet";
-    if (keyName === "shellStyle" && ["glass", "quiet", "colorful", "custom", "frosted", "monolith", "blueprint", "terminal-hardware", "smoked-acrylic", "glass-console", "circuit-glass", "clear-glass"].indexOf(current) === -1) {
+    if (keyName === "shellStyle" && ["glass", "quiet", "colorful", "custom", "frosted", "monolith", "blueprint", "terminal-hardware", "glass-vault", "radar-station", "suspended-film", "clear-glass"].indexOf(current) === -1) {
         return defaults;
     }
     if (keyName === "desktopBlur" && ["medium", "light", "shell", "off"].indexOf(current) === -1) return defaults;

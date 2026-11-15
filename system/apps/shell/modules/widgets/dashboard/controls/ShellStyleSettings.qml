@@ -36,7 +36,7 @@ SettingsGroup {
                 padding: 10
                 onClicked: {
                     Config.theme.shellStyle = modelData.id;
-                    if (["frosted", "smoked-acrylic", "glass-console", "circuit-glass", "clear-glass"].indexOf(modelData.id) !== -1) {
+                    if (["frosted", "glass-vault", "radar-station", "suspended-film", "clear-glass"].indexOf(modelData.id) !== -1) {
                         Config.theme.shellTransparency = -1;
                         if (Config.performance.desktopBlur === "off") Config.performance.desktopBlur = "shell";
                     }

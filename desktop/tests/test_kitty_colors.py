@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import signal
 import subprocess
 import tempfile
 import unittest
@@ -30,7 +31,7 @@ ShellRoot {
   for (const role of ["overSurface","background","overPrimary","primary","surfaceContainerLow","outline","red","lightRed","green","lightGreen","yellow","lightYellow","lightBlue","magenta","lightMagenta","cyan","lightCyan","overSurfaceVariant","outlineVariant","error","surface","secondary","overSecondary","tertiary","overTertiary"]) p[role] = "#112233";
   p.background = "#262724"; p.outlineVariant = "#40e3e3dc"; p.opacity = 0.68;
   console.log("KITTY_CONFIG:" + JSON.stringify(generator.render(p)));
-  for (const style of ["monolith", "blueprint", "terminal-hardware", "frosted", "colorful", "smoked-acrylic", "glass-console", "circuit-glass", "clear-glass"]) {
+  for (const style of ["monolith", "blueprint", "terminal-hardware", "frosted", "colorful", "glass-vault", "radar-station", "suspended-film", "clear-glass"]) {
    p.style = style;
    console.log("STYLE_CONFIG:" + JSON.stringify({style:style, config:generator.render(p)}));
   }
@@ -49,9 +50,9 @@ ShellRoot {
             self.assertIn('active_border_color #112233',config)
             expected = {
                 'clear-glass': ('14 16', '0.5pt', 'beam', 'fade'),
-                'smoked-acrylic': ('14 16', '1pt', 'beam', 'fade'),
-                'glass-console': ('16 18', '2pt', 'block', 'powerline'),
-                'circuit-glass': ('14 18', '2pt', 'underline', 'separator'),
+                'glass-vault': ('18 20', '2pt', 'block', 'separator'),
+                'radar-station': ('14 18', '1pt', 'underline', 'separator'),
+                'suspended-film': ('14 18', '0.5pt', 'beam', 'fade'),
                 'monolith': ('16 20', '0pt', 'block', 'separator'),
                 'blueprint': ('12 16', '1pt', 'underline', 'separator'),
                 'terminal-hardware': ('14 18', '2pt', 'block', 'powerline'),
@@ -69,9 +70,11 @@ ShellRoot {
                     candidate = root / (value['style'] + '.conf')
                     candidate.write_text(rendered)
                     code = f'from kitty.config import load_config; bad=[]; load_config({str(candidate)!r}, accumulate_bad_lines=bad); assert not bad, repr(bad)'
-                    parsed = subprocess.run(['kitty','+runpy',code],text=True,capture_output=True)
+                    parsed = subprocess.run(['kitty','+runpy',code],text=True,capture_output=True,
+                        preexec_fn=lambda: signal.signal(signal.SIGUSR1, signal.SIG_IGN))
                     self.assertEqual(parsed.returncode,0,parsed.stdout+parsed.stderr)
             path = root/'kitty.conf';path.write_text(config)
             code = f'from kitty.config import load_config; bad=[]; load_config({str(path)!r}, accumulate_bad_lines=bad); assert not bad, repr(bad)'
-            parsed = subprocess.run(['kitty','+runpy',code],text=True,capture_output=True)
+            parsed = subprocess.run(['kitty','+runpy',code],text=True,capture_output=True,
+                        preexec_fn=lambda: signal.signal(signal.SIGUSR1, signal.SIG_IGN))
             self.assertEqual(parsed.returncode,0,parsed.stdout+parsed.stderr)

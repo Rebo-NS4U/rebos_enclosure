@@ -59,8 +59,8 @@ Kitty follows the exported surface palette and opacity as well as the selected s
 
 ## Translucent materials
 
-Smoked Acrylic uses diagonal reflection bands, laminated edge hairlines, translucent sheets and recessed wells. Glass Console uses segmented chassis rails, vented housings, slotted fasteners and translucent inset display wells. Circuit Glass uses printed circuit routes, junction pads, connector teeth and a subtle dot lattice on blurred glass. Each keeps the selected palette and has a matching native Kitty profile. Selecting one resets the manual transparency override to its material default and enables shell blur if blur was off. Existing desktop blur location and strength choices are preserved; Niri supplies the actual background blur. The global transparency slider remains available after selection.
+Glass Vault uses thick stepped blocks, bold corner clamps and deep inset controls. Radar Station uses static bearing scales, partial range arcs, crosshair junctions and segmented controls. Suspended Film uses tension points, offset membrane layers and ribbed frame edges. All three keep translucent centers, the selected semantic colors and matching native terminal profiles. Selecting one enables shell blur if off and resets the manual transparency override; existing blur location and strength preferences are preserved.
 
-Condensation and Liquid Glass selections migrate to Glass Console; Optical Instrument and Prism Glass selections migrate to Circuit Glass.
+Saved Smoked Acrylic selections migrate to Glass Vault, Glass Console to Radar Station, and Circuit Glass to Suspended Film. Older predecessors migrate directly to the corresponding current theme.
 
 Clear Glass is the final theme-picker entry: restrained translucent panels, fine outer borders, borderless inner layers, gentle top highlights and soft corners. It preserves the selected colors, uses compositor blur and includes a minimal Kitty profile. Focused controls gain definition while semantic action buttons remain opaque.
