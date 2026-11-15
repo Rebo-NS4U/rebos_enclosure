@@ -418,6 +418,34 @@ class BonsaiGrowTests(unittest.TestCase):
             self.assertGreaterEqual(max(x for x, y in body) - min(x for x, y in body), 5)
             self.assertEqual(max(y for x, y in body) - min(y for x, y in body), 4)
 
+    def test_sky_leaves_a_dark_contour_and_lights_the_foreground(self):
+        canvas = [[(' ', '') for _ in range(57)] for _ in range(24)]
+        # A thin branch crossing the middle of the noon sun.
+        for y in range(5):
+            canvas[y][28] = ('│', 'wood')
+        before = [row[:] for row in canvas]
+        lit = bonsai.sky_pane(canvas, 12)
+        self.assertTrue(lit)
+        self.assertTrue(any(ink.startswith('sky_orb') for row in canvas for _, ink in row))
+        for y in range(5):
+            self.assertEqual(canvas[y][28], before[y][28])
+            for x in (27, 29):
+                self.assertFalse(canvas[y][x][1].startswith('sky_orb'))
+        original = '\033[0;38;2;70;90;60m'
+        day = bonsai.backlit_ink(original, True)
+        night = bonsai.backlit_ink(original, False)
+        self.assertNotEqual(day, night)
+        self.assertNotEqual(day, original)
+        # Integration: texture and all original glyphs survive real overlap.
+        import re
+        base = bonsai.specimen_canvas(30, 42)
+        image = bonsai.render(30, 42, True, 59, fixed_height=True, hour=12)
+        rows = re.sub(r'\x1b\[[0-9;]*m', '', image).splitlines()
+        for y, row in enumerate(base):
+            for x, (glyph, ink) in enumerate(row):
+                if ink:
+                    self.assertEqual(rows[y + 1][x + 1], glyph)
+
     def test_animation_settles_without_a_last_frame_jump(self):
         samples = [bonsai.animation_day(i / 120, 1) for i in range(121)]
         self.assertEqual(samples[0], 0)
