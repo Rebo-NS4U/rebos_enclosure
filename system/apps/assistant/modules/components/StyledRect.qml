@@ -239,14 +239,14 @@ ClippingRectangle {
         anchors.fill: parent
         active: !root.hasFillColor && root.rectOpacity > 0
             && ["bg", "popup", "pane", "surface", "internalbg"].indexOf(root.variant) !== -1
-            && ["smoked-acrylic", "condensation", "optical-instrument"].indexOf(root.styleOverride || Styling.shellStyle) !== -1
+            && ["smoked-acrylic", "liquid-glass", "prism-glass"].indexOf(root.styleOverride || Styling.shellStyle) !== -1
         sourceComponent: Item {
             id: material
             readonly property string style: root.styleOverride || Styling.shellStyle
             readonly property bool outer: root.variant === "bg" || root.variant === "popup"
             readonly property bool acrylic: style === "smoked-acrylic"
-            readonly property bool mist: style === "condensation"
-            readonly property bool optical: style === "optical-instrument"
+            readonly property bool liquid: style === "liquid-glass"
+            readonly property bool prism: style === "prism-glass"
             readonly property color ink: root.itemColor
             opacity: root.rectOpacity
             // Material optics stay static and subtle across the reading area.
@@ -284,61 +284,59 @@ ClippingRectangle {
                             ctx.lineTo(18, height - 16 + i * 2);
                             ctx.stroke();
                         }
-                    } else if (material.mist) {
-                        // Soft corner bloom leaves the central text area clear.
-                        for (let corner = 0; corner < 2; corner++) {
-                            const x = corner ? width : 0, y = corner ? height : 0;
-                            const radius = Math.min(110, width * 0.40, height * 0.45);
-                            const fog = ctx.createRadialGradient(x, y, 0, x, y, radius);
-                            fog.addColorStop(0, ink(0.11));
-                            fog.addColorStop(0.5, ink(0.035));
-                            fog.addColorStop(1, ink(0));
-                            ctx.fillStyle = fog; ctx.fillRect(0, 0, width, height);
+                    } else if (material.prism) {
+                        // Cut crystal facets alternate broad planes with razor edge highlights.
+                        const bevel = Math.min(18, width / 7, height / 7);
+                        const facets = [
+                            [[0,0],[width,0],[width-bevel,bevel],[bevel,bevel]],
+                            [[width,0],[width,height],[width-bevel,height-bevel],[width-bevel,bevel]],
+                            [[width,height],[0,height],[bevel,height-bevel],[width-bevel,height-bevel]],
+                            [[0,height],[0,0],[bevel,bevel],[bevel,height-bevel]]
+                        ];
+                        facets.forEach((points, index) => {
+                            ctx.fillStyle = ink([0.12,0.035,0.065,0.02][index]);
+                            ctx.beginPath(); ctx.moveTo(points[0][0], points[0][1]);
+                            points.slice(1).forEach(p => ctx.lineTo(p[0],p[1])); ctx.closePath(); ctx.fill();
+                        });
+                        ctx.strokeStyle = ink(0.28);
+                        ctx.strokeRect(bevel,bevel,width-bevel*2,height-bevel*2);
+                        ctx.strokeStyle = ink(0.12);
+                        for (const x of [0,width]) for (const y of [0,height]) {
+                            ctx.beginPath(); ctx.moveTo(x,y);
+                            ctx.lineTo(x ? width-bevel : bevel,y ? height-bevel : bevel); ctx.stroke();
                         }
-                        if (material.outer) {
-                            for (let i = 0; i < 18; i++) {
-                                const x = 16 + ((i * 83) % Math.max(1, width - 32));
-                                const y = i % 2 ? height - 16 - (i % 3) * 5 : 12 + (i % 3) * 5;
-                                const r = 2 + (i % 4) * 0.8;
-                                ctx.strokeStyle = ink(0.17); ctx.beginPath();
-                                ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke();
-                                ctx.strokeStyle = ink(0.32); ctx.beginPath();
-                                ctx.arc(x - 0.3, y - 0.3, r * 0.65, Math.PI, Math.PI * 1.5); ctx.stroke();
-                            }
+                        // A pair of fractured reflections stays on the perimeter.
+                        ctx.strokeStyle = ink(0.38); ctx.beginPath();
+                        ctx.moveTo(bevel+12,bevel); ctx.lineTo(width*0.42,bevel);
+                        ctx.moveTo(width-bevel,height*0.62); ctx.lineTo(width-bevel,height-bevel-12); ctx.stroke();
+                    } else if (material.liquid) {
+                        // Curved meniscus bands suggest a thick, smoothly poured lens.
+                        const rim = Math.min(24, width / 5, height / 5);
+                        ctx.lineCap = "round";
+                        for (let layer=0; layer<3; layer++) {
+                            const d = 4 + layer*3;
+                            ctx.strokeStyle = ink([0.26,0.10,0.045][layer]);
+                            ctx.lineWidth = [2,3,4][layer];
+                            ctx.beginPath(); ctx.moveTo(rim,d);
+                            ctx.bezierCurveTo(width*0.36,d+6,width*0.65,d-1,width-rim,d);
+                            ctx.quadraticCurveTo(width-d,d,width-d,rim); ctx.stroke();
+                            ctx.strokeStyle = ink([0.13,0.08,0.035][layer]);
+                            ctx.beginPath(); ctx.moveTo(d,height-rim);
+                            ctx.quadraticCurveTo(d,height-d,rim,height-d);
+                            ctx.bezierCurveTo(width*0.40,height-d-5,width*0.70,height-d+1,width-rim,height-d); ctx.stroke();
                         }
-                    } else if (material.optical && material.outer) {
-                        // Lens collars with interrupted arcs and radial calibration marks.
-                        for (let corner = 0; corner < 4; corner++) {
-                            const x = corner % 2 ? width - 14 : 14;
-                            const y = corner >= 2 ? height - 14 : 14;
-                            ctx.strokeStyle = ink(0.20);
-                            for (const r of [12, 17, 22]) {
-                                ctx.beginPath(); ctx.arc(x, y, r, 0.15, Math.PI * 1.82); ctx.stroke();
-                            }
-                            for (let tick = 0; tick < 12; tick++) {
-                                const angle = tick * Math.PI / 6;
-                                const r = tick % 3 === 0 ? 27 : 24;
-                                ctx.beginPath();
-                                ctx.moveTo(x + 22 * Math.cos(angle), y + 22 * Math.sin(angle));
-                                ctx.lineTo(x + r * Math.cos(angle), y + r * Math.sin(angle)); ctx.stroke();
-                            }
-                        }
-                        // Paired etched scales along the sides, not across content.
-                        ctx.strokeStyle = ink(0.24);
-                        for (let y = 48; y < height - 48; y += 8) {
-                            const length = y % 32 === 16 ? 7 : 3;
-                            ctx.beginPath(); ctx.moveTo(5, y); ctx.lineTo(5 + length, y);
-                            ctx.moveTo(width - 5, y); ctx.lineTo(width - 5 - length, y); ctx.stroke();
-                        }
+                        const shine = ctx.createRadialGradient(width*0.20,0,1,width*0.20,0,Math.min(width,height)*0.7);
+                        shine.addColorStop(0,ink(0.075)); shine.addColorStop(1,ink(0));
+                        ctx.fillStyle=shine; ctx.fillRect(0,0,width,height);
                     }
                 }
             }
             Rectangle {
-                anchors.fill: parent; anchors.margins: material.optical ? 5 : 2
-                radius: Math.max(0, root.radius - (material.optical ? 5 : 2))
+                anchors.fill: parent; anchors.margins: material.prism ? 3 : 2
+                radius: Math.max(0, root.radius - (material.prism ? 3 : 2))
                 color: "transparent"
-                border.width: material.mist ? 3 : 1
-                border.color: Qt.alpha(material.ink, material.optical ? 0.23 : material.mist ? 0.045 : 0.14)
+                border.width: material.liquid ? 2 : 1
+                border.color: Qt.alpha(material.ink, material.prism ? 0.18 : material.liquid ? 0.08 : 0.14)
             }
             Rectangle {
                 visible: material.acrylic
@@ -351,39 +349,6 @@ ClippingRectangle {
                 anchors.right: parent.right; anchors.top: parent.top; anchors.bottom: parent.bottom
                 anchors.margins: 4; width: 2
                 color: material.ink; opacity: 0.09
-            }
-            Repeater {
-                model: material.mist && material.outer ? 28 : 0
-                Rectangle {
-                    required property int index
-                    // Deterministic edge beads; the reading area stays clear.
-                    x: 12 + ((index * 71) % Math.max(1, material.width - 24))
-                    y: index % 2 ? material.height - 7 - (index % 4) * 3 : 5 + (index % 4) * 3
-                    width: 2 + index % 3; height: width; radius: width / 2
-                    color: "transparent"; border.width: 1
-                    border.color: Qt.alpha(material.ink, 0.12)
-                }
-            }
-            Repeater {
-                model: material.optical && material.outer ? 4 : 0
-                Item {
-                    required property int index
-                    x: index % 2 ? material.width - 22 : 8
-                    y: index >= 2 ? material.height - 22 : 8
-                    width: 14; height: 14
-                    Rectangle { anchors.fill: parent; radius: 7; color: "transparent"; border.width: 1; border.color: Qt.alpha(material.ink, 0.35) }
-                    Rectangle { x: -3; y: 6; width: 20; height: 1; color: material.ink; opacity: 0.22 }
-                    Rectangle { x: 6; y: -3; width: 1; height: 20; color: material.ink; opacity: 0.22 }
-                }
-            }
-            Repeater {
-                model: material.optical && material.outer && material.width > 120 ? 9 : 0
-                Rectangle {
-                    required property int index
-                    x: material.width / 2 - 24 + index * 6; y: material.height - 9
-                    width: 1; height: index % 4 === 0 ? 5 : 2
-                    color: material.ink; opacity: 0.38
-                }
             }
         }
     }

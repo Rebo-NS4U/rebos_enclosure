@@ -2,8 +2,8 @@
 
 var styles = [
     {id: "smoked-acrylic", label: "Smoked Acrylic", font: "Noto Sans", description: "Laminated glass edges, diagonal reflections and recessed controls."},
-    {id: "condensation", label: "Condensation", font: "DejaVu Sans", description: "Corner fog blooms, glass droplets and softly misted surfaces."},
-    {id: "optical-instrument", label: "Optical Instrument", font: "DejaVu Sans Mono", description: "Calibrated lens collars, etched scales and translucent optical glass."},
+    {id: "liquid-glass", label: "Liquid Glass", font: "DejaVu Sans", description: "Poured glass lenses, curved meniscus rims and flowing highlights."},
+    {id: "prism-glass", label: "Prism Glass", font: "DejaVu Sans Mono", description: "Cut crystal facets, angular bevels and fractured edge reflections."},
     {id: "monolith", label: "Monolith", font: "Noto Sans", description: "Sculpted slabs, staggered edge cuts, deep seams and recessed channels."},
     {id: "blueprint", label: "Blueprint", font: "JetBrains Mono", description: "Drafting grids, measurement ticks, registration marks and wire controls."},
     {id: "terminal-hardware", label: "Terminal Hardware", font: "DejaVu Sans Mono", description: "Machined bezels, slotted screws, cooling vents and textured displays."},
@@ -150,19 +150,19 @@ function surface(style, variant, p, ditherStrength) {
         }
     }
     // Translucent materials keep the selected semantic palette and compositor blur.
-    var acrylic = style === "smoked-acrylic", mist = style === "condensation", optical = style === "optical-instrument";
-    var translucent = acrylic || mist || optical;
+    var acrylic = style === "smoked-acrylic", liquid = style === "liquid-glass", prism = style === "prism-glass";
+    var translucent = acrylic || liquid || prism;
     if (translucent && neutral) {
         fill = mix(p.background, p.foreground, inset ? 0.015 : focused ? 0.075 : 0.035);
         item = p.foreground;
         opacity = acrylic ? (inset ? 0.84 : focused ? 0.90 : 0.72)
-            : mist ? (inset ? 0.88 : focused ? 0.94 : 0.80)
-            : (inset ? 0.78 : focused ? 0.92 : 0.64);
-        border = [focused ? p.primary : mix(fill, p.foreground, optical ? 0.50 : mist ? 0.16 : 0.32), optical ? 2 : 1];
+            : liquid ? (inset ? 0.74 : focused ? 0.92 : 0.62)
+            : (inset ? 0.82 : focused ? 0.94 : 0.70);
+        border = [focused ? p.primary : mix(fill, p.foreground, prism ? 0.42 : liquid ? 0.20 : 0.32), 1];
         renderGradient = acrylic
             ? [[mix(fill, p.foreground, 0.055), 0], [fill, 0.07], [fill, 0.88], [mix(fill, p.background, 0.20), 1]]
-            : mist ? [[mix(fill, p.foreground, 0.035), 0], [fill, 0.30], [fill, 0.70], [mix(fill, p.foreground, 0.035), 1]]
-            : [[mix(fill, p.foreground, 0.04), 0], [fill, 0.10], [fill, 0.90], [mix(fill, p.background, 0.25), 1]];
+            : liquid ? [[mix(fill, p.foreground, 0.055), 0], [fill, 0.14], [fill, 0.75], [mix(fill, p.foreground, 0.025), 0.95], [fill, 1]]
+            : [[mix(fill, p.foreground, 0.06), 0], [fill, 0.08], [fill, 0.88], [mix(fill, p.background, 0.40), 0.94], [fill, 1]];
     }
     var containers = ["bg", "popup", "pane", "surface", "surfaceContainer", "common", "internalbg", "focus", "surfaceVariant", "bar", "barbg"];
     var controls = ["primary", "primaryfocus", "overprimary", "secondary", "secondaryfocus", "oversecondary", "tertiary", "tertiaryfocus", "overtertiary", "error", "errorfocus", "overerror"];
@@ -176,7 +176,7 @@ function surface(style, variant, p, ditherStrength) {
         border[0] = mix(fill, p.primary, 0.12);
     if (dotted && containers.indexOf(variant) !== -1) border[1] = 1;
     return {
-        radius: acrylic ? (outer ? 14 : 7) : mist ? (outer ? 20 : 10) : optical ? (outer ? 8 : 3) : monolith ? (outer ? 3 : 0) : blueprint ? 0 : hardware ? (outer ? 5 : 2) : undefined,
+        radius: acrylic ? (outer ? 14 : 7) : liquid ? (outer ? 26 : 13) : prism ? (outer ? 2 : 1) : monolith ? (outer ? 3 : 0) : blueprint ? 0 : hardware ? (outer ? 5 : 2) : undefined,
         gradient: renderGradient ? renderGradient : frostedContainer ? [[mix(fill, p.foreground, 0.08), 0], [fill, 0.45], [mix(fill, p.background, 0.12), 1]] : [[fill, 0]], gradientType: dotted ? "halftone" : "linear", gradientAngle: acrylic ? 18 : 0,
         gradientCenterX: 0.5, gradientCenterY: 0.5,
         halftoneDotMin: dotted ? dotMax : 0, halftoneDotMax: dotted ? dotMax : 0, halftoneStart: 0, halftoneEnd: 1,
