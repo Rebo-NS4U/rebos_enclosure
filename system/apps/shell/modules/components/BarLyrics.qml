@@ -36,7 +36,8 @@ Item {
     readonly property bool canStepBack: estimatedTiming && lineIndex > 0
     readonly property bool canStepForward: estimatedTiming && lineIndex < displayLines.length - 1
     readonly property Item previousHitbox: visible && estimatedTiming && currentPanel.visible ? currentPanel.control : null
-    readonly property Item nextHitbox: visible && estimatedTiming && nextPanel.visible ? nextPanel.control : null
+    readonly property Item nextHitbox: visible && estimatedTiming && currentPanel.visible ? currentPanel.forwardControl : null
+    readonly property Item playbackHitbox: visible && nextPanel.visible && MprisController.canTogglePlaying ? nextPanel.control : null
     function stepEstimatedLine(direction) {
         if (!estimatedTiming || !displayLines.length || (direction !== -1 && direction !== 1)) return;
         const target = Math.max(0, Math.min(displayLines.length - 1, lineIndex + direction));
@@ -96,15 +97,37 @@ Item {
         }
         onExited: root.levels = Array(32).fill(0)
     }
-    // Only the estimate arrow buttons enter the panel input mask.
+    // Only the line-adjustment and playback buttons enter the input mask.
     // The remaining strip stays decorative and lets clicks pass through.
     Component.onCompleted: { LyricsService.viewers++; modeReady = true; updateMode(); }
     Component.onDestruction: LyricsService.viewers = Math.max(0, LyricsService.viewers - 1)
 
+    component PanelControl: ThemeButton {
+        id: button
+        property bool muted: false
+        width: 24; height: 24; padding: 0
+        anchors.verticalCenter: parent.verticalCenter
+        ToolTip.visible: hovered && enabled
+        ToolTip.text: Accessible.name
+        background: Rectangle {
+            radius: 8
+            color: Qt.alpha(BarAppearance.activeColor, button.down ? 0.28 : button.hovered ? 0.22 : button.muted ? 0.09 : 0.16)
+            border.width: button.activeFocus ? 2 : 1
+            border.color: Qt.alpha(BarAppearance.activeColor, button.hovered ? 0.4 : 0.16)
+        }
+        contentItem: StyledText {
+            text: button.text
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+            font.pixelSize: Styling.fontSize(2)
+            color: button.muted ? BarAppearance.mutedColor : BarAppearance.activeColor
+        }
+    }
+
     component Label: StyledText {
         property bool upcoming: false
         anchors.fill: parent
-        anchors.leftMargin: upcoming ? 18 : 44
+        anchors.leftMargin: upcoming ? 18 : root.estimatedTiming ? 72 : 44
         anchors.rightMargin: upcoming ? 44 : 18
         color: upcoming ? BarAppearance.mutedColor : BarAppearance.foregroundColor
         font.pixelSize: Styling.fontSize(-1)
@@ -120,9 +143,10 @@ Item {
         property string lyric: ""
         property bool upcoming: false
         readonly property alias control: modeBadge
+        readonly property alias forwardControl: forwardBadge
         width: root.sideWidth
         height: root.stripHeight
-        visible: lyric.trim() !== "" || root.visualizerMix > 0
+        visible: lyric.trim() !== "" || root.visualizerMix > 0 || (upcoming && MprisController.canTogglePlaying)
         variant: "bg"
         backgroundOpacity: BarAppearance.panelOpacity(false)
         topLeftRadius: BarAppearance.framed ? Styling.radius(4) : 0
@@ -150,34 +174,30 @@ Item {
                 GradientStop { position: 1; color: Qt.alpha(BarAppearance.activeColor, 0.045) }
             }
         }
-        ThemeButton {
+        PanelControl {
             id: modeBadge
-            objectName: lineSurface.upcoming ? "lyrics-step-forward" : "lyrics-step-back"
-            width: 24; height: 24; padding: 0
+            objectName: lineSurface.upcoming ? "lyrics-playback-toggle" : "lyrics-step-back"
             x: lineSurface.upcoming ? lineSurface.width - width - 7 : 7
-            anchors.verticalCenter: parent.verticalCenter
-            enabled: lineSurface.upcoming ? root.canStepForward : root.canStepBack
-            opacity: root.estimatedTiming && !enabled ? 0.35 : 1
-            hoverEnabled: root.estimatedTiming
-            text: root.estimatedTiming ? (lineSurface.upcoming ? "›" : "‹")
-                : root.visualizerMix > 0.5 ? "≋" : lineSurface.upcoming ? "›" : "♪"
-            Accessible.name: lineSurface.upcoming ? "Next estimated lyric line" : "Previous estimated lyric line"
-            ToolTip.visible: hovered && root.estimatedTiming
-            ToolTip.text: Accessible.name
-            onClicked: root.stepEstimatedLine(lineSurface.upcoming ? 1 : -1)
-            background: Rectangle {
-                radius: 8
-                color: Qt.alpha(BarAppearance.activeColor, modeBadge.down ? 0.28 : modeBadge.hovered ? 0.22 : lineSurface.upcoming ? 0.09 : 0.16)
-                border.width: modeBadge.activeFocus ? 2 : 1
-                border.color: Qt.alpha(BarAppearance.activeColor, modeBadge.hovered ? 0.4 : 0.16)
+            muted: lineSurface.upcoming
+            enabled: lineSurface.upcoming ? MprisController.canTogglePlaying : root.canStepBack
+            opacity: (root.estimatedTiming || lineSurface.upcoming) && !enabled ? 0.35 : 1
+            text: lineSurface.upcoming ? (MprisController.isPlaying ? "Ⅱ" : "▶")
+                : root.estimatedTiming ? "‹" : root.visualizerMix > 0.5 ? "≋" : "♪"
+            Accessible.name: lineSurface.upcoming ? (MprisController.isPlaying ? "Pause music" : "Resume music") : "Previous estimated lyric line"
+            onClicked: {
+                if (lineSurface.upcoming) MprisController.togglePlaying();
+                else root.stepEstimatedLine(-1);
             }
-            contentItem: StyledText {
-                text: modeBadge.text
-                horizontalAlignment: Text.AlignHCenter
-                verticalAlignment: Text.AlignVCenter
-                font.pixelSize: Styling.fontSize(2)
-                color: lineSurface.upcoming ? BarAppearance.mutedColor : BarAppearance.activeColor
-            }
+        }
+        PanelControl {
+            id: forwardBadge
+            objectName: "lyrics-step-forward"
+            x: 35
+            visible: !lineSurface.upcoming && root.estimatedTiming
+            enabled: root.canStepForward
+            text: "›"
+            Accessible.name: "Next estimated lyric line"
+            onClicked: root.stepEstimatedLine(1)
         }
         Rectangle {
             objectName: "bar-lyrics-playback-accent"

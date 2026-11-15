@@ -558,4 +558,4 @@ When no lyrics are available, both bar strips crossfade into mirrored audio spec
 
 The bar lyrics panels use layered theme surfaces, inset highlights, mirrored mode badges and a subtle track-progress accent. Spectrum bars use the active palette with light-catching gradients; both modes retain the existing motion and reduced-motion behavior.
 
-For estimated lyrics, the outer panel badges become Previous/Next line buttons. Each click moves one line without seeking playback; the correction remains as the estimate advances and resets on a new track, changed lyric text or real timestamps. Only these buttons accept pointer input, and bounds disable stepping beyond the first or final line.
+For estimated lyrics, the left panel groups Previous/Next line buttons together. The right panel has a Pause/Resume music button, also available with synced lyrics and the visualizer. Each click moves one line without seeking playback; the correction remains as the estimate advances and resets on a new track, changed lyric text or real timestamps. Only the line-adjustment and playback buttons accept pointer input, and bounds disable stepping beyond the first or final line.

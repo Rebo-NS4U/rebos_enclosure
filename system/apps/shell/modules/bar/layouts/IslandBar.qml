@@ -614,6 +614,7 @@ Item {
     }
 
     readonly property Item lyricsPreviousHitbox: lyricsStrip.previousHitbox
+    readonly property Item lyricsPlaybackHitbox: lyricsStrip.playbackHitbox
     readonly property Item lyricsNextHitbox: lyricsStrip.nextHitbox
     BarLyrics {
         id: lyricsStrip
