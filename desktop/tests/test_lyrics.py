@@ -451,6 +451,35 @@ ShellRoot {
 }
 ''')
 
+    def test_letter_motion(self):
+        self.run_harness('''import QtQuick
+import Quickshell
+import "modules/services/Lyrics.js" as Parser
+ShellRoot {
+ Timer { interval: 20; running: true; onTriggered: {
+  try {
+   function check(ok, message) { if (!ok) throw Error(message); }
+   const timing = Parser.letterCues('pa !😀');
+   check(timing.cues[1].end - timing.cues[1].start > timing.cues[0].end,
+       'Vowels must hold longer than plosive consonants');
+   for (const cue of timing.cues) {
+    const motion = Parser.letterMotion(timing, (cue.start + cue.end) / 2 / timing.duration);
+    check(motion.index === cue.index && motion.length === cue.length, 'Track actual character boundaries');
+    check(motion.bounce >= 0 && motion.bounce <= 1, 'Finite bounded bounce');
+    if (cue.index === 2 || cue.index === 3) check(motion.bounce === 0, 'Rest at spaces and punctuation');
+   }
+   check(timing.cues[4].length === 2, 'Keep surrogate pairs together');
+   check(Parser.letterMotion(Parser.letterCues(''), 0.5).bounce === 0, 'Empty line');
+   check(Parser.letterMotion(timing, 2).phase === 1, 'Clamp end');
+   check(Parser.letterMotion(timing, -1).phase === 0, 'Clamp start');
+   check(Parser.letterMotion(timing, NaN).phase === 0, 'Invalid progress');
+   console.log('PASS: letter holds, consonant hops, rests, Unicode and bounds'); Qt.quit();
+  } catch(error) { console.error(error); Qt.exit(1); }
+ }
+ }
+}
+''')
+
     def test_visualizer_fallback_transition(self):
         self.run_harness('''import QtQuick
 import Quickshell
@@ -471,7 +500,32 @@ ShellRoot {
      phase++; return;
     }
     if (phase === 1) {
-     if (strip.visualizerMix !== 0) throw Error('Lyrics must hide visualizer');
+     if (strip.visualizerMix !== 0) throw Error('Lyrics must dim the background spectrum');
+     function findItem(item, name) {
+      if (item.objectName === name) return item;
+      for (const child of item.children || []) { const found = findItem(child, name); if (found) return found; }
+      return null;
+     }
+     const panel = findItem(strip, 'bar-lyrics-current');
+     const spectrum = findItem(panel, 'bar-lyrics-visualizer');
+     const label = findItem(panel, 'bar-lyrics-text');
+     if (!spectrum.visible || spectrum.opacity < 0.2 || spectrum.opacity > 0.3 || label.opacity !== 1)
+      throw Error('Spectrum must remain softly visible behind fully readable lyrics');
+     Config.animDuration = 100;
+     MprisController.isPlaying = true;
+     if (!strip.captureAudio) throw Error('Lyrics must retain audio capture during playback');
+     MprisController.isPlaying = false;
+     const dot = findItem(panel, 'bar-lyrics-bouncing-dot');
+     LyricsService.apply('[00:01]Pat a!\\n[00:05]Next', 'Test', false);
+     strip.lyricPosition = 1.4;
+     const initialX = dot.x;
+     const initialY = dot.y;
+     strip.levels = Array(32).fill(0.9);
+     strip.lyricPosition = 2.2;
+     if (!isFinite(dot.x) || !isFinite(dot.y) || dot.x <= initialX || dot.y === initialY)
+      throw Error('Dot must advance by letters with changing bounce');
+     if (dot.x < label.x || dot.x + dot.width > label.x + label.width)
+      throw Error('Dot must stay in the lyric label');
      Config.animDuration = 1000;
      LyricsService.apply('', 'Test', true);
      phase++; return;
@@ -487,7 +541,7 @@ ShellRoot {
      LyricsService.apply('[00:01]Returned', 'Test', false);
      phase++; return;
     }
-    if (strip.visualizerMix !== 0 || strip.currentText !== 'Returned') throw Error('Lyrics must replace visualizer when available');
+    if (strip.visualizerMix !== 0 || strip.currentText !== 'Returned') throw Error('Lyrics must restore the dim background spectrum');
     console.log('PASS: visualizer fallback, crossfade, pause, reduced motion and restored lyrics'); Qt.quit();
    } catch(error) { console.error(error); Qt.exit(1); }
   }

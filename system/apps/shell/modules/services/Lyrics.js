@@ -84,3 +84,31 @@ function bestMatch(records, title, artists, album, duration) {
     }
     return best;
 }
+
+// Visual estimates within a line, not phoneme timestamps. Vowels linger,
+// consonants snap, and whitespace/punctuation give the marker a short rest.
+function letterCues(text) {
+    const cues = [];
+    let total = 0, index = 0;
+    for (const letter of text) {
+        const vowel = /[aeiouyà-åè-ïò-öù-ü]/i.test(letter);
+        const rest = /[\s.,!?;:…'’"-]/.test(letter);
+        const sharp = /[bcdgkptqx]/i.test(letter);
+        const weight = rest ? 0.45 : vowel ? 1.65 : sharp ? 0.7 : 1;
+        cues.push({index: index, length: letter.length, start: total,
+            end: total + weight, strength: rest ? 0 : sharp ? 1 : vowel ? 0.8 : 0.6});
+        total += weight;
+        index += letter.length;
+    }
+    return {cues: cues, duration: total};
+}
+
+function letterMotion(timing, progress) {
+    if (!timing.cues.length) return {index: 0, length: 0, phase: 0, bounce: 0, strength: 0};
+    const at = Math.max(0, Math.min(1, isFinite(progress) ? progress : 0)) * timing.duration;
+    const cue = timing.cues.find(cue => at < cue.end) || timing.cues[timing.cues.length - 1];
+    const phase = Math.max(0, Math.min(1, (at - cue.start) / (cue.end - cue.start)));
+    return {index: cue.index, length: cue.length, phase: phase,
+        bounce: Math.pow(Math.max(0, Math.sin(phase * Math.PI)), 0.65) * cue.strength,
+        strength: cue.strength};
+}

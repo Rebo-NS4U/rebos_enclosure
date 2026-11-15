@@ -556,7 +556,7 @@ Bar lyrics share the island’s background, opacity, border, corner treatment an
 
 Bar input controls use compact neutral buttons, with disabled input highlighted and safety details in tooltips. Slider wheel adjustments use two percentage points per notch, accumulating small trackpad movements.
 
-When no lyrics are available, both inline lyric areas crossfade into mirrored audio spectrum bars. The visualizer reads the default output monitor through `parec` (provided by the existing core `libpulse` dependency), never the microphone, and sends only levels to the UI. It captures only while the strip is visible and playback is active; pause settles the bars, and reduced motion disables capture and animation. Audio is not stored or transmitted.
+Mirrored audio spectrum bars remain softly visible behind the lyrics and crossfade to full intensity when no lyrics are available. The moving dot follows measured letter widths with estimated vowel holds, consonant hops and punctuation rests; live audio levels add bounce and size changes. Letter timing is inferred from line timestamps, not exact phoneme alignment. The visualizer reads the default output monitor through `parec` (provided by the existing core `libpulse` dependency), never the microphone, and sends only levels to the UI. It captures only while the strip is visible and playback is active; pause settles the bars, and reduced motion disables capture and animation. Audio is not stored or transmitted.
 
 The bar lyrics panels use layered theme surfaces, inset highlights, mirrored mode badges and a subtle track-progress accent. Spectrum bars use the active palette with light-catching gradients; both modes retain the existing motion and reduced-motion behavior.
 

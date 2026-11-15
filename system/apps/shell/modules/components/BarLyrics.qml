@@ -55,7 +55,7 @@ Item {
         lyricPosition = estimatedTiming ? estimatedClock.currentTime() : LyricsService.playbackClock.currentTime();
     }
     Timer {
-        interval: 33
+        interval: 16
         running: root.visible && LyricsService.hasText && MprisController.isPlaying && Motion.enabled
         repeat: true
         triggeredOnStart: true
@@ -70,7 +70,9 @@ Item {
     readonly property real lineEnd: displayLines[lineIndex + 1]?.time ?? MprisController.length
     readonly property real lineProgress: Math.max(0, Math.min(1,
         (lyricPosition - lineStart) / Math.max(0.1, lineEnd - lineStart)))
-    readonly property int wordCount: Math.max(1, currentText.trim().split(/\s+/).length)
+    readonly property var letterTiming: Lyrics.letterCues(currentText)
+    readonly property var letterMotion: Lyrics.letterMotion(letterTiming, lineProgress)
+    readonly property real audioEnergy: levels.reduce((sum, value) => sum + value, 0) / Math.max(1, levels.length)
     readonly property bool canStepBack: estimatedTiming && lineIndex > 0
     readonly property bool canStepForward: estimatedTiming && lineIndex < displayLines.length - 1
     readonly property Item previousHitbox: visible && estimatedTiming && currentPanel.visible ? currentPanel.control : null
@@ -128,8 +130,7 @@ Item {
         target: Motion
         function onEnabledChanged() { if (!Motion.enabled) root.updateMode(); }
     }
-    readonly property bool captureAudio: visible && !LyricsService.hasText
-        && MprisController.isPlaying && Motion.enabled
+    readonly property bool captureAudio: visible && MprisController.isPlaying && Motion.enabled
     Process {
         id: spectrumProcess
         command: ["python3", "-u", Qt.resolvedUrl("../../scripts/music_visualizer.py").toString().replace("file://", "")]
@@ -286,10 +287,9 @@ Item {
             anchors.fill: parent
             anchors.leftMargin: lineSurface.upcoming ? 16 : 44
             anchors.rightMargin: lineSurface.upcoming ? 44 : 16
-            opacity: root.visualizerMix
+            // Retain a quiet spectrum behind readable foreground lyrics.
+            opacity: 0.24 + root.visualizerMix * 0.76
             visible: opacity > 0
-            transform: Translate { y: (1 - root.visualizerMix) * 6 }
-            scale: 0.96 + root.visualizerMix * 0.04
             property real activity: MprisController.isPlaying && Motion.enabled ? 1 : 0
             Behavior on activity {
                 enabled: Motion.enabled
@@ -334,20 +334,36 @@ Item {
             opacity: lineSurface.progress * (1 - root.visualizerMix)
             transform: Translate { y: 4 * (1 - lineSurface.progress) }
         }
+        TextMetrics {
+            id: letterPrefix
+            font: currentLabel.font
+            text: (root.estimatedTiming ? "≈ " : "") + root.currentText.slice(0, root.letterMotion.index)
+        }
+        TextMetrics {
+            id: letterGlyph
+            font: currentLabel.font
+            text: root.currentText.slice(root.letterMotion.index, root.letterMotion.index + root.letterMotion.length)
+        }
         Rectangle {
             objectName: "bar-lyrics-bouncing-dot"
             readonly property real textWidth: Math.min(currentLabel.contentWidth, currentLabel.width)
-            readonly property real bounce: Math.abs(Math.sin(root.lineProgress * root.wordCount * Math.PI))
+            readonly property real bounce: root.letterMotion.bounce
+            readonly property real energy: root.captureAudio ? root.audioEnergy : 0
+            readonly property real travel: letterPrefix.advanceWidth
+                + letterGlyph.advanceWidth * (1 - Math.pow(1 - root.letterMotion.phase, 2))
             visible: !lineSurface.upcoming && root.currentText !== "" && root.displayLines.length > 0
                 && Motion.enabled && root.lyricPosition >= root.lineStart
+                && travel <= textWidth
             opacity: currentLabel.opacity
-            width: 4
-            height: 4
-            radius: 2
+            width: 4 + bounce * 2 + energy * 3
+            height: 4 + bounce * 4 + energy * 2
+            radius: width / 2
+            scale: 1 + energy * root.letterMotion.strength * 0.6
             color: BarAppearance.activeColor
             x: currentLabel.x + (currentLabel.width - textWidth) / 2
-                + root.lineProgress * Math.max(0, textWidth - width)
-            y: Math.max(1, (lineSurface.height - currentLabel.implicitHeight) / 2 - height - 1 - bounce * 3)
+                + Math.min(Math.max(0, textWidth - width), travel)
+            y: Math.max(1, lineSurface.height - height - 2
+                - bounce * (lineSurface.height - height - 6) * (0.65 + energy * 0.35))
         }
     }
     Line { id: currentPanel; objectName: "bar-lyrics-current"; x: root.edgeMargin; lyric: (root.estimatedTiming && root.currentText ? "≈ " : "") + root.currentText }
