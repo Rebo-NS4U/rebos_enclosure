@@ -1456,12 +1456,12 @@ def frame_rows(rows, columns, accents, color):
         text = re.sub(r"\x1b\[[0-9;]*m", lambda match: match[0] + background, text)
         return background + text + reset
     def edge(text):
-        return glass + text + reset
-    # A full cell horizontally is about half a cell vertically: these strokes
-    # make an even, substantial rim, with the backing flush against every side.
-    top = margin + edge("▄" * (width + 2))
-    bottom = margin + edge("▀" * (width + 2))
-    return [top] + [margin + edge("█") + pane(row) + edge("█")
+        # Rounded line strokes give the glass a lighter rim than solid blocks.
+        weight = "\033[1m" if color else ""
+        return pane(glass + weight + text)
+    top = margin + edge("╭" + "─" * width + "╮")
+    bottom = margin + edge("╰" + "─" * width + "╯")
+    return [top] + [margin + edge("│") + pane(row) + edge("│")
                     for row in rows] + [bottom]
 
 
