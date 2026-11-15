@@ -29,13 +29,6 @@ ColumnLayout {
     }
     readonly property list<var> groups: ProcessTree.groups(SystemResources.processes, root.metric, root.gpuDevice)
 
-    function processStats(row): string {
-        return "CPU " + row.cpu.toFixed(1) + "% · RAM " + (row.ram / 1048576).toFixed(1)
-            + " MiB\nDisk " + (row.io_available ? (row.disk / 1048576).toFixed(2) + " MiB/s" : "unavailable")
-            + " · " + row.sockets + " sockets"
-            + (root.gpuDevice ? " · GPU " + root.formatted(row) : "");
-    }
-
     RowLayout {
         Layout.fillWidth: true
         MetricAction { text: "← All stats"; onClicked: SystemResources.detailMetric = "" }
@@ -105,10 +98,10 @@ ColumnLayout {
                         Layout.fillWidth: true
                         Layout.leftMargin: Math.min(modelData.depth, 8) * 12
                         font.pixelSize: Styling.fontSize(-3)
-                        wrapMode: Text.Wrap
+                        elide: Text.ElideMiddle
+                        maximumLineCount: 1
                         text: (modelData.depth ? "↳ " : "") + modelData.name
-                            + " · PID " + modelData.pid + " · PPID " + modelData.ppid
-                            + "\n" + root.processStats(modelData)
+                            + " · PID " + modelData.pid + " · " + root.formatted(modelData)
                     }
                 }
             }

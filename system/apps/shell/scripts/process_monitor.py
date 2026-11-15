@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Unprivileged process samples. No command lines or environments are collected."""
+"""Unprivileged process samples. Only concise identity labels are emitted; full command lines and environments are never emitted."""
 import json
 import signal
 import os
@@ -7,6 +7,32 @@ from pathlib import Path
 import subprocess
 import sys
 import time
+
+
+def process_name(base, fallback):
+    """Resolve untruncated executable names and a small set of useful identities."""
+    try:
+        name = Path(os.readlink(base / 'exe')).name.removesuffix(' (deleted)')
+    except OSError:
+        return fallback
+    try:
+        with (base / 'cmdline').open('rb') as stream:
+            args = [arg.decode('utf-8', errors='replace') for arg in stream.read(8192).split(b'\0') if arg]
+    except OSError:
+        return name
+    label = name
+    if name.startswith(('python', 'node', 'ruby', 'perl')) or name in ('bash', 'sh', 'zsh', 'fish'):
+        if len(args) > 2 and args[1] == '-m':
+            label = args[2] + ' (' + name + ')'
+        elif len(args) > 1 and not args[1].startswith('-'):
+            label = Path(args[1]).name + ' (' + name + ')'
+    roles = {'renderer': 'Renderer', 'gpu-process': 'GPU worker', 'utility': 'Utility worker',
+             'zygote': 'Process launcher', 'crashpad-handler': 'Crash handler'}
+    for arg in args[1:]:
+        if arg.startswith('--type=') and arg[7:] in roles:
+            label += ' · ' + roles[arg[7:]]
+            break
+    return ''.join(char for char in label if char.isprintable())[:160] or fallback
 
 
 class ProcessMonitor:
@@ -28,6 +54,7 @@ class ProcessMonitor:
                    start=int(fields[19]), ticks=int(fields[11]) + int(fields[12]),
                    ram=max(0, int(fields[21])) * self.page_size,
                    read=0, write=0, io_available=False, sockets=0, gpu={})
+        row['name'] = process_name(base, row['name'])
         try:
             values = dict(line.split(':', 1) for line in (base / 'io').read_text().splitlines())
             row.update(read=int(values['read_bytes']), write=int(values['write_bytes']), io_available=True)
