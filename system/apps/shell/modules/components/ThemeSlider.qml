@@ -9,14 +9,13 @@ Slider {
     focusPolicy: Qt.StrongFocus
     wheelEnabled: false
     opacity: enabled ? 1 : 0.45
-    background: Rectangle {
+    background: StandardProgressBar {
         x: root.leftPadding
         y: root.topPadding + (root.availableHeight - height) / 2
         width: root.availableWidth
-        height: 4
-        radius: 2
-        color: Colors.outlineVariant
-        Rectangle { width: root.visualPosition * parent.width; height: parent.height; radius: 2; color: Colors.primary }
+        height: 2
+        value: root.position
+        rotation: root.mirrored ? 180 : 0
     }
     handle: SliderHandle {
         x: root.leftPadding + root.visualPosition * (root.availableWidth - width)

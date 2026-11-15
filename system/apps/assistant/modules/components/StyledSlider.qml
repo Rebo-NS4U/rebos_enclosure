@@ -148,45 +148,13 @@ Item {
                 }
             }
 
-            Rectangle {
-                anchors.left: hDragHandle.right
-                anchors.leftMargin: root.handleSpacing
+            StandardProgressBar {
+                anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
-                height: root.thickness
-                radius: Styling.radius(0) / 4
-                color: root.backgroundColor
-                z: 0
-            }
-
-            Loader {
-                active: root.wavy
-                anchors.left: parent.left
-                anchors.right: hDragHandle.left
-                anchors.rightMargin: root.handleSpacing
-                anchors.verticalCenter: parent.verticalCenter
-                height: hSliderItem.height * root.heightMultiplier
-                z: 1
-                sourceComponent: WavyLine {
-                    anchors.fill: parent
-                    frequency: root.wavyFrequency
-                    color: root.progressColor
-                    amplitudeMultiplier: root.wavyAmplitude
-                    lineWidth: root.thickness
-                    fullLength: hSliderItem.width
-                    running: root.playing
-                }
-            }
-            Rectangle {
-                anchors.left: parent.left
-                anchors.right: hDragHandle.left
-                anchors.rightMargin: root.handleSpacing
-                anchors.verticalCenter: parent.verticalCenter
-                height: root.thickness
-                radius: Styling.radius(0) / 4
-                color: root.progressColor
-                visible: !root.wavy
-                z: 1
+                height: 2
+                value: root.animatedProgress
+                activeColor: root.progressColor
             }
 
             StyledToolTip {
@@ -246,51 +214,13 @@ Item {
                 }
             }
 
-            Rectangle {
-                anchors.top: parent.top
-                anchors.bottom: vDragHandle.top
-                anchors.bottomMargin: root.handleSpacing
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: root.thickness
-                radius: Styling.radius(0) / 4
-                color: root.backgroundColor
-                z: 0
-            }
-
-            Loader {
-                active: root.wavy
-                anchors.top: vDragHandle.bottom
-                anchors.topMargin: root.handleSpacing
-                anchors.bottom: parent.bottom
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: parent.width * heightMultiplier
-                sourceComponent: Item {
-                    anchors.fill: parent
-                    WavyLine {
-                        anchors.centerIn: parent
-                        rotation: -90
-                        frequency: root.wavyFrequency
-                        color: root.progressColor
-                        amplitudeMultiplier: root.wavyAmplitude
-                        height: parent.width
-                        width: parent.height
-                        lineWidth: root.thickness
-                        fullLength: vSliderItem.height
-                        z: 1
-                        running: root.playing
-                    }
-                }
-            }
-            Rectangle {
-                anchors.top: vDragHandle.bottom
-                anchors.topMargin: root.handleSpacing
-                anchors.bottom: parent.bottom
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: root.thickness
-                radius: Styling.radius(0) / 4
-                color: root.progressColor
-                visible: !root.wavy
-                z: 1
+            StandardProgressBar {
+                anchors.centerIn: parent
+                width: parent.height
+                height: 2
+                rotation: -90
+                value: root.animatedProgress
+                activeColor: root.progressColor
             }
 
             StyledToolTip {

@@ -11,20 +11,13 @@ Slider {
     leftPadding: 10
     rightPadding: 10
     opacity: enabled ? 1 : 0.45
-    background: Rectangle {
+    background: StandardProgressBar {
         x: control.leftPadding
-        y: (control.height - height) / 2
+        y: control.topPadding + (control.availableHeight - height) / 2
         width: control.availableWidth
-        height: 4
-        radius: 2
-        color: Colors.outlineVariant
-        Rectangle {
-            x: control.mirrored ? parent.width - width : 0
-            width: control.position * parent.width
-            height: parent.height
-            radius: parent.radius
-            color: Colors.primary
-        }
+        height: 2
+        value: control.position
+        rotation: control.mirrored ? 180 : 0
     }
     handle: Rectangle {
         objectName: "media-slider-handle"

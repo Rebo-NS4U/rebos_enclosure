@@ -23,25 +23,6 @@ Item {
     property real dragProgress: 0.0
     readonly property real displayProgress: isDragging ? dragProgress : root.progress
 
-    property real phase: 0.0
-    property real currentAmplitude: (root.isPlaying ? 5.0 : 0.0)
-    Behavior on currentAmplitude {
-        NumberAnimation {
-            duration: Motion.feedback
-            easing.type: Easing.OutCubic
-        }
-    }
-
-    readonly property color primaryColor: Colors.primary
-    readonly property color surfaceBrightColor: Colors.surfaceBright
-    onPrimaryColorChanged: canvas.requestPaint()
-    onSurfaceBrightColorChanged: canvas.requestPaint()
-    onDisplayProgressChanged: canvas.requestPaint()
-    onCurrentAmplitudeChanged: canvas.requestPaint()
-    onWidthChanged: canvas.requestPaint()
-    onHeightChanged: canvas.requestPaint()
-    onVisibleChanged: if (visible) canvas.requestPaint()
-
     function formatTime(seconds: real): string {
         const totalSecs = Math.max(0, Math.floor(seconds));
         const mins = Math.floor(totalSecs / 60);
@@ -68,26 +49,11 @@ Item {
         }
     }
 
-    readonly property bool shouldAnimate: (root.isPlaying || root.currentAmplitude > 0.01)
-        && root.visible
-        && root.opacity > 0
-        && root.width > 0
-
-    FrameAnimation {
-        id: waveAnim
-        running: root.shouldAnimate
-        onTriggered: {
-            const dt = waveAnim.frameTime > 0 && waveAnim.frameTime < 0.1 ? waveAnim.frameTime : 0.016;
-            root.phase = (root.phase + 2.6 * dt) % (Math.PI * 2);
-            canvas.requestPaint();
-        }
-    }
-
     ColumnLayout {
         anchors.fill: parent
         spacing: Styling.spacing(4)
 
-        // Wavy progress bar area (wave + unplayed track + playhead)
+        // Shared progress rail with the existing seek interaction.
         Item {
             id: waveformArea
             Layout.fillWidth: true
@@ -124,77 +90,12 @@ Item {
                 }
             }
 
-            Canvas {
-                id: canvas
-                anchors.fill: parent
-                antialiasing: true
-
-                onPaint: {
-                    const ctx = getContext("2d");
-                    ctx.reset();
-
-                    const w = width;
-                    const h = height;
-                    if (w <= 0 || h <= 0)
-                        return;
-
-                    const centerY = h / 2;
-                    const strokeW = 3.5;
-                    const halfStroke = strokeW / 2;
-                    const playedX = Math.max(halfStroke, Math.min(w - halfStroke, w * root.displayProgress));
-
-                    // 1. Unplayed straight track line
-                    const unplayedStartX = playedX + 3.0;
-                    const unplayedEndX = w - halfStroke;
-                    if (unplayedStartX < unplayedEndX) {
-                        ctx.beginPath();
-                        ctx.strokeStyle = root.surfaceBrightColor;
-                        ctx.lineWidth = 3.0;
-                        ctx.lineCap = "round";
-                        ctx.moveTo(unplayedStartX, centerY);
-                        ctx.lineTo(unplayedEndX, centerY);
-                        ctx.stroke();
-                    }
-
-                    // 2. Played wavy sine progress line
-                    const playedStartX = halfStroke;
-                    const playedLen = playedX - playedStartX;
-                    if (playedLen > 0) {
-                        ctx.beginPath();
-                        ctx.strokeStyle = root.primaryColor;
-                        ctx.lineWidth = strokeW;
-                        ctx.lineCap = "round";
-                        ctx.lineJoin = "round";
-
-                        const wavelength = 16.0;
-                        const k = (2 * Math.PI) / wavelength;
-                        const amp = root.currentAmplitude;
-                        const taperLen = Math.min(14.0, playedLen * 0.5);
-
-                        for (let x = playedStartX; x < playedX; x += 1.0) {
-                            let envelope = 1.0;
-                            if (taperLen > 0.001) {
-                                const distStart = x - playedStartX;
-                                const distEnd = playedX - x;
-                                if (distStart < taperLen) {
-                                    envelope = Math.min(envelope, 0.5 * (1.0 - Math.cos(Math.PI * distStart / taperLen)));
-                                }
-                                if (distEnd < taperLen) {
-                                    envelope = Math.min(envelope, 0.5 * (1.0 - Math.cos(Math.PI * distEnd / taperLen)));
-                                }
-                            }
-
-                            const waveY = centerY + amp * envelope * Math.sin((x - playedStartX) * k - root.phase);
-                            if (x === playedStartX) {
-                                ctx.moveTo(x, waveY);
-                            } else {
-                                ctx.lineTo(x, waveY);
-                            }
-                        }
-                        ctx.lineTo(playedX, centerY);
-                        ctx.stroke();
-                    }
-                }
+            StandardProgressBar {
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                height: 2
+                value: root.displayProgress
             }
 
             // Playhead handle: vertical rounded capsule matching reference

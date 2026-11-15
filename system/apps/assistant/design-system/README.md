@@ -40,3 +40,7 @@ Single-choice selects inherit themed borders, spacing, arrows, hover and keyboar
 Implementation reference: [Chrome customizable select documentation](https://developer.chrome.com/blog/a-customizable-select).
 
 For consistently themed open menus in Zen/Firefox as well, load `<script src="dropdowns.js" defer></script>`. The adapter enhances existing single-choice selects with a labeled combobox, keyboard navigation, typeahead, selection marks and Escape/outside-click dismissal, preserving native select values and change events. Load it after the markup or with `defer`. Menus are positioned within the component; avoid overflow clipping on ancestors. Reinitialize or extend the adapter when dynamically replacing options.
+
+## Progress rails
+
+Use `StandardProgressBar` for linear progress in QML. Its normalized `value` is clamped to 0–1; `activeColor` and `foregroundColor` use semantic theme defaults. The lyrics-style 2px rail includes a gradient, soft bloom, bright leading edge and quarter markers. Slider wrappers retain their existing input and accessibility behavior. Shell, assistant and media package identical copies so each app installs independently; keep these copies synchronized. Vertical sliders rotate the same rail.
