@@ -430,6 +430,23 @@ ClippingRectangle {
                         }
                         ctx.strokeStyle=ink(0.14);
                         for(let y=24;y<height-24;y+=5){ctx.beginPath();ctx.moveTo(3,y);ctx.lineTo(7,y+2);ctx.moveTo(width-7,y);ctx.lineTo(width-3,y+2);ctx.stroke();}
+                        // Staggered sheet bindings and cable cleats strengthen the membrane.
+                        if(material.outer){
+                            const safe=Math.max(22,cornerRadius+8);
+                            ctx.lineWidth=1;
+                            for(let side=0;side<2;side++){
+                                const x=side?width-5:5,sx=side?-1:1;
+                                for(let y=safe;y<height-safe;y+=18){
+                                    ctx.strokeStyle=ink(0.30);ctx.strokeRect(x-sx*2,y,4,7);
+                                    ctx.strokeStyle=ink(0.20);ctx.beginPath();ctx.moveTo(x+sx*3,y+3);
+                                    ctx.lineTo(x+sx*11,y+7);ctx.lineTo(x+sx*14,y+7);ctx.stroke();
+                                }
+                            }
+                            ctx.strokeStyle=ink(0.18);ctx.beginPath();
+                            ctx.moveTo(safe,9);ctx.bezierCurveTo(width*0.35,14,width*0.65,14,width-safe,9);ctx.stroke();
+                            ctx.strokeStyle=ink(0.32);ctx.beginPath();
+                            ctx.moveTo(safe,height-6);ctx.lineTo(Math.max(safe,width-safe),height-6);ctx.stroke();
+                        }
                         // A quiet diagonal fold gives the membrane tension without clutter.
                         const sheen=ctx.createLinearGradient(0,0,width,height);
                         sheen.addColorStop(0,ink(0));sheen.addColorStop(0.40,ink(0));sheen.addColorStop(0.42,ink(0.025));sheen.addColorStop(0.60,ink(0));sheen.addColorStop(1,ink(0));
@@ -503,6 +520,27 @@ ClippingRectangle {
                     ctx.beginPath();ctx.moveTo(d,Math.max(d+r,height*0.65));
                     ctx.lineTo(d,d+r);ctx.quadraticCurveTo(d,d,d+r,d);
                     ctx.lineTo(Math.max(d+r,width-d-r),d);ctx.stroke();
+                    // A recessed service spine and a stepped lower seam cut into the slab.
+                    const safe=Math.max(18,cornerRadius+7);
+                    ctx.lineWidth=1;
+                    if(slab.outer && height>safe*2){
+                        ctx.strokeStyle=Qt.alpha(pigment,0.24);ctx.beginPath();
+                        ctx.moveTo(11,safe);ctx.lineTo(11,height-safe);ctx.stroke();
+                        ctx.strokeStyle=Qt.alpha(pigment,0.06);ctx.beginPath();
+                        ctx.moveTo(15,safe+6);ctx.lineTo(15,height-safe-6);ctx.stroke();
+                        for(let i=0;i<3;i++){
+                            ctx.fillStyle=Qt.alpha(pigment,0.22-i*0.04);
+                            ctx.fillRect(7,safe+10+i*9,6,2);
+                        }
+                    }
+                    if(slab.outer && width>safe*2+30){
+                        ctx.strokeStyle=Qt.alpha(pigment,0.25);ctx.beginPath();
+                        ctx.moveTo(safe,height-12);ctx.lineTo(width*0.56,height-12);
+                        ctx.lineTo(width*0.56+6,height-18);ctx.lineTo(width-safe,height-18);ctx.stroke();
+                        ctx.strokeStyle=Qt.alpha(pigment,0.07);ctx.beginPath();
+                        ctx.moveTo(safe,height-9);ctx.lineTo(width*0.56+2,height-9);ctx.stroke();
+                    }
+
                 }
             }
             Rectangle {
@@ -563,21 +601,31 @@ ClippingRectangle {
                     ctx.beginPath();ctx.moveTo(d,Math.max(d+r,height*0.65));
                     ctx.lineTo(d,d+r);ctx.quadraticCurveTo(d,d,d+r,d);
                     ctx.lineTo(Math.max(d+r,width-d-r),d);ctx.stroke();
+                    // A machined bezel groove and recessed bank of cooling louvers.
+                    ctx.lineWidth=1;ctx.strokeStyle=Qt.alpha(pigment,0.20);
+                    if(root.traceThemeFrame(ctx,chassis.outer?7:3))ctx.stroke();
+                    if(chassis.outer){
+                        const safe=Math.max(20,cornerRadius+8);
+                        for(let i=0;i<8 && safe+i*6<height-safe;i++){
+                            const y=safe+i*6;
+                            ctx.fillStyle=Qt.alpha(pigment,0.26);ctx.fillRect(width-14,y,7,2);
+                            ctx.fillStyle=Qt.alpha(pigment,0.07);ctx.fillRect(width-14,y+2,7,1);
+                        }
+                        if(width>safe*2+30){
+                            ctx.strokeStyle=Qt.alpha(pigment,0.24);ctx.beginPath();
+                            ctx.moveTo(safe,10);ctx.lineTo(width-safe,10);ctx.stroke();
+                            for(let i=0;i<4;i++){
+                                ctx.strokeStyle=Qt.alpha(pigment,0.26);ctx.strokeRect(width/2-24+i*13,height-10,9,4);
+                            }
+                        }
+                    }
+
                 }
             }
             Rectangle {
                 anchors.left: parent.left; anchors.top: parent.top; anchors.bottom: parent.bottom
                 anchors.margins: chassis.outer ? 3 : 1
                 width: 1; color: chassis.ink; opacity: chassis.screen ? 0.07 : 0.16
-            }
-            Repeater {
-                model: chassis.outer && chassis.height > 90 ? 6 : 0
-                Rectangle {
-                    required property int index
-                    x: chassis.width - 11; y: 24 + index * 5
-                    width: 5; height: 2; radius: 1
-                    color: chassis.ink; opacity: 0.30
-                }
             }
             // Passive display texture, with no animation or invented status lights.
             Repeater {
@@ -587,15 +635,6 @@ ClippingRectangle {
                     x: 3; y: 3 + index * 4
                     width: Math.max(0, chassis.width - 6); height: 1
                     color: chassis.ink; opacity: 0.035
-                }
-            }
-            Repeater {
-                model: chassis.outer && chassis.width > 100 ? 3 : 0
-                Rectangle {
-                    required property int index
-                    x: 20 + index * 13; y: chassis.height - 8
-                    width: 9; height: 2
-                    color: chassis.ink; opacity: 0.24
                 }
             }
         }

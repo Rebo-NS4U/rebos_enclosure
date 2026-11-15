@@ -3,10 +3,10 @@
 var styles = [
     {id: "glass-vault", label: "Glass Vault", font: "Noto Sans", description: "Heavy corner clamps, stepped transparent blocks and deep inset controls."},
     {id: "radar-station", label: "Radar Station", font: "DejaVu Sans", description: "Bearing scales, partial range arcs and segmented controls on blurred glass."},
-    {id: "suspended-film", label: "Suspended Film", font: "DejaVu Sans Mono", description: "Tension points, offset membrane layers and fine ribbed frame edges."},
-    {id: "monolith", label: "Monolith", font: "Noto Sans", description: "Sculpted slabs, staggered edge cuts, deep seams and recessed channels."},
+    {id: "suspended-film", label: "Suspended Film", font: "DejaVu Sans Mono", description: "Tension cables, staggered sheet bindings and layered transparent membranes."},
+    {id: "monolith", label: "Monolith", font: "Noto Sans", description: "Milled slabs, recessed service spines and stepped engraved seams."},
     {id: "blueprint", label: "Blueprint", font: "JetBrains Mono", description: "Drafting grids, measurement ticks, registration marks and wire controls."},
-    {id: "terminal-hardware", label: "Terminal Hardware", font: "DejaVu Sans Mono", description: "Machined bezels, slotted screws, cooling vents and textured displays."},
+    {id: "terminal-hardware", label: "Terminal Hardware", font: "DejaVu Sans Mono", description: "Grooved bezels, recessed cooling louvers and mechanical display housings."},
     {id: "frosted", label: "Frosted Glass", description: "Etched ice rims, fine edge grain and soft frosted highlights."},
     {id: "colorful", label: "Tinted", description: "Layered accent planes, offset frames and translucent color bands."},
     {id: "clear-glass", label: "Clear Glass", font: "Noto Sans", description: "Refined transparent panels, quiet hairline edges and restrained highlights."}

@@ -70,3 +70,5 @@ Frosted Glass uses etched double rims, broken highlights, fine perimeter grain a
 Glass Vault follows the corner-radius setting: clamps, inset seams and the lower glass lip use concentric rounded paths and repaint as the actual surface radius changes. Square and oversized radii are clamped to the available surface dimensions.
 
 Every theme now follows the shared corner-radius setting. Inset frame lines use concentric radii; canvas decorations repaint during changes, and corner brackets and attachment points follow the actual clipped surface geometry.
+
+Suspended Film adds cable cleats, staggered sheet bindings and a bowed tension line. Monolith adds a recessed service spine and stepped engraved seams. Terminal Hardware adds concentric bezel grooves and recessed cooling louvers. These details stay at the perimeter, adapt to the shared corner radius and remain static.
