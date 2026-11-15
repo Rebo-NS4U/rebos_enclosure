@@ -64,6 +64,17 @@ def session():
                     repeat.clicked();
                     if (music.repeatMode !== "Playlist" || repeat.text !== "Repeat all") { console.error("MUSIC_REPEAT_ALL_FAILED"); Qt.exit(1); }
                     music.volume = 0;
+                    const largeQueue = Array.from({length: 150}, (_, i) => Object.assign({}, music.tracks[i % 2], {title: "Queue song " + i}));
+                    music.play(largeQueue, 0);
+                    if (music.queue.length !== 100 || music.currentIndex !== 0) { console.error("MUSIC_QUEUE_CAP_FAILED"); Qt.exit(1); }
+                    const firstQueued = music.queue[0];
+                    music.enqueue(music.tracks[0]);
+                    if (music.queue.length !== 100 || music.queue[0] !== firstQueued || !music.notice.includes("full")) { console.error("MUSIC_QUEUE_FULL_FAILED"); Qt.exit(1); }
+                    music.play(largeQueue, 149);
+                    if (music.queue.length !== 100 || music.current.title !== "Queue song 149") { console.error("MUSIC_QUEUE_SELECTED_FAILED"); Qt.exit(1); }
+                    music.play(music.tracks.slice(0, 1), 0);
+                    music.enqueue(music.tracks[1]);
+                    if (music.queue.length !== 2 || music.queue[1].path !== music.tracks[1].path) { console.error("MUSIC_QUEUE_APPEND_FAILED"); Qt.exit(1); }
                     const playCard = findItem(music.contentItem, "music-card-play");
                     if (!playCard) return;
                     playCard.clicked();

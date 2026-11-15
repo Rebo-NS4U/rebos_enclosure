@@ -564,6 +564,6 @@ For estimated lyrics, the left panel groups Previous/Next line buttons together.
 
 Music collection cards have a Play button on the artwork: albums, artists and playlists start directly without opening their detail page. Playlist playback follows saved path order and skips missing tracks. Song rows retain their direct Play/Pause button. Repeat song is a dedicated toggle beside Repeat all; it loops the current track at the end while manual Next still advances.
 
-Enclosure Music opens with Repeat all enabled by default. Repeat song and turning repeat off remain available during playback.
+Enclosure Music opens with Repeat all enabled by default. Repeat song and turning repeat off remain available during playback. The playback queue holds at most 100 songs. Adding to a full queue leaves it unchanged and shows a notice. Playing a larger collection limits the queue to 100 songs while retaining the selected starting song.
 
 Desktop session recovery: **Super+Alt+Q** exits Niri immediately and returns to login without rebooting. Save your work first: session apps close without a confirmation prompt. Sign in again to start a fresh desktop. The shortcut works even when Quickshell is unavailable.

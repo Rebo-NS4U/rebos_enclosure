@@ -38,6 +38,7 @@ Window {
     property string query: ""
     property string detail: ""
     property string side: "Queue"
+    readonly property int queueLimit: 100
     property var queue: []
     property int currentIndex: -1
     property bool shuffle: false
@@ -130,8 +131,19 @@ Window {
     function navigate(value, arg) { page = value; detail = arg || ""; query = ""; }
     function play(list, index) {
         if (!list.length) return;
-        queue = list.slice();
-        select(index === undefined ? Math.floor(Math.random() * queue.length) : index);
+        const selected = index === undefined ? Math.floor(Math.random() * list.length) : index;
+        if (selected < 0 || selected >= list.length) return;
+        const start = selected >= queueLimit ? Math.min(selected, Math.max(0, list.length - queueLimit)) : 0;
+        queue = list.slice(start, start + queueLimit);
+        notice = list.length > queueLimit ? "Queue limited to " + queueLimit + " songs." : "";
+        select(selected - start);
+    }
+    function enqueue(track) {
+        if (queue.length >= queueLimit) {
+            notice = "Queue is full (" + queueLimit + " songs).";
+            return;
+        }
+        queue = queue.concat([track]);
     }
     function cardTracks(kind, key) {
         if (kind === "Playlists") {
@@ -345,7 +357,7 @@ Window {
                             required property int index
                             track: modelData; number: index
                             onPlayRequested: { if (selected) root.toggle(); else root.play(root.shownTracks,index); }
-                            onEnqueueRequested: root.queue = root.queue.concat([track])
+                            onEnqueueRequested: root.enqueue(track)
                         }
                         ScrollBar.vertical: ScrollBar {}
                         StyledText { anchors.centerIn: parent; visible: songs.count === 0; text: root.query ? "No matching songs" : "No songs"; color: Colors.overSurfaceVariant }

@@ -655,7 +655,7 @@
   "system/apps/shell/modules/widgets/launcher/RunMenuHost.qml": "5165342d3d70f6e0f4eeb8fc621340f483dc4a4c18c3a64e21303f2df4d84a8f",
   "system/apps/shell/modules/widgets/launcher/qmldir": "f69644603f0591f08bebb0491909c6e2149c3c56cbe6d28062a48cae16721da3",
   "system/apps/shell/modules/widgets/music/DownloadsPane.qml": "326a4d0dc06153b3ea41e8460ed828b9c1a71dfdc5b6b2b87066c0e899ae9c9b",
-  "system/apps/shell/modules/widgets/music/MusicWindow.qml": "f39964d85d8600aacca86854864d1787ed43144d370ac01ccfa430f2c9f0b18d",
+  "system/apps/shell/modules/widgets/music/MusicWindow.qml": "03cc4a9d7f39dbfdbcadc2617121c9978e947cdf2aafa512c731d08189ff3fbd",
   "system/apps/shell/modules/widgets/notes/NotesAction.qml": "f51cf55feab7383f18185d827a7ff7771d5bd0102ed618b899b223aea59057f2",
   "system/apps/shell/modules/widgets/notes/NotesPopup.qml": "b8682d94f25159f8851c91f1ddcb8027e9cb72d6c0c34f0ddfe22a0b0390f92d",
   "system/apps/shell/modules/widgets/powermenu/PowerMenu.qml": "f1f284fadcf09b2a9b9ab2791f9a90cf805fe21392126f70f16ff54b05799767",
