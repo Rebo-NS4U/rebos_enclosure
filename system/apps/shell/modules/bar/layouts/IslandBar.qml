@@ -363,6 +363,7 @@ Item {
             }
             return Math.min(420, root.width - 32);
         }
+        if (root.lyricsInBar) return Math.max(200, root.width - 8);
         return Math.min(Math.max(collapsedRow.implicitWidth + collapsedRow.anchors.leftMargin + collapsedRow.anchors.rightMargin, 200), Math.max(200, root.width - 32));
     }
 
@@ -624,9 +625,13 @@ Item {
     readonly property Item lyricsNextHitbox: lyricsStrip.nextHitbox
     BarLyrics {
         id: lyricsStrip
-        parent: contextContainer
+        parent: islandContainer
         anchors.fill: parent
+        z: 1
         inlineMode: true
+        splitAroundCenter: true
+        islandLeft: collapsedView.x
+        islandRight: collapsedView.x + collapsedView.width
         calibrationParent: root
         onOpenMedia: root.expand("media")
         stripHeight: root.islandHeight
@@ -769,9 +774,10 @@ Item {
                     // Context info: Window / Media title with live fluid shader progress fill
                     Item {
                         id: contextContainer
+                        visible: !root.lyricsInBar
                         Layout.alignment: Qt.AlignVCenter
-                        Layout.maximumWidth: root.lyricsInBar ? Math.min(640, root.width * 0.45) : 200
-                        implicitWidth: root.lyricsInBar ? Math.min(640, root.width * 0.45) : Math.min(fluidContextText.implicitWidth, 200)
+                        Layout.maximumWidth: 200
+                        implicitWidth: Math.min(fluidContextText.implicitWidth, 200)
                         implicitHeight: root.islandHeight
                         scale: contextMouse.pressed ? 0.94 : 1.0
 
@@ -824,6 +830,7 @@ Item {
 
                     // Separator
                     StyledRect {
+                        visible: !root.lyricsInBar
                         variant: "transparent"
                         Layout.alignment: Qt.AlignVCenter
                         implicitWidth: 1

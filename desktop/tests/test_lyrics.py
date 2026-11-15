@@ -337,6 +337,15 @@ ShellRoot {
     const next = find(strip, 'bar-lyrics-next');
     if (!strip.visible || current.x !== 0 || current.width !== 320 || next.x !== 320)
      throw Error('Inline lyrics must fill the media section');
+    strip.splitAroundCenter = true;
+    strip.islandLeft = 240; strip.islandRight = 400;
+    if (current.width !== 228 || current.x + current.width >= strip.islandLeft
+        || next.x <= strip.islandRight || next.x + next.width !== strip.width)
+     throw Error('Split lyrics must flank the center controls');
+    strip.width = 560;
+    strip.islandLeft = 200; strip.islandRight = 360;
+    if (current.width !== 188 || next.x <= strip.islandRight)
+     throw Error('Both sides must resize around center controls');
     for (const panel of [current, next]) {
      const click = panel.children.find(child => child.cursorShape === Qt.PointingHandCursor);
      if (!click || !click.enabled) throw Error('Both surfaces must open media');

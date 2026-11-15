@@ -12,6 +12,7 @@ import "../services/Lyrics.js" as Lyrics
 Item {
     id: root
     property bool inlineMode: false
+    property bool splitAroundCenter: false
     property Item calibrationParent: root
     signal openMedia()
     property real islandLeft: width / 2
@@ -21,7 +22,7 @@ Item {
     readonly property real gap: 12
     // Match the tiled workspace edge while keeping breathing room by the island.
     readonly property real edgeMargin: inlineMode ? 0 : 4
-    readonly property real sideWidth: inlineMode ? width / 2 : Math.max(0, Math.min(islandLeft - gap - edgeMargin,
+    readonly property real sideWidth: inlineMode && !splitAroundCenter ? width / 2 : Math.max(0, Math.min(islandLeft - gap - edgeMargin,
         width - islandRight - gap - edgeMargin))
     readonly property Region backgroundBlur: Region {
         regions: [
