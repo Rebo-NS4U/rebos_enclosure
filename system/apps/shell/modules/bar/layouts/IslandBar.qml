@@ -661,7 +661,7 @@ Item {
         z: 1
         inlineMode: root.currentMode === "collapsed"
         splitAroundCenter: true
-        readonly property real centerWidth: root.isExpanded || root.retractingToHidden
+        property real centerWidth: root.isExpanded || root.retractingToHidden
             ? root.targetWidth : collapsedView.width
         Behavior on centerWidth {
             enabled: Motion.enabled
