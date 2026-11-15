@@ -133,8 +133,10 @@ Item {
         property bool muted: false
         width: 24; height: 24; padding: 0
         anchors.verticalCenter: parent.verticalCenter
-        ToolTip.visible: hovered && enabled
-        ToolTip.text: Accessible.name
+        StyledToolTip {
+            show: button.hovered && button.enabled
+            tooltipText: button.Accessible.name
+        }
         background: Rectangle {
             radius: 8
             color: Qt.alpha(BarAppearance.activeColor, button.down ? 0.28 : button.hovered ? 0.22 : button.muted ? 0.09 : 0.16)
