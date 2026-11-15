@@ -610,7 +610,7 @@
   "system/apps/shell/modules/widgets/dashboard/controls/ShellStyleSettings.qml": "22f9b6eccab58ae52b43b7d19fca01c0d4a5069f9d3dc106e9f6dcf68cdfaab0",
   "system/apps/shell/modules/widgets/dashboard/controls/StorageSettings.qml": "9741f3b5122094a266ba024262d95e3ef4c360529641d2e70d8198a10be52283",
   "system/apps/shell/modules/widgets/dashboard/controls/SystemPanel.qml": "79aeea9d7f1bdf74af1309eff124f2e49e4d5cb8ab89cdce6e7a96e2713cd888",
-  "system/apps/shell/modules/widgets/dashboard/controls/ThemePanel.qml": "c9e60f5e335c1fcf8d109c97cc41818c105e8dcd00143d34d4e1acc376a6fc6a",
+  "system/apps/shell/modules/widgets/dashboard/controls/ThemePanel.qml": "3d8bf44a94e0fb8a35f14521f2beab3db065b992d9d77746d425b1ac73b10c5e",
   "system/apps/shell/modules/widgets/dashboard/controls/VariantEditor.qml": "557eb11d5b1259b69685ed5e3db35cb6700c7ed4ad9a4525d2b71677bc136dad",
   "system/apps/shell/modules/widgets/dashboard/controls/WallpaperSampler.qml": "ff8bcb789721159a63673973fe1a09f26934ab1a5314897425baa80df9139457",
   "system/apps/shell/modules/widgets/dashboard/controls/WallpaperTintSwatches.qml": "1e57426b2e4189232cdcb8e6af25dbe155725d49c3b1938e449b45a891587290",

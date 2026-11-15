@@ -263,37 +263,18 @@ Item {
                                 Layout.preferredWidth: 80
                             }
 
-                            SettingsTextField {
-                                Layout.fillWidth: true
-
-                                renderType: Text.NativeRendering
-                                font.hintingPreference: Font.PreferFullHinting
+                            SettingsComboBox {
                                 id: fontInput
-
-
-                                font.family: Config.theme.font
-                                font.pixelSize: Styling.fontSize(0)
-                                color: Colors.overBackground
-                                selectByMouse: true
-                                clip: true
-                                verticalAlignment: TextInput.AlignVCenter
-
+                                Layout.fillWidth: true
                                 readonly property string configValue: Config.theme.font
-
-                                onConfigValueChanged: {
-                                    if (text !== configValue) {
-                                        text = configValue;
-                                    }
+                                model: {
+                                    const families = Qt.fontFamilies();
+                                    if (families.indexOf(configValue) < 0)
+                                        families.push(configValue);
+                                    return families.sort();
                                 }
-
-                                Component.onCompleted: text = configValue
-
-                                onEditingFinished: {
-                                    if (text !== Config.theme.font && text.trim() !== "") {
-                                        Config.theme.font = text.trim();
-                                    }
-                                }
-
+                                currentIndex: model.indexOf(configValue)
+                                onActivated: Config.theme.font = currentText
                             }
 
                             SettingsTextField {
@@ -360,37 +341,18 @@ Item {
                                 Layout.preferredWidth: 80
                             }
 
-                            SettingsTextField {
-                                Layout.fillWidth: true
-
-                                renderType: Text.NativeRendering
-                                font.hintingPreference: Font.PreferFullHinting
+                            SettingsComboBox {
                                 id: monoFontInput
-
-
-                                font.family: Config.theme.monoFont
-                                font.pixelSize: Styling.monoFontSize(0)
-                                color: Colors.overBackground
-                                selectByMouse: true
-                                clip: true
-                                verticalAlignment: TextInput.AlignVCenter
-
+                                Layout.fillWidth: true
                                 readonly property string configValue: Config.theme.monoFont
-
-                                onConfigValueChanged: {
-                                    if (text !== configValue) {
-                                        text = configValue;
-                                    }
+                                model: {
+                                    const families = Qt.fontFamilies();
+                                    if (families.indexOf(configValue) < 0)
+                                        families.push(configValue);
+                                    return families.sort();
                                 }
-
-                                Component.onCompleted: text = configValue
-
-                                onEditingFinished: {
-                                    if (text !== Config.theme.monoFont && text.trim() !== "") {
-                                        Config.theme.monoFont = text.trim();
-                                    }
-                                }
-
+                                currentIndex: model.indexOf(configValue)
+                                onActivated: Config.theme.monoFont = currentText
                             }
 
                             SettingsTextField {
