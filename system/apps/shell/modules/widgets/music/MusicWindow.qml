@@ -264,7 +264,6 @@ Window {
                     Layout.preferredWidth: 180; Layout.fillHeight: true; variant: "pane"
                     ColumnLayout {
                         anchors.fill: parent; anchors.margins: 12; spacing: 6
-                        StyledText { text: "MUSIC"; color: Colors.primary; font.bold: true; font.letterSpacing: 2; font.pixelSize: Styling.fontSize(5); Layout.topMargin: 8; Layout.bottomMargin: 12 }
                         Repeater {
                             model: ["Home", "Songs", "Albums", "Artists", "Favorites", "Playlists", "Downloads", "Now playing"]
                             delegate: ThemeButton {
