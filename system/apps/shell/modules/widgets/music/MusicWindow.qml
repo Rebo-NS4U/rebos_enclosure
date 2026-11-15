@@ -11,6 +11,7 @@ import qs.config
 import qs.modules.theme
 import qs.modules.components
 import qs.modules.globals
+import "../../services/Lyrics.js" as Lyrics
 
 Window {
     id: root
@@ -74,8 +75,10 @@ Window {
         return Object.values(result);
     }
     readonly property string pageTitle: page === "Album" ? detail.split("\n")[0] : page === "Artist" ? detail : page === "Playlist" ? (playlists.find(p => p.id === detail)?.name || "Playlist") : page
+    readonly property bool estimatedTiming: lyricText.trim().length > 0 && Lyrics.parseLrc(lyricText).length === 0
     readonly property var lyricLines: {
         const raw = lyricText;
+        if (estimatedTiming) return Lyrics.estimatedLines(raw, player.duration > 0 ? player.duration/1000 : (current?.duration || 0));
         let result = [];
         raw.split("\n").forEach(line => {
             const stamps = [];
@@ -354,6 +357,13 @@ Window {
                                 onClicked: root.select(index)
                             }
                             ScrollBar.vertical: ScrollBar {}
+                        }
+                        StyledText {
+                            visible: root.side === "Lyrics" && root.estimatedTiming
+                            text: "Estimated timing · line positions may differ from the vocals"
+                            Layout.fillWidth: true; wrapMode: Text.WordWrap
+                            color: Colors.overSurfaceVariant
+                            font.pixelSize: Styling.fontSize(-2)
                         }
                         ListView {
                             id: lyricsList

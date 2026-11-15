@@ -316,6 +316,10 @@ other music directories without copying or modifying audio files. Albums,
 artists, search, favorites, saved queue playlists, shuffle, repeat, seeking,
 volume and embedded or adjacent `.lrc` lyrics are supported. Use **Now playing**
 for the queue and lyrics on narrow windows. Scan again after changing files.
+Lyrics without timestamps follow playback using evenly spaced line estimates,
+labelled **Estimated timing** in Music. These may differ from the vocals;
+embedded or downloaded timed lyrics take precedence. Estimates are not exported
+as timestamps to other players or the desktop lyrics service.
 Metadata and artwork use the existing FFmpeg dependency. `python-dbus` and
 `python-gobject` expose local playback through MPRIS to the shell and media keys.
 No player is started until the user opens Music; playback starts only on request.

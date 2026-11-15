@@ -28,6 +28,7 @@ def session():
                 '-t','4','-metadata',f'title=Acceptance song {index+1}','-metadata','artist=Enclosure',
                 '-metadata','album=Music acceptance',str(home/'Music'/f'{index}.flac')],check=True)
         (home/'Music/0.lrc').write_text('[00:00.00]First line\n[00:01.00]Second line')
+        (home/'Music/1.lrc').write_text('First untimed line\nSecond untimed line\nThird untimed line\nLast untimed line')
         qml = '''//@ pragma UseQApplication
     import QtQuick
     import Quickshell
@@ -48,7 +49,7 @@ def session():
                     music.play(music.tracks,0);
                     phase = 1;
                 } else if (phase === 1 && music.playing) {
-                    if (music.lyricLines.length !== 2) { console.error("MUSIC_LYRICS_FAILED"); Qt.exit(1); }
+                    if (music.lyricLines.length !== 2 || music.estimatedTiming) { console.error("MUSIC_LYRICS_FAILED"); Qt.exit(1); }
                     music.seek(1200);
                     music.favorite(music.current);
                     music.playlists = [{id:"test",name:"Acceptance",paths:music.queue.map(t=>t.path)}];
@@ -57,9 +58,16 @@ def session():
                     phase = 2;
                 } else if (phase === 2 && music.currentIndex === 1 && music.playing) {
                     music.control({action:"Pause"});
+                    music.side = "Lyrics";
+                    if (!music.estimatedTiming || music.lyricLines.length !== 4) { console.error("MUSIC_ESTIMATES_FAILED"); Qt.exit(1); }
+                    music.seek(2200);
+                    if (music.lyricIndex !== 2) { console.error("MUSIC_ESTIMATE_SEEK_FAILED"); Qt.exit(1); }
                     music.navigate("Albums");
                     phase = 3;
                 } else if (phase === 3 && !music.playing) {
+                    if (music.lyricIndex !== 2) { console.error("MUSIC_ESTIMATE_PAUSE_FAILED"); Qt.exit(1); }
+                    music.seek(0);
+                    if (music.lyricIndex !== 0) { console.error("MUSIC_ESTIMATE_REWIND_FAILED"); Qt.exit(1); }
                     console.log("MUSIC_ACCEPTANCE_PASSED tracks=" + music.tracks.length + " queue=" + music.queue.length);
                     console.log('MUSIC_GEOMETRY ' + music.contentItem.width + 'x' + music.contentItem.height + ' children=' + music.contentItem.children.length + ' root=' + music.contentItem.children[music.contentItem.children.length-1].width); music.contentItem.grabToImage(result => { result.saveToFile("/tmp/enclosure-music-acceptance.png"); Qt.quit(); });
                     stop();

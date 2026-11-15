@@ -20,6 +20,14 @@ function activeLine(lines, position) {
     return index;
 }
 
+// Only for the local Music reader. Keep estimates out of exported/player lyrics.
+function estimatedLines(text, duration) {
+    if (!isFinite(duration) || duration <= 0) return [];
+    const rows = String(text || "").split(/\r?\n/)
+        .map(line => line.trim()).filter(line => line && !/^\[[^\]]*\]$/.test(line));
+    return rows.map((line, index) => ({time: index * duration / rows.length, text: line}));
+}
+
 function playerLyrics(metadata) {
     for (const key of ["xesam:asText", "xesam:lyrics", "lyrics", "spotify:lyrics"]) {
         const value = metadata?.[key];
