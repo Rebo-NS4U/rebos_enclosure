@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=MouseDash
+Comment=Find your flow in a themed cursor survival game
+Exec="@HOME@/.local/bin/rebos_shell" mousedash
+Icon=input-mouse
+Terminal=false
+Categories=Game;ArcadeGame;
+Keywords=quickshell;enclosure;mouse;dodge;survival;

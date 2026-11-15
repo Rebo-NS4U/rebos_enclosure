@@ -369,3 +369,13 @@ Shell settings use compact expandable groups for the desktop bar, assistant pane
 Theme and Shell dropdowns share one grid below the theme previews. Wallpaper colors contains the palette, wallpaper color picker, saved appearances, wallpaper library and app appearance controls.
 
 Wide Settings windows show up to six theme previews in one row and four columns of dropdowns. Expanded dropdowns use up to two columns, leaving other settings visible. Narrow windows return to a single column.
+
+### MouseDash
+
+Launch **MouseDash** from the application launcher or run `rebos_shell mousedash`.
+Move the cursor to dodge incoming circles. Click the arena to begin or retry;
+Escape, leaving the arena, or switching windows pauses the run. Click to resume.
+Easy, Medium and Hard have separate personal bests, stored locally in
+`~/.config/rebos_shell/mousedash.ini`. Quiet visuals removes the cursor trail
+and glow. The native window follows the shell palette, font and surface style.
+No network service or additional dependency is required.
