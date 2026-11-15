@@ -1,11 +1,6 @@
 .pragma library
 
 var styles = [
-    {"id": "midnight-observatory", "label": "Midnight Observatory", "font": "JetBrains Mono", "description": "Navy panels, brass accents and starlit highlights."},
-    {"id": "ink-and-paper", "label": "Ink & Paper", "font": "Liberation Serif", "description": "Warm paper, charcoal ink and vermilion details."},
-    {"id": "deep-sea-station", "label": "Deep-Sea Station", "font": "Noto Sans", "description": "Deep teal surfaces and bioluminescent controls."},
-    {"id": "analog-studio", "label": "Analog Studio", "font": "DejaVu Sans", "description": "Walnut panels, cream labels and warm orange controls."},
-    {"id": "solar-eclipse", "label": "Solar Eclipse", "font": "JetBrains Mono", "description": "Near-black surfaces with copper and golden edges."},
     {"id": "botanical-archive", "label": "Botanical Archive", "font": "Liberation Serif", "description": "Parchment surfaces, forest ink and sage details."},
     {id: "instrument", label: "Instrument", description: "Layered graphite surfaces with restrained status accents."},
     {id: "frosted", label: "Frosted Glass", description: "OCR-inspired frosted panels, soft highlights and rounded glass edges."},
@@ -58,7 +53,7 @@ function ditherCellSize(strength) {
 
 function surface(style, variant, p, ditherStrength) {
     var curated = themePalette(style);
-    if (curated) return surface("quiet", variant, curated, ditherStrength);
+    if (curated) p = curated;
     var strength = Number.isFinite(ditherStrength) ? Math.max(0, Math.min(100, ditherStrength)) : 20;
     var colorful = style === "colorful", dithered = style === "dithered", quiet = style === "quiet" || dithered;
     var tint = colorful ? 0.10 : (quiet ? 0.015 : 0.035);
@@ -124,6 +119,25 @@ function surface(style, variant, p, ditherStrength) {
             border = [focused ? p.primary : "#40" + p.foreground.slice(-6), 1];
         }
     }
+    // Botanical uses opaque paper layers, ruled ink edges and pressed controls.
+    var botanical = style === "botanical-archive";
+    var paperSurface = botanical && ["bg", "popup", "bar", "pane", "surface", "surfaceContainer", "common", "internalbg", "focus", "surfaceVariant", "overprimary", "oversecondary", "overtertiary", "overerror"].indexOf(variant) !== -1;
+    if (botanical) {
+        var inset = variant === "internalbg";
+        var focused = variant === "focus" || variant === "surfaceVariant";
+        if (paperSurface) {
+            fill = mix(p.background, inset ? p.primary : p.foreground, inset ? 0.09 : focused ? 0.12 : 0.025);
+            item = p.foreground;
+            if (variant === "overprimary") item = p.primary;
+            if (variant === "oversecondary") item = p.secondary;
+            if (variant === "overtertiary") item = p.tertiary;
+            if (variant === "overerror") item = p.error;
+            border = [mix(p.background, p.primary, focused ? 0.72 : 0.38), 1];
+        } else if (variant !== "transparent" && variant !== "barbg") {
+            border = [mix(fill, item, 0.22), 1];
+        }
+        opacity = variant === "transparent" || variant === "barbg" ? 0 : 1;
+    }
     var containers = ["bg", "popup", "pane", "surface", "surfaceContainer", "common", "internalbg", "focus", "surfaceVariant", "bar", "barbg"];
     var dotted = dithered && strength > 0 && containers.indexOf(variant) !== -1;
     // Strength changes contrast only. Buttons and edges stay clean at every level.
@@ -132,7 +146,8 @@ function surface(style, variant, p, ditherStrength) {
     if (dithered && ["pane", "surface", "surfaceContainer", "common", "internalbg"].indexOf(variant) !== -1)
         border[0] = mix(fill, p.primary, 0.12);
     return {
-        gradient: frostedContainer ? [[mix(fill, p.foreground, 0.08), 0], [fill, 0.45], [mix(fill, p.background, 0.12), 1]] : [[fill, 0]], gradientType: dotted ? "halftone" : "linear", gradientAngle: 0,
+        radius: botanical ? (variant === "bg" || variant === "popup" ? 10 : 4) : undefined,
+        gradient: paperSurface ? [[mix(fill, "#ffffff", 0.08), 0], [fill, 0.55], [mix(fill, p.secondary, 0.035), 1]] : frostedContainer ? [[mix(fill, p.foreground, 0.08), 0], [fill, 0.45], [mix(fill, p.background, 0.12), 1]] : [[fill, 0]], gradientType: dotted ? "halftone" : "linear", gradientAngle: 0,
         gradientCenterX: 0.5, gradientCenterY: 0.5,
         halftoneDotMin: dotted ? dotMax : 0, halftoneDotMax: dotted ? dotMax : 0, halftoneStart: 0, halftoneEnd: 1,
         halftoneDotColor: dotted ? dotColor(fill, item, strength * 0.001) : fill, halftoneBackgroundColor: fill,
@@ -169,41 +184,6 @@ function appPalette(style, palette, customOpacity) {
 
 // Curated palettes stay independent of the wallpaper and retain semantic roles.
 var curatedPalettes = {
-    "midnight-observatory": {
-        "background": "#10182c",
-        "foreground": "#e4e7f1",
-        "primary": "#d8b878",
-        "secondary": "#a6bce6",
-        "tertiary": "#c5addc"
-    },
-    "ink-and-paper": {
-        "background": "#f4eddf",
-        "foreground": "#282722",
-        "primary": "#923c30",
-        "secondary": "#565c52",
-        "tertiary": "#63517b"
-    },
-    "deep-sea-station": {
-        "background": "#071f29",
-        "foreground": "#d2eee9",
-        "primary": "#62dbc8",
-        "secondary": "#8fbacb",
-        "tertiary": "#b9c98c"
-    },
-    "analog-studio": {
-        "background": "#2c201a",
-        "foreground": "#f2dfbf",
-        "primary": "#efac74",
-        "secondary": "#c3c58c",
-        "tertiary": "#d1a5a0"
-    },
-    "solar-eclipse": {
-        "background": "#131316",
-        "foreground": "#eee5d8",
-        "primary": "#edb56e",
-        "secondary": "#c79578",
-        "tertiary": "#c4b0d8"
-    },
     "botanical-archive": {
         "background": "#eee9d8",
         "foreground": "#283c2e",

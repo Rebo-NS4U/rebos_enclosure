@@ -47,4 +47,4 @@ Use `StandardProgressBar` for linear progress in QML. Its normalized `value` is 
 
 ## Curated desktop themes
 
-The shell Theme style picker also offers Midnight Observatory (navy/brass), Ink & Paper (paper/vermilion), Deep-Sea Station (teal/turquoise), Analog Studio (walnut/orange), Solar Eclipse (black/copper), and Botanical Archive (parchment/forest). These use fixed semantic palettes independent of the wallpaper, including application exports. Serif themes use the existing Liberation Serif family; the others reuse installed sans and mono families. Selecting a card preserves the existing font override workflow.
+Botanical Archive is a rendered theme with opaque parchment gradients, forest-ink ruled edges, inset sage wells, compact control corners and softer outer panels. Its fixed semantic palette and Liberation Serif typography stay independent of wallpaper colors, including application exports. The other experimental palette-only styles have been removed.

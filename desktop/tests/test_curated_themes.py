@@ -12,7 +12,15 @@ class CuratedThemeTests(unittest.TestCase):
                 source = (ROOT / f'system/apps/{app}/modules/theme/ShellStyles.js').read_text().replace('.pragma library', '')
                 script = source + '''
 const assert = require('node:assert/strict');
-assert.equal(Object.keys(curatedPalettes).length, 6);
+assert.deepEqual(Object.keys(curatedPalettes), ['botanical-archive']);
+const botanical = themePalette('botanical-archive');
+const paper = surface('botanical-archive', 'bg', {});
+assert.notDeepEqual(paper, surface('quiet', 'bg', botanical));
+assert.equal(paper.gradient.length, 3);
+assert.equal(paper.radius, 10);
+assert.equal(surface('botanical-archive', 'internalbg', {}).radius, 4);
+assert.equal(surface('botanical-archive', 'pane', {}).border[1], 1);
+assert.equal(paper.opacity, 1);
 for (const id of Object.keys(curatedPalettes)) {
  const p = themePalette(id);
  assert.ok(styles.find(s => s.id === id));
