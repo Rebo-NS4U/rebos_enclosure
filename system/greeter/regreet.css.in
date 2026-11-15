@@ -68,9 +68,9 @@ selection { background: {{primary}}; color: {{overPrimary}}; }
   font-size: 64px;
   font-weight: 400;
   letter-spacing: -3px;
-  color: {{primary}};
+  color: #ffffff;
   margin-top: 4px;
-  text-shadow: 0 2px 12px alpha({{primary}}, 0.12);
+  text-shadow: 0 2px 12px alpha(white, 0.12);
 }
 .noctalia-login .card-date {
   font-size: 12px;

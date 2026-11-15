@@ -35,7 +35,7 @@ static gboolean tick(GtkWidget *area, GdkFrameClock *clock, gpointer data) {
     if (second != previous) {
         g_object_set_data(G_OBJECT(area), "last-second", (gpointer)(gintptr)second);
         GDateTime *now = g_date_time_new_now_local();
-        char *time = g_date_time_format(now, "%l:%M %p");
+        char *time = g_date_time_format(now, "%-I:%M %p");
         char *date = g_date_time_format(now, "%A, %B %e");
         gtk_label_set_text(GTK_LABEL(l->time_label), time);
         gtk_label_set_text(GTK_LABEL(l->date_label), date);
@@ -142,6 +142,8 @@ static gboolean arrange(gpointer data) {
     GtkWidget *card=gtk_box_new(GTK_ORIENTATION_VERTICAL,0);
     GtkWidget *time_label=gtk_label_new(""), *date_label=gtk_label_new("");
     gtk_widget_add_css_class(time_label,"card-time");
+    gtk_widget_set_halign(time_label, GTK_ALIGN_CENTER);
+    gtk_label_set_xalign(GTK_LABEL(time_label), 0.5);
     gtk_widget_add_css_class(date_label,"card-date");
     gtk_box_append(GTK_BOX(card),time_label);
     gtk_box_append(GTK_BOX(card),date_label);
