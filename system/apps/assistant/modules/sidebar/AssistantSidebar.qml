@@ -353,6 +353,8 @@ Item {
 
         StyledRect {
             id: sidebarBackground
+            // Use the quiet fabric finish behind the assistant toolbar.
+            barSurface: true
             anchors.fill: parent
             anchors.topMargin: root.tiled ? 0 : root.sidebarMargin
             anchors.bottomMargin: root.tiled ? 0 : root.sidebarMargin
@@ -379,7 +381,7 @@ Item {
 
                         Button {
                             Layout.preferredWidth: 32
-                            Layout.preferredHeight: 32
+                            Layout.preferredHeight: 36
                             flat: true
                             padding: 0
                             contentItem: StyledText {
@@ -391,9 +393,9 @@ Item {
                                 verticalAlignment: Text.AlignVCenter
                             }
                             background: StyledRect {
-                                variant: parent.hovered ? "focus" : "common"
-                                radius: Styling.radius(4)
-                                opacity: parent.hovered ? 1 : 0
+                                variant: root.menuExpanded ? "primary" : parent.hovered || parent.visualFocus ? "focus" : "common"
+                                radius: Styling.radius(8)
+                                opacity: root.menuExpanded || parent.hovered || parent.visualFocus ? 1 : 0
                                 Behavior on opacity {
                                     NumberAnimation {
                                         duration: Config.animDuration / 4
@@ -405,7 +407,7 @@ Item {
 
                         Button {
                             Layout.preferredWidth: 32
-                            Layout.preferredHeight: 32
+                            Layout.preferredHeight: 36
                             flat: true
                             padding: 0
                             contentItem: StyledText {
@@ -417,9 +419,9 @@ Item {
                                 verticalAlignment: Text.AlignVCenter
                             }
                             background: StyledRect {
-                                variant: parent.hovered ? "focus" : "common"
-                                radius: Styling.radius(4)
-                                opacity: parent.hovered ? 1 : 0
+                                variant: parent.hovered || parent.visualFocus ? "focus" : "common"
+                                radius: Styling.radius(8)
+                                opacity: parent.hovered || parent.visualFocus ? 1 : 0
                                 Behavior on opacity {
                                     NumberAnimation {
                                         duration: Config.animDuration / 4
@@ -440,7 +442,7 @@ Item {
                             id: backendButton
                             objectName: "assistantBackendButton"
                             Layout.preferredWidth: 88
-                            Layout.preferredHeight: 32
+                            Layout.preferredHeight: 36
                             flat: true
                             padding: 4
                             onClicked: {
@@ -454,16 +456,16 @@ Item {
                                 verticalAlignment: Text.AlignVCenter
                             }
                             background: StyledRect {
-                                variant: parent.hovered ? "focus" : "common"
-                                radius: Styling.radius(6)
-                                border.color: Qt.alpha(Colors.primary, 0.28)
+                                variant: parent.hovered || parent.visualFocus ? "focus" : "common"
+                                radius: Styling.radius(8)
+                                border.color: Qt.alpha(Colors.primary, parent.hovered || parent.visualFocus ? 0.40 : 0.14)
                                 border.width: 1
                             }
                         }
 
                         Button {
                             Layout.preferredWidth: 32
-                            Layout.preferredHeight: 32
+                            Layout.preferredHeight: 36
                             flat: true
                             padding: 0
 
@@ -477,9 +479,9 @@ Item {
                             }
 
                             background: StyledRect {
-                                variant: parent.hovered ? "focus" : "common"
-                                radius: Styling.radius(4)
-                                opacity: parent.hovered ? 1 : 0
+                                variant: GlobalStates.assistantPinned ? "primary" : parent.hovered || parent.visualFocus ? "focus" : "common"
+                                radius: Styling.radius(8)
+                                opacity: GlobalStates.assistantPinned || parent.hovered || parent.visualFocus ? 1 : 0
 
                                 Behavior on opacity {
                                     NumberAnimation {
@@ -544,7 +546,7 @@ Item {
                                 required property int modelData
                                 visible: !root.tiled
                                 Layout.preferredWidth: 28
-                                Layout.preferredHeight: 32
+                                Layout.preferredHeight: 36
                                 flat: true
                                 padding: 0
                                 enabled: modelData < 0
@@ -575,7 +577,7 @@ Item {
 
                         Button {
                             Layout.preferredWidth: 32
-                            Layout.preferredHeight: 32
+                            Layout.preferredHeight: 36
                             flat: true
                             padding: 0
 
@@ -589,9 +591,9 @@ Item {
                             }
 
                             background: StyledRect {
-                                variant: parent.hovered ? "focus" : "common"
-                                radius: Styling.radius(4)
-                                opacity: parent.hovered ? 1 : 0
+                                variant: parent.hovered || parent.visualFocus ? "focus" : "common"
+                                radius: Styling.radius(8)
+                                opacity: parent.hovered || parent.visualFocus ? 1 : 0
 
                                 Behavior on opacity {
                                     NumberAnimation {
