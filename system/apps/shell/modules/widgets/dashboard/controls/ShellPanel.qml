@@ -151,6 +151,7 @@ Item {
             }
         }
         StyledSlider {
+            scroll: false
             id: appearanceSlider
             objectName: sliderRow.objectName + "-control"
             Layout.fillWidth: true

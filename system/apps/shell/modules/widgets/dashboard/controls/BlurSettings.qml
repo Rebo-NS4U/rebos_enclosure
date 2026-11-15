@@ -28,6 +28,7 @@ SettingsGroup {
     RowLayout {
         Layout.fillWidth: true
         StyledSlider {
+            scroll: false
             id: transparencySlider
             objectName: "transparency-slider"
             Layout.fillWidth: true
@@ -77,6 +78,7 @@ SettingsGroup {
     RowLayout {
         Layout.fillWidth: true
         StyledSlider {
+            scroll: false
             id: blurstrengthSlider
             objectName: "blur-strength-slider"
             Layout.fillWidth: true

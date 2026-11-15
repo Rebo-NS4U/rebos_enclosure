@@ -158,7 +158,7 @@ Item {
             } else root.hoverColor = root.sampleAt(mouse.x, mouse.y);
         }
         onWheel: wheel => {
-            if (!root.ready) { wheel.accepted = false; return; }
+            if (!root.ready || !(wheel.modifiers & Qt.ControlModifier)) { wheel.accepted = false; return; }
             root.zoomAt(Math.pow(1.25, wheel.angleDelta.y / 120), wheel.x, wheel.y);
             wheel.accepted = true;
         }

@@ -7,7 +7,7 @@ Slider {
     implicitWidth: 100
     padding: 8
     focusPolicy: Qt.StrongFocus
-    wheelEnabled: true
+    wheelEnabled: false
     opacity: enabled ? 1 : 0.45
     background: Rectangle {
         x: root.leftPadding

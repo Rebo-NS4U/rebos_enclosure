@@ -432,7 +432,7 @@ Item {
                                 Layout.preferredHeight: 20
                                 progressColor: Styling.srItem("overprimary")
                                 tooltipText: `${Math.round(value * 20)}`
-                                scroll: true
+                                scroll: false
                                 stepSize: 0.05  // 1/20 = 0.05 for integer steps in 0-20 range
                                 snapMode: "always"
 
@@ -517,7 +517,7 @@ Item {
                                 Layout.preferredHeight: 48
                                 progressColor: Styling.srItem("overprimary")
                                 tooltipText: `${Math.round(value * 100)}%`
-                                scroll: true
+                                scroll: false
                                 stepSize: 0.01
                                 snapMode: "always"
 
@@ -577,7 +577,7 @@ Item {
                                 Layout.preferredHeight: 48
                                 progressColor: Styling.srItem("overprimary")
                                 tooltipText: `${(value * 4).toFixed(1)}`
-                                scroll: true
+                                scroll: false
                                 stepSize: 0.01
                                 snapMode: "always"
 
@@ -637,7 +637,7 @@ Item {
                                 Layout.preferredHeight: 48
                                 progressColor: Styling.srItem("overprimary")
                                 tooltipText: `${Math.round((value - 0.5) * 40)}`
-                                scroll: true
+                                scroll: false
                                 stepSize: 0.025  // 1/40 for integer steps in -20 to +20 range
                                 snapMode: "always"
 
@@ -696,7 +696,7 @@ Item {
                                 Layout.preferredHeight: 48
                                 progressColor: Styling.srItem("overprimary")
                                 tooltipText: `${Math.round((value - 0.5) * 40)}`
-                                scroll: true
+                                scroll: false
                                 stepSize: 0.025  // 1/40 for integer steps in -20 to +20 range
                                 snapMode: "always"
 

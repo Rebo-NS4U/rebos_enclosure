@@ -487,6 +487,47 @@ Item {
                 StyledText { text: root.activeCategory.subLabel; color: Colors.overSurfaceVariant; width: parent.width; wrapMode: Text.WordWrap }
             }
 
+            // Wheel input belongs to navigation. This layer accepts no clicks or drags.
+            MouseArea {
+                id: wheelNavigation
+                objectName: "settings-scroll-wheel"
+                scrollGestureEnabled: true
+                enabled: {
+                    for (let i = 0; i < categoryPanels.count; i++) {
+                        if (categoryPanels.itemAt(i)?.item?.colorPickerActive) return false;
+                    }
+                    return true;
+                }
+                anchors.fill: categoryScroll
+                z: 2
+                acceptedButtons: Qt.NoButton
+                onWheel: wheel => {
+                    const delta = wheel.pixelDelta.y !== 0 ? wheel.pixelDelta.y : wheel.angleDelta.y / 2;
+                    if (delta === 0 || (wheel.modifiers & Qt.ControlModifier)) { wheel.accepted = false; return; }
+                    function scrollerAt(item) {
+                        if (!item.visible || !item.enabled) return null;
+                        const point = item.mapFromItem(wheelNavigation, wheel.x, wheel.y);
+                        if (item.clip && !item.contains(point)) return null;
+                        // Prefer the deepest list that can still scroll in this direction.
+                        for (let i = item.children.length - 1; i >= 0; i--) {
+                            const nested = scrollerAt(item.children[i]);
+                            if (nested) return nested;
+                        }
+                        if (item.interactive && item.contentY !== undefined && item.contentHeight > item.height && item.contains(point)) {
+                            const start = item.originY || 0;
+                            const end = start + item.contentHeight - item.height;
+                            if ((delta > 0 && item.contentY > start) || (delta < 0 && item.contentY < end)) return item;
+                        }
+                        return null;
+                    }
+                    const target = scrollerAt(categoryScroll.contentItem) || categoryScroll;
+                    const start = target.originY || 0;
+                    target.cancelFlick();
+                    target.contentY = Math.max(start, Math.min(start + Math.max(0, target.contentHeight - target.height), target.contentY - delta));
+                    wheel.accepted = true;
+                }
+            }
+
             Flickable {
                 id: categoryScroll
                 objectName: "settings-category-scroll"
@@ -527,6 +568,7 @@ Item {
                     }
                 }
             }
+
         }
     }
 }

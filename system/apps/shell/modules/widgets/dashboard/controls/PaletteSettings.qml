@@ -278,7 +278,7 @@ ColumnLayout {
                 }
                 Action { text: "Fit"; onClicked: wallpaperSampler.resetView() }
             }
-            Caption { text: "Scroll over the preview to zoom; drag to move around, then click to pick a color." }
+            Caption { text: "Ctrl+scroll over the preview to zoom; drag to move around, then click to pick a color." }
             RowLayout {
                 Rectangle {
                     implicitWidth: 24
@@ -444,6 +444,7 @@ ColumnLayout {
 
             Caption { text: "Background opacity: " + Math.round(Config.theme.srBg.opacity * 100) + "%" }
             ThemeSlider {
+                wheelEnabled: false
                 Layout.fillWidth: true
                 from: 0.2
                 to: 1

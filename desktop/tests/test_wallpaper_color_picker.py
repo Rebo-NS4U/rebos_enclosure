@@ -180,6 +180,8 @@ Item {
             compare(sampler.panX, 0);
             compare(sampler.sampleAt(25, 10), "");
             mouseWheel(sampler, 50, 100, 0, 120);
+            compare(sampler.zoom, 1);
+            mouseWheel(sampler, 50, 100, 0, 120, Qt.NoButton, Qt.ControlModifier);
             wait(50);
             tryVerify(() => sampler.ready);
             compare(sampler.zoom, 1.25);

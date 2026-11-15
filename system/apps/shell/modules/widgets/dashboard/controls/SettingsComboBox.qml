@@ -7,6 +7,7 @@ import qs.modules.theme
 
 ComboBox {
     id: root
+    wheelEnabled: false
     opacity: enabled ? 1 : 0.4
     implicitHeight: 48
     leftPadding: 14

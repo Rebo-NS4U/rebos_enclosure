@@ -38,6 +38,7 @@ SettingsGroup {
         Layout.fillWidth: true
         StyledText { text: "Duration" }
         StyledSlider {
+            scroll: false
             id: durationSlider
             objectName: "motion-duration"
             Layout.fillWidth: true
