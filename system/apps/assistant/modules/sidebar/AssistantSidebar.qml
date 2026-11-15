@@ -1849,6 +1849,8 @@ Item {
                                                                                 text: parent.text
                                                                                 color: Colors.primary
                                                                                 font.pixelSize: Styling.fontSize(-2)
+                                                                                horizontalAlignment: Text.AlignHCenter
+                                                                                verticalAlignment: Text.AlignVCenter
                                                                             }
                                                                             background: StyledRect {
                                                                                 variant: parent.hovered || parent.activeFocus ? "focus" : "transparent"
