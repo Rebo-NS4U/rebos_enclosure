@@ -1,8 +1,8 @@
 .pragma library
 
 var styles = [
-    {id: "monolith", label: "Monolith", font: "Noto Sans", description: "Unbroken matte slabs, minimal seams and recessed inputs."},
-    {id: "blueprint", label: "Blueprint", font: "JetBrains Mono", description: "Construction grids, corner brackets and outlined controls."},
+    {id: "monolith", label: "Monolith", font: "Noto Sans", description: "Carved slabs, stepped edges and deep recessed channels."},
+    {id: "blueprint", label: "Blueprint", font: "JetBrains Mono", description: "Drafting grids, measurement ticks, registration marks and wire controls."},
     {id: "terminal-hardware", label: "Terminal Hardware", font: "DejaVu Sans Mono", description: "Beveled housings, inset displays and mechanical controls."},
     {id: "instrument", font: "JetBrains Mono", label: "Instrument", description: "Layered graphite surfaces with restrained status accents."},
     {id: "frosted", font: "DejaVu Sans Mono", label: "Frosted Glass", description: "OCR-inspired frosted panels, soft highlights and rounded glass edges."},
@@ -137,7 +137,7 @@ function surface(style, variant, p, ditherStrength) {
     if (rendered) {
         opacity = variant === "transparent" || variant === "barbg" ? 0 : 1;
         if (neutral || outlineRole) {
-            var depth = monolith ? (inset ? 0 : focused ? 0.10 : outer ? 0.055 : 0.035)
+            var depth = monolith ? (inset ? 0 : focused ? 0.12 : outer ? 0.075 : 0.045)
                 : blueprint ? (inset ? 0.015 : focused ? 0.065 : 0.025)
                 : (inset ? 0 : focused ? 0.12 : outer ? 0.085 : 0.045);
             fill = mix(p.background, p.foreground, depth);
@@ -146,6 +146,7 @@ function surface(style, variant, p, ditherStrength) {
         if (monolith) {
             border = [mix(fill, p.foreground, 0.18), focused ? 2 : inset ? 1 : 0];
             if (focused) border[0] = p.primary;
+            if (neutral && !inset) renderGradient = [[fill, 0], [fill, 0.92], [mix(fill, p.background, 0.65), 0.94], [mix(fill, p.background, 0.65), 1]];
         } else if (blueprint) {
             // Wire controls retain the selected accent as their ink color.
             if (!neutral && !outlineRole && opacity > 0) {
@@ -168,7 +169,7 @@ function surface(style, variant, p, ditherStrength) {
     if (dithered && ["pane", "surface", "surfaceContainer", "common", "internalbg"].indexOf(variant) !== -1)
         border[0] = mix(fill, p.primary, 0.12);
     return {
-        radius: monolith ? (outer ? 6 : 2) : blueprint ? 0 : hardware ? (outer ? 5 : 2) : undefined,
+        radius: monolith ? (outer ? 3 : 0) : blueprint ? 0 : hardware ? (outer ? 5 : 2) : undefined,
         gradient: renderGradient ? renderGradient : frostedContainer ? [[mix(fill, p.foreground, 0.08), 0], [fill, 0.45], [mix(fill, p.background, 0.12), 1]] : [[fill, 0]], gradientType: dotted ? "halftone" : "linear", gradientAngle: 0,
         gradientCenterX: 0.5, gradientCenterY: 0.5,
         halftoneDotMin: dotted ? dotMax : 0, halftoneDotMax: dotted ? dotMax : 0, halftoneStart: 0, halftoneEnd: 1,

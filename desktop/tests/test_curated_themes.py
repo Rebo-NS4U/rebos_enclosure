@@ -48,6 +48,8 @@ for (const id of ids) {
 }
 const p = palettes[0];
 assert.equal(surface('monolith', 'bg', p).border[1], 0);
+assert.equal(surface('monolith', 'bg', p).gradient.length, 4);
+assert.equal(surface('monolith', 'bg', p).radius, 3);
 assert.equal(surface('monolith', 'internalbg', p).gradient[0][0], p.background);
 assert.equal(surface('blueprint', 'bg', p).radius, 0);
 assert.equal(surface('blueprint', 'primary', p).gradient[0][0], p.background);
