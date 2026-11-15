@@ -30,7 +30,7 @@ ShellRoot {
   for (const role of ["overSurface","background","overPrimary","primary","surfaceContainerLow","outline","red","lightRed","green","lightGreen","yellow","lightYellow","lightBlue","magenta","lightMagenta","cyan","lightCyan","overSurfaceVariant","outlineVariant","error","surface","secondary","overSecondary","tertiary","overTertiary"]) p[role] = "#112233";
   p.background = "#262724"; p.outlineVariant = "#40e3e3dc"; p.opacity = 0.68;
   console.log("KITTY_CONFIG:" + JSON.stringify(generator.render(p)));
-  for (const style of ["monolith", "blueprint", "terminal-hardware", "frosted", "colorful", "smoked-acrylic", "glass-console", "circuit-glass"]) {
+  for (const style of ["monolith", "blueprint", "terminal-hardware", "frosted", "colorful", "smoked-acrylic", "glass-console", "circuit-glass", "clear-glass"]) {
    p.style = style;
    console.log("STYLE_CONFIG:" + JSON.stringify({style:style, config:generator.render(p)}));
   }
@@ -48,6 +48,7 @@ ShellRoot {
             self.assertIn('font_family JetBrains Mono\nfont_size 13.5\n',config)
             self.assertIn('active_border_color #112233',config)
             expected = {
+                'clear-glass': ('14 16', '0.5pt', 'beam', 'fade'),
                 'smoked-acrylic': ('14 16', '1pt', 'beam', 'fade'),
                 'glass-console': ('16 18', '2pt', 'block', 'powerline'),
                 'circuit-glass': ('14 18', '2pt', 'underline', 'separator'),

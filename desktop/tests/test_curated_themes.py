@@ -13,7 +13,7 @@ class CuratedThemeTests(unittest.TestCase):
                 script = source + '''
 const assert = require('node:assert/strict');
 const ids = ['monolith','blueprint','terminal-hardware'];
-assert.deepEqual(styles.map(s => s.id).sort(), [...ids, 'frosted', 'colorful', 'smoked-acrylic', 'glass-console', 'circuit-glass'].sort());
+assert.deepEqual(styles.map(s => s.id).sort(), [...ids, 'frosted', 'colorful', 'smoked-acrylic', 'glass-console', 'circuit-glass', 'clear-glass'].sort());
 assert.ok(!styles.some(s => ['botanical-archive','condensation','optical-instrument'].includes(s.id)));
 for (const id of ids) {
  assert.ok(styles.some(s => s.id === id));
@@ -60,7 +60,8 @@ assert.equal(surface('terminal-hardware', 'primary', p).gradient.length, 5);
 assert.equal(surface('terminal-hardware', 'internalbg', p).gradient[0][0], p.background);
 for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++)
  assert.notDeepEqual(surface(ids[i], 'bg', p), surface(ids[j], 'bg', p));
-const materials = ['smoked-acrylic','glass-console','circuit-glass'];
+const materials = ['smoked-acrylic','glass-console','circuit-glass','clear-glass'];
+assert.equal(styles[styles.length - 1].id, 'clear-glass');
 for (const id of materials) {
  assert.equal(themePalette(id), null);
  for (const palette of palettes) {
@@ -86,6 +87,9 @@ for (const id of materials) {
  }
  assert.notDeepEqual(surface(id, 'bg', palettes[0]), surface(id, 'bg', palettes[1]));
 }
+assert.equal(surface('clear-glass', 'bg', p).opacity, 0.52);
+assert.equal(surface('clear-glass', 'bg', p).radius, 14);
+assert.equal(surface('clear-glass', 'pane', p).border[1], 0);
 assert.equal(surface('smoked-acrylic', 'bg', p).radius, 14);
 assert.equal(surface('glass-console', 'bg', p).radius, 6);
 assert.equal(surface('circuit-glass', 'bg', p).radius, 0);

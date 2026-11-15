@@ -8,7 +8,8 @@ var styles = [
     {id: "blueprint", label: "Blueprint", font: "JetBrains Mono", description: "Drafting grids, measurement ticks, registration marks and wire controls."},
     {id: "terminal-hardware", label: "Terminal Hardware", font: "DejaVu Sans Mono", description: "Machined bezels, slotted screws, cooling vents and textured displays."},
     {id: "frosted", font: "DejaVu Sans Mono", label: "Frosted Glass", description: "Frosted panels, soft highlights and rounded glass edges."},
-    {id: "colorful", font: "DejaVu Sans", label: "Tinted", description: "Transparent backgrounds with more wallpaper color."}
+    {id: "colorful", font: "DejaVu Sans", label: "Tinted", description: "Transparent backgrounds with more wallpaper color."},
+    {id: "clear-glass", label: "Clear Glass", font: "Noto Sans", description: "Refined transparent panels, quiet hairline edges and restrained highlights."}
 ];
 
 // Custom and unknown styles preserve the user's selected typeface.
@@ -164,6 +165,14 @@ function surface(style, variant, p, ditherStrength) {
             : console ? [[mix(fill, p.foreground, 0.065), 0], [fill, 0.07], [fill, 0.92], [mix(fill, p.background, 0.40), 1]]
             : [[fill, 0]];
     }
+    var clearGlass = style === "clear-glass";
+    if (clearGlass && neutral) {
+        fill = mix(p.background, p.foreground, inset ? 0.01 : 0.025);
+        item = p.foreground;
+        opacity = focused ? 0.78 : inset ? 0.38 : outer ? 0.52 : 0.32;
+        border = [focused ? p.primary : mix(fill, p.foreground, outer ? 0.22 : 0.12), outer || focused || inset ? 1 : 0];
+        renderGradient = [[mix(fill, p.foreground, 0.02), 0], [fill, 0.18], [fill, 1]];
+    }
     var containers = ["bg", "popup", "pane", "surface", "surfaceContainer", "common", "internalbg", "focus", "surfaceVariant", "bar", "barbg"];
     var controls = ["primary", "primaryfocus", "overprimary", "secondary", "secondaryfocus", "oversecondary", "tertiary", "tertiaryfocus", "overtertiary", "error", "errorfocus", "overerror"];
     var dotted = dithered && strength > 0 && (containers.indexOf(variant) !== -1 ||
@@ -176,7 +185,7 @@ function surface(style, variant, p, ditherStrength) {
         border[0] = mix(fill, p.primary, 0.12);
     if (dotted && containers.indexOf(variant) !== -1) border[1] = 1;
     return {
-        radius: acrylic ? (outer ? 14 : 7) : console ? (outer ? 6 : 2) : circuit ? 0 : monolith ? (outer ? 3 : 0) : blueprint ? 0 : hardware ? (outer ? 5 : 2) : undefined,
+        radius: clearGlass ? (outer ? 14 : 8) : acrylic ? (outer ? 14 : 7) : console ? (outer ? 6 : 2) : circuit ? 0 : monolith ? (outer ? 3 : 0) : blueprint ? 0 : hardware ? (outer ? 5 : 2) : undefined,
         gradient: renderGradient ? renderGradient : frostedContainer ? [[mix(fill, p.foreground, 0.08), 0], [fill, 0.45], [mix(fill, p.background, 0.12), 1]] : [[fill, 0]], gradientType: dotted ? "halftone" : "linear", gradientAngle: acrylic ? 18 : 0,
         gradientCenterX: 0.5, gradientCenterY: 0.5,
         halftoneDotMin: dotted ? dotMax : 0, halftoneDotMax: dotted ? dotMax : 0, halftoneStart: 0, halftoneEnd: 1,
