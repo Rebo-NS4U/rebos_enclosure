@@ -13,7 +13,8 @@ certification or an instruction to fetch a nonexistent v2.0.0 tag.
   that follow the pot accent. Experimental vine and bare-tree changes were
   reverted and are excluded from the final behavior.
 - Streamer uses the current Enclosure theme and live OLED settings, opaque
-  content sheets, themed keyboard controls and full-title tooltips.
+  content sheets that follow the selected shell material, themed keyboard controls
+  and full-title tooltips.
 - Assistant conversations gain a responsive compact header, aligned wider
   composer, concise activity labels and collapsed completed-command details.
   Approval commands remain visible; chat switches reset editing/retry/disclosure
@@ -35,6 +36,13 @@ certification or an instruction to fetch a nonexistent v2.0.0 tag.
 - CI includes shell, assistant, Node, Lua and isolated Wayland screenshot checks.
   Committed-source exports include checksums; archive acceptance exercises
   fresh files, updates, preference preservation and journal-based file recovery.
+
+- Expanded material themes, font previews, category-based settings navigation,
+  larger wallpaper choosers and dominant-color/artist sorting.
+- Local music indexing, browser-authorized downloads and output-monitor spectrum
+  visualization, with tested lyrics and metadata handling.
+- Release validation repairs noneditable dropdown clicks, preserves editable
+  search fields, and keeps complexity exceptions within their existing ceilings.
 
 ## Update and recovery notes
 

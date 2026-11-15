@@ -7,6 +7,7 @@ import signal
 import sys
 import threading
 import time
+from types import SimpleNamespace
 import app
 import menu_requests
 from menu_requests import clean as clean, parse_details as parse_details, resume_index as resume_index, card_selection as card_selection
@@ -80,8 +81,7 @@ class Engine(app.Browser):  # pylint: disable=too-many-instance-attributes
         self.chapter_count = 0
         self.chapter_name = ''
         self.position = 0
-        self.prefetch_key = None
-        self.prefetch_retry_at = 0
+        self.prefetch = SimpleNamespace(key=None, retry_at=0)
         self.paused = False
         self.captions = None
         self.links = None
@@ -258,8 +258,8 @@ class Engine(app.Browser):  # pylint: disable=too-many-instance-attributes
         self.duration = self.position = 0
         self.chapter, self.chapter_count = -1, 0
         self.chapter_name = ''
-        self.prefetch_key = None
-        self.prefetch_retry_at = 0
+        self.prefetch.key = None
+        self.prefetch.retry_at = 0
         self.paused = paused
         self.next_episode_paused = paused
         self.next_requested = False
@@ -307,10 +307,10 @@ class Engine(app.Browser):  # pylint: disable=too-many-instance-attributes
         cached = self.resolved.get(key)
         if (cached and now - cached[0] < 300) or key in self.resolving:
             return
-        if key == self.prefetch_key and now < self.prefetch_retry_at:
+        if key == self.prefetch.key and now < self.prefetch.retry_at:
             return
-        self.prefetch_key = key
-        self.prefetch_retry_at = now + 30
+        self.prefetch.key = key
+        self.prefetch.retry_at = now + 30
         self.resolve(key, lambda _: None, lambda _: None, preload=True)
 
     def settings_changed(self):

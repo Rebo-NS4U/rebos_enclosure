@@ -18,8 +18,8 @@ WINDOW = [0.5 - 0.5 * math.cos(2 * math.pi * i / (SIZE - 1)) for i in range(SIZE
 ROOTS = {size: cmath.exp(-2j * math.pi / size) for size in (2 ** n for n in range(1, 11))}
 
 
-def spectrum(samples):
-    """Hann-windowed FFT, grouped into logarithmic bands from 50 Hz to 10 kHz."""
+def fft(samples):
+    """Return Hann-windowed FFT values."""
     values = [complex(sample / 32768 * window) for sample, window in zip(samples, WINDOW)]
     j = 0
     for i in range(1, SIZE):
@@ -42,6 +42,12 @@ def spectrum(samples):
                 values[start + offset + half] = first - second
                 factor *= ROOTS[size]
         size *= 2
+    return values
+
+
+def spectrum(samples):
+    """Group the FFT into logarithmic bands from 50 Hz to 10 kHz."""
+    values = fft(samples)
     levels = []
     for band in range(BANDS):
         low = max(1, int(50 * 200 ** (band / BANDS) * SIZE / RATE))

@@ -6,6 +6,22 @@ import sys
 import tempfile
 
 
+def create_browser_session(session_type, location, browser_credentials):
+    fd, temporary = tempfile.mkstemp(dir=location.parent, prefix=".login-")
+    os.close(fd)
+    try:
+        credentials = browser_credentials(lambda url: print("LOGIN_URL " + url, flush=True))
+        conf = session_type.Configuration.Builder().set_stored_credential_file(temporary).build()
+        builder = session_type.Builder(conf)
+        builder.login_credentials = credentials
+        session = builder.create()
+        os.chmod(temporary, 0o600)
+        os.replace(temporary, location)
+    finally:
+        Path(temporary).unlink(missing_ok=True)
+    return session
+
+
 def browser_login(cls, args, login_only=False):
     from librespot.core import Session
     from zotify.config import Config
@@ -22,18 +38,7 @@ def browser_login(cls, args, login_only=False):
         except RuntimeError:
             print("Saved playback login expired. Sign in through your browser.", flush=True)
     if cls.SESSION is None:
-        fd, temporary = tempfile.mkstemp(dir=location.parent, prefix=".login-")
-        os.close(fd)
-        try:
-            credentials = browser_credentials(lambda url: print("LOGIN_URL " + url, flush=True))
-            conf = Session.Configuration.Builder().set_stored_credential_file(temporary).build()
-            builder = Session.Builder(conf)
-            builder.login_credentials = credentials
-            cls.SESSION = builder.create()
-            os.chmod(temporary, 0o600)
-            os.replace(temporary, location)
-        finally:
-            Path(temporary).unlink(missing_ok=True)
+        cls.SESSION = create_browser_session(Session, location, browser_credentials)
     try:
         if login_only or not authorized_client():
             print("Authorize library access with your Spotify Developer app in the browser.", flush=True)

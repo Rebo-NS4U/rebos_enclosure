@@ -8,16 +8,14 @@ from urllib.parse import parse_qs, urlencode, urlparse
 
 
 def browser_credentials(open_url, timeout=180, token_callback=None, client_id=None, redirect_uri=None):
-    import requests
     from librespot.core import MercuryRequests
-    from librespot.proto import Authentication_pb2 as Authentication
 
     client_id = client_id or MercuryRequests.keymaster_client_id
     state = secrets.token_urlsafe(32)
     verifier = secrets.token_urlsafe(64)
     result = {}
-    redirect = redirect_uri or "http://127.0.0.1:5588/login"
-    callback_url = urlparse(redirect)
+    redirect_uri = redirect_uri or "http://127.0.0.1:5588/login"
+    callback_url = urlparse(redirect_uri)
     if callback_url.scheme != "http" or callback_url.hostname != "127.0.0.1" or not callback_url.port or callback_url.query or callback_url.fragment:
         raise ValueError("Spotify redirect URI must be an HTTP loopback address with an explicit port.")
 
@@ -45,7 +43,7 @@ def browser_credentials(open_url, timeout=180, token_callback=None, client_id=No
         server.timeout = 0.5
         open_url("https://accounts.spotify.com/authorize?" + urlencode({
             "response_type": "code", "client_id": client_id,
-            "redirect_uri": redirect, "state": state,
+            "redirect_uri": redirect_uri, "state": state,
             "code_challenge_method": "S256",
             "code_challenge": base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest()).decode().rstrip("="),
             "scope": "streaming user-read-private user-read-email playlist-read-private user-library-read user-follow-read",
@@ -57,9 +55,16 @@ def browser_credentials(open_url, timeout=180, token_callback=None, client_id=No
         raise RuntimeError("Browser sign-in timed out. Click Sign in with Spotify to retry.")
     if result.get("error") or not result.get("code"):
         raise RuntimeError("Spotify sign-in was declined. Please retry.")
+    return exchange_token(client_id, redirect_uri, result['code'], verifier, token_callback)
+
+
+def exchange_token(client_id, redirect, code, verifier, token_callback):
+    import requests
+    from librespot.proto import Authentication_pb2 as Authentication
+
     response = requests.post("https://accounts.spotify.com/api/token", data={
         "grant_type": "authorization_code", "client_id": client_id,
-        "redirect_uri": redirect, "code": result["code"], "code_verifier": verifier,
+        "redirect_uri": redirect, "code": code, "code_verifier": verifier,
     }, timeout=30)
     if response.status_code != 200:
         raise RuntimeError(f"Spotify rejected browser sign-in (HTTP {response.status_code}).")

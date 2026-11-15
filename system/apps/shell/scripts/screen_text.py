@@ -66,6 +66,17 @@ def read_text(crop, mode='6', dictionaries=False):
     return text, confidence
 
 
+def refine_prose(crop, text, count):
+    words = text.split()
+    prose_words = sum(word.strip('.,!?;:\"\'()-').isalpha() for word in words)
+    if len(words) >= 4 and prose_words / len(words) >= 0.7:
+        mode = '3' if len(text.splitlines()) > 1 else '6'
+        regular, _ = read_text(crop, mode=mode, dictionaries=True)
+        if regular and count(regular) >= count(text) * 0.8:
+            text = regular
+    return text
+
+
 def recognize(path, region):
     """Map logical selection coordinates to native pixels, including scaled outputs."""
     values = selection_values(region)
@@ -85,13 +96,7 @@ def recognize(path, region):
                 candidate, score = read_text(alternate)
                 if candidate and score > confidence + 2 and count(candidate) >= count(text) * 0.9:
                     text, confidence = candidate, score
-            words = text.split()
-            prose_words = sum(word.strip('.,!?;:\"\'()-').isalpha() for word in words)
-            if len(words) >= 4 and prose_words / len(words) >= 0.7:
-                mode = '3' if len(text.splitlines()) > 1 else '6'
-                regular, _ = read_text(crop, mode=mode, dictionaries=True)
-                if regular and count(regular) >= count(text) * 0.8:
-                    text = regular
+            text = refine_prose(crop, text, count)
     return {'text': text, 'error': '' if text else 'No text found. Try larger text or a tighter selection.'}
 
 

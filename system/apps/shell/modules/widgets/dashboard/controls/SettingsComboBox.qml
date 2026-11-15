@@ -23,6 +23,7 @@ ComboBox {
     }
     contentItem: TextField {
         text: root.editable ? root.editText : root.displayText
+        enabled: root.editable
         readOnly: !root.editable
         selectByMouse: root.editable
         autoScroll: root.editable

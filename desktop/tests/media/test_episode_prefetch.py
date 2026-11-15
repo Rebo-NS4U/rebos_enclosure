@@ -15,8 +15,7 @@ class EpisodePrefetchTests(unittest.TestCase):
         self.engine.position = 2614.375
         self.engine.links = SimpleNamespace(chapters=[dict(start_time='2644.375', tags={'title': 'Credits'})])
         self.engine.settings = dict(mode='dub', quality='1080p', auto_next=False)
-        self.engine.prefetch_key = None
-        self.engine.prefetch_retry_at = 0
+        self.engine.prefetch = SimpleNamespace(key=None, retry_at=0)
         self.engine.resolved, self.engine.resolving = {}, {}
         self.engine.background = Mock()
         self.key = ('direct:series:tt123', '1:8', 'dub', '1080p')
@@ -43,7 +42,7 @@ class EpisodePrefetchTests(unittest.TestCase):
     def test_tv_anime_and_youtube_are_prepared_without_changing_current_episode(self):
         for kind, sid in [('tv', 'direct:series:tt123'), ('anime', 'anime-show'), ('youtube', 'youtube:playlist')]:
             self.engine.context = (dict(id=sid, kind=kind), ['one', 'two'], 0, 7)
-            self.engine.prefetch_key = None
+            self.engine.prefetch.key = None
             self.engine.resolving = {}
             self.engine.background.reset_mock()
             self.engine.prefetch_next()

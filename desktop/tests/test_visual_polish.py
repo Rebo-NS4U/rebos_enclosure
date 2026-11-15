@@ -141,7 +141,7 @@ ShellRoot {
  }
 }''', assistant=True)
 
-    def test_media_controls_keyboard_and_opaque_sheet(self):
+    def test_media_controls_keyboard_and_themed_sheet(self):
         self.check_qml('media/ui', '''import QtQuick
 import QtTest
 import Quickshell
@@ -166,7 +166,8 @@ ShellRoot {
     if(c.status!==Component.Ready)throw Error(c.errorString());
     let menu=c.createObject(null);test.wait(50);
     let sheet=test.findChild(menu,"media-content-sheet");
-    if(!sheet||sheet.rectOpacity!==1||sheet.styleOverride!=="quiet")throw Error("Content sheet must be opaque");
+    if(!sheet||sheet.styleOverride!==""||sheet.backgroundOpacity!==-1||sheet.variant!=="popup"
+       ||sheet.rectOpacity!==sheet.variantConfig.opacity)throw Error("Content sheet must follow the selected popup theme");
     menu.destroy();console.log("VISUAL POLISH PASSED");Qt.quit();
    }catch(e){console.error(e);Qt.exit(1);}
   }}

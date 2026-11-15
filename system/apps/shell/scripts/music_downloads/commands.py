@@ -1,13 +1,8 @@
 #!/usr/bin/python3
-import json
 import os
 from pathlib import Path
 import re
-import signal
 import shutil
-import subprocess
-import sys
-import threading
 from urllib.parse import urlparse
 
 

@@ -1,5 +1,43 @@
 # Validation record
 
+## 2.0 candidate refresh — 2026-11-15
+
+- Rechecked the official checkout against remote HEAD `88dad1e`; that commit is
+  an ancestor of the candidate. No v2.0.0 remote tag was present.
+- Repaired a real dropdown regression: the read-only text field intercepted
+  clicks intended for noneditable ComboBoxes. Editable fields retain their input.
+  Branch dropdown tests exercise both linked and copied installations, including
+  delayed initial inspection; settings interaction tests pass.
+- Extracted artwork, lyric query, FFT, OCR prose and browser-login/token helpers;
+  grouped bridge event counters and prefetch retry state. Removed six unused
+  imports. Ruff 0.17.3 and Pylint 4.1.3 pass with the existing 70 exception
+  ceilings unchanged. Updated stale lyric margin and media-theme assertions to
+  match the intentionally shipped eight-pixel edges and selected popup material.
+- All 117 media, 45 shell and three assistant Python tests pass, as do Node,
+  Lua, native greeter builds and tracked Python/Bash syntax. The isolated
+  screenshot runner passes all nine tests, including both opt-in Wayland cases.
+  Focused music (15), OCR (11), bridge (7), visual (4), lyrics (9), settings (1)
+  and installer-flow (2) checks pass; these overlap the desktop suite.
+- Payload verification passes for 109 installation groups, as does the linked,
+  preference-preserving deployment preview. Installed shell, assistant and media
+  directories resolve directly into this checkout. Focused portable-payload
+  developer-home/private-key/token pattern scanning found no matches; this is
+  not an exhaustive security certification.
+- Read-only live checks: no failed system/user units, valid Niri configuration,
+  consistent pacman database and all 102 declared core packages present.
+  Panel and assistant UI are active with zero service restarts; memory samples
+  were approximately 564 and 521 MiB respectively, not leak measurements.
+- The journal contains a recovered ReGreet sync start-limit event, a Quickshell
+  graphics-context abort and Xwayland broken-pipe errors. This audit does not
+  establish their origin or certify them fixed. Current service health does not
+  replace sustained observation, login or hardware acceptance.
+- No KVM device or QEMU/virsh tools are available in this environment.
+  Fresh core/full package installation, boot, real recovery, hardware,
+  authenticated provider flows and sustained observation remain open in the
+  [destination acceptance record](../docs/RELEASE-2.0-DESTINATION-ACCEPTANCE.md).
+  No desktop services or backends were restarted; no push, tag or release
+  was performed.
+
 ## 2.0 candidate preparation — 2026-11-14
 
 - Full desktop discovery passed: 540 tests with the two native Wayland cases

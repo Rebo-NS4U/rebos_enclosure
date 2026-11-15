@@ -50,7 +50,7 @@ ShellRoot {
       section.expanded = true;
       tester.wait(100);
       if (fixture.copiedInstallation) {
-       let scroller = fixture.find(installedPanel, i => i.flickableDirection !== undefined);
+       var scroller = fixture.find(installedPanel, i => i.flickableDirection !== undefined);
        fixture.check(scroller, "GitHub panel scroll container exists");
        scroller.contentY = section.mapToItem(scroller.contentItem, 0, 0).y - 10;
       } else {
@@ -60,6 +60,12 @@ ShellRoot {
       let combo = fixture.find(section, i => i.popup !== undefined && i.currentText !== undefined);
       fixture.check(combo && combo.enabled && combo.count === 2, "Branch dropdown is enabled and populated");
       fixture.check(combo.width > 0 && combo.height > 0, "Branch dropdown has usable geometry");
+      // Keep the actual control in view as section descriptions grow.
+      if (fixture.copiedInstallation)
+       scroller.contentY += combo.mapToItem(scroller, 0, 0).y - 80;
+      else
+       projects.y -= combo.mapToItem(fixture, 0, 0).y - 80;
+      tester.wait(100);
       tester.mouseClick(combo);
       tester.wait(150);
       fixture.check(combo.popup.visible, "Click opens the branch dropdown");

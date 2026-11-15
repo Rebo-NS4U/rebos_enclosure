@@ -5,7 +5,6 @@ import hashlib
 import json
 import os
 from pathlib import Path
-import shutil
 import subprocess
 import sys
 import threading
@@ -21,6 +20,20 @@ LOCK = threading.Lock()
 def emit(value):
     with LOCK:
         print(json.dumps(value), flush=True)
+
+
+def lyrics_get(endpoint, params):
+    request = urllib.request.Request('https://lrclib.net/api/' + endpoint + '?' +
+        urllib.parse.urlencode(params), headers={
+            'User-Agent': 'Enclosure Music v1 (https://github.com/Rebo-NS4U/rebos_enclosure)'})
+    with urllib.request.urlopen(request, timeout=8) as response:
+        return json.load(response)
+
+def lyrics_normal(value):
+    return re.sub(r"[\W_]+", '', value.casefold())
+
+def lyrics_primary(value):
+    return re.split(r',|;| & | feat\.? | ft\.? ', value, flags=re.I)[0].strip()
 
 
 class Library:
@@ -66,9 +79,8 @@ class Library:
                    ('cover.jpg', 'cover.png', 'folder.jpg', 'folder.png', 'front.jpg')]
         signature = [2, stat.st_mtime_ns, stat.st_size] + [
             [str(p), p.stat().st_mtime_ns, p.stat().st_size] for p in related if p.is_file()]
-        old = self.cache.get(key, {})
-        if old.get('signature') == signature:
-            return old['track']
+        if self.cache.get(key, {}).get('signature') == signature:
+            return self.cache[key]['track']
         result = subprocess.run(['ffprobe', '-v', 'error', '-show_format', '-show_streams', '-of', 'json', str(path)],
                                 capture_output=True, text=True, timeout=20)
         if result.returncode:
@@ -80,6 +92,20 @@ class Library:
             if stream.get('codec_type') == 'audio':
                 tags.update({k.lower(): v for k, v in stream.get('tags', {}).items()})
         tags.update({k.lower(): v for k, v in fmt.get('tags', {}).items()})
+        art = self.artwork(path, data, signature)
+        lyrics = next((v for k, v in tags.items() if k == 'lyrics' or k.startswith('lyrics-') or k.startswith('unsyncedlyrics')), '')
+        sidecar = path.with_suffix('.lrc')
+        if sidecar.exists():
+            lyrics = sidecar.read_text(errors='replace')
+        track = dict(path=key, url=path.as_uri(), title=tags.get('title') or path.stem,
+                     artist=tags.get('artist') or 'Unknown artist', album=tags.get('album') or 'Unknown album',
+                     duration=float(fmt.get('duration') or 0), art=art, lyrics=lyrics,
+                     number=int(str(tags.get('track', '0')).split('/')[0]) if str(tags.get('track', '0')).split('/')[0].isdigit() else 0)
+        self.cache[key] = dict(signature=signature, track=track)
+        return track
+
+    def artwork(self, path, data, signature):
+        key = str(path)
         art = ''
         for name in ('cover.jpg', 'cover.png', 'folder.jpg', 'folder.png', 'front.jpg'):
             cover = path.parent / name
@@ -93,16 +119,7 @@ class Library:
                                capture_output=True, timeout=20)
             if cover.exists():
                 art = cover.as_uri()
-        lyrics = next((v for k, v in tags.items() if k == 'lyrics' or k.startswith('lyrics-') or k.startswith('unsyncedlyrics')), '')
-        sidecar = path.with_suffix('.lrc')
-        if sidecar.exists():
-            lyrics = sidecar.read_text(errors='replace')
-        track = dict(path=key, url=path.as_uri(), title=tags.get('title') or path.stem,
-                     artist=tags.get('artist') or 'Unknown artist', album=tags.get('album') or 'Unknown album',
-                     duration=float(fmt.get('duration') or 0), art=art, lyrics=lyrics,
-                     number=int(str(tags.get('track', '0')).split('/')[0]) if str(tags.get('track', '0')).split('/')[0].isdigit() else 0)
-        self.cache[key] = dict(signature=signature, track=track)
-        return track
+        return art
 
     def scan(self):
         paths = set()
@@ -140,24 +157,11 @@ class Library:
         if not title or not artist or artist == 'Unknown artist':
             return dict(text='', status='Title and artist are needed to find lyrics.')
         album, duration = track.get('album', ''), float(track.get('duration') or 0)
-        key = hashlib.sha256(json.dumps([title, artist, album, duration]).encode()).hexdigest()
-        cache = self.cache_dir / ('lyrics-' + key + '.json')
+        cache = self.cache_dir / ('lyrics-' + hashlib.sha256(
+            json.dumps([title, artist, album, duration]).encode()).hexdigest() + '.json')
         cached = self.read(cache, None)
         if cached:
             return cached
-
-        def get(endpoint, params):
-            request = urllib.request.Request('https://lrclib.net/api/' + endpoint + '?' +
-                urllib.parse.urlencode(params), headers={
-                    'User-Agent': 'Enclosure Music v1 (https://github.com/Rebo-NS4U/rebos_enclosure)'})
-            with urllib.request.urlopen(request, timeout=8) as response:
-                return json.load(response)
-
-        def normal(value):
-            return re.sub(r"[\W_]+", '', value.casefold())
-
-        def primary(value):
-            return re.split(r',|;| & | feat\.? | ft\.? ', value, flags=re.I)[0].strip()
 
         try:
             params = dict(track_name=title, artist_name=artist)
@@ -166,15 +170,15 @@ class Library:
             if 1 <= duration <= 3600:
                 params['duration'] = round(duration)
             try:
-                data = get('get', params)
+                data = lyrics_get('get', params)
             except urllib.error.HTTPError as error:
                 if error.code not in (400, 404):
                     raise
                 data = None
             if not data or not (data.get('syncedLyrics') or data.get('plainLyrics') or data.get('instrumental')):
-                records = get('search', dict(track_name=title, artist_name=primary(artist)))
-                matches = [r for r in records if normal(r.get('trackName', '')) == normal(title)
-                    and normal(primary(r.get('artistName', ''))) == normal(primary(artist))
+                records = lyrics_get('search', dict(track_name=title, artist_name=lyrics_primary(artist)))
+                matches = [r for r in records if lyrics_normal(r.get('trackName', '')) == lyrics_normal(title)
+                    and lyrics_normal(lyrics_primary(r.get('artistName', ''))) == lyrics_normal(lyrics_primary(artist))
                     and (duration <= 0 or abs(float(r.get('duration') or 0) - duration) <= 5)]
                 data = max(matches, key=lambda r: (bool(r.get('syncedLyrics')),
                     -abs(float(r.get('duration') or 0) - duration)), default=None)

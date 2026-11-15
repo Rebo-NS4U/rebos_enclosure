@@ -51,6 +51,9 @@ bundles: deployment intentionally executes the packaged installer.
 
 ## Destination acceptance still required
 
+Use the [destination acceptance record](RELEASE-2.0-DESTINATION-ACCEPTANCE.md)
+to capture actual hardware and installation results. Unexecuted rows remain open.
+
 - Fresh core and full Arch installs, real package/AUR acquisition, boot/login
   and recovery on a disposable VM or spare machine. This execution environment
   has no exposed `/dev/kvm` or QEMU/virsh tooling; temporary-home file checks

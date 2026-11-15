@@ -388,9 +388,9 @@ ShellRoot {
      throw Error('Current/next lyrics missing');
     function label(item) { if (item.objectName === 'bar-lyrics-text') return item; for (const child of item.children) { const found = label(child); if (found) return found; } return null; }
     if (label(strip.children[0])?.text !== 'Current line' || label(strip.children[1])?.text !== 'Next line') throw Error('Lyric label binding failed');
-    if (strip.sideWidth !== 684) throw Error('Unexpected side geometry');
+    if (strip.sideWidth !== 680) throw Error('Unexpected side geometry');
     const left = strip.children[0], right = strip.children[1];
-    if (left.x !== 4 || right.x + right.width !== strip.width - 4)
+    if (left.x !== 8 || right.x + right.width !== strip.width - 8)
      throw Error('Lyrics must align with tiled window edges');
     if (left.x + left.width > strip.islandLeft || right.x < strip.islandRight
         || left.height !== 36 || right.x + right.width > strip.width)

@@ -11,6 +11,7 @@ import argparse
 import asyncio
 from collections import deque
 import contextlib
+from types import SimpleNamespace
 import json
 import os
 import re
@@ -47,8 +48,7 @@ class Bridge:  # pylint: disable=too-many-instance-attributes
         self.tasks = []
         self.client = None
         self.state = None
-        self.sequence = 0
-        self.acknowledged = 0
+        self.progress = SimpleNamespace(sequence=0, acknowledged=0)
         self.events = deque()
         self.launch = None
         self.lock = asyncio.Lock()
@@ -68,8 +68,8 @@ class Bridge:  # pylint: disable=too-many-instance-attributes
         self.client.write(encode(value))
 
     def publish(self, kind, **payload):
-        self.sequence += 1
-        event = dict(bridge=kind, seq=self.sequence, **payload)
+        self.progress.sequence += 1
+        event = dict(bridge=kind, seq=self.progress.sequence, **payload)
         self.events.append(event)
         self.send(event)
 
@@ -78,10 +78,10 @@ class Bridge:  # pylint: disable=too-many-instance-attributes
         state = frame.get("state")
         if not isinstance(state, dict) or not isinstance(sequence, int):
             raise ValueError("Invalid assistant checkpoint")
-        if not self.acknowledged <= sequence <= self.sequence:
+        if not self.progress.acknowledged <= sequence <= self.progress.sequence:
             raise ValueError("Invalid assistant event sequence")
         self.state = state
-        self.acknowledged = sequence
+        self.progress.acknowledged = sequence
         while self.events and self.events[0]["seq"] <= sequence:
             self.events.popleft()
 
@@ -151,8 +151,8 @@ class Bridge:  # pylint: disable=too-many-instance-attributes
         self.tasks = []
         if not preserve_state:
             self.state = None
-            self.sequence = 0
-            self.acknowledged = 0
+            self.progress.sequence = 0
+            self.progress.acknowledged = 0
             self.events.clear()
             self.parked = False
         self.stopping = False
@@ -211,9 +211,9 @@ class Bridge:  # pylint: disable=too-many-instance-attributes
             await self.start(self.launch)
             self.parked = False
             self.state = None
-            self.acknowledged = self.sequence
+            self.progress.acknowledged = self.progress.sequence
             self.events.clear()
-            self.send_attached(None, self.acknowledged)
+            self.send_attached(None, self.progress.acknowledged)
         return True
 
     async def handle_reset(self, frame):
@@ -244,7 +244,7 @@ class Bridge:  # pylint: disable=too-many-instance-attributes
                 self.client = writer
                 if self.process is None and not self.parked:
                     await self.start(frame)
-                self.send_attached(self.state, self.acknowledged)
+                self.send_attached(self.state, self.progress.acknowledged)
                 for event in self.events:
                     self.send(event)
                 await writer.drain()
