@@ -1329,8 +1329,43 @@ def ceramic_palette(accents):
     return palette
 
 
-def frame_rows(rows, columns, accents, color):
-    """A fine glass case with a consistent charcoal backdrop and lower plinth."""
+def sky_at_hour(hour):
+    """A quiet ink-wash sky, interpolated continuously in local civil time."""
+    stops = (
+        (0, (17, 20, 30)), (5, (24, 25, 36)),
+        (6.5, (47, 37, 39)), (9, (34, 43, 44)),
+        (14, (37, 48, 49)), (17, (48, 39, 34)),
+        (19, (31, 28, 42)), (21, (17, 20, 30)),
+        (24, (17, 20, 30)),
+    )
+    hour %= 24
+    for (start, a), (end, b) in zip(stops, stops[1:]):
+        if start <= hour <= end:
+            t = (hour - start) / (end - start)
+            t = t * t * (3 - 2 * t)
+            return tuple(round(x + (y - x) * t) for x, y in zip(a, b))
+
+
+def sky_pane(canvas, hour):
+    """Place sparse celestial marks and mist only in unoccupied glass."""
+    daylight = 6 <= hour < 18
+    progress = ((hour - 6) if daylight else (hour - 18) % 24) / 12
+    cx = round(5 + 46 * progress)
+    cy = round(8 - 6 * math.sin(math.pi * progress))
+    marks = [(cx, cy, "○" if daylight else "☾", "sky_orb")]
+    if not daylight:
+        marks += [(x, y, "·", "sky_star") for x, y in
+                  ((7, 2), (19, 1), (39, 3), (49, 1), (12, 6), (44, 7))]
+    # Broken horizontal strokes suggest distant mist, rather than a solid cloud.
+    marks += [(x, y, "─", "sky_mist") for x, y in
+              ((4, 10), (5, 10), (7, 10), (48, 13), (50, 13), (51, 13))]
+    for x, y, glyph, ink in marks:
+        if canvas[y][x] == (" ", ""):
+            canvas[y][x] = (glyph, ink)
+
+
+def frame_rows(rows, columns, accents, color, sky=None):
+    """A fine glass case with a subdued sky wash and lower plinth."""
     width = 57
     margin = " " * max(0, (columns - width - 2) // 2)
     reset = "\033[0m" if color else ""
@@ -1340,20 +1375,24 @@ def frame_rows(rows, columns, accents, color):
     glass = "\033[0;38;2;{};{};{}m".format(
         *(round(145 * 0.75 + channel * 0.25) for channel in rgb)
     ) if color else ""
-    background = "\033[48;2;24;24;24m" if color else ""
-    def pane(text):
+    def pane(text, depth=1):
+        base = sky if sky is not None else (24, 24, 24)
+        # The wash settles back into charcoal beside the pot.
+        fade = min(1.0, depth / max(1, len(rows)))
+        rgb = tuple(round(c * (1 - fade) + 24 * fade) for c in base)
+        background = "\033[48;2;{};{};{}m".format(*rgb) if color else ""
         # Material inks reset SGR before changing foreground; restore the pane
         # background after each reset so neither glyphs nor spaces punch holes.
         if not color:
             return text
         text = re.sub(r"\x1b\[[0-9;]*m", lambda match: match[0] + background, text)
         return background + text + reset
-    def edge(text):
-        return pane(glass + text)
-    top = margin + edge("╭" + "─" * width + "╮")
-    bottom = margin + edge("╰" + "━" * width + "╯")
-    return [top] + [margin + edge("│") + pane(row) + edge("│")
-                    for row in rows] + [bottom]
+    def edge(text, depth=1):
+        return pane(glass + text, depth)
+    top = margin + edge("╭" + "─" * width + "╮", 0)
+    bottom = margin + edge("╰" + "━" * width + "╯", len(rows))
+    return [top] + [margin + edge("│", y) + pane(row, y) + edge("│", y)
+                    for y, row in enumerate(rows, 1)] + [bottom]
 
 
 def space_bark_shading(canvas, seed):
@@ -1762,8 +1801,14 @@ def render(
     style="informal",
     fixed_height=False,
     pot_seed=None,
+    hour=None,
 ):
+    if hour is None:
+        local = time.localtime()
+        hour = local.tm_hour + local.tm_min / 60 + local.tm_sec / 3600
+    hour %= 24
     canvas = specimen_canvas(days, seed, style, pot_seed)
+    sky_pane(canvas, hour)
     # Reflections sit in the empty side panes, never over foliage or wood.
     for x, y in ((2, 2), (3, 3), (2, 3), (53, 6), (54, 7)):
         if canvas[y][x][0] == " ":
@@ -1776,6 +1821,10 @@ def render(
     palette["glass"] = "\033[0;38;2;{};{};{}m".format(
         *(round(105 * 0.85 + channel * 0.15) for channel in glass_rgb)
     )
+    palette["sky_orb"] = "\033[0;38;2;{};{};{}m".format(
+        *((170, 155, 121) if 6 <= hour < 18 else (150, 158, 173)))
+    palette["sky_star"] = "\033[0;38;2;88;94;111m"
+    palette["sky_mist"] = "\033[0;38;2;57;62;63m"
     output = []
     visible = canvas if fixed_height else canvas[min(occupied) : max(occupied) + 1]
     first_row = 0 if fixed_height else min(occupied)
@@ -1803,7 +1852,7 @@ def render(
             parts.append(glyph)
             previous = ink
         output.append("".join(parts) + ("\033[0m" if color else ""))
-    return "\n".join(frame_rows(output, columns, accents, color)) + "\n"
+    return "\n".join(frame_rows(output, columns, accents, color, sky_at_hour(hour))) + "\n"
 
 
 def animation_day(elapsed, duration):

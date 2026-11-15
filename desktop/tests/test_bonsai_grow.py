@@ -480,7 +480,7 @@ class BonsaiGrowTests(unittest.TestCase):
         self.assertIn("\033[48;2;24;24;24m", image)
         self.assertEqual(plain[3][3], '╱')
 
-    def test_terrarium_background_is_uniform_and_does_not_leak(self):
+    def test_terrarium_sky_background_does_not_leak(self):
         import re
         backgrounds = set()
         for theme in (['#fafafa'] * 3, ['#111111'] * 3, ['#fa4050'] * 3):
@@ -500,12 +500,33 @@ class BonsaiGrowTests(unittest.TestCase):
                                 if column < 10:
                                     self.assertIsNone(background)
                                 else:
-                                    self.assertEqual(background, (24, 24, 24))
+                                    self.assertIsNotNone(background)
                                     backgrounds.add(background)
                                 column += 1
                     self.assertIsNone(background, 'reset background before the prompt')
                     self.assertEqual(column, 69)
-        self.assertEqual(backgrounds, {(24, 24, 24)})
+        self.assertGreater(len(backgrounds), 1)
+
+    def test_sky_follows_local_time_and_preserves_specimen(self):
+        import re
+        self.assertEqual(bonsai.sky_at_hour(0), bonsai.sky_at_hour(24))
+        self.assertNotEqual(bonsai.sky_at_hour(0), bonsai.sky_at_hour(12))
+        for hour, orb in ((0, '☾'), (12, '○')):
+            image = bonsai.render(0, 42, False, 59, fixed_height=True, hour=hour)
+            self.assertIn(orb, image)
+            self.assertEqual(len(image.splitlines()), 26)
+            self.assertTrue(all(len(row) == 59 for row in image.splitlines()))
+        for hour in range(24):
+            canvas = bonsai.specimen_canvas(30, 42)
+            original = [row[:] for row in canvas]
+            bonsai.sky_pane(canvas, hour)
+            for y, row in enumerate(original):
+                for x, cell in enumerate(row):
+                    if cell != (' ', ''):
+                        self.assertEqual(canvas[y][x], cell)
+        local = __import__('time').struct_time((2026, 11, 15, 12, 0, 0, 6, 319, -1))
+        with patch.object(bonsai.time, 'localtime', return_value=local):
+            self.assertEqual(bonsai.render(0, 42), bonsai.render(0, 42, hour=12))
 
     def test_seeded_wood_palette_has_variety_and_readable_shading(self):
         import re
@@ -1059,7 +1080,9 @@ class BonsaiGrowTests(unittest.TestCase):
             self.assertEqual(bonsai.specimen_palette(42, theme)['blossom'], expected)
             with patch.object(bonsai, 'terminal_leaf_palette', return_value=theme):
                 image = bonsai.render(30, 42, True, 59)
-            self.assertTrue(any(expected + "\033[48;2;24;24;24m" + glyph in image
+            import re
+            foreground_only = re.sub(r'\x1b\[48;2;[0-9;]+m', '', image)
+            self.assertTrue(any(expected + glyph in foreground_only
                                 for glyph in bonsai.BLOSSOM_FORMS))
 
     def test_blossoms_only_replace_existing_foliage_late_in_growth(self):
