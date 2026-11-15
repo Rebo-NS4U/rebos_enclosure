@@ -76,50 +76,9 @@ ColumnLayout {
 
     component ColorSection: SettingsGroup { Layout.minimumWidth: 0; Layout.alignment: Qt.AlignTop }
 
-    ColumnLayout {
-        visible: root.currentPage === ""
-        Layout.fillWidth: true
-        spacing: Styling.spacing(20)
-        SettingsMenuGroup {
-            entryPrefix: "palette-open-"
-            title: "Palette & wallpaper"
-            description: "Choose your color scheme and fine-tune wallpaper colors."
-            entries: [
-                {"id": "palette", "label": "Palette & mode", "description": "Light, dark and OLED modes, wallpaper schemes and palette preview.", "glyph": Icons.palette},
-                {"id": "picker", "label": "Pick wallpaper colors", "description": "Choose main and accent colors from your wallpaper.", "glyph": Icons.paintBrush}
-            ]
-            onSelected: section => root.currentPage = section
-        }
-        SettingsMenuGroup {
-            entryPrefix: "palette-open-"
-            title: "Saved appearances & sources"
-            description: "Manage reusable looks and your wallpaper library."
-            entries: [
-                {"id": "presets", "label": "Saved appearances", "description": "Save, apply and manage wallpaper and color combinations.", "glyph": Icons.gear},
-                {"id": "wallpaper", "label": "Wallpaper source", "description": "Choose the folder used for your wallpaper library.", "glyph": Icons.layout}
-            ]
-            onSelected: section => root.currentPage = section
-        }
-        SettingsMenuGroup {
-            entryPrefix: "palette-open-"
-            title: "App appearance"
-            description: "Keep supported applications coordinated with the desktop."
-            entries: [
-                {"id": "apps", "label": "App backgrounds & theme sync", "description": "Icon tint, background opacity and application theme refresh.", "glyph": Icons.circuitry}
-            ]
-            onSelected: section => root.currentPage = section
-        }
-    }
 
-    SettingsSubnav {
-        visible: root.currentPage !== ""
-        objectName: "palette-navigation"
-        currentSection: root.currentPage
-        sections: [{id: "", label: "All color settings"}, {id: "palette", label: "Palette & mode"}, {id: "picker", label: "Pick wallpaper colors"},
-                   {id: "presets", label: "Saved appearances"}, {id: "wallpaper", label: "Wallpaper source"},
-                   {id: "apps", label: "App appearance"}]
-        onSelected: section => root.currentPage = section
-    }
+
+
 
     GridLayout {
         id: paletteGrid
@@ -131,7 +90,7 @@ ColumnLayout {
         ColorSection {
             title: "Palette & color mode"
             objectName: "palette-page-palette"
-            visible: root.currentPage === "palette"
+            property string settingsAnchor: "palette"
             Layout.columnSpan: paletteGrid.columns
             Caption {
                 text: "Matugen creates one palette for the desktop and your apps. Neutral is subtle; Tonal spot and Vibrant bring out more wallpaper color."
@@ -221,7 +180,7 @@ ColumnLayout {
         ColorSection {
             title: "Pick wallpaper colors"
             objectName: "palette-page-picker"
-            visible: root.currentPage === "picker"
+            property string settingsAnchor: "picker"
             Layout.columnSpan: paletteGrid.columns
             Caption {
                 text: "Select Main or Accent, then click the wallpaper. Matugen builds your theme from these colors, and the bonsai uses the same pair. Picks are saved for each wallpaper."
@@ -369,7 +328,7 @@ ColumnLayout {
         ColorSection {
             title: "Saved appearances"
             objectName: "palette-page-presets"
-            visible: root.currentPage === "presets"
+            property string settingsAnchor: "presets"
             Layout.columnSpan: paletteGrid.columns
             Caption { text: "Save your current wallpaper, monitor overrides, colors and shell appearance together. Apply picked colors before saving." }
             SettingsTextField {
@@ -411,7 +370,7 @@ ColumnLayout {
         ColorSection {
             title: "Wallpaper library"
             objectName: "palette-page-wallpaper"
-            visible: root.currentPage === "wallpaper"
+            property string settingsAnchor: "wallpaper"
             Layout.columnSpan: paletteGrid.columns
             // Wallpaper Path
             RowLayout {
@@ -473,7 +432,7 @@ ColumnLayout {
         ColorSection {
             title: "App appearance"
             objectName: "palette-page-apps"
-            visible: root.currentPage === "apps"
+            property string settingsAnchor: "apps"
             Layout.columnSpan: paletteGrid.columns
             SettingsToggleRow {
                 label: "Tint icons"

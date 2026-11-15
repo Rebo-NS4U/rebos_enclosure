@@ -150,13 +150,21 @@ Item {
 
     function dispatchSubSection(sectionId, subSectionId) {
         root.pendingSubSection = subSectionId || "";
-        if ([4, 5, 6].includes(sectionId)
-                && root.currentSection === sectionId
-                && panelLoader.status === Loader.Ready
-                && panelLoader.source.toString().endsWith(contentArea.panelComponents[sectionId].component)
-                && panelLoader.item?.currentSection !== undefined) {
-            panelLoader.item.currentSection = root.pendingSubSection;
-            root.pendingSubSection = "";
+        Qt.callLater(scrollToSelection);
+    }
+
+    function scrollToSelection() {
+        for (let i = 0; i < categoryPanels.count; i++) {
+            const loader = categoryPanels.itemAt(i);
+            if (loader.sectionId !== currentSection || !loader.item) continue;
+            if (loader.item.currentSection !== undefined) loader.item.currentSection = pendingSubSection;
+            Qt.callLater(() => {
+                if (loader.item.scrollToSection) loader.item.scrollToSection();
+                const inner = loader.scrollContent;
+                const offset = loader.item.sectionOffset ?? (inner ? inner.contentY : 0);
+                if (inner) inner.contentY = 0;
+                categoryScroll.contentY = Math.max(0, Math.min(loader.y + offset, categoryScroll.contentHeight - categoryScroll.height));
+            });
         }
     }
 
@@ -479,57 +487,42 @@ Item {
                 StyledText { text: root.activeCategory.subLabel; color: Colors.overSurfaceVariant; width: parent.width; wrapMode: Text.WordWrap }
             }
 
-            Flow {
-                id: categoryTabs
-                y: categoryHeading.height + 20
-                objectName: "settings-category-tabs"
-                width: parent.width
-                spacing: Styling.spacing(8)
-                visible: root.categoryPages.length > 1
-                Repeater {
-                    model: root.categoryPages
-                    delegate: SettingsButton {
-                        required property var modelData
-                        objectName: "settings-page-" + modelData.section
-                        text: modelData.label
-                        highlighted: root.currentSection === modelData.section
-                        background: StyledRect {
-                            variant: parent.highlighted ? "primary" : "common"
-                            radius: Styling.radius(-4)
-                            border.width: parent.highlighted || parent.activeFocus ? 2 : 1
-                            border.color: parent.highlighted || parent.activeFocus ? Colors.primary : Qt.alpha(Colors.outline, 0.3)
-                        }
-                        onClicked: root.openSection(modelData.section, "")
-                    }
-                }
-            }
-
-            // Lazy-loaded panel using Loader
-            Loader {
-                id: panelLoader
-                objectName: "settings-panel-loader"
+            Flickable {
+                id: categoryScroll
+                objectName: "settings-category-scroll"
                 anchors.fill: parent
-                anchors.topMargin: categoryTabs.visible ? categoryTabs.y + categoryTabs.height + 20 : categoryHeading.height + 20
-                asynchronous: true
-                source: contentArea.panelComponents[root.currentSection]?.component ?? ""
-
-                // Fade in animation
-                opacity: status === Loader.Ready ? 1 : 0
-                Behavior on opacity {
-                    enabled: Config.animDuration > 0
-                    NumberAnimation {
-                        duration: Config.animDuration
-                        easing.type: Easing.OutCubic
-                    }
-                }
-
-                onLoaded: {
-                    if (item) {
-                        item.maxContentWidth = Qt.binding(() => contentArea.maxContentWidth);
-                        // Apply pending subsection if any
-                        if (item.currentSection !== undefined) {
-                            item.currentSection = root.pendingSubSection;
-                            root.pendingSubSection = "";
+                anchors.topMargin: categoryHeading.height + 20
+                clip: true
+                contentHeight: categoryColumn.height
+                boundsBehavior: Flickable.StopAtBounds
+                ScrollBar.vertical: ScrollBar {}
+                Column {
+                    id: categoryColumn
+                    width: parent.width
+                    spacing: Styling.spacing(32)
+                    Repeater {
+                        id: categoryPanels
+                        model: root.activeCategory.sections
+                        delegate: Loader {
+                            id: categoryLoader
+                            required property int modelData
+                            readonly property int sectionId: modelData
+                            objectName: "settings-panel-" + sectionId
+                            width: categoryColumn.width
+                            readonly property var scrollContent: item ? Array.from(item.children).find(child => child.contentHeight !== undefined && child.contentY !== undefined) || null : null
+                            // Unroll ordinary panel scrollers; device lists retain their own bounded viewport.
+                            readonly property bool expandContent: sectionId !== 7 && scrollContent !== null && scrollContent.model === undefined
+                            height: expandContent ? Math.max(1, scrollContent.contentHeight) : Math.max(500, categoryScroll.height)
+                            source: contentArea.panelComponents[sectionId]?.component ?? ""
+                            asynchronous: true
+                            onLoaded: {
+                                item.maxContentWidth = Qt.binding(() => contentArea.maxContentWidth);
+                                if (expandContent) {
+                                    scrollContent.interactive = false;
+                                    scrollContent.clip = false;
+                                }
+                                if (sectionId === root.currentSection) root.scrollToSelection();
+                            }
                         }
                     }
                 }

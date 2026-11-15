@@ -47,7 +47,18 @@ Item {
     }
 
     property string currentSection: ""
-    onCurrentSectionChanged: mainFlickable.contentY = 0
+    property real sectionOffset: 0
+    onCurrentSectionChanged: Qt.callLater(scrollToSection)
+    function scrollToSection() {
+        function find(item) {
+            if (item.settingsAnchor === root.currentSection) return item;
+            for (const child of item.children || []) { const match = find(child); if (match) return match; }
+            return null;
+        }
+        const target = find(mainColumn);
+        sectionOffset = target ? target.mapToItem(mainColumn, 0, 0).y : 0;
+        mainFlickable.contentY = target ? Math.max(0, Math.min(target.mapToItem(mainColumn, 0, 0).y, mainFlickable.contentHeight - mainFlickable.height)) : 0;
+    }
 
     component SectionButton: SettingsSectionCard {
         required property string sectionId
@@ -534,24 +545,11 @@ Item {
                     id: titlebar
                     width: root.contentWidth
                     anchors.horizontalCenter: parent.horizontalCenter
-                    title: ({bar: "Bar", sidebar: "Assistant panel", lockscreen: "Lock screen", system: "About", weather: "Weather", storage: "Storage monitor"})[root.currentSection] || "Shell"
+                    title: "Shell"
                     description: root.currentSection === "" ? "Bar, assistant panel, lock screen and information widgets." : ""
 
-                    actions: {
-                        if (root.currentSection !== "") {
-                            return [
-                                {
-                                    icon: Icons.arrowLeft,
-                                    tooltip: "Back",
-                                    onClicked: function () {
-                                        root.currentSection = "";
-                                    }
-                                }
-                            ];
-                        }
+                    actions: []
 
-                        return [];
-                    }
                 }
             }
 
@@ -569,55 +567,18 @@ Item {
                     // ═══════════════════════════════════════════════════════════════
                     // MENU SECTION
                     // ═══════════════════════════════════════════════════════════════
-                    SettingsSubnav {
-                        visible: root.currentSection !== ""
-                        currentSection: root.currentSection
-                        sections: [{"id": "bar", "label": "Desktop bar"}, {"id": "sidebar", "label": "Assistant panel"}, {"id": "lockscreen", "label": "Lock screen"}, {"id": "system", "label": "About"}, {"id": "weather", "label": "Weather"}, {"id": "storage", "label": "Storage"}]
-                        onSelected: section => root.currentSection = section
-                    }
 
-                    ColumnLayout {
-                        visible: root.currentSection === ""
-                        Layout.fillWidth: true
-                        spacing: Styling.spacing(20)
-                        SettingsMenuGroup {
-                            title: "Panels & interaction"
-                            description: "Configure the desktop bar and assistant panel."
-                            entries: [
-                                {"id": "bar", "label": "Desktop bar", "description": "Clock, media controls, appearance and visible monitors.", "glyph": Icons.layout},
-                                {"id": "sidebar", "label": "Assistant panel", "description": "Position, width and startup behavior.", "glyph": Icons.robot}
-                            ]
-                            onSelected: section => root.currentSection = section
-                        }
-                        SettingsMenuGroup {
-                            title: "Session & information"
-                            description: "Lock screen preferences and shell information."
-                            entries: [
-                                {"id": "lockscreen", "label": "Lock screen", "description": "Choose the lock screen layout and controls.", "glyph": Icons.lock},
-                                {"id": "system", "label": "About the shell", "description": "Version, project information and support.", "glyph": Icons.gear}
-                            ]
-                            onSelected: section => root.currentSection = section
-                        }
-                        SettingsMenuGroup {
-                            title: "Information widgets"
-                            description: "Configure the information shown by desktop widgets."
-                            entries: [
-                                {id: "weather", label: "Weather", description: "Location and temperature units.", glyph: Icons.mapPin},
-                                {id: "storage", label: "Storage monitor", description: "Disks shown in the system monitor.", glyph: Icons.circuitry}
-                            ]
-                            onSelected: section => root.currentSection = section
-                        }
 
-                    }
 
-                    WeatherSettings { visible: root.currentSection === "weather" }
-                    StorageSettings { visible: root.currentSection === "storage" }
+
+                    WeatherSettings { property string settingsAnchor: "weather" }
+                    StorageSettings { property string settingsAnchor: "storage" }
 
                     // ═══════════════════════════════════════════════════════════════
                     // BAR SECTION
                     // ═══════════════════════════════════════════════════════════════
                     SettingsGroup {
-                        visible: root.currentSection === "bar"
+                        property string settingsAnchor: "bar"
                         Layout.fillWidth: true
 
                         StyledText {
@@ -724,7 +685,7 @@ Item {
                     // LOCKSCREEN SECTION
                     // ═══════════════════════════════════════════════════════════════
                     SettingsGroup {
-                        visible: root.currentSection === "lockscreen"
+                        property string settingsAnchor: "lockscreen"
                         Layout.fillWidth: true
 
                         StyledText {
@@ -764,7 +725,7 @@ Item {
                     // SYSTEM SECTION
                     // ═══════════════════════════════════════════════════════════════
                     SettingsGroup {
-                        visible: root.currentSection === "system"
+                        property string settingsAnchor: "system"
                         Layout.fillWidth: true
 
                         StyledText {
@@ -796,7 +757,7 @@ Item {
                     // SIDEBAR SECTION
                     // ═══════════════════════════════════════════════════════════════
                     SettingsGroup {
-                        visible: root.currentSection === "sidebar"
+                        property string settingsAnchor: "sidebar"
                         Layout.fillWidth: true
 
                         StyledText {

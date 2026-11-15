@@ -18,7 +18,18 @@ Item {
     readonly property real sideMargin: (width - contentWidth) / 2
 
     property string currentSection: ""
-    onCurrentSectionChanged: mainFlickable.contentY = 0
+    property real sectionOffset: 0
+    onCurrentSectionChanged: Qt.callLater(scrollToSection)
+    function scrollToSection() {
+        function find(item) {
+            if (item.settingsAnchor === root.currentSection) return item;
+            for (const child of item.children || []) { const match = find(child); if (match) return match; }
+            return null;
+        }
+        const target = find(mainColumn);
+        sectionOffset = target ? target.mapToItem(mainColumn, 0, 0).y : 0;
+        mainFlickable.contentY = target ? Math.max(0, Math.min(target.mapToItem(mainColumn, 0, 0).y, mainFlickable.contentHeight - mainFlickable.height)) : 0;
+    }
     property string selectedVariant: "bg"
 
     component SectionButton: SettingsSectionCard {
@@ -136,24 +147,11 @@ Item {
                     id: titlebar
                     width: root.contentWidth
                     anchors.horizontalCenter: parent.horizontalCenter
-                    title: ({style: "Theme & app style", general: "Text & shape", motion: "Motion", performance: "Visual effects", blur: "Transparency and blur", shadow: "Shadows", colors: "Wallpaper & palette", variants: "Custom surfaces"})[root.currentSection] || "Appearance"
+                    title: "Appearance"
                     description: root.currentSection === "" ? "Theme & app style, colors, fonts and backgrounds." : ""
 
-                    actions: {
-                        if (root.currentSection !== "") {
-                            return [
-                                {
-                                    icon: Icons.arrowLeft,
-                                    tooltip: "Back",
-                                    onClicked: function () {
-                                        root.currentSection = "";
-                                    }
-                                }
-                            ];
-                        }
+                    actions: []
 
-                        return [];
-                    }
                 }
             }
 
@@ -171,74 +169,36 @@ Item {
                     // ═══════════════════════════════════════════════════════════════
                     // MENU SECTION
                     // ═══════════════════════════════════════════════════════════════
-                    SettingsSubnav {
-                        visible: root.currentSection !== ""
-                        currentSection: root.currentSection
-                        sections: [{"id": "colors", "label": "Wallpaper & palette"}, {"id": "style", "label": "Theme & app style"}, {"id": "general", "label": "Text & shape"}, {"id": "variants", "label": "Custom surfaces"}, {"id": "blur", "label": "Transparency & blur"}, {"id": "shadow", "label": "Shadows"}, {"id": "motion", "label": "Animation"}, {"id": "performance", "label": "Visual effects"}]
-                        onSelected: section => root.currentSection = section
-                    }
 
-                    ColumnLayout {
-                        visible: root.currentSection === ""
-                        Layout.fillWidth: true
-                        spacing: Styling.spacing(20)
-                        SettingsMenuGroup {
-                            title: "Wallpaper & color"
-                            description: "Choose a wallpaper, build your palette and save appearances."
-                            entries: [
-                                {"id": "colors", "label": "Wallpaper & palette", "description": "Palette, wallpaper color picker and saved appearance presets.", "glyph": Icons.palette},
-                                {"id": "style", "label": "Theme & app style", "description": "Choose the shell style and its appearance.", "glyph": Icons.palette}
-                            ]
-                            onSelected: section => root.currentSection = section
-                        }
-                        SettingsMenuGroup {
-                            title: "Text & surfaces"
-                            description: "Fonts, corner shape and custom background details."
-                            entries: [
-                                {"id": "general", "label": "Text & shape", "description": "Text size, fonts and corner roundness.", "glyph": Icons.gear},
-                                {"id": "variants", "label": "Custom surfaces", "description": "Set colors, gradients and outlines.", "glyph": Icons.paintBrush}
-                            ]
-                            onSelected: section => root.currentSection = section
-                        }
-                        SettingsMenuGroup {
-                            title: "Depth & movement"
-                            description: "Transparency, shadows and animation behavior."
-                            entries: [
-                                {"id": "blur", "label": "Transparency and blur", "description": "Shell transparency, blur strength and where blur appears.", "glyph": Icons.drop},
-                                {"id": "shadow", "label": "Shadows", "description": "Shadow size, opacity and position.", "glyph": Icons.drop},
-                                {"id": "motion", "label": "Animation", "description": "Panel transitions, selection and button feedback.", "glyph": Icons.lightning},
-                                {id: "performance", label: "Visual effects", description: "Window previews, animated blur and artwork effects.", glyph: Icons.lightning}
-                            ]
-                            onSelected: section => root.currentSection = section
-                        }
-                    }
 
-                    PerformanceSettings { visible: root.currentSection === "performance" }
+
+
+                    PerformanceSettings { property string settingsAnchor: "performance" }
 
                     MotionSettings {
                         Layout.fillWidth: true
-                        visible: root.currentSection === "motion"
+                        property string settingsAnchor: "motion"
                     }
 
                     BlurSettings {
                         Layout.fillWidth: true
-                        visible: root.currentSection === "blur"
+                        property string settingsAnchor: "blur"
                     }
 
                     ShellStyleSettings {
-                        visible: root.currentSection === "style"
+                        property string settingsAnchor: "style"
                         Layout.fillWidth: true
                     }
 
                     PaletteSettings {
                         onCurrentPageChanged: mainFlickable.contentY = 0
-                        visible: root.currentSection === "colors"
+                        property string settingsAnchor: "colors"
                         Layout.fillWidth: true
                     }
 
                     // General section
                     SettingsGroup {
-                        visible: root.currentSection === "general"
+                        property string settingsAnchor: "general"
                         title: "Typography & shape"
 
 
@@ -512,7 +472,7 @@ Item {
 
                     // Shadow section
                     SettingsGroup {
-                        visible: root.currentSection === "shadow"
+                        property string settingsAnchor: "shadow"
                         title: "Shadow appearance"
 
 
@@ -860,7 +820,7 @@ Item {
 
                     // Variant selector section
                     SettingsGroup {
-                        visible: root.currentSection === "variants"
+                        property string settingsAnchor: "variants"
                         title: "Surface to edit"
                         description: Styling.unifiedStyle ? "Choose Custom under Theme & app style to apply individual surface changes." : "Changes apply to the selected surface."
                         SettingsComboBox {
@@ -876,7 +836,7 @@ Item {
 
                     // Editor section
                     SettingsGroup {
-                        visible: root.currentSection === "variants"
+                        property string settingsAnchor: "variants"
                         title: "Custom surface editor"
                         property string settingsSection: "variants"
 

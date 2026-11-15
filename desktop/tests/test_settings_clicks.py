@@ -115,21 +115,14 @@ ShellRoot {
         for (let child of item.children || []) collect(child);
        }
        collect(page);
-       fixture.check(cards.length > 0, name + " has navigation cards");
-       for (let target of cards) {
-        page.currentSection = "";
-        tester.wait(30);
-        fixture.check(target.enabled && target.visible && target.width > 0 && target.height > 0, name + " card enabled");
-        for (let ancestor = target.parent; ancestor; ancestor = ancestor.parent) {
-         if (ancestor.contentY !== undefined && ancestor.contentItem && ancestor.contentHeight > ancestor.height) {
-          let point = target.mapToItem(ancestor.contentItem, 0, target.height / 2);
-          ancestor.contentY = Math.max(0, Math.min(ancestor.contentHeight - ancestor.height, point.y - ancestor.height / 2));
-         }
-        }
-        tester.wait(20);
-        tester.mouseClick(target);
-        fixture.check(page.currentSection !== "", name + " section responds to click: " + target.objectName);
+       fixture.check(cards.length === 0, name + " has no subsection navigation cards");
+       let anchors = [];
+       function collectSections(item) {
+        if (item.settingsAnchor) anchors.push(item);
+        for (const child of item.children || []) collectSections(child);
        }
+       collectSections(page);
+       fixture.check(anchors.length >= 6 && anchors.every(item => item.visible), name + " controls share one scrollable page");
        if (name === "ThemePanel") {
         fixture.check(Config.theme.shadowOpacity === 0.7 && Config.theme.shadowBlur === 2 && Config.theme.shadowXOffset === -5 && Config.theme.shadowYOffset === 8, "Opening shadows preserves saved values");
         page.currentSection = "shadow"; tester.wait(30);
@@ -266,7 +259,7 @@ ShellRoot {
       fixture.check(firstTab && nextTab && nextTab.x > firstTab.x && nextTab.y === firstTab.y, "Main categories are horizontal tabs");
       for (let legacy of [{sub: "weather", page: 6, target: "weather"}, {sub: "system", page: 6, target: "storage"}, {sub: "performance", page: 4, target: "performance"}]) {
        settings.openSection(5, legacy.sub); tester.wait(100);
-       let activeLoader = fixture.find(settings, "settings-panel-loader");
+       let activeLoader = fixture.find(settings, "settings-panel-" + settings.currentSection);
        fixture.check(settings.currentSection === legacy.page && activeLoader.item.currentSection === legacy.target, "Old links open the relocated controls: " + legacy.sub);
       }
       for (let group of settings.categoryModel) {
@@ -274,13 +267,10 @@ ShellRoot {
        tester.wait(60);
        fixture.check(settings.activeCategory.label === group.label, "Category activates");
        for (let section of group.sections) {
-        if (group.sections.length > 1) {
-         let tab = fixture.find(settings, "settings-page-" + section);
-         fixture.check(tab && tab.visible && tab.enabled, "Page tab reachable");
-         tester.mouseClick(tab);
-         tester.wait(60);
-        }
-        fixture.check(settings.currentSection === section, "Tab selects original page");
+        let panel = fixture.find(settings, "settings-panel-" + section);
+        fixture.check(panel && panel.visible, "Every category panel is on the page");
+        settings.openSection(section, ""); tester.wait(100);
+        fixture.check(panel.item !== null, "Category panel loaded");
         fixture.check(settings.selectedIndex === settings.categoryModel.indexOf(group), "Category stays selected");
        }
       }
@@ -290,7 +280,7 @@ ShellRoot {
       settings.searchQuery = "transparency";
       tester.wait(80);
       fixture.check(settings.currentSection === 4 , "Search opens appearance subsection");
-      let loader = fixture.find(settings, "settings-panel-loader");
+      let loader = fixture.find(settings, "settings-panel-" + settings.currentSection);
       tester.wait(150);
       fixture.check(loader.item && loader.item.currentSection === "blur", "Search loads transparency sliders directly");
       settings.searchQuery = "";
@@ -298,9 +288,7 @@ ShellRoot {
       fixture.check(settings.currentSection === 4 && settings.selectedIndex === 0 && settings.filteredSections.length === 4, "Clearing search preserves page and category");
       settings.width = 850;
       settings.openSection(4, "colors"); tester.wait(150);
-      let colorOverview = fixture.find(loader.item, "palette-open-palette");
-      fixture.check(colorOverview && colorOverview.visible, "Color menu opens with grouped option cards");
-      tester.mouseClick(colorOverview); tester.wait(40);
+      fixture.check(!fixture.find(loader.item, "palette-open-palette"), "Color controls have no extra menu");
       let narrowWidth = loader.item.contentWidth;
       let paletteGrid = fixture.find(loader.item, "palette-sections");
       fixture.check(paletteGrid && paletteGrid.columns === 1, "Color sections stack in normal windows");
@@ -309,15 +297,13 @@ ShellRoot {
       fixture.check(paletteGrid.columns === 2, "Color sections use two columns in wide windows");
       settings.width = 750; tester.wait(100);
       fixture.check(paletteGrid.columns === 1 && loader.item.contentWidth < narrowWidth, "Color sections reflow when shrinking");
-      let paletteNavigation = fixture.find(loader.item, "palette-navigation");
-      for (let pageId of ["picker", "presets", "wallpaper", "apps", "palette"]) {
-       let button = fixture.find(paletteNavigation, "settings-subpage-" + pageId);
-       fixture.check(button && button.visible, "Color subsection is reachable: " + pageId);
-       tester.mouseClick(button); tester.wait(30);
-       for (let candidate of ["palette", "picker", "presets", "wallpaper", "apps"]) {
-        fixture.check(fixture.find(loader.item, "palette-page-" + candidate).visible === (candidate === pageId), "Only the selected color controls are shown");
-       }
-      }
+      fixture.check(!fixture.find(loader.item, "palette-navigation"), "No color subsection navigation");
+      for (const pageId of ["picker", "presets", "wallpaper", "apps", "palette"])
+       fixture.check(fixture.find(loader.item, "palette-page-" + pageId).visible, "Color controls visible together: " + pageId);
+      let scroll = fixture.find(settings, "settings-category-scroll");
+      fixture.check(scroll.contentHeight > scroll.height, "Category scrolls through combined panels");
+      settings.openSection(6, "bar"); tester.wait(150);
+      fixture.check(scroll.contentY > 0, "Search links scroll to the target panel");
       settings.destroy();
       let windowComponent = Qt.createComponent("modules/widgets/config/SettingsWindow.qml");
       fixture.check(windowComponent.status === Component.Ready, windowComponent.errorString());
