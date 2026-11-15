@@ -5,6 +5,7 @@ import Quickshell
 import Quickshell.Io
 import qs.modules.globals
 import qs.modules.theme
+import "../modules/theme/ShellStyles.js" as ShellStyles
 import "defaults/theme.js" as ThemeDefaults
 import "defaults/bar.js" as BarDefaults
 import "defaults/performance.js" as PerformanceDefaults
@@ -104,6 +105,9 @@ Singleton {
         }
 
         adapter: JsonAdapter {
+            onShellStyleChanged: {
+                if (root.themeReady) font = ShellStyles.fontForStyle(shellStyle, font);
+            }
             property string shellStyle: "glass"
             property string ditherPalette: "original"
             property string ditherTintColor: "#4c9cbd"

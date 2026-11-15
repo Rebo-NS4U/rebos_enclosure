@@ -74,6 +74,7 @@ SettingsGroup {
                     RowLayout {
                         Layout.fillWidth: true
                         StyledText {
+                            font.family: ShellStyles.fontForStyle(card.modelData.id, Config.theme.font)
                             text: card.modelData.label
                             font.pixelSize: Styling.fontSize(-1)
                             font.bold: true

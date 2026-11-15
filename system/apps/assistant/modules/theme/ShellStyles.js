@@ -1,11 +1,17 @@
 .pragma library
 
 var styles = [
-    {id: "glass", label: "Transparent", description: "Dark transparent backgrounds with light wallpaper colors."},
-    {id: "quiet", label: "Opaque", description: "Solid backgrounds with less wallpaper color."},
-    {id: "colorful", label: "Tinted", description: "Transparent backgrounds with more wallpaper color."},
+    {id: "glass", font: "Noto Sans", label: "Transparent", description: "Dark transparent backgrounds with light wallpaper colors."},
+    {id: "quiet", font: "Liberation Sans", label: "Opaque", description: "Solid backgrounds with less wallpaper color."},
+    {id: "colorful", font: "DejaVu Sans", label: "Tinted", description: "Transparent backgrounds with more wallpaper color."},
     {id: "custom", label: "Custom", description: "Use your saved background and border settings."}
 ];
+
+// Custom and unknown styles preserve the user's selected typeface.
+function fontForStyle(style, currentFont) {
+    var match = styles.find(function(entry) { return entry.id === style; });
+    return match && match.font ? match.font : currentFont;
+}
 
 function mix(a, b, amount) {
     function rgb(hex) {

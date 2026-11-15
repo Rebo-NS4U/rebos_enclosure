@@ -8,6 +8,15 @@ Copy this directory into the project and load `components.css`. Put `class="dwee
 
 `node export.mjs` regenerates `tokens.css` from the assistant source when working in this repository. The exported CSS works independently with no runtime dependency. It uses portable Dweebo fallback colors, not personal wallpaper state. Override palette and surface CSS variables together to supply a different wallpaper palette. JetBrains Mono must be available locally or bundled by the consuming project with its license; monospace is the fallback.
 
+## Theme typography
+
+Selecting a built-in shell style applies its typeface: Instrument uses JetBrains Mono,
+Frosted Glass uses DejaVu Sans Mono for an OCR-like feel, Transparent uses Noto Sans,
+Opaque uses Liberation Sans, and Tinted uses DejaVu Sans. The style cards preview
+these fonts. Custom preserves the selected font; the font field still allows manual
+changes after choosing a style. Monospace content keeps its separate font setting.
+These families are supplied by the existing desktop font packages.
+
 ## QML projects
 
 Enclosure shell and Dweebo already use `modules/theme/Colors.qml`, `Styling.qml`, and `ShellStyles.js`. Reuse `StyledText`, `SearchInput`, `ToggleButton`, and `StyledRect` from `modules/components` within their Quickshell module context. Use `Styling.srItem()` and surface variants rather than literal colors. These components depend on `qs.config` and the theme/services modules; they are not standalone QML imports.

@@ -1,13 +1,19 @@
 .pragma library
 
 var styles = [
-    {id: "instrument", label: "Instrument", description: "Layered graphite surfaces with restrained status accents."},
-    {id: "frosted", label: "Frosted Glass", description: "OCR-inspired frosted panels, soft highlights and rounded glass edges."},
-    {id: "glass", label: "Transparent", description: "Dark transparent backgrounds with light wallpaper colors."},
-    {id: "quiet", label: "Opaque", description: "Solid backgrounds with less wallpaper color."},
-    {id: "colorful", label: "Tinted", description: "Transparent backgrounds with more wallpaper color."},
+    {id: "instrument", font: "JetBrains Mono", label: "Instrument", description: "Layered graphite surfaces with restrained status accents."},
+    {id: "frosted", font: "DejaVu Sans Mono", label: "Frosted Glass", description: "OCR-inspired frosted panels, soft highlights and rounded glass edges."},
+    {id: "glass", font: "Noto Sans", label: "Transparent", description: "Dark transparent backgrounds with light wallpaper colors."},
+    {id: "quiet", font: "Liberation Sans", label: "Opaque", description: "Solid backgrounds with less wallpaper color."},
+    {id: "colorful", font: "DejaVu Sans", label: "Tinted", description: "Transparent backgrounds with more wallpaper color."},
     {id: "custom", label: "Custom", description: "Use your saved background and border settings."}
 ];
+
+// Custom and unknown styles preserve the user's selected typeface.
+function fontForStyle(style, currentFont) {
+    var match = styles.find(function(entry) { return entry.id === style; });
+    return match && match.font ? match.font : currentFont;
+}
 
 function mix(a, b, amount) {
     function rgb(hex) {
