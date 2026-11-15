@@ -3,7 +3,7 @@
 var styles = [
     {id: "canopy", label: "Canopy", font: "DejaVu Sans Mono", description: "Architectural canopy: sweeping fabric spans, curved support ribs and softly shaded surfaces."},
     {id: "orbital", label: "Orbital", font: "JetBrains Mono", description: "Orbital space: elliptical tracks, satellite points, fixed stars and recessed glass."},
-    {id: "metropolis", label: "Metropolis", font: "DejaVu Sans", description: "Midnight city: blue-black glass, layered facades, cool architectural light and warm windows."},
+    {id: "metropolis", label: "Metropolis", font: "DejaVu Sans", description: "City glass: layered facades, architectural reflections and illuminated windows in your selected colors."},
     {id: "glass-vault", label: "Glass Vault", font: "Noto Sans", description: "Heavy corner clamps, stepped transparent blocks and deep inset controls."},
     {id: "radar-station", label: "Radar Station", font: "DejaVu Sans", description: "Bearing scales, partial range arcs and segmented controls on blurred glass."},
     {id: "suspended-film", label: "Suspended Film", font: "DejaVu Sans Mono", description: "Floating glass sheets, offset edges and quiet contact shadows."},
@@ -188,14 +188,12 @@ function surface(style, variant, p, ditherStrength) {
             :[[mix(fill,p.foreground,0.07),0],[fill,0.04],[fill,0.90],[mix(fill,p.background,0.55),1]];
     }
     if (metro && neutral) {
-        // Midnight blue glazing has a daylight counterpart; semantic actions stay selected.
-        var night=contrast(p.background,"#ffffff")>contrast(p.background,"#000000");
-        var cityBase=mix(night?"#101b2b":"#dde6f0",p.background,0.16);
-        fill=mix(cityBase,p.foreground,inset?0.005:focused?0.045:0.012);
+        // Material depth uses only the selected palette; no imposed city colors.
+        fill=mix(p.background,p.foreground,inset?0.005:focused?0.045:0.012);
         item=p.foreground;
         opacity=focused?0.97:inset?0.78:outer?0.92:0.85;
-        border=[focused?p.primary:mix(fill,night?"#84b5dd":"#426383",outer?0.32:0.20),focused||outer?1:0];
-        renderGradient=[[mix(fill,night?"#6d9bc7":"#ffffff",0.045),0],[fill,0.20],[fill,0.80],[mix(fill,cityBase,0.30),1]];
+        border=[focused?p.primary:mix(fill,p.primary,outer?0.32:0.20),focused||outer?1:0];
+        renderGradient=[[mix(fill,p.primary,0.045),0],[fill,0.20],[fill,0.80],[mix(fill,p.background,0.30),1]];
     }
     if (canopy && neutral) {
         // Soft fabric shading replaces the former hard glass bezel.

@@ -459,6 +459,8 @@ ClippingRectangle {
             objectName: "wallpaper-theme-canvas"
             readonly property string finish: root.styleOverride || Styling.shellStyle
             readonly property real cornerRadius: root.effectiveCornerRadius
+            readonly property color backdrop: Colors.background
+            onBackdropChanged: requestPaint()
             readonly property color accent: Colors.primary
             readonly property color secondaryAccent: Colors.tertiary
             onAccentChanged: requestPaint()
@@ -566,16 +568,16 @@ ClippingRectangle {
 
                     }
                 }else{
-                    // Midnight architecture: cool glazing, warm occupied windows.
-                    const cool=a=>Qt.rgba(0.48,0.70,0.92,a);
-                    const warm=a=>Qt.rgba(0.96,0.73,0.43,a);
-                    const dusk=a=>Qt.rgba(0.035,0.075,0.13,a);
-                    ctx.lineWidth=1;ctx.strokeStyle=cool(outer?0.24:0.12);
+                    // City architecture follows the selected palette for glass, frames and windows.
+                    const frame=a=>Qt.rgba(accent.r,accent.g,accent.b,a);
+                    const windowLight=a=>Qt.rgba(secondaryAccent.r,secondaryAccent.g,secondaryAccent.b,a);
+                    const facade=a=>Qt.rgba(backdrop.r,backdrop.g,backdrop.b,a);
+                    ctx.lineWidth=1;ctx.strokeStyle=frame(outer?0.24:0.12);
                     if(root.traceThemeFrame(ctx,outer?5:3))ctx.stroke();
                     // A narrow reflected sky band gives depth without tinting all content.
                     const sky=ctx.createLinearGradient(0,0,0,Math.min(height,85));
-                    sky.addColorStop(0,cool(outer?0.12:0.045));
-                    sky.addColorStop(0.5,cool(0.025));sky.addColorStop(1,cool(0));
+                    sky.addColorStop(0,frame(outer?0.12:0.045));
+                    sky.addColorStop(0.5,frame(0.025));sky.addColorStop(1,frame(0));
                     ctx.fillStyle=sky;ctx.fillRect(0,0,width,Math.min(height,85));
                     if(outer){
                         // Overlapping facades vary in width, setback and roof height.
@@ -588,32 +590,32 @@ ClippingRectangle {
                             const right=Math.min(width-safe,x+towerWidth);
                             const roof=base-towerHeight;
                             const setback=Math.min(7,(right-x)*0.20);
-                            ctx.fillStyle=dusk(0.42);ctx.beginPath();ctx.moveTo(x,base);
+                            ctx.fillStyle=facade(0.42);ctx.beginPath();ctx.moveTo(x,base);
                             ctx.lineTo(x,roof+7);ctx.lineTo(x+setback,roof+7);
                             ctx.lineTo(x+setback,roof);ctx.lineTo(right-setback,roof);
                             ctx.lineTo(right-setback,roof+5);ctx.lineTo(right,roof+5);
                             ctx.lineTo(right,base);ctx.closePath();ctx.fill();
-                            ctx.strokeStyle=cool(index%3===0?0.32:0.17);ctx.lineWidth=1;ctx.stroke();
+                            ctx.strokeStyle=frame(index%3===0?0.32:0.17);ctx.lineWidth=1;ctx.stroke();
                             // Lit rooms are sparse and irregular, rather than a repeated checkerboard.
                             for(let floor=0;floor<Math.floor((towerHeight-12)/7);floor++){
                                 for(let column=0;column<Math.floor((right-x-8)/7);column++){
                                     const room=(index*13+floor*7+column*11)%9;
                                     if(room<4)continue;
-                                    ctx.fillStyle=room===8?cool(0.36):warm(room===7?0.58:0.30);
+                                    ctx.fillStyle=room===8?frame(0.36):windowLight(room===7?0.58:0.30);
                                     ctx.fillRect(x+5+column*7,roof+12+floor*7,2,3);
                                 }
                             }
                             x+=towerWidth+4;
                         }
-                        // Slender vertical mullions and warm lobby light frame the city glass.
+                        // Slender vertical mullions and palette-colored lobby light frame the city glass.
                         for(const x of [8,width-9]){
-                            ctx.strokeStyle=cool(0.22);ctx.beginPath();
+                            ctx.strokeStyle=frame(0.22);ctx.beginPath();
                             ctx.moveTo(x,safe);ctx.lineTo(x,height-safe);ctx.stroke();
-                            ctx.strokeStyle=cool(0.07);ctx.beginPath();
+                            ctx.strokeStyle=frame(0.07);ctx.beginPath();
                             ctx.moveTo(x+3,safe+12);ctx.lineTo(x+3,height-safe-12);ctx.stroke();
                         }
                         const lobby=ctx.createLinearGradient(0,height-18,0,height);
-                        lobby.addColorStop(0,warm(0));lobby.addColorStop(1,warm(0.09));
+                        lobby.addColorStop(0,windowLight(0));lobby.addColorStop(1,windowLight(0.09));
                         ctx.fillStyle=lobby;ctx.fillRect(0,height-18,width,18);
                     }
                 }
