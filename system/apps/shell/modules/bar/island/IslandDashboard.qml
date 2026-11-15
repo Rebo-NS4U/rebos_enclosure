@@ -1228,6 +1228,11 @@ Item {
             }
         }
 
+        InputControls {
+            objectName: "dashboardInputControls"
+            Layout.fillWidth: true
+        }
+
         // ═══════════════════════════════════════════════════════════════
         // MEDIA PLAYER
         // ═══════════════════════════════════════════════════════════════
