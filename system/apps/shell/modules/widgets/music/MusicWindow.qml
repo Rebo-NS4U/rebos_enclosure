@@ -203,9 +203,15 @@ Window {
         stderr: SplitParser { onRead: data => console.warn("Music: " + data) }
         onExited: { root.busy = false; root.notice = "Music service stopped. Reopen Music to retry."; root.started = false; }
     }
+    // Follow output changes made while this window is open. An implicit
+    // AudioOutput device otherwise retains the device selected at creation.
+    MediaDevices { id: mediaDevices }
     MediaPlayer {
         id: player
-        audioOutput: AudioOutput { volume: root.volume }
+        audioOutput: AudioOutput {
+            volume: root.volume
+            device: mediaDevices.defaultAudioOutput
+        }
         onMediaStatusChanged: if (mediaStatus === MediaPlayer.EndOfMedia) root.next(true)
         onErrorOccurred: (error, errorString) => { root.notice = errorString; }
     }
