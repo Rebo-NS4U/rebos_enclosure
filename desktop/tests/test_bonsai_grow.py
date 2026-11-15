@@ -609,7 +609,7 @@ class BonsaiGrowTests(unittest.TestCase):
                 for hour in (0, 6, 12, 18):
                     image = bonsai.render(day, 42, True, 80, theme,
                                           fixed_height=True, hour=hour)
-                    for row in image.splitlines():
+                    for y, row in enumerate(image.splitlines()):
                         background, column = None, 0
                         for token in re.split(r'(\x1b\[[0-9;]*m)', row):
                             if token.startswith('\x1b['):
@@ -620,7 +620,8 @@ class BonsaiGrowTests(unittest.TestCase):
                                     background = tuple(codes[2:])
                             else:
                                 for glyph in token:
-                                    self.assertEqual(background, None if column < 10 else (24, 24, 24))
+                                    inside = 0 < y < 25 and 10 < column < 68
+                                    self.assertEqual(background, (24, 24, 24) if inside else None)
                                     column += 1
                         self.assertEqual(column, 69)
                         self.assertIsNone(background, 'reset the backing before the prompt')

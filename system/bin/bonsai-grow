@@ -1458,7 +1458,9 @@ def frame_rows(rows, columns, accents, color):
         text = re.sub(r"\x1b\[[0-9;]*m", lambda match: match[0] + background, text)
         return background + text + reset
     def edge(text):
-        return pane(glass + text)
+        # Border glyphs occupy full cells, but their strokes sit inside them.
+        # Filling those cells would create a rectangle outside the rounded rim.
+        return glass + text + reset
     top = margin + edge("╭" + "─" * width + "╮")
     bottom = margin + edge("╰" + "━" * width + "╯")
     return [top] + [margin + edge("│") + pane(row) + edge("│")
