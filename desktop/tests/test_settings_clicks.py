@@ -122,7 +122,7 @@ ShellRoot {
         for (const child of item.children || []) collectSections(child);
        }
        collectSections(page);
-       fixture.check(anchors.length >= 6 && anchors.every(item => item.visible), name + " controls share one scrollable page");
+       fixture.check(anchors.length >= 6 && anchors.filter(item => item.visible).length >= 6, name + " controls share one scrollable page");
        if (name === "ShellPanel") {
         for (const sectionId of ["weather", "storage", "bar", "lockscreen", "system", "sidebar"]) {
          let group = fixture.find(page, "shell-group-" + sectionId);
@@ -368,6 +368,14 @@ ShellRoot {
       let scroll = fixture.find(settings, "settings-category-scroll");
       fixture.check(scroll.contentHeight > scroll.height, "Category scrolls through combined panels");
       settings.openSection(6, "bar"); tester.wait(150);
+      let sharedGrid = fixture.find(settings, "theme-advanced-grid");
+      let wallpaperColors = fixture.find(settings, "wallpaper-colors");
+      fixture.check(wallpaperColors.title === "Wallpaper colors" && wallpaperColors.parent === sharedGrid, "Wallpaper colors joins the shared dropdown grid");
+      for (const section of ["weather", "storage", "bar", "lockscreen", "system", "sidebar"]) {
+       let group = fixture.find(settings, "shell-group-" + section);
+       fixture.check(group.parent === sharedGrid && group.visible, "Shell dropdown joins Theme dropdowns: " + section);
+      }
+      fixture.check(fixture.find(settings, "shell-group-bar").expanded, "Shell search opens a reparented dropdown");
       fixture.check(scroll.contentY > 0, "Search links scroll to the target panel");
       settings.openSection(4, "blur"); tester.wait(200);
       let themePanel = fixture.find(settings, "settings-panel-4").item;

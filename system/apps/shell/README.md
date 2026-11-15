@@ -361,3 +361,5 @@ Theme style and basic palette controls stay visible at the top of Appearance. Ad
 Appearance uses compact theme previews, direct palette controls and a responsive two-column grid for advanced options. Expanded advanced groups span the full row; narrow windows use one column. Theme descriptions are available on hover.
 
 Shell settings use compact expandable groups for the desktop bar, assistant panel, lock screen, weather, storage and About. Search opens the matching group automatically.
+
+Theme and Shell dropdowns share one grid below the theme previews. Wallpaper colors contains the palette, wallpaper color picker, saved appearances, wallpaper library and app appearance controls.

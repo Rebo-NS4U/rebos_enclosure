@@ -35,6 +35,8 @@ Item {
         mainFlickable.contentY = target ? Math.max(0, Math.min(target.mapToItem(mainColumn, 0, 0).y, mainFlickable.contentHeight - mainFlickable.height)) : 0;
     }
     property string selectedVariant: "bg"
+    property alias dropdownGrid: advancedGrid
+    property bool combinedSettings: false
 
     component SectionButton: SettingsSectionCard {
         required property string sectionId
@@ -145,7 +147,8 @@ Item {
             // Header wrapper
             Item {
                 Layout.fillWidth: true
-                Layout.preferredHeight: titlebar.height
+                visible: !root.combinedSettings
+                Layout.preferredHeight: visible ? titlebar.height : 0
 
                 PanelTitlebar {
                     id: titlebar
@@ -182,11 +185,6 @@ Item {
                         Layout.fillWidth: true
                     }
 
-                    PaletteSettings {
-                        onCurrentPageChanged: mainFlickable.contentY = 0
-                        property string settingsAnchor: "colors"
-                        Layout.fillWidth: true
-                    }
 
                     GridLayout {
                         id: advancedGrid
@@ -195,6 +193,13 @@ Item {
                         columns: width >= 620 ? 2 : 1
                         columnSpacing: Styling.spacing(12)
                         rowSpacing: Styling.spacing(12)
+                    PaletteSettings {
+                        onCurrentPageChanged: mainFlickable.contentY = 0
+                        property string settingsAnchor: "colors"
+                        Layout.fillWidth: true
+                        Layout.columnSpan: expanded ? advancedGrid.columns : 1
+                        Layout.alignment: Qt.AlignTop
+                    }
                     PerformanceSettings {
                         property string settingsAnchor: "performance"
                         collapsible: true

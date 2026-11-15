@@ -168,6 +168,21 @@ Item {
         }
     }
 
+    function combineThemeDropdowns() {
+        let theme = null, shell = null;
+        for (let i = 0; i < categoryPanels.count; i++) {
+            const loader = categoryPanels.itemAt(i);
+            if (loader.sectionId === 4) theme = loader.item;
+            if (loader.sectionId === 6) shell = loader.item;
+        }
+        if (theme && shell) {
+            theme.combinedSettings = true;
+            shell.groupContainer = theme.dropdownGrid;
+            shell.overlayContainer = contentArea;
+        }
+        Qt.callLater(scrollToSelection);
+    }
+
     // Scroll sidebar to ensure visible selection
     function scrollSidebarToSelection() {
         if (searchResults.visible && selectedIndex >= 0)
@@ -553,7 +568,7 @@ Item {
                             readonly property var scrollContent: item ? Array.from(item.children).find(child => child.contentHeight !== undefined && child.contentY !== undefined) || null : null
                             // Unroll ordinary panel scrollers; device lists retain their own bounded viewport.
                             readonly property bool expandContent: sectionId !== 7 && scrollContent !== null && scrollContent.model === undefined
-                            height: expandContent ? Math.max(1, scrollContent.contentHeight) : Math.max(500, categoryScroll.height)
+                            height: item?.groupContainer ? 0 : expandContent ? Math.max(1, scrollContent.contentHeight) : Math.max(500, categoryScroll.height)
                             source: contentArea.panelComponents[sectionId]?.component ?? ""
                             asynchronous: true
                             onLoaded: {
@@ -562,7 +577,7 @@ Item {
                                     scrollContent.interactive = false;
                                     scrollContent.clip = false;
                                 }
-                                if (sectionId === root.currentSection) root.scrollToSelection();
+                                Qt.callLater(root.combineThemeDropdowns);
                             }
                         }
                     }

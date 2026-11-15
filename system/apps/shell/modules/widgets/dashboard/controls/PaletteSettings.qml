@@ -11,8 +11,11 @@ import qs.modules.theme
 import qs.modules.components
 import "../../../theme/PaletteSchemes.js" as PaletteSchemes
 
-ColumnLayout {
+SettingsGroup {
     id: root
+    title: "Wallpaper colors"
+    collapsible: true
+    objectName: "wallpaper-colors"
     property string settingsSection: "colors"
     readonly property PanelWindow manager: GlobalStates.wallpaperManager
     readonly property bool busy: manager?.paletteBusy ?? false
@@ -33,7 +36,6 @@ ColumnLayout {
         target: root.manager
         function onPickedAccentColorsChanged() { root.resetPicks(); }
     }
-    spacing: Styling.spacing(12)
 
     component Caption: Text {
         Layout.fillWidth: true
@@ -74,7 +76,7 @@ ColumnLayout {
         }
     }
 
-    component ColorSection: SettingsGroup { collapsible: true; Layout.minimumWidth: 0; Layout.alignment: Qt.AlignTop }
+    component ColorSection: SettingsGroup { Layout.minimumWidth: 0; Layout.alignment: Qt.AlignTop }
 
 
 
@@ -88,7 +90,7 @@ ColumnLayout {
         columnSpacing: Styling.spacing(12)
         rowSpacing: Styling.spacing(12)
         ColorSection {
-            title: "Colors"
+            title: "Palette"
             objectName: "palette-page-palette"
             collapsible: false
             property string settingsAnchor: "palette"

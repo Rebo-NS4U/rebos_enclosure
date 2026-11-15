@@ -46,6 +46,8 @@ Item {
         colorPickerCurrentColor = color;
     }
 
+    property Item groupContainer: null
+    property Item overlayContainer: null
     property string currentSection: ""
     property real sectionOffset: 0
     onCurrentSectionChanged: Qt.callLater(scrollToSection)
@@ -55,7 +57,7 @@ Item {
             for (const child of item.children || []) { const match = find(child); if (match) return match; }
             return null;
         }
-        const target = find(mainColumn);
+        const target = find(root.groupContainer || mainColumn);
         if (target && target.collapsible) target.expanded = true;
         sectionOffset = target ? target.mapToItem(mainColumn, 0, 0).y : 0;
         mainFlickable.contentY = target ? Math.max(0, Math.min(target.mapToItem(mainColumn, 0, 0).y, mainFlickable.contentHeight - mainFlickable.height)) : 0;
@@ -541,7 +543,8 @@ Item {
             // Header wrapper
             Item {
                 Layout.fillWidth: true
-                Layout.preferredHeight: titlebar.height
+                visible: !root.groupContainer
+                Layout.preferredHeight: visible ? titlebar.height : 0
 
                 PanelTitlebar {
                     id: titlebar
@@ -577,11 +580,17 @@ Item {
                         property string settingsAnchor: "weather"
                         collapsible: true
                         objectName: "shell-group-weather"
+                        parent: root.groupContainer || contentColumn
+                        Layout.columnSpan: root.groupContainer && expanded ? root.groupContainer.columns : 1
+                        Layout.alignment: Qt.AlignTop
                     }
                     StorageSettings {
                         property string settingsAnchor: "storage"
                         collapsible: true
                         objectName: "shell-group-storage"
+                        parent: root.groupContainer || contentColumn
+                        Layout.columnSpan: root.groupContainer && expanded ? root.groupContainer.columns : 1
+                        Layout.alignment: Qt.AlignTop
                     }
 
                     // ═══════════════════════════════════════════════════════════════
@@ -591,6 +600,9 @@ Item {
                         property string settingsAnchor: "bar"
                         collapsible: true
                         objectName: "shell-group-bar"
+                        parent: root.groupContainer || contentColumn
+                        Layout.columnSpan: root.groupContainer && expanded ? root.groupContainer.columns : 1
+                        Layout.alignment: Qt.AlignTop
                         title: "Desktop bar"
                         Layout.fillWidth: true
 
@@ -701,6 +713,9 @@ Item {
                         property string settingsAnchor: "lockscreen"
                         collapsible: true
                         objectName: "shell-group-lockscreen"
+                        parent: root.groupContainer || contentColumn
+                        Layout.columnSpan: root.groupContainer && expanded ? root.groupContainer.columns : 1
+                        Layout.alignment: Qt.AlignTop
                         title: "Lock screen"
                         Layout.fillWidth: true
 
@@ -744,6 +759,9 @@ Item {
                         property string settingsAnchor: "system"
                         collapsible: true
                         objectName: "shell-group-system"
+                        parent: root.groupContainer || contentColumn
+                        Layout.columnSpan: root.groupContainer && expanded ? root.groupContainer.columns : 1
+                        Layout.alignment: Qt.AlignTop
                         title: "About"
                         Layout.fillWidth: true
 
@@ -779,6 +797,9 @@ Item {
                         property string settingsAnchor: "sidebar"
                         collapsible: true
                         objectName: "shell-group-sidebar"
+                        parent: root.groupContainer || contentColumn
+                        Layout.columnSpan: root.groupContainer && expanded ? root.groupContainer.columns : 1
+                        Layout.alignment: Qt.AlignTop
                         title: "Assistant panel"
                         Layout.fillWidth: true
 
@@ -862,6 +883,8 @@ Item {
     // Color picker view (shown when colorPickerActive)
     Item {
         id: colorPickerContainer
+        parent: root.overlayContainer || root
+        z: 100
         anchors.fill: parent
         clip: true
 
