@@ -622,6 +622,7 @@ Item {
                         readonly property int approvalCount: Object.keys(sessionObject.pendingPermissions).length
                         objectName: "assistantAttention_" + sessionObject.channelId
                         Layout.fillWidth: true
+                        Layout.topMargin: 8
                         Layout.leftMargin: 12
                         Layout.rightMargin: 12
                         visible: questionCount + approvalCount > 0
@@ -651,6 +652,7 @@ Item {
                     id: sessionStrip
                     objectName: "assistantSessionTabs"
                     Layout.fillWidth: true
+                    Layout.topMargin: 8
                     Layout.preferredHeight: visible ? implicitHeight : 0
                     spacing: 12
                     readonly property int columns: Math.max(1, Math.min(sessionRepeater.count,
