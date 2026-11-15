@@ -18,7 +18,7 @@ ColumnLayout {
     // Dynamic path keys require a JavaScript dictionary.
     property var colorIndex: ({})
     property string indexError: ""
-    readonly property list<string> arrangedPaths: WallpaperColors.arrange(paths, colorIndex, colorGroup, sortOrder)
+    readonly property list<string> arrangedPaths: WallpaperColors.arrange(paths, colorIndex, colorGroup, sortOrder, directory)
     readonly property bool indexing: indexProcess.running || indexDelay.running
 
     function focusColor() { colorSelector.forceActiveFocus(); }
@@ -95,6 +95,7 @@ ColumnLayout {
             valueRole: "value"
             model: [
                 {label: "Sort: Name", value: "name"},
+                {label: "Sort: Artist", value: "artist"},
                 {label: "Sort: Color", value: "color"},
                 {label: "Dark → Light", value: "dark"},
                 {label: "Light → Dark", value: "light"}

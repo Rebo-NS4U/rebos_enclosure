@@ -1,7 +1,26 @@
 .pragma library
 
-function arrange(paths, colors, group, order) {
+// Artist collections use "Artist - Handle" as their top-level folder name.
+function artist(path, directory) {
+    const base = (directory || "").replace(/\/+$/, "") + "/";
+    if (!directory || !path.startsWith(base)) return "";
+    const relative = path.substring(base.length);
+    if (!relative.includes("/")) return "";
+    return relative.split("/")[0].split(" - ")[0].trim();
+}
+
+function arrange(paths, colors, group, order, directory) {
     const result = paths.filter(path => group === "all" || (colors[path]?.group ?? "unknown") === group);
+    if (order === "artist")
+        return result.sort((a, b) => {
+            const aa = artist(a, directory), ab = artist(b, directory);
+            if (!aa || !ab) {
+                if (aa) return -1;
+                if (ab) return 1;
+            }
+            return aa.localeCompare(ab)
+                || a.split("/").pop().localeCompare(b.split("/").pop()) || a.localeCompare(b);
+        });
     if (order === "name")
         return result.sort((a, b) => a.split("/").pop().localeCompare(b.split("/").pop()) || a.localeCompare(b));
     const groups = ["red", "orange", "yellow", "green", "cyan", "blue", "purple", "pink", "white", "gray", "black", "unknown"];
