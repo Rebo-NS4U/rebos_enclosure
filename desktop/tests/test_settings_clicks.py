@@ -352,7 +352,7 @@ ShellRoot {
       categoryScroller.contentY = categoryScroller.contentHeight - categoryScroller.height;
       beforeWheel = categoryScroller.contentY;
       tester.mouseWheel(wheelSurface, 80, 80, 0, 120); tester.wait(30);
-      fixture.check(categoryScroller.contentY < beforeWheel, "Scrolling reverses immediately at the end of the page");
+      fixture.check(Math.abs(categoryScroller.contentY - Math.max(0, beforeWheel - 120)) < 1, "Wheel moves 120 pixels and reverses immediately at the end of the page");
       settings.searchQuery = "";
       tester.wait(50);
       fixture.check(settings.currentSection === 4 && settings.selectedIndex === 0 && settings.filteredSections.length === 4, "Clearing search preserves page and category");

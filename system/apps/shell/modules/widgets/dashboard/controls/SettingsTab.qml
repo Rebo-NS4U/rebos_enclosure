@@ -508,7 +508,8 @@ Item {
                 z: 2
                 acceptedButtons: Qt.NoButton
                 onWheel: wheel => {
-                    const delta = wheel.pixelDelta.y !== 0 ? wheel.pixelDelta.y : wheel.angleDelta.y / 2;
+                    // Move two times farther per wheel notch; preserve precise touchpad input.
+                    const delta = wheel.pixelDelta.y !== 0 ? wheel.pixelDelta.y : wheel.angleDelta.y;
                     if (delta === 0 || (wheel.modifiers & Qt.ControlModifier)) { wheel.accepted = false; return; }
                     function scrollerAt(item) {
                         if (!item.visible || !item.enabled) return null;

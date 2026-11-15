@@ -606,7 +606,7 @@
   "system/apps/shell/modules/widgets/dashboard/controls/SettingsSearch.js": "f87700d2d14645a93bc93d7f03608988a1ad07892ac1715339cc9d4ff7754393",
   "system/apps/shell/modules/widgets/dashboard/controls/SettingsSectionCard.qml": "a9235a27971e8b3c846e619f2cb1d3c81a59fa225a49d7bc63912b5ff4b56a92",
   "system/apps/shell/modules/widgets/dashboard/controls/SettingsSubnav.qml": "6a79caab3f3a565d1bf972e485858d524550891d9b84e7c2d26fd5d2a7b432b1",
-  "system/apps/shell/modules/widgets/dashboard/controls/SettingsTab.qml": "13b4a7296915f351aa6e6f047650835f48d2eddc176b5dd18af8a06367dcf0fc",
+  "system/apps/shell/modules/widgets/dashboard/controls/SettingsTab.qml": "fc73a50749cc28bbf1399f3ebd1d831ecc81493cb291c6de186ff3a4f59b3722",
   "system/apps/shell/modules/widgets/dashboard/controls/SettingsTextField.qml": "0ea1396e6e91f03f89c1a614fd7f3a098560e7b153e79df1d297105463703018",
   "system/apps/shell/modules/widgets/dashboard/controls/SettingsToggleRow.qml": "af48189aa5b4a839ba28fb90d1ad5a187f0a1bf9684d4268bc27ccd83ea66d6e",
   "system/apps/shell/modules/widgets/dashboard/controls/ShellPanel.qml": "e5069edb3205f31facd03c917de771d24db7d3206657b9a6dedb6ec1ee63e81f",
