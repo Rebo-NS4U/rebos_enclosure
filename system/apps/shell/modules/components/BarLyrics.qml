@@ -344,13 +344,62 @@ Item {
             visible: !lineSurface.upcoming && root.currentText !== "" && root.displayLines.length > 0
                 && root.lyricPosition >= root.lineStart
             opacity: currentLabel.opacity
-            color: Qt.alpha(BarAppearance.activeColor, 0.16)
+            color: Qt.alpha(BarAppearance.activeColor, 0.10)
+            // Layered translucent rails give a soft bloom without a blur pass.
             Rectangle {
+                width: progressFill.width
+                height: 8
+                y: (parent.height - height) / 2
+                radius: height / 2
+                color: Qt.alpha(BarAppearance.activeColor, 0.07)
+                visible: width > 0
+            }
+            Rectangle {
+                width: progressFill.width
+                height: 4
+                y: (parent.height - height) / 2
+                radius: height / 2
+                color: Qt.alpha(BarAppearance.activeColor, 0.18)
+                visible: width > 0
+            }
+            Rectangle {
+                id: progressFill
                 objectName: "bar-lyrics-line-progress-fill"
                 width: parent.width * root.lineProgress
                 height: parent.height
                 radius: parent.radius
-                color: BarAppearance.activeColor
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0; color: Qt.alpha(BarAppearance.activeColor, 0.38) }
+                    GradientStop { position: 0.6; color: BarAppearance.activeColor }
+                    GradientStop { position: 1; color: BarAppearance.foregroundColor }
+                }
+            }
+            Rectangle {
+                // A short, bright streak marks the advancing edge, not a syllable.
+                width: Math.min(18, progressFill.width)
+                height: parent.height
+                x: progressFill.width - width
+                radius: parent.radius
+                visible: width > 0
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0; color: "transparent" }
+                    GradientStop { position: 1; color: Qt.alpha(BarAppearance.foregroundColor, 0.95) }
+                }
+            }
+            Repeater {
+                model: 3
+                delegate: Rectangle {
+                    required property int index
+                    x: (index + 1) * lineProgressTrack.width / 4
+                    y: -1
+                    width: 1
+                    height: 4
+                    radius: 0.5
+                    color: Qt.alpha(BarAppearance.foregroundColor,
+                        root.lineProgress >= (index + 1) / 4 ? 0.5 : 0.12)
+                }
             }
         }
     }
