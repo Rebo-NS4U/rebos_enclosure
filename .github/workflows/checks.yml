@@ -20,7 +20,7 @@ jobs:
         run: >-
           pacman -Syu --noconfirm --needed
           git python python-pip python-pillow python-gobject python-charset-normalizer gtk4 cage ruff
-          gcc pkgconf fish fontconfig poppler yt-dlp
+          gcc pkgconf fish kitty fontconfig poppler yt-dlp
           niri quickshell qt6-multimedia-ffmpeg ttf-dejavu nodejs lua51 xorg-server-xvfb mesa
           ffmpeg vlc vlc-plugin-ffmpeg vlc-plugin-freetype vlc-plugin-lua vlc-plugin-dvb
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4

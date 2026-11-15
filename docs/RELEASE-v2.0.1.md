@@ -10,6 +10,8 @@ This patch improves terminal bonsai presentation and includes desktop refinement
 - Greeter: centered time with white clock text.
 - Assistant: specialist presets include task methods, verification criteria, bundled skills and read-only helpers.
 
+- CI: install Kitty in the native test environment so keybinding regressions can invoke the terminal executable.
+
 ## Update
 
 ```sh
