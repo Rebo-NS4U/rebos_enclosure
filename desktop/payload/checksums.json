@@ -64,7 +64,7 @@
   "config/themes/global-colors.css": "6e87fe9be6e20bae69a022b8bbf3052099f94718c8a7290f33915e1215887d98",
   "config/vesktop/themes/rebos_shell.css": "ed41136dd60436399c96c27143abaad324d798d57ef09fc6fa3bfd73d66a4029",
   "config/xdg-desktop-portal/niri-portals.conf": "e71f778bb1895bd51419c016fd7015cfc7dc7a0c2a64a835a1a7e20e66286288",
-  "manifest.json": "5773833e04464019eda4e3c17fc134ecc090110ba6e63fb708e2795c85463c00",
+  "manifest.json": "2ac6472606ce5e21469fe8b9f81d70bda6f4cde97b8da17b060f2432e10a7671",
   "system/apps/assistant/assets/aiproviders/anthropic.svg": "e833fdfa7e7187a86a05b870925067556a506dcd4239089aed73e1e58c9366a3",
   "system/apps/assistant/assets/aiproviders/deepseek.svg": "8f9443e351b6dacce71871790201b799d92e8bf96a45ef79aeb5e9bf4db423e2",
   "system/apps/assistant/assets/aiproviders/gemini.svg": "87d5b3c4be75a66f54c1936482a263df68185545b741129badd1b7c2449c18d3",
@@ -772,7 +772,7 @@
   "system/cache-defaults/rebos_shell/fzf.conf": "e29a95ef4c68be747c6688fc6733c86b2ebd35c5bd7ab165d348d9d5a9a79426",
   "system/cache-defaults/rebos_shell/kitty.conf": "de05723b68299328b1f42fd8175db6c47db0bf3269aa36451e345e3b9a1d0f7e",
   "system/cache-defaults/rebos_shell/niri-colors.kdl": "eed26fa52d871dd7fdc337c59334d1c4397d2465db73c4dee868754f7aa50843",
-  "system/cache-defaults/rebos_shell/wallpapers.json": "42c043e197eedd823e640ebba58ae055d5b0c6ef2ed29349e10590e0fb6fe8fc",
+  "system/cache-defaults/rebos_shell/wallpapers.json": "186cae326371299c6076509c4ddcad448f6dde73467417f7eecc4066f05c4681",
   "system/environment/90-rebos-desktop.conf": "b28cab0d07c501286b5bf9880607f9c75e1caadf3fcac7ee8c8154391fcfa119",
   "system/etc/greetd/config.toml": "dc0c601fe824e98af520e249d245515f49d7cf2ca4045e5944e3f36bceeb612a",
   "system/etc/greetd/regreet.toml": "eeca9d7c05971ecbf9177ea42fddb6b54c09c79523bb0de57c4cb3c0a44fda19",
@@ -1281,10 +1281,5 @@
   "system/share/wallpapers/Ismail Inceoglu - Seventeenth/9719959-ismail-inceoglu-just-a-thursday.jpg": "2aa67ebea799b49f792f218d1699510004efe2489d6f89dfda0fe3d20d3377ce",
   "system/share/wallpapers/Ismail Inceoglu - Seventeenth/97494254-ismail-inceoglu-rising-stars-corp.webp": "9fe2e7ee252e097a7f3a263a34d878827335235264a712413d5ff6b8a469fc37",
   "system/share/wallpapers/Ismail Inceoglu - Seventeenth/99178930-ismail-inceoglu-pocket-of-hope.webp": "04b1536054985fa4c294c84460d1d3662d484a2e6ca0a81eef09f416082e5b75",
-  "system/share/wallpapers/Ismail Inceoglu - Seventeenth/sources.json": "8c2d8caa9dfbb4b762210107877e875b682670ba1897e9a7e1d85b118607fca5",
-  "system/share/wallpapers/New-1920x1200/aurora-lake.jpg": "06bed704674b03a4c51af9575aaa8aab3e9d925ca35c7dede4d1680a49f77a01",
-  "system/share/wallpapers/New-1920x1200/bioluminescent-garden.jpg": "2a1447c7a2ca6de03d4f283d560f5cce38f9c876d41b972d28f4c364e780c3ed",
-  "system/share/wallpapers/New-1920x1200/floating-islands.jpg": "a3b7f6355a3c7bb1ba67d20581ff1eacef37026d52b4fffe9f2bffee1cd4c742",
-  "system/share/wallpapers/New-1920x1200/neon-alley.jpg": "2479043d732a76be1b97e14bbc84c0af6ec4867d87f9683776534f92e11e917a",
-  "system/share/wallpapers/default.jpg": "02030effab669f7e88dc99509b2d08bd88a2f9f0f9c5d298e784e3713b300214"
+  "system/share/wallpapers/Ismail Inceoglu - Seventeenth/sources.json": "8c2d8caa9dfbb4b762210107877e875b682670ba1897e9a7e1d85b118607fca5"
 }

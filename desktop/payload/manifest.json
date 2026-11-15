@@ -109,8 +109,6 @@
     ".local/share/fonts/rebos_shell",
     ".local/share/icons/GoogleDot-Black",
     ".local/share/wallpapers/Ismail Inceoglu - Seventeenth",
-    ".local/share/wallpapers/New-1920x1200",
-    ".local/share/wallpapers/default.jpg",
     "code/anime-streamer",
     "code/rebos-assistant"
   ],
@@ -534,14 +532,6 @@
     },
     ".local/share/wallpapers/Ismail Inceoglu - Seventeenth": {
       "source": "system/share/wallpapers/Ismail Inceoglu - Seventeenth",
-      "kind": "managed"
-    },
-    ".local/share/wallpapers/New-1920x1200": {
-      "source": "system/share/wallpapers/New-1920x1200",
-      "kind": "managed"
-    },
-    ".local/share/wallpapers/default.jpg": {
-      "source": "system/share/wallpapers/default.jpg",
       "kind": "managed"
     },
     "code/anime-streamer": {

@@ -77,8 +77,7 @@ Early KMS is optional and currently supports mkinitcpio. It adds an additive NVI
 - Dark OLED theme with wallpaper-driven GTK, Qt, KDE, Kitty, Fish, Fuzzel, btop, Neovim and supported app palettes; a current palette snapshot is provided for the first login.
 - Kitty/Fish prompt and shortcuts, procedural wallpaper-colored bonsai greeting that grows from a seedling into a unique Unicode tree with layered foliage and a ceramic pot, bundled terminal/shell fonts, GoogleDot cursor and Papirus icons.
 - Custom Neovim IDE configuration and plugin lockfile. Plugins and language servers download separately through Neovim on first use; open `:IDEHelp` for instructions.
-- Four 1920×1200 wallpapers in `New-1920x1200`: Aurora Lake, Bioluminescent Garden, Floating Islands and Neon Alley. Fresh installs select Aurora Lake; existing wallpaper preferences are preserved.
-- 263 wallpapers by [Ismail Inceoglu (Seventeenth)](https://seventeenth.artstation.com/) in `Ismail Inceoglu - Seventeenth`, within 20% of 1920×1200 in each dimension. The collection includes `sources.json` with artwork links and image dimensions.
+- 263 wallpapers by [Ismail Inceoglu (Seventeenth)](https://seventeenth.artstation.com/) in `Ismail Inceoglu - Seventeenth`, within 20% of 1920×1200 in each dimension. The collection includes `sources.json` with artwork links and image dimensions. Fresh installs select The Stone Sky; existing wallpaper preferences are preserved.
 - Themed ReGreet login configuration, background, layout extension and GoogleDot cursor, NetworkManager, Bluetooth, PipeWire/WirePlumber, power profiles, authentication agent, portals, screenshots, OCR and clipboard history.
 - Full-profile apps include Discord, Spotify Launcher, OBS, Obsidian, Zen, image viewer, developer tools, and the optional AUR apps listed above.
 
