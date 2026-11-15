@@ -1359,8 +1359,6 @@ def sun_palette(hour):
         t = (band / 7) ** 1.6
         rgb = tuple(round(a + (b - a) * t) for a, b in zip(center, edge))
         palette[f"sky_orb_sun{band}"] = "\033[0;38;2;{};{};{}m".format(*rgb)
-    palette["sky_orb_sun_core"] = "\033[0;38;2;{};{};{}m".format(
-        *(min(255, round(c + 12)) for c in center))
     palette["sky_glow"] = "\033[0;38;2;{};{};{}m".format(
         *(round(c * 0.55) for c in center))
     return palette
@@ -1372,12 +1370,11 @@ def celestial_marks(daylight, rising):
         sun = (
             "   ░▒▒▒░   ",
             " ░▒▒▓▓▓▒▒░ ",
-            "░▒▒▓▓☼▓▓▒▒░",
+            "░▒▒▓▓▓▓▓▒▒░",
             " ░▒▒▓▓▓▒▒░ ",
             "   ░▒▒▒░   ",
         )
         return [(x - 5, y - 2, glyph,
-                 "sky_orb_sun_core" if glyph == "☼" else
                  f"sky_orb_sun{min(7, round(math.hypot((x - 5) / 5.4, (y - 2) / 2.45) * 7))}")
                 for y, row in enumerate(sun) for x, glyph in enumerate(row) if glyph != " "]
     moon = (

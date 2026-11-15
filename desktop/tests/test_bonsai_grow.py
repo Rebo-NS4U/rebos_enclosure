@@ -485,7 +485,8 @@ class BonsaiGrowTests(unittest.TestCase):
             marks = bonsai.celestial_marks(daylight, True)
             body = [glyph for x, y, glyph, ink in marks if ink.startswith('sky_orb')]
             self.assertNotIn('█', body)
-            self.assertIn('☼' if daylight else '·', body)
+            self.assertIn('▓' if daylight else '·', body)
+            self.assertNotIn('☼', body)
             self.assertGreater(len({ink for x, y, glyph, ink in marks}), 3)
         moon = bonsai.celestial_marks(False, True)
         reflected = bonsai.celestial_marks(False, False)
@@ -634,7 +635,7 @@ class BonsaiGrowTests(unittest.TestCase):
         for hour in (0, 12):
             image = bonsai.render(0, 42, False, 59, fixed_height=True, hour=hour)
             self.assertIn('·', image)
-            self.assertEqual('☼' in image, hour == 12)
+            self.assertNotIn('☼', image)
             self.assertNotIn('☾', image)
             self.assertEqual(len(image.splitlines()), 26)
             self.assertTrue(all(len(row) == 59 for row in image.splitlines()))
