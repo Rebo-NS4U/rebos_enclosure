@@ -10,6 +10,7 @@ import qs.modules.services
 import qs.config
 import qs.modules.globals
 import "SettingsCrawler.js" as SettingsCrawler
+import "SettingsSearch.js" as SettingsSearch
 
 Item {
     id: root
@@ -189,52 +190,6 @@ Item {
             searchResults.positionViewAtIndex(selectedIndex, ListView.Contain);
     }
 
-    // Fuzzy match: checks if all characters of query appear in order in target
-    function fuzzyMatch(query, target) {
-        if (query.length === 0)
-            return true;
-        if (target.length === 0)
-            return false;
-        const lowerQuery = query.toLowerCase();
-        const lowerTarget = target.toLowerCase();
-        let queryIndex = 0;
-        for (let i = 0; i < lowerTarget.length && queryIndex < lowerQuery.length; i++) {
-            if (lowerTarget[i] === lowerQuery[queryIndex]) {
-                queryIndex++;
-            }
-        }
-        return queryIndex === lowerQuery.length;
-    }
-
-    // Score a fuzzy match (higher is better)
-    function fuzzyScore(query, target) {
-        if (query.length === 0)
-            return 0;
-        if (target.length === 0)
-            return -1;
-        const lowerQuery = query.toLowerCase();
-        const lowerTarget = target.toLowerCase();
-
-        // Exact match gets highest score
-        if (lowerTarget.includes(lowerQuery))
-            return 1000 + (100 - target.length);
-
-        // Fuzzy scoring
-        let queryIndex = 0, score = 0, consecutive = 0, maxConsecutive = 0;
-        for (let i = 0; i < lowerTarget.length && queryIndex < lowerQuery.length; i++) {
-            if (lowerTarget[i] === lowerQuery[queryIndex]) {
-                queryIndex++;
-                consecutive++;
-                maxConsecutive = Math.max(maxConsecutive, consecutive);
-                if (i === 0 || " -_".includes(lowerTarget[i - 1]))
-                    score += 10;
-            } else {
-                consecutive = 0;
-            }
-        }
-        return queryIndex === lowerQuery.length ? score + maxConsecutive * 5 : -1;
-    }
-
     readonly property var categoryModel: [
         {label: "Theme & appearance", subLabel: "Colors, wallpaper and shell style", icon: Icons.paintBrush, isIcon: true, section: 4, sections: [4, 6]},
         {label: "Desktop & system", subLabel: "Displays, shortcuts and window rules", icon: Icons.layout, isIcon: true, section: 9, sections: [9, 7, 8]},
@@ -313,10 +268,7 @@ Item {
         if (searchQuery.length === 0)
             return categoryModel;
 
-        const query = searchQuery.toLowerCase();
-        return searchIndex.items.filter(item => {
-            return fuzzyMatch(query, item.label) || (item.keywords && item.keywords.includes(query));
-        }).map(item => {
+        return SettingsSearch.search(searchQuery, searchIndex.items).map(item => {
             // Find section metadata
             const sectionMeta = sectionModel.find(s => s.section === item.section) || {};
             return {
@@ -327,9 +279,9 @@ Item {
                 // Use section icon instead of item icon
                 icon: sectionMeta.icon || item.icon,
                 isIcon: sectionMeta.isIcon !== undefined ? sectionMeta.isIcon : (item.isIcon !== undefined ? item.isIcon : true),
-                score: fuzzyScore(query, item.label)
+                score: item.score
             };
-        }).sort((a, b) => b.score - a.score);
+        });
     }
 
     // Find the index of current section in filtered list
