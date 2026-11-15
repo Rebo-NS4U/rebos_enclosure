@@ -19,3 +19,15 @@ for (let i=0; i<100; i++) {
     assert(e.x<0 || e.x>800 || e.y<0 || e.y>500);
 }
 console.log('MouseDash mechanics: PASS');
+
+// Survival progressively enlarges the player and increases spawn pressure.
+assert(game.playerRadius(30) > game.playerRadius(0));
+assert.equal(game.playerRadius(1000), 18);
+for (let d = 0; d < 3; d++) {
+    assert(game.spawnInterval(d, 30) < game.spawnInterval(d, 0));
+    assert(game.spawnInterval(d, 10000) >= .09);
+}
+assert(game.spawnInterval(2, 0) < game.spawnInterval(0, 0));
+assert(game.sweptHit([{x:50,y:70,r:5}],0,50,100,50,18));
+assert(!game.sweptHit([{x:50,y:70,r:5}],0,50,100,50,9));
+console.log('Difficulty progression and growing hitbox: PASS');

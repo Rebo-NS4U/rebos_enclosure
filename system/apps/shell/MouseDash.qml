@@ -23,6 +23,8 @@ ShellRoot {
         property string phase: "ready"
         property int difficulty: 1
         property real elapsed: 0
+        readonly property real playerRadius: Game.playerRadius(elapsed)
+        onPhaseChanged: field.requestPaint()
         property real playerX: 0.5
         property real playerY: 0.5
         property var enemies: []
@@ -65,12 +67,12 @@ ShellRoot {
                 const now = Date.now(), dt = Math.min(0.04, (now - window.lastTick) / 1000);
                 window.lastTick = now;
                 window.elapsed += dt; window.spawnClock += dt;
-                const gap = Math.max(0.16, 0.85 - window.difficulty * 0.18 - window.elapsed * 0.007);
+                const gap = Game.spawnInterval(window.difficulty, window.elapsed);
                 if (window.spawnClock >= gap) {
                     window.spawnClock = 0;
                     window.enemies.push(Game.spawn(arena.width, arena.height, window.playerX, window.playerY, window.difficulty, window.elapsed));
                 }
-                const result = Game.step(window.enemies, dt, window.playerX * arena.width, window.playerY * arena.height, arena.width, arena.height);
+                const result = Game.step(window.enemies, dt, window.playerX * arena.width, window.playerY * arena.height, arena.width, arena.height, window.playerRadius);
                 window.enemies = result.enemies;
                 if (!window.reducedMotion) {
                     window.trail.push({x: window.playerX, y: window.playerY});
@@ -143,9 +145,9 @@ ShellRoot {
                             c.fillStyle = Qt.alpha(Colors.overBackground, 0.5); c.beginPath(); c.arc(e.x, e.y, 2, 0, Math.PI*2); c.fill();
                         }
                         const px = window.playerX*w, py = window.playerY*h;
-                        if (!window.reducedMotion) { c.fillStyle = Qt.alpha(Colors.primary, 0.12); c.beginPath(); c.arc(px, py, 20, 0, Math.PI*2); c.fill(); }
+                        if (!window.reducedMotion) { c.fillStyle = Qt.alpha(Colors.primary, 0.12); c.beginPath(); c.arc(px, py, window.playerRadius + 14, 0, Math.PI*2); c.fill(); }
                         c.fillStyle = window.phase === "over" ? Colors.error : Colors.primary;
-                        c.beginPath(); c.arc(px, py, 6, 0, Math.PI*2); c.fill();
+                        c.beginPath(); c.arc(px, py, window.playerRadius, 0, Math.PI*2); c.fill();
                     }
                     Connections { target: Colors; function onPrimaryChanged() { field.requestPaint(); } }
                 }
@@ -155,18 +157,18 @@ ShellRoot {
                     onPositionChanged: mouse => {
                         if (window.phase !== "playing") return;
                         const nextX = mouse.x, nextY = mouse.y;
-                        if (Game.sweptHit(window.enemies, window.playerX * width, window.playerY * height, nextX, nextY)) window.finish();
+                        if (Game.sweptHit(window.enemies, window.playerX * width, window.playerY * height, nextX, nextY, window.playerRadius)) window.finish();
                         window.playerX = nextX / width; window.playerY = nextY / height;
                     }
                     onExited: window.pause()
                     onClicked: mouse => {
-                        if (window.phase === "ready" || window.phase === "over") window.start(mouse.x, mouse.y);
+                        if (window.phase === "ready") window.start(mouse.x, mouse.y);
                         else if (window.phase === "paused") { window.lastTick = Date.now(); window.phase = "playing"; }
                     }
                 }
                 Rectangle {
                     anchors.centerIn: parent; width: Math.min(parent.width - 48, 440); height: 190
-                    visible: window.phase !== "playing"
+                    visible: window.phase === "ready" || window.phase === "paused"
                     radius: 16; color: Qt.alpha(Colors.background, 0.95)
                     border.width: 1; border.color: Qt.alpha(Colors.primary, 0.3)
                     Column {
@@ -178,7 +180,19 @@ ShellRoot {
                 }
             }
             RowLayout {
-                StyledText { text: "●  " + (window.phase === "playing" ? "IN THE FLOW" : window.phase === "paused" ? "PAUSED" : "READY WHEN YOU ARE"); color: Colors.primary; font.pixelSize: 11 }
+                visible: window.phase === "over"
+                Layout.fillWidth: true
+                StyledText { text: "Run complete · " + window.elapsed.toFixed(2) + " s"; color: Colors.primary; font.bold: true }
+                Item { Layout.fillWidth: true }
+                Button {
+                    text: "Play again"
+                    onClicked: { window.phase = "ready"; field.requestPaint(); }
+                    contentItem: StyledText { text: parent.text; horizontalAlignment: Text.AlignHCenter; color: Colors.background }
+                    background: Rectangle { implicitWidth: 130; implicitHeight: 36; radius: 10; color: Colors.primary; border.width: parent.activeFocus ? 2 : 0; border.color: Colors.overBackground }
+                }
+            }
+            RowLayout {
+                StyledText { text: "●  " + (window.phase === "playing" ? "IN THE FLOW" : window.phase === "paused" ? "PAUSED" : window.phase === "over" ? "RUN COMPLETE" : "READY WHEN YOU ARE"); color: Colors.primary; font.pixelSize: 11 }
                 Item { Layout.fillWidth: true }
                 StyledText { text: "Move to dodge   /   Esc to pause   /   Bests saved locally"; opacity: 0.5; font.pixelSize: 11 }
             }
