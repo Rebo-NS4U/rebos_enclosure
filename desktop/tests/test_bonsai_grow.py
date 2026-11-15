@@ -446,6 +446,26 @@ class BonsaiGrowTests(unittest.TestCase):
                 if ink:
                     self.assertEqual(rows[y + 1][x + 1], glyph)
 
+    def test_sun_has_radial_light_and_time_dependent_warmth(self):
+        import re
+        def rgb(ink):
+            return tuple(map(int, re.findall(r'\d+', ink)[-3:]))
+        noon = bonsai.sun_palette(12)
+        dawn = bonsai.sun_palette(6)
+        dusk = bonsai.sun_palette(18)
+        self.assertEqual(dawn, dusk)
+        self.assertNotEqual(noon, dawn)
+        shades = [rgb(noon[f'sky_orb_sun{i}']) for i in range(8)]
+        self.assertEqual(len(set(shades)), 8)
+        self.assertTrue(all(sum(a) > sum(b) for a, b in zip(shades, shades[1:])))
+        self.assertGreater(rgb(noon['sky_orb_sun0'])[2], rgb(dawn['sky_orb_sun0'])[2])
+        for hour in (6, 12, 17):
+            canvas = [[(' ', '') for _ in range(57)] for _ in range(24)]
+            bonsai.sky_pane(canvas, hour)
+            roles = {ink for row in canvas for _, ink in row}
+            self.assertIn('sky_glow', roles)
+            self.assertGreater(len(roles & set(noon)), 5)
+
     def test_animation_settles_without_a_last_frame_jump(self):
         samples = [bonsai.animation_day(i / 120, 1) for i in range(121)]
         self.assertEqual(samples[0], 0)

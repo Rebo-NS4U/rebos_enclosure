@@ -1346,6 +1346,24 @@ def sky_at_hour(hour):
             return tuple(round(x + (y - x) * t) for x, y in zip(a, b))
 
 
+def sun_palette(hour):
+    """Luminous ivory at noon, warm copper at the edges of the day."""
+    elevation = max(0, math.sin(math.pi * (hour - 6) / 12))
+    horizon = (230, 158, 104)
+    noon = (236, 215, 163)
+    center = tuple(a + (b - a) * elevation for a, b in zip(horizon, noon))
+    palette = {}
+    for band in range(8):
+        # Gentle limb darkening reads as light rather than a shaded planet.
+        radius = band / 7
+        brightness = 1 - 0.38 * radius ** 1.7
+        rgb = tuple(round(c * brightness) for c in center)
+        palette[f"sky_orb_sun{band}"] = "\033[0;38;2;{};{};{}m".format(*rgb)
+    palette["sky_glow"] = "\033[0;38;2;{};{};{}m".format(
+        *(round(c * 0.28) for c in center))
+    return palette
+
+
 def sky_pane(canvas, hour):
     """Place sparse celestial marks and mist only in unoccupied glass."""
     daylight = 6 <= hour < 18
@@ -1370,7 +1388,15 @@ def sky_pane(canvas, hour):
                 distance = math.hypot(dx, (y - 2) / 2.5)
                 role = "sky_orb_rim" if distance > 0.82 else (
                     "sky_orb_light" if dx < -0.15 else "sky_orb")
+                if daylight:
+                    role = f"sky_orb_sun{min(7, round(distance * 7))}"
                 marks.append((cx + x - 5, cy + y - 2, glyph, role))
+    if daylight:
+        # Sparse, low-contrast corona stays separate from the solid solar disc.
+        marks += [(cx + dx, cy + dy, glyph, "sky_glow")
+                  for dx, dy, glyph in ((-6, 0, "·"), (6, 0, "·"),
+                                        (-4, -2, "⠂"), (4, -2, "⠐"),
+                                        (-4, 2, "⠈"), (4, 2, "⠁"))]
     # Keep a narrow dark contour around the foreground. Without this breathing
     # room, solid sky blocks visually merge with thin twigs and leaf clusters.
     foreground = {(x, y) for y, row in enumerate(canvas)
@@ -1387,7 +1413,7 @@ def sky_pane(canvas, hour):
               ((4, 10), (5, 10), (7, 10), (48, 13), (50, 13), (51, 13))]
     for x, y, glyph, ink in marks:
         if 0 <= y < len(canvas) and 0 <= x < len(canvas[y]) and canvas[y][x] == (" ", ""):
-            if ink.startswith("sky_orb") and any(
+            if ink.startswith(("sky_orb", "sky_glow")) and any(
                 (x + dx, y + dy) in foreground for dx, dy in offsets
             ):
                 continue
@@ -1867,6 +1893,7 @@ def render(
     )
     for role, rgb in (("sky_orb", body), ("sky_orb_light", light), ("sky_orb_rim", rim)):
         palette[role] = "\033[0;38;2;{};{};{}m".format(*rgb)
+    palette.update(sun_palette(hour))
     palette["sky_star"] = "\033[0;38;2;88;94;111m"
     palette["sky_mist"] = "\033[0;38;2;57;62;63m"
     output = []
