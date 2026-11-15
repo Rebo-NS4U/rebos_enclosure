@@ -1437,7 +1437,7 @@ def backlit_ink(ink, daylight):
 
 @functools.lru_cache(maxsize=8)
 def rounded_frame_png(cell_width, cell_height, rows, rgb):
-    """One shared rounded mask for the charcoal backing and two-pixel rim."""
+    """Rounded glass with etched rims, grazing reflections and a quiet center."""
     width, height = 59 * cell_width, rows * cell_height
     radius = min(12, cell_height * 0.65)
     half_width, half_height = (width - cell_width) / 2, (height - cell_height) / 2
@@ -1446,11 +1446,33 @@ def rounded_frame_png(cell_width, cell_height, rows, rgb):
     for y in range(height):
         qy = abs(y + 0.5 - height / 2) - (half_height - radius)
         data.append(0)  # PNG scanline: no filter.
-        for qx in xs:
+        for x, qx in enumerate(xs):
             distance = math.hypot(max(qx, 0), max(qy, 0)) + min(max(qx, qy), 0) - radius
             alpha = round(255 * max(0, min(1, 0.5 - distance)))
             rim = max(0, min(1, distance + 2.5))
-            ink = tuple(round(24 + (channel - 24) * rim) for channel in rgb)
+            depth = -distance
+            light, frost = 0.0, 0
+            if 2 < depth < 24:
+                # An interrupted concentric etch reads as glass thickness.
+                if 5 <= depth <= 6.2 and (x // 37 + y // 53) % 7 not in (0, 1):
+                    light += 0.16
+                grazing = (x < width * 0.32 and y < height * 0.18) or (
+                    x > width * 0.78 and y > height * 0.64)
+                if grazing:
+                    light += 0.18 * max(0, 1 - depth / 20) ** 2
+                # Two narrow slanted reflections stay along the side pane.
+                if height * 0.16 < y < height * 0.36:
+                    streak = cell_width / 2 + 9 + (y - height * 0.16) * 0.10
+                    if abs(x - streak) < 0.8 or abs(x - streak - 5) < 0.5:
+                        light += 0.22
+                # A low meniscus catches light without adding a full-panel tint.
+                if height - cell_height / 2 - 11 < y < height - cell_height / 2 - 10:
+                    light += 0.16 * max(0, 1 - abs(x / width - 0.55) * 3)
+                grain = ((x * 37 + y * 73) ^ (x * y * 3)) % 97
+                frost = 5 if grain < 3 else 0
+            glass = [24 + (max(90, c) - 24) * min(0.4, light) + frost for c in rgb]
+            ink = tuple(round(base + (channel - base) * rim)
+                        for base, channel in zip(glass, rgb))
             data.extend((*ink, alpha))
     def chunk(kind, payload):
         return (struct.pack('!I', len(payload)) + kind + payload
