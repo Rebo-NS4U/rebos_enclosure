@@ -57,9 +57,11 @@ class UpdateButtonTests(unittest.TestCase):
     @unittest.skipUnless(shutil.which('qs'), 'Quickshell is required')
     def test_terminal_outcomes(self):
         cases = {
+            'current': ('#!/bin/sh\nexit 99\n', ''),
+            'offline': ('#!/bin/sh\nexit 99\n', ''),
             'open': ('#!/bin/sh\nsleep 3\n', '''
                 window.check(!button.enabled && button.text.includes("open"), "Open window is indicated");
-                window.check(feedback.text.includes("Switch to"), "Window switching guidance is visible");'''),
+                window.check(feedback.text.includes("progress"), "Window switching guidance is visible");'''),
             'failure': ('#!/bin/sh\necho "terminal failed" >&2\nexit 7\n', '''
                 window.check(button.enabled && controls.updateFailed, "Failed launch allows retry");
                 window.check(feedback.text.includes("exit 7"), "Terminal exit failure is visible");'''),
@@ -75,12 +77,19 @@ class UpdateButtonTests(unittest.TestCase):
                 (root / 'scripts').mkdir()
                 (root / 'scripts/github_projects.py').write_text(
                     'print(\'{"ok":true,"desktop_path":"/repo","projects":[],"message":"Ready"}\')\n')
+                (root / 'scripts/github_update.py').write_text(
+                    'print(\'{"available":' + ('false' if name in ('current', 'offline') else 'true')
+                    + ',"tag":"v2.0.0"}\')\n'
+                    + ('raise SystemExit(1)\n' if name == 'offline' else ''))
                 (root / 'bin').mkdir()
                 kitty = root / 'bin/kitty'
                 kitty.write_text(terminal)
                 kitty.chmod(0o755)
                 (root / 'runtime').mkdir(mode=0o700)
-                (root / 'shell.qml').write_text(HARNESS.replace('EXPECTATIONS', expectations))
+                harness = HARNESS.replace('EXPECTATIONS', expectations)
+                if name in ('current', 'offline'):
+                    harness = harness.replace('window.check(button.enabled,', 'window.check(!button.visible, "No release means no update button"); console.log("UPDATE BUTTON PASSED"); Qt.quit(); return; window.check(button.enabled,')
+                (root / 'shell.qml').write_text(harness)
                 env = dict(os.environ, HOME=temporary, XDG_RUNTIME_DIR=str(root / 'runtime'),
                            QT_QPA_PLATFORM='offscreen', QT_QUICK_BACKEND='software',
                            QT_QPA_PLATFORMTHEME='basic', PATH=str(root / 'bin') + ':' + os.environ['PATH'])

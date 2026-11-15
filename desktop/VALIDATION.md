@@ -1,5 +1,25 @@
 # Validation record
 
+## Release-only update button — 2026-11-15
+
+- Settings → GitHub now offers one Enclosure update button only for a newer
+  published stable release. Checks run on page entry, explicit status refresh
+  and every 15 minutes while visible. Drafts, prereleases, current/ahead/diverged
+  histories, missing releases and failed checks do not offer an update.
+- Clicking rechecks availability and invokes the existing updater with the exact
+  release tag and `--files-only`. Progress is visible in a terminal; the extra
+  preview/confirmation and package checkbox have been removed. Existing payload,
+  local-change, backup and frozen-updater protections remain in place.
+- All 13 installer, 19 updater/handoff/health, eight update helper/UI and two
+  branch-menu tests pass. UI cases cover available/current/offline states and
+  terminal launch failures. Ruff, pinned Pylint (70 unchanged exception ceilings),
+  installer/updater Bash syntax, payload integrity and linked deployment preview
+  pass.
+- A real read-only GitHub release check returned `available: false` for v1.8.0
+  on this newer local checkout. No update was applied. Installed shell sources
+  resolve into this checkout; no desktop or assistant service was restarted.
+  No push, tag or release was created.
+
 ## 2.0 candidate refresh — 2026-11-15
 
 - Rechecked the official checkout against remote HEAD `88dad1e`; that commit is

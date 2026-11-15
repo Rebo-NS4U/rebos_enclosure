@@ -433,15 +433,15 @@ With no local checkout available, the page can still compare the installed
 revision, but Git editing controls stay disabled. After updating these controls,
 use **Check for updates** once to refresh an already-open GitHub page.
 
-In Settings → GitHub, select Enclosure and use **Preview & update installed
-desktop…**. The update window shows a dry run and requires typing `UPDATE` before
-applying. Desktop files only is the default; select the package checkbox to also
-upgrade system and AUR packages. Errors remain visible until the window is closed.
-Locally edited managed files block updates rather than being silently replaced.
-The official checkout must be at `~/rebos_enclosure` or `~/code/rebos_enclosure`
-(or linked to the installed shell). Pull current branch updates only the checkout.
-Personal preferences and the updater's recovery backups are retained. Log out
-and back in after success.
+In Settings → GitHub, Enclosure shows a single **Update Enclosure to …** button
+only when a newer stable GitHub release is available. It checks when the page
+opens, when status is refreshed and every 15 minutes while visible. Branch
+commits, drafts, prereleases and failed checks do not offer an update.
+Clicking applies that exact release immediately in a progress terminal, without
+a second confirmation. Updates preserve personal preferences and create recovery
+backups; local-change protection and payload verification remain enforced.
+The button updates desktop files only. Terminal `./update.sh` options remain
+available for package upgrades and branch-based maintenance.
 
 ### Settings navigation and shortcut search
 
