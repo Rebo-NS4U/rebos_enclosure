@@ -610,7 +610,7 @@
   "system/apps/shell/modules/widgets/dashboard/controls/VariantEditor.qml": "557eb11d5b1259b69685ed5e3db35cb6700c7ed4ad9a4525d2b71677bc136dad",
   "system/apps/shell/modules/widgets/dashboard/controls/WallpaperSampler.qml": "ff8bcb789721159a63673973fe1a09f26934ab1a5314897425baa80df9139457",
   "system/apps/shell/modules/widgets/dashboard/controls/WallpaperTintSwatches.qml": "1e57426b2e4189232cdcb8e6af25dbe155725d49c3b1938e449b45a891587290",
-  "system/apps/shell/modules/widgets/dashboard/controls/WeatherSettings.qml": "e897252e036388abfa57d20f42f197693bc91c9dc9fd7db0efb83f66e7451896",
+  "system/apps/shell/modules/widgets/dashboard/controls/WeatherSettings.qml": "b3fb72c1cf05d95f02e4785ee277884d54a0508231cc2b1864ba919c457ded3f",
   "system/apps/shell/modules/widgets/dashboard/controls/WifiNetworkItem.qml": "188a195d3ac2c70154c89392137385abc5a97f5a373d3b6c7ca3299dc091e3aa",
   "system/apps/shell/modules/widgets/dashboard/controls/WifiPanel.qml": "9ffea9fc75fd6b0fa43baf4f53096f156ba6ef7e50121cf51f9bf13935446cae",
   "system/apps/shell/modules/widgets/dashboard/controls/WindowRuleDialog.qml": "2510009231866939beab08b073bcac47d84f74cf167ae3d43e75dc38a38cb2c9",

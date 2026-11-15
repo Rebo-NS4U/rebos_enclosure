@@ -76,69 +76,34 @@ SettingsGroup {
         }
     }
 
-    // Unit selector
-    RowLayout {
+    ColumnLayout {
         Layout.fillWidth: true
         spacing: Styling.spacing(8)
 
         StyledText {
-            renderType: Text.NativeRendering
-            font.hintingPreference: Font.PreferFullHinting
-            text: "Temperature unit"
-            font.family: Config.theme.font
-            font.pixelSize: Styling.fontSize(0)
-            color: Colors.overBackground
-            Layout.preferredWidth: 100
+            objectName: "weather-unit-label"
+            text: "Temperature units"
+            Layout.fillWidth: true
+            wrapMode: Text.WordWrap
         }
 
-        Row {
+        RowLayout {
+            Layout.fillWidth: true
             spacing: Styling.spacing(8)
-
             Repeater {
                 model: [
-                    {
-                        id: "C",
-                        label: "Celsius"
-                    },
-                    {
-                        id: "F",
-                        label: "Fahrenheit"
-                    }
+                    { id: "C", label: "Celsius (°C)" },
+                    { id: "F", label: "Fahrenheit (°F)" }
                 ]
-
-                delegate: StyledRect {
-                    id: unitButton
+                delegate: SettingsButton {
                     required property var modelData
-                    required property int index
-
-                    property bool isSelected: Config.weather.unit === modelData.id
-                    property bool isHovered: false
-
-                    variant: isSelected ? "primary" : (isHovered ? "focus" : "common")
-                    width: unitLabel.width + 24
-                    height: 36
-                    radius: Styling.radius(-2)
-
-                    StyledText {
-                        renderType: Text.NativeRendering
-                        font.hintingPreference: Font.PreferFullHinting
-                        id: unitLabel
-                        anchors.centerIn: parent
-                        text: unitButton.modelData.label
-                        font.family: Config.theme.font
-                        font.pixelSize: Styling.fontSize(0)
-                        font.weight: unitButton.isSelected ? Font.Bold : Font.Normal
-                        color: unitButton.item
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onEntered: unitButton.isHovered = true
-                        onExited: unitButton.isHovered = false
-                        onClicked: Config.weather.unit = unitButton.modelData.id
-                    }
+                    objectName: "weather-unit-" + modelData.id
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: 0
+                    text: modelData.label
+                    highlighted: Config.weather.unit === modelData.id
+                    Accessible.name: modelData.label
+                    onClicked: Config.weather.unit = modelData.id
                 }
             }
         }
