@@ -577,7 +577,18 @@ ClippingRectangle {
                 if(finish === "canopy"){
                     // A tensile fabric roof: broad catenary sweeps, ribs and shaded folds.
                     const fabric=a=>Qt.rgba(accent.r*0.65+secondaryAccent.r*0.35,accent.g*0.65+secondaryAccent.g*0.35,accent.b*0.65+secondaryAccent.b*0.35,a);
-                    if(outer){
+                    if(barSurface){
+                        // Keep shallow bars quiet: one fabric sweep, no converging ribs.
+                        const drop=Math.min(8,height*0.14);
+                        const shade=ctx.createLinearGradient(0,0,0,height);
+                        shade.addColorStop(0,fabric(0.08));
+                        shade.addColorStop(0.45,fabric(0.015));
+                        shade.addColorStop(1,fabric(0.035));
+                        ctx.fillStyle=shade;ctx.fillRect(0,0,width,height);
+                        ctx.strokeStyle=fabric(0.14);ctx.lineWidth=1;
+                        ctx.beginPath();ctx.moveTo(safe,3);
+                        ctx.quadraticCurveTo(width*0.5,3+drop,width-safe,3);ctx.stroke();
+                    }else if(outer){
                         const drop=Math.min(70,height*0.22);
                         // Translucent fabric spans the upper edge with a scalloped hem.
                         const shade=ctx.createLinearGradient(0,0,0,drop+18);
