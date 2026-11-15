@@ -245,6 +245,79 @@ ClippingRectangle {
         radius: root.radius
     }
 
+    // Frosted and Tinted have distinct perimeter construction, not a palette swap.
+    Loader {
+        anchors.fill: parent
+        active: !root.hasFillColor && root.rectOpacity > 0
+            && ["bg", "popup", "pane", "surface", "surfaceContainer", "internalbg", "focus"].indexOf(root.variant) !== -1
+            && ["frosted", "colorful"].indexOf(root.styleOverride || Styling.shellStyle) !== -1
+        sourceComponent: Item {
+            id: classic
+            readonly property bool ice: (root.styleOverride || Styling.shellStyle) === "frosted"
+            readonly property bool outer: root.variant === "bg" || root.variant === "popup"
+            readonly property color ink: root.itemColor
+            readonly property color accent: Colors.primary
+            opacity: root.rectOpacity
+            Canvas {
+                anchors.fill: parent
+                readonly property color pigment: classic.ink
+                readonly property color accent: classic.accent
+                readonly property bool ice: classic.ice
+                onPigmentChanged: requestPaint()
+                onAccentChanged: requestPaint()
+                onIceChanged: requestPaint()
+                onWidthChanged: requestPaint()
+                onHeightChanged: requestPaint()
+                onPaint: {
+                    const ctx=getContext("2d");ctx.clearRect(0,0,width,height);
+                    if(width<24 || height<24)return;
+                    const ink=a=>Qt.rgba(pigment.r,pigment.g,pigment.b,a);
+                    const tint=a=>Qt.rgba(accent.r,accent.g,accent.b,a);
+                    ctx.lineWidth=1;
+                    if(ice){
+                        // Two soft inset rims and a broken highlight suggest etched ice.
+                        for(let layer=0;layer<2;layer++){
+                            const d=3+layer*3,r=Math.min(12,width/5,height/5);
+                            ctx.strokeStyle=ink(layer?0.07:0.18);
+                            ctx.beginPath();ctx.moveTo(d+r,d);ctx.lineTo(width-d-r,d);
+                            ctx.quadraticCurveTo(width-d,d,width-d,d+r);ctx.lineTo(width-d,height-d-r);
+                            ctx.quadraticCurveTo(width-d,height-d,width-d-r,height-d);ctx.lineTo(d+r,height-d);
+                            ctx.quadraticCurveTo(d,height-d,d,height-d-r);ctx.lineTo(d,d+r);
+                            ctx.quadraticCurveTo(d,d,d+r,d);ctx.stroke();
+                        }
+                        ctx.strokeStyle=ink(0.32);ctx.beginPath();ctx.moveTo(18,3);ctx.lineTo(Math.max(18,width*0.38),3);ctx.stroke();
+                        if(classic.outer){
+                            // Fixed fine grain at the perimeter; no texture over text.
+                            ctx.fillStyle=ink(0.14);
+                            for(let i=0;i<Math.min(200,Math.floor((width+height)/4));i++){
+                                const x=8+((i*47)%Math.max(1,width-16));
+                                const y=i%2?height-5-(i%5):4+(i%5);
+                                ctx.fillRect(x,y,1,1);
+                            }
+                            const bloom=ctx.createRadialGradient(width,0,0,width,0,Math.min(100,width/3,height/2));
+                            bloom.addColorStop(0,ink(0.075));bloom.addColorStop(1,ink(0));
+                            ctx.fillStyle=bloom;ctx.fillRect(0,0,width,height);
+                        }
+                    }else{
+                        // Offset accent planes, quiet inner keylines and open frame corners.
+                        const band=classic.outer?7:3;
+                        ctx.fillStyle=tint(0.22);ctx.fillRect(0,12,band,Math.max(0,height-24));
+                        ctx.fillStyle=tint(0.12);ctx.fillRect(band+2,22,2,Math.max(0,height-44));
+                        ctx.strokeStyle=tint(0.30);ctx.beginPath();
+                        ctx.moveTo(18,5);ctx.lineTo(width-18,5);ctx.lineTo(width-5,18);ctx.lineTo(width-5,Math.max(18,height*0.32));ctx.stroke();
+                        ctx.strokeStyle=ink(0.09);ctx.beginPath();ctx.moveTo(16,11);ctx.lineTo(width-22,11);ctx.stroke();
+                        ctx.fillStyle=tint(0.23);ctx.beginPath();
+                        ctx.moveTo(width-34,height-5);ctx.lineTo(width-5,height-5);ctx.lineTo(width-5,height-16);ctx.lineTo(width-23,height-16);ctx.closePath();ctx.fill();
+                        if(classic.outer){
+                            ctx.fillStyle=tint(0.35);
+                            for(let i=0;i<3;i++)ctx.fillRect(18+i*9,height-7,5,2);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     // Structural glass: perimeter details leave the central reading area clear.
     Loader {
         anchors.fill: parent

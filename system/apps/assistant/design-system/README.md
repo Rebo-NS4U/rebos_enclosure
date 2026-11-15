@@ -64,3 +64,5 @@ Glass Vault uses thick stepped blocks, bold corner clamps and deep inset control
 Saved Smoked Acrylic selections migrate to Glass Vault, Glass Console to Radar Station, and Circuit Glass to Suspended Film. Older predecessors migrate directly to the corresponding current theme.
 
 Clear Glass is the final theme-picker entry: restrained translucent panels, fine outer borders, borderless inner layers, gentle top highlights and soft corners. It preserves the selected colors, uses compositor blur and includes a minimal Kitty profile. Focused controls gain definition while semantic action buttons remain opaque.
+
+Frosted Glass uses etched double rims, broken highlights, fine perimeter grain and soft corner bloom, with rounded outer and inner surfaces. Tinted uses offset accent planes, open-corner frames, layered color bands and cut accent tabs. Both keep translucent layers, readable semantic action colors and their native terminal profiles; selecting either enables shell blur if it was off. All decorative details are static and concentrated at the perimeter.
