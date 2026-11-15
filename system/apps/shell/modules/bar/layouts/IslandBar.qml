@@ -720,8 +720,8 @@ Item {
         height: musicSurface.height
         visible: false
         layer.enabled: true
-        readonly property real left: (width - islandContainer.width) / 2
-        readonly property real right: (width + islandContainer.width) / 2
+        readonly property real centerLeft: (width - islandContainer.width) / 2
+        readonly property real centerRight: (width + islandContainer.width) / 2
         readonly property real shoulder: Math.min(root.islandHeight, height)
         readonly property real curve: Math.min(root.cornerRadius, Math.max(0, height - shoulder), islandContainer.width / 2)
         ShapePath {
@@ -730,12 +730,12 @@ Item {
             startX: 0; startY: 0
             PathLine { x: musicOutline.width; y: 0 }
             PathLine { x: musicOutline.width; y: musicOutline.shoulder }
-            PathLine { x: musicOutline.right; y: musicOutline.shoulder }
-            PathLine { x: musicOutline.right; y: musicOutline.height - musicOutline.curve }
-            PathQuad { x: musicOutline.right - musicOutline.curve; y: musicOutline.height; controlX: musicOutline.right; controlY: musicOutline.height }
-            PathLine { x: musicOutline.left + musicOutline.curve; y: musicOutline.height }
-            PathQuad { x: musicOutline.left; y: musicOutline.height - musicOutline.curve; controlX: musicOutline.left; controlY: musicOutline.height }
-            PathLine { x: musicOutline.left; y: musicOutline.shoulder }
+            PathLine { x: musicOutline.centerRight; y: musicOutline.shoulder }
+            PathLine { x: musicOutline.centerRight; y: musicOutline.height - musicOutline.curve }
+            PathQuad { x: musicOutline.centerRight - musicOutline.curve; y: musicOutline.height; controlX: musicOutline.centerRight; controlY: musicOutline.height }
+            PathLine { x: musicOutline.centerLeft + musicOutline.curve; y: musicOutline.height }
+            PathQuad { x: musicOutline.centerLeft; y: musicOutline.height - musicOutline.curve; controlX: musicOutline.centerLeft; controlY: musicOutline.height }
+            PathLine { x: musicOutline.centerLeft; y: musicOutline.shoulder }
             PathLine { x: 0; y: musicOutline.shoulder }
             PathLine { x: 0; y: 0 }
         }
