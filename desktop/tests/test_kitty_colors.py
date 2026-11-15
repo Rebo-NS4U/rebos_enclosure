@@ -30,6 +30,10 @@ ShellRoot {
   for (const role of ["overSurface","background","overPrimary","primary","surfaceContainerLow","outline","red","lightRed","green","lightGreen","yellow","lightYellow","lightBlue","magenta","lightMagenta","cyan","lightCyan","overSurfaceVariant","outlineVariant","error","surface","secondary","overSecondary","tertiary","overTertiary"]) p[role] = "#112233";
   p.background = "#262724"; p.outlineVariant = "#40e3e3dc"; p.opacity = 0.68;
   console.log("KITTY_CONFIG:" + JSON.stringify(generator.render(p)));
+  for (const style of ["monolith", "blueprint", "terminal-hardware", "frosted", "colorful"]) {
+   p.style = style;
+   console.log("STYLE_CONFIG:" + JSON.stringify({style:style, config:generator.render(p)}));
+  }
   Qt.quit();
  } }
 }''')
@@ -43,6 +47,26 @@ ShellRoot {
             self.assertIn('background_opacity 0.68',config)
             self.assertIn('font_family JetBrains Mono\nfont_size 13.5\n',config)
             self.assertIn('active_border_color #112233',config)
+            expected = {
+                'monolith': ('16 20', '0pt', 'block', 'separator'),
+                'blueprint': ('12 16', '1pt', 'underline', 'separator'),
+                'terminal-hardware': ('14 18', '2pt', 'block', 'powerline'),
+                'frosted': ('12 14', '0.5pt', 'beam', 'fade'),
+                'colorful': ('10 14', '1pt', 'beam', 'slant'),
+            }
+            styles = [json.loads(line.split('STYLE_CONFIG:',1)[1]) for line in (result.stdout+result.stderr).splitlines() if 'STYLE_CONFIG:' in line]
+            self.assertEqual({value['style'] for value in styles}, set(expected))
+            for value in styles:
+                with self.subTest(style=value['style']):
+                    rendered = value['config']
+                    padding, border, cursor, tabs = expected[value['style']]
+                    for setting in (f'window_padding_width {padding}', f'window_border_width {border}', f'cursor_shape {cursor}', f'tab_bar_style {tabs}', 'dynamic_background_opacity yes', 'background_opacity 0.68', 'font_family JetBrains Mono', 'cursor #112233'):
+                        self.assertIn(setting + '\n', rendered)
+                    candidate = root / (value['style'] + '.conf')
+                    candidate.write_text(rendered)
+                    code = f'from kitty.config import load_config; bad=[]; load_config({str(candidate)!r}, accumulate_bad_lines=bad); assert not bad, repr(bad)'
+                    parsed = subprocess.run(['kitty','+runpy',code],text=True,capture_output=True)
+                    self.assertEqual(parsed.returncode,0,parsed.stdout+parsed.stderr)
             path = root/'kitty.conf';path.write_text(config)
             code = f'from kitty.config import load_config; bad=[]; load_config({str(path)!r}, accumulate_bad_lines=bad); assert not bad, repr(bad)'
             parsed = subprocess.run(['kitty','+runpy',code],text=True,capture_output=True)

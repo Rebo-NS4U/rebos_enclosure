@@ -6,6 +6,28 @@ import qs.config
 QtObject {
     id: root
 
+    // Native terminal geometry follows the selected shell treatment.
+    // Keep the dedicated monospace font so terminal cell alignment is preserved.
+    function appearance(style) {
+        const profiles = {
+            "monolith": {padding: "16 20", border: "0pt", margin: 0, cursor: "block", tabs: "separator", separator: "  ┃  ", blink: 0, trail: 0},
+            "blueprint": {padding: "12 16", border: "1pt", margin: 2, cursor: "underline", tabs: "separator", separator: "  │  ", blink: 0, trail: 0},
+            "terminal-hardware": {padding: "14 18", border: "2pt", margin: 3, cursor: "block", tabs: "powerline", separator: " │ ", blink: 0, trail: 0},
+            "frosted": {padding: "12 14", border: "0.5pt", margin: 0, cursor: "beam", tabs: "fade", separator: "  ", blink: 0.55, trail: 100},
+            "colorful": {padding: "10 14", border: "1pt", margin: 0, cursor: "beam", tabs: "slant", separator: "  ", blink: 0.55, trail: 60}
+        };
+        const p = profiles[style] || profiles.frosted;
+        return `# Shell rendering style: ${style}\n`
+            + `window_padding_width ${p.padding}\nwindow_margin_width ${p.margin}\n`
+            + `single_window_padding_width -1\nsingle_window_margin_width -1\n`
+            + `window_border_width ${p.border}\ndraw_minimal_borders no\n`
+            + `cursor_shape ${p.cursor}\ncursor_shape_unfocused hollow\n`
+            + `cursor_blink_interval ${p.blink}\ncursor_trail ${p.trail}\n`
+            + `tab_bar_style ${p.tabs}\ntab_separator "${p.separator}"\n`
+            + `tab_powerline_style slanted\nactive_tab_font_style bold\ninactive_tab_font_style normal\n`
+            + `dynamic_background_opacity yes\n`;
+    }
+
     function render(Colors) {
         if (!Colors)
             return "";
@@ -20,8 +42,8 @@ QtObject {
             return "#" + channel(color.r, base.r) + channel(color.g, base.g) + channel(color.b, base.b);
         };
 
-        const cursor = fmt(Colors.overSurface);
-        const cursorText = fmt(Colors.background);
+        const cursor = fmt(Colors.primary);
+        const cursorText = fmt(Colors.overPrimary);
 
         const foreground = fmt(Colors.overSurface);
         const background = fmt(Colors.background);
@@ -65,6 +87,7 @@ QtObject {
 
         // Kitty uses points; QML theme typography uses pixels.
         let conf = `font_family ${Config.theme.monoFont}\nfont_size ${Config.theme.monoFontSize * 0.75}\n`;
+        conf += appearance(Colors.style || Config.theme.shellStyle);
         conf += `cursor ${cursor}\n`;
         conf += `cursor_text_color ${cursorText}\n\n`;
 

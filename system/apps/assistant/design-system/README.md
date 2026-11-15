@@ -52,3 +52,7 @@ Blueprint uses square corners, wire controls, major and minor drafting grids, pe
 Terminal Hardware uses double machined bezels, cooling vents, slotted screws, recessed display scanlines and raised mechanical controls.
 Their fonts are Noto Sans, JetBrains Mono and DejaVu Sans Mono respectively.
 Botanical Archive has been removed. Saved selections of removed styles fall back through normal configuration validation.
+
+## Terminal rendering
+
+Kitty follows the exported surface palette and opacity as well as the selected style's native controls. Monolith uses broad padding, borderless slabs and solid cursors; Blueprint uses fine borders, underlined cursors and ruled tab separators; Terminal Hardware uses heavier borders, inset margins, solid cursors and powerline tabs. Frosted Glass uses fine edges and fading tabs; Tinted uses slanted tabs. Switching styles explicitly resets all managed geometry and cursor settings. The dedicated monospace font and size remain user configurable. Niri continues to supply background blur according to the desktop blur settings. Kitty receives a configuration reload without closing terminal sessions.
