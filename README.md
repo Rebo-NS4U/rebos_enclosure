@@ -22,8 +22,6 @@ narration, persistent Dweebo sessions, media improvements and one-click updates.
 
 ![Desktop, themed apps and terminal](docs/screenshots/desktop.png)
 
-![Desktop settings](docs/screenshots/settings.png)
-
 Screenshots show a customized desktop; new installs start with the bundled default preset.
 
 ## Features
