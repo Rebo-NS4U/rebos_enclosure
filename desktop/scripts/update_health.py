@@ -44,7 +44,8 @@ ShellRoot {
         running: true
         onTriggered: {
             for (let path of ["modules/widgets/config/SettingsWindow.qml",
-                              "modules/bar/BatteryIndicator.qml"]) {
+                              "modules/bar/BatteryIndicator.qml",
+                              "modules/bar/ReleaseUpdateButton.qml"]) {
                 let component = Qt.createComponent(path);
                 if (component.status !== Component.Ready) {
                     console.error(component.errorString());

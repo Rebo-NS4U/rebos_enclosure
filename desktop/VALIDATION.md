@@ -1,5 +1,28 @@
 # Validation record
 
+## Installer/updater follow-up acceptance — 2026-11-15
+
+- Added top-level `update.sh` and `dev.sh` Bash syntax checks to both CI and
+  tox; installer/updater help and launcher syntax checks pass locally.
+- Updater preflight now compiles the release-alert component before replacing
+  files. A regression corrupts its QML and confirms validation rejects it.
+  All 20 updater/handoff/health tests pass. Full current-payload preflight also
+  passes without starting desktop services or changing the temporary home.
+- Full desktop discovery passed: 601 tests with only the two opt-in Wayland
+  cases skipped there. The nine isolated Wayland screenshot cases, Ruff, pinned Pylint with unchanged
+  exception ceilings and payload verification pass.
+- Exact committed bundle `defb8f3` (including both update buttons) passed
+  fresh/repeat file installation, v1.8.0 update, preference/account preservation
+  and file/link recovery. Its local acceptance report is
+  `~/releases/enclosure-2.0-prep/update-buttons-acceptance.json`.
+  Archive SHA-256:
+  `60e374b7d919738d375462cca73daf94b5186ad64f4ed1a8cb5b92355c910050`.
+  This archive predates the preflight/CI coverage additions recorded here.
+- Installed application sources remain linked into the checkout; no live update,
+  desktop restart, package installation, push, tag or release was performed.
+  Clean Arch package/AUR acquisition, boot/login, hardware and authenticated
+  destination acceptance remain unverified.
+
 ## Regular updates and top-bar release alert — 2026-11-15
 
 - Restored the always-available main-branch desktop update button in GitHub

@@ -49,7 +49,7 @@ jobs:
         run: runuser -u ci -- bash desktop/scripts/build-check.sh
       - name: Check installer shell syntax
         run: |
-          for script in install.sh desktop/install.sh oneline.sh desktop/scripts/finish-apps.sh docs/restore-windows-vm-passthrough.sh docs/windows-vm-passthrough/*.sh; do
+          for script in install.sh update.sh dev.sh desktop/install.sh oneline.sh desktop/scripts/finish-apps.sh docs/restore-windows-vm-passthrough.sh docs/windows-vm-passthrough/*.sh; do
             runuser -u ci -- bash -n "$script"
           done
       - name: Verify committed release archive and file recovery

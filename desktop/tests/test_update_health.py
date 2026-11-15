@@ -14,6 +14,18 @@ APP = Path(__file__).resolve().parents[2] / 'system/apps/assistant'
 
 
 class UpdateHealthTests(unittest.TestCase):
+    @unittest.skipUnless(shutil.which('qs'), 'Quickshell is required')
+    def test_panel_preflight_catches_broken_release_button(self):
+        panel = APP.parent / 'shell'
+        update_health.validate_qml(panel, update_health.PANEL_HARNESS, 'Desktop panel')
+        with tempfile.TemporaryDirectory() as temporary:
+            broken = Path(temporary)
+            for name in ('modules', 'config', 'assets'):
+                shutil.copytree(panel / name, broken / name)
+            (broken / 'modules/bar/ReleaseUpdateButton.qml').write_text('import QtQuick\nItem { broken syntax }')
+            with self.assertRaisesRegex(ValueError, 'QML validation'):
+                update_health.validate_qml(broken, update_health.PANEL_HARNESS, 'Desktop panel')
+
     def test_bad_python_does_not_reach_install(self):
         with tempfile.TemporaryDirectory() as temporary:
             snapshot = Path(temporary)
