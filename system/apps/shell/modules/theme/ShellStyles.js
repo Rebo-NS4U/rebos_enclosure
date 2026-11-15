@@ -3,8 +3,8 @@
 var styles = [
     {id: "glass-vault", label: "Glass Vault", font: "Noto Sans", description: "Heavy corner clamps, stepped transparent blocks and deep inset controls."},
     {id: "radar-station", label: "Radar Station", font: "DejaVu Sans", description: "Bearing scales, partial range arcs and segmented controls on blurred glass."},
-    {id: "suspended-film", label: "Suspended Film", font: "DejaVu Sans Mono", description: "Tension cables, staggered sheet bindings and layered transparent membranes."},
-    {id: "monolith", label: "Monolith", font: "Noto Sans", description: "Milled slabs, recessed service spines and stepped engraved seams."},
+    {id: "suspended-film", label: "Suspended Film", font: "DejaVu Sans Mono", description: "Floating glass sheets, offset edges and quiet contact shadows."},
+    {id: "monolith", label: "Monolith", font: "Noto Sans", description: "Sculpted stone-like slabs, broad chamfers and subtle mineral grain."},
     {id: "blueprint", label: "Blueprint", font: "JetBrains Mono", description: "Drafting grids, measurement ticks, registration marks and wire controls."},
     {id: "terminal-hardware", label: "Terminal Hardware", font: "DejaVu Sans Mono", description: "Grooved bezels, recessed cooling louvers and mechanical display housings."},
     {id: "frosted", font: "DejaVu Sans Mono", label: "Frosted Glass", description: "Etched ice rims, fine edge grain and soft frosted highlights."},
@@ -146,7 +146,7 @@ function surface(style, variant, p, ditherStrength) {
         if (monolith) {
             border = [mix(fill, p.foreground, 0.18), focused ? 2 : inset ? 1 : 0];
             if (focused) border[0] = p.primary;
-            if (neutral && !inset) renderGradient = [[fill, 0], [mix(fill, p.foreground, 0.025), 0.015], [fill, 0.035], [fill, 0.91], [mix(fill, p.background, 0.80), 0.94], [mix(fill, p.background, 0.80), 1]];
+            if (neutral && !inset) renderGradient = [[fill, 0], [mix(fill, p.foreground, 0.035), 0.025], [fill, 0.075], [fill, 0.86], [mix(fill, p.background, 0.80), 0.96], [mix(fill, p.background, 0.80), 1]];
         } else if (blueprint) {
             // Wire controls retain the selected accent as their ink color.
             if (!neutral && !outlineRole && opacity > 0) {

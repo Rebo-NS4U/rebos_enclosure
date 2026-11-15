@@ -427,39 +427,30 @@ ClippingRectangle {
                             for(let i=0;i<5;i++)ctx.fillRect(width/2-19+i*8,height-7,5,2);
                         }
                     } else {
-                        // Offset membranes stretch between four tension points.
-                        for(let layer=0;layer<3;layer++) {
-                            const d=5+layer*3;
-                            ctx.strokeStyle=ink(0.22-layer*0.065);if(root.traceThemeFrame(ctx,d))ctx.stroke();
-                        }
-                        const pin=Math.max(7,cornerRadius*(1-Math.SQRT1_2)+5);
-                        for(const x of [pin,width-pin])for(const y of [pin,height-pin]){
-                            const sx=x>width/2?-1:1,sy=y>height/2?-1:1;
-                            ctx.strokeStyle=ink(0.40);ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+sx*12,y+sy*12);ctx.stroke();
-                            ctx.fillStyle=ink(0.32);ctx.fillRect(x-2,y-2,4,4);
-                        }
-                        ctx.strokeStyle=ink(0.14);
-                        for(let y=24;y<height-24;y+=5){ctx.beginPath();ctx.moveTo(3,y);ctx.lineTo(7,y+2);ctx.moveTo(width-7,y);ctx.lineTo(width-3,y+2);ctx.stroke();}
-                        // Staggered sheet bindings and cable cleats strengthen the membrane.
-                        if(material.outer){
-                            const safe=Math.max(22,cornerRadius+8);
-                            ctx.lineWidth=1;
-                            for(let side=0;side<2;side++){
-                                const x=side?width-5:5,sx=side?-1:1;
-                                for(let y=safe;y<height-safe;y+=18){
-                                    ctx.strokeStyle=ink(0.30);ctx.strokeRect(x-sx*2,y,4,7);
-                                    ctx.strokeStyle=ink(0.20);ctx.beginPath();ctx.moveTo(x+sx*3,y+3);
-                                    ctx.lineTo(x+sx*11,y+7);ctx.lineTo(x+sx*14,y+7);ctx.stroke();
-                                }
-                            }
-                            ctx.strokeStyle=ink(0.18);ctx.beginPath();
-                            ctx.moveTo(safe,9);ctx.bezierCurveTo(width*0.35,14,width*0.65,14,width-safe,9);ctx.stroke();
-                            ctx.strokeStyle=ink(0.32);ctx.beginPath();
-                            ctx.moveTo(safe,height-6);ctx.lineTo(Math.max(safe,width-safe),height-6);ctx.stroke();
-                        }
-                        // A quiet diagonal fold gives the membrane tension without clutter.
+                        // Floating sheets have offset edges and a narrow contact shadow.
+                        const sheet=(x,y,w,h,inset)=>{
+                            if(w<=0||h<=0)return;
+                            const r=Math.max(0,Math.min(cornerRadius-inset,w/2,h/2));
+                            ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);
+                            ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);
+                            ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);
+                            ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);
+                            ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();
+                        };
+                        const gap=material.outer?8:4;
+                        sheet(gap,3,width-gap-4,height-gap-3,3);
+                        ctx.fillStyle=ink(0.018);ctx.fill();ctx.strokeStyle=ink(0.20);ctx.stroke();
+                        sheet(3,gap,width-gap-4,height-gap-3,gap);
+                        ctx.strokeStyle=ink(0.08);ctx.stroke();
+                        // Layered lower edge supplies a visible sense of separation.
+                        ctx.lineWidth=2;ctx.strokeStyle=ink(0.09);
+                        const safe=Math.max(16,cornerRadius+gap);
+                        ctx.beginPath();ctx.moveTo(safe,height-gap-2);
+                        ctx.lineTo(Math.max(safe,width-safe),height-gap-2);ctx.stroke();
+                        ctx.lineWidth=1;ctx.strokeStyle=ink(0.23);
+                        ctx.beginPath();ctx.moveTo(safe,3);ctx.lineTo(Math.max(safe,width*0.58),3);ctx.stroke();
                         const sheen=ctx.createLinearGradient(0,0,width,height);
-                        sheen.addColorStop(0,ink(0));sheen.addColorStop(0.40,ink(0));sheen.addColorStop(0.42,ink(0.025));sheen.addColorStop(0.60,ink(0));sheen.addColorStop(1,ink(0));
+                        sheen.addColorStop(0,ink(0.035));sheen.addColorStop(0.38,ink(0.01));sheen.addColorStop(1,ink(0));
                         ctx.fillStyle=sheen;ctx.fillRect(0,0,width,height);
                     }
                 }
@@ -467,113 +458,51 @@ ClippingRectangle {
         }
     }
 
-    // Monolith: a carved perimeter and a recessed channel along the slab.
+    // Architectural Monolith: a continuous slab with a broad carved chamfer.
     Loader {
         anchors.fill: parent
         active: !root.hasFillColor && root.rectOpacity > 0 && (root.styleOverride || Styling.shellStyle) === "monolith"
             && ["bg", "popup", "pane", "surface", "surfaceContainer", "internalbg", "focus"].indexOf(root.variant) !== -1
-        sourceComponent: Item {
-            id: slab
-            readonly property bool outer: root.variant === "bg" || root.variant === "popup"
+        sourceComponent: Canvas {
+            anchors.fill: parent
+            objectName: "surface-edge-canvas"
+            readonly property real cornerRadius: root.effectiveCornerRadius
+            readonly property color pigment: root.itemColor
             readonly property bool inset: root.variant === "internalbg"
-            readonly property color ink: root.itemColor
+            readonly property bool outer: root.variant === "bg" || root.variant === "popup"
             opacity: root.rectOpacity
-            // Staggered cuts and a deep inner seam give the slab a silhouette.
-            Rectangle {
-                visible: slab.outer
-                anchors.fill: parent; anchors.margins: 6
-                radius: root.themeInsetRadius(6); color: "transparent"
-                border.width: 1; border.color: Qt.alpha(slab.ink, 0.10)
-            }
-            Repeater {
-                model: slab.outer && slab.height > 80 ? 3 : 0
-                Rectangle {
-                    required property int index
-                    x: 1; y: 20 + index * 8
-                    width: 7 + index * 3; height: 3
-                    color: slab.ink; opacity: 0.26 - index * 0.045
+            onCornerRadiusChanged: requestPaint()
+            onPigmentChanged: requestPaint()
+            onInsetChanged: requestPaint()
+            onOuterChanged: requestPaint()
+            onWidthChanged: requestPaint()
+            onHeightChanged: requestPaint()
+            onPaint: {
+                const ctx=getContext("2d");ctx.clearRect(0,0,width,height);
+                if(width<24||height<24)return;
+                const ink=a=>Qt.rgba(pigment.r,pigment.g,pigment.b,a);
+                // Concentric sculpted edges follow the user-selected radius.
+                const bevel=outer?8:4;
+                ctx.lineWidth=1;
+                for(let layer=0;layer<3;layer++){
+                    ctx.strokeStyle=ink(inset?[0.12,0.055,0.02][layer]:[0.15,0.065,0.025][layer]);
+                    if(root.traceThemeFrame(ctx,2+layer*2))ctx.stroke();
                 }
-            }
-            Rectangle {
-                visible: slab.outer
-                anchors.right: parent.right; anchors.top: parent.top
-                width: 7; height: Math.max(0, slab.height * 0.32)
-                color: slab.ink; opacity: 0.14
-            }
-            Repeater {
-                model: slab.outer && slab.width > 100 ? 5 : 0
-                Rectangle {
-                    required property int index
-                    x: slab.width - 54 + index * 7; y: slab.height - 9
-                    width: 2; height: 5; rotation: 35
-                    color: slab.ink; opacity: 0.26
+                const d=bevel,r=root.themeInsetRadius(d);
+                ctx.lineWidth=1;ctx.strokeStyle=ink(inset?0.06:0.23);
+                ctx.beginPath();ctx.moveTo(d,Math.max(d+r,height*0.60));ctx.lineTo(d,d+r);
+                ctx.quadraticCurveTo(d,d,d+r,d);ctx.lineTo(Math.max(d+r,width-d-r),d);ctx.stroke();
+                ctx.strokeStyle=ink(inset?0.18:0.065);ctx.lineWidth=3;
+                ctx.beginPath();ctx.moveTo(Math.max(d+r,16),height-d);
+                ctx.lineTo(width-d-r,height-d);ctx.quadraticCurveTo(width-d,height-d,width-d,height-d-r);
+                ctx.lineTo(width-d,Math.max(d+r,height*0.40));ctx.stroke();
+                // Quiet mineral grain instead of mechanical engraving or indicators.
+                ctx.fillStyle=ink(0.025);
+                const count=Math.min(260,Math.floor(width*height/600));
+                for(let i=0;i<count;i++){
+                    const x=12+(i*73)%Math.max(1,width-24),y=12+(i*137)%Math.max(1,height-24);
+                    ctx.fillRect(x,y,i%4===0?2:1,1);
                 }
-            }
-            Rectangle {
-                visible: slab.inset
-                anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top
-                height: 3; color: slab.ink; opacity: 0.12
-            }
-            Canvas {
-                anchors.fill: parent
-                objectName: "surface-edge-canvas"
-                readonly property real cornerRadius: root.effectiveCornerRadius
-                readonly property color pigment: slab.ink
-                onCornerRadiusChanged: requestPaint()
-                onPigmentChanged: requestPaint()
-                onWidthChanged: requestPaint()
-                onHeightChanged: requestPaint()
-                onPaint: {
-                    const ctx=getContext("2d");ctx.clearRect(0,0,width,height);
-                    const d=slab.outer?3:1,r=root.themeInsetRadius(d);
-                    ctx.strokeStyle=Qt.alpha(pigment,0.18);ctx.lineWidth=1;
-                    ctx.beginPath();ctx.moveTo(d,Math.max(d+r,height*0.65));
-                    ctx.lineTo(d,d+r);ctx.quadraticCurveTo(d,d,d+r,d);
-                    ctx.lineTo(Math.max(d+r,width-d-r),d);ctx.stroke();
-                    // A recessed service spine and a stepped lower seam cut into the slab.
-                    const safe=Math.max(18,cornerRadius+7);
-                    ctx.lineWidth=1;
-                    if(slab.outer && height>safe*2){
-                        ctx.strokeStyle=Qt.alpha(pigment,0.24);ctx.beginPath();
-                        ctx.moveTo(11,safe);ctx.lineTo(11,height-safe);ctx.stroke();
-                        ctx.strokeStyle=Qt.alpha(pigment,0.06);ctx.beginPath();
-                        ctx.moveTo(15,safe+6);ctx.lineTo(15,height-safe-6);ctx.stroke();
-                        for(let i=0;i<3;i++){
-                            ctx.fillStyle=Qt.alpha(pigment,0.22-i*0.04);
-                            ctx.fillRect(7,safe+10+i*9,6,2);
-                        }
-                    }
-                    if(slab.outer && width>safe*2+30){
-                        ctx.strokeStyle=Qt.alpha(pigment,0.25);ctx.beginPath();
-                        ctx.moveTo(safe,height-12);ctx.lineTo(width*0.56,height-12);
-                        ctx.lineTo(width*0.56+6,height-18);ctx.lineTo(width-safe,height-18);ctx.stroke();
-                        ctx.strokeStyle=Qt.alpha(pigment,0.07);ctx.beginPath();
-                        ctx.moveTo(safe,height-9);ctx.lineTo(width*0.56+2,height-9);ctx.stroke();
-                    }
-
-                }
-            }
-            Rectangle {
-                anchors.left: parent.left; anchors.top: parent.top; anchors.bottom: parent.bottom
-                width: slab.outer ? 5 : 2
-                color: slab.ink; opacity: slab.inset ? 0.16 : 0.08
-            }
-            Rectangle {
-                visible: slab.outer
-                x: 8; y: 14; width: 2; height: Math.max(0, slab.height - 28)
-                color: slab.ink; opacity: 0.16
-            }
-            Rectangle {
-                anchors.bottom: parent.bottom; anchors.left: parent.left; anchors.right: parent.right
-                height: slab.outer ? 5 : 2
-                color: slab.ink; opacity: slab.inset ? 0.025 : 0.08
-            }
-            Rectangle {
-                visible: slab.outer
-                anchors.right: parent.right; anchors.bottom: parent.bottom
-                anchors.rightMargin: 14; anchors.bottomMargin: 10
-                width: 28; height: 2
-                color: slab.ink; opacity: 0.30
             }
         }
     }

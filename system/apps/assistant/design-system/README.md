@@ -47,7 +47,7 @@ Use `StandardProgressBar` for linear progress in QML. Its normalized `value` is 
 ## Rendered desktop themes
 
 All styles use the selected wallpaper or color preset, including application exports.
-Monolith uses sculpted slabs, staggered edge cuts, deep inset seams, diagonal engraving and stepped lower edges.
+Monolith uses sculpted stone-like slabs, broad chamfers and subtle mineral grain.
 Blueprint uses square corners, wire controls, major and minor drafting grids, perimeter measurement ticks, registration targets and inset frames.
 Terminal Hardware uses double machined bezels, cooling vents, slotted screws, recessed display scanlines and raised mechanical controls.
 Their fonts are Noto Sans, JetBrains Mono and DejaVu Sans Mono respectively.
@@ -59,7 +59,7 @@ Kitty follows the exported surface palette and opacity as well as the selected s
 
 ## Translucent materials
 
-Glass Vault uses thick stepped blocks, bold corner clamps and deep inset controls. Radar Station uses static bearing scales, partial range arcs, crosshair junctions and segmented controls. Suspended Film uses tension points, offset membrane layers and ribbed frame edges. All three keep translucent centers, the selected semantic colors and matching native terminal profiles. Selecting one enables shell blur if off and resets the manual transparency override; existing blur location and strength preferences are preserved.
+Glass Vault uses thick stepped blocks, bold corner clamps and deep inset controls. Radar Station uses static bearing scales, partial range arcs, crosshair junctions and segmented controls. Suspended Film uses floating glass sheets, offset edges and quiet contact shadows. All three keep translucent centers, the selected semantic colors and matching native terminal profiles. Selecting one enables shell blur if off and resets the manual transparency override; existing blur location and strength preferences are preserved.
 
 Saved Smoked Acrylic selections migrate to Glass Vault, Glass Console to Radar Station, and Circuit Glass to Suspended Film. Older predecessors migrate directly to the corresponding current theme.
 
@@ -71,4 +71,6 @@ Glass Vault follows the corner-radius setting: clamps, inset seams and the lower
 
 Every theme now follows the shared corner-radius setting. Inset frame lines use concentric radii; canvas decorations repaint during changes, and corner brackets and attachment points follow the actual clipped surface geometry.
 
-Suspended Film adds cable cleats, staggered sheet bindings and a bowed tension line. Monolith adds a recessed service spine and stepped engraved seams. Terminal Hardware adds concentric bezel grooves and recessed cooling louvers. These details stay at the perimeter, adapt to the shared corner radius and remain static.
+Terminal Hardware uses concentric bezel grooves and recessed cooling louvers. These details stay at the perimeter, adapt to the shared corner radius and remain static.
+
+Architectural refinement: Suspended Film now uses floating offset glass sheets and contact-shadow edges, replacing tension cables and bindings. Monolith now uses broad sculpted chamfers and subtle mineral grain, replacing mechanical cuts and service spines. Both preserve selected colors and radius behavior; Terminal Hardware remains unchanged.
