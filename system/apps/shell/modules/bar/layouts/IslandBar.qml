@@ -2,6 +2,8 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Shapes
+import QtQuick.Effects
 import Quickshell
 import Quickshell.Widgets
 import Quickshell.Wayland._BackgroundEffect
@@ -552,8 +554,10 @@ Item {
 
     BlurRegion { id: islandBodyBlur; target: islandBody }
     readonly property Region backgroundBlur: Region {
-        regions: [islandBodyBlur, lyricsStrip.backgroundBlur]
+        regions: [islandBodyBlur, musicHeaderBlur]
     }
+
+    BlurRegion { id: musicHeaderBlur; target: musicHeader }
 
     property alias barHitbox: activeBarHitbox
 
@@ -653,14 +657,13 @@ Item {
     readonly property Item lyricsNextHitbox: lyricsStrip.nextHitbox
     BarLyrics {
         id: lyricsStrip
-        // Keep the music wings independent of the center panel's morph.
+        // Music content shares the continuous island surface below.
         anchors.horizontalCenter: parent.horizontalCenter
         width: Math.max(0, root.width - 8)
         height: root.islandHeight
         y: Math.min(0, islandContainer.y)
         z: 1
-        inlineMode: root.currentMode === "collapsed"
-        connectedMode: !inlineMode
+        inlineMode: true
         splitAroundCenter: true
         readonly property real centerWidth: root.isExpanded || root.retractingToHidden
             ? islandContainer.width : collapsedView.width
@@ -672,6 +675,70 @@ Item {
         available: root.lyricsInBar && root.shouldBeRevealed
             && !root.fullscreenOnScreen && !NiriService.overviewOpen
             && !GlobalStates.lockscreenVisible
+    }
+
+    // Paint the header and expanding center once, with one continuous outline.
+    Item {
+        id: musicHeader
+        anchors.horizontalCenter: parent.horizontalCenter
+        width: lyricsStrip.width
+        height: root.islandHeight
+        y: islandContainer.y
+        visible: lyricsStrip.visible
+        opacity: islandContainer.opacity
+    }
+    StyledRect {
+        id: musicSurface
+        x: musicHeader.x
+        y: musicHeader.y
+        width: musicHeader.width
+        height: Math.max(root.islandHeight, islandContainer.height)
+        visible: lyricsStrip.visible
+        opacity: islandContainer.opacity
+        variant: "bg"
+        backgroundOpacity: BarAppearance.panelOpacity(root.isExpanded)
+        enableBorder: false
+        radius: 0
+        layer.enabled: true
+        layer.effect: MultiEffect {
+            maskEnabled: true
+            maskSource: musicOutline
+            maskThresholdMin: 0.5
+            maskSpreadAtMin: 1
+        }
+        StyledRect {
+            anchors.fill: parent
+            variant: "transparent"
+            enableBorder: false
+            radius: 0
+            color: BarAppearance.panelTint(root.isExpanded)
+        }
+    }
+    Shape {
+        id: musicOutline
+        width: musicSurface.width
+        height: musicSurface.height
+        visible: false
+        layer.enabled: true
+        readonly property real left: (width - islandContainer.width) / 2
+        readonly property real right: (width + islandContainer.width) / 2
+        readonly property real shoulder: Math.min(root.islandHeight, height)
+        readonly property real curve: Math.min(root.cornerRadius, Math.max(0, height - shoulder), islandContainer.width / 2)
+        ShapePath {
+            strokeWidth: -1
+            fillColor: "white"
+            startX: 0; startY: 0
+            PathLine { x: musicOutline.width; y: 0 }
+            PathLine { x: musicOutline.width; y: musicOutline.shoulder }
+            PathLine { x: musicOutline.right; y: musicOutline.shoulder }
+            PathLine { x: musicOutline.right; y: musicOutline.height - musicOutline.curve }
+            PathQuad { x: musicOutline.right - musicOutline.curve; y: musicOutline.height; controlX: musicOutline.right; controlY: musicOutline.height }
+            PathLine { x: musicOutline.left + musicOutline.curve; y: musicOutline.height }
+            PathQuad { x: musicOutline.left; y: musicOutline.height - musicOutline.curve; controlX: musicOutline.left; controlY: musicOutline.height }
+            PathLine { x: musicOutline.left; y: musicOutline.shoulder }
+            PathLine { x: 0; y: musicOutline.shoulder }
+            PathLine { x: 0; y: 0 }
+        }
     }
 
     // Quiet boundaries between the lyric wings and central controls.
@@ -700,8 +767,8 @@ Item {
         transform: Scale {
             origin.x: islandContainer.width / 2
             origin.y: 0
-            xScale: 1 + Math.sin(root.revealProgress * Math.PI) * 0.012
-            yScale: 1 - Math.sin(root.revealProgress * Math.PI) * 0.035
+            xScale: lyricsStrip.visible ? 1 : 1 + Math.sin(root.revealProgress * Math.PI) * 0.012
+            yScale: lyricsStrip.visible ? 1 : 1 - Math.sin(root.revealProgress * Math.PI) * 0.035
         }
         anchors.horizontalCenter: parent.horizontalCenter
         width: root.targetWidth
@@ -747,8 +814,8 @@ Item {
         StyledRect {
             id: islandBody
             anchors.fill: parent
-            variant: "bg"
-            backgroundOpacity: BarAppearance.panelOpacity(root.isExpanded)
+            variant: lyricsStrip.visible ? "transparent" : "bg"
+            backgroundOpacity: lyricsStrip.visible ? 0 : BarAppearance.panelOpacity(root.isExpanded)
             topLeftRadius: lyricsStrip.visible ? 0 : BarAppearance.framed ? root.cornerRadius : 0
             topRightRadius: lyricsStrip.visible ? 0 : BarAppearance.framed ? root.cornerRadius : 0
             border.width: root.currentMode === "typing" ? 1 : (BarAppearance.framed ? 1 : 0)
@@ -789,7 +856,7 @@ Item {
                 topRightRadius: islandBody.topRightRadius
                 bottomLeftRadius: islandBody.bottomLeftRadius
                 bottomRightRadius: islandBody.bottomRightRadius
-                color: root.currentMode === "typing" ? Qt.alpha(Colors.primary, BarAppearance.accent * 0.12) : BarAppearance.panelTint(root.isExpanded)
+                color: lyricsStrip.visible ? "transparent" : root.currentMode === "typing" ? Qt.alpha(Colors.primary, BarAppearance.accent * 0.12) : BarAppearance.panelTint(root.isExpanded)
             }
 
             MouseArea {
