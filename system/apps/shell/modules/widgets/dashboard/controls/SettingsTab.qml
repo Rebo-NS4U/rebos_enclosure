@@ -161,7 +161,7 @@ Item {
         if (sidebarFlickable.height <= 0)
             return;
 
-        const tabHeight = 48;
+        const tabHeight = root.searchQuery.length ? 48 : 76;
         const tabSpacing = 0;
         const itemY = root.selectedIndex * (tabHeight + tabSpacing);
 
@@ -220,11 +220,11 @@ Item {
     }
 
     readonly property var categoryModel: [
-        {label: "Theme & appearance", icon: Icons.paintBrush, isIcon: true, section: 4, sections: [4, 6]},
-        {label: "Windows & input", icon: Icons.layout, isIcon: true, section: 9, sections: [9, 7, 8]},
-        {label: "Devices & connections", icon: Icons.wifiHigh, isIcon: true, section: 0, sections: [0, 1, 2]},
-        {label: "Widgets & performance", icon: Icons.circuitry, isIcon: true, section: 5, sections: [5]},
-        {label: "Assistant & GitHub", icon: Icons.robot, isIcon: true, section: 3, sections: [3, 10]}
+        {label: "Theme & appearance", subLabel: "Colors, wallpaper and shell style", icon: Icons.paintBrush, isIcon: true, section: 4, sections: [4, 6]},
+        {label: "Windows & input", subLabel: "Displays, shortcuts and window rules", icon: Icons.layout, isIcon: true, section: 9, sections: [9, 7, 8]},
+        {label: "Devices & connections", subLabel: "Wi-Fi, Bluetooth and audio", icon: Icons.wifiHigh, isIcon: true, section: 0, sections: [0, 1, 2]},
+        {label: "Widgets & performance", subLabel: "Weather, effects and storage", icon: Icons.circuitry, isIcon: true, section: 5, sections: [5]},
+        {label: "Assistant & GitHub", subLabel: "AI preferences and repositories", icon: Icons.robot, isIcon: true, section: 3, sections: [3, 10]}
     ]
     readonly property var activeCategory: categoryModel.find(item => item.sections.includes(currentSection)) || categoryModel[0]
     readonly property var categoryPages: activeCategory.sections.map(id => sectionModel.find(item => item.section === id))
@@ -338,8 +338,8 @@ Item {
 
         // Sidebar area: search + list
         ColumnLayout {
-            Layout.preferredWidth: root.width < 900 ? 220 : 280
-            Layout.maximumWidth: root.width < 900 ? 220 : 280
+            Layout.preferredWidth: root.width < 900 ? 235 : 300
+            Layout.maximumWidth: root.width < 900 ? 235 : 300
             Layout.fillHeight: true
             spacing: Styling.spacing(4)
 
@@ -424,11 +424,11 @@ Item {
                         id: tabHighlight
                         variant: "focus"
                         width: parent.width
-                        height: 48
+                        height: root.searchQuery.length ? 48 : 76
                         radius: Styling.radius(-6)
                         z: 0
 
-                        readonly property int tabHeight: 48
+                        readonly property int tabHeight: root.searchQuery.length ? 48 : 76
                         readonly property int tabSpacing: 0
 
                         x: 0
@@ -462,7 +462,7 @@ Item {
                                 required property int index
 
                                 width: sidebar.width
-                                height: 48
+                                height: root.searchQuery.length ? 48 : 76
                                 flat: true
                                 hoverEnabled: true
 
@@ -524,12 +524,16 @@ Item {
 
                                     // Text
                                     Column {
+                                        width: sidebarButton.width - 55
+                                        spacing: 4
                                         anchors.verticalCenter: parent.verticalCenter
 
                                         StyledText {
                                             renderType: Text.NativeRendering
                                             font.hintingPreference: Font.PreferFullHinting
                                             text: sidebarButton.modelData.label
+                                            width: parent.width
+                                            wrapMode: Text.WordWrap
                                             font.family: Config.theme.font
                                             font.pixelSize: Styling.fontSize(0)
                                             font.weight: sidebarButton.isActive ? Font.Bold : Font.Normal
@@ -549,6 +553,8 @@ Item {
                                             font.hintingPreference: Font.PreferFullHinting
                                             visible: !!sidebarButton.modelData.subLabel
                                             text: sidebarButton.modelData.subLabel || ""
+                                            width: parent.width
+                                            wrapMode: Text.WordWrap
                                             font.family: Config.theme.font
                                             font.pixelSize: Styling.fontSize(-2)
                                             color: Colors.overSurfaceVariant
@@ -651,8 +657,17 @@ Item {
                 }
             ]
 
+            Column {
+                id: categoryHeading
+                width: parent.width
+                spacing: 6
+                StyledText { text: root.activeCategory.label; font.pixelSize: Styling.fontSize(10); font.bold: true }
+                StyledText { text: root.activeCategory.subLabel; color: Colors.overSurfaceVariant; width: parent.width; wrapMode: Text.WordWrap }
+            }
+
             Flow {
                 id: categoryTabs
+                y: categoryHeading.height + 20
                 objectName: "settings-category-tabs"
                 width: parent.width
                 spacing: Styling.spacing(8)
@@ -680,7 +695,7 @@ Item {
                 id: panelLoader
                 objectName: "settings-panel-loader"
                 anchors.fill: parent
-                anchors.topMargin: categoryTabs.visible ? categoryTabs.height + 12 : 0
+                anchors.topMargin: categoryTabs.visible ? categoryTabs.y + categoryTabs.height + 20 : categoryHeading.height + 20
                 asynchronous: true
                 source: contentArea.panelComponents[root.currentSection]?.component ?? ""
 

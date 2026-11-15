@@ -86,17 +86,31 @@ ColumnLayout {
         }
     }
 
+    component ColorSection: StyledRect {
+        default property alias content: body.data
+        Layout.fillWidth: true
+        Layout.minimumWidth: 0
+        Layout.alignment: Qt.AlignTop
+        implicitHeight: body.implicitHeight + 40
+        variant: "common"
+        border.width: 1
+        border.color: Qt.alpha(Colors.outline, 0.35)
+        ColumnLayout {
+            id: body
+            x: 20
+            y: 20
+            width: parent.width - 40
+            spacing: Styling.spacing(12)
+        }
+    }
+
     GridLayout {
         objectName: "palette-sections"
         Layout.fillWidth: true
-        columns: root.width >= 1000 ? 2 : 1
+        columns: root.width >= 880 ? 2 : 1
         columnSpacing: Styling.spacing(24)
         rowSpacing: Styling.spacing(24)
-        ColumnLayout {
-            Layout.fillWidth: true
-            Layout.minimumWidth: 0
-            Layout.alignment: Qt.AlignTop
-            spacing: Styling.spacing(12)
+        ColorSection {
             StyledText { text: "Palette & color mode"; font.bold: true }
             Caption {
                 text: "Matugen creates one palette for the desktop and your apps. Neutral is subtle; Tonal spot and Vibrant bring out more wallpaper color."
@@ -183,11 +197,7 @@ ColumnLayout {
                 }
             }
         }
-        ColumnLayout {
-            Layout.fillWidth: true
-            Layout.minimumWidth: 0
-            Layout.alignment: Qt.AlignTop
-            spacing: Styling.spacing(12)
+        ColorSection {
             Text {
                 text: "Pick colors from your wallpaper"
                 font.family: Config.theme.font
@@ -338,11 +348,7 @@ ColumnLayout {
                 onAccepted: root.pickColor(selectedColor.toString())
             }
         }
-        ColumnLayout {
-            Layout.fillWidth: true
-            Layout.minimumWidth: 0
-            Layout.alignment: Qt.AlignTop
-            spacing: Styling.spacing(12)
+        ColorSection {
             StyledText { text: "Saved wallpaper and color presets"; font.bold: true }
             Caption { text: "Save your current wallpaper, monitor overrides, colors and shell appearance together. Apply picked colors before saving." }
             SettingsTextField {
@@ -381,11 +387,7 @@ ColumnLayout {
             }
 
         }
-        ColumnLayout {
-            Layout.fillWidth: true
-            Layout.minimumWidth: 0
-            Layout.alignment: Qt.AlignTop
-            spacing: Styling.spacing(12)
+        ColorSection {
             StyledText { text: "Wallpaper folder and icons"; font.bold: true }
             // Wallpaper Path
             RowLayout {
