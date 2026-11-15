@@ -572,6 +572,45 @@ class BonsaiGrowTests(unittest.TestCase):
                     os.close(master)
                     os.close(slave)
 
+    def test_rounded_backing_and_border_share_a_clipped_pixel_mask(self):
+        import struct
+        import zlib
+        png = bonsai.rounded_frame_png(10, 20, 26, (240, 130, 80))
+        self.assertEqual(png[:8], b'\x89PNG\r\n\x1a\n')
+        width, height = struct.unpack('!II', png[16:24])
+        self.assertEqual((width, height), (590, 520))
+        offset, compressed = 8, b''
+        while offset < len(png):
+            size = struct.unpack('!I', png[offset:offset + 4])[0]
+            if png[offset + 4:offset + 8] == b'IDAT':
+                compressed += png[offset + 8:offset + 8 + size]
+            offset += size + 12
+        pixels = zlib.decompress(compressed)
+        def pixel(x, y):
+            start = y * (width * 4 + 1) + 1 + x * 4
+            return tuple(pixels[start:start + 4])
+        self.assertEqual(pixel(295, 0)[3], 0, 'no dark strip above the top edge')
+        self.assertEqual(pixel(5, 10)[3], 0, 'outside the rounded corner stays transparent')
+        self.assertEqual(pixel(295, 10), (240, 130, 80, 255))
+        self.assertEqual(pixel(295, 260), (24, 24, 24, 255))
+        self.assertEqual(pixel(584, 260), (240, 130, 80, 255))
+        self.assertEqual(pixel(589, 260)[3], 0)
+        self.assertEqual(pixel(295, 519)[3], 0)
+
+    def test_kitty_frame_is_quiet_and_preserves_the_terminal_cursor(self):
+        import struct
+        with patch.dict(os.environ, {'TERM': 'xterm-kitty'}), \
+             patch.object(bonsai.sys.stdout, 'isatty', return_value=True), \
+             patch.object(bonsai.sys.stdout, 'fileno', return_value=1), \
+             patch.object(bonsai.fcntl, 'ioctl', return_value=struct.pack('HHHH', 40, 80, 800, 800)):
+            command = bonsai.kitty_frame(26, 80, [240, 130, 80])
+            self.assertIn('q=2,z=-1,C=1,c=59,r=26', command)
+            self.assertTrue(command.startswith('\033[10C'))
+            self.assertTrue(command.endswith('\033[10D'))
+        with patch.dict(os.environ, {'TERM': 'xterm-kitty'}), \
+             patch.object(bonsai.sys.stdout, 'isatty', return_value=False):
+            self.assertEqual(bonsai.kitty_frame(26, 80, [240, 130, 80]), '')
+
     def test_frame_fits_and_keeps_animation_height(self):
         for columns in (59, 80, 100):
             for day in (0, 7, 30):
