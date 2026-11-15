@@ -19,6 +19,10 @@ import time
 import zlib
 
 
+# One material identity per process: fresh for a new terminal, stable in animation.
+GLASS_SEED = random.SystemRandom().getrandbits(63)
+
+
 def valid_palette(value):
     return (
         isinstance(value, list)
@@ -1436,41 +1440,58 @@ def backlit_ink(ink, daylight):
 
 
 @functools.lru_cache(maxsize=8)
-def rounded_frame_png(cell_width, cell_height, rows, rgb):
+def rounded_frame_png(cell_width, cell_height, rows, rgb, texture_seed=0):
     """Rounded glass with etched rims, grazing reflections and a quiet center."""
     width, height = 59 * cell_width, rows * cell_height
     radius = min(12, cell_height * 0.65)
     half_width, half_height = (width - cell_width) / 2, (height - cell_height) / 2
     xs = [abs(x + 0.5 - width / 2) - (half_width - radius) for x in range(width)]
+    rng = random.Random(texture_seed)
+    etch_depth, etch_phase = rng.uniform(4.5, 8), rng.randrange(97)
+    grain_strength = rng.randint(7, 13)
+    # Vary side, length, curvature, width and brightness of each reflection.
+    beams = []
+    for index in range(rng.randint(3, 5)):
+        start = rng.uniform(0.10, 0.60) * height
+        length = rng.uniform(0.18, 0.42) * height
+        beams.append((index % 2, start, length, rng.uniform(10, 30),
+                      rng.uniform(-14, 14), rng.uniform(-9, 9),
+                      rng.uniform(0.8, 2.2), rng.uniform(0.38, 0.65)))
+    glint_center, glint_span = rng.uniform(0.25, 0.75), rng.uniform(0.18, 0.35)
+    reflection_ink = tuple(0.3 * c + 0.7 * 205 for c in rgb)
     data = bytearray()
     for y in range(height):
         qy = abs(y + 0.5 - height / 2) - (half_height - radius)
         data.append(0)  # PNG scanline: no filter.
+        reflections = []
+        for side, start, length, inset, tilt, bend, sigma, strength in beams:
+            t = (y - start) / length
+            if 0 < t < 1:
+                center = cell_width / 2 + inset + tilt * (t - 0.5) + bend * (t - 0.5) ** 2
+                if side:
+                    center = width - center
+                reflections.append((center, sigma, strength * math.sin(math.pi * t) ** 0.6))
         for x, qx in enumerate(xs):
             distance = math.hypot(max(qx, 0), max(qy, 0)) + min(max(qx, qy), 0) - radius
             alpha = round(255 * max(0, min(1, 0.5 - distance)))
             rim = max(0, min(1, distance + 2.5))
             depth = -distance
             light, frost = 0.0, 0
-            if 2 < depth < 24:
-                # An interrupted concentric etch reads as glass thickness.
-                if 5 <= depth <= 6.2 and (x // 37 + y // 53) % 7 not in (0, 1):
-                    light += 0.16
-                grazing = (x < width * 0.32 and y < height * 0.18) or (
-                    x > width * 0.78 and y > height * 0.64)
-                if grazing:
-                    light += 0.18 * max(0, 1 - depth / 20) ** 2
-                # Two narrow slanted reflections stay along the side pane.
-                if height * 0.16 < y < height * 0.36:
-                    streak = cell_width / 2 + 9 + (y - height * 0.16) * 0.10
-                    if abs(x - streak) < 0.8 or abs(x - streak - 5) < 0.5:
-                        light += 0.22
-                # A low meniscus catches light without adding a full-panel tint.
-                if height - cell_height / 2 - 11 < y < height - cell_height / 2 - 10:
-                    light += 0.16 * max(0, 1 - abs(x / width - 0.55) * 3)
-                grain = ((x * 37 + y * 73) ^ (x * y * 3)) % 97
-                frost = 5 if grain < 3 else 0
-            glass = [24 + (max(90, c) - 24) * min(0.4, light) + frost for c in rgb]
+            if 2 < depth < 48:
+                # Broken inner etching and frost vary with the material identity.
+                if abs(depth - etch_depth) < 0.7 and (x // 31 + y // 43 + etch_phase) % 7 > 1:
+                    light += 0.26
+                for center, sigma, strength in reflections:
+                    delta = x - center
+                    light += strength * math.exp(-(delta / sigma) ** 2)
+                    light += 0.10 * strength * math.exp(-(delta / (sigma * 5)) ** 2)
+                    # A separate trailing glint suggests a second glass surface.
+                    light += 0.18 * strength * math.exp(-((delta - 5) / 0.7) ** 2)
+                if height - cell_height / 2 - 12 < y < height - cell_height / 2 - 10:
+                    light += 0.24 * max(0, 1 - abs(x / width - glint_center) / glint_span)
+                grain = ((x * 37 + y * 73 + etch_phase) ^ (x * y * 3)) % 97
+                frost = grain_strength if grain < 5 else 0
+            glass = [24 + (c - 24) * min(0.7, light) + frost for c in reflection_ink]
             ink = tuple(round(base + (channel - base) * rim)
                         for base, channel in zip(glass, rgb))
             data.extend((*ink, alpha))
@@ -1499,7 +1520,7 @@ def kitty_frame(rows, columns, rgb):
             return ''
     except (OSError, ValueError, AttributeError):
         return ''
-    encoded = base64.b64encode(rounded_frame_png(cell_width, cell_height, rows, tuple(rgb))).decode()
+    encoded = base64.b64encode(rounded_frame_png(cell_width, cell_height, rows, tuple(rgb), GLASS_SEED)).decode()
     image_id = (os.getpid() % (2**32 - 1)) + 1
     commands = []
     for offset in range(0, len(encoded), 4096):

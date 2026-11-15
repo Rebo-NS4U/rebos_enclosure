@@ -592,11 +592,19 @@ class BonsaiGrowTests(unittest.TestCase):
         self.assertEqual(pixel(5, 10)[3], 0, 'outside the rounded corner stays transparent')
         self.assertEqual(pixel(295, 10), (240, 130, 80, 255))
         self.assertEqual(pixel(295, 260), (24, 24, 24, 255), 'keep the center quiet')
-        self.assertNotEqual(pixel(10, 150)[:3], (24, 24, 24), 'etched inset catches light')
-        self.assertEqual(pixel(10, 150)[3], 255)
+        self.assertTrue(any(pixel(x, y)[:3] != (24, 24, 24)
+                            for x in range(10, 36) for y in range(80, 300)),
+                        'reflections and etching catch light along the pane')
         self.assertEqual(pixel(584, 260), (240, 130, 80, 255))
         self.assertEqual(pixel(589, 260)[3], 0)
         self.assertEqual(pixel(295, 519)[3], 0)
+
+    def test_glass_varies_between_seeds_and_stays_stable_within_a_session(self):
+        args = (10, 20, 26, (240, 130, 80))
+        first = bonsai.rounded_frame_png(*args, texture_seed=11)
+        second = bonsai.rounded_frame_png(*args, texture_seed=29)
+        self.assertNotEqual(first, second)
+        self.assertEqual(first, bonsai.rounded_frame_png(*args, texture_seed=11))
 
     def test_kitty_frame_is_quiet_and_preserves_the_terminal_cursor(self):
         import struct
@@ -605,6 +613,7 @@ class BonsaiGrowTests(unittest.TestCase):
              patch.object(bonsai.sys.stdout, 'fileno', return_value=1), \
              patch.object(bonsai.fcntl, 'ioctl', return_value=struct.pack('HHHH', 40, 80, 800, 800)):
             command = bonsai.kitty_frame(26, 80, [240, 130, 80])
+            self.assertEqual(command, bonsai.kitty_frame(26, 80, [240, 130, 80]))
             self.assertIn('q=2,z=-1,C=1,c=59,r=26', command)
             self.assertTrue(command.startswith('\033[10C'))
             self.assertTrue(command.endswith('\033[10D'))
