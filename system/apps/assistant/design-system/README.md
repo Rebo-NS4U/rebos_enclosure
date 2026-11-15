@@ -74,3 +74,7 @@ Every theme now follows the shared corner-radius setting. Inset frame lines use 
 Terminal Hardware uses concentric bezel grooves and recessed cooling louvers. These details stay at the perimeter, adapt to the shared corner radius and remain static.
 
 Architectural refinement: Suspended Film now uses floating offset glass sheets and contact-shadow edges, replacing tension cables and bindings. Monolith now uses broad sculpted chamfers and subtle mineral grain, replacing mechanical cuts and service spines. Both preserve selected colors and radius behavior; Terminal Hardware remains unchanged.
+
+## Wallpaper-focused themes
+
+Canopy complements nature wallpapers with branching leaf-vein contours and layered organic edge lines. Orbital complements space wallpapers with interrupted orbital rings and static edge constellations. Metropolis complements city wallpapers with stepped skyline modules, facade windows and architectural divisions. All three use the selected wallpaper colors, translucent surfaces, compositor blur, matching native Kitty profiles and the shared corner radius. Decorations stay at the perimeter; Clear Glass remains the final picker entry.

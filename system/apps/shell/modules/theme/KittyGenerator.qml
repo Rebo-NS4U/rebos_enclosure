@@ -10,6 +10,9 @@ QtObject {
     // Keep the dedicated monospace font so terminal cell alignment is preserved.
     function appearance(style) {
         const profiles = {
+            "canopy": {padding: "16 18", border: "0.5pt", margin: 0, cursor: "beam", tabs: "fade", separator: "  ", blink: 0.55, trail: 0},
+            "orbital": {padding: "14 18", border: "1pt", margin: 1, cursor: "underline", tabs: "separator", separator: "  ·  ", blink: 0, trail: 0},
+            "metropolis": {padding: "12 16", border: "1.5pt", margin: 1, cursor: "block", tabs: "slant", separator: "  │  ", blink: 0, trail: 0},
             "clear-glass": {padding: "14 16", border: "0.5pt", margin: 0, cursor: "beam", tabs: "fade", separator: "  ", blink: 0.55, trail: 0},
             "glass-vault": {padding: "18 20", border: "2pt", margin: 2, cursor: "block", tabs: "separator", separator: "  ┃  ", blink: 0, trail: 0},
             "radar-station": {padding: "14 18", border: "1pt", margin: 1, cursor: "underline", tabs: "separator", separator: "  ┆  ", blink: 0, trail: 0},

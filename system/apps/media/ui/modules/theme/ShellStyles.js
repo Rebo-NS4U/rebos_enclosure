@@ -9,6 +9,9 @@ var styles = [
     {id: "terminal-hardware", label: "Terminal Hardware", font: "DejaVu Sans Mono", description: "Grooved bezels, recessed cooling louvers and mechanical display housings."},
     {id: "frosted", label: "Frosted Glass", description: "Etched ice rims, fine edge grain and soft frosted highlights."},
     {id: "colorful", label: "Tinted", description: "Layered accent planes, offset frames and translucent color bands."},
+    {id: "canopy", label: "Canopy", font: "Noto Sans", description: "Branching leaf veins, organic edge contours and layered natural surfaces."},
+    {id: "orbital", label: "Orbital", font: "JetBrains Mono", description: "Broken orbital rings, etched constellations and floating observatory panels."},
+    {id: "metropolis", label: "Metropolis", font: "DejaVu Sans", description: "Stepped skyline edges, facade grids and architectural panel divisions."},
     {id: "clear-glass", label: "Clear Glass", font: "Noto Sans", description: "Refined transparent panels, quiet hairline edges and restrained highlights."}
 ];
 
@@ -181,6 +184,15 @@ function surface(style, variant, p, ditherStrength) {
         opacity=focused?0.86:inset?0.50:outer?0.74:0.62;
         border=[focused?p.primary:mix(fill,p.primary,outer?0.38:0.20),outer||focused?1:0];
         renderGradient=[[mix(fill,p.foreground,0.025),0],[fill,0.24],[mix(fill,p.background,0.12),1]];
+    }
+    var canopy=style === "canopy", orbital=style === "orbital", metro=style === "metropolis";
+    if ((canopy || orbital || metro) && neutral) {
+        fill=mix(mix(p.background,p.foreground,inset?0.015:0.035),p.primary,focused?0.08:0.025);
+        item=p.foreground;
+        opacity=focused?0.94:inset?(metro?0.82:0.64):metro?0.88:canopy?0.78:0.70;
+        border=[focused?p.primary:mix(fill,p.foreground,metro?0.30:0.23),outer||focused||inset?1:0];
+        renderGradient=canopy?[[mix(fill,p.foreground,0.025),0],[fill,0.45],[mix(fill,p.background,0.12),1]]
+            :orbital?[[fill,0]]:[[mix(fill,p.foreground,0.035),0],[fill,0.08],[fill,0.92],[mix(fill,p.background,0.30),1]];
     }
     var containers = ["bg", "popup", "pane", "surface", "surfaceContainer", "common", "internalbg", "focus", "surfaceVariant", "bar", "barbg"];
     var dotted = dithered && strength > 0 && containers.indexOf(variant) !== -1;

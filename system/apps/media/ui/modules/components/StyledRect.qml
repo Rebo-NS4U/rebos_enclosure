@@ -459,6 +459,92 @@ ClippingRectangle {
         }
     }
 
+    // Wallpaper architecture, using the selected semantic colors throughout.
+    Loader {
+        anchors.fill: parent
+        active: !root.hasFillColor && root.rectOpacity > 0
+            && ["bg", "popup", "pane", "surface", "surfaceContainer", "internalbg", "focus"].indexOf(root.variant) !== -1
+            && ["canopy", "orbital", "metropolis"].indexOf(root.styleOverride || Styling.shellStyle) !== -1
+        sourceComponent: Canvas {
+            anchors.fill: parent
+            objectName: "wallpaper-theme-canvas"
+            readonly property string finish: root.styleOverride || Styling.shellStyle
+            readonly property real cornerRadius: root.effectiveCornerRadius
+            readonly property color pigment: root.itemColor
+            readonly property bool outer: root.variant === "bg" || root.variant === "popup"
+            opacity: root.rectOpacity
+            onCornerRadiusChanged: requestPaint()
+            onPigmentChanged: requestPaint()
+            onFinishChanged: requestPaint()
+            onOuterChanged: requestPaint()
+            onWidthChanged: requestPaint()
+            onHeightChanged: requestPaint()
+            onPaint: {
+                const ctx=getContext("2d");ctx.clearRect(0,0,width,height);
+                if(width<24||height<24)return;
+                const ink=a=>Qt.rgba(pigment.r,pigment.g,pigment.b,a);
+                ctx.lineWidth=1;
+                const safe=Math.max(18,cornerRadius+6);
+                if(finish === "canopy"){
+                    // Leaf-vein contours grow along opposite edges, clear of the text.
+                    ctx.strokeStyle=ink(0.12);if(root.traceThemeFrame(ctx,5))ctx.stroke();
+                    for(let side=0;side<2;side++){
+                        const x=side?width-8:8,sx=side?-1:1;
+                        ctx.strokeStyle=ink(0.22);ctx.beginPath();ctx.moveTo(x,safe);
+                        ctx.bezierCurveTo(x+sx*5,height*0.35,x-sx*3,height*0.65,x,height-safe);ctx.stroke();
+                        for(let y=safe+12;y<height-safe-10;y+=26){
+                            ctx.strokeStyle=ink(0.17);ctx.beginPath();ctx.moveTo(x,y+8);
+                            ctx.quadraticCurveTo(x+sx*12,y+5,x+sx*15,y-7);ctx.stroke();
+                            ctx.strokeStyle=ink(0.08);ctx.beginPath();ctx.moveTo(x+sx*5,y+5);ctx.lineTo(x+sx*12,y+3);ctx.stroke();
+                        }
+                    }
+                    if(outer){
+                        ctx.strokeStyle=ink(0.10);
+                        for(let layer=0;layer<2;layer++){
+                            ctx.beginPath();ctx.moveTo(safe,height-8-layer*4);
+                            ctx.bezierCurveTo(width*0.35,height-17-layer*4,width*0.65,height-3-layer*4,width-safe,height-10-layer*4);ctx.stroke();
+                        }
+                    }
+                }else if(finish === "orbital"){
+                    ctx.strokeStyle=ink(0.12);if(root.traceThemeFrame(ctx,5))ctx.stroke();
+                    const r=Math.min(60,width*0.22,height*0.30),cx=width-safe,cy=safe;
+                    for(let ring=0;ring<3;ring++){
+                        ctx.strokeStyle=ink(0.22-ring*0.05);ctx.beginPath();
+                        ctx.arc(cx,cy,r*(1-ring*0.23),Math.PI*0.42,Math.PI*1.02);ctx.stroke();
+                    }
+                    // A static edge constellation, with no animated or fake status data.
+                    const stars=[];
+                    for(let i=0;i<(outer?12:5);i++){
+                        const x=safe+((i*53)%Math.max(1,width-safe*2));
+                        const y=height-7-(i%3)*5;
+                        stars.push([x,y]);ctx.fillStyle=ink(i%3?0.22:0.44);
+                        ctx.beginPath();ctx.arc(x,y,i%3?0.8:1.4,0,Math.PI*2);ctx.fill();
+                    }
+                    ctx.strokeStyle=ink(0.09);
+                    for(let i=1;i<stars.length;i++)if(Math.abs(stars[i][0]-stars[i-1][0])<70){ctx.beginPath();ctx.moveTo(...stars[i-1]);ctx.lineTo(...stars[i]);ctx.stroke();}
+                }else{
+                    // Facade modules form a stepped silhouette around a quiet center.
+                    ctx.strokeStyle=ink(0.18);if(root.traceThemeFrame(ctx,6))ctx.stroke();
+                    if(outer && width>safe*2){
+                        const usable=width-safe*2,units=Math.min(14,Math.floor(usable/14));
+                        for(let i=0;i<units;i++){
+                            const x=safe+i*usable/units,w=usable/units-3,h=5+(i*7%4)*4;
+                            ctx.fillStyle=ink(0.07);ctx.fillRect(x,height-5-h,w,h);
+                            ctx.strokeStyle=ink(0.20);ctx.strokeRect(x,height-5-h,w,h);
+                            ctx.fillStyle=ink(0.25);
+                            for(let y=height-h-1;y<height-7;y+=5)for(let col=x+3;col<x+w-2;col+=5)ctx.fillRect(col,y,1.5,1.5);
+                        }
+                    }
+                    ctx.strokeStyle=ink(0.14);
+                    for(let y=safe;y<height-safe;y+=16){
+                        ctx.beginPath();ctx.moveTo(width-7,y);ctx.lineTo(width-7,y+10);ctx.lineTo(width-13,y+10);ctx.stroke();
+                    }
+                    ctx.strokeStyle=ink(0.25);ctx.beginPath();ctx.moveTo(safe,5);ctx.lineTo(Math.max(safe,width-safe),5);ctx.stroke();
+                }
+            }
+        }
+    }
+
     // Architectural Monolith: a continuous slab with a broad carved chamfer.
     Loader {
         anchors.fill: parent

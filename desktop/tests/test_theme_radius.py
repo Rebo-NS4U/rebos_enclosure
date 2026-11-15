@@ -47,14 +47,14 @@ import qs.config
 import qs.modules.components
 ShellRoot {
  function decoration(node) {
-  if (["structural-glass-canvas","classic-glass-canvas","drafting-corner-canvas","surface-edge-canvas"].includes(node.objectName)) return node;
+  if (["structural-glass-canvas","classic-glass-canvas","drafting-corner-canvas","surface-edge-canvas","wallpaper-theme-canvas"].includes(node.objectName)) return node;
   for (const child of node.children || []) { const result = decoration(child); if (result) return result; }
   return null;
  }
  Window { visible: true; width: 300; height: 240
   Grid { columns: 3; spacing: 2
    Repeater { id: cards
-    model: ["glass-vault","radar-station","suspended-film","monolith","blueprint","terminal-hardware","frosted","colorful","clear-glass"]
+    model: ["glass-vault","radar-station","suspended-film","monolith","blueprint","terminal-hardware","frosted","colorful","clear-glass","canopy","orbital","metropolis"]
     StyledRect { required property string modelData; width:96; height:72; variant:"bg"; styleOverride:modelData; animateRadius:false }
    }
   }
@@ -87,6 +87,6 @@ ShellRoot {
             output = result.stdout + result.stderr
             self.assertEqual(result.returncode, 0, output)
             self.assertNotIn('THEME_RADIUS_FAILED', output)
-            self.assertEqual(output.count('THEME_RADIUS_OK'), 36, output)
+            self.assertEqual(output.count('THEME_RADIUS_OK'), 48, output)
             for error in ('ReferenceError', 'TypeError', 'Unable to assign', 'Cannot assign'):
                 self.assertNotIn(error, output)

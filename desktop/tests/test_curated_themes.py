@@ -14,7 +14,7 @@ class CuratedThemeTests(unittest.TestCase):
 const assert = require('node:assert/strict');
 const ids = ['monolith','blueprint','terminal-hardware'];
 assert.deepEqual(styles.slice(0,3).map(s=>s.id), ['glass-vault','radar-station','suspended-film']);
-assert.deepEqual(styles.map(s => s.id).sort(), [...ids, 'frosted', 'colorful', 'glass-vault', 'radar-station', 'suspended-film', 'clear-glass'].sort());
+assert.deepEqual(styles.map(s => s.id).sort(), [...ids, 'frosted', 'colorful', 'glass-vault', 'radar-station', 'suspended-film', 'canopy', 'orbital', 'metropolis', 'clear-glass'].sort());
 assert.ok(!styles.some(s => ['botanical-archive','condensation','optical-instrument'].includes(s.id)));
 for (const id of ids) {
  assert.ok(styles.some(s => s.id === id));
@@ -61,7 +61,7 @@ assert.equal(surface('terminal-hardware', 'primary', p).gradient.length, 5);
 assert.equal(surface('terminal-hardware', 'internalbg', p).gradient[0][0], p.background);
 for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++)
  assert.notDeepEqual(surface(ids[i], 'bg', p), surface(ids[j], 'bg', p));
-const materials = ['glass-vault','radar-station','suspended-film','clear-glass'];
+const materials = ['glass-vault','radar-station','suspended-film','clear-glass','canopy','orbital','metropolis'];
 assert.equal(styles[styles.length - 1].id, 'clear-glass');
 for (const id of materials) {
  assert.equal(themePalette(id), null);
