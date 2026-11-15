@@ -110,7 +110,8 @@
     ".local/bin/nmtui",
     ".local/bin/nmtui-connect",
     ".local/bin/nmtui-edit",
-    ".local/bin/nmtui-hostname"
+    ".local/bin/nmtui-hostname",
+    ".local/share/applications/zotify-gui.desktop"
   ],
   "layout": 2,
   "sources": {
@@ -540,6 +541,10 @@
     },
     ".local/bin/nmtui-hostname": {
       "source": "system/bin/nmtui",
+      "kind": "managed"
+    },
+    ".local/share/applications/zotify-gui.desktop": {
+      "source": "system/share/applications/zotify-gui.desktop",
       "kind": "managed"
     }
   }

@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Music Downloads
+Exec=bash "@HOME@/.config/quickshell/scripts/open_music.sh"
+Icon=folder-music
+NoDisplay=true
+Categories=AudioVideo;Audio;

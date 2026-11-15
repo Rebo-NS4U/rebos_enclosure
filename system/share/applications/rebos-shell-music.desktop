@@ -1,9 +1,9 @@
 [Desktop Entry]
 Type=Application
 Name=Enclosure Music
-Comment=Your themed local music library, playlists and lyrics
+Comment=Music library, downloads, playlists and lyrics
 Exec=bash "@HOME@/.config/quickshell/scripts/open_music.sh"
 Icon=multimedia-player
 Terminal=false
 Categories=AudioVideo;Audio;Music;Player;
-Keywords=music;library;albums;artists;playlists;lyrics;quickshell;enclosure;
+Keywords=music;library;albums;artists;playlists;lyrics;download;Spotify;spotDL;Zotify;quickshell;enclosure;

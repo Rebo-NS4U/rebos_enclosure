@@ -210,7 +210,7 @@ Window {
         onErrorOccurred: (error, errorString) => { root.notice = errorString; }
     }
     Timer { interval: 500; running: root.playing; repeat: true; onTriggered: root.sync() }
-    Shortcut { sequence: "Space"; enabled: !search.inputActiveFocus && !playlistName.inputActiveFocus; onActivated: root.toggle() }
+    Shortcut { sequence: "Space"; enabled: root.page !== "Downloads" && !search.inputActiveFocus && !playlistName.inputActiveFocus; onActivated: root.toggle() }
     Shortcut { sequence: "Ctrl+F"; onActivated: search.focusInput() }
     Shortcut { sequence: "Escape"; onActivated: GlobalStates.musicWindowVisible = false }
 
@@ -260,7 +260,7 @@ Window {
                         anchors.fill: parent; anchors.margins: 16; spacing: 10
                         StyledText { text: "MUSIC"; color: Colors.primary; font.bold: true; font.letterSpacing: 3; font.pixelSize: Styling.fontSize(5); Layout.topMargin: 12; Layout.bottomMargin: 18 }
                         Repeater {
-                            model: ["Home", "Songs", "Albums", "Artists", "Favorites", "Playlists", "Now playing"]
+                            model: ["Home", "Songs", "Albums", "Artists", "Favorites", "Playlists", "Downloads", "Now playing"]
                             delegate: ThemeButton {
                                 required property string modelData
                                 Layout.fillWidth: true; text: modelData; highlighted: root.page === modelData
@@ -274,7 +274,7 @@ Window {
                     }
                 }
                 ColumnLayout {
-                    visible: root.width >= 1120 || root.page !== "Now playing"
+                    visible: root.page !== "Downloads" && (root.width >= 1120 || root.page !== "Now playing")
                     Layout.fillWidth: true; Layout.fillHeight: true; spacing: 14
                     RowLayout {
                         Layout.fillWidth: true
@@ -351,8 +351,13 @@ Window {
                         }
                     }
                 }
+                DownloadsPane {
+                    visible: root.page === "Downloads"
+                    Layout.fillWidth: true; Layout.fillHeight: true
+                    onCompleted: root.scan()
+                }
                 StyledRect {
-                    visible: root.width >= 1120 || root.page === "Now playing"
+                    visible: root.page !== "Downloads" && (root.width >= 1120 || root.page === "Now playing")
                     Layout.fillWidth: root.width < 1120
                     Layout.preferredWidth: 280; Layout.fillHeight: true; variant: "pane"
                     ColumnLayout {

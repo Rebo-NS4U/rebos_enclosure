@@ -1,0 +1,3 @@
+spotdl==4.6.0
+spotipyfree==1.9.14
+spotapi==1.2.8
