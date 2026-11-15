@@ -13,15 +13,16 @@ Item {
     id: root
     property bool inlineMode: false
     property bool splitAroundCenter: false
+    property bool connectedMode: false
     property Item calibrationParent: root
     signal openMedia()
     property real islandLeft: width / 2
     property real islandRight: width / 2
     property real stripHeight: 36
     property bool available: true
-    readonly property real gap: 12
+    readonly property real gap: connectedMode ? 0 : 12
     // Match the tiled workspace edge while keeping breathing room by the island.
-    readonly property real edgeMargin: inlineMode ? 0 : 4
+    readonly property real edgeMargin: inlineMode || connectedMode ? 0 : 4
     readonly property real sideWidth: inlineMode && !splitAroundCenter ? width / 2 : Math.max(0, Math.min(islandLeft - gap - edgeMargin,
         width - islandRight - gap - edgeMargin))
     readonly property Region backgroundBlur: Region {
@@ -196,12 +197,12 @@ Item {
         height: root.stripHeight
         visible: lyric.trim() !== "" || root.visualizerMix > 0 || (upcoming && root.estimatedTiming)
         variant: "bg"
-        backgroundOpacity: root.inlineMode ? 0 : BarAppearance.panelOpacity(false)
-        topLeftRadius: BarAppearance.framed ? Styling.radius(4) : 0
-        topRightRadius: topLeftRadius
-        bottomLeftRadius: BarAppearance.themedCorners ? Styling.radius(4) : height / 2
-        bottomRightRadius: bottomLeftRadius
-        border.width: !root.inlineMode && BarAppearance.framed ? 1 : 0
+        backgroundOpacity: root.inlineMode ? 0 : BarAppearance.panelOpacity(root.connectedMode)
+        topLeftRadius: root.connectedMode ? 0 : BarAppearance.framed ? Styling.radius(4) : 0
+        topRightRadius: root.connectedMode ? 0 : topLeftRadius
+        bottomLeftRadius: root.connectedMode && upcoming ? 0 : BarAppearance.themedCorners ? Styling.radius(4) : height / 2
+        bottomRightRadius: root.connectedMode ? (upcoming ? (BarAppearance.themedCorners ? Styling.radius(4) : height / 2) : 0) : bottomLeftRadius
+        border.width: !root.inlineMode && !root.connectedMode && BarAppearance.framed ? 1 : 0
         border.color: BarAppearance.panelBorder(false)
 
         MouseArea {

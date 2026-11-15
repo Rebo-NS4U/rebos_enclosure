@@ -660,6 +660,7 @@ Item {
         y: Math.min(0, islandContainer.y)
         z: 1
         inlineMode: root.currentMode === "collapsed"
+        connectedMode: !inlineMode
         splitAroundCenter: true
         readonly property real centerWidth: root.isExpanded || root.retractingToHidden
             ? islandContainer.width : collapsedView.width
@@ -748,8 +749,8 @@ Item {
             anchors.fill: parent
             variant: "bg"
             backgroundOpacity: BarAppearance.panelOpacity(root.isExpanded)
-            topLeftRadius: BarAppearance.framed ? root.cornerRadius : 0
-            topRightRadius: BarAppearance.framed ? root.cornerRadius : 0
+            topLeftRadius: lyricsStrip.visible ? 0 : BarAppearance.framed ? root.cornerRadius : 0
+            topRightRadius: lyricsStrip.visible ? 0 : BarAppearance.framed ? root.cornerRadius : 0
             border.width: root.currentMode === "typing" ? 1 : (BarAppearance.framed ? 1 : 0)
             border.color: root.currentMode === "typing" ? Qt.alpha(Colors.primary, 0.28) : BarAppearance.panelBorder(root.isExpanded)
 
@@ -775,8 +776,8 @@ Item {
                     easing.type: Motion.enterCurve
                 }
             }
-            enableShadow: root.currentMode !== "typing" && (root.isExpanded || root.retractingToHidden)
-            enableBorder: true
+            enableShadow: !lyricsStrip.visible && root.currentMode !== "typing" && (root.isExpanded || root.retractingToHidden)
+            enableBorder: !lyricsStrip.visible
             clip: true
 
             // A quiet wallpaper tint over the translucent pane, below all controls.
