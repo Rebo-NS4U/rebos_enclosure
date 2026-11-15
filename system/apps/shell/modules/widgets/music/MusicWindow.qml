@@ -426,33 +426,41 @@ Window {
                         Cover { artwork: root.current?.art || ""; Layout.preferredWidth: 46; Layout.preferredHeight: 46 }
                         ColumnLayout {
                             Layout.fillWidth: true
-                            StyledText { Layout.fillWidth: true; text: root.current?.title || "Enclosure Music"; elide: Text.ElideRight }
+                            RowLayout {
+                                Layout.fillWidth: true
+                                StyledText {
+                                    Layout.minimumWidth: 0
+                                    Layout.preferredWidth: implicitWidth
+                                    Layout.maximumWidth: Math.max(0, parent.width - currentFavorite.width - parent.spacing)
+                                    text: root.current?.title || "Enclosure Music"; elide: Text.ElideRight
+                                }
+                                ThemeButton {
+                                    id: currentFavorite
+                                    objectName: "music-favorite-current"
+                                    enabled: !!root.current
+                                    checked: !!root.current && root.favorites.includes(root.current.path)
+                                    text: checked ? "♥" : "♡"
+                                    Accessible.name: checked ? "Remove current song from favorites" : "Add current song to favorites"
+                                    ToolTip.visible: hovered
+                                    ToolTip.text: Accessible.name
+                                    onClicked: if (root.current) root.favorite(root.current)
+                                }
+                                Item { Layout.fillWidth: true }
+                            }
                             StyledText { Layout.fillWidth: true; text: root.current?.artist || "Local music library"; elide: Text.ElideRight; color: Colors.overSurfaceVariant; font.pixelSize: Styling.fontSize(-2) }
-                        }
-                        ThemeButton {
-                            objectName: "music-favorite-current"
-                            enabled: !!root.current
-                            checked: !!root.current && root.favorites.includes(root.current.path)
-                            text: checked ? "♥" : "♡"
-                            Accessible.name: checked ? "Remove current song from favorites" : "Add current song to favorites"
-                            ToolTip.visible: hovered
-                            ToolTip.text: Accessible.name
-                            onClicked: if (root.current) root.favorite(root.current)
                         }
                         ThemeButton { text: "Shuffle"; checked: root.shuffle; onClicked: root.shuffle = !root.shuffle }
                         ThemeButton { text: "⏮"; Accessible.name: "Previous track"; enabled: !!root.current; onClicked: root.previous() }
                         ThemeButton { text: root.playing ? "Pause" : "Play"; highlighted: true; enabled: root.queue.length > 0 || root.shownTracks.length > 0; onClicked: root.toggle() }
                         ThemeButton { text: "⏭"; Accessible.name: "Next track"; enabled: root.queue.length > 1; onClicked: root.next(false) }
                         ThemeButton {
-                            objectName: "music-repeat-song"
-                            text: "Repeat song"; checkable: true; checked: root.repeatMode === "Track"
-                            highlighted: checked
-                            Accessible.name: "Repeat current song"
-                            onClicked: root.repeatMode = root.repeatMode === "Track" ? "None" : "Track"
-                        }
-                        ThemeButton {
-                            text: "Repeat all"; checkable: true; checked: root.repeatMode === "Playlist"
-                            onClicked: root.repeatMode = root.repeatMode === "Playlist" ? "None" : "Playlist"
+                            objectName: "music-repeat"
+                            text: root.repeatMode === "Track" ? "Repeat song" : root.repeatMode === "Playlist" ? "Repeat all" : "Repeat off"
+                            checked: root.repeatMode !== "None"
+                            Accessible.name: text + ". Click to change repeat mode"
+                            ToolTip.visible: hovered
+                            ToolTip.text: "Cycle repeat: off → all → song"
+                            onClicked: root.repeatMode = root.repeatMode === "None" ? "Playlist" : root.repeatMode === "Playlist" ? "Track" : "None"
                         }
                         ThemeSlider { Layout.preferredWidth: 90; from: 0; to: 1; value: root.volume; Accessible.name: "Volume"; onMoved: root.volume = value }
                     }

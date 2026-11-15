@@ -56,6 +56,13 @@ def session():
                     if (music.repeatMode !== "Playlist") { console.error("MUSIC_REPEAT_DEFAULT_FAILED"); Qt.exit(1); }
                     const favorite = findItem(music.contentItem, "music-favorite-current");
                     if (!favorite || favorite.enabled) { console.error("MUSIC_FAVORITE_EMPTY_FAILED"); Qt.exit(1); }
+                    const repeat = findItem(music.contentItem, "music-repeat");
+                    repeat.clicked();
+                    if (music.repeatMode !== "Track" || repeat.text !== "Repeat song") { console.error("MUSIC_REPEAT_TRACK_FAILED"); Qt.exit(1); }
+                    repeat.clicked();
+                    if (music.repeatMode !== "None" || repeat.checked) { console.error("MUSIC_REPEAT_OFF_FAILED"); Qt.exit(1); }
+                    repeat.clicked();
+                    if (music.repeatMode !== "Playlist" || repeat.text !== "Repeat all") { console.error("MUSIC_REPEAT_ALL_FAILED"); Qt.exit(1); }
                     music.volume = 0;
                     const playCard = findItem(music.contentItem, "music-card-play");
                     if (!playCard) return;
@@ -69,6 +76,7 @@ def session():
                     if (music.lyricLines.length !== 2 || music.estimatedTiming) { console.error("MUSIC_LYRICS_FAILED"); Qt.exit(1); }
                     music.seek(1200);
                     const favorite = findItem(music.contentItem, "music-favorite-current");
+                    if (favorite.parent.children[0].text !== music.current.title) { console.error("MUSIC_FAVORITE_PLACEMENT_FAILED"); Qt.exit(1); }
                     favorite.clicked();
                     if (!favorite.checked || !music.favorites.includes(music.current.path)) { console.error("MUSIC_FAVORITE_ADD_FAILED"); Qt.exit(1); }
                     favorite.clicked();
@@ -76,7 +84,7 @@ def session():
                     favorite.clicked();
                     music.playlists = [{id:"test",name:"Acceptance",paths:music.queue.map(t=>t.path).reverse()}];
                     music.save();
-                    findItem(music.contentItem, "music-repeat-song").clicked();
+                    findItem(music.contentItem, "music-repeat").clicked();
                     if (music.repeatMode !== "Track") { console.error("MUSIC_REPEAT_TOGGLE_FAILED"); Qt.exit(1); }
                     music.seek(3800);
                     repeatStart = attempts;
@@ -86,7 +94,7 @@ def session():
                     music.next(false);
                     phase = 2;
                 } else if (phase === 2 && music.currentIndex === 1 && music.playing) {
-                    findItem(music.contentItem, "music-repeat-song").clicked();
+                    findItem(music.contentItem, "music-repeat").clicked();
                     if (music.repeatMode !== "None") { console.error("MUSIC_REPEAT_DISABLE_FAILED"); Qt.exit(1); }
                     music.control({action:"Pause"});
                     music.side = "Lyrics";

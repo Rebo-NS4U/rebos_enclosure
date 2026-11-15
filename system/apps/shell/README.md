@@ -318,6 +318,8 @@ other music directories without copying or modifying audio files. Albums,
 artists, search, favorites, saved queue playlists, shuffle, repeat, seeking,
 volume and embedded or adjacent `.lrc` lyrics are supported. Use **Now playing**
 for the queue and lyrics on narrow windows. Scan again after changing files.
+The heart beside the current song title toggles favorites. The bottom-bar repeat
+button cycles through Repeat off, Repeat all, and Repeat song.
 Lyrics without timestamps follow playback using evenly spaced line estimates,
 labelled **Estimated timing** in Music and **≈** in the desktop lyrics strip.
 The strip advances both current and next lines, including after seeks or pauses.
