@@ -7,6 +7,7 @@ import qs.modules.theme
 
 ComboBox {
     id: root
+    property bool previewFonts: false
     wheelEnabled: false
     opacity: enabled ? 1 : 0.4
     implicitHeight: 48
@@ -44,12 +45,14 @@ ComboBox {
         required property int index
         required property var modelData
         width: root.width - 12
-        implicitHeight: 42
+        implicitHeight: root.previewFonts ? 70 : 42
         padding: 12
         highlighted: root.highlightedIndex === index
         hoverEnabled: true
         contentItem: StyledText {
-            text: root.textRole ? String(option.modelData[root.textRole] ?? "") : String(option.modelData)
+            readonly property string label: root.textRole ? String(option.modelData[root.textRole] ?? "") : String(option.modelData)
+            text: root.previewFonts ? label + "\nAa Bb Cc 0123456789" : label
+            font.family: root.previewFonts ? label : root.font.family
             elide: Text.ElideRight
             color: option.index === root.currentIndex ? Colors.primary : Colors.overSurface
             rightPadding: 24

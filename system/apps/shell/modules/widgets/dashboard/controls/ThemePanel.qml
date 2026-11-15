@@ -265,6 +265,7 @@ Item {
 
                             SettingsComboBox {
                                 id: fontInput
+                                previewFonts: true
                                 Layout.fillWidth: true
                                 readonly property string configValue: Config.theme.font
                                 model: {
@@ -351,6 +352,7 @@ Item {
 
                             SettingsComboBox {
                                 id: monoFontInput
+                                previewFonts: true
                                 Layout.fillWidth: true
                                 readonly property string configValue: Config.theme.monoFont
                                 model: {
