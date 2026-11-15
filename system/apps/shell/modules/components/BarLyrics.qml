@@ -4,6 +4,7 @@ import Quickshell.Io
 import qs.modules.services
 import qs.modules.theme
 import qs.modules.bar
+import "../services/Lyrics.js" as Lyrics
 
 Item {
     id: root
@@ -14,12 +15,24 @@ Item {
     readonly property real gap: 12
     readonly property real sideWidth: Math.max(0, Math.min(islandLeft - gap * 2,
         width - islandRight - gap * 2))
-    readonly property int lineIndex: Math.max(0, LyricsService.currentLine)
-    readonly property string currentText: !LyricsService.hasText ? "" : LyricsService.lines.length
-        ? (LyricsService.displayLines[lineIndex]?.text || "")
+    readonly property bool estimatedTiming: LyricsService.hasText && !LyricsService.lines.length && MprisController.length > 0
+    readonly property var displayLines: estimatedTiming
+        ? Lyrics.estimatedLines(LyricsService.plain, MprisController.length) : LyricsService.displayLines
+    LyricsClock {
+        id: estimatedClock
+        lines: root.estimatedTiming ? root.displayLines : []
+        position: MprisController.position
+        playing: MprisController.isPlaying
+        rate: LyricsService.player?.rate ?? 1
+        enabled: root.estimatedTiming && root.visible
+        trackKey: LyricsService.trackKey
+    }
+    readonly property int lineIndex: Math.max(0, estimatedTiming ? estimatedClock.activeIndex : LyricsService.currentLine)
+    readonly property string currentText: !LyricsService.hasText ? "" : displayLines.length
+        ? (displayLines[lineIndex]?.text || "")
         : LyricsService.plain.split("\n").find(line => line.trim()) || ""
     readonly property string nextText: LyricsService.hasText
-        ? LyricsService.displayLines[lineIndex + 1]?.text || "" : ""
+        ? displayLines[lineIndex + 1]?.text || "" : ""
     visible: available && LyricsService.stripEnabled && MprisController.trackTitle !== "" && sideWidth >= 120
     property var levels: Array(32).fill(0)
     property real visualizerMix: 1
@@ -180,6 +193,6 @@ Item {
             transform: Translate { y: 4 * (1 - lineSurface.progress) }
         }
     }
-    Line { objectName: "bar-lyrics-current"; x: root.gap; lyric: root.currentText }
-    Line { objectName: "bar-lyrics-next"; x: root.width - root.sideWidth - root.gap; lyric: root.nextText; upcoming: true }
+    Line { objectName: "bar-lyrics-current"; x: root.gap; lyric: (root.estimatedTiming && root.currentText ? "≈ " : "") + root.currentText }
+    Line { objectName: "bar-lyrics-next"; x: root.width - root.sideWidth - root.gap; lyric: (root.estimatedTiming && root.nextText ? "≈ " : "") + root.nextText; upcoming: true }
 }

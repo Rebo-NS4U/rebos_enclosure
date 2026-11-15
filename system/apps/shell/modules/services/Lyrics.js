@@ -20,7 +20,7 @@ function activeLine(lines, position) {
     return index;
 }
 
-// Only for the local Music reader. Keep estimates out of exported/player lyrics.
+// For Music and the desktop strip. Keep estimates out of exported/player lyrics.
 function estimatedLines(text, duration) {
     if (!isFinite(duration) || duration <= 0) return [];
     const rows = String(text || "").split(/\r?\n/)

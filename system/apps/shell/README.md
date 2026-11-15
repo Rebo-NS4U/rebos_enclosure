@@ -317,7 +317,9 @@ artists, search, favorites, saved queue playlists, shuffle, repeat, seeking,
 volume and embedded or adjacent `.lrc` lyrics are supported. Use **Now playing**
 for the queue and lyrics on narrow windows. Scan again after changing files.
 Lyrics without timestamps follow playback using evenly spaced line estimates,
-labelled **Estimated timing** in Music. These may differ from the vocals;
+labelled **Estimated timing** in Music and **≈** in the desktop lyrics strip.
+The strip advances both current and next lines, including after seeks or pauses.
+These may differ from the vocals;
 embedded or downloaded timed lyrics take precedence. Estimates are not exported
 as timestamps to other players or the desktop lyrics service.
 Metadata and artwork use the existing FFmpeg dependency. `python-dbus` and

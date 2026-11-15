@@ -218,6 +218,56 @@ ShellRoot {
 
 @unittest.skipUnless(shutil.which('quickshell'), 'Quickshell required')
 class Lyrics(unittest.TestCase):
+    def test_bar_untimed_lyrics_follow_playback(self):
+        self.run_harness('''import QtQuick
+import Quickshell
+import qs.modules.components
+import qs.modules.services
+ShellRoot {
+ Item { width: 1920; height: 1200
+  BarLyrics { id: strip; anchors.fill: parent; islandLeft: 700; islandRight: 1220 }
+ }
+ Timer { interval: 300; running: true; repeat: true; property int phase: 0
+  onTriggered: {
+   try {
+    function check(ok, message) { if (!ok) throw Error(message); }
+    if (phase === 0) {
+     LyricsService.createRequest = () => ({open:()=>{},setRequestHeader:()=>{},send:()=>{},abort:()=>{}});
+     MprisController.activePlayer = {dbusName:'test', identity:'Music', metadata:{}, trackAlbum:''};
+     MprisController.length = 1.6; MprisController.position = 0; MprisController.isPlaying = false;
+     LyricsService.refresh(); LyricsService.apply('First\\nSecond\\nThird\\nFourth', 'Music', false);
+     phase++; return;
+    }
+    if (phase === 1) {
+     check(strip.estimatedTiming && strip.currentText === 'First' && strip.nextText === 'Second', 'Untimed current/next lines');
+     check(strip.children[0].lyric === '≈ First', 'Estimate visibly labelled');
+     check(!LyricsService.lines.length && !LyricsService.hasLyrics, 'Estimates must not replace real timings');
+     MprisController.isPlaying = true; interval = 650; phase++; return;
+    }
+    if (phase === 2) {
+     check(strip.currentText === 'Second' && strip.nextText === 'Third', 'Strip must advance without position polling');
+     MprisController.position = 0.65; MprisController.isPlaying = false;
+     phase++; return;
+    }
+    if (phase === 3) {
+     check(strip.currentText === 'Second', 'Pause must freeze estimated line');
+     MprisController.position = 1.3;
+     check(strip.currentText === 'Fourth' && strip.nextText === '', 'Forward seek and final line');
+     MprisController.position = 0;
+     check(strip.currentText === 'First', 'Backward seek');
+     LyricsService.apply('[00:00]Real first\\n[00:01]Real next', 'LRCLIB', false);
+     check(!strip.estimatedTiming && strip.currentText === 'Real first' && strip.nextText === 'Real next', 'Real timing takes priority');
+     check(strip.children[0].lyric === 'Real first', 'Real timestamps have no estimate label');
+     LyricsService.apply('', 'LRCLIB', true);
+     check(!strip.estimatedTiming && !strip.currentText && !strip.nextText, 'Track without lyrics clears estimates');
+     console.log('PASS: estimated strip cues, pause, seeks, labels and real timing priority'); Qt.quit();
+    }
+   } catch(error) { console.error(error); Qt.exit(1); }
+  }
+ }
+}
+''')
+
     def test_lyrics(self):
         self.run_harness(HARNESS)
 
