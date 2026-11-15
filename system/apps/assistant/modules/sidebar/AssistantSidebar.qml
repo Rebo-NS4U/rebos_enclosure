@@ -91,6 +91,7 @@ Item {
 
     readonly property int sidebarMargin: 4
     property bool wantsFocus: false
+    property int canopyVariation: Math.floor(Math.random() * 4)
     property bool menuExpanded: false
     property real menuWidth: 250
     property list<var> slashCommands: [
@@ -205,6 +206,7 @@ Item {
 
     onActiveChanged: {
         if (active) {
+            canopyVariation = (canopyVariation + 1 + Math.floor(Math.random() * 3)) % 4;
             Ai.ensureSession();
             Ai.activeSession.refreshPlanUsage(false);
             root.wantsFocus = true;
@@ -355,6 +357,7 @@ Item {
             id: sidebarBackground
             // Concentrate the sculpted fabric finish behind the assistant toolbar.
             barSurface: true
+            canopyVariation: root.canopyVariation
             anchors.fill: parent
             anchors.topMargin: root.tiled ? 0 : root.sidebarMargin
             anchors.bottomMargin: root.tiled ? 0 : root.sidebarMargin

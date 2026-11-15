@@ -14,6 +14,7 @@ ClippingRectangle {
     required property string variant
     property string styleOverride: ""
     property bool barSurface: false
+    property int canopyVariation: 0
     // Color samples need their exact fill, without a surface shader over it.
     property color fillColor: "transparent"
     readonly property bool hasFillColor: fillColor.a > 0
@@ -536,6 +537,8 @@ ClippingRectangle {
             objectName: "wallpaper-theme-canvas"
             readonly property bool barSurface: root.barSurface
             onBarSurfaceChanged: requestPaint()
+            readonly property int canopyVariation: root.canopyVariation
+            onCanopyVariationChanged: requestPaint()
             readonly property string finish: root.styleOverride || Styling.shellStyle
             readonly property real cornerRadius: root.effectiveCornerRadius
             readonly property color backdrop: Colors.background
@@ -569,7 +572,11 @@ ClippingRectangle {
                     const fabric=a=>Qt.rgba(accent.r*0.65+secondaryAccent.r*0.35,accent.g*0.65+secondaryAccent.g*0.35,accent.b*0.65+secondaryAccent.b*0.35,a);
                     if(barSurface){
                         // A sculpted header canopy; keep the conversation surface quiet.
-                        const roof=Math.min(78,height*0.22);
+                        // Four stable silhouettes: balanced, left-swept, right-swept, broad.
+                        const v=((canopyVariation % 4)+4)%4;
+                        const pivot=[0.52,0.34,0.68,0.50][v];
+                        const roof=Math.min([78,90,90,60][v],height*0.22);
+                        const rightDepth=[0.72,0.48,1.10,0.95][v];
                         const glow=ctx.createLinearGradient(0,0,0,roof+24);
                         glow.addColorStop(0,fabric(0.28));
                         glow.addColorStop(0.55,fabric(0.10));
@@ -577,8 +584,8 @@ ClippingRectangle {
                         ctx.fillStyle=glow;ctx.fillRect(0,0,width,roof+24);
                         function hem(offset) {
                             ctx.beginPath();ctx.moveTo(0,12+offset);
-                            ctx.bezierCurveTo(width*0.16,roof+offset,width*0.32,roof+offset,width*0.52,16+offset);
-                            ctx.bezierCurveTo(width*0.70,roof*0.72+offset,width*0.86,roof*0.72+offset,width,12+offset);
+                            ctx.bezierCurveTo(width*pivot*0.31,roof+offset,width*pivot*0.62,roof+offset,width*pivot,16+offset);
+                            ctx.bezierCurveTo(width*(pivot+(1-pivot)*0.38),roof*rightDepth+offset,width*(pivot+(1-pivot)*0.72),roof*rightDepth+offset,width,12+offset);
                         }
                         const cloth=ctx.createLinearGradient(0,0,0,roof);
                         cloth.addColorStop(0,fabric(0.08));
@@ -588,8 +595,8 @@ ClippingRectangle {
                         // A broad contact shadow gives the fabric edge depth.
                         hem(3);ctx.strokeStyle=fabric(0.08);ctx.lineWidth=4;ctx.stroke();
                         hem(0);ctx.strokeStyle=fabric(0.48);ctx.lineWidth=1;ctx.stroke();
-                        for(const end of [0.22,0.80]){
-                            ctx.beginPath();ctx.moveTo(width*0.52,2);
+                        for(const end of [pivot*0.43,pivot+(1-pivot)*0.58]){
+                            ctx.beginPath();ctx.moveTo(width*pivot,2);
                             ctx.quadraticCurveTo(width*end,8,width*end,roof*0.62);
                             ctx.strokeStyle=fabric(0.16);ctx.lineWidth=1;ctx.stroke();
                         }
