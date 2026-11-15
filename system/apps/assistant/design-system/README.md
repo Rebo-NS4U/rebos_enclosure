@@ -95,3 +95,7 @@ Details use selected semantic palette colors and static geometry. Glass layers c
 ## Metropolis bar
 
 The collapsed bar uses a dedicated shallow city cornice: a miniature skyline and sparse lit windows in the bottom eight pixels, a softly illuminated roofline and stepped end caps. It follows the selected background, primary and tertiary colors. Expanded panels retain the full facade and cloud treatment. The finish is static, clips to the bar corners and repaints when the bar expands or collapses.
+
+## Settings navigation
+
+Shell settings use a persistent category sidebar with selected states and descriptions, plus page shortcuts above the scrolling controls. Search remains available across categories and shows guidance when there are no matches. Narrow windows omit sidebar descriptions and icons to leave room for controls; settings grids reflow according to the remaining content width.
