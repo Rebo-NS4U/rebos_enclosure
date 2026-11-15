@@ -125,9 +125,15 @@ ColumnLayout {
                         ThemeButton { text: "Clear log"; enabled: !root.busy && root.logText.length > 0; onClicked: root.logText = "" }
                     }
                     ScrollView {
+                        id: activityScroll
                         Layout.fillWidth: true; Layout.fillHeight: true; clip: true
+                        function scrollToBottom() {
+                            contentItem.contentY = Math.max(0, contentItem.contentHeight - contentItem.height);
+                        }
                         TextArea {
                             text: root.logText; placeholderText: "Download output will appear here."
+                            onTextChanged: Qt.callLater(activityScroll.scrollToBottom)
+                            onContentHeightChanged: Qt.callLater(activityScroll.scrollToBottom)
                             readOnly: true; wrapMode: TextEdit.Wrap; selectByMouse: true
                             color: Colors.overSurface; placeholderTextColor: Colors.overSurfaceVariant
                             font.family: Config.theme.font; font.pixelSize: Styling.fontSize(-2)
