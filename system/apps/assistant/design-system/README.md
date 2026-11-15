@@ -46,7 +46,7 @@ Use `StandardProgressBar` for linear progress in QML. Its normalized `value` is 
 
 ## Rendered desktop themes
 
-All styles use the selected wallpaper or color preset, including application exports.
+Styles use the selected wallpaper or color preset, including application exports. Metropolis adds its own midnight-blue surface material while retaining selected semantic action colors and foreground text.
 Monolith uses sculpted stone-like slabs, broad chamfers and subtle mineral grain.
 Blueprint uses square corners, wire controls, major and minor drafting grids, perimeter measurement ticks, registration targets and inset frames.
 Terminal Hardware uses double machined bezels, cooling vents, slotted screws, recessed display scanlines and raised mechanical controls.
@@ -80,6 +80,6 @@ Architectural refinement: Suspended Film now uses floating offset glass sheets a
 Canopy, Orbital and Metropolis are the first three theme-picker entries, in that order.
 Canopy uses an architectural fabric roof with scalloped catenary spans, curved support ribs, soft palette-tinted shading and a quiet lower shadow. It uses DejaVu Sans Mono.
 Orbital uses elliptical orbit tracks and satellite points around recessed glass, with a deterministic star field distributed across the full panel. Star brightness and size vary subtly; stars remain static behind content. It uses JetBrains Mono.
-Metropolis uses deeper neutral city glazing, a stepped skyline with lit windows, an architectural grid and luminous sign bands. Its primary and tertiary light channels are blended toward each other, with softer edge spill and stronger glass opacity for balanced color and readable content.
+Metropolis evokes a midnight city with blue-black glazing (pale blue-gray in light mode), overlapping setback facades, sparse warm windows, cool mullions and a soft reflected-sky band. The former full-panel drafting grid and neon sign bands are removed. City surface colors retain a small selected-background influence, while semantic action colors and foreground text remain selected. Architectural decoration stays around the perimeter; static windows vary by floor and building.
 All three use static technical details, semantic palette colors and visible surface hierarchy. Marks are decorative, with no invented telemetry.
-All three preserve selected palette colors, readable centers, compositor blur, native Kitty profiles and the shared corner radius. Material layers clip to rounded surfaces; Clear Glass remains last.
+All three preserve selected semantic action colors, readable centers, compositor blur, native Kitty profiles and the shared corner radius. Material layers clip to rounded surfaces; Clear Glass remains last.

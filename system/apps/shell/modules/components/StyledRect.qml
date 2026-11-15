@@ -576,53 +576,55 @@ ClippingRectangle {
 
                     }
                 }else{
-                    // Harmonize both light channels to reduce competing saturated edges.
-                    const neon=a=>Qt.rgba(accent.r*0.82+secondaryAccent.r*0.18,accent.g*0.82+secondaryAccent.g*0.18,accent.b*0.82+secondaryAccent.b*0.18,a);
-                    const violet=a=>Qt.rgba(secondaryAccent.r*0.70+accent.r*0.30,secondaryAccent.g*0.70+accent.g*0.30,secondaryAccent.b*0.70+accent.b*0.30,a);
-                    // Architectural frame and drafting grid anchor the neon glazing.
-                    ctx.lineWidth=1;ctx.strokeStyle=ink(outer?0.23:0.12);
-                    if(root.traceThemeFrame(ctx,outer?8:3))ctx.stroke();
+                    // Midnight architecture: cool glazing, warm occupied windows.
+                    const cool=a=>Qt.rgba(0.48,0.70,0.92,a);
+                    const warm=a=>Qt.rgba(0.96,0.73,0.43,a);
+                    const dusk=a=>Qt.rgba(0.035,0.075,0.13,a);
+                    ctx.lineWidth=1;ctx.strokeStyle=cool(outer?0.24:0.12);
+                    if(root.traceThemeFrame(ctx,outer?5:3))ctx.stroke();
+                    // A narrow reflected sky band gives depth without tinting all content.
+                    const sky=ctx.createLinearGradient(0,0,0,Math.min(height,85));
+                    sky.addColorStop(0,cool(outer?0.12:0.045));
+                    sky.addColorStop(0.5,cool(0.025));sky.addColorStop(1,cool(0));
+                    ctx.fillStyle=sky;ctx.fillRect(0,0,width,Math.min(height,85));
                     if(outer){
-                        for(let x=24;x<width-16;x+=24){
-                            ctx.strokeStyle=ink(x%96===0?0.10:0.035);
-                            ctx.beginPath();ctx.moveTo(x,9);ctx.lineTo(x,height-9);ctx.stroke();
-                        }
-                        for(let y=24;y<height-16;y+=24){
-                            ctx.strokeStyle=ink(y%96===0?0.10:0.035);
-                            ctx.beginPath();ctx.moveTo(9,y);ctx.lineTo(width-9,y);ctx.stroke();
-                        }
-                    }
-                    // Neon spill falls inward from opposing glass edges.
-                    const spill=ctx.createLinearGradient(0,0,width,0);
-                    spill.addColorStop(0,neon(outer?0.16:0.06));
-                    spill.addColorStop(0.12,neon(0.025));spill.addColorStop(0.45,neon(0));
-                    spill.addColorStop(0.80,violet(0.015));spill.addColorStop(1,violet(outer?0.12:0.04));
-                    ctx.fillStyle=spill;ctx.fillRect(0,0,width,height);
-                    if(outer){
-                        // Offset illuminated fins and sign bands give a city silhouette.
-                        const top=Math.min(height-safe,safe+height*0.42);
-                        ctx.strokeStyle=neon(0.72);ctx.lineWidth=3;
-                        ctx.beginPath();ctx.moveTo(4,safe);ctx.lineTo(4,top);ctx.stroke();
-                        ctx.strokeStyle=violet(0.58);ctx.lineWidth=2;
-                        ctx.beginPath();ctx.moveTo(width-4,height-safe);ctx.lineTo(width-4,Math.max(safe,height*0.40));ctx.stroke();
-                        if(width>safe*2+20){
-                            ctx.fillStyle=neon(0.66);ctx.fillRect(safe,3,Math.min(64,(width-safe*2)*0.36),3);
-                            ctx.fillStyle=violet(0.54);ctx.fillRect(Math.max(safe,width-safe-88),height-6,Math.min(88,width-safe*2),3);
-                        }
-                        // A stepped skyline and lit windows root the glass in a city.
-                        for(let x=safe;x<width-safe-10;x+=19){
-                            const floors=2+(Math.floor(x/19)*7)%5;
-                            const roof=height-8-floors*5;
-                            ctx.fillStyle=ink(0.08);ctx.fillRect(x,roof,15,height-8-roof);
-                            ctx.strokeStyle=neon(0.32);ctx.lineWidth=1;
-                            ctx.beginPath();ctx.moveTo(x,height-8);ctx.lineTo(x,roof);
-                            ctx.lineTo(x+15,roof);ctx.lineTo(x+15,height-8);ctx.stroke();
-                            ctx.fillStyle=violet(0.36);
-                            for(let floor=0;floor<floors-1;floor++){
-                                ctx.fillRect(x+4,roof+4+floor*5,2,2);
-                                if(floor%2===0)ctx.fillRect(x+10,roof+4+floor*5,2,2);
+                        // Overlapping facades vary in width, setback and roof height.
+                        // Their silhouettes remain in the lower margin, below the reading area.
+                        const base=height-5;
+                        let index=0;
+                        for(let x=safe-8;x<width-safe-12;index++){
+                            const towerWidth=[29,41,24,35,31][index%5];
+                            const towerHeight=Math.min(height*0.18,[36,54,29,66,43,48,32][index%7]);
+                            const right=Math.min(width-safe,x+towerWidth);
+                            const roof=base-towerHeight;
+                            const setback=Math.min(7,(right-x)*0.20);
+                            ctx.fillStyle=dusk(0.42);ctx.beginPath();ctx.moveTo(x,base);
+                            ctx.lineTo(x,roof+7);ctx.lineTo(x+setback,roof+7);
+                            ctx.lineTo(x+setback,roof);ctx.lineTo(right-setback,roof);
+                            ctx.lineTo(right-setback,roof+5);ctx.lineTo(right,roof+5);
+                            ctx.lineTo(right,base);ctx.closePath();ctx.fill();
+                            ctx.strokeStyle=cool(index%3===0?0.32:0.17);ctx.lineWidth=1;ctx.stroke();
+                            // Lit rooms are sparse and irregular, rather than a repeated checkerboard.
+                            for(let floor=0;floor<Math.floor((towerHeight-12)/7);floor++){
+                                for(let column=0;column<Math.floor((right-x-8)/7);column++){
+                                    const room=(index*13+floor*7+column*11)%9;
+                                    if(room<4)continue;
+                                    ctx.fillStyle=room===8?cool(0.36):warm(room===7?0.58:0.30);
+                                    ctx.fillRect(x+5+column*7,roof+12+floor*7,2,3);
+                                }
                             }
+                            x+=towerWidth+4;
                         }
+                        // Slender vertical mullions and warm lobby light frame the city glass.
+                        for(const x of [8,width-9]){
+                            ctx.strokeStyle=cool(0.22);ctx.beginPath();
+                            ctx.moveTo(x,safe);ctx.lineTo(x,height-safe);ctx.stroke();
+                            ctx.strokeStyle=cool(0.07);ctx.beginPath();
+                            ctx.moveTo(x+3,safe+12);ctx.lineTo(x+3,height-safe-12);ctx.stroke();
+                        }
+                        const lobby=ctx.createLinearGradient(0,height-18,0,height);
+                        lobby.addColorStop(0,warm(0));lobby.addColorStop(1,warm(0.09));
+                        ctx.fillStyle=lobby;ctx.fillRect(0,height-18,width,18);
                     }
                 }
                 ctx.restore();
