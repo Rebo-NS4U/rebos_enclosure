@@ -49,7 +49,7 @@ Item {
     readonly property int lineIndex: estimatedTiming
         ? Math.max(0, Math.min(displayLines.length - 1, estimatedBaseIndex + estimatedOffset))
         : Math.max(0, LyricsService.currentLine)
-    // Line timestamps are available; word positions are an approximation.
+    // Show elapsed time within the current line; no word or syllable timing is inferred.
     property real lyricPosition: 0
     function updateLyricPosition() {
         lyricPosition = estimatedTiming ? estimatedClock.currentTime() : LyricsService.playbackClock.currentTime();
@@ -70,9 +70,6 @@ Item {
     readonly property real lineEnd: displayLines[lineIndex + 1]?.time ?? MprisController.length
     readonly property real lineProgress: Math.max(0, Math.min(1,
         (lyricPosition - lineStart) / Math.max(0.1, lineEnd - lineStart)))
-    readonly property var letterTiming: Lyrics.letterCues(currentText)
-    readonly property var letterMotion: Lyrics.letterMotion(letterTiming, lineProgress)
-    readonly property real audioEnergy: levels.reduce((sum, value) => sum + value, 0) / Math.max(1, levels.length)
     readonly property bool canStepBack: estimatedTiming && lineIndex > 0
     readonly property bool canStepForward: estimatedTiming && lineIndex < displayLines.length - 1
     readonly property Item previousHitbox: visible && estimatedTiming && currentPanel.visible ? currentPanel.control : null
@@ -334,36 +331,27 @@ Item {
             opacity: lineSurface.progress * (1 - root.visualizerMix)
             transform: Translate { y: 4 * (1 - lineSurface.progress) }
         }
-        TextMetrics {
-            id: letterPrefix
-            font: currentLabel.font
-            text: (root.estimatedTiming ? "≈ " : "") + root.currentText.slice(0, root.letterMotion.index)
-        }
-        TextMetrics {
-            id: letterGlyph
-            font: currentLabel.font
-            text: root.currentText.slice(root.letterMotion.index, root.letterMotion.index + root.letterMotion.length)
-        }
         Rectangle {
-            objectName: "bar-lyrics-bouncing-dot"
-            readonly property real textWidth: Math.min(currentLabel.contentWidth, currentLabel.width)
-            readonly property real bounce: root.letterMotion.bounce
-            readonly property real energy: root.captureAudio ? root.audioEnergy : 0
-            readonly property real travel: letterPrefix.advanceWidth
-                + letterGlyph.advanceWidth * (1 - Math.pow(1 - root.letterMotion.phase, 2))
+            id: lineProgressTrack
+            objectName: "bar-lyrics-line-progress"
+            // Follow the visible label width, including when long lyrics elide.
+            width: Math.max(0, Math.min(currentLabel.contentWidth, currentLabel.width))
+            height: 2
+            radius: height / 2
+            x: currentLabel.x + (currentLabel.width - width) / 2
+            y: Math.min(lineSurface.height - height - 2,
+                (lineSurface.height + currentLabel.implicitHeight) / 2 + 2)
             visible: !lineSurface.upcoming && root.currentText !== "" && root.displayLines.length > 0
-                && Motion.enabled && root.lyricPosition >= root.lineStart
-                && travel <= textWidth
+                && root.lyricPosition >= root.lineStart
             opacity: currentLabel.opacity
-            width: 4 + bounce * 2 + energy * 3
-            height: 4 + bounce * 4 + energy * 2
-            radius: width / 2
-            scale: 1 + energy * root.letterMotion.strength * 0.6
-            color: BarAppearance.activeColor
-            x: currentLabel.x + (currentLabel.width - textWidth) / 2
-                + Math.min(Math.max(0, textWidth - width), travel)
-            y: Math.max(1, lineSurface.height - height - 2
-                - bounce * (lineSurface.height - height - 6) * (0.65 + energy * 0.35))
+            color: Qt.alpha(BarAppearance.activeColor, 0.16)
+            Rectangle {
+                objectName: "bar-lyrics-line-progress-fill"
+                width: parent.width * root.lineProgress
+                height: parent.height
+                radius: parent.radius
+                color: BarAppearance.activeColor
+            }
         }
     }
     Line { id: currentPanel; objectName: "bar-lyrics-current"; x: root.edgeMargin; lyric: (root.estimatedTiming && root.currentText ? "≈ " : "") + root.currentText }

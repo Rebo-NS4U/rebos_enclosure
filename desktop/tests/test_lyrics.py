@@ -451,35 +451,6 @@ ShellRoot {
 }
 ''')
 
-    def test_letter_motion(self):
-        self.run_harness('''import QtQuick
-import Quickshell
-import "modules/services/Lyrics.js" as Parser
-ShellRoot {
- Timer { interval: 20; running: true; onTriggered: {
-  try {
-   function check(ok, message) { if (!ok) throw Error(message); }
-   const timing = Parser.letterCues('pa !😀');
-   check(timing.cues[1].end - timing.cues[1].start > timing.cues[0].end,
-       'Vowels must hold longer than plosive consonants');
-   for (const cue of timing.cues) {
-    const motion = Parser.letterMotion(timing, (cue.start + cue.end) / 2 / timing.duration);
-    check(motion.index === cue.index && motion.length === cue.length, 'Track actual character boundaries');
-    check(motion.bounce >= 0 && motion.bounce <= 1, 'Finite bounded bounce');
-    if (cue.index === 2 || cue.index === 3) check(motion.bounce === 0, 'Rest at spaces and punctuation');
-   }
-   check(timing.cues[4].length === 2, 'Keep surrogate pairs together');
-   check(Parser.letterMotion(Parser.letterCues(''), 0.5).bounce === 0, 'Empty line');
-   check(Parser.letterMotion(timing, 2).phase === 1, 'Clamp end');
-   check(Parser.letterMotion(timing, -1).phase === 0, 'Clamp start');
-   check(Parser.letterMotion(timing, NaN).phase === 0, 'Invalid progress');
-   console.log('PASS: letter holds, consonant hops, rests, Unicode and bounds'); Qt.quit();
-  } catch(error) { console.error(error); Qt.exit(1); }
- }
- }
-}
-''')
-
     def test_visualizer_fallback_transition(self):
         self.run_harness('''import QtQuick
 import Quickshell
@@ -515,17 +486,27 @@ ShellRoot {
      MprisController.isPlaying = true;
      if (!strip.captureAudio) throw Error('Lyrics must retain audio capture during playback');
      MprisController.isPlaying = false;
-     const dot = findItem(panel, 'bar-lyrics-bouncing-dot');
-     LyricsService.apply('[00:01]Pat a!\\n[00:05]Next', 'Test', false);
-     strip.lyricPosition = 1.4;
-     const initialX = dot.x;
-     const initialY = dot.y;
-     strip.levels = Array(32).fill(0.9);
-     strip.lyricPosition = 2.2;
-     if (!isFinite(dot.x) || !isFinite(dot.y) || dot.x <= initialX || dot.y === initialY)
-      throw Error('Dot must advance by letters with changing bounce');
-     if (dot.x < label.x || dot.x + dot.width > label.x + label.width)
-      throw Error('Dot must stay in the lyric label');
+     Config.animDuration = 0;
+     LyricsService.apply('[00:01]Current lyric\\n[00:05]Next', 'Test', false);
+     const track = findItem(panel, 'bar-lyrics-line-progress');
+     const fill = findItem(track, 'bar-lyrics-line-progress-fill');
+     for (const position of [1, 2, 3, 5, 8, 0]) {
+      strip.lyricPosition = position;
+      const expected = Math.max(0, Math.min(1, (position - 1) / 4));
+      if (Math.abs(fill.width - track.width * expected) > 0.01)
+       throw Error('Underline must show elapsed line time, including seeks and bounds');
+     }
+     strip.lyricPosition = 3;
+     if (!track.visible || track.width <= 0 || track.x < label.x
+         || track.x + track.width > label.x + label.width || fill.height !== 2)
+      throw Error('Progress must fit beneath the lyric even with reduced motion');
+     const nextPanel = findItem(strip, 'bar-lyrics-next');
+     if (findItem(nextPanel, 'bar-lyrics-line-progress').visible)
+      throw Error('Upcoming line must not show elapsed progress');
+     MprisController.position = 5;
+     strip.updateLyricPosition();
+     if (strip.currentText !== 'Next' || fill.width !== 0)
+      throw Error('Next cue must reset line progress');
      Config.animDuration = 1000;
      LyricsService.apply('', 'Test', true);
      phase++; return;
