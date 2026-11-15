@@ -251,8 +251,9 @@ ShellRoot {
       let settings = settingsComponent.createObject(fixture, {width: 1000, height: 740});
       fixture.check(settings !== null, "Grouped settings created");
       tester.wait(100);
-      fixture.check(settings.filteredSections.length === 5, "Five sidebar categories");
+      fixture.check(settings.filteredSections.length === 4, "Four sidebar categories");
       fixture.check([].concat.apply([], settings.categoryModel.map(group => group.sections)).sort((a,b) => a-b).join(",") === "0,1,2,3,4,5,6,7,8,9,10", "Every page belongs to exactly one category");
+      fixture.check(settings.categoryModel[1].sections.join(",") === "9,7,8,5", "Desktop combines displays, input, window rules, widgets and performance");
       for (let group of settings.categoryModel) {
        settings.openSection(group.section, "");
        tester.wait(60);
@@ -279,7 +280,7 @@ ShellRoot {
       fixture.check(loader.item && loader.item.currentSection === "blur", "Search loads transparency sliders directly");
       settings.searchQuery = "";
       tester.wait(50);
-      fixture.check(settings.currentSection === 4 && settings.selectedIndex === 0 && settings.filteredSections.length === 5, "Clearing search preserves page and category");
+      fixture.check(settings.currentSection === 4 && settings.selectedIndex === 0 && settings.filteredSections.length === 4, "Clearing search preserves page and category");
       settings.openSection(4, "colors"); tester.wait(150);
       let colorOverview = fixture.find(loader.item, "palette-open-palette");
       fixture.check(colorOverview && colorOverview.visible, "Color menu opens with grouped option cards");

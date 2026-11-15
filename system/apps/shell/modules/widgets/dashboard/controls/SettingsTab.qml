@@ -221,9 +221,8 @@ Item {
 
     readonly property var categoryModel: [
         {label: "Theme & appearance", subLabel: "Colors, wallpaper and shell style", icon: Icons.paintBrush, isIcon: true, section: 4, sections: [4, 6]},
-        {label: "Windows & input", subLabel: "Displays, shortcuts and window rules", icon: Icons.layout, isIcon: true, section: 9, sections: [9, 7, 8]},
+        {label: "Desktop & system", subLabel: "Displays, input, widgets and performance", icon: Icons.layout, isIcon: true, section: 9, sections: [9, 7, 8, 5]},
         {label: "Devices & connections", subLabel: "Wi-Fi, Bluetooth and audio", icon: Icons.wifiHigh, isIcon: true, section: 0, sections: [0, 1, 2]},
-        {label: "Widgets & performance", subLabel: "Weather, effects and storage", icon: Icons.circuitry, isIcon: true, section: 5, sections: [5]},
         {label: "Assistant & GitHub", subLabel: "AI preferences and repositories", icon: Icons.robot, isIcon: true, section: 3, sections: [3, 10]}
     ]
     readonly property var activeCategory: categoryModel.find(item => item.sections.includes(currentSection)) || categoryModel[0]
