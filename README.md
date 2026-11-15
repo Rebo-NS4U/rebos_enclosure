@@ -13,10 +13,10 @@ Source is grouped into **`config/`** (shipped defaults) and **`system/`** (manag
 
 [Download latest release](https://github.com/Rebo-NS4U/rebos_enclosure/releases/latest) · [Installation guide](desktop/README.md) · [Package list](desktop/packages/README.md)
 
-[2.0 preparation and remaining acceptance gates](docs/RELEASE-2.0-CHECKLIST.md) · [Draft 2.0 notes](docs/RELEASE-v2.0.0.md)
+[2.0 preparation and remaining acceptance gates](docs/RELEASE-2.0-CHECKLIST.md) · [2.0 release notes](docs/RELEASE-v2.0.0.md)
 
-[v1.8.0 release notes](docs/RELEASE-v1.8.0.md): Frosted Glass themes, screen text selection,
-reader improvements, synced lyrics and faster media playback.
+[v2.0.0 release notes](docs/RELEASE-v2.0.0.md): material themes, Music, reader
+narration, persistent Dweebo sessions, media improvements and one-click updates.
 
 ## Screenshots
 
@@ -158,8 +158,8 @@ After installation, reboot and choose **Niri**. **Super+Return** opens Kitty, **
 To install a specific release, use its exact tag:
 
 ```bash
-bash install.sh --release v1.8.0 --interactive --dry-run
-bash install.sh --release v1.8.0
+bash install.sh --release v2.0.0 --interactive --dry-run
+bash install.sh --release v2.0.0
 ```
 
 The selector also works with `desktop/install.sh`. Missing tags stop installation;
@@ -210,8 +210,8 @@ After this one-time refresh, future updates fetch the current engine automatical
 To update to a specific release:
 
 ```bash
-./update.sh --release v1.8.0 --dry-run
-./update.sh --release v1.8.0
+./update.sh --release v2.0.0 --dry-run
+./update.sh --release v2.0.0
 ```
 
 Use the exact tag from [GitHub releases](https://github.com/Rebo-NS4U/rebos_enclosure/releases).

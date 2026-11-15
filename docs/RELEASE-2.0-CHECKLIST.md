@@ -1,9 +1,9 @@
 # 2.0 preparation and acceptance
 
-This is a local, unpublished candidate. No v2.0.0 tag, GitHub release or push has
-been performed. Stable app version strings and published-release instructions
-remain unchanged pending acceptance; shell/assistant component versions are not
-the Enclosure release version. [Draft release notes](RELEASE-v2.0.0.md).
+The v2.0.0 release is selected from the reviewed committed source. Component
+versions are independent of the Enclosure release number. Historical candidate
+results below remain as preparation evidence; destination acceptance gaps remain
+explicitly open. See the [2.0 release notes](RELEASE-v2.0.0.md).
 
 ## Repeatable local gates
 
@@ -78,7 +78,7 @@ to capture actual hardware and installation results. Unexecuted rows remain open
 - Longer guarded-desktop/assistant and Spotify memory/crash observation. Existing
   audit warnings are investigations, not diagnoses or automatically safe fixes.
 - Final visual/screenshots review, component/release metadata decision, review
-  unpublished commits, then explicitly approve publishing the selected commit.
+  unpublished commits, and publish only the selected verified commit.
 
 The initial [audit](RELEASE-2.0-AUDIT.md), [UI repairs](UI-POLISH.md) and
 [final four bug repairs](FINAL-BUG-FIXES.md) record prior evidence and limits.
