@@ -79,7 +79,7 @@ Architectural refinement: Suspended Film now uses floating offset glass sheets a
 
 Canopy, Orbital and Metropolis are the first three theme-picker entries, in that order.
 Canopy uses fogged glass with a milky translucent body, broad feathered mist blooms and airy inner layers. Its borderless surfaces have no ribs or hard layer contours; keyboard focus retains a fine semantic outline.
-Orbital uses spacecraft plating, recessed pressure seals and segmented docking rails.
-Metropolis uses architectural bays, deep structural reveals and cantilevered facade bands.
+Orbital uses weightless satin glass, diffuse rim illumination and light recessed layers. A single fading top highlight replaces docking rails and pressure-hull frames.
+Metropolis uses smoked architectural glass with broad, soft facade reflections and a single fine structural reveal. Repeated blocks, stacked frames and heavy bands are removed.
 Their materials replace leaf illustrations, orbital constellations and skyline miniatures.
 All three preserve selected palette colors, readable centers, compositor blur, native Kitty profiles and the shared corner radius. Material layers clip to rounded surfaces; Clear Glass remains last.

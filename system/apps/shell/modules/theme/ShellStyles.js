@@ -2,8 +2,8 @@
 
 var styles = [
     {id: "canopy", label: "Canopy", font: "Noto Sans", description: "Soft fogged glass, diffuse mist blooms and gently layered translucent surfaces."},
-    {id: "orbital", label: "Orbital", font: "JetBrains Mono", description: "Spacecraft plating, recessed pressure seals and segmented docking rails."},
-    {id: "metropolis", label: "Metropolis", font: "DejaVu Sans", description: "Architectural bays, deep structural reveals and cantilevered facade bands."},
+    {id: "orbital", label: "Orbital", font: "JetBrains Mono", description: "Weightless satin glass, diffuse rim light and quiet recessed surfaces."},
+    {id: "metropolis", label: "Metropolis", font: "DejaVu Sans", description: "Smoked architectural glass, broad facade reflections and fine structural edges."},
     {id: "glass-vault", label: "Glass Vault", font: "Noto Sans", description: "Heavy corner clamps, stepped transparent blocks and deep inset controls."},
     {id: "radar-station", label: "Radar Station", font: "DejaVu Sans", description: "Bearing scales, partial range arcs and segmented controls on blurred glass."},
     {id: "suspended-film", label: "Suspended Film", font: "DejaVu Sans Mono", description: "Floating glass sheets, offset edges and quiet contact shadows."},
@@ -193,13 +193,21 @@ function surface(style, variant, p, ditherStrength) {
         renderGradient=[[mix(fill,p.foreground,0.025),0],[fill,0.24],[mix(fill,p.background,0.12),1]];
     }
     var canopy=style === "canopy", orbital=style === "orbital", metro=style === "metropolis";
-    if ((canopy || orbital || metro) && neutral) {
-        fill=mix(mix(p.background,p.foreground,inset?0.015:0.035),p.primary,focused?0.08:0.025);
+    if (orbital && neutral) {
+        // Quiet satin glazing: light rims, deep space between inner layers.
+        fill=mix(p.background,p.foreground,inset?0.015:0.045);
         item=p.foreground;
-        opacity=focused?0.94:inset?(metro?0.78:orbital?0.72:0.48):metro?0.88:canopy?0.66:0.84;
-        border=[focused?p.primary:mix(fill,p.foreground,metro?0.32:orbital?0.27:0.16),focused?2:canopy?0:outer||inset?1:0];
-        renderGradient=canopy?[[mix(fill,p.foreground,0.025),0],[fill,0.45],[mix(fill,p.background,0.12),1]]
-            :orbital?[[mix(fill,p.foreground,0.035),0],[fill,0.06],[fill,0.88],[mix(fill,p.background,0.22),1]]:[[mix(fill,p.foreground,0.035),0],[fill,0.08],[fill,0.92],[mix(fill,p.background,0.30),1]];
+        opacity=focused?0.86:inset?0.34:outer?0.62:0.46;
+        border=[focused?p.primary:mix(fill,p.foreground,0.13),focused||outer?1:0];
+        renderGradient=[[mix(fill,p.foreground,0.02),0],[fill,0.35],[mix(fill,p.background,0.08),1]];
+    }
+    if (metro && neutral) {
+        // Architectural glazing has body without stacked frames or facade blocks.
+        fill=mix(p.background,p.foreground,inset?0.02:0.035);
+        item=p.foreground;
+        opacity=focused?0.90:inset?0.48:outer?0.78:0.60;
+        border=[focused?p.primary:mix(fill,p.foreground,0.16),focused||outer?1:0];
+        renderGradient=[[mix(fill,p.foreground,0.03),0],[fill,0.32],[fill,0.75],[mix(fill,p.background,0.10),1]];
     }
     if (canopy && neutral) {
         // A milky body holds compositor blur; inner layers remain airy.

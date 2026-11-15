@@ -477,7 +477,6 @@ ClippingRectangle {
                 // Clip every material layer to the shared rounded surface.
                 ctx.save();
                 if(root.traceThemeFrame(ctx,0))ctx.clip();
-                const depth=outer?18:8;
                 if(finish === "canopy"){
                     // Wide, feathered mist blooms have no visible contour or ribs.
                     const mist=ctx.createLinearGradient(0,0,width*0.25,height);
@@ -494,49 +493,33 @@ ClippingRectangle {
                         ctx.fillStyle=bloom;ctx.fillRect(0,0,width,height);
                     }
                 }else if(finish === "orbital"){
-                    // Pressure-hull seals and docking rails; no celestial imagery.
-                    ctx.strokeStyle=ink(0.24);ctx.lineWidth=2;
-                    if(root.traceThemeFrame(ctx,4))ctx.stroke();
-                    ctx.strokeStyle=ink(0.10);ctx.lineWidth=1;
-                    if(root.traceThemeFrame(ctx,8))ctx.stroke();
-                    for(let x=safe;x<width-safe-12;x+=36){
-                        const span=Math.min(24,width-safe-x);
-                        ctx.fillStyle=ink(0.16);ctx.fillRect(x,3,span,3);
-                        ctx.fillStyle=ink(0.10);ctx.fillRect(x,height-7,span,4);
-                        ctx.strokeStyle=ink(0.30);ctx.beginPath();
-                        ctx.moveTo(x,3);ctx.lineTo(x+span,3);ctx.stroke();
-                    }
-                    if(outer){
-                        for(let side=0;side<2;side++){
-                            const x=side?width-13:6;
-                            for(let y=safe+8;y<height-safe-12;y+=64){
-                                ctx.fillStyle=ink(0.14);ctx.fillRect(x,y,7,24);
-                                ctx.strokeStyle=ink(0.32);ctx.strokeRect(x+2,y+5,3,14);
-                            }
-                        }
+                    // Diffuse rim illumination floats around a quiet satin center.
+                    const glow=ctx.createRadialGradient(width*0.78,0,0,width*0.78,0,Math.max(width,height)*0.7);
+                    glow.addColorStop(0,ink(outer?0.065:0.025));
+                    glow.addColorStop(0.35,ink(0.018));
+                    glow.addColorStop(1,ink(0));
+                    ctx.fillStyle=glow;ctx.fillRect(0,0,width,height);
+                    if(outer && width>safe*2){
+                        const rim=ctx.createLinearGradient(safe,0,width-safe,0);
+                        rim.addColorStop(0,ink(0));rim.addColorStop(0.65,ink(0.22));rim.addColorStop(1,ink(0));
+                        ctx.strokeStyle=rim;ctx.lineWidth=1;
+                        ctx.beginPath();ctx.moveTo(safe,2);ctx.lineTo(width-safe,2);ctx.stroke();
                     }
                 }else{
-                    // Structural reveals and cantilevered bands replace skyline art.
-                    ctx.strokeStyle=ink(0.26);ctx.lineWidth=2;
-                    if(root.traceThemeFrame(ctx,5))ctx.stroke();
-                    ctx.strokeStyle=ink(0.09);ctx.lineWidth=1;
-                    if(root.traceThemeFrame(ctx,9))ctx.stroke();
-                    const bay=outer?72:48;
-                    for(let x=safe;x<width-safe;x+=bay){
-                        const span=Math.min(bay-8,width-safe-x);
-                        ctx.fillStyle=ink(0.13);ctx.fillRect(x,0,span,depth);
-                        ctx.fillStyle=ink(0.24);ctx.fillRect(x,depth-3,span,2);
-                        ctx.fillStyle=ink(0.12);ctx.fillRect(x+4,height-depth,Math.max(0,span-4),depth);
-                    }
-                    if(outer){
-                        ctx.fillStyle=ink(0.12);
-                        ctx.fillRect(0,safe,7,Math.max(0,height-safe*2));
-                        ctx.fillRect(width-7,safe,7,Math.max(0,height-safe*2));
-                        ctx.strokeStyle=ink(0.28);
-                        for(let y=safe+24;y<height-safe;y+=48){
-                            ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(12,y);
-                            ctx.moveTo(width-12,y);ctx.lineTo(width,y);ctx.stroke();
-                        }
+                    // Broad reflections suggest a single architectural glass plane.
+                    const reflection=ctx.createLinearGradient(0,0,width,height*0.18);
+                    reflection.addColorStop(0,ink(0.008));
+                    reflection.addColorStop(0.20,ink(outer?0.045:0.018));
+                    reflection.addColorStop(0.40,ink(0.008));
+                    reflection.addColorStop(0.72,ink(outer?0.025:0.01));
+                    reflection.addColorStop(1,ink(0));
+                    ctx.fillStyle=reflection;ctx.fillRect(0,0,width,height);
+                    if(outer && height>safe*2){
+                        // One quiet structural reveal; no repeated facade ornament.
+                        const reveal=ctx.createLinearGradient(0,safe,0,height-safe);
+                        reveal.addColorStop(0,ink(0));reveal.addColorStop(0.4,ink(0.14));reveal.addColorStop(1,ink(0));
+                        ctx.strokeStyle=reveal;ctx.lineWidth=1;
+                        ctx.beginPath();ctx.moveTo(3,safe);ctx.lineTo(3,height-safe);ctx.stroke();
                     }
                 }
                 ctx.restore();
