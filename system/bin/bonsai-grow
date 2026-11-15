@@ -1364,6 +1364,54 @@ def sun_palette(hour):
     return palette
 
 
+def celestial_marks(daylight, rising):
+    """Rasterize curves at 2×4 dots per cell, with solid interiors."""
+    marks = []
+    dots = ((1, 8), (2, 16), (4, 32), (64, 128))
+    for y in range(-3, 4):
+        for x in range(-6, 7):
+            body, glow = 0, 0
+            for sy, row in enumerate(dots):
+                for sx, bit in enumerate(row):
+                    dx = (x + (sx + 0.5) / 2 - 0.5) / 5.4
+                    dy = (y + (sy + 0.5) / 4 - 0.5) / 2.45
+                    radius = math.hypot(dx, dy)
+                    shadow = math.hypot(dx - 0.43, dy) < 0.96
+                    if radius <= 1 and (daylight or not shadow):
+                        body |= bit
+                    elif daylight and 1 < radius <= 1.18:
+                        glow |= bit
+            if body:
+                # Keep full areas solid, reserving fine dots for curved edges.
+                if not daylight and not rising:
+                    body = sum((right if body & left else 0) | (left if body & right else 0)
+                               for left, right in dots)
+                glyph = {255: "█", 27: "▀", 228: "▄"}.get(body, chr(0x2800 + body))
+                distance = math.hypot(x / 5.4, y / 2.45)
+                if daylight:
+                    role = f"sky_orb_sun{min(7, round(distance * 7))}"
+                else:
+                    # Silver outer limb fades toward the crescent's terminator.
+                    terminator = max(0, math.hypot(x / 5.4 - 0.43, y / 2.45) - 0.96)
+                    band = min(7, round(terminator / 0.47 * 7))
+                    role = f"sky_orb_moon{band}"
+                marks.append((x if daylight or rising else -x, y, glyph, role))
+            elif glow:
+                marks.append((x, y, chr(0x2800 + glow), "sky_glow"))
+    return marks
+
+
+def moon_palette():
+    """Cool shadow, pearl midtones and a softly illuminated silver limb."""
+    palette = {}
+    for band in range(8):
+        t = (band / 7) ** 0.65
+        rgb = tuple(round(a + (b - a) * t)
+                    for a, b in zip((103, 126, 145), (214, 222, 218)))
+        palette[f"sky_orb_moon{band}"] = "\033[0;38;2;{};{};{}m".format(*rgb)
+    return palette
+
+
 def sky_pane(canvas, hour):
     """Place sparse celestial marks and mist only in unoccupied glass."""
     hour %= 24
@@ -1372,35 +1420,8 @@ def sky_pane(canvas, hour):
     # Keep the center for the tree. Morning/evening rise at the left corner;
     # afternoon/after-midnight settle at the right, with an inset glass margin.
     cx, cy = (8 if rising else 48), 4
-    # Half-blocks give a clean circular silhouette at terminal cell proportions.
-    # Cut a second offset disc from the moon to form a continuous crescent.
-    marks = []
-    for y in range(5):
-        for x in range(11):
-            dx = (x - 5) / 5.5
-            halves = []
-            for half in range(2):
-                dy = (y * 2 + half - 4.5) / 5
-                inside = dx * dx + dy * dy <= 1
-                shadow = (dx - 0.45) ** 2 + (dy + 0.16) ** 2 < 0.87 ** 2
-                halves.append(inside and (daylight or not shadow))
-            glyph = {(True, True): "█", (True, False): "▀",
-                     (False, True): "▄"}.get(tuple(halves))
-            if glyph:
-                distance = math.hypot(dx, (y - 2) / 2.5)
-                role = "sky_orb_rim" if distance > 0.82 else (
-                    "sky_orb_light" if dx < -0.15 else "sky_orb")
-                if daylight:
-                    role = f"sky_orb_sun{min(7, round(distance * 7))}"
-                # The crescent opens toward the garden from either corner.
-                offset = x - 5 if daylight or rising else 5 - x
-                marks.append((cx + offset, cy + y - 2, glyph, role))
-    if daylight:
-        # Sparse, low-contrast corona stays separate from the solid solar disc.
-        marks += [(cx + dx, cy + dy, glyph, "sky_glow")
-                  for dx, dy, glyph in ((-6, 0, "·"), (6, 0, "·"),
-                                        (-4, -2, "⠂"), (4, -2, "⠐"),
-                                        (-4, 2, "⠈"), (4, 2, "⠁"))]
+    marks = [(cx + x, cy + y, glyph, role)
+             for x, y, glyph, role in celestial_marks(daylight, rising)]
     # Keep a narrow dark contour around the foreground. Without this breathing
     # room, solid sky blocks visually merge with thin twigs and leaf clusters.
     foreground = {(x, y) for y, row in enumerate(canvas)
@@ -1890,14 +1911,8 @@ def render(
     palette["glass"] = "\033[0;38;2;{};{};{}m".format(
         *(round(105 * 0.85 + channel * 0.15) for channel in glass_rgb)
     )
-    # Warm porcelain daylight and cool pearl moonlight, with a dim outer rim.
-    body, light, rim = (
-        ((182, 149, 99), (207, 179, 128), (112, 94, 67)) if 6 <= hour < 18
-        else ((156, 169, 177), (193, 202, 203), (90, 108, 121))
-    )
-    for role, rgb in (("sky_orb", body), ("sky_orb_light", light), ("sky_orb_rim", rim)):
-        palette[role] = "\033[0;38;2;{};{};{}m".format(*rgb)
     palette.update(sun_palette(hour))
+    palette.update(moon_palette())
     palette["sky_star"] = "\033[0;38;2;88;94;111m"
     palette["sky_mist"] = "\033[0;38;2;57;62;63m"
     output = []

@@ -476,9 +476,22 @@ class BonsaiGrowTests(unittest.TestCase):
             left = 6 <= hour < 12 or 18 <= hour < 24
             self.assertTrue(body)
             self.assertTrue(all((2 <= x <= 14 if left else 42 <= x <= 54)
-                                and 2 <= y <= 6 for x, y in body))
+                                and 1 <= y <= 7 for x, y in body))
             # Keep the central tree area free of celestial blocks.
             self.assertFalse(any(15 <= x <= 41 for x, y in body))
+
+    def test_celestial_curves_use_fine_edges_and_solid_interiors(self):
+        for daylight in (True, False):
+            marks = bonsai.celestial_marks(daylight, True)
+            body = [glyph for x, y, glyph, ink in marks if ink.startswith('sky_orb')]
+            self.assertIn('█', body)
+            self.assertTrue(any(0x2800 < ord(glyph) <= 0x28ff for glyph in body))
+            self.assertGreater(len({ink for x, y, glyph, ink in marks}), 4)
+        moon = bonsai.celestial_marks(False, True)
+        reflected = bonsai.celestial_marks(False, False)
+        self.assertEqual({(-x, y, ink) for x, y, glyph, ink in moon},
+                         {(x, y, ink) for x, y, glyph, ink in reflected})
+        self.assertEqual(len(set(bonsai.moon_palette().values())), 8)
 
     def test_animation_settles_without_a_last_frame_jump(self):
         samples = [bonsai.animation_day(i / 120, 1) for i in range(121)]
