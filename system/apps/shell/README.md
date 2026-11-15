@@ -357,3 +357,5 @@ OCR can still confuse similar glyphs and does not parse mathematical notation.
 Settings has four main categories: Theme & appearance, Desktop & system, Devices & connections, and Assistant & GitHub. Each category combines its panels on one scrollable page. Appearance, panel and wallpaper controls appear directly without subsection menus. Search keeps the existing section links and scrolls to the matching controls. Device and shortcut lists retain bounded scrolling.
 
 Theme style and basic palette controls stay visible at the top of Appearance. Advanced theme controls and wallpaper tools expand in place; search automatically expands matching theme groups.
+
+Appearance uses compact theme previews, direct palette controls and a responsive two-column grid for advanced options. Expanded advanced groups span the full row; narrow windows use one column. Theme descriptions are available on hover.

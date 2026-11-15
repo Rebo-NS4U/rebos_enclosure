@@ -84,21 +84,15 @@ ColumnLayout {
         id: paletteGrid
         objectName: "palette-sections"
         Layout.fillWidth: true
-        columns: root.width >= 880 ? 2 : 1
-        columnSpacing: Styling.spacing(24)
-        rowSpacing: Styling.spacing(24)
+        columns: root.width >= 620 ? 2 : 1
+        columnSpacing: Styling.spacing(12)
+        rowSpacing: Styling.spacing(12)
         ColorSection {
-            title: "Palette & color mode"
+            title: "Colors"
             objectName: "palette-page-palette"
             collapsible: false
             property string settingsAnchor: "palette"
-            Layout.columnSpan: paletteGrid.columns
-            Caption {
-                text: "Matugen creates one palette for the desktop and your apps. Neutral is subtle; Tonal spot and Vibrant bring out more wallpaper color."
-            }
-            Caption {
-                text: root.manager ? "Current wallpaper: " + (root.manager.currentWallpaper.split("/").pop() || "None selected") : "Wallpaper controls are not ready yet."
-            }
+            Layout.columnSpan: !collapsible || expanded ? paletteGrid.columns : 1
             RowLayout {
                 Action {
                     text: "Dark"
@@ -182,7 +176,7 @@ ColumnLayout {
             title: "Pick wallpaper colors"
             objectName: "palette-page-picker"
             property string settingsAnchor: "picker"
-            Layout.columnSpan: paletteGrid.columns
+            Layout.columnSpan: !collapsible || expanded ? paletteGrid.columns : 1
             Caption {
                 text: "Select Main or Accent, then click the wallpaper. Matugen builds your theme from these colors, and the bonsai uses the same pair. Picks are saved for each wallpaper."
             }
@@ -330,7 +324,7 @@ ColumnLayout {
             title: "Saved appearances"
             objectName: "palette-page-presets"
             property string settingsAnchor: "presets"
-            Layout.columnSpan: paletteGrid.columns
+            Layout.columnSpan: !collapsible || expanded ? paletteGrid.columns : 1
             Caption { text: "Save your current wallpaper, monitor overrides, colors and shell appearance together. Apply picked colors before saving." }
             SettingsTextField {
                 id: presetName
@@ -372,7 +366,7 @@ ColumnLayout {
             title: "Wallpaper library"
             objectName: "palette-page-wallpaper"
             property string settingsAnchor: "wallpaper"
-            Layout.columnSpan: paletteGrid.columns
+            Layout.columnSpan: !collapsible || expanded ? paletteGrid.columns : 1
             // Wallpaper Path
             RowLayout {
                 Layout.fillWidth: true
@@ -434,7 +428,7 @@ ColumnLayout {
             title: "App appearance"
             objectName: "palette-page-apps"
             property string settingsAnchor: "apps"
-            Layout.columnSpan: paletteGrid.columns
+            Layout.columnSpan: !collapsible || expanded ? paletteGrid.columns : 1
             SettingsToggleRow {
                 label: "Tint icons"
                 description: "Use the theme palette for supported icons."

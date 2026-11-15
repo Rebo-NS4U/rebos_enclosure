@@ -12,7 +12,7 @@ StyledRect {
     property bool expanded: false
     default property alias content: body.data
     Layout.fillWidth: true
-    implicitHeight: column.implicitHeight + 40
+    implicitHeight: column.implicitHeight + (collapsible ? 24 : 32)
     variant: "common"
     radius: Styling.radius(-2)
     border.width: 1
@@ -22,10 +22,23 @@ StyledRect {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
-        anchors.margins: 20
-        spacing: Styling.spacing(16)
+        anchors.margins: root.collapsible ? 12 : 16
+        spacing: Styling.spacing(root.collapsible ? 10 : 12)
         StyledText { visible: !root.collapsible && root.title.length > 0; text: root.title; font.bold: true; font.pixelSize: Styling.fontSize(1); Layout.fillWidth: true; wrapMode: Text.WordWrap }
         SettingsButton {
+            id: expandButton
+            background: StyledRect {
+                variant: expandButton.hovered ? "focus" : "transparent"
+                border.width: expandButton.activeFocus ? 2 : 0
+                border.color: Colors.primary
+                radius: Styling.radius(-4)
+            }
+            contentItem: StyledText {
+                text: expandButton.text
+                font: expandButton.font
+                verticalAlignment: Text.AlignVCenter
+                elide: Text.ElideRight
+            }
             objectName: root.objectName + "-expand"
             visible: root.collapsible
             Layout.fillWidth: true
@@ -42,6 +55,6 @@ StyledRect {
             color: Colors.overSurfaceVariant
             font.pixelSize: Styling.fontSize(-1)
         }
-        ColumnLayout { id: body; visible: !root.collapsible || root.expanded; Layout.fillWidth: true; spacing: Styling.spacing(16) }
+        ColumnLayout { id: body; visible: !root.collapsible || root.expanded; Layout.fillWidth: true; spacing: Styling.spacing(root.collapsible ? 10 : 12) }
     }
 }

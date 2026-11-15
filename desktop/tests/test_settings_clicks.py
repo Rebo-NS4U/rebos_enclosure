@@ -124,6 +124,15 @@ ShellRoot {
        collectSections(page);
        fixture.check(anchors.length >= 6 && anchors.every(item => item.visible), name + " controls share one scrollable page");
        if (name === "ThemePanel") {
+        const advancedGrid = fixture.find(page, "theme-advanced-grid");
+        fixture.check(advancedGrid.columns === 2, "Advanced theme options use two columns");
+        let styleCards = [];
+        function collectStyles(item) {
+         if (item.objectName.startsWith("shell-style-")) styleCards.push(item);
+         for (const child of item.children || []) collectStyles(child);
+        }
+        collectStyles(page);
+        fixture.check(styleCards.length >= 3 && styleCards.every(card => card.height <= 120), "Theme previews stay compact");
         const shadows = fixture.find(page, "theme-group-shadow");
         fixture.check(shadows.collapsible && !shadows.expanded, "Advanced theme controls start collapsed");
         const collapsedHeight = shadows.implicitHeight;
@@ -333,11 +342,11 @@ ShellRoot {
       fixture.check(!fixture.find(loader.item, "palette-open-palette"), "Color controls have no extra menu");
       let narrowWidth = loader.item.contentWidth;
       let paletteGrid = fixture.find(loader.item, "palette-sections");
-      fixture.check(paletteGrid && paletteGrid.columns === 1, "Color sections stack in normal windows");
+      fixture.check(paletteGrid && paletteGrid.columns === 2, "Color tools use a compact grid in normal windows");
       settings.width = 1700; tester.wait(100);
       fixture.check(loader.item.contentWidth > narrowWidth + 500, "Loaded settings page expands with the window");
       fixture.check(paletteGrid.columns === 2, "Color sections use two columns in wide windows");
-      settings.width = 750; tester.wait(100);
+      settings.width = 600; tester.wait(100);
       fixture.check(paletteGrid.columns === 1 && loader.item.contentWidth < narrowWidth, "Color sections reflow when shrinking");
       fixture.check(!fixture.find(loader.item, "palette-navigation"), "No color subsection navigation");
       for (const pageId of ["picker", "presets", "wallpaper", "apps", "palette"])

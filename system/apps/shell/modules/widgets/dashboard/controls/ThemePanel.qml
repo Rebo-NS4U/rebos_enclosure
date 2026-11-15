@@ -152,7 +152,7 @@ Item {
                     width: root.contentWidth
                     anchors.horizontalCenter: parent.horizontalCenter
                     title: "Appearance"
-                    description: root.currentSection === "" ? "Theme & app style, colors, fonts and backgrounds." : ""
+                    description: ""
 
                     actions: []
 
@@ -188,9 +188,18 @@ Item {
                         Layout.fillWidth: true
                     }
 
+                    GridLayout {
+                        id: advancedGrid
+                        objectName: "theme-advanced-grid"
+                        Layout.fillWidth: true
+                        columns: width >= 620 ? 2 : 1
+                        columnSpacing: Styling.spacing(12)
+                        rowSpacing: Styling.spacing(12)
                     PerformanceSettings {
                         property string settingsAnchor: "performance"
                         collapsible: true
+                        Layout.columnSpan: expanded ? advancedGrid.columns : 1
+                        Layout.alignment: Qt.AlignTop
                         objectName: "theme-group-performance"
                     }
 
@@ -198,6 +207,8 @@ Item {
                         Layout.fillWidth: true
                         property string settingsAnchor: "motion"
                         collapsible: true
+                        Layout.columnSpan: expanded ? advancedGrid.columns : 1
+                        Layout.alignment: Qt.AlignTop
                         objectName: "theme-group-motion"
                     }
 
@@ -205,6 +216,8 @@ Item {
                         Layout.fillWidth: true
                         property string settingsAnchor: "blur"
                         collapsible: true
+                        Layout.columnSpan: expanded ? advancedGrid.columns : 1
+                        Layout.alignment: Qt.AlignTop
                         objectName: "theme-group-blur"
                     }
 
@@ -213,6 +226,8 @@ Item {
                     SettingsGroup {
                         property string settingsAnchor: "general"
                         collapsible: true
+                        Layout.columnSpan: expanded ? advancedGrid.columns : 1
+                        Layout.alignment: Qt.AlignTop
                         objectName: "theme-group-general"
                         title: "Typography & shape"
 
@@ -489,6 +504,8 @@ Item {
                     SettingsGroup {
                         property string settingsAnchor: "shadow"
                         collapsible: true
+                        Layout.columnSpan: expanded ? advancedGrid.columns : 1
+                        Layout.alignment: Qt.AlignTop
                         objectName: "theme-group-shadow"
                         title: "Shadow appearance"
 
@@ -839,6 +856,8 @@ Item {
                     SettingsGroup {
                         property string settingsAnchor: "variants"
                         collapsible: true
+                        Layout.columnSpan: expanded ? advancedGrid.columns : 1
+                        Layout.alignment: Qt.AlignTop
                         objectName: "theme-group-variants"
                         title: "Surface to edit"
                         description: Styling.unifiedStyle ? "Choose Custom under Theme & app style to apply individual surface changes." : "Changes apply to the selected surface."
@@ -857,6 +876,8 @@ Item {
                     SettingsGroup {
                         property string settingsAnchor: "variants"
                         collapsible: true
+                        Layout.columnSpan: expanded ? advancedGrid.columns : 1
+                        Layout.alignment: Qt.AlignTop
                         objectName: "theme-group-variants"
                         title: "Custom surface editor"
                         property string settingsSection: "variants"
@@ -882,6 +903,7 @@ Item {
                             }
                         }
 
+                    }
                     }
                 }
             }
