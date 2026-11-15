@@ -283,6 +283,7 @@ ClippingRectangle {
                 readonly property color accent: classic.accent
                 readonly property bool ice: classic.ice
                 objectName: "classic-glass-canvas"
+                readonly property int frostSeed: Math.floor(Math.random()*65536)
                 readonly property real cornerRadius: root.effectiveCornerRadius
                 onCornerRadiusChanged: requestPaint()
                 onPigmentChanged: requestPaint()
@@ -317,17 +318,32 @@ ClippingRectangle {
                                 const y=i%2?height-5-(i%5):4+(i%5);
                                 ctx.fillRect(x,y,1,1);
                             }
-                            // Branching frost crystals grow inward from the cold upper rim.
-                            for(let x=Math.max(22,cornerRadius+8);x<width-22;x+=43){
-                                const length=12+(Math.floor(x/43)%3)*5;
-                                ctx.strokeStyle=ink(0.12);ctx.lineWidth=0.7;
-                                ctx.beginPath();ctx.moveTo(x,3);ctx.lineTo(x+5,length);
-                                for(let twig=0;twig<3;twig++){
-                                    const y=6+twig*4,stem=x+(y-3)*5/(length-3);
-                                    ctx.moveTo(stem,y);ctx.lineTo(stem-4,y+2);
-                                    ctx.moveTo(stem,y);ctx.lineTo(stem+4,y-2);
+                            // Stable per-surface randomness breaks the repeated crack motif.
+                            // Repainting or resizing keeps existing crystals in place.
+                            const random=i=>{
+                                const value=Math.sin((i+1)*127.1+frostSeed*311.7)*43758.5453;
+                                return value-Math.floor(value);
+                            };
+                            const edge=Math.max(22,cornerRadius+8);
+                            let x=edge+random(0)*38;
+                            for(let crystal=0;x<width-edge;crystal++){
+                                const key=crystal*13;
+                                const length=Math.min(height-9,9+random(key+2)*15);
+                                const lean=(random(key+3)-0.5)*14;
+                                ctx.strokeStyle=ink(0.08+random(key+4)*0.07);ctx.lineWidth=0.7;
+                                ctx.beginPath();ctx.moveTo(x,3);ctx.lineTo(x+lean,length);
+                                const twigs=1+Math.floor(random(key+5)*3);
+                                for(let twig=0;twig<twigs;twig++){
+                                    const t=(twig+1)/(twigs+1);
+                                    const y=3+t*(length-3),stem=x+t*lean;
+                                    const reach=2+random(key+6+twig)*4;
+                                    ctx.moveTo(stem,y);ctx.lineTo(stem-reach,y+reach*0.55);
+                                    if(random(key+9+twig)>0.35){
+                                        ctx.moveTo(stem,y);ctx.lineTo(stem+reach*0.8,y-reach*0.45);
+                                    }
                                 }
                                 ctx.stroke();
+                                x+=30+random(key+1)*76;
                             }
                             const bloom=ctx.createRadialGradient(width,0,0,width,0,Math.min(100,width/3,height/2));
                             bloom.addColorStop(0,ink(0.075));bloom.addColorStop(1,ink(0));
