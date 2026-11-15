@@ -37,6 +37,15 @@
   unique saved original for each mutation. A new regression covers four aliases,
   repeat install/recovery and fresh-install recovery; all 13 storage tests and
   31 deployment tests pass. This repair follows the full-suite run above.
+- Corrected committed bundle `8d97e0460d787e8ef5f83bbfdaaa9dcf48b597f5`
+  passed exact-archive fresh/repeat deployment, v1.8.0 update, preference
+  preservation and file/link recovery. SHA-256:
+  `c9971797ac1ed9061341459dc55f42910df5734a8ff65b9b6405d104f9a52deb`.
+  Local artifacts are under `~/releases/enclosure-2.0-prep/`; use only
+  `enclosure-2.0-candidate-r2.tar.gz` and `acceptance-r2.json`.
+- Concurrent uncommitted SettingsTab and settings-test edits appeared after
+  candidate export. They were preserved and excluded from this candidate;
+  they require checksum refresh and validation before a subsequent release.
 - No KVM device or QEMU/virsh tools are available in this environment.
   Fresh core/full package installation, boot, real recovery, hardware,
   authenticated provider flows and sustained observation remain open in the

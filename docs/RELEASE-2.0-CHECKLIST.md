@@ -29,6 +29,17 @@ New regressions cover connection-time public DNS enforcement, TLS identity,
 compressed-document work limits, entity-expansion rejection and deterministic
 committed-source exports. Failed imports preserve existing book state.
 
+## Latest candidate refresh — 2026-11-15
+
+The full desktop run passed 598 tests with the usual two separately exercised
+Wayland skips. All 117 media, 45 shell, three assistant and Node/Lua/native,
+lint and design checks passed. Subsequent shared-command recovery repair
+passed 13 storage, 31 deployment and four release tests and the design gate.
+The exact committed `8d97e04` r2 archive passed fresh/repeat files, v1.8.0
+update, preference preservation and recovery. See the updated
+[validation record](../desktop/VALIDATION.md) for its digest and limits.
+Later uncommitted settings edits are excluded and need their own validation.
+
 ## Build and verify the actual bundle
 
 From the tested, committed checkout, choose a new output path:
