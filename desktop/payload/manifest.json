@@ -110,6 +110,7 @@
     ".local/share/icons/GoogleDot-Black",
     ".local/share/wallpapers/Ismail Inceoglu - Seventeenth",
     ".local/share/wallpapers/Cycle Circle - Zombie012",
+    ".local/share/wallpapers/My Wolpapors - Shared Album",
     "code/anime-streamer",
     "code/rebos-assistant"
   ],
@@ -545,6 +546,10 @@
     },
     ".local/share/wallpapers/Cycle Circle - Zombie012": {
       "source": "system/share/wallpapers/Cycle Circle - Zombie012",
+      "kind": "managed"
+    },
+    ".local/share/wallpapers/My Wolpapors - Shared Album": {
+      "source": "system/share/wallpapers/My Wolpapors - Shared Album",
       "kind": "managed"
     }
   }
