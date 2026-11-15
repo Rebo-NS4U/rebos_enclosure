@@ -653,17 +653,22 @@ Item {
     readonly property Item lyricsNextHitbox: lyricsStrip.nextHitbox
     BarLyrics {
         id: lyricsStrip
-        parent: islandContainer
-        anchors.fill: parent
+        // Keep the music wings independent of the center panel's morph.
+        anchors.horizontalCenter: parent.horizontalCenter
+        width: Math.max(0, root.width - 8)
+        height: root.islandHeight
+        y: Math.min(0, islandContainer.y)
         z: 1
-        inlineMode: true
+        inlineMode: root.currentMode === "collapsed"
         splitAroundCenter: true
-        islandLeft: collapsedView.x
-        islandRight: collapsedView.x + collapsedView.width
+        readonly property real centerWidth: root.isExpanded || root.retractingToHidden
+            ? islandContainer.width : collapsedView.width
+        islandLeft: (width - centerWidth) / 2
+        islandRight: (width + centerWidth) / 2
         calibrationParent: root
         onOpenMedia: root.expand("media")
         stripHeight: root.islandHeight
-        available: root.lyricsInBar && root.currentMode === "collapsed" && root.shouldBeRevealed
+        available: root.lyricsInBar && root.shouldBeRevealed
             && !root.fullscreenOnScreen && !NiriService.overviewOpen
             && !GlobalStates.lockscreenVisible
     }
