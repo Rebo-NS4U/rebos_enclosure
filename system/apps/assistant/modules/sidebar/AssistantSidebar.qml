@@ -1656,7 +1656,7 @@ Item {
                                                             ColumnLayout {
                                                                 id: messageBody
                                                                 Layout.fillWidth: true
-                                                                visible: !messageDelegate.isToolResult && !messageDelegate.isEditing && !bubbleContentText.visible
+                                                                visible: !messageDelegate.isToolResult && !messageDelegate.isEditing && !bubbleContentText.visible && (modelData.content || "").trim().length > 0
                                                                 spacing: 8
 
                                                                 readonly property bool streaming: mainChatArea.session.isBusy && mainChatArea.session.activeAssistantIndex === messageDelegate.index
@@ -1795,7 +1795,7 @@ Item {
                                                                         height: 1
                                                                         color: Colors.outline
                                                                         opacity: 0.2
-                                                                        visible: (modelData.content || "").length > 0
+                                                                        visible: (modelData.content || "").trim().length > 0
                                                                     }
 
                                                                     RowLayout {

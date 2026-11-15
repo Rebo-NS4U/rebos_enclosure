@@ -176,7 +176,7 @@
   "system/apps/assistant/modules/sidebar/AssistantModelPicker.qml": "fbc205b2744e96d87069c28e8aeddab145b3415503466831d18865b3908dda8a",
   "system/apps/assistant/modules/sidebar/AssistantPresetPicker.qml": "5962be845e9e571c372369bfbb60ded254a669a1ffe0dc782c4b9e0bccd2f25d",
   "system/apps/assistant/modules/sidebar/AssistantQuestions.qml": "866fefe55724a4d05a19224d2c86a80a53fed27899c02b2dcd8354ce02a257cd",
-  "system/apps/assistant/modules/sidebar/AssistantSidebar.qml": "4f8652a3d535c97d551e050632bc26362b0e27492ee81c67a46b0a891ba334f2",
+  "system/apps/assistant/modules/sidebar/AssistantSidebar.qml": "7a2e5aed4f112406108efc3f9f92cb05c6a1866243f8b20b040527599bf512ec",
   "system/apps/assistant/modules/sidebar/AssistantWindow.qml": "dbc19b212caa1cf170074976a323246914df7d2e4b5a4c2214bd9186e1835596",
   "system/apps/assistant/modules/sidebar/CodeBlock.qml": "947b288a5f07dd13e4ec9607b89cb0603e5da5b14f5252481258853c732a20ac",
   "system/apps/assistant/modules/sidebar/ModelSelectorPopup.qml": "0ad47f17d1a3dc1b7b8da05bd0aeebfa68c6a3e3e7963fa72496ef10340ad687",
