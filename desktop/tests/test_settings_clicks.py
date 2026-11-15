@@ -274,6 +274,15 @@ ShellRoot {
       settings.searchQuery = "";
       tester.wait(50);
       fixture.check(settings.currentSection === 4 && settings.selectedIndex === 0 && settings.filteredSections.length === 5, "Clearing search preserves page and category");
+      settings.openSection(4, "colors"); tester.wait(150);
+      let narrowWidth = loader.item.contentWidth;
+      let paletteGrid = fixture.find(loader.item, "palette-sections");
+      fixture.check(paletteGrid && paletteGrid.columns === 1, "Color sections stack in normal windows");
+      settings.width = 1700; tester.wait(100);
+      fixture.check(loader.item.contentWidth > narrowWidth + 500, "Loaded settings page expands with the window");
+      fixture.check(paletteGrid.columns === 2, "Color sections use two columns in wide windows");
+      settings.width = 850; tester.wait(100);
+      fixture.check(paletteGrid.columns === 1 && loader.item.contentWidth < narrowWidth, "Color sections reflow when shrinking");
       settings.destroy();
       let windowComponent = Qt.createComponent("modules/widgets/config/SettingsWindow.qml");
       fixture.check(windowComponent.status === Component.Ready, windowComponent.errorString());

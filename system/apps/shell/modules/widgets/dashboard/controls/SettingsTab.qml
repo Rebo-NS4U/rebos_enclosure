@@ -220,11 +220,11 @@ Item {
     }
 
     readonly property var categoryModel: [
-        {label: "Personalization", icon: Icons.paintBrush, isIcon: true, section: 4, sections: [4, 6]},
-        {label: "Desktop", icon: Icons.layout, isIcon: true, section: 9, sections: [9, 7, 8]},
-        {label: "Connections & sound", icon: Icons.wifiHigh, isIcon: true, section: 0, sections: [0, 1, 2]},
-        {label: "System", icon: Icons.circuitry, isIcon: true, section: 5, sections: [5]},
-        {label: "Apps & integrations", icon: Icons.robot, isIcon: true, section: 3, sections: [3, 10]}
+        {label: "Theme & appearance", icon: Icons.paintBrush, isIcon: true, section: 4, sections: [4, 6]},
+        {label: "Windows & input", icon: Icons.layout, isIcon: true, section: 9, sections: [9, 7, 8]},
+        {label: "Devices & connections", icon: Icons.wifiHigh, isIcon: true, section: 0, sections: [0, 1, 2]},
+        {label: "Widgets & performance", icon: Icons.circuitry, isIcon: true, section: 5, sections: [5]},
+        {label: "Assistant & GitHub", icon: Icons.robot, isIcon: true, section: 3, sections: [3, 10]}
     ]
     readonly property var activeCategory: categoryModel.find(item => item.sections.includes(currentSection)) || categoryModel[0]
     readonly property var categoryPages: activeCategory.sections.map(id => sectionModel.find(item => item.section === id))
@@ -239,7 +239,7 @@ Item {
         },
         {
             icon: Icons.gear,
-            label: "Shell",
+            label: "Panels & widgets",
             section: 6,
             isIcon: true
         },
@@ -281,7 +281,7 @@ Item {
         },
         {
             icon: Icons.circuitry,
-            label: "System",
+            label: "Weather & performance",
             section: 5,
             isIcon: true
         },
@@ -338,8 +338,8 @@ Item {
 
         // Sidebar area: search + list
         ColumnLayout {
-            Layout.preferredWidth: 250
-            Layout.maximumWidth: 250
+            Layout.preferredWidth: root.width < 900 ? 220 : 280
+            Layout.maximumWidth: root.width < 900 ? 220 : 280
             Layout.fillHeight: true
             spacing: Styling.spacing(4)
 
@@ -587,7 +587,7 @@ Item {
             clip: true
 
             property int previousSection: 0
-            readonly property int maxContentWidth: Math.min(760, width - 24)
+            readonly property int maxContentWidth: Math.max(0, width - 24)
 
             // Track section changes for animation direction
             onVisibleChanged: {
@@ -696,7 +696,7 @@ Item {
 
                 onLoaded: {
                     if (item) {
-                        item.maxContentWidth = contentArea.maxContentWidth;
+                        item.maxContentWidth = Qt.binding(() => contentArea.maxContentWidth);
                         // Apply pending subsection if any
                         if (item.currentSection !== undefined) {
                             item.currentSection = root.pendingSubSection;

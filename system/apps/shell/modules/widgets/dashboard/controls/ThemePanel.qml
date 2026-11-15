@@ -134,7 +134,7 @@ Item {
                     id: titlebar
                     width: root.contentWidth
                     anchors.horizontalCenter: parent.horizontalCenter
-                    title: ({style: "Theme style", general: "Fonts and corners", motion: "Motion", blur: "Transparency and blur", shadow: "Shadows", colors: "Wallpaper colors", variants: "Backgrounds and borders"})[root.currentSection] || "Appearance"
+                    title: ({style: "Theme style", general: "Typography & shape", motion: "Motion", blur: "Transparency and blur", shadow: "Shadows", colors: "Colors & wallpaper", variants: "Surfaces & borders"})[root.currentSection] || "Appearance"
                     description: root.currentSection === "" ? "Theme style, colors, fonts and backgrounds." : ""
 
                     actions: {
@@ -172,7 +172,7 @@ Item {
                     GridLayout {
                         visible: root.currentSection === ""
                         Layout.fillWidth: true
-                        columns: root.contentWidth < Styling.fontSize(0) * 30 ? 1 : 2
+                        columns: root.contentWidth < 560 ? 1 : root.contentWidth < 1050 ? 2 : 3
                         columnSpacing: Styling.spacing(12)
                         rowSpacing: Styling.spacing(12)
                         SectionButton {
@@ -194,7 +194,7 @@ Item {
                             glyph: Icons.lightning
                         }
                         SectionButton {
-                            text: "Fonts and corners"
+                            text: "Typography & shape"
                             description: "Text size, fonts and corner roundness."
                             glyph: Icons.gear
                             sectionId: "general"
@@ -206,13 +206,13 @@ Item {
                             sectionId: "shadow"
                         }
                         SectionButton {
-                            text: "Wallpaper colors"
-                            description: "Choose colors from your wallpaper."
+                            text: "Colors & wallpaper"
+                            description: "Palette, wallpaper color picker and saved appearance presets."
                             glyph: Icons.palette
                             sectionId: "colors"
                         }
                         SectionButton {
-                            text: "Backgrounds and borders"
+                            text: "Surfaces & borders"
                             description: "Set colors, gradients and outlines."
                             glyph: Icons.paintBrush
                             sectionId: "variants"
