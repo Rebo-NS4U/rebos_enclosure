@@ -565,3 +565,5 @@ For estimated lyrics, the left panel groups Previous/Next line buttons together.
 Music collection cards have a Play button on the artwork: albums, artists and playlists start directly without opening their detail page. Playlist playback follows saved path order and skips missing tracks. Song rows retain their direct Play/Pause button. Repeat song is a dedicated toggle beside Repeat all; it loops the current track at the end while manual Next still advances.
 
 Enclosure Music opens with Repeat all enabled by default. Repeat song and turning repeat off remain available during playback.
+
+Quickshell recovery: press **Super+Alt+Q** to clear the panel service crash limit and restart it, even when the shell is unavailable.
