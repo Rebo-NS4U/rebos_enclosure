@@ -51,6 +51,7 @@ def session():
                 attempts++;
                 if (attempts > 90) { console.error("MUSIC_ACCEPTANCE_TIMEOUT " + music.notice); Qt.exit(1); }
                 if (phase === 0 && !music.busy && music.tracks.length === 2) {
+                    if (music.repeatMode !== "Playlist") { console.error("MUSIC_REPEAT_DEFAULT_FAILED"); Qt.exit(1); }
                     music.volume = 0;
                     const playCard = findItem(music.contentItem, "music-card-play");
                     if (!playCard) return;

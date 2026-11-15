@@ -40,7 +40,7 @@ Window {
     property var queue: []
     property int currentIndex: -1
     property bool shuffle: false
-    property string repeatMode: "None"
+    property string repeatMode: "Playlist"
     property real volume: 0.8
     property int requestId: 0
     property var callbacks: ({})
