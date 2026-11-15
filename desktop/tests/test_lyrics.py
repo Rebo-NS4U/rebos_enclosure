@@ -218,6 +218,36 @@ ShellRoot {
 
 @unittest.skipUnless(shutil.which('quickshell'), 'Quickshell required')
 class Lyrics(unittest.TestCase):
+    def test_joined_plain_lyric_lines(self):
+        self.run_harness('''import QtQuick
+import Quickshell
+import qs.modules.services
+import "modules/services/Lyrics.js" as Parser
+ShellRoot {
+ Timer { interval: 300; running: true; onTriggered: {
+  try {
+   function check(ok, message) { if (!ok) throw Error(message); }
+   const first = "I kept all of your letters in a drawer";
+   const second = "Now the memories are fading away";
+   const rows = Parser.estimatedLines(first + ' ' + second + '\\nAlready separate', 90);
+   check(rows.length === 3 && rows[0].text === first && rows[1].text === second
+    && rows[2].text === 'Already separate', 'Joined capitalized phrases split, existing breaks kept');
+   check(rows[0].time === 0 && rows[1].time === 30 && rows[2].time === 60, 'Estimates use the split line count');
+   const clause = 'I waited at the station for another lonely hour until the last train finally came around';
+   check(Parser.estimatedLines(clause, 60).length === 2, 'Long explicit clause split');
+   const ordinary = 'All the way through the night I kept waiting for the sound of your voice';
+   check(Parser.estimatedLines(ordinary, 60).length === 1, 'Mid-sentence I is not a line break');
+   check(Parser.estimatedLines('Hello my friend Now go home', 60).length === 1, 'Short rows stay intact');
+   check(Parser.estimatedLines('[ar:Artist]\\n\\nSingle line', 60).length === 1, 'Metadata and blanks omitted');
+   check(Parser.estimatedLines(first + ' ' + second, 0).length === 0, 'Unknown duration has no invented cues');
+   const timed = Parser.parseLrc('[00:01]' + first + ' ' + second);
+   check(timed.length === 1 && timed[0].text === first + ' ' + second, 'Supplied timestamp boundaries preserved');
+   console.log('PASS: joined lyric phrases, clause boundaries, timing and unsplit controls'); Qt.quit();
+  } catch(error) { console.error(error); Qt.exit(1); }
+ } }
+}
+''')
+
     def test_bar_untimed_lyrics_follow_playback(self):
         self.run_harness('''import QtQuick
 import Quickshell

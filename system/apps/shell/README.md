@@ -319,6 +319,9 @@ for the queue and lyrics on narrow windows. Scan again after changing files.
 Lyrics without timestamps follow playback using evenly spaced line estimates,
 labelled **Estimated timing** in Music and **≈** in the desktop lyrics strip.
 The strip advances both current and next lines, including after seeks or pauses.
+Long plain-text rows joined at a new capitalized phrase or an explicit clause
+boundary are split into separate estimated lines in both readers. Short rows
+and supplied timestamped lines keep their original breaks.
 These may differ from the vocals;
 embedded or downloaded timed lyrics take precedence. Estimates are not exported
 as timestamps to other players or the desktop lyrics service.

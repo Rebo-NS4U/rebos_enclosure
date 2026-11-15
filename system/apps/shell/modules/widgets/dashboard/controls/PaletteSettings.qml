@@ -86,6 +86,43 @@ ColumnLayout {
         }
     }
 
+    StyledText { text: "Saved wallpaper and color presets"; font.bold: true }
+    Caption { text: "Save your current wallpaper, monitor overrides, colors and shell appearance together. Apply picked colors before saving." }
+    SettingsTextField {
+        id: presetName
+        Layout.fillWidth: true
+        placeholderText: "Preset name"
+        Accessible.name: "New appearance preset name"
+        maximumLength: 80
+    }
+    Action {
+        text: "Save current appearance"
+        enabled: !!root.manager && !!root.pickerWallpaper && !root.busy && !!presetName.text.trim()
+            && !root.manager.appearancePresets.some(entry => entry.name === presetName.text.trim())
+        onClicked: {
+            if (root.manager.saveAppearancePreset(presetName.text)) presetName.clear();
+        }
+    }
+    Caption {
+        visible: !!root.manager && root.manager.appearancePresets.some(entry => entry.name === presetName.text.trim())
+        text: "That name is already saved. Use Replace current below to update it."
+    }
+    Repeater {
+        model: root.manager?.appearancePresets ?? []
+        delegate: ColumnLayout {
+            id: savedPreset
+            required property var modelData
+            Layout.fillWidth: true
+            StyledText { text: savedPreset.modelData.name; Layout.fillWidth: true; elide: Text.ElideRight }
+            RowLayout {
+                Layout.fillWidth: true
+                Action { text: "Apply"; enabled: !root.busy; onClicked: root.manager.applyAppearancePreset(savedPreset.modelData.name) }
+                Action { text: "Replace current"; enabled: !root.busy && !!root.pickerWallpaper; onClicked: root.manager.saveAppearancePreset(savedPreset.modelData.name, true) }
+                Action { text: "Delete"; onClicked: root.manager.deleteAppearancePreset(savedPreset.modelData.name) }
+            }
+        }
+    }
+
     StyledText { text: "Wallpaper folder and icons"; font.bold: true }
     // Wallpaper Path
     RowLayout {

@@ -21,10 +21,30 @@ function activeLine(lines, position) {
 }
 
 // For Music and the desktop strip. Keep estimates out of exported/player lyrics.
+function splitPlainLine(line) {
+    // Some plain-text providers join verses with a single space. Prefer a new
+    // capitalized phrase, then an explicit clause boundary on very long rows.
+    // Require substantial text on both sides; never split on the pronoun "I".
+    if (line.length < 60 || line.split(/\s+/).length < 12) return [line];
+    const pattern = /\s+(?=[A-Z][a-z]+\b|I['’](?:m|ll|ve|d)\b|(?:until|but|because|while)\b)/g;
+    let match, best = -1, score = Infinity;
+    while ((match = pattern.exec(line)) !== null) {
+        const left = line.slice(0, match.index).trim();
+        const right = line.slice(match.index).trim();
+        if (left.split(/\s+/).length < 4 || right.split(/\s+/).length < 4) continue;
+        const distance = Math.abs(left.length - right.length);
+        if (distance < score) { best = match.index; score = distance; }
+    }
+    if (best < 0) return [line];
+    return splitPlainLine(line.slice(0, best).trim())
+        .concat(splitPlainLine(line.slice(best).trim()));
+}
+
 function estimatedLines(text, duration) {
     if (!isFinite(duration) || duration <= 0) return [];
     const rows = String(text || "").split(/\r?\n/)
-        .map(line => line.trim()).filter(line => line && !/^\[[^\]]*\]$/.test(line));
+        .map(line => line.trim()).filter(line => line && !/^\[[^\]]*\]$/.test(line))
+        .reduce((result, line) => result.concat(splitPlainLine(line)), []);
     return rows.map((line, index) => ({time: index * duration / rows.length, text: line}));
 }
 

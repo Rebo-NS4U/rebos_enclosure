@@ -270,6 +270,54 @@ PanelWindow {
         }
     }
 
+    readonly property var appearancePresets: wallpaperAdapter.appearancePresets
+    readonly property var presetThemeKeys: ["lightMode", "oledMode", "shellStyle", "shellTransparency",
+        "ditherPalette", "ditherTintColor", "ditherBorder", "ditherStrength", "wallpaperDitherStrength", "tintIcons"]
+
+    function saveAppearancePreset(name, replace = false) {
+        name = name.trim();
+        if (!name || !currentWallpaper || paletteBusy)
+            return false;
+        const entries = appearancePresets.slice();
+        const index = entries.findIndex(entry => entry.name === name);
+        if (index >= 0 && !replace)
+            return false;
+        const theme = {};
+        presetThemeKeys.forEach(key => theme[key] = Config.theme[key]);
+        const entry = JSON.parse(JSON.stringify({name: name, wallpaper: currentWallpaper,
+            screens: perScreenWallpapers, accents: wallpaperAdapter.wallpaperAccentColors,
+            scheme: currentMatugenScheme, colorPreset: activeColorPreset,
+            mode: wallpaperMode, tint: tintEnabled, theme: theme, opacity: Config.theme.srBg.opacity}));
+        if (index >= 0) entries[index] = entry;
+        else entries.push(entry);
+        wallpaperAdapter.appearancePresets = entries;
+        return true;
+    }
+
+    function deleteAppearancePreset(name) {
+        wallpaperAdapter.appearancePresets = appearancePresets.filter(entry => entry.name !== name);
+    }
+
+    function applyAppearancePreset(name) {
+        const entry = appearancePresets.find(item => item.name === name);
+        if (!entry || paletteBusy) return;
+        presetThemeKeys.forEach(key => {
+            if (entry.theme[key] !== undefined) Config.theme[key] = entry.theme[key];
+        });
+        Config.theme.srBg.opacity = entry.opacity;
+        wallpaperAdapter.wallpaperAccentColors = Object.assign({}, wallpaperAdapter.wallpaperAccentColors, entry.accents);
+        wallpaperAdapter.matugenScheme = entry.scheme;
+        wallpaperAdapter.activeColorPreset = entry.colorPreset;
+        wallpaperAdapter.tintEnabled = entry.tint;
+        setWallpaperMode(entry.mode);
+        wallpaperAdapter.perScreenWallpapers = Object.assign({}, entry.screens);
+        setWallpaper(entry.wallpaper);
+        Qt.callLater(() => {
+            if (entry.colorPreset) applyColorPreset();
+            else runMatugenForCurrentWallpaper();
+        });
+    }
+
     function scanColorPresets() {
         scanPresetsProcess.running = true;
     }
@@ -959,6 +1007,7 @@ PanelWindow {
             property string currentWall: ""
             property string wallPath: ""
             property string matugenScheme: "scheme-tonal-spot"
+            property var appearancePresets: []
             property var wallpaperAccentColors: ({})
             property string activeColorPreset: ""
             property bool tintEnabled: false

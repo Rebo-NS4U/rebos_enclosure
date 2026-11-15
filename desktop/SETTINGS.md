@@ -60,3 +60,7 @@ surfaces and labels/handles (`python3 desktop/tests/test_shell_control_styles.py
 Fan controls and model loading share the shell action style. Notification error
 actions use the error foreground role; shared actions include visible focus and
 disabled states. Color swatches retain their exact colors with empty labels.
+
+### Saved appearance presets
+
+In Colors settings, enter a name and choose **Save current appearance**. Presets persist locally with wallpaper settings and include the wallpaper, monitor overrides, picked colors, Matugen scheme or static palette, light/dark mode, tint, shell style, dithering and opacity. Apply picked colors before saving. Each saved entry offers **Apply**, **Replace current** (overwrite with the current appearance), and **Delete**. Duplicate names cannot be saved accidentally. Wallpaper files and static palettes must remain available at their original locations.

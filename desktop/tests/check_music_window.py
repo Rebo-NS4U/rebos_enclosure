@@ -28,7 +28,7 @@ def session():
                 '-t','4','-metadata',f'title=Acceptance song {index+1}','-metadata','artist=Enclosure',
                 '-metadata','album=Music acceptance',str(home/'Music'/f'{index}.flac')],check=True)
         (home/'Music/0.lrc').write_text('[00:00.00]First line\n[00:01.00]Second line')
-        (home/'Music/1.lrc').write_text('First untimed line\nSecond untimed line\nThird untimed line\nLast untimed line')
+        (home/'Music/1.lrc').write_text('I kept all of your letters in a drawer Now the memories are fading away\nThird untimed line\nLast untimed line')
         qml = '''//@ pragma UseQApplication
     import QtQuick
     import Quickshell
@@ -60,6 +60,7 @@ def session():
                     music.control({action:"Pause"});
                     music.side = "Lyrics";
                     if (!music.estimatedTiming || music.lyricLines.length !== 4) { console.error("MUSIC_ESTIMATES_FAILED"); Qt.exit(1); }
+                    if (music.lyricLines[1].text !== "Now the memories are fading away") { console.error("MUSIC_JOINED_LINES_FAILED"); Qt.exit(1); }
                     music.seek(2200);
                     if (music.lyricIndex !== 2) { console.error("MUSIC_ESTIMATE_SEEK_FAILED"); Qt.exit(1); }
                     music.navigate("Albums");
