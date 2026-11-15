@@ -42,6 +42,29 @@ class StorageLayoutTests(unittest.TestCase):
         hashes = {name: hashlib.sha256(path.read_bytes()).hexdigest() for name, path in inventory(self.payload).items()}
         (self.payload / 'checksums.json').write_text(json.dumps(hashes))
 
+    def test_shared_command_aliases_restore_fresh_and_repeat_install(self):
+        data = json.loads((self.payload / 'manifest.json').read_text())
+        for alias in ('example-connect', 'example-edit', 'example-hostname'):
+            name = '.local/bin/' + alias
+            data['units'].append(name)
+            data['sources'][name] = dict(data['sources']['.local/bin/example'])
+        (self.payload / 'manifest.json').write_text(json.dumps(data))
+        self.rehash()
+        first = deploy.install(self.payload, self.home)
+        central = self.home / '.local/share/enclosure/system/bin/example'
+        original = central.read_bytes()
+        update = deploy.install(self.payload, self.home)
+        deploy.restore(update)
+        self.assertEqual(central.read_bytes(), original)
+        for name in data['units']:
+            path = self.home / name
+            self.assertTrue(path.exists(), name)
+        deploy.restore(first)
+        self.assertFalse(central.exists())
+        for name in data['units']:
+            path = self.home / name
+            self.assertFalse(path.exists() or path.is_symlink(), name)
+
     def test_already_grouped_theme_settings_are_not_moved_into_themselves(self):
         data = json.loads((self.payload / 'manifest.json').read_text())
         name = '.config/enclosure/theme/widgets.qss'

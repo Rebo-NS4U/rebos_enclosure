@@ -69,11 +69,14 @@ def organize(home, payload, backup, journal):  # pylint: disable=too-many-locals
     for old, new in moves:
         old_name, new_name = str(old.relative_to(home)), str(new.relative_to(home))
         # Keep an overwritten managed version in the same recovery journal.
-        central_entry = {'path': new_name, 'existed': exists(new)}
+        # Several command aliases can share one managed destination. Each
+        # mutation needs its own saved original for reverse-order recovery.
+        central_entry = {'path': new_name, 'existed': exists(new),
+                         'saved': f'organized/{len(journal["entries"])}'}
         journal['entries'].append(central_entry)
         save()
         if central_entry['existed']:
-            saved = backup / 'files' / new_name
+            saved = backup / central_entry['saved']
             saved.parent.mkdir(parents=True, exist_ok=True)
             new.rename(saved)
         move_entry = {'path': old_name, 'existed': True, 'moved_to': new_name}

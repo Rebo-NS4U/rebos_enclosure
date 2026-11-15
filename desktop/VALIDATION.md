@@ -13,7 +13,8 @@
   imports. Ruff 0.17.3 and Pylint 4.1.3 pass with the existing 70 exception
   ceilings unchanged. Updated stale lyric margin and media-theme assertions to
   match the intentionally shipped eight-pixel edges and selected popup material.
-- All 117 media, 45 shell and three assistant Python tests pass, as do Node,
+- Full desktop discovery passed: 598 tests with the two opt-in Wayland
+  skips exercised separately. All 117 media, 45 shell and three assistant Python tests pass, as do Node,
   Lua, native greeter builds and tracked Python/Bash syntax. The isolated
   screenshot runner passes all nine tests, including both opt-in Wayland cases.
   Focused music (15), OCR (11), bridge (7), visual (4), lyrics (9), settings (1)
@@ -31,6 +32,11 @@
   graphics-context abort and Xwayland broken-pipe errors. This audit does not
   establish their origin or certify them fixed. Current service health does not
   replace sustained observation, login or hardware acceptance.
+- Exact-bundle acceptance exposed shared-command recovery corruption: multiple
+  aliases reused one saved managed-file backup. Organization now journals a
+  unique saved original for each mutation. A new regression covers four aliases,
+  repeat install/recovery and fresh-install recovery; all 13 storage tests and
+  31 deployment tests pass. This repair follows the full-suite run above.
 - No KVM device or QEMU/virsh tools are available in this environment.
   Fresh core/full package installation, boot, real recovery, hardware,
   authenticated provider flows and sustained observation remain open in the
