@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# nmtui uses newt/S-Lang. Slots 16+ keep its classic colors independent of
+# wallpaper-generated ANSI slots 0-15, without changing the terminal palette.
+case "${TERM:-}" in
+    *256color*|xterm-kitty)
+        white=color231 blue=color19 black=color16 gray=color252 muted=color244
+        ;;
+    *)
+        white=white blue=blue black=black gray=lightgray muted=gray
+        ;;
+esac
+export NEWT_COLORS="root=$white,$blue border=$black,$gray window=$black,$gray shadow=$black,$black title=$blue,$gray button=$black,$gray actbutton=$white,$blue checkbox=$black,$gray actcheckbox=$white,$blue entry=$black,$white disentry=$muted,$gray label=$black,$gray listbox=$black,$gray actlistbox=$white,$blue textbox=$black,$gray acttextbox=$black,$white helpline=$white,$blue roottext=$white,$blue emptyscale=$gray,$gray fullscale=$white,$blue compactbutton=$black,$gray actsellistbox=$white,$blue sellistbox=$white,$blue"
+
+program=${0##*/}
+case "$program" in
+    nmtui|nmtui-connect|nmtui-edit|nmtui-hostname) ;;
+    *) program=nmtui ;;
+esac
+exec "/usr/bin/$program" "$@"

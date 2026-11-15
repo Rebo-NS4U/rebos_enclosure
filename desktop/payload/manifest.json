@@ -106,7 +106,11 @@
     ".local/share/applications/rebos-shell-wallpapers.desktop",
     ".local/share/applications/rebos-shell-anime.desktop",
     ".config/autostart/blueman.desktop",
-    ".local/share/applications/rebos-shell-music.desktop"
+    ".local/share/applications/rebos-shell-music.desktop",
+    ".local/bin/nmtui",
+    ".local/bin/nmtui-connect",
+    ".local/bin/nmtui-edit",
+    ".local/bin/nmtui-hostname"
   ],
   "layout": 2,
   "sources": {
@@ -520,6 +524,22 @@
     },
     ".local/share/applications/rebos-shell-music.desktop": {
       "source": "system/share/applications/rebos-shell-music.desktop",
+      "kind": "managed"
+    },
+    ".local/bin/nmtui": {
+      "source": "system/bin/nmtui",
+      "kind": "managed"
+    },
+    ".local/bin/nmtui-connect": {
+      "source": "system/bin/nmtui",
+      "kind": "managed"
+    },
+    ".local/bin/nmtui-edit": {
+      "source": "system/bin/nmtui",
+      "kind": "managed"
+    },
+    ".local/bin/nmtui-hostname": {
+      "source": "system/bin/nmtui",
       "kind": "managed"
     }
   }

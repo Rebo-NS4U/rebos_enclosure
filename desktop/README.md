@@ -189,6 +189,8 @@ its [include documentation](https://niri-wm.github.io/niri/Configuration%3A-Incl
 | Super+W / E | Browser / file manager |
 | Super+Shift+/ | Keybinding help |
 
+`nmtui` and its connect/edit/hostname shortcuts use a fixed classic blue-and-gray palette. The launcher uses indexed colors outside the wallpaper-themed ANSI slots on 256-color terminals, with standard named colors on basic terminals. Only nmtui is affected; other terminal programs keep their theme. Reopen nmtui to apply it.
+
 Open Settings from the launcher to adjust weather location, displays and theme. Four main categories combine related controls on scrollable pages, with search links that scroll to the matching controls. Wheel and trackpad scrolling move the page without changing settings; nested lists hand scrolling back to the page at their ends. Use Ctrl+scroll to zoom a wallpaper preview. Desktop & system contains displays, keyboard shortcuts and window rules. Weather and storage live under Theme & appearance. Use `SettingsGroup`, `SettingsToggleRow`, `SettingsTextField` and `SettingsComboBox` when adding settings. Choose any wallpaper to generate a fresh palette. Open Zen once to create its profile and Spotify Launcher once to install its client and sign in. Close Spotify, then run:
 
 ```bash
