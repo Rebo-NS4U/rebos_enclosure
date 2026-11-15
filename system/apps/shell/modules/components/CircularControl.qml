@@ -86,20 +86,16 @@ StyledRect {
             isDragging = false;
         }
 
-        onWheel: wheel => {
-            if (wheel.angleDelta.y > 0) {
-                let newValue = Math.round(Math.min(1, root.value + 0.1) * 100) / 100;
-                root.controlValueChanged(newValue);
-            } else {
-                let newValue = Math.round(Math.max(0, root.value - 0.1) * 100) / 100;
-                root.controlValueChanged(newValue);
-            }
-        }
+        onWheel: wheel => { wheel.accepted = false; }
 
         StyledToolTip {
             show: mouseArea.containsMouse && root.tooltipText !== ""
             tooltipText: root.tooltipText
         }
+    }
+
+    ScrollStepHandler {
+        onStepped: steps => root.controlValueChanged(Math.max(0, Math.min(1, root.value + steps * 0.02)))
     }
 
     Item {

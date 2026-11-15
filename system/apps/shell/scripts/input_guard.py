@@ -6,7 +6,6 @@ import os
 from pathlib import Path
 import select
 import sys
-import time
 
 EVIOCGRAB = 0x40044590
 
@@ -30,7 +29,6 @@ class Guard:
     def __init__(self):
         self.handles = []
         self.disabled = None
-        self.deadline = 0
         self.error = ''
 
     def restore(self):
@@ -61,7 +59,6 @@ class Guard:
                 self.handles.append(fd)
                 fcntl.ioctl(fd, EVIOCGRAB, 1)
             self.disabled = kind
-            self.deadline = time.monotonic() + 60
         except OSError as error:
             self.restore()
             self.error = f'Input control unavailable: {error.strerror}'
@@ -69,11 +66,10 @@ class Guard:
     def state(self, found):
         if self.disabled:
             other = 'touchscreen' if self.disabled == 'keyboard' else 'keyboard'
-            if not found[other] or time.monotonic() >= self.deadline:
+            if not found[other]:
                 self.restore()
         return dict(disabled=self.disabled or '', keyboard=bool(found['keyboard']),
-                    touchscreen=bool(found['touchscreen']), error=self.error,
-                    remaining=max(0, int(self.deadline - time.monotonic())) if self.disabled else 0)
+                    touchscreen=bool(found['touchscreen']), error=self.error)
 
 
 def main():

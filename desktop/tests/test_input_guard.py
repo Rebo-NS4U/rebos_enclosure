@@ -30,14 +30,14 @@ class InputSafety(unittest.TestCase):
         self.g.toggle('keyboard', {'keyboard': ['kbd'], 'touchscreen': []})
         self.ioctl.assert_not_called()
 
-    def test_disconnect_and_timeout_restore(self):
+    def test_disconnect_restores_but_no_timer(self):
         self.g.toggle('keyboard', self.found)
         self.g.state({'keyboard': ['kbd'], 'touchscreen': []})
         self.assertIsNone(self.g.disabled)
         self.g.toggle('touchscreen', self.found)
-        self.g.deadline = 0
-        self.g.state(self.found)
-        self.assertIsNone(self.g.disabled)
+        for _ in range(1000):
+            self.g.state(self.found)
+        self.assertEqual(self.g.disabled, 'touchscreen')
 
     def test_combined_device_cannot_disable_fallback(self):
         self.g.toggle('keyboard', {'keyboard': ['shared'], 'touchscreen': ['shared']})

@@ -50,6 +50,7 @@ Item {
     property real wavyFrequency: 8
     property real heightMultiplier: 8
     property bool smoothDrag: true
+    property real scrollStep: 0.02
     property bool scroll: true
     property bool tooltip: true
     property bool updateOnRelease: false
@@ -426,17 +427,11 @@ Item {
             root.isDragging = false;
         }
 
-        onWheel: wheel => {
-            if (root.scroll) {
-                const scrollStep = root.stepSize > 0 ? root.stepSize : 0.01;
-                if (wheel.angleDelta.y > 0) {
-                    root.value = root.applyStep(Math.min(1, root.value + scrollStep));
-                } else {
-                    root.value = root.applyStep(Math.max(0, root.value - scrollStep));
-                }
-            } else {
-                wheel.accepted = false;
-            }
-        }
+        onWheel: wheel => { wheel.accepted = false; }
+    }
+
+    ScrollStepHandler {
+        enabled: root.scroll
+        onStepped: steps => root.editValue(root.value + steps * root.scrollStep)
     }
 }

@@ -21,7 +21,7 @@ Singleton {
     readonly property real normalizedTemperature: (temperature - minTemperature) / (maxTemperature - minTemperature)
 
     function clampTemperature(value) {
-        return Math.max(minTemperature, Math.min(maxTemperature, Math.round(value / 100) * 100));
+        return Math.max(minTemperature, Math.min(maxTemperature, Math.round(value / 20) * 20));
     }
 
     function setTemperature(value) {

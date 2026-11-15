@@ -9,7 +9,6 @@ Singleton {
     property bool keyboardAvailable: false
     property bool touchscreenAvailable: false
     property string error: ""
-    property int remaining: 0
     function toggle(kind) {
         if (helper.running)
             helper.write(kind + "\n");
@@ -19,9 +18,9 @@ Singleton {
         const label = kind === "keyboard" ? "Keyboard" : "Touchscreen";
         if (error) return error;
         if (!available) return label + ": unavailable";
-        if (disabled === kind) return label + ": Off · restores in " + remaining + "s · tap to enable";
+        if (disabled === kind) return label + ": Off · tap to enable";
         if (disabled !== "") return label + ": On · enable the other input first";
-        return label + ": On · tap to disable for 60s";
+        return label + ": On · tap to disable";
     }
     Process {
         id: helper
@@ -36,7 +35,6 @@ Singleton {
                     root.keyboardAvailable = state.keyboard;
                     root.touchscreenAvailable = state.touchscreen;
                     root.error = state.error;
-                    root.remaining = state.remaining;
                 } catch (e) { root.error = "Cannot read input state"; }
             }
         }

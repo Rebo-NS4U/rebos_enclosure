@@ -531,8 +531,8 @@ Assistant chat pages are constructed only for the visible selected session. Long
 
 The bar control panel includes keyboard and touchscreen buttons (Tab then Space
 or Enter also activates them). Only one may be disabled at a time, and both
-must be connected. Input automatically returns after 60 seconds, when the
-fallback device disconnects, or when the helper exits. No disabled state is saved.
+must be connected. There is no timed restore. Input returns when the
+fallback device disconnects or when the helper exits. No disabled state is saved.
 The helper uses Python's standard library and Linux evdev, leaving pointer devices
 alone. If device access is denied, run `bash desktop/scripts/setup-input-controls.sh`
 from the checkout; this uses `assistant-sudo` to install an optional udev rule
@@ -551,3 +551,5 @@ Music reads embedded lyrics (including audio-stream tags) first, then automatica
 Lyrics now use the empty strip on both sides of the island bar: current line on the left and next line on the right. They follow the bar’s animated width, elide long lines, and hide when insufficient space remains, on the lockscreen, in overview or fullscreen. Lyrics do not intercept clicks. The lyrics shortcut toggles this strip; the old floating Top/Bottom widget is removed.
 
 Bar lyrics share the island’s background, opacity, border, corner treatment and text roles. Line changes crossfade with a small vertical movement using the shell motion setting; disabling animations immediately settles the text. Layout width follows the bar directly so transitions never overlap it.
+
+Bar input controls use compact neutral buttons, with disabled input highlighted and safety details in tooltips. Slider wheel adjustments use two percentage points per notch, accumulating small trackpad movements.

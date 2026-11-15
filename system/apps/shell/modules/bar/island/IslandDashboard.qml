@@ -763,8 +763,7 @@ Item {
                             }
                         }
                         onWheelScrolled: (delta) => {
-                            if (delta > 0) Audio.incrementVolume();
-                            else Audio.decrementVolume();
+                            Audio.setVolume(Math.max(0, Math.min(1, root.audioVolume + (delta > 0 ? 0.02 : -0.02))));
                         }
                     }
                     StyledText {
@@ -836,8 +835,8 @@ Item {
                             }
                         }
                         onWheelScrolled: (delta) => {
-                            if (delta > 0) Audio.setMicVolume(Math.min(1.0, micVol + 0.05));
-                            else Audio.setMicVolume(Math.max(0.05, micVol - 0.05));
+                            if (delta > 0) Audio.setMicVolume(Math.min(1.0, micVol + 0.02));
+                            else Audio.setMicVolume(Math.max(0.05, micVol - 0.02));
                         }
                     }
                     StyledText {
@@ -1219,7 +1218,7 @@ Item {
                             if (!NightLightService.desiredActive) {
                                 NightLightService.toggle();
                             }
-                            const step = 100;
+                            const step = 80;
                             const delta = wheel.angleDelta.y > 0 ? -step : step;
                             NightLightService.setTemperature(NightLightService.temperature + delta);
                         }
