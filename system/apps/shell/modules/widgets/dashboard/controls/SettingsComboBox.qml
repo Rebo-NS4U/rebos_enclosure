@@ -20,11 +20,16 @@ ComboBox {
         border.width: root.activeFocus || root.popup.visible ? 2 : 1
         border.color: root.activeFocus || root.popup.visible ? Colors.primary : Qt.alpha(Colors.outline, 0.3)
     }
-    contentItem: StyledText {
-        text: root.displayText
+    contentItem: TextField {
+        text: root.editable ? root.editText : root.displayText
+        readOnly: !root.editable
+        selectByMouse: root.editable
+        autoScroll: root.editable
+        padding: 0
+        background: null
+        onTextEdited: root.editText = text
         color: root.enabled ? Colors.overSurface : Colors.overSurfaceVariant
         verticalAlignment: Text.AlignVCenter
-        elide: Text.ElideRight
         font: root.font
     }
     indicator: StyledText {

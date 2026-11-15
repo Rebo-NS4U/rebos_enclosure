@@ -274,7 +274,15 @@ Item {
                                     return families.sort();
                                 }
                                 currentIndex: model.indexOf(configValue)
+                                editable: true
                                 onActivated: Config.theme.font = currentText
+                                onAccepted: {
+                                    const family = editText.trim();
+                                    if (family.length > 0)
+                                        Config.theme.font = family;
+                                    else
+                                        editText = configValue;
+                                }
                             }
 
                             SettingsTextField {
@@ -352,7 +360,15 @@ Item {
                                     return families.sort();
                                 }
                                 currentIndex: model.indexOf(configValue)
+                                editable: true
                                 onActivated: Config.theme.monoFont = currentText
+                                onAccepted: {
+                                    const family = editText.trim();
+                                    if (family.length > 0)
+                                        Config.theme.monoFont = family;
+                                    else
+                                        editText = configValue;
+                                }
                             }
 
                             SettingsTextField {
