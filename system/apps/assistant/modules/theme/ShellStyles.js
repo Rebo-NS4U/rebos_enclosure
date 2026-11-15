@@ -1,9 +1,9 @@
 .pragma library
 
 var styles = [
-    {id: "smoked-acrylic", label: "Smoked Acrylic", font: "Noto Sans", description: "Translucent polished sheets, recessed controls and crisp edge reflections."},
-    {id: "condensation", label: "Condensation", font: "DejaVu Sans", description: "Misted surfaces, soft fog rims and fine condensation beads."},
-    {id: "optical-instrument", label: "Optical Instrument", font: "DejaVu Sans Mono", description: "Blurred optical glass, etched reticles and precision metal bezels."},
+    {id: "smoked-acrylic", label: "Smoked Acrylic", font: "Noto Sans", description: "Laminated glass edges, diagonal reflections and recessed controls."},
+    {id: "condensation", label: "Condensation", font: "DejaVu Sans", description: "Corner fog blooms, glass droplets and softly misted surfaces."},
+    {id: "optical-instrument", label: "Optical Instrument", font: "DejaVu Sans Mono", description: "Calibrated lens collars, etched scales and translucent optical glass."},
     {id: "monolith", label: "Monolith", font: "Noto Sans", description: "Sculpted slabs, staggered edge cuts, deep seams and recessed channels."},
     {id: "blueprint", label: "Blueprint", font: "JetBrains Mono", description: "Drafting grids, measurement ticks, registration marks and wire controls."},
     {id: "terminal-hardware", label: "Terminal Hardware", font: "DejaVu Sans Mono", description: "Machined bezels, slotted screws, cooling vents and textured displays."},
@@ -177,7 +177,7 @@ function surface(style, variant, p, ditherStrength) {
     if (dotted && containers.indexOf(variant) !== -1) border[1] = 1;
     return {
         radius: acrylic ? (outer ? 14 : 7) : mist ? (outer ? 20 : 10) : optical ? (outer ? 8 : 3) : monolith ? (outer ? 3 : 0) : blueprint ? 0 : hardware ? (outer ? 5 : 2) : undefined,
-        gradient: renderGradient ? renderGradient : frostedContainer ? [[mix(fill, p.foreground, 0.08), 0], [fill, 0.45], [mix(fill, p.background, 0.12), 1]] : [[fill, 0]], gradientType: dotted ? "halftone" : "linear", gradientAngle: 0,
+        gradient: renderGradient ? renderGradient : frostedContainer ? [[mix(fill, p.foreground, 0.08), 0], [fill, 0.45], [mix(fill, p.background, 0.12), 1]] : [[fill, 0]], gradientType: dotted ? "halftone" : "linear", gradientAngle: acrylic ? 18 : 0,
         gradientCenterX: 0.5, gradientCenterY: 0.5,
         halftoneDotMin: dotted ? dotMax : 0, halftoneDotMax: dotted ? dotMax : 0, halftoneStart: 0, halftoneEnd: 1,
         halftoneDotColor: dotted ? dotColor(fill, item, 0.10 + strength * 0.0025) : fill, halftoneBackgroundColor: fill,

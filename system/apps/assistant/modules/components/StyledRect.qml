@@ -249,6 +249,90 @@ ClippingRectangle {
             readonly property bool optical: style === "optical-instrument"
             readonly property color ink: root.itemColor
             opacity: root.rectOpacity
+            // Material optics stay static and subtle across the reading area.
+            Canvas {
+                anchors.fill: parent
+                readonly property color pigment: material.ink
+                readonly property string finish: material.style
+                onPigmentChanged: requestPaint()
+                onFinishChanged: requestPaint()
+                onWidthChanged: requestPaint()
+                onHeightChanged: requestPaint()
+                onPaint: {
+                    const ctx = getContext("2d");
+                    ctx.clearRect(0, 0, width, height);
+                    if (width < 24 || height < 24) return;
+                    const ink = alpha => Qt.rgba(pigment.r, pigment.g, pigment.b, alpha);
+                    ctx.lineWidth = 1;
+                    if (material.acrylic) {
+                        // Broad diagonal reflection, split into a fine polished glint.
+                        const sheen = ctx.createLinearGradient(0, 0, width, height * 0.5);
+                        sheen.addColorStop(0, ink(0));
+                        sheen.addColorStop(0.24, ink(0.015));
+                        sheen.addColorStop(0.30, ink(0.075));
+                        sheen.addColorStop(0.32, ink(0.015));
+                        sheen.addColorStop(0.50, ink(0));
+                        sheen.addColorStop(1, ink(0));
+                        ctx.fillStyle = sheen;
+                        ctx.fillRect(0, 0, width, height);
+                        // Laminated edge: offset hairlines form an apparent glass thickness.
+                        for (let i = 0; i < 3; i++) {
+                            ctx.strokeStyle = ink(0.19 - i * 0.045);
+                            ctx.beginPath();
+                            ctx.moveTo(width - 5 - i * 2, 18);
+                            ctx.lineTo(width - 5 - i * 2, height - 16 + i * 2);
+                            ctx.lineTo(18, height - 16 + i * 2);
+                            ctx.stroke();
+                        }
+                    } else if (material.mist) {
+                        // Soft corner bloom leaves the central text area clear.
+                        for (let corner = 0; corner < 2; corner++) {
+                            const x = corner ? width : 0, y = corner ? height : 0;
+                            const radius = Math.min(110, width * 0.40, height * 0.45);
+                            const fog = ctx.createRadialGradient(x, y, 0, x, y, radius);
+                            fog.addColorStop(0, ink(0.11));
+                            fog.addColorStop(0.5, ink(0.035));
+                            fog.addColorStop(1, ink(0));
+                            ctx.fillStyle = fog; ctx.fillRect(0, 0, width, height);
+                        }
+                        if (material.outer) {
+                            for (let i = 0; i < 18; i++) {
+                                const x = 16 + ((i * 83) % Math.max(1, width - 32));
+                                const y = i % 2 ? height - 16 - (i % 3) * 5 : 12 + (i % 3) * 5;
+                                const r = 2 + (i % 4) * 0.8;
+                                ctx.strokeStyle = ink(0.17); ctx.beginPath();
+                                ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke();
+                                ctx.strokeStyle = ink(0.32); ctx.beginPath();
+                                ctx.arc(x - 0.3, y - 0.3, r * 0.65, Math.PI, Math.PI * 1.5); ctx.stroke();
+                            }
+                        }
+                    } else if (material.optical && material.outer) {
+                        // Lens collars with interrupted arcs and radial calibration marks.
+                        for (let corner = 0; corner < 4; corner++) {
+                            const x = corner % 2 ? width - 14 : 14;
+                            const y = corner >= 2 ? height - 14 : 14;
+                            ctx.strokeStyle = ink(0.20);
+                            for (const r of [12, 17, 22]) {
+                                ctx.beginPath(); ctx.arc(x, y, r, 0.15, Math.PI * 1.82); ctx.stroke();
+                            }
+                            for (let tick = 0; tick < 12; tick++) {
+                                const angle = tick * Math.PI / 6;
+                                const r = tick % 3 === 0 ? 27 : 24;
+                                ctx.beginPath();
+                                ctx.moveTo(x + 22 * Math.cos(angle), y + 22 * Math.sin(angle));
+                                ctx.lineTo(x + r * Math.cos(angle), y + r * Math.sin(angle)); ctx.stroke();
+                            }
+                        }
+                        // Paired etched scales along the sides, not across content.
+                        ctx.strokeStyle = ink(0.24);
+                        for (let y = 48; y < height - 48; y += 8) {
+                            const length = y % 32 === 16 ? 7 : 3;
+                            ctx.beginPath(); ctx.moveTo(5, y); ctx.lineTo(5 + length, y);
+                            ctx.moveTo(width - 5, y); ctx.lineTo(width - 5 - length, y); ctx.stroke();
+                        }
+                    }
+                }
+            }
             Rectangle {
                 anchors.fill: parent; anchors.margins: material.optical ? 5 : 2
                 radius: Math.max(0, root.radius - (material.optical ? 5 : 2))
