@@ -102,11 +102,11 @@ def session():
                     const downloads = findItem(music.contentItem, "music-downloads");
                     const start = findItem(music.contentItem, "music-download-start");
                     if (!downloads || start.enabled) { console.error("MUSIC_DOWNLOAD_EMPTY_LINKS_FAILED"); Qt.exit(1); }
-                    downloads.backendIndex = 1;
-                    downloads.sourceIndex = 1;
-                    if (downloads.needsLinks) { console.error("MUSIC_DOWNLOAD_SOURCE_FAILED"); Qt.exit(1); }
-                    downloads.backendIndex = 0;
-                    if (!downloads.needsLinks || downloads.canDownload) { console.error("MUSIC_DOWNLOAD_BACKEND_RESET_FAILED"); Qt.exit(1); }
+                    const links = findItem(music.contentItem, "music-download-links");
+                    links.text = "https://open.spotify.com/track/example";
+                    if (!downloads.canDownload) { console.error("MUSIC_DOWNLOAD_LINKS_FAILED"); Qt.exit(1); }
+                    links.text = "";
+                    if (downloads.canDownload) { console.error("MUSIC_DOWNLOAD_EMPTY_LINKS_FAILED"); Qt.exit(1); }
                     console.log("MUSIC_ACCEPTANCE_PASSED tracks=" + music.tracks.length + " queue=" + music.queue.length);
                     console.log('MUSIC_GEOMETRY ' + music.contentItem.width + 'x' + music.contentItem.height + ' children=' + music.contentItem.children.length + ' root=' + music.contentItem.children[music.contentItem.children.length-1].width); music.contentItem.grabToImage(result => { result.saveToFile("/tmp/enclosure-music-acceptance.png"); Qt.quit(); });
                     stop();

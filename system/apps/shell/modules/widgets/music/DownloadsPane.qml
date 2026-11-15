@@ -15,21 +15,17 @@ ColumnLayout {
     property string status: "Ready"
     property bool failed: false
     property bool cancelling: false
-    property bool loginOnly: false
-    property int backendIndex: 0
-    property int sourceIndex: 0
     property string audioFormat: "ogg"
-    readonly property bool needsLinks: backendIndex === 0 || sourceIndex === 0
-    readonly property bool canDownload: !busy && service.running && folder.text.trim().length > 0 && (!needsLinks || links.text.trim().length > 0)
+    readonly property bool canDownload: !busy && service.running && folder.text.trim().length > 0 && links.text.trim().length > 0
     spacing: 16
     signal completed()
-    function start(login) {
-        if (busy || (!login && !canDownload)) return;
-        busy = true; failed = false; cancelling = false; loginOnly = login;
-        status = login ? "Signing in…" : "Downloading…";
+    function start() {
+        if (!canDownload) return;
+        busy = true; failed = false; cancelling = false;
+        status = "Downloading…";
         logText = "Starting…\n";
-        service.write(JSON.stringify({backend: backendIndex ? "zotify" : "spotdl", mode: backendIndex === 0 ? 0 : sourceIndex,
-            links: links.text, folder: folder.text, format: audioFormat, login: login}) + "\n");
+        service.write(JSON.stringify({backend: "spotdl", mode: 0,
+            links: links.text, folder: folder.text, format: audioFormat}) + "\n");
     }
     Process {
         id: service
@@ -45,8 +41,8 @@ ColumnLayout {
                     root.busy = false;
                     root.logText += message.code === 0 ? "Finished · check log for skipped items.\n" : "Stopped or failed · see log.\n";
                     root.failed = message.code !== 0 && !root.cancelling;
-                    root.status = root.cancelling ? "Cancelled" : message.code !== 0 ? "Needs attention" : root.loginOnly ? "Signed in" : "Finished";
-                    if (message.code === 0 && !root.loginOnly) root.completed();
+                    root.status = root.cancelling ? "Cancelled" : message.code !== 0 ? "Needs attention" : "Finished";
+                    if (message.code === 0) root.completed();
                 }
             }
         }
@@ -67,8 +63,7 @@ ColumnLayout {
     }
     Flow {
         Layout.fillWidth: true; Layout.preferredHeight: childrenRect.height; spacing: 8
-        ThemeButton { objectName: "music-download-start"; text: root.busy ? root.status : "Start download"; enabled: root.canDownload; highlighted: true; onClicked: root.start(false) }
-        ThemeButton { text: "Sign in with browser"; visible: root.backendIndex === 1; enabled: !root.busy && service.running; onClicked: root.start(true) }
+        ThemeButton { objectName: "music-download-start"; text: root.busy ? root.status : "Start download"; enabled: root.canDownload; highlighted: true; onClicked: root.start() }
         ThemeButton { text: root.cancelling ? "Cancelling…" : "Cancel"; visible: root.busy; enabled: !root.cancelling; onClicked: { root.cancelling = true; root.status = "Cancelling…"; service.write('{"cancel":true}\n'); } }
     }
     ScrollView {
@@ -84,41 +79,17 @@ ColumnLayout {
                     id: setup
                     anchors.fill: parent; anchors.margins: 20; spacing: 12
                     StyledText { text: "01  Choose your source"; font.bold: true; font.pixelSize: Styling.fontSize(2) }
-                    RowLayout {
-                        Repeater {
-                            model: ["spotDL", "Zotify"]
-                            delegate: ThemeButton {
-                                required property int index
-                                required property string modelData
-                                text: modelData; checked: root.backendIndex === index; enabled: !root.busy
-                                onClicked: root.backendIndex = index
-                            }
-                        }
-                    }
                     StyledText {
                         Layout.fillWidth: true; wrapMode: Text.WordWrap; color: Colors.overSurfaceVariant
-                        text: root.backendIndex === 0 ? "Match Spotify links to YouTube audio. No Spotify sign-in needed." : "Download Spotify audio. Sign in with your browser before your first download."
+                        text: "spotDL matches Spotify links to YouTube audio. No Spotify sign-in needed."
                     }
-                    Flow {
-                        Layout.fillWidth: true; Layout.preferredHeight: childrenRect.height; spacing: 8
-                        visible: root.backendIndex === 1
-                        Repeater {
-                            model: ["Links", "Liked songs", "Followed artists"]
-                            delegate: ThemeButton {
-                                required property int index
-                                required property string modelData
-                                text: modelData; checked: root.sourceIndex === index; enabled: !root.busy
-                                onClicked: root.sourceIndex = index
-                            }
-                        }
-                    }
-                    StyledText { visible: root.needsLinks; text: "Spotify links"; font.bold: true }
+                    StyledText { text: "Spotify links"; font.bold: true }
                     SearchInput {
                         id: links; objectName: "music-download-links"
-                        visible: root.needsLinks; Layout.fillWidth: true
+                        Layout.fillWidth: true
                         placeholderText: "Paste track, album or playlist links"; enabled: !root.busy
                     }
-                    StyledText { visible: root.needsLinks; text: "Separate multiple links with spaces."; color: Colors.overSurfaceVariant; font.pixelSize: Styling.fontSize(-2) }
+                    StyledText { text: "Separate multiple links with spaces."; color: Colors.overSurfaceVariant; font.pixelSize: Styling.fontSize(-2) }
                 }
             }
             StyledRect {
@@ -156,7 +127,7 @@ ColumnLayout {
                     ScrollView {
                         Layout.fillWidth: true; Layout.fillHeight: true; clip: true
                         TextArea {
-                            text: root.logText; placeholderText: "Download output and sign-in instructions will appear here."
+                            text: root.logText; placeholderText: "Download output will appear here."
                             readOnly: true; wrapMode: TextEdit.Wrap; selectByMouse: true
                             color: Colors.overSurface; placeholderTextColor: Colors.overSurfaceVariant
                             font.family: Config.theme.font; font.pixelSize: Styling.fontSize(-2)

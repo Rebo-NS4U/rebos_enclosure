@@ -21,6 +21,8 @@ class Downloads(unittest.TestCase):
                 proc.stdin.write(json.dumps(data)+'\n'); proc.stdin.flush()
             def read(): return json.loads(proc.stdout.readline())
             try:
+                send(backend='zotify', links='https://open.spotify.com/track/abc')
+                self.assertIn('Only spotDL', read()['error'])
                 send(links='invalid')
                 self.assertIn('error',read())
                 send(links='https://open.spotify.com/track/abc')
