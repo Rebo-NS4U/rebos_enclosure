@@ -98,4 +98,4 @@ The collapsed bar uses a dedicated shallow city cornice: a miniature skyline and
 
 ## Settings navigation
 
-Shell settings use a persistent category sidebar with selected states and descriptions, plus page shortcuts above the scrolling controls. Search remains available across categories and shows guidance when there are no matches. Narrow windows omit sidebar descriptions and icons to leave room for controls; settings grids reflow according to the remaining content width.
+Shell settings use wrapping category tabs at the top, plus page shortcuts above the full-width scrolling controls. Search remains available across categories and shows guidance when there are no matches. Theme previews choose their column count from the available grid width; labels wrap and cards grow to keep longer names visible in narrow windows.

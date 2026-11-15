@@ -339,242 +339,225 @@ Item {
                 }
             }
         }
-        RowLayout {
+        Flow {
+            id: mainTabs
+            objectName: "settings-main-tabs"
+            Layout.fillWidth: true
+            spacing: 8
+            Repeater {
+                model: root.categoryModel
+                delegate: SettingsButton {
+                    required property var modelData
+                    objectName: "settings-category-" + modelData.section
+                    text: modelData.label
+                    highlighted: modelData.sections.includes(root.currentSection)
+                    onClicked: root.openSection(modelData.section, "")
+                }
+            }
+        }
+        ListView {
+            id: searchResults
+            objectName: "settings-search-results"
+            Layout.fillWidth: true
+            Layout.preferredHeight: Math.min(contentHeight, root.height * 0.5)
+            visible: root.searchQuery.length > 0
+            clip: true
+            model: visible ? root.filteredSections : []
+            currentIndex: root.selectedIndex
+            ScrollBar.vertical: ScrollBar {}
+            delegate: SettingsButton {
+                required property var modelData
+                required property int index
+                width: searchResults.width
+                text: modelData.label + (modelData.subLabel ? " · " + modelData.subLabel : "")
+                highlighted: index === root.selectedIndex
+                onClicked: root.openSection(modelData.section, modelData.subSection)
+            }
+        }
+        StyledText {
+            Layout.fillWidth: true
+            visible: root.searchQuery.length > 0 && root.filteredSections.length === 0
+            text: "No settings found. Try a different word or browse a category."
+            color: Colors.overSurfaceVariant
+            wrapMode: Text.WordWrap
+        }
+        // Content area with animated transitions
+        Item {
+            id: contentArea
             Layout.fillWidth: true
             Layout.fillHeight: true
-            spacing: 20
-            ColumnLayout {
-                id: mainTabs
-                objectName: "settings-main-tabs"
-                Layout.preferredWidth: root.width >= 800 ? 240 : 160
-                Layout.maximumWidth: Layout.preferredWidth
-                Layout.minimumWidth: 0
-                Layout.fillHeight: true
-                spacing: 8
-                Repeater {
-                    model: root.categoryModel
-                    delegate: SettingsSectionCard {
-                        required property var modelData
-                        objectName: "settings-category-" + modelData.section
-                        text: modelData.label
-                        description: root.width >= 800 ? modelData.subLabel : ""
-                        glyph: root.width >= 800 ? modelData.icon : ""
-                        selected: modelData.sections.includes(root.currentSection)
-                        onClicked: root.openSection(modelData.section, "")
-                    }
-                }
-                Item { Layout.fillHeight: true }
-            }
-            ColumnLayout {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                Layout.minimumWidth: 0
-                spacing: 12
-                ListView {
-                    id: searchResults
-                    objectName: "settings-search-results"
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: Math.min(contentHeight, root.height * 0.5)
-                    visible: root.searchQuery.length > 0
-                    clip: true
-                    model: visible ? root.filteredSections : []
-                    currentIndex: root.selectedIndex
-                    ScrollBar.vertical: ScrollBar {}
-                    delegate: SettingsButton {
-                        required property var modelData
-                        required property int index
-                        width: searchResults.width
-                        text: modelData.label + (modelData.subLabel ? " · " + modelData.subLabel : "")
-                        highlighted: index === root.selectedIndex
-                        onClicked: root.openSection(modelData.section, modelData.subSection)
-                    }
-                }
-                StyledText {
-                    Layout.fillWidth: true
-                    visible: root.searchQuery.length > 0 && root.filteredSections.length === 0
-                    text: "No settings found. Try a different word or browse a category."
-                    color: Colors.overSurfaceVariant
-                    wrapMode: Text.WordWrap
-                }
-                // Content area with animated transitions
-                Item {
-                    id: contentArea
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    clip: true
+            clip: true
 
-                    property int previousSection: 0
-                    readonly property int maxContentWidth: Math.max(0, width - 24)
+            property int previousSection: 0
+            readonly property int maxContentWidth: Math.max(0, width - 24)
 
-                    // Track section changes for animation direction
-                    onVisibleChanged: {
-                        if (visible) {
-                            contentArea.previousSection = root.currentSection;
-                        }
-                    }
-
-                    Connections {
-                        target: root
-                        function onCurrentSectionChanged() {
-                            contentArea.previousSection = root.currentSection;
-                        }
-                    }
-
-                    // Panel definitions for Loader
-                    readonly property var panelComponents: [
-                        {
-                            component: "WifiPanel.qml",
-                            section: 0
-                        },
-                        {
-                            component: "BluetoothPanel.qml",
-                            section: 1
-                        },
-                        {
-                            component: "AudioMixerPanel.qml",
-                            section: 2
-                        },
-                        {
-                            component: "../../config/AiPanel.qml",
-                            section: 3
-                        },
-                        {
-                            component: "ThemePanel.qml",
-                            section: 4
-                        },
-                        {
-                            component: "SystemPanel.qml",
-                            section: 5
-                        },
-                        {
-                            component: "ShellPanel.qml",
-                            section: 6
-                        },
-                        {
-                            component: "KeybindingsPanel.qml",
-                            section: 7
-                        },
-                        {
-                            component: "WindowRulesPanel.qml",
-                            section: 8
-                        },
-                        {
-                            component: "DisplayPanel.qml",
-                            section: 9
-                        },
-                        {
-                            component: "GithubPanel.qml",
-                            section: 10
-                        }
-                    ]
-
-                    Column {
-                        id: categoryHeading
-                        visible: true
-                        width: parent.width
-                        spacing: 6
-                        StyledText { text: root.activeCategory.label; font.pixelSize: Styling.fontSize(10); font.bold: true }
-                        StyledText { text: root.activeCategory.subLabel; color: Colors.overSurfaceVariant; width: parent.width; wrapMode: Text.WordWrap }
-                        Flow {
-                            width: parent.width
-                            spacing: 8
-                            Repeater {
-                                model: root.categoryPages
-                                delegate: SettingsButton {
-                                    required property var modelData
-                                    objectName: "settings-page-" + modelData.section
-                                    text: modelData.label
-                                    highlighted: root.currentSection === modelData.section
-                                    onClicked: root.openSection(modelData.section, "")
-                                }
-                            }
-                        }
-                    }
-
-                    // Wheel input belongs to navigation. This layer accepts no clicks or drags.
-                    MouseArea {
-                        id: wheelNavigation
-                        objectName: "settings-scroll-wheel"
-                        scrollGestureEnabled: true
-                        enabled: {
-                            for (let i = 0; i < categoryPanels.count; i++) {
-                                if (categoryPanels.itemAt(i)?.item?.colorPickerActive) return false;
-                            }
-                            return true;
-                        }
-                        anchors.fill: categoryScroll
-                        z: 2
-                        acceptedButtons: Qt.NoButton
-                        onWheel: wheel => {
-                            const delta = wheel.pixelDelta.y !== 0 ? wheel.pixelDelta.y : wheel.angleDelta.y / 2;
-                            if (delta === 0 || (wheel.modifiers & Qt.ControlModifier)) { wheel.accepted = false; return; }
-                            function scrollerAt(item) {
-                                if (!item.visible || !item.enabled) return null;
-                                const point = item.mapFromItem(wheelNavigation, wheel.x, wheel.y);
-                                if (item.clip && !item.contains(point)) return null;
-                                // Prefer the deepest list that can still scroll in this direction.
-                                for (let i = item.children.length - 1; i >= 0; i--) {
-                                    const nested = scrollerAt(item.children[i]);
-                                    if (nested) return nested;
-                                }
-                                if (item.interactive && item.contentY !== undefined && item.contentHeight > item.height && item.contains(point)) {
-                                    const start = item.originY || 0;
-                                    const end = start + item.contentHeight - item.height;
-                                    if ((delta > 0 && item.contentY > start) || (delta < 0 && item.contentY < end)) return item;
-                                }
-                                return null;
-                            }
-                            const target = scrollerAt(categoryScroll.contentItem) || categoryScroll;
-                            const start = target.originY || 0;
-                            target.cancelFlick();
-                            target.contentY = Math.max(start, Math.min(start + Math.max(0, target.contentHeight - target.height), target.contentY - delta));
-                            wheel.accepted = true;
-                        }
-                    }
-
-                    Flickable {
-                        id: categoryScroll
-                        objectName: "settings-category-scroll"
-                        anchors.fill: parent
-                        anchors.topMargin: categoryHeading.visible ? categoryHeading.height + 20 : 0
-                        clip: true
-                        contentHeight: categoryColumn.height
-                        boundsBehavior: Flickable.StopAtBounds
-                        ScrollBar.vertical: ScrollBar {}
-                        Column {
-                            id: categoryColumn
-                            width: parent.width
-                            spacing: Styling.spacing(32)
-                            Repeater {
-                                id: categoryPanels
-                                model: root.activeCategory.sections
-                                delegate: Loader {
-                                    id: categoryLoader
-                                    required property int modelData
-                                    readonly property int sectionId: modelData
-                                    objectName: "settings-panel-" + sectionId
-                                    width: categoryColumn.width
-                                    readonly property var scrollContent: item ? Array.from(item.children).find(child => child.contentHeight !== undefined && child.contentY !== undefined) || null : null
-                                    // Unroll ordinary panel scrollers; device lists retain their own bounded viewport.
-                                    readonly property bool expandContent: sectionId !== 7 && scrollContent !== null && scrollContent.model === undefined
-                                    height: item?.groupContainer ? 0 : expandContent ? Math.max(1, scrollContent.contentHeight) : Math.max(500, categoryScroll.height)
-                                    source: contentArea.panelComponents[sectionId]?.component ?? ""
-                                    asynchronous: true
-                                    onLoaded: {
-                                        item.maxContentWidth = Qt.binding(() => contentArea.maxContentWidth);
-                                        if (expandContent) {
-                                            scrollContent.interactive = false;
-                                            scrollContent.clip = false;
-                                        }
-                                        Qt.callLater(root.combineThemeDropdowns);
-                                    }
-                                }
-                            }
-                        }
-                    }
-
+            // Track section changes for animation direction
+            onVisibleChanged: {
+                if (visible) {
+                    contentArea.previousSection = root.currentSection;
                 }
             }
+
+            Connections {
+                target: root
+                function onCurrentSectionChanged() {
+                    contentArea.previousSection = root.currentSection;
+                }
+            }
+
+            // Panel definitions for Loader
+            readonly property var panelComponents: [
+                {
+                    component: "WifiPanel.qml",
+                    section: 0
+                },
+                {
+                    component: "BluetoothPanel.qml",
+                    section: 1
+                },
+                {
+                    component: "AudioMixerPanel.qml",
+                    section: 2
+                },
+                {
+                    component: "../../config/AiPanel.qml",
+                    section: 3
+                },
+                {
+                    component: "ThemePanel.qml",
+                    section: 4
+                },
+                {
+                    component: "SystemPanel.qml",
+                    section: 5
+                },
+                {
+                    component: "ShellPanel.qml",
+                    section: 6
+                },
+                {
+                    component: "KeybindingsPanel.qml",
+                    section: 7
+                },
+                {
+                    component: "WindowRulesPanel.qml",
+                    section: 8
+                },
+                {
+                    component: "DisplayPanel.qml",
+                    section: 9
+                },
+                {
+                    component: "GithubPanel.qml",
+                    section: 10
+                }
+            ]
+
+            Column {
+                id: categoryHeading
+                visible: true
+                width: parent.width
+                spacing: 6
+                StyledText { text: root.activeCategory.label; font.pixelSize: Styling.fontSize(10); font.bold: true }
+                StyledText { text: root.activeCategory.subLabel; color: Colors.overSurfaceVariant; width: parent.width; wrapMode: Text.WordWrap }
+                Flow {
+                    width: parent.width
+                    spacing: 8
+                    Repeater {
+                        model: root.categoryPages
+                        delegate: SettingsButton {
+                            required property var modelData
+                            objectName: "settings-page-" + modelData.section
+                            text: modelData.label
+                            highlighted: root.currentSection === modelData.section
+                            onClicked: root.openSection(modelData.section, "")
+                        }
+                    }
+                }
+            }
+
+            // Wheel input belongs to navigation. This layer accepts no clicks or drags.
+            MouseArea {
+                id: wheelNavigation
+                objectName: "settings-scroll-wheel"
+                scrollGestureEnabled: true
+                enabled: {
+                    for (let i = 0; i < categoryPanels.count; i++) {
+                        if (categoryPanels.itemAt(i)?.item?.colorPickerActive) return false;
+                    }
+                    return true;
+                }
+                anchors.fill: categoryScroll
+                z: 2
+                acceptedButtons: Qt.NoButton
+                onWheel: wheel => {
+                    const delta = wheel.pixelDelta.y !== 0 ? wheel.pixelDelta.y : wheel.angleDelta.y / 2;
+                    if (delta === 0 || (wheel.modifiers & Qt.ControlModifier)) { wheel.accepted = false; return; }
+                    function scrollerAt(item) {
+                        if (!item.visible || !item.enabled) return null;
+                        const point = item.mapFromItem(wheelNavigation, wheel.x, wheel.y);
+                        if (item.clip && !item.contains(point)) return null;
+                        // Prefer the deepest list that can still scroll in this direction.
+                        for (let i = item.children.length - 1; i >= 0; i--) {
+                            const nested = scrollerAt(item.children[i]);
+                            if (nested) return nested;
+                        }
+                        if (item.interactive && item.contentY !== undefined && item.contentHeight > item.height && item.contains(point)) {
+                            const start = item.originY || 0;
+                            const end = start + item.contentHeight - item.height;
+                            if ((delta > 0 && item.contentY > start) || (delta < 0 && item.contentY < end)) return item;
+                        }
+                        return null;
+                    }
+                    const target = scrollerAt(categoryScroll.contentItem) || categoryScroll;
+                    const start = target.originY || 0;
+                    target.cancelFlick();
+                    target.contentY = Math.max(start, Math.min(start + Math.max(0, target.contentHeight - target.height), target.contentY - delta));
+                    wheel.accepted = true;
+                }
+            }
+
+            Flickable {
+                id: categoryScroll
+                objectName: "settings-category-scroll"
+                anchors.fill: parent
+                anchors.topMargin: categoryHeading.visible ? categoryHeading.height + 20 : 0
+                clip: true
+                contentHeight: categoryColumn.height
+                boundsBehavior: Flickable.StopAtBounds
+                ScrollBar.vertical: ScrollBar {}
+                Column {
+                    id: categoryColumn
+                    width: parent.width
+                    spacing: Styling.spacing(32)
+                    Repeater {
+                        id: categoryPanels
+                        model: root.activeCategory.sections
+                        delegate: Loader {
+                            id: categoryLoader
+                            required property int modelData
+                            readonly property int sectionId: modelData
+                            objectName: "settings-panel-" + sectionId
+                            width: categoryColumn.width
+                            readonly property var scrollContent: item ? Array.from(item.children).find(child => child.contentHeight !== undefined && child.contentY !== undefined) || null : null
+                            // Unroll ordinary panel scrollers; device lists retain their own bounded viewport.
+                            readonly property bool expandContent: sectionId !== 7 && scrollContent !== null && scrollContent.model === undefined
+                            height: item?.groupContainer ? 0 : expandContent ? Math.max(1, scrollContent.contentHeight) : Math.max(500, categoryScroll.height)
+                            source: contentArea.panelComponents[sectionId]?.component ?? ""
+                            asynchronous: true
+                            onLoaded: {
+                                item.maxContentWidth = Qt.binding(() => contentArea.maxContentWidth);
+                                if (expandContent) {
+                                    scrollContent.interactive = false;
+                                    scrollContent.clip = false;
+                                }
+                                Qt.callLater(root.combineThemeDropdowns);
+                            }
+                        }
+                    }
+                }
+            }
+
         }
     }
 }

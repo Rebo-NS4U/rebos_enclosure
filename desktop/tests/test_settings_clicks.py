@@ -308,7 +308,7 @@ ShellRoot {
       fixture.check(settings.categoryModel[1].sections.join(",") === "9,7,8", "Desktop contains displays, input and window rules");
       let firstTab = fixture.find(settings, "settings-category-4");
       let nextTab = fixture.find(settings, "settings-category-9");
-      fixture.check(firstTab && nextTab && nextTab.y > firstTab.y && nextTab.x === firstTab.x, "Main categories form a persistent sidebar");
+      fixture.check(firstTab && nextTab && nextTab.x > firstTab.x && nextTab.y === firstTab.y, "Main categories sit across the top");
       tester.mouseClick(nextTab); tester.wait(100);
       let shortcutsPage = fixture.find(settings, "settings-page-7");
       fixture.check(shortcutsPage && shortcutsPage.visible, "Category exposes page shortcuts");
@@ -356,16 +356,23 @@ ShellRoot {
       settings.searchQuery = "";
       tester.wait(50);
       fixture.check(settings.currentSection === 4 && settings.selectedIndex === 0 && settings.filteredSections.length === 4, "Clearing search preserves page and category");
-      settings.width = 1100;
+      settings.width = 850;
       settings.openSection(4, "colors"); tester.wait(150);
       fixture.check(!fixture.find(loader.item, "palette-open-palette"), "Color controls have no extra menu");
       let narrowWidth = loader.item.contentWidth;
       let paletteGrid = fixture.find(loader.item, "palette-sections");
       fixture.check(paletteGrid && paletteGrid.columns === 2, "Color tools use a compact grid in normal windows");
       settings.width = 1700; tester.wait(100);
-      fixture.check(loader.item.contentWidth > narrowWidth + 400, "Loaded settings page expands with the window");
+      fixture.check(loader.item.contentWidth > narrowWidth + 500, "Loaded settings page expands with the window");
       fixture.check(paletteGrid.columns === 2, "Color sections use two columns in wide windows");
       settings.width = 600; tester.wait(100);
+      // Preview cards must remain inside their grid after shrinking the window.
+      let previewGrid = fixture.find(settings, "theme-preview-grid");
+      for (let child of previewGrid.children) {
+       if (!child.objectName.startsWith("shell-style-")) continue;
+       fixture.check(child.x >= 0 && child.x + child.width <= previewGrid.width + 1, "Theme previews stay within the window");
+       fixture.check(child.height >= child.implicitContentHeight + child.padding * 2, "Theme labels fit their cards");
+      }
       fixture.check(paletteGrid.columns === 1 && loader.item.contentWidth < narrowWidth, "Color sections reflow when shrinking");
       fixture.check(!fixture.find(loader.item, "palette-navigation"), "No color subsection navigation");
       for (const pageId of ["picker", "presets", "wallpaper", "apps", "palette"])
@@ -412,7 +419,7 @@ ShellRoot {
       tester.mouseWheel(nestedList, 50, 50, 0, -120); tester.wait(40);
       fixture.check(scroll.contentY > pageBeforeList, "List end hands wheel back to settings page");
       nestedList.destroy();
-      settings.width = 2200; settings.height = 1080;
+      settings.width = 1920; settings.height = 1080;
       settings.openSection(4, ""); tester.wait(100);
       function collapseGroups(item) {
        if (item.collapsible) item.expanded = false;

@@ -17,7 +17,7 @@ SettingsGroup {
     GridLayout {
         objectName: "theme-preview-grid"
         uniformCellWidths: true
-        columns: root.width >= 1440 ? 6 : root.width >= 640 ? 3 : root.width >= 380 ? 2 : 1
+        columns: width >= 1440 ? 6 : width >= 640 ? 3 : width >= 380 ? 2 : 1
         Layout.fillWidth: true
         columnSpacing: Styling.spacing(10)
         rowSpacing: Styling.spacing(10)
@@ -32,7 +32,8 @@ SettingsGroup {
                 readonly property var previewPalette: ShellStyles.themePalette(modelData.id)
                 readonly property var sample: Styling.styleConfig(modelData.id, "bg")
                 Layout.fillWidth: true
-                implicitHeight: 104
+                Layout.minimumWidth: 0
+                implicitHeight: Math.max(104, implicitContentHeight + padding * 2)
                 padding: 10
                 onClicked: {
                     Config.theme.shellStyle = modelData.id;
@@ -77,6 +78,8 @@ SettingsGroup {
                         StyledText {
                             font.family: ShellStyles.fontForStyle(card.modelData.id, Config.theme.font)
                             text: card.modelData.label
+                            wrapMode: Text.WordWrap
+                            Layout.minimumWidth: 0
                             font.pixelSize: Styling.fontSize(-1)
                             font.bold: true
                             Layout.fillWidth: true
