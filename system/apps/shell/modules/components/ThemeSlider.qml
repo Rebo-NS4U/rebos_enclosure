@@ -12,7 +12,7 @@ Slider {
     // A small pointer detent at each quarter; programmatic updates stay exact.
     function snapQuarter(ratio: real): real {
         const quarter = Math.round(ratio * 4) / 4;
-        return quarter > 0 && quarter < 1 && Math.abs(ratio - quarter) <= 0.020000001
+        return quarter > 0 && quarter < 1 && Math.abs(ratio - quarter) <= 0.050000001
             ? quarter : ratio;
     }
 
