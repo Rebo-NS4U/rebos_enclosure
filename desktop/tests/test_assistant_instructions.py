@@ -42,6 +42,22 @@ ShellRoot {
             check(session.codexPreset === "coding", "new chats select dweebo-Do");
             let defaultMode = session.codexPresets.find(item => item.id === session.codexPreset);
             check(defaultMode.name === "dweebo-Do" && defaultMode.model === "gpt-6.1-sol" && defaultMode.effort === "medium", "default selects the Do model and effort");
+            // Exercise every role through the actual prompt builder and mode-change gate.
+            const roleMarkers = {
+                coding: "Coding mode:", deep: "root-cause debugging",
+                symphony: "acceptance criterion", light_coding: "Linux configuration",
+                quick: "command syntax", knowledge: "conceptual learning"
+            };
+            session.currentSessionId = "role-specialization-test";
+            session.instructionSessionId = session.currentSessionId;
+            for (const role of session.codexPresets) {
+                session.instructionModeGuidance = "previous role";
+                const changed = session.standingInstructions(role, false);
+                check(changed[0].text === role.guidance && changed[0].text.includes(roleMarkers[role.id]), role.id + " specialized guidance delivered after switching");
+                session.instructionModeGuidance = role.guidance;
+                check(!session.standingInstructions(role, false).some(item => item.text === role.guidance), role.id + " guidance does not repeat");
+                check(session.standingInstructions(role, true)[0].text === role.guidance, role.id + " guidance restored for forced delivery");
+            }
             let deep = session.codexPresets.find(item => item.id === "deep");
             check(deep && deep.model === defaultMode.model && deep.effort === "high", "Deep offers Sol with high reasoning");
             session.sessionConfigOptions = [
