@@ -1330,7 +1330,7 @@ def ceramic_palette(accents):
 
 
 def frame_rows(rows, columns, accents, color):
-    """A fine glass case, with an open center and a weighted lower plinth."""
+    """A fine glass case with a consistent charcoal backdrop and lower plinth."""
     width = 57
     margin = " " * max(0, (columns - width - 2) // 2)
     reset = "\033[0m" if color else ""
@@ -1340,11 +1340,19 @@ def frame_rows(rows, columns, accents, color):
     glass = "\033[0;38;2;{};{};{}m".format(
         *(round(145 * 0.75 + channel * 0.25) for channel in rgb)
     ) if color else ""
+    background = "\033[48;2;24;24;24m" if color else ""
+    def pane(text):
+        # Material inks reset SGR before changing foreground; restore the pane
+        # background after each reset so neither glyphs nor spaces punch holes.
+        if not color:
+            return text
+        text = re.sub(r"\x1b\[[0-9;]*m", lambda match: match[0] + background, text)
+        return background + text + reset
     def edge(text):
-        return glass + text + reset
+        return pane(glass + text)
     top = margin + edge("╭" + "─" * width + "╮")
     bottom = margin + edge("╰" + "━" * width + "╯")
-    return [top] + [margin + edge("│") + row + reset + edge("│")
+    return [top] + [margin + edge("│") + pane(row) + edge("│")
                     for row in rows] + [bottom]
 
 

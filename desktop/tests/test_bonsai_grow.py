@@ -466,7 +466,7 @@ class BonsaiGrowTests(unittest.TestCase):
                 self.assertTrue(all(len(row) <= columns for row in rows))
                 self.assertNotIn('\033', image)
 
-    def test_terrarium_preserves_tree_and_uses_only_foreground_ink(self):
+    def test_terrarium_preserves_tree_and_has_a_contained_background(self):
         import re
         canvas = bonsai.specimen_canvas(30, 42)
         image = bonsai.render(30, 42, True, 59, fixed_height=True)
@@ -477,8 +477,35 @@ class BonsaiGrowTests(unittest.TestCase):
             for x, (glyph, ink) in enumerate(row):
                 if glyph != ' ':
                     self.assertEqual(plain[y + 1][x + 1], glyph)
-        self.assertNotIn(';48;', image)
+        self.assertIn("\033[48;2;24;24;24m", image)
         self.assertEqual(plain[3][3], '╱')
+
+    def test_terrarium_background_is_uniform_and_does_not_leak(self):
+        import re
+        backgrounds = set()
+        for theme in (['#fafafa'] * 3, ['#111111'] * 3, ['#fa4050'] * 3):
+            for day in (0, 30):
+                image = bonsai.render(day, 42, True, 80, theme, fixed_height=True)
+                for row in image.splitlines():
+                    background, column = None, 0
+                    for token in re.split(r'(\x1b\[[0-9;]*m)', row):
+                        if token.startswith('\x1b['):
+                            codes = list(map(int, token[2:-1].split(';')))
+                            if codes[0] == 0:
+                                background = None
+                            if codes[:2] == [48, 2]:
+                                background = tuple(codes[2:])
+                        else:
+                            for glyph in token:
+                                if column < 10:
+                                    self.assertIsNone(background)
+                                else:
+                                    self.assertEqual(background, (24, 24, 24))
+                                    backgrounds.add(background)
+                                column += 1
+                    self.assertIsNone(background, 'reset background before the prompt')
+                    self.assertEqual(column, 69)
+        self.assertEqual(backgrounds, {(24, 24, 24)})
 
     def test_seeded_wood_palette_has_variety_and_readable_shading(self):
         import re
@@ -630,7 +657,7 @@ class BonsaiGrowTests(unittest.TestCase):
                 rows = bonsai.render(30, seed, True, 59, fixed_height=True).splitlines()[21:23]
             bright = {rgb(ink) for row in rows for ink in re.findall(r'\x1b\[[0-9;]*m', row)
                       if len(re.findall(r'\d+', ink)) >= 5 and max(rgb(ink)) > 100}
-            frame_ink = rgb(re.findall(r"\x1b\[[0-9;]*m", rows[0])[0])
+            frame_ink = rgb(re.findall(r"\x1b\[0;38;2;[0-9;]*m", rows[0])[0])
             self.assertEqual(bright - {frame_ink}, {main, accent})
         neutral = bonsai.ceramic_palette(('#eeeeee', '#111111', '#888888'))
         self.assertTrue(all(len(set(rgb(ink))) == 1 for ink in neutral.values()))
@@ -731,7 +758,7 @@ class BonsaiGrowTests(unittest.TestCase):
                     self.assertIn(bonsai.wood_palette(seed)['wood'], image)
                     pot_inlay = bonsai.specimen_palette(seed)['ceramic_inlay_main']
                     self.assertIn(pot_inlay, image)
-                    self.assertNotIn('\033[48;', image)
+                    self.assertIn('\033[48;2;24;24;24m', image)
                     self.assertIn(bonsai.wood_palette(seed)['bark'], image)
                     self.assertEqual(state.read_text(), original)
 
@@ -1032,7 +1059,8 @@ class BonsaiGrowTests(unittest.TestCase):
             self.assertEqual(bonsai.specimen_palette(42, theme)['blossom'], expected)
             with patch.object(bonsai, 'terminal_leaf_palette', return_value=theme):
                 image = bonsai.render(30, 42, True, 59)
-            self.assertTrue(any(expected + glyph in image for glyph in bonsai.BLOSSOM_FORMS))
+            self.assertTrue(any(expected + "\033[48;2;24;24;24m" + glyph in image
+                                for glyph in bonsai.BLOSSOM_FORMS))
 
     def test_blossoms_only_replace_existing_foliage_late_in_growth(self):
         for seed in range(48):
