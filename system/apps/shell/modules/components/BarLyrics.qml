@@ -21,7 +21,7 @@ Item {
     property bool available: true
     readonly property real gap: 12
     // Match the tiled workspace edge while keeping breathing room by the island.
-    readonly property real edgeMargin: inlineMode ? 0 : 4
+    readonly property real edgeMargin: inlineMode ? 0 : 8
     readonly property real sideWidth: inlineMode && !splitAroundCenter ? width / 2 : Math.max(0, Math.min(islandLeft - gap - edgeMargin,
         width - islandRight - gap - edgeMargin))
     readonly property Region backgroundBlur: Region {
@@ -197,9 +197,9 @@ Item {
         visible: lyric.trim() !== "" || root.visualizerMix > 0 || (upcoming && root.estimatedTiming)
         variant: "bg"
         backgroundOpacity: root.inlineMode ? 0 : BarAppearance.panelOpacity(false)
-        topLeftRadius: BarAppearance.framed ? Styling.radius(4) : 0
+        topLeftRadius: root.inlineMode ? (BarAppearance.framed ? Styling.radius(4) : 0) : Math.min(height / 2, Styling.radius(4))
         topRightRadius: topLeftRadius
-        bottomLeftRadius: BarAppearance.themedCorners ? Styling.radius(4) : height / 2
+        bottomLeftRadius: root.inlineMode ? (BarAppearance.themedCorners ? Styling.radius(4) : height / 2) : topLeftRadius
         bottomRightRadius: bottomLeftRadius
         border.width: !root.inlineMode && BarAppearance.framed ? 1 : 0
         border.color: BarAppearance.panelBorder(false)
