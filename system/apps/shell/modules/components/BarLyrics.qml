@@ -199,7 +199,7 @@ Item {
         backgroundOpacity: root.inlineMode ? 0 : BarAppearance.panelOpacity(false)
         topLeftRadius: root.inlineMode ? (BarAppearance.framed ? Styling.radius(4) : 0) : Math.min(height / 2, Styling.radius(4))
         topRightRadius: topLeftRadius
-        bottomLeftRadius: root.inlineMode ? (BarAppearance.themedCorners ? Styling.radius(4) : height / 2) : topLeftRadius
+        bottomLeftRadius: root.inlineMode ? Styling.radius(0) : topLeftRadius
         bottomRightRadius: bottomLeftRadius
         border.width: !root.inlineMode && BarAppearance.framed ? 1 : 0
         border.color: BarAppearance.panelBorder(false)

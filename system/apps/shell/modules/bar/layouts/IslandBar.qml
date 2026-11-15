@@ -761,8 +761,8 @@ Item {
                 enabled: Config.animDuration > 0
                 NumberAnimation { duration: Config.animDuration; easing.type: Motion.enterCurve }
             }
-            bottomLeftRadius: BarAppearance.themedCorners ? root.cornerRadius : (root.currentMode === "osd") ? (root.targetHeight / 2) : ((root.isExpanded || root.retractingToHidden) ? root.cornerRadius : (root.islandHeight / 2))
-            bottomRightRadius: BarAppearance.themedCorners ? root.cornerRadius : (root.currentMode === "osd") ? (root.targetHeight / 2) : ((root.isExpanded || root.retractingToHidden) ? root.cornerRadius : (root.islandHeight / 2))
+            bottomLeftRadius: root.cornerRadius
+            bottomRightRadius: root.cornerRadius
 
             Behavior on bottomLeftRadius {
                 enabled: Config.animDuration > 0

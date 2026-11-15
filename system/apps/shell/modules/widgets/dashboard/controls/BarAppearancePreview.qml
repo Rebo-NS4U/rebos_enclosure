@@ -30,7 +30,7 @@ StyledRect {
         height: Styling.fontSize(0) * 2.6
         variant: "bg"
         backgroundOpacity: BarAppearance.panelOpacity(false)
-        radius: height / 2
+        radius: Styling.radius(0)
         border.width: BarAppearance.bordered ? 1 : 0
         border.color: BarAppearance.panelBorder(false)
         StyledRect {
@@ -67,7 +67,7 @@ StyledRect {
                 variant: "transparent"
                 enableBorder: false
                 color: BarAppearance.clockTint(false)
-                radius: height / 2
+                radius: Styling.radius(0)
                 implicitWidth: clock.implicitWidth + Styling.fontSize(0)
                 implicitHeight: Styling.fontSize(0) * 1.9
                 StyledText {
