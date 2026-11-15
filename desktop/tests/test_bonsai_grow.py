@@ -6,6 +6,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 import unittest
+from unittest.mock import patch
 
 SOURCE = Path(__file__).resolve().parents[2] / 'system/bin/bonsai-grow'
 loader = importlib.machinery.SourceFileLoader('bonsai_grow', str(SOURCE))
@@ -15,6 +16,32 @@ loader.exec_module(bonsai)
 
 
 class BonsaiGrowTests(unittest.TestCase):
+    def test_transparent_materials_gain_definition_without_changing_accents(self):
+        import json
+        import re
+        from unittest.mock import patch
+        theme = ['#85b470', '#b8ce93', '#67bca3']
+        def brightness(ink):
+            return sum(map(int, re.findall(r'\d+', ink)[-3:]))
+        with tempfile.TemporaryDirectory() as directory:
+            cache = Path(directory) / 'rebos_shell'
+            cache.mkdir()
+            path = cache / 'effective-palette.json'
+            with patch.dict(os.environ, {'XDG_CACHE_HOME': directory}):
+                path.write_text(json.dumps({'opacity': 1}))
+                opaque = bonsai.specimen_palette(42, theme)
+                path.write_text(json.dumps({'opacity': 0.48}))
+                glass = bonsai.specimen_palette(42, theme)
+                for role in ('bark', 'wood', 'woodlight', 'ceramic_body_11', 'ceramic_foot_11'):
+                    self.assertGreater(brightness(glass[role]), brightness(opaque[role]))
+                for role in ('leaf4', 'ceramic_inlay_main', 'ceramic_inlay_accent'):
+                    self.assertEqual(glass[role], opaque[role])
+                for invalid in (None, '0.5', True, float('nan')):
+                    path.write_text(json.dumps({'opacity': invalid}))
+                    self.assertEqual(bonsai.transparency_lift(), 0)
+                path.write_text('invalid')
+                self.assertEqual(bonsai.transparency_lift(), 0)
+
     def test_standalone_specimen(self):
         palette = ['#85b470', '#b8ce93', '#67bca3']
         image = bonsai.render(30, 42, False, 80, palette)
@@ -483,7 +510,8 @@ class BonsaiGrowTests(unittest.TestCase):
                                  bonsai.wood_palette(42, ['#6080dc'] * 3))
                 self.assertIn(bonsai.wood_palette(42)['wood'], bonsai.render(30, 42))
 
-    def test_green_leaves_get_brown_wood_and_red_leaves_get_red_wood(self):
+    @patch.object(bonsai, "transparency_lift", return_value=0)
+    def test_green_leaves_get_brown_wood_and_red_leaves_get_red_wood(self, _lift):
         import colorsys
         import re
         for seed in range(100):
@@ -559,7 +587,8 @@ class BonsaiGrowTests(unittest.TestCase):
             self.assertIn(palette['ceramic_foot_11'], colored)
             self.assertIn(palette['ceramic_inlay_main'], colored)
 
-    def test_ceramic_uses_two_solid_enamels_and_a_subdued_bowl(self):
+    @patch.object(bonsai, "transparency_lift", return_value=0)
+    def test_ceramic_uses_two_solid_enamels_and_a_subdued_bowl(self, _lift):
         import re
         from unittest.mock import patch
         def rgb(ink):
@@ -613,7 +642,8 @@ class BonsaiGrowTests(unittest.TestCase):
             self.assertGreater(red, green)
             self.assertGreaterEqual(green, blue)
 
-    def test_dark_wood_and_vibrant_pot_patterns(self):
+    @patch.object(bonsai, "transparency_lift", return_value=0)
+    def test_dark_wood_and_vibrant_pot_patterns(self, _lift):
         import colorsys
         import re
         for accent in ('#70bb50', '#6080dc', '#db6095', '#eeeeee'):

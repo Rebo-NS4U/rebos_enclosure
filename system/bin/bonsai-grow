@@ -38,6 +38,19 @@ def wallpaper_palette():
         return fallback
 
 
+def transparency_lift():
+    """Lift quiet materials as wallpaper shows through the terminal surface."""
+    cache = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache"))
+    try:
+        data = json.loads((cache / "rebos_shell/effective-palette.json").read_text())
+        opacity = data.get("opacity", 1)
+        if type(opacity) not in (int, float) or not math.isfinite(opacity):
+            return 0.0
+        return 1 - max(0.0, min(1.0, opacity))
+    except (OSError, ValueError, AttributeError):
+        return 0.0
+
+
 def preview_identity(seed):
     directory = (
         Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local/state"))
@@ -1291,7 +1304,6 @@ def pot_rows(seed):
 POT_ACCENT_MARKS = frozenset("◇◆·╳┬┴│╷╴╶")
 
 
-@functools.lru_cache(maxsize=32)
 def ceramic_palette(accents):
     """Two solid enamels above a dark ceramic body; no color gradient."""
     palette = {}
@@ -1306,12 +1318,13 @@ def ceramic_palette(accents):
     primary = [int(accents[0][i:i + 2], 16) / 255 for i in (1, 3, 5)]
     hue, saturation, _ = colorsys.rgb_to_hsv(*primary)
     tint = colorsys.hsv_to_rgb(hue, saturation * 0.08, 1)
+    lift = transparency_lift()
     for column in range(23):
         highlight = math.exp(-((column / 22 - 0.32) / 0.38) ** 2)
         for material, value in (("rim", 0.28 + 0.06 * highlight),
                                 ("body", 0.22 + 0.04 * highlight),
                                 ("foot", 0.17 + 0.04 * highlight)):
-            rgb = [round(channel * value * 255) for channel in tint]
+            rgb = [round(channel * (value + 0.26 * lift) * 255) for channel in tint]
             palette[f"ceramic_{material}_{column}"] = "\033[0;38;2;{};{};{}m".format(*rgb)
     return palette
 
@@ -1608,13 +1621,14 @@ def wood_palette(seed, leaves=None):
         for name, base in zip(("bark", "wood", "woodlight"), family)
     }
     shade = rng.uniform(0.9, 1.0)
+    material_value = 0.48 + 0.34 * transparency_lift()
     for name, rgb in colors.items():
         h, sat, value = colorsys.rgb_to_hsv(*(channel / 255 for channel in rgb))
         if wood_hue is not None:
             h = wood_hue
             sat = max(sat, 0.55)
         colors[name] = tuple(round(channel * 255) for channel in
-                             colorsys.hsv_to_rgb(h, sat * 0.5 if saturation >= 0.08 else 0, value * 0.48 * shade))
+                             colorsys.hsv_to_rgb(h, sat * 0.5 if saturation >= 0.08 else 0, value * material_value * shade))
     # A colored seam between bark and heartwood, rather than a black groove.
     colors["scar"] = tuple(round(bark * 0.55 + wood * 0.45)
                            for bark, wood in zip(colors["bark"], colors["wood"]))
