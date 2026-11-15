@@ -18,6 +18,7 @@ Item {
     readonly property real sideMargin: (width - contentWidth) / 2
 
     property string currentSection: ""
+    onCurrentSectionChanged: mainFlickable.contentY = 0
     property string selectedVariant: "bg"
 
     component SectionButton: SettingsSectionCard {
@@ -134,8 +135,8 @@ Item {
                     id: titlebar
                     width: root.contentWidth
                     anchors.horizontalCenter: parent.horizontalCenter
-                    title: ({style: "Theme style", general: "Typography & shape", motion: "Motion", blur: "Transparency and blur", shadow: "Shadows", colors: "Colors & wallpaper", variants: "Surfaces & borders"})[root.currentSection] || "Appearance"
-                    description: root.currentSection === "" ? "Theme style, colors, fonts and backgrounds." : ""
+                    title: ({style: "Theme & app style", general: "Text & shape", motion: "Motion", blur: "Transparency and blur", shadow: "Shadows", colors: "Wallpaper & palette", variants: "Custom surfaces"})[root.currentSection] || "Appearance"
+                    description: root.currentSection === "" ? "Theme & app style, colors, fonts and backgrounds." : ""
 
                     actions: {
                         if (root.currentSection !== "") {
@@ -169,53 +170,88 @@ Item {
                     // ═══════════════════════════════════════════════════════════════
                     // MENU SECTION
                     // ═══════════════════════════════════════════════════════════════
-                    GridLayout {
+                    SettingsSubnav {
+                        visible: root.currentSection !== ""
+                        currentSection: root.currentSection
+                        sections: [{"id": "style", "label": "Theme & app style"}, {"id": "colors", "label": "Wallpaper & palette"}, {"id": "general", "label": "Text & shape"}, {"id": "blur", "label": "Transparency & blur"}, {"id": "shadow", "label": "Shadows"}, {"id": "motion", "label": "Animation"}, {"id": "variants", "label": "Custom surfaces"}]
+                        onSelected: section => root.currentSection = section
+                    }
+
+                    ColumnLayout {
                         visible: root.currentSection === ""
                         Layout.fillWidth: true
-                        columns: root.contentWidth < 560 ? 1 : root.contentWidth < 1050 ? 2 : 3
-                        columnSpacing: Styling.spacing(12)
-                        rowSpacing: Styling.spacing(12)
-                        SectionButton {
-                            sectionId: "style"
-                            text: "Theme style"
-                            description: "Choose the shell style and its appearance."
-                            glyph: Icons.palette
+                        spacing: Styling.spacing(20)
+                        SettingsGroup {
+                            title: "Wallpaper & color"
+                            description: "Choose a wallpaper, build your palette and save appearances."
+                            GridLayout {
+                                Layout.fillWidth: true
+                                columns: root.contentWidth < 680 ? 1 : 2
+                                columnSpacing: 12
+                                rowSpacing: 12
+                                SectionButton {
+                                    text: "Wallpaper & palette"
+                                    description: "Palette, wallpaper color picker and saved appearance presets."
+                                    glyph: Icons.palette
+                                    sectionId: "colors"
+                                }
+                                SectionButton {
+                                    sectionId: "style"
+                                    text: "Theme & app style"
+                                    description: "Choose the shell style and its appearance."
+                                    glyph: Icons.palette
+                                }
+                            }
                         }
-                        SectionButton {
-                            sectionId: "blur"
-                            text: "Transparency and blur"
-                            description: "Shell transparency, blur strength and where blur appears."
-                            glyph: Icons.drop
+                        SettingsGroup {
+                            title: "Text & surfaces"
+                            description: "Fonts, corner shape and custom background details."
+                            GridLayout {
+                                Layout.fillWidth: true
+                                columns: root.contentWidth < 680 ? 1 : 2
+                                columnSpacing: 12
+                                rowSpacing: 12
+                                SectionButton {
+                                    text: "Text & shape"
+                                    description: "Text size, fonts and corner roundness."
+                                    glyph: Icons.gear
+                                    sectionId: "general"
+                                }
+                                SectionButton {
+                                    text: "Custom surfaces"
+                                    description: "Set colors, gradients and outlines."
+                                    glyph: Icons.paintBrush
+                                    sectionId: "variants"
+                                }
+                            }
                         }
-                        SectionButton {
-                            sectionId: "motion"
-                            text: "Motion"
-                            description: "Panel transitions, selection and button feedback."
-                            glyph: Icons.lightning
-                        }
-                        SectionButton {
-                            text: "Typography & shape"
-                            description: "Text size, fonts and corner roundness."
-                            glyph: Icons.gear
-                            sectionId: "general"
-                        }
-                        SectionButton {
-                            text: "Shadows"
-                            description: "Shadow size, opacity and position."
-                            glyph: Icons.drop
-                            sectionId: "shadow"
-                        }
-                        SectionButton {
-                            text: "Colors & wallpaper"
-                            description: "Palette, wallpaper color picker and saved appearance presets."
-                            glyph: Icons.palette
-                            sectionId: "colors"
-                        }
-                        SectionButton {
-                            text: "Surfaces & borders"
-                            description: "Set colors, gradients and outlines."
-                            glyph: Icons.paintBrush
-                            sectionId: "variants"
+                        SettingsGroup {
+                            title: "Depth & movement"
+                            description: "Transparency, shadows and animation behavior."
+                            GridLayout {
+                                Layout.fillWidth: true
+                                columns: root.contentWidth < 680 ? 1 : 3
+                                columnSpacing: 12
+                                rowSpacing: 12
+                                SectionButton {
+                                    sectionId: "blur"
+                                    text: "Transparency and blur"
+                                    description: "Shell transparency, blur strength and where blur appears."
+                                    glyph: Icons.drop
+                                }
+                                SectionButton {
+                                    text: "Shadows"
+                                    description: "Shadow size, opacity and position."
+                                    glyph: Icons.drop
+                                    sectionId: "shadow"
+                                }
+                                SectionButton {
+                                    sectionId: "motion"
+                                    text: "Motion"
+                                    description: "Panel transitions, selection and button feedback."
+                                    glyph: Icons.lightning
+                                }
+                            }
                         }
                     }
 
@@ -235,6 +271,7 @@ Item {
                     }
 
                     PaletteSettings {
+                        onCurrentPageChanged: mainFlickable.contentY = 0
                         visible: root.currentSection === "colors"
                         Layout.fillWidth: true
                     }
@@ -918,7 +955,7 @@ Item {
 
                             StyledText {
                                 Layout.fillWidth: true
-                                text: Styling.unifiedStyle ? "Choose Custom under Theme style to edit backgrounds and borders." : "Custom background and border settings are active."
+                                text: Styling.unifiedStyle ? "Choose Custom under Theme & app style to edit backgrounds and borders." : "Custom background and border settings are active."
                                 wrapMode: Text.WordWrap
                                 color: Colors.overSurfaceVariant
                                 font.pixelSize: Styling.fontSize(-1)

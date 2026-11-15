@@ -19,6 +19,7 @@ ColumnLayout {
     readonly property string preset: manager?.activeColorPreset ?? ""
     property var draftColors: manager?.pickedAccentColors ?? ["", ""]
     property int pickedRole: 0
+    property string currentPage: "palette"
     readonly property string pickerWallpaper: manager?.currentWallpaper ?? ""
     readonly property string pickerSource: manager && pickerWallpaper ? manager.getColorSource(pickerWallpaper) : ""
     function resetPicks() { draftColors = (manager?.pickedAccentColors ?? ["", ""]).slice(); }
@@ -104,13 +105,26 @@ ColumnLayout {
         }
     }
 
+    SettingsSubnav {
+        objectName: "palette-navigation"
+        currentSection: root.currentPage
+        sections: [{id: "palette", label: "Palette & mode"}, {id: "picker", label: "Pick wallpaper colors"},
+                   {id: "presets", label: "Saved appearances"}, {id: "wallpaper", label: "Wallpaper source"},
+                   {id: "apps", label: "App appearance"}]
+        onSelected: section => root.currentPage = section
+    }
+
     GridLayout {
+        id: paletteGrid
         objectName: "palette-sections"
         Layout.fillWidth: true
         columns: root.width >= 880 ? 2 : 1
         columnSpacing: Styling.spacing(24)
         rowSpacing: Styling.spacing(24)
         ColorSection {
+            objectName: "palette-page-palette"
+            visible: root.currentPage === "palette"
+            Layout.columnSpan: paletteGrid.columns
             StyledText { text: "Palette & color mode"; font.bold: true }
             Caption {
                 text: "Matugen creates one palette for the desktop and your apps. Neutral is subtle; Tonal spot and Vibrant bring out more wallpaper color."
@@ -198,6 +212,9 @@ ColumnLayout {
             }
         }
         ColorSection {
+            objectName: "palette-page-picker"
+            visible: root.currentPage === "picker"
+            Layout.columnSpan: paletteGrid.columns
             Text {
                 text: "Pick colors from your wallpaper"
                 font.family: Config.theme.font
@@ -349,6 +366,9 @@ ColumnLayout {
             }
         }
         ColorSection {
+            objectName: "palette-page-presets"
+            visible: root.currentPage === "presets"
+            Layout.columnSpan: paletteGrid.columns
             StyledText { text: "Saved wallpaper and color presets"; font.bold: true }
             Caption { text: "Save your current wallpaper, monitor overrides, colors and shell appearance together. Apply picked colors before saving." }
             SettingsTextField {
@@ -388,7 +408,10 @@ ColumnLayout {
 
         }
         ColorSection {
-            StyledText { text: "Wallpaper folder and icons"; font.bold: true }
+            objectName: "palette-page-wallpaper"
+            visible: root.currentPage === "wallpaper"
+            Layout.columnSpan: paletteGrid.columns
+            StyledText { text: "Wallpaper library"; font.bold: true }
             // Wallpaper Path
             RowLayout {
                 Layout.fillWidth: true
@@ -444,6 +467,13 @@ ColumnLayout {
                 }
             }
 
+
+        }
+        ColorSection {
+            objectName: "palette-page-apps"
+            visible: root.currentPage === "apps"
+            Layout.columnSpan: paletteGrid.columns
+            StyledText { text: "App backgrounds & theme sync"; font.bold: true }
             // Tint Icons toggle
             RowLayout {
                 Layout.fillWidth: true
@@ -517,9 +547,7 @@ ColumnLayout {
                 text: "Refreshing apps with the current palette."
             }
             Timer { id: refreshNotice; interval: 3000 }
-            Caption {
-                text: "Terminal search: Ctrl+R for history, Ctrl+T for files, Alt+C for folders, Shift+Tab for fuzzy completion, and Ctrl+Shift+F for Kitty scrollback."
-            }
+
         }
     }
 }

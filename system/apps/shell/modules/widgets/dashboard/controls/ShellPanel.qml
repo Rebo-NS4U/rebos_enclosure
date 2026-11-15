@@ -47,6 +47,7 @@ Item {
     }
 
     property string currentSection: ""
+    onCurrentSectionChanged: mainFlickable.contentY = 0
 
     component SectionButton: SettingsSectionCard {
         required property string sectionId
@@ -608,6 +609,13 @@ Item {
                     // ═══════════════════════════════════════════════════════════════
                     // MENU SECTION
                     // ═══════════════════════════════════════════════════════════════
+                    SettingsSubnav {
+                        visible: root.currentSection !== ""
+                        currentSection: root.currentSection
+                        sections: [{"id": "bar", "label": "Desktop bar"}, {"id": "sidebar", "label": "Assistant panel"}, {"id": "lockscreen", "label": "Lock screen"}, {"id": "system", "label": "About"}]
+                        onSelected: section => root.currentSection = section
+                    }
+
                     GridLayout {
                         visible: root.currentSection === ""
                         Layout.fillWidth: true
@@ -719,7 +727,7 @@ Item {
                             StyledText {
                                 Layout.fillWidth: true
                                 wrapMode: Text.WordWrap
-                                text: "Bar opacity and accent follow your theme automatically. Adjust shell transparency in Personalization → Appearance → Transparency and blur."
+                                text: "Bar opacity and accent follow your theme automatically. Adjust shell transparency in Theme & appearance → Appearance → Transparency and blur."
                                 font.pixelSize: Styling.fontSize(-1)
                                 color: Colors.overSurfaceVariant
                             }

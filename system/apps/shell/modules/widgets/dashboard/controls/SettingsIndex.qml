@@ -13,14 +13,14 @@ QtObject {
         { label: "Assistant", keywords: "assistant agent acp codex enable disable", section: 3, subSection: "", subLabel: "", icon: Icons.robot, isIcon: true },
 
         { label: "Appearance", keywords: "theme appearance look style customize", section: 4, subSection: "", subLabel: "Appearance", icon: Icons.paintBrush, isIcon: true },
-        { label: "Theme style", keywords: "theme zen spotify kitty vscode neovim gtk qt apps appearance transparent opaque tinted glass quiet dark colorful preset transparency assistant launcher menus notifications custom", section: 4, subSection: "style", subLabel: "Appearance > Theme style", icon: Icons.paintBrush, isIcon: true },
-        { label: "Fonts and corners", keywords: "font text size typography corner radius roundness", section: 4, subSection: "general", subLabel: "Appearance > Fonts and corners", icon: Icons.paintBrush, isIcon: true },
+        { label: "Theme & app style", keywords: "theme zen spotify kitty vscode neovim gtk qt apps appearance transparent opaque tinted glass quiet dark colorful preset transparency assistant launcher menus notifications custom", section: 4, subSection: "style", subLabel: "Appearance > Theme & app style", icon: Icons.paintBrush, isIcon: true },
+        { label: "Text & shape", keywords: "font text size typography corner radius roundness", section: 4, subSection: "general", subLabel: "Appearance > Text & shape", icon: Icons.paintBrush, isIcon: true },
         { label: "Motion", keywords: "animation animations movement speed duration smooth quick reduced off transitions", section: 4, subSection: "motion", subLabel: "Appearance > Motion", icon: Icons.lightning, isIcon: true },
         { label: "Transparency and blur", keywords: "transparency opacity strength slider gpu graphics performance video glass lighter shell panels off full blur", section: 4, subSection: "blur", subLabel: "Appearance > Transparency and blur", icon: Icons.drop, isIcon: true },
         { label: "Shadows", keywords: "opacity blur offset color", section: 4, subSection: "shadow", subLabel: "Appearance > Shadow", icon: Icons.drop, isIcon: true },
         { label: "Colors", keywords: "folder directory path icons tint matugen wallpaper eyedropper picker bonsai main accent custom automatic scheme palette oled light dark kitty fish spotify zen vscode opacity refresh", section: 4, subSection: "colors", subLabel: "Appearance > Colors", icon: Icons.palette, isIcon: true },
 
-        { label: "Backgrounds and borders", keywords: "variant gradient border halftone shell colors", section: 4, subSection: "variants", subLabel: "Appearance > Backgrounds and borders", icon: Icons.palette, isIcon: true },
+        { label: "Custom surfaces", keywords: "variant gradient border halftone shell colors", section: 4, subSection: "variants", subLabel: "Appearance > Custom surfaces", icon: Icons.palette, isIcon: true },
 
         { label: "System", keywords: "hardware info resources cpu ram weather performance", section: 5, subSection: "", subLabel: "System", icon: Icons.circuitry, isIcon: true },
         { label: "Weather", keywords: "location temperature celsius fahrenheit", section: 5, subSection: "weather", subLabel: "System > Weather", icon: Icons.mapPin, isIcon: true },

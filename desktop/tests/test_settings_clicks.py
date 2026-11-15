@@ -283,6 +283,15 @@ ShellRoot {
       fixture.check(paletteGrid.columns === 2, "Color sections use two columns in wide windows");
       settings.width = 850; tester.wait(100);
       fixture.check(paletteGrid.columns === 1 && loader.item.contentWidth < narrowWidth, "Color sections reflow when shrinking");
+      let paletteNavigation = fixture.find(loader.item, "palette-navigation");
+      for (let pageId of ["picker", "presets", "wallpaper", "apps", "palette"]) {
+       let button = fixture.find(paletteNavigation, "settings-subpage-" + pageId);
+       fixture.check(button && button.visible, "Color subsection is reachable: " + pageId);
+       tester.mouseClick(button); tester.wait(30);
+       for (let candidate of ["palette", "picker", "presets", "wallpaper", "apps"]) {
+        fixture.check(fixture.find(loader.item, "palette-page-" + candidate).visible === (candidate === pageId), "Only the selected color controls are shown");
+       }
+      }
       settings.destroy();
       let windowComponent = Qt.createComponent("modules/widgets/config/SettingsWindow.qml");
       fixture.check(windowComponent.status === Component.Ready, windowComponent.errorString());

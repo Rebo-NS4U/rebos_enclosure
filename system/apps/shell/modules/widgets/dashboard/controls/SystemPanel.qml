@@ -15,6 +15,7 @@ Item {
     readonly property real sideMargin: (width - contentWidth) / 2
 
     property string currentSection: ""
+    onCurrentSectionChanged: mainFlickable.contentY = 0
 
     component SectionButton: SettingsSectionCard {
         required property string sectionId
@@ -79,6 +80,13 @@ Item {
                     // ═══════════════════════════════════════════════════════════════
                     // MENU SECTION
                     // ═══════════════════════════════════════════════════════════════
+                    SettingsSubnav {
+                        visible: root.currentSection !== ""
+                        currentSection: root.currentSection
+                        sections: [{"id": "weather", "label": "Weather widget"}, {"id": "performance", "label": "Visual effects"}, {"id": "system", "label": "Storage monitor"}]
+                        onSelected: section => root.currentSection = section
+                    }
+
                     GridLayout {
                         visible: root.currentSection === ""
                         Layout.fillWidth: true
