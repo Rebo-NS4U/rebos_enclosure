@@ -1445,10 +1445,8 @@ def frame_rows(rows, columns, accents, color):
     reset = "\033[0m" if color else ""
     primary = accents[0] if valid_palette(accents) else "#85b470"
     rgb = [int(primary[i:i + 2], 16) for i in (1, 3, 5)]
-    # Soft neutral glass borrows a little of the selected primary hue.
-    glass = "\033[0;38;2;{};{};{}m".format(
-        *(round(145 * 0.75 + channel * 0.25) for channel in rgb)
-    ) if color else ""
+    # The frame uses the exact primary exported by the current desktop theme.
+    glass = "\033[0;38;2;{};{};{}m".format(*rgb) if color else ""
     background = "\033[48;2;24;24;24m" if color else ""
     def pane(text):
         if not color:
