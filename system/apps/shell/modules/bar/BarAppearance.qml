@@ -47,7 +47,7 @@ Singleton {
         return bordered ? Qt.alpha(highlightColor, 0.5) : "transparent";
     }
     function clockTint(hovered: bool): color {
-        return bordered ? Qt.alpha(highlightColor, hovered ? 0.32 : 0.22) : "transparent";
+        return "transparent";
     }
     function workspaceTint(active: bool, hovered: bool): color {
         return bordered && (active || hovered) ? Qt.alpha(highlightColor, active ? 0.22 : 0.12) : "transparent";

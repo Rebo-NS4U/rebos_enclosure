@@ -654,7 +654,7 @@ Item {
                             StyledText {
                                 Layout.fillWidth: true
                                 wrapMode: Text.WordWrap
-                                text: "Plain uses a simple theme background. Bordered adds an accent outline and highlights the clock and active workspace. Both follow the shell transparency setting."
+                                text: "Plain uses a simple theme background. Bordered adds an accent outline and highlights the active workspace. Both follow the shell transparency setting."
                                 font.pixelSize: Styling.fontSize(-1)
                                 color: Colors.overSurfaceVariant
                             }

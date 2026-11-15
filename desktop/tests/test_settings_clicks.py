@@ -193,7 +193,7 @@ ShellRoot {
        fixture.check(Math.abs(BarAppearance.panelOpacity(false) - 0.35) < 0.001, "Bar follows transparency for " + style);
        fixture.check(Math.abs(BarAppearance.panelOpacity(true) - 0.35) < 0.001, "Expanded bar follows transparency for " + style);
        fixture.check(BarAppearance.bordered && BarAppearance.panelBorder(false).toString() === Qt.alpha(Colors.primary, 0.5).toString(), "Bordered bar uses accent outline for " + style);
-       fixture.check(BarAppearance.clockTint(false).r === BarAppearance.highlightColor.r, "Clock accent follows theme highlight for " + style);
+       fixture.check(BarAppearance.clockTint(false).a === 0 && BarAppearance.clockTint(true).a === 0, "Clock has no highlight for " + style);
        Config.theme.shellTransparency = -1;
        tester.wait(30);
        fixture.check(BarAppearance.opacity === Styling.getStyledRectConfig("bg").opacity, "Bar follows default theme opacity for " + style);

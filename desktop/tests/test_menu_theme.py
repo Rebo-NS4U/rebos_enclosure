@@ -44,7 +44,7 @@ ShellRoot {
     Config.bar.islandAppearance = "glass";
     Config.theme.shellStyle = "instrument"; tester.wait(30);
     if (!BarAppearance.framed || BarAppearance.panelOpacity(false) !== 1) throw Error("Instrument bar frame/opacity");
-    if (BarAppearance.clockTint(false).a <= 0) throw Error("Instrument clock surface missing");
+    if (BarAppearance.clockTint(false).a !== 0) throw Error("Clock must stay unhighlighted");
     if (BarAppearance.activeWorkspaceOutline !== Colors.primary) throw Error("Workspace accent missing");
     Config.theme.shellStyle = "quiet"; Config.bar.islandAppearance = "classic"; tester.wait(30);
     if (BarAppearance.instrument || BarAppearance.clockTint(false).a !== 0) throw Error("Classic bar style changed");
