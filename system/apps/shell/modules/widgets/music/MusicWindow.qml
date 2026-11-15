@@ -18,7 +18,8 @@ Window {
     title: "Enclosure Music" // Local library; uses the shell theme.
     width: 1240; height: 800
     minimumWidth: 860; minimumHeight: 600
-    color: Colors.background
+    // Let the shared bg surface and compositor blur remain visible.
+    color: "transparent"
     visible: GlobalStates.musicWindowVisible
     onClosing: event => { event.accepted = false; GlobalStates.musicWindowVisible = false; }
     onVisibleChanged: if (visible && !started) { started = true; backend.running = true; }
@@ -255,6 +256,7 @@ Window {
     }
 
     StyledRect {
+        objectName: "music-background"
         anchors.fill: parent; variant: "bg"; radius: 0
         ColumnLayout {
             anchors.fill: parent; anchors.margins: 16; spacing: 12

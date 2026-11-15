@@ -51,6 +51,8 @@ def session():
                 attempts++;
                 if (attempts > 90) { console.error("MUSIC_ACCEPTANCE_TIMEOUT " + music.notice); Qt.exit(1); }
                 if (phase === 0 && !music.busy && music.tracks.length === 2) {
+                    const backdrop = findItem(music.contentItem, "music-background");
+                    if (music.color.a !== 0 || !backdrop || backdrop.variant !== "bg") { console.error("MUSIC_SHARED_BACKGROUND_FAILED"); Qt.exit(1); }
                     if (music.repeatMode !== "Playlist") { console.error("MUSIC_REPEAT_DEFAULT_FAILED"); Qt.exit(1); }
                     music.volume = 0;
                     const playCard = findItem(music.contentItem, "music-card-play");
