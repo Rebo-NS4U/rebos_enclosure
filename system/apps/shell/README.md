@@ -363,3 +363,5 @@ Appearance uses compact theme previews, direct palette controls and a responsive
 Shell settings use compact expandable groups for the desktop bar, assistant panel, lock screen, weather, storage and About. Search opens the matching group automatically.
 
 Theme and Shell dropdowns share one grid below the theme previews. Wallpaper colors contains the palette, wallpaper color picker, saved appearances, wallpaper library and app appearance controls.
+
+Wide Settings windows show up to six theme previews in one row and four columns of dropdowns. Expanded dropdowns use up to two columns, leaving other settings visible. Narrow windows return to a single column.

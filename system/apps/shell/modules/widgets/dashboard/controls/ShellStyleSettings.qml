@@ -15,7 +15,9 @@ SettingsGroup {
     property string settingsSection: "style"
 
     GridLayout {
-        columns: root.width >= 640 ? 3 : root.width >= 380 ? 2 : 1
+        objectName: "theme-preview-grid"
+        uniformCellWidths: true
+        columns: root.width >= 1440 ? 6 : root.width >= 640 ? 3 : root.width >= 380 ? 2 : 1
         Layout.fillWidth: true
         columnSpacing: Styling.spacing(10)
         rowSpacing: Styling.spacing(10)

@@ -581,7 +581,7 @@ Item {
                         collapsible: true
                         objectName: "shell-group-weather"
                         parent: root.groupContainer || contentColumn
-                        Layout.columnSpan: root.groupContainer && expanded ? root.groupContainer.columns : 1
+                        Layout.columnSpan: root.groupContainer && expanded ? Math.min(2, root.groupContainer.columns) : 1
                         Layout.alignment: Qt.AlignTop
                     }
                     StorageSettings {
@@ -589,7 +589,7 @@ Item {
                         collapsible: true
                         objectName: "shell-group-storage"
                         parent: root.groupContainer || contentColumn
-                        Layout.columnSpan: root.groupContainer && expanded ? root.groupContainer.columns : 1
+                        Layout.columnSpan: root.groupContainer && expanded ? Math.min(2, root.groupContainer.columns) : 1
                         Layout.alignment: Qt.AlignTop
                     }
 
@@ -601,7 +601,7 @@ Item {
                         collapsible: true
                         objectName: "shell-group-bar"
                         parent: root.groupContainer || contentColumn
-                        Layout.columnSpan: root.groupContainer && expanded ? root.groupContainer.columns : 1
+                        Layout.columnSpan: root.groupContainer && expanded ? Math.min(2, root.groupContainer.columns) : 1
                         Layout.alignment: Qt.AlignTop
                         title: "Desktop bar"
                         Layout.fillWidth: true
@@ -714,7 +714,7 @@ Item {
                         collapsible: true
                         objectName: "shell-group-lockscreen"
                         parent: root.groupContainer || contentColumn
-                        Layout.columnSpan: root.groupContainer && expanded ? root.groupContainer.columns : 1
+                        Layout.columnSpan: root.groupContainer && expanded ? Math.min(2, root.groupContainer.columns) : 1
                         Layout.alignment: Qt.AlignTop
                         title: "Lock screen"
                         Layout.fillWidth: true
@@ -760,7 +760,7 @@ Item {
                         collapsible: true
                         objectName: "shell-group-system"
                         parent: root.groupContainer || contentColumn
-                        Layout.columnSpan: root.groupContainer && expanded ? root.groupContainer.columns : 1
+                        Layout.columnSpan: root.groupContainer && expanded ? Math.min(2, root.groupContainer.columns) : 1
                         Layout.alignment: Qt.AlignTop
                         title: "About"
                         Layout.fillWidth: true
@@ -798,7 +798,7 @@ Item {
                         collapsible: true
                         objectName: "shell-group-sidebar"
                         parent: root.groupContainer || contentColumn
-                        Layout.columnSpan: root.groupContainer && expanded ? root.groupContainer.columns : 1
+                        Layout.columnSpan: root.groupContainer && expanded ? Math.min(2, root.groupContainer.columns) : 1
                         Layout.alignment: Qt.AlignTop
                         title: "Assistant panel"
                         Layout.fillWidth: true

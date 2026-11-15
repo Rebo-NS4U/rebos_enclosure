@@ -496,6 +496,7 @@ Item {
 
             Column {
                 id: categoryHeading
+                visible: root.width < 1280
                 width: parent.width
                 spacing: 6
                 StyledText { text: root.activeCategory.label; font.pixelSize: Styling.fontSize(10); font.bold: true }
@@ -547,7 +548,7 @@ Item {
                 id: categoryScroll
                 objectName: "settings-category-scroll"
                 anchors.fill: parent
-                anchors.topMargin: categoryHeading.height + 20
+                anchors.topMargin: categoryHeading.visible ? categoryHeading.height + 20 : 0
                 clip: true
                 contentHeight: categoryColumn.height
                 boundsBehavior: Flickable.StopAtBounds

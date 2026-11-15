@@ -407,6 +407,21 @@ ShellRoot {
       tester.mouseWheel(nestedList, 50, 50, 0, -120); tester.wait(40);
       fixture.check(scroll.contentY > pageBeforeList, "List end hands wheel back to settings page");
       nestedList.destroy();
+      settings.width = 1920; settings.height = 1080;
+      settings.openSection(4, ""); tester.wait(100);
+      function collapseGroups(item) {
+       if (item.collapsible) item.expanded = false;
+       for (const child of item.children || []) collapseGroups(child);
+      }
+      collapseGroups(settings); tester.wait(100);
+      fixture.check(sharedGrid.columns === 4, "Fullscreen settings uses four dropdown columns");
+      fixture.check(fixture.find(settings, "theme-preview-grid").columns === 6, "Fullscreen theme previews fit in one row");
+      fixture.check(scroll.contentHeight <= scroll.height, "Fullscreen shows every closed dropdown without scrolling");
+      settings.openSection(6, "bar"); tester.wait(80);
+      let fullscreenBar = fixture.find(settings, "shell-group-bar");
+      fixture.check(fullscreenBar.expanded && fullscreenBar.width < sharedGrid.width * 0.6, "Expanded controls leave room for other fullscreen settings");
+      settings.width = 600; tester.wait(80);
+      fixture.check(sharedGrid.columns === 1, "Narrow settings restores one readable column");
       settings.destroy();
       let windowComponent = Qt.createComponent("modules/widgets/config/SettingsWindow.qml");
       fixture.check(windowComponent.status === Component.Ready, windowComponent.errorString());

@@ -190,20 +190,20 @@ Item {
                         id: advancedGrid
                         objectName: "theme-advanced-grid"
                         Layout.fillWidth: true
-                        columns: width >= 620 ? 2 : 1
+                        columns: width >= 1640 ? 4 : width >= 1160 ? 3 : width >= 620 ? 2 : 1
                         columnSpacing: Styling.spacing(12)
                         rowSpacing: Styling.spacing(12)
                     PaletteSettings {
                         onCurrentPageChanged: mainFlickable.contentY = 0
                         property string settingsAnchor: "colors"
                         Layout.fillWidth: true
-                        Layout.columnSpan: expanded ? advancedGrid.columns : 1
+                        Layout.columnSpan: expanded ? Math.min(2, advancedGrid.columns) : 1
                         Layout.alignment: Qt.AlignTop
                     }
                     PerformanceSettings {
                         property string settingsAnchor: "performance"
                         collapsible: true
-                        Layout.columnSpan: expanded ? advancedGrid.columns : 1
+                        Layout.columnSpan: expanded ? Math.min(2, advancedGrid.columns) : 1
                         Layout.alignment: Qt.AlignTop
                         objectName: "theme-group-performance"
                     }
@@ -212,7 +212,7 @@ Item {
                         Layout.fillWidth: true
                         property string settingsAnchor: "motion"
                         collapsible: true
-                        Layout.columnSpan: expanded ? advancedGrid.columns : 1
+                        Layout.columnSpan: expanded ? Math.min(2, advancedGrid.columns) : 1
                         Layout.alignment: Qt.AlignTop
                         objectName: "theme-group-motion"
                     }
@@ -221,7 +221,7 @@ Item {
                         Layout.fillWidth: true
                         property string settingsAnchor: "blur"
                         collapsible: true
-                        Layout.columnSpan: expanded ? advancedGrid.columns : 1
+                        Layout.columnSpan: expanded ? Math.min(2, advancedGrid.columns) : 1
                         Layout.alignment: Qt.AlignTop
                         objectName: "theme-group-blur"
                     }
@@ -231,7 +231,7 @@ Item {
                     SettingsGroup {
                         property string settingsAnchor: "general"
                         collapsible: true
-                        Layout.columnSpan: expanded ? advancedGrid.columns : 1
+                        Layout.columnSpan: expanded ? Math.min(2, advancedGrid.columns) : 1
                         Layout.alignment: Qt.AlignTop
                         objectName: "theme-group-general"
                         title: "Typography & shape"
@@ -509,7 +509,7 @@ Item {
                     SettingsGroup {
                         property string settingsAnchor: "shadow"
                         collapsible: true
-                        Layout.columnSpan: expanded ? advancedGrid.columns : 1
+                        Layout.columnSpan: expanded ? Math.min(2, advancedGrid.columns) : 1
                         Layout.alignment: Qt.AlignTop
                         objectName: "theme-group-shadow"
                         title: "Shadow appearance"
@@ -861,7 +861,7 @@ Item {
                     SettingsGroup {
                         property string settingsAnchor: "variants"
                         collapsible: true
-                        Layout.columnSpan: expanded ? advancedGrid.columns : 1
+                        Layout.columnSpan: expanded ? Math.min(2, advancedGrid.columns) : 1
                         Layout.alignment: Qt.AlignTop
                         objectName: "theme-group-variants"
                         title: "Surface to edit"
@@ -881,7 +881,7 @@ Item {
                     SettingsGroup {
                         property string settingsAnchor: "variants"
                         collapsible: true
-                        Layout.columnSpan: expanded ? advancedGrid.columns : 1
+                        Layout.columnSpan: expanded ? Math.min(2, advancedGrid.columns) : 1
                         Layout.alignment: Qt.AlignTop
                         objectName: "theme-group-variants"
                         title: "Custom surface editor"
