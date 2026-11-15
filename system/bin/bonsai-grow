@@ -1368,11 +1368,11 @@ def celestial_marks(daylight, rising):
     """Original open line art, inspired by classic terminal weather drawings."""
     if daylight:
         sun = (
-            "   ░▒▒▒░   ",
-            " ░▒▒▓▓▓▒▒░ ",
+            "  ░▒▒▒▒▒░  ",
+            "░▒▒▒▓▓▓▒▒▒░",
             "░▒▒▓▓▓▓▓▒▒░",
-            " ░▒▒▓▓▓▒▒░ ",
-            "   ░▒▒▒░   ",
+            "░▒▒▒▓▓▓▒▒▒░",
+            "  ░▒▒▒▒▒░  ",
         )
         return [(x - 5, y - 2, glyph,
                  f"sky_orb_sun{min(7, round(math.hypot((x - 5) / 5.4, (y - 2) / 2.45) * 7))}")
