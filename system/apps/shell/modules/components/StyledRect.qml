@@ -590,6 +590,24 @@ ClippingRectangle {
                     sky.addColorStop(0.5,frame(0.025));sky.addColorStop(1,frame(0));
                     ctx.fillStyle=sky;ctx.fillRect(0,0,width,Math.min(height,85));
                     if(outer){
+                        // Soft cloud banks hang from the upper edge, fading before the content.
+                        const cloudDepth=Math.min(52,height*0.18);
+                        for(let layer=0;layer<2;layer++){
+                            const mist=ctx.createLinearGradient(0,0,0,cloudDepth);
+                            mist.addColorStop(0,layer===0?ink(0.07):frame(0.10));
+                            mist.addColorStop(0.48,layer===0?ink(0.045):frame(0.055));
+                            mist.addColorStop(1,frame(0));
+                            ctx.fillStyle=mist;ctx.beginPath();ctx.moveTo(-48,0);
+                            ctx.lineTo(-48,cloudDepth*0.40);
+                            const span=layer===0?126:94;
+                            for(let x=-48;x<width+span;x+=span){
+                                const rise=cloudDepth*(0.55+0.18*Math.sin(x*0.023+layer*2));
+                                const base=cloudDepth*(layer===0?0.30:0.18);
+                                ctx.bezierCurveTo(x+span*0.18,rise,x+span*0.40,rise,x+span*0.52,base+cloudDepth*0.12);
+                                ctx.bezierCurveTo(x+span*0.68,base+cloudDepth*0.40,x+span*0.86,base+cloudDepth*0.30,x+span,base);
+                            }
+                            ctx.lineTo(width+span*2,0);ctx.closePath();ctx.fill();
+                        }
                         // Overlapping facades vary in width, setback and roof height.
                         // Their silhouettes remain in the lower margin, below the reading area.
                         const base=height-5;
