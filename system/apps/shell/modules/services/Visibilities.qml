@@ -165,6 +165,9 @@ Singleton {
                     island.collapse();
                 } else {
                     clearAll();
+                    // Layer focus can refresh focusedMonitor as the menu opens.
+                    // Record its screen before that update can migrate/clear it.
+                    lastFocusedScreen = focusedMonitor.name;
                     currentActiveModule = "powermenu";
                     island.expand("power");
                 }

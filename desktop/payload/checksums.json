@@ -539,7 +539,7 @@
   "system/apps/shell/modules/services/SuspendManager.qml": "3684a90985cbc9225c6c2d7532bda0bc72e70904e37809f7c6f75e02c6eef2bf",
   "system/apps/shell/modules/services/SystemResources.qml": "07e98a12071758c2e5d86f3754482146e63ba8db814538051d9ec4e2052993cd",
   "system/apps/shell/modules/services/UsageTracker.qml": "93c177f105d8effbb03a5add3a6622be316584a97381ff2edeeb08ad5e6712b9",
-  "system/apps/shell/modules/services/Visibilities.qml": "38aa4a5c40ba93542dc7699354ca0d53a3f5710ab98710ce9f6b1eb19f420e52",
+  "system/apps/shell/modules/services/Visibilities.qml": "68f1e7a10f12b35ea46506e271ce00e6769b76a5d18e64801bc06db502c25f8a",
   "system/apps/shell/modules/services/WeatherService.qml": "30401c0f03e4a35bb61e2d9f5faf88779a7bcc9b1cd5cdb44c2ff238e46d935e",
   "system/apps/shell/modules/services/WifiAccessPoint.qml": "88d78b96b5ea5058a056e6c0f9cd1e47335cf198526e84dbd40214779bb89fa2",
   "system/apps/shell/modules/shell/EdgeWindowTab.qml": "ce100f4bf7640f9618ad560ae38d9e77b33d5e6dbab915b8e7f4ed55690f7f39",
