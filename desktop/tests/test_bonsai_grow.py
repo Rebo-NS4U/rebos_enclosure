@@ -787,6 +787,11 @@ class BonsaiGrowTests(unittest.TestCase):
         self.assertEqual(pixel(584, 260), (240, 130, 80, 255))
         self.assertEqual(pixel(589, 260)[3], 0)
         self.assertEqual(pixel(295, 519)[3], 0)
+        self.assertEqual(pixel(295, 475)[3], 255, 'floor meets the pot baseline')
+        self.assertLess(sum(pixel(295, 475)[:3]), sum(pixel(100, 475)[:3]),
+                        'contact shadow sits beneath the ceramic foot')
+        self.assertGreater(sum(pixel(295, 485)[:3]), sum(pixel(295, 475)[:3]),
+                           'shadow softens toward the front bevel')
 
     def test_glass_varies_between_seeds_and_stays_stable_within_a_session(self):
         first = bonsai.glass_reflections(11, True)
