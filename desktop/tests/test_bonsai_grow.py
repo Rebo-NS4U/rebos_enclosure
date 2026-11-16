@@ -937,13 +937,7 @@ class BonsaiGrowTests(unittest.TestCase):
                             else:
                                 for glyph in token:
                                     inside = 10 <= column < 69
-                                    x = column - 11  # Margin and left frame edge.
-                                    ceramic = ((y == 21 and 16 < x < 38)
-                                               or (y == 22 and 17 < x < 37))
                                     expected = expected_background if inside else None
-                                    if ceramic:
-                                        ink = bonsai.specimen_palette(42)[f'ceramic_body_{x - 16}']
-                                        expected = tuple(map(int, re.findall(r'\d+', ink)[-3:]))
                                     self.assertEqual(background, expected)
                                     column += 1
                         self.assertEqual(column, 69)

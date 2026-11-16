@@ -2489,7 +2489,6 @@ def render(
         *(round(105 * 0.85 + channel * 0.15) for channel in glass_rgb)
     )
     palette["sky_mist"] = "\033[0;38;2;57;62;63m"
-    backing = "\033[48;2;{};{};{}m".format(*theme_background()) if color else ""
     output = []
     visible = canvas if fixed_height else canvas[min(occupied) :]
     first_row = 0 if fixed_height else min(occupied)
@@ -2526,14 +2525,7 @@ def render(
                 ink = f"ceramic_{material}_{x - 16}"
             if color and ink != previous:
                 parts.append(palette[ink])
-            # Opaque ceramic behind the enamel makes a bowl rather than a cage.
-            ceramic_fill = color and ((y == 20 and 16 < x < 38)
-                                      or (y == 21 and 17 < x < 37))
-            if ceramic_fill:
-                parts.append(palette[f"ceramic_body_{x - 16}"].replace("[0;38;", "[48;"))
             parts.append(glyph)
-            if ceramic_fill:
-                parts.append(backing)
             previous = ink
         output.append("".join(parts) + ("\033[0m" if color else ""))
     return "\n".join(frame_rows(output, columns, accents, color)) + "\n"
