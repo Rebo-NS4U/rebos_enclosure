@@ -73,9 +73,13 @@ def playback_streams():
         role = props.get('media.role', '').lower()
         app = props.get('application.id', '').lower()
         binary = props.get('application.process.binary', '').lower()
+        # Qt Multimedia's music player shares Quickshell's app identity.
+        # SoundEffect feedback does not use the QtmPulseStream media name.
+        shell_music = props.get('media.name', '').startswith('QtmPulseStream-')
+        shell = app == 'org.quickshell' or binary in {'quickshell', 'qs'}
         if (stream.get('corked') or stream.get('mute')
                 or role in {'event', 'notification', 'alert', 'system'}
-                or app == 'org.quickshell' or binary in {'quickshell', 'qs', 'canberra-gtk-play'}):
+                or (shell and not shell_music) or binary == 'canberra-gtk-play'):
             continue
         if int(stream['sink']) in monitors:
             streams[int(stream['index'])] = monitors[int(stream['sink'])]

@@ -142,7 +142,15 @@ Item {
                 } catch (_) {}
             }
         }
-        onExited: root.levels = Array(32).fill(0)
+        onExited: {
+            root.levels = Array(32).fill(0);
+            if (root.captureAudio) spectrumRetry.restart();
+        }
+    }
+    Timer {
+        id: spectrumRetry
+        interval: 1000
+        onTriggered: if (root.captureAudio) spectrumProcess.running = true
     }
     // Inline surfaces share the bar hitbox; line controls retain their own actions.
     Component.onCompleted: { LyricsService.viewers++; modeReady = true; updateMode(); }
