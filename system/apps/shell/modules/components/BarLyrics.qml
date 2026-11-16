@@ -106,7 +106,9 @@ Item {
     property var levels: Array(32).fill(0)
     property real visualizerMix: 1
     property bool modeReady: false
+    // A timed empty outro cue ends the lyrics without ending playback.
     readonly property bool showVisualizer: !LyricsService.hasText
+        || (!currentText.trim() && !nextText.trim())
     function updateMode() {
         modeTransition.stop();
         const destination = showVisualizer ? 1 : 0;

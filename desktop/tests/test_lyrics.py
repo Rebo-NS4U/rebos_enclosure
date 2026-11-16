@@ -533,6 +533,46 @@ ShellRoot {
 }
 ''')
 
+    def test_visualizer_after_final_lyric(self):
+        self.run_harness('''import QtQuick
+import Quickshell
+import qs.modules.components
+import qs.modules.services
+import qs.config
+ShellRoot {
+ Item { width: 1920; height: 1200
+  BarLyrics { id: strip; anchors.fill: parent; islandLeft: 700; islandRight: 1220 }
+ }
+ Timer { interval: 80; running: true; repeat: true; property int phase: 0
+  onTriggered: {
+   try {
+    Config.animDuration = 0;
+    if (phase === 0) {
+     LyricsService.refresh();
+     LyricsService.apply('[00:01]Last lyric\\n[00:05]', 'Test', false);
+     MprisController.position = 2;
+     phase++; return;
+    }
+    if (phase === 1) {
+     if (strip.showVisualizer || strip.currentText !== 'Last lyric') throw Error('Lyric must remain readable');
+     MprisController.position = 6;
+     phase++; return;
+    }
+    if (phase === 2) {
+     if (!strip.visible || !strip.showVisualizer || strip.visualizerMix !== 1)
+      throw Error('Empty outro must show full visualizer');
+     MprisController.position = 2;
+     phase++; return;
+    }
+    if (strip.showVisualizer || strip.visualizerMix !== 0 || strip.currentText !== 'Last lyric')
+     throw Error('Seeking back must restore lyrics');
+    console.log('PASS: full outro spectrum and seek back'); Qt.quit();
+   } catch(error) { console.error(error); Qt.exit(1); }
+  }
+ }
+}
+''')
+
     def test_manual_estimated_line_correction(self):
         self.run_harness('''import QtQuick
 import Quickshell
