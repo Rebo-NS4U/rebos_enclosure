@@ -794,9 +794,10 @@ class BonsaiGrowTests(unittest.TestCase):
         for x in (1, 588):
             self.assertLess(pixel(x, 493)[3], pixel(x, 502)[3],
                             'upper ledge is narrower than middle tier')
-            self.assertEqual(pixel(x, 510)[3], 0, 'bottom foot steps inward')
+            self.assertLess(pixel(x, 502)[3], pixel(x, 510)[3],
+                            'bottom foot steps outward beyond middle tier')
         for x in (5, 584):
-            self.assertEqual(pixel(x, 510)[3], 255, 'inset bottom foot stays solid')
+            self.assertEqual(pixel(x, 510)[3], 255, 'broad bottom foot stays solid')
         self.assertEqual(pixel(295, 510)[3], 255, 'thicker plinth has a full lower face')
         self.assertLess(sum(pixel(295, 510)[:3]), sum(pixel(295, 498)[:3]),
                         'recessed lower lip stays darker than the upper bevel')

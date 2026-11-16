@@ -1841,14 +1841,14 @@ def rounded_frame_png(
                 for base, channel in zip(backing, rgb)
             )
             # Separate outlines make real steps in the silhouette: a top
-            # ledge, a projecting middle tier and an inset bottom foot.
+            # ledge, a wider middle tier and a broad projecting bottom foot.
             if y + .5 >= height - 1.5 * cell_height:
                 if y + .5 < height - 1.15 * cell_height:
-                    tier_top, tier_bottom, inset = 1.5, 1.15, .18 * cell_width
+                    tier_top, tier_bottom, inset = 1.5, 1.15, .4 * cell_width
                 elif y + .5 < height - .65 * cell_height:
-                    tier_top, tier_bottom, inset = 1.15, .65, .05 * cell_width
+                    tier_top, tier_bottom, inset = 1.15, .65, .18 * cell_width
                 else:
-                    tier_top, tier_bottom, inset = .65, .35, .4 * cell_width
+                    tier_top, tier_bottom, inset = .65, .35, .05 * cell_width
                 base_radius = min(1, cell_width * .1, cell_height * .06)
                 base_qx = abs(x + .5 - width / 2) - (width / 2 - inset - base_radius)
                 base_qy = (abs(y + .5 - (height - (tier_top + tier_bottom) / 2 * cell_height))
