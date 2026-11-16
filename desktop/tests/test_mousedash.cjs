@@ -22,7 +22,7 @@ console.log('MouseDash mechanics: PASS');
 
 // Survival progressively enlarges the player and increases spawn pressure.
 assert(game.playerRadius(30) > game.playerRadius(0));
-assert.equal(game.playerRadius(1000), 18);
+assert.equal(game.playerRadius(1000), 11);
 for (let d = 0; d < 3; d++) {
     assert(game.spawnInterval(d, 30) < game.spawnInterval(d, 0));
     assert(game.spawnInterval(d, 10000) >= .09);
@@ -65,3 +65,21 @@ assert.equal(fatalFrame.collision.x, 50);
 assert.equal(fatalFrame.enemies[0].x, 31);
 assert.equal(fatalFrame.enemies[1].x, 31); // The whole field stops at that instant.
 console.log('Exact death position, cause and earliest obstacle: PASS');
+
+// Balance guardrails for the shipped 480px arena.
+vm.runInContext('{ let seed=91; Math.random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;}; }', game);
+for (let d = 0; d < 4; d++) {
+    assert(game.enemySpeed(d, 10000, 'gauntlet') <= 326);
+    assert(game.spawnInterval(d, 10000, 'gauntlet') >= [0.5, 0.4, 0.32, 0.26][d]);
+    for (const [px, py] of [[0,0], [0.02,0.5], [0.5,0.5], [0.98,0.98]]) for (let sample=0; sample<100; sample++) {
+        const e = game.spawn(480,480,px,py,d,60,'gauntlet');
+        const hit = game.contact([{x:px*480, y:py*480, r:game.playerRadius(60)}], e.x,e.y,e.x+e.vx*10,e.y+e.vy*10,e.r);
+        if (hit) {
+            // Discount the offscreen approach; count only visible warning time.
+            const offscreenTime = e.x < -e.r ? 20 / e.vx : e.x > 480+e.r ? -20 / e.vx
+                : e.y < -e.r ? 20 / e.vy : -20 / e.vy;
+            assert(hit.t * 10 - offscreenTime >= 0.65 - 1e-6);
+        }
+    }
+}
+console.log('Capped difficulty and visible spawn reaction margin: PASS');

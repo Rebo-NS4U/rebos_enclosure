@@ -1,22 +1,33 @@
 // Pure game mechanics; coordinates and speeds are logical pixels.
-function playerRadius(elapsed) { return Math.min(18, 9 + elapsed * 0.12); }
+function playerRadius(elapsed) { return Math.min(11, 9 + elapsed * 0.025); }
 function roundDuration(mode) { return mode === "gauntlet" ? 60 : 0; }
 function roundComplete(mode, elapsed) { return roundDuration(mode) > 0 && elapsed >= roundDuration(mode); }
 function pressure(mode, elapsed) {
-    return mode === "gauntlet" ? 1 + Math.min(5, Math.floor(elapsed / 10)) * 0.22 : 1;
+    return mode === "gauntlet" ? 1 + Math.min(5, Math.floor(elapsed / 10)) * 0.08 : 1;
+}
+// Independent caps keep speed, density and hitbox growth from compounding forever.
+function enemySpeed(difficulty, elapsed, mode) {
+    return (110 + difficulty * 35 + Math.min(60, elapsed * 0.8)) * Math.sqrt(pressure(mode, elapsed));
 }
 function spawnInterval(difficulty, elapsed, mode) {
-    return Math.max(0.09, (0.64 - difficulty * 0.14) / (1 + elapsed * 0.045) / pressure(mode, elapsed));
+    const floors = [0.5, 0.4, 0.32, 0.26];
+    return Math.max(floors[difficulty], (1 - difficulty * 0.15) / (1 + Math.min(90, elapsed) * 0.006) / pressure(mode, elapsed));
 }
 function spawn(w, h, px, py, difficulty, elapsed, mode) {
-    const edge = Math.floor(Math.random() * 4), r = 9 + Math.random() * 16;
+    const speed = enemySpeed(difficulty, elapsed, mode);
+    // At least 650 ms from first appearance to a stationary cursor on this edge.
+    // Choose a distant edge instead of silently killing a player near the border.
+    const clearance = speed * 0.65 + playerRadius(elapsed);
+    const distances = [px * w, (1 - px) * w, py * h, (1 - py) * h];
+    let edges = [0, 1, 2, 3].filter(i => distances[i] >= clearance);
+    if (!edges.length) edges = [distances.indexOf(Math.max.apply(null, distances))];
+    const edge = edges[Math.floor(Math.random() * edges.length)], r = 9 + Math.random() * 16;
     let x = Math.random() * w, y = Math.random() * h;
     if (edge === 0) x = -r - 20;
     if (edge === 1) x = w + r + 20;
     if (edge === 2) y = -r - 20;
     if (edge === 3) y = h + r + 20;
     const angle = Math.atan2(py * h - y, px * w - x) + (Math.random() - 0.5) * 0.8;
-    const speed = (145 + difficulty * 70 + Math.min(360, elapsed * 5)) * Math.sqrt(pressure(mode, elapsed));
     return {x:x, y:y, r:r, vx:Math.cos(angle)*speed, vy:Math.sin(angle)*speed};
 }
 // First contact along a segment, including fast crossings with clear endpoints.
