@@ -388,3 +388,7 @@ The list shows friendly app names, PIDs and config paths, including multiple
 instances of the same app. It refreshes every three seconds while visible and
 scrolls for longer lists. It uses Quickshell’s instance registry for the current
 display (`qs list --all --json`), including apps without regular windows.
+
+Use **Close** beside an app to stop that specific Quickshell instance. Closing
+Enclosure Shell also closes the panel containing the monitor. The list refreshes
+after a close request; failures appear below the list heading.

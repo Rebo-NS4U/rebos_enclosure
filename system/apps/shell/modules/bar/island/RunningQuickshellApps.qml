@@ -5,6 +5,7 @@ import QtQuick.Controls
 import Quickshell.Io
 import qs.modules.components
 import qs.modules.theme
+import qs.modules.widgets.dashboard.metrics
 import qs.config
 
 StyledRect {
@@ -12,6 +13,25 @@ StyledRect {
     property var instances: []
     property string status: "Loading…"
     property string output: ""
+    property string closingId: ""
+    property string actionMessage: ""
+
+    function closeApp(app) {
+        if (closer.running || !app.id) return;
+        closingId = app.id;
+        actionMessage = "";
+        // Target the registry instance, avoiding stale or reused process IDs.
+        closer.command = ["qs", "kill", "--id", app.id];
+        closer.running = true;
+    }
+    Process {
+        id: closer
+        onExited: (exitCode, exitStatus) => {
+            root.actionMessage = exitCode === 0 ? "Close requested." : "Could not close this app. It may have already exited.";
+            root.closingId = "";
+            root.refresh();
+        }
+    }
     implicitHeight: content.implicitHeight + Styling.spacing(24)
     variant: "internalbg"
     radius: Styling.radius(2)
@@ -71,6 +91,13 @@ StyledRect {
             wrapMode: Text.Wrap
             color: Colors.overSurfaceVariant
         }
+        StyledText {
+            Layout.fillWidth: true
+            visible: root.actionMessage !== ""
+            text: root.actionMessage
+            wrapMode: Text.Wrap
+            color: Colors.overSurfaceVariant
+        }
         ScrollView {
             Layout.fillWidth: true
             Layout.preferredHeight: Math.min(appList.implicitHeight, Styling.spacing(240))
@@ -84,18 +111,32 @@ StyledRect {
                 Repeater {
                     model: root.instances
                     ColumnLayout {
+                        id: appRow
                         required property var modelData
                         Layout.fillWidth: true
                         spacing: Styling.spacing(2)
-                        StyledText {
+                        RowLayout {
                             Layout.fillWidth: true
-                            text: root.appName(parent.modelData) + " · PID " + parent.modelData.pid
-                            font.pixelSize: Styling.fontSize(-2)
-                            wrapMode: Text.Wrap
+                            StyledText {
+                                Layout.fillWidth: true
+                                text: root.appName(appRow.modelData) + " · PID " + appRow.modelData.pid
+                                font.pixelSize: Styling.fontSize(-2)
+                                wrapMode: Text.Wrap
+                            }
+                            MetricAction {
+                                text: root.closingId === appRow.modelData.id ? "Closing…" : "Close"
+                                enabled: !closer.running && !!appRow.modelData.id
+                                onClicked: root.closeApp(appRow.modelData)
+                                activeFocusOnTab: true
+                                Accessible.role: Accessible.Button
+                                Accessible.name: "Close " + root.appName(appRow.modelData)
+                                Keys.onReturnPressed: clicked()
+                                Keys.onSpacePressed: clicked()
+                            }
                         }
                         StyledText {
                             Layout.fillWidth: true
-                            text: parent.modelData.config_path || "Unknown config"
+                            text: appRow.modelData.config_path || "Unknown config"
                             font.pixelSize: Styling.fontSize(-3)
                             color: Colors.overSurfaceVariant
                             wrapMode: Text.WrapAnywhere
