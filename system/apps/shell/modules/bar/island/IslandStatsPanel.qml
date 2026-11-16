@@ -71,6 +71,10 @@ Item {
 
         Separator { Layout.fillWidth: true; implicitHeight: 1 }
 
+        RunningQuickshellApps {
+            Layout.fillWidth: true
+        }
+
         MetricAction {
             Layout.fillWidth: true
             visible: SystemResources.detailMetric !== "window"

@@ -380,3 +380,11 @@ Easy, Medium and Hard have separate personal bests, stored locally in
 and glow. The native window opens maximized and follows the shell palette, font and surface style.
 The player grows from 9 to 18px radius as survival time increases. Enemies accelerate and spawn more frequently over time. After a loss the final arena stays visible until Play again is selected.
 No network service or additional dependency is required.
+
+### Running Quickshell apps
+
+Open the panel’s **System Resources** view to see **Running Quickshell apps**.
+The list shows friendly app names, PIDs and config paths, including multiple
+instances of the same app. It refreshes every three seconds while visible and
+scrolls for longer lists. It uses Quickshell’s instance registry for the current
+display (`qs list --all --json`), including apps without regular windows.
