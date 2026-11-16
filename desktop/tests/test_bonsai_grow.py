@@ -1626,6 +1626,41 @@ class BonsaiGrowTests(unittest.TestCase):
             self.assertNotIn('\033', result.stdout)
             self.assertEqual(list(Path(directory).iterdir()), [])
 
+    def test_single_launch_greeting_returns_worker_and_paints_terminal(self):
+        import fcntl
+        import pty
+        import select
+        import signal
+        import struct
+        import termios
+        import time
+        master, slave = pty.openpty()
+        worker = None
+        try:
+            fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack('HHHH', 40, 100, 0, 0))
+            result = subprocess.run(
+                [str(SOURCE), '--greeting', '--seed', '42'],
+                stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=slave,
+                env={**os.environ, 'TERM': 'xterm-256color', 'REDUCE_MOTION': '0'},
+                timeout=5, check=True)
+            worker = int(result.stdout.strip())
+            painted = b''
+            deadline = time.monotonic() + 5
+            while b'\x1b[?2026l' not in painted and time.monotonic() < deadline:
+                if select.select([master], [], [], .1)[0]:
+                    painted += os.read(master, 65536)
+            self.assertIn(b'\x1b[H\x1b[26B', painted)
+            self.assertIn(b'\x1b[?2026l', painted)
+        finally:
+            if worker is not None:
+                os.kill(worker, signal.SIGTERM)
+            os.close(slave)
+            os.close(master)
+
+    def test_single_launch_greeting_is_quiet_without_terminal(self):
+        result = subprocess.run([str(SOURCE), '--greeting'], capture_output=True, check=True)
+        self.assertEqual((result.stdout, result.stderr), (b'', b''))
+
     def test_redirected_greeting_is_quiet(self):
         result = subprocess.run([str(SOURCE)], capture_output=True, check=True)
         self.assertEqual(result.stdout, b'')

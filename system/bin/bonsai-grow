@@ -2182,6 +2182,36 @@ def animate_background(seed, accents, duration, style):
         time.sleep(30 if day >= 30 else 1 / 60)
 
 
+def greeting(seed, duration, style):
+    """Reserve on stderr's terminal, returning the forked worker PID on stdout."""
+    if not sys.stderr.isatty() or os.environ.get("TERM") == "dumb":
+        return
+    size = os.get_terminal_size(sys.stderr.fileno())
+    if size.columns < 59:
+        return
+    accents = wallpaper_palette()
+    output = sys.stdout
+    sys.stdout = sys.stderr
+    try:
+        if size.lines < 30 or os.environ.get("REDUCE_MOTION") == "1":
+            print(render(30, 42, True, size.columns, accents, style), flush=True)
+            return
+        sys.stdout.write("\n" * size.lines + "\033[H\033[26B")
+        sys.stdout.flush()
+    finally:
+        sys.stdout = output
+    pid = os.fork()
+    if pid:
+        print(pid, flush=True)
+        return
+    # Close the command-substitution pipe so Fish can display its prompt.
+    os.dup2(sys.stderr.fileno(), sys.stdout.fileno())
+    try:
+        animate_background(seed, accents, duration, style)
+    finally:
+        os._exit(0)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -2221,9 +2251,15 @@ def main():
         action="store_true",
         help="Animate reserved greeting rows without reading input",
     )
+    parser.add_argument("--greeting", action="store_true",
+                        help="Reserve rows and start animation in one launch; emit worker PID")
     args = parser.parse_args()
     if not math.isfinite(args.duration) or args.duration <= 0:
         parser.error("--duration must be a positive finite number")
+    if args.greeting:
+        greeting(args.seed if args.seed is not None else random.SystemRandom().randrange(2**63),
+                 args.duration, args.style)
+        return
     columns = shutil.get_terminal_size().columns
     if args.preview is None and (
         not sys.stdout.isatty() or columns < 59 or os.environ.get("TERM") == "dumb"

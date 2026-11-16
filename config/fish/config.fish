@@ -1,10 +1,9 @@
 ## Full bonsai growth time-lapse with patterned ceramic pots.
 function fish_greeting
     if status is-interactive; and test -t 1; and command -q bonsai-grow
-        if bonsai-grow --reserve-animation
-            bonsai-grow --background </dev/null &
-            set -g __bonsai_animation_pid $last_pid
-            disown $last_pid
+        set -l worker (bonsai-grow --greeting </dev/null)
+        if string match -qr '^[0-9]+$' -- "$worker"
+            set -g __bonsai_animation_pid $worker
         end
     end
 end
