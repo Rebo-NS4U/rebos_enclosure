@@ -88,7 +88,7 @@ class ProcessMonitor:
             pass
         return row
 
-    def sample(self):
+    def sample(self, memory_accounting=False):
         now = time.monotonic()
         elapsed = now - self.timestamp if self.timestamp is not None else None
         current = {}
@@ -100,17 +100,42 @@ class ProcessMonitor:
                 row = self.snapshot(base.name)
             except (OSError, ValueError, IndexError):
                 continue
+            if memory_accounting:
+                row['ram'], row['memory_available'] = self.proportional_memory(base)
             current[row['pid']] = row
             old = self.previous.get(row['pid'])
             valid = elapsed and old and old['start'] == row['start']
             result = {key: row[key] for key in ('pid', 'ppid', 'name', 'ram', 'sockets', 'io_available')}
+            if memory_accounting:
+                result['memory_available'] = row['memory_available']
             result['cpu'] = max(0, (row['ticks'] - old['ticks']) / self.ticks / elapsed * 100) if valid else 0
             result['disk'] = max(0, row['read'] + row['write'] - old['read'] - old['write']) / elapsed if valid and old['io_available'] and row['io_available'] else 0
             result['gpu'] = {dev: max(0, ns - old['gpu'].get(dev, ns)) / (elapsed * 1e9) * 100 if valid else 0
                              for dev, ns in row['gpu'].items()}
             rows.append(result)
         self.previous, self.timestamp = current, now
+        if memory_accounting:
+            values = dict(line.split(':', 1) for line in (self.proc / 'meminfo').read_text().splitlines())
+            total = int(values['MemTotal'].split()[0]) * 1024
+            available = int(values['MemAvailable'].split()[0]) * 1024
+            attributed = sum(row['ram'] for row in rows)
+            return dict(processes=rows, memory=dict(total=total, available=available,
+                        used=total - available, attributed=attributed,
+                        other=total - available - attributed,
+                        unreadable=sum(not row['memory_available'] for row in rows)))
         return rows
+
+    @staticmethod
+    def proportional_memory(base):
+        """Count shared pages proportionally; never silently substitute duplicated RSS."""
+        try:
+            with (base / 'smaps_rollup').open() as stream:
+                for line in stream:
+                    if line.startswith('Pss:'):
+                        return int(line.split()[1]) * 1024, True
+        except (OSError, ValueError):
+            pass
+        return 0, False
 
 
 def pick_window():
@@ -184,7 +209,7 @@ if __name__ == '__main__':
         monitor = ProcessMonitor()
         try:
             while True:
-                print(json.dumps(monitor.sample()), flush=True)
+                print(json.dumps(monitor.sample(memory_accounting='--memory-accounting' in sys.argv)), flush=True)
                 time.sleep(1)
         except (BrokenPipeError, KeyboardInterrupt):
             pass

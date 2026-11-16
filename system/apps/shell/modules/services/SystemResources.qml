@@ -16,6 +16,7 @@ Singleton {
     property string detailMetric: ""
     property string detailTitle: ""
     property list<var> processes: []
+    property var memoryAccounting: ({})
     property list<string> gpuPciIds: []
     property var windowInfo: ({})
     property bool pickingWindow: false
@@ -86,13 +87,18 @@ Singleton {
     }
 
     Process {
-        command: ["python3", Quickshell.shellDir + "/scripts/process_monitor.py"]
+        command: root.detailMetric === "ram"
+            ? ["python3", Quickshell.shellDir + "/scripts/process_monitor.py", "--memory-accounting"]
+            : ["python3", Quickshell.shellDir + "/scripts/process_monitor.py"]
         running: GlobalStates.systemMonitorOpen && root.detailMetric !== "" && root.detailMetric !== "window"
         stdout: SplitParser {
             onRead: data => {
                 try {
-                    const rows = JSON.parse(data);
-                    Qt.callLater(() => { root.processes = rows; });
+                    const sample = JSON.parse(data);
+                    Qt.callLater(() => {
+                        root.processes = sample.processes || sample;
+                        root.memoryAccounting = sample.memory || ({});
+                    });
                 } catch (e) { console.warn("Process monitor: invalid sample"); }
             }
         }

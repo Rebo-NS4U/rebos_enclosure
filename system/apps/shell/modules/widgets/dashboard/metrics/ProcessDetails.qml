@@ -22,13 +22,14 @@ ColumnLayout {
         return row[metric] ?? 0;
     }
     function formatted(row): string {
+        if (metric === "ram" && row.memory_available === false) return "Unavailable";
         const v = value(row);
         if (metric === "cpu" || gpuDevice) return v.toFixed(1) + "%";
         if (metric === "network") return v + " sockets";
         return (v / 1024 / 1024).toFixed(1) + (metric === "disk" ? " MiB/s" : " MiB");
     }
     readonly property list<var> groups: ProcessTree.groups(SystemResources.processes, root.metric, root.gpuDevice)
-    readonly property real listedRam: SystemResources.processes.reduce((total, row) => total + (row.ram || 0), 0)
+    readonly property var memory: SystemResources.memoryAccounting
 
     function memorySize(bytes): string {
         return (bytes / 1024 / 1024).toFixed(1) + " MiB";
@@ -45,11 +46,14 @@ ColumnLayout {
         visible: root.metric === "ram"
         wrapMode: Text.Wrap
         font.pixelSize: Styling.fontSize(-3)
-        text: "System RAM: " + root.memorySize(SystemResources.ramUsed * 1024) + " used + "
-            + root.memorySize(SystemResources.ramAvailable * 1024) + " available = "
-            + root.memorySize(SystemResources.ramTotal * 1024) + " total"
-            + "\nListed process memory (RSS): " + root.memorySize(root.listedRam)
-            + " across " + SystemResources.processes.length + " processes"
+        text: root.memory.total === undefined ? "Collecting memory breakdown…"
+            : "Processes (PSS): " + root.memorySize(root.memory.attributed)
+            + "\nSystem / unattributed adjustment: " + root.memorySize(root.memory.other)
+            + "\nUsed: " + root.memorySize(root.memory.used)
+            + " · Available: " + root.memorySize(root.memory.available)
+            + " · Total: " + root.memorySize(root.memory.total)
+            + "\n" + SystemResources.processes.length + " processes · "
+            + root.memory.unreadable + " without readable memory counters"
     }
     StyledText {
         Layout.fillWidth: true
@@ -66,7 +70,7 @@ ColumnLayout {
             : root.metric === "disk" ? "Read + write activity across all disks; this is not space occupied on the selected disk. Restricted processes may be unavailable."
             : root.gpuDevice ? "GPU engine time reported by the driver. Processes without accessible GPU counters are omitted."
             : root.metric === "cpu" ? "CPU uses 100% per core. Expand a tree to see nested subprocesses and their individual usage."
-            : "All readable processes are grouped into trees; expand a tree to see its entries. Process memory (RSS) counts shared pages in each process, so adding rows can count the same memory more than once. System used RAM also includes kernel memory and excludes reclaimable memory estimated as available. These totals do not add up to the same measure; restricted processes may be missing. Samples update independently."
+            : "Shared memory is divided proportionally between processes (PSS). Process totals plus the system / unattributed adjustment equal used RAM. The adjustment includes kernel memory, inaccessible processes and differences in reclaimable memory; it can be negative. Expand trees for individual entries; unavailable counters are excluded. Values are rounded."
     }
     ListView {
         id: list
@@ -100,6 +104,7 @@ ColumnLayout {
                         text: (root.expandedPpid === groupRow.modelData.ppid ? "▾ " : "▸ ")
                             + groupRow.modelData.name + " · PID " + groupRow.modelData.ppid
                             + "\n" + groupRow.modelData.children.length + " processes in tree · " + root.formatted(groupRow.modelData)
+                            + (root.metric === "ram" && groupRow.modelData.children.some(row => row.memory_available === false) ? " (partial)" : "")
                     }
                     MouseArea {
                         anchors.fill: parent
