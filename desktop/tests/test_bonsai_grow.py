@@ -791,6 +791,11 @@ class BonsaiGrowTests(unittest.TestCase):
             self.assertEqual(pixel(x, 260)[3], 255, 'glass wall stays in place')
             self.assertEqual(pixel(x, 493)[3], 0, 'upper tier has a visible setback')
             self.assertGreater(pixel(x, 502)[3], 0, 'middle tier projects past upper tier')
+        for x in (7, 582):
+            self.assertGreater(pixel(x, 493)[3], 0, 'chamfer joins glass to the upper tier')
+        for x in (10, 579):
+            for y in range(486, 499):
+                self.assertEqual(pixel(x, y)[3], 255, 'glass seat has no open seam')
         for x in (1, 588):
             self.assertEqual(pixel(x, 502)[3], 0, 'middle tier has a visible setback')
             self.assertGreater(pixel(x, 510)[3], 0, 'bottom tier projects past middle tier')

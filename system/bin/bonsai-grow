@@ -1844,7 +1844,11 @@ def rounded_frame_png(
             # ledge, a wider middle tier and a broad projecting bottom foot.
             if y + .5 >= height - 1.5 * cell_height:
                 if y + .5 < height - 1.15 * cell_height:
-                    tier_top, tier_bottom, inset = 1.5, 1.15, .9 * cell_width
+                    # Start flush with the glass wall, then chamfer inward
+                    # into the narrow upper tier so neither side hangs free.
+                    seating = (y + .5 - (height - 1.5 * cell_height)) / (.35 * cell_height)
+                    tier_top, tier_bottom = 1.5, 1.15
+                    inset = (.5 + .4 * seating) * cell_width
                 elif y + .5 < height - .65 * cell_height:
                     tier_top, tier_bottom, inset = 1.15, .65, .45 * cell_width
                 else:
@@ -1864,6 +1868,12 @@ def rounded_frame_png(
                 shadow *= math.exp(-floor_depth * 7)
                 level = 32 + floor_depth * 12 - 20 * shadow
                 ink = tuple(round(level + tint) for tint in (0, 3, 5))
+                # A short reflection at the joint carries the glass rim into
+                # its metal seat without adding a bright stripe across the art.
+                side = min(x + .5, width - x - .5)
+                joint = max(0, 1 - floor_depth / .18) if side < 1.6 * cell_width else 0
+                ink = tuple(round(c + (light - c) * joint * .45)
+                            for c, light in zip(ink, rgb))
                 line.extend((*ink, alpha))
             elif y + .5 >= height - 1.15 * cell_height:
                 # A lit bevel, brushed face and recessed lower lip share the
