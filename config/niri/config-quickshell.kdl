@@ -433,3 +433,11 @@ window-rule {
     open-floating true
     open-focused true
 }
+
+// MouseDash keeps a compact arena, centered above the tiled workspace.
+window-rule {
+    match title="^MouseDash · Enclosure$"
+    open-floating true
+    default-column-width { fixed 780; }
+    default-window-height { fixed 600; }
+}

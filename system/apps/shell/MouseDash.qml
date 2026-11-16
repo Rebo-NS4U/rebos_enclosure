@@ -15,9 +15,9 @@ ShellRoot {
         id: window
         title: "MouseDash · Enclosure"
         visible: true
-        maximized: true
-        implicitWidth: 1080
-        implicitHeight: 760
+        maximized: false
+        implicitWidth: 780
+        implicitHeight: 600
         minimumSize: Qt.size(700, 560)
         color: Colors.background
         onVisibleChanged: if (!visible) Qt.quit()

@@ -577,4 +577,4 @@ Enclosure Music opens with Repeat all enabled by default. Repeat song and turnin
 
 Desktop session recovery: **Super+Alt+Q** exits Niri immediately and returns to login without rebooting. Save your work first: session apps close without a confirmation prompt. Sign in again to start a fresh desktop. The shortcut works even when Quickshell is unavailable.
 
-MouseDash uses display-synced frame updates and native Qt scene-graph circles instead of repainting a full-window Canvas. The arena has a palette-tinted dotted backdrop, distinct danger rings and a time-sampled cursor trail. Quiet visuals hides trails and halos while retaining gameplay and collision cues. No extra packages are required.
+MouseDash opens as a centered 780×600 floating window under Niri, keeping the arena compact and the dodging pressure higher. It uses display-synced frame updates and native Qt scene-graph circles instead of repainting a full-window Canvas. The arena has a palette-tinted dotted backdrop, distinct danger rings and a time-sampled cursor trail. Quiet visuals hides trails and halos while retaining gameplay and collision cues. No extra packages are required.
