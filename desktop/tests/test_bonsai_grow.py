@@ -861,9 +861,12 @@ class BonsaiGrowTests(unittest.TestCase):
         for seed in range(16):
             rows = bonsai.render(30, seed, False, 59, fixed_height=True).splitlines()
             self.assertEqual(rows[0], "╭" + "─" * 57 + "╮")
-            self.assertEqual(rows[-2], "├" + "─" * 22 + "▀▀" + "─" * 8 + "▀▀" + "─" * 23 + "┤")
+            self.assertEqual(rows[-2], "├" + "─" * 21 + "▀▀" + "─" * 9 + "▀▀" + "─" * 23 + "┤")
             foot = bonsai.pot_rows(seed)[-1]
             self.assertIn(foot.strip(), rows[-3])
+            for column, glyph in enumerate(rows[-2]):
+                if glyph == "▀":
+                    self.assertEqual(rows[-3][column], "┬")
             self.assertTrue(rows[-3][1:-1].strip())
             self.assertNotIn("╱", rows[0])
 

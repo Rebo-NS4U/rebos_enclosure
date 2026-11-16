@@ -1387,7 +1387,7 @@ def pot_rows(seed):
         "╭═════════════════════╮",
         "╰" + upper.center(21) + "╯",
         " ╲" + lower.center(19) + "╱ ",
-        "  ╰─────────────────╯  ",
+        "  ╰──┬┬─────────┬┬──╯  ",
     )
 
 
@@ -1843,7 +1843,7 @@ def rounded_frame_png(
             if height - 1.5 * cell_height <= y + .5 < height - 1.15 * cell_height:
                 # The two ceramic feet end at the center of the floor row.
                 floor_depth = (y + .5 - (height - 1.5 * cell_height)) / cell_height
-                shadow_x = min(abs(x + .5 - foot * cell_width) for foot in (24, 34))
+                shadow_x = min(abs(x + .5 - foot * cell_width) for foot in (23, 34))
                 shadow = math.exp(-(shadow_x / (1.1 * cell_width)) ** 2)
                 shadow *= math.exp(-floor_depth * 7)
                 level = 32 + floor_depth * 12 - 20 * shadow
@@ -1981,10 +1981,10 @@ def frame_rows(rows, columns, accents, color):
         weight = ""
         return pane(glass + weight + text)
 
-    # Half-height, broad ceramic pads meet the floor without thin posts.
+    # Broad ceramic pads join the downward strokes in the bowl baseline.
     foot_ink = ceramic_palette(accents)["ceramic_foot_11"] if color else ""
-    floor = (margin + edge("├" + "─" * 22) + pane(foot_ink + "▀▀")
-             + edge("─" * 8) + pane(foot_ink + "▀▀")
+    floor = (margin + edge("├" + "─" * 21) + pane(foot_ink + "▀▀")
+             + edge("─" * 9) + pane(foot_ink + "▀▀")
              + edge("─" * 23 + "┤"))
     top = margin + edge("╭" + "─" * width + "╮")
     bottom = margin + edge("╰" + "─" * width + "╯")
