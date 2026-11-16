@@ -63,6 +63,7 @@ ShellRoot {
         property int difficulty: 1
         property string playMode: "survival"
         property bool victory: false
+        property var death: null
         property real elapsed: 0
         readonly property real playerRadius: Game.playerRadius(elapsed)
         property real playerX: 0.5
@@ -92,10 +93,11 @@ ShellRoot {
             property real hard: 0
             property string challenges: "{}"
         }
-        function finish(won) {
+        function finish(won, collision) {
+            death = collision || null;
             victory = won;
             if (won) elapsed = duration;
-            phase = "over";
+            phase = death ? "death" : "over";
             if (elapsed > best) {
                 if (playMode === "survival" && difficulty < 3) {
                     if (difficulty === 0) records.easy = elapsed;
@@ -109,12 +111,19 @@ ShellRoot {
         }
         function reset() {
             phase = "ready"; elapsed = 0; enemies = []; trail = [];
-            enemyVisuals.clear(); victory = false;
+            enemyVisuals.clear(); victory = false; death = null;
         }
         function start(x, y) {
             reset(); playerX = x / arena.width; playerY = y / arena.height;
             spawnClock = 0; trailClock = 0; phase = "playing";
             arena.forceActiveFocus();
+        }
+        function movePlayer(x, y) {
+            const hit = Game.contact(enemies, playerX * arena.width, playerY * arena.height, x, y, playerRadius);
+            playerX = (hit ? hit.x : x) / arena.width;
+            playerY = (hit ? hit.y : y) / arena.height;
+            if (hit) finish(false, hit);
+            return !hit;
         }
         function pause() { if (phase === "playing") phase = "paused"; }
         property bool windowActive: contentItem.Window.active
@@ -151,7 +160,7 @@ ShellRoot {
                     points.push({x: window.playerX, y: window.playerY, time: window.elapsed});
                     window.trail = points;
                 }
-                if (result.hit) window.finish(false);
+                if (result.hit) window.finish(false, result.collision);
                 else if (Game.roundComplete(window.playMode, window.elapsed)) window.finish(true);
 
             }
@@ -164,7 +173,7 @@ ShellRoot {
                 id: arena
                 anchors.fill: parent
                 variant: "common"
-                visible: window.locked
+                visible: window.locked || window.phase === "death"
                 focus: visible; clip: true
                 // Static scene-graph backdrop; nothing uploads a full-arena texture per frame.
                 Rectangle {
@@ -226,7 +235,7 @@ ShellRoot {
                     x: window.playerX * arena.width - width / 2
                     y: window.playerY * arena.height - height / 2
                     width: window.playerRadius * 2; height: width; radius: width / 2
-                    color: window.phase === "over" ? Colors.error : Colors.primary
+                    color: window.phase === "death" ? Colors.error : Colors.primary
                     border.width: 2; border.color: Colors.overBackground
                     Rectangle {
                         anchors.centerIn: parent; width: parent.width + 18; height: width; radius: width / 2
@@ -246,15 +255,51 @@ ShellRoot {
                     cursorShape: window.phase === "playing" ? Qt.BlankCursor : Qt.PointingHandCursor
                     onPositionChanged: mouse => {
                         if (window.phase !== "playing") return;
-                        if (Game.sweptHit(window.enemies, window.playerX * width, window.playerY * height, mouse.x, mouse.y, window.playerRadius)) window.finish(false);
-                        window.playerX = mouse.x / width; window.playerY = mouse.y / height;
+                        window.movePlayer(mouse.x, mouse.y);
                     }
                     onExited: window.pause()
                     onClicked: mouse => {
                         if (window.phase === "paused") {
                             // Check the return path rather than teleporting through obstacles.
-                            if (Game.sweptHit(window.enemies, window.playerX * width, window.playerY * height, mouse.x, mouse.y, window.playerRadius)) window.finish(false);
-                            else { window.playerX = mouse.x / width; window.playerY = mouse.y / height; window.phase = "playing"; }
+                            if (window.movePlayer(mouse.x, mouse.y)) window.phase = "playing";
+                        }
+                    }
+                }
+                // Keep the fatal field visible until the player chooses their next action.
+                Item {
+                    anchors.fill: parent; visible: window.phase === "death"
+                    Rectangle {
+                        readonly property var hit: window.death
+                        x: hit ? hit.enemy.x - width / 2 : 0
+                        y: hit ? hit.enemy.y - height / 2 : 0
+                        width: hit ? hit.enemy.r * 2 + 10 : 0; height: width; radius: width / 2
+                        color: "transparent"; border.width: 3; border.color: Colors.overBackground
+                    }
+                    Rectangle {
+                        readonly property var hit: window.death
+                        readonly property real sx: hit ? (hit.cause === "enemy" ? hit.enemyFromX : hit.fromX) : 0
+                        readonly property real sy: hit ? (hit.cause === "enemy" ? hit.enemyFromY : hit.fromY) : 0
+                        readonly property real ex: hit ? (hit.cause === "enemy" ? hit.enemy.x : hit.x) : 0
+                        readonly property real ey: hit ? (hit.cause === "enemy" ? hit.enemy.y : hit.y) : 0
+                        x: sx; y: sy - 1; height: 2; width: Math.hypot(ex - sx, ey - sy)
+                        transformOrigin: Item.Left; rotation: Math.atan2(ey - sy, ex - sx) * 180 / Math.PI
+                        color: Colors.overBackground
+                    }
+                    Rectangle {
+                        x: 16; width: parent.width - 32; height: 120; radius: 12
+                        y: window.death && window.death.y > parent.height / 2 ? 72 : parent.height - height - 16
+                        color: Qt.alpha(Colors.background, 0.95); border.color: Qt.alpha(Colors.error, 0.5)
+                        ColumnLayout {
+                            anchors.fill: parent; anchors.margins: 14; spacing: 6
+                            StyledText { text: "CAUGHT · " + window.elapsed.toFixed(2) + "s"; color: Colors.error; font.bold: true; font.pixelSize: 18 }
+                            StyledText {
+                                text: window.death && window.death.cause === "cursor" ? "Your cursor crossed into the highlighted ring." : "The highlighted ring caught your cursor."
+                                Layout.fillWidth: true; wrapMode: Text.WordWrap; font.pixelSize: 11
+                            }
+                            RowLayout {
+                                DashButton { text: "Try again"; accent: true; onClicked: window.start(cursorPosition.point.position.x, cursorPosition.point.position.y) }
+                                DashButton { text: "Setup"; onClicked: window.phase = "over" }
+                            }
                         }
                     }
                 }
@@ -299,7 +344,7 @@ ShellRoot {
             StyledRect {
                 id: setup
                 anchors.fill: parent; variant: "common"
-                visible: !window.locked
+                visible: !window.locked && window.phase !== "death"
                 ColumnLayout {
                     anchors.fill: parent; anchors.margins: 28; spacing: 12
                     RowLayout {

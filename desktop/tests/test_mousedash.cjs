@@ -49,3 +49,19 @@ for (const mode of ['survival', 'gauntlet'])
     for (let d = 0; d < 4; d++)
         assert(game.spawnInterval(d, 10000, mode) >= .09);
 console.log('Timed goals, wave escalation and Extreme difficulty: PASS');
+
+// Death inspection must identify the earliest obstacle and exact first contact.
+const cursorHit = game.contact([{x:80,y:50,r:10}, {x:50,y:50,r:10}], 0,50,100,50);
+assert.equal(cursorHit.enemy.x, 50);
+assert.equal(cursorHit.x, 31);
+assert.equal(cursorHit.t, .31);
+assert.equal(cursorHit.cause, 'cursor');
+assert.equal(game.contact([{x:50,y:80,r:10}], 0,50,100,50), null);
+assert.equal(game.contact([{x:50,y:50,r:10}], 50,50,50,50).t, 0);
+const fatalFrame = game.step([{x:0,y:50,r:10,vx:100,vy:0}, {x:0,y:200,r:10,vx:100,vy:0}], 1,50,50,400,400);
+assert.equal(fatalFrame.collision.cause, 'enemy');
+assert.equal(fatalFrame.collision.enemy.x, 31);
+assert.equal(fatalFrame.collision.x, 50);
+assert.equal(fatalFrame.enemies[0].x, 31);
+assert.equal(fatalFrame.enemies[1].x, 31); // The whole field stops at that instant.
+console.log('Exact death position, cause and earliest obstacle: PASS');
