@@ -2011,10 +2011,10 @@ def frame_rows(rows, columns, accents, color):
         weight = ""
         return pane(glass + weight + text)
 
-    # Rounded ceramic feet join the heavier bowl baseline and rest on the floor.
+    # Light uprights meet a heavier flat sole on each foot, seated on the floor.
     foot_ink = ceramic_palette(accents)["ceramic_foot_11"] if color else ""
-    floor = (margin + edge("├" + "─" * 21) + pane(foot_ink + "╰╯")
-             + edge("─" * 9) + pane(foot_ink + "╰╯")
+    floor = (margin + edge("├" + "─" * 21) + pane(foot_ink + "┕┙")
+             + edge("─" * 9) + pane(foot_ink + "┕┙")
              + edge("─" * 23 + "┤"))
     top = margin + edge("╭" + "─" * width + "╮")
     bottom = margin + edge("╰" + "─" * width + "╯")
