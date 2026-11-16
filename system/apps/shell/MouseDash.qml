@@ -6,6 +6,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import QtCore
 import Quickshell
+import Quickshell.Widgets
 import qs.modules.components
 import qs.modules.theme
 import "MouseDashEngine.js" as Game
@@ -36,7 +37,7 @@ ShellRoot {
             }
         }
         background: Rectangle {
-            radius: 12
+            radius: Styling.radius(0)
             color: control.accent ? Colors.primary : Qt.alpha(Colors.primary, control.down ? 0.24 : control.hovered ? 0.16 : 0.06)
             border.width: control.visualFocus ? 2 : 1
             border.color: control.visualFocus ? Colors.overBackground : Qt.alpha(Colors.primary, control.checked ? 0.8 : control.hovered ? 0.5 : 0.2)
@@ -57,7 +58,7 @@ ShellRoot {
         implicitHeight: 480
         minimumSize: Qt.size(480, 480)
         maximumSize: Qt.size(480, 480)
-        color: Colors.background
+        color: "transparent"
         onVisibleChanged: if (!visible) Qt.quit()
         property string phase: "ready"
         property int difficulty: 1
@@ -199,19 +200,22 @@ ShellRoot {
 
             }
         }
-        Item {
+        ClippingRectangle {
             id: view
             anchors.fill: parent
+            radius: Styling.radius(0)
+            color: Colors.background
             HoverHandler { id: cursorPosition }
             StyledRect {
                 id: arena
                 anchors.fill: parent
                 variant: "common"
+                radius: Styling.radius(0)
                 visible: window.locked || window.phase === "death"
                 focus: visible; clip: true
                 // Static scene-graph backdrop; nothing uploads a full-arena texture per frame.
                 Rectangle {
-                    anchors.fill: parent; radius: 16
+                    anchors.fill: parent; radius: arena.radius
                     gradient: Gradient {
                         GradientStop { position: 0; color: Qt.tint(Colors.background, Qt.alpha(Colors.primary, 0.13)) }
                         GradientStop { position: 1; color: Colors.background }
@@ -330,7 +334,7 @@ ShellRoot {
                         color: Colors.overBackground
                     }
                     Rectangle {
-                        x: 16; width: parent.width - 32; height: 120; radius: 12
+                        x: 16; width: parent.width - 32; height: 120; radius: Styling.radius(0)
                         y: window.death && window.death.y > parent.height / 2 ? 72 : parent.height - height - 16
                         color: Qt.alpha(Colors.background, 0.95); border.color: Qt.alpha(Colors.error, 0.5)
                         ColumnLayout {
@@ -392,6 +396,7 @@ ShellRoot {
             StyledRect {
                 id: setup
                 anchors.fill: parent; variant: "common"
+                radius: Styling.radius(0)
                 visible: !window.locked && window.phase !== "death"
                 ColumnLayout {
                     anchors.fill: parent; anchors.margins: 28; spacing: 12
