@@ -1,9 +1,9 @@
 // Pure game mechanics; coordinates and speeds are logical pixels.
 function playerRadius(elapsed) { return Math.min(18, 9 + elapsed * 0.12); }
-function roundDuration(mode) { return mode === "blitz" ? 45 : mode === "gauntlet" ? 60 : 0; }
+function roundDuration(mode) { return mode === "gauntlet" ? 60 : 0; }
 function roundComplete(mode, elapsed) { return roundDuration(mode) > 0 && elapsed >= roundDuration(mode); }
 function pressure(mode, elapsed) {
-    return mode === "blitz" ? 1.45 : mode === "gauntlet" ? 1 + Math.min(5, Math.floor(elapsed / 10)) * 0.22 : 1;
+    return mode === "gauntlet" ? 1 + Math.min(5, Math.floor(elapsed / 10)) * 0.22 : 1;
 }
 function spawnInterval(difficulty, elapsed, mode) {
     return Math.max(0.09, (0.64 - difficulty * 0.14) / (1 + elapsed * 0.045) / pressure(mode, elapsed));

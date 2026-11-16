@@ -75,10 +75,9 @@ ShellRoot {
         readonly property real duration: Game.roundDuration(playMode)
         readonly property var modes: [
             {key: "survival", name: "01  SURVIVAL", caption: "Endless · one life", hint: "Stay alive. The pressure never stops."},
-            {key: "blitz", name: "02  BLITZ", caption: "45 seconds · high speed", hint: "Survive 45 seconds of fast, dense traffic."},
-            {key: "gauntlet", name: "03  GAUNTLET", caption: "60 seconds · six waves", hint: "Six waves. Each one faster than the last."}
+            {key: "gauntlet", name: "02  GAUNTLET", caption: "60 seconds · six waves", hint: "Six waves. Each one faster than the last."}
         ]
-        readonly property int modeIndex: playMode === "survival" ? 0 : playMode === "blitz" ? 1 : 2
+        readonly property int modeIndex: playMode === "survival" ? 0 : 1
         readonly property string recordKey: playMode + difficulty
         readonly property real best: playMode === "survival" && difficulty < 3
             ? (difficulty === 0 ? records.easy : difficulty === 1 ? records.medium : records.hard)
@@ -212,9 +211,15 @@ ShellRoot {
                 }
             }
             StyledRect {
-                id: arena
+                id: gameView
                 variant: "common"
                 Layout.fillWidth: true; Layout.fillHeight: true
+                StyledRect {
+                id: arena
+                variant: "common"
+                anchors.centerIn: parent
+                width: Math.max(0, Math.min(320, gameView.width - 32, gameView.height - 32))
+                height: width
                 focus: true; clip: true
                 onWidthChanged: { window.pause(); window.enemies = []; enemyVisuals.clear(); }
                 onHeightChanged: { window.pause(); window.enemies = []; enemyVisuals.clear(); }
@@ -225,7 +230,7 @@ ShellRoot {
                         GradientStop { position: 0; color: Qt.tint(Colors.background, Qt.alpha(Colors.primary, 0.13)) }
                         GradientStop { position: 1; color: Colors.background }
                     }
-                    border.color: Qt.alpha(Colors.primary, 0.22)
+                    border.width: 1.5; border.color: Qt.alpha(Colors.primary, 0.5)
                 }
                 Repeater {
                     model: Math.ceil(arena.width / 48) * Math.ceil(arena.height / 48)
@@ -321,7 +326,7 @@ ShellRoot {
                     StyledText {
                         width: parent.width; horizontalAlignment: Text.AlignHCenter
                         text: window.phase === "ready" ? "MAKE YOUR MOVE" : window.phase === "paused" ? "CATCH YOUR BREATH" : window.victory ? "CHALLENGE CLEARED" : "ONE MORE RUN?"
-                        font.pixelSize: 25; font.bold: true; color: Colors.primary
+                        font.pixelSize: 20; font.bold: true; color: Colors.primary; wrapMode: Text.WordWrap
                     }
                     StyledText {
                         width: parent.width; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap
@@ -331,7 +336,7 @@ ShellRoot {
                     StyledText {
                         width: parent.width; horizontalAlignment: Text.AlignHCenter
                         text: window.phase === "paused" ? "Esc pauses · moving outside the arena pauses" : "CLICK IN THE ARENA TO " + (window.phase === "over" ? "RETRY  ↗" : "BEGIN  ↗")
-                        color: Colors.primary; font.pixelSize: 11; font.bold: true
+                        color: Colors.primary; font.pixelSize: 11; font.bold: true; wrapMode: Text.WordWrap
                     }
                 }
                 Rectangle {
@@ -345,8 +350,9 @@ ShellRoot {
                     text: "WAVE " + Math.min(6, 1 + Math.floor(window.elapsed / 10)) + " / 6"; font.pixelSize: 11; color: Colors.primary
                 }
             }
+            }
             RowLayout {
-                Layout.fillWidth: true; spacing: 8
+                Layout.fillWidth: true; Layout.minimumHeight: 36; spacing: 8
                 Rectangle { width: 6; height: 6; radius: 3; color: window.phase === "playing" ? Colors.primary : Qt.alpha(Colors.primary, 0.4) }
                 StyledText {
                     text: window.phase === "playing" ? "DODGE THE RINGS" : window.phase === "paused" ? "PAUSED" : "CHOOSE YOUR CHALLENGE"
