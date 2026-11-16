@@ -551,10 +551,13 @@ class BonsaiGrowTests(unittest.TestCase):
 
     def test_cloud_variations_are_stable_connected_and_shaded(self):
         silhouettes = set()
+        widths = set()
         for rising in (True, False):
             for seed in range(40):
                 marks = bonsai.cloud_marks(rising, seed)
                 self.assertEqual(marks, bonsai.cloud_marks(rising, seed))
+                upper = [x for x, y, _, _ in marks if y < 5]
+                widths.add(max(upper) - min(upper) + 1)
                 self.assertGreaterEqual(len({ink for _, _, _, ink in marks}), 4)
                 silhouettes.add(tuple((x, y, glyph) for x, y, glyph, _ in marks))
                 self.assertTrue(all(1 <= x <= 55 and 1 <= y <= 7
@@ -575,7 +578,8 @@ class BonsaiGrowTests(unittest.TestCase):
                                 pixels.remove(neighbor)
                                 pending.append(neighbor)
                 self.assertEqual(components, 2)
-        self.assertGreater(len(silhouettes), 20)
+        self.assertGreater(len(silhouettes), 60)
+        self.assertGreaterEqual(len(widths), 5)
 
     def test_clouds_match_lighting_and_preserve_foreground(self):
         for hour in (3, 6, 9, 12, 17, 21):

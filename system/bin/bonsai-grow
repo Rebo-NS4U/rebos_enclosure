@@ -1417,18 +1417,36 @@ def cloud_marks(rising, seed=None):
         (1, 2, 4, 5, 5, 4, 4, 5, 6, 6, 5, 4, 4, 3, 2, 1),
         (1, 2, 3, 4, 5, 6, 6, 6, 6, 6, 5, 4, 4, 3, 2, 1),
         (1, 2, 3, 4, 4, 5, 5, 4, 4, 5, 5, 4, 3, 2, 2, 1),
+        (1, 3, 5, 6, 6, 5, 4, 3, 4, 5, 6, 6, 5, 3, 2, 1),
+        (1, 2, 3, 5, 6, 6, 5, 4, 3, 3, 4, 4, 3, 3, 2, 1),
+        (1, 2, 4, 5, 5, 4, 3, 4, 5, 6, 6, 5, 4, 4, 2, 1),
+        (1, 2, 3, 3, 4, 4, 5, 6, 6, 6, 5, 4, 3, 2, 2, 1),
     )
     wisps = ((1, 2, 4, 4, 3, 3, 4, 3, 1),
              (1, 2, 3, 4, 5, 5, 4, 3, 1),
-             (1, 3, 4, 4, 4, 3, 3, 2, 1))
+             (1, 3, 4, 4, 4, 3, 3, 2, 1),
+             (1, 2, 3, 4, 3, 4, 4, 2, 1),
+             (1, 3, 4, 5, 5, 4, 3, 2, 1),
+             (1, 2, 3, 3, 2, 3, 3, 2, 1))
     marks = []
-    for bank, (profiles, base, anchor) in enumerate(
-            ((crowns, 8, 39 if rising else 2),
-             (wisps, 15, 39 if rising else 8))):
+    for bank, profiles in enumerate((crowns, wisps)):
         profile = rng.choice(profiles)
         if rng.choice((False, True)):
             profile = profile[::-1]
-        anchor += rng.randrange(2)
+        # Resample the rounded crown as a whole: varied widths without noisy
+        # individual columns or changes to the scene between animation frames.
+        width = rng.randint(12, 17) if bank == 0 else rng.randint(7, 11)
+        stretched = []
+        for column in range(width):
+            position = column * (len(profile) - 1) / (width - 1)
+            index = int(position)
+            fraction = position - index
+            stretched.append(round(profile[index] * (1 - fraction)
+                                   + profile[min(index + 1, len(profile) - 1)] * fraction))
+        profile = stretched
+        base = rng.randint(8, 9) if bank == 0 else rng.randint(15, 16)
+        pane_start = 39 if rising else 2
+        anchor = rng.randint(pane_start, pane_start + 17 - width)
         for column, height in enumerate(profile):
             # Lift the tapered ends by a half-cell; the central underside stays
             # continuous, without the detached flecks of scaled cloud lobes.
