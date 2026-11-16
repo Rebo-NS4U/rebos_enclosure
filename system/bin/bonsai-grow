@@ -1406,7 +1406,7 @@ def moon_palette():
     return palette
 
 
-def cloud_marks(rising, seed=None):
+def cloud_marks(rising, seed=None, kind=None):
     """Sculpted cloud banks with continuous bellies and varied rounded crowns."""
     rng = random.Random(f"{GLASS_SEED if seed is None else seed}:clouds")
     # Heights are vertical half-cells: hand-shaped silhouettes retain clean
@@ -1428,30 +1428,51 @@ def cloud_marks(rising, seed=None):
              (1, 2, 3, 4, 3, 4, 4, 2, 1),
              (1, 3, 4, 5, 5, 4, 3, 2, 1),
              (1, 2, 3, 3, 2, 3, 3, 2, 1))
+    feathers = ((1, 1, 2, 2, 2, 1, 1, 1, 1),
+                (1, 1, 1, 2, 2, 2, 2, 1, 1))
+    shelves = ((1, 2, 2, 3, 3, 2, 2, 3, 2, 2, 1),)
+    # Each weather pattern controls count, proportions and vertical rhythm.
+    # All coordinates stay above the pot; foreground masking protects the tree.
+    layouts = {
+        "clear": (),
+        "mega": ((crowns, 24, 30, 12, 1.65),),
+        "cumulus": ((crowns, 11, 18, 9, 1),),
+        "scattered": ((wisps, 5, 9, 6, 0.7),
+                      (wisps, 6, 10, 11, 0.8),
+                      (wisps, 5, 9, 16, 0.7)),
+        "cirrus": ((feathers, 14, 23, 5, 1),
+                   (feathers, 10, 19, 10, 1),
+                   (feathers, 8, 15, 15, 1)),
+        "stratus": ((shelves, 23, 30, 8, 1),
+                    (shelves, 17, 26, 14, 0.8)),
+        "layered": ((crowns, 12, 17, 8, 1),
+                    (wisps, 7, 11, 16, 1)),
+    }
+    kind = rng.choice(tuple(layouts)) if kind is None else kind
     marks = []
-    for bank, profiles in enumerate((crowns, wisps)):
+    for bank, (profiles, narrow, wide, base, scale) in enumerate(layouts[kind]):
         profile = rng.choice(profiles)
         if rng.choice((False, True)):
             profile = profile[::-1]
-        # Resample the rounded crown as a whole: varied widths without noisy
-        # individual columns or changes to the scene between animation frames.
-        width = rng.randint(12, 17) if bank == 0 else rng.randint(7, 11)
+        # Resample whole silhouettes to preserve soft, connected curves.
+        width = rng.randint(narrow, wide)
+        if kind == "mega":
+            scale = 10 / max(profile)
         stretched = []
         for column in range(width):
             position = column * (len(profile) - 1) / (width - 1)
             index = int(position)
             fraction = position - index
-            stretched.append(round(profile[index] * (1 - fraction)
-                                   + profile[min(index + 1, len(profile) - 1)] * fraction))
+            stretched.append(round((profile[index] * (1 - fraction)
+                                   + profile[min(index + 1, len(profile) - 1)] * fraction) * scale))
         profile = stretched
-        base = rng.randint(8, 9) if bank == 0 else rng.randint(15, 16)
-        pane_start = 39 if rising else 2
-        anchor = rng.randint(pane_start, pane_start + 17 - width)
+        pane_width = max(17, width)
+        pane_start = 56 - pane_width if rising else 2
+        anchor = rng.randint(pane_start, pane_start + pane_width - width)
         for column, height in enumerate(profile):
-            # Lift the tapered ends by a half-cell; the central underside stays
-            # continuous, without the detached flecks of scaled cloud lobes.
-            bottom = base - (column in (0, len(profile) - 1))
-            height = max(2, height)
+            # A shared belly keeps even the finest tapered tips connected.
+            bottom = base
+            height = max(1 if kind in ("cirrus", "stratus") else 2, height)
             top = bottom - height
             for y in range(top // 2, (bottom - 1) // 2 + 1):
                 halves = tuple(top <= y * 2 + half < bottom for half in (0, 1))
@@ -1463,7 +1484,9 @@ def cloud_marks(rising, seed=None):
                 facing = column / (len(profile) - 1)
                 facing = 1 - facing if rising else facing
                 shade = min(5, max(0, round(depth ** 1.3 * 4 + (1 - facing) * 0.8)))
-                if y * 2 + 2 >= bottom:
+                if kind == "cirrus":
+                    shade = min(4, 1 + round(depth * 2 + (1 - facing)))
+                elif y * 2 + 2 >= bottom:
                     shade = max(shade, 4 if bank == 0 else 5)
                 marks.append((anchor + column, y, glyph, f"sky_cloud{shade}"))
     return marks

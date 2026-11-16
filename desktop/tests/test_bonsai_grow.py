@@ -549,48 +549,60 @@ class BonsaiGrowTests(unittest.TestCase):
                          {(x, y, ink) for x, y, glyph, ink in reflected})
         self.assertEqual(len(set(bonsai.moon_palette().values())), 8)
 
-    def test_cloud_variations_are_stable_connected_and_shaded(self):
+    def test_cloud_weather_patterns_are_stable_connected_and_distinct(self):
+        patterns = {'clear': 0, 'mega': 1, 'cumulus': 1, 'scattered': 3,
+                    'cirrus': 3, 'stratus': 2, 'layered': 2}
         silhouettes = set()
-        widths = set()
         for rising in (True, False):
-            for seed in range(40):
-                marks = bonsai.cloud_marks(rising, seed)
-                self.assertEqual(marks, bonsai.cloud_marks(rising, seed))
-                upper = [x for x, y, _, _ in marks if y < 5]
-                widths.add(max(upper) - min(upper) + 1)
-                self.assertGreaterEqual(len({ink for _, _, _, ink in marks}), 4)
-                silhouettes.add(tuple((x, y, glyph) for x, y, glyph, _ in marks))
-                self.assertTrue(all(1 <= x <= 55 and 1 <= y <= 7
-                                    for x, y, _, _ in marks))
-                # Verify actual half-pixels, including tapered tips, connect
-                # into exactly two banks without detached speckles.
-                pixels = {(x, y * 2 + half) for x, y, glyph, _ in marks
-                          for half in (0, 1)
-                          if glyph == '█' or glyph == ('▀' if half == 0 else '▄')}
-                components = 0
-                while pixels:
-                    pending = [pixels.pop()]
-                    components += 1
-                    while pending:
-                        x, y = pending.pop()
-                        for neighbor in ((x-1, y), (x+1, y), (x, y-1), (x, y+1)):
-                            if neighbor in pixels:
-                                pixels.remove(neighbor)
-                                pending.append(neighbor)
-                self.assertEqual(components, 2)
-        self.assertGreater(len(silhouettes), 60)
-        self.assertGreaterEqual(len(widths), 5)
+            for kind, expected in patterns.items():
+                for seed in range(20):
+                    marks = bonsai.cloud_marks(rising, seed, kind)
+                    self.assertEqual(marks, bonsai.cloud_marks(rising, seed, kind))
+                    self.assertEqual(bool(marks), kind != 'clear')
+                    silhouettes.add(tuple((x, y, glyph) for x, y, glyph, _ in marks))
+                    self.assertTrue(all(1 <= x <= 55 and 1 <= y <= 7
+                                        for x, y, _, _ in marks))
+                    self.assertTrue(all(ink in bonsai.cloud_palette(12)
+                                        for _, _, _, ink in marks))
+                    if kind == 'mega':
+                        self.assertGreaterEqual(len({x for x, _, _, _ in marks}), 24)
+                        self.assertGreaterEqual(len({y for _, y, _, _ in marks}), 5)
+                    pixels = {(x, y * 2 + half) for x, y, glyph, _ in marks
+                              for half in (0, 1)
+                              if glyph == '█' or glyph == ('▀' if half == 0 else '▄')}
+                    components = 0
+                    while pixels:
+                        pending = [pixels.pop()]
+                        components += 1
+                        while pending:
+                            x, y = pending.pop()
+                            for neighbor in ((x-1, y), (x+1, y), (x, y-1), (x, y+1)):
+                                if neighbor in pixels:
+                                    pixels.remove(neighbor)
+                                    pending.append(neighbor)
+                    self.assertEqual(components, expected, (kind, seed))
+        self.assertGreater(len(silhouettes), 100)
+        # Automatic selection includes empty and single/multiple cloud scenes.
+        selected = [bonsai.cloud_marks(True, seed) for seed in range(100)]
+        self.assertTrue(any(not marks for marks in selected))
+        self.assertTrue(any(marks for marks in selected))
 
     def test_clouds_match_lighting_and_preserve_foreground(self):
-        for hour in (3, 6, 9, 12, 17, 21):
+        cases = ((hour, kind) for hour in (3, 6, 9, 12, 17, 21)
+                 for kind in ('clear', 'mega', 'cumulus', 'scattered',
+                              'cirrus', 'stratus', 'layered'))
+        for hour, kind in cases:
             canvas = bonsai.specimen_canvas(30, 42, 'informal', 42)
             foreground = {(x, y): cell for y, row in enumerate(canvas)
                           for x, cell in enumerate(row) if cell[1]}
-            bonsai.sky_pane(canvas, hour)
+            rising = 6 <= hour < 12 or hour >= 18
+            marks = bonsai.cloud_marks(rising, 42, kind)
+            with patch.object(bonsai, 'cloud_marks', return_value=marks):
+                bonsai.sky_pane(canvas, hour)
             clouds = [(x, y, glyph, ink) for y, row in enumerate(canvas)
                       for x, (glyph, ink) in enumerate(row)
                       if ink.startswith('sky_cloud')]
-            self.assertTrue(clouds)
+            self.assertEqual(bool(clouds), kind != 'clear')
             self.assertTrue(all(1 <= x <= 55 and 1 <= y <= 8
                                 and glyph in '█▀▄' for x, y, glyph, ink in clouds))
             self.assertTrue(all(ink in bonsai.cloud_palette(hour)
