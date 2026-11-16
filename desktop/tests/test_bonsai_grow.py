@@ -591,6 +591,22 @@ class BonsaiGrowTests(unittest.TestCase):
         self.assertTrue(any(not marks for marks in selected))
         self.assertTrue(any(marks for marks in selected))
 
+    def test_billowing_clouds_have_multiple_distinct_peaks(self):
+        for kind in ('cumulus', 'mega'):
+            for seed in range(100):
+                tops = {}
+                for x, y, glyph, _ in bonsai.cloud_marks(True, seed, kind):
+                    top = y * 2 + (glyph == '▄')
+                    tops[x] = min(top, tops.get(x, top))
+                # Collapse plateaus before counting separate upward puffs.
+                contour = []
+                for x in sorted(tops):
+                    if not contour or contour[-1] != tops[x]:
+                        contour.append(tops[x])
+                peaks = sum(a > b < c for a, b, c in
+                            zip(contour, contour[1:], contour[2:]))
+                self.assertGreaterEqual(peaks, 2, (kind, seed, contour))
+
     def test_cloud_palette_has_soft_light_and_cool_shadow(self):
         import re
         def rgb(ink):
