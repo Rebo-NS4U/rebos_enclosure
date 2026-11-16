@@ -1387,7 +1387,7 @@ def pot_rows(seed):
         "╭═════════════════════╮",
         "╰" + upper.center(21) + "╯",
         " ╲" + lower.center(19) + "╱ ",
-        "  ╰━━━━━━━━━━━━━━━━━╯  ",
+        "  ╰───┬─────────┬───╯  ",
     )
 
 
@@ -1828,7 +1828,7 @@ def rounded_frame_png(
         line = bytearray(b"\0")  # PNG scanline: no filter.
         x = 0
         while x < width:
-            if x == left and right > left and qy <= 0 and radius >= 2.5 and y < height - 2.5 * cell_height:
+            if x == left and right > left and qy <= 0 and radius >= 2.5 and y < height - 1.5 * cell_height:
                 line.extend(bytes((*backing, round(255 * opacity))) * (right - left))
                 x = right
                 continue
@@ -1840,20 +1840,19 @@ def rounded_frame_png(
                 round(base + (channel - base) * rim)
                 for base, channel in zip(backing, rgb)
             )
-            if height - 2.5 * cell_height <= y + .5 < height - 1.5 * cell_height:
-                # Bring the horizontal floor up to the ceramic glyph baseline.
-                # Its contact shadow anchors the foot without moving the tree.
-                floor_depth = (y + .5 - (height - 2.5 * cell_height)) / cell_height
-                shadow_x = max(0, abs(x + .5 - 28.5 * cell_width) - 9 * cell_width)
-                shadow = math.exp(-(shadow_x / (1.5 * cell_width)) ** 2)
+            if height - 1.5 * cell_height <= y + .5 < height - 1.15 * cell_height:
+                # The two ceramic feet end at the center of the floor row.
+                floor_depth = (y + .5 - (height - 1.5 * cell_height)) / cell_height
+                shadow_x = min(abs(x + .5 - foot * cell_width) for foot in (23.5, 33.5))
+                shadow = math.exp(-(shadow_x / (1.1 * cell_width)) ** 2)
                 shadow *= math.exp(-floor_depth * 7)
                 level = 32 + floor_depth * 12 - 20 * shadow
                 ink = tuple(round(level + tint) for tint in (0, 3, 5))
                 line.extend((*ink, alpha))
-            elif y + .5 >= height - 1.5 * cell_height:
+            elif y + .5 >= height - 1.15 * cell_height:
                 # A lit bevel, brushed face and recessed lower lip share the
                 # original low footprint directly beneath the ceramic foot.
-                depth = (y + .5 - (height - 1.5 * cell_height)) / cell_height
+                depth = (y + .5 - (height - 1.15 * cell_height)) / cell_height
                 across = x / width
                 sheen = max(0, 1 - abs(across - .32) * 2)
                 if depth < .09:
@@ -1875,7 +1874,7 @@ def rounded_frame_png(
                 seam = math.exp(-((side - 2.8) / .8) ** 2) * .34
                 ribbon_center = cell_width * (.83 + .16 * y / height)
                 ribbon = math.exp(-((side - ribbon_center) / (cell_width * .24)) ** 2)
-                taper = math.sin(math.pi * max(0, min(1, y / (height - 1.5 * cell_height)))) ** 2
+                taper = math.sin(math.pi * max(0, min(1, y / (height - 1.15 * cell_height)))) ** 2
                 reflection = (seam + ribbon * .16 * taper) * (1 - rim)
                 ink = tuple(round(c + (light - c) * reflection)
                             for c, light in zip(ink, (168, 203, 213)))
@@ -1982,12 +1981,17 @@ def frame_rows(rows, columns, accents, color):
         weight = ""
         return pane(glass + weight + text)
 
+    # Short stems descend from the bowl and terminate on the floor plane.
+    foot_ink = ceramic_palette(accents)["ceramic_foot_11"] if color else ""
+    floor = (margin + edge("├" + "─" * 22) + pane(foot_ink + "┴")
+             + edge("─" * 9) + pane(foot_ink + "┴")
+             + edge("─" * 24 + "┤"))
     top = margin + edge("╭" + "─" * width + "╮")
     bottom = margin + edge("╰" + "─" * width + "╯")
     return (
         [graphic + top]
         + [margin + edge("│") + pane(row) + edge("│") for row in rows[:-1]]
-        + [margin + edge("├" + "─" * width + "┤")]
+        + [floor]
         + [bottom]
     )
 
@@ -2610,7 +2614,7 @@ def prepared_directory(columns):
     return (
         Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache"))
         / "bonsai-grow"
-        / f"prepared-v17-{columns}"
+        / f"prepared-v18-{columns}"
     )
 
 

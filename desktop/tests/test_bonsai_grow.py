@@ -69,7 +69,7 @@ class BonsaiGrowTests(unittest.TestCase):
                     self.assertEqual(pixel(295, 10), (240, 130, 80, 255))
                     self.assertEqual(pixel(295, 0)[3], 0)
                     self.assertEqual(pixel(295, 495)[3], 255, "base stays solid")
-                    self.assertGreater(sum(pixel(295, 491)[:3]), sum(pixel(295, 500)[:3]), "bevel shades into the lower lip")
+                    self.assertGreater(sum(pixel(295, 497)[:3]), sum(pixel(295, 500)[:3]), "bevel shades into the lower lip")
                     self.assertEqual(pixel(295, 510)[3], 0, "base stays low")
 
     def test_transparent_materials_gain_definition_without_changing_accents(self):
@@ -787,13 +787,12 @@ class BonsaiGrowTests(unittest.TestCase):
         self.assertEqual(pixel(584, 260), (240, 130, 80, 255))
         self.assertEqual(pixel(589, 260)[3], 0)
         self.assertEqual(pixel(295, 519)[3], 0)
-        self.assertEqual(pixel(295, 470)[3], 255, 'floor meets the pot bottom stroke')
-        self.assertLess(sum(pixel(295, 470)[:3]), sum(pixel(100, 470)[:3]),
-                        'contact starts at the horizontal stroke, without an air gap')
-        self.assertLess(sum(pixel(295, 475)[:3]), sum(pixel(100, 475)[:3]),
-                        'contact shadow sits beneath the ceramic foot')
-        self.assertGreater(sum(pixel(295, 485)[:3]), sum(pixel(295, 475)[:3]),
-                           'shadow softens toward the front bevel')
+        self.assertEqual(pixel(235, 490)[3], 255, 'floor meets the feet')
+        self.assertEqual(pixel(295, 475), (18, 52, 86, 255),
+                         'open space below the bowl, between the feet')
+        for x in (235, 335):
+            self.assertLess(sum(pixel(x, 490)[:3]), sum(pixel(295, 490)[:3]),
+                            'small contact shadows sit under each foot')
 
     def test_glass_varies_between_seeds_and_stays_stable_within_a_session(self):
         first = bonsai.glass_reflections(11, True)
@@ -862,7 +861,7 @@ class BonsaiGrowTests(unittest.TestCase):
         for seed in range(16):
             rows = bonsai.render(30, seed, False, 59, fixed_height=True).splitlines()
             self.assertEqual(rows[0], "╭" + "─" * 57 + "╮")
-            self.assertEqual(rows[-2], "├" + "─" * 57 + "┤")
+            self.assertEqual(rows[-2], "├" + "─" * 22 + "┴" + "─" * 9 + "┴" + "─" * 24 + "┤")
             foot = bonsai.pot_rows(seed)[-1]
             self.assertIn(foot.strip(), rows[-3])
             self.assertTrue(rows[-3][1:-1].strip())
@@ -1848,7 +1847,7 @@ class BonsaiGrowTests(unittest.TestCase):
         greeting = source.split('# Finish painting')[0]
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            (root / 'bonsai-grow/prepared-v17-100').mkdir(parents=True)
+            (root / 'bonsai-grow/prepared-v18-100').mkdir(parents=True)
             (root / 'rebos_shell').mkdir()
             (root / 'bin').mkdir()
             script = root / 'bin/bonsai-grow'
@@ -1856,7 +1855,7 @@ class BonsaiGrowTests(unittest.TestCase):
             script.chmod(0o755)
             config = root / 'greeting.fish'
             config.write_text(greeting)
-            cache = root / 'bonsai-grow/prepared-v17-100/0.ready'
+            cache = root / 'bonsai-grow/prepared-v18-100/0.ready'
             palette = root / 'rebos_shell/effective-palette.json'
             palette.write_text('{}')
             for fresh in (True, False):
@@ -1901,7 +1900,7 @@ class BonsaiGrowTests(unittest.TestCase):
         source = (SOURCE.parents[1] / '../config/fish/config.fish').resolve().read_text()
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            pool = root / 'bonsai-grow/prepared-v17-100'
+            pool = root / 'bonsai-grow/prepared-v18-100'
             pool.mkdir(parents=True)
             (root / 'bin').mkdir()
             script = root / 'bin/bonsai-grow'
