@@ -899,7 +899,7 @@ Item {
     function requestFeedback(kind, glyph = null) {
         if (!Motion.enabled || !visible || !practicing) return;
         if (kind === "letter" || kind === "error") {
-            if (!glyph) return;
+            if (!glyph || (kind === "error" && (!glyph.typed || !glyph.incorrect))) return;
             // Each keystroke finishes its own fade, even during the next key or row.
             glyph.stopFeedback();
             if (glowingGlyphs.length >= 12) glowingGlyphs[0].stopFeedback();
@@ -2582,7 +2582,12 @@ Item {
                                                 }
                                                 transformOrigin: Item.Center
                                                 function celebrate() { root.requestFeedback("letter", glyph); }
-                                                function startFeedback(failed = false) { failedFeedback = failed; keyFeedback.restart(); }
+                                                function startFeedback(failed = false) {
+                                                    // A delayed feedback request must still match the current input.
+                                                    failedFeedback = failed && typed && incorrect;
+                                                    keyFeedback.restart();
+                                                }
+                                                onIncorrectChanged: { if (!incorrect && failedFeedback) stopFeedback(); }
                                                 function stopFeedback() { keyFeedback.stop(); spark = 0; failedFeedback = false; root.forgetGlyph(glyph); }
                                                 NumberAnimation {
                                                     id: keyFeedback

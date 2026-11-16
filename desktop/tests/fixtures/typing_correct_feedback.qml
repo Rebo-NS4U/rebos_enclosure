@@ -24,6 +24,17 @@ ShellRoot {
                     if (glyph.rotation || glyph.scale !== 1 || glyph.transform[0].x || glyph.transform[0].y) throw Error("Correct letter moved like a rejection: " + i);
                     if (!glyph.typed || glyph.incorrect || glyph.failedFeedback) throw Error("Correct letter rejected: " + i);
                 }
+                const failures = practice.failureEvents;
+                const correct = practice.glyphItems[0];
+                // Modifier/navigation keys must not change input or replay rejection.
+                driver.keyClick(Qt.Key_Meta, Qt.NoModifier, 0);
+                driver.keyClick(Qt.Key_Left, Qt.NoModifier, 0);
+                driver.keyClick(Qt.Key_Right, Qt.NoModifier, 0);
+                practice.requestFeedback("error", correct);
+                correct.startFeedback(true);
+                if (correct.failedFeedback || correct.rejectionOffset || correct.rotation || correct.scale !== 1)
+                    throw Error("Correct glyph accepted stale rejection feedback");
+                if (practice.failureEvents !== failures) throw Error("Stale rejection counted as an error");
                 if (practice.failureEvents) throw Error("Correct keys triggered error events: " + practice.failureEvents);
                 driver.keyClick(Qt.Key_X, Qt.NoModifier, 0);
                 if (!practice.glyphItems[3].failedFeedback) throw Error("Mistake did not animate");
