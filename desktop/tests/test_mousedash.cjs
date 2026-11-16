@@ -133,3 +133,26 @@ game.steerDebris(debris,1);
 assert(debris[0].vy > 0); assert(Math.abs(Math.hypot(debris[0].vx,debris[0].vy)-100)<1e-9);
 assert.equal(debris[1].vy,0);
 console.log('Starwake pulse boundary and orbital steering: PASS');
+
+// A swept close pass earns once per hazard, including clear endpoints.
+const closePass = [{x:50,y:25,r:10}];
+assert.equal(game.graze(closePass,0,0,100,0,9),1);
+assert.equal(game.graze(closePass,100,0,0,0,9),0);
+assert.equal(game.graze([{x:50,y:19,r:10}],0,0,100,0,9),0); // Contact.
+assert.equal(game.graze([{x:50,y:34,r:10}],0,0,100,0,9),0); // Too far.
+const incomingGraze = [{x:0,y:25,r:10,vx:100,vy:0}];
+assert.equal(game.step(incomingGraze,1,50,0,480,480).grazes,1);
+assert.equal(game.step(incomingGraze,0,50,0,480,480).grazes,0);
+const lethal = game.step([{x:0,y:25,r:10,vx:100,vy:0},{x:0,y:0,r:10,vx:100,vy:0}],1,50,0,480,480);
+assert(lethal.hit); assert.equal(lethal.grazes,0);
+for (const [age,points] of [[0,150],[2,150],[2.001,100]]) assert.equal(game.starReward(0,age).points,points);
+assert.equal(game.starReward(5,1).combo,5);
+assert.equal(game.starReward(5,1).points,750);
+let bonus = game.award(960,40,10,0,0);
+assert.equal(bonus.score,1000); assert(bonus.activated); assert.equal(bonus.overdriveUntil,16);
+bonus = game.award(1000,100,15,16,1);
+assert.equal(bonus.score,1200); assert(!bonus.activated); assert.equal(bonus.overdriveUntil,16);
+assert.equal(game.award(1000,100,16,16,1).score,1100); // Exact expiry.
+bonus = game.award(1900,100,15,16,1);
+assert.equal(bonus.score,2100); assert.equal(bonus.overdriveUntil,21);
+console.log('Near-miss sweeps, anti-repeat, fatal-frame exclusion, quick stars and overdrive milestones: PASS');

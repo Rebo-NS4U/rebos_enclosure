@@ -65,11 +65,15 @@ function step(enemies, dt, px, py, w, h, radius = 9) {
     }
     // Freeze the entire field at first contact, rather than past the collision.
     const advance = dt * (collision ? collision.t : 1), live = [];
+    let grazes = 0;
     for (const e of enemies) {
+        if (!collision && !e.grazed && nearPass(e.x, e.y, e.x + e.vx * advance, e.y + e.vy * advance, px, py, radius + e.r)) {
+            e.grazed = true; grazes++;
+        }
         e.x += e.vx * advance; e.y += e.vy * advance;
         if (e.x > -100 && e.x < w+100 && e.y > -100 && e.y < h+100) live.push(e);
     }
-    return {enemies:live, hit:collision !== null, collision:collision};
+    return {enemies:live, hit:collision !== null, collision:collision, grazes:grazes};
 }
 
 // One slow, harmless touch target at a time. Keep its lane clear of the HUD.
@@ -97,4 +101,30 @@ function steerDebris(enemies, dt) {
 function pulse(enemies, x, y, radius) {
     const live = enemies.filter(e => Math.hypot(e.x - x, e.y - y) > radius + e.r);
     return {enemies: live, count: enemies.length - live.length};
+}
+
+// Closest point on the swept path. Actual contacts never earn a near-miss.
+function nearPass(x, y, nx, ny, cx, cy, radius) {
+    const dx = nx-x, dy = ny-y, length = dx*dx+dy*dy;
+    const t = length ? Math.max(0, Math.min(1, ((cx-x)*dx+(cy-y)*dy)/length)) : 0;
+    const distance = Math.hypot(x+dx*t-cx, y+dy*t-cy);
+    return distance > radius && distance <= radius + 14;
+}
+function graze(enemies, x, y, nx, ny, radius) {
+    let count = 0;
+    for (const e of enemies) if (!e.grazed && nearPass(x,y,nx,ny,e.x,e.y,radius+e.r)) {
+        e.grazed = true; count++;
+    }
+    return count;
+}
+function starReward(combo, age) {
+    const chain = Math.min(5, combo + 1);
+    return {combo:chain, points:chain * (age <= 2 ? 150 : 100), quick:age <= 2};
+}
+function award(score, points, elapsed, overdriveUntil, milestone) {
+    const next = score + points * (elapsed < overdriveUntil ? 2 : 1);
+    const reached = Math.floor(next / 1000);
+    return {score:next, milestone:Math.max(milestone,reached),
+        overdriveUntil:reached > milestone ? elapsed + 6 : overdriveUntil,
+        activated:reached > milestone};
 }

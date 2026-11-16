@@ -113,6 +113,27 @@ ShellRoot {
         property int targetsCollected: 0
         property int score: 0
         property int combo: 0
+        property int nearMisses: 0
+        property real comboUntil: 0
+        property real overdriveUntil: 0
+        property int milestone: 0
+        property string notice: ""
+        property real noticeUntil: 0
+        readonly property bool overdrive: elapsed < overdriveUntil
+        readonly property int bestScore: Number(JSON.parse(records.scoreRecords)[recordKey] || 0)
+        function awardPoints(points, label) {
+            const reward = Game.award(score, points, elapsed, overdriveUntil, milestone);
+            const gained = reward.score - score;
+            score = reward.score; milestone = reward.milestone; overdriveUntil = reward.overdriveUntil;
+            notice = reward.activated ? "OVERDRIVE · DOUBLE SCORE FOR 6s" : label + " +" + gained;
+            noticeUntil = elapsed + 1.6;
+        }
+        function awardGrazes(count) {
+            if (!count) return;
+            nearMisses += count;
+            if (combo > 0) comboUntil = Math.min(elapsed + 8, comboUntil + count);
+            awardPoints(count * 40, "NEAR MISS");
+        }
         property int pulseCharges: 1
         property real pulseTime: -10
         property real pulseX: 0
@@ -122,7 +143,8 @@ ShellRoot {
             pulseCharges--; pulseTime = elapsed;
             pulseX = playerX * arena.width; pulseY = playerY * arena.height;
             const cleared = Game.pulse(enemies, pulseX, pulseY, 115);
-            enemies = cleared.enemies; score += cleared.count * 25;
+            enemies = cleared.enemies;
+            if (cleared.count) awardPoints(cleared.count * 25, "PULSE");
         }
         property real spawnClock: 0
         property real trailClock: 0
@@ -130,8 +152,8 @@ ShellRoot {
         readonly property bool locked: phase === "playing" || phase === "paused"
         readonly property real duration: Game.roundDuration(playMode)
         readonly property var modes: [
-            {key: "survival", name: "DEEP SPACE", caption: "Endless expedition", hint: "Collect stars for combos. Every third star recharges your pulse."},
-            {key: "gauntlet", name: "WARP RUN", caption: "60s · six sectors", hint: "Reach the jump gate through six escalating sectors."}
+            {key: "survival", name: "DEEP SPACE", caption: "Endless expedition", hint: "Skim debris for +40. Chain stars fast. Every 1,000 points: overdrive."},
+            {key: "gauntlet", name: "WARP RUN", caption: "60s · six sectors", hint: "Score big through six sectors. Every 1,000 points: 6s double score."}
         ]
         readonly property int modeIndex: playMode === "survival" ? 0 : 1
         readonly property string recordKey: playMode + difficulty
@@ -146,12 +168,17 @@ ShellRoot {
             property real medium: 0
             property real hard: 0
             property string challenges: "{}"
+            property string scoreRecords: "{}"
         }
         function finish(won, collision) {
             death = collision || null;
             victory = won;
             if (won) elapsed = duration;
             phase = death ? "death" : "over";
+            if (score > bestScore) {
+                const scores = JSON.parse(records.scoreRecords);
+                scores[recordKey] = score; records.scoreRecords = JSON.stringify(scores);
+            }
             if (elapsed > best) {
                 if (playMode === "survival" && difficulty < 3) {
                     if (difficulty === 0) records.easy = elapsed;
@@ -168,6 +195,7 @@ ShellRoot {
             enemyVisuals.clear(); victory = false; death = null;
             pickupTarget = null; targetClock = 0; targetsCollected = 0; collection = null;
             score = 0; combo = 0; pulseCharges = 1; pulseTime = -10;
+            nearMisses = 0; comboUntil = 0; overdriveUntil = 0; milestone = 0; notice = ""; noticeUntil = 0;
         }
         function start(x, y) {
             reset(); playerX = x / arena.width; playerY = y / arena.height;
@@ -181,21 +209,28 @@ ShellRoot {
             playerX = (hit ? hit.x : x) / arena.width;
             playerY = (hit ? hit.y : y) / arena.height;
             if (hit) finish(false, hit);
-            else if (pickup) collectTarget();
+            else {
+                awardGrazes(Game.graze(enemies, fromX, fromY, x, y, playerRadius));
+                if (pickup) collectTarget();
+            }
             return !hit;
         }
         function collectTarget() {
             if (phase !== "playing" || !pickupTarget) return false;
-            collection = {x: pickupTarget.x, y: pickupTarget.y, time: elapsed};
+            if (elapsed >= comboUntil) combo = 0;
+            const reward = Game.starReward(combo, elapsed - targetBorn);
+            combo = reward.combo; comboUntil = elapsed + 8;
+            const before = score;
+            awardPoints(reward.points, reward.quick ? "QUICK STAR" : "STAR");
+            collection = {x: pickupTarget.x, y: pickupTarget.y, time: elapsed, points: score - before};
             pickupTarget = null; targetClock = 0; targetsCollected++;
-            combo = Math.min(5, combo + 1); score += 100 * combo;
             if (targetsCollected % 3 === 0) pulseCharges = Math.min(2, pulseCharges + 1);
             return true;
         }
         function updateTarget(dt) {
             if (!pickupTarget) {
                 targetClock += dt;
-                if (targetClock >= (targetsCollected === 0 ? 4 : 6)) {
+                if (targetClock >= (targetsCollected === 0 ? 1.5 : 0.85)) {
                     pickupTarget = Game.spawnTarget(arena.width, arena.height, difficulty);
                     targetBorn = elapsed;
                     targetClock = 0;
@@ -206,7 +241,8 @@ ShellRoot {
             pickupTarget = result.target;
             if (result.collected) { collectTarget(); return; }
             if (result.missed) {
-                pickupTarget = null; targetClock = 0; combo = 0;
+                pickupTarget = null; targetClock = 0; combo = 0; comboUntil = 0;
+                notice = "STAR LOST · CHAIN RESET"; noticeUntil = elapsed + 1.6;
             }
         }
         function pause() { if (phase === "playing") phase = "paused"; }
@@ -221,6 +257,7 @@ ShellRoot {
             onTriggered: {
                 const dt = Math.min(0.04, frameTime);
                 window.elapsed += dt; window.spawnClock += dt;
+                if (window.combo > 0 && window.elapsed >= window.comboUntil) window.combo = 0;
                 const gap = Game.spawnInterval(window.difficulty, window.elapsed, window.playMode);
                 if (window.spawnClock >= gap) {
                     window.spawnClock = 0;
@@ -231,6 +268,7 @@ ShellRoot {
                 Game.steerDebris(window.enemies, dt);
                 const result = Game.step(window.enemies, dt, window.playerX * arena.width, window.playerY * arena.height, arena.width, arena.height, window.playerRadius);
                 window.enemies = result.enemies;
+                if (!result.hit) window.awardGrazes(result.grazes);
                 // Keep delegates alive: update positions without rebuilding the scene.
                 while (enemyVisuals.count > result.enemies.length)
                     enemyVisuals.remove(enemyVisuals.count - 1);
@@ -366,7 +404,7 @@ ShellRoot {
                 }
                 Rectangle {
                     id: targetCircle
-                    readonly property real arrival: window.reducedMotion ? 1 : Math.min(1, (window.elapsed - window.targetBorn) / 0.55)
+                    readonly property real arrival: window.reducedMotion ? 1 : Math.max(0, Math.min(1, (window.elapsed - window.targetBorn) / 0.55))
                     readonly property var target: window.pickupTarget
                     visible: !!target && window.phase !== "death"
                     x: target ? target.x - width / 2 : 0
@@ -374,6 +412,11 @@ ShellRoot {
                     width: target ? target.r * 2 : 0; height: width; radius: width / 2
                     color: Qt.alpha(Colors.success, 0.25)
                     border.width: 3; border.color: Colors.success
+                    StyledText {
+                        anchors.horizontalCenter: parent.horizontalCenter; anchors.bottom: parent.top; anchors.bottomMargin: 7
+                        text: "+50%"; visible: window.elapsed - window.targetBorn <= 2
+                        font.pixelSize: 10; font.bold: true; color: Colors.success
+                    }
                     Rectangle {
                         anchors.centerIn: parent
                         width: parent.width + 12 + (1 - targetCircle.arrival) * 50
@@ -390,7 +433,7 @@ ShellRoot {
                 Item {
                     id: collectFX
                     readonly property var burst: window.collection
-                    readonly property real progress: burst ? Math.min(1, (window.elapsed - burst.time) / 0.65) : 1
+                    readonly property real progress: burst ? Math.max(0, Math.min(1, (window.elapsed - burst.time) / 0.65)) : 1
                     visible: !!burst && progress < 1
                     x: burst ? burst.x : 0; y: burst ? burst.y : 0
                     Rectangle {
@@ -415,7 +458,7 @@ ShellRoot {
                     }
                     StyledText {
                         x: -40; width: 80; y: -30 - (window.reducedMotion ? 0 : collectFX.progress * 28)
-                        text: "+" + (100 * window.combo); font.pixelSize: 20; font.bold: true
+                        text: "+" + (collectFX.burst ? collectFX.burst.points : 0); font.pixelSize: 20; font.bold: true
                         color: Colors.success; horizontalAlignment: Text.AlignHCenter
                         opacity: 1 - collectFX.progress
                     }
@@ -464,7 +507,7 @@ ShellRoot {
                             anchors.fill: parent; anchors.margins: 14; spacing: 6
                             StyledText { text: (window.death && window.death.cause === "missed" ? "TARGET MISSED · " : "CAUGHT · ") + window.elapsed.toFixed(2) + "s"; color: Colors.error; font.bold: true; font.pixelSize: 18 }
                             StyledText {
-                                text: window.death && window.death.cause === "missed" ? "The target escaped. Touch it before it leaves." : window.death && window.death.cause === "cursor" ? "Your flight path crossed the highlighted debris." : "Incoming debris intercepted your ship."
+                                text: window.death && window.death.cause === "missed" ? "The target escaped. Touch it before it leaves." : window.death && window.death.cause === "cursor" ? "Flight path crossed debris. Score " + window.score + " · Best " + window.bestScore : "Debris intercepted your ship. Score " + window.score + " · Best " + window.bestScore
                                 Layout.fillWidth: true; wrapMode: Text.WordWrap; font.pixelSize: 11
                             }
                             RowLayout {
@@ -475,12 +518,32 @@ ShellRoot {
                     }
                 }
                 Rectangle {
-                    readonly property real progress: Math.min(1, (window.elapsed - window.pulseTime) / 0.5)
+                    readonly property real progress: Math.max(0, Math.min(1, (window.elapsed - window.pulseTime) / 0.5))
                     visible: progress < 1
                     x: window.pulseX - width / 2; y: window.pulseY - height / 2
                     width: window.reducedMotion ? 230 : 230 * progress; height: width; radius: width / 2
                     color: Qt.alpha(Colors.primary, 0.08); border.color: Colors.primary; border.width: 3
                     opacity: 1 - progress
+                }
+                Column {
+                    anchors.top: parent.top; anchors.topMargin: 63
+                    anchors.horizontalCenter: parent.horizontalCenter; spacing: 5
+                    visible: window.phase === "playing"
+                    StyledText {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: window.overdrive ? "OVERDRIVE ×2 · " + Math.ceil(window.overdriveUntil - window.elapsed) + "s" : "CHAIN ×" + window.combo + " · " + Math.max(0, window.comboUntil - window.elapsed).toFixed(1) + "s"
+                        color: window.overdrive ? Colors.tertiary : Colors.primary; font.pixelSize: 10
+                    }
+                    Rectangle {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        width: 140; height: 3; radius: 1.5; color: Qt.alpha(Colors.primary, 0.15)
+                        Rectangle { width: parent.width * Math.max(0, Math.min(1, window.overdrive ? (window.overdriveUntil - window.elapsed) / 6 : (window.comboUntil - window.elapsed) / 8)); height: parent.height; radius: 1.5; color: window.overdrive ? Colors.tertiary : Colors.primary; visible: window.overdrive || window.combo > 0 }
+                    }
+                    StyledText {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: window.notice; visible: window.elapsed < window.noticeUntil
+                        color: Colors.success; font.pixelSize: 10; font.bold: true
+                    }
                 }
                 RowLayout {
                     anchors.bottom: parent.bottom; anchors.horizontalCenter: parent.horizontalCenter; anchors.bottomMargin: 16
@@ -592,7 +655,7 @@ ShellRoot {
                     }
                     RowLayout {
                         Layout.fillWidth: true
-                        StyledText { text: window.phase === "over" ? "SCORE " + window.score + " · ✦ " + window.targetsCollected : "BEST FLIGHT  " + window.best.toFixed(1) + "s"; font.pixelSize: 11; color: Colors.primary }
+                        StyledText { text: window.phase === "over" ? "SCORE " + window.score + " · BEST " + window.bestScore : "BEST " + window.bestScore + " · " + window.best.toFixed(1) + "s"; font.pixelSize: 11; color: Colors.primary }
                         Item { Layout.fillWidth: true }
                         DashButton {
                             text: "Quiet FX"; checkable: true; checked: window.reducedMotion
@@ -608,7 +671,7 @@ ShellRoot {
                     }
                     StyledText {
                         Layout.fillWidth: true; horizontalAlignment: Text.AlignHCenter
-                        text: "Stars boost combos · 3 stars = pulse · Space fires · Esc pauses"; font.pixelSize: 10; opacity: 0.45
+                        text: "Stars within 2s = +50% · 3 stars = pulse · Space fires"; font.pixelSize: 10; opacity: 0.45
                     }
                 }
             }
