@@ -70,6 +70,9 @@ ShellRoot {
         property real playerY: 0.5
         property var enemies: []
         property var trail: []
+        property var clickTarget: null
+        property real targetClock: 0
+        property int targetsClicked: 0
         property real spawnClock: 0
         property real trailClock: 0
         property bool reducedMotion: false
@@ -112,6 +115,7 @@ ShellRoot {
         function reset() {
             phase = "ready"; elapsed = 0; enemies = []; trail = [];
             enemyVisuals.clear(); victory = false; death = null;
+            clickTarget = null; targetClock = 0; targetsClicked = 0;
         }
         function start(x, y) {
             reset(); playerX = x / arena.width; playerY = y / arena.height;
@@ -124,6 +128,29 @@ ShellRoot {
             playerY = (hit ? hit.y : y) / arena.height;
             if (hit) finish(false, hit);
             return !hit;
+        }
+        function clickAt(x, y) {
+            if (phase !== "playing" || !Game.targetHit(clickTarget, x, y)) return false;
+            clickTarget = null; targetClock = 0; targetsClicked++;
+            return true;
+        }
+        function updateTarget(dt) {
+            if (!clickTarget) {
+                targetClock += dt;
+                if (targetClock >= (targetsClicked === 0 ? 4 : 6)) {
+                    clickTarget = Game.spawnTarget(arena.width, arena.height, difficulty);
+                    targetClock = 0;
+                }
+                return;
+            }
+            const result = Game.stepTarget(clickTarget, dt, arena.width, arena.height);
+            clickTarget = result.target;
+            if (result.missed) {
+                const x = Math.max(clickTarget.r, Math.min(arena.width - clickTarget.r, clickTarget.x));
+                const y = Math.max(clickTarget.r, Math.min(arena.height - clickTarget.r, clickTarget.y));
+                finish(false, {cause:"missed", x:x, y:y, fromX:x, fromY:y,
+                    enemy:{x:x,y:y,r:clickTarget.r}});
+            }
         }
         function pause() { if (phase === "playing") phase = "paused"; }
         property bool windowActive: contentItem.Window.active
@@ -161,7 +188,10 @@ ShellRoot {
                     window.trail = points;
                 }
                 if (result.hit) window.finish(false, result.collision);
-                else if (Game.roundComplete(window.playMode, window.elapsed)) window.finish(true);
+                else {
+                    window.updateTarget(dt);
+                    if (window.phase === "playing" && Game.roundComplete(window.playMode, window.elapsed)) window.finish(true);
+                }
 
             }
         }
@@ -249,6 +279,20 @@ ShellRoot {
                         color: Colors.overBackground; opacity: 0.7
                     }
                 }
+                Rectangle {
+                    id: targetCircle
+                    readonly property var target: window.clickTarget
+                    visible: !!target && window.phase !== "death"
+                    x: target ? target.x - width / 2 : 0
+                    y: target ? target.y - height / 2 : 0
+                    width: target ? target.r * 2 : 0; height: width; radius: width / 2
+                    color: Qt.alpha(Colors.success, 0.25)
+                    border.width: 3; border.color: Colors.success
+                    StyledText {
+                        anchors.centerIn: parent; text: "CLICK"
+                        font.pixelSize: 10; font.bold: true; color: Colors.overBackground
+                    }
+                }
                 MouseArea {
                     id: pointer
                     anchors.fill: parent; hoverEnabled: true
@@ -259,7 +303,8 @@ ShellRoot {
                     }
                     onExited: window.pause()
                     onClicked: mouse => {
-                        if (window.phase === "paused") {
+                        if (window.phase === "playing") window.clickAt(mouse.x, mouse.y);
+                        else if (window.phase === "paused") {
                             // Check the return path rather than teleporting through obstacles.
                             if (window.movePlayer(mouse.x, mouse.y)) window.phase = "playing";
                         }
@@ -291,9 +336,9 @@ ShellRoot {
                         color: Qt.alpha(Colors.background, 0.95); border.color: Qt.alpha(Colors.error, 0.5)
                         ColumnLayout {
                             anchors.fill: parent; anchors.margins: 14; spacing: 6
-                            StyledText { text: "CAUGHT · " + window.elapsed.toFixed(2) + "s"; color: Colors.error; font.bold: true; font.pixelSize: 18 }
+                            StyledText { text: (window.death && window.death.cause === "missed" ? "TARGET MISSED · " : "CAUGHT · ") + window.elapsed.toFixed(2) + "s"; color: Colors.error; font.bold: true; font.pixelSize: 18 }
                             StyledText {
-                                text: window.death && window.death.cause === "cursor" ? "Your cursor crossed into the highlighted ring." : "The highlighted ring caught your cursor."
+                                text: window.death && window.death.cause === "missed" ? "The click target escaped. Click it before it leaves." : window.death && window.death.cause === "cursor" ? "Your cursor crossed into the highlighted ring." : "The highlighted ring caught your cursor."
                                 Layout.fillWidth: true; wrapMode: Text.WordWrap; font.pixelSize: 11
                             }
                             RowLayout {
@@ -315,6 +360,10 @@ ShellRoot {
                         font.pixelSize: 10; opacity: 0.6
                     }
                     Item { Layout.fillWidth: true }
+                    StyledText {
+                        text: window.clickTarget ? "CLICK ○" : "○ " + window.targetsClicked
+                        color: Colors.success; font.pixelSize: 11; font.bold: true
+                    }
                     DashButton { text: "Pause  Ⅱ"; visible: window.phase === "playing"; onClicked: window.pause() }
                 }
                 Rectangle {
@@ -411,7 +460,7 @@ ShellRoot {
                     }
                     StyledText {
                         Layout.fillWidth: true; horizontalAlignment: Text.AlignHCenter
-                        text: "Move to dodge · Esc to pause"; font.pixelSize: 10; opacity: 0.45
+                        text: "Dodge rings · Click labeled targets · Esc pauses"; font.pixelSize: 10; opacity: 0.45
                     }
                 }
             }

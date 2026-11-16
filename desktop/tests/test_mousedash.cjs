@@ -83,3 +83,20 @@ for (let d = 0; d < 4; d++) {
     }
 }
 console.log('Capped difficulty and visible spawn reaction margin: PASS');
+
+// Click targets are slower, start visibly inside the arena, and traverse it.
+for (let d=0; d<4; d++) for (let i=0; i<100; i++) {
+    const target = game.spawnTarget(480,480,d);
+    assert(target.x >= target.r && target.x <= 480-target.r);
+    assert(target.y >= target.r && target.y <= 480-target.r);
+    assert(Math.hypot(target.vx,target.vy) < game.enemySpeed(d,0,'survival'));
+    assert(!game.stepTarget(target,4,480,480).missed);
+    assert(game.stepTarget(target,10,480,480).missed);
+    assert(game.targetHit(target,target.x,target.y));
+    assert(game.targetHit(target,target.x+target.r,target.y));
+    assert(!game.targetHit(target,target.x+target.r+1,target.y));
+    const frozen = game.stepTarget(target,0,480,480).target;
+    assert.equal(frozen.x,target.x); assert.equal(frozen.y,target.y);
+}
+assert(!game.targetHit(null,0,0));
+console.log('Slow click targets, hit area and escape deadline: PASS');

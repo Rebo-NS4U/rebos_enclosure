@@ -1,4 +1,5 @@
-// Deterministic balance audit, not a substitute for human playtesting.
+// Obstacle-dodging balance audit only: excludes mandatory click targets.
+// Not a full-game completion test or a substitute for human playtesting.
 // Usage: node desktop/tests/audit_mousedash.cjs [alternate-engine.js]
 const fs=require('fs'),vm=require('vm'),path=require('path');
 const g={};vm.createContext(g);vm.runInContext(fs.readFileSync(process.argv[2]||path.join(__dirname, '../../system/apps/shell/MouseDashEngine.js'),'utf8'),g);
