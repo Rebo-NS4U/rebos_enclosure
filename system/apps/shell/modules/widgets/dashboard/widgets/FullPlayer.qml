@@ -140,8 +140,6 @@ StyledRect {
         mipmap: true
         id: backgroundArtFull
         anchors.fill: parent
-        // This background also accepts full-resolution desktop wallpapers.
-        sourceSize: Qt.size(1024, 1024)
         source: (MprisController.activePlayer?.trackArtUrl ?? "") !== "" ? MprisController.activePlayer.trackArtUrl : player.wallpaperPath
         fillMode: Image.PreserveAspectCrop
         visible: false

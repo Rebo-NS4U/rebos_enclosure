@@ -242,16 +242,7 @@ Window {
         property string artwork: ""
         color: Colors.surfaceContainerHigh
         radius: Styling.radius(0)
-        Image {
-            id: image
-            anchors.fill: parent
-            source: cover.artwork
-            // Covers are at most a few hundred logical pixels, even in the player.
-            // Bound decoded artwork instead of retaining the original full-size image.
-            sourceSize: Qt.size(512, 512)
-            asynchronous: true
-            fillMode: Image.PreserveAspectCrop
-        }
+        Image { id: image; anchors.fill: parent; source: cover.artwork; asynchronous: true; fillMode: Image.PreserveAspectCrop }
         StyledText { anchors.centerIn: parent; visible: image.status !== Image.Ready; text: "♫"; font.pixelSize: Math.min(cover.width*0.35,72); color: Colors.primary }
     }
     component TrackRow: StyledRect {
