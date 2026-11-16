@@ -861,7 +861,7 @@ class BonsaiGrowTests(unittest.TestCase):
         for seed in range(16):
             rows = bonsai.render(30, seed, False, 59, fixed_height=True).splitlines()
             self.assertEqual(rows[0], "╭" + "─" * 57 + "╮")
-            self.assertEqual(rows[-2], "├" + "─" * 22 + "┴" + "─" * 9 + "┴" + "─" * 24 + "┤")
+            self.assertEqual(rows[-2], "├" + "─" * 22 + "▀▀" + "─" * 8 + "▀▀" + "─" * 23 + "┤")
             foot = bonsai.pot_rows(seed)[-1]
             self.assertIn(foot.strip(), rows[-3])
             self.assertTrue(rows[-3][1:-1].strip())
@@ -918,7 +918,14 @@ class BonsaiGrowTests(unittest.TestCase):
                             else:
                                 for glyph in token:
                                     inside = 10 <= column < 69
-                                    self.assertEqual(background, expected_background if inside else None)
+                                    x = column - 11  # Margin and left frame edge.
+                                    ceramic = ((y == 21 and 16 < x < 38)
+                                               or (y == 22 and 17 < x < 37))
+                                    expected = expected_background if inside else None
+                                    if ceramic:
+                                        ink = bonsai.specimen_palette(42)[f'ceramic_body_{x - 16}']
+                                        expected = tuple(map(int, re.findall(r'\d+', ink)[-3:]))
+                                    self.assertEqual(background, expected)
                                     column += 1
                         self.assertEqual(column, 69)
                         self.assertIsNone(background, 'reset the backing before the prompt')
@@ -1847,7 +1854,7 @@ class BonsaiGrowTests(unittest.TestCase):
         greeting = source.split('# Finish painting')[0]
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            (root / 'bonsai-grow/prepared-v18-100').mkdir(parents=True)
+            (root / 'bonsai-grow/prepared-v19-100').mkdir(parents=True)
             (root / 'rebos_shell').mkdir()
             (root / 'bin').mkdir()
             script = root / 'bin/bonsai-grow'
@@ -1855,7 +1862,7 @@ class BonsaiGrowTests(unittest.TestCase):
             script.chmod(0o755)
             config = root / 'greeting.fish'
             config.write_text(greeting)
-            cache = root / 'bonsai-grow/prepared-v18-100/0.ready'
+            cache = root / 'bonsai-grow/prepared-v19-100/0.ready'
             palette = root / 'rebos_shell/effective-palette.json'
             palette.write_text('{}')
             for fresh in (True, False):
@@ -1900,7 +1907,7 @@ class BonsaiGrowTests(unittest.TestCase):
         source = (SOURCE.parents[1] / '../config/fish/config.fish').resolve().read_text()
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            pool = root / 'bonsai-grow/prepared-v18-100'
+            pool = root / 'bonsai-grow/prepared-v19-100'
             pool.mkdir(parents=True)
             (root / 'bin').mkdir()
             script = root / 'bin/bonsai-grow'

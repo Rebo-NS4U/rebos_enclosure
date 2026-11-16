@@ -1387,7 +1387,7 @@ def pot_rows(seed):
         "╭═════════════════════╮",
         "╰" + upper.center(21) + "╯",
         " ╲" + lower.center(19) + "╱ ",
-        "  ╰───┬─────────┬───╯  ",
+        "  ▀█████████████████▀  ",
     )
 
 
@@ -1843,7 +1843,7 @@ def rounded_frame_png(
             if height - 1.5 * cell_height <= y + .5 < height - 1.15 * cell_height:
                 # The two ceramic feet end at the center of the floor row.
                 floor_depth = (y + .5 - (height - 1.5 * cell_height)) / cell_height
-                shadow_x = min(abs(x + .5 - foot * cell_width) for foot in (23.5, 33.5))
+                shadow_x = min(abs(x + .5 - foot * cell_width) for foot in (24, 34))
                 shadow = math.exp(-(shadow_x / (1.1 * cell_width)) ** 2)
                 shadow *= math.exp(-floor_depth * 7)
                 level = 32 + floor_depth * 12 - 20 * shadow
@@ -1971,7 +1971,7 @@ def frame_rows(rows, columns, accents, color):
             return text + reset
         # Foreground inks reset SGR. Reapply the theme backing after each
         # change so neither the artwork nor empty cells reveal the wallpaper.
-        text = re.sub(r"\x1b\[[0-9;]*m", lambda match: match[0] + background, text)
+        text = re.sub(r"\x1b\[0(?:;[0-9;]*)?m", lambda match: match[0] + background, text)
         return background + text + reset
 
     def edge(text):
@@ -1981,11 +1981,11 @@ def frame_rows(rows, columns, accents, color):
         weight = ""
         return pane(glass + weight + text)
 
-    # Short stems descend from the bowl and terminate on the floor plane.
+    # Half-height, broad ceramic pads meet the floor without thin posts.
     foot_ink = ceramic_palette(accents)["ceramic_foot_11"] if color else ""
-    floor = (margin + edge("├" + "─" * 22) + pane(foot_ink + "┴")
-             + edge("─" * 9) + pane(foot_ink + "┴")
-             + edge("─" * 24 + "┤"))
+    floor = (margin + edge("├" + "─" * 22) + pane(foot_ink + "▀▀")
+             + edge("─" * 8) + pane(foot_ink + "▀▀")
+             + edge("─" * 23 + "┤"))
     top = margin + edge("╭" + "─" * width + "╮")
     bottom = margin + edge("╰" + "─" * width + "╯")
     return (
@@ -2473,6 +2473,7 @@ def render(
         *(round(105 * 0.85 + channel * 0.15) for channel in glass_rgb)
     )
     palette["sky_mist"] = "\033[0;38;2;57;62;63m"
+    backing = "\033[48;2;{};{};{}m".format(*theme_background()) if color else ""
     output = []
     visible = canvas if fixed_height else canvas[min(occupied) :]
     first_row = 0 if fixed_height else min(occupied)
@@ -2509,7 +2510,14 @@ def render(
                 ink = f"ceramic_{material}_{x - 16}"
             if color and ink != previous:
                 parts.append(palette[ink])
+            # Opaque ceramic behind the enamel makes a bowl rather than a cage.
+            ceramic_fill = color and ((y == 20 and 16 < x < 38)
+                                      or (y == 21 and 17 < x < 37))
+            if ceramic_fill:
+                parts.append(palette[f"ceramic_body_{x - 16}"].replace("[0;38;", "[48;"))
             parts.append(glyph)
+            if ceramic_fill:
+                parts.append(backing)
             previous = ink
         output.append("".join(parts) + ("\033[0m" if color else ""))
     return "\n".join(frame_rows(output, columns, accents, color)) + "\n"
@@ -2614,7 +2622,7 @@ def prepared_directory(columns):
     return (
         Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache"))
         / "bonsai-grow"
-        / f"prepared-v18-{columns}"
+        / f"prepared-v19-{columns}"
     )
 
 
