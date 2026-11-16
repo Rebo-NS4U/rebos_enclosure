@@ -787,7 +787,9 @@ class BonsaiGrowTests(unittest.TestCase):
         self.assertEqual(pixel(584, 260), (240, 130, 80, 255))
         self.assertEqual(pixel(589, 260)[3], 0)
         self.assertEqual(pixel(295, 519)[3], 0)
-        self.assertEqual(pixel(295, 475)[3], 255, 'floor meets the pot baseline')
+        self.assertEqual(pixel(295, 470)[3], 255, 'floor meets the pot bottom stroke')
+        self.assertLess(sum(pixel(295, 470)[:3]), sum(pixel(100, 470)[:3]),
+                        'contact starts at the horizontal stroke, without an air gap')
         self.assertLess(sum(pixel(295, 475)[:3]), sum(pixel(100, 475)[:3]),
                         'contact shadow sits beneath the ceramic foot')
         self.assertGreater(sum(pixel(295, 485)[:3]), sum(pixel(295, 475)[:3]),
@@ -1846,7 +1848,7 @@ class BonsaiGrowTests(unittest.TestCase):
         greeting = source.split('# Finish painting')[0]
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            (root / 'bonsai-grow/prepared-v16-100').mkdir(parents=True)
+            (root / 'bonsai-grow/prepared-v17-100').mkdir(parents=True)
             (root / 'rebos_shell').mkdir()
             (root / 'bin').mkdir()
             script = root / 'bin/bonsai-grow'
@@ -1854,7 +1856,7 @@ class BonsaiGrowTests(unittest.TestCase):
             script.chmod(0o755)
             config = root / 'greeting.fish'
             config.write_text(greeting)
-            cache = root / 'bonsai-grow/prepared-v16-100/0.ready'
+            cache = root / 'bonsai-grow/prepared-v17-100/0.ready'
             palette = root / 'rebos_shell/effective-palette.json'
             palette.write_text('{}')
             for fresh in (True, False):
@@ -1899,7 +1901,7 @@ class BonsaiGrowTests(unittest.TestCase):
         source = (SOURCE.parents[1] / '../config/fish/config.fish').resolve().read_text()
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            pool = root / 'bonsai-grow/prepared-v16-100'
+            pool = root / 'bonsai-grow/prepared-v17-100'
             pool.mkdir(parents=True)
             (root / 'bin').mkdir()
             script = root / 'bin/bonsai-grow'

@@ -1387,7 +1387,7 @@ def pot_rows(seed):
         "╭═════════════════════╮",
         "╰" + upper.center(21) + "╯",
         " ╲" + lower.center(19) + "╱ ",
-        "  ╰─────────────────╯  ",
+        "  ╰━━━━━━━━━━━━━━━━━╯  ",
     )
 
 
@@ -1828,7 +1828,7 @@ def rounded_frame_png(
         line = bytearray(b"\0")  # PNG scanline: no filter.
         x = 0
         while x < width:
-            if x == left and right > left and qy <= 0 and radius >= 2.5 and y < height - 2.25 * cell_height:
+            if x == left and right > left and qy <= 0 and radius >= 2.5 and y < height - 2.5 * cell_height:
                 line.extend(bytes((*backing, round(255 * opacity))) * (right - left))
                 x = right
                 continue
@@ -1840,10 +1840,10 @@ def rounded_frame_png(
                 round(base + (channel - base) * rim)
                 for base, channel in zip(backing, rgb)
             )
-            if height - 2.25 * cell_height <= y + .5 < height - 1.5 * cell_height:
+            if height - 2.5 * cell_height <= y + .5 < height - 1.5 * cell_height:
                 # Bring the horizontal floor up to the ceramic glyph baseline.
                 # Its contact shadow anchors the foot without moving the tree.
-                floor_depth = (y + .5 - (height - 2.25 * cell_height)) / cell_height
+                floor_depth = (y + .5 - (height - 2.5 * cell_height)) / cell_height
                 shadow_x = max(0, abs(x + .5 - 28.5 * cell_width) - 9 * cell_width)
                 shadow = math.exp(-(shadow_x / (1.5 * cell_width)) ** 2)
                 shadow *= math.exp(-floor_depth * 7)
@@ -2610,7 +2610,7 @@ def prepared_directory(columns):
     return (
         Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache"))
         / "bonsai-grow"
-        / f"prepared-v16-{columns}"
+        / f"prepared-v17-{columns}"
     )
 
 
