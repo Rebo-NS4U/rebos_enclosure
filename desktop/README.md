@@ -576,3 +576,5 @@ Music collection cards have a Play button on the artwork: albums, artists and pl
 Enclosure Music opens with Repeat all enabled by default. Repeat song and turning repeat off remain available during playback. The playback queue holds at most 100 songs. Adding to a full queue leaves it unchanged and shows a notice. Playing a larger collection limits the queue to 100 songs while retaining the selected starting song.
 
 Desktop session recovery: **Super+Alt+Q** exits Niri immediately and returns to login without rebooting. Save your work first: session apps close without a confirmation prompt. Sign in again to start a fresh desktop. The shortcut works even when Quickshell is unavailable.
+
+MouseDash uses display-synced frame updates and native Qt scene-graph circles instead of repainting a full-window Canvas. The arena has a palette-tinted dotted backdrop, distinct danger rings and a time-sampled cursor trail. Quiet visuals hides trails and halos while retaining gameplay and collision cues. No extra packages are required.

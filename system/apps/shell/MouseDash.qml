@@ -25,13 +25,13 @@ ShellRoot {
         property int difficulty: 1
         property real elapsed: 0
         readonly property real playerRadius: Game.playerRadius(elapsed)
-        onPhaseChanged: field.requestPaint()
+
         property real playerX: 0.5
         property real playerY: 0.5
         property var enemies: []
         property var trail: []
         property real spawnClock: 0
-        property double lastTick: 0
+        property real trailClock: 0
         property bool reducedMotion: false
         readonly property var modes: ["Easy", "Medium", "Hard"]
         readonly property real best: difficulty === 0 ? records.easy : difficulty === 1 ? records.medium : records.hard
@@ -54,19 +54,19 @@ ShellRoot {
         function start(x, y) {
             playerX = x / arena.width; playerY = y / arena.height;
             enemies = []; trail = []; elapsed = 0; spawnClock = 0;
-            lastTick = Date.now(); phase = "playing";
+            enemyVisuals.clear(); trailClock = 0; phase = "playing";
             arena.forceActiveFocus();
         }
         function pause() { if (phase === "playing") phase = "paused"; }
         property bool windowActive: contentItem.Window.active
         onWindowActiveChanged: if (!windowActive) pause()
         Shortcut { sequence: "Escape"; onActivated: window.pause() }
-        Shortcut { sequence: "Space"; onActivated: { if (window.phase === "paused") { window.lastTick = Date.now(); window.phase = "playing"; } } }
-        Timer {
-            interval: 16; repeat: true; running: window.phase === "playing"
+        Shortcut { sequence: "Space"; onActivated: { if (window.phase === "paused") { window.phase = "playing"; } } }
+        ListModel { id: enemyVisuals }
+        FrameAnimation {
+            running: window.phase === "playing"
             onTriggered: {
-                const now = Date.now(), dt = Math.min(0.04, (now - window.lastTick) / 1000);
-                window.lastTick = now;
+                const dt = Math.min(0.04, frameTime);
                 window.elapsed += dt; window.spawnClock += dt;
                 const gap = Game.spawnInterval(window.difficulty, window.elapsed);
                 if (window.spawnClock >= gap) {
@@ -75,12 +75,25 @@ ShellRoot {
                 }
                 const result = Game.step(window.enemies, dt, window.playerX * arena.width, window.playerY * arena.height, arena.width, arena.height, window.playerRadius);
                 window.enemies = result.enemies;
-                if (!window.reducedMotion) {
-                    window.trail.push({x: window.playerX, y: window.playerY});
-                    if (window.trail.length > 22) window.trail.shift();
+                // Keep delegates alive: update positions without rebuilding the scene.
+                while (enemyVisuals.count > result.enemies.length)
+                    enemyVisuals.remove(enemyVisuals.count - 1);
+                for (let i = 0; i < result.enemies.length; i++) {
+                    const e = result.enemies[i];
+                    const row = { ex: e.x, ey: e.y, size: e.r * 2 };
+                    if (i < enemyVisuals.count) enemyVisuals.set(i, row);
+                    else enemyVisuals.append(row);
+                }
+                // Time-based sampling keeps the tail identical at 60, 120 and 144 Hz.
+                window.trailClock += dt;
+                if (!window.reducedMotion && window.trailClock >= 0.012) {
+                    window.trailClock %= 0.012;
+                    const points = window.trail.slice(-23);
+                    points.push({x: window.playerX, y: window.playerY, time: window.elapsed});
+                    window.trail = points;
                 }
                 if (result.hit) window.finish();
-                field.requestPaint();
+
             }
         }
         ColumnLayout {
@@ -89,7 +102,7 @@ ShellRoot {
                 Layout.fillWidth: true; spacing: 20
                 ColumnLayout {
                     spacing: 4
-                    StyledText { text: "M O U S E D A S H"; font.pixelSize: 25; font.bold: true; color: Colors.primary }
+                    StyledText { text: "MouseDash"; font.pixelSize: 25; font.bold: true; color: Colors.primary }
                     StyledText { text: "Find your flow. Stay in motion."; opacity: 0.65 }
                 }
                 Item { Layout.fillWidth: true }
@@ -111,46 +124,95 @@ ShellRoot {
                         required property int index
                         text: modelData; checkable: true; checked: window.difficulty === index
                         enabled: window.phase !== "playing" && window.phase !== "paused"
-                        onClicked: { window.difficulty = index; window.phase = "ready"; window.elapsed = 0; window.enemies = []; field.requestPaint(); }
+                        onClicked: { window.difficulty = index; window.phase = "ready"; window.elapsed = 0; window.enemies = []; }
                         contentItem: StyledText { text: parent.text; horizontalAlignment: Text.AlignHCenter; color: parent.checked ? Colors.background : Colors.overBackground }
                         background: Rectangle { radius: 10; implicitWidth: 92; implicitHeight: 36; color: parent.checked ? Colors.primary : Qt.alpha(Colors.primary, parent.hovered ? 0.2 : 0.08); border.width: parent.activeFocus ? 2 : 0; border.color: Colors.primary }
                     }
                 }
                 Item { Layout.fillWidth: true }
-                CheckBox { text: "Quiet visuals"; checked: window.reducedMotion; onToggled: { window.reducedMotion = checked; window.trail = []; field.requestPaint(); } }
+                CheckBox { text: "Quiet visuals"; checked: window.reducedMotion; onToggled: { window.reducedMotion = checked; window.trail = []; } }
             }
             StyledRect {
                 id: arena
                 variant: "common"
                 Layout.fillWidth: true; Layout.fillHeight: true
                 focus: true
-                onWidthChanged: { window.pause(); window.enemies = []; field.requestPaint(); }
-                onHeightChanged: { window.pause(); window.enemies = []; field.requestPaint(); }
-                Canvas {
-                    id: field
-                    anchors.fill: parent
-                    onPaint: {
-                        const c = getContext("2d"), w = width, h = height;
-                        c.clearRect(0, 0, w, h);
-                        c.strokeStyle = Qt.alpha(Colors.primary, 0.07); c.lineWidth = 1;
-                        for (let x = 24; x < w; x += 32) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, h); c.stroke(); }
-                        for (let y = 24; y < h; y += 32) { c.beginPath(); c.moveTo(0, y); c.lineTo(w, y); c.stroke(); }
-                        if (window.phase === "ready") return;
-                        if (!window.reducedMotion) for (let i = 0; i < window.trail.length; i++) {
-                            const t = window.trail[i]; c.fillStyle = Qt.alpha(Colors.primary, i / window.trail.length * 0.25);
-                            c.beginPath(); c.arc(t.x*w, t.y*h, 2 + i / window.trail.length * 4, 0, Math.PI*2); c.fill();
-                        }
-                        for (const e of window.enemies) {
-                            c.fillStyle = Qt.alpha(Colors.overBackground, 0.16); c.strokeStyle = Qt.alpha(Colors.overBackground, 0.65); c.lineWidth = 1.5;
-                            c.beginPath(); c.arc(e.x, e.y, e.r, 0, Math.PI*2); c.fill(); c.stroke();
-                            c.fillStyle = Qt.alpha(Colors.overBackground, 0.5); c.beginPath(); c.arc(e.x, e.y, 2, 0, Math.PI*2); c.fill();
-                        }
-                        const px = window.playerX*w, py = window.playerY*h;
-                        if (!window.reducedMotion) { c.fillStyle = Qt.alpha(Colors.primary, 0.12); c.beginPath(); c.arc(px, py, window.playerRadius + 14, 0, Math.PI*2); c.fill(); }
-                        c.fillStyle = window.phase === "over" ? Colors.error : Colors.primary;
-                        c.beginPath(); c.arc(px, py, window.playerRadius, 0, Math.PI*2); c.fill();
+                onWidthChanged: { window.pause(); window.enemies = []; enemyVisuals.clear(); }
+                onHeightChanged: { window.pause(); window.enemies = []; enemyVisuals.clear(); }
+                clip: true
+                // Static scene-graph backdrop; nothing uploads a full-arena texture per frame.
+                Rectangle {
+                    anchors.fill: parent; radius: 16
+                    gradient: Gradient {
+                        GradientStop { position: 0; color: Qt.tint(Colors.background, Qt.alpha(Colors.primary, 0.13)) }
+                        GradientStop { position: 1; color: Colors.background }
                     }
-                    Connections { target: Colors; function onPrimaryChanged() { field.requestPaint(); } }
+                    border.color: Qt.alpha(Colors.primary, 0.22)
+                }
+                Repeater {
+                    model: Math.ceil(arena.width / 48) * Math.ceil(arena.height / 48)
+                    delegate: Rectangle {
+                        required property int index
+                        x: (index % Math.ceil(arena.width / 48)) * 48 + 24
+                        y: Math.floor(index / Math.ceil(arena.width / 48)) * 48 + 24
+                        width: 2; height: 2; radius: 1
+                        color: Colors.primary; opacity: 0.12
+                    }
+                }
+                Repeater {
+                    model: 24
+                    delegate: Rectangle {
+                        required property int index
+                        readonly property var point: window.trail[index]
+                        readonly property real life: point ? Math.max(0, 1 - (window.elapsed - point.time) / 0.3) : 0
+                        visible: !window.reducedMotion && !!point && window.phase !== "ready"
+                        x: point ? point.x * arena.width - width / 2 : 0
+                        y: point ? point.y * arena.height - height / 2 : 0
+                        width: 3 + life * 10; height: width; radius: width / 2
+                        color: Colors.primary; opacity: life * 0.32
+                    }
+                }
+                Repeater {
+                    model: enemyVisuals
+                    delegate: Rectangle {
+                        required property real ex
+                        required property real ey
+                        required property real size
+                        x: ex - size / 2; y: ey - size / 2
+                        width: size; height: size; radius: size / 2
+                        visible: window.phase !== "ready"
+                        color: Qt.alpha(Colors.error, 0.2)
+                        border.width: 1.5; border.color: Qt.alpha(Colors.error, 0.85)
+                        Rectangle {
+                            anchors.centerIn: parent; width: parent.width + 10; height: width; radius: width / 2
+                            visible: !window.reducedMotion
+                            color: "transparent"; border.width: 4; border.color: Qt.alpha(Colors.error, 0.06)
+                        }
+                        Rectangle {
+                            anchors.centerIn: parent; width: 4; height: 4; radius: 2
+                            color: Colors.error
+                        }
+                    }
+                }
+                Rectangle {
+                    id: player
+                    visible: window.phase !== "ready"
+                    x: window.playerX * arena.width - width / 2
+                    y: window.playerY * arena.height - height / 2
+                    width: window.playerRadius * 2; height: width; radius: width / 2
+                    color: window.phase === "over" ? Colors.error : Colors.primary
+                    border.width: 2; border.color: Colors.overBackground
+                    Rectangle {
+                        anchors.centerIn: parent; width: parent.width + 18; height: width; radius: width / 2
+                        color: Qt.alpha(player.color, 0.1)
+                        border.width: 1; border.color: Qt.alpha(player.color, 0.2)
+                        visible: !window.reducedMotion
+                    }
+                    Rectangle {
+                        x: parent.width * 0.25; y: parent.height * 0.2
+                        width: parent.width * 0.25; height: width; radius: width / 2
+                        color: Colors.overBackground; opacity: 0.7
+                    }
                 }
                 MouseArea {
                     anchors.fill: parent; hoverEnabled: true
@@ -164,7 +226,7 @@ ShellRoot {
                     onExited: window.pause()
                     onClicked: mouse => {
                         if (window.phase === "ready") window.start(mouse.x, mouse.y);
-                        else if (window.phase === "paused") { window.lastTick = Date.now(); window.phase = "playing"; }
+                        else if (window.phase === "paused") { window.phase = "playing"; }
                     }
                 }
                 Rectangle {
@@ -187,7 +249,7 @@ ShellRoot {
                 Item { Layout.fillWidth: true }
                 Button {
                     text: "Play again"
-                    onClicked: { window.phase = "ready"; field.requestPaint(); }
+                    onClicked: { window.phase = "ready"; }
                     contentItem: StyledText { text: parent.text; horizontalAlignment: Text.AlignHCenter; color: Colors.background }
                     background: Rectangle { implicitWidth: 130; implicitHeight: 36; radius: 10; color: Colors.primary; border.width: parent.activeFocus ? 2 : 0; border.color: Colors.overBackground }
                 }
