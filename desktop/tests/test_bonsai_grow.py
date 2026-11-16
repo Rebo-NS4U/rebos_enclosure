@@ -365,6 +365,7 @@ class BonsaiGrowTests(unittest.TestCase):
              patch.object(bonsai.time, 'sleep'), \
              patch.object(bonsai.shutil, 'get_terminal_size', side_effect=[os.terminal_size((80,40))]*4 + [os.terminal_size((81,40))]), \
              patch.object(bonsai.os, 'write'), \
+             patch.object(bonsai, 'cache_opening'), \
              patch('signal.signal'):
             bonsai.animate_background(42, ['#70bb50']*3, 1, 'informal')
         ages = [call.args[0] for call in canvas.call_args_list]
@@ -390,7 +391,8 @@ class BonsaiGrowTests(unittest.TestCase):
              patch.object(bonsai.time, 'localtime', side_effect=[morning, afternoon]), \
              patch.object(bonsai.time, 'sleep') as sleep, \
              patch.object(bonsai.shutil, 'get_terminal_size', side_effect=[size]*3 + [os.terminal_size((81, 40))]), \
-             patch.object(bonsai.os, 'write') as write, patch('signal.signal'):
+             patch.object(bonsai.os, 'write') as write, \
+             patch.object(bonsai, 'cache_opening'), patch('signal.signal'):
             bonsai.animate_background(42, ['#70bb50']*3, 1, 'informal')
         self.assertEqual(write.call_count, 2)
         self.assertNotEqual(write.call_args_list[0].args[1], write.call_args_list[1].args[1])
@@ -1630,6 +1632,79 @@ class BonsaiGrowTests(unittest.TestCase):
             self.assertIn('╭──────────┴──────────╮', result.stdout)
             self.assertNotIn('\033', result.stdout)
             self.assertEqual(list(Path(directory).iterdir()), [])
+
+    @unittest.skipUnless(__import__('shutil').which('fish'), 'Fish is required')
+    def test_fish_paints_fresh_cache_before_launch_and_skips_stale_cache(self):
+        import pty
+        import time
+        source = (SOURCE.parents[1] / '../config/fish/config.fish').resolve().read_text()
+        greeting = source.split('# Finish painting')[0]
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'bonsai-grow').mkdir()
+            (root / 'rebos_shell').mkdir()
+            (root / 'bin').mkdir()
+            script = root / 'bin/bonsai-grow'
+            script.write_text('#!/bin/sh\nprintf "PYTHON_LAUNCH %s\\n" "$*" >&2\n')
+            script.chmod(0o755)
+            config = root / 'greeting.fish'
+            config.write_text(greeting)
+            cache = root / 'bonsai-grow/opening-100.ansi'
+            palette = root / 'rebos_shell/effective-palette.json'
+            cache.write_text('CACHED_FRAME')
+            palette.write_text('{}')
+            for fresh in (True, False):
+                with self.subTest(fresh=fresh):
+                    stamp = time.time() + (10 if fresh else -10)
+                    os.utime(cache, (stamp, stamp))
+                    master, slave = pty.openpty()
+                    try:
+                        subprocess.run(['fish', '--no-config', '-ic',
+                                        f'source {config}; fish_greeting'],
+                            stdin=subprocess.DEVNULL, stdout=slave, stderr=slave,
+                            env={**os.environ, 'PATH': str(root / 'bin') + ':' + os.environ['PATH'],
+                                 'XDG_CACHE_HOME': directory, 'COLUMNS': '100', 'LINES': '40',
+                                 'TERM': 'xterm-kitty', 'REDUCE_MOTION': '0'},
+                            check=True, timeout=5)
+                        os.close(slave)
+                        slave = None
+                        output = b''
+                        while True:
+                            try:
+                                part = os.read(master, 65536)
+                            except OSError:
+                                break
+                            if not part:
+                                break
+                            output += part
+                        if fresh:
+                            self.assertLess(output.index(b'CACHED_FRAME'), output.index(b'PYTHON_LAUNCH'))
+                            self.assertIn(b'--opening-shown', output)
+                        else:
+                            self.assertNotIn(b'CACHED_FRAME', output)
+                            self.assertNotIn(b'--opening-shown', output)
+                    finally:
+                        if slave is not None:
+                            os.close(slave)
+                        os.close(master)
+
+    def test_opening_cache_is_complete_and_replaces_previous_frame(self):
+        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {'XDG_CACHE_HOME': directory}):
+            bonsai.cache_opening(100, 'first frame')
+            bonsai.cache_opening(100, 'second frame')
+            cache = Path(directory) / 'bonsai-grow'
+            self.assertEqual((cache / 'opening-100.ansi').read_text(), 'second frame')
+            self.assertEqual(len(list(cache.iterdir())), 1)
+
+    def test_cached_greeting_does_not_clear_the_opening(self):
+        from unittest.mock import Mock
+        terminal = Mock(isatty=lambda: True, fileno=lambda: 2)
+        with patch.object(bonsai.sys, 'stderr', terminal), \
+             patch.object(bonsai.os, 'get_terminal_size', return_value=os.terminal_size((100, 40))), \
+             patch.object(bonsai.os, 'fork', return_value=123), \
+             patch('builtins.print'), patch.dict(os.environ, {'TERM': 'xterm-kitty', 'REDUCE_MOTION': '0'}):
+            bonsai.greeting(42, 2, 'informal', opening_shown=True)
+        terminal.write.assert_not_called()
 
     def test_seedling_skips_invisible_mature_decoration_plans(self):
         with patch.object(bonsai, 'blossom_plan', side_effect=AssertionError('early flowers')), \

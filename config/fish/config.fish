@@ -1,7 +1,23 @@
 ## Full bonsai growth time-lapse with patterned ceramic pots.
 function fish_greeting
     if status is-interactive; and test -t 1; and command -q bonsai-grow
-        set -l worker (bonsai-grow --greeting </dev/null)
+        set -l cache_root "$HOME/.cache"
+        if set -q XDG_CACHE_HOME; and test -n "$XDG_CACHE_HOME"
+            set cache_root "$XDG_CACHE_HOME"
+        end
+        set -l opening "$cache_root/bonsai-grow/opening-$COLUMNS.ansi"
+        set -l palette "$cache_root/rebos_shell/effective-palette.json"
+        set -l opening_shown
+        if test "$LINES" -ge 30; and test "$COLUMNS" -ge 59; and test "$TERM" != dumb; and test "$REDUCE_MOTION" != 1; and test -s "$opening"
+            if not test -r "$palette"; or test "$opening" -nt "$palette"
+                string repeat -n $LINES \n
+                printf '\e[H\e[26B'
+                if command cat -- "$opening"
+                    set opening_shown --opening-shown
+                end
+            end
+        end
+        set -l worker (bonsai-grow --greeting $opening_shown </dev/null)
         if string match -qr '^[0-9]+$' -- "$worker"
             set -g __bonsai_animation_pid $worker
         end
