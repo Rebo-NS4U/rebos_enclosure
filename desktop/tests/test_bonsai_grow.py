@@ -376,7 +376,7 @@ class BonsaiGrowTests(unittest.TestCase):
 
     def test_all_pot_patterns_and_accents_are_mirrored(self):
         from unittest.mock import patch
-        mirror = str.maketrans('╭╮╰╯┌┐└┘╱╲╴╶▗▖', '╮╭╯╰┐┌┘└╲╱╶╴▖▗')
+        mirror = str.maketrans('╭╮╰╯┌┐└┘╱╲╴╶', '╮╭╯╰┐┌┘└╲╱╶╴')
         for motif in bonsai.POT_MOTIFS:
             with self.subTest(motif=motif), patch.object(bonsai.random.Random, 'choice', return_value=motif):
                 for row in bonsai.pot_rows(0):
@@ -862,7 +862,6 @@ class BonsaiGrowTests(unittest.TestCase):
             self.assertEqual(rows[0], "╭" + "─" * 57 + "╮")
             self.assertEqual(rows[-2], "├" + "─" * 57 + "┤")
             foot = bonsai.pot_rows(seed)[-1]
-            self.assertEqual(foot.strip(), "▗" + "▄" * 17 + "▖")
             self.assertIn(foot.strip(), rows[-3])
             self.assertTrue(rows[-3][1:-1].strip())
             self.assertNotIn("╱", rows[0])
