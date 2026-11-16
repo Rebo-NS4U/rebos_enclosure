@@ -23,8 +23,8 @@ class BonsaiGrowTests(unittest.TestCase):
             cache.mkdir()
             path = cache / 'effective-palette.json'
             with patch.dict(os.environ, {'XDG_CACHE_HOME': directory}):
-                for value, expected in (('#123456', (18, 52, 86)),
-                                        ('#e0dCd8', (224, 220, 216)),
+                for value, expected in (('#123456', (16, 46, 76)),
+                                        ('#e0dCd8', (197, 194, 190)),
                                         ('bad', (15, 15, 15)), (None, (15, 15, 15))):
                     path.write_text(json.dumps({'background': value}))
                     self.assertEqual(bonsai.theme_background(), expected)
@@ -34,6 +34,40 @@ class BonsaiGrowTests(unittest.TestCase):
                 self.assertEqual(bonsai.theme_background(), (15, 15, 15))
                 path.unlink()
                 self.assertEqual(bonsai.theme_background(), (15, 15, 15))
+
+    def test_kitty_backing_follows_theme_opacity_with_crisp_rim(self):
+        import json
+        import struct
+        import zlib
+        with tempfile.TemporaryDirectory() as directory:
+            cache = Path(directory) / 'rebos_shell'
+            cache.mkdir()
+            with patch.dict(os.environ, {'XDG_CACHE_HOME': directory, 'TERM': 'xterm-kitty'}), \
+                 patch.object(bonsai.sys.stdout, 'isatty', return_value=True), \
+                 patch.object(bonsai.sys.stdout, 'fileno', return_value=1), \
+                 patch.object(bonsai.fcntl, 'ioctl', return_value=struct.pack('HHHH', 40, 80, 800, 800)):
+                for opacity in (0, 0.48, 1):
+                    (cache / 'effective-palette.json').write_text(json.dumps(
+                        {'background': '#123456', 'opacity': opacity}))
+                    with patch.object(bonsai, 'rounded_frame_png', wraps=bonsai.rounded_frame_png) as render_png:
+                        bonsai.kitty_frame(26, 80, [240, 130, 80])
+                        args = render_png.call_args.args
+                    self.assertEqual(args[-2], (16, 46, 76))
+                    self.assertAlmostEqual(args[-1], opacity)
+                    png = bonsai.rounded_frame_png(*args)
+                    offset, compressed = 8, b''
+                    while offset < len(png):
+                        size = struct.unpack('!I', png[offset:offset + 4])[0]
+                        if png[offset + 4:offset + 8] == b'IDAT':
+                            compressed += png[offset + 8:offset + 8 + size]
+                        offset += size + 12
+                    pixels = zlib.decompress(compressed)
+                    def pixel(x, y):
+                        start = y * (590 * 4 + 1) + 1 + x * 4
+                        return tuple(pixels[start:start + 4])
+                    self.assertEqual(pixel(295, 260), (16, 46, 76, round(255 * opacity)))
+                    self.assertEqual(pixel(295, 10), (240, 130, 80, 255))
+                    self.assertEqual(pixel(295, 0)[3], 0)
 
     def test_transparent_materials_gain_definition_without_changing_accents(self):
         import json
@@ -1661,7 +1695,7 @@ class BonsaiGrowTests(unittest.TestCase):
         greeting = source.split('# Finish painting')[0]
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            (root / 'bonsai-grow/prepared-v8-100').mkdir(parents=True)
+            (root / 'bonsai-grow/prepared-v9-100').mkdir(parents=True)
             (root / 'rebos_shell').mkdir()
             (root / 'bin').mkdir()
             script = root / 'bin/bonsai-grow'
@@ -1669,7 +1703,7 @@ class BonsaiGrowTests(unittest.TestCase):
             script.chmod(0o755)
             config = root / 'greeting.fish'
             config.write_text(greeting)
-            cache = root / 'bonsai-grow/prepared-v8-100/0.ready'
+            cache = root / 'bonsai-grow/prepared-v9-100/0.ready'
             palette = root / 'rebos_shell/effective-palette.json'
             palette.write_text('{}')
             for fresh in (True, False):
@@ -1714,7 +1748,7 @@ class BonsaiGrowTests(unittest.TestCase):
         source = (SOURCE.parents[1] / '../config/fish/config.fish').resolve().read_text()
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            pool = root / 'bonsai-grow/prepared-v8-100'
+            pool = root / 'bonsai-grow/prepared-v9-100'
             pool.mkdir(parents=True)
             (root / 'bin').mkdir()
             script = root / 'bin/bonsai-grow'
