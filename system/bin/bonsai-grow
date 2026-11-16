@@ -2420,9 +2420,7 @@ def render(
         hour = local.tm_hour + local.tm_min / 60 + local.tm_sec / 3600
     hour %= 24
     canvas = specimen_canvas(days, seed, style, pot_seed)
-    backlit = sky_pane(canvas, hour)
     # Reflections sit in the empty side panes, never over foliage or wood.
-    # Independently selected panes still keep clear of the celestial outline.
     place_glass_marks(canvas, GLASS_SEED)
     occupied = [y for y, row in enumerate(canvas) if any(c != " " for c, _ in row)]
     # One palette gives the leaves priority and keeps every other material quiet.
@@ -2432,10 +2430,6 @@ def render(
     palette["glass"] = "\033[0;38;2;{};{};{}m".format(
         *(round(105 * 0.85 + channel * 0.15) for channel in glass_rgb)
     )
-    palette.update(sun_palette(hour))
-    palette.update(moon_palette())
-    palette.update(cloud_palette(hour))
-    palette["sky_star"] = "\033[0;38;2;88;94;111m"
     palette["sky_mist"] = "\033[0;38;2;57;62;63m"
     output = []
     visible = canvas if fixed_height else canvas[min(occupied) : max(occupied) + 1]
@@ -2468,17 +2462,6 @@ def render(
             elif color and ink == "pot":
                 material = "rim" if y == 19 else "foot" if y == 22 else "body"
                 ink = f"ceramic_{material}_{x - 16}"
-            if (
-                color
-                and (x, y) in backlit
-                and (ink.startswith(("leaf", "wood", "bark", "shoot")) or ink == "scar")
-            ):
-                # Retain every tree glyph and its texture; only lift the face
-                # directly in front of the celestial body.
-                lit = ink + "_backlit"
-                if lit not in palette:
-                    palette[lit] = backlit_ink(palette[ink], 6 <= hour < 18)
-                ink = lit
             if color and ink != previous:
                 parts.append(palette[ink])
             parts.append(glyph)
@@ -2586,7 +2569,7 @@ def prepared_directory(columns):
     return (
         Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache"))
         / "bonsai-grow"
-        / f"prepared-v11-{columns}"
+        / f"prepared-v12-{columns}"
     )
 
 
@@ -2699,7 +2682,7 @@ def start_refill(columns, accents, style):
 def animate_background(
     seed, accents, duration, style, prepared=None, refill_started=False
 ):
-    """Grow once, then track the sky until Fish stops us before command output."""
+    """Grow once, then hold the glass scene until Fish stops us before command output."""
     import signal
 
     signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))

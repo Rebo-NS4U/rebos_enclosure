@@ -435,7 +435,17 @@ class BonsaiGrowTests(unittest.TestCase):
         self.assertLess(bounds(sprout)[1],bounds(mature)[1])
         self.assertTrue(any(ink.startswith('leaf') for row in sprout for glyph,ink in row))
 
-    def test_idle_sky_keeps_updating_after_growth(self):
+    def test_render_keeps_glass_without_sky_decorations(self):
+        with patch.object(bonsai, 'sky_pane', side_effect=AssertionError('sky drawn')), \
+             patch.object(bonsai, 'place_glass_marks', wraps=bonsai.place_glass_marks) as glass:
+            for day in (0, 15, 30):
+                frames = [bonsai.render(day, 42, hour=hour) for hour in (0, 6, 12, 18)]
+                self.assertTrue(all(frame == frames[0] for frame in frames))
+            self.assertEqual(glass.call_count, 12)
+            self.assertTrue(any(ink == 'glass' for row in glass.call_args.args[0]
+                                for glyph, ink in row))
+
+    def test_idle_glass_scene_stays_stable_after_growth(self):
         size = os.terminal_size((80, 40))
         local = __import__('time')
         morning = local.struct_time((2026, 11, 15, 8, 0, 0, 6, 319, -1))
@@ -448,7 +458,7 @@ class BonsaiGrowTests(unittest.TestCase):
              patch.object(bonsai, 'start_refill'), patch('signal.signal'):
             bonsai.animate_background(42, ['#70bb50']*3, 1, 'informal')
         self.assertEqual(write.call_count, 2)
-        self.assertNotEqual(write.call_args_list[0].args[1], write.call_args_list[1].args[1])
+        self.assertEqual(write.call_args_list[0].args[1], write.call_args_list[1].args[1])
         self.assertEqual([c.args[0] for c in sleep.call_args_list], [30, 30])
         for hours in ((7, 12, 17), (19, 0, 5)):
             positions = []
@@ -1817,7 +1827,7 @@ class BonsaiGrowTests(unittest.TestCase):
         greeting = source.split('# Finish painting')[0]
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            (root / 'bonsai-grow/prepared-v11-100').mkdir(parents=True)
+            (root / 'bonsai-grow/prepared-v12-100').mkdir(parents=True)
             (root / 'rebos_shell').mkdir()
             (root / 'bin').mkdir()
             script = root / 'bin/bonsai-grow'
@@ -1825,7 +1835,7 @@ class BonsaiGrowTests(unittest.TestCase):
             script.chmod(0o755)
             config = root / 'greeting.fish'
             config.write_text(greeting)
-            cache = root / 'bonsai-grow/prepared-v11-100/0.ready'
+            cache = root / 'bonsai-grow/prepared-v12-100/0.ready'
             palette = root / 'rebos_shell/effective-palette.json'
             palette.write_text('{}')
             for fresh in (True, False):
@@ -1870,7 +1880,7 @@ class BonsaiGrowTests(unittest.TestCase):
         source = (SOURCE.parents[1] / '../config/fish/config.fish').resolve().read_text()
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            pool = root / 'bonsai-grow/prepared-v11-100'
+            pool = root / 'bonsai-grow/prepared-v12-100'
             pool.mkdir(parents=True)
             (root / 'bin').mkdir()
             script = root / 'bin/bonsai-grow'
