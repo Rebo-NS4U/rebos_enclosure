@@ -438,6 +438,6 @@ window-rule {
 window-rule {
     match title="^MouseDash · Enclosure$"
     open-floating true
-    default-column-width { fixed 780; }
-    default-window-height { fixed 600; }
+    default-column-width { fixed 480; }
+    default-window-height { fixed 480; }
 }

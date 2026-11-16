@@ -53,9 +53,10 @@ ShellRoot {
         title: "MouseDash · Enclosure"
         visible: true
         maximized: false
-        implicitWidth: 780
-        implicitHeight: 600
-        minimumSize: Qt.size(700, 560)
+        implicitWidth: 480
+        implicitHeight: 480
+        minimumSize: Qt.size(480, 480)
+        maximumSize: Qt.size(480, 480)
         color: Colors.background
         onVisibleChanged: if (!visible) Qt.quit()
         property string phase: "ready"
@@ -74,8 +75,8 @@ ShellRoot {
         readonly property bool locked: phase === "playing" || phase === "paused"
         readonly property real duration: Game.roundDuration(playMode)
         readonly property var modes: [
-            {key: "survival", name: "01  SURVIVAL", caption: "Endless · one life", hint: "Stay alive. The pressure never stops."},
-            {key: "gauntlet", name: "02  GAUNTLET", caption: "60 seconds · six waves", hint: "Six waves. Each one faster than the last."}
+            {key: "survival", name: "SURVIVAL", caption: "Endless · one life", hint: "Stay alive. The pressure never stops."},
+            {key: "gauntlet", name: "GAUNTLET", caption: "60 seconds · six waves", hint: "Six waves. Each one faster than the last."}
         ]
         readonly property int modeIndex: playMode === "survival" ? 0 : 1
         readonly property string recordKey: playMode + difficulty
@@ -155,74 +156,16 @@ ShellRoot {
 
             }
         }
-        ColumnLayout {
-            anchors.fill: parent; anchors.margins: 20; spacing: 12
-            RowLayout {
-                Layout.fillWidth: true; spacing: 18
-                ColumnLayout {
-                    spacing: 2
-                    StyledText { text: "MOUSEDASH"; font.pixelSize: 24; font.bold: true; font.letterSpacing: 2; color: Colors.primary }
-                    StyledText { text: "Small arena. Big pressure."; font.pixelSize: 11; opacity: 0.55 }
-                }
-                Item { Layout.fillWidth: true }
-                ColumnLayout {
-                    spacing: 2
-                    StyledText { text: window.duration ? "TIME LEFT" : "TIME ALIVE"; font.pixelSize: 10; opacity: 0.55 }
-                    StyledText { text: (window.duration ? Math.max(0, window.duration - window.elapsed) : window.elapsed).toFixed(1) + "s"; font.pixelSize: 25; font.bold: true }
-                }
-                ColumnLayout {
-                    spacing: 2
-                    StyledText { text: "BEST RUN"; font.pixelSize: 10; opacity: 0.55 }
-                    StyledText { text: window.best.toFixed(1) + "s"; font.pixelSize: 25; color: Colors.primary }
-                }
-            }
-            RowLayout {
-                Layout.fillWidth: true; spacing: 8
-                Repeater {
-                    model: window.modes
-                    delegate: DashButton {
-                        required property var modelData
-                        Layout.fillWidth: true
-                        text: modelData.name; caption: modelData.caption
-                        checkable: true; autoExclusive: true; checked: window.playMode === modelData.key
-                        enabled: !window.locked
-                        onClicked: { window.playMode = modelData.key; window.reset(); }
-                    }
-                }
-            }
-            RowLayout {
-                Layout.fillWidth: true; spacing: 6
-                StyledText { text: "LEVEL"; font.pixelSize: 10; opacity: 0.5; Layout.rightMargin: 4 }
-                Repeater {
-                    model: ["Easy", "Normal", "Hard", "Extreme"]
-                    delegate: DashButton {
-                        required property string modelData
-                        required property int index
-                        Layout.fillWidth: true; implicitWidth: 76
-                        text: modelData; checked: window.difficulty === index; checkable: true; autoExclusive: true
-                        accent: checked; enabled: !window.locked
-                        onClicked: { window.difficulty = index; window.reset(); }
-                    }
-                }
-                DashButton {
-                    text: "Quiet FX"; checkable: true; checked: window.reducedMotion
-                    Layout.leftMargin: 8
-                    onClicked: { window.reducedMotion = checked; window.trail = []; }
-                }
-            }
+        Item {
+            id: view
+            anchors.fill: parent
+            HoverHandler { id: cursorPosition }
             StyledRect {
-                id: gameView
-                variant: "common"
-                Layout.fillWidth: true; Layout.fillHeight: true
-                StyledRect {
                 id: arena
+                anchors.fill: parent
                 variant: "common"
-                anchors.centerIn: parent
-                width: Math.max(0, Math.min(320, gameView.width - 32, gameView.height - 32))
-                height: width
-                focus: true; clip: true
-                onWidthChanged: { window.pause(); window.enemies = []; enemyVisuals.clear(); }
-                onHeightChanged: { window.pause(); window.enemies = []; enemyVisuals.clear(); }
+                visible: window.locked
+                focus: visible; clip: true
                 // Static scene-graph backdrop; nothing uploads a full-arena texture per frame.
                 Rectangle {
                     anchors.fill: parent; radius: 16
@@ -308,59 +251,124 @@ ShellRoot {
                     }
                     onExited: window.pause()
                     onClicked: mouse => {
-                        if (window.phase === "ready" || window.phase === "over") window.start(mouse.x, mouse.y);
-                        else if (window.phase === "paused") {
+                        if (window.phase === "paused") {
                             // Check the return path rather than teleporting through obstacles.
                             if (Game.sweptHit(window.enemies, window.playerX * width, window.playerY * height, mouse.x, mouse.y, window.playerRadius)) window.finish(false);
                             else { window.playerX = mouse.x / width; window.playerY = mouse.y / height; window.phase = "playing"; }
                         }
                     }
                 }
-                Rectangle {
-                    anchors.fill: parent; color: Qt.alpha(Colors.background, 0.7)
-                    visible: window.phase !== "playing"
-                }
-                Column {
-                    anchors.centerIn: parent; width: parent.width - 48; spacing: 10
-                    visible: window.phase !== "playing"
+                RowLayout {
+                    anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right
+                    anchors.margins: 16
                     StyledText {
-                        width: parent.width; horizontalAlignment: Text.AlignHCenter
-                        text: window.phase === "ready" ? "MAKE YOUR MOVE" : window.phase === "paused" ? "CATCH YOUR BREATH" : window.victory ? "CHALLENGE CLEARED" : "ONE MORE RUN?"
-                        font.pixelSize: 20; font.bold: true; color: Colors.primary; wrapMode: Text.WordWrap
+                        text: (window.duration ? Math.max(0, window.duration - window.elapsed) : window.elapsed).toFixed(1) + "s"
+                        font.pixelSize: 22; font.bold: true; color: Colors.primary
                     }
                     StyledText {
-                        width: parent.width; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap
-                        text: window.phase === "over" ? window.elapsed.toFixed(2) + " seconds · " + (window.victory ? "You made it." : "Every dodge counts.") : window.phase === "paused" ? "Click a safe path back to your cursor to resume." : window.modes[window.modeIndex].hint
-                        font.pixelSize: 12; opacity: 0.75
+                        text: window.playMode === "gauntlet" ? "WAVE " + Math.min(6, 1 + Math.floor(window.elapsed / 10)) + "/6" : "SURVIVAL"
+                        font.pixelSize: 10; opacity: 0.6
                     }
-                    StyledText {
-                        width: parent.width; horizontalAlignment: Text.AlignHCenter
-                        text: window.phase === "paused" ? "Esc pauses · moving outside the arena pauses" : "CLICK IN THE ARENA TO " + (window.phase === "over" ? "RETRY  ↗" : "BEGIN  ↗")
-                        color: Colors.primary; font.pixelSize: 11; font.bold: true; wrapMode: Text.WordWrap
-                    }
+                    Item { Layout.fillWidth: true }
+                    DashButton { text: "Pause  Ⅱ"; visible: window.phase === "playing"; onClicked: window.pause() }
                 }
                 Rectangle {
                     anchors.bottom: parent.bottom; height: 3
                     width: parent.width * (window.duration ? Math.min(1, window.elapsed / window.duration) : 0)
                     color: Colors.primary
                 }
-                StyledText {
-                    anchors.top: parent.top; anchors.left: parent.left; anchors.margins: 12
-                    visible: window.playMode === "gauntlet" && window.phase === "playing"
-                    text: "WAVE " + Math.min(6, 1 + Math.floor(window.elapsed / 10)) + " / 6"; font.pixelSize: 11; color: Colors.primary
+                Rectangle {
+                    anchors.fill: parent; color: Qt.alpha(Colors.background, 0.85)
+                    visible: window.phase === "paused"
+                }
+                Column {
+                    anchors.centerIn: parent; width: parent.width - 48; spacing: 14
+                    visible: window.phase === "paused"
+                    StyledText {
+                        width: parent.width; horizontalAlignment: Text.AlignHCenter
+                        text: "TAKE A BREATH"; font.pixelSize: 24; font.bold: true; color: Colors.primary
+                    }
+                    StyledText {
+                        width: parent.width; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap
+                        text: "Click a safe path back to your cursor to resume."
+                        font.pixelSize: 12; opacity: 0.65
+                    }
+                    DashButton { anchors.horizontalCenter: parent.horizontalCenter; text: "End run"; onClicked: window.finish(false) }
                 }
             }
-            }
-            RowLayout {
-                Layout.fillWidth: true; Layout.minimumHeight: 36; spacing: 8
-                Rectangle { width: 6; height: 6; radius: 3; color: window.phase === "playing" ? Colors.primary : Qt.alpha(Colors.primary, 0.4) }
-                StyledText {
-                    text: window.phase === "playing" ? "DODGE THE RINGS" : window.phase === "paused" ? "PAUSED" : "CHOOSE YOUR CHALLENGE"
-                    font.pixelSize: 10; opacity: 0.65
+            StyledRect {
+                id: setup
+                anchors.fill: parent; variant: "common"
+                visible: !window.locked
+                ColumnLayout {
+                    anchors.fill: parent; anchors.margins: 28; spacing: 12
+                    RowLayout {
+                        Layout.fillWidth: true
+                        ColumnLayout {
+                            spacing: 3
+                            StyledText { text: "MOUSEDASH"; font.pixelSize: 24; font.bold: true; font.letterSpacing: 2; color: Colors.primary }
+                            StyledText {
+                                text: window.phase === "over" ? (window.victory ? "CLEARED · " : "RUN COMPLETE · ") + window.elapsed.toFixed(2) + "s" : "Your next challenge starts here."
+                                font.pixelSize: 11; opacity: 0.65
+                            }
+                        }
+                        Item { Layout.fillWidth: true }
+                    }
+                    Item { Layout.fillHeight: true }
+                    StyledText { text: "01 / CHOOSE YOUR RUN"; font.pixelSize: 10; opacity: 0.5 }
+                    RowLayout {
+                        Layout.fillWidth: true; spacing: 8
+                        Repeater {
+                            model: window.modes
+                            delegate: DashButton {
+                                required property var modelData
+                                Layout.fillWidth: true
+                                text: modelData.name; caption: modelData.caption
+                                checkable: true; autoExclusive: true; checked: window.playMode === modelData.key
+                                onClicked: { window.playMode = modelData.key; window.reset(); }
+                            }
+                        }
+                    }
+                    StyledText {
+                        Layout.fillWidth: true; text: window.modes[window.modeIndex].hint
+                        font.pixelSize: 11; opacity: 0.65; wrapMode: Text.WordWrap
+                    }
+                    StyledText { text: "02 / SET THE PRESSURE"; font.pixelSize: 10; opacity: 0.5; Layout.topMargin: 6 }
+                    RowLayout {
+                        Layout.fillWidth: true; spacing: 6
+                        Repeater {
+                            model: ["Easy", "Normal", "Hard", "Extreme"]
+                            delegate: DashButton {
+                                required property string modelData
+                                required property int index
+                                Layout.fillWidth: true; implicitWidth: 72
+                                text: modelData; checked: window.difficulty === index
+                                checkable: true; autoExclusive: true; accent: checked
+                                onClicked: { window.difficulty = index; window.reset(); }
+                            }
+                        }
+                    }
+                    RowLayout {
+                        Layout.fillWidth: true
+                        StyledText { text: "BEST  " + window.best.toFixed(1) + "s"; font.pixelSize: 11; color: Colors.primary }
+                        Item { Layout.fillWidth: true }
+                        DashButton {
+                            text: "Quiet FX"; checkable: true; checked: window.reducedMotion
+                            onClicked: { window.reducedMotion = checked; window.trail = []; }
+                        }
+                    }
+                    Item { Layout.fillHeight: true }
+                    DashButton {
+                        id: playButton
+                        Layout.fillWidth: true; implicitHeight: 44
+                        accent: true; text: window.phase === "over" ? "PLAY AGAIN  ↗" : "LET'S PLAY  ↗"
+                        onClicked: window.start(cursorPosition.point.position.x, cursorPosition.point.position.y)
+                    }
+                    StyledText {
+                        Layout.fillWidth: true; horizontalAlignment: Text.AlignHCenter
+                        text: "Move to dodge · Esc to pause"; font.pixelSize: 10; opacity: 0.45
+                    }
                 }
-                Item { Layout.fillWidth: true }
-                DashButton { text: "Pause  Ⅱ"; visible: window.phase === "playing"; onClicked: window.pause() }
-                DashButton { text: window.locked ? "End run" : "Reset"; visible: window.phase !== "ready"; onClicked: { if (window.locked) window.finish(false); else window.reset(); } }
             }
         }
     }
