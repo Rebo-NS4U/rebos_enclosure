@@ -28,12 +28,28 @@ ColumnLayout {
         return (v / 1024 / 1024).toFixed(1) + (metric === "disk" ? " MiB/s" : " MiB");
     }
     readonly property list<var> groups: ProcessTree.groups(SystemResources.processes, root.metric, root.gpuDevice)
+    readonly property real listedRam: SystemResources.processes.reduce((total, row) => total + (row.ram || 0), 0)
+
+    function memorySize(bytes): string {
+        return (bytes / 1024 / 1024).toFixed(1) + " MiB";
+    }
 
     RowLayout {
         Layout.fillWidth: true
         MetricAction { text: "← All stats"; onClicked: SystemResources.detailMetric = "" }
         Item { Layout.fillWidth: true }
         StyledText { text: "Live · process trees"; font.pixelSize: Styling.fontSize(-3); color: Colors.overSurfaceVariant }
+    }
+    StyledText {
+        Layout.fillWidth: true
+        visible: root.metric === "ram"
+        wrapMode: Text.Wrap
+        font.pixelSize: Styling.fontSize(-3)
+        text: "System RAM: " + root.memorySize(SystemResources.ramUsed * 1024) + " used + "
+            + root.memorySize(SystemResources.ramAvailable * 1024) + " available = "
+            + root.memorySize(SystemResources.ramTotal * 1024) + " total"
+            + "\nListed process memory (RSS): " + root.memorySize(root.listedRam)
+            + " across " + SystemResources.processes.length + " processes"
     }
     StyledText {
         Layout.fillWidth: true
@@ -50,7 +66,7 @@ ColumnLayout {
             : root.metric === "disk" ? "Read + write activity across all disks; this is not space occupied on the selected disk. Restricted processes may be unavailable."
             : root.gpuDevice ? "GPU engine time reported by the driver. Processes without accessible GPU counters are omitted."
             : root.metric === "cpu" ? "CPU uses 100% per core. Expand a tree to see nested subprocesses and their individual usage."
-            : "Resident memory of each tree, including shared pages. Indentation shows parent/child relationships."
+            : "All readable processes are grouped into trees; expand a tree to see its entries. Process memory (RSS) counts shared pages in each process, so adding rows can count the same memory more than once. System used RAM also includes kernel memory and excludes reclaimable memory estimated as available. These totals do not add up to the same measure; restricted processes may be missing. Samples update independently."
     }
     ListView {
         id: list
