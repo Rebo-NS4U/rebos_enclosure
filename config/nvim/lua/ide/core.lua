@@ -29,15 +29,19 @@ function M.setup()
     map('n', '<C-' .. key .. '>', '<C-w>' .. direction, { desc = 'Focus window ' .. direction })
   end
   for key, resize in pairs({
-    Left = { 'vertical resize -', 'Narrower pane' },
-    Right = { 'vertical resize +', 'Wider pane' },
-    Up = { 'resize +', 'Taller pane' },
-    Down = { 'resize -', 'Shorter pane' },
+    Left = { 'vertical resize -', 'Narrower pane', 'h' },
+    Right = { 'vertical resize +', 'Wider pane', 'l' },
+    Up = { 'resize +', 'Taller pane', 'k' },
+    Down = { 'resize -', 'Shorter pane', 'j' },
   }) do
     for _, step in ipairs({ { 'C-', 2 }, { 'C-S-', 8 } }) do
       local command = resize[1] .. step[2]
       map({ 'n', 'i', 'v' }, '<' .. step[1] .. key .. '>', function() vim.cmd(command) end,
         { desc = resize[2] .. ' (' .. step[2] .. ')' })
+      if step[1] == 'C-' then
+        map({ 'n', 'i', 'v' }, '<C-M-' .. resize[3] .. '>', function() vim.cmd(command) end,
+          { desc = resize[2] })
+      end
     end
   end
   map('n', '<leader>s=', '<C-w>=', { desc = 'Equalize panes' })
