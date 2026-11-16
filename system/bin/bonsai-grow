@@ -49,10 +49,12 @@ def theme_background():
     """Tint the exported theme background twelve percent darker."""
     cache = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache"))
     try:
-        value = json.loads((cache / "rebos_shell/effective-palette.json").read_text()).get("background")
+        value = json.loads(
+            (cache / "rebos_shell/effective-palette.json").read_text()
+        ).get("background")
         if isinstance(value, str) and re.fullmatch(r"#[0-9a-fA-F]{6}", value):
-            return tuple(round(int(value[i:i + 2], 16) * 0.88) for i in (1, 3, 5))
-    except (OSError, ValueError, AttributeError):
+            return tuple(round(int(value[i : i + 2], 16) * 0.88) for i in (1, 3, 5))
+    except OSError, ValueError, AttributeError:
         pass
     return (15, 15, 15)
 
@@ -66,7 +68,7 @@ def transparency_lift():
         if type(opacity) not in (int, float) or not math.isfinite(opacity):
             return 0.0
         return 1 - max(0.0, min(1.0, opacity))
-    except (OSError, ValueError, AttributeError):
+    except OSError, ValueError, AttributeError:
         return 0.0
 
 
@@ -451,8 +453,12 @@ def scaffold_layout(seed):
         result.append((depth, x - (centers[-1] - 27) * 0.6, y, born))
     # The third scaffold is the upright crown leader. Random extra branches
     # clustered at the apex made several forks occupy the same terminal row.
-    result[2] = (12, centers[-1] - (centers[-1] - 27) * 0.6 + side * 0.6,
-                 2.8, max(11 / 0.7, 16))
+    result[2] = (
+        12,
+        centers[-1] - (centers[-1] - 27) * 0.6 + side * 0.6,
+        2.8,
+        max(11 / 0.7, 16),
+    )
     return result
 
 
@@ -514,9 +520,11 @@ def juvenile_foliage(days, seed):
         # They rise with the stem before the first lateral shoots unfold.
         x, y = round(centers[height - 1]), 18 - height
         glyph = "·" if days < 0.5 else "•"
-        return [(x, y, 0, "╱", "shoot_tip1"),
-                (x - 1, y, 0, glyph, "leaf4"),
-                (x + 1, y, 0, glyph, "leaf7")]
+        return [
+            (x, y, 0, "╱", "shoot_tip1"),
+            (x - 1, y, 0, glyph, "leaf4"),
+            (x + 1, y, 0, glyph, "leaf7"),
+        ]
     # The original pair follows the leader until the first limb attachments
     # establish, then travels outward on those limbs as their tips extend.
     primaries = [branch for branch in branch_graph(seed) if branch["parent"] is None]
@@ -529,8 +537,9 @@ def juvenile_foliage(days, seed):
         x, y = round(centers[depth]), 18 - depth
         length = math.hypot(tx - x, ty - y)
         starter_reach = min(2, 0.5 + max(0, days - 3) * 0.375)
-        progress = min(1, max(starter_reach / length,
-                              (days + 1 - branch_born) / (length * 0.55)))
+        progress = min(
+            1, max(starter_reach / length, (days + 1 - branch_born) / (length * 0.55))
+        )
         tip_x = round(x + (tx - x) * progress)
         tip_y = round(
             y + (ty - y) * progress - math.sin(progress * math.pi) * branch["curve"]
@@ -545,8 +554,13 @@ def juvenile_foliage(days, seed):
                 continue
             unfold = age - delay
             remaining = shed - days
-            glyph = ("·" if unfold < 0.5 or remaining < 0.8
-                     else "•" if unfold < 2.5 or remaining < 1.8 else "●")
+            glyph = (
+                "·"
+                if unfold < 0.5 or remaining < 0.8
+                else "•"
+                if unfold < 2.5 or remaining < 1.8
+                else "●"
+            )
             tone = (cohort + (side > 0)) % 3
             shade = 2 if dy < 0 else 1
             leaves.append(
@@ -587,8 +601,10 @@ def branch_point(branch, t):
     c1, c2 = branch_controls(branch)
     return (
         x + (tx - x) * t,
-        (1 - t) ** 3 * y + 3 * (1 - t) ** 2 * t * c1
-        + 3 * (1 - t) * t * t * c2 + t ** 3 * ty,
+        (1 - t) ** 3 * y
+        + 3 * (1 - t) ** 2 * t * c1
+        + 3 * (1 - t) * t * t * c2
+        + t**3 * ty,
     )
 
 
@@ -597,8 +613,10 @@ def branch_controls(branch):
     lift = branch["curve"] * 4 / 3
     # Short twigs need proportionally smaller bends; an absolute offset can
     # otherwise turn even a cubic tip sharply back on itself.
-    tip_limit = math.hypot(branch["end"][0] - branch["start"][0],
-                           ty - y + 4 * branch["curve"]) * 0.1
+    tip_limit = (
+        math.hypot(branch["end"][0] - branch["start"][0], ty - y + 4 * branch["curve"])
+        * 0.1
+    )
     tip = max(-tip_limit, min(tip_limit, branch.get("tip_bend", 0) * 0.25))
     c1 = y + branch.get("departure", (ty - y) - 4 * branch["curve"]) / 3
     c2 = y + (ty - y) * 2 / 3 - lift + tip
@@ -615,8 +633,7 @@ def branch_tangent(branch, t):
     y, ty = branch["start"][1], branch["end"][1]
     return (
         branch["end"][0] - branch["start"][0],
-        3 * ((1 - t) ** 2 * (c1 - y)
-             + 2 * (1 - t) * t * (c2 - c1) + t * t * (ty - c2)),
+        3 * ((1 - t) ** 2 * (c1 - y) + 2 * (1 - t) * t * (c2 - c1) + t * t * (ty - c2)),
     )
 
 
@@ -701,8 +718,10 @@ def branch_graph(seed):
             if habit == "twisted_juniper"
             else min(max(0, start[1] - end[1]) * 0.3, rng.uniform(1.4, 2.2))
             if habit in ("broom", "old_oak") and level == 0
-            else min(max(0, start[1] - end[1]) * 0.2,
-                     rng.uniform(0.5, 1.1) if level == 0 else rng.uniform(0.2, 0.4)),
+            else min(
+                max(0, start[1] - end[1]) * 0.2,
+                rng.uniform(0.5, 1.1) if level == 0 else rng.uniform(0.2, 0.4),
+            ),
             level=level,
             leader=leader,
             lower=lower,
@@ -717,14 +736,19 @@ def branch_graph(seed):
                 own = end[1] - start[1] - 4 * branch["curve"]
                 inherited = pdy * dx / pdx
                 branch["departure"] = own + max(
-                    -length * 0.6, min(length * 0.6, (inherited - own) * 0.7))
+                    -length * 0.6, min(length * 0.6, (inherited - own) * 0.7)
+                )
         branches.append(branch)
         if lower or level >= (1 if habit == "twisted_juniper" else 2) or length < 4:
             return
         # Inner upright shoots fill the shoulder; outer shoots extend the
         # crown. Staggered insertions avoid the repeated symmetrical Y of an
         # L-system, while a second generation gives broadleaf trees ramification.
-        fractions = (rng.uniform(0.36, 0.46), rng.uniform(0.62, 0.72)) if level == 0 else (0.64,)
+        fractions = (
+            (rng.uniform(0.36, 0.46), rng.uniform(0.62, 0.72))
+            if level == 0
+            else (0.64,)
+        )
         direction = 1 if end[0] >= start[0] else -1
         for fork, fraction in enumerate(fractions):
             origin = branch_point(branch, fraction)
@@ -732,14 +756,27 @@ def branch_graph(seed):
             # Fine peripheral twigs are shorter and less steep than the
             # inner fans. Their tips vary without protruding as long antlers.
             outer = level == 0 and fork == 1
-            rise = (rng.uniform(1.0, 1.8) if outer or level else rng.uniform(1.8, 3.0))
-            target_x = (end[0] + direction * rng.uniform(0.2, 0.9)
-                        if outer else origin[0] + direction * max(1.0, reach))
-            target = (target_x, min(origin[1] - rise, end[1] - 0.3) if outer
-                      else origin[1] - rise)
+            rise = rng.uniform(1.0, 1.8) if outer or level else rng.uniform(1.8, 3.0)
+            target_x = (
+                end[0] + direction * rng.uniform(0.2, 0.9)
+                if outer
+                else origin[0] + direction * max(1.0, reach)
+            )
+            target = (
+                target_x,
+                min(origin[1] - rise, end[1] - 0.3) if outer else origin[1] - rise,
+            )
             arrival = born + length * fraction * 0.55
-            add(origin, target, arrival + rng.uniform(0.3, 0.7),
-                width * (0.45 if fork == 0 else 0.27), index, fraction, level + 1, leader)
+            add(
+                origin,
+                target,
+                arrival + rng.uniform(0.3, 0.7),
+                width * (0.45 if fork == 0 else 0.27),
+                index,
+                fraction,
+                level + 1,
+                leader,
+            )
 
     for root_index, (depth, tx, ty, born) in enumerate(layout):
         tx += shift + jitter.uniform(-0.6, 0.6)
@@ -749,18 +786,24 @@ def branch_graph(seed):
         width = max(0.55, 1.45 * (1 - depth / 24))
         if habit == "old_oak":
             width = (1.25, 1.1, 0.9)[min(root_index, 2)]
-        add((centers[depth], 18 - depth), (tx, ty), born, width,
-            leader=ty < 4.5 and abs(tx - centers[-1]) < 4)
+        add(
+            (centers[depth], 18 - depth),
+            (tx, ty),
+            born,
+            width,
+            leader=ty < 4.5 and abs(tx - centers[-1]) < 4,
+        )
     if one_sided:
         # Give the swept lower body a distinct vertical continuation and crown.
         add((centers[11], 7), (centers[-1] + wind * 1.2, 2.7), 17, 0.85, leader=True)
-    parents = {branch['parent'] for branch in branches if branch['parent'] is not None}
+    parents = {branch["parent"] for branch in branches if branch["parent"] is not None}
     for index, branch in enumerate(branches):
         if index not in parents:
             # Give terminal twigs a small, seed-stable individual bend.
             tip_rng = random.Random(f"{seed}:tip-character:{index}")
-            branch['tip_bend'] = (tip_rng.choice((-1, 1))
-                                  * min(branch['length'] * 0.35, tip_rng.uniform(0.8, 1.3)))
+            branch["tip_bend"] = tip_rng.choice((-1, 1)) * min(
+                branch["length"] * 0.35, tip_rng.uniform(0.8, 1.3)
+            )
     return branches
 
 
@@ -786,8 +829,16 @@ def foliage_sprays(seed):
         if any(max(abs(x - px), abs(y - py)) < 2.3 for px, py in chosen):
             continue
         branch = graph[index]
-        sprays.append(dict(branch, end=(x, y), length=branch["length"] * fraction,
-                           inner=True, support=index, attachment=fraction))
+        sprays.append(
+            dict(
+                branch,
+                end=(x, y),
+                length=branch["length"] * fraction,
+                inner=True,
+                support=index,
+                attachment=fraction,
+            )
+        )
         chosen.append((x, y))
         if len(chosen) == 3:
             break
@@ -858,7 +909,9 @@ def natural_specimen(seed, days):
         if days + 1 >= arrival + 0.5 or days + 1 < branch["born"]:
             continue
         steps = max(1, math.ceil(branch["length"] * 2))
-        progress = min(1, (days + 1 - branch["born"]) / max(0.001, branch["length"] * 0.55))
+        progress = min(
+            1, (days + 1 - branch["born"]) / max(0.001, branch["length"] * 0.55)
+        )
         step = min(steps, math.floor(progress * steps + 1e-9))
         if step < 1:
             continue
@@ -893,16 +946,29 @@ def natural_specimen(seed, days):
             rx *= 0.78
             ry *= 0.82
         if branch["level"]:
-            rx *= (0.85 if branch["level"] == 1 else 0.65) if full_fan else (0.70 if branch["level"] == 1 else 0.50)
-            ry *= (0.92 if branch["level"] == 1 else 0.80) if full_fan else (0.82 if branch["level"] == 1 else 0.65)
+            rx *= (
+                (0.85 if branch["level"] == 1 else 0.65)
+                if full_fan
+                else (0.70 if branch["level"] == 1 else 0.50)
+            )
+            ry *= (
+                (0.92 if branch["level"] == 1 else 0.80)
+                if full_fan
+                else (0.82 if branch["level"] == 1 else 0.65)
+            )
         # Each terminal has a stable spray habit: compact tuft, spreading fan,
         # sloping pad or softer hanging spray, all rooted at the actual twig.
         character = random.Random(f"{seed}:spray-character:{index}")
-        spread, depth, lean = character.choice((
-            (0.82, 1.12, -0.12), (1.12, 0.82, 0.08),
-            (1.02, 0.94, -0.24), (0.92, 1.08, 0.22)))
+        spread, depth, lean = character.choice(
+            (
+                (0.82, 1.12, -0.12),
+                (1.12, 0.82, 0.08),
+                (1.02, 0.94, -0.24),
+                (0.92, 1.08, 0.22),
+            )
+        )
         rx, ry = rx * spread, ry * depth
-        if branch['level'] == 0 and cy < 4.5:
+        if branch["level"] == 0 and cy < 4.5:
             # The single apex replaces several crowded upper twigs, so give
             # its foliage enough volume to form a complete crown on its own.
             rx, ry = max(rx, 4.4), max(ry, 2.0)
@@ -910,19 +976,21 @@ def natural_specimen(seed, days):
             # Compact shoots on the actual inner limbs close the central
             # funnel, rather than enlarging only the outside terminal pads.
             rx, ry = 3.4, 1.9
-        lean *= 1 if branch['end'][0] >= branch['start'][0] else -1
+        lean *= 1 if branch["end"][0] >= branch["start"][0] else -1
         cleft_side = character.choice((-1, 1))
         cleft_start = character.uniform(0.15, 0.4)
         vertical_reach = ry + abs(lean) * rx
         arrival = branch["born"] + branch["length"] * 0.55
         candidates = {}
-        for y in range(max(1, math.floor(cy - vertical_reach)),
-                       min(18, math.ceil(cy + vertical_reach)) + 1):
+        for y in range(
+            max(1, math.floor(cy - vertical_reach)),
+            min(18, math.ceil(cy + vertical_reach)) + 1,
+        ):
             for x in range(
                 max(2, math.floor(cx - rx)), min(54, math.ceil(cx + rx)) + 1
             ):
                 nx, ny = (x - cx) / rx, (y - cy - lean * (x - cx)) / ry
-                distance = nx ** 2 + ny ** 2
+                distance = nx**2 + ny**2
                 # Shared spray shapes make neighboring leaves read as clusters.
                 # A scalloped rim and a small lower cleft leave airy branch gaps.
                 rim = (
@@ -930,7 +998,11 @@ def natural_specimen(seed, days):
                     + 0.19 * math.sin(nx * 7 + index)
                     + 0.12 * math.cos(ny * 6 - index)
                 )
-                cleft = ny > 0.25 and cleft_start < nx * cleft_side < 0.7 and distance > 0.38
+                cleft = (
+                    ny > 0.25
+                    and cleft_start < nx * cleft_side < 0.7
+                    and distance > 0.38
+                )
                 texture = random.Random(f"{seed}:leaf-cell:{index}:{x}:{y}")
                 if (
                     distance > rim
@@ -1327,34 +1399,40 @@ def ceramic_palette(accents):
     """Two solid enamels above a dark ceramic body; no color gradient."""
     palette = {}
     for name, color in zip(("main", "accent"), accents[:2]):
-        rgb = [int(color[i:i + 2], 16) / 255 for i in (1, 3, 5)]
+        rgb = [int(color[i : i + 2], 16) / 255 for i in (1, 3, 5)]
         hue, saturation, _ = colorsys.rgb_to_hsv(*rgb)
-        rgb = [round(channel * 255) for channel in
-               colorsys.hsv_to_rgb(hue, saturation * 0.9, 0.84)]
+        rgb = [
+            round(channel * 255)
+            for channel in colorsys.hsv_to_rgb(hue, saturation * 0.9, 0.84)
+        ]
         palette[f"ceramic_inlay_{name}"] = "\033[0;38;2;{};{};{}m".format(*rgb)
 
     # A faint primary tint and restrained lighting give the bowl its volume.
-    primary = [int(accents[0][i:i + 2], 16) / 255 for i in (1, 3, 5)]
+    primary = [int(accents[0][i : i + 2], 16) / 255 for i in (1, 3, 5)]
     hue, saturation, _ = colorsys.rgb_to_hsv(*primary)
     tint = colorsys.hsv_to_rgb(hue, saturation * 0.08, 1)
     lift = transparency_lift()
     for column in range(23):
-        highlight = math.exp(-((column / 22 - 0.32) / 0.38) ** 2)
-        for material, value in (("rim", 0.28 + 0.06 * highlight),
-                                ("body", 0.22 + 0.04 * highlight),
-                                ("foot", 0.17 + 0.04 * highlight)):
+        highlight = math.exp(-(((column / 22 - 0.32) / 0.38) ** 2))
+        for material, value in (
+            ("rim", 0.28 + 0.06 * highlight),
+            ("body", 0.22 + 0.04 * highlight),
+            ("foot", 0.17 + 0.04 * highlight),
+        ):
             rgb = [round(channel * (value + 0.26 * lift) * 255) for channel in tint]
-            palette[f"ceramic_{material}_{column}"] = "\033[0;38;2;{};{};{}m".format(*rgb)
+            palette[f"ceramic_{material}_{column}"] = "\033[0;38;2;{};{};{}m".format(
+                *rgb
+            )
     return palette
 
 
 def sun_palette(hour):
     """Luminous ivory at noon, warm copper at the edges of the day."""
     elevation = max(0, math.sin(math.pi * (hour - 6) / 12))
-    center = tuple(a + (b - a) * elevation
-                   for a, b in zip((237, 176, 108), (244, 224, 174)))
-    edge = tuple(a + (b - a) * elevation
-                 for a, b in zip((170, 86, 45), (194, 139, 76)))
+    center = tuple(
+        a + (b - a) * elevation for a, b in zip((237, 176, 108), (244, 224, 174))
+    )
+    edge = tuple(a + (b - a) * elevation for a, b in zip((170, 86, 45), (194, 139, 76)))
     palette = {}
     for band in range(8):
         # Ivory light eases into amber pigment rather than a muddy dark rim.
@@ -1362,7 +1440,8 @@ def sun_palette(hour):
         rgb = tuple(round(a + (b - a) * t) for a, b in zip(center, edge))
         palette[f"sky_orb_sun{band}"] = "\033[0;38;2;{};{};{}m".format(*rgb)
     palette["sky_glow"] = "\033[0;38;2;{};{};{}m".format(
-        *(round(c * 0.55) for c in center))
+        *(round(c * 0.55) for c in center)
+    )
     return palette
 
 
@@ -1378,10 +1457,11 @@ def celestial_marks(daylight, rising):
             for half in range(2):
                 dy = (y + (half + 0.5) / 2 - 0.5) / 3.4
                 inside = dx * dx + dy * dy <= 1
-                shadow = (dx - 0.43) ** 2 + dy * dy < 0.96 ** 2
+                shadow = (dx - 0.43) ** 2 + dy * dy < 0.96**2
                 halves.append(inside and (daylight or not shadow))
-            glyph = {(True, True): "█", (True, False): "▀",
-                     (False, True): "▄"}.get(tuple(halves))
+            glyph = {(True, True): "█", (True, False): "▀", (False, True): "▄"}.get(
+                tuple(halves)
+            )
             if glyph is None:
                 continue
             if daylight:
@@ -1400,8 +1480,9 @@ def moon_palette():
     palette = {}
     for band in range(8):
         t = (band / 7) ** 0.65
-        rgb = tuple(round(a + (b - a) * t)
-                    for a, b in zip((103, 126, 145), (214, 222, 218)))
+        rgb = tuple(
+            round(a + (b - a) * t) for a, b in zip((103, 126, 145), (214, 222, 218))
+        )
         palette[f"sky_orb_moon{band}"] = "\033[0;38;2;{};{};{}m".format(*rgb)
     return palette
 
@@ -1424,14 +1505,15 @@ def cloud_marks(rising, seed=None, kind=None):
         (1, 2, 3, 4, 5, 5, 3, 2, 4, 6, 6, 5, 3, 4, 3, 1),
         (1, 2, 4, 5, 5, 3, 2, 4, 6, 6, 5, 3, 4, 4, 2, 1),
     )
-    wisps = ((1, 2, 4, 4, 3, 3, 4, 3, 1),
-             (1, 2, 3, 4, 5, 5, 4, 3, 1),
-             (1, 3, 4, 4, 4, 3, 3, 2, 1),
-             (1, 2, 3, 4, 3, 4, 4, 2, 1),
-             (1, 3, 4, 5, 5, 4, 3, 2, 1),
-             (1, 2, 3, 3, 2, 3, 3, 2, 1))
-    feathers = ((1, 1, 2, 2, 2, 1, 1, 1, 1),
-                (1, 1, 1, 2, 2, 2, 2, 1, 1))
+    wisps = (
+        (1, 2, 4, 4, 3, 3, 4, 3, 1),
+        (1, 2, 3, 4, 5, 5, 4, 3, 1),
+        (1, 3, 4, 4, 4, 3, 3, 2, 1),
+        (1, 2, 3, 4, 3, 4, 4, 2, 1),
+        (1, 3, 4, 5, 5, 4, 3, 2, 1),
+        (1, 2, 3, 3, 2, 3, 3, 2, 1),
+    )
+    feathers = ((1, 1, 2, 2, 2, 1, 1, 1, 1), (1, 1, 1, 2, 2, 2, 2, 1, 1))
     shelves = ((1, 2, 2, 3, 3, 2, 2, 3, 2, 2, 1),)
     # Each weather pattern controls count, proportions and vertical rhythm.
     # All coordinates stay above the pot; foreground masking protects the tree.
@@ -1439,16 +1521,18 @@ def cloud_marks(rising, seed=None, kind=None):
         "clear": (),
         "mega": ((crowns, 24, 30, 12, 1.65),),
         "cumulus": ((crowns, 11, 18, 9, 1),),
-        "scattered": ((wisps, 5, 9, 6, 0.7),
-                      (wisps, 6, 10, 11, 0.8),
-                      (wisps, 5, 9, 16, 0.7)),
-        "cirrus": ((feathers, 14, 23, 5, 1),
-                   (feathers, 10, 19, 10, 1),
-                   (feathers, 8, 15, 15, 1)),
-        "stratus": ((shelves, 23, 30, 8, 1),
-                    (shelves, 17, 26, 14, 0.8)),
-        "layered": ((crowns, 12, 17, 8, 1),
-                    (wisps, 7, 11, 16, 1)),
+        "scattered": (
+            (wisps, 5, 9, 6, 0.7),
+            (wisps, 6, 10, 11, 0.8),
+            (wisps, 5, 9, 16, 0.7),
+        ),
+        "cirrus": (
+            (feathers, 14, 23, 5, 1),
+            (feathers, 10, 19, 10, 1),
+            (feathers, 8, 15, 15, 1),
+        ),
+        "stratus": ((shelves, 23, 30, 8, 1), (shelves, 17, 26, 14, 0.8)),
+        "layered": ((crowns, 12, 17, 8, 1), (wisps, 7, 11, 16, 1)),
     }
     kind = rng.choice(tuple(layouts)) if kind is None else kind
     marks = []
@@ -1465,8 +1549,15 @@ def cloud_marks(rising, seed=None, kind=None):
             position = column * (len(profile) - 1) / (width - 1)
             index = int(position)
             fraction = position - index
-            stretched.append(round((profile[index] * (1 - fraction)
-                                   + profile[min(index + 1, len(profile) - 1)] * fraction) * scale))
+            stretched.append(
+                round(
+                    (
+                        profile[index] * (1 - fraction)
+                        + profile[min(index + 1, len(profile) - 1)] * fraction
+                    )
+                    * scale
+                )
+            )
         profile = stretched
         pane_width = max(17, width)
         pane_start = 56 - pane_width if rising else 2
@@ -1482,17 +1573,20 @@ def cloud_marks(rising, seed=None, kind=None):
             top = bottom - height
             for y in range(top // 2, (bottom - 1) // 2 + 1):
                 halves = tuple(top <= y * 2 + half < bottom for half in (0, 1))
-                glyph = {(True, True): "█", (True, False): "▀",
-                         (False, True): "▄"}[halves]
-                sample = sum(y * 2 + half + 0.5 for half in (0, 1)
-                             if halves[half]) / sum(halves)
+                glyph = {(True, True): "█", (True, False): "▀", (False, True): "▄"}[
+                    halves
+                ]
+                sample = sum(
+                    y * 2 + half + 0.5 for half in (0, 1) if halves[half]
+                ) / sum(halves)
                 depth = (sample - top) / height
                 facing = 1 - u if rising else u
                 # Local lobe shading merges into the bank's overall volume;
                 # no uniformly dark stripe along every bottom row.
                 volume = (sample - (base - max(profile))) / max(profile)
-                shade = round(5 * (0.68 * depth ** 1.5 + 0.32 * volume)
-                              + (0.5 - facing) * 0.7)
+                shade = round(
+                    5 * (0.68 * depth**1.5 + 0.32 * volume) + (0.5 - facing) * 0.7
+                )
                 if kind == "cirrus":
                     shade = 1 + round(depth + (1 - facing))
                 elif kind == "stratus":
@@ -1509,8 +1603,14 @@ def cloud_palette(hour):
     dawn = ((218, 173, 144), (162, 137, 145), (88, 94, 117))
     noon = ((207, 211, 202), (147, 163, 174), (86, 106, 128))
     night = ((145, 165, 186), (93, 116, 144), (48, 65, 91))
-    stops = (tuple(tuple(a + (b - a) * elevation for a, b in zip(warm, cool))
-                   for warm, cool in zip(dawn, noon)) if daylight else night)
+    stops = (
+        tuple(
+            tuple(a + (b - a) * elevation for a, b in zip(warm, cool))
+            for warm, cool in zip(dawn, noon)
+        )
+        if daylight
+        else night
+    )
     palette = {}
     for band in range(6):
         position = band / 5 * 2
@@ -1518,8 +1618,9 @@ def cloud_palette(hour):
         t = position - segment
         # Smooth pigment transitions keep the shaded banks soft at six tones.
         t = t * t * (3 - 2 * t)
-        rgb = tuple(round(a + (b - a) * t)
-                    for a, b in zip(stops[segment], stops[segment + 1]))
+        rgb = tuple(
+            round(a + (b - a) * t) for a, b in zip(stops[segment], stops[segment + 1])
+        )
         palette[f"sky_cloud{band}"] = "\033[0;38;2;{};{};{}m".format(*rgb)
     return palette
 
@@ -1532,25 +1633,40 @@ def sky_pane(canvas, hour, cloud_seed=None):
     # Keep the center for the tree. Morning/evening rise at the left corner;
     # afternoon/after-midnight settle at the right, with an inset glass margin.
     cx, cy = (8 if rising else 48), 4
-    marks = [(cx + x, cy + y, glyph, role)
-             for x, y, glyph, role in celestial_marks(daylight, rising)]
+    marks = [
+        (cx + x, cy + y, glyph, role)
+        for x, y, glyph, role in celestial_marks(daylight, rising)
+    ]
     # Keep a narrow dark contour around the foreground. Without this breathing
     # room, solid sky blocks visually merge with thin twigs and leaf clusters.
-    foreground = {(x, y) for y, row in enumerate(canvas)
-                  for x, (_, ink) in enumerate(row) if ink and y < 19}
+    foreground = {
+        (x, y)
+        for y, row in enumerate(canvas)
+        for x, (_, ink) in enumerate(row)
+        if ink and y < 19
+    }
     orb = {(x, y) for x, y, _, ink in marks if ink.startswith("sky_orb")}
     offsets = ((0, 0), (-1, 0), (1, 0), (0, -1), (0, 1))
-    backlit = {(x, y) for x, y in foreground
-               if any((x + dx, y + dy) in orb for dx, dy in offsets)}
+    backlit = {
+        (x, y)
+        for x, y in foreground
+        if any((x + dx, y + dy) in orb for dx, dy in offsets)
+    }
     marks += cloud_marks(rising, cloud_seed)
     if not daylight:
-        marks += [(x, y, "·", "sky_star") for x, y in
-                  ((7, 2), (19, 1), (39, 3), (49, 1), (12, 6), (44, 7))]
+        marks += [
+            (x, y, "·", "sky_star")
+            for x, y in ((7, 2), (19, 1), (39, 3), (49, 1), (12, 6), (44, 7))
+        ]
     for x, y, glyph, ink in marks:
         # Leave the drawing's negative space quiet: no stars inside the crescent.
         if ink == "sky_star" and abs(x - cx) <= 7 and abs(y - cy) <= 4:
             continue
-        if 0 <= y < len(canvas) and 0 <= x < len(canvas[y]) and canvas[y][x] == (" ", ""):
+        if (
+            0 <= y < len(canvas)
+            and 0 <= x < len(canvas[y])
+            and canvas[y][x] == (" ", "")
+        ):
             if ink.startswith(("sky_orb", "sky_glow", "sky_cloud")) and any(
                 (x + dx, y + dy) in foreground for dx, dy in offsets
             ):
@@ -1564,7 +1680,8 @@ def backlit_ink(ink, daylight):
     rgb = [int(c) for c in re.findall(r"\d+", ink)[-3:]]
     light = (212, 182, 133) if daylight else (178, 199, 213)
     return "\033[0;38;2;{};{};{}m".format(
-        *(round(a * 0.78 + b * 0.22) for a, b in zip(rgb, light)))
+        *(round(a * 0.78 + b * 0.22) for a, b in zip(rgb, light))
+    )
 
 
 def glass_reflections(texture_seed, left_corner):
@@ -1585,24 +1702,37 @@ def glass_reflections(texture_seed, left_corner):
         points.add((max_dx, fragment_y))
         if fragment_y < max_dy and rng.choice((False, True)):
             points.add((max_dx - 1, fragment_y + 1))
-    return tuple((x + dx, y + dy) for dx, dy in sorted(points, key=lambda p: (p[1], p[0])))
+    return tuple(
+        (x + dx, y + dy) for dx, dy in sorted(points, key=lambda p: (p[1], p[0]))
+    )
 
 
 def place_glass_marks(canvas, texture_seed):
     """Place complete text reflections with a cell of breathing room around art."""
     blocked = set()
     groups = []
+
     def reserve(points):
-        blocked.update((x + dx, y + dy) for x, y in points
-                       for dx in (-1, 0, 1) for dy in (-1, 0, 1))
-    reserve((x, y) for y, row in enumerate(canvas) for x, (_, ink) in enumerate(row) if ink)
+        blocked.update(
+            (x + dx, y + dy)
+            for x, y in points
+            for dx in (-1, 0, 1)
+            for dy in (-1, 0, 1)
+        )
+
+    reserve(
+        (x, y) for y, row in enumerate(canvas) for x, (_, ink) in enumerate(row) if ink
+    )
+
     def place(points, glyph, ink):
-        if not all(1 <= x <= 55 and 1 <= y <= 17 and (x, y) not in blocked
-                   for x, y in points):
+        if not all(
+            1 <= x <= 55 and 1 <= y <= 17 and (x, y) not in blocked for x, y in points
+        ):
             return False
         reserve(points)
         groups.append((glyph, points))
         return True
+
     rng = random.Random(texture_seed ^ 0xA71C)
     group_count = rng.choice((2, 3))
     preferred_right = rng.choice((False, True))
@@ -1637,7 +1767,10 @@ def place_glass_marks(canvas, texture_seed):
             placed = any(place(points, "─", "sky_mist") for points in candidates)
         if not placed:
             return []  # Keep the composition complete; never paint half a layout.
-    if len(groups) != group_count or len({points[0][0] < 28 for _, points in groups}) != 2:
+    if (
+        len(groups) != group_count
+        or len({points[0][0] < 28 for _, points in groups}) != 2
+    ):
         return []
     for glyph, points in groups:
         ink = "glass" if glyph == "╱" else "sky_mist"
@@ -1647,7 +1780,9 @@ def place_glass_marks(canvas, texture_seed):
 
 
 @functools.lru_cache(maxsize=8)
-def rounded_frame_png(cell_width, cell_height, rows, rgb, backing=(15, 15, 15), opacity=1.0):
+def rounded_frame_png(
+    cell_width, cell_height, rows, rgb, backing=(15, 15, 15), opacity=1.0
+):
     """One shared rounded mask for the theme backing and two-pixel rim."""
     width, height = 59 * cell_width, rows * cell_height
     radius = min(12, cell_height * 0.65)
@@ -1674,47 +1809,82 @@ def rounded_frame_png(cell_width, cell_height, rows, rgb, backing=(15, 15, 15), 
             distance = math.hypot(max(qx, 0), max(qy, 0)) + min(max(qx, qy), 0) - radius
             alpha = round(255 * max(0, min(1, 0.5 - distance)))
             rim = max(0, min(1, distance + 2.5))
-            ink = tuple(round(base + (channel - base) * rim) for base, channel in zip(backing, rgb))
+            ink = tuple(
+                round(base + (channel - base) * rim)
+                for base, channel in zip(backing, rgb)
+            )
             line.extend((*ink, round(alpha * (opacity + (1 - opacity) * rim))))
             x += 1
         scanlines[qy] = line
         data.extend(line)
+
     def chunk(kind, payload):
-        return (struct.pack('!I', len(payload)) + kind + payload
-                + struct.pack('!I', zlib.crc32(kind + payload)))
-    return (b'\x89PNG\r\n\x1a\n'
-            + chunk(b'IHDR', struct.pack('!IIBBBBB', width, height, 8, 6, 0, 0, 0))
-            + chunk(b'IDAT', zlib.compress(data)) + chunk(b'IEND', b''))
+        return (
+            struct.pack("!I", len(payload))
+            + kind
+            + payload
+            + struct.pack("!I", zlib.crc32(kind + payload))
+        )
+
+    return (
+        b"\x89PNG\r\n\x1a\n"
+        + chunk(b"IHDR", struct.pack("!IIBBBBB", width, height, 8, 6, 0, 0, 0))
+        + chunk(b"IDAT", zlib.compress(data))
+        + chunk(b"IEND", b"")
+    )
 
 
 def kitty_frame(rows, columns, rgb):
     """Draw a pixel-aligned frame behind text without moving its cursor."""
-    if not (os.environ.get('KITTY_WINDOW_ID') or os.environ.get('TERM') == 'xterm-kitty'):
-        return ''
+    if not (
+        os.environ.get("KITTY_WINDOW_ID") or os.environ.get("TERM") == "xterm-kitty"
+    ):
+        return ""
     try:
         import termios
+
         if not sys.stdout.isatty():
-            return ''
+            return ""
         lines, cols, pixels_x, pixels_y = struct.unpack(
-            'HHHH', fcntl.ioctl(sys.stdout.fileno(), termios.TIOCGWINSZ, b'\0' * 8))
+            "HHHH", fcntl.ioctl(sys.stdout.fileno(), termios.TIOCGWINSZ, b"\0" * 8)
+        )
         if not all((lines, cols, pixels_x, pixels_y)):
-            return ''
+            return ""
         cell_width, cell_height = pixels_x // cols, pixels_y // lines
         if not (1 <= cell_width <= 128 and 1 <= cell_height <= 256):
-            return ''
-    except (OSError, ValueError, AttributeError):
-        return ''
-    encoded = base64.b64encode(rounded_frame_png(cell_width, cell_height, rows, tuple(rgb), theme_background(), 1 - transparency_lift())).decode()
-    image_id = 0x626F6E73  # Terminal-local ID: cached and live frames replace the same border.
+            return ""
+    except OSError, ValueError, AttributeError:
+        return ""
+    encoded = base64.b64encode(
+        rounded_frame_png(
+            cell_width,
+            cell_height,
+            rows,
+            tuple(rgb),
+            theme_background(),
+            1 - transparency_lift(),
+        )
+    ).decode()
+    image_id = (
+        0x626F6E73  # Terminal-local ID: cached and live frames replace the same border.
+    )
     commands = []
     for offset in range(0, len(encoded), 4096):
         more = int(offset + 4096 < len(encoded))
-        header = (f'a=T,f=100,i={image_id},p=1,q=2,z=-1,C=1,c=59,r={rows},'
-                  if offset == 0 else '')
-        commands.append(f'\033_G{header}m={more};{encoded[offset:offset + 4096]}\033\\')
+        header = (
+            f"a=T,f=100,i={image_id},p=1,q=2,z=-1,C=1,c=59,r={rows},"
+            if offset == 0
+            else ""
+        )
+        commands.append(
+            f"\033_G{header}m={more};{encoded[offset : offset + 4096]}\033\\"
+        )
     margin = max(0, (columns - 59) // 2)
-    return ((f'\033[{margin}C' if margin else '') + ''.join(commands)
-            + (f'\033[{margin}D' if margin else ''))
+    return (
+        (f"\033[{margin}C" if margin else "")
+        + "".join(commands)
+        + (f"\033[{margin}D" if margin else "")
+    )
 
 
 def frame_rows(rows, columns, accents, color):
@@ -1723,11 +1893,12 @@ def frame_rows(rows, columns, accents, color):
     margin = " " * max(0, (columns - width - 2) // 2)
     reset = "\033[0m" if color else ""
     primary = accents[0] if valid_palette(accents) else "#85b470"
-    rgb = [int(primary[i:i + 2], 16) for i in (1, 3, 5)]
+    rgb = [int(primary[i : i + 2], 16) for i in (1, 3, 5)]
     # The frame uses the exact primary exported by the current desktop theme.
     glass = "\033[0;38;2;{};{};{}m".format(*rgb) if color else ""
     graphic = kitty_frame(len(rows) + 2, columns, rgb) if color else ""
     background = "\033[48;2;{};{};{}m".format(*theme_background()) if color else ""
+
     def pane(text):
         if not color:
             return text
@@ -1737,16 +1908,21 @@ def frame_rows(rows, columns, accents, color):
         # change so neither the artwork nor empty cells reveal the wallpaper.
         text = re.sub(r"\x1b\[[0-9;]*m", lambda match: match[0] + background, text)
         return background + text + reset
+
     def edge(text):
         if graphic:
             return " " * len(text)
         # Rounded line strokes give the glass a lighter rim than solid blocks.
         weight = "\033[1m" if color else ""
         return pane(glass + weight + text)
+
     top = margin + edge("╭" + "─" * width + "╮")
     bottom = margin + edge("╰" + "─" * width + "╯")
-    return [graphic + top] + [margin + edge("│") + pane(row) + edge("│")
-                    for row in rows] + [bottom]
+    return (
+        [graphic + top]
+        + [margin + edge("│") + pane(row) + edge("│") for row in rows]
+        + [bottom]
+    )
 
 
 def space_bark_shading(canvas, seed):
@@ -1777,7 +1953,9 @@ def blossom_sites(seed, style="informal"):
     count = rng.randint(2, 4)
     chosen = []
     for x, y in candidates:
-        if all(max(abs(x - px), abs(y - py)) >= BLOSSOM_SPACING for px, py, born in chosen):
+        if all(
+            max(abs(x - px), abs(y - py)) >= BLOSSOM_SPACING for px, py, born in chosen
+        ):
             chosen.append((x, y, rng.uniform(21, 26)))
         if len(chosen) == count:
             break
@@ -1793,21 +1971,30 @@ def blossom_plan(seed, style="informal"):
     """Reserve every flower's space before any buds open, including companions."""
     centers = blossom_sites(seed, style)
     occupied = [(x, y) for x, y, born in centers]
-    foliage = sorted({(x, y) for x, y, born, glyph, ink in specimen(seed, 30, style)
-                      if ink.startswith("leaf") and born <= 31
-                      and 0 <= x < 57 and 0 <= y < 19})
+    foliage = sorted(
+        {
+            (x, y)
+            for x, y, born, glyph, ink in specimen(seed, 30, style)
+            if ink.startswith("leaf") and born <= 31 and 0 <= x < 57 and 0 <= y < 19
+        }
+    )
     plan = []
     for x, y, born in centers:
         rng = random.Random(f"{seed}:{style}:flower:{x}:{y}")
         plan.append((x, y, born, rng.choice(BLOSSOM_FORMS)))
         # One optional, smaller companion sits several leaf cells away.
         # Reserve future centers too, so later blooms cannot crowd earlier ones.
-        candidates = [(px, py) for px, py in foliage
-                      if BLOSSOM_SPACING <= max(abs(px - x), abs(py - y)) <= 4]
+        candidates = [
+            (px, py)
+            for px, py in foliage
+            if BLOSSOM_SPACING <= max(abs(px - x), abs(py - y)) <= 4
+        ]
         rng.shuffle(candidates)
         for px, py in candidates:
-            if all(max(abs(px - ox), abs(py - oy)) >= BLOSSOM_SPACING
-                   for ox, oy in occupied):
+            if all(
+                max(abs(px - ox), abs(py - oy)) >= BLOSSOM_SPACING
+                for ox, oy in occupied
+            ):
                 occupied.append((px, py))
                 plan.append((px, py, born + 1.2, rng.choice(("❀", "✧"))))
                 break
@@ -1919,8 +2106,13 @@ def trunk_hollow(seed):
     """Give half the trees a stable set of sheltered hollow sites."""
     if random.Random(f"{seed}:hollow-chance").random() >= 0.5:
         return ()
-    sites = sorted({(x, y) for x, y, born, glyph, ink in stem(30, seed)
-                    if ink == "bark" and 12 <= y <= 16})
+    sites = sorted(
+        {
+            (x, y)
+            for x, y, born, glyph, ink in stem(30, seed)
+            if ink == "bark" and 12 <= y <= 16
+        }
+    )
     random.Random(f"{seed}:hollow").shuffle(sites)
     return tuple(sites)
 
@@ -1929,14 +2121,19 @@ def add_trunk_hollow(canvas, seed, days):
     """An aged hollow and raised grain, without changing the trunk silhouette."""
     if days < 23:
         return
-    site = next(((x, y) for x, y in trunk_hollow(seed)
-                 if canvas[y][x][1] == "bark"), None)
+    site = next(
+        ((x, y) for x, y in trunk_hollow(seed) if canvas[y][x][1] == "bark"), None
+    )
     if site is None:
         return
     x, y = site
     canvas[y][x] = ("○", "woodlight")
-    for px, py, glyph in ((x - 1, y, "╎"), (x + 1, y, "╎"),
-                          (x, y - 1, "╷"), (x, y + 1, "╵")):
+    for px, py, glyph in (
+        (x - 1, y, "╎"),
+        (x + 1, y, "╎"),
+        (x, y - 1, "╷"),
+        (x, y + 1, "╵"),
+    ):
         if canvas[py][px][1] == "bark":
             canvas[py][px] = (glyph, "woodlight")
 
@@ -2010,8 +2207,10 @@ def wood_palette(seed, leaves=None):
     rng = random.Random(f"{seed}:wood-palette")
     leaves = leaves if valid_palette(leaves) else terminal_leaf_palette()
     # The wallpaper primary determines the crown and its wood pairing.
-    leaf_hsv = [colorsys.rgb_to_hsv(*(int(leaf[k:k + 2], 16) / 255
-                                    for k in (1, 3, 5))) for leaf in leaves]
+    leaf_hsv = [
+        colorsys.rgb_to_hsv(*(int(leaf[k : k + 2], 16) / 255 for k in (1, 3, 5)))
+        for leaf in leaves
+    ]
     hue, saturation, value = leaf_hsv[0]
     rgb = [channel * 255 for channel in colorsys.hsv_to_rgb(hue, saturation, value)]
     wood_hue = None
@@ -2033,8 +2232,10 @@ def wood_palette(seed, leaves=None):
     family = families[rng.choice(choices)]
     tint = [rng.randint(-8, 8) for _ in range(3)]
     colors = {
-        name: tuple(round((value + shift) * 0.9 + leaf * 0.1)
-                    for value, shift, leaf in zip(base, tint, rgb))
+        name: tuple(
+            round((value + shift) * 0.9 + leaf * 0.1)
+            for value, shift, leaf in zip(base, tint, rgb)
+        )
         for name, base in zip(("bark", "wood", "woodlight"), family)
     }
     shade = rng.uniform(0.9, 1.0)
@@ -2044,46 +2245,63 @@ def wood_palette(seed, leaves=None):
         if wood_hue is not None:
             h = wood_hue
             sat = max(sat, 0.55)
-        colors[name] = tuple(round(channel * 255) for channel in
-                             colorsys.hsv_to_rgb(h, sat * 0.5 if saturation >= 0.08 else 0, value * material_value * shade))
+        colors[name] = tuple(
+            round(channel * 255)
+            for channel in colorsys.hsv_to_rgb(
+                h,
+                sat * 0.5 if saturation >= 0.08 else 0,
+                value * material_value * shade,
+            )
+        )
     # A colored seam between bark and heartwood, rather than a black groove.
-    colors["scar"] = tuple(round(bark * 0.55 + wood * 0.45)
-                           for bark, wood in zip(colors["bark"], colors["wood"]))
+    colors["scar"] = tuple(
+        round(bark * 0.55 + wood * 0.45)
+        for bark, wood in zip(colors["bark"], colors["wood"])
+    )
     for name in ("bark", "wood"):
-        colors[f"{name}_grain"] = tuple(round(base * 0.65 + light * 0.35)
-                                         for base, light in zip(colors[name], colors["woodlight"]))
-    return {name: "\033[0;38;2;{};{};{}m".format(*rgb)
-            for name, rgb in colors.items()}
+        colors[f"{name}_grain"] = tuple(
+            round(base * 0.65 + light * 0.35)
+            for base, light in zip(colors[name], colors["woodlight"])
+        )
+    return {name: "\033[0;38;2;{};{};{}m".format(*rgb) for name, rgb in colors.items()}
 
 
 def specimen_palette(seed, leaves=None):
     """Keep foliage true to the main wallpaper color with gentle related shades."""
     leaves = leaves if valid_palette(leaves) else terminal_leaf_palette()
-    hsv = [colorsys.rgb_to_hsv(*(int(c[k:k + 2], 16) / 255
-                               for k in (1, 3, 5))) for c in leaves]
+    hsv = [
+        colorsys.rgb_to_hsv(*(int(c[k : k + 2], 16) / 255 for k in (1, 3, 5)))
+        for c in leaves
+    ]
     hue, saturation, _ = hsv[0]
+
     def ink(h, sat, value):
-        rgb = [round(channel * 255) for channel in
-               colorsys.hsv_to_rgb(h % 1, sat, value)]
+        rgb = [
+            round(channel * 255) for channel in colorsys.hsv_to_rgb(h % 1, sat, value)
+        ]
         return "\033[0;38;2;{};{};{}m".format(*rgb)
+
     # Neutral themes stay neutral; otherwise give the crown the chroma budget.
     chroma = max(0.62, saturation) if saturation >= 0.08 else 0
     palette = wood_palette(seed, leaves)
-    palette.update({
-        "": "\033[0m",
-        "pot": ink(hue, chroma * 0.25, 0.43),
-        "pot_shadow": ink(hue, chroma * 0.2, 0.3),
-        "pot_rim": ink(hue, chroma * 0.22, 0.56),
-        "pot_glaze": ink(hue, chroma * 0.28, 0.45),
-        "pot_edge": ink(hue, chroma * 0.24, 0.31),
-        "pot_foot": ink(hue, chroma * 0.2, 0.28),
-    })
+    palette.update(
+        {
+            "": "\033[0m",
+            "pot": ink(hue, chroma * 0.25, 0.43),
+            "pot_shadow": ink(hue, chroma * 0.2, 0.3),
+            "pot_rim": ink(hue, chroma * 0.22, 0.56),
+            "pot_glaze": ink(hue, chroma * 0.28, 0.45),
+            "pot_edge": ink(hue, chroma * 0.24, 0.31),
+            "pot_foot": ink(hue, chroma * 0.2, 0.28),
+        }
+    )
     palette["shoot"] = palette["wood"]
     # Preserve the actual primary color, including pastel saturation and value.
     # Nearby clusters only borrow a little of the real secondary; no hue shifts
     # or synthetic saturation/value floors turn the wallpaper into neon leaves.
-    endpoints = [[int(color[k:k + 2], 16) / 255 for k in (1, 3, 5)]
-                 for color in leaves[:2]]
+    endpoints = [
+        [int(color[k : k + 2], 16) / 255 for k in (1, 3, 5)] for color in leaves[:2]
+    ]
 
     def linear(v):
         return v / 12.92 if v <= 0.04045 else ((v + 0.055) / 1.055) ** 2.4
@@ -2096,8 +2314,10 @@ def specimen_palette(seed, leaves=None):
             palette[f"shoot_{name}{i}"] = ink(hue, chroma * 0.3, 0.55)
         # A neutral primary stays neutral even beside a colorful secondary.
         weight = weight if saturation >= 0.08 else 0
-        mixed = [srgb(linear(a) * (1 - weight) + linear(b) * weight)
-                 for a, b in zip(*endpoints)]
+        mixed = [
+            srgb(linear(a) * (1 - weight) + linear(b) * weight)
+            for a, b in zip(*endpoints)
+        ]
         for j, (shade, light) in enumerate(((0.82, 0), (1, 0), (0.94, 0.06))):
             rgb = [round((channel * shade + light) * 255) for channel in mixed]
             palette[f"leaf{i * 3 + j}"] = "\033[0;38;2;{};{};{}m".format(*rgb)
@@ -2105,7 +2325,7 @@ def specimen_palette(seed, leaves=None):
     # Retain the source accent inks for palette inspection; the rendered pot
     # uses the two solid enamels below.
     for role, color in zip(("pot_inlay", "pot_pattern"), leaves[:2]):
-        rgb = [int(color[i:i + 2], 16) for i in (1, 3, 5)]
+        rgb = [int(color[i : i + 2], 16) for i in (1, 3, 5)]
         palette[role] = "\033[0;38;2;{};{};{}m".format(*rgb)
     palette.update(ceramic_palette(tuple(leaves)))
     # Flowers share the rendered pot enamel, including its brightness adjustment.
@@ -2133,7 +2353,9 @@ def specimen_canvas(days, seed, style="informal", pot_seed=None):
         add_knurling(canvas, seed, days)
     add_blossoms(canvas, seed, days, style)
     rows = pot_rows(seed if pot_seed is None else pot_seed)
-    has_details = any(char in POT_ACCENT_MARKS for row in rows[1:3] for char in row.strip()[1:-1])
+    has_details = any(
+        char in POT_ACCENT_MARKS for row in rows[1:3] for char in row.strip()[1:-1]
+    )
     for y, row in enumerate(rows, 19):
         left = len(row) - len(row.lstrip())
         right = len(row.rstrip()) - 1
@@ -2177,7 +2399,7 @@ def render(
     # One palette gives the leaves priority and keeps every other material quiet.
     palette = specimen_palette(seed)
     accents = accents if valid_palette(accents) else wallpaper_palette()
-    glass_rgb = [int(accents[0][i:i + 2], 16) for i in (1, 3, 5)]
+    glass_rgb = [int(accents[0][i : i + 2], 16) for i in (1, 3, 5)]
     palette["glass"] = "\033[0;38;2;{};{};{}m".format(
         *(round(105 * 0.85 + channel * 0.15) for channel in glass_rgb)
     )
@@ -2193,9 +2415,14 @@ def render(
     lighting_canvas = canvas
     for y, row in enumerate(visible, first_row):
         parts, previous = [], None
-        wood_columns = [x for x, (glyph, ink) in enumerate(lighting_canvas[y])
-                        if ink in ("wood", "bark", "woodlight", "scar") and glyph.strip()]
-        wood_center = (min(wood_columns) + max(wood_columns)) / 2 if wood_columns else 27
+        wood_columns = [
+            x
+            for x, (glyph, ink) in enumerate(lighting_canvas[y])
+            if ink in ("wood", "bark", "woodlight", "scar") and glyph.strip()
+        ]
+        wood_center = (
+            (min(wood_columns) + max(wood_columns)) / 2 if wood_columns else 27
+        )
         for x, (glyph, ink) in enumerate(row):
             if color and ink in ("wood", "bark"):
                 # Light catches the left face; long, gentle grain follows the
@@ -2204,12 +2431,18 @@ def render(
                 if x <= wood_center and grain > -0.3:
                     ink += "_grain"
             if color and ink in ("pot_inlay", "pot_pattern"):
-                ink = "ceramic_inlay_accent" if ink == "pot_pattern" else "ceramic_inlay_main"
+                ink = (
+                    "ceramic_inlay_accent"
+                    if ink == "pot_pattern"
+                    else "ceramic_inlay_main"
+                )
             elif color and ink == "pot":
                 material = "rim" if y == 19 else "foot" if y == 22 else "body"
                 ink = f"ceramic_{material}_{x - 16}"
-            if color and (x, y) in backlit and (
-                ink.startswith(("leaf", "wood", "bark", "shoot")) or ink == "scar"
+            if (
+                color
+                and (x, y) in backlit
+                and (ink.startswith(("leaf", "wood", "bark", "shoot")) or ink == "scar")
             ):
                 # Retain every tree glyph and its texture; only lift the face
                 # directly in front of the celestial body.
@@ -2302,7 +2535,8 @@ def animate_growth(seed, accents, duration=2.0, style="informal"):
                         eased = progress * progress * (3 - 2 * progress)
                         day = start_day + (30 - start_day) * eased
                         sys.stdout.write(
-                            "\033[?2026h\033[26A\r" + picture(day, True) + "\033[?2026l")
+                            "\033[?2026h\033[26A\r" + picture(day, True) + "\033[?2026l"
+                        )
                         sys.stdout.flush()
                         if progress >= 1:
                             break
@@ -2320,19 +2554,30 @@ POOL_SIZE = 4
 
 
 def prepared_directory(columns):
-    return Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache")) / "bonsai-grow" / f"prepared-v9-{columns}"
+    return (
+        Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache"))
+        / "bonsai-grow"
+        / f"prepared-v9-{columns}"
+    )
 
 
 def prepared_identity(value, columns, accents, style):
     try:
         data = json.loads(value)
-        if (data["version"] == 1 and data["columns"] == columns
-                and data["palette"] == accents and data["style"] == style
-                and all(type(data[key]) is int and 0 <= data[key] < 2**63
-                        for key in ("seed", "pot_seed", "glass_seed"))
-                and type(data["hour"]) in (int, float) and 0 <= data["hour"] < 24):
+        if (
+            data["version"] == 1
+            and data["columns"] == columns
+            and data["palette"] == accents
+            and data["style"] == style
+            and all(
+                type(data[key]) is int and 0 <= data[key] < 2**63
+                for key in ("seed", "pot_seed", "glass_seed")
+            )
+            and type(data["hour"]) in (int, float)
+            and 0 <= data["hour"] < 24
+        ):
             return data
-    except (ValueError, TypeError, KeyError):
+    except ValueError, TypeError, KeyError:
         pass
     return None
 
@@ -2356,20 +2601,39 @@ def refill_prepared(columns, accents, style):
                 target = directory / f"{slot}.ready"
                 try:
                     with target.open() as existing:
-                        if (prepared_identity(existing.readline(), columns, accents, style)
-                                and target.stat().st_mtime > palette_stamp):
+                        if (
+                            prepared_identity(
+                                existing.readline(), columns, accents, style
+                            )
+                            and target.stat().st_mtime > palette_stamp
+                        ):
                             continue
                 except OSError:
                     pass
                 rng = random.SystemRandom()
                 local = time.localtime()
-                identity = dict(version=1, columns=columns, palette=accents, style=style,
-                                seed=rng.randrange(2**63), pot_seed=rng.randrange(2**63),
-                                glass_seed=rng.randrange(2**63),
-                                hour=local.tm_hour + local.tm_min / 60 + local.tm_sec / 3600)
+                identity = dict(
+                    version=1,
+                    columns=columns,
+                    palette=accents,
+                    style=style,
+                    seed=rng.randrange(2**63),
+                    pot_seed=rng.randrange(2**63),
+                    glass_seed=rng.randrange(2**63),
+                    hour=local.tm_hour + local.tm_min / 60 + local.tm_sec / 3600,
+                )
                 GLASS_SEED = identity["glass_seed"]
-                picture = render(0, identity["seed"], True, columns, accents, style,
-                                 fixed_height=True, pot_seed=identity["pot_seed"], hour=identity["hour"])
+                picture = render(
+                    0,
+                    identity["seed"],
+                    True,
+                    columns,
+                    accents,
+                    style,
+                    fixed_height=True,
+                    pot_seed=identity["pot_seed"],
+                    hour=identity["hour"],
+                )
                 frame = "\033[?2026h\0337\033[H" + picture + "\0338\033[?2026l"
                 temporary.write_text(json.dumps(identity) + "\n" + frame)
                 temporary.replace(target)
@@ -2403,14 +2667,18 @@ def start_refill(columns, accents, style):
         os._exit(0)
 
 
-def animate_background(seed, accents, duration, style, prepared=None, refill_started=False):
+def animate_background(
+    seed, accents, duration, style, prepared=None, refill_started=False
+):
     """Grow once, then track the sky until Fish stops us before command output."""
     import signal
 
     signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))
     size = shutil.get_terminal_size()
     global GLASS_SEED
-    pot_seed = prepared["pot_seed"] if prepared else random.SystemRandom().randrange(2**63)
+    pot_seed = (
+        prepared["pot_seed"] if prepared else random.SystemRandom().randrange(2**63)
+    )
     if prepared:
         seed = prepared["seed"]
         GLASS_SEED = prepared["glass_seed"]
@@ -2481,7 +2749,9 @@ def greeting(seed, duration, style, opening_shown=False, prepared=None):
     # Close the command-substitution pipe so Fish can display its prompt.
     os.dup2(sys.stderr.fileno(), sys.stdout.fileno())
     try:
-        animate_background(seed, accents, duration, style, identity, refill_started=True)
+        animate_background(
+            seed, accents, duration, style, identity, refill_started=True
+        )
     finally:
         os._exit(0)
 
@@ -2525,17 +2795,32 @@ def main():
         action="store_true",
         help="Animate reserved greeting rows without reading input",
     )
-    parser.add_argument("--greeting", action="store_true",
-                        help="Reserve rows and start animation in one launch; emit worker PID")
-    parser.add_argument("--opening-shown", action="store_true",
-                        help="Keep the cached opening already painted by Fish")
-    parser.add_argument("--prepared", help="Identity of the single-use opening claimed by Fish")
+    parser.add_argument(
+        "--greeting",
+        action="store_true",
+        help="Reserve rows and start animation in one launch; emit worker PID",
+    )
+    parser.add_argument(
+        "--opening-shown",
+        action="store_true",
+        help="Keep the cached opening already painted by Fish",
+    )
+    parser.add_argument(
+        "--prepared", help="Identity of the single-use opening claimed by Fish"
+    )
     args = parser.parse_args()
     if not math.isfinite(args.duration) or args.duration <= 0:
         parser.error("--duration must be a positive finite number")
     if args.greeting:
-        greeting(args.seed if args.seed is not None else random.SystemRandom().randrange(2**63),
-                 args.duration, args.style, args.opening_shown, args.prepared)
+        greeting(
+            args.seed
+            if args.seed is not None
+            else random.SystemRandom().randrange(2**63),
+            args.duration,
+            args.style,
+            args.opening_shown,
+            args.prepared,
+        )
         return
     columns = shutil.get_terminal_size().columns
     if args.preview is None and (
