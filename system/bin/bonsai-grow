@@ -1406,6 +1406,43 @@ def moon_palette():
     return palette
 
 
+def cloud_marks(rising):
+    """Layered cumulus lobes, sampled with the same half blocks as the orbs."""
+    marks = []
+    # Two low, asymmetric banks in the opposite pane leave the tree's crown open.
+    lobes = ((-4.5, 0.3, 3.3, 0.9), (-1.8, -0.3, 3.1, 1.5),
+             (1.3, 0, 2.7, 1.2), (4, 0.5, 3.4, 0.7))
+    for cx, cy, scale in ((47 if rising else 9, 3, 1),
+                           (43 if rising else 13, 7, 0.65)):
+        for y in range(-2, 3):
+            for x in range(-8, 9):
+                halves = []
+                for half in range(2):
+                    sy = y + (half + 0.5) / 2 - 0.5
+                    halves.append(sy <= 0.9 * scale and any(((x / scale - lx) / rx) ** 2
+                                      + ((sy / scale - ly) / ry) ** 2 <= 1
+                                      for lx, ly, rx, ry in lobes))
+                glyph = {(True, True): "█", (True, False): "▀",
+                         (False, True): "▄"}.get(tuple(halves))
+                if glyph:
+                    band = max(0, min(3, round((y / scale + 1.5))))
+                    marks.append((cx + x, cy + y, glyph, f"sky_cloud{band}"))
+    return marks
+
+
+def cloud_palette(hour):
+    """Soft ivory and amber by day, muted blue silver under moonlight."""
+    daylight = 6 <= hour % 24 < 18
+    elevation = max(0, math.sin(math.pi * (hour % 24 - 6) / 12))
+    top = (tuple(round(a + (b - a) * elevation)
+                 for a, b in zip((177, 139, 109), (181, 185, 179)))
+           if daylight else (106, 123, 141))
+    bottom = (67, 70, 77) if daylight else (42, 52, 68)
+    return {f"sky_cloud{band}": "\033[0;38;2;{};{};{}m".format(
+                *(round(a + (b - a) * band / 3) for a, b in zip(top, bottom)))
+            for band in range(4)}
+
+
 def sky_pane(canvas, hour):
     """Place sparse celestial marks and mist only in unoccupied glass."""
     hour %= 24
@@ -1424,6 +1461,7 @@ def sky_pane(canvas, hour):
     offsets = ((0, 0), (-1, 0), (1, 0), (0, -1), (0, 1))
     backlit = {(x, y) for x, y in foreground
                if any((x + dx, y + dy) in orb for dx, dy in offsets)}
+    marks += cloud_marks(rising)
     if not daylight:
         marks += [(x, y, "·", "sky_star") for x, y in
                   ((7, 2), (19, 1), (39, 3), (49, 1), (12, 6), (44, 7))]
@@ -1432,7 +1470,7 @@ def sky_pane(canvas, hour):
         if ink == "sky_star" and abs(x - cx) <= 7 and abs(y - cy) <= 4:
             continue
         if 0 <= y < len(canvas) and 0 <= x < len(canvas[y]) and canvas[y][x] == (" ", ""):
-            if ink.startswith(("sky_orb", "sky_glow")) and any(
+            if ink.startswith(("sky_orb", "sky_glow", "sky_cloud")) and any(
                 (x + dx, y + dy) in foreground for dx, dy in offsets
             ):
                 continue
@@ -2064,6 +2102,7 @@ def render(
     )
     palette.update(sun_palette(hour))
     palette.update(moon_palette())
+    palette.update(cloud_palette(hour))
     palette["sky_star"] = "\033[0;38;2;88;94;111m"
     palette["sky_mist"] = "\033[0;38;2;57;62;63m"
     output = []

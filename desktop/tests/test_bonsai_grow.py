@@ -549,6 +549,28 @@ class BonsaiGrowTests(unittest.TestCase):
                          {(x, y, ink) for x, y, glyph, ink in reflected})
         self.assertEqual(len(set(bonsai.moon_palette().values())), 8)
 
+    def test_clouds_match_lighting_and_preserve_foreground(self):
+        for hour in (3, 6, 9, 12, 17, 21):
+            canvas = bonsai.specimen_canvas(30, 42, 'informal', 42)
+            foreground = {(x, y): cell for y, row in enumerate(canvas)
+                          for x, cell in enumerate(row) if cell[1]}
+            bonsai.sky_pane(canvas, hour)
+            clouds = [(x, y, glyph, ink) for y, row in enumerate(canvas)
+                      for x, (glyph, ink) in enumerate(row)
+                      if ink.startswith('sky_cloud')]
+            self.assertTrue(clouds)
+            self.assertTrue(all(1 <= x <= 55 and 1 <= y <= 8
+                                and glyph in '█▀▄' for x, y, glyph, ink in clouds))
+            self.assertTrue(all(ink in bonsai.cloud_palette(hour)
+                                for x, y, glyph, ink in clouds))
+            for (x, y), cell in foreground.items():
+                self.assertEqual(canvas[y][x], cell)
+            for x, y, _, _ in clouds:
+                self.assertFalse(any((x + dx, y + dy) in foreground
+                                     for dx, dy in ((0, 0), (-1, 0), (1, 0), (0, -1), (0, 1))))
+        self.assertNotEqual(bonsai.cloud_palette(12), bonsai.cloud_palette(21))
+        self.assertNotEqual(bonsai.cloud_palette(6), bonsai.cloud_palette(12))
+
     def test_crescent_negative_space_is_clear_of_stars(self):
         for hour in (3, 21):
             canvas = [[(' ', '') for _ in range(57)] for _ in range(24)]
