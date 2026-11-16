@@ -109,3 +109,14 @@ assert(game.stepTarget(pickup,2,480,480,180,100,9).collected);
 assert(!game.stepTarget(pickup,2,480,480,180,140,9).collected);
 assert(game.stepTarget(pickup,0,480,480,130,100,9).collected);
 console.log('Cursor and target swept touch collection: PASS');
+
+// BASE/Normal favors denser, slower lanes while preserving reaction margins.
+for (const mode of ['survival', 'gauntlet']) for (const elapsed of [0, 30, 60, 300]) {
+    const previousSpeed = (145 + Math.min(60, elapsed * .8)) * Math.sqrt(game.pressure(mode, elapsed));
+    const previousGap = Math.max(.4, .85 / (1 + Math.min(90, elapsed) * .006) / game.pressure(mode, elapsed));
+    assert(Math.abs(game.enemySpeed(1, elapsed, mode) - previousSpeed * .8) < 1e-9);
+    assert(game.spawnInterval(1, elapsed, mode) <= previousGap);
+}
+assert.equal(game.spawnInterval(1, 0, 'survival'), .65);
+assert.equal(game.enemySpeed(1, 0, 'survival'), 116);
+console.log('Denser, slower default difficulty: PASS');

@@ -7,11 +7,11 @@ function pressure(mode, elapsed) {
 }
 // Independent caps keep speed, density and hitbox growth from compounding forever.
 function enemySpeed(difficulty, elapsed, mode) {
-    return (110 + difficulty * 35 + Math.min(60, elapsed * 0.8)) * Math.sqrt(pressure(mode, elapsed));
+    return (difficulty === 1 ? 0.8 : 1) * (110 + difficulty * 35 + Math.min(60, elapsed * 0.8)) * Math.sqrt(pressure(mode, elapsed));
 }
 function spawnInterval(difficulty, elapsed, mode) {
     const floors = [0.5, 0.4, 0.32, 0.26];
-    return Math.max(floors[difficulty], (1 - difficulty * 0.15) / (1 + Math.min(90, elapsed) * 0.006) / pressure(mode, elapsed));
+    return Math.max(floors[difficulty], (difficulty === 1 ? 0.65 : 1 - difficulty * 0.15) / (1 + Math.min(90, elapsed) * 0.006) / pressure(mode, elapsed));
 }
 function spawn(w, h, px, py, difficulty, elapsed, mode) {
     const speed = enemySpeed(difficulty, elapsed, mode);

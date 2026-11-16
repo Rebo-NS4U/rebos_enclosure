@@ -73,6 +73,8 @@ ShellRoot {
         property var trail: []
         property var pickupTarget: null
         property real targetClock: 0
+        property real targetBorn: 0
+        property var collection: null
         property int targetsCollected: 0
         property real spawnClock: 0
         property real trailClock: 0
@@ -116,7 +118,7 @@ ShellRoot {
         function reset() {
             phase = "ready"; elapsed = 0; enemies = []; trail = [];
             enemyVisuals.clear(); victory = false; death = null;
-            pickupTarget = null; targetClock = 0; targetsCollected = 0;
+            pickupTarget = null; targetClock = 0; targetsCollected = 0; collection = null;
         }
         function start(x, y) {
             reset(); playerX = x / arena.width; playerY = y / arena.height;
@@ -135,6 +137,7 @@ ShellRoot {
         }
         function collectTarget() {
             if (phase !== "playing" || !pickupTarget) return false;
+            collection = {x: pickupTarget.x, y: pickupTarget.y, time: elapsed};
             pickupTarget = null; targetClock = 0; targetsCollected++;
             return true;
         }
@@ -143,6 +146,7 @@ ShellRoot {
                 targetClock += dt;
                 if (targetClock >= (targetsCollected === 0 ? 4 : 6)) {
                     pickupTarget = Game.spawnTarget(arena.width, arena.height, difficulty);
+                    targetBorn = elapsed;
                     targetClock = 0;
                 }
                 return;
@@ -171,7 +175,9 @@ ShellRoot {
                 const gap = Game.spawnInterval(window.difficulty, window.elapsed, window.playMode);
                 if (window.spawnClock >= gap) {
                     window.spawnClock = 0;
-                    window.enemies.push(Game.spawn(arena.width, arena.height, window.playerX, window.playerY, window.difficulty, window.elapsed, window.playMode));
+                    const spawned = Game.spawn(arena.width, arena.height, window.playerX, window.playerY, window.difficulty, window.elapsed, window.playMode);
+                    spawned.born = window.elapsed;
+                    window.enemies.push(spawned);
                 }
                 const result = Game.step(window.enemies, dt, window.playerX * arena.width, window.playerY * arena.height, arena.width, arena.height, window.playerRadius);
                 window.enemies = result.enemies;
@@ -180,7 +186,7 @@ ShellRoot {
                     enemyVisuals.remove(enemyVisuals.count - 1);
                 for (let i = 0; i < result.enemies.length; i++) {
                     const e = result.enemies[i];
-                    const row = { ex: e.x, ey: e.y, size: e.r * 2 };
+                    const row = { ex: e.x, ey: e.y, size: e.r * 2, age: window.elapsed - e.born };
                     if (i < enemyVisuals.count) enemyVisuals.set(i, row);
                     else enemyVisuals.append(row);
                 }
@@ -251,15 +257,20 @@ ShellRoot {
                         required property real ex
                         required property real ey
                         required property real size
+                        required property real age
+                        readonly property real arrival: window.reducedMotion ? 1 : Math.min(1, age / 0.65)
+                        // The rim keeps the exact collision size while its halo blooms.
+                        opacity: 0.65 + arrival * 0.35
                         x: ex - size / 2; y: ey - size / 2
                         width: size; height: size; radius: size / 2
                         visible: window.phase !== "ready"
                         color: Qt.alpha(Colors.error, 0.2)
                         border.width: 1.5; border.color: Qt.alpha(Colors.error, 0.85)
                         Rectangle {
-                            anchors.centerIn: parent; width: parent.width + 10; height: width; radius: width / 2
+                            anchors.centerIn: parent; width: parent.width + 10 + (1 - parent.arrival) * 44; height: width; radius: width / 2
                             visible: !window.reducedMotion
-                            color: "transparent"; border.width: 4; border.color: Qt.alpha(Colors.error, 0.06)
+                            color: "transparent"; border.width: 1 + (1 - parent.arrival) * 2
+                            border.color: Qt.alpha(Colors.error, 0.06 + (1 - parent.arrival) * 0.55)
                         }
                         Rectangle {
                             anchors.centerIn: parent; width: 4; height: 4; radius: 2
@@ -289,6 +300,7 @@ ShellRoot {
                 }
                 Rectangle {
                     id: targetCircle
+                    readonly property real arrival: window.reducedMotion ? 1 : Math.min(1, (window.elapsed - window.targetBorn) / 0.55)
                     readonly property var target: window.pickupTarget
                     visible: !!target && window.phase !== "death"
                     x: target ? target.x - width / 2 : 0
@@ -296,6 +308,50 @@ ShellRoot {
                     width: target ? target.r * 2 : 0; height: width; radius: width / 2
                     color: Qt.alpha(Colors.success, 0.25)
                     border.width: 3; border.color: Colors.success
+                    Rectangle {
+                        anchors.centerIn: parent
+                        width: parent.width + 12 + (1 - targetCircle.arrival) * 50
+                        height: width; radius: width / 2; color: "transparent"
+                        border.width: 2; border.color: Colors.success
+                        opacity: window.reducedMotion ? 0 : 0.15 + (1 - targetCircle.arrival) * 0.65
+                    }
+                    Rectangle {
+                        anchors.centerIn: parent; width: 8; height: width; radius: 4
+                        color: Colors.success
+                    }
+                }
+                Item {
+                    id: collectFX
+                    readonly property var burst: window.collection
+                    readonly property real progress: burst ? Math.min(1, (window.elapsed - burst.time) / 0.65) : 1
+                    visible: !!burst && progress < 1
+                    x: burst ? burst.x : 0; y: burst ? burst.y : 0
+                    Rectangle {
+                        anchors.centerIn: parent
+                        width: window.reducedMotion ? 52 : 44 + collectFX.progress * 100
+                        height: width; radius: width / 2
+                        color: Qt.alpha(Colors.success, (1 - collectFX.progress) * 0.18)
+                        border.width: 3 * (1 - collectFX.progress); border.color: Colors.success
+                        opacity: 1 - collectFX.progress
+                    }
+                    Repeater {
+                        model: window.reducedMotion ? 0 : 10
+                        delegate: Rectangle {
+                            required property int index
+                            readonly property real angle: index * Math.PI / 5
+                            readonly property real distance: 20 + 60 * (1 - Math.pow(1 - collectFX.progress, 3))
+                            x: Math.cos(angle) * distance - width / 2
+                            y: Math.sin(angle) * distance - height / 2
+                            width: 5 * (1 - collectFX.progress) + 2; height: width; radius: width / 2
+                            color: Colors.success; opacity: 1 - collectFX.progress
+                        }
+                    }
+                    StyledText {
+                        x: -40; width: 80; y: -30 - (window.reducedMotion ? 0 : collectFX.progress * 28)
+                        text: "+1"; font.pixelSize: 20; font.bold: true
+                        color: Colors.success; horizontalAlignment: Text.AlignHCenter
+                        opacity: 1 - collectFX.progress
+                    }
                 }
                 MouseArea {
                     id: pointer
