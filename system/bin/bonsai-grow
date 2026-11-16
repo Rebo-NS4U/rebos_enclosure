@@ -1812,12 +1812,13 @@ def place_glass_marks(canvas, texture_seed):
 @functools.lru_cache(maxsize=8)
 def rounded_frame_png(
     cell_width, cell_height, rows, rgb, backing=(15, 15, 15), opacity=1.0,
-    *, feet_rgb=(58, 58, 58)
+    *, feet_rgb=(58, 58, 58), overhang_cells=0
 ):
     """Laminated glass edges and a machined charcoal plinth, behind the art."""
-    width, height = 59 * cell_width, rows * cell_height
+    width, height = (59 + 2 * overhang_cells) * cell_width, rows * cell_height
+    glass_inset = (.5 + overhang_cells) * cell_width
     radius = min(12, cell_height * 0.65)
-    half_width, half_height = (width - cell_width) / 2, (height - cell_height) / 2
+    half_width, half_height = width / 2 - glass_inset, (height - cell_height) / 2
     xs = [abs(x + 0.5 - width / 2) - (half_width - radius) for x in range(width)]
     # The flat interior is one repeated pixel; only the rim needs shading math.
     interior = [x for x, qx in enumerate(xs) if qx <= 0]
@@ -1849,9 +1850,9 @@ def rounded_frame_png(
                     # into the narrow upper tier so neither side hangs free.
                     seating = (y + .5 - (height - 1.5 * cell_height)) / (.35 * cell_height)
                     tier_top, tier_bottom = 1.5, 1.15
-                    inset = (.5 + .4 * seating) * cell_width
+                    inset = (.5 + .4 * seating + overhang_cells) * cell_width
                 elif y + .5 < height - .65 * cell_height:
-                    tier_top, tier_bottom, inset = 1.15, .65, .45 * cell_width
+                    tier_top, tier_bottom, inset = 1.15, .65, (.45 + .5 * overhang_cells) * cell_width
                 else:
                     tier_top, tier_bottom, inset = .65, .1, .05 * cell_width
                 base_radius = min(1, cell_width * .1, cell_height * .06)
@@ -1864,7 +1865,7 @@ def rounded_frame_png(
             if height - 1.5 * cell_height <= y + .5 < height - 1.15 * cell_height:
                 # The two ceramic feet end at the center of the floor row.
                 floor_depth = (y + .5 - (height - 1.5 * cell_height)) / cell_height
-                shadow_x = min(abs(x + .5 - foot * cell_width) for foot in (23, 34))
+                shadow_x = min(abs(x + .5 - (foot + overhang_cells) * cell_width) for foot in (23, 34))
                 shadow = math.exp(-(shadow_x / (1.6 * cell_width)) ** 2)
                 shadow *= math.exp(-floor_depth * 7)
                 level = 20 - 12 * shadow
@@ -1872,7 +1873,7 @@ def rounded_frame_png(
                 # A short reflection at the joint carries the glass rim into
                 # its metal seat without adding a bright stripe across the art.
                 side = min(x + .5, width - x - .5)
-                joint = max(0, 1 - floor_depth / .18) if side < 1.6 * cell_width else 0
+                joint = max(0, 1 - floor_depth / .18) if side < (1.6 + overhang_cells) * cell_width else 0
                 ink = tuple(round(c + (light - c) * joint * .45)
                             for c, light in zip(ink, rgb))
             elif y + .5 >= height - 1.15 * cell_height:
@@ -1886,8 +1887,8 @@ def rounded_frame_png(
             else:
                 # Optical thickness: twin cool seams and a soft reflected
                 # ribbon confined to the side panes, leaving the center clear.
-                side = min(x + .5 - cell_width / 2,
-                           width - cell_width / 2 - x - .5)
+                side = min(x + .5 - glass_inset,
+                           width - glass_inset - x - .5)
                 seam = math.exp(-((side - 2.8) / .8) ** 2) * .34
                 ribbon_center = cell_width * (.83 + .16 * y / height)
                 ribbon = math.exp(-((side - ribbon_center) / (cell_width * .24)) ** 2)
@@ -1902,7 +1903,7 @@ def rounded_frame_png(
                 depth = (y + .5 - (height - 2 * cell_height)) / (.5 * cell_height)
                 spread = depth * depth * (3 - 2 * depth)
                 half_foot = cell_width * (1 + .65 * spread)
-                center = min((23 * cell_width, 34 * cell_width), key=lambda c: abs(x + .5 - c))
+                center = min(((23 + overhang_cells) * cell_width, (34 + overhang_cells) * cell_width), key=lambda c: abs(x + .5 - c))
                 dx = x + .5 - center
                 # Round just the bottom corners, retaining a flat contact edge.
                 foot_radius = min(2, cell_height * .08)
@@ -1958,6 +1959,8 @@ def kitty_frame(rows, columns, rgb, feet_rgb=(58, 58, 58)):
             return ""
     except OSError, ValueError, AttributeError:
         return ""
+    overhang_cells = int(columns >= 61)
+    graphic_columns = 59 + 2 * overhang_cells
     encoded = base64.b64encode(
         rounded_frame_png(
             cell_width,
@@ -1967,6 +1970,7 @@ def kitty_frame(rows, columns, rgb, feet_rgb=(58, 58, 58)):
             theme_background(),
             1 - transparency_lift(),
             feet_rgb=tuple(feet_rgb),
+            overhang_cells=overhang_cells,
         )
     ).decode()
     image_id = (
@@ -1976,14 +1980,14 @@ def kitty_frame(rows, columns, rgb, feet_rgb=(58, 58, 58)):
     for offset in range(0, len(encoded), 4096):
         more = int(offset + 4096 < len(encoded))
         header = (
-            f"a=T,f=100,i={image_id},p=1,q=2,z=-1,C=1,c=59,r={rows},"
+            f"a=T,f=100,i={image_id},p=1,q=2,z=-1,C=1,c={graphic_columns},r={rows},"
             if offset == 0
             else ""
         )
         commands.append(
             f"\033_G{header}m={more};{encoded[offset : offset + 4096]}\033\\"
         )
-    margin = max(0, (columns - 59) // 2)
+    margin = max(0, (columns - 59) // 2 - overhang_cells)
     return (
         (f"\033[{margin}C" if margin else "")
         + "".join(commands)
@@ -2656,7 +2660,7 @@ def prepared_directory(columns):
     return (
         Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache"))
         / "bonsai-grow"
-        / f"prepared-v19-{columns}"
+        / f"prepared-v20-{columns}"
     )
 
 

@@ -50,7 +50,7 @@ class BonsaiGrowTests(unittest.TestCase):
                     (cache / 'effective-palette.json').write_text(json.dumps(
                         {'background': '#123456', 'opacity': opacity}))
                     with patch.object(bonsai, 'rounded_frame_png', wraps=bonsai.rounded_frame_png) as render_png:
-                        bonsai.kitty_frame(26, 80, [240, 130, 80])
+                        bonsai.kitty_frame(26, 59, [240, 130, 80])
                         args = render_png.call_args.args
                     self.assertEqual(args[-2], (16, 46, 76))
                     self.assertAlmostEqual(args[-1], opacity)
@@ -824,6 +824,34 @@ class BonsaiGrowTests(unittest.TestCase):
             self.assertLess(sum(pixel(x, 490)[:3]), sum(pixel(295, 490)[:3]),
                             'small contact shadows sit under each foot')
 
+    def test_wide_plinth_keeps_glass_and_feet_aligned(self):
+        import struct
+        import zlib
+        png = bonsai.rounded_frame_png(10, 20, 26, (130, 160, 140),
+                                      (18, 24, 22), overhang_cells=1)
+        width, height = struct.unpack('!II', png[16:24])
+        self.assertEqual((width, height), (610, 520))
+        offset, compressed = 8, b''
+        while offset < len(png):
+            size = struct.unpack('!I', png[offset:offset + 4])[0]
+            if png[offset + 4:offset + 8] == b'IDAT':
+                compressed += png[offset + 8:offset + 8 + size]
+            offset += size + 12
+        pixels = zlib.decompress(compressed)
+        def pixel(x, y):
+            start = y * (width * 4 + 1) + 1 + x * 4
+            return tuple(pixels[start:start + 4])
+        for x in (5, 604):
+            self.assertEqual(pixel(x, 260)[3], 0, 'overhang leaves glass width unchanged')
+            self.assertEqual(pixel(x, 510)[3], 255, 'base extends past glass')
+        for x in (15, 594):
+            self.assertEqual(pixel(x, 260)[3], 255, 'glass shifts with image padding')
+        for center in (240, 350):
+            self.assertNotEqual(pixel(center, 485)[:3], (18, 24, 22), 'feet align with text')
+        for x in (20, 589):
+            for y in range(486, 499):
+                self.assertEqual(pixel(x, y)[3], 255, 'seat stays connected')
+
     def test_glass_varies_between_seeds_and_stays_stable_within_a_session(self):
         first = bonsai.glass_reflections(11, True)
         self.assertGreater(len({bonsai.glass_reflections(seed, True) for seed in range(120)}), 40)
@@ -880,9 +908,11 @@ class BonsaiGrowTests(unittest.TestCase):
              patch.object(bonsai.fcntl, 'ioctl', return_value=struct.pack('HHHH', 40, 80, 800, 800)):
             command = bonsai.kitty_frame(26, 80, [240, 130, 80])
             self.assertEqual(command, bonsai.kitty_frame(26, 80, [240, 130, 80]))
-            self.assertIn('q=2,z=-1,C=1,c=59,r=26', command)
-            self.assertTrue(command.startswith('\033[10C'))
-            self.assertTrue(command.endswith('\033[10D'))
+            self.assertIn('q=2,z=-1,C=1,c=61,r=26', command)
+            self.assertTrue(command.startswith('\033[9C'))
+            self.assertTrue(command.endswith('\033[9D'))
+            compact = bonsai.kitty_frame(26, 60, [240, 130, 80])
+            self.assertIn('C=1,c=59,r=26', compact)
         with patch.dict(os.environ, {'TERM': 'xterm-kitty'}), \
              patch.object(bonsai.sys.stdout, 'isatty', return_value=False):
             self.assertEqual(bonsai.kitty_frame(26, 80, [240, 130, 80]), '')
@@ -1884,7 +1914,7 @@ class BonsaiGrowTests(unittest.TestCase):
         greeting = source.split('# Finish painting')[0]
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            (root / 'bonsai-grow/prepared-v19-100').mkdir(parents=True)
+            (root / 'bonsai-grow/prepared-v20-100').mkdir(parents=True)
             (root / 'rebos_shell').mkdir()
             (root / 'bin').mkdir()
             script = root / 'bin/bonsai-grow'
@@ -1892,7 +1922,7 @@ class BonsaiGrowTests(unittest.TestCase):
             script.chmod(0o755)
             config = root / 'greeting.fish'
             config.write_text(greeting)
-            cache = root / 'bonsai-grow/prepared-v19-100/0.ready'
+            cache = root / 'bonsai-grow/prepared-v20-100/0.ready'
             palette = root / 'rebos_shell/effective-palette.json'
             palette.write_text('{}')
             for fresh in (True, False):
@@ -1937,7 +1967,7 @@ class BonsaiGrowTests(unittest.TestCase):
         source = (SOURCE.parents[1] / '../config/fish/config.fish').resolve().read_text()
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            pool = root / 'bonsai-grow/prepared-v19-100'
+            pool = root / 'bonsai-grow/prepared-v20-100'
             pool.mkdir(parents=True)
             (root / 'bin').mkdir()
             script = root / 'bin/bonsai-grow'
