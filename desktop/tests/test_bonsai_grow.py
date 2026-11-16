@@ -535,7 +535,7 @@ class BonsaiGrowTests(unittest.TestCase):
             # Keep the central tree area free of celestial blocks.
             self.assertFalse(any(15 <= x <= 41 for x, y in body))
 
-    def test_celestial_materials_and_mirrored_solid_crescent(self):
+    def test_celestial_materials_and_fixed_solid_crescent(self):
         for daylight in (True, False):
             marks = bonsai.celestial_marks(daylight, True)
             body = [glyph for x, y, glyph, ink in marks if ink.startswith('sky_orb')]
@@ -544,9 +544,8 @@ class BonsaiGrowTests(unittest.TestCase):
             self.assertNotIn('☼', body)
             self.assertGreater(len({ink for x, y, glyph, ink in marks}), 3)
         moon = bonsai.celestial_marks(False, True)
-        reflected = bonsai.celestial_marks(False, False)
-        self.assertEqual({(-x, y, ink) for x, y, glyph, ink in moon},
-                         {(x, y, ink) for x, y, glyph, ink in reflected})
+        setting = bonsai.celestial_marks(False, False)
+        self.assertEqual(moon, setting)
         self.assertEqual(len(set(bonsai.moon_palette().values())), 8)
 
     def test_cloud_weather_patterns_are_stable_connected_and_distinct(self):
@@ -1797,7 +1796,7 @@ class BonsaiGrowTests(unittest.TestCase):
         greeting = source.split('# Finish painting')[0]
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            (root / 'bonsai-grow/prepared-v9-100').mkdir(parents=True)
+            (root / 'bonsai-grow/prepared-v10-100').mkdir(parents=True)
             (root / 'rebos_shell').mkdir()
             (root / 'bin').mkdir()
             script = root / 'bin/bonsai-grow'
@@ -1805,7 +1804,7 @@ class BonsaiGrowTests(unittest.TestCase):
             script.chmod(0o755)
             config = root / 'greeting.fish'
             config.write_text(greeting)
-            cache = root / 'bonsai-grow/prepared-v9-100/0.ready'
+            cache = root / 'bonsai-grow/prepared-v10-100/0.ready'
             palette = root / 'rebos_shell/effective-palette.json'
             palette.write_text('{}')
             for fresh in (True, False):
@@ -1850,7 +1849,7 @@ class BonsaiGrowTests(unittest.TestCase):
         source = (SOURCE.parents[1] / '../config/fish/config.fish').resolve().read_text()
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            pool = root / 'bonsai-grow/prepared-v9-100'
+            pool = root / 'bonsai-grow/prepared-v10-100'
             pool.mkdir(parents=True)
             (root / 'bin').mkdir()
             script = root / 'bin/bonsai-grow'

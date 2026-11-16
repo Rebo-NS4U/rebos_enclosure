@@ -1471,7 +1471,7 @@ def celestial_marks(daylight, rising):
                 terminator = max(0, math.hypot(dx - 0.43, y / 3.4) - 0.96)
                 band = min(7, round(terminator / 0.47 * 7))
                 role = f"sky_orb_moon{band}"
-            marks.append((x if daylight or rising else -x, y, glyph, role))
+            marks.append((x, y, glyph, role))
     return marks
 
 
@@ -2557,7 +2557,7 @@ def prepared_directory(columns):
     return (
         Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache"))
         / "bonsai-grow"
-        / f"prepared-v9-{columns}"
+        / f"prepared-v10-{columns}"
     )
 
 
