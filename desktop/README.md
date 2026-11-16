@@ -589,4 +589,4 @@ Both MouseDash modes include a harmless green/success-colored circle with a thic
 
 The system monitor RAM detail uses proportional set size (PSS) to divide shared pages between processes. Trees include all sampled processes; inaccessible memory counters are shown as unavailable and tree totals are marked partial. A system/unattributed adjustment reconciles the process sum with `MemTotal - MemAvailable` from the same sampling cycle. This includes kernel memory, inaccessible counters, reclaimability differences and sampling skew; the adjustment may be negative. Other metrics and window-picker memory retain their existing measurements.
 
-The bonsai glass enclosure is flat and front-facing, with a solid base directly beneath the pot foot and no roof or perspective lines. The animation uses 59 columns and 26 rows.
+The bonsai glass enclosure is flat and front-facing, with a low charcoal base directly beneath the pot foot and no roof or perspective lines. The animation uses 59 columns and 26 rows.

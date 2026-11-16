@@ -68,7 +68,8 @@ class BonsaiGrowTests(unittest.TestCase):
                     self.assertEqual(pixel(295, 260), (16, 46, 76, round(255 * opacity)))
                     self.assertEqual(pixel(295, 10), (240, 130, 80, 255))
                     self.assertEqual(pixel(295, 0)[3], 0)
-                    self.assertEqual(pixel(295, 495)[3], 255, "base stays solid even with transparent glass")
+                    self.assertEqual(pixel(295, 495), (28, 30, 32, 255), "base stays charcoal and solid")
+                    self.assertEqual(pixel(295, 510)[3], 0, "base stays low")
 
     def test_transparent_materials_gain_definition_without_changing_accents(self):
         import json
@@ -852,7 +853,7 @@ class BonsaiGrowTests(unittest.TestCase):
         for seed in range(16):
             rows = bonsai.render(30, seed, False, 59, fixed_height=True).splitlines()
             self.assertEqual(rows[0], "╭" + "─" * 57 + "╮")
-            self.assertEqual(rows[-2], "├" + "━" * 57 + "┤")
+            self.assertEqual(rows[-2], "├" + "─" * 57 + "┤")
             foot = bonsai.pot_rows(seed)[-1]
             self.assertIn(foot.strip(), rows[-3])
             self.assertTrue(rows[-3][1:-1].strip())
@@ -1838,7 +1839,7 @@ class BonsaiGrowTests(unittest.TestCase):
         greeting = source.split('# Finish painting')[0]
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            (root / 'bonsai-grow/prepared-v14-100').mkdir(parents=True)
+            (root / 'bonsai-grow/prepared-v15-100').mkdir(parents=True)
             (root / 'rebos_shell').mkdir()
             (root / 'bin').mkdir()
             script = root / 'bin/bonsai-grow'
@@ -1846,7 +1847,7 @@ class BonsaiGrowTests(unittest.TestCase):
             script.chmod(0o755)
             config = root / 'greeting.fish'
             config.write_text(greeting)
-            cache = root / 'bonsai-grow/prepared-v14-100/0.ready'
+            cache = root / 'bonsai-grow/prepared-v15-100/0.ready'
             palette = root / 'rebos_shell/effective-palette.json'
             palette.write_text('{}')
             for fresh in (True, False):
@@ -1891,7 +1892,7 @@ class BonsaiGrowTests(unittest.TestCase):
         source = (SOURCE.parents[1] / '../config/fish/config.fish').resolve().read_text()
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            pool = root / 'bonsai-grow/prepared-v14-100'
+            pool = root / 'bonsai-grow/prepared-v15-100'
             pool.mkdir(parents=True)
             (root / 'bin').mkdir()
             script = root / 'bin/bonsai-grow'
