@@ -1812,7 +1812,7 @@ def place_glass_marks(canvas, texture_seed):
 def rounded_frame_png(
     cell_width, cell_height, rows, rgb, backing=(15, 15, 15), opacity=1.0
 ):
-    """One shared rounded mask for the theme backing and two-pixel rim."""
+    """Glasshouse silhouette with a pitched roof, eave and slim base rail."""
     width, height = 59 * cell_width, rows * cell_height
     radius = min(12, cell_height * 0.65)
     half_width, half_height = (width - cell_width) / 2, (height - cell_height) / 2
@@ -1821,30 +1821,37 @@ def rounded_frame_png(
     interior = [x for x, qx in enumerate(xs) if qx <= 0]
     left, right = (interior[0], interior[-1] + 1) if interior else (0, 0)
     data = bytearray()
-    scanlines = {}
     for y in range(height):
         qy = abs(y + 0.5 - height / 2) - (half_height - radius)
-        if qy in scanlines:
-            data.extend(scanlines[qy])
-            continue
         line = bytearray(b"\0")  # PNG scanline: no filter.
         x = 0
         while x < width:
-            if x == left and right > left and qy <= 0 and radius >= 2.5:
+            if x == left and right > left and qy <= 0 and radius >= 2.5 and 3 * cell_height <= y < height - cell_height:
                 line.extend(bytes((*backing, round(255 * opacity))) * (right - left))
                 x = right
                 continue
             qx = xs[x]
             distance = math.hypot(max(qx, 0), max(qy, 0)) + min(max(qx, qy), 0) - radius
+            # A low, hipped glass roof rises above the front pane. Keep the
+            # existing rounded lower corners and the full artwork untouched.
+            rise = 2 * cell_height
+            slope = rise / (14 * cell_width)
+            roof = (cell_height / 2 + max(0, abs(x + .5 - width / 2)
+                    - 14.5 * cell_width) * slope - (y + .5))
+            distance = max(distance, roof / (math.sqrt(1 + slope * slope)
+                                       if abs(x + .5 - width / 2) > 14.5 * cell_width else 1))
             alpha = round(255 * max(0, min(1, 0.5 - distance)))
             rim = max(0, min(1, distance + 2.5))
+            if y >= 2 * cell_height:
+                eave = abs(y + .5 - 2.5 * cell_height)
+                base = abs(y + .5 - (height - .5 * cell_height - 3))
+                rim = max(rim, max(0, 1 - min(eave, base) / 1.5))
             ink = tuple(
                 round(base + (channel - base) * rim)
                 for base, channel in zip(backing, rgb)
             )
             line.extend((*ink, round(alpha * (opacity + (1 - opacity) * rim))))
             x += 1
-        scanlines[qy] = line
         data.extend(line)
 
     def chunk(kind, payload):
@@ -1925,7 +1932,7 @@ def frame_rows(rows, columns, accents, color):
     rgb = [int(primary[i : i + 2], 16) for i in (1, 3, 5)]
     # The frame uses the exact primary exported by the current desktop theme.
     glass = "\033[0;38;2;{};{};{}m".format(*rgb) if color else ""
-    graphic = kitty_frame(len(rows) + 2, columns, rgb) if color else ""
+    graphic = kitty_frame(len(rows) + 4, columns, rgb) if color else ""
     background = "\033[48;2;{};{};{}m".format(*theme_background()) if color else ""
 
     def pane(text):
@@ -1948,7 +1955,8 @@ def frame_rows(rows, columns, accents, color):
     top = margin + edge("╭" + "─" * width + "╮")
     bottom = margin + edge("╰" + "─" * width + "╯")
     return (
-        [graphic + top]
+        [graphic + margin + " " * 14 + edge("╭" + "─" * 29 + "╮") + " " * 14,
+         margin + " " * 7 + edge("╱" + " " * 43 + "╲") + " " * 7, top]
         + [margin + edge("│") + pane(row) + edge("│") for row in rows]
         + [bottom]
     )
@@ -2513,7 +2521,7 @@ def animate_growth(seed, accents, duration=2.0, style="informal"):
     day = 0.0
     try:
         tty.setcbreak(fd)
-        sys.stdout.write("\n" * 26 + "\033[?25l")
+        sys.stdout.write("\n" * 28 + "\033[?25l")
         reserved = True
         began = time.monotonic()
         while True:
@@ -2523,7 +2531,7 @@ def animate_growth(seed, accents, duration=2.0, style="informal"):
             elapsed = time.monotonic() - began
             day = animation_day(elapsed, duration)
             sys.stdout.write(
-                "\033[?2026h\033[26A\r" + picture(day, True) + "\033[?2026l"
+                "\033[?2026h\033[28A\r" + picture(day, True) + "\033[?2026l"
             )
             sys.stdout.flush()
             if day >= 30:
@@ -2547,7 +2555,7 @@ def animate_growth(seed, accents, duration=2.0, style="informal"):
                         eased = progress * progress * (3 - 2 * progress)
                         day = start_day + (30 - start_day) * eased
                         sys.stdout.write(
-                            "\033[?2026h\033[26A\r" + picture(day, True) + "\033[?2026l"
+                            "\033[?2026h\033[28A\r" + picture(day, True) + "\033[?2026l"
                         )
                         sys.stdout.flush()
                         if progress >= 1:
@@ -2569,7 +2577,7 @@ def prepared_directory(columns):
     return (
         Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache"))
         / "bonsai-grow"
-        / f"prepared-v12-{columns}"
+        / f"prepared-v13-{columns}"
     )
 
 
@@ -2747,7 +2755,7 @@ def greeting(seed, duration, style, opening_shown=False, prepared=None):
             print(render(30, 42, True, size.columns, accents, style), flush=True)
             return
         if not opening_shown:
-            sys.stdout.write("\n" * size.lines + "\033[H\033[26B")
+            sys.stdout.write("\n" * size.lines + "\033[H\033[28B")
             sys.stdout.flush()
     finally:
         sys.stdout = output
@@ -2847,7 +2855,7 @@ def main():
             )
             return 1
         # Scroll existing content into scrollback and leave two prompt rows.
-        sys.stdout.write("\n" * size.lines + "\033[H\033[26B")
+        sys.stdout.write("\n" * size.lines + "\033[H\033[28B")
         sys.stdout.flush()
         return
     if args.background:
