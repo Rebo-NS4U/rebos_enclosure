@@ -72,19 +72,17 @@ function step(enemies, dt, px, py, w, h, radius = 9) {
     return {enemies:live, hit:collision !== null, collision:collision};
 }
 
-// One slow, harmless click target at a time. Keep its lane clear of the HUD.
+// One slow, harmless touch target at a time. Keep its lane clear of the HUD.
 function spawnTarget(w, h, difficulty) {
-    const edge = Math.floor(Math.random() * 4), r = 22, speed = 55 + difficulty * 5;
+    const edge = Math.floor(Math.random() * 4), r = 22, speed = 70 + difficulty * 5;
     const laneX = w * (0.2 + Math.random() * 0.6), laneY = h * (0.2 + Math.random() * 0.6);
     if (edge === 0) return {x:r+8,y:laneY,r:r,vx:speed,vy:0};
     if (edge === 1) return {x:w-r-8,y:laneY,r:r,vx:-speed,vy:0};
     if (edge === 2) return {x:laneX,y:r+8,r:r,vx:0,vy:speed};
     return {x:laneX,y:h-r-8,r:r,vx:0,vy:-speed};
 }
-function targetHit(target, x, y) {
-    return !!target && Math.hypot(x-target.x, y-target.y) <= target.r + 1e-6;
-}
-function stepTarget(target, dt, w, h) {
+function stepTarget(target, dt, w, h, px, py, radius = 9) {
     const next = {x:target.x+target.vx*dt,y:target.y+target.vy*dt,r:target.r,vx:target.vx,vy:target.vy};
-    return {target:next, missed:next.x < -next.r || next.x > w+next.r || next.y < -next.r || next.y > h+next.r};
+    const collected = px !== undefined && py !== undefined && sweptHit([{x:px,y:py,r:radius}], target.x,target.y,next.x,next.y,target.r);
+    return {target:next, collected:collected, missed:next.x < -next.r || next.x > w+next.r || next.y < -next.r || next.y > h+next.r};
 }

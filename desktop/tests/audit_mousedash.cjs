@@ -1,4 +1,4 @@
-// Obstacle-dodging balance audit only: excludes mandatory click targets.
+// Obstacle-dodging balance audit only: excludes mandatory touch targets.
 // Not a full-game completion test or a substitute for human playtesting.
 // Usage: node desktop/tests/audit_mousedash.cjs [alternate-engine.js]
 const fs=require('fs'),vm=require('vm'),path=require('path');

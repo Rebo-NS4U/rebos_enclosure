@@ -70,9 +70,9 @@ ShellRoot {
         property real playerY: 0.5
         property var enemies: []
         property var trail: []
-        property var clickTarget: null
+        property var pickupTarget: null
         property real targetClock: 0
-        property int targetsClicked: 0
+        property int targetsCollected: 0
         property real spawnClock: 0
         property real trailClock: 0
         property bool reducedMotion: false
@@ -115,7 +115,7 @@ ShellRoot {
         function reset() {
             phase = "ready"; elapsed = 0; enemies = []; trail = [];
             enemyVisuals.clear(); victory = false; death = null;
-            clickTarget = null; targetClock = 0; targetsClicked = 0;
+            pickupTarget = null; targetClock = 0; targetsCollected = 0;
         }
         function start(x, y) {
             reset(); playerX = x / arena.width; playerY = y / arena.height;
@@ -123,33 +123,37 @@ ShellRoot {
             arena.forceActiveFocus();
         }
         function movePlayer(x, y) {
-            const hit = Game.contact(enemies, playerX * arena.width, playerY * arena.height, x, y, playerRadius);
+            const fromX = playerX * arena.width, fromY = playerY * arena.height;
+            const hit = Game.contact(enemies, fromX, fromY, x, y, playerRadius);
+            const pickup = pickupTarget && Game.sweptHit([pickupTarget], fromX, fromY, x, y, playerRadius);
             playerX = (hit ? hit.x : x) / arena.width;
             playerY = (hit ? hit.y : y) / arena.height;
             if (hit) finish(false, hit);
+            else if (pickup) collectTarget();
             return !hit;
         }
-        function clickAt(x, y) {
-            if (phase !== "playing" || !Game.targetHit(clickTarget, x, y)) return false;
-            clickTarget = null; targetClock = 0; targetsClicked++;
+        function collectTarget() {
+            if (phase !== "playing" || !pickupTarget) return false;
+            pickupTarget = null; targetClock = 0; targetsCollected++;
             return true;
         }
         function updateTarget(dt) {
-            if (!clickTarget) {
+            if (!pickupTarget) {
                 targetClock += dt;
-                if (targetClock >= (targetsClicked === 0 ? 4 : 6)) {
-                    clickTarget = Game.spawnTarget(arena.width, arena.height, difficulty);
+                if (targetClock >= (targetsCollected === 0 ? 4 : 6)) {
+                    pickupTarget = Game.spawnTarget(arena.width, arena.height, difficulty);
                     targetClock = 0;
                 }
                 return;
             }
-            const result = Game.stepTarget(clickTarget, dt, arena.width, arena.height);
-            clickTarget = result.target;
+            const result = Game.stepTarget(pickupTarget, dt, arena.width, arena.height, playerX * arena.width, playerY * arena.height, playerRadius);
+            pickupTarget = result.target;
+            if (result.collected) { collectTarget(); return; }
             if (result.missed) {
-                const x = Math.max(clickTarget.r, Math.min(arena.width - clickTarget.r, clickTarget.x));
-                const y = Math.max(clickTarget.r, Math.min(arena.height - clickTarget.r, clickTarget.y));
+                const x = Math.max(pickupTarget.r, Math.min(arena.width - pickupTarget.r, pickupTarget.x));
+                const y = Math.max(pickupTarget.r, Math.min(arena.height - pickupTarget.r, pickupTarget.y));
                 finish(false, {cause:"missed", x:x, y:y, fromX:x, fromY:y,
-                    enemy:{x:x,y:y,r:clickTarget.r}});
+                    enemy:{x:x,y:y,r:pickupTarget.r}});
             }
         }
         function pause() { if (phase === "playing") phase = "paused"; }
@@ -281,7 +285,7 @@ ShellRoot {
                 }
                 Rectangle {
                     id: targetCircle
-                    readonly property var target: window.clickTarget
+                    readonly property var target: window.pickupTarget
                     visible: !!target && window.phase !== "death"
                     x: target ? target.x - width / 2 : 0
                     y: target ? target.y - height / 2 : 0
@@ -299,8 +303,7 @@ ShellRoot {
                     }
                     onExited: window.pause()
                     onClicked: mouse => {
-                        if (window.phase === "playing") window.clickAt(mouse.x, mouse.y);
-                        else if (window.phase === "paused") {
+                        if (window.phase === "paused") {
                             // Check the return path rather than teleporting through obstacles.
                             if (window.movePlayer(mouse.x, mouse.y)) window.phase = "playing";
                         }
@@ -334,7 +337,7 @@ ShellRoot {
                             anchors.fill: parent; anchors.margins: 14; spacing: 6
                             StyledText { text: (window.death && window.death.cause === "missed" ? "TARGET MISSED · " : "CAUGHT · ") + window.elapsed.toFixed(2) + "s"; color: Colors.error; font.bold: true; font.pixelSize: 18 }
                             StyledText {
-                                text: window.death && window.death.cause === "missed" ? "The click target escaped. Click it before it leaves." : window.death && window.death.cause === "cursor" ? "Your cursor crossed into the highlighted ring." : "The highlighted ring caught your cursor."
+                                text: window.death && window.death.cause === "missed" ? "The target escaped. Touch it before it leaves." : window.death && window.death.cause === "cursor" ? "Your cursor crossed into the highlighted ring." : "The highlighted ring caught your cursor."
                                 Layout.fillWidth: true; wrapMode: Text.WordWrap; font.pixelSize: 11
                             }
                             RowLayout {
@@ -357,7 +360,7 @@ ShellRoot {
                     }
                     Item { Layout.fillWidth: true }
                     StyledText {
-                        text: "○ " + window.targetsClicked
+                        text: "○ " + window.targetsCollected
                         color: Colors.success; font.pixelSize: 11; font.bold: true
                     }
                     DashButton { text: "Pause  Ⅱ"; visible: window.phase === "playing"; onClicked: window.pause() }
@@ -456,7 +459,7 @@ ShellRoot {
                     }
                     StyledText {
                         Layout.fillWidth: true; horizontalAlignment: Text.AlignHCenter
-                        text: "Dodge rings · Click colored targets · Esc pauses"; font.pixelSize: 10; opacity: 0.45
+                        text: "Dodge rings · Touch colored targets · Esc pauses"; font.pixelSize: 10; opacity: 0.45
                     }
                 }
             }
