@@ -16,6 +16,25 @@ loader.exec_module(bonsai)
 
 
 class BonsaiGrowTests(unittest.TestCase):
+    def test_theme_background_tracks_export_and_rejects_invalid_colors(self):
+        import json
+        with tempfile.TemporaryDirectory() as directory:
+            cache = Path(directory) / 'rebos_shell'
+            cache.mkdir()
+            path = cache / 'effective-palette.json'
+            with patch.dict(os.environ, {'XDG_CACHE_HOME': directory}):
+                for value, expected in (('#123456', (18, 52, 86)),
+                                        ('#e0dCd8', (224, 220, 216)),
+                                        ('bad', (15, 15, 15)), (None, (15, 15, 15))):
+                    path.write_text(json.dumps({'background': value}))
+                    self.assertEqual(bonsai.theme_background(), expected)
+                    image = bonsai.render(30, 42, True, 80)
+                    self.assertIn('\033[48;2;{};{};{}m'.format(*expected), image)
+                path.write_text('broken')
+                self.assertEqual(bonsai.theme_background(), (15, 15, 15))
+                path.unlink()
+                self.assertEqual(bonsai.theme_background(), (15, 15, 15))
+
     def test_transparent_materials_gain_definition_without_changing_accents(self):
         import json
         import re
@@ -576,7 +595,7 @@ class BonsaiGrowTests(unittest.TestCase):
     def test_rounded_backing_and_border_share_a_clipped_pixel_mask(self):
         import struct
         import zlib
-        png = bonsai.rounded_frame_png(10, 20, 26, (240, 130, 80))
+        png = bonsai.rounded_frame_png(10, 20, 26, (240, 130, 80), (18, 52, 86))
         self.assertEqual(png[:8], b'\x89PNG\r\n\x1a\n')
         width, height = struct.unpack('!II', png[16:24])
         self.assertEqual((width, height), (590, 520))
@@ -593,8 +612,8 @@ class BonsaiGrowTests(unittest.TestCase):
         self.assertEqual(pixel(295, 0)[3], 0, 'no dark strip above the top edge')
         self.assertEqual(pixel(5, 10)[3], 0, 'outside the rounded corner stays transparent')
         self.assertEqual(pixel(295, 10), (240, 130, 80, 255))
-        self.assertEqual(pixel(295, 260), (15, 15, 15, 255), 'keep the center quiet')
-        self.assertEqual(pixel(10, 150), (15, 15, 15, 255), 'no raster glass texture')
+        self.assertEqual(pixel(295, 260), (18, 52, 86, 255), 'keep the center quiet')
+        self.assertEqual(pixel(10, 150), (18, 52, 86, 255), 'no raster glass texture')
         self.assertEqual(pixel(584, 260), (240, 130, 80, 255))
         self.assertEqual(pixel(589, 260)[3], 0)
         self.assertEqual(pixel(295, 519)[3], 0)
@@ -689,12 +708,13 @@ class BonsaiGrowTests(unittest.TestCase):
             for x, (glyph, ink) in enumerate(row):
                 if glyph != ' ':
                     self.assertEqual(plain[y + 1][x + 1], glyph)
-        self.assertIn("\033[48;2;15;15;15m", image)
+        self.assertIn("\033[48;2;{};{};{}m".format(*bonsai.theme_background()), image)
         self.assertTrue(any(plain[y + 1][x + 1] == '╱' and cell == (' ', '')
                             for y, row in enumerate(canvas) for x, cell in enumerate(row)))
 
-    def test_terrarium_keeps_neutral_backing_inside_the_frame(self):
+    def test_terrarium_keeps_theme_backing_inside_the_frame(self):
         import re
+        expected_background = bonsai.theme_background()
         for theme in (['#fafafa'] * 3, ['#111111'] * 3, ['#fa4050'] * 3):
             for day in (0, 30):
                 for hour in (0, 6, 12, 18):
@@ -712,7 +732,7 @@ class BonsaiGrowTests(unittest.TestCase):
                             else:
                                 for glyph in token:
                                     inside = 10 <= column < 69
-                                    self.assertEqual(background, (15, 15, 15) if inside else None)
+                                    self.assertEqual(background, expected_background if inside else None)
                                     column += 1
                         self.assertEqual(column, 69)
                         self.assertIsNone(background, 'reset the backing before the prompt')
@@ -1641,7 +1661,7 @@ class BonsaiGrowTests(unittest.TestCase):
         greeting = source.split('# Finish painting')[0]
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            (root / 'bonsai-grow/prepared-v7-100').mkdir(parents=True)
+            (root / 'bonsai-grow/prepared-v8-100').mkdir(parents=True)
             (root / 'rebos_shell').mkdir()
             (root / 'bin').mkdir()
             script = root / 'bin/bonsai-grow'
@@ -1649,7 +1669,7 @@ class BonsaiGrowTests(unittest.TestCase):
             script.chmod(0o755)
             config = root / 'greeting.fish'
             config.write_text(greeting)
-            cache = root / 'bonsai-grow/prepared-v7-100/0.ready'
+            cache = root / 'bonsai-grow/prepared-v8-100/0.ready'
             palette = root / 'rebos_shell/effective-palette.json'
             palette.write_text('{}')
             for fresh in (True, False):
@@ -1694,7 +1714,7 @@ class BonsaiGrowTests(unittest.TestCase):
         source = (SOURCE.parents[1] / '../config/fish/config.fish').resolve().read_text()
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            pool = root / 'bonsai-grow/prepared-v7-100'
+            pool = root / 'bonsai-grow/prepared-v8-100'
             pool.mkdir(parents=True)
             (root / 'bin').mkdir()
             script = root / 'bin/bonsai-grow'

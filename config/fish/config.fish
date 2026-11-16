@@ -5,7 +5,7 @@ function fish_greeting
         if set -q XDG_CACHE_HOME; and test -n "$XDG_CACHE_HOME"
             set cache_root "$XDG_CACHE_HOME"
         end
-        set -l pool "$cache_root/bonsai-grow/prepared-v7-$COLUMNS"
+        set -l pool "$cache_root/bonsai-grow/prepared-v8-$COLUMNS"
         set -l palette "$cache_root/rebos_shell/effective-palette.json"
         set -l opening_shown
         set -l prepared
