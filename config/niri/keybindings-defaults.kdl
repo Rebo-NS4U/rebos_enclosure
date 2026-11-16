@@ -137,9 +137,9 @@ binds {
     // Consume one window from the right to the bottom of the focused column.
     Mod+Comma  { consume-window-into-column; }
 
-    Mod+R { switch-preset-column-width; }
-    Mod+Shift+R { switch-preset-window-height; }
-    Mod+Ctrl+R { reset-window-height; }
+    Mod+R repeat=false hotkey-overlay-title="Cycle width: 1/3, 1/2, 2/3, full" { switch-preset-column-width; }
+    Mod+Shift+R repeat=false hotkey-overlay-title="Cycle height: 1/3, 1/2, 2/3, full" { switch-preset-window-height; }
+    Mod+Ctrl+R hotkey-overlay-title="Reset window height to automatic" { reset-window-height; }
     Mod+F { maximize-column; }
     Mod+Shift+F { fullscreen-window; }
 
