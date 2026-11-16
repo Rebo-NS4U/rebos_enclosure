@@ -119,6 +119,8 @@ function M.setup()
     adapters = { acp = acp },
     interactions = { chat = { adapter = 'dweebo_coding', keymaps = {
       send = { modes = { n = { '<CR>', '<C-s>' }, i = { '<CR>', '<C-s>' } } },
+      scroll_chat_down = { modes = { n = '<M-d>', i = '<M-d>' } },
+      scroll_chat_up = { modes = { n = '<M-u>', i = '<M-u>' } },
     } }, inline = { adapter = 'dweebo_coding' } },
     display = { chat = { window = { layout = 'vertical', width = 0.4 },
       input = { layout = 'split', height = 6 }, start_in_insert_mode = true } },

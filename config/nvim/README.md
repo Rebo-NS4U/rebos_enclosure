@@ -138,10 +138,11 @@ Codex: Node.js/npm, Python 3 and Codex. CodeCompanion and plenary install throug
 
 ## Resizing panes
 
-Without arrow keys, hold **Ctrl+Alt** and press **H/J/K/L**:
+Without arrow keys, hold **Alt** and press **H/J/K/L**:
 H makes the pane narrower, L wider, K taller and J shorter.
 These work in normal, insert and visual modes. Plain Ctrl-H/J/K/L still move
 between panes in normal mode; Ctrl-J in Dweebo's message box still adds a line.
+In the Dweebo message box, Alt-D/U scrolls the conversation down/up.
 
 Alternatively, hold Ctrl and press an arrow key while focused in a pane:
 Right makes it wider, Left narrower, Up taller and Down shorter.

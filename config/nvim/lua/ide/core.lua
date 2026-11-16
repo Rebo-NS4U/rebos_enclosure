@@ -39,7 +39,7 @@ function M.setup()
       map({ 'n', 'i', 'v' }, '<' .. step[1] .. key .. '>', function() vim.cmd(command) end,
         { desc = resize[2] .. ' (' .. step[2] .. ')' })
       if step[1] == 'C-' then
-        map({ 'n', 'i', 'v' }, '<C-M-' .. resize[3] .. '>', function() vim.cmd(command) end,
+        map({ 'n', 'i', 'v' }, '<M-' .. resize[3] .. '>', function() vim.cmd(command) end,
           { desc = resize[2] })
       end
     end
