@@ -1747,6 +1747,17 @@ Scope {
 
     property string activeAssistantMessageId: ""
     property int activeAssistantIndex: -1
+    // Deliberately transient and scoped to this chat; never saved in history.
+    property bool autoApprove: false
+    onCurrentChatIdChanged: autoApprove = false
+    onAutoApproveChanged: {
+        if (autoApprove) {
+            for (let i = 0; i < currentChat.length; i++) {
+                if (currentChat[i].functionPending === true)
+                    autoApproveCommand(i);
+            }
+        }
+    }
     property var pendingPermissions: ({})
     property string pendingAssistantText: ""
     property string pendingAssistantMessageId: ""
@@ -1955,6 +1966,8 @@ Scope {
         currentChat = chat;
         turnWatchdog.stop();
         statusText = "Waiting for permission…";
+        if (autoApprove)
+            autoApproveCommand(index);
     }
 
     function choosePermissionOption(options, allow) {
@@ -2006,6 +2019,15 @@ Scope {
         }
 
         saveCurrentChat();
+    }
+
+    function autoApproveCommand(index) {
+        let message = currentChat[index];
+        let permission = message && pendingPermissions[String(message.permissionRequestId)];
+        // Never select a rejection or an unknown option as an approval fallback.
+        // Only allow_once keeps the toggle reversible within this chat.
+        if (permission && permission.options.some(option => option.kind === "allow_once"))
+            resolvePermission(index, true);
     }
 
     function approveCommand(index) {

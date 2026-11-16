@@ -1999,6 +1999,31 @@ Item {
                                         }
                                     }
 
+                                Button {
+                                    objectName: "assistantAutoApproveButton"
+                                    Layout.leftMargin: 16
+                                    Layout.topMargin: 8
+                                    Layout.preferredHeight: 36
+                                    checkable: true
+                                    checked: mainChatArea.session.autoApprove
+                                    onClicked: mainChatArea.session.autoApprove = !mainChatArea.session.autoApprove
+                                    Accessible.name: "Auto approve tool requests for this chat"
+                                    contentItem: StyledText {
+                                        text: mainChatArea.session.autoApprove ? "Auto approve: On" : "Auto approve: Off"
+                                        color: mainChatArea.session.autoApprove ? Styling.srItem("overprimary") : Colors.overSurface
+                                        horizontalAlignment: Text.AlignHCenter
+                                        verticalAlignment: Text.AlignVCenter
+                                    }
+                                    background: StyledRect {
+                                        variant: mainChatArea.session.autoApprove ? "primary" : parent.hovered || parent.visualFocus ? "focus" : "common"
+                                        radius: Styling.radius(8)
+                                    }
+                                    StyledToolTip {
+                                        show: parent.hovered
+                                        tooltipText: "Automatically approve tool requests in this chat until switched off"
+                                    }
+                                }
+
                                 RowLayout {
                                     Layout.fillWidth: true
                                     Layout.fillHeight: true
