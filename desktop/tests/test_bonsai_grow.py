@@ -574,12 +574,16 @@ class BonsaiGrowTests(unittest.TestCase):
                     while pixels:
                         pending = [pixels.pop()]
                         components += 1
+                        bottom_by_column = {}
                         while pending:
                             x, y = pending.pop()
+                            bottom_by_column[x] = max(y, bottom_by_column.get(x, y))
                             for neighbor in ((x-1, y), (x+1, y), (x, y-1), (x, y+1)):
                                 if neighbor in pixels:
                                     pixels.remove(neighbor)
                                     pending.append(neighbor)
+                        self.assertEqual(len(set(bottom_by_column.values())), 1,
+                                         (kind, seed, 'cloud base must stay level'))
                     self.assertEqual(components, expected, (kind, seed))
         self.assertGreater(len(silhouettes), 100)
         # Automatic selection includes empty and single/multiple cloud scenes.

@@ -1470,18 +1470,13 @@ def cloud_marks(rising, seed=None, kind=None):
         pane_start = 56 - pane_width if rising else 2
         anchor = rng.randint(pane_start, pane_start + pane_width - width)
         for column, height in enumerate(profile):
-            # Round off the belly at the tips instead of cutting every bank
-            # into a rectangle. Thin veils retain a continuous tapered ribbon.
+            # Clouds build upward from a level condensation base. Taper
+            # their crowns at the ends without bending the whole bank into an arc.
             u = column / (len(profile) - 1)
             airy = kind in ("cirrus", "stratus")
             tip = column in (0, len(profile) - 1)
-            bottom = base - (not airy and (u < 0.12 or u > 0.88))
+            bottom = base
             height = 1 if tip else max(1 if airy else 2, height)
-            # Slightly swept cirrus ribbons differ from level stratus shelves.
-            if kind == "cirrus":
-                bottom -= int(0.2 < u < 0.8)
-                if not tip:
-                    height = max(2, height)
             top = bottom - height
             for y in range(top // 2, (bottom - 1) // 2 + 1):
                 halves = tuple(top <= y * 2 + half < bottom for half in (0, 1))
