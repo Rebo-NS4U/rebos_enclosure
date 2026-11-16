@@ -2578,7 +2578,7 @@ Item {
                                                 rotation: failedFeedback ? rejectionOffset * 1.6 : 0
                                                 transform: Translate {
                                                     x: glyph.rejectionOffset + glyph.formattingMotionX
-                                                    y: glyph.formattingKey && !glyph.failedFeedback ? glyph.formattingMotionY : -glyph.spark * (glyph.failedFeedback ? 4 : 2.2)
+                                                    y: glyph.formattingKey && !glyph.failedFeedback ? glyph.formattingMotionY : (glyph.failedFeedback ? -glyph.spark * 4 : 0)
                                                 }
                                                 transformOrigin: Item.Center
                                                 function celebrate() { root.requestFeedback("letter", glyph); }
@@ -2600,8 +2600,8 @@ Item {
                                                     width: parent.width + 6
                                                     height: root.highlightBounds.height + 6
                                                     z: -1
-                                                    strength: Math.min(1, glyph.spark * 1.4)
-                                                    growth: glyph.failedFeedback ? 0.55 : 0.12
+                                                    strength: Math.min(1, glyph.spark * (glyph.failedFeedback ? 1.4 : 0.35))
+                                                    growth: glyph.failedFeedback ? 0.55 : 0
                                                     color: Qt.alpha(glyph.failedFeedback ? Colors.error : Colors.primary, glyph.failedFeedback ? 0.32 : 0.07)
                                                     border.color: Qt.alpha(glyph.failedFeedback ? Colors.error : Colors.primary, glyph.failedFeedback ? 0.9 : 0.22)
                                                 }
