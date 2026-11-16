@@ -1,9 +1,9 @@
 [Desktop Entry]
 Type=Application
-Name=MouseDash
-Comment=Find your flow in a themed cursor survival game
-Exec="@HOME@/.local/bin/rebos_shell" mousedash
-Icon=input-mouse
+Name=Starwake
+Comment=Collect stars, dodge cosmic debris and pulse through deep space
+Exec="@HOME@/.local/bin/rebos_shell" starwake
+Icon=applications-games
 Terminal=false
 Categories=Game;ArcadeGame;
-Keywords=quickshell;enclosure;mouse;dodge;survival;
+Keywords=quickshell;enclosure;starwake;space;mouse;dodge;survival;

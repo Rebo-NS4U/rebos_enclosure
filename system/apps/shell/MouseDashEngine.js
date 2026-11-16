@@ -28,7 +28,7 @@ function spawn(w, h, px, py, difficulty, elapsed, mode) {
     if (edge === 2) y = -r - 20;
     if (edge === 3) y = h + r + 20;
     const angle = Math.atan2(py * h - y, px * w - x) + (Math.random() - 0.5) * 0.8;
-    return {x:x, y:y, r:r, vx:Math.cos(angle)*speed, vy:Math.sin(angle)*speed};
+    return {x:x, y:y, r:r, vx:Math.cos(angle)*speed, vy:Math.sin(angle)*speed, orbiting: elapsed >= 12 && Math.random() < 0.25};
 }
 // First contact along a segment, including fast crossings with clear endpoints.
 function contact(enemies, x, y, nx, ny, radius = 9) {
@@ -85,4 +85,16 @@ function stepTarget(target, dt, w, h, px, py, radius = 9) {
     const next = {x:target.x+target.vx*dt,y:target.y+target.vy*dt,r:target.r,vx:target.vx,vy:target.vy};
     const collected = px !== undefined && py !== undefined && sweptHit([{x:px,y:py,r:radius}], target.x,target.y,next.x,next.y,target.r);
     return {target:next, collected:collected, missed:next.x < -next.r || next.x > w+next.r || next.y < -next.r || next.y > h+next.r};
+}
+
+// Curved debris turns gently; swept collision still checks every frame.
+function steerDebris(enemies, dt) {
+    const angle = dt * 0.45, c = Math.cos(angle), s = Math.sin(angle);
+    for (const e of enemies) if (e.orbiting) {
+        const vx = e.vx; e.vx = vx * c - e.vy * s; e.vy = vx * s + e.vy * c;
+    }
+}
+function pulse(enemies, x, y, radius) {
+    const live = enemies.filter(e => Math.hypot(e.x - x, e.y - y) > radius + e.r);
+    return {enemies: live, count: enemies.length - live.length};
 }

@@ -40,7 +40,7 @@ Usage: rebos_shell [COMMAND]
 
 Commands:
     (none)                            Launch rebos_shell
-    mousedash                         Launch the cursor survival game
+    starwake                         Launch the cosmic cursor adventure
     update                            Update rebos_shell
     refresh                           Refresh local/dev profile (for developers)
     lock                              Activate lockscreen
@@ -50,7 +50,7 @@ Commands:
     brightness -s [monitor]           Save current brightness
     brightness -r [monitor]           Restore saved brightness
     brightness -l                     List monitors and their brightness
-    mousedash                         Launch the cursor survival game
+    starwake                         Launch the cosmic cursor adventure
     help                              Show this help message
     version, -v, --version            Show rebos_shell version
     goodbye                           Uninstall rebos_shell :(
@@ -126,7 +126,7 @@ restart_rebos_shell() {
 }
 
 case "${1:-}" in
-mousedash)
+starwake|mousedash)
 	exec "$QS_BIN" -n -p "${SCRIPT_DIR}/MouseDash.qml"
 	;;
 update)

@@ -120,3 +120,16 @@ for (const mode of ['survival', 'gauntlet']) for (const elapsed of [0, 30, 60, 3
 assert.equal(game.spawnInterval(1, 0, 'survival'), .65);
 assert.equal(game.enemySpeed(1, 0, 'survival'), 116);
 console.log('Denser, slower default difficulty: PASS');
+
+// Pulse removes only intersecting hazards and reports points without mutating input.
+const hazards = [{x:0,y:0,r:10}, {x:125,y:0,r:10}, {x:126,y:0,r:10}];
+const blast = game.pulse(hazards,0,0,115);
+assert.equal(blast.count,2); assert.equal(blast.enemies.length,1);
+assert.equal(blast.enemies[0].x,126); assert.equal(hazards.length,3);
+assert.equal(game.pulse([],0,0,115).count,0);
+const debris = [{vx:100,vy:0,orbiting:true}, {vx:100,vy:0}];
+game.steerDebris(debris,0); assert.equal(debris[0].vx,100);
+game.steerDebris(debris,1);
+assert(debris[0].vy > 0); assert(Math.abs(Math.hypot(debris[0].vx,debris[0].vy)-100)<1e-9);
+assert.equal(debris[1].vy,0);
+console.log('Starwake pulse boundary and orbital steering: PASS');

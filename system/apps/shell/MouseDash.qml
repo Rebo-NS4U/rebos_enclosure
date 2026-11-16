@@ -49,9 +49,44 @@ ShellRoot {
             Behavior on color { enabled: !window.reducedMotion; ColorAnimation { duration: 110 } }
         }
     }
+    component Cosmos: Item {
+        Repeater {
+            model: 70
+            delegate: Rectangle {
+                required property int index
+                x: (index * 137.508) % Math.max(1, parent.width)
+                y: (index * 83.71) % Math.max(1, parent.height)
+                width: index % 9 === 0 ? 3 : 1; height: width; radius: width / 2
+                color: Colors.overBackground; opacity: 0.12 + (index % 4) * 0.1
+            }
+        }
+        Rectangle {
+            x: parent.width * 0.7 - width / 2; y: parent.height * 0.44 - height / 2
+            width: parent.width * 0.34; height: width; radius: width / 2
+            gradient: Gradient {
+                GradientStop { position: 0; color: Qt.tint(Colors.background, Qt.alpha(Colors.tertiary, 0.35)) }
+                GradientStop { position: 1; color: Colors.background }
+            }
+            border.color: Qt.alpha(Colors.tertiary, 0.28)
+            Rectangle {
+                anchors.centerIn: parent; width: parent.width * 1.65; height: parent.height * 0.4
+                radius: width / 2; rotation: -25; color: "transparent"
+                border.width: 3; border.color: Qt.alpha(Colors.primary, 0.2)
+            }
+        }
+        Repeater {
+            model: 3
+            delegate: Rectangle {
+                required property int index
+                x: parent.width * 0.7 - width / 2; y: parent.height * 0.44 - height / 2
+                width: parent.width * (0.5 + index * 0.25); height: width; radius: width / 2
+                color: "transparent"; border.color: Qt.alpha(Colors.primary, 0.07)
+            }
+        }
+    }
     FloatingWindow {
         id: window
-        title: "MouseDash · Enclosure"
+        title: "Starwake · Enclosure"
         visible: true
         maximized: false
         implicitWidth: 480
@@ -76,14 +111,27 @@ ShellRoot {
         property real targetBorn: 0
         property var collection: null
         property int targetsCollected: 0
+        property int score: 0
+        property int combo: 0
+        property int pulseCharges: 1
+        property real pulseTime: -10
+        property real pulseX: 0
+        property real pulseY: 0
+        function pulse() {
+            if (phase !== "playing" || pulseCharges < 1) return;
+            pulseCharges--; pulseTime = elapsed;
+            pulseX = playerX * arena.width; pulseY = playerY * arena.height;
+            const cleared = Game.pulse(enemies, pulseX, pulseY, 115);
+            enemies = cleared.enemies; score += cleared.count * 25;
+        }
         property real spawnClock: 0
         property real trailClock: 0
         property bool reducedMotion: false
         readonly property bool locked: phase === "playing" || phase === "paused"
         readonly property real duration: Game.roundDuration(playMode)
         readonly property var modes: [
-            {key: "survival", name: "SURVIVAL", caption: "Endless · one life", hint: "Stay alive. The pressure never stops."},
-            {key: "gauntlet", name: "GAUNTLET", caption: "60 seconds · six waves", hint: "Six waves. Each one faster than the last."}
+            {key: "survival", name: "DEEP SPACE", caption: "Endless expedition", hint: "Collect stars for combos. Every third star recharges your pulse."},
+            {key: "gauntlet", name: "WARP RUN", caption: "60s · six sectors", hint: "Reach the jump gate through six escalating sectors."}
         ]
         readonly property int modeIndex: playMode === "survival" ? 0 : 1
         readonly property string recordKey: playMode + difficulty
@@ -119,6 +167,7 @@ ShellRoot {
             phase = "ready"; elapsed = 0; enemies = []; trail = [];
             enemyVisuals.clear(); victory = false; death = null;
             pickupTarget = null; targetClock = 0; targetsCollected = 0; collection = null;
+            score = 0; combo = 0; pulseCharges = 1; pulseTime = -10;
         }
         function start(x, y) {
             reset(); playerX = x / arena.width; playerY = y / arena.height;
@@ -139,6 +188,8 @@ ShellRoot {
             if (phase !== "playing" || !pickupTarget) return false;
             collection = {x: pickupTarget.x, y: pickupTarget.y, time: elapsed};
             pickupTarget = null; targetClock = 0; targetsCollected++;
+            combo = Math.min(5, combo + 1); score += 100 * combo;
+            if (targetsCollected % 3 === 0) pulseCharges = Math.min(2, pulseCharges + 1);
             return true;
         }
         function updateTarget(dt) {
@@ -155,15 +206,13 @@ ShellRoot {
             pickupTarget = result.target;
             if (result.collected) { collectTarget(); return; }
             if (result.missed) {
-                const x = Math.max(pickupTarget.r, Math.min(arena.width - pickupTarget.r, pickupTarget.x));
-                const y = Math.max(pickupTarget.r, Math.min(arena.height - pickupTarget.r, pickupTarget.y));
-                finish(false, {cause:"missed", x:x, y:y, fromX:x, fromY:y,
-                    enemy:{x:x,y:y,r:pickupTarget.r}});
+                pickupTarget = null; targetClock = 0; combo = 0;
             }
         }
         function pause() { if (phase === "playing") phase = "paused"; }
         property bool windowActive: contentItem.Window.active
         onWindowActiveChanged: if (!windowActive) pause()
+        Shortcut { sequence: "Space"; onActivated: window.pulse() }
         Shortcut { sequence: "Escape"; onActivated: window.pause() }
         // Resuming requires the pointer inside the arena, preventing off-arena play.
         ListModel { id: enemyVisuals }
@@ -179,6 +228,7 @@ ShellRoot {
                     spawned.born = window.elapsed;
                     window.enemies.push(spawned);
                 }
+                Game.steerDebris(window.enemies, dt);
                 const result = Game.step(window.enemies, dt, window.playerX * arena.width, window.playerY * arena.height, arena.width, arena.height, window.playerRadius);
                 window.enemies = result.enemies;
                 // Keep delegates alive: update positions without rebuilding the scene.
@@ -186,7 +236,7 @@ ShellRoot {
                     enemyVisuals.remove(enemyVisuals.count - 1);
                 for (let i = 0; i < result.enemies.length; i++) {
                     const e = result.enemies[i];
-                    const row = { ex: e.x, ey: e.y, size: e.r * 2, age: window.elapsed - e.born };
+                    const row = { ex: e.x, ey: e.y, size: e.r * 2, age: window.elapsed - e.born, orbiting: !!e.orbiting, heading: Math.atan2(e.vy, e.vx) * 180 / Math.PI };
                     if (i < enemyVisuals.count) enemyVisuals.set(i, row);
                     else enemyVisuals.append(row);
                 }
@@ -228,14 +278,15 @@ ShellRoot {
                     }
                     border.width: 1.5; border.color: Qt.alpha(Colors.primary, 0.5)
                 }
+                Cosmos { anchors.fill: parent; opacity: 0.6 }
                 Repeater {
-                    model: Math.ceil(arena.width / 48) * Math.ceil(arena.height / 48)
+                    model: 95
                     delegate: Rectangle {
                         required property int index
-                        x: (index % Math.ceil(arena.width / 48)) * 48 + 24
-                        y: Math.floor(index / Math.ceil(arena.width / 48)) * 48 + 24
-                        width: 2; height: 2; radius: 1
-                        color: Colors.primary; opacity: 0.12
+                        x: ((index * 137.508) % arena.width)
+                        y: ((index * 83.71) % arena.height)
+                        width: index % 7 === 0 ? 3 : 1.5; height: width; radius: width / 2
+                        color: Colors.overBackground; opacity: 0.15 + (index % 5) * 0.1
                     }
                 }
                 Repeater {
@@ -258,13 +309,15 @@ ShellRoot {
                         required property real ey
                         required property real size
                         required property real age
+                        required property bool orbiting
+                        required property real heading
                         readonly property real arrival: window.reducedMotion ? 1 : Math.min(1, age / 0.65)
                         // The rim keeps the exact collision size while its halo blooms.
                         opacity: 0.65 + arrival * 0.35
                         x: ex - size / 2; y: ey - size / 2
                         width: size; height: size; radius: size / 2
                         visible: window.phase !== "ready"
-                        color: Qt.alpha(Colors.error, 0.2)
+                        color: Qt.alpha(orbiting ? Colors.tertiary : Colors.error, 0.3)
                         border.width: 1.5; border.color: Qt.alpha(Colors.error, 0.85)
                         Rectangle {
                             anchors.centerIn: parent; width: parent.width + 10 + (1 - parent.arrival) * 44; height: width; radius: width / 2
@@ -272,9 +325,20 @@ ShellRoot {
                             color: "transparent"; border.width: 1 + (1 - parent.arrival) * 2
                             border.color: Qt.alpha(Colors.error, 0.06 + (1 - parent.arrival) * 0.55)
                         }
+                        rotation: heading
                         Rectangle {
-                            anchors.centerIn: parent; width: 4; height: 4; radius: 2
-                            color: Colors.error
+                            anchors.right: parent.left; anchors.verticalCenter: parent.verticalCenter
+                            width: parent.size * 1.6; height: parent.size * 0.5; radius: height / 2
+                            gradient: Gradient {
+                                orientation: Gradient.Horizontal
+                                GradientStop { position: 0; color: "transparent" }
+                                GradientStop { position: 1; color: Qt.alpha(Colors.error, 0.35) }
+                            }
+                            visible: !window.reducedMotion && !parent.orbiting
+                        }
+                        Rectangle {
+                            anchors.centerIn: parent; width: parent.width * 0.45; height: width; radius: width * 0.25
+                            rotation: 45; color: parent.orbiting ? Colors.tertiary : Colors.error
                         }
                     }
                 }
@@ -283,7 +347,9 @@ ShellRoot {
                     visible: window.phase !== "ready"
                     x: window.playerX * arena.width - width / 2
                     y: window.playerY * arena.height - height / 2
-                    width: window.playerRadius * 2; height: width; radius: width / 2
+                    width: window.playerRadius * 2; height: width
+                    rotation: 45
+                    radius: 4
                     color: window.phase === "death" ? Colors.error : Colors.primary
                     border.width: 2; border.color: Colors.overBackground
                     Rectangle {
@@ -316,8 +382,9 @@ ShellRoot {
                         opacity: window.reducedMotion ? 0 : 0.15 + (1 - targetCircle.arrival) * 0.65
                     }
                     Rectangle {
-                        anchors.centerIn: parent; width: 8; height: width; radius: 4
-                        color: Colors.success
+                        anchors.centerIn: parent; width: 17; height: width; radius: 3
+                        rotation: 45; color: Colors.success
+                        Rectangle { anchors.centerIn: parent; width: 7; height: 7; radius: 2; color: Colors.overBackground }
                     }
                 }
                 Item {
@@ -348,7 +415,7 @@ ShellRoot {
                     }
                     StyledText {
                         x: -40; width: 80; y: -30 - (window.reducedMotion ? 0 : collectFX.progress * 28)
-                        text: "+1"; font.pixelSize: 20; font.bold: true
+                        text: "+" + (100 * window.combo); font.pixelSize: 20; font.bold: true
                         color: Colors.success; horizontalAlignment: Text.AlignHCenter
                         opacity: 1 - collectFX.progress
                     }
@@ -397,15 +464,28 @@ ShellRoot {
                             anchors.fill: parent; anchors.margins: 14; spacing: 6
                             StyledText { text: (window.death && window.death.cause === "missed" ? "TARGET MISSED · " : "CAUGHT · ") + window.elapsed.toFixed(2) + "s"; color: Colors.error; font.bold: true; font.pixelSize: 18 }
                             StyledText {
-                                text: window.death && window.death.cause === "missed" ? "The target escaped. Touch it before it leaves." : window.death && window.death.cause === "cursor" ? "Your cursor crossed into the highlighted ring." : "The highlighted ring caught your cursor."
+                                text: window.death && window.death.cause === "missed" ? "The target escaped. Touch it before it leaves." : window.death && window.death.cause === "cursor" ? "Your flight path crossed the highlighted debris." : "Incoming debris intercepted your ship."
                                 Layout.fillWidth: true; wrapMode: Text.WordWrap; font.pixelSize: 11
                             }
                             RowLayout {
                                 DashButton { text: "Try again"; accent: true; onClicked: window.start(cursorPosition.point.position.x, cursorPosition.point.position.y) }
-                                DashButton { text: "Setup"; onClicked: window.phase = "over" }
+                                DashButton { text: "Flight plan"; onClicked: window.phase = "over" }
                             }
                         }
                     }
+                }
+                Rectangle {
+                    readonly property real progress: Math.min(1, (window.elapsed - window.pulseTime) / 0.5)
+                    visible: progress < 1
+                    x: window.pulseX - width / 2; y: window.pulseY - height / 2
+                    width: window.reducedMotion ? 230 : 230 * progress; height: width; radius: width / 2
+                    color: Qt.alpha(Colors.primary, 0.08); border.color: Colors.primary; border.width: 3
+                    opacity: 1 - progress
+                }
+                RowLayout {
+                    anchors.bottom: parent.bottom; anchors.horizontalCenter: parent.horizontalCenter; anchors.bottomMargin: 16
+                    StyledText { text: "✦ " + window.targetsCollected + " STARS"; font.pixelSize: 10; color: Colors.success }
+                    DashButton { implicitWidth: 170; text: "PULSE [Space]  " + window.pulseCharges; enabled: window.pulseCharges > 0 && window.phase === "playing"; onClicked: window.pulse() }
                 }
                 RowLayout {
                     anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right
@@ -415,12 +495,12 @@ ShellRoot {
                         font.pixelSize: 22; font.bold: true; color: Colors.primary
                     }
                     StyledText {
-                        text: window.playMode === "gauntlet" ? "WAVE " + Math.min(6, 1 + Math.floor(window.elapsed / 10)) + "/6" : "SURVIVAL"
+                        text: window.playMode === "gauntlet" ? "SECTOR " + Math.min(6, 1 + Math.floor(window.elapsed / 10)) + "/6" : "DEEP SPACE"
                         font.pixelSize: 10; opacity: 0.6
                     }
                     Item { Layout.fillWidth: true }
                     StyledText {
-                        text: "○ " + window.targetsCollected
+                        text: "✦ " + window.score + "  ×" + window.combo
                         color: Colors.success; font.pixelSize: 11; font.bold: true
                     }
                     DashButton { text: "Pause  Ⅱ"; visible: window.phase === "playing"; onClicked: window.pause() }
@@ -439,7 +519,7 @@ ShellRoot {
                     visible: window.phase === "paused"
                     StyledText {
                         width: parent.width; horizontalAlignment: Text.AlignHCenter
-                        text: "TAKE A BREATH"; font.pixelSize: 24; font.bold: true; color: Colors.primary
+                        text: "HOLDING ORBIT"; font.pixelSize: 24; font.bold: true; color: Colors.primary
                     }
                     StyledText {
                         width: parent.width; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap
@@ -454,22 +534,30 @@ ShellRoot {
                 anchors.fill: parent; variant: "common"
                 radius: Styling.radius(0)
                 visible: !window.locked && window.phase !== "death"
+                Cosmos { anchors.fill: parent; opacity: 0.7 }
                 ColumnLayout {
-                    anchors.fill: parent; anchors.margins: 28; spacing: 12
+                    anchors.fill: parent; anchors.margins: 24; spacing: 8
                     RowLayout {
                         Layout.fillWidth: true
                         ColumnLayout {
                             spacing: 3
-                            StyledText { text: "MOUSEDASH"; font.pixelSize: 24; font.bold: true; font.letterSpacing: 2; color: Colors.primary }
+                            StyledText { text: "STARWAKE"; font.pixelSize: 24; font.bold: true; font.letterSpacing: 2; color: Colors.primary }
                             StyledText {
-                                text: window.phase === "over" ? (window.victory ? "CLEARED · " : "RUN COMPLETE · ") + window.elapsed.toFixed(2) + "s" : "Your next challenge starts here."
+                                text: window.phase === "over" ? (window.victory ? "JUMP COMPLETE · " : "FLIGHT LOG · ") + window.elapsed.toFixed(2) + "s" : "A small ship. An infinite sky."
                                 font.pixelSize: 11; opacity: 0.65
                             }
                         }
                         Item { Layout.fillWidth: true }
                     }
-                    Item { Layout.fillHeight: true }
-                    StyledText { text: "01 / CHOOSE YOUR RUN"; font.pixelSize: 10; opacity: 0.5 }
+                    Item {
+                        Layout.fillHeight: true; Layout.minimumHeight: 36; Layout.fillWidth: true
+                        StyledText {
+                            anchors.left: parent.left; anchors.verticalCenter: parent.verticalCenter
+                            text: "✦  EXPLORE. COLLECT. ESCAPE."; color: Colors.tertiary
+                            font.pixelSize: 11; font.letterSpacing: 1
+                        }
+                    }
+                    StyledText { text: "01 / FLIGHT PLAN"; font.pixelSize: 10; opacity: 0.5 }
                     RowLayout {
                         Layout.fillWidth: true; spacing: 8
                         Repeater {
@@ -487,7 +575,7 @@ ShellRoot {
                         Layout.fillWidth: true; text: window.modes[window.modeIndex].hint
                         font.pixelSize: 11; opacity: 0.65; wrapMode: Text.WordWrap
                     }
-                    StyledText { text: "02 / SET THE PRESSURE"; font.pixelSize: 10; opacity: 0.5; Layout.topMargin: 6 }
+                    StyledText { text: "02 / HAZARD DENSITY"; font.pixelSize: 10; opacity: 0.5; Layout.topMargin: 6 }
                     RowLayout {
                         Layout.fillWidth: true; spacing: 6
                         Repeater {
@@ -504,7 +592,7 @@ ShellRoot {
                     }
                     RowLayout {
                         Layout.fillWidth: true
-                        StyledText { text: "BEST  " + window.best.toFixed(1) + "s"; font.pixelSize: 11; color: Colors.primary }
+                        StyledText { text: window.phase === "over" ? "SCORE " + window.score + " · ✦ " + window.targetsCollected : "BEST FLIGHT  " + window.best.toFixed(1) + "s"; font.pixelSize: 11; color: Colors.primary }
                         Item { Layout.fillWidth: true }
                         DashButton {
                             text: "Quiet FX"; checkable: true; checked: window.reducedMotion
@@ -515,12 +603,12 @@ ShellRoot {
                     DashButton {
                         id: playButton
                         Layout.fillWidth: true; implicitHeight: 44
-                        accent: true; text: window.phase === "over" ? "PLAY AGAIN  ↗" : "LET'S PLAY  ↗"
+                        accent: true; text: window.phase === "over" ? "LAUNCH AGAIN  ↗" : "LAUNCH EXPEDITION  ↗"
                         onClicked: window.start(cursorPosition.point.position.x, cursorPosition.point.position.y)
                     }
                     StyledText {
                         Layout.fillWidth: true; horizontalAlignment: Text.AlignHCenter
-                        text: "Dodge rings · Touch colored targets · Esc pauses"; font.pixelSize: 10; opacity: 0.45
+                        text: "Stars boost combos · 3 stars = pulse · Space fires · Esc pauses"; font.pixelSize: 10; opacity: 0.45
                     }
                 }
             }

@@ -370,16 +370,15 @@ Theme and Shell dropdowns share one grid below the theme previews. Wallpaper col
 
 Wide Settings windows show up to six theme previews in one row and four columns of dropdowns. Expanded dropdowns use up to two columns, leaving other settings visible. Narrow windows return to a single column.
 
-### MouseDash
+### Starwake
 
-Launch **MouseDash** from the application launcher or run `rebos_shell mousedash`.
-Move the cursor to dodge incoming circles. Click the arena to begin; use Play again after a loss;
-Escape, leaving the arena, or switching windows pauses the run. Click to resume.
-Easy, Medium and Hard have separate personal bests, stored locally in
-`~/.config/rebos_shell/mousedash.ini`. Quiet visuals removes the cursor trail
-and glow. The native window opens maximized and follows the shell palette, font and surface style.
-The player grows from 9 to 18px radius as survival time increases. Enemies accelerate and spawn more frequently over time. After a loss the final arena stays visible until Play again is selected.
-No network service or additional dependency is required.
+Starwake (formerly MouseDash) is a native, theme-aware 480×480 cosmic cursor adventure. Launch **Starwake** from the app launcher or run `rebos_shell starwake`; `mousedash` remains a compatible command. Internal filenames, shell ID and the `~/.config/rebos_shell/mousedash.ini` record store remain stable to preserve integrations and personal best times.
+
+Choose endless **Deep Space** or a 60-second **Warp Run** across six sectors, with four hazard densities. Fly by moving the pointer. Dodge comet cores and curved orbital debris (introduced after 12 seconds). Touch diamond stars to earn 100 points times your combo, capped at ×5. Missing a star resets the combo without ending the flight. Every third collected star restores a pulse charge, up to two; each run starts with one. Press Space or the Pulse button to clear debris within 115px plus its collision radius, earning 25 points per cleared hazard. Score is per flight; saved records measure survival time.
+
+The planet backdrop, orbit tracks, starfield, ship, comet wakes, collection sparks and pulse wave follow the shell semantic palette. Quiet FX suppresses trails, wakes, halos and expanding effects. Escape, pointer exit and focus loss pause gameplay and effect time. Click a safe path back to the ship to resume. Collision freezes the field at first contact with a marked cause and retry controls. Existing swept collision and capped difficulty remain; no additional packages or network services are needed.
+
+Verify mechanics with `node desktop/tests/test_mousedash.cjs`. The older `audit_mousedash.cjs` measures straight-line obstacle dodging only; it does not model new steering, star objectives or pulses and is not a Starwake completion benchmark. Human playtesting is still needed to assess feel.
 
 ### Running Quickshell apps
 
