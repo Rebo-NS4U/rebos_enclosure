@@ -365,7 +365,7 @@ class BonsaiGrowTests(unittest.TestCase):
              patch.object(bonsai.time, 'sleep'), \
              patch.object(bonsai.shutil, 'get_terminal_size', side_effect=[os.terminal_size((80,40))]*4 + [os.terminal_size((81,40))]), \
              patch.object(bonsai.os, 'write'), \
-             patch.object(bonsai, 'cache_opening'), \
+             patch.object(bonsai, 'start_refill'), \
              patch('signal.signal'):
             bonsai.animate_background(42, ['#70bb50']*3, 1, 'informal')
         ages = [call.args[0] for call in canvas.call_args_list]
@@ -392,7 +392,7 @@ class BonsaiGrowTests(unittest.TestCase):
              patch.object(bonsai.time, 'sleep') as sleep, \
              patch.object(bonsai.shutil, 'get_terminal_size', side_effect=[size]*3 + [os.terminal_size((81, 40))]), \
              patch.object(bonsai.os, 'write') as write, \
-             patch.object(bonsai, 'cache_opening'), patch('signal.signal'):
+             patch.object(bonsai, 'start_refill'), patch('signal.signal'):
             bonsai.animate_background(42, ['#70bb50']*3, 1, 'informal')
         self.assertEqual(write.call_count, 2)
         self.assertNotEqual(write.call_args_list[0].args[1], write.call_args_list[1].args[1])
@@ -1641,7 +1641,7 @@ class BonsaiGrowTests(unittest.TestCase):
         greeting = source.split('# Finish painting')[0]
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            (root / 'bonsai-grow').mkdir()
+            (root / 'bonsai-grow/prepared-v1-100').mkdir(parents=True)
             (root / 'rebos_shell').mkdir()
             (root / 'bin').mkdir()
             script = root / 'bin/bonsai-grow'
@@ -1649,12 +1649,12 @@ class BonsaiGrowTests(unittest.TestCase):
             script.chmod(0o755)
             config = root / 'greeting.fish'
             config.write_text(greeting)
-            cache = root / 'bonsai-grow/opening-100.ansi'
+            cache = root / 'bonsai-grow/prepared-v1-100/0.ready'
             palette = root / 'rebos_shell/effective-palette.json'
-            cache.write_text('CACHED_FRAME')
             palette.write_text('{}')
             for fresh in (True, False):
                 with self.subTest(fresh=fresh):
+                    cache.write_text('IDENTITY\nCACHED_FRAME')
                     stamp = time.time() + (10 if fresh else -10)
                     os.utime(cache, (stamp, stamp))
                     master, slave = pty.openpty()
@@ -1688,13 +1688,116 @@ class BonsaiGrowTests(unittest.TestCase):
                             os.close(slave)
                         os.close(master)
 
-    def test_opening_cache_is_complete_and_replaces_previous_frame(self):
-        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {'XDG_CACHE_HOME': directory}):
-            bonsai.cache_opening(100, 'first frame')
-            bonsai.cache_opening(100, 'second frame')
-            cache = Path(directory) / 'bonsai-grow'
-            self.assertEqual((cache / 'opening-100.ansi').read_text(), 'second frame')
-            self.assertEqual(len(list(cache.iterdir())), 1)
+    @unittest.skipUnless(__import__('shutil').which('fish'), 'Fish is required')
+    def test_concurrent_fish_launches_claim_different_prepared_specimens(self):
+        import pty
+        source = (SOURCE.parents[1] / '../config/fish/config.fish').resolve().read_text()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            pool = root / 'bonsai-grow/prepared-v1-100'
+            pool.mkdir(parents=True)
+            (root / 'bin').mkdir()
+            script = root / 'bin/bonsai-grow'
+            script.write_text('#!/bin/sh\nexit 0\n')
+            script.chmod(0o755)
+            config = root / 'greeting.fish'
+            config.write_text(source.split('# Finish painting')[0])
+            for index in range(4):
+                (pool / f'{index}.ready').write_text(f'IDENTITY-{index}\nSPECIMEN-{index}')
+            launches = []
+            try:
+                for _ in range(4):
+                    master, slave = pty.openpty()
+                    process = subprocess.Popen(['fish', '--no-config', '-ic',
+                                                f'source {config}; fish_greeting'],
+                        stdin=subprocess.DEVNULL, stdout=slave, stderr=slave,
+                        env={**os.environ, 'PATH': str(root / 'bin') + ':' + os.environ['PATH'],
+                             'XDG_CACHE_HOME': directory, 'COLUMNS': '100', 'LINES': '40',
+                             'TERM': 'xterm-kitty', 'REDUCE_MOTION': '0'})
+                    os.close(slave)
+                    launches.append((process, master))
+                consumed = set()
+                for process, master in launches:
+                    process.wait(timeout=5)
+                    output = b''
+                    while True:
+                        try:
+                            part = os.read(master, 65536)
+                        except OSError:
+                            break
+                        if not part:
+                            break
+                        output += part
+                    matches = [index for index in range(4) if f'SPECIMEN-{index}'.encode() in output]
+                    self.assertEqual(len(matches), 1, output)
+                    consumed.update(matches)
+                self.assertEqual(len(consumed), 4)
+                self.assertEqual(list(pool.glob('*.ready')), [])
+                self.assertEqual(list(pool.glob('.claimed-*')), [])
+            finally:
+                for process, master in launches:
+                    if process.poll() is None:
+                        process.kill()
+                        process.wait()
+                    os.close(master)
+
+    def test_greeting_starts_refill_before_returning_worker_pid(self):
+        from unittest.mock import Mock
+        events = []
+        with patch.object(bonsai.sys, 'stderr', Mock(isatty=lambda: True, fileno=lambda: 2)), \
+             patch.object(bonsai.os, 'get_terminal_size', return_value=os.terminal_size((100, 40))), \
+             patch.object(bonsai, 'start_refill', side_effect=lambda *args: events.append('refill')), \
+             patch.object(bonsai.os, 'fork', side_effect=lambda: events.append('worker') or 123), \
+             patch('builtins.print', side_effect=lambda *args, **kwargs: events.append('pid')), \
+             patch.dict(os.environ, {'TERM': 'xterm-kitty', 'REDUCE_MOTION': '0'}):
+            bonsai.greeting(42, 2, 'informal')
+        self.assertEqual(events, ['refill', 'worker', 'pid'])
+
+    def test_prepared_pool_has_unique_identities_and_replaces_only_consumed_slots(self):
+        import json
+        accents = ['#85b470', '#b8ce93', '#67bca3']
+        original_glass = bonsai.GLASS_SEED
+        with tempfile.TemporaryDirectory() as directory, \
+             patch.dict(os.environ, {'XDG_CACHE_HOME': directory}), \
+             patch.object(bonsai, 'render', return_value='FRAME') as render:
+            bonsai.refill_prepared(100, accents, 'informal')
+            pool = bonsai.prepared_directory(100)
+            files = sorted(pool.glob('*.ready'))
+            self.assertEqual(len(files), 4)
+            identities = [json.loads(path.read_text().splitlines()[0]) for path in files]
+            for key in ('seed', 'pot_seed', 'glass_seed'):
+                self.assertEqual(len({identity[key] for identity in identities}), 4)
+            bonsai.refill_prepared(100, accents, 'informal')
+            self.assertEqual(render.call_count, 4)
+            files[0].rename(pool / '.claimed-test')
+            bonsai.refill_prepared(100, accents, 'informal')
+            self.assertEqual(render.call_count, 5)
+            replacement = json.loads(files[0].read_text().splitlines()[0])
+            self.assertNotEqual(replacement['seed'], identities[0]['seed'])
+            self.assertEqual(bonsai.GLASS_SEED, original_glass)
+
+    def test_prepared_live_frame_exactly_matches_cached_specimen(self):
+        import json
+        size = os.terminal_size((100, 40))
+        accents = ['#85b470', '#b8ce93', '#67bca3']
+        with tempfile.TemporaryDirectory() as directory, \
+             patch.dict(os.environ, {'XDG_CACHE_HOME': directory}), \
+             patch.object(bonsai, 'GLASS_SEED', bonsai.GLASS_SEED):
+            bonsai.refill_prepared(100, accents, 'informal')
+            header, cached = (bonsai.prepared_directory(100) / '0.ready').read_text().split('\n', 1)
+            identity = bonsai.prepared_identity(header, 100, accents, 'informal')
+            self.assertIsNotNone(identity)
+            with patch.object(bonsai.time, 'monotonic', side_effect=[0, .2]), \
+                 patch.object(bonsai.time, 'sleep'), patch('signal.signal'), \
+                 patch.object(bonsai, 'start_refill') as refill, \
+                 patch.object(bonsai.shutil, 'get_terminal_size', side_effect=[size, size, os.terminal_size((101, 40))]), \
+                 patch.object(bonsai.os, 'write') as write:
+                bonsai.animate_background(999, accents, 2, 'informal', identity)
+            self.assertEqual(write.call_args.args[1], cached.encode())
+            refill.assert_called_once_with(100, accents, 'informal')
+            self.assertIsNone(bonsai.prepared_identity(header, 80, accents, 'informal'))
+            self.assertIsNone(bonsai.prepared_identity(header, 100, ['#000000'] * 3, 'informal'))
+            self.assertIsNone(bonsai.prepared_identity('broken', 100, accents, 'informal'))
 
     def test_cached_greeting_does_not_clear_the_opening(self):
         from unittest.mock import Mock
@@ -1703,7 +1806,8 @@ class BonsaiGrowTests(unittest.TestCase):
              patch.object(bonsai.os, 'get_terminal_size', return_value=os.terminal_size((100, 40))), \
              patch.object(bonsai.os, 'fork', return_value=123), \
              patch('builtins.print'), patch.dict(os.environ, {'TERM': 'xterm-kitty', 'REDUCE_MOTION': '0'}):
-            bonsai.greeting(42, 2, 'informal', opening_shown=True)
+            with patch.object(bonsai, 'prepared_identity', return_value={'seed': 42}):
+                bonsai.greeting(42, 2, 'informal', opening_shown=True)
         terminal.write.assert_not_called()
 
     def test_seedling_skips_invisible_mature_decoration_plans(self):

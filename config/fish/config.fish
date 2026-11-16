@@ -5,15 +5,30 @@ function fish_greeting
         if set -q XDG_CACHE_HOME; and test -n "$XDG_CACHE_HOME"
             set cache_root "$XDG_CACHE_HOME"
         end
-        set -l opening "$cache_root/bonsai-grow/opening-$COLUMNS.ansi"
+        set -l pool "$cache_root/bonsai-grow/prepared-v1-$COLUMNS"
         set -l palette "$cache_root/rebos_shell/effective-palette.json"
         set -l opening_shown
-        if test "$LINES" -ge 30; and test "$COLUMNS" -ge 59; and test "$TERM" != dumb; and test "$REDUCE_MOTION" != 1; and test -s "$opening"
-            if not test -r "$palette"; or test "$opening" -nt "$palette"
-                string repeat -n $LINES \n
-                printf '\e[H\e[26B'
-                if command cat -- "$opening"
-                    set opening_shown --opening-shown
+        set -l prepared
+        if test "$LINES" -ge 30; and test "$COLUMNS" -ge 59; and test "$TERM" != dumb; and test "$REDUCE_MOTION" != 1
+            for opening in $pool/*.ready
+                if not test -s "$opening"
+                    continue
+                end
+                if test -r "$palette"; and not test "$opening" -nt "$palette"
+                    continue
+                end
+                # Atomic rename gives concurrent terminals different specimens.
+                set -l claim "$pool/.claimed-$fish_pid"
+                if command mv -T -- "$opening" "$claim" 2>/dev/null
+                    if read -l prepared < "$claim"
+                        string repeat -n $LINES \n
+                        printf '\e[H\e[26B'
+                        if command tail -n +2 -- "$claim"
+                            set opening_shown --opening-shown --prepared "$prepared"
+                        end
+                    end
+                    command rm -f -- "$claim"
+                    break
                 end
             end
         end

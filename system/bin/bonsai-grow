@@ -2184,32 +2184,117 @@ def animate_growth(seed, accents, duration=2.0, style="informal"):
             signal.signal(signal.SIGTERM, old_term)
 
 
-def cache_opening(columns, frame):
-    """Publish a complete first frame for Fish to paint before Python starts."""
-    directory = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache")) / "bonsai-grow"
-    temporary = directory / f".opening-{columns}-{os.getpid()}.tmp"
+POOL_SIZE = 4
+
+
+def prepared_directory(columns):
+    return Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache")) / "bonsai-grow" / f"prepared-v1-{columns}"
+
+
+def prepared_identity(value, columns, accents, style):
+    try:
+        data = json.loads(value)
+        if (data["version"] == 1 and data["columns"] == columns
+                and data["palette"] == accents and data["style"] == style
+                and all(type(data[key]) is int and 0 <= data[key] < 2**63
+                        for key in ("seed", "pot_seed", "glass_seed"))
+                and type(data["hour"]) in (int, float) and 0 <= data["hour"] < 24):
+            return data
+    except (ValueError, TypeError, KeyError):
+        pass
+    return None
+
+
+def refill_prepared(columns, accents, style):
+    """Fill four single-use slots; Fish claims each with an atomic rename."""
+    global GLASS_SEED
+    directory = prepared_directory(columns)
+    old_glass = GLASS_SEED
+    temporary = directory / f".preparing-{os.getpid()}"
     try:
         directory.mkdir(parents=True, exist_ok=True)
-        temporary.write_text(frame)
-        temporary.replace(directory / f"opening-{columns}.ansi")
+        palette_path = directory.parent.parent / "rebos_shell/effective-palette.json"
+        palette_stamp = palette_path.stat().st_mtime if palette_path.exists() else 0
+        with (directory / ".lock").open("a") as lock:
+            try:
+                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                return  # Another terminal is already replenishing this width.
+            for slot in range(POOL_SIZE):
+                target = directory / f"{slot}.ready"
+                try:
+                    with target.open() as existing:
+                        if (prepared_identity(existing.readline(), columns, accents, style)
+                                and target.stat().st_mtime > palette_stamp):
+                            continue
+                except OSError:
+                    pass
+                rng = random.SystemRandom()
+                local = time.localtime()
+                identity = dict(version=1, columns=columns, palette=accents, style=style,
+                                seed=rng.randrange(2**63), pot_seed=rng.randrange(2**63),
+                                glass_seed=rng.randrange(2**63),
+                                hour=local.tm_hour + local.tm_min / 60 + local.tm_sec / 3600)
+                GLASS_SEED = identity["glass_seed"]
+                picture = render(0, identity["seed"], True, columns, accents, style,
+                                 fixed_height=True, pot_seed=identity["pot_seed"], hour=identity["hour"])
+                frame = "\033[?2026h\0337\033[H" + picture + "\0338\033[?2026l"
+                temporary.write_text(json.dumps(identity) + "\n" + frame)
+                temporary.replace(target)
     except OSError:
+        pass  # A read-only cache must never prevent the live greeting.
+    finally:
+        GLASS_SEED = old_glass
         try:
             temporary.unlink(missing_ok=True)
         except OSError:
-            pass  # A read-only cache must never prevent the live greeting.
+            pass
 
 
-def animate_background(seed, accents, duration, style):
+def start_refill(columns, accents, style):
+    """Refill independently so typing a command cannot cancel the next opening."""
+    import signal
+
+    try:
+        pid = os.fork()
+    except OSError:
+        return
+    if pid:
+        return
+    try:
+        # Release Fish's command-substitution pipe, retaining terminal geometry.
+        os.dup2(sys.stderr.fileno(), sys.stdout.fileno())
+        os.setsid()
+        signal.signal(signal.SIGHUP, signal.SIG_IGN)
+        refill_prepared(columns, accents, style)
+    finally:
+        os._exit(0)
+
+
+def animate_background(seed, accents, duration, style, prepared=None, refill_started=False):
     """Grow once, then track the sky until Fish stops us before command output."""
     import signal
 
     signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))
     size = shutil.get_terminal_size()
-    pot_seed = random.SystemRandom().randrange(2**63)
+    global GLASS_SEED
+    pot_seed = prepared["pot_seed"] if prepared else random.SystemRandom().randrange(2**63)
+    if prepared:
+        seed = prepared["seed"]
+        GLASS_SEED = prepared["glass_seed"]
     began = time.monotonic()
     first_frame = True
     while shutil.get_terminal_size() == size:
-        day = animation_day(time.monotonic() - began, duration)
+        elapsed = time.monotonic() - began
+        day = 0 if first_frame and prepared else animation_day(elapsed, duration)
+        hour = None
+        if prepared:
+            local = time.localtime()
+            current_hour = local.tm_hour + local.tm_min / 60 + local.tm_sec / 3600
+            delta = (current_hour - prepared["hour"] + 12) % 24 - 12
+            hour = prepared["hour"] + delta * min(1, elapsed / duration)
+            if first_frame:
+                hour = prepared["hour"]
         picture = render(
             day,
             seed,
@@ -2219,19 +2304,21 @@ def animate_background(seed, accents, duration, style):
             style,
             fixed_height=True,
             pot_seed=pot_seed,
+            hour=hour,
         )
         # One synchronized write saves and restores Fish's editing cursor.
         frame = "\033[?2026h\0337\033[H" + picture + "\0338\033[?2026l"
         os.write(sys.stdout.fileno(), frame.encode())
         if first_frame:
-            cache_opening(size.columns, frame)
+            if not refill_started:
+                start_refill(size.columns, accents, style)
             first_frame = False
         # Fish terminates this worker at preexec/exit. Keep the mature scene
         # alive while the first prompt is idle; resizing also ends the worker.
         time.sleep(30 if day >= 30 else 1 / 60)
 
 
-def greeting(seed, duration, style, opening_shown=False):
+def greeting(seed, duration, style, opening_shown=False, prepared=None):
     """Reserve on stderr's terminal, returning the forked worker PID on stdout."""
     if not sys.stderr.isatty() or os.environ.get("TERM") == "dumb":
         return
@@ -2239,6 +2326,8 @@ def greeting(seed, duration, style, opening_shown=False):
     if size.columns < 59:
         return
     accents = wallpaper_palette()
+    identity = prepared_identity(prepared, size.columns, accents, style)
+    opening_shown = opening_shown and identity is not None
     output = sys.stdout
     sys.stdout = sys.stderr
     try:
@@ -2250,6 +2339,9 @@ def greeting(seed, duration, style, opening_shown=False):
             sys.stdout.flush()
     finally:
         sys.stdout = output
+    # Start replenishing before returning the animation PID to Fish: even an
+    # immediate command may stop growth, but it must not cancel the next tree.
+    start_refill(size.columns, accents, style)
     pid = os.fork()
     if pid:
         print(pid, flush=True)
@@ -2257,7 +2349,7 @@ def greeting(seed, duration, style, opening_shown=False):
     # Close the command-substitution pipe so Fish can display its prompt.
     os.dup2(sys.stderr.fileno(), sys.stdout.fileno())
     try:
-        animate_background(seed, accents, duration, style)
+        animate_background(seed, accents, duration, style, identity, refill_started=True)
     finally:
         os._exit(0)
 
@@ -2305,12 +2397,13 @@ def main():
                         help="Reserve rows and start animation in one launch; emit worker PID")
     parser.add_argument("--opening-shown", action="store_true",
                         help="Keep the cached opening already painted by Fish")
+    parser.add_argument("--prepared", help="Identity of the single-use opening claimed by Fish")
     args = parser.parse_args()
     if not math.isfinite(args.duration) or args.duration <= 0:
         parser.error("--duration must be a positive finite number")
     if args.greeting:
         greeting(args.seed if args.seed is not None else random.SystemRandom().randrange(2**63),
-                 args.duration, args.style, args.opening_shown)
+                 args.duration, args.style, args.opening_shown, args.prepared)
         return
     columns = shutil.get_terminal_size().columns
     if args.preview is None and (
