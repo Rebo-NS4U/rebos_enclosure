@@ -1880,7 +1880,7 @@ Item {
                             id: inputContainer
                             objectName: "assistantComposer"
                             property int attachmentPreviewHeight: attachmentPreview.visible ? Math.min(attachmentPreview.contentHeight, 120) + 8 : 0
-                            height: attachmentPreviewHeight + autoApproveButton.implicitHeight + 14 + Math.min(150, Math.max(48, inputField.contentHeight + 24))
+                            height: attachmentPreviewHeight + Math.min(150, Math.max(48, inputField.contentHeight + 24))
 
                             anchors.bottom: parent.bottom
                             property real centerMargin: (parent.height / 2) - (height / 2)
@@ -1999,37 +1999,6 @@ Item {
                                         }
                                     }
 
-                                Button {
-                                    id: autoApproveButton
-                                    objectName: "assistantAutoApproveButton"
-                                    Layout.leftMargin: 16
-                                    Layout.topMargin: 8
-                                    implicitHeight: 36
-                                    Layout.preferredHeight: implicitHeight
-                                    checkable: true
-                                    checked: mainChatArea.session.autoApprove
-                                    onClicked: {
-                                        mainChatArea.session.autoApprove = !mainChatArea.session.autoApprove;
-                                        root.requestKeyboardFocus();
-                                        inputField.forceActiveFocus();
-                                    }
-                                    Accessible.name: "Auto approve tool requests for this chat"
-                                    contentItem: StyledText {
-                                        text: mainChatArea.session.autoApprove ? "Auto approve: On" : "Auto approve: Off"
-                                        color: mainChatArea.session.autoApprove ? Styling.srItem("overprimary") : Colors.overSurface
-                                        horizontalAlignment: Text.AlignHCenter
-                                        verticalAlignment: Text.AlignVCenter
-                                    }
-                                    background: StyledRect {
-                                        variant: mainChatArea.session.autoApprove ? "primary" : parent.hovered || parent.visualFocus ? "focus" : "common"
-                                        radius: Styling.radius(8)
-                                    }
-                                    StyledToolTip {
-                                        show: parent.hovered
-                                        tooltipText: "Automatically approve tool requests in this chat until switched off"
-                                    }
-                                }
-
                                 RowLayout {
                                     Layout.fillWidth: true
                                     Layout.fillHeight: true
@@ -2144,6 +2113,65 @@ Item {
                                                 if (root.active)
                                                     forceActiveFocus();
                                             }
+                                        }
+                                    }
+
+                                    Button {
+                                        id: autoApproveButton
+                                        objectName: "assistantAutoApproveButton"
+                                        Layout.preferredWidth: implicitWidth
+                                        Layout.preferredHeight: 36
+                                        implicitWidth: autoApproveContent.implicitWidth + 16
+                                        padding: 8
+                                        flat: true
+                                        checkable: true
+                                        checked: mainChatArea.session.autoApprove
+                                        onClicked: {
+                                            mainChatArea.session.autoApprove = !mainChatArea.session.autoApprove;
+                                            root.requestKeyboardFocus();
+                                            inputField.forceActiveFocus();
+                                        }
+                                        Accessible.name: "Auto approve tool requests for this chat"
+                                        contentItem: RowLayout {
+                                            id: autoApproveContent
+                                            spacing: 8
+                                            Rectangle {
+                                                Layout.preferredWidth: 28
+                                                Layout.preferredHeight: 16
+                                                radius: 8
+                                                color: Qt.alpha(Colors.primary, mainChatArea.session.autoApprove ? 0.18 : 0.04)
+                                                border.width: 1
+                                                border.color: mainChatArea.session.autoApprove ? Colors.primary : Colors.outline
+                                                Rectangle {
+                                                    width: 10
+                                                    height: 10
+                                                    radius: 5
+                                                    anchors.verticalCenter: parent.verticalCenter
+                                                    x: mainChatArea.session.autoApprove ? parent.width - width - 3 : 3
+                                                    color: mainChatArea.session.autoApprove ? Colors.primary : Colors.outline
+                                                    Behavior on x {
+                                                        enabled: Config.animDuration > 0
+                                                        NumberAnimation { duration: Config.animDuration / 2 }
+                                                    }
+                                                }
+                                            }
+                                            StyledText {
+                                                text: "Auto approve"
+                                                font.pixelSize: Styling.fontSize(-1)
+                                                color: mainChatArea.session.autoApprove ? Colors.primary : Colors.overSurface
+                                            }
+                                        }
+                                        background: Rectangle {
+                                            radius: Styling.radius(8)
+                                            color: Qt.alpha(Colors.primary, autoApproveButton.down ? 0.16 : autoApproveButton.hovered ? 0.08 : 0)
+                                            border.width: autoApproveButton.visualFocus ? 1 : 0
+                                            border.color: Colors.primary
+                                        }
+                                        StyledToolTip {
+                                            show: autoApproveButton.hovered
+                                            tooltipText: mainChatArea.session.autoApprove
+                                                ? "Auto approve is on for this chat · Click to turn off"
+                                                : "Auto approve is off · Click to approve tool requests in this chat"
                                         }
                                     }
 

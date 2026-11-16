@@ -351,7 +351,7 @@ Caption refreshes reuse their VLC channel without clearing between heartbeats, a
 
 New Dweebo Codex chats default to **dweebo-Do** (Sol, medium reasoning). Saved chats retain their selected preset. Choose **dweebo-Deep** for complex coding and research with Sol at high reasoning.
 
-The composer’s **Auto approve: Off/On** button approves pending and future tool requests for the current chat until switched off. New or reopened chats start off. It uses one-time approval options; requests without that option still require review. Questions remain manual.
+The composer’s **Auto approve** switch beside **Add image** approves pending and future tool requests for the current chat until switched off. New or reopened chats start off. It uses one-time approval options; requests without that option still require review. Questions remain manual.
 
 ### Free models in Dweebo
 
