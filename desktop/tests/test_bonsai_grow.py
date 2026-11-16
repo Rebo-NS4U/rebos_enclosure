@@ -786,6 +786,10 @@ class BonsaiGrowTests(unittest.TestCase):
         self.assertEqual(pixel(30, 150), (18, 52, 86, 255), 'optics stay outside the artwork')
         self.assertEqual(pixel(584, 260), (240, 130, 80, 255))
         self.assertEqual(pixel(589, 260)[3], 0)
+        for x in (1, 588):
+            self.assertEqual(pixel(x, 260)[3], 0, 'glass stays inset')
+            self.assertGreater(pixel(x, 495)[3], 0, 'plinth projects beyond glass')
+        self.assertEqual(pixel(1, 495)[3], pixel(588, 495)[3])
         self.assertEqual(pixel(295, 519)[3], 0)
         self.assertEqual(pixel(235, 490)[3], 255, 'floor meets the feet')
         self.assertEqual(pixel(295, 475), (18, 52, 86, 255),

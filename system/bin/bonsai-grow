@@ -1840,6 +1840,15 @@ def rounded_frame_png(
                 round(base + (channel - base) * rim)
                 for base, channel in zip(backing, rgb)
             )
+            # The plinth projects half a cell beyond each glass wall. Give it
+            # its own shallow rounded outline instead of clipping it to glass.
+            if y + .5 >= height - 1.5 * cell_height:
+                base_radius = min(3, cell_width * .25, cell_height * .12)
+                base_qx = abs(x + .5 - width / 2) - ((width - 1) / 2 - base_radius)
+                base_qy = abs(y + .5 - (height - 1.2 * cell_height)) - (.3 * cell_height - base_radius)
+                base_distance = (math.hypot(max(base_qx, 0), max(base_qy, 0))
+                                 + min(max(base_qx, base_qy), 0) - base_radius)
+                alpha = round(255 * max(0, min(1, .5 - base_distance)))
             if height - 1.5 * cell_height <= y + .5 < height - 1.15 * cell_height:
                 # The two ceramic feet end at the center of the floor row.
                 floor_depth = (y + .5 - (height - 1.5 * cell_height)) / cell_height
@@ -1851,7 +1860,7 @@ def rounded_frame_png(
                 line.extend((*ink, alpha))
             elif y + .5 >= height - 1.15 * cell_height:
                 # A lit bevel, brushed face and recessed lower lip share the
-                # original low footprint directly beneath the ceramic foot.
+                # wider outline directly beneath the ceramic feet.
                 depth = (y + .5 - (height - 1.15 * cell_height)) / cell_height
                 across = x / width
                 sheen = max(0, 1 - abs(across - .32) * 2)
