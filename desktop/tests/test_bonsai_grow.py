@@ -68,7 +68,8 @@ class BonsaiGrowTests(unittest.TestCase):
                     self.assertEqual(pixel(295, 260), (16, 46, 76, round(255 * opacity)))
                     self.assertEqual(pixel(295, 10), (240, 130, 80, 255))
                     self.assertEqual(pixel(295, 0)[3], 0)
-                    self.assertEqual(pixel(295, 495), (28, 30, 32, 255), "base stays charcoal and solid")
+                    self.assertEqual(pixel(295, 495)[3], 255, "base stays solid")
+                    self.assertGreater(sum(pixel(295, 491)[:3]), sum(pixel(295, 500)[:3]), "bevel shades into the lower lip")
                     self.assertEqual(pixel(295, 510)[3], 0, "base stays low")
 
     def test_transparent_materials_gain_definition_without_changing_accents(self):
@@ -781,7 +782,8 @@ class BonsaiGrowTests(unittest.TestCase):
         self.assertEqual(pixel(5, 10)[3], 0, 'outside the rounded corner stays transparent')
         self.assertEqual(pixel(295, 10), (240, 130, 80, 255))
         self.assertEqual(pixel(295, 260), (18, 52, 86, 255), 'keep the center quiet')
-        self.assertEqual(pixel(10, 150), (18, 52, 86, 255), 'no raster glass texture')
+        self.assertGreater(pixel(10, 150)[2], 86, 'cool reflection defines the side pane')
+        self.assertEqual(pixel(30, 150), (18, 52, 86, 255), 'optics stay outside the artwork')
         self.assertEqual(pixel(584, 260), (240, 130, 80, 255))
         self.assertEqual(pixel(589, 260)[3], 0)
         self.assertEqual(pixel(295, 519)[3], 0)

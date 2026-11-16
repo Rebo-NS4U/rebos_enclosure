@@ -1812,21 +1812,18 @@ def place_glass_marks(canvas, texture_seed):
 def rounded_frame_png(
     cell_width, cell_height, rows, rgb, backing=(15, 15, 15), opacity=1.0
 ):
-    """Quiet glass outline above a low charcoal terrarium base."""
+    """Laminated glass edges and a machined charcoal plinth, behind the art."""
     width, height = 59 * cell_width, rows * cell_height
     radius = min(12, cell_height * 0.65)
     half_width, half_height = (width - cell_width) / 2, (height - cell_height) / 2
     xs = [abs(x + 0.5 - width / 2) - (half_width - radius) for x in range(width)]
     # The flat interior is one repeated pixel; only the rim needs shading math.
     interior = [x for x, qx in enumerate(xs) if qx <= 0]
-    left, right = (interior[0], interior[-1] + 1) if interior else (0, 0)
+    left, right = (max(interior[0], 2 * cell_width),
+                   min(interior[-1] + 1, width - 2 * cell_width)) if interior else (0, 0)
     data = bytearray()
-    scanlines = {}
     for y in range(height):
         qy = abs(y + 0.5 - height / 2) - (half_height - radius)
-        if y < height - 2 * cell_height and qy in scanlines:
-            data.extend(scanlines[qy])
-            continue
         line = bytearray(b"\0")  # PNG scanline: no filter.
         x = 0
         while x < width:
@@ -1843,17 +1840,36 @@ def rounded_frame_png(
                 for base, channel in zip(backing, rgb)
             )
             if y + .5 >= height - 1.5 * cell_height:
-                # Solid flat base, directly beneath the ceramic foot.
-                ink = (28, 30, 32)
-                # A low slab rather than a tall outlined frame pedestal.
+                # A lit bevel, brushed face and recessed lower lip share the
+                # original low footprint directly beneath the ceramic foot.
+                depth = (y + .5 - (height - 1.5 * cell_height)) / cell_height
+                across = x / width
+                sheen = max(0, 1 - abs(across - .32) * 2)
+                if depth < .09:
+                    level = 64 + 32 * sheen - depth * 200
+                elif depth < .46:
+                    grain = ((x * 13 + y * 7) % 11 - 5) * .24
+                    level = 29 + 12 * sheen - depth * 16 + grain
+                else:
+                    level = 13 + 9 * max(0, 1 - (depth - .46) * 12)
+                ink = tuple(round(level + tint) for tint in (0, 3, 5))
                 lower_edge = height - .9 * cell_height
                 alpha = min(alpha, round(255 * max(0, min(1, lower_edge - y))))
                 line.extend((*ink, alpha))
             else:
-                line.extend((*ink, round(alpha * (opacity + (1 - opacity) * rim))))
+                # Optical thickness: twin cool seams and a soft reflected
+                # ribbon confined to the side panes, leaving the center clear.
+                side = min(x + .5 - cell_width / 2,
+                           width - cell_width / 2 - x - .5)
+                seam = math.exp(-((side - 2.8) / .8) ** 2) * .34
+                ribbon_center = cell_width * (.83 + .16 * y / height)
+                ribbon = math.exp(-((side - ribbon_center) / (cell_width * .24)) ** 2)
+                taper = math.sin(math.pi * max(0, min(1, y / (height - 1.5 * cell_height)))) ** 2
+                reflection = (seam + ribbon * .16 * taper) * (1 - rim)
+                ink = tuple(round(c + (light - c) * reflection)
+                            for c, light in zip(ink, (168, 203, 213)))
+                line.extend((*ink, round(alpha * (opacity + (1 - opacity) * max(rim, reflection)))))
             x += 1
-        if y < height - 2 * cell_height:
-            scanlines[qy] = line
         data.extend(line)
 
     def chunk(kind, payload):
