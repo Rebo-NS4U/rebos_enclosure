@@ -28,6 +28,19 @@ function M.setup()
   for key, direction in pairs({ h = 'h', j = 'j', k = 'k', l = 'l' }) do
     map('n', '<C-' .. key .. '>', '<C-w>' .. direction, { desc = 'Focus window ' .. direction })
   end
+  for key, resize in pairs({
+    Left = { 'vertical resize -', 'Narrower pane' },
+    Right = { 'vertical resize +', 'Wider pane' },
+    Up = { 'resize +', 'Taller pane' },
+    Down = { 'resize -', 'Shorter pane' },
+  }) do
+    for _, step in ipairs({ { 'C-', 2 }, { 'C-S-', 8 } }) do
+      local command = resize[1] .. step[2]
+      map({ 'n', 'i', 'v' }, '<' .. step[1] .. key .. '>', function() vim.cmd(command) end,
+        { desc = resize[2] .. ' (' .. step[2] .. ')' })
+    end
+  end
+  map('n', '<leader>s=', '<C-w>=', { desc = 'Equalize panes' })
   map('n', '<leader>sv', '<Cmd>vsplit<CR>', { desc = 'Split vertically' })
   map('n', '<leader>sh', '<Cmd>split<CR>', { desc = 'Split horizontally' })
   map('n', '<S-l>', '<Cmd>bnext<CR>', { desc = 'Next file' })

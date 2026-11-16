@@ -135,3 +135,13 @@ agent process; it does not stop the desktop assistant. Resume a saved agent
 session to continue later. Required runtime dependencies are the same as desktop
 Codex: Node.js/npm, Python 3 and Codex. CodeCompanion and plenary install through
 `:Lazy`; their versions are recorded in `lazy-lock.json`.
+
+## Resizing panes
+
+Hold Ctrl and press an arrow key while focused in a pane:
+Right makes it wider, Left narrower, Up taller and Down shorter.
+Each press changes its size by two columns or lines; hold Ctrl+Shift with the
+arrow for eight at a time. These shortcuts work while typing as well as in
+normal and visual modes. In normal mode, `Space s =` makes the panes equal.
+You can also drag the divider between panes with the mouse.
+For an already-open editor, save your files and reopen Neovim to load new shortcuts.
