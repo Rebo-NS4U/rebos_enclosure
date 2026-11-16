@@ -1880,7 +1880,7 @@ Item {
                             id: inputContainer
                             objectName: "assistantComposer"
                             property int attachmentPreviewHeight: attachmentPreview.visible ? Math.min(attachmentPreview.contentHeight, 120) + 8 : 0
-                            height: attachmentPreviewHeight + Math.min(150, Math.max(48, inputField.contentHeight + 24))
+                            height: attachmentPreviewHeight + autoApproveButton.implicitHeight + 14 + Math.min(150, Math.max(48, inputField.contentHeight + 24))
 
                             anchors.bottom: parent.bottom
                             property real centerMargin: (parent.height / 2) - (height / 2)
@@ -2000,13 +2000,19 @@ Item {
                                     }
 
                                 Button {
+                                    id: autoApproveButton
                                     objectName: "assistantAutoApproveButton"
                                     Layout.leftMargin: 16
                                     Layout.topMargin: 8
-                                    Layout.preferredHeight: 36
+                                    implicitHeight: 36
+                                    Layout.preferredHeight: implicitHeight
                                     checkable: true
                                     checked: mainChatArea.session.autoApprove
-                                    onClicked: mainChatArea.session.autoApprove = !mainChatArea.session.autoApprove
+                                    onClicked: {
+                                        mainChatArea.session.autoApprove = !mainChatArea.session.autoApprove;
+                                        root.requestKeyboardFocus();
+                                        inputField.forceActiveFocus();
+                                    }
                                     Accessible.name: "Auto approve tool requests for this chat"
                                     contentItem: StyledText {
                                         text: mainChatArea.session.autoApprove ? "Auto approve: On" : "Auto approve: Off"
