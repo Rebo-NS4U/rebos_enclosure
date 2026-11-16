@@ -5,7 +5,7 @@ function fish_greeting
         if set -q XDG_CACHE_HOME; and test -n "$XDG_CACHE_HOME"
             set cache_root "$XDG_CACHE_HOME"
         end
-        set -l pool "$cache_root/bonsai-grow/prepared-v13-$COLUMNS"
+        set -l pool "$cache_root/bonsai-grow/prepared-v14-$COLUMNS"
         set -l palette "$cache_root/rebos_shell/effective-palette.json"
         set -l opening_shown
         set -l prepared
@@ -22,7 +22,7 @@ function fish_greeting
                 if command mv -T -- "$opening" "$claim" 2>/dev/null
                     if read -l prepared < "$claim"
                         string repeat -n $LINES \n
-                        printf '\e[H\e[28B'
+                        printf '\e[H\e[26B'
                         if command tail -n +2 -- "$claim"
                             set opening_shown --opening-shown --prepared "$prepared"
                         end

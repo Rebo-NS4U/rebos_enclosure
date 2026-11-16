@@ -68,6 +68,7 @@ class BonsaiGrowTests(unittest.TestCase):
                     self.assertEqual(pixel(295, 260), (16, 46, 76, round(255 * opacity)))
                     self.assertEqual(pixel(295, 10), (240, 130, 80, 255))
                     self.assertEqual(pixel(295, 0)[3], 0)
+                    self.assertEqual(pixel(295, 495)[3], 255, "base stays solid even with transparent glass")
 
     def test_transparent_materials_gain_definition_without_changing_accents(self):
         import json
@@ -100,7 +101,7 @@ class BonsaiGrowTests(unittest.TestCase):
         image = bonsai.render(30, 42, False, 80, palette)
         self.assertEqual(image, bonsai.render(30, 42, False, 80, palette))
         self.assertIn('╭──────────┴──────────╮', image)
-        self.assertLessEqual(len(image.splitlines()), 28)
+        self.assertLessEqual(len(image.splitlines()), 26)
         self.assertTrue(all(len(row) <= 80 for row in image.splitlines()))
         self.assertNotEqual(image, bonsai.render(30, 43, False, 80, palette))
         self.assertNotEqual(image, bonsai.render(0, 42, False, 80, palette))
@@ -510,7 +511,7 @@ class BonsaiGrowTests(unittest.TestCase):
         for y, row in enumerate(base):
             for x, (glyph, ink) in enumerate(row):
                 if ink:
-                    self.assertEqual(rows[y + 3][x + 1], glyph)
+                    self.assertEqual(rows[y + 1][x + 1], glyph)
 
     def test_sun_has_radial_light_and_time_dependent_warmth(self):
         import re
@@ -727,8 +728,8 @@ class BonsaiGrowTests(unittest.TestCase):
                     while time.monotonic() - began < 4:
                         if select.select([master], [], [], .05)[0]:
                             output += os.read(master, 65536)
-                        if skip and not sent and b'\033[28A' in output:
-                            frames_before_skip = output.count(b'\033[28A')
+                        if skip and not sent and b'\033[26A' in output:
+                            frames_before_skip = output.count(b'\033[26A')
                             if skip == 'signal':
                                 import signal
                                 process.send_signal(signal.SIGTERM)
@@ -744,13 +745,13 @@ class BonsaiGrowTests(unittest.TestCase):
                     import re
                     plain = re.sub(rb'\x1b\[[0-9;]*m', b'', output)
                     self.assertIn('╭──────────┴──────────╮'.encode(), plain)
-                    self.assertGreaterEqual(output.count(b'\033[28A'), 2)
+                    self.assertGreaterEqual(output.count(b'\033[26A'), 2)
                     self.assertIn(b'\033[?25h', output)
                     self.assertNotIn(b'Traceback', output)
                     self.assertEqual(list(Path(directory).iterdir()), [])
                     if skip:
                         self.assertTrue(sent)
-                        self.assertGreater(output.count(b'\033[28A') - frames_before_skip, 2)
+                        self.assertGreater(output.count(b'\033[26A') - frames_before_skip, 2)
                 finally:
                     if process.poll() is None:
                         process.kill()
@@ -775,8 +776,6 @@ class BonsaiGrowTests(unittest.TestCase):
         def pixel(x, y):
             start = y * (width * 4 + 1) + 1 + x * 4
             return tuple(pixels[start:start + 4])
-        self.assertEqual(pixel(30, 20)[3], 0, 'roof corners stay open')
-        self.assertEqual(pixel(30, 70)[3], 255, 'glass below the roof is filled')
         self.assertEqual(pixel(295, 0)[3], 0, 'no dark strip above the top edge')
         self.assertEqual(pixel(5, 10)[3], 0, 'outside the rounded corner stays transparent')
         self.assertEqual(pixel(295, 10), (240, 130, 80, 255))
@@ -849,15 +848,24 @@ class BonsaiGrowTests(unittest.TestCase):
              patch.object(bonsai.sys.stdout, 'isatty', return_value=False):
             self.assertEqual(bonsai.kitty_frame(26, 80, [240, 130, 80]), '')
 
+    def test_flat_base_touches_the_pot(self):
+        for seed in range(16):
+            rows = bonsai.render(30, seed, False, 59, fixed_height=True).splitlines()
+            self.assertEqual(rows[0], "╭" + "─" * 57 + "╮")
+            self.assertEqual(rows[-2], "├" + "━" * 57 + "┤")
+            foot = bonsai.pot_rows(seed)[-1]
+            self.assertIn(foot.strip(), rows[-3])
+            self.assertTrue(rows[-3][1:-1].strip())
+            self.assertNotIn("╱", rows[0])
+
     def test_frame_fits_and_keeps_animation_height(self):
         for columns in (59, 80, 100):
             for day in (0, 7, 30):
                 image = bonsai.render(day, 42, False, columns,
                                      ['#85b470'] * 3, fixed_height=True)
                 rows = image.splitlines()
-                self.assertEqual(len(rows), 28)
-                self.assertEqual(rows[0].strip(), "╭" + "─" * 29 + "╮")
-                self.assertEqual(rows[2].strip(), "╭" + "─" * 57 + "╮")
+                self.assertEqual(len(rows), 26)
+                self.assertEqual(rows[0].strip(), "╭" + "─" * 57 + "╮")
                 self.assertEqual(rows[-1].strip(), "╰" + "─" * 57 + "╯")
                 self.assertNotIn('║', image)
                 left = len(rows[0]) - 59
@@ -871,14 +879,14 @@ class BonsaiGrowTests(unittest.TestCase):
         canvas = bonsai.specimen_canvas(30, 42)
         image = bonsai.render(30, 42, True, 59, fixed_height=True, hour=15)
         plain = re.sub(r'\x1b\[[0-9;]*m', '', image).splitlines()
-        self.assertEqual(len(plain), 28)
+        self.assertEqual(len(plain), 26)
         self.assertTrue(all(len(row) == 59 for row in plain))
         for y, row in enumerate(canvas):
             for x, (glyph, ink) in enumerate(row):
                 if glyph != ' ':
-                    self.assertEqual(plain[y + 3][x + 1], glyph)
+                    self.assertEqual(plain[y + 1][x + 1], glyph)
         self.assertIn("\033[48;2;{};{};{}m".format(*bonsai.theme_background()), image)
-        self.assertTrue(any(plain[y + 3][x + 1] == '╱' and cell == (' ', '')
+        self.assertTrue(any(plain[y + 1][x + 1] == '╱' and cell == (' ', '')
                             for y, row in enumerate(canvas) for x, cell in enumerate(row)))
 
     def test_terrarium_keeps_theme_backing_inside_the_frame(self):
@@ -900,15 +908,14 @@ class BonsaiGrowTests(unittest.TestCase):
                                     background = tuple(codes[2:])
                             else:
                                 for glyph in token:
-                                    inset = 14 if y == 0 else 7 if y == 1 else 0
-                                    inside = 10 + inset <= column < 69 - inset
+                                    inside = 10 <= column < 69
                                     self.assertEqual(background, expected_background if inside else None)
                                     column += 1
                         self.assertEqual(column, 69)
                         self.assertIsNone(background, 'reset the backing before the prompt')
                     plain = bonsai.render(day, 42, False, 80, theme, fixed_height=True, hour=hour)
                     self.assertNotIn('\033', plain)
-                    for row in plain.splitlines()[3:-1]:
+                    for row in plain.splitlines()[1:-2]:
                         self.assertEqual((row[10], row[-1]), ('│', '│'))
 
     def test_sky_follows_local_time_and_preserves_specimen(self):
@@ -918,7 +925,7 @@ class BonsaiGrowTests(unittest.TestCase):
             self.assertIn('·', image)
             self.assertNotIn('☼', image)
             self.assertNotIn('☾', image)
-            self.assertEqual(len(image.splitlines()), 28)
+            self.assertEqual(len(image.splitlines()), 26)
             self.assertTrue(all(len(row) == 59 for row in image.splitlines()))
         for hour in range(24):
             canvas = bonsai.specimen_canvas(30, 42)
@@ -1079,7 +1086,7 @@ class BonsaiGrowTests(unittest.TestCase):
             inks = {ink for row in canvas[20:22] for glyph, ink in row if glyph.strip()}
             self.assertTrue({'pot_inlay', 'pot_pattern'} <= inks)
             with patch.object(bonsai, 'terminal_leaf_palette', return_value=list(accents)):
-                rows = bonsai.render(30, seed, True, 59, fixed_height=True).splitlines()[23:25]
+                rows = bonsai.render(30, seed, True, 59, fixed_height=True).splitlines()[21:23]
             bright = {rgb(ink) for row in rows for ink in re.findall(r'\x1b\[[0-9;]*m', row)
                       if len(re.findall(r'\d+', ink)) >= 5 and max(rgb(ink)) > 100}
             frame_ink = rgb(re.findall(r"\x1b\[0;38;2;[0-9;]*m", rows[0])[0])
@@ -1405,7 +1412,7 @@ class BonsaiGrowTests(unittest.TestCase):
         for seed in range(64):
             for day in (0, 3, 7, 14, 22, 30):
                 rows = bonsai.render(day, seed, False, 59, ['#85b470']*3,
-                                    fixed_height=True).splitlines()[3:22]
+                                    fixed_height=True).splitlines()[1:20]
                 canvas = bonsai.specimen_canvas(day, seed)
                 # Glass reflections are separate from the living silhouette.
                 points = {(x,y) for y,row in enumerate(rows)
@@ -1788,7 +1795,7 @@ class BonsaiGrowTests(unittest.TestCase):
             seen.add(bonsai.growth_pattern(seed)[0])
             for day in (0,7,14,30):
                 rows = bonsai.render(day,seed,False,59,['#85b470']*3,
-                                    fixed_height=True).splitlines()[3:-1]
+                                    fixed_height=True).splitlines()[1:-1]
                 body = [row[1:-1] for row in rows]
                 self.assertEqual(body[18][27],'│')
                 self.assertEqual(body[19][27],'┴')
@@ -1831,7 +1838,7 @@ class BonsaiGrowTests(unittest.TestCase):
         greeting = source.split('# Finish painting')[0]
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            (root / 'bonsai-grow/prepared-v13-100').mkdir(parents=True)
+            (root / 'bonsai-grow/prepared-v14-100').mkdir(parents=True)
             (root / 'rebos_shell').mkdir()
             (root / 'bin').mkdir()
             script = root / 'bin/bonsai-grow'
@@ -1839,7 +1846,7 @@ class BonsaiGrowTests(unittest.TestCase):
             script.chmod(0o755)
             config = root / 'greeting.fish'
             config.write_text(greeting)
-            cache = root / 'bonsai-grow/prepared-v13-100/0.ready'
+            cache = root / 'bonsai-grow/prepared-v14-100/0.ready'
             palette = root / 'rebos_shell/effective-palette.json'
             palette.write_text('{}')
             for fresh in (True, False):
@@ -1884,7 +1891,7 @@ class BonsaiGrowTests(unittest.TestCase):
         source = (SOURCE.parents[1] / '../config/fish/config.fish').resolve().read_text()
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            pool = root / 'bonsai-grow/prepared-v13-100'
+            pool = root / 'bonsai-grow/prepared-v14-100'
             pool.mkdir(parents=True)
             (root / 'bin').mkdir()
             script = root / 'bin/bonsai-grow'
@@ -2031,7 +2038,7 @@ class BonsaiGrowTests(unittest.TestCase):
             while b'\x1b[?2026l' not in painted and time.monotonic() < deadline:
                 if select.select([master], [], [], .1)[0]:
                     painted += os.read(master, 65536)
-            self.assertIn(b'\x1b[H\x1b[28B', painted)
+            self.assertIn(b'\x1b[H\x1b[26B', painted)
             self.assertIn(b'\x1b[?2026l', painted)
         finally:
             if worker is not None:
