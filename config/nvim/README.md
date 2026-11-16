@@ -104,7 +104,9 @@ No existing Neovim configuration was replaced. To revert, rename
 
 `Space a a` toggles a separate Dweebo Codex chat; `Space a n` starts a new one.
 In visual mode, `Space a s` attaches selected code. `Space a p` opens AI actions.
-Press Enter in the chat to send; `?` in normal mode shows chat shortcuts.
+Type in the separate **Dweebo message** box beneath the conversation and press
+Enter to send. Ctrl-J inserts a new line. The conversation stays read-only.
+The message box opens ready to type; `?` in normal mode shows chat shortcuts.
 
 `:Dweebo` starts with Do. Other profiles are available with `:Dweebo deep`,
 `:Dweebo symphony`, `:Dweebo light_coding`, `:Dweebo quick` and

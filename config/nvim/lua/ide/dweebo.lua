@@ -117,8 +117,21 @@ function M.setup()
   end
   require('codecompanion').setup({
     adapters = { acp = acp },
-    interactions = { chat = { adapter = 'dweebo_coding' }, inline = { adapter = 'dweebo_coding' } },
-    display = { chat = { window = { layout = 'vertical', width = 0.4 } } },
+    interactions = { chat = { adapter = 'dweebo_coding', keymaps = {
+      send = { modes = { n = { '<CR>', '<C-s>' }, i = { '<CR>', '<C-s>' } } },
+    } }, inline = { adapter = 'dweebo_coding' } },
+    display = { chat = { window = { layout = 'vertical', width = 0.4 },
+      input = { layout = 'split', height = 6 }, start_in_insert_mode = true } },
+  })
+  vim.api.nvim_create_autocmd('FileType', {
+    group = vim.api.nvim_create_augroup('DweeboMessageBox', { clear = true }),
+    pattern = 'codecompanion_chat_input',
+    callback = function(event)
+      for _, win in ipairs(vim.fn.win_findbuf(event.buf)) do
+        vim.wo[win].winbar = ' Dweebo message | Enter: send | Ctrl-J: new line'
+      end
+      vim.keymap.set('i', '<C-j>', '<CR>', { buffer = event.buf, desc = 'New line in Dweebo message', remap = false })
+    end,
   })
   vim.api.nvim_create_user_command('Dweebo', function(opts)
     local profile = opts.args ~= '' and opts.args or 'coding'

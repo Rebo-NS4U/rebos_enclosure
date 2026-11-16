@@ -20,6 +20,27 @@ vim.opt.rtp:prepend(lazy .. '/codecompanion.nvim')
 vim.opt.rtp:prepend(lazy .. '/plenary.nvim')
 local dweebo = require('ide.dweebo')
 dweebo.setup()
+-- Exercise the real message-box Enter mapping through submission validation,
+-- stopping immediately before any agent process or network request starts.
+local chat = require('codecompanion').chat({adapter='dweebo_coding'})
+assert(vim.bo.filetype == 'codecompanion_chat_input')
+assert(not vim.bo[chat.bufnr].modifiable)
+assert(vim.wo.winbar:find('Enter: send',1,true))
+vim.api.nvim_buf_set_lines(0,0,-1,false,{'hello from the message box'})
+local submitted = false
+chat.dispatch_cancellable = function(_, event)
+  if event == 'on_before_submit' then
+    local parsed = require('codecompanion.interactions.chat.parser').messages(chat,chat.header_line)
+    assert(parsed and parsed.content == 'hello from the message box')
+    submitted = true
+    return true
+  end
+end
+local send = vim.fn.maparg('<CR>','i',false,true)
+assert(send.buffer == 1 and type(send.callback) == 'function')
+send.callback()
+assert(submitted, 'Enter did not submit the typed message')
+assert(vim.fn.maparg('<C-j>','i',false,true).desc == 'New line in Dweebo message')
 local data = dweebo.defaults()
 assert(#data.profiles == 6)
 for _, profile in ipairs(data.profiles) do
