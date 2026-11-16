@@ -22,6 +22,7 @@ import subprocess
 import sys
 import threading
 import time
+import zlib
 
 
 LIMIT = 64 * 1024 * 1024
@@ -55,6 +56,17 @@ class Bridge:  # pylint: disable=too-many-instance-attributes
         self.stopping = False
         self.parked = False
         self.shutdown_requested = asyncio.Event()
+
+    @property
+    def state(self):
+        """Expand recovery state only while attaching or validating a park request."""
+        return json.loads(zlib.decompress(self._state)) if self._state is not None else None
+
+    @state.setter
+    def state(self, value):
+        # Checkpoints contain the complete conversation and tool results. Keeping
+        # that decoded object graph duplicates the UI's history even when idle.
+        self._state = zlib.compress(encode(value), level=1) if value is not None else None
 
     def send(self, value):
         if self.client is None:
@@ -202,6 +214,7 @@ class Bridge:  # pylint: disable=too-many-instance-attributes
         await self.stop(preserve_state=True)
         self.parked = True
         state.update(agentParked=True, initialized=False, authenticated=False, sessionReady=False)
+        self.state = state
         self.publish("parked")
         return True
 
@@ -254,6 +267,8 @@ class Bridge:  # pylint: disable=too-many-instance-attributes
                         break
                     if not await self.handle_frame(json.loads(line)):
                         break
+                # Do not retain the previous full checkpoint while readline waits.
+                del line
         except (ValueError, KeyError, OSError, RuntimeError) as error:
             # Only diagnostic errors, never protocol payloads or chat content.
             with contextlib.suppress(OSError):
@@ -321,6 +336,8 @@ def relay(path, start_service=True, channel="default"):
         try:
             for line in sys.stdin.buffer:
                 connection.sendall(line)
+                # Each checkpoint contains the full chat; release it before idle.
+                del line
         except OSError:
             pass
         finally:

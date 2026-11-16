@@ -42,6 +42,8 @@ class BridgeModeTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(await bridge.handle_frame({'bridge': 'park', 'seq': 0, 'state': state}))
         bridge.stop.assert_awaited_once_with(preserve_state=True)
         self.assertTrue(bridge.parked)
+        self.assertTrue(bridge.state["agentParked"])
+        self.assertFalse(bridge.state["sessionReady"])
         self.assertTrue(await bridge.handle_frame({'bridge': 'wake', 'seq': 1, 'state': state}))
         bridge.start.assert_awaited_once_with(bridge.launch)
         self.assertFalse(bridge.parked)

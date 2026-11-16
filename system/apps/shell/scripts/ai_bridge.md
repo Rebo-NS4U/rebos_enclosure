@@ -49,6 +49,13 @@ unacknowledged events and replays them after reattachment. Text is flushed into
 the checkpoint before acknowledgement to prevent losing streamed chunks.
 Events are applied in order, outside the QML stdout handler.
 
+The bridge stores recovery checkpoints compressed while idle and expands them
+only for reattachment or parking checks. Both the server and relay release the
+last full protocol frame before waiting for more input. This reduces retained
+chat copies without truncating history, pending requests or replay events.
+Transport updates apply on the next bridge launch; active backends are not
+restarted for an update.
+
 Permission requests arriving while the menu is absent wait for user input after
 reattachment. The daemon never approves them automatically. The existing Stop
 button still cancels a turn, Reconnect explicitly replaces the agent, and
