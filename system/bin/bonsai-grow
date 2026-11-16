@@ -1470,39 +1470,61 @@ def cloud_marks(rising, seed=None, kind=None):
         pane_start = 56 - pane_width if rising else 2
         anchor = rng.randint(pane_start, pane_start + pane_width - width)
         for column, height in enumerate(profile):
-            # A shared belly keeps even the finest tapered tips connected.
-            bottom = base
-            height = max(1 if kind in ("cirrus", "stratus") else 2, height)
+            # Round off the belly at the tips instead of cutting every bank
+            # into a rectangle. Thin veils retain a continuous tapered ribbon.
+            u = column / (len(profile) - 1)
+            airy = kind in ("cirrus", "stratus")
+            tip = column in (0, len(profile) - 1)
+            bottom = base - (not airy and (u < 0.12 or u > 0.88))
+            height = 1 if tip else max(1 if airy else 2, height)
+            # Slightly swept cirrus ribbons differ from level stratus shelves.
+            if kind == "cirrus":
+                bottom -= int(0.2 < u < 0.8)
+                if not tip:
+                    height = max(2, height)
             top = bottom - height
             for y in range(top // 2, (bottom - 1) // 2 + 1):
                 halves = tuple(top <= y * 2 + half < bottom for half in (0, 1))
                 glyph = {(True, True): "█", (True, False): "▀",
                          (False, True): "▄"}[halves]
-                depth = (max(top, y * 2) - top) / max(1, height - 1)
-                # Bright rounded shoulders fall into a quieter lavender belly.
-                # The edge facing the celestial body catches a soft rim light.
-                facing = column / (len(profile) - 1)
-                facing = 1 - facing if rising else facing
-                shade = min(5, max(0, round(depth ** 1.3 * 4 + (1 - facing) * 0.8)))
+                sample = sum(y * 2 + half + 0.5 for half in (0, 1)
+                             if halves[half]) / sum(halves)
+                depth = (sample - top) / height
+                facing = 1 - u if rising else u
+                # Local lobe shading merges into the bank's overall volume;
+                # no uniformly dark stripe along every bottom row.
+                volume = (sample - (base - max(profile))) / max(profile)
+                shade = round(5 * (0.68 * depth ** 1.5 + 0.32 * volume)
+                              + (0.5 - facing) * 0.7)
                 if kind == "cirrus":
-                    shade = min(4, 1 + round(depth * 2 + (1 - facing)))
-                elif y * 2 + 2 >= bottom:
-                    shade = max(shade, 4 if bank == 0 else 5)
+                    shade = 1 + round(depth + (1 - facing))
+                elif kind == "stratus":
+                    shade = 2 + round(depth * 2)
+                shade = min(5, max(0, shade))
                 marks.append((anchor + column, y, glyph, f"sky_cloud{shade}"))
     return marks
 
 
 def cloud_palette(hour):
-    """Soft ivory and amber by day, muted blue silver under moonlight."""
+    """Pearl crowns, peach sunset light and blue lavender shadow planes."""
     daylight = 6 <= hour % 24 < 18
     elevation = max(0, math.sin(math.pi * (hour % 24 - 6) / 12))
-    top = (tuple(round(a + (b - a) * elevation)
-                 for a, b in zip((177, 139, 109), (181, 185, 179)))
-           if daylight else (106, 123, 141))
-    bottom = (67, 70, 77) if daylight else (42, 52, 68)
-    return {f"sky_cloud{band}": "\033[0;38;2;{};{};{}m".format(
-                *(round(a + (b - a) * band / 5) for a, b in zip(top, bottom)))
-            for band in range(6)}
+    dawn = ((218, 173, 144), (162, 137, 145), (88, 94, 117))
+    noon = ((207, 211, 202), (147, 163, 174), (86, 106, 128))
+    night = ((145, 165, 186), (93, 116, 144), (48, 65, 91))
+    stops = (tuple(tuple(a + (b - a) * elevation for a, b in zip(warm, cool))
+                   for warm, cool in zip(dawn, noon)) if daylight else night)
+    palette = {}
+    for band in range(6):
+        position = band / 5 * 2
+        segment = min(1, int(position))
+        t = position - segment
+        # Smooth pigment transitions keep the shaded banks soft at six tones.
+        t = t * t * (3 - 2 * t)
+        rgb = tuple(round(a + (b - a) * t)
+                    for a, b in zip(stops[segment], stops[segment + 1]))
+        palette[f"sky_cloud{band}"] = "\033[0;38;2;{};{};{}m".format(*rgb)
+    return palette
 
 
 def sky_pane(canvas, hour, cloud_seed=None):

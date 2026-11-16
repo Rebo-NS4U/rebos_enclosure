@@ -587,6 +587,22 @@ class BonsaiGrowTests(unittest.TestCase):
         self.assertTrue(any(not marks for marks in selected))
         self.assertTrue(any(marks for marks in selected))
 
+    def test_cloud_palette_has_soft_light_and_cool_shadow(self):
+        import re
+        def rgb(ink):
+            return tuple(map(int, re.findall(r'\d+', ink)[-3:]))
+        for hour in (0, 6, 9, 12, 17, 23):
+            shades = [rgb(bonsai.cloud_palette(hour)[f'sky_cloud{i}'])
+                      for i in range(6)]
+            self.assertEqual(len(set(shades)), 6)
+            self.assertTrue(all(sum(a) > sum(b) for a, b in zip(shades, shades[1:])))
+            self.assertGreater(shades[-1][2], shades[-1][0])
+        dawn = rgb(bonsai.cloud_palette(6)['sky_cloud0'])
+        night = rgb(bonsai.cloud_palette(23)['sky_cloud0'])
+        self.assertGreater(dawn[0], dawn[2])
+        self.assertGreater(night[2], night[0])
+        self.assertEqual(bonsai.cloud_palette(0), bonsai.cloud_palette(24))
+
     def test_clouds_match_lighting_and_preserve_foreground(self):
         cases = ((hour, kind) for hour in (3, 6, 9, 12, 17, 21)
                  for kind in ('clear', 'mega', 'cumulus', 'scattered',
