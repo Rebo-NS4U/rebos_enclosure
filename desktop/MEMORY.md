@@ -1,5 +1,14 @@
 # Memory audit
 
+## Bounded music artwork
+
+Music library covers decode within 512 × 512 pixels and the dashboard player
+background within 1024 × 1024 pixels, including its wallpaper fallback. This
+avoids keeping full-resolution originals for these small surfaces. Fixed bounds
+also avoid decoding again during layout animations. Existing asynchronous loading
+and playback lifetimes are preserved. Savings depend on the source images; no
+desktop-wide before/after reduction has been established for this change.
+
 ## 2026-11-14 measurements
 
 The assistant was already running a newer process when this audit began. Its RSS
