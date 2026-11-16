@@ -549,6 +549,34 @@ class BonsaiGrowTests(unittest.TestCase):
                          {(x, y, ink) for x, y, glyph, ink in reflected})
         self.assertEqual(len(set(bonsai.moon_palette().values())), 8)
 
+    def test_cloud_variations_are_stable_connected_and_shaded(self):
+        silhouettes = set()
+        for rising in (True, False):
+            for seed in range(40):
+                marks = bonsai.cloud_marks(rising, seed)
+                self.assertEqual(marks, bonsai.cloud_marks(rising, seed))
+                self.assertGreaterEqual(len({ink for _, _, _, ink in marks}), 4)
+                silhouettes.add(tuple((x, y, glyph) for x, y, glyph, _ in marks))
+                self.assertTrue(all(1 <= x <= 55 and 1 <= y <= 7
+                                    for x, y, _, _ in marks))
+                # Verify actual half-pixels, including tapered tips, connect
+                # into exactly two banks without detached speckles.
+                pixels = {(x, y * 2 + half) for x, y, glyph, _ in marks
+                          for half in (0, 1)
+                          if glyph == '█' or glyph == ('▀' if half == 0 else '▄')}
+                components = 0
+                while pixels:
+                    pending = [pixels.pop()]
+                    components += 1
+                    while pending:
+                        x, y = pending.pop()
+                        for neighbor in ((x-1, y), (x+1, y), (x, y-1), (x, y+1)):
+                            if neighbor in pixels:
+                                pixels.remove(neighbor)
+                                pending.append(neighbor)
+                self.assertEqual(components, 2)
+        self.assertGreater(len(silhouettes), 20)
+
     def test_clouds_match_lighting_and_preserve_foreground(self):
         for hour in (3, 6, 9, 12, 17, 21):
             canvas = bonsai.specimen_canvas(30, 42, 'informal', 42)
