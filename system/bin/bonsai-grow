@@ -2450,6 +2450,40 @@ def specimen_palette(seed, leaves=None):
     return palette
 
 
+def texture_dense_foliage(canvas, seed):
+    """Break up solid leaf masses with stable, softly shaded small sprays."""
+    foliage = {
+        (x, y)
+        for y, row in enumerate(canvas)
+        for x, (_, ink) in enumerate(row)
+        if ink.startswith("leaf")
+    }
+    for x, y in foliage:
+        neighbors = sum(
+            (x + dx, y + dy) in foliage
+            for dx in (-1, 0, 1)
+            for dy in (-1, 0, 1)
+            if dx or dy
+        )
+        if neighbors < 7:
+            continue
+        # Broad, staggered patches read as overlapping sprays, not static noise.
+        patch_x = (x + (y // 2 % 2)) // 3
+        patch = random.Random(f"{seed}:dense-spray:{patch_x}:{y // 2}").random()
+        detail = random.Random(f"{seed}:dense-leaf:{x}:{y}").random()
+        glyph, ink = canvas[y][x]
+        tone = int(ink[4:]) // 3
+        if patch < 0.35:
+            glyph = "•" if detail < 0.65 else "◆"
+            shade = 0
+        elif patch > 0.7:
+            glyph = "♣" if detail < 0.6 else "◆"
+            shade = 2
+        else:
+            continue
+        canvas[y][x] = (glyph, f"leaf{tone * 3 + shade}")
+
+
 def specimen_canvas(days, seed, style="informal", pot_seed=None):
     width, height = 57, 24
     canvas = [[(" ", "") for _ in range(width)] for _ in range(height)]
@@ -2468,6 +2502,7 @@ def specimen_canvas(days, seed, style="informal", pot_seed=None):
         space_bark_shading(canvas, seed)
         add_trunk_scar(canvas, seed, days)
         add_knurling(canvas, seed, days)
+    texture_dense_foliage(canvas, seed)
     add_blossoms(canvas, seed, days, style)
     rows = pot_rows(seed if pot_seed is None else pot_seed)
     has_details = any(

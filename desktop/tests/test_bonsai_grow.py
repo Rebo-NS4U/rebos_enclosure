@@ -16,6 +16,23 @@ loader.exec_module(bonsai)
 
 
 class BonsaiGrowTests(unittest.TestCase):
+    def test_dense_leaf_texture_preserves_outline_and_is_stable(self):
+        import copy
+        canvas = [[("●", "leaf4") for _ in range(15)] for _ in range(9)]
+        canvas[4][7] = ("┃", "wood")
+        original = copy.deepcopy(canvas)
+        duplicate = copy.deepcopy(canvas)
+        bonsai.texture_dense_foliage(canvas, 42)
+        bonsai.texture_dense_foliage(duplicate, 42)
+        self.assertEqual(canvas, duplicate)
+        self.assertNotEqual(canvas, original)
+        self.assertEqual(canvas[4][7], original[4][7])
+        self.assertEqual(canvas[0], original[0])
+        self.assertEqual(canvas[-1], original[-1])
+        self.assertTrue(all(glyph.strip() for row in canvas for glyph, _ in row))
+        self.assertGreaterEqual(len({ink for row in canvas for _, ink in row if ink.startswith("leaf")}), 3)
+
+
     def test_theme_background_tracks_export_and_rejects_invalid_colors(self):
         import json
         with tempfile.TemporaryDirectory() as directory:
