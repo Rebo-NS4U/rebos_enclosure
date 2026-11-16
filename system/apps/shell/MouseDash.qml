@@ -288,10 +288,6 @@ ShellRoot {
                     width: target ? target.r * 2 : 0; height: width; radius: width / 2
                     color: Qt.alpha(Colors.success, 0.25)
                     border.width: 3; border.color: Colors.success
-                    StyledText {
-                        anchors.centerIn: parent; text: "CLICK"
-                        font.pixelSize: 10; font.bold: true; color: Colors.overBackground
-                    }
                 }
                 MouseArea {
                     id: pointer
@@ -361,7 +357,7 @@ ShellRoot {
                     }
                     Item { Layout.fillWidth: true }
                     StyledText {
-                        text: window.clickTarget ? "CLICK ○" : "○ " + window.targetsClicked
+                        text: "○ " + window.targetsClicked
                         color: Colors.success; font.pixelSize: 11; font.bold: true
                     }
                     DashButton { text: "Pause  Ⅱ"; visible: window.phase === "playing"; onClicked: window.pause() }
@@ -460,7 +456,7 @@ ShellRoot {
                     }
                     StyledText {
                         Layout.fillWidth: true; horizontalAlignment: Text.AlignHCenter
-                        text: "Dodge rings · Click labeled targets · Esc pauses"; font.pixelSize: 10; opacity: 0.45
+                        text: "Dodge rings · Click colored targets · Esc pauses"; font.pixelSize: 10; opacity: 0.45
                     }
                 }
             }
