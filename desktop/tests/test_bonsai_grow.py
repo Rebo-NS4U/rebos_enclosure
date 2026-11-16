@@ -611,6 +611,32 @@ class BonsaiGrowTests(unittest.TestCase):
                 self.assertTrue(all((49 <= x <= 55 if left_corner else 1 <= x <= 7)
                                     and 3 <= y <= 17 for x, y in points))
 
+    def test_all_glass_groups_vary_and_never_overlap_each_other_or_art(self):
+        horizontal_layouts = set()
+        for hour in (3, 9, 15, 21):
+            original = bonsai.specimen_canvas(30, 42)
+            bonsai.sky_pane(original, hour)
+            occupied = {(x, y) for y, row in enumerate(original)
+                        for x, (_, ink) in enumerate(row) if ink}
+            for seed in range(60):
+                canvas = [row[:] for row in original]
+                groups = bonsai.place_glass_marks(canvas, seed, 6 <= hour < 12 or 18 <= hour < 24)
+                horizontal_layouts.add(tuple(points for glyph, points in groups if glyph == '─'))
+                self.assertTrue(any(glyph == '─' for glyph, _ in groups))
+                previous = set(occupied)
+                for glyph, points in groups:
+                    self.assertEqual(len(points), len(set(points)))
+                    for x, y in points:
+                        self.assertTrue(all((x + dx, y + dy) not in previous
+                                            for dx in (-1, 0, 1) for dy in (-1, 0, 1)))
+                        self.assertEqual(canvas[y][x][0], glyph)
+                    previous.update(points)
+                for x, y in occupied:
+                    self.assertEqual(canvas[y][x], original[y][x])
+        self.assertGreater(len(horizontal_layouts), 20)
+        full = [[('█', 'wood') for _ in range(57)] for _ in range(24)]
+        self.assertEqual(bonsai.place_glass_marks(full, 42, False), [])
+
     def test_kitty_frame_is_quiet_and_preserves_the_terminal_cursor(self):
         import struct
         with patch.dict(os.environ, {'TERM': 'xterm-kitty'}), \
@@ -654,8 +680,8 @@ class BonsaiGrowTests(unittest.TestCase):
                 if glyph != ' ':
                     self.assertEqual(plain[y + 1][x + 1], glyph)
         self.assertIn("\033[48;2;24;24;24m", image)
-        self.assertTrue(any(plain[y + 1][x + 1] == '╱'
-                            for x, y in bonsai.glass_reflections(bonsai.GLASS_SEED, False)))
+        self.assertTrue(any(plain[y + 1][x + 1] == '╱' and cell == (' ', '')
+                            for y, row in enumerate(canvas) for x, cell in enumerate(row)))
 
     def test_terrarium_keeps_neutral_backing_inside_the_frame(self):
         import re
