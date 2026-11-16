@@ -650,6 +650,27 @@ class BonsaiGrowTests(unittest.TestCase):
         self.assertNotEqual(bonsai.cloud_palette(12), bonsai.cloud_palette(21))
         self.assertNotEqual(bonsai.cloud_palette(6), bonsai.cloud_palette(12))
 
+    def test_tree_occlusion_removes_small_cloud_islands(self):
+        canvas = [[(' ', '') for _ in range(57)] for _ in range(24)]
+        # A continuous bank is cut into a substantial cloud and a tiny speck.
+        marks = [(x, 8, '█', 'sky_cloud2') for x in range(15, 27)]
+        canvas[8][23] = ('│', 'bark')
+        with patch.object(bonsai, 'cloud_marks', return_value=marks):
+            bonsai.sky_pane(canvas, 12)
+        self.assertTrue(all(canvas[8][x][1] == 'sky_cloud2' for x in range(15, 22)))
+        self.assertEqual(canvas[8][23], ('│', 'bark'))
+        self.assertEqual(canvas[8][25:27], [(' ', ''), (' ', '')])
+
+    def test_cloud_fragments_use_half_block_connectivity(self):
+        canvas = [[(' ', '') for _ in range(57)] for _ in range(24)]
+        marks = [(x, 8, '█', 'sky_cloud2') for x in range(15, 20)]
+        # Opposite half-blocks in neighboring columns do not touch.
+        marks += [(25, 8, '▀', 'sky_cloud2'), (26, 8, '▄', 'sky_cloud2')]
+        with patch.object(bonsai, 'cloud_marks', return_value=marks):
+            bonsai.sky_pane(canvas, 12)
+        self.assertEqual(canvas[8][25:27], [(' ', ''), (' ', '')])
+        self.assertTrue(all(canvas[8][x][1] == 'sky_cloud2' for x in range(15, 20)))
+
     def test_crescent_negative_space_is_clear_of_stars(self):
         for hour in (3, 21):
             canvas = [[(' ', '') for _ in range(57)] for _ in range(24)]
@@ -1796,7 +1817,7 @@ class BonsaiGrowTests(unittest.TestCase):
         greeting = source.split('# Finish painting')[0]
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            (root / 'bonsai-grow/prepared-v10-100').mkdir(parents=True)
+            (root / 'bonsai-grow/prepared-v11-100').mkdir(parents=True)
             (root / 'rebos_shell').mkdir()
             (root / 'bin').mkdir()
             script = root / 'bin/bonsai-grow'
@@ -1804,7 +1825,7 @@ class BonsaiGrowTests(unittest.TestCase):
             script.chmod(0o755)
             config = root / 'greeting.fish'
             config.write_text(greeting)
-            cache = root / 'bonsai-grow/prepared-v10-100/0.ready'
+            cache = root / 'bonsai-grow/prepared-v11-100/0.ready'
             palette = root / 'rebos_shell/effective-palette.json'
             palette.write_text('{}')
             for fresh in (True, False):
@@ -1849,7 +1870,7 @@ class BonsaiGrowTests(unittest.TestCase):
         source = (SOURCE.parents[1] / '../config/fish/config.fish').resolve().read_text()
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            pool = root / 'bonsai-grow/prepared-v10-100'
+            pool = root / 'bonsai-grow/prepared-v11-100'
             pool.mkdir(parents=True)
             (root / 'bin').mkdir()
             script = root / 'bin/bonsai-grow'

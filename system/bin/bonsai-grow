@@ -1672,6 +1672,35 @@ def sky_pane(canvas, hour, cloud_seed=None):
             ):
                 continue
             canvas[y][x] = (glyph, ink)
+    # Masking branches can leave tiny cloud islands in canopy gaps. Measure
+    # connected areas at half-cell resolution so touching block glyphs really
+    # share an edge, then discard fragments smaller than four full cells.
+    cloud_pixels = set()
+    for y, row in enumerate(canvas):
+        for x, (glyph, ink) in enumerate(row):
+            if ink.startswith("sky_cloud"):
+                for half in (0, 1):
+                    if glyph == "█" or glyph == ("▀", "▄")[half]:
+                        cloud_pixels.add((x, y * 2 + half))
+    remaining = cloud_pixels.copy()
+    retained = set()
+    while remaining:
+        component = {remaining.pop()}
+        pending = list(component)
+        while pending:
+            x, y = pending.pop()
+            for point in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
+                if point in remaining:
+                    remaining.remove(point)
+                    component.add(point)
+                    pending.append(point)
+        if len(component) >= 8:
+            retained.update(component)
+    for x, py in cloud_pixels - retained:
+        y = py // 2
+        halves = ((x, y * 2) in retained, (x, y * 2 + 1) in retained)
+        glyph = {(True, True): "█", (True, False): "▀", (False, True): "▄"}.get(halves)
+        canvas[y][x] = (glyph, canvas[y][x][1]) if glyph else (" ", "")
     return backlit
 
 
@@ -2557,7 +2586,7 @@ def prepared_directory(columns):
     return (
         Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache"))
         / "bonsai-grow"
-        / f"prepared-v10-{columns}"
+        / f"prepared-v11-{columns}"
     )
 
 
