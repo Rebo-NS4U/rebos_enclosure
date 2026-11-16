@@ -11,6 +11,43 @@ import qs.modules.theme
 import "MouseDashEngine.js" as Game
 
 ShellRoot {
+    component DashButton: Button {
+        id: control
+        property string caption: ""
+        property bool accent: false
+        implicitHeight: caption ? 66 : 36
+        implicitWidth: 100
+        padding: 10
+        hoverEnabled: true
+        opacity: enabled ? 1 : 0.38
+        scale: down && !window.reducedMotion ? 0.97 : 1
+        Behavior on scale { NumberAnimation { duration: 90 } }
+        contentItem: Column {
+            spacing: 4
+            StyledText {
+                width: parent.width; text: control.text; font.pixelSize: 13; font.bold: true
+                horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
+                color: control.accent ? Colors.background : Colors.overBackground
+            }
+            StyledText {
+                visible: control.caption !== ""; width: parent.width; text: control.caption
+                font.pixelSize: 10; horizontalAlignment: Text.AlignHCenter
+                color: control.accent ? Colors.background : Colors.overBackground; opacity: 0.65
+            }
+        }
+        background: Rectangle {
+            radius: 12
+            color: control.accent ? Colors.primary : Qt.alpha(Colors.primary, control.down ? 0.24 : control.hovered ? 0.16 : 0.06)
+            border.width: control.visualFocus ? 2 : 1
+            border.color: control.visualFocus ? Colors.overBackground : Qt.alpha(Colors.primary, control.checked ? 0.8 : control.hovered ? 0.5 : 0.2)
+            Rectangle {
+                visible: control.checked && !control.accent
+                anchors.bottom: parent.bottom; anchors.horizontalCenter: parent.horizontalCenter
+                width: 28; height: 3; radius: 1.5; color: Colors.primary
+            }
+            Behavior on color { enabled: !window.reducedMotion; ColorAnimation { duration: 110 } }
+        }
+    }
     FloatingWindow {
         id: window
         title: "MouseDash · Enclosure"
@@ -23,9 +60,10 @@ ShellRoot {
         onVisibleChanged: if (!visible) Qt.quit()
         property string phase: "ready"
         property int difficulty: 1
+        property string playMode: "survival"
+        property bool victory: false
         property real elapsed: 0
         readonly property real playerRadius: Game.playerRadius(elapsed)
-
         property real playerX: 0.5
         property real playerY: 0.5
         property var enemies: []
@@ -33,8 +71,18 @@ ShellRoot {
         property real spawnClock: 0
         property real trailClock: 0
         property bool reducedMotion: false
-        readonly property var modes: ["Easy", "Medium", "Hard"]
-        readonly property real best: difficulty === 0 ? records.easy : difficulty === 1 ? records.medium : records.hard
+        readonly property bool locked: phase === "playing" || phase === "paused"
+        readonly property real duration: Game.roundDuration(playMode)
+        readonly property var modes: [
+            {key: "survival", name: "01  SURVIVAL", caption: "Endless · one life", hint: "Stay alive. The pressure never stops."},
+            {key: "blitz", name: "02  BLITZ", caption: "45 seconds · high speed", hint: "Survive 45 seconds of fast, dense traffic."},
+            {key: "gauntlet", name: "03  GAUNTLET", caption: "60 seconds · six waves", hint: "Six waves. Each one faster than the last."}
+        ]
+        readonly property int modeIndex: playMode === "survival" ? 0 : playMode === "blitz" ? 1 : 2
+        readonly property string recordKey: playMode + difficulty
+        readonly property real best: playMode === "survival" && difficulty < 3
+            ? (difficulty === 0 ? records.easy : difficulty === 1 ? records.medium : records.hard)
+            : Number(JSON.parse(records.challenges)[recordKey] || 0)
         Settings {
             id: records
             category: "MouseDash"
@@ -42,36 +90,47 @@ ShellRoot {
             property real easy: 0
             property real medium: 0
             property real hard: 0
+            property string challenges: "{}"
         }
-        function finish() {
+        function finish(won) {
+            victory = won;
+            if (won) elapsed = duration;
             phase = "over";
             if (elapsed > best) {
-                if (difficulty === 0) records.easy = elapsed;
-                else if (difficulty === 1) records.medium = elapsed;
-                else records.hard = elapsed;
+                if (playMode === "survival" && difficulty < 3) {
+                    if (difficulty === 0) records.easy = elapsed;
+                    else if (difficulty === 1) records.medium = elapsed;
+                    else records.hard = elapsed;
+                } else {
+                    const scores = JSON.parse(records.challenges);
+                    scores[recordKey] = elapsed; records.challenges = JSON.stringify(scores);
+                }
             }
         }
+        function reset() {
+            phase = "ready"; elapsed = 0; enemies = []; trail = [];
+            enemyVisuals.clear(); victory = false;
+        }
         function start(x, y) {
-            playerX = x / arena.width; playerY = y / arena.height;
-            enemies = []; trail = []; elapsed = 0; spawnClock = 0;
-            enemyVisuals.clear(); trailClock = 0; phase = "playing";
+            reset(); playerX = x / arena.width; playerY = y / arena.height;
+            spawnClock = 0; trailClock = 0; phase = "playing";
             arena.forceActiveFocus();
         }
         function pause() { if (phase === "playing") phase = "paused"; }
         property bool windowActive: contentItem.Window.active
         onWindowActiveChanged: if (!windowActive) pause()
         Shortcut { sequence: "Escape"; onActivated: window.pause() }
-        Shortcut { sequence: "Space"; onActivated: { if (window.phase === "paused") { window.phase = "playing"; } } }
+        // Resuming requires the pointer inside the arena, preventing off-arena play.
         ListModel { id: enemyVisuals }
         FrameAnimation {
             running: window.phase === "playing"
             onTriggered: {
                 const dt = Math.min(0.04, frameTime);
                 window.elapsed += dt; window.spawnClock += dt;
-                const gap = Game.spawnInterval(window.difficulty, window.elapsed);
+                const gap = Game.spawnInterval(window.difficulty, window.elapsed, window.playMode);
                 if (window.spawnClock >= gap) {
                     window.spawnClock = 0;
-                    window.enemies.push(Game.spawn(arena.width, arena.height, window.playerX, window.playerY, window.difficulty, window.elapsed));
+                    window.enemies.push(Game.spawn(arena.width, arena.height, window.playerX, window.playerY, window.difficulty, window.elapsed, window.playMode));
                 }
                 const result = Game.step(window.enemies, dt, window.playerX * arena.width, window.playerY * arena.height, arena.width, arena.height, window.playerRadius);
                 window.enemies = result.enemies;
@@ -92,54 +151,73 @@ ShellRoot {
                     points.push({x: window.playerX, y: window.playerY, time: window.elapsed});
                     window.trail = points;
                 }
-                if (result.hit) window.finish();
+                if (result.hit) window.finish(false);
+                else if (Game.roundComplete(window.playMode, window.elapsed)) window.finish(true);
 
             }
         }
         ColumnLayout {
-            anchors.fill: parent; anchors.margins: 24; spacing: 18
+            anchors.fill: parent; anchors.margins: 20; spacing: 12
             RowLayout {
-                Layout.fillWidth: true; spacing: 20
+                Layout.fillWidth: true; spacing: 18
                 ColumnLayout {
-                    spacing: 4
-                    StyledText { text: "MouseDash"; font.pixelSize: 25; font.bold: true; color: Colors.primary }
-                    StyledText { text: "Find your flow. Stay in motion."; opacity: 0.65 }
+                    spacing: 2
+                    StyledText { text: "MOUSEDASH"; font.pixelSize: 24; font.bold: true; font.letterSpacing: 2; color: Colors.primary }
+                    StyledText { text: "Small arena. Big pressure."; font.pixelSize: 11; opacity: 0.55 }
                 }
                 Item { Layout.fillWidth: true }
                 ColumnLayout {
-                    StyledText { text: "SURVIVAL"; opacity: 0.55; font.pixelSize: 11 }
-                    StyledText { text: window.elapsed.toFixed(2) + " s"; font.pixelSize: 28; font.bold: true }
+                    spacing: 2
+                    StyledText { text: window.duration ? "TIME LEFT" : "TIME ALIVE"; font.pixelSize: 10; opacity: 0.55 }
+                    StyledText { text: (window.duration ? Math.max(0, window.duration - window.elapsed) : window.elapsed).toFixed(1) + "s"; font.pixelSize: 25; font.bold: true }
                 }
                 ColumnLayout {
-                    StyledText { text: "PERSONAL BEST"; opacity: 0.55; font.pixelSize: 11 }
-                    StyledText { text: window.best.toFixed(2) + " s"; font.pixelSize: 28; color: Colors.primary }
+                    spacing: 2
+                    StyledText { text: "BEST RUN"; font.pixelSize: 10; opacity: 0.55 }
+                    StyledText { text: window.best.toFixed(1) + "s"; font.pixelSize: 25; color: Colors.primary }
                 }
             }
             RowLayout {
-                spacing: 8
+                Layout.fillWidth: true; spacing: 8
                 Repeater {
                     model: window.modes
-                    delegate: Button {
-                        required property string modelData
-                        required property int index
-                        text: modelData; checkable: true; checked: window.difficulty === index
-                        enabled: window.phase !== "playing" && window.phase !== "paused"
-                        onClicked: { window.difficulty = index; window.phase = "ready"; window.elapsed = 0; window.enemies = []; }
-                        contentItem: StyledText { text: parent.text; horizontalAlignment: Text.AlignHCenter; color: parent.checked ? Colors.background : Colors.overBackground }
-                        background: Rectangle { radius: 10; implicitWidth: 92; implicitHeight: 36; color: parent.checked ? Colors.primary : Qt.alpha(Colors.primary, parent.hovered ? 0.2 : 0.08); border.width: parent.activeFocus ? 2 : 0; border.color: Colors.primary }
+                    delegate: DashButton {
+                        required property var modelData
+                        Layout.fillWidth: true
+                        text: modelData.name; caption: modelData.caption
+                        checkable: true; autoExclusive: true; checked: window.playMode === modelData.key
+                        enabled: !window.locked
+                        onClicked: { window.playMode = modelData.key; window.reset(); }
                     }
                 }
-                Item { Layout.fillWidth: true }
-                CheckBox { text: "Quiet visuals"; checked: window.reducedMotion; onToggled: { window.reducedMotion = checked; window.trail = []; } }
+            }
+            RowLayout {
+                Layout.fillWidth: true; spacing: 6
+                StyledText { text: "LEVEL"; font.pixelSize: 10; opacity: 0.5; Layout.rightMargin: 4 }
+                Repeater {
+                    model: ["Easy", "Normal", "Hard", "Extreme"]
+                    delegate: DashButton {
+                        required property string modelData
+                        required property int index
+                        Layout.fillWidth: true; implicitWidth: 76
+                        text: modelData; checked: window.difficulty === index; checkable: true; autoExclusive: true
+                        accent: checked; enabled: !window.locked
+                        onClicked: { window.difficulty = index; window.reset(); }
+                    }
+                }
+                DashButton {
+                    text: "Quiet FX"; checkable: true; checked: window.reducedMotion
+                    Layout.leftMargin: 8
+                    onClicked: { window.reducedMotion = checked; window.trail = []; }
+                }
             }
             StyledRect {
                 id: arena
                 variant: "common"
                 Layout.fillWidth: true; Layout.fillHeight: true
-                focus: true
+                focus: true; clip: true
                 onWidthChanged: { window.pause(); window.enemies = []; enemyVisuals.clear(); }
                 onHeightChanged: { window.pause(); window.enemies = []; enemyVisuals.clear(); }
-                clip: true
                 // Static scene-graph backdrop; nothing uploads a full-arena texture per frame.
                 Rectangle {
                     anchors.fill: parent; radius: 16
@@ -215,49 +293,68 @@ ShellRoot {
                     }
                 }
                 MouseArea {
+                    id: pointer
                     anchors.fill: parent; hoverEnabled: true
-                    cursorShape: window.phase === "playing" ? Qt.BlankCursor : Qt.ArrowCursor
+                    cursorShape: window.phase === "playing" ? Qt.BlankCursor : Qt.PointingHandCursor
                     onPositionChanged: mouse => {
                         if (window.phase !== "playing") return;
-                        const nextX = mouse.x, nextY = mouse.y;
-                        if (Game.sweptHit(window.enemies, window.playerX * width, window.playerY * height, nextX, nextY, window.playerRadius)) window.finish();
-                        window.playerX = nextX / width; window.playerY = nextY / height;
+                        if (Game.sweptHit(window.enemies, window.playerX * width, window.playerY * height, mouse.x, mouse.y, window.playerRadius)) window.finish(false);
+                        window.playerX = mouse.x / width; window.playerY = mouse.y / height;
                     }
                     onExited: window.pause()
                     onClicked: mouse => {
-                        if (window.phase === "ready") window.start(mouse.x, mouse.y);
-                        else if (window.phase === "paused") { window.phase = "playing"; }
+                        if (window.phase === "ready" || window.phase === "over") window.start(mouse.x, mouse.y);
+                        else if (window.phase === "paused") {
+                            // Check the return path rather than teleporting through obstacles.
+                            if (Game.sweptHit(window.enemies, window.playerX * width, window.playerY * height, mouse.x, mouse.y, window.playerRadius)) window.finish(false);
+                            else { window.playerX = mouse.x / width; window.playerY = mouse.y / height; window.phase = "playing"; }
+                        }
                     }
                 }
                 Rectangle {
-                    anchors.centerIn: parent; width: Math.min(parent.width - 48, 440); height: 190
-                    visible: window.phase === "ready" || window.phase === "paused"
-                    radius: 16; color: Qt.alpha(Colors.background, 0.95)
-                    border.width: 1; border.color: Qt.alpha(Colors.primary, 0.3)
-                    Column {
-                        anchors.centerIn: parent; spacing: 14
-                        StyledText { anchors.horizontalCenter: parent.horizontalCenter; text: window.phase === "ready" ? "Enter the arena" : window.phase === "paused" ? "Take a breath" : "A beautiful run."; font.pixelSize: 27; font.bold: true; color: Colors.primary }
-                        StyledText { anchors.horizontalCenter: parent.horizontalCenter; text: window.phase === "ready" ? "Move your cursor. Dodge the circles." : window.phase === "paused" ? "Click to resume · Esc to pause" : "You survived " + window.elapsed.toFixed(2) + " seconds" }
-                        StyledText { anchors.horizontalCenter: parent.horizontalCenter; text: window.phase === "over" ? "Click anywhere to try again →" : window.phase === "ready" ? "Click anywhere to begin →" : "Your run is waiting."; opacity: 0.6 }
+                    anchors.fill: parent; color: Qt.alpha(Colors.background, 0.7)
+                    visible: window.phase !== "playing"
+                }
+                Column {
+                    anchors.centerIn: parent; width: parent.width - 48; spacing: 10
+                    visible: window.phase !== "playing"
+                    StyledText {
+                        width: parent.width; horizontalAlignment: Text.AlignHCenter
+                        text: window.phase === "ready" ? "MAKE YOUR MOVE" : window.phase === "paused" ? "CATCH YOUR BREATH" : window.victory ? "CHALLENGE CLEARED" : "ONE MORE RUN?"
+                        font.pixelSize: 25; font.bold: true; color: Colors.primary
+                    }
+                    StyledText {
+                        width: parent.width; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap
+                        text: window.phase === "over" ? window.elapsed.toFixed(2) + " seconds · " + (window.victory ? "You made it." : "Every dodge counts.") : window.phase === "paused" ? "Click a safe path back to your cursor to resume." : window.modes[window.modeIndex].hint
+                        font.pixelSize: 12; opacity: 0.75
+                    }
+                    StyledText {
+                        width: parent.width; horizontalAlignment: Text.AlignHCenter
+                        text: window.phase === "paused" ? "Esc pauses · moving outside the arena pauses" : "CLICK IN THE ARENA TO " + (window.phase === "over" ? "RETRY  ↗" : "BEGIN  ↗")
+                        color: Colors.primary; font.pixelSize: 11; font.bold: true
                     }
                 }
-            }
-            RowLayout {
-                visible: window.phase === "over"
-                Layout.fillWidth: true
-                StyledText { text: "Run complete · " + window.elapsed.toFixed(2) + " s"; color: Colors.primary; font.bold: true }
-                Item { Layout.fillWidth: true }
-                Button {
-                    text: "Play again"
-                    onClicked: { window.phase = "ready"; }
-                    contentItem: StyledText { text: parent.text; horizontalAlignment: Text.AlignHCenter; color: Colors.background }
-                    background: Rectangle { implicitWidth: 130; implicitHeight: 36; radius: 10; color: Colors.primary; border.width: parent.activeFocus ? 2 : 0; border.color: Colors.overBackground }
+                Rectangle {
+                    anchors.bottom: parent.bottom; height: 3
+                    width: parent.width * (window.duration ? Math.min(1, window.elapsed / window.duration) : 0)
+                    color: Colors.primary
+                }
+                StyledText {
+                    anchors.top: parent.top; anchors.left: parent.left; anchors.margins: 12
+                    visible: window.playMode === "gauntlet" && window.phase === "playing"
+                    text: "WAVE " + Math.min(6, 1 + Math.floor(window.elapsed / 10)) + " / 6"; font.pixelSize: 11; color: Colors.primary
                 }
             }
             RowLayout {
-                StyledText { text: "●  " + (window.phase === "playing" ? "IN THE FLOW" : window.phase === "paused" ? "PAUSED" : window.phase === "over" ? "RUN COMPLETE" : "READY WHEN YOU ARE"); color: Colors.primary; font.pixelSize: 11 }
+                Layout.fillWidth: true; spacing: 8
+                Rectangle { width: 6; height: 6; radius: 3; color: window.phase === "playing" ? Colors.primary : Qt.alpha(Colors.primary, 0.4) }
+                StyledText {
+                    text: window.phase === "playing" ? "DODGE THE RINGS" : window.phase === "paused" ? "PAUSED" : "CHOOSE YOUR CHALLENGE"
+                    font.pixelSize: 10; opacity: 0.65
+                }
                 Item { Layout.fillWidth: true }
-                StyledText { text: "Move to dodge   /   Esc to pause   /   Bests saved locally"; opacity: 0.5; font.pixelSize: 11 }
+                DashButton { text: "Pause  Ⅱ"; visible: window.phase === "playing"; onClicked: window.pause() }
+                DashButton { text: window.locked ? "End run" : "Reset"; visible: window.phase !== "ready"; onClicked: { if (window.locked) window.finish(false); else window.reset(); } }
             }
         }
     }
