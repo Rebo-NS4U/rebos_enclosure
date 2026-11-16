@@ -3,6 +3,16 @@ local projects_file = vim.fn.stdpath('config') .. '/projects.lua'
 local projects = vim.fn.filereadable(projects_file) == 1 and dofile(projects_file) or {}
 projects = vim.tbl_map(vim.fn.expand, projects)
 return {
+  { 'olimorris/codecompanion.nvim', version = 'v20.2.0',
+    dependencies = { 'nvim-lua/plenary.nvim' },
+    cmd = { 'Dweebo', 'CodeCompanion', 'CodeCompanionChat', 'CodeCompanionActions' },
+    keys = {
+      { '<leader>aa', '<Cmd>CodeCompanionChat toggle<CR>', desc = 'Dweebo chat', mode = { 'n', 'v' } },
+      { '<leader>an', '<Cmd>Dweebo<CR>', desc = 'New Dweebo chat' },
+      { '<leader>as', '<Cmd>CodeCompanionChat add<CR>', desc = 'Send selection to Dweebo', mode = 'v' },
+      { '<leader>ap', '<Cmd>CodeCompanionActions<CR>', desc = 'AI actions', mode = { 'n', 'v' } },
+    },
+    config = function() require('ide.dweebo').setup() end },
   { 'folke/snacks.nvim', lazy = false, priority = 1000,
     opts = { picker = { enabled = true, sources = { projects = { projects = projects } } }, explorer = { enabled = true },
       input = { enabled = true }, notifier = { enabled = true }, indent = { enabled = true },
@@ -46,7 +56,7 @@ return {
       { '<leader>f', group = 'Find' }, { '<leader>c', group = 'Code' }, { '<leader>g', group = 'Git' },
       { '<leader>b', group = 'Buffers' }, { '<leader>d', group = 'Debug' }, { '<leader>s', group = 'Splits' },
       { '<leader>t', group = 'Terminal' }, { '<leader>r', group = 'Run' }, { '<leader>x', group = 'Diagnostics' },
-      { '<leader>u', group = 'UI' },
+      { '<leader>u', group = 'UI' }, { '<leader>a', group = 'Dweebo AI' },
     })
   end },
   { 'nvim-tree/nvim-web-devicons', lazy = true },

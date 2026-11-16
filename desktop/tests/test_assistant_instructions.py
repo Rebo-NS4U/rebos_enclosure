@@ -150,7 +150,7 @@ class AssistantGithubWorkflowTest(unittest.TestCase):
             base = Path(temporary)
             package = base / "package"
             shutil.copytree(Path(__file__).parent / "fixtures/ai_sidebar", package)
-            for relative in ("modules/services/AiSession.qml", "modules/services/AiQuestions.js"):
+            for relative in ("modules/services/AiSession.qml", "modules/services/AiQuestions.js", "modules/services/DweeboDefaults.js"):
                 target = package / relative
                 target.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(ROOT / relative, target)

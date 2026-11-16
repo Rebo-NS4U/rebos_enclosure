@@ -99,3 +99,37 @@ Other runtimes require their own debug adapters.
 
 No existing Neovim configuration was replaced. To revert, rename
 `~/.config/nvim` to `~/.config/nvim.disabled`.
+
+## Dweebo AI
+
+`Space a a` toggles a separate Dweebo Codex chat; `Space a n` starts a new one.
+In visual mode, `Space a s` attaches selected code. `Space a p` opens AI actions.
+Press Enter in the chat to send; `?` in normal mode shows chat shortcuts.
+
+`:Dweebo` starts with Do. Other profiles are available with `:Dweebo deep`,
+`:Dweebo symphony`, `:Dweebo light_coding`, `:Dweebo quick` and
+`:Dweebo knowledge` (Tab completes). Profiles, model IDs, reasoning settings,
+standing preferences and the default Codex launch command are shared with the
+desktop through `DweeboDefaults.js`. Custom Codex commands and authentication
+in Dweebo's local `rebos_shell/config/ai.json` are honored as well.
+The native agent inherits its existing Codex configuration, login, MCP servers,
+skills and plugins. No API key or separate login is needed for ChatGPT auth.
+
+The agent uses Neovim's working directory as its workspace, with Dweebo's
+workspace sandbox, approval prompts, network wrapper, disabled automatic memory,
+plan-usage tool and answerable question tool. It can search/read/edit unopened
+files and use absolute paths in other directories; writes outside the workspace
+still require approval. Use `:pwd` / `:cd /path/to/project` to choose the workspace
+before starting a chat. Unsaved buffers must be attached explicitly.
+Use `/file` or `/buffer` to attach context, `/acp_session_options` to change
+reasoning/access settings, `ga` to select a model, and `/resume` to resume an
+agent session. Normal tool approvals are shown by CodeCompanion; question forms
+use Neovim's selection/input UI.
+
+This integration exposes the Codex agent in the editor. Desktop-only controls
+(speech, desktop sidebar layout, Gemini/Distill selectors and the desktop
+background-service lifecycle) stay in the desktop app. Closing Neovim stops its
+agent process; it does not stop the desktop assistant. Resume a saved agent
+session to continue later. Required runtime dependencies are the same as desktop
+Codex: Node.js/npm, Python 3 and Codex. CodeCompanion and plenary install through
+`:Lazy`; their versions are recorded in `lazy-lock.json`.
