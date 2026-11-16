@@ -1381,11 +1381,11 @@ POT_MOTIFS = (
 
 
 def pot_rows(seed):
-    """Seat a complete, intricate two-row panel inside the tapered bowl."""
+    """A rolled lip, rounded shoulders and tapered ceramic bowl."""
     upper, lower = random.Random(f"{seed}:pot").choice(POT_MOTIFS)
     return (
-        "╭─────────────────────╮",
-        "╲" + upper.center(21) + "╱",
+        "╭═════════════════════╮",
+        "╰" + upper.center(21) + "╯",
         " ╲" + lower.center(19) + "╱ ",
         "  ╰─────────────────╯  ",
     )
@@ -1416,6 +1416,7 @@ def ceramic_palette(accents):
         highlight = math.exp(-(((column / 22 - 0.32) / 0.38) ** 2))
         for material, value in (
             ("rim", 0.28 + 0.06 * highlight),
+            ("edge", 0.25 + 0.08 * highlight),
             ("body", 0.22 + 0.04 * highlight),
             ("foot", 0.17 + 0.04 * highlight),
         ):
@@ -2497,7 +2498,10 @@ def render(
                     else "ceramic_inlay_main"
                 )
             elif color and ink == "pot":
-                material = "rim" if y == 19 else "foot" if y == 22 else "body"
+                material = (
+                    "rim" if y == 19 else "foot" if y == 22
+                    else "edge" if glyph in "╰╯╲╱" else "body"
+                )
                 ink = f"ceramic_{material}_{x - 16}"
             if color and ink != previous:
                 parts.append(palette[ink])
@@ -2606,7 +2610,7 @@ def prepared_directory(columns):
     return (
         Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache"))
         / "bonsai-grow"
-        / f"prepared-v15-{columns}"
+        / f"prepared-v16-{columns}"
     )
 
 
