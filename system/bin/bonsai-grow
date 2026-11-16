@@ -1845,7 +1845,7 @@ def rounded_frame_png(
             if y + .5 >= height - 1.5 * cell_height:
                 base_radius = min(3, cell_width * .25, cell_height * .12)
                 base_qx = abs(x + .5 - width / 2) - ((width - 1) / 2 - base_radius)
-                base_qy = abs(y + .5 - (height - 1.2 * cell_height)) - (.3 * cell_height - base_radius)
+                base_qy = abs(y + .5 - (height - .925 * cell_height)) - (.575 * cell_height - base_radius)
                 base_distance = (math.hypot(max(base_qx, 0), max(base_qy, 0))
                                  + min(max(base_qx, base_qy), 0) - base_radius)
                 alpha = round(255 * max(0, min(1, .5 - base_distance)))
@@ -1872,7 +1872,7 @@ def rounded_frame_png(
                 else:
                     level = 13 + 9 * max(0, 1 - (depth - .46) * 12)
                 ink = tuple(round(level + tint) for tint in (0, 3, 5))
-                lower_edge = height - .9 * cell_height
+                lower_edge = height - .35 * cell_height
                 alpha = min(alpha, round(255 * max(0, min(1, lower_edge - y))))
                 line.extend((*ink, alpha))
             else:
