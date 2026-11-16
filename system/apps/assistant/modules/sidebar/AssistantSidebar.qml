@@ -476,13 +476,17 @@ Item {
                                 text: Icons.pin
                                 font.family: Icons.font
                                 font.pixelSize: Styling.fontSize(2)
-                                color: GlobalStates.assistantPinned ? Styling.srItem("overprimary") : Colors.overSurface
+                                color: GlobalStates.assistantPinned ? Colors.primary : Colors.overSurface
                                 horizontalAlignment: Text.AlignHCenter
                                 verticalAlignment: Text.AlignVCenter
                             }
 
                             background: StyledRect {
-                                variant: GlobalStates.assistantPinned ? "primary" : parent.hovered || parent.visualFocus ? "focus" : "common"
+                                variant: parent.hovered || parent.visualFocus ? "focus" : "common"
+                                fillColor: GlobalStates.assistantPinned
+                                    ? Qt.alpha(Colors.primary, parent.hovered || parent.visualFocus ? 0.22 : 0.12)
+                                    : "transparent"
+                                enableBorder: false
                                 radius: Styling.radius(8)
                                 opacity: GlobalStates.assistantPinned || parent.hovered || parent.visualFocus ? 1 : 0
 
