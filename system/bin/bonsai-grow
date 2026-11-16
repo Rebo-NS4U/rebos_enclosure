@@ -1536,14 +1536,14 @@ def rounded_frame_png(cell_width, cell_height, rows, rgb):
         x = 0
         while x < width:
             if x == left and right > left and qy <= 0 and radius >= 2.5:
-                line.extend(bytes((16, 16, 16, 255)) * (right - left))
+                line.extend(bytes((28, 28, 28, 255)) * (right - left))
                 x = right
                 continue
             qx = xs[x]
             distance = math.hypot(max(qx, 0), max(qy, 0)) + min(max(qx, qy), 0) - radius
             alpha = round(255 * max(0, min(1, 0.5 - distance)))
             rim = max(0, min(1, distance + 2.5))
-            ink = tuple(round(16 + (channel - 16) * rim) for channel in rgb)
+            ink = tuple(round(28 + (channel - 28) * rim) for channel in rgb)
             line.extend((*ink, alpha))
             x += 1
         scanlines[qy] = line
@@ -1596,7 +1596,7 @@ def frame_rows(rows, columns, accents, color):
     # The frame uses the exact primary exported by the current desktop theme.
     glass = "\033[0;38;2;{};{};{}m".format(*rgb) if color else ""
     graphic = kitty_frame(len(rows) + 2, columns, rgb) if color else ""
-    background = "\033[48;2;16;16;16m" if color else ""
+    background = "\033[48;2;28;28;28m" if color else ""
     def pane(text):
         if not color:
             return text
@@ -2188,7 +2188,7 @@ POOL_SIZE = 4
 
 
 def prepared_directory(columns):
-    return Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache")) / "bonsai-grow" / f"prepared-v4-{columns}"
+    return Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache")) / "bonsai-grow" / f"prepared-v5-{columns}"
 
 
 def prepared_identity(value, columns, accents, style):

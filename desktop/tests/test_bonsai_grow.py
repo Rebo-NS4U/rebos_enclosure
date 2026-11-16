@@ -593,8 +593,8 @@ class BonsaiGrowTests(unittest.TestCase):
         self.assertEqual(pixel(295, 0)[3], 0, 'no dark strip above the top edge')
         self.assertEqual(pixel(5, 10)[3], 0, 'outside the rounded corner stays transparent')
         self.assertEqual(pixel(295, 10), (240, 130, 80, 255))
-        self.assertEqual(pixel(295, 260), (16, 16, 16, 255), 'keep the center quiet')
-        self.assertEqual(pixel(10, 150), (16, 16, 16, 255), 'no raster glass texture')
+        self.assertEqual(pixel(295, 260), (28, 28, 28, 255), 'keep the center quiet')
+        self.assertEqual(pixel(10, 150), (28, 28, 28, 255), 'no raster glass texture')
         self.assertEqual(pixel(584, 260), (240, 130, 80, 255))
         self.assertEqual(pixel(589, 260)[3], 0)
         self.assertEqual(pixel(295, 519)[3], 0)
@@ -689,7 +689,7 @@ class BonsaiGrowTests(unittest.TestCase):
             for x, (glyph, ink) in enumerate(row):
                 if glyph != ' ':
                     self.assertEqual(plain[y + 1][x + 1], glyph)
-        self.assertIn("\033[48;2;16;16;16m", image)
+        self.assertIn("\033[48;2;28;28;28m", image)
         self.assertTrue(any(plain[y + 1][x + 1] == '╱' and cell == (' ', '')
                             for y, row in enumerate(canvas) for x, cell in enumerate(row)))
 
@@ -712,7 +712,7 @@ class BonsaiGrowTests(unittest.TestCase):
                             else:
                                 for glyph in token:
                                     inside = 10 <= column < 69
-                                    self.assertEqual(background, (16, 16, 16) if inside else None)
+                                    self.assertEqual(background, (28, 28, 28) if inside else None)
                                     column += 1
                         self.assertEqual(column, 69)
                         self.assertIsNone(background, 'reset the backing before the prompt')
@@ -993,7 +993,7 @@ class BonsaiGrowTests(unittest.TestCase):
                     self.assertIn(bonsai.wood_palette(seed)['wood'], image)
                     pot_inlay = bonsai.specimen_palette(seed)['ceramic_inlay_main']
                     self.assertIn(pot_inlay, image)
-                    self.assertIn('\033[48;2;16;16;16m', image)
+                    self.assertIn('\033[48;2;28;28;28m', image)
                     self.assertIn(bonsai.wood_palette(seed)['bark'], image)
                     self.assertEqual(state.read_text(), original)
 
@@ -1641,7 +1641,7 @@ class BonsaiGrowTests(unittest.TestCase):
         greeting = source.split('# Finish painting')[0]
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            (root / 'bonsai-grow/prepared-v4-100').mkdir(parents=True)
+            (root / 'bonsai-grow/prepared-v5-100').mkdir(parents=True)
             (root / 'rebos_shell').mkdir()
             (root / 'bin').mkdir()
             script = root / 'bin/bonsai-grow'
@@ -1649,7 +1649,7 @@ class BonsaiGrowTests(unittest.TestCase):
             script.chmod(0o755)
             config = root / 'greeting.fish'
             config.write_text(greeting)
-            cache = root / 'bonsai-grow/prepared-v4-100/0.ready'
+            cache = root / 'bonsai-grow/prepared-v5-100/0.ready'
             palette = root / 'rebos_shell/effective-palette.json'
             palette.write_text('{}')
             for fresh in (True, False):
@@ -1694,7 +1694,7 @@ class BonsaiGrowTests(unittest.TestCase):
         source = (SOURCE.parents[1] / '../config/fish/config.fish').resolve().read_text()
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            pool = root / 'bonsai-grow/prepared-v4-100'
+            pool = root / 'bonsai-grow/prepared-v5-100'
             pool.mkdir(parents=True)
             (root / 'bin').mkdir()
             script = root / 'bin/bonsai-grow'
