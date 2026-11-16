@@ -1811,7 +1811,8 @@ def place_glass_marks(canvas, texture_seed):
 
 @functools.lru_cache(maxsize=8)
 def rounded_frame_png(
-    cell_width, cell_height, rows, rgb, backing=(15, 15, 15), opacity=1.0
+    cell_width, cell_height, rows, rgb, backing=(15, 15, 15), opacity=1.0,
+    *, feet_rgb=(58, 58, 58)
 ):
     """Laminated glass edges and a machined charcoal plinth, behind the art."""
     width, height = 59 * cell_width, rows * cell_height
@@ -1828,7 +1829,7 @@ def rounded_frame_png(
         line = bytearray(b"\0")  # PNG scanline: no filter.
         x = 0
         while x < width:
-            if x == left and right > left and qy <= 0 and radius >= 2.5 and y < height - 1.5 * cell_height:
+            if x == left and right > left and qy <= 0 and radius >= 2.5 and y < height - 2 * cell_height:
                 line.extend(bytes((*backing, round(255 * opacity))) * (right - left))
                 x = right
                 continue
@@ -1874,7 +1875,6 @@ def rounded_frame_png(
                 joint = max(0, 1 - floor_depth / .18) if side < 1.6 * cell_width else 0
                 ink = tuple(round(c + (light - c) * joint * .45)
                             for c, light in zip(ink, rgb))
-                line.extend((*ink, alpha))
             elif y + .5 >= height - 1.15 * cell_height:
                 # A lit bevel, brushed face and recessed lower lip share the
                 # wider outline directly beneath the ceramic feet.
@@ -1895,7 +1895,6 @@ def rounded_frame_png(
                 ink = tuple(round(level + tint) for tint in (0, 3, 5))
                 lower_edge = height - .1 * cell_height
                 alpha = min(alpha, round(255 * max(0, min(1, lower_edge - y))))
-                line.extend((*ink, alpha))
             else:
                 # Optical thickness: twin cool seams and a soft reflected
                 # ribbon confined to the side panes, leaving the center clear.
@@ -1908,7 +1907,29 @@ def rounded_frame_png(
                 reflection = (seam + ribbon * .16 * taper) * (1 - rim)
                 ink = tuple(round(c + (light - c) * reflection)
                             for c, light in zip(ink, (168, 203, 213)))
-                line.extend((*ink, round(alpha * (opacity + (1 - opacity) * max(rim, reflection)))))
+                alpha = round(alpha * (opacity + (1 - opacity) * max(rim, reflection)))
+            # Short solid ceramic feet flare toward the floor. They live in
+            # the backing image so their edges are independent of font glyphs.
+            if height - 2 * cell_height <= y + .5 < height - 1.5 * cell_height:
+                depth = (y + .5 - (height - 2 * cell_height)) / (.5 * cell_height)
+                spread = depth * depth * (3 - 2 * depth)
+                half_foot = cell_width * (1 + .65 * spread)
+                center = min((23 * cell_width, 34 * cell_width), key=lambda c: abs(x + .5 - c))
+                dx = x + .5 - center
+                # Round just the bottom corners, retaining a flat contact edge.
+                foot_radius = min(2, cell_height * .08)
+                bottom = height - 1.5 * cell_height - y - .5
+                if bottom < foot_radius:
+                    half_foot -= foot_radius - math.sqrt(max(0, foot_radius ** 2 - (foot_radius - bottom) ** 2))
+                coverage = max(0, min(1, half_foot - abs(dx) + .5))
+                shade = 1.08 - .12 * depth - .1 * dx / half_foot
+                foot_ink = tuple(round(max(0, min(255, c * shade))) for c in feet_rgb)
+                combined = coverage + (1 - coverage) * alpha / 255
+                if combined:
+                    ink = tuple(round((f * coverage + c * (1 - coverage) * alpha / 255) / combined)
+                                for f, c in zip(foot_ink, ink))
+                alpha = round(combined * 255)
+            line.extend((*ink, alpha))
             x += 1
         data.extend(line)
 
@@ -1928,7 +1949,7 @@ def rounded_frame_png(
     )
 
 
-def kitty_frame(rows, columns, rgb):
+def kitty_frame(rows, columns, rgb, feet_rgb=(58, 58, 58)):
     """Draw a pixel-aligned frame behind text without moving its cursor."""
     if not (
         os.environ.get("KITTY_WINDOW_ID") or os.environ.get("TERM") == "xterm-kitty"
@@ -1957,6 +1978,7 @@ def kitty_frame(rows, columns, rgb):
             tuple(rgb),
             theme_background(),
             1 - transparency_lift(),
+            feet_rgb=tuple(feet_rgb),
         )
     ).decode()
     image_id = (
@@ -1991,7 +2013,9 @@ def frame_rows(rows, columns, accents, color):
     # Keep the glass quieter than the foliage and ceramic enamel.
     rgb = [round(85 * .75 + channel * .25) for channel in rgb]
     glass = "\033[0;38;2;{};{};{}m".format(*rgb) if color else ""
-    graphic = kitty_frame(len(rows) + 2, columns, rgb) if color else ""
+    foot_ink = ceramic_palette(accents)["ceramic_foot_11"] if color else ""
+    feet_rgb = tuple(map(int, re.findall(r"\d+", foot_ink)[-3:])) if color else (58, 58, 58)
+    graphic = kitty_frame(len(rows) + 2, columns, rgb, feet_rgb) if color else ""
     background = "\033[48;2;{};{};{}m".format(*theme_background()) if color else ""
 
     def pane(text):
@@ -2011,10 +2035,10 @@ def frame_rows(rows, columns, accents, color):
         weight = ""
         return pane(glass + weight + text)
 
-    # Each two-column neck spreads into a four-column sole with tapered tips.
-    foot_ink = ceramic_palette(accents)["ceramic_foot_11"] if color else ""
-    floor = (margin + edge("├" + "─" * 20) + pane(foot_ink + "╺┷┷╸")
-             + edge("─" * 7) + pane(foot_ink + "╺┷┷╸")
+    # Kitty draws smooth feet in its backing; text terminals use solid wedges.
+    foot = "    " if graphic else "▟██▙"
+    floor = (margin + edge("├" + "─" * 20) + pane(foot_ink + foot)
+             + edge("─" * 7) + pane(foot_ink + foot)
              + edge("─" * 22 + "┤"))
     top = margin + edge("╭" + "─" * width + "╮")
     bottom = margin + edge("╰" + "─" * width + "╯")

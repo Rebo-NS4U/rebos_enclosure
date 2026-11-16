@@ -69,6 +69,9 @@ class BonsaiGrowTests(unittest.TestCase):
                     self.assertEqual(pixel(295, 10), (240, 130, 80, 255))
                     self.assertEqual(pixel(295, 0)[3], 0)
                     self.assertEqual(pixel(295, 495)[3], 255, "base stays solid")
+                    self.assertEqual(pixel(230, 485)[3], 255, "solid foot stays opaque")
+                    self.assertEqual(pixel(210, 481)[3], round(255 * opacity),
+                                     "open space beside feet retains theme opacity")
                     self.assertGreater(sum(pixel(295, 497)[:3]), sum(pixel(295, 500)[:3]), "bevel shades into the lower lip")
                     self.assertEqual(pixel(295, 510)[3], 255, "deeper base stays opaque")
                     self.assertEqual(pixel(295, 519)[3], 0, "clearance below the base")
@@ -809,6 +812,11 @@ class BonsaiGrowTests(unittest.TestCase):
                         'recessed lower lip stays darker than the upper bevel')
         self.assertEqual(pixel(295, 519)[3], 0, 'leave clearance below the plinth')
         self.assertEqual(pixel(295, 519)[3], 0)
+        for center in (230, 340):
+            self.assertNotEqual(pixel(center, 482)[:3], (18, 52, 86), 'solid ceramic neck')
+            self.assertEqual(pixel(center - 14, 481)[:3], (18, 52, 86), 'narrow upper edge')
+            self.assertNotEqual(pixel(center - 14, 488)[:3], (18, 52, 86), 'foot flares outward')
+            self.assertEqual(pixel(center, 488)[3], 255, 'feet stay opaque')
         self.assertEqual(pixel(235, 490)[3], 255, 'floor meets the feet')
         self.assertEqual(pixel(295, 475), (18, 52, 86, 255),
                          'open space below the bowl, between the feet')
@@ -883,14 +891,14 @@ class BonsaiGrowTests(unittest.TestCase):
         for seed in range(16):
             rows = bonsai.render(30, seed, False, 59, fixed_height=True).splitlines()
             self.assertEqual(rows[0], "╭" + "─" * 57 + "╮")
-            self.assertEqual(rows[-2], "├" + "─" * 20 + "╺┷┷╸" + "─" * 7 + "╺┷┷╸" + "─" * 22 + "┤")
+            self.assertEqual(rows[-2], "├" + "─" * 20 + "▟██▙" + "─" * 7 + "▟██▙" + "─" * 22 + "┤")
             foot = bonsai.pot_rows(seed)[-1]
             self.assertIn(foot.strip(), rows[-3])
             for column, glyph in enumerate(rows[-2]):
-                if glyph == "┷":
+                if glyph == "█":
                     self.assertEqual(rows[-3][column], "┯")
             for column, glyph in enumerate(rows[-2]):
-                if glyph in "╺╸":
+                if glyph in "▟▙":
                     self.assertNotEqual(rows[-3][column], "┯")
             self.assertTrue(rows[-3][1:-1].strip())
             self.assertNotIn("╱", rows[0])
