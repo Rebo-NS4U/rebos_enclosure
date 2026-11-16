@@ -803,8 +803,8 @@ class BonsaiGrowTests(unittest.TestCase):
             self.assertEqual(pixel(x, 502)[3], 0, 'middle tier has a visible setback')
             self.assertGreater(pixel(x, 510)[3], 0, 'bottom tier projects past middle tier')
         self.assertEqual(pixel(1, 510)[3], pixel(588, 510)[3])
-        self.assertGreater(sum(pixel(295, 507)[:3]), sum(pixel(295, 506)[:3]),
-                           'bottom tier has its own highlighted ledge above a dark seam')
+        self.assertEqual({pixel(295, y)[:3] for y in range(499, 518)},
+                         {(32, 35, 37)}, 'all tier faces share one charcoal color')
         for x in (5, 584):
             self.assertEqual(pixel(x, 510)[3], 255, 'broad bottom foot stays solid')
         self.assertEqual(pixel(295, 510)[3], 255, 'thicker plinth has a full lower face')

@@ -1867,7 +1867,7 @@ def rounded_frame_png(
                 shadow_x = min(abs(x + .5 - foot * cell_width) for foot in (23, 34))
                 shadow = math.exp(-(shadow_x / (1.6 * cell_width)) ** 2)
                 shadow *= math.exp(-floor_depth * 7)
-                level = 32 + floor_depth * 12 - 20 * shadow
+                level = 32 - 20 * shadow
                 ink = tuple(round(level + tint) for tint in (0, 3, 5))
                 # A short reflection at the joint carries the glass rim into
                 # its metal seat without adding a bright stripe across the art.
@@ -1876,22 +1876,10 @@ def rounded_frame_png(
                 ink = tuple(round(c + (light - c) * joint * .45)
                             for c, light in zip(ink, rgb))
             elif y + .5 >= height - 1.15 * cell_height:
-                # A lit bevel, brushed face and recessed lower lip share the
-                # wider outline directly beneath the ceramic feet.
+                # One charcoal face and a single restrained upper highlight
+                # keep the stepped outline clear without stacked color bands.
                 depth = (y + .5 - (height - 1.15 * cell_height)) / cell_height
-                across = x / width
-                sheen = max(0, 1 - abs(across - .32) * 2)
-                if depth < .09:
-                    level = 64 + 32 * sheen - depth * 200
-                elif depth < .43:
-                    grain = ((x * 13 + y * 7) % 11 - 5) * .24
-                    level = 42 + 10 * sheen - depth * 16 + grain
-                elif depth < .5:
-                    level = 16 + 3 * sheen
-                elif depth < .57:
-                    level = 52 + 16 * sheen - (depth - .5) * 180
-                else:
-                    level = 29 - (depth - .57) * 16
+                level = 52 if depth < .09 else 32
                 ink = tuple(round(level + tint) for tint in (0, 3, 5))
                 lower_edge = height - .1 * cell_height
                 alpha = min(alpha, round(255 * max(0, min(1, lower_edge - y))))
