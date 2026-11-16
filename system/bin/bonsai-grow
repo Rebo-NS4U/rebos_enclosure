@@ -1867,7 +1867,7 @@ def rounded_frame_png(
                 shadow_x = min(abs(x + .5 - foot * cell_width) for foot in (23, 34))
                 shadow = math.exp(-(shadow_x / (1.6 * cell_width)) ** 2)
                 shadow *= math.exp(-floor_depth * 7)
-                level = 32 - 20 * shadow
+                level = 20 - 12 * shadow
                 ink = tuple(round(level + tint) for tint in (0, 3, 5))
                 # A short reflection at the joint carries the glass rim into
                 # its metal seat without adding a bright stripe across the art.
@@ -1879,7 +1879,7 @@ def rounded_frame_png(
                 # One charcoal face and a single restrained upper highlight
                 # keep the stepped outline clear without stacked color bands.
                 depth = (y + .5 - (height - 1.15 * cell_height)) / cell_height
-                level = 52 if depth < .09 else 32
+                level = 36 if depth < .09 else 20
                 ink = tuple(round(level + tint) for tint in (0, 3, 5))
                 lower_edge = height - .1 * cell_height
                 alpha = min(alpha, round(255 * max(0, min(1, lower_edge - y))))
