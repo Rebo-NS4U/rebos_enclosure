@@ -618,13 +618,16 @@ class BonsaiGrowTests(unittest.TestCase):
             bonsai.sky_pane(original, hour)
             occupied = {(x, y) for y, row in enumerate(original)
                         for x, (_, ink) in enumerate(row) if ink}
+            seen_counts, streak_sides = set(), set()
             for seed in range(60):
                 canvas = [row[:] for row in original]
-                groups = bonsai.place_glass_marks(canvas, seed, 6 <= hour < 12 or 18 <= hour < 24)
+                groups = bonsai.place_glass_marks(canvas, seed)
                 horizontal_layouts.add(tuple(points for glyph, points in groups if glyph == '─'))
-                self.assertEqual(len(groups), 3)
+                self.assertIn(len(groups), (2, 3))
+                seen_counts.add(len(groups))
+                streak_sides.update(points[0][0] < 28 for glyph, points in groups if glyph == '╱')
                 left_count = sum(points[0][0] < 28 for _, points in groups)
-                self.assertIn(left_count, (1, 2))
+                self.assertIn(left_count, (1,) if len(groups) == 2 else (1, 2))
                 self.assertTrue(any(glyph == '─' for glyph, _ in groups))
                 previous = set(occupied)
                 for glyph, points in groups:
@@ -636,9 +639,11 @@ class BonsaiGrowTests(unittest.TestCase):
                     previous.update(points)
                 for x, y in occupied:
                     self.assertEqual(canvas[y][x], original[y][x])
+            self.assertEqual(seen_counts, {2, 3})
+            self.assertEqual(streak_sides, {False, True})
         self.assertGreater(len(horizontal_layouts), 20)
         full = [[('█', 'wood') for _ in range(57)] for _ in range(24)]
-        self.assertEqual(bonsai.place_glass_marks(full, 42, False), [])
+        self.assertEqual(bonsai.place_glass_marks(full, 42), [])
 
     def test_kitty_frame_is_quiet_and_preserves_the_terminal_cursor(self):
         import struct
