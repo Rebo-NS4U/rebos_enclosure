@@ -71,7 +71,7 @@ class BonsaiGrowTests(unittest.TestCase):
                     self.assertEqual(pixel(295, 495)[3], 255, "base stays solid")
                     self.assertGreater(sum(pixel(295, 497)[:3]), sum(pixel(295, 500)[:3]), "bevel shades into the lower lip")
                     self.assertEqual(pixel(295, 510)[3], 255, "deeper base stays opaque")
-                    self.assertEqual(pixel(295, 514)[3], 0, "clearance below the base")
+                    self.assertEqual(pixel(295, 519)[3], 0, "clearance below the base")
 
     def test_transparent_materials_gain_definition_without_changing_accents(self):
         import json
@@ -787,21 +787,22 @@ class BonsaiGrowTests(unittest.TestCase):
         self.assertEqual(pixel(30, 150), (18, 52, 86, 255), 'optics stay outside the artwork')
         self.assertEqual(pixel(584, 260), (240, 130, 80, 255))
         self.assertEqual(pixel(589, 260)[3], 0)
+        for x in (5, 584):
+            self.assertEqual(pixel(x, 260)[3], 255, 'glass wall stays in place')
+            self.assertEqual(pixel(x, 493)[3], 0, 'upper tier has a visible setback')
+            self.assertGreater(pixel(x, 502)[3], 0, 'middle tier projects past upper tier')
         for x in (1, 588):
-            self.assertEqual(pixel(x, 260)[3], 0, 'glass stays inset')
-            self.assertGreater(pixel(x, 502)[3], 0, 'plinth projects beyond glass')
-        self.assertEqual(pixel(1, 502)[3], pixel(588, 502)[3])
-        for x in (1, 588):
-            self.assertLess(pixel(x, 493)[3], pixel(x, 502)[3],
-                            'upper ledge is narrower than middle tier')
-            self.assertLess(pixel(x, 502)[3], pixel(x, 510)[3],
-                            'bottom foot steps outward beyond middle tier')
+            self.assertEqual(pixel(x, 502)[3], 0, 'middle tier has a visible setback')
+            self.assertGreater(pixel(x, 510)[3], 0, 'bottom tier projects past middle tier')
+        self.assertEqual(pixel(1, 510)[3], pixel(588, 510)[3])
+        self.assertGreater(sum(pixel(295, 507)[:3]), sum(pixel(295, 506)[:3]),
+                           'bottom tier has its own highlighted ledge above a dark seam')
         for x in (5, 584):
             self.assertEqual(pixel(x, 510)[3], 255, 'broad bottom foot stays solid')
         self.assertEqual(pixel(295, 510)[3], 255, 'thicker plinth has a full lower face')
         self.assertLess(sum(pixel(295, 510)[:3]), sum(pixel(295, 498)[:3]),
                         'recessed lower lip stays darker than the upper bevel')
-        self.assertEqual(pixel(295, 514)[3], 0, 'leave clearance below the plinth')
+        self.assertEqual(pixel(295, 519)[3], 0, 'leave clearance below the plinth')
         self.assertEqual(pixel(295, 519)[3], 0)
         self.assertEqual(pixel(235, 490)[3], 255, 'floor meets the feet')
         self.assertEqual(pixel(295, 475), (18, 52, 86, 255),

@@ -1844,11 +1844,11 @@ def rounded_frame_png(
             # ledge, a wider middle tier and a broad projecting bottom foot.
             if y + .5 >= height - 1.5 * cell_height:
                 if y + .5 < height - 1.15 * cell_height:
-                    tier_top, tier_bottom, inset = 1.5, 1.15, .4 * cell_width
+                    tier_top, tier_bottom, inset = 1.5, 1.15, .9 * cell_width
                 elif y + .5 < height - .65 * cell_height:
-                    tier_top, tier_bottom, inset = 1.15, .65, .18 * cell_width
+                    tier_top, tier_bottom, inset = 1.15, .65, .45 * cell_width
                 else:
-                    tier_top, tier_bottom, inset = .65, .35, .05 * cell_width
+                    tier_top, tier_bottom, inset = .65, .1, .05 * cell_width
                 base_radius = min(1, cell_width * .1, cell_height * .06)
                 base_qx = abs(x + .5 - width / 2) - (width / 2 - inset - base_radius)
                 base_qy = (abs(y + .5 - (height - (tier_top + tier_bottom) / 2 * cell_height))
@@ -1873,13 +1873,17 @@ def rounded_frame_png(
                 sheen = max(0, 1 - abs(across - .32) * 2)
                 if depth < .09:
                     level = 64 + 32 * sheen - depth * 200
-                elif depth < .5:
+                elif depth < .43:
                     grain = ((x * 13 + y * 7) % 11 - 5) * .24
                     level = 42 + 10 * sheen - depth * 16 + grain
+                elif depth < .5:
+                    level = 16 + 3 * sheen
+                elif depth < .57:
+                    level = 52 + 16 * sheen - (depth - .5) * 180
                 else:
-                    level = 24 - (depth - .5) * 18
+                    level = 29 - (depth - .57) * 16
                 ink = tuple(round(level + tint) for tint in (0, 3, 5))
-                lower_edge = height - .35 * cell_height
+                lower_edge = height - .1 * cell_height
                 alpha = min(alpha, round(255 * max(0, min(1, lower_edge - y))))
                 line.extend((*ink, alpha))
             else:
