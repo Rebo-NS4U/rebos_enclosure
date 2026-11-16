@@ -1522,16 +1522,32 @@ def rounded_frame_png(cell_width, cell_height, rows, rgb):
     radius = min(12, cell_height * 0.65)
     half_width, half_height = (width - cell_width) / 2, (height - cell_height) / 2
     xs = [abs(x + 0.5 - width / 2) - (half_width - radius) for x in range(width)]
+    # The flat interior is one repeated pixel; only the rim needs shading math.
+    interior = [x for x, qx in enumerate(xs) if qx <= 0]
+    left, right = (interior[0], interior[-1] + 1) if interior else (0, 0)
     data = bytearray()
+    scanlines = {}
     for y in range(height):
         qy = abs(y + 0.5 - height / 2) - (half_height - radius)
-        data.append(0)  # PNG scanline: no filter.
-        for qx in xs:
+        if qy in scanlines:
+            data.extend(scanlines[qy])
+            continue
+        line = bytearray(b"\0")  # PNG scanline: no filter.
+        x = 0
+        while x < width:
+            if x == left and right > left and qy <= 0 and radius >= 2.5:
+                line.extend(bytes((24, 24, 24, 255)) * (right - left))
+                x = right
+                continue
+            qx = xs[x]
             distance = math.hypot(max(qx, 0), max(qy, 0)) + min(max(qx, qy), 0) - radius
             alpha = round(255 * max(0, min(1, 0.5 - distance)))
             rim = max(0, min(1, distance + 2.5))
             ink = tuple(round(24 + (channel - 24) * rim) for channel in rgb)
-            data.extend((*ink, alpha))
+            line.extend((*ink, alpha))
+            x += 1
+        scanlines[qy] = line
+        data.extend(line)
     def chunk(kind, payload):
         return (struct.pack('!I', len(payload)) + kind + payload
                 + struct.pack('!I', zlib.crc32(kind + payload)))
@@ -1669,6 +1685,9 @@ def blossom_plan(seed, style="informal"):
 
 def add_blossoms(canvas, seed, days, style="informal"):
     """Open spaced rosettes and florets without widening the crown."""
+    # Flowers cannot open before day 21; avoid building mature foliage at startup.
+    if days < 21:
+        return
     for x, y, born, flower in blossom_plan(seed, style):
         if days < born or not canvas[y][x][1].startswith("leaf"):
             continue
@@ -1706,6 +1725,8 @@ def knurl_sites(seed):
 
 
 def add_knurling(canvas, seed, days):
+    if days < 15:
+        return
     for x, y, born in knurl_sites(seed):
         if days < born or canvas[y][x][1] != "bark" or canvas[y + 1][x][1] != "bark":
             continue
@@ -1747,6 +1768,8 @@ def trunk_scar(seed):
 
 
 def add_trunk_scar(canvas, seed, days):
+    if days < 17:
+        return
     path = trunk_scar(seed)
     occupied = {(x, y) for x, y, glyph, born in path}
     for x, y, glyph, born in path:

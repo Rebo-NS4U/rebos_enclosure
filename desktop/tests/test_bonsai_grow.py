@@ -1631,6 +1631,13 @@ class BonsaiGrowTests(unittest.TestCase):
             self.assertNotIn('\033', result.stdout)
             self.assertEqual(list(Path(directory).iterdir()), [])
 
+    def test_seedling_skips_invisible_mature_decoration_plans(self):
+        with patch.object(bonsai, 'blossom_plan', side_effect=AssertionError('early flowers')), \
+             patch.object(bonsai, 'knurl_sites', side_effect=AssertionError('early knots')), \
+             patch.object(bonsai, 'trunk_scar', side_effect=AssertionError('early scar')):
+            for day in (0, 7, 14):
+                bonsai.specimen_canvas(day, 42)
+
     def test_single_launch_greeting_returns_worker_and_paints_terminal(self):
         import fcntl
         import pty
@@ -1642,11 +1649,12 @@ class BonsaiGrowTests(unittest.TestCase):
         master, slave = pty.openpty()
         worker = None
         try:
-            fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack('HHHH', 40, 100, 0, 0))
+            fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack('HHHH', 40, 100, 1000, 800))
             result = subprocess.run(
                 [str(SOURCE), '--greeting', '--seed', '42'],
                 stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=slave,
-                env={**os.environ, 'TERM': 'xterm-256color', 'REDUCE_MOTION': '0'},
+                env={**os.environ, 'TERM': 'xterm-256color', 'REDUCE_MOTION': '0',
+                     'KITTY_WINDOW_ID': '1'},
                 timeout=5, check=True)
             worker = int(result.stdout.strip())
             painted = b''
