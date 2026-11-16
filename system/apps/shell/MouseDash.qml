@@ -114,6 +114,29 @@ ShellRoot {
         property int score: 0
         property int combo: 0
         property int nearMisses: 0
+        property bool hangarOpen: false
+        property string objectiveNotice: ""
+        property real objectiveNoticeUntil: 0
+        readonly property var careerBadges: JSON.parse(records.badges)
+        readonly property string flightStyle: Game.styleAvailable(records.selectedStyle, careerBadges) ? records.selectedStyle : "scout"
+        readonly property var loadout: Game.loadout(flightStyle)
+        readonly property real pickupRadius: playerRadius + loadout.pickupBonus
+        readonly property var flightObjectives: Game.objectives(elapsed, targetsCollected, nearMisses)
+        readonly property var pendingObjectives: flightObjectives.filter(o => !careerBadges[o.id])
+        function selectStyle(id) {
+            if (locked || phase === "death" || !Game.styleAvailable(id, careerBadges)) return false;
+            records.selectedStyle = id; reset(); return true;
+        }
+        function updateObjectives() {
+            if (phase !== "playing") return;
+            const badges = JSON.parse(records.badges);
+            const earned = flightObjectives.filter(o => o.progress >= o.goal && !badges[o.id]);
+            if (!earned.length) return;
+            for (const objective of earned) badges[objective.id] = true;
+            records.badges = JSON.stringify(badges);
+            objectiveNotice = earned.map(o => o.name + " · " + o.reward).join(" / ");
+            objectiveNoticeUntil = elapsed + 3;
+        }
         property real comboUntil: 0
         property real overdriveUntil: 0
         property int milestone: 0
@@ -132,7 +155,8 @@ ShellRoot {
             if (!count) return;
             nearMisses += count;
             if (combo > 0) comboUntil = Math.min(elapsed + 8, comboUntil + count);
-            awardPoints(count * 40, "NEAR MISS");
+            awardPoints(count * loadout.grazePoints, "NEAR MISS");
+            updateObjectives();
         }
         property int pulseCharges: 1
         property real pulseTime: -10
@@ -142,7 +166,7 @@ ShellRoot {
             if (phase !== "playing" || pulseCharges < 1) return;
             pulseCharges--; pulseTime = elapsed;
             pulseX = playerX * arena.width; pulseY = playerY * arena.height;
-            const cleared = Game.pulse(enemies, pulseX, pulseY, 115);
+            const cleared = Game.pulse(enemies, pulseX, pulseY, loadout.pulseRadius);
             enemies = cleared.enemies;
             if (cleared.count) awardPoints(cleared.count * 25, "PULSE");
         }
@@ -152,12 +176,12 @@ ShellRoot {
         readonly property bool locked: phase === "playing" || phase === "paused"
         readonly property real duration: Game.roundDuration(playMode)
         readonly property var modes: [
-            {key: "survival", name: "DEEP SPACE", caption: "Endless expedition", hint: "Skim debris for +40. Chain stars fast. Every 1,000 points: overdrive."},
+            {key: "survival", name: "DEEP SPACE", caption: "Endless expedition", hint: "Skim debris for +" + loadout.grazePoints + ". Chain stars. Open Hangar for objectives."},
             {key: "gauntlet", name: "WARP RUN", caption: "60s · six sectors", hint: "Score big through six sectors. Every 1,000 points: 6s double score."}
         ]
         readonly property int modeIndex: playMode === "survival" ? 0 : 1
-        readonly property string recordKey: playMode + difficulty
-        readonly property real best: playMode === "survival" && difficulty < 3
+        readonly property string recordKey: Game.scoreKey(playMode, difficulty, flightStyle)
+        readonly property real best: playMode === "survival" && difficulty < 3 && flightStyle === "scout"
             ? (difficulty === 0 ? records.easy : difficulty === 1 ? records.medium : records.hard)
             : Number(JSON.parse(records.challenges)[recordKey] || 0)
         Settings {
@@ -169,6 +193,8 @@ ShellRoot {
             property real hard: 0
             property string challenges: "{}"
             property string scoreRecords: "{}"
+            property string badges: "{}"
+            property string selectedStyle: "scout"
         }
         function finish(won, collision) {
             death = collision || null;
@@ -180,7 +206,7 @@ ShellRoot {
                 scores[recordKey] = score; records.scoreRecords = JSON.stringify(scores);
             }
             if (elapsed > best) {
-                if (playMode === "survival" && difficulty < 3) {
+                if (playMode === "survival" && difficulty < 3 && flightStyle === "scout") {
                     if (difficulty === 0) records.easy = elapsed;
                     else if (difficulty === 1) records.medium = elapsed;
                     else records.hard = elapsed;
@@ -195,17 +221,18 @@ ShellRoot {
             enemyVisuals.clear(); victory = false; death = null;
             pickupTarget = null; targetClock = 0; targetsCollected = 0; collection = null;
             score = 0; combo = 0; pulseCharges = 1; pulseTime = -10;
+            objectiveNotice = ""; objectiveNoticeUntil = 0;
             nearMisses = 0; comboUntil = 0; overdriveUntil = 0; milestone = 0; notice = ""; noticeUntil = 0;
         }
         function start(x, y) {
-            reset(); playerX = x / arena.width; playerY = y / arena.height;
+            reset(); hangarOpen = false; playerX = x / arena.width; playerY = y / arena.height;
             spawnClock = 0; trailClock = 0; phase = "playing";
             arena.forceActiveFocus();
         }
         function movePlayer(x, y) {
             const fromX = playerX * arena.width, fromY = playerY * arena.height;
             const hit = Game.contact(enemies, fromX, fromY, x, y, playerRadius);
-            const pickup = pickupTarget && Game.sweptHit([pickupTarget], fromX, fromY, x, y, playerRadius);
+            const pickup = pickupTarget && Game.sweptHit([pickupTarget], fromX, fromY, x, y, pickupRadius);
             playerX = (hit ? hit.x : x) / arena.width;
             playerY = (hit ? hit.y : y) / arena.height;
             if (hit) finish(false, hit);
@@ -225,6 +252,7 @@ ShellRoot {
             collection = {x: pickupTarget.x, y: pickupTarget.y, time: elapsed, points: score - before};
             pickupTarget = null; targetClock = 0; targetsCollected++;
             if (targetsCollected % 3 === 0) pulseCharges = Math.min(2, pulseCharges + 1);
+            updateObjectives();
             return true;
         }
         function updateTarget(dt) {
@@ -237,7 +265,7 @@ ShellRoot {
                 }
                 return;
             }
-            const result = Game.stepTarget(pickupTarget, dt, arena.width, arena.height, playerX * arena.width, playerY * arena.height, playerRadius);
+            const result = Game.stepTarget(pickupTarget, dt, arena.width, arena.height, playerX * arena.width, playerY * arena.height, pickupRadius);
             pickupTarget = result.target;
             if (result.collected) { collectTarget(); return; }
             if (result.missed) {
@@ -289,6 +317,7 @@ ShellRoot {
                 if (result.hit) window.finish(false, result.collision);
                 else {
                     window.updateTarget(dt);
+                    window.updateObjectives();
                     if (window.phase === "playing" && Game.roundComplete(window.playMode, window.elapsed)) window.finish(true);
                 }
 
@@ -388,7 +417,7 @@ ShellRoot {
                     width: window.playerRadius * 2; height: width
                     rotation: 45
                     radius: 4
-                    color: window.phase === "death" ? Colors.error : Colors.primary
+                    color: window.phase === "death" ? Colors.error : window.flightStyle === "collector" ? Colors.success : window.flightStyle === "surfer" ? Colors.tertiary : Colors.primary
                     border.width: 2; border.color: Colors.overBackground
                     Rectangle {
                         anchors.centerIn: parent; width: parent.width + 18; height: width; radius: width / 2
@@ -412,6 +441,11 @@ ShellRoot {
                     width: target ? target.r * 2 : 0; height: width; radius: width / 2
                     color: Qt.alpha(Colors.success, 0.25)
                     border.width: 3; border.color: Colors.success
+                    Rectangle {
+                        anchors.centerIn: parent; width: parent.width + window.loadout.pickupBonus * 2; height: width
+                        radius: width / 2; color: "transparent"; border.width: 1; border.color: Qt.alpha(Colors.success, 0.45)
+                        visible: window.loadout.pickupBonus > 0
+                    }
                     StyledText {
                         anchors.horizontalCenter: parent.horizontalCenter; anchors.bottom: parent.top; anchors.bottomMargin: 7
                         text: "+50%"; visible: window.elapsed - window.targetBorn <= 2
@@ -505,7 +539,7 @@ ShellRoot {
                         color: Qt.alpha(Colors.background, 0.95); border.color: Qt.alpha(Colors.error, 0.5)
                         ColumnLayout {
                             anchors.fill: parent; anchors.margins: 14; spacing: 6
-                            StyledText { text: (window.death && window.death.cause === "missed" ? "TARGET MISSED · " : "CAUGHT · ") + window.elapsed.toFixed(2) + "s"; color: Colors.error; font.bold: true; font.pixelSize: 18 }
+                            StyledText { text: (window.death && window.death.cause === "missed" ? "TARGET MISSED · " : "CAUGHT · ") + window.elapsed.toFixed(2) + "s · " + Game.medal(window.score); color: Colors.error; font.bold: true; font.pixelSize: 18 }
                             StyledText {
                                 text: window.death && window.death.cause === "missed" ? "The target escaped. Touch it before it leaves." : window.death && window.death.cause === "cursor" ? "Flight path crossed debris. Score " + window.score + " · Best " + window.bestScore : "Debris intercepted your ship. Score " + window.score + " · Best " + window.bestScore
                                 Layout.fillWidth: true; wrapMode: Text.WordWrap; font.pixelSize: 11
@@ -521,13 +555,14 @@ ShellRoot {
                     readonly property real progress: Math.max(0, Math.min(1, (window.elapsed - window.pulseTime) / 0.5))
                     visible: progress < 1
                     x: window.pulseX - width / 2; y: window.pulseY - height / 2
-                    width: window.reducedMotion ? 230 : 230 * progress; height: width; radius: width / 2
+                    width: window.loadout.pulseRadius * 2 * (window.reducedMotion ? 1 : progress); height: width; radius: width / 2
                     color: Qt.alpha(Colors.primary, 0.08); border.color: Colors.primary; border.width: 3
                     opacity: 1 - progress
                 }
                 Column {
                     anchors.top: parent.top; anchors.topMargin: 63
                     anchors.horizontalCenter: parent.horizontalCenter; spacing: 5
+                    width: parent.width - 32
                     visible: window.phase === "playing"
                     StyledText {
                         anchors.horizontalCenter: parent.horizontalCenter
@@ -541,7 +576,9 @@ ShellRoot {
                     }
                     StyledText {
                         anchors.horizontalCenter: parent.horizontalCenter
-                        text: window.notice; visible: window.elapsed < window.noticeUntil
+                        width: parent.width; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap
+                        text: window.elapsed < window.objectiveNoticeUntil ? window.objectiveNotice : window.notice
+                        visible: window.elapsed < window.noticeUntil || window.elapsed < window.objectiveNoticeUntil
                         color: Colors.success; font.pixelSize: 10; font.bold: true
                     }
                 }
@@ -567,6 +604,15 @@ ShellRoot {
                         color: Colors.success; font.pixelSize: 11; font.bold: true
                     }
                     DashButton { text: "Pause  Ⅱ"; visible: window.phase === "playing"; onClicked: window.pause() }
+                }
+                StyledText {
+                    anchors.bottom: parent.bottom; anchors.bottomMargin: 62
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    visible: window.phase === "playing"
+                    text: window.pendingObjectives.length
+                        ? window.pendingObjectives[0].name + " " + window.pendingObjectives[0].progress + "/" + window.pendingObjectives[0].goal
+                        : Game.nextMedal(window.score) ? "NEXT MEDAL · " + window.score + "/" + Game.nextMedal(window.score) : "GOLD FLIGHT · ALL BADGES EARNED"
+                    font.pixelSize: 10; color: Colors.tertiary
                 }
                 Rectangle {
                     anchors.bottom: parent.bottom; height: 3
@@ -596,7 +642,7 @@ ShellRoot {
                 id: setup
                 anchors.fill: parent; variant: "common"
                 radius: Styling.radius(0)
-                visible: !window.locked && window.phase !== "death"
+                visible: !window.locked && window.phase !== "death" && !window.hangarOpen
                 Cosmos { anchors.fill: parent; opacity: 0.7 }
                 ColumnLayout {
                     anchors.fill: parent; anchors.margins: 24; spacing: 8
@@ -611,12 +657,13 @@ ShellRoot {
                             }
                         }
                         Item { Layout.fillWidth: true }
+                        DashButton { text: "Hangar"; implicitWidth: 82; onClicked: window.hangarOpen = true }
                     }
                     Item {
                         Layout.fillHeight: true; Layout.minimumHeight: 36; Layout.fillWidth: true
                         StyledText {
                             anchors.left: parent.left; anchors.verticalCenter: parent.verticalCenter
-                            text: "✦  EXPLORE. COLLECT. ESCAPE."; color: Colors.tertiary
+                            text: window.phase === "over" ? Game.medal(window.score) + " · " + window.nearMisses + " NEAR MISSES" : window.loadout.name + " · " + Game.medal(window.bestScore); color: Colors.tertiary
                             font.pixelSize: 11; font.letterSpacing: 1
                         }
                     }
@@ -672,6 +719,48 @@ ShellRoot {
                     StyledText {
                         Layout.fillWidth: true; horizontalAlignment: Text.AlignHCenter
                         text: "Stars within 2s = +50% · 3 stars = pulse · Space fires"; font.pixelSize: 10; opacity: 0.45
+                    }
+                }
+            }
+            StyledRect {
+                anchors.fill: parent; variant: "common"; radius: Styling.radius(0)
+                visible: !window.locked && window.phase !== "death" && window.hangarOpen
+                Cosmos { anchors.fill: parent; opacity: 0.5 }
+                ColumnLayout {
+                    anchors.fill: parent; anchors.margins: 24; spacing: 9
+                    RowLayout {
+                        StyledText { text: "HANGAR"; font.pixelSize: 24; font.bold: true; color: Colors.primary }
+                        Item { Layout.fillWidth: true }
+                        DashButton { text: "Back"; onClicked: window.hangarOpen = false }
+                    }
+                    StyledText { text: "Complete objectives in one flight to unlock styles."; font.pixelSize: 10 }
+                    Repeater {
+                        model: Game.styles()
+                        delegate: DashButton {
+                            required property var modelData
+                            readonly property bool available: Game.styleAvailable(modelData.id, window.careerBadges)
+                            Layout.fillWidth: true; implicitHeight: 58
+                            text: modelData.name + (available ? (window.flightStyle === modelData.id ? " · EQUIPPED" : "") : " · LOCKED")
+                            caption: available ? modelData.caption : modelData.id === "collector" ? "Collect 5 stars in one flight" : "Earn 8 near misses in one flight"
+                            enabled: available; accent: window.flightStyle === modelData.id
+                            onClicked: window.selectStyle(modelData.id)
+                        }
+                    }
+                    StyledText { text: "CAREER OBJECTIVES"; font.pixelSize: 10; color: Colors.tertiary }
+                    Repeater {
+                        model: window.flightObjectives
+                        delegate: StyledText {
+                            required property var modelData
+                            text: (window.careerBadges[modelData.id] ? "✓ " : "○ ") + modelData.name + " · " + (modelData.id === "collector" ? "5 stars" : modelData.id === "surfer" ? "8 near misses" : "Survive 30s")
+                            color: window.careerBadges[modelData.id] ? Colors.success : Colors.overBackground
+                            font.pixelSize: 11
+                        }
+                    }
+                    Item { Layout.fillHeight: true }
+                    StyledText {
+                        Layout.fillWidth: true; wrapMode: Text.WordWrap; font.pixelSize: 10
+                        text: "MEDALS  Bronze 1,000 · Silver 3,000 · Gold 6,000\n" + window.loadout.name + " best: " + window.bestScore + " · " + Game.medal(window.bestScore) + "\nRecords are separate for each style, mode and difficulty."
+                        color: Colors.primary
                     }
                 }
             }

@@ -156,3 +156,30 @@ assert.equal(game.award(1000,100,16,16,1).score,1100); // Exact expiry.
 bonus = game.award(1900,100,15,16,1);
 assert.equal(bonus.score,2100); assert.equal(bonus.overdriveUntil,21);
 console.log('Near-miss sweeps, anti-repeat, fatal-frame exclusion, quick stars and overdrive milestones: PASS');
+
+// Objectives use single-flight totals, capped display values, and exact thresholds.
+let missions = game.objectives(29.99,4,7);
+assert(missions.every(o=>o.progress<o.goal));
+missions = game.objectives(30,5,8);
+assert(missions.every(o=>o.progress===o.goal));
+assert(game.objectives(1000,1000,1000).every(o=>o.progress===o.goal));
+assert(game.styleAvailable('scout',{}));
+assert(!game.styleAvailable('collector',{}));
+assert(!game.styleAvailable('surfer',{surfer:1}));
+assert(game.styleAvailable('collector',{collector:true}));
+assert(!game.styleAvailable('unknown',{unknown:true}));
+const scout = game.loadout('scout'), collector = game.loadout('collector'), surfer = game.loadout('surfer');
+assert.equal(game.loadout('unknown').id,'scout');
+assert.equal(collector.pickupBonus,12); assert(collector.pulseRadius<scout.pulseRadius);
+assert(surfer.grazePoints>scout.grazePoints); assert(surfer.pulseRadius<scout.pulseRadius);
+assert(!game.sweptHit([{x:50,y:0,r:22}],10,0,10,0,9));
+assert(game.sweptHit([{x:50,y:0,r:22}],10,0,10,0,9+collector.pickupBonus));
+assert.equal(game.pulse([{x:110,y:0,r:10}],0,0,collector.pulseRadius).count,0);
+assert.equal(game.pulse([{x:110,y:0,r:10}],0,0,scout.pulseRadius).count,1);
+for (const [points,medal,next] of [[0,'UNRANKED',1000],[999,'UNRANKED',1000],[1000,'BRONZE',3000],[2999,'BRONZE',3000],[3000,'SILVER',6000],[5999,'SILVER',6000],[6000,'GOLD',0]]) {
+ assert.equal(game.medal(points),medal); assert.equal(game.nextMedal(points),next);
+}
+assert.equal(game.scoreKey('survival',1,'scout'),'survival1');
+assert.equal(game.scoreKey('survival',1,'collector'),'survival1:collector');
+assert.notEqual(game.scoreKey('gauntlet',1,'surfer'),game.scoreKey('survival',1,'surfer'));
+console.log('Career thresholds, unlock gates, style tradeoffs, medals and isolated record keys: PASS');

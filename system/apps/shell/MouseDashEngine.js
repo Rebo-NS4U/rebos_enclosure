@@ -128,3 +128,28 @@ function award(score, points, elapsed, overdriveUntil, milestone) {
         overdriveUntil:reached > milestone ? elapsed + 6 : overdriveUntil,
         activated:reached > milestone};
 }
+
+// Career badges require a single flight; completed badges survive retries.
+function objectives(elapsed, stars, grazes) {
+    return [
+        {id:"collector", name:"STAR COLLECTOR", progress:Math.min(5,stars), goal:5, reward:"Unlock Collector"},
+        {id:"surfer", name:"DEBRIS SURFER", progress:Math.min(8,grazes), goal:8, reward:"Unlock Surfer"},
+        {id:"voyager", name:"VOYAGER", progress:Math.min(30,Math.floor(elapsed)), goal:30, reward:"Career badge"}
+    ];
+}
+function styles() {
+    return [
+        {id:"scout", name:"SCOUT", caption:"Balanced · 115px pulse", pulseRadius:115, pickupBonus:0, grazePoints:40},
+        {id:"collector", name:"COLLECTOR", caption:"+12px star reach · 85px pulse", pulseRadius:85, pickupBonus:12, grazePoints:40},
+        {id:"surfer", name:"SURFER", caption:"+60 per near miss · 90px pulse", pulseRadius:90, pickupBonus:0, grazePoints:60}
+    ];
+}
+function styleAvailable(id, badges) {
+    return id === "scout" || ((id === "collector" || id === "surfer") && badges[id] === true);
+}
+function loadout(id) { return styles().filter(s => s.id === id)[0] || styles()[0]; }
+function medal(score) { return score >= 6000 ? "GOLD" : score >= 3000 ? "SILVER" : score >= 1000 ? "BRONZE" : "UNRANKED"; }
+function nextMedal(score) { return score < 1000 ? 1000 : score < 3000 ? 3000 : score < 6000 ? 6000 : 0; }
+function scoreKey(mode, difficulty, style) {
+    return mode + difficulty + (style === "scout" ? "" : ":" + style);
+}
