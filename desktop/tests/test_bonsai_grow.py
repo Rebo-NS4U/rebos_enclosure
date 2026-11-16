@@ -622,6 +622,9 @@ class BonsaiGrowTests(unittest.TestCase):
                 canvas = [row[:] for row in original]
                 groups = bonsai.place_glass_marks(canvas, seed, 6 <= hour < 12 or 18 <= hour < 24)
                 horizontal_layouts.add(tuple(points for glyph, points in groups if glyph == '─'))
+                self.assertEqual(len(groups), 3)
+                left_count = sum(points[0][0] < 28 for _, points in groups)
+                self.assertIn(left_count, (1, 2))
                 self.assertTrue(any(glyph == '─' for glyph, _ in groups))
                 previous = set(occupied)
                 for glyph, points in groups:
