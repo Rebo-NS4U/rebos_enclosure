@@ -1,6 +1,5 @@
 """Verify spectrum response and that the output monitor is cleaned up on exit."""
 import importlib.util
-import io
 import math
 from pathlib import Path
 import unittest
@@ -25,15 +24,30 @@ class MusicVisualizerTests(unittest.TestCase):
         self.assertLess(max(tone(120, 500)), max(bass))
         self.assertTrue(all(0 <= value <= 1 for value in bass + treble))
 
-    def test_output_monitor_and_cleanup(self):
-        child = Mock(stdout=io.BytesIO(b''))
-        with patch.object(visualizer.subprocess, 'Popen', return_value=child) as start, \
-             patch.object(visualizer.signal, 'signal'):
+    def test_regular_audio_without_mpris_and_system_exclusion(self):
+        def stream(index, **props):
+            return dict(index=index, sink=7, corked=False, mute=False, properties=props)
+        streams = [stream(1), stream(2, **{'media.role': 'event'}),
+                   stream(3, **{'application.id': 'org.quickshell'}),
+                   stream(4, **{'media.role': 'music'}),
+                   dict(stream(5), corked=True), dict(stream(6), mute=True)]
+        import json
+        with patch.object(visualizer.subprocess, 'run', side_effect=[
+            Mock(stdout=json.dumps(streams)),
+            Mock(stdout=json.dumps([dict(index=7, monitor_source='output.monitor')]))]):
+            self.assertEqual(visualizer.playback_streams(),
+                             {1: 'output.monitor', 4: 'output.monitor'})
+
+    def test_cleanup_on_exit(self):
+        child = Mock()
+        with patch.object(visualizer, 'playback_streams', return_value={1: 'output.monitor'}), \
+             patch.object(visualizer.subprocess, 'Popen', return_value=child) as start, \
+             patch.object(visualizer.signal, 'signal'), \
+             patch.object(visualizer.os, 'set_blocking'), \
+             patch.object(visualizer.selectors, 'DefaultSelector') as selector:
+            selector.return_value.__enter__.return_value = selector.return_value
+            selector.return_value.select.side_effect = BrokenPipeError
             visualizer.main()
-        self.assertIn('--device=@DEFAULT_MONITOR@', start.call_args.args[0])
+        self.assertIn('--device=output.monitor', start.call_args.args[0])
+        self.assertIn('--monitor-stream=1', start.call_args.args[0])
         child.terminate.assert_called_once()
-        child.wait.assert_called_once_with(timeout=2)
-
-
-if __name__ == '__main__':
-    unittest.main()

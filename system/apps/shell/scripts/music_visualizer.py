@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Stream spectrum levels from the default audio output monitor; never the mic.
+"""Stream spectrum levels from application playback, excluding system sounds.
 
 Only numeric levels go to stdout. Audio is neither stored nor sent over a network.
 """
@@ -7,6 +7,9 @@ import array
 import cmath
 import json
 import math
+import os
+import selectors
+import time
 import signal
 import subprocess
 import sys
@@ -57,34 +60,96 @@ def spectrum(samples):
     return levels
 
 
+def playback_streams():
+    """Select audible app streams; event roles and shell feedback are system sounds."""
+    result = subprocess.run(['pactl', '-f', 'json', 'list', 'sink-inputs'],
+                            capture_output=True, text=True, timeout=2, check=True)
+    sinks = subprocess.run(['pactl', '-f', 'json', 'list', 'sinks'],
+                           capture_output=True, text=True, timeout=2, check=True)
+    monitors = {int(s['index']): s.get('monitor_source_name', s.get('monitor_source')) for s in json.loads(sinks.stdout)}
+    streams = {}
+    for stream in json.loads(result.stdout):
+        props = stream.get('properties', {})
+        role = props.get('media.role', '').lower()
+        app = props.get('application.id', '').lower()
+        binary = props.get('application.process.binary', '').lower()
+        if (stream.get('corked') or stream.get('mute')
+                or role in {'event', 'notification', 'alert', 'system'}
+                or app == 'org.quickshell' or binary in {'quickshell', 'qs', 'canberra-gtk-play'}):
+            continue
+        if int(stream['sink']) in monitors:
+            streams[int(stream['index'])] = monitors[int(stream['sink'])]
+    return streams
+
+
+def stop_capture(selector, state):
+    child = state['child']
+    selector.unregister(child.stdout)
+    child.terminate()
+    try:
+        child.wait(timeout=2)
+    except subprocess.TimeoutExpired:
+        child.kill()
+        child.wait()
+    child.stdout.close()
+
+
 def main():
     def stop(*_):
         raise SystemExit(0)
 
     signal.signal(signal.SIGTERM, stop)
-    child = None
+    captures = {}
+    selector = selectors.DefaultSelector()
+    refresh = 0
     try:
-        child = subprocess.Popen(['parec', '--device=@DEFAULT_MONITOR@', '--raw',
-            '--format=s16le', '--rate=' + str(RATE), '--channels=1', '--latency-msec=40'],
-            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
         while True:
-            raw = child.stdout.read(SIZE * 2)
-            if len(raw) != SIZE * 2:
-                break
-            samples = array.array('h', raw)
-            if sys.byteorder != 'little':
-                samples.byteswap()
-            print(json.dumps(spectrum(samples)), flush=True)
+            now = time.monotonic()
+            if now >= refresh:
+                # Fail closed if the audio server cannot identify playback streams.
+                try:
+                    streams = playback_streams()
+                except (OSError, ValueError, subprocess.SubprocessError):
+                    streams = {}
+                for index in list(captures):
+                    state = captures[index]
+                    if streams.get(index) != state['sink'] or state['child'].poll() is not None:
+                        stop_capture(selector, captures.pop(index))
+                for index, sink in streams.items():
+                    if index in captures:
+                        continue
+                    child = subprocess.Popen(['parec', '--device=' + str(sink),
+                        '--monitor-stream=' + str(index), '--raw', '--format=s16le',
+                        '--rate=' + str(RATE), '--channels=1', '--latency-msec=40'],
+                        stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+                    os.set_blocking(child.stdout.fileno(), False)
+                    state = dict(child=child, sink=sink, buffer=b'', levels=[0] * BANDS, updated=now)
+                    captures[index] = state
+                    selector.register(child.stdout, selectors.EVENT_READ, state)
+                refresh = now + 0.3
+            for key, _ in selector.select(timeout=0.04):
+                state = key.data
+                raw = os.read(key.fileobj.fileno(), SIZE * 16)
+                if not raw:
+                    continue
+                state['buffer'] += raw
+                while len(state['buffer']) >= SIZE * 2:
+                    samples = array.array('h', state['buffer'][:SIZE * 2])
+                    state['buffer'] = state['buffer'][SIZE * 2:]
+                    if sys.byteorder != 'little':
+                        samples.byteswap()
+                    state['levels'] = spectrum(samples)
+                    state['updated'] = time.monotonic()
+            active = [s['levels'] for s in captures.values()
+                      if time.monotonic() - s['updated'] < 0.2]
+            print(json.dumps([max((levels[i] for levels in active), default=0)
+                              for i in range(BANDS)]), flush=True)
     except (OSError, BrokenPipeError):
         pass
     finally:
-        if child is not None:
-            child.terminate()
-            try:
-                child.wait(timeout=2)
-            except subprocess.TimeoutExpired:
-                child.kill()
-                child.wait()
+        for state in captures.values():
+            stop_capture(selector, state)
+        selector.close()
 
 
 if __name__ == '__main__':

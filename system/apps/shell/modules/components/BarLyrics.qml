@@ -101,7 +101,7 @@ Item {
         : LyricsService.plain.split("\n").find(line => line.trim()) || ""
     readonly property string nextText: LyricsService.hasText
         ? displayLines[lineIndex + 1]?.text || "" : ""
-    visible: available && LyricsService.stripEnabled && MprisController.trackTitle !== "" && sideWidth >= 120
+    visible: available && LyricsService.stripEnabled && (MprisController.trackTitle !== "" || levels.some(value => value > 0.001)) && sideWidth >= 120
     onVisibleChanged: if (!visible) calibrationOpen = false
     property var levels: Array(32).fill(0)
     property real visualizerMix: 1
@@ -127,7 +127,7 @@ Item {
         target: Motion
         function onEnabledChanged() { if (!Motion.enabled) root.updateMode(); }
     }
-    readonly property bool captureAudio: visible && MprisController.isPlaying && Motion.enabled
+    readonly property bool captureAudio: available && LyricsService.stripEnabled && sideWidth >= 120 && Motion.enabled
     Process {
         id: spectrumProcess
         command: ["python3", "-u", Qt.resolvedUrl("../../scripts/music_visualizer.py").toString().replace("file://", "")]
@@ -293,7 +293,7 @@ Item {
             readonly property real textPadding: 24
             readonly property real textHalfWidth: Math.min(currentLabel.contentWidth, currentLabel.width) / 2
             readonly property real textCenter: currentLabel.x + currentLabel.width / 2 - x
-            property real activity: MprisController.isPlaying && Motion.enabled ? 1 : 0
+            property real activity: root.captureAudio ? 1 : 0
             Behavior on activity {
                 enabled: Motion.enabled
                 NumberAnimation { duration: Motion.enter; easing.type: Motion.enterCurve }

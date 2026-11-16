@@ -513,7 +513,10 @@ ShellRoot {
     }
     if (phase === 2) {
      if (strip.visualizerMix <= 0 || strip.visualizerMix >= 1) throw Error('Fallback must crossfade');
-     if (strip.captureAudio) throw Error('Paused playback must not capture audio');
+     if (!strip.captureAudio) throw Error('Ordinary app audio must work without MPRIS playback');
+     MprisController.trackTitle = '';
+     strip.levels = Array(32).fill(0.5);
+     if (!strip.visible) throw Error('Ordinary audio must reveal the visualizer without a track');
      Config.animDuration = 0;
      phase++; return;
     }
