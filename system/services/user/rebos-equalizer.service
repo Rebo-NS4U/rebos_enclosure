@@ -1,0 +1,15 @@
+[Unit]
+Description=Enclosure output equalizer
+After=pipewire.service pipewire-pulse.service wireplumber.service
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 %h/.config/quickshell/scripts/audio_equalizer.py serve
+KillMode=mixed
+Restart=on-failure
+RestartSec=2
+TimeoutStopSec=8
+
+[Install]
+WantedBy=graphical-session.target

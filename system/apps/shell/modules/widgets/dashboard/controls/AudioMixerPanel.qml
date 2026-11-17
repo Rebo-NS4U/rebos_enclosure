@@ -18,7 +18,8 @@ Item {
     readonly property int contentWidth: Math.min(width, maxContentWidth)
     readonly property real sideMargin: (width - contentWidth) / 2
 
-    property bool showOutput: true  // true = output, false = input
+    property string currentSection: "output"
+    readonly property bool showOutput: currentSection !== "input"
 
     // Scrollable content - fills entire width for scroll/drag
     Flickable {
@@ -43,7 +44,7 @@ Item {
                     width: root.contentWidth
                     anchors.horizontalCenter: parent.horizontalCenter
                     title: "Sound"
-            description: "Choose audio devices and adjust volume."
+                    description: "Choose audio devices, adjust volume and shape playback sound."
 
                     actions: [
                         {
@@ -72,13 +73,14 @@ Item {
                     spacing: Styling.spacing(12)
 
                     SettingsSubnav {
-                        currentSection: root.showOutput ? "output" : "input"
-                        sections: [{id: "output", label: "Output devices"}, {id: "input", label: "Input devices"}]
-                        onSelected: section => root.showOutput = section === "output"
+                        currentSection: root.currentSection || "output"
+                        sections: [{id: "output", label: "Output devices"}, {id: "input", label: "Input devices"}, {id: "equalizer", label: "Equalizer"}]
+                        onSelected: section => root.currentSection = section
                     }
 
 
                     SettingsGroup {
+                        visible: root.currentSection !== "equalizer"
                         title: root.showOutput ? "Output devices" : "Input devices"
                         description: "Select the device to use by default."
                     // Device list
@@ -100,7 +102,12 @@ Item {
                     }
 
                     }
+                    AudioEqualizerPanel {
+                        Layout.fillWidth: true
+                        visible: root.currentSection === "equalizer"
+                    }
                     SettingsGroup {
+                        visible: root.currentSection !== "equalizer"
                         title: "Volume mixer"
                         description: "Adjust the selected device and individual applications."
                     // Main volume control

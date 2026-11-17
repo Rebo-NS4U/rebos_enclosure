@@ -108,6 +108,7 @@ ShellRoot {
                 _ = NiriService.overviewOpen;
                 _ = DesktopBlur.appliedMode;
                 _ = Audio.value;
+                _ = AudioEqualizer.initialized;
                 _ = AudioFormat.connected;
                 _ = Brightness.monitors;
                 // Own org.freedesktop.Notifications and load history early.

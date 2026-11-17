@@ -17,7 +17,9 @@ Singleton {
     id: root
 
     property bool ready: Pipewire.defaultAudioSink?.ready ?? false
-    property PwNode sink: Pipewire.defaultAudioSink
+    property PwNode sink: Pipewire.defaultAudioSink?.name === AudioEqualizer.sinkName
+        ? (Pipewire.nodes.values.find(node => node.name === AudioEqualizer.output) ?? Pipewire.defaultAudioSink)
+        : Pipewire.defaultAudioSink
     property PwNode source: Pipewire.defaultAudioSource
     readonly property real hardMaxValue: 2.00
     property real value: sink?.audio?.volume ?? 0
@@ -96,13 +98,13 @@ Singleton {
 
     function appNodes(isSink) {
         return Pipewire.nodes.values.filter((node) => {
-            return root.correctType(node, isSink) && node.isStream;
+            return root.correctType(node, isSink) && node.isStream && node.name !== "enclosure.equalizer.output";
         });
     }
 
     function devices(isSink) {
         return Pipewire.nodes.values.filter(node => {
-            return root.correctType(node, isSink) && !node.isStream && (!node.name || !node.name.endsWith(".monitor"));
+            return root.correctType(node, isSink) && node.name !== AudioEqualizer.sinkName && !node.isStream && (!node.name || !node.name.endsWith(".monitor"));
         });
     }
 
@@ -200,6 +202,10 @@ Singleton {
     }
 
     function setDefaultSink(node) {
+        if (AudioEqualizer.enabled && node?.name && node.name !== AudioEqualizer.sinkName) {
+            AudioEqualizer.setTarget(node.name);
+            return;
+        }
         Pipewire.preferredDefaultAudioSink = node;
         if (node?.id) {
             Quickshell.execDetached(["wpctl", "set-default", String(node.id)]);

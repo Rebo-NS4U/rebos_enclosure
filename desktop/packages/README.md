@@ -106,3 +106,5 @@ The emoji picker uses the core Fuzzel launcher in dmenu mode and wl-clipboard. I
   PipeWire, WirePlumber and the portals. Existing installations missing it
   should install it through the normal package update; no desktop restart
   is required for file deployment.
+
+The optional integrated equalizer uses PipeWire/libpipewire built-in filter-chain DSP and libpulse control tools already supplied by core packages. Its independent `rebos-equalizer.service` is started by the shell; it does not replace or restart the audio server.

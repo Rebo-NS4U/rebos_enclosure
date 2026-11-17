@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import qs.modules.globals
 import qs.modules.bar
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -27,14 +28,14 @@ Item {
         const nodes = Pipewire.nodes.values;
         if (!nodes)
             return [];
-        return nodes.filter(node => node && node.isSink && !node.isStream && node.audio);
+        return nodes.filter(node => node && node.name !== AudioEqualizer.sinkName && node.isSink && !node.isStream && node.audio);
     }
 
     readonly property var appNodes: {
         const nodes = Pipewire.nodes.values;
         if (!nodes)
             return [];
-        return nodes.filter(node => node && node.isSink && node.isStream && node.audio);
+        return nodes.filter(node => node && node.name !== "enclosure.equalizer.output" && node.isSink && node.isStream && node.audio);
     }
 
     ColumnLayout {
@@ -65,6 +66,10 @@ Item {
             }
 
             Item { Layout.fillWidth: true }
+            ThemeButton {
+                text: "EQ & mixer"
+                onClicked: { GlobalShortcuts.run("settings"); GlobalStates.settingsCurrentTab = 2; }
+            }
 
             // Audio Format / Bitrate Badge (Sample rate & bit depth)
             StyledRect {

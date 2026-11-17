@@ -112,7 +112,8 @@
     ".local/share/wallpapers/My Wolpapors - Shared Album",
     "code/anime-streamer",
     "code/rebos-assistant",
-    ".local/share/applications/rebos-shell-mousedash.desktop"
+    ".local/share/applications/rebos-shell-mousedash.desktop",
+    ".config/systemd/user/rebos-equalizer.service"
   ],
   "layout": 2,
   "sources": {
@@ -550,6 +551,10 @@
     },
     ".local/share/applications/rebos-shell-mousedash.desktop": {
       "source": "system/share/applications/rebos-shell-mousedash.desktop",
+      "kind": "managed"
+    },
+    ".config/systemd/user/rebos-equalizer.service": {
+      "source": "system/services/user/rebos-equalizer.service",
       "kind": "managed"
     }
   }
