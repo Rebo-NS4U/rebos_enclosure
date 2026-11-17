@@ -571,6 +571,8 @@ For estimated lyrics, the left panel groups Previous/Next line buttons together.
 
 Music collection cards have a Play button on the artwork: albums, artists and playlists start directly without opening their detail page. Playlist playback follows saved path order and skips missing tracks. Song rows retain their direct Play/Pause button. Repeat song is a dedicated toggle beside Repeat all; it loops the current track at the end while manual Next still advances.
 
+Use the Fullscreen button or F11 for a dedicated listening view with large album artwork, synced lyrics on wide displays, seek, volume and playback controls. Escape returns to the library without stopping playback; F11 toggles the view and restores the previous window mode.
+
 Enclosure Music opens with Repeat all enabled by default. Repeat song and turning repeat off remain available during playback. The playback queue holds at most 100 songs. Adding to a full queue leaves it unchanged and shows a notice. Playing a larger collection limits the queue to 100 songs while retaining the selected starting song.
 
 Panel recovery: **Super+Alt+R** restarts Quickshell through `rebos-panel.service`, even when the panel is unresponsive.

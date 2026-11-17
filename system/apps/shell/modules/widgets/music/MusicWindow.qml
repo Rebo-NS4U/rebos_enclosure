@@ -24,6 +24,16 @@ Window {
     onClosing: event => { event.accepted = false; GlobalStates.musicWindowVisible = false; }
     onVisibleChanged: if (visible && !started) { started = true; backend.running = true; }
 
+    readonly property bool immersive: visibility === Window.FullScreen
+    property bool restoreMaximized: false
+    function toggleFullscreen() {
+        if (immersive) {
+            if (restoreMaximized) showMaximized(); else showNormal();
+        } else {
+            restoreMaximized = visibility === Window.Maximized;
+            showFullScreen();
+        }
+    }
     property bool started: false
     property bool busy: false
     property string notice: ""
@@ -107,7 +117,10 @@ Window {
         for (let i = 0; i < lyricLines.length; i++) if (lyricLines[i].time >= 0 && lyricLines[i].time <= player.position/1000) found = i;
         return found;
     }
-    onLyricIndexChanged: if (lyricIndex >= 0) lyricsList.positionViewAtIndex(lyricIndex, ListView.Center)
+    onLyricIndexChanged: if (lyricIndex >= 0) {
+        lyricsList.positionViewAtIndex(lyricIndex, ListView.Center);
+        fullscreenLyrics.positionViewAtIndex(lyricIndex, ListView.Center);
+    }
 
     function time(ms) { const s = Math.max(0, Math.floor(ms/1000)); return Math.floor(s/60) + ":" + (s%60 < 10 ? "0" : "") + s%60; }
     function request(cmd, args, callback) {
@@ -240,9 +253,10 @@ Window {
         onErrorOccurred: (error, errorString) => { root.notice = errorString; }
     }
     Timer { interval: 500; running: root.playing; repeat: true; onTriggered: root.sync() }
-    Shortcut { sequence: "Space"; enabled: root.page !== "Downloads" && root.page !== "Daily Mixes" && !search.inputActiveFocus && !playlistName.inputActiveFocus; onActivated: root.toggle() }
+    Shortcut { sequence: "Space"; enabled: root.immersive || (root.page !== "Downloads" && root.page !== "Daily Mixes" && !search.inputActiveFocus && !playlistName.inputActiveFocus); onActivated: root.toggle() }
     Shortcut { sequence: "Ctrl+F"; enabled: root.page !== "Downloads" && root.page !== "Daily Mixes"; onActivated: search.focusInput() }
-    Shortcut { sequence: "Escape"; onActivated: GlobalStates.musicWindowVisible = false }
+    Shortcut { sequence: "F11"; onActivated: root.toggleFullscreen() }
+    Shortcut { sequence: "Escape"; onActivated: { if (root.immersive) root.toggleFullscreen(); else GlobalStates.musicWindowVisible = false; } }
 
     component Cover: ClippingRectangle {
         id: cover
@@ -287,6 +301,7 @@ Window {
     }
 
     StyledRect {
+        visible: !root.immersive
         objectName: "music-background"
         anchors.fill: parent; variant: "bg"; radius: 0
         ColumnLayout {
@@ -305,6 +320,7 @@ Window {
                         Layout.fillWidth: true
                         StyledText { text: "Enclosure Music"; font.bold: true; font.pixelSize: Styling.fontSize(2) }
                         StyledText { Layout.fillWidth: true; text: root.tracks.length + " songs"; color: Colors.overSurfaceVariant; elide: Text.ElideRight }
+                        ThemeButton { objectName: "music-fullscreen-enter"; text: "Fullscreen"; Accessible.name: "Enter fullscreen listening view (F11)"; onClicked: root.toggleFullscreen() }
                         ThemeButton { text: "Add folder"; enabled: !root.busy; onClicked: { root.busy = true; root.request("folder", {}, root.load); } }
                         ThemeButton { text: root.busy ? "Scanning…" : "Refresh library"; enabled: !root.busy; onClicked: root.scan() }
                     }
@@ -540,6 +556,110 @@ Window {
                         ThemeSlider { id: seekSlider; Layout.fillWidth: true; from: 0; to: Math.max(1,player.duration); value: player.position; enabled: !!root.current; Accessible.name: "Seek"; onMoved: root.seek(value) }
                         StyledText { text: root.time(player.duration); font.pixelSize: Styling.fontSize(-2) }
                     }
+                }
+            }
+        }
+    }
+
+    // A listening stage: artwork, lyrics and transport share the existing player.
+    Rectangle {
+        id: stage
+        objectName: "music-fullscreen-stage"
+        anchors.fill: parent
+        visible: root.immersive
+        color: Colors.surface
+        gradient: Gradient {
+            GradientStop { position: 0; color: Qt.tint(Colors.surface, Qt.alpha(Colors.primary, 0.18)) }
+            GradientStop { position: 0.65; color: Colors.surface }
+            GradientStop { position: 1; color: Qt.tint(Colors.surface, Qt.alpha(Colors.primary, 0.06)) }
+        }
+        readonly property real inset: Math.max(24, Math.min(width * 0.045, 80))
+        readonly property bool wide: width >= 1100
+        ColumnLayout {
+            anchors.fill: parent; anchors.margins: stage.inset
+            spacing: Math.max(18, stage.height * 0.025)
+            RowLayout {
+                Layout.fillWidth: true
+                ColumnLayout {
+                    spacing: 4
+                    StyledText { text: "NOW PLAYING"; font.pixelSize: Styling.fontSize(-2); font.letterSpacing: 3; color: Colors.primary }
+                    StyledText { text: root.current?.album || "Your listening room"; elide: Text.ElideRight; Layout.maximumWidth: stage.width * 0.6; color: Colors.overSurfaceVariant }
+                }
+                Item { Layout.fillWidth: true }
+                ThemeButton { objectName: "music-fullscreen-exit"; text: "Exit fullscreen · Esc"; onClicked: root.toggleFullscreen() }
+            }
+            RowLayout {
+                Layout.fillWidth: true; Layout.fillHeight: true
+                spacing: stage.inset
+                ColumnLayout {
+                    Layout.fillWidth: true; Layout.fillHeight: true
+                    Layout.preferredWidth: stage.wide ? stage.width * 0.42 : stage.width
+                    spacing: 18
+                    Item { Layout.fillHeight: true }
+                    Cover {
+                        objectName: "music-fullscreen-art"
+                        Layout.alignment: Qt.AlignHCenter
+                        Layout.preferredWidth: Math.max(100, Math.min(stage.wide ? stage.width * 0.36 : stage.width * 0.5, stage.height * 0.46))
+                        Layout.preferredHeight: width
+                        artwork: root.current?.art || ""
+                        radius: Styling.radius(8)
+                        border.width: 1; border.color: Qt.alpha(Colors.outline, 0.25)
+                    }
+                    ColumnLayout {
+                        Layout.fillWidth: true; spacing: 8
+                        StyledText { Layout.fillWidth: true; text: root.current?.title || "Find your next favorite"; font.pixelSize: Math.min(40, stage.height * 0.044); font.bold: true; maximumLineCount: 2; wrapMode: Text.Wrap; elide: Text.ElideRight; horizontalAlignment: Text.AlignHCenter }
+                        StyledText { Layout.fillWidth: true; text: root.current?.artist || "Choose a song from your library"; font.pixelSize: Styling.fontSize(4); color: Colors.overSurfaceVariant; elide: Text.ElideRight; horizontalAlignment: Text.AlignHCenter }
+                    }
+                    Item { Layout.fillHeight: true }
+                }
+                ColumnLayout {
+                    visible: stage.wide
+                    Layout.fillWidth: true; Layout.fillHeight: true
+                    Layout.preferredWidth: stage.width * 0.45
+                    spacing: 16
+                    StyledText { text: "LYRICS"; font.pixelSize: Styling.fontSize(-2); font.letterSpacing: 3; color: Colors.primary }
+                    ListView {
+                        id: fullscreenLyrics
+                        objectName: "music-fullscreen-lyrics"
+                        Layout.fillWidth: true; Layout.fillHeight: true
+                        clip: true; spacing: 26
+                        model: root.lyricLines
+                        topMargin: height * 0.28; bottomMargin: height * 0.28
+                        onVisibleChanged: if (visible && root.lyricIndex >= 0) positionViewAtIndex(root.lyricIndex, ListView.Center)
+                        delegate: ContentText {
+                            required property var modelData
+                            required property int index
+                            width: fullscreenLyrics.width
+                            text: modelData.text; wrapMode: Text.WordWrap
+                            font.pixelSize: Math.min(36, stage.height * 0.04); font.bold: true
+                            color: index === root.lyricIndex ? Colors.primary : Colors.overSurfaceVariant
+                            opacity: index === root.lyricIndex ? 1 : 0.55
+                        }
+                        StyledText { anchors.centerIn: parent; width: parent.width; text: root.lyricStatus || "Let the music speak."; visible: root.lyricLines.length === 0; wrapMode: Text.WordWrap; font.pixelSize: Styling.fontSize(8); color: Colors.overSurfaceVariant }
+                    }
+                    StyledText { visible: root.estimatedTiming; text: "Estimated lyric timing"; color: Colors.overSurfaceVariant; font.pixelSize: Styling.fontSize(-2) }
+                }
+            }
+            StyledText { visible: root.notice !== ""; Layout.fillWidth: true; text: root.notice; elide: Text.ElideRight; color: Colors.error }
+            ColumnLayout {
+                Layout.fillWidth: true; spacing: 14
+                RowLayout {
+                    Layout.fillWidth: true; spacing: 14
+                    StyledText { text: root.time(player.position); color: Colors.overSurfaceVariant }
+                    ThemeSlider { objectName: "music-fullscreen-seek"; Layout.fillWidth: true; from: 0; to: Math.max(1, player.duration); value: player.position; enabled: !!root.current; Accessible.name: "Seek"; onMoved: root.seek(value) }
+                    StyledText { text: root.time(player.duration); color: Colors.overSurfaceVariant }
+                }
+                RowLayout {
+                    Layout.fillWidth: true; spacing: 12
+                    ThemeButton { text: root.favorites.includes(root.current?.path) ? "♥" : "♡"; enabled: !!root.current; Accessible.name: "Favorite current song"; onClicked: root.favorite(root.current) }
+                    Item { Layout.fillWidth: true }
+                    ThemeButton { text: "Shuffle"; checked: root.shuffle; onClicked: root.shuffle = !root.shuffle }
+                    ThemeButton { text: "⏮"; Accessible.name: "Previous track"; enabled: !!root.current; onClicked: root.previous() }
+                    ThemeButton { objectName: "music-fullscreen-play"; text: root.playing ? "Pause" : "Play"; highlighted: true; Layout.preferredWidth: 120; implicitHeight: 52; enabled: root.queue.length > 0 || root.shownTracks.length > 0; onClicked: root.toggle() }
+                    ThemeButton { text: "⏭"; Accessible.name: "Next track"; enabled: root.queue.length > 1; onClicked: root.next(false) }
+                    ThemeButton { text: root.repeatMode === "Track" ? "Repeat song" : "Repeat all"; checked: root.repeatMode !== "None"; onClicked: root.repeatMode = root.repeatMode === "None" ? "Playlist" : root.repeatMode === "Playlist" ? "Track" : "None" }
+                    Item { Layout.fillWidth: true }
+                    ThemeSlider { Layout.preferredWidth: 100; from: 0; to: 1; value: root.volume; Accessible.name: "Volume"; onMoved: root.volume = value }
                 }
             }
         }

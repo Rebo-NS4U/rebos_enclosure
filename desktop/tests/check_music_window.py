@@ -217,8 +217,34 @@ def session():
                     console.log("MIX_LAYOUT_PASSED");
                     console.log("MIX_PREVIEW_AND_DOWNLOAD_PASSED");
                     console.log("MUSIC_ACCEPTANCE_PASSED tracks=" + music.tracks.length + " queue=" + music.queue.length);
-                    console.log('MUSIC_GEOMETRY ' + music.contentItem.width + 'x' + music.contentItem.height + ' children=' + music.contentItem.children.length + ' root=' + music.contentItem.children[music.contentItem.children.length-1].width); music.contentItem.grabToImage(result => { result.saveToFile("/tmp/enclosure-music-acceptance.png"); Qt.quit(); });
-                    stop();
+                    console.log('MUSIC_GEOMETRY ' + music.contentItem.width + 'x' + music.contentItem.height + ' children=' + music.contentItem.children.length + ' root=' + music.contentItem.children[music.contentItem.children.length-1].width); music.contentItem.grabToImage(result => { result.saveToFile("/tmp/enclosure-music-acceptance.png"); music.toggleFullscreen(); repeatStart = attempts; phase = 90; });
+                } else if (phase === 90 && attempts >= repeatStart + 3) {
+                    const stage = findItem(music.contentItem, "music-fullscreen-stage");
+                    const art = findItem(music.contentItem, "music-fullscreen-art");
+                    const transport = findItem(music.contentItem, "music-fullscreen-play");
+                    const rail = findItem(music.contentItem, "music-fullscreen-seek");
+                    if (!music.immersive || !stage.visible || !art.visible || art.width < 100 || !transport.enabled || !rail.enabled) { console.error("MUSIC_FULLSCREEN_ENTER_FAILED"); Qt.exit(1); return; }
+                    const pos = transport.mapToItem(stage, 0, 0);
+                    if (pos.y < 0 || pos.y + transport.height > stage.height) { console.error("MUSIC_FULLSCREEN_BOUNDS_FAILED"); Qt.exit(1); return; }
+                    const selected = music.current.path;
+                    findItem(music.contentItem, "music-fullscreen-exit").clicked();
+                    if (music.immersive || music.current.path !== selected) { console.error("MUSIC_FULLSCREEN_RESTORE_FAILED"); Qt.exit(1); return; }
+                    repeatStart = attempts; phase = 92;
+                } else if (phase === 92 && attempts >= repeatStart + 3) {
+                    music.toggleFullscreen(); music.requestActivate(); repeatStart = attempts; phase = 91;
+                } else if (phase === 91 && attempts >= repeatStart + 3) {
+                    music.contentItem.grabToImage(result => {
+                        result.saveToFile("/tmp/enclosure-music-fullscreen.png");
+                        input.keyClick(Qt.Key_Escape); repeatStart = attempts; phase = 93;
+
+                    });
+                    phase = 11;
+                } else if (phase === 93 && attempts >= repeatStart + 3) {
+                    if (music.immersive || !music.visible) { console.error("MUSIC_FULLSCREEN_ESCAPE_FAILED"); Qt.exit(1); return; }
+                    input.keyClick(Qt.Key_F11); repeatStart = attempts; phase = 94;
+                } else if (phase === 94 && attempts >= repeatStart + 3) {
+                    if (!music.immersive) { console.error("MUSIC_FULLSCREEN_F11_FAILED"); Qt.exit(1); return; }
+                    console.log("MUSIC_FULLSCREEN_PASSED"); stop(); Qt.quit();
                 }
             }
         }
