@@ -9,8 +9,8 @@ Button {
     focusPolicy: Qt.StrongFocus
     Accessible.name: text
     hoverEnabled: true
-    implicitHeight: Math.max(36, implicitContentHeight + padding * 2)
-    padding: 10
+    implicitHeight: Math.max(Styling.spacing(36), implicitContentHeight + padding * 2)
+    padding: Styling.spacing(10)
     font.family: Config.theme.font
     font.pixelSize: Styling.fontSize(-1)
     opacity: enabled ? 1 : 0.45
@@ -24,7 +24,7 @@ Button {
     }
     contentItem: StyledText {
         text: root.text
-        color: root.highlighted || root.checked ? Colors.overPrimary : Colors.overSurface
+        color: root.background.itemColor
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
         elide: Text.ElideRight

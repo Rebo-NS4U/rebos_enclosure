@@ -5,7 +5,9 @@ Bluetooth panel, PipeWire device/application mixer, notification server/history,
 and session menu are reused. No greeter files or wallpaper treatments change.
 
 `DesktopDialogs.qml` adds the polkit agent and a shared searchable selection
-window. It uses StyledRect, StyledText, SearchInput and ThemeButton, inheriting
+window. `DesktopDialogSurface.qml` owns the reusable themed presentation, separate
+from authentication and clipboard transport. The window requests blur only behind
+the painted card and reserves room for the configured shadow. It uses StyledRect, StyledText, SearchInput and ThemeButton, inheriting
 Colors, Styling, Motion and ShellStyles through the canonical components. Its
 surface follows the selected material, corner frame, font and opacity, with no
 full-screen dimming. Content scrolls within the available screen. Search arrows,
@@ -39,7 +41,14 @@ user-installed consumers, but shipped selection scripts no longer invoke it.
 
 ## Verification and activation
 
-Run the menu transport and emoji tests in desktop/tests; Bluetooth pairing,
+The dialog theme regression covers all twelve material finishes plus Custom,
+light/dark palettes, scalable text, square/rounded frames, transparency, keyboard
+focus, masked authentication and narrow screens (104 combinations). It also runs
+in an isolated native Wayland renderer to check actual material changes without
+changing the desktop theme. Shared button labels use the current surface foreground,
+including Blueprint outlined buttons; padding follows theme typography.
+
+Run the menu transport, dialog theme and emoji tests in desktop/tests; Bluetooth pairing,
 Bluetooth scrolling/credential-stdin and connectivity tests live under the shell's
 scripts directory. `qs ipc -p ~/.config/quickshell call desktopDialogs status`
 reports registration and dialog visibility without exposing secrets.

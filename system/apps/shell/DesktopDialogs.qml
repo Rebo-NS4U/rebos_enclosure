@@ -4,6 +4,8 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
+import Quickshell.Wayland._BackgroundEffect
+import qs.config
 import Quickshell.Services.Polkit
 import qs.modules.components
 import qs.modules.theme
@@ -11,6 +13,7 @@ import qs.modules.services
 
 Item {
     id: root
+    readonly property real shadowMargin: Math.ceil(Math.max(Math.abs(Config.theme.shadowXOffset), Math.abs(Config.theme.shadowYOffset)) + Config.theme.shadowBlur * 16)
     property var request: null
     property var choices: []
     readonly property var flow: agentLoader.item?.flow ?? null
@@ -20,23 +23,23 @@ Item {
         broker.write(JSON.stringify({selection: selection}) + "\n");
         request = null;
         choices = [];
-        search.clear();
+        card.searchInput.clear();
     }
     function filter() {
-        const query = search.text.toLocaleLowerCase();
+        const query = card.searchInput.text.toLocaleLowerCase();
         choices = (request?.lines ?? []).filter(line => String(line).toLocaleLowerCase().includes(query));
-        list.currentIndex = choices.length ? 0 : -1;
+        card.choiceList.currentIndex = choices.length ? 0 : -1;
     }
     function submit() {
         if (authenticating) {
             if (flow?.isResponseRequired) {
-                flow.submit(search.text);
-                search.clear();
+                flow.submit(card.searchInput.text);
+                card.searchInput.clear();
             }
-        } else if (list.currentIndex >= 0) finish(choices[list.currentIndex]);
+        } else if (card.choiceList.currentIndex >= 0) finish(choices[card.choiceList.currentIndex]);
     }
     function cancel() {
-        search.clear();
+        card.searchInput.clear();
         if (authenticating) flow?.cancelAuthenticationRequest();
         else if (request) finish(null);
     }
@@ -50,9 +53,9 @@ Item {
                 try {
                     root.request = JSON.parse(data);
                     if (root.authenticating) { root.finish(null); return; }
-                    search.clear();
+                    card.searchInput.clear();
                     root.filter();
-                    Qt.callLater(() => search.focusInput());
+                    Qt.callLater(() => card.searchInput.focusInput());
                 } catch (_) { root.request = null; }
             }
         }
@@ -78,15 +81,15 @@ Item {
     Connections {
         target: root.flow
         function onIsResponseRequiredChanged() {
-            search.clear();
-            if (root.flow?.isResponseRequired) Qt.callLater(() => search.focusInput());
+            card.searchInput.clear();
+            if (root.flow?.isResponseRequired) Qt.callLater(() => card.searchInput.focusInput());
         }
-        function onIsCompletedChanged() { search.clear(); }
+        function onIsCompletedChanged() { card.searchInput.clear(); }
     }
     onAuthenticatingChanged: {
-        search.clear();
+        card.searchInput.clear();
         if (authenticating && request) finish(null);
-        if (authenticating) Qt.callLater(() => search.focusInput());
+        if (authenticating) Qt.callLater(() => card.searchInput.focusInput());
     }
     IpcHandler {
         target: "desktopDialogs"
@@ -106,116 +109,19 @@ Item {
         visible: root.authenticating || root.request !== null
         screen: Quickshell.screens.find(s => s.name === NiriService.focusedMonitor?.name) ?? Quickshell.screens[0]
         color: "transparent"
-        implicitWidth: Math.min(620, (screen?.width ?? 640) - 24)
-        implicitHeight: Math.min(content.implicitHeight + Styling.spacing(32), (screen?.height ?? 600) - 48)
+        implicitWidth: Math.max(1, Math.min(Styling.spacing(620) + root.shadowMargin * 2, (screen?.width ?? 640) - 24))
+        implicitHeight: Math.max(1, Math.min(card.contentImplicitHeight + root.shadowMargin * 2, (screen?.height ?? 600) - 48))
         exclusionMode: ExclusionMode.Ignore
         WlrLayershell.namespace: "rebos_shell:dialogs"
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.keyboardFocus: visible ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
-        onVisibleChanged: if (visible) Qt.callLater(() => search.focusInput())
-        StyledRect {
+        onVisibleChanged: if (visible) Qt.callLater(() => card.searchInput.focusInput())
+        BackgroundEffect.blurRegion: BlurRegion { target: card }
+        DesktopDialogSurface {
+            id: card
             anchors.fill: parent
-            variant: "bg"
-            radius: Styling.radius(0)
-            enableShadow: true
-            Flickable {
-                anchors.fill: parent
-                anchors.margins: Styling.spacing(16)
-                contentHeight: content.implicitHeight
-                clip: true
-                ColumnLayout {
-                    id: content
-                    width: parent.width
-                    spacing: Styling.spacing(12)
-                    focus: true
-                    Keys.onEscapePressed: root.cancel()
-                    StyledText {
-                        Layout.fillWidth: true
-                        text: root.authenticating ? "Authentication required" : root.request?.title ?? "Select"
-                        font.bold: true
-                        wrapMode: Text.Wrap
-                    }
-                    StyledText {
-                        Layout.fillWidth: true
-                        visible: root.authenticating
-                        text: root.flow?.message ?? ""
-                        wrapMode: Text.Wrap
-                    }
-                    Flow {
-                        Layout.fillWidth: true
-                        spacing: Styling.spacing(8)
-                        visible: root.authenticating && (root.flow?.identities.length ?? 0) > 1
-                        Repeater {
-                            model: root.flow?.identities ?? []
-                            ThemeButton {
-                                required property var modelData
-                                text: modelData.displayName || modelData.name || "User"
-                                checked: root.flow?.selectedIdentity === modelData
-                                onClicked: { search.clear(); root.flow.selectedIdentity = modelData; }
-                            }
-                        }
-                    }
-                    StyledText {
-                        Layout.fillWidth: true
-                        visible: root.authenticating && text.length > 0
-                        text: root.flow?.supplementaryMessage || (root.flow?.failed ? "Authentication failed. Try again or cancel." : "")
-                        color: root.flow?.supplementaryIsError || root.flow?.failed ? Colors.error : Colors.overSurface
-                        wrapMode: Text.Wrap
-                    }
-                    StyledText {
-                        Layout.fillWidth: true
-                        visible: root.authenticating
-                        text: root.flow?.inputPrompt || "Waiting for authentication…"
-                        wrapMode: Text.Wrap
-                    }
-                    SearchInput {
-                        id: search
-                        Layout.fillWidth: true
-                        enabled: !root.authenticating || (root.flow?.isResponseRequired ?? false)
-                        passwordMode: root.authenticating && !root.flow?.responseVisible
-                        placeholderText: root.authenticating ? "Authentication response" : root.request?.placeholder ?? "Search…"
-                        clearOnEscape: false
-                        onSearchTextChanged: if (!root.authenticating) root.filter()
-                        onAccepted: root.submit()
-                        onEscapePressed: root.cancel()
-                        onDownPressed: list.currentIndex = Math.min(root.choices.length - 1, list.currentIndex + 1)
-                        onUpPressed: list.currentIndex = Math.max(0, list.currentIndex - 1)
-                    }
-                    ListView {
-                        id: list
-                        visible: !root.authenticating
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: Math.min(320, contentHeight)
-                        clip: true
-                        model: root.choices
-                        currentIndex: -1
-                        onCurrentIndexChanged: positionViewAtIndex(currentIndex, ListView.Contain)
-                        delegate: ThemeButton {
-                            required property string modelData
-                            required property int index
-                            width: list.width
-                            text: modelData
-                            highlighted: list.currentIndex === index
-                            onClicked: root.finish(modelData)
-                        }
-                    }
-                    StyledText {
-                        visible: !root.authenticating && root.choices.length === 0
-                        text: "No matching entries"
-                    }
-                    RowLayout {
-                        Layout.fillWidth: true
-                        ThemeButton { text: "Cancel"; onClicked: root.cancel() }
-                        Item { Layout.fillWidth: true }
-                        ThemeButton {
-                            text: root.authenticating ? "Authenticate" : "Select"
-                            highlighted: true
-                            enabled: root.authenticating ? root.flow?.isResponseRequired ?? false : list.currentIndex >= 0
-                            onClicked: root.submit()
-                        }
-                    }
-                }
-            }
+            anchors.margins: root.shadowMargin
+            controller: root
         }
     }
 }

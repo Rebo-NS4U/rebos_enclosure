@@ -19,13 +19,19 @@ ColumnLayout {
         id: response
         Layout.fillWidth: true
         visible: inputRequired
+        implicitHeight: Math.max(Styling.spacing(48), Styling.fontSize(0) + Styling.spacing(20))
+        border.width: inputActiveFocus ? 2 : 1
+        border.color: inputActiveFocus ? Colors.primary : Qt.alpha(Colors.outline, 0.3)
+        Accessible.name: "Pairing PIN or passkey"
         passwordMode: true
         placeholderText: "Pairing PIN or passkey"
         onAccepted: { BluetoothService.respondPairing(true, text); clear(); }
         onEscapePressed: { BluetoothService.respondPairing(false); clear(); }
         onVisibleChanged: { clear(); if (visible) Qt.callLater(() => focusInput()); }
     }
-    RowLayout {
+    Flow {
+        Layout.fillWidth: true
+        spacing: Styling.spacing(8)
         ThemeButton { text: "Cancel pairing"; onClicked: { BluetoothService.cancelPairing(); response.clear(); } }
         ThemeButton {
             visible: prompt !== null
@@ -47,7 +53,7 @@ ColumnLayout {
         text: BluetoothService.pairingCode
         font.pixelSize: Styling.fontSize(10)
         font.bold: true
-        color: Styling.srItem("overprimary")
+        color: Colors.overBackground
         horizontalAlignment: Text.AlignHCenter
     }
 
