@@ -44,3 +44,8 @@ Skills ship within the existing assistant installer source mapping, so installed
 copies receive the same skills and helpers as development symlinks. They are loaded
 by the preset's explicit file reference rather than requiring a global skill install
 or a backend restart.
+
+## Tab shortcuts
+
+While the assistant is focused, press Ctrl+H for the previous conversation tab
+and Ctrl+L for the next. Navigation wraps at either end and focuses the composer.

@@ -90,6 +90,30 @@ Item {
             resizeSidebar(GlobalStates.assistantWidth);
     }
 
+    // Follow the visible tab order and wrap at either end.
+    function switchSessionTab(direction) {
+        const sessions = Ai.sessions;
+        if (sessions.length < 2) return;
+        const index = sessions.indexOf(Ai.activeSession);
+        const next = (index + direction + sessions.length) % sessions.length;
+        Ai.selectSession(sessions[next]);
+        Qt.callLater(root.focusSearchInput);
+    }
+
+    Shortcut {
+        sequence: "Ctrl+H"
+        context: Qt.WindowShortcut
+        enabled: root.active && root.windowFocused && Ai.sessions.length > 1
+        onActivated: root.switchSessionTab(-1)
+    }
+
+    Shortcut {
+        sequence: "Ctrl+L"
+        context: Qt.WindowShortcut
+        enabled: root.active && root.windowFocused && Ai.sessions.length > 1
+        onActivated: root.switchSessionTab(1)
+    }
+
     function focusSearchInput() {
         currentPage?.input.forceActiveFocus();
     }
