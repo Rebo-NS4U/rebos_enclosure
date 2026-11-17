@@ -133,15 +133,31 @@ assert.equal(game.bossClears(102),3);
 for (const t of [0,2.99,30,35.99,36]) assert.equal(game.spawnBurst(480,480,3,t,240,240).length,0);
 for (const t of [3,12,21,39,48,57,75,84,93,111,10011]) {
  const b=game.spawnBurst(480,480,3,t,240,240);
- assert(b.length>=3 && b.length<=5);
+ assert(b.length>=2 && b.length<=5);
  for(const e of b) {
   assert(Number.isFinite(e.vx) && Number.isFinite(e.vy));
   const hit=game.contact([{x:240,y:240,r:11}],e.x,e.y,e.x+e.vx*10,e.y+e.vy*10,e.r);
   if(hit) assert(hit.t*10>=0.55-1e-8);
  }
 }
-assert.equal(game.spawnBurst(480,480,2,8,240,240).length,0);
-assert.equal(game.spawnBurst(480,480,2,12,240,240).length,3);
+assert(game.spawnBurst(480,480,2,8,240,240).length>0); // No scheduled quiet quarter.
+// Repeated bursts at the same instant must vary count, direction and timing.
+vm.runInContext('{ let seed=753; Math.random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;}; }',game);
+for (const [d,t] of [[2,8],[3,3],[3,39],[3,75]]) {
+ const counts=new Set(), angles=new Set(), intervals=new Set();
+ for(let i=0;i<100;i++) {
+  const burst=game.spawnBurst(480,480,d,t,240,240);
+  counts.add(burst.length); intervals.add(game.spawnInterval(d,t));
+  for(const e of burst) {
+   angles.add(Math.round(Math.atan2(e.vy,e.vx)*100));
+   assert(Math.hypot(e.vx,e.vy)<=(d===2?325:350)+1e-8);
+   const hit=game.contact([{x:240,y:240,r:11}],e.x,e.y,e.x+e.vx*10,e.y+e.vy*10,e.r);
+   if(hit) assert(hit.t*10>=0.55-1e-8);
+  }
+ }
+ assert(counts.size>=2); assert(angles.size>30); assert.equal(intervals.size,100);
+}
+console.log('Hard and boss bursts vary counts, angles and timing safely: PASS');
 // Identical random draws expose the time ramp without random sampling noise.
 vm.runInContext('Math.random=()=>0.5',game);
 const earlyEasy=game.spawnBurst(480,480,0,0,240,240);

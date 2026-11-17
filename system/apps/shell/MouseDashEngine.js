@@ -98,7 +98,7 @@ function scoreKey(mode, difficulty) { return "tailored:" + (difficulty === 3 ? "
 function difficultyHint(d) {
     return ["Easy · Rising drift: faster volleys and more aimed shots as you survive.",
         "Normal · Meteor field: unpredictable angles and aimed bursts.",
-        "Hard · Crossfire: alternating horizontal/vertical volleys, then recovery.",
+        "Hard · Crossfire: irregular mixed-angle bursts from changing borders.",
         "Extreme · Endless bosses: survive 3 attack phases for a clear bonus. No time limit."][d];
 }
 function bossState(elapsed) {
@@ -115,44 +115,39 @@ function encounterLabel(d, elapsed) {
         const b = bossState(elapsed);
         return "BOSS " + b.round + " · " + b.name + " · " + (b.phase === "attack" ? "PHASE " + (b.attack+1) : b.phase.toUpperCase()) + " · " + Math.ceil(b.remaining) + "s";
     }
-    if (d === 2) return elapsed % 12 < 8 ? "CROSSFIRE · KEEP A ROUTE OPEN" : "RECOVERY · COLLECT STARS";
+    if (d === 2) return "CROSSFIRE · EXPECT THE UNEXPECTED";
     return d === 0 ? "RISING DRIFT" : "METEOR FIELD";
 }
 function spawnInterval(difficulty, elapsed) {
     if (difficulty === 0) return Math.max(0.36, 0.8-Math.min(120,elapsed)*0.004) + Math.random()*0.18;
-    if (difficulty === 2) return 0.42 + Math.random()*0.12;
-    if (difficulty === 3) return Math.max(0.22, 0.52-bossState(elapsed).level*0.035);
+    if (difficulty === 2) return Math.max(0.26,0.46-Math.min(120,elapsed)*0.0015)*(0.55+Math.random()*1.15);
+    if (difficulty === 3) return Math.max(0.22, 0.52-bossState(elapsed).level*0.035)*(0.55+Math.random()*1.1);
     return Math.max(0.3, 0.55-Math.min(90,elapsed)*0.004)*(0.7+Math.random()*0.6);
 }
 function spawnBurst(w, h, difficulty, elapsed, px, py) {
     const boss = bossState(elapsed);
-    if (difficulty === 2 && elapsed % 12 >= 8 || difficulty === 3 && boss.phase !== "attack") return [];
+    if (difficulty === 3 && boss.phase !== "attack") return [];
     const cap = [245,290,325,350][difficulty];
     const baseSpeed = difficulty === 0 ? Math.min(cap,150+elapsed*0.9) : Math.min(cap,[110,215,245,230][difficulty]+(difficulty === 3 ? boss.level*12+boss.attack*20 : elapsed*1.2));
-    const count = difficulty === 0 ? (elapsed >= 60 ? 2 : 1)+Math.floor(Math.random()*2) : difficulty === 1 ? 1+Math.floor(Math.random()*4) : difficulty === 2 ? 3 : 3+boss.attack;
-    const grouped = difficulty === 0 || difficulty === 2 || difficulty === 3 && boss.kind !== 1 || Math.random()<0.35;
+    const count = difficulty === 0 ? (elapsed >= 60 ? 2 : 1)+Math.floor(Math.random()*2) : difficulty === 1 ? 1+Math.floor(Math.random()*4) : difficulty === 2 ? 1+Math.floor(Math.random()*4) : 2+Math.floor(Math.random()*(2+boss.attack));
+    const grouped = difficulty === 0 || Math.random() < (difficulty === 2 ? 0.25 : 0.35);
     const sharedLane = 0.1 + Math.random()*0.8;
     const distances = [px,w-px,py,h-py];
     const eligible = [0,1,2,3].filter(edge=>distances[edge]>=Math.min(180,baseSpeed*0.55+35));
     let edges = eligible.length ? eligible : [distances.indexOf(Math.max.apply(null,distances))];
-    if (difficulty === 2 || difficulty === 3 && boss.kind === 1) {
-        const axis = Math.floor(elapsed / (difficulty === 2 ? 2 : 1)) % 2;
-        const preferred = edges.filter(e=>Math.floor(e/2) === axis);
-        if (preferred.length) edges = preferred;
-    }
     const sharedEdge = edges[Math.floor(Math.random()*edges.length)];
     const enemies=[];
     for(let i=0;i<count;i++) {
         const edge = grouped ? sharedEdge : edges[Math.floor(Math.random()*edges.length)];
         const r = difficulty === 0 ? 10 : 9+Math.random()*8, vertical=edge>=2, span=vertical ? w : h;
-        const sweep = difficulty === 3 && boss.kind === 2;
-        const lane = Math.max(r+2, Math.min(span-r-2, sweep ? span*(0.5+0.36*Math.sin(elapsed*1.4+i*0.3)) : grouped ? sharedLane*span+(i-(count-1)/2)*45 : r+2+Math.random()*(span-2*r-4)));
+        const sweep = difficulty === 3 && boss.kind === 2 && Math.random()<0.55;
+        const lane = Math.max(r+2, Math.min(span-r-2, sweep ? span*(0.5+0.36*Math.sin(elapsed*1.4+Math.random()*2.4+i*0.3)) : grouped ? sharedLane*span+(difficulty >= 2 ? (Math.random()-0.5)*120 : (i-(count-1)/2)*45) : r+2+Math.random()*(span-2*r-4)));
         const x = vertical ? lane : edge===0 ? r+2 : w-r-2;
         const y = vertical ? (edge===2 ? r+2 : h-r-2) : lane;
-        const aimed = difficulty === 0 ? Math.random() < Math.min(0.55,0.2+elapsed*0.003) : difficulty === 1 ? Math.random()<0.75 : difficulty === 3 && boss.kind === 0;
-        const tx = aimed ? px : difficulty === 1 ? w*(0.15+Math.random()*0.7) : vertical ? x : w/2;
-        const ty = aimed ? py : difficulty === 1 ? h*(0.15+Math.random()*0.7) : vertical ? h/2 : y;
-        const angle = Math.atan2(ty-y,tx-x)+(aimed ? (i-(count-1)/2)*0.17 : 0);
+        const aimed = difficulty === 0 ? Math.random() < Math.min(0.55,0.2+elapsed*0.003) : difficulty === 1 ? Math.random()<0.75 : difficulty === 2 ? Math.random()<0.6 : Math.random() < (boss.kind === 0 ? 0.85 : boss.kind === 1 ? 0.55 : 0.3);
+        const tx = aimed ? px : difficulty >= 1 ? w*(0.15+Math.random()*0.7) : vertical ? x : w/2;
+        const ty = aimed ? py : difficulty >= 1 ? h*(0.15+Math.random()*0.7) : vertical ? h/2 : y;
+        const angle = Math.atan2(ty-y,tx-x)+(difficulty >= 2 ? (Math.random()-0.5)*0.7 : aimed ? (i-(count-1)/2)*0.17 : 0);
         // Visible border births retain at least 550ms reaction time at every tier.
         const safeSpeed = Math.max(40,(distances[edge]-2*r-playerRadius(elapsed)-6)/0.55);
         const speed = Math.min(cap,baseSpeed*(0.8+Math.random()*0.35),safeSpeed);
