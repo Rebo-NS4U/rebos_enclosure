@@ -1029,6 +1029,32 @@ ClippingRectangle {
                     // One inset bezel and a small vent bank keep the housing legible.
                     if(chassis.outer){
                         const safe=Math.max(20,cornerRadius+8);
+                        // Split top seams and three inset slots suggest a machined cover.
+                        if(width>safe*2+80){
+                            const center=width/2;
+                            ctx.strokeStyle=Qt.alpha(pigment,0.18);ctx.lineWidth=1;
+                            for(const span of [[safe,center-24],[center+24,width-safe]]){
+                                ctx.beginPath();ctx.moveTo(span[0],9);
+                                ctx.lineTo(span[1],9);ctx.stroke();
+                            }
+                            ctx.fillStyle=Qt.alpha(pigment,0.22);
+                            for(let i=-1;i<=1;i++)ctx.fillRect(center+i*10-3,7,6,2);
+                        }
+                        // A short rail on each side, with end caps and a center notch.
+                        // Keep details inside the bezel and away from rounded corners.
+                        if(height>safe*2+64){
+                            const mid=height/2;
+                            const half=Math.min(28,(height-safe*2)/4);
+                            ctx.strokeStyle=Qt.alpha(pigment,0.18);ctx.lineWidth=1;
+                            for(const x of [8,width-8]){
+                                const inward=x<width/2?1:-1;
+                                ctx.beginPath();ctx.moveTo(x+3*inward,mid-half);
+                                ctx.lineTo(x,mid-half);ctx.lineTo(x,mid+half);
+                                ctx.lineTo(x+3*inward,mid+half);ctx.stroke();
+                                ctx.fillStyle=Qt.alpha(pigment,0.24);
+                                ctx.fillRect(x-1,mid-3,2,6);
+                            }
+                        }
                         if(width>safe*2+40 && height>safe*2+24){
                             for(let i=0;i<4;i++){
                                 const y=safe+i*6;
