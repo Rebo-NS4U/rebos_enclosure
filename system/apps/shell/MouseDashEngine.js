@@ -96,7 +96,7 @@ function scoreKey(mode, difficulty) { return "tailored:" + (difficulty === 3 ? "
 
 // Each tier has its own rhythm, targeting rules and collection pressure.
 function difficultyHint(d) {
-    return ["Easy · Relaxed drift: slow straight lanes, long breaks and slower stars.",
+    return ["Easy · Rising drift: faster volleys and more aimed shots as you survive.",
         "Normal · Meteor field: unpredictable angles and aimed bursts.",
         "Hard · Crossfire: alternating horizontal/vertical volleys, then recovery.",
         "Extreme · Endless bosses: survive 3 attack phases for a clear bonus. No time limit."][d];
@@ -116,10 +116,10 @@ function encounterLabel(d, elapsed) {
         return "BOSS " + b.round + " · " + b.name + " · " + (b.phase === "attack" ? "PHASE " + (b.attack+1) : b.phase.toUpperCase()) + " · " + Math.ceil(b.remaining) + "s";
     }
     if (d === 2) return elapsed % 12 < 8 ? "CROSSFIRE · KEEP A ROUTE OPEN" : "RECOVERY · COLLECT STARS";
-    return d === 0 ? "RELAXED DRIFT" : "METEOR FIELD";
+    return d === 0 ? "RISING DRIFT" : "METEOR FIELD";
 }
 function spawnInterval(difficulty, elapsed) {
-    if (difficulty === 0) return 1.15 + Math.random()*0.5;
+    if (difficulty === 0) return Math.max(0.36, 0.8-Math.min(120,elapsed)*0.004) + Math.random()*0.18;
     if (difficulty === 2) return 0.42 + Math.random()*0.12;
     if (difficulty === 3) return Math.max(0.22, 0.52-bossState(elapsed).level*0.035);
     return Math.max(0.3, 0.55-Math.min(90,elapsed)*0.004)*(0.7+Math.random()*0.6);
@@ -127,9 +127,9 @@ function spawnInterval(difficulty, elapsed) {
 function spawnBurst(w, h, difficulty, elapsed, px, py) {
     const boss = bossState(elapsed);
     if (difficulty === 2 && elapsed % 12 >= 8 || difficulty === 3 && boss.phase !== "attack") return [];
-    const cap = [150,290,325,350][difficulty];
-    const baseSpeed = difficulty === 0 ? 110 : Math.min(cap,[110,215,245,230][difficulty]+(difficulty === 3 ? boss.level*12+boss.attack*20 : elapsed*1.2));
-    const count = difficulty === 0 ? 1 : difficulty === 1 ? 1+Math.floor(Math.random()*4) : difficulty === 2 ? 3 : 3+boss.attack;
+    const cap = [245,290,325,350][difficulty];
+    const baseSpeed = difficulty === 0 ? Math.min(cap,150+elapsed*0.9) : Math.min(cap,[110,215,245,230][difficulty]+(difficulty === 3 ? boss.level*12+boss.attack*20 : elapsed*1.2));
+    const count = difficulty === 0 ? (elapsed >= 60 ? 2 : 1)+Math.floor(Math.random()*2) : difficulty === 1 ? 1+Math.floor(Math.random()*4) : difficulty === 2 ? 3 : 3+boss.attack;
     const grouped = difficulty === 0 || difficulty === 2 || difficulty === 3 && boss.kind !== 1 || Math.random()<0.35;
     const sharedLane = 0.1 + Math.random()*0.8;
     const distances = [px,w-px,py,h-py];
@@ -149,7 +149,7 @@ function spawnBurst(w, h, difficulty, elapsed, px, py) {
         const lane = Math.max(r+2, Math.min(span-r-2, sweep ? span*(0.5+0.36*Math.sin(elapsed*1.4+i*0.3)) : grouped ? sharedLane*span+(i-(count-1)/2)*45 : r+2+Math.random()*(span-2*r-4)));
         const x = vertical ? lane : edge===0 ? r+2 : w-r-2;
         const y = vertical ? (edge===2 ? r+2 : h-r-2) : lane;
-        const aimed = difficulty === 1 ? Math.random()<0.75 : difficulty === 3 && boss.kind === 0;
+        const aimed = difficulty === 0 ? Math.random() < Math.min(0.55,0.2+elapsed*0.003) : difficulty === 1 ? Math.random()<0.75 : difficulty === 3 && boss.kind === 0;
         const tx = aimed ? px : difficulty === 1 ? w*(0.15+Math.random()*0.7) : vertical ? x : w/2;
         const ty = aimed ? py : difficulty === 1 ? h*(0.15+Math.random()*0.7) : vertical ? h/2 : y;
         const angle = Math.atan2(ty-y,tx-x)+(aimed ? (i-(count-1)/2)*0.17 : 0);

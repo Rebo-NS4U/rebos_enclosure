@@ -96,7 +96,7 @@ for (let d=0;d<4;d++) for (let i=0;i<100;i++) for(const [px,py] of [[12,12],[240
  assert(burst.length>=(d===3?0:1) && burst.length<=5);
  for(const e of burst) {
   assert(e.x-e.r>=0 && e.x+e.r<=480 && e.y-e.r>=0 && e.y+e.r<=480);
-  assert(Math.hypot(e.vx,e.vy)<=[225,290,325,350][d]+1e-8);
+  assert(Math.hypot(e.vx,e.vy)<=[245,290,325,350][d]+1e-8);
   assert(Number.isFinite(e.vx) && Number.isFinite(e.vy));
   const hit=game.contact([{x:px,y:py,r:11}],e.x,e.y,e.x+e.vx*10,e.y+e.vy*10,e.r);
   if(hit) assert(hit.t*10>=0.55-1e-8);
@@ -142,9 +142,19 @@ for (const t of [3,12,21,39,48,57,75,84,93,111,10011]) {
 }
 assert.equal(game.spawnBurst(480,480,2,8,240,240).length,0);
 assert.equal(game.spawnBurst(480,480,2,12,240,240).length,3);
-const easy=game.spawnBurst(480,480,0,100,240,240);
-assert.equal(easy.length,1);
-assert(Math.abs(easy[0].vx)<1e-8 || Math.abs(easy[0].vy)<1e-8);
+// Identical random draws expose the time ramp without random sampling noise.
+vm.runInContext('Math.random=()=>0.5',game);
+const earlyEasy=game.spawnBurst(480,480,0,0,240,240);
+const lateEasy=game.spawnBurst(480,480,0,120,240,240);
+assert.equal(earlyEasy.length,2);
+assert.equal(lateEasy.length,3);
+assert(Math.hypot(lateEasy[0].vx,lateEasy[0].vy)>Math.hypot(earlyEasy[0].vx,earlyEasy[0].vy));
+assert(game.spawnInterval(0,60)<game.spawnInterval(0,0));
+assert(game.spawnInterval(0,120)<game.spawnInterval(0,60));
+assert.equal(game.spawnInterval(0,10000),game.spawnInterval(0,120));
+// Aimed shots become common late in the run, closing stationary safe lanes.
+assert(Math.abs(earlyEasy[0].vx)<1e-8 || Math.abs(earlyEasy[0].vy)<1e-8);
+assert(Math.abs(lateEasy[0].vx)>1 && Math.abs(lateEasy[0].vy)>1);
 const easyStar=game.spawnTarget(480,480,0);
 assert.equal(Math.hypot(easyStar.vx,easyStar.vy),45);
 console.log('Distinct difficulty rules and endless boss lifecycle: PASS');
