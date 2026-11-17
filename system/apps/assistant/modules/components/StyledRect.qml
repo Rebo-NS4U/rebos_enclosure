@@ -905,27 +905,43 @@ ClippingRectangle {
                     // Background slabs use long, asymmetric fractures along all four edges.
                     // Compact bars and smaller surfaces keep the original corner treatment.
                     if((root.variant === "bg" || root.variant === "popup") && !root.barSurface && width>240 && height>120){
-                        vein([[width*0.04,0],[width*0.16,band*0.6],
-                            [width*0.30,band*0.28],[width*0.43,band],
-                            [width*0.61,band*0.45],[width*0.79,band*0.7],[width*0.96,0]],accent);
-                        vein([[width,height*0.08],[width-band*0.6,height*0.24],
-                            [width-band*0.25,height*0.41],[width-band,height*0.57],
-                            [width-band*0.4,height*0.73],[width,height*0.94]],accent);
-                        vein([[width*0.93,height],[width*0.77,height-band*0.45],
-                            [width*0.62,height-band],[width*0.47,height-band*0.35],
-                            [width*0.29,height-band*0.75],[width*0.07,height]],secondaryAccent);
-                        vein([[0,height*0.95],[band*0.45,height*0.79],
-                            [band,height*0.61],[band*0.25,height*0.46],
-                            [band*0.7,height*0.27],[0,height*0.05]],secondaryAccent);
-                        // Unequal splinters break up the long seams without entering content.
-                        vein([[width*0.30,band*0.28],[width*0.34,band*0.85],
-                            [width*0.39,0]],accent);
-                        vein([[width-band*0.25,height*0.41],
-                            [width-band*1.6,height*0.46],[width,height*0.50]],accent);
-                        vein([[width*0.62,height-band],[width*0.58,height-band*1.65],
-                            [width*0.53,height]],secondaryAccent);
-                        vein([[band,height*0.61],[band*1.65,height*0.66],
-                            [0,height*0.71]],secondaryAccent);
+                        // Uneven fault lines double back, split and rejoin in the edge band.
+                        // Each edge has its own silhouette; geometry stays static on repaint.
+                        function fault(edge,knots,splinters,color){
+                            function map(point){
+                                const t=point[0],d=point[1]*band;
+                                if(edge===0)return [t*width,d];
+                                if(edge===1)return [width-d,t*height];
+                                if(edge===2)return [(1-t)*width,height-d];
+                                return [d,(1-t)*height];
+                            }
+                            vein(knots.map(map),color);
+                            for(let i=0;i<splinters.length;i++)vein(splinters[i].map(map),color);
+                        }
+                        fault(0,[[0.02,0],[0.11,0.35],[0.19,0.16],[0.24,1.1],
+                            [0.28,0.48],[0.32,0.72],[0.46,0.22],[0.54,1.35],
+                            [0.57,0.60],[0.72,0.28],[0.79,0.92],[0.91,0.18],[0.98,0]],[
+                            [[0.19,0.16],[0.21,0.85],[0.18,1.55],[0.26,0.9],[0.28,0.48]],
+                            [[0.54,1.35],[0.50,1.75],[0.53,2.1],[0.57,1.7]],
+                            [[0.79,0.92],[0.83,0.44],[0.81,0]]],accent);
+                        fault(1,[[0.03,0],[0.17,0.42],[0.23,1.4],[0.27,0.55],
+                            [0.40,0.22],[0.48,0.8],[0.45,1.35],[0.59,0.5],
+                            [0.74,1.12],[0.82,0.25],[0.97,0]],[
+                            [[0.23,1.4],[0.29,1.9],[0.33,1.6],[0.37,2.15]],
+                            [[0.48,0.8],[0.52,0.2],[0.57,0]],
+                            [[0.74,1.12],[0.78,1.6],[0.83,0.9],[0.82,0.25]]],accent);
+                        fault(2,[[0.01,0],[0.13,0.65],[0.22,0.26],[0.31,0.90],
+                            [0.36,0.48],[0.48,1.5],[0.52,0.62],[0.66,0.18],
+                            [0.73,1.12],[0.84,0.38],[0.97,0]],[
+                            [[0.31,0.90],[0.28,1.45],[0.34,1.9],[0.39,1.3],[0.36,0.48]],
+                            [[0.48,1.5],[0.46,1.85],[0.51,2.15]],
+                            [[0.73,1.12],[0.78,0.65],[0.75,0]]],secondaryAccent);
+                        fault(3,[[0.04,0],[0.12,0.24],[0.26,1.1],[0.31,0.4],
+                            [0.43,0.65],[0.51,0.16],[0.64,1.3],[0.61,0.7],
+                            [0.76,0.32],[0.85,0.95],[0.98,0]],[
+                            [[0.26,1.1],[0.21,1.55],[0.25,1.85]],
+                            [[0.64,1.3],[0.69,1.85],[0.74,1.35],[0.76,0.32]],
+                            [[0.85,0.95],[0.89,0.35],[0.92,0]]],secondaryAccent);
                     }else{
                         vein([[width-reach,0],[width-reach*0.72,band*0.55],
                             [width-reach*0.45,band*0.32],[width-band,band],
