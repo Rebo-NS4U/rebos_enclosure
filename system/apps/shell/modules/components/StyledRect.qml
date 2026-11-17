@@ -105,14 +105,23 @@ ClippingRectangle {
         return Math.max(0, Math.min(effectiveCornerRadius - inset, (width - 2 * inset) / 2, (height - 2 * inset) / 2));
     }
 
+    function themeCornerRadius(value, inset) {
+        const corner = value < 0 ? radius : value;
+        return Math.max(0, Math.min(corner - inset, (width - 2 * inset) / 2, (height - 2 * inset) / 2));
+    }
+
     function traceThemeFrame(ctx, inset) {
         if (width <= 2 * inset || height <= 2 * inset) return false;
-        const r = themeInsetRadius(inset), right = width - inset, bottom = height - inset;
-        ctx.beginPath();ctx.moveTo(inset+r,inset);ctx.lineTo(right-r,inset);
-        ctx.quadraticCurveTo(right,inset,right,inset+r);ctx.lineTo(right,bottom-r);
-        ctx.quadraticCurveTo(right,bottom,right-r,bottom);ctx.lineTo(inset+r,bottom);
-        ctx.quadraticCurveTo(inset,bottom,inset,bottom-r);ctx.lineTo(inset,inset+r);
-        ctx.quadraticCurveTo(inset,inset,inset+r,inset);
+        const tl = themeCornerRadius(topLeftRadius, inset);
+        const tr = themeCornerRadius(topRightRadius, inset);
+        const bl = themeCornerRadius(bottomLeftRadius, inset);
+        const br = themeCornerRadius(bottomRightRadius, inset);
+        const right = width - inset, bottom = height - inset;
+        ctx.beginPath();ctx.moveTo(inset+tl,inset);ctx.lineTo(right-tr,inset);
+        ctx.quadraticCurveTo(right,inset,right,inset+tr);ctx.lineTo(right,bottom-br);
+        ctx.quadraticCurveTo(right,bottom,right-br,bottom);ctx.lineTo(inset+bl,bottom);
+        ctx.quadraticCurveTo(inset,bottom,inset,bottom-bl);ctx.lineTo(inset,inset+tl);
+        ctx.quadraticCurveTo(inset,inset,inset+tl,inset);
         return true;
     }
 
@@ -288,6 +297,8 @@ ClippingRectangle {
                 readonly property int frostSeed: Math.floor(Math.random()*65536)
                 readonly property real cornerRadius: root.effectiveCornerRadius
                 onCornerRadiusChanged: requestPaint()
+                readonly property var frameCorners: [root.topLeftRadius, root.topRightRadius, root.bottomLeftRadius, root.bottomRightRadius]
+                onFrameCornersChanged: requestPaint()
                 onPigmentChanged: requestPaint()
                 onAccentChanged: requestPaint()
                 onIceChanged: requestPaint()
@@ -303,13 +314,9 @@ ClippingRectangle {
                     if(ice){
                         // Two soft inset rims and a broken highlight suggest etched ice.
                         for(let layer=0;layer<2;layer++){
-                            const d=3+layer*3,r=root.themeInsetRadius(d);
+                            const d=3+layer*3;
                             ctx.strokeStyle=ink(layer?0.07:0.18);
-                            ctx.beginPath();ctx.moveTo(d+r,d);ctx.lineTo(width-d-r,d);
-                            ctx.quadraticCurveTo(width-d,d,width-d,d+r);ctx.lineTo(width-d,height-d-r);
-                            ctx.quadraticCurveTo(width-d,height-d,width-d-r,height-d);ctx.lineTo(d+r,height-d);
-                            ctx.quadraticCurveTo(d,height-d,d,height-d-r);ctx.lineTo(d,d+r);
-                            ctx.quadraticCurveTo(d,d,d+r,d);ctx.stroke();
+                            if(root.traceThemeFrame(ctx,d))ctx.stroke();
                         }
                         ctx.strokeStyle=ink(0.32);ctx.beginPath();ctx.moveTo(Math.max(18,cornerRadius),3);ctx.lineTo(Math.max(18,cornerRadius,width*0.38),3);ctx.stroke();
                         if(classic.outer){
@@ -357,7 +364,7 @@ ClippingRectangle {
                         ctx.fillStyle=tint(0.22);ctx.fillRect(0,12,band,Math.max(0,height-24));
                         ctx.fillStyle=tint(0.12);ctx.fillRect(band+2,22,2,Math.max(0,height-44));
                         ctx.strokeStyle=tint(0.30);ctx.beginPath();
-                        const r=root.themeInsetRadius(5);
+                        const r=root.themeCornerRadius(root.topRightRadius,5);
                         ctx.moveTo(Math.max(18,5+r),5);ctx.lineTo(width-5-r,5);
                         ctx.quadraticCurveTo(width-5,5,width-5,5+r);
                         ctx.lineTo(width-5,Math.max(5+r,height*0.32));ctx.stroke();
@@ -407,6 +414,8 @@ ClippingRectangle {
                 readonly property bool barSurface: root.barSurface
                 onBarSurfaceChanged: requestPaint()
                 onCornerRadiusChanged: requestPaint()
+                readonly property var frameCorners: [root.topLeftRadius, root.topRightRadius, root.bottomLeftRadius, root.bottomRightRadius]
+                onFrameCornersChanged: requestPaint()
                 onPigmentChanged: requestPaint()
                 onFinishChanged: requestPaint()
                 onWidthChanged: requestPaint()
@@ -418,15 +427,9 @@ ClippingRectangle {
                     ctx.save();if(root.traceThemeFrame(ctx,0))ctx.clip();
                     ctx.lineWidth=1;
                     if (finish === "glass-vault") {
-                        const radiusAt = inset => Math.max(0, Math.min(cornerRadius-inset, (width-inset*2)/2, (height-inset*2)/2));
+                        const radiusAt = inset => root.themeInsetRadius(inset);
                         const frame = inset => {
-                            if (width <= inset*2 || height <= inset*2) return;
-                            const r=radiusAt(inset),right=width-inset,bottom=height-inset;
-                            ctx.beginPath();ctx.moveTo(inset+r,inset);ctx.lineTo(right-r,inset);
-                            ctx.quadraticCurveTo(right,inset,right,inset+r);ctx.lineTo(right,bottom-r);
-                            ctx.quadraticCurveTo(right,bottom,right-r,bottom);ctx.lineTo(inset+r,bottom);
-                            ctx.quadraticCurveTo(inset,bottom,inset,bottom-r);ctx.lineTo(inset,inset+r);
-                            ctx.quadraticCurveTo(inset,inset,inset+r,inset);ctx.stroke();
+                            if(root.traceThemeFrame(ctx,inset))ctx.stroke();
                         };
                         if(barSurface){
                             // A shallow continuous rim suits the compact bar; keep its center clear.
@@ -604,6 +607,8 @@ ClippingRectangle {
             readonly property bool outer: root.variant === "bg" || root.variant === "popup"
             opacity: root.rectOpacity
             onCornerRadiusChanged: requestPaint()
+            readonly property var frameCorners: [root.topLeftRadius, root.topRightRadius, root.bottomLeftRadius, root.bottomRightRadius]
+            onFrameCornersChanged: requestPaint()
             onPigmentChanged: requestPaint()
             onFinishChanged: requestPaint()
             onOuterChanged: requestPaint()
@@ -850,6 +855,8 @@ ClippingRectangle {
             readonly property bool outer: root.variant === "bg" || root.variant === "popup"
             opacity: root.rectOpacity
             onCornerRadiusChanged: requestPaint()
+            readonly property var frameCorners: [root.topLeftRadius, root.topRightRadius, root.bottomLeftRadius, root.bottomRightRadius]
+            onFrameCornersChanged: requestPaint()
             onPigmentChanged: requestPaint()
             onOuterChanged: requestPaint()
             onWidthChanged: requestPaint()
@@ -892,6 +899,8 @@ ClippingRectangle {
             readonly property bool inset: root.variant === "internalbg"
             opacity: root.rectOpacity
             onCornerRadiusChanged: requestPaint()
+            readonly property var frameCorners: [root.topLeftRadius, root.topRightRadius, root.bottomLeftRadius, root.bottomRightRadius]
+            onFrameCornersChanged: requestPaint()
             onPigmentChanged: requestPaint()
             onShadowInkChanged: requestPaint()
             onAccentChanged: requestPaint()
@@ -1051,6 +1060,10 @@ ClippingRectangle {
             Rectangle {
                 anchors.fill: parent; anchors.margins: chassis.outer ? 4 : 2
                 radius: root.themeInsetRadius(chassis.outer ? 4 : 2)
+                topLeftRadius: root.themeCornerRadius(root.topLeftRadius, chassis.outer ? 4 : 2)
+                topRightRadius: root.themeCornerRadius(root.topRightRadius, chassis.outer ? 4 : 2)
+                bottomLeftRadius: root.themeCornerRadius(root.bottomLeftRadius, chassis.outer ? 4 : 2)
+                bottomRightRadius: root.themeCornerRadius(root.bottomRightRadius, chassis.outer ? 4 : 2)
                 color: "transparent"; border.width: 1
                 border.color: Qt.alpha(chassis.ink, chassis.outer ? 0.15 : 0.07)
             }
@@ -1064,6 +1077,8 @@ ClippingRectangle {
                 onOuterChanged: requestPaint()
                 onScreenChanged: requestPaint()
                 onCornerRadiusChanged: requestPaint()
+                readonly property var frameCorners: [root.topLeftRadius, root.topRightRadius, root.bottomLeftRadius, root.bottomRightRadius]
+                onFrameCornersChanged: requestPaint()
                 onPigmentChanged: requestPaint()
                 onWidthChanged: requestPaint()
                 onHeightChanged: requestPaint()
@@ -1180,6 +1195,10 @@ ClippingRectangle {
                 anchors.fill: parent
                 anchors.margins: 10
                 radius: root.themeInsetRadius(10)
+                topLeftRadius: root.themeCornerRadius(root.topLeftRadius, 10)
+                topRightRadius: root.themeCornerRadius(root.topRightRadius, 10)
+                bottomLeftRadius: root.themeCornerRadius(root.bottomLeftRadius, 10)
+                bottomRightRadius: root.themeCornerRadius(root.bottomRightRadius, 10)
                 color: "transparent"
                 border.width: 1
                 border.color: Qt.alpha(engraving.ink, 0.15)
@@ -1202,6 +1221,8 @@ ClippingRectangle {
                 readonly property real cornerRadius: root.effectiveCornerRadius
                 readonly property color pigment: engraving.ink
                 onCornerRadiusChanged: requestPaint()
+                readonly property var frameCorners: [root.topLeftRadius, root.topRightRadius, root.bottomLeftRadius, root.bottomRightRadius]
+                onFrameCornersChanged: requestPaint()
                 onPigmentChanged: requestPaint()
                 onWidthChanged: requestPaint()
                 onHeightChanged: requestPaint()

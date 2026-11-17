@@ -73,6 +73,18 @@ ShellRoot {
      if (panel.radius !== expected || (canvas && canvas.cornerRadius !== Math.min(expected,36))) {
       console.error("THEME_RADIUS_FAILED",panel.modelData,expected,panel.radius,canvas ? canvas.cornerRadius : "native"); Qt.quit();
      } else console.log("THEME_RADIUS_OK",panel.modelData,expected);
+     panel.topLeftRadius = 0; panel.topRightRadius = 0;
+     const curves = [];
+     const ctx = {beginPath:()=>{}, moveTo:()=>{}, lineTo:()=>{},
+                  quadraticCurveTo:(...args)=>curves.push(args)};
+     panel.traceThemeFrame(ctx, 3);
+     const lower = Math.max(0, Math.min(expected,36)-3);
+     if (curves[0][3] !== 3 || curves[3][2] !== 3 ||
+         curves[1][2] !== 93-lower || curves[2][3] !== 69-lower) {
+      console.error("THEME_RADIUS_FAILED attached frame",panel.modelData,expected,JSON.stringify(curves));
+     }
+     panel.topLeftRadius = Qt.binding(() => panel.radius);
+     panel.topRightRadius = Qt.binding(() => panel.radius);
     }
    });
   }
