@@ -807,14 +807,14 @@ ClippingRectangle {
     Loader {
         anchors.fill: parent
         active: !root.hasFillColor && root.rectOpacity > 0 && (root.styleOverride || Styling.shellStyle) === "monolith"
-            && ["bg", "popup", "pane", "surface", "surfaceContainer", "internalbg", "focus"].indexOf(root.variant) !== -1
+            && ["bg", "popup", "bar", "pane", "surface", "surfaceContainer", "internalbg", "focus", "surfaceVariant"].indexOf(root.variant) !== -1
         sourceComponent: Canvas {
             anchors.fill: parent
             objectName: "surface-edge-canvas"
             readonly property real cornerRadius: root.effectiveCornerRadius
             readonly property color pigment: root.itemColor
             readonly property bool inset: root.variant === "internalbg"
-            readonly property bool outer: root.variant === "bg" || root.variant === "popup"
+            readonly property bool outer: root.variant === "bg" || root.variant === "popup" || root.variant === "bar" || root.barSurface
             opacity: root.rectOpacity
             onCornerRadiusChanged: requestPaint()
             onPigmentChanged: requestPaint()
@@ -827,6 +827,14 @@ ClippingRectangle {
                 if(width<24||height<24)return;
                 const ink=a=>Qt.rgba(pigment.r,pigment.g,pigment.b,a);
                 // Concentric sculpted edges follow the user-selected radius.
+                ctx.save();if(root.traceThemeFrame(ctx,0))ctx.clip();
+                const shoulder=ctx.createLinearGradient(0,0,0,outer?22:9);
+                shoulder.addColorStop(0,ink(0.16));shoulder.addColorStop(0.3,ink(0.065));shoulder.addColorStop(1,ink(0));
+                ctx.fillStyle=shoulder;ctx.fillRect(0,0,width,outer?22:9);
+                const foot=ctx.createLinearGradient(0,height-18,0,height);
+                foot.addColorStop(0,ink(0));foot.addColorStop(1,ink(0.09));
+                ctx.fillStyle=foot;ctx.fillRect(0,Math.max(0,height-18),width,18);
+                ctx.restore();
                 const bevel=outer?8:4;
                 ctx.lineWidth=1;
                 for(let layer=0;layer<3;layer++){
@@ -854,12 +862,14 @@ ClippingRectangle {
                     ctx.restore();
                 }
                 // Quiet mineral grain instead of mechanical engraving or indicators.
+                ctx.save();if(root.traceThemeFrame(ctx,0))ctx.clip();
                 ctx.fillStyle=ink(0.025);
                 const count=Math.min(260,Math.floor(width*height/600));
                 for(let i=0;i<count;i++){
                     const x=12+(i*73)%Math.max(1,width-24),y=12+(i*137)%Math.max(1,height-24);
                     ctx.fillRect(x,y,i%4===0?2:1,1);
                 }
+                ctx.restore();
             }
         }
     }
@@ -868,10 +878,10 @@ ClippingRectangle {
     Loader {
         anchors.fill: parent
         active: !root.hasFillColor && root.rectOpacity > 0 && (root.styleOverride || Styling.shellStyle) === "terminal-hardware"
-            && ["bg", "popup", "pane", "surface", "surfaceContainer", "internalbg", "focus"].indexOf(root.variant) !== -1
+            && ["bg", "popup", "bar", "pane", "surface", "surfaceContainer", "internalbg", "focus", "surfaceVariant"].indexOf(root.variant) !== -1
         sourceComponent: Item {
             id: chassis
-            readonly property bool outer: root.variant === "bg" || root.variant === "popup"
+            readonly property bool outer: root.variant === "bg" || root.variant === "popup" || root.variant === "bar" || root.barSurface
             readonly property bool screen: root.variant === "internalbg"
             readonly property color ink: root.itemColor
             opacity: root.rectOpacity
@@ -892,6 +902,12 @@ ClippingRectangle {
                 onHeightChanged: requestPaint()
                 onPaint: {
                     const ctx=getContext("2d");ctx.clearRect(0,0,width,height);
+                    if(width<24||height<24)return;
+                    ctx.save();if(root.traceThemeFrame(ctx,0))ctx.clip();
+                    const brushed=ctx.createLinearGradient(0,0,0,chassis.outer?20:8);
+                    brushed.addColorStop(0,Qt.alpha(pigment,0.14));
+                    brushed.addColorStop(0.35,Qt.alpha(pigment,0.035));brushed.addColorStop(1,Qt.alpha(pigment,0));
+                    ctx.fillStyle=brushed;ctx.fillRect(0,0,width,chassis.outer?20:8);
                     const d=chassis.outer?3:1,r=root.themeInsetRadius(d);
                     ctx.strokeStyle=Qt.alpha(pigment,0.18);ctx.lineWidth=1;
                     ctx.beginPath();ctx.moveTo(d,Math.max(d+r,height*0.65));
@@ -928,7 +944,7 @@ ClippingRectangle {
                             }
                         }
                     }
-
+                    ctx.restore();
                 }
             }
             Rectangle {
@@ -952,29 +968,40 @@ ClippingRectangle {
     // Non-interactive drafting marks and case fasteners, behind content.
     Loader {
         anchors.fill: parent
-        active: !root.hasFillColor && root.rectOpacity > 0 && (root.variant === "bg" || root.variant === "popup")
+        active: !root.hasFillColor && root.rectOpacity > 0 && (root.variant === "bg" || root.variant === "popup" || root.variant === "bar" || root.barSurface)
             && ["blueprint", "terminal-hardware"].indexOf(root.styleOverride || Styling.shellStyle) !== -1
         sourceComponent: Item {
             id: engraving
             readonly property bool drafting: (root.styleOverride || Styling.shellStyle) === "blueprint"
             readonly property color ink: root.itemColor
             opacity: root.rectOpacity
-            Repeater {
-                model: engraving.drafting ? Math.floor(engraving.width / 20) : 0
-                Rectangle {
-                    required property int index
-                    x: (index + 1) * 20
-                    width: 1; height: engraving.height
-                    color: engraving.ink; opacity: (index + 1) % 4 === 0 ? 0.14 : 0.055
-                }
-            }
-            Repeater {
-                model: engraving.drafting ? Math.floor(engraving.height / 20) : 0
-                Rectangle {
-                    required property int index
-                    y: (index + 1) * 20
-                    height: 1; width: engraving.width
-                    color: engraving.ink; opacity: (index + 1) % 4 === 0 ? 0.14 : 0.055
+            Canvas {
+                anchors.fill: parent
+                visible: engraving.drafting
+                readonly property color pigment: engraving.ink
+                onPigmentChanged: requestPaint()
+                onWidthChanged: requestPaint()
+                onHeightChanged: requestPaint()
+                onPaint: {
+                    const ctx=getContext("2d");ctx.clearRect(0,0,width,height);
+                    ctx.save();if(root.traceThemeFrame(ctx,0))ctx.clip();
+                    // Ruled vellum: crisp near its edges, quiet beneath content.
+                    for(let axis=0;axis<2;axis++){
+                        const extent=axis?height:width;
+                        for(let n=20;n<extent;n+=20){
+                            const major=n%80===0;
+                            const wash=ctx.createLinearGradient(axis?0:n,axis?n:0,axis?width:n,axis?n:height);
+                            const alpha=major?0.13:0.055;
+                            wash.addColorStop(0,Qt.alpha(pigment,alpha));
+                            wash.addColorStop(0.22,Qt.alpha(pigment,alpha*0.22));
+                            wash.addColorStop(0.78,Qt.alpha(pigment,alpha*0.22));
+                            wash.addColorStop(1,Qt.alpha(pigment,alpha));
+                            ctx.strokeStyle=wash;ctx.lineWidth=major?0.8:0.5;
+                            ctx.beginPath();ctx.moveTo(axis?0:n,axis?n:0);
+                            ctx.lineTo(axis?width:n,axis?n:height);ctx.stroke();
+                        }
+                    }
+                    ctx.restore();
                 }
             }
             // Measurement teeth stay at the perimeter, away from text.

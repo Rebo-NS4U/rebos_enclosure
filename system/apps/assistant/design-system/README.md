@@ -115,3 +115,5 @@ The bonsai glass enclosure is flat and front-facing, with a low charcoal base di
 Glass Vault shell refinement uses a fine polished bevel, fading upper reflections and slimmer rounded clasps on outer panels. Inner controls retain a single quiet rim; the lower meniscus follows the shared radius. Selected palette colors and translucent centers are preserved.
 
 Glass Vault bar surfaces use a shallow continuous rim and a narrow upper sheen, leaving the compact center clear. Expanded island panels retain the full vault treatment; switching between them repaints the material.
+
+Monolith, Blueprint and Terminal Hardware carry their material treatments into bars as well as panels. Monolith has a broad lit stone shoulder, a shaded lower foot and grain clipped to the rounded slab. Blueprint's major and minor rules fade beneath the content and strengthen toward the sheet edges. Terminal Hardware adds a brushed upper shoulder inside its clipped housing. These finishes remain static, preserve semantic colors and share the same treatment in shell, assistant and media surfaces.
