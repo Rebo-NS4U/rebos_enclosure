@@ -853,7 +853,7 @@ ClippingRectangle {
         }
     }
 
-    // Architectural Monolith: a continuous slab with a broad carved chamfer.
+    // Monolith: a quiet continuous surface with palette-derived edge accents.
     Loader {
         anchors.fill: parent
         active: !root.hasFillColor && root.rectOpacity > 0 && (root.styleOverride || Styling.shellStyle) === "monolith"
@@ -863,75 +863,42 @@ ClippingRectangle {
             objectName: "surface-edge-canvas"
             readonly property real cornerRadius: root.effectiveCornerRadius
             readonly property color pigment: root.itemColor
-            readonly property bool inset: root.variant === "internalbg"
+            readonly property color accent: Colors.primary
+            readonly property color secondaryAccent: Colors.secondary
             readonly property bool outer: root.variant === "bg" || root.variant === "popup" || root.variant === "bar" || root.barSurface
+            readonly property bool inset: root.variant === "internalbg"
             opacity: root.rectOpacity
             onCornerRadiusChanged: requestPaint()
             onPigmentChanged: requestPaint()
-            onInsetChanged: requestPaint()
+            onAccentChanged: requestPaint()
+            onSecondaryAccentChanged: requestPaint()
             onOuterChanged: requestPaint()
+            onInsetChanged: requestPaint()
             onWidthChanged: requestPaint()
             onHeightChanged: requestPaint()
             onPaint: {
                 const ctx=getContext("2d");ctx.clearRect(0,0,width,height);
                 if(width<24||height<24)return;
-                const ink=a=>Qt.rgba(pigment.r,pigment.g,pigment.b,a);
-                // Concentric sculpted edges follow the user-selected radius.
                 ctx.save();if(root.traceThemeFrame(ctx,0))ctx.clip();
-                const shoulder=ctx.createLinearGradient(0,0,0,outer?22:9);
-                shoulder.addColorStop(0,ink(0.16));shoulder.addColorStop(0.3,ink(0.065));shoulder.addColorStop(1,ink(0));
-                ctx.fillStyle=shoulder;ctx.fillRect(0,0,width,outer?22:9);
-                const foot=ctx.createLinearGradient(0,height-18,0,height);
-                foot.addColorStop(0,ink(0));foot.addColorStop(1,ink(0.09));
-                ctx.fillStyle=foot;ctx.fillRect(0,Math.max(0,height-18),width,18);
-                ctx.restore();
-                const bevel=outer?8:4;
-                ctx.lineWidth=1;
-                // One broad carved arris replaces nested technical-looking rims.
-                ctx.strokeStyle=ink(inset?0.12:0.075);ctx.lineWidth=inset?1:5;
-                if(root.traceThemeFrame(ctx,inset?3:4))ctx.stroke();
-                const d=bevel,r=root.themeInsetRadius(d);
-                ctx.lineWidth=1;ctx.strokeStyle=ink(inset?0.06:0.23);
-                ctx.beginPath();ctx.moveTo(d,Math.max(d+r,height*0.60));ctx.lineTo(d,d+r);
-                ctx.quadraticCurveTo(d,d,d+r,d);ctx.lineTo(Math.max(d+r,width-d-r),d);ctx.stroke();
-                ctx.strokeStyle=ink(inset?0.18:0.065);ctx.lineWidth=3;
-                ctx.beginPath();ctx.moveTo(Math.max(d+r,16),height-d);
-                ctx.lineTo(width-d-r,height-d);ctx.quadraticCurveTo(width-d,height-d,width-d,height-d-r);
-                ctx.lineTo(width-d,Math.max(d+r,height*0.40));ctx.stroke();
-                if(outer){
-                    // Natural strata terminate at the slab edge, leaving its face quiet.
-                    ctx.save();if(root.traceThemeFrame(ctx,0))ctx.clip();
-                    // A split stone face: irregular mineral ribbons climb the left edge.
-                    // Keep the quiet central face free of decorative strokes.
-                    const depth=Math.min(19,width*0.055);
-                    for(let seam=0;seam<3;seam++){
-                        const x=3+seam*4;
-                        ctx.strokeStyle=ink(0.10-seam*0.022);ctx.lineWidth=seam===0?2:0.8;
-                        ctx.beginPath();ctx.moveTo(x,0);
-                        ctx.bezierCurveTo(x+depth,height*0.18,x-depth*0.5,height*0.33,x+3,height*0.51);
-                        ctx.bezierCurveTo(x+depth,height*0.68,x-2,height*0.82,x+depth*0.5,height);ctx.stroke();
+                // A single fine edge defines the slab without texture or carved detail.
+                ctx.lineWidth=0.8;ctx.strokeStyle=Qt.alpha(pigment,inset?0.045:0.085);
+                if(root.traceThemeFrame(ctx,0.8))ctx.stroke();
+                if(!inset){
+                    const safe=Math.max(12,cornerRadius+4);
+                    const span=Math.max(0,Math.min(outer?96:40,width-safe*2));
+                    if(span>8){
+                        const wash=ctx.createLinearGradient(0,0,0,outer?16:8);
+                        wash.addColorStop(0,Qt.alpha(accent,outer?0.075:0.035));
+                        wash.addColorStop(1,Qt.alpha(accent,0));
+                        ctx.fillStyle=wash;ctx.fillRect(safe,0,span,outer?16:8);
+                        ctx.lineWidth=1.5;ctx.strokeStyle=Qt.alpha(accent,outer?0.65:0.38);
+                        ctx.beginPath();ctx.moveTo(safe,1.5);ctx.lineTo(safe+span,1.5);ctx.stroke();
+                        if(outer){
+                            ctx.lineWidth=1;ctx.strokeStyle=Qt.alpha(secondaryAccent,0.40);
+                            ctx.beginPath();ctx.moveTo(width-safe-span*0.45,height-1.5);
+                            ctx.lineTo(width-safe,height-1.5);ctx.stroke();
+                        }
                     }
-                    // Broad mineral facets catch light along the foot of the slab.
-                    ctx.fillStyle=ink(0.045);ctx.beginPath();ctx.moveTo(0,height);
-                    ctx.lineTo(0,height-13);ctx.lineTo(width*0.28,height-5);
-                    ctx.lineTo(width*0.64,height-17);ctx.lineTo(width,height-8);
-                    ctx.lineTo(width,height);ctx.closePath();ctx.fill();
-                    for(let vein=0;vein<4;vein++){
-                        const y=height-10-vein*5;
-                        ctx.strokeStyle=ink(0.055+vein*0.008);ctx.lineWidth=vein===0?1.5:0.7;
-                        ctx.beginPath();ctx.moveTo(0,y);
-                        ctx.bezierCurveTo(width*0.21,y-9,width*0.32,y+5,width*0.52,y-3);
-                        ctx.bezierCurveTo(width*0.71,y-10,width*0.86,y+4,width,y-6);ctx.stroke();
-                    }
-                    ctx.restore();
-                }
-                // Quiet mineral grain instead of mechanical engraving or indicators.
-                ctx.save();if(root.traceThemeFrame(ctx,0))ctx.clip();
-                ctx.fillStyle=ink(0.025);
-                const count=Math.min(260,Math.floor(width*height/600));
-                for(let i=0;i<count;i++){
-                    const x=12+(i*73)%Math.max(1,width-24),y=12+(i*137)%Math.max(1,height-24);
-                    ctx.fillRect(x,y,i%4===0?2:1,1);
                 }
                 ctx.restore();
             }

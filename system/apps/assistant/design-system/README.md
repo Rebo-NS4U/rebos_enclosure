@@ -49,7 +49,7 @@ Use `StandardProgressBar` for linear progress in QML. Its normalized `value` is 
 ## Rendered desktop themes
 
 All styles use the selected wallpaper or color preset, including application exports.
-Monolith uses sculpted stone-like slabs, broad chamfers and subtle mineral grain.
+Monolith uses clean continuous slabs with a fine neutral rim, a short primary-colored upper accent and a smaller secondary-colored lower accent. Its center stays plain; inset surfaces omit colored marks.
 Blueprint uses square corners, wire controls, major and minor drafting grids, perimeter measurement ticks, registration targets and inset frames.
 Terminal Hardware uses double machined bezels, cooling vents, slotted screws, recessed display scanlines and raised mechanical controls.
 Their fonts are Noto Sans, JetBrains Mono and DejaVu Sans Mono respectively.
@@ -75,7 +75,7 @@ Every theme now follows the shared corner-radius setting. Inset frame lines use 
 
 Terminal Hardware uses concentric bezel grooves and recessed cooling louvers. These details stay at the perimeter, adapt to the shared corner radius and remain static.
 
-Architectural refinement: Suspended Film now uses floating offset glass sheets and contact-shadow edges, replacing tension cables and bindings. Monolith now uses broad sculpted chamfers and subtle mineral grain, replacing mechanical cuts and service spines. Both preserve selected colors and radius behavior; Terminal Hardware remains unchanged.
+Architectural refinement: Suspended Film now uses floating offset glass sheets and contact-shadow edges, replacing tension cables and bindings. Monolith uses quiet continuous surfaces and restrained palette-colored edge accents. Both preserve selected colors and radius behavior; Terminal Hardware remains unchanged.
 
 ## Material themes
 
@@ -88,7 +88,7 @@ All three preserve selected semantic action colors, readable centers, compositor
 
 ## Material detail refinement
 
-The remaining nine themes share the same level of material detail as Canopy, Orbital and Metropolis. Glass Vault adds refractive grazing bands behind its rounded clamps. Radar Station adds soft scope illumination and radial divisions to its etched bearing scales. Suspended Film separates floating sheets with curved grazing reflections. Monolith adds natural stone strata along the lower slab edge. Blueprint includes a small architectural truss drawing within its ruled sheet. Terminal Hardware adds brushed upper-bezel lines and recessed panel seams. Frosted Glass grows branching crystals from the upper rim. Tinted layers fading colored-glass planes at its upper edge. Clear Glass keeps restrained grazing reflections and a lower meniscus.
+The remaining nine themes share the same level of material detail as Canopy, Orbital and Metropolis. Glass Vault adds refractive grazing bands behind its rounded clamps. Radar Station adds soft scope illumination and radial divisions to its etched bearing scales. Suspended Film separates floating sheets with curved grazing reflections. Monolith keeps a clean face with small palette-derived edge accents. Blueprint includes a small architectural truss drawing within its ruled sheet. Terminal Hardware adds brushed upper-bezel lines and recessed panel seams. Frosted Glass grows branching crystals from the upper rim. Tinted layers fading colored-glass planes at its upper edge. Clear Glass keeps restrained grazing reflections and a lower meniscus.
 
 Details use selected semantic palette colors and static geometry. Glass layers clip to the shared rounded frame; inset surfaces retain simpler decoration. Clear Glass remains the final entry. No theme imposes a new palette, and native application export colors remain derived from the selected palette.
 
@@ -116,6 +116,6 @@ Glass Vault shell refinement uses a fine polished bevel, fading upper reflection
 
 Glass Vault bar surfaces use a shallow continuous rim and a narrow upper sheen, leaving the compact center clear. Expanded island panels retain the full vault treatment; switching between them repaints the material.
 
-Monolith, Blueprint and Terminal Hardware carry their material treatments into bars as well as panels. Monolith has a broad lit stone shoulder, a shaded lower foot and grain clipped to the rounded slab. Blueprint's major and minor rules fade beneath the content and strengthen toward the sheet edges. Terminal Hardware adds a brushed upper shoulder inside its clipped housing. These finishes remain static, preserve semantic colors and share the same treatment in shell, assistant and media surfaces.
+Monolith, Blueprint and Terminal Hardware carry their material treatments into bars as well as panels. Monolith has a plain face, a fine rim and restrained primary and secondary edge accents. Blueprint's major and minor rules fade beneath the content and strengthen toward the sheet edges. Terminal Hardware adds a brushed upper shoulder inside its clipped housing. These finishes remain static, preserve semantic colors and share the same treatment in shell, assistant and media surfaces.
 
-Monolith distinguishes its stonework with a single broad carved arris, irregular vertical mineral ribbons and angular strata at the slab foot. Terminal Hardware uses recessed rack mounting slots, cooling louvers, diagonal grip cuts and a segmented lower retention rail. Their surface geometry remains distinct at compact bar sizes; decorations stay at the perimeter and follow the selected palette and rounded clipping frame.
+Monolith keeps its surfaces free of grain, mineral seams and carved facets. Terminal Hardware uses recessed rack mounting slots, cooling louvers, diagonal grip cuts and a segmented lower retention rail. Their surface geometry remains distinct at compact bar sizes; decorations stay at the perimeter and follow the selected palette and rounded clipping frame.

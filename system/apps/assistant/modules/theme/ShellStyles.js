@@ -7,7 +7,7 @@ var styles = [
     {id: "glass-vault", label: "Glass Vault", font: "Noto Sans", description: "Thick glass blocks, rounded clamps, refractive light bands and deep inset controls."},
     {id: "radar-station", label: "Radar Station", font: "DejaVu Sans", description: "Etched bearing scales, radial divisions and softly illuminated scope glass."},
     {id: "suspended-film", label: "Suspended Film", font: "DejaVu Sans Mono", description: "Suspended glass sheets, curved grazing reflections and separated contact edges."},
-    {id: "monolith", label: "Monolith", font: "Noto Sans", description: "Carved stone slabs, broad chamfers, natural strata and fine mineral grain."},
+    {id: "monolith", label: "Monolith", font: "Noto Sans", description: "Clean continuous slabs with restrained palette-colored edge accents."},
     {id: "blueprint", label: "Blueprint", font: "JetBrains Mono", description: "Architectural drafting sheets, truss details, ruled scales and wire controls."},
     {id: "terminal-hardware", label: "Terminal Hardware", font: "DejaVu Sans Mono", description: "Brushed metal bezels, recessed louvers, panel seams and machined controls."},
     {id: "frosted", font: "DejaVu Sans Mono", label: "Frosted Glass", description: "Branching frost crystals, etched ice rims, fine grain and soft corner bloom."},
@@ -135,7 +135,7 @@ function surface(style, variant, p, ditherStrength) {
         if (monolith) {
             border = [mix(fill, p.foreground, 0.18), focused ? 2 : inset ? 1 : 0];
             if (focused) border[0] = p.primary;
-            if (neutral && !inset) renderGradient = [[fill, 0], [mix(fill, p.foreground, 0.035), 0.025], [fill, 0.075], [fill, 0.86], [mix(fill, p.background, 0.80), 0.96], [mix(fill, p.background, 0.80), 1]];
+            if (neutral && !inset) renderGradient = [[fill, 0], [mix(fill, p.primary, 0.018), 0.025], [fill, 0.075], [fill, 0.86], [mix(fill, p.background, 0.08), 0.96], [mix(fill, p.background, 0.08), 1]];
         } else if (blueprint) {
             // Wire controls retain the selected accent as their ink color.
             if (!neutral && !outlineRole && opacity > 0) {
