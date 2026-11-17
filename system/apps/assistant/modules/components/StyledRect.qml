@@ -864,8 +864,8 @@ ClippingRectangle {
                 if(root.traceThemeFrame(ctx,0.8))ctx.stroke();
                 if(!inset){
                     // Solid, straight-edged facets with true 45-degree cuts.
-                    const depth=Math.min(height*0.46,width*0.36);
-                    const reach=width*0.86;
+                    const depth=Math.min(outer?64:28,height*0.36,width*0.30);
+                    const reach=Math.min(width*0.48,outer?240:108);
                     for(let i=0;i<3;i++){
                         const d=depth*(1-i*0.27);
                         const run=reach-i*depth*0.46;
@@ -883,6 +883,27 @@ ClippingRectangle {
                         ctx.strokeStyle=Qt.alpha(pigment,outer?0.16:0.10);
                         ctx.beginPath();ctx.moveTo(run,height);
                         ctx.lineTo(run-d,height-d);ctx.lineTo(0,height-d);ctx.stroke();
+                    }
+                    // Narrow side facets repeat the corner geometry without filling the face.
+                    if(height>100){
+                        const side=Math.min(outer?18:8,width*0.08,height*0.08);
+                        const top=height*0.30,bottom=height*0.70;
+                        for(let i=0;i<3;i++){
+                            const d=side*(1-i*0.27);
+                            const a=top+i*side*0.46,b=bottom-i*side*0.46;
+                            ctx.fillStyle=Qt.alpha(accent,outer?0.065:0.04);
+                            ctx.beginPath();ctx.moveTo(0,a);ctx.lineTo(d,a+d);
+                            ctx.lineTo(d,b-d);ctx.lineTo(0,b);ctx.closePath();ctx.fill();
+                            ctx.strokeStyle=Qt.alpha(pigment,outer?0.20:0.12);
+                            ctx.beginPath();ctx.moveTo(0,a);ctx.lineTo(d,a+d);
+                            ctx.lineTo(d,b-d);ctx.lineTo(0,b);ctx.stroke();
+                            ctx.fillStyle=Qt.alpha(secondaryAccent,outer?0.055:0.035);
+                            ctx.beginPath();ctx.moveTo(width,a);ctx.lineTo(width-d,a+d);
+                            ctx.lineTo(width-d,b-d);ctx.lineTo(width,b);ctx.closePath();ctx.fill();
+                            ctx.strokeStyle=Qt.alpha(pigment,outer?0.16:0.10);
+                            ctx.beginPath();ctx.moveTo(width,a);ctx.lineTo(width-d,a+d);
+                            ctx.lineTo(width-d,b-d);ctx.lineTo(width,b);ctx.stroke();
+                        }
                     }
                 }
                 ctx.restore();
