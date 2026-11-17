@@ -11,13 +11,29 @@ ColumnLayout {
     spacing: Styling.spacing(6)
     property string category: AudioEqualizer.presetGroups.Other.includes(AudioEqualizer.preset) ? "Other" : "Music"
     readonly property var choices: AudioEqualizer.presetGroups[category]
+    readonly property int cardsPerPage: Math.max(1, Math.min(3, Math.floor((pages.width + Styling.spacing(6)) / Styling.spacing(145))))
+    readonly property int pageCount: Math.ceil(choices.length / cardsPerPage)
+    readonly property int currentPage: pages.currentIndex
     function revealSelection() {
         const selected = choices.indexOf(AudioEqualizer.preset);
-        cards.currentIndex = Math.max(0, selected);
-        cards.positionViewAtIndex(cards.currentIndex, ListView.Contain);
+        pages.currentIndex = selected >= 0 ? Math.floor(selected / cardsPerPage) : 0;
+        pages.positionViewAtIndex(pages.currentIndex, ListView.Beginning);
     }
-    function choose(name) { AudioEqualizer.selectPreset(name); }
+    function pageBy(direction) {
+        pages.currentIndex = Math.max(0, Math.min(pageCount - 1, pages.currentIndex + direction));
+        pages.positionViewAtIndex(pages.currentIndex, ListView.Beginning);
+    }
+    function focusCard(index) {
+        index = Math.max(0, Math.min(choices.length - 1, index));
+        pages.currentIndex = Math.floor(index / cardsPerPage);
+        pages.positionViewAtIndex(pages.currentIndex, ListView.Beginning);
+        Qt.callLater(() => {
+            const page = pages.itemAtIndex(pages.currentIndex);
+            page?.cardRepeater.itemAt(index % cardsPerPage)?.forceActiveFocus();
+        });
+    }
     onCategoryChanged: Qt.callLater(revealSelection)
+    onCardsPerPageChanged: Qt.callLater(revealSelection)
     Connections {
         target: AudioEqualizer
         function onPresetChanged() {
@@ -44,59 +60,116 @@ ColumnLayout {
         }
         StyledText {
             Layout.fillWidth: true
-            text: AudioEqualizer.preset
+            text: AudioEqualizer.preset + " · " + (pages.currentIndex + 1) + "/" + root.pageCount
             horizontalAlignment: Text.AlignRight
             elide: Text.ElideRight
-            Accessible.name: "Current equalizer preset: " + text
+            Accessible.name: "Current preset: " + AudioEqualizer.preset + ". Page " + (pages.currentIndex + 1) + " of " + root.pageCount
         }
     }
     RowLayout {
         Layout.fillWidth: true
-        spacing: Styling.spacing(4)
+        spacing: Styling.spacing(6)
         ThemeButton {
+            objectName: "audio-eq-previous-page"
             text: "‹"
-            Accessible.name: "Previous presets"
-            enabled: cards.contentX > 1
-            onClicked: cards.positionViewAtIndex(Math.max(0, cards.indexAt(cards.contentX + 1, 1) - 1), ListView.Beginning)
+            Layout.preferredWidth: Styling.spacing(36)
+            Layout.preferredHeight: pages.height
+            Accessible.name: "Previous preset page"
+            enabled: pages.currentIndex > 0
+            onClicked: root.pageBy(-1)
         }
         ListView {
-            id: cards
+            id: pages
             objectName: "audio-eq-preset-cards"
             Layout.fillWidth: true
-            Layout.preferredHeight: Styling.spacing(64)
+            Layout.preferredHeight: Styling.spacing(68)
             orientation: ListView.Horizontal
-            spacing: Styling.spacing(6)
+            snapMode: ListView.SnapOneItem
+            highlightRangeMode: ListView.StrictlyEnforceRange
+            highlightMoveDuration: Motion.enabled ? Motion.feedback : 0
+            preferredHighlightBegin: 0
+            preferredHighlightEnd: width
             clip: true
             boundsBehavior: Flickable.StopAtBounds
-            model: root.choices
+            model: root.pageCount
             currentIndex: 0
-            delegate: ThemeButton {
-                required property string modelData
+            WheelHandler {
+                acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+                onWheel: event => {
+                    const delta = Math.abs(event.angleDelta.x) > Math.abs(event.angleDelta.y) ? event.angleDelta.x : event.angleDelta.y;
+                    if (delta && !wheelDebounce.running) { root.pageBy(delta < 0 ? 1 : -1); wheelDebounce.start(); }
+                    event.accepted = true;
+                }
+            }
+            Timer { id: wheelDebounce; interval:180 }
+            delegate: Row {
+                id: page
                 required property int index
-                objectName: "audio-eq-preset-" + modelData
-                width: Math.min(cards.width, Styling.spacing(148))
-                height: cards.height
-                checked: AudioEqualizer.preset === modelData
-                Accessible.name: modelData + ": " + AudioEqualizer.presetDescriptions[modelData]
-                onClicked: root.choose(modelData)
-                onActiveFocusChanged: if (activeFocus) cards.positionViewAtIndex(index, ListView.Contain)
-                Keys.onLeftPressed: { cards.currentIndex = Math.max(0, index - 1); cards.itemAtIndex(cards.currentIndex)?.forceActiveFocus(); }
-                Keys.onRightPressed: { cards.currentIndex = Math.min(root.choices.length - 1, index + 1); cards.positionViewAtIndex(cards.currentIndex, ListView.Contain); Qt.callLater(() => cards.itemAtIndex(cards.currentIndex)?.forceActiveFocus()); }
-                contentItem: ColumnLayout {
-                    spacing: Styling.spacing(2)
-                    StyledText { objectName: "preset-card-label"; text: modelData; font.bold: true; color: parent.parent.background.itemColor; Layout.fillWidth: true; elide: Text.ElideRight }
-                    StyledText { text: AudioEqualizer.presetDescriptions[modelData]; font.pixelSize: Styling.fontSize(-3); color: parent.parent.background.itemColor; Layout.fillWidth: true; elide: Text.ElideRight }
+                property alias cardRepeater: cardRepeater
+                width: pages.width
+                height: pages.height
+                spacing: Styling.spacing(6)
+                Repeater {
+                    id: cardRepeater
+                    model: Math.min(root.cardsPerPage, root.choices.length - page.index * root.cardsPerPage)
+                    ThemeButton {
+                        id: card
+                        required property int index
+                        readonly property int choiceIndex: page.index * root.cardsPerPage + index
+                        readonly property string choice: root.choices[choiceIndex] || ""
+                        objectName: "audio-eq-preset-" + choice
+                        width: (pages.width - (root.cardsPerPage - 1) * page.spacing) / root.cardsPerPage
+                        height: pages.height
+                        checked: AudioEqualizer.preset === choice
+                        Accessible.name: choice + ": " + AudioEqualizer.presetDescriptions[choice]
+                        onClicked: AudioEqualizer.selectPreset(choice)
+                        onActiveFocusChanged: if (activeFocus && pages.currentIndex !== page.index) {
+                            pages.currentIndex = page.index;
+                            pages.positionViewAtIndex(page.index, ListView.Beginning);
+                        }
+                        Keys.onLeftPressed: root.focusCard(choiceIndex - 1)
+                        Keys.onRightPressed: root.focusCard(choiceIndex + 1)
+                        Keys.onPressed: event => {
+                            if (event.key === Qt.Key_Home) root.focusCard(0);
+                            else if (event.key === Qt.Key_End) root.focusCard(root.choices.length - 1);
+                            else if (event.key === Qt.Key_PageUp) root.focusCard(choiceIndex - root.cardsPerPage);
+                            else if (event.key === Qt.Key_PageDown) root.focusCard(choiceIndex + root.cardsPerPage);
+                            else { event.accepted = false; return; }
+                            event.accepted = true;
+                        }
+                        contentItem: ColumnLayout {
+                            spacing: Styling.spacing(2)
+                            StyledText {
+                                objectName: "preset-card-label"
+                                text: (card.checked ? "✓ " : "") + card.choice
+                                font.bold: true
+                                color: card.background.itemColor
+                                Layout.fillWidth: true
+                                elide: Text.ElideRight
+                            }
+                            StyledText {
+                                text: AudioEqualizer.presetDescriptions[card.choice] || ""
+                                font.pixelSize: Styling.fontSize(-3)
+                                color: card.background.itemColor
+                                Layout.fillWidth: true
+                                wrapMode: Text.WordWrap
+                                maximumLineCount: 2
+                                elide: Text.ElideRight
+                            }
+                        }
+
+                    }
                 }
             }
         }
         ThemeButton {
+            objectName: "audio-eq-next-page"
             text: "›"
-            Accessible.name: "Next presets"
-            enabled: !cards.atXEnd
-            onClicked: {
-                const first = Math.max(0, cards.indexAt(cards.contentX + 1, 1));
-                cards.positionViewAtIndex(Math.min(root.choices.length - 1, first + Math.max(1, Math.floor(cards.width / Styling.spacing(154)))), ListView.Beginning);
-            }
+            Layout.preferredWidth: Styling.spacing(36)
+            Layout.preferredHeight: pages.height
+            Accessible.name: "Next preset page"
+            enabled: pages.currentIndex < root.pageCount - 1
+            onClicked: root.pageBy(1)
         }
     }
 }

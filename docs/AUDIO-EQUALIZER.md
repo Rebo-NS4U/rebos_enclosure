@@ -4,7 +4,10 @@ Open **Media Center** for the compact equalizer beneath the playback controls,
 in the former embedded-lyrics area. Both island and standard players use the same
 compact vertical EQ controls: all ten faders are visible together, with a preset
 card carousel and bypass/reset actions. Music/Other tabs filter the cards; arrow
-buttons, touchpad scrolling and keyboard focus reveal additional cards. The media panel widens within the screen bounds;
+buttons and wheel/touchpad gestures move whole pages, without cropped cards. A
+page counter shows your position. Left/Right moves card focus, Home/End jumps to
+the first/last preset, and Page Up/Down advances by a page. Enter/Space applies
+the focused card. Selection has a checkmark and descriptions wrap across two lines. The media panel widens within the screen bounds;
 smaller layouts wrap faders into rows and shorten them to fit available height. The on-screen
 lyrics strip remains separate. The full editor is also available at
 **Sound → EQ & mixer → Equalizer** or **Settings → Sound → Equalizer**.

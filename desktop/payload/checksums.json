@@ -602,7 +602,7 @@
   "system/apps/shell/modules/widgets/dashboard/controls/ColorButton.qml": "a06db2ef770b7c2de398c1127396c20f3c3e09f8af4ac663953c186dcd489d61",
   "system/apps/shell/modules/widgets/dashboard/controls/ColorPickerView.qml": "a2180d9ef12aeca129c97651c62c92c0fd4c0852051cc88826b8c1be5be898b0",
   "system/apps/shell/modules/widgets/dashboard/controls/DisplayPanel.qml": "f992ee11cdec99057d025649e9f931d57d83d45f23aa5f42edd5fe8f0153f7fd",
-  "system/apps/shell/modules/widgets/dashboard/controls/EqualizerPresetSelector.qml": "2df5d0798ad63bb38c8da279e5533efe3fc4dd322a02082a0059b554f091a381",
+  "system/apps/shell/modules/widgets/dashboard/controls/EqualizerPresetSelector.qml": "90e788512ff22575ddfab365aebf9d075bd364e1fbb077050f9886bba71ade6a",
   "system/apps/shell/modules/widgets/dashboard/controls/GithubPanel.qml": "daa83dff1dcf703d8cdd5edcaf8bb9b2ec742d88d629b248ed7ce9d40857ebcf",
   "system/apps/shell/modules/widgets/dashboard/controls/GithubProjects.qml": "c9fd9d86a9d98a69245229b53897bd4f4f6d1ddc54194fb3c12fa4aef87d22e1",
   "system/apps/shell/modules/widgets/dashboard/controls/GithubSection.qml": "afb7478e534be98bd21a3c965a70cfd1ff4fd9883af9050ff0d75ba7ee346475",
