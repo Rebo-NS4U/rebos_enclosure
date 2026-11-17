@@ -860,8 +860,8 @@ ClippingRectangle {
                 if(root.traceThemeFrame(ctx,0.8))ctx.stroke();
                 if(!inset){
                     // Solid, straight-edged facets with true 45-degree cuts.
-                    const depth=Math.min(outer?64:28,height*0.36,width*0.30);
-                    const reach=Math.min(width*0.48,outer?240:108);
+                    const depth=Math.min(height*0.46,width*0.36);
+                    const reach=width*0.86;
                     for(let i=0;i<3;i++){
                         const d=depth*(1-i*0.27);
                         const run=reach-i*depth*0.46;

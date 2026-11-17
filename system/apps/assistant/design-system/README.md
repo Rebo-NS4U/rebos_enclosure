@@ -49,7 +49,7 @@ Use `StandardProgressBar` for linear progress in QML. Its normalized `value` is 
 ## Rendered desktop themes
 
 All styles use the selected wallpaper or color preset, including application exports.
-Monolith uses three crisp overlapping basalt facets at opposing corners, with straight engraved seams and true 45-degree cuts. Flat palette-derived fills give each plane a hard edge; patterns scale down for bars and panes, the center stays clear and inset surfaces omit decoration.
+Monolith uses three crisp overlapping basalt facets extending from opposing corners across 86% of the surface width and up to 46% of its height, with straight engraved seams and true 45-degree cuts. Flat palette-derived fills give each plane a hard edge; patterns scale down for bars and panes, a gap separates the opposing patterns and inset surfaces omit decoration.
 Blueprint uses square corners, wire controls, major and minor drafting grids, perimeter measurement ticks, registration targets and inset frames.
 Terminal Hardware uses double machined bezels, cooling vents, slotted screws, recessed display scanlines and raised mechanical controls.
 Their fonts are Noto Sans, JetBrains Mono and DejaVu Sans Mono respectively.
