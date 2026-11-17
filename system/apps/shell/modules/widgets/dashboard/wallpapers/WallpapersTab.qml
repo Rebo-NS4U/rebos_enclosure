@@ -258,6 +258,8 @@ FocusScope {
         anchors.fill: parent
         spacing: Styling.spacing(8)
 
+        WallpaperFolderPicker { Layout.fillWidth: true }
+
         // Header: search / wallpaper mode / scheme. Selector lists render as
         // overlays, so expanding one does not change the grid layout.
         RowLayout {

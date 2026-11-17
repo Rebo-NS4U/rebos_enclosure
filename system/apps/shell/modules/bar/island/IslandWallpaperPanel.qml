@@ -212,6 +212,8 @@ Item {
             }
         }
 
+        WallpaperFolderPicker { Layout.fillWidth: true }
+
         Separator { Layout.fillWidth: true; implicitHeight: 1 }
 
         // ═══════════════════════════════════════════════════════════════
