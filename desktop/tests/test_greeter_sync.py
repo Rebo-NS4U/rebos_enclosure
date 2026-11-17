@@ -80,7 +80,14 @@ class GreeterSyncTests(unittest.TestCase):
                 (ROOT.parent / 'system/greeter/regreet.css.in').read_text())
             theme = home / '.config/enclosure/shell/config/theme.json'
             theme.parent.mkdir(parents=True)
-            theme.write_text('{"roundness":16,"font":"JetBrains Mono","fontSize":14}')
+            theme.write_text(json.dumps({
+                'roundness': 16, 'font': 'JetBrains Mono', 'fontSize': 14,
+                'shellStyle': 'custom', 'ditherStrength': 37, 'shellTransparency': 22,
+                'apiKey': 'never-publish',
+                'srBg': {'gradient': [['primary', 0], ['#112233', 1]],
+                         'gradientType': 'radial', 'opacity': 0.8,
+                         'border': ['primary', 2], 'apiKey': 'never-publish'}
+            }))
             wall = home / 'wall.png'
             Image.new('RGB', (16, 16), 'red').save(wall)
             (cache / 'wallpapers.json').write_text(json.dumps({'currentWall': str(wall)}))
@@ -101,6 +108,11 @@ class GreeterSyncTests(unittest.TestCase):
             self.assertEqual(exported['metrics']['radius'], 16)
             self.assertEqual(exported['palette']['foreground'], '#112233')
             self.assertNotIn('opacity', exported['palette'])
+            self.assertEqual(exported['material']['shellStyle'], 'custom')
+            self.assertEqual(exported['material']['ditherStrength'], 37)
+            self.assertEqual(exported['material']['srBg']['gradientType'], 'radial')
+            self.assertEqual(exported['material']['srBg']['border'], ['primary', 2])
+            self.assertNotIn('never-publish', (target / 'quickshell.json').read_text())
             self.assertNotIn('{{', css)
             self.assertNotIn('glass-texture', css)
             # GTK parses CSS without mapping a window or connecting to greetd.

@@ -9,11 +9,10 @@ for dependency in quickshell cage greetd python3; do command -v "$dependency" >/
 backup="/var/backups/rebos-greeter/$(date +%Y%m%d-%H%M%S)"
 install -d -m755 "$backup" "$TARGET"
 cp -a /etc/greetd/config.toml "$backup/config.toml"
-cp -r "$SOURCE/." "$TARGET/"
+python3 "$ROOT/desktop/scripts/prepare-quickshell-greeter.py" "$TARGET"
 chown -R root:root "$TARGET"
 chmod -R a+rX "$TARGET"
 chmod 755 "$TARGET/launcher"
-install -m644 "$ROOT/system/apps/shell/modules/theme/ShellStyles.js" "$TARGET/themes/enclosure/shell/ShellStyles.js"
 # Keep the existing ReGreet payload and config for manual rollback.
 install -Dm644 /dev/stdin /etc/greetd/config.toml <<'CONFIG'
 [terminal]

@@ -75,6 +75,55 @@ def main():
     exported = {'palette': colors, 'metrics': {
         'font': font, 'fontSize': int(metrics['fontSize']), 'radius': radius,
         'style': str(theme.get('shellStyle', 'quiet'))}}
+    # Material geometry only. Do not copy the full user settings tree.
+    material = {
+        'shellStyle': str(theme.get('shellStyle', 'quiet')),
+        'roundness': radius, 'font': font, 'fontSize': int(metrics['fontSize']),
+        'monoFontSize': int(metrics['fontSize']),
+        'ditherStrength': number('ditherStrength', 20, 0, 100),
+        'shellTransparency': number('shellTransparency', -1, -1, 100),
+        'animDuration': number('animDuration', 0, 0, 2000),
+        'shadowXOffset': number('shadowXOffset', 0, -100, 100),
+        'shadowYOffset': number('shadowYOffset', 0, -100, 100),
+        'shadowBlur': number('shadowBlur', 1, 0, 16),
+    }
+    def color(value):
+        return isinstance(value, str) and (value in colors or
+               re.fullmatch(r'#[0-9a-fA-F]{6,8}', value) or value == 'transparent')
+    shadow = theme.get('shadowColor', 'shadow')
+    material['shadowColor'] = shadow if color(shadow) else 'shadow'
+    try:
+        material['shadowOpacity'] = max(0, min(1, float(theme.get('shadowOpacity', 0))))
+    except (TypeError, ValueError):
+        material['shadowOpacity'] = 0
+    for key in ('srBg', 'srPopup', 'srInternalBg', 'srPane', 'srCommon', 'srFocus',
+                'srPrimary', 'srPrimaryFocus', 'srOverPrimary', 'srSecondary',
+                'srSecondaryFocus', 'srOverSecondary', 'srTertiary', 'srTertiaryFocus',
+                'srOverTertiary', 'srError', 'srErrorFocus', 'srOverError', 'srBarBg'):
+        original = theme.get(key)
+        if not isinstance(original, dict):
+            continue
+        surface = {}
+        for field, value in original.items():
+            if field in ('gradientAngle', 'gradientCenterX', 'gradientCenterY',
+                         'halftoneDotMin', 'halftoneDotMax', 'halftoneStart',
+                         'halftoneEnd', 'opacity', 'radius'):
+                if isinstance(value, (float, int)) and not isinstance(value, bool) and -360 <= value <= 360:
+                    surface[field] = value
+            elif field in ('itemColor', 'color', 'halftoneDotColor', 'halftoneBackgroundColor'):
+                if color(value):
+                    surface[field] = value
+            elif field == 'gradientType' and value in ('linear', 'radial', 'halftone'):
+                surface[field] = value
+            elif field == 'gradient' and isinstance(value, list):
+                surface[field] = [stop for stop in value[:8]
+                                  if isinstance(stop, list) and len(stop) == 2 and color(stop[0])
+                                  and isinstance(stop[1], (int, float)) and 0 <= stop[1] <= 1]
+            elif field == 'border' and isinstance(value, list) and len(value) == 2:
+                if color(value[0]) and isinstance(value[1], (int, float)) and 0 <= value[1] <= 16:
+                    surface[field] = value
+        material[key] = surface
+    exported['material'] = material
     appearance = json.dumps(exported).encode()
     signature = {'image': image_signature, 'css': hashlib.sha256(css).hexdigest(),
                  'quickshell': hashlib.sha256(appearance).hexdigest()}

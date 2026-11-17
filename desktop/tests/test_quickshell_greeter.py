@@ -1,4 +1,5 @@
 """Exercise the real Quickshell greetd client against a local protocol server."""
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -11,6 +12,27 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 CORE = ROOT / 'system/etc/rebos-greeter/quickshell/core'
+
+
+
+class MaterialAssemblyTests(unittest.TestCase):
+    def test_renderer_and_shaders_come_from_shell(self):
+        spec = importlib.util.spec_from_file_location('greeter_assembly', ROOT / 'desktop/scripts/prepare-quickshell-greeter.py')
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        with tempfile.TemporaryDirectory() as directory:
+            destination = Path(directory)
+            module.assemble(destination)
+            target = destination / 'themes/enclosure/shell/modules'
+            canonical = ROOT / 'system/apps/shell/modules'
+            files = ['components/StyledRect.qml', 'theme/Styling.qml',
+                     'theme/Motion.qml', 'theme/ShellStyles.js']
+            for shader in ('linear_gradient', 'radial_gradient', 'halftone', 'dither_fill'):
+                for stage in ('vert', 'frag'):
+                    files += [f'components/{shader}.{stage}', f'components/{shader}.{stage}.qsb']
+            for name in files:
+                self.assertEqual((target / name).read_bytes(), (canonical / name).read_bytes(), name)
+            self.assertFalse((destination / 'themes/enclosure/shell/modules/services').exists())
 
 
 class AuthenticationTests(unittest.TestCase):

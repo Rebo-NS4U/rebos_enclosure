@@ -13,6 +13,9 @@
 import QtQuick
 import Quickshell
 import QsGreet
+import qs.config
+import qs.modules.theme
+import qs.modules.components
 
 ShellRoot {
     // One host per screen where wlr-layer-shell exists (niri, sway).

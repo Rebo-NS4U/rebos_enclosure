@@ -1,35 +1,26 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import Quickshell.Io
+import qs.config
+import qs.modules.theme
+import qs.modules.components
 import QsGreet
-import "ShellStyles.js" as Styles
 
 FocusScope {
     id: root
     focus: true
     property string themeError: ""
-    property var appearance: ({})
+    readonly property var appearance: Config.appearance
     readonly property var p: appearance.palette || ({background: "#111111", foreground: "#eeeeee", primary: "#b9a1ff", overPrimary: "#111111"})
     readonly property var metrics: appearance.metrics || ({})
     readonly property string family: metrics.font || "JetBrains Mono"
     readonly property int size: metrics.fontSize || 14
     readonly property int corners: metrics.radius === undefined ? 16 : metrics.radius
-    readonly property var face: Styles.surface(metrics.style || "quiet", "bg", p, 0)
     function submit() {
         var secret = password.text;
         password.clear();
         if (Auth.promptActive) Auth.submitSecret(secret);
         else Auth.login(username.text, secret);
-    }
-    FileView {
-        path: "/var/lib/rebos-greeter/theme/quickshell.json"
-        watchChanges: true
-        onFileChanged: reload()
-        onLoaded: {
-            try { root.appearance = JSON.parse(text()); }
-            catch (e) { console.warn("Invalid greeter appearance:", e); }
-        }
     }
     Rectangle { anchors.fill: parent; color: root.p.background }
     Image {
@@ -38,13 +29,13 @@ FocusScope {
         fillMode: Image.PreserveAspectCrop
     }
     Rectangle { anchors.fill: parent; color: "#65000000" }
-    Rectangle {
+    StyledRect {
+        variant: "bg"
+        enableShadow: true
         anchors.centerIn: parent
         width: Math.min(460, parent.width - 40)
         height: content.implicitHeight + 64
         radius: root.corners
-        color: root.face.gradient[0][0]
-        border.color: root.p.outlineVariant || root.p.primary
         ColumnLayout {
             id: content
             anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter; margins: 32 }
@@ -70,7 +61,7 @@ FocusScope {
                 enabled: !Auth.busy && !Auth.promptActive
                 font { family: root.family; pixelSize: root.size }
                 color: root.p.foreground
-                background: Rectangle { implicitHeight: 48; radius: Math.max(0, root.corners - 6); color: root.p.background; border.color: username.activeFocus ? root.p.primary : (root.p.outlineVariant || root.p.primary) }
+                background: StyledRect { implicitHeight: 48; variant: username.activeFocus ? "focus" : "internalbg"; controlSurface: true; radius: Math.max(0, root.corners - 6) }
                 onAccepted: password.forceActiveFocus()
             }
             Label { text: Auth.promptActive ? Auth.promptMessage : "Password"; color: root.p.foreground; wrapMode: Text.Wrap; Layout.fillWidth: true; font.family: root.family }
@@ -82,7 +73,7 @@ FocusScope {
                 echoMode: Auth.promptActive && Auth.promptEcho ? TextInput.Normal : TextInput.Password
                 font { family: root.family; pixelSize: root.size }
                 color: root.p.foreground
-                background: Rectangle { implicitHeight: 48; radius: Math.max(0, root.corners - 6); color: root.p.background; border.color: password.activeFocus ? root.p.primary : (root.p.outlineVariant || root.p.primary) }
+                background: StyledRect { implicitHeight: 48; variant: password.activeFocus ? "focus" : "internalbg"; controlSurface: true; radius: Math.max(0, root.corners - 6) }
                 onAccepted: root.submit()
             }
             Label {
@@ -103,7 +94,7 @@ FocusScope {
                     visible: index < 3 || Power.enabled
                     text: modelData
                     contentItem: Text { text: parent.text; color: index === 1 ? (root.p.overPrimary || root.p.background) : root.p.foreground; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter; font { family: root.family; pixelSize: root.size } }
-                    background: Rectangle { implicitHeight: 36; radius: Math.max(0, root.corners - 6); color: index === 1 ? root.p.primary : root.p.background; border.width: parent.activeFocus ? 2 : 1; border.color: root.p.primary }
+                    background: StyledRect { implicitHeight: 36; variant: index === 1 ? "primary" : (parent.activeFocus || parent.hovered ? "focus" : "common"); controlSurface: true; controlPressed: parent.down; radius: Math.max(0, root.corners - 6) }
                     onClicked: {
                         if (index === 0) Sessions.cycle();
                         else if (index === 1) root.submit();

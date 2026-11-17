@@ -13,11 +13,23 @@ user and session selection, password failures, additional PAM prompts,
 cancellation and power actions. Theme load failures use the upstream fallback.
 
 `regreet-sync` publishes the current wallpaper and a restricted appearance JSON
-containing only color roles, font, font size, radius and style. Existing path
-and timer units keep both greeters updated. The interface uses the shared
-ShellStyles surface colors; session-only widgets and decorative shell material
-shaders are not loaded. When updating ShellStyles.js, synchronize the greeter's
-copy. Installation also copies the canonical shell version.
+containing color roles, typography, geometry, transparency, dithering and
+custom surface definitions. Existing path and timer units keep both greeters
+updated. Only explicitly allowed visual fields are published.
+
+The greeter uses the shell's actual `StyledRect`, `Styling`, `Motion` and
+`ShellStyles` components, including material canvases and compiled linear,
+radial, halftone and dither shaders. The panel and login controls use the same
+renderer. `prepare-quickshell-greeter.py` assembles these dependencies directly
+from canonical shell source during installation, so no separate material copy
+needs maintaining. Small Config/Colors adapters consume the public appearance
+export without loading session services.
+
+For a nested material check, assemble into a temporary directory, copy
+`desktop/tests/fixtures/greeter-materials.qml` into its
+`themes/enclosure/shell/` directory, and run that file through `cage -- quickshell -p`.
+The fixture cycles the material finishes plus custom radial/halftone shaders,
+saves snapshots under `/tmp/rebos-material-*.png`, and exits automatically.
 
 To migrate an existing Enclosure installation after deploying its sync helper:
 
