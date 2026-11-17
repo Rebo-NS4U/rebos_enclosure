@@ -3,6 +3,7 @@ import Quickshell
 import Quickshell.Wayland
 import Quickshell.Io
 import qs.modules.globals
+import qs.modules.components
 import qs.modules.theme
 import qs.modules.services
 import qs.config
@@ -1524,6 +1525,22 @@ PanelWindow {
             id: wallImage
             anchors.fill: parent
             source: wallpaper.renderedWallpaper
+        }
+    }
+
+    // This is the actual desktop surface, independent of panel backgrounds.
+    Loader {
+        anchors.fill: parent
+        active: Styling.shellStyle === "monolith"
+        sourceComponent: StyledRect {
+            objectName: "monolith-desktop-outline"
+            anchors.fill: parent
+            variant: "bg"
+            styleOverride: "monolith"
+            decorationOnly: true
+            backgroundOpacity: 1
+            enableBorder: false
+            radius: 0
         }
     }
 

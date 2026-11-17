@@ -14,6 +14,8 @@ ClippingRectangle {
 
     required property string variant
     property string styleOverride: ""
+    // Draw material edges over an existing wallpaper without an opaque surface.
+    property bool decorationOnly: false
     property bool barSurface: false
     property bool controlSurface: false
     property bool controlPressed: false
@@ -125,6 +127,7 @@ ClippingRectangle {
     // Color priority: single-color gradient > explicit solid color > transparent (for real gradients)
     // Apply rectOpacity via alpha channel to avoid affecting children
     color: {
+        if (decorationOnly) return "transparent";
         if (hasFillColor) return applyOpacity(fillColor, rectOpacity);
         if (isSingleColorGradient && (gradientType === "linear" || gradientType === "radial")) {
             return applyOpacity(singleGradientColor, rectOpacity);
@@ -145,7 +148,7 @@ ClippingRectangle {
     // Linear gradient - procedural (no texture)
     Loader {
         anchors.fill: parent
-        active: !root.hasFillColor && root.gradientType === "linear" && root.needsGradientShader
+        active: !root.decorationOnly && !root.hasFillColor && root.gradientType === "linear" && root.needsGradientShader
 
         sourceComponent: ShaderEffect {
             opacity: root.rectOpacity
@@ -175,7 +178,7 @@ ClippingRectangle {
     // Radial gradient - procedural (no texture)
     Loader {
         anchors.fill: parent
-        active: !root.hasFillColor && root.gradientType === "radial" && root.needsGradientShader
+        active: !root.decorationOnly && !root.hasFillColor && root.gradientType === "radial" && root.needsGradientShader
 
         sourceComponent: ShaderEffect {
             opacity: root.rectOpacity
@@ -206,7 +209,7 @@ ClippingRectangle {
     // Halftone gradient - no texture needed, purely procedural
     Loader {
         anchors.fill: parent
-        active: !root.hasFillColor && root.gradientType === "halftone" && !root.usesDitherGrid
+        active: !root.decorationOnly && !root.hasFillColor && root.gradientType === "halftone" && !root.usesDitherGrid
 
         sourceComponent: ShaderEffect {
             opacity: root.rectOpacity
@@ -236,7 +239,7 @@ ClippingRectangle {
     // halftone gradients retain their independent renderer and saved settings.
     Loader {
         anchors.fill: parent
-        active: !root.hasFillColor && root.gradientType === "halftone" && root.usesDitherGrid
+        active: !root.decorationOnly && !root.hasFillColor && root.gradientType === "halftone" && root.usesDitherGrid
         sourceComponent: ShaderEffect {
             objectName: "dithered-fill"
             opacity: root.rectOpacity
@@ -900,7 +903,7 @@ ClippingRectangle {
                     }
                     // Background slabs use long, asymmetric fractures along all four edges.
                     // Compact bars and smaller surfaces keep the original corner treatment.
-                    if(root.variant === "bg" && !root.barSurface && width>240 && height>120){
+                    if((root.variant === "bg" || root.variant === "popup") && !root.barSurface && width>240 && height>120){
                         vein([[width*0.04,0],[width*0.16,band*0.6],
                             [width*0.30,band*0.28],[width*0.43,band],
                             [width*0.61,band*0.45],[width*0.79,band*0.7],[width*0.96,0]],accent);
