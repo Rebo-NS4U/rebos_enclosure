@@ -118,7 +118,7 @@ function M.setup()
   require('codecompanion').setup({
     adapters = { acp = acp },
     interactions = { chat = { adapter = 'dweebo_coding', keymaps = {
-      send = { modes = { n = { '<CR>', '<C-s>' }, i = { '<CR>', '<C-s>' } } },
+      send = { modes = { n = '<CR>', i = '<CR>' } },
       scroll_chat_down = { modes = { n = '<M-d>', i = '<M-d>' } },
       scroll_chat_up = { modes = { n = '<M-u>', i = '<M-u>' } },
     } }, inline = { adapter = 'dweebo_coding' } },

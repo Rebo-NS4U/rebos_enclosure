@@ -18,6 +18,7 @@ local root, lazy = arg[1], arg[2]
 vim.opt.rtp:prepend(root .. '/config/nvim')
 vim.opt.rtp:prepend(lazy .. '/codecompanion.nvim')
 vim.opt.rtp:prepend(lazy .. '/plenary.nvim')
+require('ide.core').setup()
 local dweebo = require('ide.dweebo')
 dweebo.setup()
 -- Exercise the real message-box Enter mapping through submission validation,
@@ -41,6 +42,14 @@ assert(send.buffer == 1 and type(send.callback) == 'function')
 send.callback()
 assert(submitted, 'Enter did not submit the typed message')
 assert(vim.fn.maparg('<C-j>','i',false,true).desc == 'New line in Dweebo message')
+-- Chat-local mappings must not shadow the global save shortcut.
+for _, mode in ipairs({ 'n', 'i' }) do
+  local save = vim.fn.maparg('<C-s>', mode, false, true)
+  assert(save.buffer == 0 and save.desc == 'Save file', 'Chat shadows Ctrl-S in ' .. mode)
+  local enter = vim.fn.maparg('<CR>', mode, false, true)
+  assert(enter.buffer == 1 and type(enter.callback) == 'function')
+end
+
 local data = dweebo.defaults()
 assert(#data.profiles == 6)
 for _, profile in ipairs(data.profiles) do
