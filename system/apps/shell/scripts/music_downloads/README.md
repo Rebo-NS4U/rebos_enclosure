@@ -41,8 +41,10 @@ completion, including cancellation or partial failure, so available tracks can p
 The mix preview shows downloaded availability and a scrollable track list. Use
 Play downloaded or select an available track to play in mix order through Music's
 shared player (pause, seek, previous/next and queue). Missing tracks are enabled
-for direct preview through the running Spotify desktop player. Preview in Spotify
-starts the first listed track; clicking an undownloaded row plays that track.
+for direct preview through the running Spotify desktop player. Each mix card has a **Preview random** button, available before opening its track
+list. Every press picks a random song from that mix and avoids immediately repeating
+the last preview when another song is available. Clicking an undownloaded row in
+the track list still previews that specific track.
 No spotDL job, audio-file download or library write is performed. Open Spotify
 and sign in before previewing; unavailable playback is reported without silently
 starting a download. Local playback pauses only after Spotify accepts the request.

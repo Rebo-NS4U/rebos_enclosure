@@ -68,13 +68,23 @@ ShellRoot {
     const uri="spotify:track:"+"a".repeat(22);
     const localUri="spotify:track:"+"b".repeat(22);
     pane.localTracks=[{path:"/fixture/local.flac",spotifyUri:localUri}];
-    pane.selected={name:"Daily Mix 1",tracks:[{uri:uri,title:"Online song",artist:"Artist"},{uri:localUri,title:"Local song",artist:"Artist"}]};
+    const mix={name:"Daily Mix 1",uri:"spotify:playlist:"+"c".repeat(22),version:"fixture",tracks:[{uri:uri,title:"Online song",artist:"Artist"},{uri:localUri,title:"Local song",artist:"Artist"}]};
+    pane.mixes={current:[mix],saved:[],checked:""}; t.wait(100);
+    const mixPreview=t.findChild(pane,"music-mix-stream-preview-0");
+    t.verify(mixPreview!==null && mixPreview.enabled && pane.selected===null);
+    mixPreview.clicked(); const first=pane.streamed; t.verify(first===uri || first===localUri);
+    mixPreview.clicked(); t.verify(pane.streamed!==first); t.verify(pane.selected===null);
+    t.compare(pane.downloads,0);
+    t.verify(!pane.previewRandomMix({name:"Empty",tracks:[]}));
+    t.verify(pane.previewRandomMix({name:"Single",tracks:[mix.tracks[0]]})); t.compare(pane.streamed,uri);
+    t.verify(pane.previewRandomMix({name:"Single",tracks:[mix.tracks[0]]})); t.compare(pane.streamed,uri);
+    pane.selected=mix;
     t.wait(100);
     const row=t.findChild(pane,"music-mix-track-0");
     t.verify(row!==null && row.enabled);
     row.clicked(); t.compare(pane.streamed,uri); t.compare(pane.downloads,0);
     t.findChild(pane,"music-mix-track-1").clicked(); t.verify(pane.localPlayed);
-    t.findChild(pane,"music-mix-stream-preview").clicked(); t.compare(pane.streamed,uri);
+    t.verify(t.findChild(pane,"music-mix-stream-preview")===null);
     t.compare(pane.downloads,0); console.log("STREAM_PREVIEW_PASSED"); Qt.quit();
    } catch(e) {console.error(e,e.stack);Qt.exit(1);}
   } }

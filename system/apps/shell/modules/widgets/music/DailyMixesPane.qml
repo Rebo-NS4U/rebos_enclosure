@@ -15,6 +15,7 @@ Item {
     property string previewStatus: ""
     property bool downloadBusy: false
     property var selected: null
+    property var lastPreviewByMix: ({})
     property string section: "current"
     readonly property bool wide: width >= Styling.spacing(940)
     readonly property var displayedMixes: mixes[section] || []
@@ -26,6 +27,19 @@ Item {
     signal previewRequested(string uri)
     signal downloadRequested(var mix)
     signal requested(string cmd, var args, var callback)
+    function previewRandomMix(mix) {
+        const tracks = (mix?.tracks || []).filter(track => /^spotify:track:[A-Za-z0-9]{22}$/.test(track.uri || ""));
+        if (!tracks.length) return false;
+        const key = (mix.uri || mix.name || "") + ":" + (mix.version || mix.savedAt || "");
+        const previous = lastPreviewByMix[key];
+        const alternatives = tracks.filter(track => track.uri !== previous);
+        const choices = alternatives.length ? alternatives : tracks;
+        const track = choices[Math.floor(Math.random() * choices.length)];
+        lastPreviewByMix = Object.assign({}, lastPreviewByMix, {[key]: track.uri});
+        previewStatus = "Opening a random song in Spotify · " + track.title;
+        previewRequested(track.uri);
+        return true;
+    }
     function refresh() { requested("mixes_get", {}, data => { root.mixes = data; }); }
     onVisibleChanged: if (visible) refresh()
     onSelectedChanged: { previewStatus = ""; preview.currentIndex = -1; preview.positionViewAtBeginning(); }
@@ -48,7 +62,7 @@ Item {
         }
         StyledText {
             Layout.fillWidth: true; wrapMode: Text.WordWrap
-            text: root.notice || root.mixes.refreshStatus || (root.mixes.checked
+            text: root.notice || root.previewStatus || root.mixes.refreshStatus || (root.mixes.checked
                 ? "Updated " + new Date(root.mixes.checked).toLocaleString() + " · Preview streams in Spotify; downloads are optional."
                 : "Open Spotify’s Made for You once to discover mixes. Preview streams without a library download.")
             color: root.notice ? Colors.error : Colors.overSurfaceVariant
@@ -73,7 +87,7 @@ Item {
                     Layout.fillWidth: true; Layout.fillHeight: true
                     clip: true
                     cellWidth: width / Math.max(1, Math.floor(width / Styling.spacing(270)))
-                    cellHeight: Styling.spacing(182)
+                    cellHeight: Styling.spacing(210)
                     model: root.displayedMixes
                     boundsBehavior: Flickable.StopAtBounds
                     delegate: Item {
@@ -105,7 +119,15 @@ Item {
                                 Item { Layout.fillHeight: true }
                                 Flow {
                                     Layout.fillWidth: true; spacing: Styling.spacing(4)
-                                    ThemeButton { objectName: "music-mix-view-" + mix.index; text: "View tracks"; highlighted: true; onClicked: root.selected = mix.modelData }
+                                    ThemeButton {
+                                        objectName: "music-mix-stream-preview-" + mix.index
+                                        text: "Preview random"
+                                        Accessible.name: "Preview a random song from " + mix.modelData.name + " in Spotify"
+                                        highlighted: true
+                                        enabled: mix.modelData.tracks.some(track => /^spotify:track:[A-Za-z0-9]{22}$/.test(track.uri || ""))
+                                        onClicked: root.previewRandomMix(mix.modelData)
+                                    }
+                                    ThemeButton { objectName: "music-mix-view-" + mix.index; text: "View tracks"; onClicked: root.selected = mix.modelData }
                                     ThemeButton { text: "Download"; enabled: !root.downloadBusy; onClicked: { root.selected = mix.modelData; root.downloadRequested(mix.modelData); } }
                                     ThemeButton {
                                         text: "Save"; Accessible.name: "Save mix snapshot"; visible: !mix.modelData.savedAt
@@ -147,12 +169,6 @@ Item {
                     }
                     Flow {
                         Layout.fillWidth: true; spacing: Styling.spacing(6)
-                        ThemeButton {
-                            objectName: "music-mix-stream-preview"
-                            text: "Preview in Spotify"
-                            highlighted: true; enabled: root.previewTracks.length > 0
-                            onClicked: root.previewRequested(root.previewTracks[0].track.uri)
-                        }
                         ThemeButton { text: "Play local · " + root.playableTracks.length; enabled: root.playableTracks.length > 0; onClicked: root.playRequested(root.playableTracks, 0) }
                     }
                     StyledText {
