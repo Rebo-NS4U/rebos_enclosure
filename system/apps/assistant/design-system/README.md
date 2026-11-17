@@ -49,7 +49,7 @@ Use `StandardProgressBar` for linear progress in QML. Its normalized `value` is 
 ## Rendered desktop themes
 
 All styles use the selected wallpaper or color preset, including application exports.
-Monolith uses stepped megalith facets along opposing rims, paired carved pillar incisions on tall outer slabs, a fine neutral rim and palette-colored edge accents. Patterns scale down for bars and panes; the center stays plain and inset surfaces omit decoration.
+Monolith uses three broad overlapping basalt planes at opposing corners, with softly engraved diagonal seams. Palette-derived washes fade toward a clear center; patterns scale down for bars and panes and inset surfaces omit decoration.
 Blueprint uses square corners, wire controls, major and minor drafting grids, perimeter measurement ticks, registration targets and inset frames.
 Terminal Hardware uses double machined bezels, cooling vents, slotted screws, recessed display scanlines and raised mechanical controls.
 Their fonts are Noto Sans, JetBrains Mono and DejaVu Sans Mono respectively.
@@ -75,7 +75,7 @@ Every theme now follows the shared corner-radius setting. Inset frame lines use 
 
 Terminal Hardware uses concentric bezel grooves and recessed cooling louvers. These details stay at the perimeter, adapt to the shared corner radius and remain static.
 
-Architectural refinement: Suspended Film now uses floating offset glass sheets and contact-shadow edges, replacing tension cables and bindings. Monolith uses stepped perimeter facets and carved pillar incisions with palette-colored edges. Both preserve selected colors and radius behavior; Terminal Hardware remains unchanged.
+Architectural refinement: Suspended Film now uses floating offset glass sheets and contact-shadow edges, replacing tension cables and bindings. Monolith uses broad overlapping basalt planes and softly engraved diagonal seams. Both preserve selected colors and radius behavior; Terminal Hardware remains unchanged.
 
 ## Material themes
 
@@ -89,7 +89,7 @@ All three preserve selected semantic action colors, readable centers, compositor
 
 ## Material detail refinement
 
-The remaining nine themes share the same level of material detail as Canopy, Orbital and Metropolis. Glass Vault adds refractive grazing bands behind its rounded clamps. Radar Station adds soft scope illumination and radial divisions to its etched bearing scales. Suspended Film separates floating sheets with curved grazing reflections. Monolith keeps a clean center with stepped stone patterns around its edges. Blueprint includes a small architectural truss drawing within its ruled sheet. Terminal Hardware adds brushed upper-bezel lines and recessed panel seams. Frosted Glass grows branching crystals from the upper rim. Tinted layers fading colored-glass planes at its upper edge. Clear Glass keeps restrained grazing reflections and a lower meniscus.
+The remaining nine themes share the same level of material detail as Canopy, Orbital and Metropolis. Glass Vault adds refractive grazing bands behind its rounded clamps. Radar Station adds soft scope illumination and radial divisions to its etched bearing scales. Suspended Film separates floating sheets with curved grazing reflections. Monolith keeps a clean center with fading angular basalt planes at opposing corners. Blueprint includes a small architectural truss drawing within its ruled sheet. Terminal Hardware adds brushed upper-bezel lines and recessed panel seams. Frosted Glass grows branching crystals from the upper rim. Tinted layers fading colored-glass planes at its upper edge. Clear Glass keeps restrained grazing reflections and a lower meniscus.
 
 Details use selected semantic palette colors and static geometry. Glass layers clip to the shared rounded frame; inset surfaces retain simpler decoration. Clear Glass remains the final entry. No theme imposes a new palette, and native application export colors remain derived from the selected palette.
 
@@ -117,9 +117,9 @@ Glass Vault shell refinement uses a fine polished bevel, fading upper reflection
 
 Glass Vault bar surfaces use a shallow continuous rim and a narrow upper sheen, leaving the compact center clear. Expanded island panels retain the full vault treatment; switching between them repaints the material.
 
-Monolith, Blueprint and Terminal Hardware carry their material treatments into bars as well as panels. Monolith has a plain center, stepped rim facets and primary and secondary edge accents. Blueprint's major and minor rules fade beneath the content and strengthen toward the sheet edges. Terminal Hardware adds a brushed upper shoulder inside its clipped housing. These finishes remain static, preserve semantic colors and share the same treatment in shell, assistant and media surfaces.
+Monolith, Blueprint and Terminal Hardware carry their material treatments into bars as well as panels. Monolith has a plain center and broad diagonal corner planes with fading palette-derived washes. Blueprint's major and minor rules fade beneath the content and strengthen toward the sheet edges. Terminal Hardware adds a brushed upper shoulder inside its clipped housing. These finishes remain static, preserve semantic colors and share the same treatment in shell, assistant and media surfaces.
 
-Monolith uses static stepped stone facets and paired pillar incisions at the perimeter, leaving text areas clear. Terminal Hardware uses recessed rack mounting slots, cooling louvers, diagonal grip cuts and a segmented lower retention rail. Their surface geometry remains distinct at compact bar sizes; decorations stay at the perimeter and follow the selected palette and rounded clipping frame.
+Monolith uses static overlapping basalt planes and engraved diagonal seams at opposing corners, leaving text areas clear. Terminal Hardware uses recessed rack mounting slots, cooling louvers, diagonal grip cuts and a segmented lower retention rail. Their surface geometry remains distinct at compact bar sizes; decorations stay at the perimeter and follow the selected palette and rounded clipping frame.
 
 Canopy keeps uninterrupted fabric hems: upper support ribs and the randomized assistant header’s short vertical attachment marks are removed. Fabric silhouettes, soft shading and the stable variation per opening are preserved.
 

@@ -816,7 +816,7 @@ ClippingRectangle {
         }
     }
 
-    // Monolith: stepped stone facets and carved pillars around a quiet slab.
+    // Monolith: overlapping basalt planes with softly engraved diagonal seams.
     Loader {
         anchors.fill: parent
         active: !root.hasFillColor && root.rectOpacity > 0 && (root.styleOverride || Styling.shellStyle) === "monolith"
@@ -847,49 +847,36 @@ ClippingRectangle {
                 ctx.lineWidth=0.8;ctx.strokeStyle=Qt.alpha(pigment,inset?0.045:0.085);
                 if(root.traceThemeFrame(ctx,0.8))ctx.stroke();
                 if(!inset){
-                    // Stepped megalith silhouettes: shallow facets along opposing rims.
-                    const band=Math.min(outer?22:10,height*0.24);
-                    const pitch=outer?88:64;
-                    for(let x=0,i=0;x<width;x+=pitch,i++){
-                        const step=band*(i%3===0?1:0.62);
-                        ctx.fillStyle=Qt.alpha(accent,outer?0.065:0.035);
-                        ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x+pitch,0);
-                        ctx.lineTo(x+pitch,step*0.4);ctx.lineTo(x+pitch*0.68,step*0.4);
-                        ctx.lineTo(x+pitch*0.46,step);ctx.lineTo(x,step);ctx.closePath();ctx.fill();
-                        ctx.strokeStyle=Qt.alpha(pigment,outer?0.14:0.08);ctx.lineWidth=0.7;
-                        ctx.beginPath();ctx.moveTo(x,step);ctx.lineTo(x+pitch*0.46,step);
-                        ctx.lineTo(x+pitch*0.68,step*0.4);ctx.stroke();
-                        ctx.fillStyle=Qt.alpha(secondaryAccent,outer?0.045:0.025);
-                        ctx.beginPath();ctx.moveTo(width-x,height);ctx.lineTo(width-x-pitch,height);
-                        ctx.lineTo(width-x-pitch,height-step*0.5);
-                        ctx.lineTo(width-x-pitch*0.36,height-step*0.5);
-                        ctx.lineTo(width-x-pitch*0.18,height-step);ctx.lineTo(width-x,height-step);
-                        ctx.closePath();ctx.fill();
-                    }
-                    // Paired incisions read as carved pillars on taller slabs.
-                    if(outer && height>100){
-                        const reach=Math.min(120,height*0.34);
-                        for(let i=0;i<3;i++){
-                            const x=7+i*4,y=Math.max(cornerRadius+8,28)+i*9;
-                            ctx.strokeStyle=Qt.alpha(pigment,0.16-i*0.03);ctx.lineWidth=1;
-                            ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x,y+reach);
-                            ctx.lineTo(x+3,y+reach+4);ctx.stroke();
-                        }
-                    }
-                    const safe=Math.max(12,cornerRadius+4);
-                    const span=Math.max(0,Math.min(outer?96:40,width-safe*2));
-                    if(span>8){
-                        const wash=ctx.createLinearGradient(0,0,0,outer?16:8);
-                        wash.addColorStop(0,Qt.alpha(accent,outer?0.075:0.035));
+                    // Broad oblique slabs overlap at opposing corners like cut basalt.
+                    // Fade toward the face so content never sits on a hard seam.
+                    const depth=Math.min(outer?76:30,height*0.38);
+                    const extent=Math.min(width*0.58,outer?310:140);
+                    for(let i=0;i<3;i++){
+                        const offset=i*depth*0.26;
+                        const reach=extent-i*extent*0.19;
+                        const wash=ctx.createLinearGradient(0,0,0,depth);
+                        wash.addColorStop(0,Qt.alpha(accent,(outer?0.10:0.055)-i*0.012));
                         wash.addColorStop(1,Qt.alpha(accent,0));
-                        ctx.fillStyle=wash;ctx.fillRect(safe,0,span,outer?16:8);
-                        ctx.lineWidth=1.5;ctx.strokeStyle=Qt.alpha(accent,outer?0.65:0.38);
-                        ctx.beginPath();ctx.moveTo(safe,1.5);ctx.lineTo(safe+span,1.5);ctx.stroke();
-                        if(outer){
-                            ctx.lineWidth=1;ctx.strokeStyle=Qt.alpha(secondaryAccent,0.40);
-                            ctx.beginPath();ctx.moveTo(width-safe-span*0.45,height-1.5);
-                            ctx.lineTo(width-safe,height-1.5);ctx.stroke();
-                        }
+                        ctx.fillStyle=wash;
+                        ctx.beginPath();ctx.moveTo(width-reach,0);
+                        ctx.lineTo(width,0);ctx.lineTo(width,depth-offset);
+                        ctx.lineTo(width-reach*0.30,depth-offset);
+                        ctx.closePath();ctx.fill();
+                        const seam=ctx.createLinearGradient(width-reach,0,width,depth);
+                        seam.addColorStop(0,Qt.alpha(pigment,0));
+                        seam.addColorStop(0.6,Qt.alpha(pigment,outer?0.12:0.065));
+                        seam.addColorStop(1,Qt.alpha(pigment,0));
+                        ctx.strokeStyle=seam;ctx.lineWidth=0.8;
+                        ctx.beginPath();ctx.moveTo(width-reach,0);
+                        ctx.lineTo(width-reach*0.30,depth-offset);
+                        ctx.lineTo(width,depth-offset);ctx.stroke();
+                        const shadow=ctx.createLinearGradient(0,height,0,height-depth);
+                        shadow.addColorStop(0,Qt.alpha(secondaryAccent,(outer?0.075:0.04)-i*0.01));
+                        shadow.addColorStop(1,Qt.alpha(secondaryAccent,0));
+                        ctx.fillStyle=shadow;
+                        ctx.beginPath();ctx.moveTo(0,height);ctx.lineTo(reach,height);
+                        ctx.lineTo(reach*0.30,height-depth+offset);
+                        ctx.lineTo(0,height-depth+offset);ctx.closePath();ctx.fill();
                     }
                 }
                 ctx.restore();
