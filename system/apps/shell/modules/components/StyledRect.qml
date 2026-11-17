@@ -949,17 +949,43 @@ ClippingRectangle {
                         stroke(Qt.alpha(color,0.055),5);
                         stroke(light,0.9);
                     }
-                    vein([[width-reach,0],[width-reach*0.72,band*0.55],
-                        [width-reach*0.45,band*0.32],[width-band,band],
-                        [width-band*0.4,band*2],[width,band*2.6]],accent);
-                    vein([[reach,height],[reach*0.68,height-band*0.65],
-                        [reach*0.38,height-band*0.4],[band,height-band],
-                        [band*0.35,height-band*2],[0,height-band*2.8]],secondaryAccent);
-                    if(height>100 && width>120){
-                        vein([[width-reach*0.45,band*0.32],
-                            [width-reach*0.38,band*0.8],[width-reach*0.24,0]],accent);
-                        vein([[reach*0.38,height-band*0.4],
-                            [reach*0.32,height-band*0.95],[reach*0.18,height]],secondaryAccent);
+                    // Background slabs use long, asymmetric fractures along all four edges.
+                    // Compact bars and smaller surfaces keep the original corner treatment.
+                    if(root.variant === "bg" && !root.barSurface && width>240 && height>120){
+                        vein([[width*0.04,0],[width*0.16,band*0.6],
+                            [width*0.30,band*0.28],[width*0.43,band],
+                            [width*0.61,band*0.45],[width*0.79,band*0.7],[width*0.96,0]],accent);
+                        vein([[width,height*0.08],[width-band*0.6,height*0.24],
+                            [width-band*0.25,height*0.41],[width-band,height*0.57],
+                            [width-band*0.4,height*0.73],[width,height*0.94]],accent);
+                        vein([[width*0.93,height],[width*0.77,height-band*0.45],
+                            [width*0.62,height-band],[width*0.47,height-band*0.35],
+                            [width*0.29,height-band*0.75],[width*0.07,height]],secondaryAccent);
+                        vein([[0,height*0.95],[band*0.45,height*0.79],
+                            [band,height*0.61],[band*0.25,height*0.46],
+                            [band*0.7,height*0.27],[0,height*0.05]],secondaryAccent);
+                        // Unequal splinters break up the long seams without entering content.
+                        vein([[width*0.30,band*0.28],[width*0.34,band*0.85],
+                            [width*0.39,0]],accent);
+                        vein([[width-band*0.25,height*0.41],
+                            [width-band*1.6,height*0.46],[width,height*0.50]],accent);
+                        vein([[width*0.62,height-band],[width*0.58,height-band*1.65],
+                            [width*0.53,height]],secondaryAccent);
+                        vein([[band,height*0.61],[band*1.65,height*0.66],
+                            [0,height*0.71]],secondaryAccent);
+                    }else{
+                        vein([[width-reach,0],[width-reach*0.72,band*0.55],
+                            [width-reach*0.45,band*0.32],[width-band,band],
+                            [width-band*0.4,band*2],[width,band*2.6]],accent);
+                        vein([[reach,height],[reach*0.68,height-band*0.65],
+                            [reach*0.38,height-band*0.4],[band,height-band],
+                            [band*0.35,height-band*2],[0,height-band*2.8]],secondaryAccent);
+                        if(height>100 && width>120){
+                            vein([[width-reach*0.45,band*0.32],
+                                [width-reach*0.38,band*0.8],[width-reach*0.24,0]],accent);
+                            vein([[reach*0.38,height-band*0.4],
+                                [reach*0.32,height-band*0.95],[reach*0.18,height]],secondaryAccent);
+                        }
                     }
                 }
                 ctx.restore();
