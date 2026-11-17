@@ -38,6 +38,20 @@ the rust-analyzer launcher exists but its toolchain component is currently missi
 Install it with `rustup component add rust-analyzer`. Additional languages and
 debug adapters can be added in `lua/ide/plugins.lua`.
 
+## Image viewer
+
+Open an image with `:edit /path/to/image.png`, `nvim image.jpg`, or select it
+in the file explorer. Snacks displays it directly in the editor. Use Kitty
+(or another terminal supporting the Kitty graphics protocol); the Linux console
+cannot render images. ImageMagick is required for formats other than PNG;
+both Kitty and ImageMagick are included in Enclosure's core packages.
+Supported image formats include PNG, JPEG, GIF, WebP, BMP, TIFF, HEIC and AVIF.
+
+Images referenced in Markdown and other supported documents render inline when
+the corresponding Tree-sitter parser is available. Run `:checkhealth snacks`
+to diagnose terminal or image conversion issues. Reopen Neovim after enabling
+this feature in an existing session.
+
 ## Shortcuts
 
 | Keys | Action |

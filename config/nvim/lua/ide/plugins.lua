@@ -15,6 +15,7 @@ return {
     config = function() require('ide.dweebo').setup() end },
   { 'folke/snacks.nvim', lazy = false, priority = 1000,
     opts = { picker = { enabled = true, sources = { projects = { projects = projects } } }, explorer = { enabled = true },
+      image = { enabled = true },
       input = { enabled = true }, notifier = { enabled = true }, indent = { enabled = true },
       terminal = { enabled = true }, bigfile = { enabled = true }, quickfile = { enabled = true },
       dashboard = { enabled = true, preset = { header = '\nREBO / NEOVIM\n', keys = {
