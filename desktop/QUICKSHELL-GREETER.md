@@ -35,7 +35,13 @@ For a nested material check, assemble into a temporary directory, copy
 The fixture cycles the material finishes plus custom radial/halftone shaders,
 saves snapshots under `/tmp/rebos-material-*.png`, and exits automatically.
 
-To migrate an existing Enclosure installation after deploying its sync helper:
+`update.sh` now migrates existing Rebos ReGreet configurations and refreshes
+Quickshell greeter assets through the privileged installer before enabling theme
+sync. This also runs with `--files-only`; `--dry-run` makes no system changes.
+Other login configurations are retained.
+The switch takes effect on the next greeter launch.
+
+To migrate manually after deploying the sync helper:
 
 ```sh
 ~/.local/bin/assistant-sudo --reason 'Switch to the Quickshell login greeter' -- \

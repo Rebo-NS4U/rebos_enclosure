@@ -62,6 +62,56 @@ class PackageApprovalTests(unittest.TestCase):
                     self.assertNotEqual(result.returncode, 0)
                     self.assertIn('repository differs', result.stderr)
 
+    def test_managed_greeter_migration_uses_approval_helper(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            installer = root / 'desktop/scripts/install-quickshell-greeter.sh'
+            installer.parent.mkdir(parents=True)
+            installer.touch()
+            helper = root / '.local/bin/assistant-sudo'
+            helper.parent.mkdir(parents=True)
+            config = root / 'config.toml'
+            for command in ('regreet --style /var/lib/rebos-greeter/theme/regreet.css',
+                            '/usr/local/lib/rebos-greeter/quickshell/launcher', 'tuigreet'):
+                config.write_text('[default_session]\ncommand = "' + command + '"\n')
+                for approved_helper in (False, True):
+                    if approved_helper:
+                        helper.touch()
+                    else:
+                        helper.unlink(missing_ok=True)
+                    with patch.object(update, 'run') as run:
+                        update.update_greeter(root, root, config)
+                    if command == 'tuigreet':
+                        run.assert_not_called()
+                    else:
+                        expected = (str(helper), '--reason',
+                                    'Update the Enclosure Quickshell login greeter', '--',
+                                    '/usr/bin/bash', str(installer)) if approved_helper else (
+                                        'sudo', '/usr/bin/bash', str(installer))
+                        run.assert_called_once_with(*expected)
+
+    def test_files_only_migrates_before_sync_and_dry_run_skips(self):
+        import argparse
+        for dry_run in (True, False):
+            with tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                sync = root / 'desktop/scripts/greeter_sync.py'
+                sync.parent.mkdir(parents=True)
+                sync.touch()
+                args = argparse.Namespace(allow_local_changes=True, files_only=True, dry_run=dry_run)
+                with patch.object(update.subprocess, 'check_output', return_value='commit'), \
+                     patch.object(update, 'apply_snapshot'), \
+                     patch.object(update, 'update_greeter') as migrate, \
+                     patch.object(update, 'run') as run:
+                    run.side_effect = lambda *args: self.assertTrue(migrate.called)
+                    update.apply_fetched_snapshot(root, root, args)
+                if dry_run:
+                    migrate.assert_not_called()
+                    run.assert_not_called()
+                else:
+                    migrate.assert_called_once_with(root, root)
+                    run.assert_called_once_with('python3', str(sync))
+
     def test_package_upgrade_approval_command(self):
         for helper_exists in (True, False):
             with self.subTest(helper_exists=helper_exists), tempfile.TemporaryDirectory() as temporary:

@@ -27,6 +27,7 @@ class HandoffTests(unittest.TestCase):
         shutil.copy2(ROOT / 'update.sh', self.remote / 'update.sh')
         # Never contact the real user's greeter or desktop services in fixtures.
         (scripts / 'greeter_sync.py').write_text('pass\n')
+        (scripts / 'install-quickshell-greeter.sh').unlink()
         self.git('init', '-q', '-b', 'main')
         self.git('config', 'user.name', 'Update Test')
         self.git('config', 'user.email', 'update@example.invalid')

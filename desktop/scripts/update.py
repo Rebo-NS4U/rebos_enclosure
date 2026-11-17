@@ -104,6 +104,23 @@ def check_local_changes(home, payload=None):
                          'and retain a recovery backup, explicitly use --allow-local-changes')
 
 
+def update_greeter(snapshot, home, config=Path('/etc/greetd/config.toml')):
+    """Migrate/refresh the managed greeter while respecting other login setups."""
+    installer = snapshot / 'desktop/scripts/install-quickshell-greeter.sh'
+    if not installer.is_file() or not config.is_file():
+        return
+    import tomllib
+    command = tomllib.loads(config.read_text()).get('default_session', {}).get('command', '')
+    if '/rebos-greeter/' not in command:
+        return
+    helper = home / '.local/bin/assistant-sudo'
+    if helper.is_file():
+        run(str(helper), '--reason', 'Update the Enclosure Quickshell login greeter',
+            '--', '/usr/bin/bash', str(installer))
+    else:
+        run('sudo', '/usr/bin/bash', str(installer))
+
+
 def apply_fetched_snapshot(snapshot, home, args):
     if not args.allow_local_changes and source_checkout(home) is None:
         check_local_changes(home, snapshot / 'desktop/payload')
@@ -133,6 +150,8 @@ def apply_fetched_snapshot(snapshot, home, args):
     if not args.allow_local_changes and source_checkout(home) is None:
         check_local_changes(home, snapshot / 'desktop/payload')
     backup = apply_snapshot(snapshot, home)
+    # Refresh system greeter assets as well as user files, including files-only updates.
+    update_greeter(snapshot, home)
     # Use the fetched implementation so this update matches its payload.
     greeter_setup = snapshot / 'desktop/scripts/greeter_sync.py'
     if greeter_setup.is_file():
