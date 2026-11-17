@@ -402,6 +402,8 @@ ClippingRectangle {
                 readonly property string finish: material.finish
                 objectName: "structural-glass-canvas"
                 readonly property real cornerRadius: Math.max(0, Math.min(root.radius, width / 2, height / 2))
+                readonly property bool barSurface: root.barSurface
+                onBarSurfaceChanged: requestPaint()
                 onCornerRadiusChanged: requestPaint()
                 onPigmentChanged: requestPaint()
                 onFinishChanged: requestPaint()
@@ -424,6 +426,19 @@ ClippingRectangle {
                             ctx.quadraticCurveTo(inset,bottom,inset,bottom-r);ctx.lineTo(inset,inset+r);
                             ctx.quadraticCurveTo(inset,inset,inset+r,inset);ctx.stroke();
                         };
+                        if(barSurface){
+                            // A shallow continuous rim suits the compact bar; keep its center clear.
+                            const rim=ctx.createLinearGradient(0,0,0,height);
+                            rim.addColorStop(0,ink(0.25));
+                            rim.addColorStop(0.35,ink(0.055));
+                            rim.addColorStop(0.75,ink(0.025));
+                            rim.addColorStop(1,ink(0.12));
+                            ctx.strokeStyle=rim;frame(1.5);
+                            const depth=Math.min(7,height*0.18);
+                            const sheen=ctx.createLinearGradient(0,0,0,depth);
+                            sheen.addColorStop(0,ink(0.055));sheen.addColorStop(1,ink(0));
+                            ctx.fillStyle=sheen;ctx.fillRect(0,0,width,depth);
+                        }else{
                         // A polished bevel defines the block without boxing in its content.
                         const step=material.outer ? 6 : 2;
                         const bevel=ctx.createLinearGradient(0,0,width,height);
@@ -471,6 +486,7 @@ ClippingRectangle {
                             ctx.lineTo(width-lip-r,height-lip);
                             ctx.quadraticCurveTo(width-lip,height-lip,width-lip,height-lip-r);
                             ctx.lineTo(width-lip,Math.max(12,lip+r));ctx.stroke();
+                        }
                         }
                     } else if (finish === "radar-station") {
                         // Fixed bearing scales: no sweep, motion or simulated live data.

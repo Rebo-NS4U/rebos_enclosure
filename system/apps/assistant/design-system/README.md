@@ -113,3 +113,5 @@ Celestial design references: [wttr.in’s compact weather drawings](https://gith
 The bonsai glass enclosure is flat and front-facing, with a low charcoal base directly beneath the pot foot and no roof or perspective lines. The animation uses 59 columns and 26 rows.
 
 Glass Vault shell refinement uses a fine polished bevel, fading upper reflections and slimmer rounded clasps on outer panels. Inner controls retain a single quiet rim; the lower meniscus follows the shared radius. Selected palette colors and translucent centers are preserved.
+
+Glass Vault bar surfaces use a shallow continuous rim and a narrow upper sheen, leaving the compact center clear. Expanded island panels retain the full vault treatment; switching between them repaints the material.
