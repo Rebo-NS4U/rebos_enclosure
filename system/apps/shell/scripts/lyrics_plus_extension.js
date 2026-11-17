@@ -50,3 +50,59 @@ async function refresh() {
     refresh();
     setInterval(publish, 5000);
 })();
+
+// Daily Mix metadata only. Learn playlist links from Spotify's visible Daily Mix cards.
+(function dailyMixes() {
+    let collecting = false;
+    let lastCollection = 0;
+    let cached = null;
+    const learned = new Map();
+    async function publishMixes() {
+        if (!cached) return;
+        try { await fetch('http://127.0.0.1:19838/mixes', {method: 'POST', credentials: 'omit',
+            headers: {'Content-Type': 'application/json'}, body: JSON.stringify(cached)}); } catch (_) {}
+    }
+    async function collect() {
+        if (collecting || !globalThis.Spicetify?.Platform?.PlaylistAPI) return;
+        collecting = true;
+        try {
+            const previousSize = learned.size;
+            document.querySelectorAll('a[href*="/playlist/"]').forEach(a => {
+                const card = a.closest('[data-testid="card"]') || a.parentElement;
+                const name = (a.textContent + ' ' + (a.getAttribute('aria-label') || '') + ' ' + (card?.textContent || '')).match(/Daily Mix [1-6]\b/);
+                const id = a.getAttribute('href').match(/\/playlist\/([A-Za-z0-9]{22})(?:[/?#]|$)/);
+                if (name && id) learned.set('spotify:playlist:' + id[1], name[0]);
+            });
+            if (learned.size === previousSize && Date.now() - lastCollection < 15 * 60 * 1000) return;
+            lastCollection = Date.now();
+            const mixes = [];
+            for (const [uri, name] of learned) {
+                try {
+                    const items = [];
+                    let offset = 0;
+                    while (true) {
+                        const page = await Spicetify.Platform.PlaylistAPI.getContents(uri, {offset, limit: 100});
+                        if (!Array.isArray(page.items)) throw Error('Missing playlist contents');
+                        items.push(...page.items);
+                        offset += page.items.length;
+                        if (page.items.length < 100 || offset >= page.totalLength) break;
+                        if (offset >= 1000) throw Error('Mix too large');
+                    }
+                    const tracks = items.map(row => row.track || row).map(t => ({uri: t.uri,
+                        title: t.name || '', artist: (t.artists || []).map(a => a.name).join(', ')}));
+                    if (tracks.length && tracks.every(t => /^spotify:track:[A-Za-z0-9]{22}$/.test(t.uri)))
+                        mixes.push({uri, name, tracks});
+                } catch (error) { console.warn('Enclosure Daily Mix refresh failed', name, error); }
+            }
+            if (mixes.length) { cached = {mixes}; await publishMixes(); }
+        } finally { collecting = false; }
+    }
+    collect();
+    setInterval(collect, 60000);
+    // Navigating to Made for You teaches the collector all visible mix links.
+    let timer;
+    new MutationObserver(() => { clearTimeout(timer); timer = setTimeout(() => {
+        collect();
+    }, 2000); }).observe(document.documentElement, {childList: true, subtree: true});
+    setInterval(publishMixes, 15000);
+})();

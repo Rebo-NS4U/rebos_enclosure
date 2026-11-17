@@ -45,6 +45,8 @@ class Library:
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.state = self.read(self.state_dir / 'library.json', {})
         self.cache = self.read(self.cache_dir / 'index.json', {})
+        from music_mixes import Mixes
+        self.mixes = Mixes(self.state_dir / 'mixes.json', self.read, self.write)
         self.music = self.home / 'Music'
         config = Path(os.environ.get('XDG_CONFIG_HOME', self.home / '.config')) / 'user-dirs.dirs'
         if config.exists():
@@ -192,6 +194,8 @@ class Library:
             return dict(text='', status='Lyrics unavailable. Try this song again when online.')
 
     def dispatch(self, cmd, args):
+        if cmd in ('mixes_get', 'mixes_save'):
+            return self.mixes.dispatch(cmd, args)
         if cmd == 'lyrics':
             return self.lyrics(args.get('track') or {})
         if cmd == 'scan':
@@ -311,6 +315,10 @@ def start_mpris():
 
 def main():
     library = Library()
+    try:
+        library.mixes.start()
+    except OSError as error:
+        print("Daily Mix bridge unavailable: " + str(error), file=sys.stderr)
     try:
         mpris = start_mpris()
     except Exception as error:

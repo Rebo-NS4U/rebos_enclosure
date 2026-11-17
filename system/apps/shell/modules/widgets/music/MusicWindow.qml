@@ -233,8 +233,8 @@ Window {
         onErrorOccurred: (error, errorString) => { root.notice = errorString; }
     }
     Timer { interval: 500; running: root.playing; repeat: true; onTriggered: root.sync() }
-    Shortcut { sequence: "Space"; enabled: root.page !== "Downloads" && !search.inputActiveFocus && !playlistName.inputActiveFocus; onActivated: root.toggle() }
-    Shortcut { sequence: "Ctrl+F"; enabled: root.page !== "Downloads"; onActivated: search.focusInput() }
+    Shortcut { sequence: "Space"; enabled: root.page !== "Downloads" && root.page !== "Daily Mixes" && !search.inputActiveFocus && !playlistName.inputActiveFocus; onActivated: root.toggle() }
+    Shortcut { sequence: "Ctrl+F"; enabled: root.page !== "Downloads" && root.page !== "Daily Mixes"; onActivated: search.focusInput() }
     Shortcut { sequence: "Escape"; onActivated: GlobalStates.musicWindowVisible = false }
 
     component Cover: ClippingRectangle {
@@ -283,7 +283,7 @@ Window {
                     ColumnLayout {
                         anchors.fill: parent; anchors.margins: 12; spacing: 6
                         Repeater {
-                            model: ["Home", "Songs", "Albums", "Artists", "Favorites", "Playlists", "Downloads", "Now playing"]
+                            model: ["Home", "Songs", "Albums", "Artists", "Favorites", "Playlists", "Daily Mixes", "Downloads", "Now playing"]
                             delegate: ThemeButton {
                                 required property string modelData
                                 Layout.fillWidth: true; text: modelData; highlighted: root.page === modelData
@@ -297,7 +297,7 @@ Window {
                     }
                 }
                 ColumnLayout {
-                    visible: root.page !== "Downloads" && (root.width >= 1120 || root.page !== "Now playing")
+                    visible: root.page !== "Downloads" && root.page !== "Daily Mixes" && (root.width >= 1120 || root.page !== "Now playing")
                     Layout.fillWidth: true; Layout.fillHeight: true; spacing: 14
                     RowLayout {
                         Layout.fillWidth: true
@@ -374,13 +374,18 @@ Window {
                         }
                     }
                 }
+                DailyMixesPane {
+                    visible: root.page === "Daily Mixes"
+                    Layout.fillWidth: true; Layout.fillHeight: true
+                    onRequested: (cmd, args, callback) => root.request(cmd, args, callback)
+                }
                 DownloadsPane {
                     visible: root.page === "Downloads"
                     Layout.fillWidth: true; Layout.fillHeight: true
                     onCompleted: root.scan()
                 }
                 StyledRect {
-                    visible: root.page !== "Downloads" && (root.width >= 1120 || root.page === "Now playing")
+                    visible: root.page !== "Downloads" && root.page !== "Daily Mixes" && (root.width >= 1120 || root.page === "Now playing")
                     Layout.fillWidth: root.width < 1120
                     Layout.preferredWidth: 280; Layout.fillHeight: true; variant: "pane"
                     ColumnLayout {

@@ -16,6 +16,7 @@ ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / 'system/apps/shell/scripts/music_library.py'
 spec = importlib.util.spec_from_file_location('music_library', SCRIPT)
 music = importlib.util.module_from_spec(spec)
+sys.path.insert(0, str(SCRIPT.parent))
 spec.loader.exec_module(music)
 
 

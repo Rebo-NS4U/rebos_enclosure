@@ -7,3 +7,20 @@ spotDL uses the media package group or ~/.local/share/venvs/spotdl/bin/spotdl. T
 The legacy Music Installer launcher is hidden; use Music for playback and downloads. Closing Music hides it, preserving playback and running downloads.
 
 Music uses the universal shell background surface. Transparent styles reveal the desktop through the window and follow the global compositor blur settings; opaque styles stay solid. Adjust background style and blur in the shared Appearance settings.
+
+## Daily Mix snapshots
+
+The Daily Mixes page receives track-list metadata from the existing Spicetify
+Lyrics Plus adapter. Keep Spotify and Music open and visit Spotify's Made for You
+page once per Spotify session so visible Daily Mix cards can be discovered.
+Discovered mixes refresh every 15 minutes; complete results are delivered locally
+on port 19838. Failed refreshes retain the last good version. Save current keeps
+an immutable, dated local snapshot, deduplicated by playlist and track-list version.
+View tracks opens individual songs in Spotify. Snapshots contain metadata, not
+local audio downloads. No Spotify credentials are sent to Music.
+
+Run `python3 scripts/setup_lyrics_plus.py` from the shell source and then
+`spicetify apply -n` to prepare the adapter. An already running Spotify client
+loads the updated extension on its next normal launch; setup does not restart it.
+The desktop API is internal and can change; an empty page remains in the waiting
+state until the integration delivers mixes. Saved snapshots remain available offline.
