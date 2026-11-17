@@ -25,6 +25,25 @@ class Downloads(unittest.TestCase):
         with self.assertRaises(ValueError):
             commands.build_spotdl_args(0, 'invalid', '/tmp/Music', 'ogg', mix_tracks=True)
 
+    def test_cookie_file_validation_and_arguments(self):
+        spec = importlib.util.spec_from_file_location('download_commands', SERVICE.parent/'commands.py')
+        commands = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(commands)
+        link = 'https://open.spotify.com/track/abc'
+        with tempfile.TemporaryDirectory() as directory:
+            cookies = Path(directory) / 'cookies with spaces.txt'
+            cookies.write_text('# Netscape HTTP Cookie File\n')
+            for mix in (False, True):
+                args = commands.build_spotdl_args(0, link, directory, 'ogg', mix_tracks=mix, cookie_file=str(cookies))
+                self.assertEqual(args[args.index('--cookie-file')+1], str(cookies))
+            self.assertNotIn('--cookie-file', commands.build_spotdl_args(0, link, directory, 'ogg'))
+            for invalid in ('relative.txt', str(Path(directory)/'missing'), directory, True):
+                with self.assertRaises(ValueError):
+                    commands.build_spotdl_args(0, link, directory, 'ogg', cookie_file=invalid)
+            cookies.write_text('{"cookies": "not a Netscape export"}')
+            with self.assertRaises(ValueError):
+                commands.build_spotdl_args(0, link, directory, 'ogg', cookie_file=str(cookies))
+
     def test_warm_imports_once_and_isolates_jobs(self):
         with tempfile.TemporaryDirectory() as directory:
             folder = Path(directory)
@@ -137,7 +156,7 @@ time.sleep(60)
             home = Path(directory)
             executable = home/'.local/share/venvs/spotdl/bin/spotdl'
             executable.parent.mkdir(parents=True)
-            executable.write_text('#!/usr/bin/python3\nimport sys,time\nprint("fake track",flush=True)\nif "slow" in " ".join(sys.argv): time.sleep(30)\n')
+            executable.write_text('#!/usr/bin/python3\nimport sys,time\nprint(sys.argv[sys.argv.index("--cookie-file")+1] if "--cookie-file" in sys.argv else "fake track",flush=True)\nif "slow" in " ".join(sys.argv): time.sleep(30)\n')
             executable.chmod(0o755)
             proc = subprocess.Popen(['python3','-u',str(SERVICE)],stdin=subprocess.PIPE,stdout=subprocess.PIPE,text=True,env={**os.environ,'HOME':directory,'PYTHONDONTWRITEBYTECODE':'1'})
             def send(**data):
@@ -153,6 +172,14 @@ time.sleep(60)
                 self.assertEqual(read()['log'],'fake track')
                 self.assertEqual(read()['code'],0)
                 self.assertTrue((home/'Music').is_dir())
+                cookies = home/'session cookies.txt'
+                cookies.write_text('# Netscape HTTP Cookie File\n')
+                send(links='https://open.spotify.com/track/abc', cookieFile=str(cookies), mixTracks=True)
+                self.assertTrue(read()['started'])
+                self.assertEqual(read()['log'], str(cookies))
+                self.assertEqual(read()['code'], 0)
+                send(links='https://open.spotify.com/track/abc', cookieFile=str(home/'missing'))
+                self.assertIn('unreadable', read()['error'])
                 send(links='https://open.spotify.com/track/slow')
                 self.assertTrue(read()['started']); self.assertEqual(read()['log'],'fake track')
                 send(cancel=True)

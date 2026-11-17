@@ -114,7 +114,7 @@ try:
             fmt = data.get('format', 'ogg')
             if data.get('backend', 'spotdl') != 'spotdl':
                 raise ValueError('Only spotDL is supported.')
-            command = [find_spotdl(), *build_spotdl_args(mode, data.get('links', ''), folder, fmt, mix_tracks=data.get('mixTracks') is True)]
+            command = [find_spotdl(), *build_spotdl_args(mode, data.get('links', ''), folder, fmt, mix_tracks=data.get('mixTracks') is True, cookie_file=data.get('cookieFile', ''))]
             os.makedirs(folder, exist_ok=True)
             if worker is None or worker.poll() is not None:
                 worker = start_worker()

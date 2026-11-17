@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
+import QtQuick.Dialogs
 import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell.Io
@@ -32,7 +33,14 @@ ColumnLayout {
         status = "Downloading…";
         logText = "Starting…\n";
         service.write(JSON.stringify({backend: "spotdl", mode: 0,
-            links: links.text, folder: folder.text, format: audioFormat, mixTracks: mixTracks}) + "\n");
+            links: links.text, folder: folder.text, format: audioFormat, cookieFile: cookieFile.text.trim(), mixTracks: mixTracks}) + "\n");
+    }
+    FileDialog {
+        id: cookiePicker
+        title: "Choose YouTube cookies.txt"
+        fileMode: FileDialog.OpenFile
+        nameFilters: ["Cookie files (*.txt)", "All files (*)"]
+        onAccepted: cookieFile.text = decodeURIComponent(selectedFile.toString().replace(/^file:\/\//, ""))
     }
     Process {
         id: service
@@ -99,6 +107,22 @@ ColumnLayout {
                         onSearchTextChanged: text => { root.mixTracks = false; }
                     }
                     StyledText { text: "Separate multiple links with spaces."; color: Colors.overSurfaceVariant; font.pixelSize: Styling.fontSize(-2) }
+                    StyledText { text: "YouTube cookie file (optional)"; font.bold: true }
+                    RowLayout {
+                        Layout.fillWidth: true
+                        SearchInput {
+                            id: cookieFile; objectName: "music-download-cookie-file"
+                            Layout.fillWidth: true; enabled: !root.busy
+                            placeholderText: "Path to exported cookies.txt"
+                        }
+                        ThemeButton { text: "Browse"; enabled: !root.busy; onClicked: cookiePicker.open() }
+                        ThemeButton { text: "Clear"; enabled: !root.busy && cookieFile.text.length > 0; onClicked: cookieFile.clear() }
+                    }
+                    StyledText {
+                        Layout.fillWidth: true; wrapMode: Text.WordWrap; color: Colors.overSurfaceVariant
+                        font.pixelSize: Styling.fontSize(-2)
+                        text: "For age-restricted audio, use a Netscape cookies.txt export from your signed-in, age-verified YouTube session. Leave blank for public downloads. Keep this file private; it grants access to your session."
+                    }
                 }
             }
             StyledRect {

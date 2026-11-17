@@ -43,7 +43,7 @@ def build_args(mode, text, folder, fmt):
     return args
 
 
-def build_spotdl_args(mode, text, folder, fmt, mix_tracks=False):
+def build_spotdl_args(mode, text, folder, fmt, mix_tracks=False, cookie_file=""):
     if mode != 0:
         raise ValueError("For spotDL, paste a Spotify playlist, album, artist or track link.")
     build_args(mode, text, folder, fmt)
@@ -56,7 +56,22 @@ def build_spotdl_args(mode, text, folder, fmt, mix_tracks=False):
         if path.split("/")[1] in ("episode", "show"):
             raise ValueError("spotDL supports music links; use Zotify for podcasts.")
         links.append("https://open.spotify.com" + path.rstrip("/"))
-    return ["download", *links, "--format", fmt, "--output",
+    cookie_args = []
+    if cookie_file:
+        if not isinstance(cookie_file, str):
+            raise ValueError("Choose a cookie file path.")
+        cookies = Path(cookie_file).expanduser()
+        if not cookies.is_absolute():
+            raise ValueError("Choose an absolute cookie file path.")
+        try:
+            with cookies.open("rb") as source:
+                header = source.readline(256).strip()
+        except OSError:
+            raise ValueError("Cookie file is missing or unreadable. Choose a readable Netscape cookies.txt file.") from None
+        if header not in (b"# Netscape HTTP Cookie File", b"# HTTP Cookie File"):
+            raise ValueError("Choose a Netscape cookies.txt export, not a browser database or JSON file.")
+        cookie_args = ["--cookie-file", str(cookies)]
+    return ["download", *links, *cookie_args, "--format", fmt, "--output",
             str(Path(folder).expanduser() / ("{track-id}.{output-ext}" if mix_tracks else "{artists} - {title}.{output-ext}")),
             "--threads", "2", "--overwrite", "skip", "--simple-tui", "--max-retries", "2"]
 

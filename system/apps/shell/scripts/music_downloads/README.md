@@ -82,3 +82,18 @@ Ordinary playlists stay in Playlists; Daily Mixes remains the discovery section.
 
 Click anywhere on a library song row to play or pause it. The favorite and queue
 buttons retain their separate actions.
+
+## YouTube cookie files
+
+Downloads accepts an optional **YouTube cookie file** path, with Browse and Clear
+controls. Sign into YouTube in your browser and complete any requested age
+verification first. Export that session as a Netscape-format `cookies.txt` using
+[yt-dlp's cookie guidance](https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp).
+Select the file before starting a download. Music validates the path and format
+and passes it to spotDL with `--cookie-file`, including Daily Mix downloads.
+A blank field preserves unauthenticated downloading. The selection lasts while
+Music is open; no cookies are imported into Music's settings or shipped payload.
+Keep cookie files private (for example, `chmod 600 /path/to/cookies.txt`), outside
+the checkout. They grant access to your signed-in session. Refresh the export
+if the session expires. Cookies do not remove YouTube account/age restrictions
+or guarantee that a particular video can be downloaded.
