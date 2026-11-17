@@ -936,7 +936,7 @@ ClippingRectangle {
                 if(!inset){
                     // Incised channels: shadowed upper-left walls and a lit lower-right lip.
                     // All shading stays inside the groove; no floating cast shadow.
-                    function engrave(points){
+                    function engrave(points,inlay){
                         function edge(dx,dy,color,lineWidth){
                             ctx.strokeStyle=color;ctx.lineWidth=lineWidth;ctx.beginPath();
                             ctx.moveTo(points[0][0]+dx,points[0][1]+dy);
@@ -947,6 +947,19 @@ ClippingRectangle {
                         edge(0,0,Qt.alpha(shadowInk,outer?0.52:0.36),outer?3:2);
                         edge(-0.65,-0.65,Qt.alpha(shadowInk,0.72),1.2);
                         edge(0.9,0.9,Qt.alpha(pigment,outer?0.25:0.16),0.8);
+                        if(inlay){
+                            // A mineral inlay catches light at the angular turn, inside the cut.
+                            const first=points[0],last=points[points.length-1];
+                            const glint=ctx.createLinearGradient(first[0],first[1],last[0],last[1]);
+                            glint.addColorStop(0,Qt.alpha(inlay,0));
+                            glint.addColorStop(0.35,Qt.alpha(inlay,0.10));
+                            glint.addColorStop(0.70,Qt.alpha(inlay,outer?0.90:0.65));
+                            glint.addColorStop(0.85,Qt.alpha(inlay,outer?0.55:0.35));
+                            glint.addColorStop(1,Qt.alpha(inlay,0));
+                            edge(0,0,Qt.alpha(inlay,outer?0.10:0.06),2.4);
+                            edge(0,0,glint,outer?1.1:0.8);
+                        }
+
                     }
                     // Paired chamfered corner grooves follow the rim instead of stacked wedges.
                     const margin=Math.min(outer?7:4,width*0.08,height*0.08);
@@ -959,11 +972,11 @@ ClippingRectangle {
                         engrave([[width-along,insetEdge],
                             [width-insetEdge-cut,insetEdge],
                             [width-insetEdge,insetEdge+cut],
-                            [width-insetEdge,down]]);
+                            [width-insetEdge,down]],i===0?accent:null);
                         engrave([[along,height-insetEdge],
                             [insetEdge+cut,height-insetEdge],
                             [insetEdge,height-insetEdge-cut],
-                            [insetEdge,height-down]]);
+                            [insetEdge,height-down]],i===0?secondaryAccent:null);
                     }
                     // Short side carvings sit near the other two corners, leaving the middle clear.
                     if(height>100){
