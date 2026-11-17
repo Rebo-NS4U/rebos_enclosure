@@ -80,7 +80,7 @@ Architectural refinement: Suspended Film now uses floating offset glass sheets a
 ## Material themes
 
 Canopy, Orbital and Metropolis are the first three theme-picker entries, in that order.
-Canopy uses an abstract organic fringe along the upper edge. Irregular curved growth, asymmetric foliage fragments, varied proportions and open gaps suggest vegetation without identifying a tree species. Stable variation avoids repeating leaf pairs, cloud lobes and gray seam strokes. Shallow bars use compact crowns; the assistant header varies the crown count on each opening while preserving the choice during repainting and resizing. Text and controls remain clear below the decoration. It uses DejaVu Sans Mono.
+Canopy uses broad asymmetric fabric drapes with a shallow overlapping fold. Palette-tinted fills define the silhouette without seam strokes, foliage or branch motifs. Bars use a shallow version; assistant headers retain stable variation between openings. Text and controls stay clear below the decoration. It uses DejaVu Sans Mono.
 Orbital uses elliptical orbit tracks and satellite points around recessed glass, with a deterministic star field distributed across the full panel. Star brightness and size vary subtly; stars remain static behind content. It uses JetBrains Mono.
 Metropolis uses overlapping setback facades, sparse illuminated windows, slender mullions and a soft reflected-sky band with two fading cloud banks along the upper edge. Glass and facade fills follow the selected background, architectural lighting uses primary, and windows use tertiary. No blue, amber or other fixed theme colors override the selected palette. The former full-panel drafting grid and neon sign bands are removed. Architectural decoration stays around the perimeter; static windows vary by floor and building.
 Canopy, Orbital and Metropolis use 62%, 68% and 64% opacity for outer panels, respectively, with lighter inset and nested surfaces. Focused surfaces retain stronger fills, while text and semantic action buttons keep their existing opacity. The same surface values apply across the shell, assistant, media app and native application palette exports.
@@ -125,4 +125,4 @@ Canopy keeps uninterrupted fabric hems: upper support ribs and the randomized as
 
 Glass Vault corner clasps sit on the inset bevel with matching concentric radii, short tangent arms, rounded ends and a soft translucent seat beneath a fine highlight. Their reach is limited at compact and pill-shaped sizes. The lower reflection is centered between the mounts instead of climbing one side of the frame.
 
-Canopy tops use filled leaf silhouettes and soft shading without drawn lines. Nested surfaces have no seam, preventing streaks from showing through translucent panels.
+Canopy tops use broad filled fabric silhouettes and soft shading without drawn lines. Nested surfaces have no seam, preventing streaks from showing through translucent panels.

@@ -580,51 +580,36 @@ ClippingRectangle {
                 ctx.save();
                 if(root.traceThemeFrame(ctx,0))ctx.clip();
                 if(finish === "canopy"){
-                    // A translucent tree crown with palette-tinted clusters of leaves.
+                    // Translucent fabric drapes use the selected palette.
                     const fabric=a=>Qt.rgba(accent.r*0.65+secondaryAccent.r*0.35,accent.g*0.65+secondaryAccent.g*0.35,accent.b*0.65+secondaryAccent.b*0.35,a);
-                    // An abstract organic edge: irregular growth, open gaps and varied tips.
-                    function treeCanopy(depth, crowns) {
-                        function variation(n) {
-                            const v=Math.sin(n*127.1+43.7)*43758.5453;
-                            return v-Math.floor(v);
-                        }
-                        const count=Math.max(9,crowns*2);
-                        const span=width/count;
-                        for(let layer=0;layer<2;layer++){
-                            for(let i=0;i<count;i++){
-                                const seed=i*19+layer*137;
-                                const x=(i+variation(seed)*0.65)*span;
-                                const reach=depth*(0.34+variation(seed+1)*0.62)*(layer?0.78:1);
-                                const bend=(variation(seed+2)-0.5)*span*0.9;
-                                const stem=Math.max(1,Math.min(5,span*0.05));
-                                ctx.fillStyle=fabric(layer?0.30:0.23);
-                                // Broad curved tapers imply growth without outlining branches.
-                                ctx.beginPath();ctx.moveTo(x-stem,0);ctx.lineTo(x+stem,0);
-                                ctx.bezierCurveTo(x+stem,reach*0.35,x+bend+stem,reach*0.72,x+bend,reach);
-                                ctx.bezierCurveTo(x+bend-stem,reach*0.65,x-stem,reach*0.28,x-stem,0);
-                                ctx.closePath();ctx.fill();
-                                const fragments=3+Math.floor(variation(seed+3)*4);
-                                for(let j=0;j<fragments;j++){
-                                    const key=seed+j*11;
-                                    const t=0.18+variation(key+4)*0.72;
-                                    const length=Math.min(span*0.8,depth*0.42)*(0.45+variation(key+5)*0.75);
-                                    const breadth=length*(0.12+variation(key+6)*0.28);
-                                    const side=variation(key+7)>0.5?1:-1;
-                                    ctx.save();ctx.translate(x+bend*t,reach*t);
-                                    ctx.rotate(side*(0.35+variation(key+8)*1.9));
-                                    ctx.fillStyle=fabric(0.22+variation(key+9)*0.19);
-                                    ctx.beginPath();ctx.moveTo(-length*0.12,0);
-                                    // Unequal soft and tapered edges avoid a repeated leaf species.
-                                    ctx.bezierCurveTo(length*0.15,-breadth,length*0.62,-breadth*0.8,length,0);
-                                    ctx.bezierCurveTo(length*0.73,breadth*0.2,length*0.36,breadth,-length*0.12,0);
-                                    ctx.closePath();ctx.fill();ctx.restore();
-                                }
-                            }
-                        }
+                    // Broad asymmetrical drapes, defined by filled edges rather than seam lines.
+                    function drapedCanopy(depth, shape) {
+                        const split=0.42+(shape%3)*0.055;
+                        const cloth=ctx.createLinearGradient(0,0,0,depth);
+                        cloth.addColorStop(0,fabric(0.14));
+                        cloth.addColorStop(0.65,fabric(0.26));
+                        cloth.addColorStop(1,fabric(0.38));
+                        ctx.fillStyle=cloth;
+                        ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(width,0);
+                        ctx.lineTo(width,depth*0.12);
+                        ctx.bezierCurveTo(width*0.85,depth*0.86,
+                            width*(split+0.12),depth*0.92,width*split,depth*0.22);
+                        ctx.bezierCurveTo(width*(split-0.12),depth*1.12,
+                            width*0.12,depth*0.96,0,depth*0.14);
+                        ctx.closePath();ctx.fill();
+                        // One shallow overlapping fold gives the upper edge depth.
+                        const fold=ctx.createLinearGradient(0,0,0,depth*0.48);
+                        fold.addColorStop(0,fabric(0.12));
+                        fold.addColorStop(1,fabric(0.045));
+                        ctx.fillStyle=fold;
+                        ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(width,0);
+                        ctx.bezierCurveTo(width*0.70,depth*0.42,
+                            width*0.24,depth*0.48,0,depth*0.06);
+                        ctx.closePath();ctx.fill();
                     }
 
                     if(barSurface){
-                        // Leaf crowns stay confined to the header.
+                        // Broad drapes stay confined to the header.
                         // Different span counts and proportions, stable until the next opening.
                         const profiles=[
                             [1], [0.46,0.54], [0.28,0.44,0.28],
@@ -634,17 +619,15 @@ ClippingRectangle {
                         const v=((canopyVariation % profiles.length)+profiles.length)%profiles.length;
                         const spans=profiles[v];
                         const roof=Math.min([72,76,68,60,52,78][v],height*0.22);
-                        treeCanopy(roof,spans.length+3);
+                        drapedCanopy(roof,spans.length+3);
                     }else if(outer){
                         const drop=Math.min(70,height*0.22);
-                        treeCanopy(drop,5);
+                        drapedCanopy(drop,5);
                         // Ground-level shade echoes the roof without framing the content.
                         const ground=ctx.createLinearGradient(0,height-24,0,height);
                         ground.addColorStop(0,fabric(0));ground.addColorStop(1,fabric(0.12));
                         ctx.fillStyle=ground;ctx.fillRect(0,height-24,width,24);
-                        ctx.strokeStyle=fabric(0.27);ctx.lineWidth=1;
-                        ctx.beginPath();ctx.moveTo(safe,height-7);
-                        ctx.quadraticCurveTo(width*0.5,height-18,width-safe,height-7);ctx.stroke();
+
                     }
                 }else if(finish === "orbital"){
                     // Elliptical orbital tracks wrap a quiet, recessed space capsule.
