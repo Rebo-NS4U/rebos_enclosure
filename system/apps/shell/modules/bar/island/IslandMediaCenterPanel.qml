@@ -8,6 +8,7 @@ import Quickshell.Services.Mpris
 import qs.modules.services
 import qs.modules.theme
 import qs.modules.components
+import qs.modules.widgets.dashboard.controls
 import qs.modules.globals
 import qs.config
 
@@ -615,6 +616,6 @@ Item {
                 }
             }
         }
-        LyricsSection { Layout.fillWidth: true }
+        MediaEqualizer { Layout.fillWidth: true }
     }
 }

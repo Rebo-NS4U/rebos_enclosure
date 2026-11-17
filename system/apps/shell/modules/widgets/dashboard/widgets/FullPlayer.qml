@@ -6,6 +6,7 @@ import Quickshell.Widgets
 import Quickshell.Services.Mpris
 import qs.modules.theme
 import qs.modules.components
+import qs.modules.widgets.dashboard.controls
 import qs.modules.services
 import qs.modules.globals
 import qs.config
@@ -20,7 +21,7 @@ StyledRect {
     visible: true
     radius: playerRadius
 
-    implicitHeight: 400 + lyricsSection.implicitHeight + 12
+    implicitHeight: 400 + equalizerSection.implicitHeight + 12
 
     readonly property bool isDragging: realSeekBar.isDragging
 
@@ -186,7 +187,7 @@ StyledRect {
     ColumnLayout {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: parent.top
-        anchors.topMargin: Math.max(12, (parent.height - lyricsSection.implicitHeight - implicitHeight) / 2)
+        anchors.topMargin: Math.max(12, (parent.height - equalizerSection.implicitHeight - implicitHeight) / 2)
         width: parent.width - 32
         spacing: Styling.spacing(8)
 
@@ -558,8 +559,8 @@ StyledRect {
         }
     }
 
-    LyricsSection {
-        id: lyricsSection
+    MediaEqualizer {
+        id: equalizerSection
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom

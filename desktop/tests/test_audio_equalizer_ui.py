@@ -61,9 +61,35 @@ ShellRoot {
 }'''
 
 
+MEDIA_HARNESS = HARNESS.replace('import qs.modules.components', 'import qs.modules.bar.island\nimport qs.modules.widgets.dashboard.widgets\nimport qs.modules.components').replace(
+    'AudioMixerPanel { id:panel; x:24; y:24; width:parent.width-48; height:parent.height-48; currentSection:"equalizer" }',
+    'IslandMediaCenterPanel { id:panel; x:24; y:24; width:parent.width-48; height:implicitHeight }\n'
+    'FullPlayer { id:standard; visible:false; width:parent.width-48; height:implicitHeight }'
+).replace(
+    '    Config.theme.shellStyle="orbital"; tester.wait(40);',
+    '    tester.verify(find(panel,"media-equalizer")!==null);\n'
+    '    tester.verify(find(panel,"lyrics-viewport")===null);\n'
+    '    tester.verify(find(standard,"media-equalizer")!==null);\n'
+    '    tester.verify(find(standard,"lyrics-viewport")===null);\n'
+    '    const viewport=find(panel,"media-equalizer-scroll");\n'
+    '    const last=find(panel,"audio-eq-band-9"); last.forceActiveFocus(); tester.wait(40);\n'
+    '    tester.verify(viewport.contentY>0);\n'
+    '    const y=last.mapToItem(viewport,0,0).y;\n'
+    '    tester.verify(y>=-1 && y+last.height<=viewport.height+1);\n'
+    '    viewport.contentY=0;\n'
+    '    Config.theme.shellStyle="orbital"; tester.wait(40);'
+)
+
+
 class EqualizerUiTests(unittest.TestCase):
     @unittest.skipUnless(shutil.which('qs'), 'Quickshell required')
     def test_audio_tab(self):
+        self.run_ui(HARNESS)
+
+    def test_media_centers(self):
+        self.run_ui(MEDIA_HARNESS)
+
+    def run_ui(self, harness):
         with tempfile.TemporaryDirectory(prefix='enclosure-eq-ui-') as folder:
             root = Path(folder)
             for name in ('modules', 'config', 'assets'):
@@ -71,7 +97,7 @@ class EqualizerUiTests(unittest.TestCase):
             (root/'scripts').mkdir()
             for name in ('audio_equalizer.py', 'audio_eq_dsp.py'):
                 shutil.copy2(APP/'scripts'/name, root/'scripts'/name)
-            (root/'shell.qml').write_text(HARNESS)
+            (root/'shell.qml').write_text(harness)
             runtime = root/'runtime'
             runtime.mkdir(mode=0o700)
             env = dict(os.environ, HOME=folder, XDG_RUNTIME_DIR=str(runtime), QT_QPA_PLATFORM='offscreen',

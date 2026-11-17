@@ -6,8 +6,9 @@ import qs.modules.theme
 
 SettingsGroup {
     id: root
-    title: "Output equalizer"
-    description: "Shape playback sound with ten adjustable bands. Microphone audio stays unchanged."
+    property bool compact: false
+    title: compact ? "Equalizer" : "Output equalizer"
+    description: compact ? "" : "Shape playback sound with ten adjustable bands. Microphone audio stays unchanged."
     Flow {
         Layout.fillWidth: true
         spacing: Styling.spacing(8)
@@ -50,8 +51,8 @@ SettingsGroup {
     }
     GridLayout {
         Layout.fillWidth: true
-        columns: width >= Styling.spacing(560) ? 2 : 1
-        columnSpacing: Styling.spacing(20)
+        columns: width >= Styling.spacing(root.compact ? 320 : 560) ? 2 : 1
+        columnSpacing: Styling.spacing(root.compact ? 12 : 20)
         rowSpacing: Styling.spacing(8)
         Repeater {
             model: AudioEqualizer.frequencies
@@ -85,6 +86,7 @@ SettingsGroup {
     StyledText {
         Layout.fillWidth: true
         wrapMode: Text.Wrap
+        visible: !root.compact
         text: "Music: gentle balance · Speech: clearer voices · Movies: warmth and dialogue · Gaming: mid/high detail · Bass/Treble: focused boosts. Automatic headroom reduces gain when bands are boosted."
         font.pixelSize: Styling.fontSize(-1)
     }
