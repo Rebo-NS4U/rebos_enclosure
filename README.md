@@ -244,7 +244,7 @@ projects authored Enclosure's new features or endorse this distribution.
 | [nlux](https://freesound.org/s/622773/) | “Polite Warning Tone,” Attribution 4.0; [bundled attribution](system/apps/shell/assets/sound/attribution.txt). |
 | Abbie Gonzalez / OpenDyslexic | Bundled accessibility font; [copyright and SIL OFL 1.1 notice](system/share/fonts/opendyslexic/OFL.txt). |
 | JetBrains Mono, League Gothic and Phosphor font/icon contributors; GoogleDot-Black cursor contributors; Papirus icon contributors | Bundled font/icon/cursor assets and installed icon integration. The GoogleDot-Black metadata does not name an individual creator; no creator is inferred from its Google-inspired name. |
-| Arch Linux and package maintainers; Niri, Quickshell, Qt, GTK, Kitty, Fish, Neovim, NetworkManager, PipeWire/WirePlumber, greetd/ReGreet and desktop-portal contributors | Desktop/runtime foundation, packaging and installed tools. See the [package list](desktop/packages/README.md) for the wider dependency set. |
+| Arch Linux and package maintainers; Niri, Quickshell, Qt, GTK, Kitty, Fish, Neovim, NetworkManager, PipeWire/WirePlumber, greetd/Quickshell and desktop-portal contributors | Desktop/runtime foundation, packaging and installed tools. See the [package list](desktop/packages/README.md) for the wider dependency set. |
 | VLC, mpv, FFmpeg, yt-dlp, spotDL, LRCLIB, Whisper/whisper.cpp, Silero VAD, Kokoro and kokoro-onnx contributors; Spotify/Spicetify contributors | Playback, downloads, lyric lookup, optional captions/narration and app integration. Optional tools/models retain their own upstream terms and setup requirements. |
 
 Artwork rights remain with the respective artists. Collection inclusion or source
@@ -253,4 +253,4 @@ artwork rights. Original notices remain with their components. See
 [upstream sources and attribution details](UPSTREAM.md).
 
 The default login screen uses a theme-synced Quickshell greeter on greetd. See
-[greeter setup and rollback](desktop/QUICKSHELL-GREETER.md). ReGreet remains available as a legacy installer option.
+[greeter setup and rollback](desktop/QUICKSHELL-GREETER.md).

@@ -32,7 +32,6 @@
     ".config/rebos_shell/config/system.json",
     ".config/rebos_shell/config/theme.json",
     ".config/rebos_shell/config/weather.json",
-    ".config/regreet-sync/regreet.css.in",
     ".config/scripts/browser-app",
     ".config/scripts/copy-latest-screenshot-path.sh",
     ".config/scripts/install-aur.sh",
@@ -48,9 +47,9 @@
     ".config/systemd/user/rebos-assistant.service",
     ".config/systemd/user/rebos-assistant@.service",
     ".config/systemd/user/rebos-panel.service",
-    ".config/systemd/user/regreet-sync.path",
-    ".config/systemd/user/regreet-sync.service",
-    ".config/systemd/user/regreet-sync.timer",
+    ".config/systemd/user/greeter-sync.path",
+    ".config/systemd/user/greeter-sync.service",
+    ".config/systemd/user/greeter-sync.timer",
     ".config/systemd/user/wl-gammarelay.service",
     ".config/themes",
     ".config/vesktop/themes/rebos_shell.css",
@@ -71,7 +70,7 @@
     ".local/bin/rebos-assistant",
     ".local/bin/rebos-clipboard",
     ".local/bin/rebos_shell",
-    ".local/bin/regreet-sync",
+    ".local/bin/greeter-sync",
     ".local/bin/rice",
     ".local/bin/t",
     ".local/bin/thinkpad-fan-control",
@@ -229,10 +228,6 @@
       "source": "config/shell/config/weather.json",
       "kind": "personal"
     },
-    ".config/regreet-sync/regreet.css.in": {
-      "source": "system/greeter/regreet.css.in",
-      "kind": "managed"
-    },
     ".config/scripts/browser-app": {
       "source": "system/scripts/browser-app",
       "kind": "managed"
@@ -293,16 +288,16 @@
       "source": "system/services/user/rebos-panel.service",
       "kind": "managed"
     },
-    ".config/systemd/user/regreet-sync.path": {
-      "source": "system/services/user/regreet-sync.path",
+    ".config/systemd/user/greeter-sync.path": {
+      "source": "system/services/user/greeter-sync.path",
       "kind": "managed"
     },
-    ".config/systemd/user/regreet-sync.service": {
-      "source": "system/services/user/regreet-sync.service",
+    ".config/systemd/user/greeter-sync.service": {
+      "source": "system/services/user/greeter-sync.service",
       "kind": "managed"
     },
-    ".config/systemd/user/regreet-sync.timer": {
-      "source": "system/services/user/regreet-sync.timer",
+    ".config/systemd/user/greeter-sync.timer": {
+      "source": "system/services/user/greeter-sync.timer",
       "kind": "managed"
     },
     ".config/systemd/user/wl-gammarelay.service": {
@@ -385,8 +380,8 @@
       "source": "system/bin/rebos_shell",
       "kind": "managed"
     },
-    ".local/bin/regreet-sync": {
-      "source": "system/bin/regreet-sync",
+    ".local/bin/greeter-sync": {
+      "source": "system/bin/greeter-sync",
       "kind": "managed"
     },
     ".local/bin/rice": {

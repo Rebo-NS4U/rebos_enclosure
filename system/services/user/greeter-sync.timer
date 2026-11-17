@@ -1,0 +1,11 @@
+[Unit]
+Description=Retry Quickshell greeter sync and detect changes to the wallpaper image
+
+[Timer]
+OnStartupSec=15
+OnUnitInactiveSec=15min
+AccuracySec=1min
+Unit=greeter-sync.service
+
+[Install]
+WantedBy=timers.target

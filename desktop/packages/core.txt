@@ -16,7 +16,6 @@ bluez
 bluez-utils
 blueman
 greetd
-greetd-regreet
 cage
 power-profiles-daemon
 upower

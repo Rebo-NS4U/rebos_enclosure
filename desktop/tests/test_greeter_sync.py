@@ -20,7 +20,8 @@ class GreeterSyncTests(unittest.TestCase):
             home = Path(temporary)
             units = home / '.config/systemd/user'
             units.mkdir(parents=True)
-            legacy = ('rebos-greeter-sync.path', 'rebos-greeter-sync.service')
+            legacy = ('rebos-greeter-sync.path', 'rebos-greeter-sync.service',
+                      'regreet-sync.path', 'regreet-sync.timer', 'regreet-sync.service')
             for name in legacy:
                 (units / name).touch()
             with patch.object(greeter_sync.os, 'access', return_value=True), \
@@ -30,22 +31,19 @@ class GreeterSyncTests(unittest.TestCase):
                 greeter_sync.configure(home)
             commands = [call.args[0] for call in run.call_args_list]
             replacement = commands.index(['systemctl', '--user', 'enable', '--now',
-                                          'regreet-sync.path', 'regreet-sync.timer'])
+                                          'greeter-sync.path', 'greeter-sync.timer'])
             for name in legacy:
-                action = ['disable', '--now'] if name.endswith('.path') else ['stop']
+                action = ['disable', '--now'] if name.endswith(('.path', '.timer')) else ['stop']
                 self.assertLess(commands.index(['systemctl', '--user', *action, name]),
                                 replacement)
 
     def test_wallpaper_and_color_changes(self):
-        script = runpy.run_path(str(ROOT.parent / 'system/bin/regreet-sync'))
+        script = runpy.run_path(str(ROOT.parent / 'system/bin/greeter-sync'))
         with tempfile.TemporaryDirectory() as temporary:
             home = Path(temporary)
             cache, target = home / 'cache', home / 'theme'
             cache.mkdir()
             target.mkdir()
-            config = home / '.config/regreet-sync'
-            config.mkdir(parents=True)
-            (config / 'regreet.css.in').write_text('window {color: {{primary}};}')
             wall = home / 'wall.png'
             Image.new('RGB', (16, 16), 'red').save(wall)
             (cache / 'wallpapers.json').write_text(json.dumps({'currentWall': str(wall)}))
@@ -54,30 +52,26 @@ class GreeterSyncTests(unittest.TestCase):
             sync = script['main']
             sync.__globals__.update(HOME=home, CACHE=cache, TARGET=target)
             sync()
-            self.assertIn('#112233', (target / 'regreet.css').read_text())
+            self.assertEqual(json.loads((target / 'quickshell.json').read_text())['palette']['primary'], '#112233')
             timestamp = (target / 'background.png').stat().st_mtime_ns
             sync()
             self.assertEqual(timestamp, (target / 'background.png').stat().st_mtime_ns)
             palette.write_text('{"primary":"#abcdef"}')
             sync()
-            self.assertIn('#abcdef', (target / 'regreet.css').read_text())
+            self.assertEqual(json.loads((target / 'quickshell.json').read_text())['palette']['primary'], '#abcdef')
             Image.new('RGB', (16, 16), 'blue').save(wall)
             sync()
             with Image.open(target / 'background.png') as image:
                 self.assertEqual(image.getpixel((0, 0)), (0, 0, 255))
 
-    def test_playground_metrics_and_css(self):
-        script = runpy.run_path(str(ROOT.parent / 'system/bin/regreet-sync'))
+    def test_material_metrics_and_public_export(self):
+        script = runpy.run_path(str(ROOT.parent / 'system/bin/greeter-sync'))
         import subprocess
         with tempfile.TemporaryDirectory() as temporary:
             home = Path(temporary)
             cache, target = home / 'cache', home / 'theme'
             cache.mkdir()
             target.mkdir()
-            config = home / '.config/regreet-sync'
-            config.mkdir(parents=True)
-            (config / 'regreet.css.in').write_text(
-                (ROOT.parent / 'system/greeter/regreet.css.in').read_text())
             theme = home / '.config/enclosure/shell/config/theme.json'
             theme.parent.mkdir(parents=True)
             theme.write_text(json.dumps({
@@ -100,10 +94,6 @@ class GreeterSyncTests(unittest.TestCase):
             sync = script['main']
             sync.__globals__.update(HOME=home, CACHE=cache, TARGET=target)
             sync()
-            css = (target / 'regreet.css').read_text()
-            self.assertIn('border-radius: 16px', css)
-            self.assertIn('border-radius: 10px', css)
-            self.assertIn('font-size: 14px', css)
             exported = json.loads((target / 'quickshell.json').read_text())
             self.assertEqual(exported['metrics']['radius'], 16)
             self.assertEqual(exported['palette']['foreground'], '#112233')
@@ -121,28 +111,12 @@ class GreeterSyncTests(unittest.TestCase):
             exported = json.loads((target / 'quickshell.json').read_text())
             self.assertEqual(exported['display'], {'use12hFormat': False, 'tintEnabled': True})
             self.assertNotIn('never-publish', (target / 'quickshell.json').read_text())
-            self.assertNotIn('{{', css)
-            self.assertNotIn('glass-texture', css)
-            # GTK parses CSS without mapping a window or connecting to greetd.
-            parser = """import gi, sys
- gi.require_version('Gtk', '4.0')
- from gi.repository import Gtk
- errors = []
- provider = Gtk.CssProvider()
- provider.connect('parsing-error', lambda p, section, error: errors.append(str(error)))
- provider.load_from_path(sys.argv[1])
- if errors: raise SystemExit('\\n'.join(errors))
-"""
-            parser = '\n'.join(line[1:] if line.startswith(' ') else line for line in parser.splitlines())
-            subprocess.run(['/usr/bin/python3', '-c', parser, str(target / 'regreet.css')], check=True)
             timestamp = (target / 'background.png').stat().st_mtime_ns
             theme.write_text('{"roundness":0,"font":"Unsafe; font","fontSize":18}')
             sync()
-            css = (target / 'regreet.css').read_text()
             self.assertEqual(json.loads((target / 'quickshell.json').read_text())['metrics']['radius'], 0)
-            self.assertIn('border-radius: 0px', css)
-            self.assertIn('font-size: 18px', css)
-            self.assertIn('font-family: "JetBrains Mono"', css)
+            self.assertEqual(json.loads((target / 'quickshell.json').read_text())['metrics']['font'], 'JetBrains Mono')
+            self.assertFalse((target / 'regreet.css').exists())
             self.assertEqual(timestamp, (target / 'background.png').stat().st_mtime_ns)
 
     def test_permission_setup_uses_desktop_approval(self):
@@ -159,4 +133,4 @@ class GreeterSyncTests(unittest.TestCase):
                 self.assertIn('--reason', command)
                 self.assertEqual(command[-1], '/var/lib/rebos-greeter/theme')
                 self.assertEqual(run.call_args_list[-1].args[0],
-                                 ['systemctl', '--user', 'start', 'regreet-sync.service'])
+                                 ['systemctl', '--user', 'start', 'greeter-sync.service'])

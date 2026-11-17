@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-"""Publish the current desktop wallpaper and effective palette for ReGreet."""
+"""Publish the current desktop wallpaper and effective palette for the Quickshell greeter."""
 import hashlib
 import io
 import json
@@ -31,7 +31,6 @@ def main():
     state = json.loads((CACHE / 'wallpapers.json').read_text())
     wallpaper = Path(state['currentWall'])
     palette = json.loads((CACHE / 'effective-palette.json').read_text())
-    template = (HOME / '.config/regreet-sync/regreet.css.in').read_text()
 
     # The effective palette already contains the shared surface hierarchy.
     # Read geometry separately so font/corner changes invalidate the CSS stamp.
@@ -56,16 +55,6 @@ def main():
                'radius': str(radius), 'innerRadius': str(max(0, radius - 6)),
                'opacity': str(opacity)}
 
-    def token(match):
-        key = match[1]
-        if key in metrics:
-            return metrics[key]
-        value = palette[key]
-        if not re.fullmatch(r'#[0-9a-fA-F]{6}', value):
-            raise ValueError('Invalid palette color: ' + key)
-        return value
-
-    css = re.sub(r'\{\{(\w+)\}\}', token, template).encode()
     info = wallpaper.stat()
     image_signature = [str(wallpaper), info.st_mtime_ns, info.st_size]
     # Export only appearance, never shell settings containing personal state.
@@ -131,9 +120,9 @@ def main():
         material[key] = surface
     exported['material'] = material
     appearance = json.dumps(exported).encode()
-    signature = {'image': image_signature, 'css': hashlib.sha256(css).hexdigest(),
+    signature = {'image': image_signature,
                  'quickshell': hashlib.sha256(appearance).hexdigest()}
-    stamp = CACHE / 'regreet-sync.json'
+    stamp = CACHE / 'greeter-sync.json'
     previous = json.loads(stamp.read_text()) if stamp.exists() else {}
     if previous.get('image') != image_signature or not (TARGET / 'background.png').exists():
         if wallpaper.suffix.lower() in {'.mp4', '.webm', '.mkv', '.mov', '.avi', '.m4v'}:
@@ -149,13 +138,11 @@ def main():
             output = io.BytesIO()
             image.save(output, format='PNG')
         atomic_write(TARGET / 'background.png', output.getvalue())
-    if previous.get('css') != signature['css'] or not (TARGET / 'regreet.css').exists():
-        atomic_write(TARGET / 'regreet.css', css)
     if previous.get('quickshell') != signature['quickshell'] or not (TARGET / 'quickshell.json').exists():
         atomic_write(TARGET / 'quickshell.json', appearance)
     if previous != signature:
         atomic_write(stamp, json.dumps(signature).encode())
-        print('ReGreet wallpaper and colors synchronized', flush=True)
+        print('Quickshell greeter wallpaper and colors synchronized', flush=True)
 
 
 if __name__ == '__main__':

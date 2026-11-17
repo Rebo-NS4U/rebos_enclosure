@@ -35,7 +35,7 @@ class InstallFlowTests(unittest.TestCase):
     def test_nvidia_setup_uses_selected_plan_without_touching_real_system(self):
         self.run_install(login=False)
 
-    def test_regreet_installs_assets_and_migrates_ly_without_restarting_services(self):
+    def test_quickshell_installs_assets_and_migrates_ly_without_restarting_services(self):
         self.run_install(login=True)
 
     def run_install(self, login):
@@ -133,21 +133,14 @@ class InstallFlowTests(unittest.TestCase):
                     ['systemctl', 'enable', 'getty@tty2.service'],
                     ['systemctl', 'disable', 'getty@tty1.service'],
                     ['systemctl', 'enable', 'greetd.service']])
-                for name in ('config.toml', 'regreet.toml'):
-                    self.assertEqual(copied['/etc/greetd/' + name],
-                                     (ROOT / 'system/etc/greetd' / name).read_text())
-                self.assertEqual(copied['/usr/local/lib/rebos-greeter/icons/default/index.theme'],
-                                 (ROOT / 'system/etc/rebos-greeter/icons/default/index.theme').read_text())
-                for name in ('layout', 'cage-cursor'):
-                    self.assertTrue(any(e['args'] and e['args'][-1] == '/usr/local/lib/rebos-greeter/' + name + '.so'
-                                        and e.get('size', 0) > 0 for e in entries))
-                for name in ('regreet.css', 'background.png', 'glass-texture.png'):
-                    self.assertTrue(any(e['args'] and e['args'][-1] == '/var/lib/rebos-greeter/theme/' + name
-                                        and e.get('size', 0) > 0 for e in entries))
+                self.assertTrue(any(e['args'] and e['args'][-1].endswith('/install-quickshell-greeter.sh') for e in entries))
+                self.assertTrue(any(e['args'] and e['args'][-1] == '/var/lib/rebos-greeter/theme/background.png' and e.get('size', 0) > 0 for e in entries))
+                self.assertFalse(any('regreet.toml' in str(e['args']) or 'layout.so' in str(e['args']) for e in entries))
                 package_call = next(e['args'] for e in entries if e['command'] == 'sudo'
                                     and e['args'][:2] == ['pacman', '-S'])
-                self.assertTrue({'greetd', 'greetd-regreet', 'cage'} <= set(package_call))
+                self.assertTrue({'greetd', 'quickshell', 'cage'} <= set(package_call))
                 self.assertNotIn('ly', package_call)
+                self.assertNotIn('greetd-regreet', package_call)
             else:
                 self.assertEqual(service_calls, [])
                 self.assertFalse(any(e['args'][-1].startswith(('/etc/pam.d/greetd', '/etc/greetd/', '/usr/local/lib/rebos-greeter/',

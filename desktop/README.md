@@ -55,7 +55,7 @@ bash install.sh --keep-network       # retain your existing network service setu
 bash install.sh --files-only         # copy settings only; dependencies must already exist
 ```
 
-Reboot after installation. Select **Niri** in ReGreet, log in and open a terminal with **Super+Return**. A manually started session should use `niri-session` from a TTY. The packaged session exports the environment for portals and session services. See [Niri's session documentation](https://github.com/niri-wm/niri/wiki/Getting-Started). ReGreet runs under Cage through greetd on tty1, with its corresponding getty disabled. Enabled Ly units are disabled for the next boot; no running session is stopped.
+Reboot after installation. Select **Niri** in Quickshell greeter, log in and open a terminal with **Super+Return**. A manually started session should use `niri-session` from a TTY. The packaged session exports the environment for portals and session services. See [Niri's session documentation](https://github.com/niri-wm/niri/wiki/Getting-Started). Quickshell greeter runs under Cage through greetd on tty1, with its corresponding getty disabled. Enabled Ly units are disabled for the next boot; no running session is stopped.
 
 ## Interactive configuration
 
@@ -82,7 +82,7 @@ The bundled artist and shared-album collections retain only images at least **19
 - 60 wallpapers by [Ismail Inceoglu (Seventeenth)](https://seventeenth.artstation.com/) in `Ismail Inceoglu - Seventeenth`, at least 1920×1200 in both dimensions. The collection includes `sources.json` with artwork links and image dimensions. Fresh installs select The Stone Sky; existing wallpaper preferences are preserved.
 - 10 images selected from 117 public projects by [Cycle Circle (Zombie012)](https://zombie012.artstation.com/) in the separate `Cycle Circle - Zombie012` wallpaper folder. `sources.json` records artwork credits, source URLs and dimensions. Select this folder in the wallpaper gallery to browse the collection. Choose **Sort: Artist** to order all collections by artist, then filename; loose wallpapers appear last. Artist names come from the top-level collection folder (`Artist - Handle`).
 - 62 full-resolution wallpapers from the user-supplied Google Photos album `my wolpapors :3`, in the separate `My Wolpapors - Shared Album` collection. Artist attribution is unspecified; the collection metadata records dimensions and image hashes without album access links or account details.
-- Themed ReGreet login configuration, background, layout extension and GoogleDot cursor, NetworkManager, Bluetooth, PipeWire/WirePlumber, power profiles, authentication agent, portals, screenshots, OCR and clipboard history.
+- Themed Quickshell login configuration, shared material renderer, background and GoogleDot cursor, NetworkManager, Bluetooth, PipeWire/WirePlumber, power profiles, authentication agent, portals, screenshots, OCR and clipboard history.
 - Full-profile apps include Discord, Spotify Launcher, OBS, Obsidian, Zen, image viewer, developer tools, and the optional AUR apps listed above.
 
 Anime Streamer captions can automatically detect each speech span's language and
@@ -130,21 +130,15 @@ approval boundaries. The policy is delivered once to each backend conversation,
 including older restored chats, and persists across reconnects. Releases are
 created when requested.
 
-Password login through ReGreet starts and unlocks the login keyring using optional
+Password login through Quickshell greeter starts and unlocks the login keyring using optional
 GNOME Keyring PAM hooks in `/etc/pam.d/greetd`. The installer backs up the previous
 PAM file. The keyring password must match the login password; automatic login
 cannot supply a password to unlock it. Existing sessions need no restart.
 
-Login packages are `greetd`, `greetd-regreet` and `cage`. The tracked greetd and
-ReGreet configuration lives in `system/etc/greetd/`; the matching
-layout, cursor extension and theme assets live in `system/etc/rebos-greeter/`.
-The greeter uses a private cursor search path with a GoogleDot `default` fallback,
-so unnamed cursor requests also match the theme without changing the system default.
-The Cage helper also supplies cursor-shape-v1 on older Cage builds, routing GTK
-Wayland pointer, text and hand cursors through GoogleDot instead of GTK built-ins.
-Build it against Cage’s installed wlroots development headers; the build script
-selects the matching ABI from Cage’s linked library.
-The former `install/ly/` configuration and patches have been removed.
+Login packages are `greetd`, `quickshell` and `cage`. Configuration lives in
+`system/etc/greetd/`; the Quickshell interface and shared material assembly are
+described in [greeter setup](QUICKSHELL-GREETER.md). ReGreet and its GTK extensions
+are no longer installed.
 
 Base packages and optional application groups are editable in `desktop/packages/core.txt` and `desktop/packages/groups.json`. Driver packages are selected by the installer. A full system upgrade precedes package installation. The installer uses configured repositories and does not add Chaotic-AUR, replace the kernel, or copy this computer's GPU driver settings. Intel/AMD microcode and graphics userspace packages are detected from the destination. **NVIDIA:** the setup menu offers open DKMS and legacy 580 DKMS branches, matching kernel headers, hybrid offload and optional mkinitcpio early KMS. Choose the branch appropriate to the GPU; the installer does not guess NVIDIA generations or remove conflicting installed driver families automatically. Consult [Arch's NVIDIA guide](https://wiki.archlinux.org/title/NVIDIA). Existing network service enablement changes take effect on reboot so installation does not disconnect the active link. If using a custom network stack, use `--keep-network`.
 
@@ -324,13 +318,13 @@ and successful requests retaining their client/request identifiers.
 
 `desktop/scripts/snapshot.py --verify` verifies reviewed `config/` and `system/` source. Use `--output /path/to/new.tar.gz` to export committed HEAD with an adjacent `.sha256` file. Verify the exact archive with `python desktop/scripts/check_release.py /path/to/new.tar.gz`; add `--previous /path/to/prior.tar.gz` for cross-release file update and recovery checks. Each archive needs its adjacent checksum. These checks use temporary homes and do not install packages or change services. Live-home snapshotting has been removed. Preserve component licenses; artwork rights remain with their authors. See the [filesystem guide](../docs/FILESYSTEM.md) for personal settings, managed defaults, grouping and recovery.
 
-ReGreet follows the current desktop wallpaper and effective color palette through
-`regreet-sync.path`, with a timer to retry failures and detect edits to the image.
+Quickshell greeter follows the current desktop wallpaper and effective color palette through
+`greeter-sync.path`, with a timer to retry failures and detect edits to the image.
 Installation and `update.sh` enable the sync for an existing Enclosure greeter and
 refresh its theme immediately; the next login displays the result. The first
 update may request administrator approval to grant the desktop user ownership of
 `/var/lib/rebos-greeter/theme` only. It does not restart greetd or the desktop.
-The CSS template and sync units are managed code refreshed by updates; wallpaper
+The appearance exporter and sync units are managed code refreshed by updates; wallpaper
 and color preferences remain preserved. Animated wallpapers use a still frame.
 Setup disables the legacy `rebos-greeter-sync.path` watcher and stops its service
 before enabling the replacement, so both exporters cannot compete.
@@ -536,7 +530,7 @@ hidden content. The 20 million visible-character limit still applies. This
 bounds ZIP read work; PDF/Calibre processes retain their existing timeouts and
 are not a general sandbox for hostile documents.
 
-Optional background work runs on demand: the screenshot editor starts for a capture and exits when closed (legacy `--warm` is a no-op). ReGreet sync uses file-change watchers immediately, with a 15-minute fallback for wallpaper files edited in place. Explicit assistant shutdown exits its user service; detaching the UI still preserves active work, and idle resumable agents retain their existing parking policy.
+Optional background work runs on demand: the screenshot editor starts for a capture and exits when closed (legacy `--warm` is a no-op). Quickshell greeter sync uses file-change watchers immediately, with a 15-minute fallback for wallpaper files edited in place. Explicit assistant shutdown exits its user service; detaching the UI still preserves active work, and idle resumable agents retain their existing parking policy.
 
 The Bluetooth tray no longer starts at login. USB drives continue to mount automatically through udiskie. Bluetooth connections and existing mounts remain available. Open `blueman-manager` to manage Bluetooth; pairing may start its helper on demand. Remove `~/.config/autostart/blueman.desktop` to restore the tray at login. Background resumable assistant agents park after one minute of inactivity; busy sessions and pending approvals are excluded.
 

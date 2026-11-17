@@ -29,11 +29,12 @@ def options(**kwargs):
 
 
 class SetupTests(unittest.TestCase):
-    def test_default_login_installs_quickshell_with_regreet_rollback(self):
+    def test_default_login_installs_quickshell_without_regreet(self):
         plan = setup.build_plan(options(), hardware())
         self.assertEqual(plan['login'], 'quickshell')
-        self.assertTrue({'greetd', 'greetd-regreet', 'cage'} <= set(plan['packages']))
+        self.assertTrue({'greetd', 'cage'} <= set(plan['packages']))
         self.assertNotIn('ly', plan['packages'])
+        self.assertNotIn('greetd-regreet', plan['packages'])
         setup.validate_plan(plan)
 
     def test_core_includes_vlc_subtitle_renderer_and_hls_demuxer(self):

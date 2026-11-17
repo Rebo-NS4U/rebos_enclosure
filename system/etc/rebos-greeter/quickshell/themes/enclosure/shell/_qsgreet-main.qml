@@ -68,7 +68,6 @@ FocusScope {
                     color: panel.item
                     font.pixelSize: Styling.fontSize(0)
                 }
-                StyledText { text: "Welcome back"; color: panel.item; font.pixelSize: Styling.fontSize(8) }
                 StyledText { text: "Username"; color: panel.item }
                 SearchInput {
                     id: username

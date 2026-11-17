@@ -150,10 +150,6 @@ if ((!files_only)); then
 fi
 for dependency in cc fish fc-cache; do command -v "$dependency" >/dev/null || die "Missing dependency: $dependency"; done
 work_dir=$(mktemp -d)
-if ((!files_only)) && [[ $login != keep ]]; then
-    bash "$ROOT/scripts/build-greeter-cursor.sh" "$work_dir/cage-cursor.so"
-    cc -O2 -shared -fPIC "$ROOT/../system/etc/rebos-greeter/layout.c" $(pkg-config --cflags --libs gtk4) -o "$work_dir/layout.so"
-fi
 # Validate the exact customized Niri configuration before changing user files.
 python3 - "$ROOT/../config/niri" "$work_dir/niri" <<'PY'
 from pathlib import Path
@@ -196,18 +192,8 @@ if ((!files_only)); then
         for path in /etc/greetd /usr/local/lib/rebos-greeter /var/lib/rebos-greeter/theme /usr/share/icons/GoogleDot-Black; do
             backup_system_file "$path"
         done
-        for name in config.toml regreet.toml; do
-            sudo install -Dm644 "$ROOT/../system/etc/greetd/$name" "/etc/greetd/$name"
-        done
-        for name in layout cage-cursor; do
-            sudo install -Dm644 "$ROOT/../system/etc/rebos-greeter/$name.c" "/usr/local/lib/rebos-greeter/$name.c"
-            sudo install -Dm755 "$work_dir/$name.so" "/usr/local/lib/rebos-greeter/$name.so"
-        done
-        sudo install -Dm644 "$ROOT/../system/etc/rebos-greeter/icons/default/index.theme" "/usr/local/lib/rebos-greeter/icons/default/index.theme"
         sudo install -d -m755 /var/lib/rebos-greeter/theme /usr/share/icons/GoogleDot-Black
-        for name in regreet.css background.png glass-texture.png; do
-            sudo install -m644 "$ROOT/../system/etc/rebos-greeter/theme/$name" "/var/lib/rebos-greeter/theme/$name"
-        done
+        sudo install -m644 "$ROOT/../system/etc/rebos-greeter/theme/background.png" /var/lib/rebos-greeter/theme/background.png
         sudo cp -r "$ROOT/../system/share/icons/GoogleDot-Black/." /usr/share/icons/GoogleDot-Black/
         sudo chown -R root:root /usr/share/icons/GoogleDot-Black
         # Change enablement for the next boot; never stop the running login/session.

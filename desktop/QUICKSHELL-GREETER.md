@@ -1,10 +1,8 @@
 # Quickshell login greeter
 
-The default installer login choice is now `quickshell`; `regreet` remains a
-supported legacy option, and `keep` leaves login configuration alone. The
+The installer login choices are `quickshell` and `keep` (leave login configuration alone). The
 Quickshell greeter uses the existing greetd PAM stack, Quickshell and Cage;
-no new package or user session backend is required. ReGreet stays installed
-for rollback. No running desktop or login service is restarted.
+no additional user session backend is required. ReGreet is retired. No running desktop or login service is restarted.
 
 The MIT-licensed quickshell-greetd core and launcher are vendored under
 `system/etc/rebos-greeter/quickshell`, with their source revision in `UPSTREAM`.
@@ -12,9 +10,9 @@ The Enclosure interface is separate from the session lockscreen. It supports
 user and session selection, password failures, additional PAM prompts,
 cancellation and power actions. Theme load failures use the upstream fallback.
 
-`regreet-sync` publishes the current wallpaper and a restricted appearance JSON
+`greeter-sync` publishes the current wallpaper and a restricted appearance JSON
 containing color roles, typography, geometry, transparency, dithering and
-custom surface definitions. Existing path and timer units keep both greeters
+custom surface definitions. Existing path and timer units keep the greeter
 updated. Only explicitly allowed visual fields are published.
 
 The greeter uses the shell's actual `StyledRect`, `Styling`, `Motion` and
@@ -43,7 +41,7 @@ To migrate an existing Enclosure installation after deploying its sync helper:
 ```sh
 ~/.local/bin/assistant-sudo --reason 'Switch to the Quickshell login greeter' -- \
   /usr/bin/bash desktop/scripts/install-quickshell-greeter.sh
-~/.local/bin/regreet-sync
+~/.local/bin/greeter-sync
 systemctl --user daemon-reload
 ```
 

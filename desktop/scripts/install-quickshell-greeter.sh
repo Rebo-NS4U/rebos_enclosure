@@ -13,13 +13,6 @@ python3 "$ROOT/desktop/scripts/prepare-quickshell-greeter.py" "$TARGET"
 chown -R root:root "$TARGET"
 chmod -R a+rX "$TARGET"
 chmod 755 "$TARGET/launcher"
-# Keep the existing ReGreet payload and config for manual rollback.
-install -Dm644 /dev/stdin /etc/greetd/config.toml <<'CONFIG'
-[terminal]
-vt = 1
-
-[default_session]
-command = "env QSGREET_PREFIX=/usr/local/lib/rebos-greeter/quickshell QSGREET_THEME=enclosure QSGREET_LOCK_USER=0 XCURSOR_THEME=GoogleDot-Black XCURSOR_SIZE=20 /usr/local/lib/rebos-greeter/quickshell/launcher"
-user = "greeter"
-CONFIG
+install -Dm644 "$ROOT/system/etc/greetd/config.toml" /etc/greetd/config.toml
+bash "$ROOT/desktop/scripts/remove-regreet.sh"
 printf 'Quickshell greeter configured for next login. Backup: %s/config.toml\n' "$backup"
