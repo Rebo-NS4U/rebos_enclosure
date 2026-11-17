@@ -829,7 +829,7 @@ ClippingRectangle {
         }
     }
 
-    // Monolith: a quiet continuous surface with palette-derived edge accents.
+    // Monolith: stepped stone facets and carved pillars around a quiet slab.
     Loader {
         anchors.fill: parent
         active: !root.hasFillColor && root.rectOpacity > 0 && (root.styleOverride || Styling.shellStyle) === "monolith"
@@ -856,10 +856,39 @@ ClippingRectangle {
                 const ctx=getContext("2d");ctx.clearRect(0,0,width,height);
                 if(width<24||height<24)return;
                 ctx.save();if(root.traceThemeFrame(ctx,0))ctx.clip();
-                // A single fine edge defines the slab without texture or carved detail.
+                // A fine rim follows the selected rounded frame.
                 ctx.lineWidth=0.8;ctx.strokeStyle=Qt.alpha(pigment,inset?0.045:0.085);
                 if(root.traceThemeFrame(ctx,0.8))ctx.stroke();
                 if(!inset){
+                    // Stepped megalith silhouettes: shallow facets along opposing rims.
+                    const band=Math.min(outer?22:10,height*0.24);
+                    const pitch=outer?88:64;
+                    for(let x=0,i=0;x<width;x+=pitch,i++){
+                        const step=band*(i%3===0?1:0.62);
+                        ctx.fillStyle=Qt.alpha(accent,outer?0.065:0.035);
+                        ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x+pitch,0);
+                        ctx.lineTo(x+pitch,step*0.4);ctx.lineTo(x+pitch*0.68,step*0.4);
+                        ctx.lineTo(x+pitch*0.46,step);ctx.lineTo(x,step);ctx.closePath();ctx.fill();
+                        ctx.strokeStyle=Qt.alpha(pigment,outer?0.14:0.08);ctx.lineWidth=0.7;
+                        ctx.beginPath();ctx.moveTo(x,step);ctx.lineTo(x+pitch*0.46,step);
+                        ctx.lineTo(x+pitch*0.68,step*0.4);ctx.stroke();
+                        ctx.fillStyle=Qt.alpha(secondaryAccent,outer?0.045:0.025);
+                        ctx.beginPath();ctx.moveTo(width-x,height);ctx.lineTo(width-x-pitch,height);
+                        ctx.lineTo(width-x-pitch,height-step*0.5);
+                        ctx.lineTo(width-x-pitch*0.36,height-step*0.5);
+                        ctx.lineTo(width-x-pitch*0.18,height-step);ctx.lineTo(width-x,height-step);
+                        ctx.closePath();ctx.fill();
+                    }
+                    // Paired incisions read as carved pillars on taller slabs.
+                    if(outer && height>100){
+                        const reach=Math.min(120,height*0.34);
+                        for(let i=0;i<3;i++){
+                            const x=7+i*4,y=Math.max(cornerRadius+8,28)+i*9;
+                            ctx.strokeStyle=Qt.alpha(pigment,0.16-i*0.03);ctx.lineWidth=1;
+                            ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x,y+reach);
+                            ctx.lineTo(x+3,y+reach+4);ctx.stroke();
+                        }
+                    }
                     const safe=Math.max(12,cornerRadius+4);
                     const span=Math.max(0,Math.min(outer?96:40,width-safe*2));
                     if(span>8){
