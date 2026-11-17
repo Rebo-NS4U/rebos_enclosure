@@ -189,7 +189,7 @@ function surface(style, variant, p, ditherStrength) {
     if (orbital && neutral) {
         fill=mix(p.background,p.foreground,inset?0.005:focused?0.10:outer?0.075:0.045);
         item=p.foreground;
-        opacity=focused?0.98:inset?0.94:outer?0.97:0.90;
+        opacity=focused?0.84:inset?0.48:outer?0.68:0.48;
         border=[focused?p.primary:mix(fill,p.foreground,inset?0.28:0.40),focused||outer?2:1];
         renderGradient=inset?[[fill,0],[fill,0.94],[mix(fill,p.foreground,0.05),1]]
             :[[mix(fill,p.foreground,0.07),0],[fill,0.04],[fill,0.90],[mix(fill,p.background,0.55),1]];
@@ -198,7 +198,7 @@ function surface(style, variant, p, ditherStrength) {
         // Material depth uses only the selected palette; no imposed city colors.
         fill=mix(p.background,p.foreground,inset?0.005:focused?0.045:0.012);
         item=p.foreground;
-        opacity=focused?0.97:inset?0.78:outer?0.92:0.85;
+        opacity=focused?0.82:inset?0.42:outer?0.64:0.44;
         border=[focused?p.primary:mix(fill,p.primary,outer?0.32:0.20),focused||outer?1:0];
         renderGradient=[[mix(fill,p.primary,0.045),0],[fill,0.20],[fill,0.80],[mix(fill,p.background,0.30),1]];
     }
@@ -207,7 +207,7 @@ function surface(style, variant, p, ditherStrength) {
         var cloth=mix(p.primary,p.secondary,0.35);
         fill=mix(mix(p.background,p.foreground,inset?0.015:0.035),cloth,inset?0.025:0.055);
         item=p.foreground;
-        opacity=focused?0.96:inset?0.72:outer?0.91:0.82;
+        opacity=focused?0.80:inset?0.40:outer?0.62:0.42;
         border=[focused?p.primary:mix(fill,cloth,outer?0.27:0.16),focused||outer?1:0];
         renderGradient=[[mix(fill,cloth,0.045),0],[fill,0.30],[fill,0.78],[mix(fill,p.background,0.12),1]];
     }
