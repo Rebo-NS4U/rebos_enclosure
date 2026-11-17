@@ -1013,7 +1013,7 @@ ClippingRectangle {
                 anchors.fill: parent; anchors.margins: chassis.outer ? 4 : 2
                 radius: root.themeInsetRadius(chassis.outer ? 4 : 2)
                 color: "transparent"; border.width: 1
-                border.color: Qt.alpha(chassis.ink, chassis.screen ? 0.20 : 0.15)
+                border.color: Qt.alpha(chassis.ink, chassis.outer ? 0.15 : 0.07)
             }
             Canvas {
                 anchors.fill: parent
@@ -1036,79 +1036,18 @@ ClippingRectangle {
                     brushed.addColorStop(0,Qt.alpha(pigment,0.14));
                     brushed.addColorStop(0.35,Qt.alpha(pigment,0.035));brushed.addColorStop(1,Qt.alpha(pigment,0));
                     ctx.fillStyle=brushed;ctx.fillRect(0,0,width,chassis.outer?20:8);
-                    const d=chassis.outer?3:1,r=root.themeInsetRadius(d);
-                    ctx.strokeStyle=Qt.alpha(pigment,0.18);ctx.lineWidth=1;
-                    ctx.beginPath();ctx.moveTo(d,Math.max(d+r,height*0.65));
-                    ctx.lineTo(d,d+r);ctx.quadraticCurveTo(d,d,d+r,d);
-                    ctx.lineTo(Math.max(d+r,width-d-r),d);ctx.stroke();
-                    // A machined bezel groove and recessed bank of cooling louvers.
-                    ctx.lineWidth=1;ctx.strokeStyle=Qt.alpha(pigment,0.20);
-                    if(root.traceThemeFrame(ctx,chassis.outer?7:3))ctx.stroke();
+                    // One inset bezel and a small vent bank keep the housing legible.
                     if(chassis.outer){
                         const safe=Math.max(20,cornerRadius+8);
-                        for(let i=0;i<8 && safe+i*6<height-safe;i++){
-                            const y=safe+i*6;
-                            ctx.fillStyle=Qt.alpha(pigment,0.26);ctx.fillRect(width-14,y,7,2);
-                            ctx.fillStyle=Qt.alpha(pigment,0.07);ctx.fillRect(width-14,y+2,7,1);
-                        }
-                        // Rack ears: paired recessed mounting rails with milled slots.
-                        // Short bars use the same housing as a compact equipment strip.
-                        const rail=ctx.createLinearGradient(0,0,14,0);
-                        rail.addColorStop(0,Qt.alpha(pigment,0.04));
-                        rail.addColorStop(0.45,Qt.alpha(pigment,0.14));
-                        rail.addColorStop(1,Qt.alpha(pigment,0.025));
-                        ctx.fillStyle=rail;ctx.fillRect(2,safe,11,Math.max(0,height-safe*2));
-                        ctx.strokeStyle=Qt.alpha(pigment,0.30);ctx.lineWidth=1;
-                        for(let y=safe+5;y<height-safe;y+=22){
-                            ctx.beginPath();ctx.moveTo(6,y);ctx.lineTo(9,y);
-                            ctx.lineTo(9,y+7);ctx.lineTo(6,y+7);ctx.closePath();ctx.stroke();
-                        }
-                        // Segmented lower retention rail and diagonal grip cuts.
-                        if(width>safe*2+40){
-                            for(let x=safe;x<width-safe-8;x+=18){
-                                ctx.fillStyle=Qt.alpha(pigment,0.12);ctx.fillRect(x,height-7,13,3);
-                                ctx.strokeStyle=Qt.alpha(pigment,0.32);ctx.lineWidth=0.8;
-                                ctx.beginPath();ctx.moveTo(x,height-7);ctx.lineTo(x+13,height-7);ctx.stroke();
+                        if(width>safe*2+40 && height>safe*2+24){
+                            for(let i=0;i<4;i++){
+                                const y=safe+i*6;
+                                ctx.fillStyle=Qt.alpha(pigment,0.16);
+                                ctx.fillRect(width-12,y,5,1);
                             }
-                            for(let i=0;i<5;i++){
-                                const x=width-safe-30+i*5;
-                                ctx.beginPath();ctx.moveTo(x,4);ctx.lineTo(x-4,9);ctx.stroke();
-                            }
-                        }
-                        // Brushed metal stays within the upper bezel, with recessed seams.
-                        ctx.save();if(root.traceThemeFrame(ctx,0))ctx.clip();
-                        for(let line=0;line<4;line++){
-                            ctx.strokeStyle=Qt.alpha(pigment,line%2?0.025:0.055);ctx.lineWidth=0.7;
-                            ctx.beginPath();ctx.moveTo(safe,3+line*1.5);
-                            ctx.lineTo(width-safe,3+line*1.5);ctx.stroke();
-                        }
-                        for(const x of [safe,width-safe]){
-                            ctx.strokeStyle=Qt.alpha(pigment,0.18);ctx.lineWidth=1;
-                            ctx.beginPath();ctx.moveTo(x,height-5);ctx.lineTo(x,height-15);
-                            ctx.lineTo(x+(x<width/2?12:-12),height-15);ctx.stroke();
-                        }
-                        ctx.restore();
-                        if(width>safe*2+30){
-                            ctx.strokeStyle=Qt.alpha(pigment,0.24);ctx.beginPath();
-                            ctx.moveTo(safe,10);ctx.lineTo(width-safe,10);ctx.stroke();
                         }
                     }
                     ctx.restore();
-                }
-            }
-            Rectangle {
-                anchors.left: parent.left; anchors.top: parent.top; anchors.bottom: parent.bottom
-                anchors.margins: chassis.outer ? 3 : 1
-                width: 1; color: chassis.ink; opacity: chassis.screen ? 0.07 : 0.16
-            }
-            // Passive display texture, with no animation or invented status lights.
-            Repeater {
-                model: chassis.screen ? Math.min(160, Math.floor(chassis.height / 4)) : 0
-                Rectangle {
-                    required property int index
-                    x: 3; y: 3 + index * 4
-                    width: Math.max(0, chassis.width - 6); height: 1
-                    color: chassis.ink; opacity: 0.035
                 }
             }
         }

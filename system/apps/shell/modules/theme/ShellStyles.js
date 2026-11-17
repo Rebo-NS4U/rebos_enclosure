@@ -9,7 +9,7 @@ var styles = [
     {id: "suspended-film", label: "Suspended Film", font: "DejaVu Sans Mono", description: "Suspended glass sheets, curved grazing reflections and separated contact edges."},
     {id: "monolith", label: "Monolith", font: "Noto Sans", description: "Beveled basalt facets, contact shadows and fine etched mineral grain."},
     {id: "blueprint", label: "Blueprint", font: "JetBrains Mono", description: "Architectural drafting sheets, truss details, ruled scales and wire controls."},
-    {id: "terminal-hardware", label: "Terminal Hardware", font: "DejaVu Sans Mono", description: "Brushed metal bezels, recessed louvers, panel seams and machined controls."},
+    {id: "terminal-hardware", label: "Terminal Hardware", font: "DejaVu Sans Mono", description: "Clean machined bezels, subtle brushed highlights and sparse cooling vents."},
     {id: "frosted", font: "DejaVu Sans Mono", label: "Frosted Glass", description: "Branching frost crystals, etched ice rims, fine grain and soft corner bloom."},
     {id: "colorful", font: "DejaVu Sans", label: "Tinted", description: "Layered colored glass planes, offset frames and fading accent reflections."},
     {id: "clear-glass", label: "Clear Glass", font: "Noto Sans", description: "Clear glazing with grazing reflections, fine highlights and a subtle lower meniscus."}

@@ -51,7 +51,7 @@ Use `StandardProgressBar` for linear progress in QML. Its normalized `value` is 
 All styles use the selected wallpaper or color preset, including application exports.
 Monolith uses compact overlapping basalt facets at opposing corners and narrow matching facets along both side edges on taller surfaces. All facets use straight engraved seams and true 45-degree cuts. Raised bevel highlights, dark cut edges and narrow offset contact shadows give the facets depth under an upper-left light source. A lit upper rim and shaded lower lip add thickness to the slab without expanding the pattern coverage. Flat palette-derived fills give each plane a hard edge. Fine static mineral stipple and sparse 45-degree tool marks add a low-contrast stone texture across the face; inset surfaces use lighter stipple without tool marks. Grain positions are deterministic and sample counts are bounded on large surfaces. Facets scale down for bars and panes and stay out of the center.
 Blueprint uses square corners, wire controls, major and minor drafting grids, perimeter measurement ticks, registration targets and inset frames.
-Terminal Hardware uses double machined bezels, cooling vents, slotted screws, recessed display scanlines and raised mechanical controls.
+Terminal Hardware uses a single inset machined bezel, a subtle brushed upper highlight, sparse cooling vents on larger housings and raised mechanical controls. Inner surfaces remain quiet without scanline texture.
 Their fonts are Noto Sans, JetBrains Mono and DejaVu Sans Mono respectively.
 Botanical Archive has been removed. Saved selections of removed styles fall back through normal configuration validation.
 
@@ -73,7 +73,7 @@ Glass Vault follows the corner-radius setting: clamps, inset seams and the lower
 
 Every theme now follows the shared corner-radius setting. Inset frame lines use concentric radii; canvas decorations repaint during changes, and corner brackets and attachment points follow the actual clipped surface geometry.
 
-Terminal Hardware uses concentric bezel grooves and recessed cooling louvers. These details stay at the perimeter, adapt to the shared corner radius and remain static.
+Terminal Hardware uses a single inset bezel and a compact bank of four cooling vents on larger housings. These details stay at the perimeter, adapt to the shared corner radius and remain static.
 
 Architectural refinement: Suspended Film now uses floating offset glass sheets and contact-shadow edges, replacing tension cables and bindings. Monolith uses crisp angular basalt facets and straight engraved seams. Both preserve selected colors and radius behavior; Terminal Hardware remains unchanged.
 
@@ -89,7 +89,7 @@ All three preserve selected semantic action colors, readable centers, compositor
 
 ## Material detail refinement
 
-The remaining nine themes share the same level of material detail as Canopy, Orbital and Metropolis. Glass Vault adds refractive grazing bands behind its rounded clamps. Radar Station adds soft scope illumination and radial divisions to its etched bearing scales. Suspended Film separates floating sheets with curved grazing reflections. Monolith keeps a clean center with hard-edged angular basalt facets at opposing corners. Blueprint includes a small architectural truss drawing within its ruled sheet. Terminal Hardware adds brushed upper-bezel lines and recessed panel seams. Frosted Glass grows branching crystals from the upper rim. Tinted layers fading colored-glass planes at its upper edge. Clear Glass keeps restrained grazing reflections and a lower meniscus.
+The remaining nine themes share the same level of material detail as Canopy, Orbital and Metropolis. Glass Vault adds refractive grazing bands behind its rounded clamps. Radar Station adds soft scope illumination and radial divisions to its etched bearing scales. Suspended Film separates floating sheets with curved grazing reflections. Monolith keeps a clean center with hard-edged angular basalt facets at opposing corners. Blueprint includes a small architectural truss drawing within its ruled sheet. Terminal Hardware keeps a soft brushed upper-bezel highlight. Frosted Glass grows branching crystals from the upper rim. Tinted layers fading colored-glass planes at its upper edge. Clear Glass keeps restrained grazing reflections and a lower meniscus.
 
 Details use selected semantic palette colors and static geometry. Glass layers clip to the shared rounded frame; inset surfaces retain simpler decoration. Clear Glass remains the final entry. No theme imposes a new palette, and native application export colors remain derived from the selected palette.
 
@@ -119,7 +119,7 @@ Glass Vault bar surfaces use a shallow continuous rim and a narrow upper sheen, 
 
 Monolith, Blueprint and Terminal Hardware carry their material treatments into bars as well as panels. Monolith has a plain center and sharp 45-degree corner facets with flat palette-derived fills. Blueprint's major and minor rules fade beneath the content and strengthen toward the sheet edges. Terminal Hardware adds a brushed upper shoulder inside its clipped housing. These finishes remain static, preserve semantic colors and share the same treatment in shell, assistant and media surfaces.
 
-Monolith uses static angular basalt facets and straight 45-degree seams at opposing corners, leaving text areas clear. Terminal Hardware uses recessed rack mounting slots, cooling louvers, diagonal grip cuts and a segmented lower retention rail. Their surface geometry remains distinct at compact bar sizes; decorations stay at the perimeter and follow the selected palette and rounded clipping frame.
+Monolith uses static angular basalt facets and straight 45-degree seams at opposing corners, leaving text areas clear. Terminal Hardware uses a single inset bezel and sparse cooling vents; repeated rack slots, grip cuts and segmented retention rails are omitted to reduce clutter. Their surface geometry remains distinct at compact bar sizes; decorations stay at the perimeter and follow the selected palette and rounded clipping frame.
 
 Canopy keeps uninterrupted fabric hems: upper support ribs and the randomized assistant header’s short vertical attachment marks are removed. Fabric silhouettes, soft shading and the stable variation per opening are preserved.
 
