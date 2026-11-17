@@ -582,7 +582,7 @@ ClippingRectangle {
                 if(finish === "canopy"){
                     // Translucent fabric drapes use the selected palette.
                     const fabric=a=>Qt.rgba(accent.r*0.65+secondaryAccent.r*0.35,accent.g*0.65+secondaryAccent.g*0.35,accent.b*0.65+secondaryAccent.b*0.35,a);
-                    // Offset suspended folds with broad grazing light and soft contact shadows.
+                    // Taut diagonal fabric sails with folded tips, grazing light and soft shadows.
                     function drapedCanopy(depth, shape) {
                         const split=0.39+(shape%4)*0.055;
                         const glow=ctx.createLinearGradient(0,0,width,depth);
@@ -597,10 +597,12 @@ ClippingRectangle {
                             function drape(offset) {
                                 ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(width,0);
                                 ctx.lineTo(width,edge+offset);
-                                ctx.bezierCurveTo(width*0.87,reach*(0.90-layer*0.12)+offset,
-                                    width*(pinch+0.12),reach*0.96+offset,width*pinch,reach*0.20+offset);
-                                ctx.bezierCurveTo(width*(pinch-0.12),reach*1.16+offset,
-                                    width*0.10,reach*(0.87+layer*0.08)+offset,0,edge+offset);
+                                // Long diagonal hems meet at a crisp folded tip, without scallops.
+                                ctx.lineTo(width*(pinch+0.16),reach*0.58+offset);
+                                ctx.lineTo(width*pinch,reach*0.88+offset);
+                                ctx.lineTo(width*(pinch+0.055),reach*0.55+offset);
+                                ctx.bezierCurveTo(width*(pinch-0.10),reach*0.54+offset,
+                                    width*0.12,reach*0.32+offset,0,edge+offset);
                                 ctx.closePath();
                             }
                             // Broad, fading contact shadow separates the suspended sheets.
