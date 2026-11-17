@@ -106,3 +106,9 @@ calibre
 
 # Kokoro voice and ONNX timing setup use an isolated Python environment.
 python-pip
+
+# Starwake native Wayland pointer confinement build
+qt6-base
+qt6-declarative
+wayland
+wayland-protocols

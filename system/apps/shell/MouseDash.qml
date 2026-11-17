@@ -209,11 +209,13 @@ ShellRoot {
             nearMisses = 0; comboUntil = 0; notice = ""; noticeUntil = 0;
         }
         function start(x, y) {
-            reset(); logOpen = false; playerX = x / arena.width; playerY = y / arena.height;
+            reset(); logOpen = false; playerX = Math.max(12, Math.min(arena.width - 12, x)) / arena.width; playerY = Math.max(12, Math.min(arena.height - 12, y)) / arena.height;
             trailClock = 0; phase = "playing";
             arena.forceActiveFocus();
         }
         function movePlayer(x, y) {
+            x = Math.max(12, Math.min(arena.width - 12, x));
+            y = Math.max(12, Math.min(arena.height - 12, y));
             const fromX = playerX * arena.width, fromY = playerY * arena.height;
             const hit = Game.contact(enemies, fromX, fromY, x, y, playerRadius);
             const pickup = pickupTarget && Game.sweptHit([pickupTarget], fromX, fromY, x, y, playerRadius);
@@ -306,6 +308,8 @@ ShellRoot {
             HoverHandler { id: cursorPosition }
             StyledRect {
                 id: arena
+                objectName: "starwakeArena"
+                property bool capturePointer: window.phase === "playing"
                 anchors.fill: parent
                 variant: "common"
                 radius: Styling.radius(0)
@@ -707,7 +711,7 @@ ShellRoot {
                     }
                     StyledText {
                         Layout.fillWidth: true; horizontalAlignment: Text.AlignHCenter
-                        text: "Follow the gap markers · Collect stars · Esc pauses"; font.pixelSize: 10; opacity: 0.45
+                        text: "Pointer stays in arena · Esc pauses and releases it"; font.pixelSize: 10; opacity: 0.45
                     }
                 }
             }

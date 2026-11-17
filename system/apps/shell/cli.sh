@@ -127,6 +127,8 @@ restart_rebos_shell() {
 
 case "${1:-}" in
 starwake|mousedash)
+	pointer_library=$(bash "${SCRIPT_DIR}/scripts/build_starwake_pointer.sh") || exit 1
+	export LD_PRELOAD="$pointer_library${LD_PRELOAD:+:$LD_PRELOAD}"
 	exec "$QS_BIN" -n -p "${SCRIPT_DIR}/MouseDash.qml"
 	;;
 update)
