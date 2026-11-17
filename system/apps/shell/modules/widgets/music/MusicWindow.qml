@@ -43,10 +43,8 @@ Window {
     property var tracks: []
     property var favorites: []
     property var playlists: []
-    readonly property var libraryPlaylists: playlists.filter(p => !p.mix)
-    readonly property var downloadedMixes: playlists.filter(p => p.mix)
     property var folders: []
-    property string page: "Home"
+    property string page: "Albums"
     property string query: ""
     property string detail: ""
     property string side: "Queue"
@@ -62,11 +60,6 @@ Window {
     readonly property bool playing: player.playbackState === MediaPlayer.PlayingState
     readonly property var shownTracks: {
         let list = tracks;
-        if (page === "Downloaded Mixes") {
-            const paths = new Set();
-            downloadedMixes.forEach(p => p.paths.forEach(path => paths.add(path)));
-            list = list.filter(t => paths.has(t.path));
-        }
         if (page === "Favorites") list = list.filter(t => favorites.indexOf(t.path) >= 0);
         if (page === "Album") list = list.filter(t => t.album + "\n" + t.artist === detail).slice().sort((a,b) => a.number - b.number);
         if (page === "Artist") list = list.filter(t => t.artist === detail);
@@ -166,7 +159,7 @@ Window {
         queue = queue.concat([track]);
     }
     function cardTracks(kind, key) {
-        if (kind === "Playlists" || kind === "Downloaded Mixes") {
+        if (kind === "Playlists") {
             const playlist = playlists.find(p => p.id === key);
             return playlist ? playlist.paths.map(path => tracks.find(t => t.path === path)).filter(Boolean) : [];
         }
@@ -253,8 +246,8 @@ Window {
         onErrorOccurred: (error, errorString) => { root.notice = errorString; }
     }
     Timer { interval: 500; running: root.playing; repeat: true; onTriggered: root.sync() }
-    Shortcut { sequence: "Space"; enabled: root.immersive || (root.page !== "Downloads" && root.page !== "Spotify playlists" && root.page !== "Previews" && !search.inputActiveFocus && !playlistName.inputActiveFocus); onActivated: root.toggle() }
-    Shortcut { sequence: "Ctrl+F"; enabled: root.page !== "Downloads" && root.page !== "Spotify playlists" && root.page !== "Previews"; onActivated: search.focusInput() }
+    Shortcut { sequence: "Space"; enabled: root.immersive || (root.page !== "Downloads" && root.page !== "Spotify playlists" && !search.inputActiveFocus && !playlistName.inputActiveFocus); onActivated: root.toggle() }
+    Shortcut { sequence: "Ctrl+F"; enabled: root.page !== "Downloads" && root.page !== "Spotify playlists"; onActivated: search.focusInput() }
     Shortcut { sequence: "F11"; onActivated: root.toggleFullscreen() }
     Shortcut { sequence: "Escape"; onActivated: { if (root.immersive) root.toggleFullscreen(); else GlobalStates.musicWindowVisible = false; } }
 
@@ -327,14 +320,15 @@ Window {
                     Flow {
                         id: navigationTabs
                         objectName: "music-navigation-tabs"
-                        readonly property int tabCount: 11
+                        readonly property int tabCount: navigationModel.length
+                        readonly property var navigationModel: ["Songs", "Albums", "Artists", "Favorites", "Playlists", "Spotify playlists", "Downloads", "Now playing"]
                         readonly property int rowCount: Math.max(1, Math.ceil(tabCount * (Styling.spacing(112) + spacing) / Math.max(1, width + spacing)))
                         readonly property int columns: Math.ceil(tabCount / rowCount)
                         readonly property int lastRowCount: tabCount % columns || columns
                         Layout.fillWidth: true
                         spacing: Styling.spacing(6)
                         Repeater {
-                            model: ["Home", "Songs", "Albums", "Artists", "Favorites", "Playlists", "Downloaded Mixes", "Spotify playlists", "Previews", "Downloads", "Now playing"]
+                            model: navigationTabs.navigationModel
                             ThemeButton {
                                 required property string modelData
                                 required property int index
@@ -352,7 +346,7 @@ Window {
             RowLayout {
                 Layout.fillWidth: true; Layout.fillHeight: true; spacing: Styling.spacing(16)
                 ColumnLayout {
-                    visible: root.page !== "Downloads" && root.page !== "Spotify playlists" && root.page !== "Previews" && (root.width >= 1120 || root.page !== "Now playing")
+                    visible: root.page !== "Downloads" && root.page !== "Spotify playlists" && (root.width >= 1120 || root.page !== "Now playing")
                     Layout.fillWidth: true; Layout.fillHeight: true; spacing: 14
                     RowLayout {
                         Layout.fillWidth: true
@@ -369,11 +363,11 @@ Window {
                     // Album shelves and artist cards follow the downloaded reference's library layout.
                     GridView {
                         id: cards
-                        visible: ["Home","Albums","Artists","Playlists","Downloaded Mixes"].includes(root.page)
+                        visible: ["Albums","Artists","Playlists"].includes(root.page)
                         Layout.fillWidth: true; Layout.fillHeight: true; clip: true
                         cellWidth: Math.max(160, Math.floor(width/Math.max(1,Math.floor(width/190))))
                         cellHeight: cellWidth + 62
-                        model: root.page === "Artists" ? root.artists : (root.page === "Playlists" || root.page === "Downloaded Mixes") ? (root.page === "Downloaded Mixes" ? root.downloadedMixes : root.libraryPlaylists).map(p => ({key:p.id,title:p.name,subtitle:(p.mix ? p.sourceName + " · " : "") + p.paths.length + " songs",art:root.tracks.find(t=>t.path === p.paths[0])?.art || ""})) : root.albums
+                        model: root.page === "Artists" ? root.artists : (root.page === "Playlists") ? root.playlists.map(p => ({key:p.id,title:p.name,subtitle:(p.mix ? p.sourceName + " · " : "") + p.paths.length + " songs",art:root.tracks.find(t=>t.path === p.paths[0])?.art || ""})) : root.albums
                         delegate: Item {
                             id: card
                             required property var modelData
@@ -394,13 +388,13 @@ Window {
                                 }
                                 ThemeButton {
                                     Layout.fillWidth: true; text: card.modelData.title
-                                    onClicked: root.navigate(root.page === "Artists" ? "Artist" : (root.page === "Playlists" || root.page === "Downloaded Mixes") ? "Playlist" : "Album",card.modelData.key)
+                                    onClicked: root.navigate(root.page === "Artists" ? "Artist" : (root.page === "Playlists") ? "Playlist" : "Album",card.modelData.key)
                                 }
                                 StyledText { Layout.fillWidth: true; text: card.modelData.subtitle; elide: Text.ElideRight; color: Colors.overSurfaceVariant; font.pixelSize: Styling.fontSize(-2) }
                             }
                         }
                         ScrollBar.vertical: ScrollBar {}
-                        StyledText { anchors.centerIn: parent; width: parent.width-48; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap; visible: cards.count === 0; text: root.busy ? "Scanning music…" : root.page === "Downloaded Mixes" ? "No downloaded mixes yet.\nDownload a mix from Spotify playlists to see it here." : root.page === "Playlists" ? "Create a playlist from the queue below." : "No music found.\nAdd a folder or change the search."; color: Colors.overSurfaceVariant }
+                        StyledText { anchors.centerIn: parent; width: parent.width-48; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap; visible: cards.count === 0; text: root.busy ? "Scanning music…" : root.page === "Playlists" ? "Create a playlist from the queue below or download a mix from Spotify playlists." : "No music found.\nAdd a folder or change the search."; color: Colors.overSurfaceVariant }
                     }
                     ListView {
                         id: songs
@@ -431,7 +425,6 @@ Window {
                 }
                 DailyMixesPane {
                     id: dailyMixes
-                    previewOnly: root.page === "Previews"
                     importedPlaylists: root.playlists
                     localTracks: root.tracks
                     currentPath: root.current?.path || ""
@@ -445,7 +438,7 @@ Window {
                     onDownloadRequested: mix => root.request("mixes_download", {uri: mix.uri, version: mix.version}, data => {
                         if (downloads.prepareMix(data)) root.navigate("Downloads");
                     })
-                    visible: root.page === "Spotify playlists" || root.page === "Previews"
+                    visible: root.page === "Spotify playlists"
                     Layout.fillWidth: true; Layout.fillHeight: true
                     onRequested: (cmd, args, callback) => root.request(cmd, args, callback)
                 }
@@ -456,7 +449,7 @@ Window {
                     onCompleted: root.scan()
                 }
                 StyledRect {
-                    visible: root.page !== "Downloads" && root.page !== "Spotify playlists" && root.page !== "Previews" && (root.width >= 1120 || root.page === "Now playing")
+                    visible: root.page !== "Downloads" && root.page !== "Spotify playlists" && (root.width >= 1120 || root.page === "Now playing")
                     Layout.fillWidth: root.width < 1120
                     Layout.preferredWidth: 280; Layout.fillHeight: true; variant: "pane"
                     ColumnLayout {

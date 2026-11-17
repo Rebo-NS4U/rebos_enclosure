@@ -70,12 +70,21 @@ def session():
                         {id: "manual", name: "My playlist", paths: [music.tracks[1].path]},
                         {id: "mix", name: "Enclosure Mix", sourceName: "Daily Mix 1", mix: true, paths: [music.tracks[0].path]}
                     ];
-                    const downloadedTab = findItem(music.contentItem, "music-navigation-Downloaded Mixes");
+                    for (const removed of ["Home", "Previews", "Downloaded Mixes"]) {
+                        if (findItem(music.contentItem, "music-navigation-" + removed)) { console.error("REDUNDANT_MUSIC_TAB"); Qt.exit(1); }
+                    }
+                    const mode = findItem(music.contentItem, "music-preview-mode");
+                    const mixesPane = findItem(music.contentItem, "music-daily-mixes");
+                    mode.clicked();
+                    if (!mixesPane.previewOnly || mixesPane.section !== "imported") { console.error("PREVIEW_MODE_FAILED"); Qt.exit(1); }
+                    mode.clicked();
+                    if (mixesPane.previewOnly || mixesPane.section !== "current") { console.error("BROWSE_MODE_FAILED"); Qt.exit(1); }
+                    const downloadedTab = findItem(music.contentItem, "music-navigation-Playlists");
                     if (!downloadedTab) { console.error("DOWNLOADED_MIX_NAV_MISSING"); Qt.exit(1); }
                     downloadedTab.clicked();
-                    if (music.page !== "Downloaded Mixes" || music.downloadedMixes.length !== 1 || music.libraryPlaylists.length !== 1 || music.shownTracks.length !== 1 || music.cardTracks(music.page, "mix")[0].path !== music.tracks[0].path) { console.error("DOWNLOADED_MIX_SECTION_FAILED"); Qt.exit(1); }
+                    if (music.page !== "Playlists" || music.playlists.length !== 2 || music.shownTracks.length !== 2 || music.cardTracks(music.page, "mix")[0].path !== music.tracks[0].path) { console.error("DOWNLOADED_MIX_SECTION_FAILED"); Qt.exit(1); }
                     music.playlists = previousPlaylists;
-                    music.navigate("Home");
+                    music.navigate("Albums");
                     music.volume = 0;
                     const largeQueue = Array.from({length: 150}, (_, i) => Object.assign({}, music.tracks[i % 2], {title: "Queue song " + i}));
                     music.play(largeQueue, 0);
@@ -94,7 +103,7 @@ def session():
                     if (music.currentIndex < 0 || music.currentIndex >= music.queue.length) { console.error("MUSIC_RANDOM_START_FAILED"); Qt.exit(1); }
                     music.play(music.queue, 0);
                     if (music.currentIndex !== 0) { console.error("MUSIC_EXPLICIT_START_FAILED"); Qt.exit(1); }
-                    if (music.page !== "Home" || music.queue.length !== 2) { console.error("MUSIC_CARD_PLAY_FAILED"); Qt.exit(1); }
+                    if (music.page !== "Albums" || music.queue.length !== 2) { console.error("MUSIC_CARD_PLAY_FAILED"); Qt.exit(1); }
                     phase = 1;
                 } else if (phase === 1 && music.playing) {
                     if (music.lyricLines.length !== 2 || music.estimatedTiming) { console.error("MUSIC_LYRICS_FAILED"); Qt.exit(1); }
@@ -213,7 +222,7 @@ def session():
                     const previewCard = findItem(music.contentItem,"music-mix-preview-card");
                     const preview = findItem(music.contentItem,"music-mix-preview");
                     const pos = previewCard.mapToItem(mixes,0,0);
-                    if (mixes.wide || pos.x < 0 || pos.y < 0 || pos.x+previewCard.width > mixes.width+1 || pos.y+previewCard.height > mixes.height+1 || preview.height < 100) { console.error("MIX_NARROW_LAYOUT_FAILED"); Qt.exit(1); return; }
+                    if (mixes.wide || pos.x < 0 || pos.y < 0 || pos.x+previewCard.width > mixes.width+1 || pos.y+previewCard.height > mixes.height+1 || preview.height < 100) { console.error("MIX_NARROW_LAYOUT_FAILED " + [pos.x,pos.y,previewCard.width,previewCard.height,mixes.width,mixes.height,preview.height]); Qt.exit(1); return; }
                     console.log("MIX_LAYOUT_PASSED");
                     console.log("MIX_PREVIEW_AND_DOWNLOAD_PASSED");
                     console.log("MUSIC_ACCEPTANCE_PASSED tracks=" + music.tracks.length + " queue=" + music.queue.length);

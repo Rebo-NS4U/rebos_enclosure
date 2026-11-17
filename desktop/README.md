@@ -598,3 +598,5 @@ The system monitor RAM detail uses proportional set size (PSS) to divide shared 
 The bonsai glass enclosure is flat and front-facing, with a low charcoal base directly beneath the pot foot and no roof or perspective lines. The animation uses 59 columns and 26 rows.
 
 The integrated Sound settings include an optional ten-band output equalizer with Music, Speech, Movies, Gaming, Bass and Treble presets. See [audio equalizer](../docs/AUDIO-EQUALIZER.md) for routing, bypass and verification.
+
+Music navigation uses Songs, Albums, Artists, Favorites, Playlists, Spotify playlists, Downloads and Now playing. Albums is the initial view. Playlists includes downloaded mixes with their source labels; Spotify playlists contains a Previews mode for imported playlist previews.

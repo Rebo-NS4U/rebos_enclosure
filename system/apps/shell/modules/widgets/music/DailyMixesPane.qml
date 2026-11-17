@@ -78,6 +78,7 @@ Item {
         Flow {
             Layout.fillWidth: true
             spacing: Styling.spacing(8)
+            ThemeButton { objectName: "music-preview-mode"; text: root.previewOnly ? "Browse" : "Previews"; checked: root.previewOnly; onClicked: root.previewOnly = !root.previewOnly }
             StyledText { text: root.previewOnly ? "Previews" : "Spotify playlists"; font.bold: true; font.pixelSize: Styling.fontSize(8); height: Math.max(36, Styling.spacing(40)); verticalAlignment: Text.AlignVCenter }
             ThemeButton {
                 objectName: "music-mixes-update"
@@ -88,7 +89,6 @@ Item {
             }
             ThemeButton { visible: !root.previewOnly; text: "Made for You ↗"; Accessible.name: "Open Made for You in Spotify"; onClicked: Qt.openUrlExternally("spotify:genre:made-for-x-hub") }
         }
-        StyledText { visible: !root.previewOnly; text: "Preview any Spotify playlist"; font.bold: true }
         RowLayout {
             visible: !root.previewOnly
             Layout.fillWidth: true
