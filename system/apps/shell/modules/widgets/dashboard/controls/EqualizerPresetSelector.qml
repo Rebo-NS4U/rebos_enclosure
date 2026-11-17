@@ -9,6 +9,7 @@ ColumnLayout {
     id: root
     objectName: "audio-eq-presets"
     spacing: Styling.spacing(6)
+    property bool showEqActions: false
     property string category: AudioEqualizer.presetGroups.Other.includes(AudioEqualizer.preset) ? "Other" : "Music"
     readonly property var choices: AudioEqualizer.presetGroups[category]
     readonly property int cardsPerPage: Math.max(1, Math.min(3, Math.floor((pages.width + Styling.spacing(6)) / Styling.spacing(145))))
@@ -43,23 +44,47 @@ ColumnLayout {
         }
     }
     Component.onCompleted: Qt.callLater(revealSelection)
-    RowLayout {
+    Flow {
         Layout.fillWidth: true
         spacing: Styling.spacing(6)
         ThemeButton {
+            id: enableButton
+            objectName: "audio-eq-compact-toggle"
+            visible: root.showEqActions
+            text: AudioEqualizer.enabled ? "EQ on" : "EQ off"
+            Accessible.name: "Output equalizer " + (AudioEqualizer.enabled ? "enabled" : "bypassed")
+            highlighted: AudioEqualizer.enabled
+            enabled: AudioEqualizer.initialized
+            onClicked: AudioEqualizer.setEnabled(!AudioEqualizer.enabled)
+        }
+        ThemeButton {
+            id: musicButton
             objectName: "audio-eq-category-Music"
             text: "Music"
             checked: root.category === "Music"
             onClicked: root.category = "Music"
         }
         ThemeButton {
+            id: otherButton
             objectName: "audio-eq-category-Other"
             text: "Other"
             checked: root.category === "Other"
             onClicked: root.category = "Other"
         }
+        ThemeButton {
+            id: resetButton
+            objectName: "audio-eq-compact-reset"
+            visible: root.showEqActions
+            text: "Reset"
+            Accessible.name: "Reset equalizer to flat"
+            onClicked: AudioEqualizer.selectPreset("Flat")
+        }
         StyledText {
-            Layout.fillWidth: true
+            width: Math.max(Styling.spacing(80), parent.width - musicButton.width - otherButton.width
+                - (root.showEqActions ? enableButton.width + resetButton.width : 0)
+                - parent.spacing * (root.showEqActions ? 4 : 2))
+            height: musicButton.height
+            verticalAlignment: Text.AlignVCenter
             text: AudioEqualizer.preset + " · " + (pages.currentIndex + 1) + "/" + root.pageCount
             horizontalAlignment: Text.AlignRight
             elide: Text.ElideRight

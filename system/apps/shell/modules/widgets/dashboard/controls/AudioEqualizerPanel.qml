@@ -26,21 +26,6 @@ SettingsGroup {
         }
         ThemeButton { text: "Reset to flat"; onClicked: AudioEqualizer.selectPreset("Flat") }
     }
-    RowLayout {
-        visible: root.compact
-        Layout.fillWidth: true
-        spacing: Styling.spacing(6)
-        ThemeButton {
-            objectName: "audio-eq-compact-toggle"
-            text: AudioEqualizer.enabled ? "EQ on" : "EQ off"
-            Accessible.name: "Output equalizer " + (AudioEqualizer.enabled ? "enabled" : "bypassed")
-            highlighted: AudioEqualizer.enabled
-            enabled: AudioEqualizer.initialized
-            onClicked: AudioEqualizer.setEnabled(!AudioEqualizer.enabled)
-        }
-        Item { Layout.fillWidth: true }
-        ThemeButton { text: "Reset"; Accessible.name: "Reset equalizer to flat"; onClicked: AudioEqualizer.selectPreset("Flat") }
-    }
     StyledText {
         Layout.fillWidth: true
         wrapMode: Text.Wrap
@@ -53,6 +38,7 @@ SettingsGroup {
     }
     EqualizerPresetSelector {
         id: presetSelector
+        showEqActions: root.compact
         Layout.fillWidth: true
     }
     StyledText {
