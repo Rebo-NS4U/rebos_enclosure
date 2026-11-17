@@ -41,7 +41,7 @@ for (let d=0; d<4; d++) for (let i=0; i<100; i++) {
     assert(target.y >= target.r && target.y <= 480-target.r);
     assert(Math.hypot(target.vx,target.vy) <= 85);
     assert(!game.stepTarget(target,4,480,480).missed);
-    assert(game.stepTarget(target,10,480,480).missed);
+    assert(game.stepTarget(target,12,480,480).missed);
     assert(game.sweptHit([target],target.x,target.y,target.x,target.y,0));
     assert(game.sweptHit([target],target.x,target.y,target.x+target.r,target.y,0));
     assert(!game.sweptHit([target],target.x+target.r+1,target.y,target.x+target.r+1,target.y,0));
@@ -85,7 +85,7 @@ assert(game.objectives(1000,1000,1000).every(o=>o.progress===o.goal));
 for (const [points,medal,next] of [[0,'UNRANKED',1000],[999,'UNRANKED',1000],[1000,'BRONZE',3000],[2999,'BRONZE',3000],[3000,'SILVER',6000],[5999,'SILVER',6000],[6000,'GOLD',0]]) {
  assert.equal(game.medal(points),medal); assert.equal(game.nextMedal(points),next);
 }
-assert.equal(game.scoreKey('survival',1),'drift:survival1');
+assert.equal(game.scoreKey('survival',1),'tailored:survival1');
 assert.notEqual(game.scoreKey('gauntlet',1),game.scoreKey('survival',1));
 console.log('Career objectives, medals and new-rules records: PASS');
 
@@ -93,7 +93,7 @@ console.log('Career objectives, medals and new-rules records: PASS');
 vm.runInContext('{ let seed=91; Math.random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;}; }',game);
 for (let d=0;d<4;d++) for (let i=0;i<100;i++) for(const [px,py] of [[12,12],[240,240],[468,468],[80,400]]) {
  const burst=game.spawnBurst(480,480,d,300,px,py);
- assert(burst.length>=1 && burst.length<=(d===0?3:4));
+ assert(burst.length>=(d===3?0:1) && burst.length<=5);
  for(const e of burst) {
   assert(e.x-e.r>=0 && e.x+e.r<=480 && e.y-e.r>=0 && e.y+e.r<=480);
   assert(Math.hypot(e.vx,e.vy)<=[225,290,325,350][d]+1e-8);
@@ -101,7 +101,7 @@ for (let d=0;d<4;d++) for (let i=0;i<100;i++) for(const [px,py] of [[12,12],[240
   const hit=game.contact([{x:px,y:py,r:11}],e.x,e.y,e.x+e.vx*10,e.y+e.vy*10,e.r);
   if(hit) assert(hit.t*10>=0.55-1e-8);
  }
- const interval=game.spawnInterval(d,300);assert(interval>0.1 && interval<1.1);
+ const interval=game.spawnInterval(d,300);assert(interval>0.1 && interval<1.7);
 }
 // Timing and entry geometry vary; there is no repeating gate/fan/train order.
 const signatures=new Set(),timings=new Set();
@@ -111,5 +111,40 @@ for(let i=0;i<40;i++) {
 }
 assert.equal(signatures.size,40); assert.equal(timings.size,40);
 vm.runInContext('Math.random=()=>0.5',game);
-for(let d=0;d<4;d++) assert(game.spawnInterval(d,60)<game.spawnInterval(d,0));
+assert(game.spawnInterval(1,60)<game.spawnInterval(1,0));
 console.log('Visible irregular bursts, reaction margins, varying geometry/timing and capped pressure: PASS');
+
+// Difficulty identity and endless boss lifecycle, including every boundary.
+assert.equal(game.roundDuration('gauntlet',3),0);
+assert(!game.roundComplete('gauntlet',100000,3));
+assert.equal(game.scoreKey('survival',3),game.scoreKey('gauntlet',3));
+assert.equal(game.bossState(0).phase,'warning');
+assert.equal(game.bossState(3).attack,0);
+assert.equal(game.bossState(12).attack,1);
+assert.equal(game.bossState(21).attack,2);
+assert.equal(game.bossState(30).phase,'recovery');
+assert.equal(game.bossClears(29.99),0);
+assert.equal(game.bossClears(30),1);
+assert.equal(game.bossClears(36),1);
+assert.equal(game.bossState(36).kind,1);
+assert.equal(game.bossState(72).kind,2);
+assert.equal(game.bossState(108).level,1);
+assert.equal(game.bossClears(102),3);
+for (const t of [0,2.99,30,35.99,36]) assert.equal(game.spawnBurst(480,480,3,t,240,240).length,0);
+for (const t of [3,12,21,39,48,57,75,84,93,111,10011]) {
+ const b=game.spawnBurst(480,480,3,t,240,240);
+ assert(b.length>=3 && b.length<=5);
+ for(const e of b) {
+  assert(Number.isFinite(e.vx) && Number.isFinite(e.vy));
+  const hit=game.contact([{x:240,y:240,r:11}],e.x,e.y,e.x+e.vx*10,e.y+e.vy*10,e.r);
+  if(hit) assert(hit.t*10>=0.55-1e-8);
+ }
+}
+assert.equal(game.spawnBurst(480,480,2,8,240,240).length,0);
+assert.equal(game.spawnBurst(480,480,2,12,240,240).length,3);
+const easy=game.spawnBurst(480,480,0,100,240,240);
+assert.equal(easy.length,1);
+assert(Math.abs(easy[0].vx)<1e-8 || Math.abs(easy[0].vy)<1e-8);
+const easyStar=game.spawnTarget(480,480,0);
+assert.equal(Math.hypot(easyStar.vx,easyStar.vy),45);
+console.log('Distinct difficulty rules and endless boss lifecycle: PASS');

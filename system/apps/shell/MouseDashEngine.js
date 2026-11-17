@@ -1,7 +1,7 @@
 // Pure game mechanics; coordinates and speeds are logical pixels.
 function playerRadius(elapsed) { return Math.min(11, 9 + elapsed * 0.025); }
-function roundDuration(mode) { return mode === "gauntlet" ? 60 : 0; }
-function roundComplete(mode, elapsed) { return roundDuration(mode) > 0 && elapsed >= roundDuration(mode); }
+function roundDuration(mode, difficulty) { return difficulty === 3 ? 0 : mode === "gauntlet" ? 60 : 0; }
+function roundComplete(mode, elapsed, difficulty) { return roundDuration(mode, difficulty) > 0 && elapsed >= roundDuration(mode, difficulty); }
 // First contact along a segment, including fast crossings with clear endpoints.
 function contact(enemies, x, y, nx, ny, radius = 9) {
     const dx = nx - x, dy = ny - y, a = dx * dx + dy * dy;
@@ -50,7 +50,7 @@ function step(enemies, dt, px, py, w, h, radius = 9) {
 
 // One slow, harmless touch target at a time. Keep its lane clear of the HUD.
 function spawnTarget(w, h, difficulty) {
-    const edge = Math.floor(Math.random() * 4), r = 22, speed = 70 + difficulty * 5;
+    const edge = Math.floor(Math.random() * 4), r = 22, speed = difficulty === 0 ? 45 : 70 + difficulty * 5;
     const laneX = w * (0.2 + Math.random() * 0.6), laneY = h * (0.2 + Math.random() * 0.6);
     if (edge === 0) return {x:r+8,y:laneY,r:r,vx:speed,vy:0};
     if (edge === 1) return {x:w-r-8,y:laneY,r:r,vx:-speed,vy:0};
@@ -92,37 +92,68 @@ function objectives(elapsed, stars, grazes) {
 function medal(score) { return score >= 6000 ? "GOLD" : score >= 3000 ? "SILVER" : score >= 1000 ? "BRONZE" : "UNRANKED"; }
 function nextMedal(score) { return score < 1000 ? 1000 : score < 3000 ? 3000 : score < 6000 ? 6000 : 0; }
 // New rules use separate records; older scores remain untouched in settings.
-function scoreKey(mode, difficulty) { return "drift:" + mode + difficulty; }
+function scoreKey(mode, difficulty) { return "tailored:" + (difficulty === 3 ? "boss" : mode) + difficulty; }
 
-// Irregular bursts, not a repeating formation sequence. Every meteor gets its own
-// speed and aim; grouped births sometimes share a patch of the border.
+// Each tier has its own rhythm, targeting rules and collection pressure.
+function difficultyHint(d) {
+    return ["Easy · Relaxed drift: slow straight lanes, long breaks and slower stars.",
+        "Normal · Meteor field: unpredictable angles and aimed bursts.",
+        "Hard · Crossfire: alternating horizontal/vertical volleys, then recovery.",
+        "Extreme · Endless bosses: survive 3 attack phases for a clear bonus. No time limit."][d];
+}
+function bossState(elapsed) {
+    const round = Math.floor(elapsed / 36), time = elapsed % 36;
+    const names = ["THE HUNTER", "TWIN SENTINELS", "THE WEAVER"];
+    return {round:round + 1, name:names[round % 3], kind:round % 3,
+        level:Math.floor(round / 3), phase:time < 3 ? "warning" : time < 30 ? "attack" : "recovery",
+        attack:Math.min(2, Math.max(0, Math.floor((time - 3) / 9))),
+        remaining:time < 3 ? 3-time : time < 30 ? 30-time : 36-time};
+}
+function bossClears(elapsed) { return Math.floor((elapsed + 6) / 36); }
+function encounterLabel(d, elapsed) {
+    if (d === 3) {
+        const b = bossState(elapsed);
+        return "BOSS " + b.round + " · " + b.name + " · " + (b.phase === "attack" ? "PHASE " + (b.attack+1) : b.phase.toUpperCase()) + " · " + Math.ceil(b.remaining) + "s";
+    }
+    if (d === 2) return elapsed % 12 < 8 ? "CROSSFIRE · KEEP A ROUTE OPEN" : "RECOVERY · COLLECT STARS";
+    return d === 0 ? "RELAXED DRIFT" : "METEOR FIELD";
+}
 function spawnInterval(difficulty, elapsed) {
-    const base = Math.max([0.48,0.3,0.24,0.2][difficulty], [0.8,0.55,0.43,0.35][difficulty] - Math.min(90,elapsed)*0.004);
-    return base * (0.7 + Math.random()*0.6);
+    if (difficulty === 0) return 1.15 + Math.random()*0.5;
+    if (difficulty === 2) return 0.42 + Math.random()*0.12;
+    if (difficulty === 3) return Math.max(0.22, 0.52-bossState(elapsed).level*0.035);
+    return Math.max(0.3, 0.55-Math.min(90,elapsed)*0.004)*(0.7+Math.random()*0.6);
 }
 function spawnBurst(w, h, difficulty, elapsed, px, py) {
-    const cap = [225,290,325,350][difficulty];
-    const baseSpeed = Math.min(cap,[175,215,245,270][difficulty]+elapsed*1.2);
-    const count = 1 + Math.floor(Math.random() * (difficulty === 0 ? 3 : 4));
-    const grouped = Math.random() < 0.35;
+    const boss = bossState(elapsed);
+    if (difficulty === 2 && elapsed % 12 >= 8 || difficulty === 3 && boss.phase !== "attack") return [];
+    const cap = [150,290,325,350][difficulty];
+    const baseSpeed = difficulty === 0 ? 110 : Math.min(cap,[110,215,245,230][difficulty]+(difficulty === 3 ? boss.level*12+boss.attack*20 : elapsed*1.2));
+    const count = difficulty === 0 ? 1 : difficulty === 1 ? 1+Math.floor(Math.random()*4) : difficulty === 2 ? 3 : 3+boss.attack;
+    const grouped = difficulty === 0 || difficulty === 2 || difficulty === 3 && boss.kind !== 1 || Math.random()<0.35;
     const sharedLane = 0.1 + Math.random()*0.8;
     const distances = [px,w-px,py,h-py];
-    // Exclude nearby borders rather than materializing hazards on the ship.
     const eligible = [0,1,2,3].filter(edge=>distances[edge]>=Math.min(180,baseSpeed*0.55+35));
-    const edges = eligible.length ? eligible : [distances.indexOf(Math.max.apply(null,distances))];
+    let edges = eligible.length ? eligible : [distances.indexOf(Math.max.apply(null,distances))];
+    if (difficulty === 2 || difficulty === 3 && boss.kind === 1) {
+        const axis = Math.floor(elapsed / (difficulty === 2 ? 2 : 1)) % 2;
+        const preferred = edges.filter(e=>Math.floor(e/2) === axis);
+        if (preferred.length) edges = preferred;
+    }
     const sharedEdge = edges[Math.floor(Math.random()*edges.length)];
     const enemies=[];
     for(let i=0;i<count;i++) {
         const edge = grouped ? sharedEdge : edges[Math.floor(Math.random()*edges.length)];
-        const r = 9+Math.random()*8, vertical=edge>=2, span=vertical ? w : h;
-        const lane = Math.max(r+2, Math.min(span-r-2, grouped ? sharedLane*span+(Math.random()-0.5)*65 : r+2+Math.random()*(span-2*r-4)));
+        const r = difficulty === 0 ? 10 : 9+Math.random()*8, vertical=edge>=2, span=vertical ? w : h;
+        const sweep = difficulty === 3 && boss.kind === 2;
+        const lane = Math.max(r+2, Math.min(span-r-2, sweep ? span*(0.5+0.36*Math.sin(elapsed*1.4+i*0.3)) : grouped ? sharedLane*span+(i-(count-1)/2)*45 : r+2+Math.random()*(span-2*r-4)));
         const x = vertical ? lane : edge===0 ? r+2 : w-r-2;
         const y = vertical ? (edge===2 ? r+2 : h-r-2) : lane;
-        const aimed = Math.random()<0.75;
-        const tx = aimed ? px : w*(0.15+Math.random()*0.7);
-        const ty = aimed ? py : h*(0.15+Math.random()*0.7);
-        const angle = Math.atan2(ty-y,tx-x)+(Math.random()-0.5)*0.65;
-        // At least 550ms before reaching a stationary ship, even without advance cues.
+        const aimed = difficulty === 1 ? Math.random()<0.75 : difficulty === 3 && boss.kind === 0;
+        const tx = aimed ? px : difficulty === 1 ? w*(0.15+Math.random()*0.7) : vertical ? x : w/2;
+        const ty = aimed ? py : difficulty === 1 ? h*(0.15+Math.random()*0.7) : vertical ? h/2 : y;
+        const angle = Math.atan2(ty-y,tx-x)+(aimed ? (i-(count-1)/2)*0.17 : 0);
+        // Visible border births retain at least 550ms reaction time at every tier.
         const safeSpeed = Math.max(40,(distances[edge]-2*r-playerRadius(elapsed)-6)/0.55);
         const speed = Math.min(cap,baseSpeed*(0.8+Math.random()*0.35),safeSpeed);
         enemies.push({x:x,y:y,r:r,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,orbiting:false,spin:Math.random()*360});

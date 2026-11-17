@@ -111,6 +111,7 @@ ShellRoot {
         property real targetBorn: 0
         property var collection: null
         property int targetsCollected: 0
+        property int bossesCleared: 0
         property int score: 0
         property int combo: 0
         property int nearMisses: 0
@@ -160,7 +161,7 @@ ShellRoot {
         property real trailClock: 0
         property bool reducedMotion: false
         readonly property bool locked: phase === "playing" || phase === "paused"
-        readonly property real duration: Game.roundDuration(playMode)
+        readonly property real duration: Game.roundDuration(playMode, difficulty)
         readonly property var modes: [
             {key: "survival", name: "DEEP SPACE", caption: "Endless expedition", hint: "Unpredictable meteor bursts. Chase stars and keep moving."},
             {key: "gauntlet", name: "WARP RUN", caption: "60s · six sectors", hint: "Survive 60 seconds of rising meteor pressure. No fixed wave sequence."}
@@ -195,7 +196,7 @@ ShellRoot {
         }
 
         function reset() {
-            phase = "ready"; elapsed = 0; enemies = []; trail = [];
+            phase = "ready"; elapsed = 0; bossesCleared = 0; enemies = []; trail = [];
             enemyVisuals.clear(); victory = false; death = null;
             pickupTarget = null; targetClock = 0; targetsCollected = 0; collection = null;
             score = 0; combo = 0;
@@ -291,7 +292,11 @@ ShellRoot {
                 else {
                     window.updateTarget(dt);
                     window.updateObjectives();
-                    if (window.phase === "playing" && Game.roundComplete(window.playMode, window.elapsed)) window.finish(true);
+                    if (window.difficulty === 3 && Game.bossClears(window.elapsed) > window.bossesCleared) {
+                        window.bossesCleared = Game.bossClears(window.elapsed);
+                        window.awardPoints(1000, "BOSS " + window.bossesCleared + " SURVIVED");
+                    }
+                    if (window.phase === "playing" && Game.roundComplete(window.playMode, window.elapsed, window.difficulty)) window.finish(true);
                 }
 
             }
@@ -612,7 +617,8 @@ ShellRoot {
                         font.pixelSize: 22; font.bold: true; color: Colors.primary
                     }
                     StyledText {
-                        text: window.playMode === "gauntlet" ? "SECTOR " + Math.min(6, 1 + Math.floor(window.elapsed / 10)) + "/6" : "DEEP SPACE"
+                        Layout.fillWidth: true; wrapMode: Text.WordWrap
+                        text: Game.encounterLabel(window.difficulty, window.elapsed)
                         font.pixelSize: 10; opacity: 0.6
                     }
                     Item { Layout.fillWidth: true }
@@ -699,7 +705,7 @@ ShellRoot {
                         }
                     }
                     StyledText {
-                        Layout.fillWidth: true; text: window.modes[window.modeIndex].hint
+                        Layout.fillWidth: true; text: window.difficulty === 3 ? "Extreme overrides the time limit with an endless boss gauntlet." : window.modes[window.modeIndex].hint
                         font.pixelSize: 11; opacity: 0.65; wrapMode: Text.WordWrap
                     }
                     StyledText { text: "02 / DIFFICULTY"; font.pixelSize: 10; opacity: 0.5; Layout.topMargin: 6 }
@@ -716,6 +722,10 @@ ShellRoot {
                                 onClicked: { window.difficulty = index; window.reset(); }
                             }
                         }
+                    }
+                    StyledText {
+                        Layout.fillWidth: true; text: Game.difficultyHint(window.difficulty)
+                        font.pixelSize: 11; wrapMode: Text.WordWrap; color: Colors.primary
                     }
                     RowLayout {
                         Layout.fillWidth: true
