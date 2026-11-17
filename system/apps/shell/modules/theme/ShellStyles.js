@@ -7,7 +7,7 @@ var styles = [
     {id: "glass-vault", label: "Glass Vault", font: "Noto Sans", description: "Polished glass blocks, soft grazing reflections and restrained rounded clasps."},
     {id: "radar-station", label: "Radar Station", font: "DejaVu Sans", description: "Etched bearing scales, radial divisions and softly illuminated scope glass."},
     {id: "suspended-film", label: "Suspended Film", font: "DejaVu Sans Mono", description: "Suspended glass sheets, curved grazing reflections and separated contact edges."},
-    {id: "monolith", label: "Monolith", font: "Noto Sans", description: "Beveled basalt facets, contact shadows and fine etched mineral grain."},
+    {id: "monolith", label: "Monolith", font: "Noto Sans", description: "Engraved stone with recessed angular channels and fine mineral grain."},
     {id: "blueprint", label: "Blueprint", font: "JetBrains Mono", description: "Architectural drafting sheets, truss details, ruled scales and wire controls."},
     {id: "terminal-hardware", label: "Terminal Hardware", font: "DejaVu Sans Mono", description: "Clean machined bezels, subtle brushed highlights and sparse cooling vents."},
     {id: "frosted", font: "DejaVu Sans Mono", label: "Frosted Glass", description: "Branching frost crystals, etched ice rims, fine grain and soft corner bloom."},

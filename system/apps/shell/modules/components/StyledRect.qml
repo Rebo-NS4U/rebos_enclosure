@@ -872,7 +872,7 @@ ClippingRectangle {
         }
     }
 
-    // Monolith: crisp basalt facets with straight seams and 45-degree cuts.
+    // Monolith: angular incisions engraved into a mineral-grained stone slab.
     Loader {
         anchors.fill: parent
         active: !root.hasFillColor && root.rectOpacity > 0 && (root.styleOverride || Styling.shellStyle) === "monolith"
@@ -934,42 +934,36 @@ ClippingRectangle {
                 ctx.lineWidth=0.8;ctx.strokeStyle=Qt.alpha(pigment,inset?0.045:0.085);
                 if(root.traceThemeFrame(ctx,0.8))ctx.stroke();
                 if(!inset){
-                    // Raised lips: contact shadow below each cut, a bright upper edge,
-                    // and a dark lower edge share one consistent upper-left light source.
-                    function bevel(points){
-                        const lift=outer?2.5:1.4;
+                    // Incised channels: shadowed upper-left walls and a lit lower-right lip.
+                    // All shading stays inside the groove; no floating cast shadow.
+                    function engrave(points){
                         function edge(dx,dy,color,lineWidth){
                             ctx.strokeStyle=color;ctx.lineWidth=lineWidth;ctx.beginPath();
                             ctx.moveTo(points[0][0]+dx,points[0][1]+dy);
                             for(let j=1;j<points.length;j++)ctx.lineTo(points[j][0]+dx,points[j][1]+dy);
                             ctx.stroke();
                         }
-                        edge(lift,lift,Qt.alpha(shadowInk,outer?0.32:0.20),outer?4:2.5);
-                        edge(0.7,0.7,Qt.alpha(shadowInk,0.65),1.5);
-                        edge(-0.6,-0.6,Qt.alpha(pigment,outer?0.30:0.20),0.9);
+                        // Broad dark channel, dark upper wall, then a thin catching edge.
+                        edge(0,0,Qt.alpha(shadowInk,outer?0.52:0.36),outer?3:2);
+                        edge(-0.65,-0.65,Qt.alpha(shadowInk,0.72),1.2);
+                        edge(0.9,0.9,Qt.alpha(pigment,outer?0.25:0.16),0.8);
                     }
-                    // Solid, straight-edged facets with true 45-degree cuts.
+                    // Shallow recessed planes outlined by straight 45-degree carvings.
                     const depth=Math.min(outer?64:28,height*0.36,width*0.30);
                     const reach=Math.min(width*0.48,outer?240:108);
                     for(let i=0;i<3;i++){
                         const d=depth*(1-i*0.27);
                         const run=reach-i*depth*0.46;
-                        ctx.fillStyle=Qt.alpha(accent,outer?0.065:0.04);
+                        ctx.fillStyle=Qt.alpha(shadowInk,outer?0.055:0.035);
                         ctx.beginPath();ctx.moveTo(width-run,0);ctx.lineTo(width,0);
                         ctx.lineTo(width,d);ctx.lineTo(width-run+d,d);
                         ctx.closePath();ctx.fill();
-                        ctx.strokeStyle=Qt.alpha(pigment,outer?0.20:0.12);ctx.lineWidth=0.8;
-                        ctx.beginPath();ctx.moveTo(width-run,0);
-                        ctx.lineTo(width-run+d,d);ctx.lineTo(width,d);ctx.stroke();
-                        bevel([[width-run,0],[width-run+d,d],[width,d]]);
-                        ctx.fillStyle=Qt.alpha(secondaryAccent,outer?0.055:0.035);
+                        engrave([[width-run,0],[width-run+d,d],[width,d]]);
+                        ctx.fillStyle=Qt.alpha(shadowInk,outer?0.045:0.025);
                         ctx.beginPath();ctx.moveTo(0,height);ctx.lineTo(run,height);
                         ctx.lineTo(run-d,height-d);ctx.lineTo(0,height-d);
                         ctx.closePath();ctx.fill();
-                        ctx.strokeStyle=Qt.alpha(pigment,outer?0.16:0.10);
-                        ctx.beginPath();ctx.moveTo(run,height);
-                        ctx.lineTo(run-d,height-d);ctx.lineTo(0,height-d);ctx.stroke();
-                        bevel([[run,height],[run-d,height-d],[0,height-d]]);
+                        engrave([[run,height],[run-d,height-d],[0,height-d]]);
                     }
                     // Narrow side facets repeat the corner geometry without filling the face.
                     if(height>100){
@@ -978,20 +972,14 @@ ClippingRectangle {
                         for(let i=0;i<3;i++){
                             const d=side*(1-i*0.27);
                             const a=top+i*side*0.46,b=bottom-i*side*0.46;
-                            ctx.fillStyle=Qt.alpha(accent,outer?0.065:0.04);
+                            ctx.fillStyle=Qt.alpha(shadowInk,outer?0.055:0.035);
                             ctx.beginPath();ctx.moveTo(0,a);ctx.lineTo(d,a+d);
                             ctx.lineTo(d,b-d);ctx.lineTo(0,b);ctx.closePath();ctx.fill();
-                            ctx.strokeStyle=Qt.alpha(pigment,outer?0.20:0.12);
-                            ctx.beginPath();ctx.moveTo(0,a);ctx.lineTo(d,a+d);
-                            ctx.lineTo(d,b-d);ctx.lineTo(0,b);ctx.stroke();
-                            bevel([[0,a],[d,a+d],[d,b-d],[0,b]]);
-                            ctx.fillStyle=Qt.alpha(secondaryAccent,outer?0.055:0.035);
+                            engrave([[0,a],[d,a+d],[d,b-d],[0,b]]);
+                            ctx.fillStyle=Qt.alpha(shadowInk,outer?0.045:0.025);
                             ctx.beginPath();ctx.moveTo(width,a);ctx.lineTo(width-d,a+d);
                             ctx.lineTo(width-d,b-d);ctx.lineTo(width,b);ctx.closePath();ctx.fill();
-                            ctx.strokeStyle=Qt.alpha(pigment,outer?0.16:0.10);
-                            ctx.beginPath();ctx.moveTo(width,a);ctx.lineTo(width-d,a+d);
-                            ctx.lineTo(width-d,b-d);ctx.lineTo(width,b);ctx.stroke();
-                            bevel([[width,a],[width-d,a+d],[width-d,b-d],[width,b]]);
+                            engrave([[width,a],[width-d,a+d],[width-d,b-d],[width,b]]);
                         }
                     }
                 }
