@@ -79,3 +79,6 @@ including existing downloads. Names use the two most frequent artists, with the
 original Daily Mix label and song count beneath each card. Similar names gain a
 readable mix/version label. Folder hashes remain internal; files are not moved.
 Ordinary playlists stay in Playlists; Daily Mixes remains the discovery section.
+
+Click anywhere on a library song row to play or pause it. The favorite and queue
+buttons retain their separate actions.

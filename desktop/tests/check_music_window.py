@@ -31,10 +31,12 @@ def session():
         (home/'Music/1.lrc').write_text('I kept all of your letters in a drawer Now the memories are fading away\nThird untimed line\nLast untimed line')
         qml = '''//@ pragma UseQApplication
     import QtQuick
+    import QtTest
     import Quickshell
     import qs.modules.widgets.music
     import qs.modules.globals
     ShellRoot {
+        TestCase { id: input; when: false }
         MusicWindow { id: music }
         function findItem(item, name) {
             if (item.objectName === name) return item;
@@ -140,6 +142,21 @@ def session():
                     music.play(music.queue, 0);
                     if (music.currentIndex !== 0) { console.error("MUSIC_EXPLICIT_START_FAILED"); Qt.exit(1); }
                     if (music.page !== "Playlists" || music.queue[0].path !== music.tracks[1].path) { console.error("MUSIC_PLAYLIST_CARD_FAILED"); Qt.exit(1); }
+                    music.control({action:"Pause"});
+                    music.navigate("Playlist", "test");
+                    phase = 40;
+                } else if (phase === 40) {
+                    const row = findItem(music.contentItem, "music-track-row-0");
+                    if (!row || row.width < 100) return;
+                    input.mouseClick(row, row.width * 0.45, row.height / 2);
+                    phase = 41;
+                } else if (phase === 41 && music.playing) {
+                    if (music.current.path !== music.playlists[0].paths[0]) { console.error("MUSIC_ROW_CLICK_WRONG_TRACK"); Qt.exit(1); }
+                    const queue = findItem(music.contentItem, "music-track-queue-0");
+                    const length = music.queue.length;
+                    input.mouseClick(queue, queue.width / 2, queue.height / 2);
+                    if (music.queue.length !== length + 1 || !music.playing) { console.error("MUSIC_ROW_QUEUE_CLICK_FAILED"); Qt.exit(1); }
+                    console.log("MUSIC_FULL_ROW_CLICK_PASSED");
                     music.control({action:"Pause"});
                     music.navigate("Downloads");
                     const downloads = findItem(music.contentItem, "music-downloads");

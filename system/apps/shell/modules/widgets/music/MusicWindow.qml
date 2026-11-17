@@ -254,6 +254,7 @@ Window {
     }
     component TrackRow: StyledRect {
         id: row
+        objectName: "music-track-row-" + number
         required property var track
         property int number: 0
         property bool selected: root.current?.path === track.path
@@ -261,8 +262,15 @@ Window {
         signal enqueueRequested()
         width: ListView.view ? ListView.view.width : 0
         height: Styling.spacing(70)
-        variant: selected ? "focus" : "transparent"
+        variant: selected || rowClick.containsMouse ? "focus" : "transparent"
         radius: Styling.radius(0)
+        MouseArea {
+            id: rowClick
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: row.playRequested()
+        }
         RowLayout {
             anchors.fill: parent; anchors.margins: 8; spacing: 12
             ThemeButton { text: row.selected && root.playing ? "Ⅱ" : "▶"; Accessible.name: (row.selected && root.playing ? "Pause " : "Play ") + row.track.title; onClicked: row.playRequested() }
@@ -274,7 +282,7 @@ Window {
             }
             StyledText { text: root.time(row.track.duration*1000); color: Colors.overSurfaceVariant }
             ThemeButton { text: root.favorites.includes(row.track.path) ? "♥" : "♡"; Accessible.name: "Favorite " + row.track.title; onClicked: root.favorite(row.track) }
-            ThemeButton { text: "+"; Accessible.name: "Queue " + row.track.title; onClicked: row.enqueueRequested() }
+            ThemeButton { objectName: "music-track-queue-" + row.number; text: "+"; Accessible.name: "Queue " + row.track.title; onClicked: row.enqueueRequested() }
         }
     }
 
