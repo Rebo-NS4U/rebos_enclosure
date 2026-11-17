@@ -949,8 +949,8 @@ ClippingRectangle {
                         edge(0.9,0.9,Qt.alpha(pigment,outer?0.25:0.16),0.8);
                     }
                     // Shallow recessed planes outlined by straight 45-degree carvings.
-                    const depth=Math.min(outer?64:28,height*0.36,width*0.30);
-                    const reach=Math.min(width*0.48,outer?240:108);
+                    const depth=Math.min(outer?48:22,height*0.26,width*0.24);
+                    const reach=Math.min(width*0.36,outer?180:84);
                     for(let i=0;i<3;i++){
                         const d=depth*(1-i*0.27);
                         const run=reach-i*depth*0.46;
@@ -965,10 +965,11 @@ ClippingRectangle {
                         ctx.closePath();ctx.fill();
                         engrave([[run,height],[run-d,height-d],[0,height-d]]);
                     }
-                    // Narrow side facets repeat the corner geometry without filling the face.
+                    // Short side carvings sit near the other two corners, leaving the middle clear.
                     if(height>100){
-                        const side=Math.min(outer?18:8,width*0.08,height*0.08);
-                        const top=height*0.30,bottom=height*0.70;
+                        const side=Math.min(outer?14:7,width*0.06,height*0.035);
+                        const top=Math.min(Math.max(cornerRadius+4,12),height*0.08);
+                        const bottom=Math.min(top+110,height*0.28);
                         for(let i=0;i<3;i++){
                             const d=side*(1-i*0.27);
                             const a=top+i*side*0.46,b=bottom-i*side*0.46;
@@ -976,10 +977,11 @@ ClippingRectangle {
                             ctx.beginPath();ctx.moveTo(0,a);ctx.lineTo(d,a+d);
                             ctx.lineTo(d,b-d);ctx.lineTo(0,b);ctx.closePath();ctx.fill();
                             engrave([[0,a],[d,a+d],[d,b-d],[0,b]]);
+                            const lowerA=height-b,lowerB=height-a;
                             ctx.fillStyle=Qt.alpha(shadowInk,outer?0.045:0.025);
-                            ctx.beginPath();ctx.moveTo(width,a);ctx.lineTo(width-d,a+d);
-                            ctx.lineTo(width-d,b-d);ctx.lineTo(width,b);ctx.closePath();ctx.fill();
-                            engrave([[width,a],[width-d,a+d],[width-d,b-d],[width,b]]);
+                            ctx.beginPath();ctx.moveTo(width,lowerA);ctx.lineTo(width-d,lowerA+d);
+                            ctx.lineTo(width-d,lowerB-d);ctx.lineTo(width,lowerB);ctx.closePath();ctx.fill();
+                            engrave([[width,lowerA],[width-d,lowerA+d],[width-d,lowerB-d],[width,lowerB]]);
                         }
                     }
                 }
