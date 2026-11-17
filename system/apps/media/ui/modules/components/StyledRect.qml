@@ -838,6 +838,7 @@ ClippingRectangle {
             objectName: "surface-edge-canvas"
             readonly property real cornerRadius: root.effectiveCornerRadius
             readonly property color pigment: root.itemColor
+            readonly property color shadowInk: Qt.darker(Colors.background, 1.8)
             readonly property color accent: Colors.primary
             readonly property color secondaryAccent: Colors.secondary
             readonly property bool outer: root.variant === "bg" || root.variant === "popup" || root.variant === "bar" || root.barSurface
@@ -845,6 +846,7 @@ ClippingRectangle {
             opacity: root.rectOpacity
             onCornerRadiusChanged: requestPaint()
             onPigmentChanged: requestPaint()
+            onShadowInkChanged: requestPaint()
             onAccentChanged: requestPaint()
             onSecondaryAccentChanged: requestPaint()
             onOuterChanged: requestPaint()
@@ -876,10 +878,32 @@ ClippingRectangle {
                         }
                     }
                 }
+                // A lit upper shoulder and shaded lower lip give the slab thickness.
+                const rim=ctx.createLinearGradient(0,0,width*0.25,height);
+                rim.addColorStop(0,Qt.alpha(pigment,inset?0.06:0.26));
+                rim.addColorStop(0.40,Qt.alpha(pigment,0.025));
+                rim.addColorStop(0.75,Qt.alpha(shadowInk,0.08));
+                rim.addColorStop(1,Qt.alpha(shadowInk,inset?0.16:0.48));
+                ctx.strokeStyle=rim;ctx.lineWidth=outer?3:2;
+                if(root.traceThemeFrame(ctx,1.5))ctx.stroke();
                 // A fine rim follows the selected rounded frame.
                 ctx.lineWidth=0.8;ctx.strokeStyle=Qt.alpha(pigment,inset?0.045:0.085);
                 if(root.traceThemeFrame(ctx,0.8))ctx.stroke();
                 if(!inset){
+                    // Raised lips: contact shadow below each cut, a bright upper edge,
+                    // and a dark lower edge share one consistent upper-left light source.
+                    function bevel(points){
+                        const lift=outer?2.5:1.4;
+                        function edge(dx,dy,color,lineWidth){
+                            ctx.strokeStyle=color;ctx.lineWidth=lineWidth;ctx.beginPath();
+                            ctx.moveTo(points[0][0]+dx,points[0][1]+dy);
+                            for(let j=1;j<points.length;j++)ctx.lineTo(points[j][0]+dx,points[j][1]+dy);
+                            ctx.stroke();
+                        }
+                        edge(lift,lift,Qt.alpha(shadowInk,outer?0.32:0.20),outer?4:2.5);
+                        edge(0.7,0.7,Qt.alpha(shadowInk,0.65),1.5);
+                        edge(-0.6,-0.6,Qt.alpha(pigment,outer?0.30:0.20),0.9);
+                    }
                     // Solid, straight-edged facets with true 45-degree cuts.
                     const depth=Math.min(outer?64:28,height*0.36,width*0.30);
                     const reach=Math.min(width*0.48,outer?240:108);
@@ -893,6 +917,7 @@ ClippingRectangle {
                         ctx.strokeStyle=Qt.alpha(pigment,outer?0.20:0.12);ctx.lineWidth=0.8;
                         ctx.beginPath();ctx.moveTo(width-run,0);
                         ctx.lineTo(width-run+d,d);ctx.lineTo(width,d);ctx.stroke();
+                        bevel([[width-run,0],[width-run+d,d],[width,d]]);
                         ctx.fillStyle=Qt.alpha(secondaryAccent,outer?0.055:0.035);
                         ctx.beginPath();ctx.moveTo(0,height);ctx.lineTo(run,height);
                         ctx.lineTo(run-d,height-d);ctx.lineTo(0,height-d);
@@ -900,6 +925,7 @@ ClippingRectangle {
                         ctx.strokeStyle=Qt.alpha(pigment,outer?0.16:0.10);
                         ctx.beginPath();ctx.moveTo(run,height);
                         ctx.lineTo(run-d,height-d);ctx.lineTo(0,height-d);ctx.stroke();
+                        bevel([[run,height],[run-d,height-d],[0,height-d]]);
                     }
                     // Narrow side facets repeat the corner geometry without filling the face.
                     if(height>100){
@@ -914,12 +940,14 @@ ClippingRectangle {
                             ctx.strokeStyle=Qt.alpha(pigment,outer?0.20:0.12);
                             ctx.beginPath();ctx.moveTo(0,a);ctx.lineTo(d,a+d);
                             ctx.lineTo(d,b-d);ctx.lineTo(0,b);ctx.stroke();
+                            bevel([[0,a],[d,a+d],[d,b-d],[0,b]]);
                             ctx.fillStyle=Qt.alpha(secondaryAccent,outer?0.055:0.035);
                             ctx.beginPath();ctx.moveTo(width,a);ctx.lineTo(width-d,a+d);
                             ctx.lineTo(width-d,b-d);ctx.lineTo(width,b);ctx.closePath();ctx.fill();
                             ctx.strokeStyle=Qt.alpha(pigment,outer?0.16:0.10);
                             ctx.beginPath();ctx.moveTo(width,a);ctx.lineTo(width-d,a+d);
                             ctx.lineTo(width-d,b-d);ctx.lineTo(width,b);ctx.stroke();
+                            bevel([[width,a],[width-d,a+d],[width-d,b-d],[width,b]]);
                         }
                     }
                 }
