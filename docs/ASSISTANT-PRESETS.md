@@ -49,3 +49,6 @@ or a backend restart.
 
 While the assistant is focused, press Ctrl+H for the previous conversation tab
 and Ctrl+L for the next. Navigation wraps at either end and focuses the composer.
+
+Press Ctrl+T to open a new tab and Ctrl+Q to close the current tab. Closing the
+last tab hides the assistant, matching the tab close button.

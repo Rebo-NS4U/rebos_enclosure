@@ -170,6 +170,29 @@ Item {
         onActivated: root.switchSessionTab(1)
     }
 
+    Shortcut {
+        sequence: "Ctrl+Q"
+        context: Qt.WindowShortcut
+        autoRepeat: false
+        enabled: root.active && root.windowFocused && Ai.sessions.length > 0
+        onActivated: {
+            Ai.closeSession(Ai.activeSession);
+            if (Ai.sessions.length > 0) Qt.callLater(root.focusSearchInput);
+        }
+    }
+
+    Shortcut {
+        sequence: "Ctrl+T"
+        context: Qt.WindowShortcut
+        autoRepeat: false
+        enabled: root.active && root.windowFocused
+        onActivated: {
+            Ai.newSession();
+            root.menuExpanded = false;
+            Qt.callLater(root.focusSearchInput);
+        }
+    }
+
     function focusSearchInput() {
         currentPage?.input.forceActiveFocus();
     }
