@@ -178,7 +178,7 @@ def session():
                     mixes.playRequested(mixes.playableTracks, 0);
                     if (music.current.path !== local.path || music.queue.length !== 1) { console.error("MIX_PREVIEW_PLAY_FAILED"); Qt.exit(1); }
                     if (!mixDownloads.prepareMix({links: "https://open.spotify.com/track/" + "b".repeat(22), folder: "/tmp/mix-preview-fixture"}) || !mixDownloads.mixTracks) { console.error("MIX_DOWNLOAD_PREPARE_FAILED"); Qt.exit(1); }
-                    music.navigate("Daily Mixes");
+                    music.navigate("Spotify playlists");
 
                     repeatStart = attempts; phase = 5;
                 } else if (phase === 5 && attempts >= repeatStart + 3) {
@@ -197,7 +197,7 @@ def session():
                     if (Math.abs(lastTab.x + lastTab.width - tabs.width) > 1) { console.error("MUSIC_TOP_NAV_FILL_FAILED"); Qt.exit(1); return; }
                     navButton.clicked();
                     if (music.page !== "Songs") { console.error("MUSIC_TOP_NAV_FAILED"); Qt.exit(1); return; }
-                    music.navigate("Daily Mixes");
+                    music.navigate("Spotify playlists");
                     const savedTab = findItem(music.contentItem,"music-mixes-saved"); savedTab.clicked();
                     if (mixes.section !== "saved" || mixes.displayedMixes.length !== 1) { console.error("MIX_SAVED_NAV_FAILED"); Qt.exit(1); return; }
                     findItem(music.contentItem,"music-mixes-current").clicked();

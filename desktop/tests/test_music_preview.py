@@ -80,6 +80,7 @@ import Quickshell
 import QtTest
 import qs.modules.widgets.music
 ShellRoot {
+ MusicWindow { id:music; started:true; visible:false }
  FloatingWindow { visible:true; implicitWidth:700; implicitHeight:800
   DailyMixesPane { id:pane; anchors.fill:parent
    property string lastCommand:""
@@ -91,9 +92,10 @@ ShellRoot {
    property string streamed:""
    property int downloads:0
    property bool localPlayed:false
+   property string localPath:""
    onPreviewRequested: uri => streamed=uri
    onDownloadRequested: downloads++
-   onPlayRequested: (list,index) => localPlayed=list.length===1 && index===0
+   onPlayRequested: (list,index) => { localPlayed=list.length===1 && index===0; localPath=list[index]?.path || ""; }
   }
   TestCase { id:t; when:false }
   Timer { interval:400;running:true;onTriggered: {
@@ -123,7 +125,35 @@ ShellRoot {
     row.clicked(); t.compare(pane.streamed,uri); t.compare(pane.downloads,0);
     t.findChild(pane,"music-mix-track-1").clicked(); t.verify(pane.localPlayed);
     t.verify(t.findChild(pane,"music-mix-stream-preview")===null);
-    t.compare(pane.downloads,0); console.log("STREAM_PREVIEW_PASSED"); Qt.quit();
+    t.compare(pane.downloads,0);
+    pane.localTracks=[{path:"/fixture/one.flac",title:"One",artist:"Artist"},{path:"/fixture/two.flac",title:"Two",artist:"Artist"}];
+    pane.importedPlaylists=[{id:"imported",name:"Imported favorites",paths:["/fixture/one.flac","/fixture/missing.flac","/fixture/two.flac"]},{id:"empty",name:"Missing files",paths:["/fixture/missing.flac"]}];
+    pane.previewOnly=true; t.wait(100);
+    t.compare(pane.section,"imported"); t.compare(pane.importedSources.length,2);
+    t.compare(pane.importedSources[0].tracks.length,2);
+    t.verify(!t.findChild(pane,"music-playlist-load").visible);
+    const localPreview=t.findChild(pane,"music-mix-stream-preview-0");
+    const streamed=pane.streamed;
+    t.verify(localPreview.enabled); localPreview.clicked(); const localFirst=pane.localPath;
+    t.verify(localFirst==="/fixture/one.flac" || localFirst==="/fixture/two.flac");
+    localPreview.clicked(); t.verify(pane.localPath!==localFirst); t.compare(pane.streamed,streamed);
+    t.verify(!t.findChild(pane,"music-mix-stream-preview-1").enabled);
+    pane.selected=pane.importedSources[0]; t.wait(100);
+    t.verify(t.findChild(pane,"music-mix-track-0").enabled);
+    t.findChild(pane,"music-mix-track-0").clicked(); t.compare(pane.localPath,"/fixture/one.flac");
+    const next=t.findChild(pane,"music-previews-next"); t.verify(next.visible && next.enabled); next.clicked();
+    t.compare(pane.downloads,0);
+    t.findChild(pane,"music-mixes-current").clicked(); t.compare(pane.displayedMixes.length,1);
+    t.findChild(pane,"music-mixes-saved").clicked(); t.compare(pane.displayedMixes.length,0);
+    music.tracks=pane.localTracks; music.playlists=pane.importedPlaylists;
+    const previewTab=t.findChild(music.contentItem,"music-navigation-Previews");
+    t.verify(previewTab!==null); previewTab.clicked(); t.compare(music.page,"Previews");
+    const musicPane=t.findChild(music.contentItem,"music-daily-mixes");
+    t.verify(musicPane.previewOnly); t.compare(musicPane.importedSources.length,2);
+    t.compare(musicPane.importedSources[0].tracks.length,2);
+    t.findChild(music.contentItem,"music-navigation-Spotify playlists").clicked();
+    t.verify(!musicPane.previewOnly); t.compare(musicPane.section,"current");
+    console.log("STREAM_PREVIEW_PASSED"); Qt.quit();
    } catch(e) {console.error(e,e.stack);Qt.exit(1);}
   } }
  }

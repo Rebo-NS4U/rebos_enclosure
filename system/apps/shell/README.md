@@ -313,6 +313,13 @@ font, density, corner radius and surface style.
 
 Play, Play all, and album or playlist Play start with a random song. Selecting a specific song starts that song; Shuffle controls subsequent track selection.
 
+Open the **Previews** tab to choose from playlists already imported into the
+library, including folder playlists, downloaded mixes and playlists saved from
+the queue. **Preview random** and **Next preview** avoid repeating the last song
+when another is available. **View tracks** lets you pick a song. Imported songs
+play from their existing local files; the **Spotify** and **Saved** selectors
+reuse previously loaded Spotify lists without pasting their links again.
+
 Open **Spotify playlists**, paste a Spotify playlist link (or playlist URI),
 then choose **Load playlist**. Use **Preview random** or **View tracks** to hear
 individual songs. Spotify must be signed in and able to access that playlist;

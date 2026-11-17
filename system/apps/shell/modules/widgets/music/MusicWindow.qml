@@ -253,8 +253,8 @@ Window {
         onErrorOccurred: (error, errorString) => { root.notice = errorString; }
     }
     Timer { interval: 500; running: root.playing; repeat: true; onTriggered: root.sync() }
-    Shortcut { sequence: "Space"; enabled: root.immersive || (root.page !== "Downloads" && root.page !== "Spotify playlists" && !search.inputActiveFocus && !playlistName.inputActiveFocus); onActivated: root.toggle() }
-    Shortcut { sequence: "Ctrl+F"; enabled: root.page !== "Downloads" && root.page !== "Spotify playlists"; onActivated: search.focusInput() }
+    Shortcut { sequence: "Space"; enabled: root.immersive || (root.page !== "Downloads" && root.page !== "Spotify playlists" && root.page !== "Previews" && !search.inputActiveFocus && !playlistName.inputActiveFocus); onActivated: root.toggle() }
+    Shortcut { sequence: "Ctrl+F"; enabled: root.page !== "Downloads" && root.page !== "Spotify playlists" && root.page !== "Previews"; onActivated: search.focusInput() }
     Shortcut { sequence: "F11"; onActivated: root.toggleFullscreen() }
     Shortcut { sequence: "Escape"; onActivated: { if (root.immersive) root.toggleFullscreen(); else GlobalStates.musicWindowVisible = false; } }
 
@@ -327,14 +327,14 @@ Window {
                     Flow {
                         id: navigationTabs
                         objectName: "music-navigation-tabs"
-                        readonly property int tabCount: 10
+                        readonly property int tabCount: 11
                         readonly property int rowCount: Math.max(1, Math.ceil(tabCount * (Styling.spacing(112) + spacing) / Math.max(1, width + spacing)))
                         readonly property int columns: Math.ceil(tabCount / rowCount)
                         readonly property int lastRowCount: tabCount % columns || columns
                         Layout.fillWidth: true
                         spacing: Styling.spacing(6)
                         Repeater {
-                            model: ["Home", "Songs", "Albums", "Artists", "Favorites", "Playlists", "Downloaded Mixes", "Spotify playlists", "Downloads", "Now playing"]
+                            model: ["Home", "Songs", "Albums", "Artists", "Favorites", "Playlists", "Downloaded Mixes", "Spotify playlists", "Previews", "Downloads", "Now playing"]
                             ThemeButton {
                                 required property string modelData
                                 required property int index
@@ -352,7 +352,7 @@ Window {
             RowLayout {
                 Layout.fillWidth: true; Layout.fillHeight: true; spacing: Styling.spacing(16)
                 ColumnLayout {
-                    visible: root.page !== "Downloads" && root.page !== "Spotify playlists" && (root.width >= 1120 || root.page !== "Now playing")
+                    visible: root.page !== "Downloads" && root.page !== "Spotify playlists" && root.page !== "Previews" && (root.width >= 1120 || root.page !== "Now playing")
                     Layout.fillWidth: true; Layout.fillHeight: true; spacing: 14
                     RowLayout {
                         Layout.fillWidth: true
@@ -431,6 +431,8 @@ Window {
                 }
                 DailyMixesPane {
                     id: dailyMixes
+                    previewOnly: root.page === "Previews"
+                    importedPlaylists: root.playlists
                     localTracks: root.tracks
                     currentPath: root.current?.path || ""
                     notice: root.notice
@@ -443,7 +445,7 @@ Window {
                     onDownloadRequested: mix => root.request("mixes_download", {uri: mix.uri, version: mix.version}, data => {
                         if (downloads.prepareMix(data)) root.navigate("Downloads");
                     })
-                    visible: root.page === "Spotify playlists"
+                    visible: root.page === "Spotify playlists" || root.page === "Previews"
                     Layout.fillWidth: true; Layout.fillHeight: true
                     onRequested: (cmd, args, callback) => root.request(cmd, args, callback)
                 }
@@ -454,7 +456,7 @@ Window {
                     onCompleted: root.scan()
                 }
                 StyledRect {
-                    visible: root.page !== "Downloads" && root.page !== "Spotify playlists" && (root.width >= 1120 || root.page === "Now playing")
+                    visible: root.page !== "Downloads" && root.page !== "Spotify playlists" && root.page !== "Previews" && (root.width >= 1120 || root.page === "Now playing")
                     Layout.fillWidth: root.width < 1120
                     Layout.preferredWidth: 280; Layout.fillHeight: true; variant: "pane"
                     ColumnLayout {
