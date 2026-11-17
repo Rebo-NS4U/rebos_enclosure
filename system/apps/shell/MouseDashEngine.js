@@ -92,16 +92,22 @@ function objectives(elapsed, stars, grazes) {
 function medal(score) { return score >= 6000 ? "GOLD" : score >= 3000 ? "SILVER" : score >= 1000 ? "BRONZE" : "UNRANKED"; }
 function nextMedal(score) { return score < 1000 ? 1000 : score < 3000 ? 3000 : score < 6000 ? 6000 : 0; }
 // New rules use separate records; older scores remain untouched in settings.
-function scoreKey(mode, difficulty) { return "patterns:" + mode + difficulty; }
+function scoreKey(mode, difficulty) { return "pressure:" + mode + difficulty; }
+
+function encounterInterval(difficulty, elapsed) {
+    const start = [7, 5.6, 4.8, 4.2][difficulty];
+    const floor = [6.2, 4.2, 3.7, 3.3][difficulty];
+    return Math.max(floor, start - Math.min(90, elapsed) * 0.025);
+}
 
 // Snapshot the player's position once, during the warning. No homing or late aim.
 function encounter(index, w, h, difficulty, elapsed, px, py) {
     const distances = [px, w-px, py, h-py];
     const edge = distances.indexOf(Math.max.apply(null, distances));
     const vertical = edge >= 2, span = vertical ? w : h;
-    const speed = Math.min(230, 135 + difficulty * 18 + Math.min(35, elapsed * 0.4));
+    const speed = Math.min([225,290,325,350][difficulty], [175,215,245,270][difficulty] + elapsed * 1.2);
     const type = index % 3, events = [];
-    const gap = span * (0.25 + Math.random() * 0.5), halfGap = difficulty === 0 ? 82 : 68;
+    const gap = span * (0.25 + Math.random() * 0.5), halfGap = [65,49,43,39][difficulty];
     function meteor(lane, angleOffset, r) {
         const x = vertical ? lane : edge === 0 ? -r-20 : w+r+20;
         const y = vertical ? (edge === 2 ? -r-20 : h+r+20) : lane;
@@ -109,27 +115,42 @@ function encounter(index, w, h, difficulty, elapsed, px, py) {
         return {x:x,y:y,r:r,vx:Math.cos(base+angleOffset)*speed,vy:Math.sin(base+angleOffset)*speed,orbiting:false};
     }
     if (type === 0) {
-        const wall=[];
-        for(let lane=24;lane<span;lane+=40) if(Math.abs(lane-gap)>halfGap) wall.push(meteor(lane,0,12));
-        events.push({delay:0,enemies:wall});
+        const count = difficulty === 0 ? 2 : 3, spacing = [1.2,0.95,0.85,0.78][difficulty];
+        const direction = gap < span / 2 ? 1 : -1;
+        for(let wave=0;wave<count;wave++) {
+            const opening = Math.max(75,Math.min(span-75,gap + (wave % 2) * direction * span * 0.25));
+            const wall=[];
+            for(let lane=18;lane<span;lane+=36) if(Math.abs(lane-opening)>halfGap) wall.push(meteor(lane,0,13));
+            events.push({delay:wave*spacing,enemies:wall,gap:{vertical:vertical,position:opening,half:halfGap-13,edge:edge}});
+        }
     } else if(type === 1) {
         const origin = span * 0.5;
         const source = meteor(origin,0,10);
         const angle = Math.atan2(py-source.y,px-source.x);
-        const fan=[];
-        for(let i=-2;i<=2;i++) fan.push({x:source.x,y:source.y,r:10,vx:Math.cos(angle+i*0.27)*speed,vy:Math.sin(angle+i*0.27)*speed,orbiting:false});
-        events.push({delay:0,enemies:fan});
-        events.push({delay:1.1,enemies:fan.map(e=>Object.assign({},e))});
+        const rays = difficulty === 0 ? 5 : 7, count = difficulty === 0 ? 2 : 3;
+        for(let wave=0;wave<count;wave++) {
+            const fan=[], offset=wave===1 ? 0.11 : wave===2 ? -0.11 : 0;
+            for(let i=-(rays-1)/2;i<=(rays-1)/2;i++) {
+                const direction=angle+i*0.22+offset;
+                fan.push({x:source.x,y:source.y,r:11,vx:Math.cos(direction)*speed,vy:Math.sin(direction)*speed,orbiting:false});
+            }
+            events.push({delay:wave*[1.1,0.85,0.75,0.65][difficulty],enemies:fan});
+        }
     } else {
-        // Two parallel trains leave the rest of the arena open for routing.
-        const lane = Math.max(55,Math.min(span-55,vertical ? px : py));
-        for(let i=0;i<5;i++) events.push({delay:i*0.32,enemies:[meteor(lane-34,0,11),meteor(lane+34,0,11)]});
+        // The middle rail is occupied too; alternating offsets force lateral movement.
+        const lane = Math.max(100,Math.min(span-100,vertical ? px : py));
+        const count = difficulty === 0 ? 5 : 7;
+        for(let i=0;i<count;i++) {
+            const shift = Math.sin(i * Math.PI / 3) * (difficulty === 0 ? 35 : 65);
+            const rails = difficulty === 0 ? [0,65] : [-62,0,62];
+            events.push({delay:i*[0.3,0.26,0.23,0.21][difficulty],enemies:rails.map(offset=>meteor(lane+offset+shift,0,12))});
+        }
     }
     const preview=events[0].enemies.map(e=>({x:Math.max(0,Math.min(w,e.x)),y:Math.max(0,Math.min(h,e.y)),angle:Math.atan2(e.vy,e.vx)*180/Math.PI}));
     return {name:["METEOR GATE","FAN VOLLEY","COMET TRAINS"][type],
-        hint:["Find the marked gap","Move between the spreading lanes","Leave the twin comet lanes"][type],
-        warning:1.5, events:events, preview:preview,
-        gap:type===0 ? {vertical:vertical,position:gap,half:halfGap-12,edge:edge} : null};
+        hint:["Weave through the changing gaps","Watch the fans shift between volleys","Leave the sweeping comet rails"][type],
+        warning:[1.4,1.1,0.95,0.85][difficulty], events:events, preview:preview,
+        gap:type===0 ? events[0].gap : null};
 }
 // A queue is advanced only by gameplay time, so pause freezes all launches.
 function launchEvents(events, age) {

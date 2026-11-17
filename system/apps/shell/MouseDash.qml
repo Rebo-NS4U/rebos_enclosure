@@ -147,7 +147,7 @@ ShellRoot {
         property var activeEncounter: null
         property var encounterEvents: []
         property real encounterBorn: 0
-        property real nextEncounter: 3
+        property real nextEncounter: 1.25
         property int encounterIndex: 0
         readonly property bool encounterWarning: !!activeEncounter && elapsed < encounterBorn + activeEncounter.warning
         function updateSpawns() {
@@ -155,7 +155,7 @@ ShellRoot {
             if (elapsed >= nextEncounter) {
                 activeEncounter = Game.encounter(encounterIndex++, arena.width, arena.height, difficulty, elapsed, playerX * arena.width, playerY * arena.height);
                 encounterBorn = elapsed; encounterEvents = activeEncounter.events;
-                nextEncounter = elapsed + 9;
+                nextEncounter = elapsed + Game.encounterInterval(difficulty, elapsed);
             }
             if (!activeEncounter || encounterWarning) return;
             const launch = Game.launchEvents(encounterEvents, elapsed - encounterBorn - activeEncounter.warning);
@@ -167,7 +167,7 @@ ShellRoot {
         readonly property bool locked: phase === "playing" || phase === "paused"
         readonly property real duration: Game.roundDuration(playMode)
         readonly property var modes: [
-            {key: "survival", name: "DEEP SPACE", caption: "Endless expedition", hint: "Read the lanes. Find the gaps. Chain stars between meteor waves."},
+            {key: "survival", name: "DEEP SPACE", caption: "Endless expedition", hint: "Fast volleys. Shifting gaps. Keep moving as waves overlap."},
             {key: "gauntlet", name: "WARP RUN", caption: "60s · six sectors", hint: "Survive six sectors of gates, fans and comet trains. Movement is everything."}
         ]
         readonly property int modeIndex: playMode === "survival" ? 0 : 1
@@ -204,7 +204,7 @@ ShellRoot {
             enemyVisuals.clear(); victory = false; death = null;
             pickupTarget = null; targetClock = 0; targetsCollected = 0; collection = null;
             score = 0; combo = 0;
-            activeEncounter = null; encounterEvents = []; encounterBorn = 0; nextEncounter = 3; encounterIndex = 0;
+            activeEncounter = null; encounterEvents = []; encounterBorn = 0; nextEncounter = 1.25; encounterIndex = 0;
             objectiveNotice = ""; objectiveNoticeUntil = 0;
             nearMisses = 0; comboUntil = 0; notice = ""; noticeUntil = 0;
         }
@@ -336,7 +336,7 @@ ShellRoot {
                     }
                 }
                 Rectangle {
-                    readonly property var gap: window.encounterWarning ? window.activeEncounter.gap : null
+                    readonly property var gap: window.activeEncounter && window.encounterEvents.length ? (window.encounterEvents[0].gap || null) : null
                     visible: !!gap
                     x: !gap ? 0 : gap.vertical ? gap.position - width / 2 : gap.edge === 0 ? 5 : arena.width - width - 5
                     y: !gap ? 0 : gap.vertical ? (gap.edge === 2 ? 5 : arena.height - height - 5) : gap.position - height / 2
