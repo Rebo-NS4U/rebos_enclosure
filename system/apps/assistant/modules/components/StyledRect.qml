@@ -580,10 +580,35 @@ ClippingRectangle {
                 ctx.save();
                 if(root.traceThemeFrame(ctx,0))ctx.clip();
                 if(finish === "canopy"){
-                    // A tensile fabric roof: uninterrupted catenary sweeps and shaded folds.
+                    // A translucent tree crown with palette-tinted clusters of leaves.
                     const fabric=a=>Qt.rgba(accent.r*0.65+secondaryAccent.r*0.35,accent.g*0.65+secondaryAccent.g*0.35,accent.b*0.65+secondaryAccent.b*0.35,a);
+                    // Layered leaf crowns define the top edge without branch or seam strokes.
+                    function treeCanopy(depth, lobes) {
+                        for(let layer=0;layer<2;layer++){
+                            const span=width/lobes;
+                            const foliage=ctx.createLinearGradient(0,0,0,depth);
+                            foliage.addColorStop(0,fabric(layer?0.12:0.30));
+                            foliage.addColorStop(0.7,fabric(layer?0.19:0.38));
+                            foliage.addColorStop(1,fabric(layer?0.24:0.44));
+                            ctx.fillStyle=foliage;
+                            ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(width,0);
+                            ctx.lineTo(width,depth*0.28);
+                            for(let i=lobes-1;i>=0;i--){
+                                const x=i*span;
+                                const reach=depth*(layer?0.48:0.72)*(i%3===0?1:0.83);
+                                const tip=depth*(layer?0.15:0.28);
+                                // Uneven overlapping lobes suggest clusters of leaves.
+                                ctx.bezierCurveTo(x+span*0.96,tip+reach,
+                                    x+span*0.64,tip+reach,x+span*0.51,tip+reach*0.62);
+                                ctx.bezierCurveTo(x+span*0.30,tip+reach*1.14,
+                                    x+span*0.04,tip+reach*0.80,x,tip);
+                            }
+                            ctx.lineTo(0,0);ctx.closePath();ctx.fill();
+                        }
+                    }
+
                     if(barSurface){
-                        // A sculpted header canopy; keep the conversation surface quiet.
+                        // Leaf crowns stay confined to the header.
                         // Different span counts and proportions, stable until the next opening.
                         const profiles=[
                             [1], [0.46,0.54], [0.28,0.44,0.28],
@@ -593,41 +618,10 @@ ClippingRectangle {
                         const v=((canopyVariation % profiles.length)+profiles.length)%profiles.length;
                         const spans=profiles[v];
                         const roof=Math.min([72,76,68,60,52,78][v],height*0.22);
-                        const glow=ctx.createLinearGradient(0,0,0,roof+24);
-                        glow.addColorStop(0,fabric(0.28));
-                        glow.addColorStop(0.55,fabric(0.10));
-                        glow.addColorStop(1,fabric(0));
-                        ctx.fillStyle=glow;ctx.fillRect(0,0,width,roof+24);
-                        function hem(offset) {
-                            ctx.beginPath();ctx.moveTo(0,10+offset);
-                            let x=0;
-                            for(let i=0;i<spans.length;i++){
-                                const span=width*spans[i];
-                                // Wider spans hang deeper; alternate folds very gently.
-                                const depth=10+(roof-10)*Math.sqrt(spans[i]/Math.max(...spans))*(i%2?0.86:1);
-                                ctx.bezierCurveTo(x+span*0.28,depth+offset,
-                                    x+span*0.72,depth+offset,x+span,10+offset);
-                                x+=span;
-                            }
-                        }
-                        const cloth=ctx.createLinearGradient(0,0,0,roof);
-                        cloth.addColorStop(0,fabric(0.08));
-                        cloth.addColorStop(1,fabric(0.20));
-                        hem(0);ctx.lineTo(width,0);ctx.lineTo(0,0);ctx.closePath();
-                        ctx.fillStyle=cloth;ctx.fill();
-                        // Keep the draped silhouette softly filled without seam strokes.
+                        treeCanopy(roof,spans.length+3);
                     }else if(outer){
                         const drop=Math.min(70,height*0.22);
-                        // Translucent fabric spans the upper edge with a scalloped hem.
-                        const shade=ctx.createLinearGradient(0,0,0,drop+18);
-                        shade.addColorStop(0,fabric(0.22));
-                        shade.addColorStop(0.7,fabric(0.08));shade.addColorStop(1,fabric(0.015));
-                        ctx.fillStyle=shade;ctx.beginPath();ctx.moveTo(0,0);
-                        ctx.lineTo(width,0);ctx.lineTo(width,10);
-                        ctx.bezierCurveTo(width*0.80,drop,width*0.67,drop,width*0.50,12);
-                        ctx.bezierCurveTo(width*0.30,drop*1.25,width*0.16,drop*1.25,0,10);
-                        ctx.closePath();ctx.fill();
-                        // The filled fabric silhouette defines the hem without a drawn seam.
+                        treeCanopy(drop,5);
                         // Ground-level shade echoes the roof without framing the content.
                         const ground=ctx.createLinearGradient(0,height-24,0,height);
                         ground.addColorStop(0,fabric(0));ground.addColorStop(1,fabric(0.12));
