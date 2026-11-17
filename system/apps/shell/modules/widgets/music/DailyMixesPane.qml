@@ -40,6 +40,14 @@ Item {
         previewRequested(track.uri);
         return true;
     }
+    function loadPlaylist() {
+        if (!playlistLink.text.trim() || mixes.refreshPending) return;
+        previewStatus = "";
+        requested("mixes_load", {link: playlistLink.text.trim()}, data => {
+            root.mixes = data;
+            root.section = "current";
+        });
+    }
     function refresh() { requested("mixes_get", {}, data => { root.mixes = data; }); }
     onVisibleChanged: if (visible) refresh()
     onSelectedChanged: { previewStatus = ""; preview.currentIndex = -1; preview.positionViewAtBeginning(); }
@@ -51,7 +59,7 @@ Item {
         Flow {
             Layout.fillWidth: true
             spacing: Styling.spacing(8)
-            StyledText { text: "Daily Mixes"; font.bold: true; font.pixelSize: Styling.fontSize(8); height: Math.max(36, Styling.spacing(40)); verticalAlignment: Text.AlignVCenter }
+            StyledText { text: "Spotify playlists"; font.bold: true; font.pixelSize: Styling.fontSize(8); height: Math.max(36, Styling.spacing(40)); verticalAlignment: Text.AlignVCenter }
             ThemeButton {
                 objectName: "music-mixes-update"
                 text: root.mixes.refreshPending ? "Updating…" : "Update mixes"
@@ -60,11 +68,28 @@ Item {
             }
             ThemeButton { text: "Made for You ↗"; Accessible.name: "Open Made for You in Spotify"; onClicked: Qt.openUrlExternally("spotify:genre:made-for-x-hub") }
         }
+        StyledText { text: "Preview any Spotify playlist"; font.bold: true }
+        RowLayout {
+            Layout.fillWidth: true
+            SearchInput {
+                id: playlistLink
+                objectName: "music-playlist-link"
+                Layout.fillWidth: true
+                placeholderText: "Paste a Spotify playlist link"
+                onAccepted: root.loadPlaylist()
+            }
+            ThemeButton {
+                objectName: "music-playlist-load"
+                text: root.mixes.refreshPending ? "Loading…" : "Load playlist"
+                enabled: playlistLink.text.trim() !== "" && !root.mixes.refreshPending
+                onClicked: root.loadPlaylist()
+            }
+        }
         StyledText {
             Layout.fillWidth: true; wrapMode: Text.WordWrap
-            text: root.notice || root.previewStatus || root.mixes.refreshStatus || (root.mixes.checked
+            text: root.notice || (root.mixes.refreshPending ? "Waiting for Spotify…" : "") || root.previewStatus || root.mixes.refreshStatus || (root.mixes.checked
                 ? "Updated " + new Date(root.mixes.checked).toLocaleString() + " · Preview streams in Spotify; downloads are optional."
-                : "Open Spotify’s Made for You once to discover mixes. Preview streams without a library download.")
+                : "Paste any playlist link above, or open Made for You in Spotify to collect Daily Mixes. Previews stream without downloading.")
             color: root.notice ? Colors.error : Colors.overSurfaceVariant
             font.pixelSize: Styling.fontSize(-1)
         }

@@ -82,6 +82,12 @@ import qs.modules.widgets.music
 ShellRoot {
  FloatingWindow { visible:true; implicitWidth:700; implicitHeight:800
   DailyMixesPane { id:pane; anchors.fill:parent
+   property string lastCommand:""
+   property string lastLink:""
+   onRequested: (cmd,args,callback) => {
+    lastCommand=cmd; lastLink=args.link || "";
+    if(cmd==="mixes_load") callback({current:[],saved:[],refreshPending:true});
+   }
    property string streamed:""
    property int downloads:0
    property bool localPlayed:false
@@ -92,6 +98,11 @@ ShellRoot {
   TestCase { id:t; when:false }
   Timer { interval:400;running:true;onTriggered: {
    try {
+    const link=t.findChild(pane,"music-playlist-link");
+    const load=t.findChild(pane,"music-playlist-load");
+    t.verify(!load.enabled); link.text="https://open.spotify.com/playlist/"+"c".repeat(22);
+    t.verify(load.enabled); load.clicked(); t.compare(pane.lastCommand,"mixes_load");
+    t.compare(pane.lastLink,link.text); t.verify(!load.enabled);
     const uri="spotify:track:"+"a".repeat(22);
     const localUri="spotify:track:"+"b".repeat(22);
     pane.localTracks=[{path:"/fixture/local.flac",spotifyUri:localUri}];

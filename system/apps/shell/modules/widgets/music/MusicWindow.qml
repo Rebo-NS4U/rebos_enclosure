@@ -253,8 +253,8 @@ Window {
         onErrorOccurred: (error, errorString) => { root.notice = errorString; }
     }
     Timer { interval: 500; running: root.playing; repeat: true; onTriggered: root.sync() }
-    Shortcut { sequence: "Space"; enabled: root.immersive || (root.page !== "Downloads" && root.page !== "Daily Mixes" && !search.inputActiveFocus && !playlistName.inputActiveFocus); onActivated: root.toggle() }
-    Shortcut { sequence: "Ctrl+F"; enabled: root.page !== "Downloads" && root.page !== "Daily Mixes"; onActivated: search.focusInput() }
+    Shortcut { sequence: "Space"; enabled: root.immersive || (root.page !== "Downloads" && root.page !== "Spotify playlists" && !search.inputActiveFocus && !playlistName.inputActiveFocus); onActivated: root.toggle() }
+    Shortcut { sequence: "Ctrl+F"; enabled: root.page !== "Downloads" && root.page !== "Spotify playlists"; onActivated: search.focusInput() }
     Shortcut { sequence: "F11"; onActivated: root.toggleFullscreen() }
     Shortcut { sequence: "Escape"; onActivated: { if (root.immersive) root.toggleFullscreen(); else GlobalStates.musicWindowVisible = false; } }
 
@@ -334,7 +334,7 @@ Window {
                         Layout.fillWidth: true
                         spacing: Styling.spacing(6)
                         Repeater {
-                            model: ["Home", "Songs", "Albums", "Artists", "Favorites", "Playlists", "Downloaded Mixes", "Daily Mixes", "Downloads", "Now playing"]
+                            model: ["Home", "Songs", "Albums", "Artists", "Favorites", "Playlists", "Downloaded Mixes", "Spotify playlists", "Downloads", "Now playing"]
                             ThemeButton {
                                 required property string modelData
                                 required property int index
@@ -352,7 +352,7 @@ Window {
             RowLayout {
                 Layout.fillWidth: true; Layout.fillHeight: true; spacing: Styling.spacing(16)
                 ColumnLayout {
-                    visible: root.page !== "Downloads" && root.page !== "Daily Mixes" && (root.width >= 1120 || root.page !== "Now playing")
+                    visible: root.page !== "Downloads" && root.page !== "Spotify playlists" && (root.width >= 1120 || root.page !== "Now playing")
                     Layout.fillWidth: true; Layout.fillHeight: true; spacing: 14
                     RowLayout {
                         Layout.fillWidth: true
@@ -400,7 +400,7 @@ Window {
                             }
                         }
                         ScrollBar.vertical: ScrollBar {}
-                        StyledText { anchors.centerIn: parent; width: parent.width-48; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap; visible: cards.count === 0; text: root.busy ? "Scanning music…" : root.page === "Downloaded Mixes" ? "No downloaded mixes yet.\nDownload a mix from Daily Mixes to see it here." : root.page === "Playlists" ? "Create a playlist from the queue below." : "No music found.\nAdd a folder or change the search."; color: Colors.overSurfaceVariant }
+                        StyledText { anchors.centerIn: parent; width: parent.width-48; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap; visible: cards.count === 0; text: root.busy ? "Scanning music…" : root.page === "Downloaded Mixes" ? "No downloaded mixes yet.\nDownload a mix from Spotify playlists to see it here." : root.page === "Playlists" ? "Create a playlist from the queue below." : "No music found.\nAdd a folder or change the search."; color: Colors.overSurfaceVariant }
                     }
                     ListView {
                         id: songs
@@ -443,7 +443,7 @@ Window {
                     onDownloadRequested: mix => root.request("mixes_download", {uri: mix.uri, version: mix.version}, data => {
                         if (downloads.prepareMix(data)) root.navigate("Downloads");
                     })
-                    visible: root.page === "Daily Mixes"
+                    visible: root.page === "Spotify playlists"
                     Layout.fillWidth: true; Layout.fillHeight: true
                     onRequested: (cmd, args, callback) => root.request(cmd, args, callback)
                 }
@@ -454,7 +454,7 @@ Window {
                     onCompleted: root.scan()
                 }
                 StyledRect {
-                    visible: root.page !== "Downloads" && root.page !== "Daily Mixes" && (root.width >= 1120 || root.page === "Now playing")
+                    visible: root.page !== "Downloads" && root.page !== "Spotify playlists" && (root.width >= 1120 || root.page === "Now playing")
                     Layout.fillWidth: root.width < 1120
                     Layout.preferredWidth: 280; Layout.fillHeight: true; variant: "pane"
                     ColumnLayout {

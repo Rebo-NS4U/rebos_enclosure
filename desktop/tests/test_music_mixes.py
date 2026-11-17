@@ -12,6 +12,34 @@ module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 
 class MixTests(unittest.TestCase):
+    def test_load_any_playlist_and_report_access_failure(self):
+        store = module.Mixes(Path('/unused'), lambda *a: a[1], lambda *a: None)
+        uri = 'spotify:playlist:' + 'c'*22
+        result = store.dispatch('mixes_load', {'link': 'https://open.spotify.com/playlist/' + 'c'*22 + '?si=shared'})
+        self.assertTrue(result['refreshPending'])
+        self.assertEqual(store.refresh_uri, uri)
+        with self.assertRaises(ValueError):
+            store.dispatch('mixes_refresh', {})
+        mix = dict(uri=uri, name='My favorites / 2026', tracks=[dict(uri='spotify:track:'+'b'*22, title='One')])
+        store.update(dict(mixes=[mix], refresh_id=store.refresh_id))
+        current = store.dispatch('mixes_get', {})['current'][0]
+        self.assertEqual(current['name'], mix['name'])
+        store.dispatch('mixes_save', dict(uri=uri, version=current['version']))
+        self.assertEqual(len(store.data['saved']), 1)
+        store.dispatch('mixes_load', {'link': uri})
+        store.update(dict(mixes=[], refresh_id=store.refresh_id, error='Playlist unavailable'))
+        self.assertEqual(store.dispatch('mixes_get', {})['refreshStatus'], 'Playlist unavailable')
+        self.assertEqual(len(store.data['current']), 1)
+
+    def test_playlist_links_are_validated(self):
+        uri = 'spotify:playlist:' + 'a'*22
+        self.assertEqual(module.playlist_uri(uri), uri)
+        self.assertEqual(module.playlist_uri('https://open.spotify.com/intl-en/playlist/'+'a'*22), uri)
+        for link in ('https://evil.test/playlist/'+'a'*22, 'file:///etc/passwd',
+                     'https://open.spotify.com/track/'+'a'*22, 'spotify:playlist:$(bad)', ''):
+            with self.assertRaises(ValueError):
+                module.playlist_uri(link)
+
     def test_refresh_and_save(self):
         with tempfile.TemporaryDirectory() as directory:
             writes = []

@@ -62,7 +62,7 @@ async function refresh() {
         try { await fetch('http://127.0.0.1:19838/mixes', {method: 'POST', credentials: 'omit',
             headers: {'Content-Type': 'application/json'}, body: JSON.stringify(cached)}); } catch (_) {}
     }
-    async function collect(force = false, refreshId = "") {
+    async function collect(force = false, refreshId = "", playlistUri = "") {
         if (collecting || !globalThis.Spicetify?.Platform?.PlaylistAPI) return;
         collecting = true;
         try {
@@ -76,7 +76,10 @@ async function refresh() {
             if (!force && learned.size === previousSize && Date.now() - lastCollection < 60 * 60 * 1000) return;
             lastCollection = Date.now();
             const mixes = [];
-            for (const [uri, name] of learned) {
+            let failure = '';
+            const requested = /^spotify:playlist:[A-Za-z0-9]{22}$/.test(playlistUri);
+            const targets = requested ? [[playlistUri, 'Playlist ' + playlistUri.split(':').pop()]] : [...learned];
+            for (const [uri, name] of targets) {
                 try {
                     const items = [];
                     let offset = 0;
@@ -86,18 +89,25 @@ async function refresh() {
                         items.push(...page.items);
                         offset += page.items.length;
                         if (page.items.length < 100 || offset >= page.totalLength) break;
-                        if (offset >= 1000) throw Error('Mix too large');
+                        if (offset >= 10000) throw Error('Playlist exceeds 10,000 tracks');
                     }
-                    const tracks = items.map(row => row.track || row).map(t => ({uri: t.uri,
+                    const tracks = items.map(row => row.track || row).filter(t => t && /^spotify:track:[A-Za-z0-9]{22}$/.test(t.uri || '')).map(t => ({uri: t.uri,
                         title: t.name || '', artist: (t.artists || []).map(a => a.name).join(', ')}));
-                    if (tracks.length && tracks.every(t => /^spotify:track:[A-Za-z0-9]{22}$/.test(t.uri)))
-                        mixes.push({uri, name, tracks});
-                } catch (error) { console.warn('Enclosure Daily Mix refresh failed', name, error); }
+                    if (!tracks.length) throw Error('No playable Spotify tracks in this playlist');
+                    let title = name;
+                    if (requested && typeof Spicetify.Platform.PlaylistAPI.getMetadata === 'function') {
+                        try {
+                            const metadata = await Spicetify.Platform.PlaylistAPI.getMetadata(uri);
+                            if (metadata?.name?.trim()) title = metadata.name.trim().slice(0, 200);
+                        } catch (_) { /* Tracks remain usable without a display name. */ }
+                    }
+                    mixes.push({uri, name: title, tracks});
+                } catch (error) { failure = 'Could not load playlist. Check Spotify access and try again. ' + String(error.message || '').slice(0, 150); console.warn('Enclosure playlist refresh failed', name, error); }
             }
-            if (mixes.length) { cached = {mixes}; await publishMixes(); }
+            if (mixes.length && !requested) { cached = {mixes}; await publishMixes(); }
             if (refreshId) {
                 await fetch('http://127.0.0.1:19838/mixes', {method: 'POST', credentials: 'omit',
-                    headers: {'Content-Type': 'application/json'}, body: JSON.stringify({mixes, refresh_id: refreshId})});
+                    headers: {'Content-Type': 'application/json'}, body: JSON.stringify({mixes, refresh_id: refreshId, error: requested ? failure : ""})});
             }
         } finally { collecting = false; }
     }
@@ -116,7 +126,7 @@ async function refresh() {
             const response = await fetch('http://127.0.0.1:19838/mixes', {credentials: 'omit', cache: 'no-store'});
             if (!response.ok) return;
             const command = await response.json();
-            if (command.refresh_id) await collect(true, command.refresh_id);
+            if (command.refresh_id) await collect(true, command.refresh_id, command.playlist_uri);
         } catch (_) { /* Music may be closed. */ }
     }, 5000);
 })();

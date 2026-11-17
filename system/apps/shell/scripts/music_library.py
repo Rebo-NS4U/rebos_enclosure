@@ -235,12 +235,15 @@ class Library:
                         if m['uri'] == args.get('uri') and m['version'] == args.get('version')), None)
             if not mix:
                 raise ValueError('Mix changed; select it again before downloading')
-            folder = self.music / 'Daily Mixes' / (mix['name'] + '-' + mix['version'][:12])
+            safe_name = re.sub(r'[^\w .-]', '_', mix['name']).strip(' .')[:100] or 'Playlist'
+            folder = self.music / 'Daily Mixes' / (safe_name + '-' + mix['uri'].split(':')[-1] + '-' + mix['version'][:12])
+            if re.fullmatch(r'Daily Mix [1-6]', mix['name']):
+                folder = self.music / 'Daily Mixes' / (mix['name'] + '-' + mix['version'][:12])
             if str(self.music) not in self.state['folders']:
                 self.state['folders'].append(str(self.music))
                 self.write(self.state_dir / 'library.json', self.state)
             return dict(folder=str(folder), links='https://open.spotify.com/playlist/' + mix['uri'].split(':')[-1])
-        if cmd in ('mixes_get', 'mixes_save', 'mixes_refresh'):
+        if cmd in ('mixes_get', 'mixes_save', 'mixes_refresh', 'mixes_load'):
             return self.mixes.dispatch(cmd, args)
         if cmd == 'scan':
             return self.scan()

@@ -47,7 +47,8 @@ class Bridge(unittest.TestCase):
     def test_adapter_timestamp_conversion_and_plain_fallback(self):
         source = (SCRIPTS / 'lyrics_plus_extension.js').read_text()
         script = '''const vm = require('vm'); const assert = require('assert');
-const context = vm.createContext({setTimeout: () => {}});
+const context = vm.createContext({setTimeout: () => {}, setInterval: () => {},
+    MutationObserver: class { observe() {} }, document: {documentElement: {}}});
 vm.runInContext(SOURCE, context);
 const timed = vm.runInContext("payload({uri:'track'}, {provider:'Spotify',synced:[{startTime:'1250',text:'Test'}]})", context);
 assert.equal(timed.lines[0].time, 1.25); assert.equal(timed.synced, true);

@@ -313,7 +313,16 @@ font, density, corner radius and surface style.
 
 Play, Play all, and album or playlist Play start with a random song. Selecting a specific song starts that song; Shuffle controls subsequent track selection.
 
-Daily Mix previews stream through the running Spotify desktop app. On Niri,
+Open **Spotify playlists**, paste a Spotify playlist link (or playlist URI),
+then choose **Load playlist**. Use **Preview random** or **View tracks** to hear
+individual songs. Spotify must be signed in and able to access that playlist;
+private playlists work when the signed-in account has access. Unavailable/local
+tracks and episodes are omitted. Playlists up to 10,000 entries are supported.
+Daily Mixes remain available in the same section. Playlist loading uses the
+bundled local Spotify adapter; after updating it, Spotify loads it on its next
+launch (the updater does not restart active playback).
+
+Spotify playlist previews stream through the running Spotify desktop app. On Niri,
 previews return focus to the music window if Spotify activates itself, so Spotify
 can stay in the background. Sign in to Spotify first; previews do not download
 tracks or restart either player.
