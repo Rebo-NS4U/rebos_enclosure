@@ -124,3 +124,5 @@ Monolith keeps its surfaces free of grain, mineral seams and carved facets. Term
 Canopy keeps uninterrupted fabric hems: upper support ribs and the randomized assistant header’s short vertical attachment marks are removed. Fabric silhouettes, soft shading and the stable variation per opening are preserved.
 
 Glass Vault corner clasps sit on the inset bevel with matching concentric radii, short tangent arms, rounded ends and a soft translucent seat beneath a fine highlight. Their reach is limited at compact and pill-shaped sizes. The lower reflection is centered between the mounts instead of climbing one side of the frame.
+
+Canopy tops use filled fabric silhouettes and soft shading without drawn hem lines. Nested surfaces have no fabric seam, preventing streaks from showing through translucent panels.

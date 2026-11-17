@@ -615,9 +615,7 @@ ClippingRectangle {
                         cloth.addColorStop(1,fabric(0.20));
                         hem(0);ctx.lineTo(width,0);ctx.lineTo(0,0);ctx.closePath();
                         ctx.fillStyle=cloth;ctx.fill();
-                        // A broad contact shadow gives the fabric edge depth.
-                        hem(3);ctx.strokeStyle=fabric(0.08);ctx.lineWidth=4;ctx.stroke();
-                        hem(0);ctx.strokeStyle=fabric(0.48);ctx.lineWidth=1;ctx.stroke();
+                        // Keep the draped silhouette softly filled without seam strokes.
                     }else if(outer){
                         const drop=Math.min(70,height*0.22);
                         // Translucent fabric spans the upper edge with a scalloped hem.
@@ -629,10 +627,7 @@ ClippingRectangle {
                         ctx.bezierCurveTo(width*0.80,drop,width*0.67,drop,width*0.50,12);
                         ctx.bezierCurveTo(width*0.30,drop*1.25,width*0.16,drop*1.25,0,10);
                         ctx.closePath();ctx.fill();
-                        ctx.strokeStyle=fabric(0.46);ctx.lineWidth=1.2;
-                        ctx.beginPath();ctx.moveTo(0,10);
-                        ctx.bezierCurveTo(width*0.16,drop*1.25,width*0.30,drop*1.25,width*0.50,12);
-                        ctx.bezierCurveTo(width*0.67,drop,width*0.80,drop,width,10);ctx.stroke();
+                        // The filled fabric silhouette defines the hem without a drawn seam.
                         // Ground-level shade echoes the roof without framing the content.
                         const ground=ctx.createLinearGradient(0,height-24,0,height);
                         ground.addColorStop(0,fabric(0));ground.addColorStop(1,fabric(0.12));
@@ -640,11 +635,6 @@ ClippingRectangle {
                         ctx.strokeStyle=fabric(0.27);ctx.lineWidth=1;
                         ctx.beginPath();ctx.moveTo(safe,height-7);
                         ctx.quadraticCurveTo(width*0.5,height-18,width-safe,height-7);ctx.stroke();
-                    }else{
-                        // Inner surfaces retain a simple, softly tensioned seam.
-                        ctx.strokeStyle=fabric(inset?0.10:0.20);ctx.lineWidth=1;
-                        ctx.beginPath();ctx.moveTo(safe,4);
-                        ctx.quadraticCurveTo(width*0.5,Math.min(12,height*0.16),width-safe,4);ctx.stroke();
                     }
                 }else if(finish === "orbital"){
                     // Elliptical orbital tracks wrap a quiet, recessed space capsule.
