@@ -55,9 +55,14 @@ assert.equal(surface('monolith', 'bg', p).radius, undefined);
 assert.equal(surface('monolith', 'internalbg', p).gradient[0][0], p.background);
 assert.equal(surface('blueprint', 'bg', p).radius, undefined);
 assert.equal(surface('blueprint', 'primary', p).gradient[0][0], p.background);
-assert.equal(surface('terminal-hardware', 'bg', p).gradient.length, 4);
+for (const palette of palettes) {
+ for (const role of ['bg','popup','bar','pane','surface','surfaceContainer','internalbg','focus','surfaceVariant','primary','secondary','tertiary']) {
+  const material = surface('terminal-hardware', role, palette);
+  assert.equal(material.gradient.length, 1, 'hardware must have a flat fill: ' + role);
+ }
+}
 assert.equal(surface('terminal-hardware', 'bg', p).border[1], 2);
-assert.equal(surface('terminal-hardware', 'primary', p).gradient.length, 5);
+assert.equal(surface('terminal-hardware', 'primary', p).gradient.length, 1);
 assert.equal(surface('terminal-hardware', 'internalbg', p).gradient[0][0], p.background);
 for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++)
  assert.notDeepEqual(surface(ids[i], 'bg', p), surface(ids[j], 'bg', p));

@@ -986,10 +986,6 @@ ClippingRectangle {
                     const ctx=getContext("2d");ctx.clearRect(0,0,width,height);
                     if(width<24||height<24)return;
                     ctx.save();if(root.traceThemeFrame(ctx,0))ctx.clip();
-                    const brushed=ctx.createLinearGradient(0,0,0,chassis.outer?20:8);
-                    brushed.addColorStop(0,Qt.alpha(pigment,0.14));
-                    brushed.addColorStop(0.35,Qt.alpha(pigment,0.035));brushed.addColorStop(1,Qt.alpha(pigment,0));
-                    ctx.fillStyle=brushed;ctx.fillRect(0,0,width,chassis.outer?20:8);
                     // One inset bezel and a small vent bank keep the housing legible.
                     if(chassis.outer){
                         const safe=Math.max(20,cornerRadius+8);

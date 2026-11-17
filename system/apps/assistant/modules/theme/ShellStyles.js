@@ -9,7 +9,7 @@ var styles = [
     {id: "suspended-film", label: "Suspended Film", font: "DejaVu Sans Mono", description: "Suspended glass sheets, curved grazing reflections and separated contact edges."},
     {id: "monolith", label: "Monolith", font: "Noto Sans", description: "Engraved stone with recessed angular channels and fine mineral grain."},
     {id: "blueprint", label: "Blueprint", font: "JetBrains Mono", description: "Architectural drafting sheets, truss details, ruled scales and wire controls."},
-    {id: "terminal-hardware", label: "Terminal Hardware", font: "DejaVu Sans Mono", description: "Clean machined bezels, subtle brushed highlights and sparse cooling vents."},
+    {id: "terminal-hardware", label: "Terminal Hardware", font: "DejaVu Sans Mono", description: "Flat machined panels, inset bezels and sparse cooling vents."},
     {id: "frosted", font: "DejaVu Sans Mono", label: "Frosted Glass", description: "Branching frost crystals, etched ice rims, fine grain and soft corner bloom."},
     {id: "colorful", font: "DejaVu Sans", label: "Tinted", description: "Layered colored glass planes, offset frames and fading accent reflections."},
     {id: "clear-glass", label: "Clear Glass", font: "Noto Sans", description: "Clear glazing with grazing reflections, fine highlights and a subtle lower meniscus."}
@@ -146,11 +146,8 @@ function surface(style, variant, p, ditherStrength) {
         } else {
             border = [mix(fill, p.foreground, inset ? 0.26 : 0.38), focused || outer ? 2 : 1];
             if (focused) border[0] = p.primary;
-            // Narrow highlight and lower lip form a machined bevel.
-            if (neutral) renderGradient = inset
-                ? [[fill, 0], [mix(fill, p.foreground, 0.015), 0.15], [fill, 0.94], [mix(fill, p.foreground, 0.045), 1]]
-                : [[mix(fill, p.foreground, 0.08), 0], [fill, 0.06], [fill, 0.90], [mix(fill, p.background, 0.55), 1]];
-            else if (!outlineRole && opacity > 0) renderGradient = [[fill, 0], [mix(fill, item, 0.035), 0.08], [fill, 0.20], [fill, 0.85], [mix(fill, p.background, 0.08), 1]];
+            // Flat faces: machined detail comes from the perimeter geometry.
+            renderGradient = [[fill, 0]];
         }
     }
     // Three distinct structural treatments with translucent centers.
