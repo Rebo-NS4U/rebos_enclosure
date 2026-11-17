@@ -39,6 +39,32 @@ class MusicLibraryTests(unittest.TestCase):
                         '-metadata', 'album=Test album', '-metadata', 'track=3/12', str(self.song)], check=True)
         self.library = music.Library(self.home)
 
+    def test_spotify_suggestions_and_download_destination(self):
+        uri = 'spotify:track:' + 'b'*22
+        other = 'spotify:track:' + 'c'*22
+        mix = dict(uri='spotify:playlist:'+'a'*22, name='Daily Mix 1', tracks=[dict(uri=uri, title='Seed', artist='Artist')])
+        self.library.mixes.update(dict(mixes=[mix]))
+        current = self.library.mixes.dispatch('mixes_get', {})['current'][0]
+        target = self.library.dispatch('mixes_download', current)
+        folder = Path(target['folder'])
+        folder.mkdir(parents=True)
+        shutil.copyfile(self.song, folder/('b'*22+'.flac'))
+        playlist = self.library.scan()['state']['playlists'][0]
+        pending = self.library.dispatch('suggestions_refresh', dict(playlist=playlist['id']))
+        self.assertTrue(pending['pending'])
+        self.assertEqual(self.library.mixes.suggestion['uri'], mix['uri'])
+        job = self.library.mixes.suggestion['id']
+        result = dict(suggestion_id=job, tracks=[dict(uri=other, title='New online song', artist='Other artist')])
+        self.library.mixes.update(dict(result, suggestion_id='stale'))
+        self.assertTrue(self.library.mixes.suggestions()['pending'])
+        self.library.mixes.update(result)
+        self.assertEqual(self.library.dispatch('suggestions_get', {})['tracks'][0]['uri'], other)
+        download = self.library.dispatch('suggestion_download', dict(playlist=playlist['id'], uri=other))
+        self.assertEqual(download['folder'], str(folder))
+        self.assertEqual(download['links'], 'https://open.spotify.com/track/'+'c'*22)
+        with self.assertRaises(ValueError):
+            self.library.dispatch('suggestion_download', dict(playlist=playlist['id'], uri=uri))
+
     def test_playlist_add_survives_rescan_and_reload(self):
         folder = self.folder / 'Downloaded playlist'
         folder.mkdir()

@@ -170,7 +170,7 @@ class Library:
                             name = ' · '.join(leaders) + ' Mix'
                     folder_playlists.append(dict(
                         id='folder:' + hashlib.sha256(str(folder.absolute()).encode()).hexdigest(),
-                        name=name, paths=members, folder=True, mix=is_mix, sourceName=source_name))
+                        name=name, paths=members, folder=True, folderPath=str(root), mix=is_mix, sourceName=source_name))
         available = {t['path'] for t in tracks}
         for playlist in folder_playlists:
             extras = self.state['playlistAdditions'].get(playlist['id'], [])
@@ -234,6 +234,31 @@ class Library:
         }
         if cmd in media_actions:
             return media_actions[cmd]()
+        if cmd == 'suggestions_get':
+            return self.mixes.suggestions()
+        if cmd in ('suggestions_refresh', 'suggestion_download'):
+            data = self.scan()
+            playlist = next((p for p in data['state']['playlists'] if p['id'] == args.get('playlist')), None)
+            if not playlist:
+                raise ValueError('Playlist is no longer available')
+            if cmd == 'suggestion_download':
+                result = self.mixes.suggestions()
+                uri = args.get('uri')
+                if result.get('playlist') != playlist['id'] or not any(t['uri'] == uri for t in result['tracks']):
+                    raise ValueError('Suggestions changed; refresh and try again')
+                folder = playlist.get('folderPath') or str(self.music / 'Suggested tracks')
+                return dict(folder=folder, links='https://open.spotify.com/track/' + uri.split(':')[-1],
+                            playlist=playlist['id'], uri=uri)
+            members = [t for t in data['tracks'] if t['path'] in playlist['paths']]
+            uris = {t.get('spotifyUri') for t in members if t.get('spotifyUri')}
+            mixes = self.mixes.dispatch('mixes_get', {})
+            sources = mixes['current'] + mixes['saved']
+            source = max(sources, key=lambda m: len(uris & {t['uri'] for t in m['tracks']}), default=None)
+            if not source or not uris.intersection(t['uri'] for t in source['tracks']):
+                source = next((m for m in sources if m['uri'].split(':')[-1] in playlist.get('folderPath', '') or m['name'] == playlist.get('sourceName')), None)
+            if not source:
+                raise ValueError('Spotify source playlist not found. Load its Spotify link in Spotify playlists first, then refresh suggestions.')
+            return self.mixes.suggest(playlist['id'], source['uri'])
         if cmd == 'mixes_download':
             data = self.mixes.dispatch('mixes_get', {})
             mix = next((m for m in data['current'] + data['saved']

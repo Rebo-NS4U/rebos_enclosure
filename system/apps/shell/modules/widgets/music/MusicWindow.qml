@@ -70,20 +70,34 @@ Window {
         const q = query.trim().toLowerCase();
         return q ? list.filter(t => (t.title + " " + t.artist + " " + t.album).toLowerCase().includes(q)) : list;
     }
+    property var spotifySuggestions: ({tracks: [], pending: false, status: ""})
+    property var pendingSuggestionDownload: null
     readonly property var suggestedTracks: {
-        if (page !== "Playlist") return [];
         const playlist = playlists.find(p => p.id === detail);
-        if (!playlist) return [];
+        if (page !== "Playlist" || !playlist || spotifySuggestions.playlist !== detail) return [];
         const members = tracks.filter(t => playlist.paths.includes(t.path));
-        const artists = members.map(t => t.artist.toLowerCase()).filter(a => a !== "unknown artist");
-        const identities = members.map(t => (t.artist + "\n" + t.title).toLowerCase());
-        const seen = new Set(identities);
-        return tracks.filter(t => {
+        const identities = new Set(members.map(t => (t.artist + "\n" + t.title).toLowerCase()));
+        const uris = new Set(members.map(t => t.spotifyUri));
+        return (spotifySuggestions.tracks || []).filter(t => {
             const key = (t.artist + "\n" + t.title).toLowerCase();
-            if (playlist.paths.includes(t.path) || seen.has(key) || !artists.includes(t.artist.toLowerCase())) return false;
-            seen.add(key);
-            return true;
+            if (uris.has(t.uri) || identities.has(key)) return false;
+            uris.add(t.uri); identities.add(key); return true;
         }).slice(0, 20);
+    }
+    function refreshSuggestions() {
+        if (page !== "Playlist") return;
+        const selected = detail;
+        spotifySuggestions = {playlist: selected, tracks: [], pending: true, status: "Loading Spotify suggestions…"};
+        request("suggestions_refresh", {playlist: selected}, data => {
+            if (detail === selected) spotifySuggestions = data;
+        });
+    }
+    Timer {
+        interval: 2000; repeat: true
+        running: root.page === "Playlist" && root.spotifySuggestions.pending
+        onTriggered: root.request("suggestions_get", {}, data => {
+            if (data.playlist === root.detail) root.spotifySuggestions = data;
+        })
     }
     readonly property var albums: {
         const result = {};
@@ -142,7 +156,7 @@ Window {
         if (message.event === "control") { control(message); return; }
         const callback = callbacks[message.id];
         delete callbacks[message.id];
-        if (!message.ok) { busy = false; notice = message.error; return; }
+        if (!message.ok) { busy = false; notice = message.error; if (spotifySuggestions.pending) spotifySuggestions = Object.assign({}, spotifySuggestions, {pending:false}); return; }
         if (callback) callback(message.data);
     }
     function load(data) {
@@ -156,7 +170,7 @@ Window {
     function favorite(track) {
         favorites = favorites.includes(track.path) ? favorites.filter(p => p !== track.path) : favorites.concat([track.path]); save();
     }
-    function navigate(value, arg) { page = value; detail = arg || ""; query = ""; }
+    function navigate(value, arg) { page = value; detail = arg || ""; query = ""; if (page === "Playlist") refreshSuggestions(); }
     function play(list, index) {
         if (!list.length) return;
         const selected = index === undefined ? Math.floor(Math.random() * list.length) : index;
@@ -429,11 +443,15 @@ Window {
                     ColumnLayout {
                         visible: root.page === "Playlist"
                         Layout.fillWidth: true
-                        StyledText { text: "Suggested tracks · From your library"; font.bold: true }
+                        RowLayout {
+                            Layout.fillWidth: true
+                            StyledText { text: "Suggested tracks · Spotify"; font.bold: true; Layout.fillWidth: true }
+                            ThemeButton { text: root.spotifySuggestions.pending ? "Loading…" : "Refresh"; enabled: !root.spotifySuggestions.pending; onClicked: root.refreshSuggestions() }
+                        }
                         StyledText {
                             visible: root.suggestedTracks.length === 0
                             Layout.fillWidth: true; wrapMode: Text.WordWrap
-                            text: "No more tracks by this playlist’s artists in your library. Download more music to discover suggestions here."
+                            text: root.spotifySuggestions.status || "Open Spotify, then refresh suggestions for this playlist."
                             color: Colors.overSurfaceVariant
                         }
                         ListView {
@@ -446,11 +464,20 @@ Window {
                                 required property var modelData
                                 width: ListView.view.width; height: Styling.spacing(52)
                                 StyledText { Layout.fillWidth: true; text: suggestion.modelData.title + " · " + suggestion.modelData.artist; elide: Text.ElideRight }
-                                ThemeButton { text: "Play"; Accessible.name: "Play suggested track " + suggestion.modelData.title; onClicked: root.play([suggestion.modelData], 0) }
+                                ThemeButton { text: "Play"; Accessible.name: "Play suggested track " + suggestion.modelData.title; onClicked: root.request("mixes_preview", {uri:suggestion.modelData.uri}, data => { player.pause(); }) }
                                 ThemeButton {
                                     text: "Add"; Accessible.name: "Add " + suggestion.modelData.title + " to playlist"
-                                    enabled: !root.busy
-                                    onClicked: root.request("playlist_add", {playlist: root.detail, path: suggestion.modelData.path}, root.load)
+                                    enabled: !root.busy && !downloads.busy && !root.pendingSuggestionDownload
+                                    onClicked: {
+                                        const local = root.tracks.find(t => t.spotifyUri === suggestion.modelData.uri);
+                                        if (local) root.request("playlist_add", {playlist:root.detail, path:local.path}, root.load);
+                                        else root.request("suggestion_download", {playlist:root.detail, uri:suggestion.modelData.uri}, data => {
+                                            if (downloads.prepareSuggestion(data)) {
+                                                root.pendingSuggestionDownload = data;
+                                                downloads.start();
+                                            }
+                                        });
+                                    }
                                 }
                             }
                             ScrollBar.vertical: ScrollBar {}
@@ -491,7 +518,18 @@ Window {
                     id: downloads
                     visible: root.page === "Downloads"
                     Layout.fillWidth: true; Layout.fillHeight: true
-                    onCompleted: root.scan()
+                    onRejected: { root.pendingSuggestionDownload = null; root.notice = "Download could not start. Check Downloads for details."; }
+                    onCompleted: {
+                        const pending = root.pendingSuggestionDownload;
+                        root.pendingSuggestionDownload = null;
+                        if (!pending) { root.scan(); return; }
+                        root.request("scan", {}, data => {
+                            root.load(data);
+                            const track = data.tracks.find(t => t.spotifyUri === pending.uri);
+                            if (track) root.request("playlist_add", {playlist:pending.playlist, path:track.path}, root.load);
+                            else root.notice = "Track was not downloaded. Check the Downloads activity log and try again.";
+                        });
+                    }
                 }
                 StyledRect {
                     visible: root.page !== "Downloads" && root.page !== "Spotify playlists" && (root.width >= 1120 || root.page === "Now playing")

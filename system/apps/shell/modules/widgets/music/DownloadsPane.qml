@@ -21,6 +21,13 @@ ColumnLayout {
     readonly property bool canDownload: !busy && service.running && folder.text.trim().length > 0 && links.text.trim().length > 0
     spacing: 16
     signal completed()
+    signal rejected()
+    function prepareSuggestion(data) {
+        if (busy || !service.running) return false;
+        links.text = data.links; folder.text = data.folder; mixTracks = true;
+        status = "Downloading Spotify suggestion";
+        return true;
+    }
     function prepareMix(data) {
         if (busy) return false;
         links.text = data.links; folder.text = data.folder; mixTracks = true;
@@ -51,7 +58,7 @@ ColumnLayout {
                 let message;
                 try { message = JSON.parse(data); } catch (e) { return; }
                 if (message.log) root.logText = (root.logText + message.log + "\n").slice(-60000);
-                if (message.error) { root.busy = !!message.busy; root.failed = true; root.status = message.busy ? "Download still running" : "Could not start"; root.logText += message.error + "\n"; }
+                if (message.error) { root.busy = !!message.busy; root.failed = true; root.status = message.busy ? "Download still running" : "Could not start"; root.logText += message.error + "\n"; if (!message.busy) root.rejected(); }
                 if (message.done) {
                     const wasCancelled = message.cancelled === true || root.cancelling;
                     root.busy = false;
@@ -62,7 +69,7 @@ ColumnLayout {
                 }
             }
         }
-        onExited: { root.busy = false; root.failed = true; root.status = "Service unavailable"; root.logText += "Download service stopped.\n"; }
+        onExited: { root.busy = false; root.failed = true; root.status = "Service unavailable"; root.logText += "Download service stopped.\n"; root.rejected(); }
     }
     RowLayout {
         Layout.fillWidth: true

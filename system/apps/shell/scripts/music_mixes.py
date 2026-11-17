@@ -51,9 +51,24 @@ class Mixes:
         self.lock = threading.Lock()
         self.refresh_id = ''
         self.refresh_uri = ''
+        self.suggestion = None
+        self.suggestion_result = dict(tracks=[], pending=False, status='')
         self.refresh_started = 0
         self.refresh_status = ''
         self.data = read(path, dict(current=[], saved=[], checked=''))
+
+    def suggest(self, playlist, uri):
+        with self.lock:
+            self.suggestion = dict(id=uuid.uuid4().hex, playlist=playlist, uri=uri, started=time.monotonic())
+            self.suggestion_result = dict(playlist=playlist, tracks=[], pending=True, status='Waiting for Spotify…')
+            return copy.deepcopy(self.suggestion_result)
+
+    def suggestions(self):
+        with self.lock:
+            if self.suggestion and time.monotonic() - self.suggestion['started'] > 45:
+                self.suggestion = None
+                self.suggestion_result.update(pending=False, status='Spotify did not respond. Open Spotify with the updated integration, then refresh suggestions.')
+            return copy.deepcopy(self.suggestion_result)
 
     def dispatch(self, cmd, args):
         with self.lock:
@@ -80,6 +95,19 @@ class Mixes:
             return dict(copy.deepcopy(self.data), refreshPending=bool(self.refresh_id), refreshStatus=self.refresh_status)
 
     def update(self, payload):
+        if 'suggestion_id' in payload:
+            tracks = payload.get('tracks', [])
+            if not isinstance(tracks, list) or len(tracks) > 100:
+                raise ValueError('Invalid suggestions')
+            # Reuse the strict metadata validation for Spotify tracks.
+            cleaned = normalize(dict(mixes=[dict(uri='spotify:playlist:' + 'a'*22,
+                name='Suggestions', tracks=tracks)]))[0]['tracks'] if tracks else []
+            with self.lock:
+                if self.suggestion and payload['suggestion_id'] == self.suggestion['id']:
+                    self.suggestion_result.update(tracks=cleaned, pending=False,
+                        status=str(payload.get('error') or ('Suggestions from Spotify' if cleaned else 'Spotify returned no suggestions.'))[:300])
+                    self.suggestion = None
+            return
         mixes = normalize(payload)
         now = datetime.now(timezone.utc).isoformat()
         with self.lock:
@@ -119,7 +147,7 @@ class Mixes:
                 if not self.allowed():
                     self.reply(403); return
                 with store.lock:
-                    self.reply(200, dict(refresh_id=store.refresh_id, playlist_uri=store.refresh_uri))
+                    self.reply(200, dict(refresh_id=store.refresh_id, playlist_uri=store.refresh_uri, suggestion=({k: v for k, v in store.suggestion.items() if k != "started"} if store.suggestion else None)))
             def do_POST(self):
                 if not self.allowed():
                     self.reply(403); return

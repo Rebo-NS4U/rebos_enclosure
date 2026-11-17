@@ -54,6 +54,7 @@ async function refresh() {
 // Daily Mix metadata only. Learn playlist links from Spotify's visible Daily Mix cards.
 (function dailyMixes() {
     let collecting = false;
+    let suggesting = false;
     let lastCollection = 0;
     let cached = null;
     const learned = new Map();
@@ -126,6 +127,20 @@ async function refresh() {
             const response = await fetch('http://127.0.0.1:19838/mixes', {credentials: 'omit', cache: 'no-store'});
             if (!response.ok) return;
             const command = await response.json();
+            if (command.suggestion && !suggesting) {
+                suggesting = true;
+                const job = command.suggestion;
+                try {
+                    let tracks = [], error = '';
+                    try {
+                        const api = Spicetify.Platform.PlaylistAPI;
+                        if (typeof api.getRecommendedTracks !== 'function') throw Error('Update the Spotify integration to load recommendations.');
+                        const rows = await api.getRecommendedTracks(job.uri, [], 40);
+                        tracks = rows.map(row => row.track || row).filter(t => /^spotify:track:[A-Za-z0-9]{22}$/.test(t.uri || '')).map(t => ({uri:t.uri, title:t.name || '', artist:(t.artists || []).map(a => a.name).join(', ')}));
+                    } catch (e) { error = 'Could not load Spotify suggestions. ' + String(e.message || e).slice(0, 180); }
+                    await fetch('http://127.0.0.1:19838/mixes', {method:'POST', credentials:'omit', headers:{'Content-Type':'application/json'}, body:JSON.stringify({suggestion_id:job.id, tracks, error})});
+                } finally { suggesting = false; }
+            }
             if (command.refresh_id) await collect(true, command.refresh_id, command.playlist_uri);
         } catch (_) { /* Music may be closed. */ }
     }, 5000);
