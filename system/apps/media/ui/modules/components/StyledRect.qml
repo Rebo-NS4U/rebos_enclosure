@@ -855,6 +855,27 @@ ClippingRectangle {
                 const ctx=getContext("2d");ctx.clearRect(0,0,width,height);
                 if(width<24||height<24)return;
                 ctx.save();if(root.traceThemeFrame(ctx,0))ctx.clip();
+                // Deterministic mineral stipple and tiny diagonal tool marks.
+                // Bound the sample count on large panels; no animation or random repaint noise.
+                const grainStep=Math.max(6,Math.ceil(Math.sqrt(width*height/10000)));
+                for(let gy=0;gy<height;gy+=grainStep){
+                    for(let gx=0;gx<width;gx+=grainStep){
+                        let hash=((gx+11)*374761393+(gy+7)*668265263)|0;
+                        hash=((hash^(hash>>>13))*1274126177)|0;
+                        const seed=(hash^(hash>>>16))>>>0;
+                        const x=gx+(seed&255)/256*grainStep;
+                        const y=gy+((seed>>>8)&255)/256*grainStep;
+                        const strength=inset?0.025:outer?0.065:0.045;
+                        ctx.fillStyle=Qt.alpha(pigment,strength*(0.55+((seed>>>16)&15)/20));
+                        const size=(seed&3)===0?1.2:0.7;
+                        ctx.fillRect(x,y,size,size);
+                        if(!inset && seed%19===0){
+                            ctx.strokeStyle=Qt.alpha(pigment,strength*0.7);ctx.lineWidth=0.6;
+                            const cut=2+((seed>>>20)&3);
+                            ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+cut,y-cut);ctx.stroke();
+                        }
+                    }
+                }
                 // A fine rim follows the selected rounded frame.
                 ctx.lineWidth=0.8;ctx.strokeStyle=Qt.alpha(pigment,inset?0.045:0.085);
                 if(root.traceThemeFrame(ctx,0.8))ctx.stroke();
