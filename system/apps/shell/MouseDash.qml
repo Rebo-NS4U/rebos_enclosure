@@ -89,10 +89,10 @@ ShellRoot {
         title: "Starwake · Enclosure"
         visible: true
         maximized: false
-        implicitWidth: 480
-        implicitHeight: 480
-        minimumSize: Qt.size(480, 480)
-        maximumSize: Qt.size(480, 480)
+        implicitWidth: 540
+        implicitHeight: 540
+        minimumSize: Qt.size(540, 540)
+        maximumSize: Qt.size(540, 540)
         color: "transparent"
         onVisibleChanged: if (!visible) Qt.quit()
         property string phase: "ready"
@@ -324,7 +324,7 @@ ShellRoot {
                     }
                     border.width: 1.5; border.color: Qt.alpha(Colors.primary, 0.5)
                 }
-                Cosmos { anchors.fill: parent; opacity: 0.6 }
+                Cosmos { anchors.fill: parent; opacity: 0.35 }
                 Repeater {
                     model: spawnVisuals
                     delegate: Item {
@@ -399,26 +399,44 @@ ShellRoot {
                         required property real heading
                         readonly property real arrival: window.reducedMotion ? 1 : Math.max(0,Math.min(1, age / 0.15))
                         // The collision rim is full size from birth; only the surface brightens.
-                        opacity: 0.65 + arrival * 0.35
+                        opacity: 1
                         x: ex - size / 2; y: ey - size / 2
                         width: size; height: size; radius: size / 2
                         visible: window.phase !== "ready"
-                        color: Qt.alpha(orbiting ? Colors.tertiary : Colors.error, 0.3)
-                        border.width: 1.5; border.color: Qt.alpha(Colors.error, 0.85)
+                        color: Colors.error
+                        gradient: Gradient {
+                            GradientStop { position: 0; color: Qt.tint(Colors.error, Qt.alpha(Colors.overBackground, 0.25)) }
+                            GradientStop { position: 1; color: Qt.tint(Colors.error, Qt.alpha(Colors.background, 0.3)) }
+                        }
+                        border.width: 2; border.color: Colors.overBackground
+                        Repeater {
+                            model: window.reducedMotion ? 0 : 3
+                            delegate: Rectangle {
+                                required property int index
+                                anchors.centerIn: parent
+                                width: parent.width + 8 + index * 9; height: width; radius: width / 2
+                                z: -1; color: Qt.alpha(Colors.error, 0.07 - index * 0.018)
+                                border.width: 1; border.color: Qt.alpha(Colors.error, 0.22 - index * 0.06)
+                            }
+                        }
                         rotation: heading
                         Rectangle {
                             anchors.right: parent.left; anchors.verticalCenter: parent.verticalCenter
-                            width: parent.size * 1.6; height: parent.size * 0.5; radius: height / 2
+                            width: parent.size * 1.9; height: parent.size * 0.55; radius: height / 2
                             gradient: Gradient {
                                 orientation: Gradient.Horizontal
                                 GradientStop { position: 0; color: "transparent" }
-                                GradientStop { position: 1; color: Qt.alpha(Colors.error, 0.35) }
+                                GradientStop { position: 1; color: Qt.alpha(Colors.error, 0.6) }
                             }
                             visible: !window.reducedMotion && !parent.orbiting
                         }
                         Rectangle {
-                            anchors.centerIn: parent; width: parent.width * 0.45; height: width; radius: width * 0.25
-                            rotation: 45; color: parent.orbiting ? Colors.tertiary : Colors.error
+                            anchors.centerIn: parent; width: parent.width * 0.5; height: width; radius: width * 0.2
+                            rotation: 45; color: Colors.overBackground
+                            Rectangle {
+                                anchors.centerIn: parent; width: parent.width * 0.4; height: width; radius: width / 2
+                                color: Colors.error
+                            }
                         }
                     }
                 }
