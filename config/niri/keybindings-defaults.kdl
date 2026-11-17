@@ -8,6 +8,7 @@ binds {
     Mod+Alt+Q repeat=false hotkey-overlay-title="End desktop session (closes apps)" { quit skip-confirmation=true; }
 
     // rebos_shell QuickShell actions.
+    Mod+Alt+R repeat=false hotkey-overlay-title="Restart Quickshell" { spawn "systemctl" "--user" "restart" "rebos-panel.service"; }
     Mod+T repeat=false hotkey-overlay-title="Open Book Typing" { spawn "qs" "ipc" "-p" "@HOME@/.config/quickshell" "call" "rebos_shell" "run" "t"; }
     Mod+Ctrl+T repeat=false hotkey-overlay-title="Toggle Lyrics" { spawn "qs" "ipc" "-p" "@HOME@/.config/quickshell" "call" "lyrics" "toggle"; }
     Mod+Alt+F hotkey-overlay-title="File Shelf" { spawn "qs" "ipc" "-p" "@HOME@/.config/quickshell" "call" "rebos_shell" "run" "file-shelf"; }
