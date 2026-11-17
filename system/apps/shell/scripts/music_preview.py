@@ -1,11 +1,51 @@
 """Preview Spotify tracks through the existing player, without library downloads."""
+import json
+import os
 import re
 import subprocess
+import time
+
+SPOTIFY_APPS = {'Spotify', 'spotify', 'com.spotify.Client'}
+
+
+def focused_window():
+    """Best effort: playback also works outside a Niri desktop session."""
+    if not os.environ.get('NIRI_SOCKET'):
+        return None
+    try:
+        result = subprocess.run(['niri', 'msg', '-j', 'focused-window'],
+                                check=True, capture_output=True, text=True, timeout=1)
+        window = json.loads(result.stdout)
+        return window if isinstance(window, dict) and isinstance(window.get('id'), int) else None
+    except (OSError, subprocess.SubprocessError, ValueError, TypeError):
+        return None
+
+
+def keep_background(previous):
+    if not previous or previous.get('app_id') in SPOTIFY_APPS:
+        return
+    # Spotify may activate its window asynchronously after OpenUri. Never undo
+    # a switch to another application that the user makes during this interval.
+    for _ in range(5):
+        time.sleep(0.1)
+        current = focused_window()
+        if not current:
+            return
+        if current['id'] == previous['id']:
+            continue
+        if current.get('app_id') in SPOTIFY_APPS:
+            try:
+                subprocess.run(['niri', 'msg', 'action', 'focus-window', '--id', str(previous['id'])],
+                               check=True, capture_output=True, text=True, timeout=1)
+            except (OSError, subprocess.SubprocessError):
+                pass
+        return
 
 
 def preview(uri):
     if not isinstance(uri, str) or not re.fullmatch(r'spotify:track:[A-Za-z0-9]{22}', uri):
         raise ValueError('Choose a valid Spotify track to preview')
+    previous = focused_window()
     try:
         subprocess.run(['gdbus', 'call', '--session', '--dest', 'org.mpris.MediaPlayer2.spotify',
                         '--object-path', '/org/mpris/MediaPlayer2', '--method',
@@ -14,4 +54,5 @@ def preview(uri):
     except (OSError, subprocess.SubprocessError) as error:
         raise ValueError('Spotify preview unavailable. Open Spotify, sign in and try again. '
                          'No music was downloaded.') from error
-    return {'uri': uri, 'status': 'Preview opened in Spotify · no library download'}
+    keep_background(previous)
+    return {'uri': uri, 'status': 'Playing through Spotify in the background · no library download'}

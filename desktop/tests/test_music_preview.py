@@ -14,6 +14,33 @@ import music_preview
 
 
 class MusicPreviewTests(unittest.TestCase):
+    def test_spotify_activation_returns_focus_to_player(self):
+        player = {'id': 4, 'app_id': 'org.quickshell'}
+        spotify = {'id': 5, 'app_id': 'Spotify'}
+        with patch.object(music_preview, 'focused_window', side_effect=[player, player, spotify]), \
+                patch.object(music_preview.time, 'sleep'), \
+                patch.object(music_preview.subprocess, 'run') as run:
+            result = music_preview.preview('spotify:track:' + 'a'*22)
+        self.assertEqual(run.call_count, 2)
+        self.assertIn('org.mpris.MediaPlayer2.Player.OpenUri', run.call_args_list[0].args[0])
+        self.assertEqual(run.call_args_list[1].args[0],
+                         ['niri', 'msg', 'action', 'focus-window', '--id', '4'])
+        self.assertIn('background', result['status'])
+
+    def test_focus_safeguard_preserves_user_switch_and_handles_missing_session(self):
+        player = {'id': 4, 'app_id': 'org.quickshell'}
+        for current in (None, {'id': 6, 'app_id': 'firefox'}):
+            with patch.object(music_preview, 'focused_window', return_value=current), \
+                    patch.object(music_preview.time, 'sleep'), \
+                    patch.object(music_preview.subprocess, 'run') as run:
+                music_preview.keep_background(player)
+                run.assert_not_called()
+
+    def test_unavailable_compositor_does_not_break_playback(self):
+        with patch.dict(os.environ, {'NIRI_SOCKET': '/fixture/socket'}), \
+                patch.object(music_preview.subprocess, 'run', side_effect=FileNotFoundError()):
+            self.assertIsNone(music_preview.focused_window())
+
     def test_preview_uses_spotify_uri_without_file_writes_or_downloads(self):
         uri = 'spotify:track:' + 'a'*22
         with patch.object(music_preview.subprocess, 'run') as run:

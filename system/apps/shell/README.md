@@ -313,6 +313,11 @@ font, density, corner radius and surface style.
 
 Play, Play all, and album or playlist Play start with a random song. Selecting a specific song starts that song; Shuffle controls subsequent track selection.
 
+Daily Mix previews stream through the running Spotify desktop app. On Niri,
+previews return focus to the music window if Spotify activates itself, so Spotify
+can stay in the background. Sign in to Spotify first; previews do not download
+tracks or restart either player.
+
 The library initially reads the XDG Music directory. **Add folder** includes
 other music directories without copying or modifying audio files. Albums,
 artists, search, favorites, saved queue playlists, shuffle, repeat, seeking,
