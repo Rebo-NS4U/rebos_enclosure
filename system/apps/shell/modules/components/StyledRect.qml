@@ -424,41 +424,54 @@ ClippingRectangle {
                             ctx.quadraticCurveTo(inset,bottom,inset,bottom-r);ctx.lineTo(inset,inset+r);
                             ctx.quadraticCurveTo(inset,inset,inset+r,inset);ctx.stroke();
                         };
-                        const step=material.outer ? 10 : 4;
-                        ctx.strokeStyle=ink(0.18);frame(step);
-                        ctx.strokeStyle=ink(0.08);frame(step+3);
-                        // Clamps follow the same inset arc as the clipped surface.
-                        for (const x of [3,width-3]) for (const y of [3,height-3]) {
-                            const sx=x>width/2 ? -1 : 1,sy=y>height/2 ? -1 : 1;
-                            const r=radiusAt(3),inner=radiusAt(5);
-                            const span=Math.min(Math.max(material.outer?26:12,r+6),(width-6)/2,(height-6)/2);
-                            ctx.strokeStyle=ink(0.32);ctx.lineWidth=material.outer?5:2;
-                            ctx.beginPath();ctx.moveTo(x,y+sy*span);ctx.lineTo(x,y+sy*r);
-                            ctx.quadraticCurveTo(x,y,x+sx*r,y);ctx.lineTo(x+sx*span,y);ctx.stroke();
-                            ctx.lineWidth=1;ctx.strokeStyle=ink(0.55);
-                            const ix=x+sx*2,iy=y+sy*2;
-                            ctx.beginPath();ctx.moveTo(ix,y+sy*span);ctx.lineTo(ix,iy+sy*inner);
-                            ctx.quadraticCurveTo(ix,iy,ix+sx*inner,iy);ctx.lineTo(x+sx*span,iy);ctx.stroke();
-                        }
+                        // A polished bevel defines the block without boxing in its content.
+                        const step=material.outer ? 6 : 2;
+                        const bevel=ctx.createLinearGradient(0,0,width,height);
+                        bevel.addColorStop(0,ink(0.38));
+                        bevel.addColorStop(0.32,ink(0.10));
+                        bevel.addColorStop(0.70,ink(0.035));
+                        bevel.addColorStop(1,ink(0.20));
+                        ctx.strokeStyle=bevel;frame(step);
                         if(material.outer){
-                            // Thick glass splits grazing light into narrow refractive bands.
-                            for(let band=0;band<3;band++){
-                                const d=12+band*3;
-                                const refraction=ctx.createLinearGradient(0,0,width,0);
-                                refraction.addColorStop(0,ink(0));refraction.addColorStop(0.28,ink(0.08-band*0.02));
-                                refraction.addColorStop(0.64,ink(0.025));refraction.addColorStop(1,ink(0));
-                                ctx.strokeStyle=refraction;ctx.lineWidth=2;
-                                ctx.beginPath();ctx.moveTo(Math.max(24,cornerRadius),d);
-                                ctx.bezierCurveTo(width*0.30,d+5,width*0.70,d-3,width-24,d+2);ctx.stroke();
+                            ctx.strokeStyle=ink(0.045);frame(step+3);
+                            // Broad, fading reflections give the rim optical depth.
+                            const depth=Math.min(48,height*0.25);
+                            const wash=ctx.createLinearGradient(0,0,0,depth);
+                            wash.addColorStop(0,ink(0.09));
+                            wash.addColorStop(0.35,ink(0.025));
+                            wash.addColorStop(1,ink(0));
+                            ctx.fillStyle=wash;ctx.fillRect(0,0,width,depth);
+                            const grazing=ctx.createLinearGradient(0,0,width,0);
+                            grazing.addColorStop(0,ink(0));
+                            grazing.addColorStop(0.24,ink(0.22));
+                            grazing.addColorStop(0.62,ink(0.06));
+                            grazing.addColorStop(1,ink(0));
+                            ctx.strokeStyle=grazing;ctx.lineWidth=1;
+                            const inset=Math.max(14,cornerRadius+3);
+                            if(width>inset*2){
+                                ctx.beginPath();ctx.moveTo(inset,12);
+                                ctx.bezierCurveTo(width*0.34,15,width*0.65,9,width-inset,12);ctx.stroke();
                             }
+                            // Small rounded corner clasps retain the vault silhouette.
+                            for (const x of [3,width-3]) for (const y of [3,height-3]) {
+                                const sx=x>width/2 ? -1 : 1,sy=y>height/2 ? -1 : 1;
+                                const r=radiusAt(3);
+                                const span=Math.min(Math.max(18,r+5),(width-6)/2,(height-6)/2);
+                                ctx.strokeStyle=ink(sy===1?0.24:0.13);ctx.lineWidth=2;
+                                ctx.beginPath();ctx.moveTo(x,y+sy*span);ctx.lineTo(x,y+sy*r);
+                                ctx.quadraticCurveTo(x,y,x+sx*r,y);ctx.lineTo(x+sx*span,y);ctx.stroke();
+                            }
+                            // A shaded lower meniscus follows the same concentric radius.
+                            const lip=4,r=radiusAt(lip);
+                            const reflection=ctx.createLinearGradient(0,0,width,0);
+                            reflection.addColorStop(0,ink(0));reflection.addColorStop(0.65,ink(0.17));
+                            reflection.addColorStop(1,ink(0.035));
+                            ctx.lineWidth=2;ctx.strokeStyle=reflection;
+                            ctx.beginPath();ctx.moveTo(Math.max(12,lip+r),height-lip);
+                            ctx.lineTo(width-lip-r,height-lip);
+                            ctx.quadraticCurveTo(width-lip,height-lip,width-lip,height-lip-r);
+                            ctx.lineTo(width-lip,Math.max(12,lip+r));ctx.stroke();
                         }
-                        // The lower glass lip bends around the same rounded corner.
-                        const lip=6,r=radiusAt(lip);
-                        ctx.lineWidth=3;ctx.strokeStyle=ink(0.13);
-                        ctx.beginPath();ctx.moveTo(Math.max(12,lip+r),height-lip);
-                        ctx.lineTo(width-lip-r,height-lip);
-                        ctx.quadraticCurveTo(width-lip,height-lip,width-lip,height-lip-r);
-                        ctx.lineTo(width-lip,Math.max(12,lip+r));ctx.stroke();
                     } else if (finish === "radar-station") {
                         // Fixed bearing scales: no sweep, motion or simulated live data.
                         ctx.strokeStyle=ink(0.12);if(root.traceThemeFrame(ctx,8))ctx.stroke();

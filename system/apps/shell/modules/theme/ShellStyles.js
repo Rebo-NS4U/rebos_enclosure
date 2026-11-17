@@ -4,7 +4,7 @@ var styles = [
     {id: "canopy", label: "Canopy", font: "DejaVu Sans Mono", description: "Architectural canopy: sweeping fabric spans, curved support ribs and softly shaded surfaces."},
     {id: "orbital", label: "Orbital", font: "JetBrains Mono", description: "Orbital space: elliptical tracks, satellite points, fixed stars and recessed glass."},
     {id: "metropolis", label: "Metropolis", font: "DejaVu Sans", description: "City glass: layered facades, architectural reflections and illuminated windows in your selected colors."},
-    {id: "glass-vault", label: "Glass Vault", font: "Noto Sans", description: "Thick glass blocks, rounded clamps, refractive light bands and deep inset controls."},
+    {id: "glass-vault", label: "Glass Vault", font: "Noto Sans", description: "Polished glass blocks, soft grazing reflections and restrained rounded clasps."},
     {id: "radar-station", label: "Radar Station", font: "DejaVu Sans", description: "Etched bearing scales, radial divisions and softly illuminated scope glass."},
     {id: "suspended-film", label: "Suspended Film", font: "DejaVu Sans Mono", description: "Suspended glass sheets, curved grazing reflections and separated contact edges."},
     {id: "monolith", label: "Monolith", font: "Noto Sans", description: "Carved stone slabs, broad chamfers, natural strata and fine mineral grain."},
@@ -173,7 +173,7 @@ function surface(style, variant, p, ditherStrength) {
         fill=mix(p.background,p.foreground,inset?0.012:focused?0.07:0.03);
         item=p.foreground;
         opacity=vault?(inset?0.82:focused?0.94:0.70):radar?(inset?0.76:focused?0.92:0.64):(inset?0.60:focused?0.86:0.48);
-        border=[focused?p.primary:mix(fill,p.foreground,vault?0.36:radar?0.34:0.24),vault?2:1];
+        border=[focused?p.primary:mix(fill,p.foreground,vault?0.24:radar?0.34:0.24),1];
         renderGradient=vault?[[mix(fill,p.foreground,0.05),0],[fill,0.06],[fill,0.92],[mix(fill,p.background,0.40),1]]
             :radar?[[fill,0]]:[[mix(fill,p.foreground,0.015),0],[fill,0.25],[fill,1]];
     }

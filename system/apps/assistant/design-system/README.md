@@ -111,3 +111,5 @@ Zen browser chrome uses primary containers for selected tabs, URL focus and menu
 Celestial design references: [wttr.in’s compact weather drawings](https://github.com/chubin/wttr.in#usage), [ASCII Art Archive sun gallery](https://www.asciiart.eu/nature/sun), and [crescent gallery](https://www.asciiart.eu/space/moons). The bonsai drawings are original compositions using crescent silhouettes and negative space from these references; no external artwork is bundled.
 
 The bonsai glass enclosure is flat and front-facing, with a low charcoal base directly beneath the pot foot and no roof or perspective lines. The animation uses 59 columns and 26 rows.
+
+Glass Vault shell refinement uses a fine polished bevel, fading upper reflections and slimmer rounded clasps on outer panels. Inner controls retain a single quiet rim; the lower meniscus follows the shared radius. Selected palette colors and translucent centers are preserved.
