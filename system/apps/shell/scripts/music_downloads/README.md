@@ -74,5 +74,8 @@ full width with a Mixes back action. The header stays compact and only cards and
 tracks scroll, so preview controls remain reachable. Track title and artist use
 separate themed lines; download and Spotify-preview behavior are unchanged.
 
-Downloaded Daily Mix folders appear as separate playlists in the library, including
-existing downloads. The Daily Mixes parent folder is not a combined playlist.
+Downloaded Daily Mix folders appear in the separate **Downloaded Mixes** section,
+including existing downloads. Names use the two most frequent artists, with the
+original Daily Mix label and song count beneath each card. Similar names gain a
+readable mix/version label. Folder hashes remain internal; files are not moved.
+Ordinary playlists stay in Playlists; Daily Mixes remains the discovery section.

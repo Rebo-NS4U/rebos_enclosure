@@ -63,6 +63,17 @@ def session():
                     if (music.repeatMode !== "None" || repeat.checked) { console.error("MUSIC_REPEAT_OFF_FAILED"); Qt.exit(1); }
                     repeat.clicked();
                     if (music.repeatMode !== "Playlist" || repeat.text !== "Repeat all") { console.error("MUSIC_REPEAT_ALL_FAILED"); Qt.exit(1); }
+                    const previousPlaylists = music.playlists;
+                    music.playlists = [
+                        {id: "manual", name: "My playlist", paths: [music.tracks[1].path]},
+                        {id: "mix", name: "Enclosure Mix", sourceName: "Daily Mix 1", mix: true, paths: [music.tracks[0].path]}
+                    ];
+                    const downloadedTab = findItem(music.contentItem, "music-navigation-Downloaded Mixes");
+                    if (!downloadedTab) { console.error("DOWNLOADED_MIX_NAV_MISSING"); Qt.exit(1); }
+                    downloadedTab.clicked();
+                    if (music.page !== "Downloaded Mixes" || music.downloadedMixes.length !== 1 || music.libraryPlaylists.length !== 1 || music.shownTracks.length !== 1 || music.cardTracks(music.page, "mix")[0].path !== music.tracks[0].path) { console.error("DOWNLOADED_MIX_SECTION_FAILED"); Qt.exit(1); }
+                    music.playlists = previousPlaylists;
+                    music.navigate("Home");
                     music.volume = 0;
                     const largeQueue = Array.from({length: 150}, (_, i) => Object.assign({}, music.tracks[i % 2], {title: "Queue song " + i}));
                     music.play(largeQueue, 0);

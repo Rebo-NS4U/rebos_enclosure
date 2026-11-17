@@ -33,6 +33,8 @@ Window {
     property var tracks: []
     property var favorites: []
     property var playlists: []
+    readonly property var libraryPlaylists: playlists.filter(p => !p.mix)
+    readonly property var downloadedMixes: playlists.filter(p => p.mix)
     property var folders: []
     property string page: "Home"
     property string query: ""
@@ -50,6 +52,11 @@ Window {
     readonly property bool playing: player.playbackState === MediaPlayer.PlayingState
     readonly property var shownTracks: {
         let list = tracks;
+        if (page === "Downloaded Mixes") {
+            const paths = new Set();
+            downloadedMixes.forEach(p => p.paths.forEach(path => paths.add(path)));
+            list = list.filter(t => paths.has(t.path));
+        }
         if (page === "Favorites") list = list.filter(t => favorites.indexOf(t.path) >= 0);
         if (page === "Album") list = list.filter(t => t.album + "\n" + t.artist === detail).slice().sort((a,b) => a.number - b.number);
         if (page === "Artist") list = list.filter(t => t.artist === detail);
@@ -146,7 +153,7 @@ Window {
         queue = queue.concat([track]);
     }
     function cardTracks(kind, key) {
-        if (kind === "Playlists") {
+        if (kind === "Playlists" || kind === "Downloaded Mixes") {
             const playlist = playlists.find(p => p.id === key);
             return playlist ? playlist.paths.map(path => tracks.find(t => t.path === path)).filter(Boolean) : [];
         }
@@ -296,14 +303,14 @@ Window {
                     Flow {
                         id: navigationTabs
                         objectName: "music-navigation-tabs"
-                        readonly property int tabCount: 9
+                        readonly property int tabCount: 10
                         readonly property int rowCount: Math.max(1, Math.ceil(tabCount * (Styling.spacing(112) + spacing) / Math.max(1, width + spacing)))
                         readonly property int columns: Math.ceil(tabCount / rowCount)
                         readonly property int lastRowCount: tabCount % columns || columns
                         Layout.fillWidth: true
                         spacing: Styling.spacing(6)
                         Repeater {
-                            model: ["Home", "Songs", "Albums", "Artists", "Favorites", "Playlists", "Daily Mixes", "Downloads", "Now playing"]
+                            model: ["Home", "Songs", "Albums", "Artists", "Favorites", "Playlists", "Downloaded Mixes", "Daily Mixes", "Downloads", "Now playing"]
                             ThemeButton {
                                 required property string modelData
                                 required property int index
@@ -338,11 +345,11 @@ Window {
                     // Album shelves and artist cards follow the downloaded reference's library layout.
                     GridView {
                         id: cards
-                        visible: ["Home","Albums","Artists","Playlists"].includes(root.page)
+                        visible: ["Home","Albums","Artists","Playlists","Downloaded Mixes"].includes(root.page)
                         Layout.fillWidth: true; Layout.fillHeight: true; clip: true
                         cellWidth: Math.max(160, Math.floor(width/Math.max(1,Math.floor(width/190))))
                         cellHeight: cellWidth + 62
-                        model: root.page === "Artists" ? root.artists : root.page === "Playlists" ? root.playlists.map(p => ({key:p.id,title:p.name,subtitle:p.paths.length + " songs",art:root.tracks.find(t=>t.path === p.paths[0])?.art || ""})) : root.albums
+                        model: root.page === "Artists" ? root.artists : (root.page === "Playlists" || root.page === "Downloaded Mixes") ? (root.page === "Downloaded Mixes" ? root.downloadedMixes : root.libraryPlaylists).map(p => ({key:p.id,title:p.name,subtitle:(p.mix ? p.sourceName + " · " : "") + p.paths.length + " songs",art:root.tracks.find(t=>t.path === p.paths[0])?.art || ""})) : root.albums
                         delegate: Item {
                             id: card
                             required property var modelData
@@ -363,13 +370,13 @@ Window {
                                 }
                                 ThemeButton {
                                     Layout.fillWidth: true; text: card.modelData.title
-                                    onClicked: root.navigate(root.page === "Artists" ? "Artist" : root.page === "Playlists" ? "Playlist" : "Album",card.modelData.key)
+                                    onClicked: root.navigate(root.page === "Artists" ? "Artist" : (root.page === "Playlists" || root.page === "Downloaded Mixes") ? "Playlist" : "Album",card.modelData.key)
                                 }
                                 StyledText { Layout.fillWidth: true; text: card.modelData.subtitle; elide: Text.ElideRight; color: Colors.overSurfaceVariant; font.pixelSize: Styling.fontSize(-2) }
                             }
                         }
                         ScrollBar.vertical: ScrollBar {}
-                        StyledText { anchors.centerIn: parent; width: parent.width-48; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap; visible: cards.count === 0; text: root.busy ? "Scanning music…" : root.page === "Playlists" ? "Create a playlist from the queue below." : "No music found.\nAdd a folder or change the search."; color: Colors.overSurfaceVariant }
+                        StyledText { anchors.centerIn: parent; width: parent.width-48; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap; visible: cards.count === 0; text: root.busy ? "Scanning music…" : root.page === "Downloaded Mixes" ? "No downloaded mixes yet.\nDownload a mix from Daily Mixes to see it here." : root.page === "Playlists" ? "Create a playlist from the queue below." : "No music found.\nAdd a folder or change the search."; color: Colors.overSurfaceVariant }
                     }
                     ListView {
                         id: songs

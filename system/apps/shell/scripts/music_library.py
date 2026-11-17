@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Local music index and MPRIS bridge. JSON lines in/out; no shell commands."""
+from collections import Counter
 import concurrent.futures
 import hashlib
 import json
@@ -157,9 +158,26 @@ class Library:
                 root = folder.resolve()
                 members = [t['path'] for t in tracks if Path(t['path']).is_relative_to(root)]
                 if members:
+                    is_mix = folder.parent == self.music / 'Daily Mixes'
+                    source_name = re.sub(r'-[a-f0-9]{12}$', '', folder.name) if is_mix else folder.name
+                    name = source_name
+                    if is_mix:
+                        artists = Counter(t['artist'] for t in tracks if t['path'] in members
+                                          and t.get('artist') and t['artist'] != 'Unknown artist')
+                        leaders = sorted(artists, key=lambda artist: (-artists[artist], artist.casefold(), artist))[:2]
+                        if leaders:
+                            name = ' · '.join(leaders) + ' Mix'
                     folder_playlists.append(dict(
                         id='folder:' + hashlib.sha256(str(folder.absolute()).encode()).hexdigest(),
-                        name=folder.name, paths=members, folder=True))
+                        name=name, paths=members, folder=True, mix=is_mix, sourceName=source_name))
+        # Similar mixes can share leading artists; retain readable distinctions.
+        counts = Counter(p['name'] for p in folder_playlists if p.get('mix'))
+        used = Counter()
+        for playlist in folder_playlists:
+            if playlist.get('mix') and counts[playlist['name']] > 1:
+                label = playlist['name'] + ' · ' + playlist['sourceName']
+                used[label] += 1
+                playlist['name'] = label + (f" · Version {used[label]}" if used[label] > 1 else '')
         state = dict(self.state, playlists=self.state['playlists'] + folder_playlists)
         return dict(tracks=tracks, state=state, errors=errors)
 

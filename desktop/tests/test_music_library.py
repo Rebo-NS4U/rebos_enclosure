@@ -139,7 +139,9 @@ class MusicLibraryTests(unittest.TestCase):
             folder.mkdir(parents=True)
             shutil.copyfile(self.song, folder / 'track.flac')
         playlists = self.library.scan()['state']['playlists']
-        self.assertEqual([p['name'] for p in playlists], [first.name, second.name])
+        self.assertEqual([p['name'] for p in playlists], ['Test artist Mix · Daily Mix 1', 'Test artist Mix · Daily Mix 2'])
+        self.assertTrue(all(p['mix'] for p in playlists))
+        self.assertEqual([p['sourceName'] for p in playlists], ['Daily Mix 1', 'Daily Mix 2'])
         self.assertEqual(playlists[0]['paths'], [str(first / 'track.flac')])
         self.assertEqual(playlists[1]['paths'], [str(second / 'track.flac')])
         stable_id = playlists[0]['id']
@@ -147,6 +149,26 @@ class MusicLibraryTests(unittest.TestCase):
         playlists = self.library.scan()['state']['playlists']
         self.assertEqual(len(playlists), 1)
         self.assertEqual(playlists[0]['id'], stable_id)
+        self.assertEqual(playlists[0]['name'], 'Test artist Mix')
+
+    def test_mix_names_use_leading_artists_and_clean_fallback(self):
+        folder = self.folder / 'Daily Mixes' / 'Daily Mix 3-cccccccccccc'
+        folder.mkdir(parents=True)
+        artists = ['Radiohead', 'Muse', 'Radiohead', 'Other']
+        for index in range(len(artists)):
+            shutil.copyfile(self.song, folder / f'{index}.flac')
+        inspect = self.library.inspect
+        def metadata(path):
+            track = dict(inspect(path))
+            if path.parent == folder:
+                track['artist'] = artists[int(path.stem)]
+            return track
+        with patch.object(self.library, 'inspect', side_effect=metadata):
+            playlist = self.library.scan()['state']['playlists'][0]
+            self.assertEqual(playlist['name'], 'Radiohead · Muse Mix')
+            self.assertEqual(playlist['sourceName'], 'Daily Mix 3')
+            artists[:] = ['Unknown artist'] * len(artists)
+            self.assertEqual(self.library.scan()['state']['playlists'][0]['name'], 'Daily Mix 3')
 
     def test_automatic_lyrics_prefer_synced_and_cache_offline(self):
         track = dict(title='Song', artist='Artist', album='Album', duration=120)
