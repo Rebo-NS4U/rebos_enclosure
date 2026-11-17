@@ -114,19 +114,12 @@ ShellRoot {
         property int score: 0
         property int combo: 0
         property int nearMisses: 0
-        property bool hangarOpen: false
+        property bool logOpen: false
         property string objectiveNotice: ""
         property real objectiveNoticeUntil: 0
         readonly property var careerBadges: JSON.parse(records.badges)
-        readonly property string flightStyle: Game.styleAvailable(records.selectedStyle, careerBadges) ? records.selectedStyle : "scout"
-        readonly property var loadout: Game.loadout(flightStyle)
-        readonly property real pickupRadius: playerRadius + loadout.pickupBonus
         readonly property var flightObjectives: Game.objectives(elapsed, targetsCollected, nearMisses)
         readonly property var pendingObjectives: flightObjectives.filter(o => !careerBadges[o.id])
-        function selectStyle(id) {
-            if (locked || phase === "death" || !Game.styleAvailable(id, careerBadges)) return false;
-            records.selectedStyle = id; reset(); return true;
-        }
         function updateObjectives() {
             if (phase !== "playing") return;
             const badges = JSON.parse(records.badges);
@@ -138,52 +131,48 @@ ShellRoot {
             objectiveNoticeUntil = elapsed + 3;
         }
         property real comboUntil: 0
-        property real overdriveUntil: 0
-        property int milestone: 0
         property string notice: ""
         property real noticeUntil: 0
-        readonly property bool overdrive: elapsed < overdriveUntil
         readonly property int bestScore: Number(JSON.parse(records.scoreRecords)[recordKey] || 0)
         function awardPoints(points, label) {
-            const reward = Game.award(score, points, elapsed, overdriveUntil, milestone);
-            const gained = reward.score - score;
-            score = reward.score; milestone = reward.milestone; overdriveUntil = reward.overdriveUntil;
-            notice = reward.activated ? "OVERDRIVE · DOUBLE SCORE FOR 6s" : label + " +" + gained;
-            noticeUntil = elapsed + 1.6;
+            score += points; notice = label + " +" + points; noticeUntil = elapsed + 1.6;
         }
         function awardGrazes(count) {
-            if (!count) return;
+            if (!count || phase !== "playing") return;
             nearMisses += count;
             if (combo > 0) comboUntil = Math.min(elapsed + 8, comboUntil + count);
-            awardPoints(count * loadout.grazePoints, "NEAR MISS");
+            awardPoints(count * 40, "NEAR MISS");
             updateObjectives();
         }
-        property int pulseCharges: 1
-        property real pulseTime: -10
-        property real pulseX: 0
-        property real pulseY: 0
-        function pulse() {
-            if (phase !== "playing" || pulseCharges < 1) return;
-            pulseCharges--; pulseTime = elapsed;
-            pulseX = playerX * arena.width; pulseY = playerY * arena.height;
-            const cleared = Game.pulse(enemies, pulseX, pulseY, loadout.pulseRadius);
-            enemies = cleared.enemies;
-            if (cleared.count) awardPoints(cleared.count * 25, "PULSE");
+        property var activeEncounter: null
+        property var encounterEvents: []
+        property real encounterBorn: 0
+        property real nextEncounter: 3
+        property int encounterIndex: 0
+        readonly property bool encounterWarning: !!activeEncounter && elapsed < encounterBorn + activeEncounter.warning
+        function updateSpawns() {
+            if (phase !== "playing") return;
+            if (elapsed >= nextEncounter) {
+                activeEncounter = Game.encounter(encounterIndex++, arena.width, arena.height, difficulty, elapsed, playerX * arena.width, playerY * arena.height);
+                encounterBorn = elapsed; encounterEvents = activeEncounter.events;
+                nextEncounter = elapsed + 9;
+            }
+            if (!activeEncounter || encounterWarning) return;
+            const launch = Game.launchEvents(encounterEvents, elapsed - encounterBorn - activeEncounter.warning);
+            encounterEvents = launch.pending;
+            if (launch.launched.length) enemies = enemies.concat(launch.launched.map(e=>Object.assign({},e,{born:elapsed})));
         }
-        property real spawnClock: 0
         property real trailClock: 0
         property bool reducedMotion: false
         readonly property bool locked: phase === "playing" || phase === "paused"
         readonly property real duration: Game.roundDuration(playMode)
         readonly property var modes: [
-            {key: "survival", name: "DEEP SPACE", caption: "Endless expedition", hint: "Skim debris for +" + loadout.grazePoints + ". Chain stars. Open Hangar for objectives."},
-            {key: "gauntlet", name: "WARP RUN", caption: "60s · six sectors", hint: "Score big through six sectors. Every 1,000 points: 6s double score."}
+            {key: "survival", name: "DEEP SPACE", caption: "Endless expedition", hint: "Read the lanes. Find the gaps. Chain stars between meteor waves."},
+            {key: "gauntlet", name: "WARP RUN", caption: "60s · six sectors", hint: "Survive six sectors of gates, fans and comet trains. Movement is everything."}
         ]
         readonly property int modeIndex: playMode === "survival" ? 0 : 1
-        readonly property string recordKey: Game.scoreKey(playMode, difficulty, flightStyle)
-        readonly property real best: playMode === "survival" && difficulty < 3 && flightStyle === "scout"
-            ? (difficulty === 0 ? records.easy : difficulty === 1 ? records.medium : records.hard)
-            : Number(JSON.parse(records.challenges)[recordKey] || 0)
+        readonly property string recordKey: Game.scoreKey(playMode, difficulty)
+        readonly property real best: Number(JSON.parse(records.challenges)[recordKey] || 0)
         Settings {
             id: records
             category: "MouseDash"
@@ -194,7 +183,6 @@ ShellRoot {
             property string challenges: "{}"
             property string scoreRecords: "{}"
             property string badges: "{}"
-            property string selectedStyle: "scout"
         }
         function finish(won, collision) {
             death = collision || null;
@@ -206,33 +194,29 @@ ShellRoot {
                 scores[recordKey] = score; records.scoreRecords = JSON.stringify(scores);
             }
             if (elapsed > best) {
-                if (playMode === "survival" && difficulty < 3 && flightStyle === "scout") {
-                    if (difficulty === 0) records.easy = elapsed;
-                    else if (difficulty === 1) records.medium = elapsed;
-                    else records.hard = elapsed;
-                } else {
-                    const scores = JSON.parse(records.challenges);
-                    scores[recordKey] = elapsed; records.challenges = JSON.stringify(scores);
-                }
+                const times = JSON.parse(records.challenges);
+                times[recordKey] = elapsed; records.challenges = JSON.stringify(times);
             }
         }
+
         function reset() {
             phase = "ready"; elapsed = 0; enemies = []; trail = [];
             enemyVisuals.clear(); victory = false; death = null;
             pickupTarget = null; targetClock = 0; targetsCollected = 0; collection = null;
-            score = 0; combo = 0; pulseCharges = 1; pulseTime = -10;
+            score = 0; combo = 0;
+            activeEncounter = null; encounterEvents = []; encounterBorn = 0; nextEncounter = 3; encounterIndex = 0;
             objectiveNotice = ""; objectiveNoticeUntil = 0;
-            nearMisses = 0; comboUntil = 0; overdriveUntil = 0; milestone = 0; notice = ""; noticeUntil = 0;
+            nearMisses = 0; comboUntil = 0; notice = ""; noticeUntil = 0;
         }
         function start(x, y) {
-            reset(); hangarOpen = false; playerX = x / arena.width; playerY = y / arena.height;
-            spawnClock = 0; trailClock = 0; phase = "playing";
+            reset(); logOpen = false; playerX = x / arena.width; playerY = y / arena.height;
+            trailClock = 0; phase = "playing";
             arena.forceActiveFocus();
         }
         function movePlayer(x, y) {
             const fromX = playerX * arena.width, fromY = playerY * arena.height;
             const hit = Game.contact(enemies, fromX, fromY, x, y, playerRadius);
-            const pickup = pickupTarget && Game.sweptHit([pickupTarget], fromX, fromY, x, y, pickupRadius);
+            const pickup = pickupTarget && Game.sweptHit([pickupTarget], fromX, fromY, x, y, playerRadius);
             playerX = (hit ? hit.x : x) / arena.width;
             playerY = (hit ? hit.y : y) / arena.height;
             if (hit) finish(false, hit);
@@ -251,7 +235,6 @@ ShellRoot {
             awardPoints(reward.points, reward.quick ? "QUICK STAR" : "STAR");
             collection = {x: pickupTarget.x, y: pickupTarget.y, time: elapsed, points: score - before};
             pickupTarget = null; targetClock = 0; targetsCollected++;
-            if (targetsCollected % 3 === 0) pulseCharges = Math.min(2, pulseCharges + 1);
             updateObjectives();
             return true;
         }
@@ -265,7 +248,7 @@ ShellRoot {
                 }
                 return;
             }
-            const result = Game.stepTarget(pickupTarget, dt, arena.width, arena.height, playerX * arena.width, playerY * arena.height, pickupRadius);
+            const result = Game.stepTarget(pickupTarget, dt, arena.width, arena.height, playerX * arena.width, playerY * arena.height, playerRadius);
             pickupTarget = result.target;
             if (result.collected) { collectTarget(); return; }
             if (result.missed) {
@@ -276,7 +259,6 @@ ShellRoot {
         function pause() { if (phase === "playing") phase = "paused"; }
         property bool windowActive: contentItem.Window.active
         onWindowActiveChanged: if (!windowActive) pause()
-        Shortcut { sequence: "Space"; onActivated: window.pulse() }
         Shortcut { sequence: "Escape"; onActivated: window.pause() }
         // Resuming requires the pointer inside the arena, preventing off-arena play.
         ListModel { id: enemyVisuals }
@@ -284,16 +266,9 @@ ShellRoot {
             running: window.phase === "playing"
             onTriggered: {
                 const dt = Math.min(0.04, frameTime);
-                window.elapsed += dt; window.spawnClock += dt;
+                window.elapsed += dt;
                 if (window.combo > 0 && window.elapsed >= window.comboUntil) window.combo = 0;
-                const gap = Game.spawnInterval(window.difficulty, window.elapsed, window.playMode);
-                if (window.spawnClock >= gap) {
-                    window.spawnClock = 0;
-                    const spawned = Game.spawn(arena.width, arena.height, window.playerX, window.playerY, window.difficulty, window.elapsed, window.playMode);
-                    spawned.born = window.elapsed;
-                    window.enemies.push(spawned);
-                }
-                Game.steerDebris(window.enemies, dt);
+                window.updateSpawns();
                 const result = Game.step(window.enemies, dt, window.playerX * arena.width, window.playerY * arena.height, arena.width, arena.height, window.playerRadius);
                 window.enemies = result.enemies;
                 if (!result.hit) window.awardGrazes(result.grazes);
@@ -346,6 +321,34 @@ ShellRoot {
                     border.width: 1.5; border.color: Qt.alpha(Colors.primary, 0.5)
                 }
                 Cosmos { anchors.fill: parent; opacity: 0.6 }
+                Repeater {
+                    model: window.encounterWarning ? window.activeEncounter.preview : []
+                    delegate: Rectangle {
+                        required property var modelData
+                        x: modelData.x; y: modelData.y - 1; width: 100; height: 2
+                        rotation: modelData.angle; transformOrigin: Item.Left
+                        color: Colors.error; opacity: 0.5
+                        Rectangle { width: 6; height: 6; radius: 3; x: 3; y: -2; color: Colors.error }
+                    }
+                }
+                Rectangle {
+                    readonly property var gap: window.encounterWarning ? window.activeEncounter.gap : null
+                    visible: !!gap
+                    x: !gap ? 0 : gap.vertical ? gap.position - width / 2 : gap.edge === 0 ? 5 : arena.width - width - 5
+                    y: !gap ? 0 : gap.vertical ? (gap.edge === 2 ? 5 : arena.height - height - 5) : gap.position - height / 2
+                    width: gap && gap.vertical ? gap.half * 2 : 12
+                    height: gap && !gap.vertical ? gap.half * 2 : 12
+                    radius: 4; color: Qt.alpha(Colors.success, 0.15); border.color: Colors.success
+                }
+                StyledText {
+                    anchors.horizontalCenter: parent.horizontalCenter; anchors.top: parent.top; anchors.topMargin: 128
+                    width: parent.width - 32; horizontalAlignment: Text.AlignHCenter
+                    visible: window.locked && !!window.activeEncounter
+                    text: !window.activeEncounter ? "" : window.encounterWarning
+                        ? window.activeEncounter.name + " · " + Math.max(0,window.encounterBorn + window.activeEncounter.warning - window.elapsed).toFixed(1) + "s\n" + window.activeEncounter.hint
+                        : window.encounterEvents.length ? window.activeEncounter.name : (window.enemies.length ? window.activeEncounter.name : "OPEN SPACE") + " · NEXT IN " + Math.max(0,window.nextEncounter - window.elapsed).toFixed(1) + "s"
+                    color: window.encounterWarning ? Colors.error : Colors.tertiary; font.pixelSize: 10
+                }
                 Repeater {
                     model: 95
                     delegate: Rectangle {
@@ -417,7 +420,7 @@ ShellRoot {
                     width: window.playerRadius * 2; height: width
                     rotation: 45
                     radius: 4
-                    color: window.phase === "death" ? Colors.error : window.flightStyle === "collector" ? Colors.success : window.flightStyle === "surfer" ? Colors.tertiary : Colors.primary
+                    color: window.phase === "death" ? Colors.error : Colors.primary
                     border.width: 2; border.color: Colors.overBackground
                     Rectangle {
                         anchors.centerIn: parent; width: parent.width + 18; height: width; radius: width / 2
@@ -441,11 +444,6 @@ ShellRoot {
                     width: target ? target.r * 2 : 0; height: width; radius: width / 2
                     color: Qt.alpha(Colors.success, 0.25)
                     border.width: 3; border.color: Colors.success
-                    Rectangle {
-                        anchors.centerIn: parent; width: parent.width + window.loadout.pickupBonus * 2; height: width
-                        radius: width / 2; color: "transparent"; border.width: 1; border.color: Qt.alpha(Colors.success, 0.45)
-                        visible: window.loadout.pickupBonus > 0
-                    }
                     StyledText {
                         anchors.horizontalCenter: parent.horizontalCenter; anchors.bottom: parent.top; anchors.bottomMargin: 7
                         text: "+50%"; visible: window.elapsed - window.targetBorn <= 2
@@ -551,14 +549,6 @@ ShellRoot {
                         }
                     }
                 }
-                Rectangle {
-                    readonly property real progress: Math.max(0, Math.min(1, (window.elapsed - window.pulseTime) / 0.5))
-                    visible: progress < 1
-                    x: window.pulseX - width / 2; y: window.pulseY - height / 2
-                    width: window.loadout.pulseRadius * 2 * (window.reducedMotion ? 1 : progress); height: width; radius: width / 2
-                    color: Qt.alpha(Colors.primary, 0.08); border.color: Colors.primary; border.width: 3
-                    opacity: 1 - progress
-                }
                 Column {
                     anchors.top: parent.top; anchors.topMargin: 63
                     anchors.horizontalCenter: parent.horizontalCenter; spacing: 5
@@ -566,13 +556,13 @@ ShellRoot {
                     visible: window.phase === "playing"
                     StyledText {
                         anchors.horizontalCenter: parent.horizontalCenter
-                        text: window.overdrive ? "OVERDRIVE ×2 · " + Math.ceil(window.overdriveUntil - window.elapsed) + "s" : "CHAIN ×" + window.combo + " · " + Math.max(0, window.comboUntil - window.elapsed).toFixed(1) + "s"
-                        color: window.overdrive ? Colors.tertiary : Colors.primary; font.pixelSize: 10
+                        text: "CHAIN ×" + window.combo + " · " + Math.max(0, window.comboUntil - window.elapsed).toFixed(1) + "s"
+                        color: Colors.primary; font.pixelSize: 10
                     }
                     Rectangle {
                         anchors.horizontalCenter: parent.horizontalCenter
                         width: 140; height: 3; radius: 1.5; color: Qt.alpha(Colors.primary, 0.15)
-                        Rectangle { width: parent.width * Math.max(0, Math.min(1, window.overdrive ? (window.overdriveUntil - window.elapsed) / 6 : (window.comboUntil - window.elapsed) / 8)); height: parent.height; radius: 1.5; color: window.overdrive ? Colors.tertiary : Colors.primary; visible: window.overdrive || window.combo > 0 }
+                        Rectangle { width: parent.width * Math.max(0, Math.min(1, (window.comboUntil - window.elapsed) / 8)); height: parent.height; radius: 1.5; color: Colors.primary; visible: window.combo > 0 }
                     }
                     StyledText {
                         anchors.horizontalCenter: parent.horizontalCenter
@@ -585,7 +575,6 @@ ShellRoot {
                 RowLayout {
                     anchors.bottom: parent.bottom; anchors.horizontalCenter: parent.horizontalCenter; anchors.bottomMargin: 16
                     StyledText { text: "✦ " + window.targetsCollected + " STARS"; font.pixelSize: 10; color: Colors.success }
-                    DashButton { implicitWidth: 170; text: "PULSE [Space]  " + window.pulseCharges; enabled: window.pulseCharges > 0 && window.phase === "playing"; onClicked: window.pulse() }
                 }
                 RowLayout {
                     anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right
@@ -642,7 +631,7 @@ ShellRoot {
                 id: setup
                 anchors.fill: parent; variant: "common"
                 radius: Styling.radius(0)
-                visible: !window.locked && window.phase !== "death" && !window.hangarOpen
+                visible: !window.locked && window.phase !== "death" && !window.logOpen
                 Cosmos { anchors.fill: parent; opacity: 0.7 }
                 ColumnLayout {
                     anchors.fill: parent; anchors.margins: 24; spacing: 8
@@ -657,13 +646,13 @@ ShellRoot {
                             }
                         }
                         Item { Layout.fillWidth: true }
-                        DashButton { text: "Hangar"; implicitWidth: 82; onClicked: window.hangarOpen = true }
+                        DashButton { text: "Flight log"; implicitWidth: 92; onClicked: window.logOpen = true }
                     }
                     Item {
                         Layout.fillHeight: true; Layout.minimumHeight: 36; Layout.fillWidth: true
                         StyledText {
                             anchors.left: parent.left; anchors.verticalCenter: parent.verticalCenter
-                            text: window.phase === "over" ? Game.medal(window.score) + " · " + window.nearMisses + " NEAR MISSES" : window.loadout.name + " · " + Game.medal(window.bestScore); color: Colors.tertiary
+                            text: window.phase === "over" ? Game.medal(window.score) + " · " + window.nearMisses + " NEAR MISSES" : "PERSONAL BEST · " + Game.medal(window.bestScore); color: Colors.tertiary
                             font.pixelSize: 11; font.letterSpacing: 1
                         }
                     }
@@ -685,7 +674,7 @@ ShellRoot {
                         Layout.fillWidth: true; text: window.modes[window.modeIndex].hint
                         font.pixelSize: 11; opacity: 0.65; wrapMode: Text.WordWrap
                     }
-                    StyledText { text: "02 / HAZARD DENSITY"; font.pixelSize: 10; opacity: 0.5; Layout.topMargin: 6 }
+                    StyledText { text: "02 / DIFFICULTY"; font.pixelSize: 10; opacity: 0.5; Layout.topMargin: 6 }
                     RowLayout {
                         Layout.fillWidth: true; spacing: 6
                         Repeater {
@@ -718,34 +707,22 @@ ShellRoot {
                     }
                     StyledText {
                         Layout.fillWidth: true; horizontalAlignment: Text.AlignHCenter
-                        text: "Stars within 2s = +50% · 3 stars = pulse · Space fires"; font.pixelSize: 10; opacity: 0.45
+                        text: "Follow the gap markers · Collect stars · Esc pauses"; font.pixelSize: 10; opacity: 0.45
                     }
                 }
             }
             StyledRect {
                 anchors.fill: parent; variant: "common"; radius: Styling.radius(0)
-                visible: !window.locked && window.phase !== "death" && window.hangarOpen
+                visible: !window.locked && window.phase !== "death" && window.logOpen
                 Cosmos { anchors.fill: parent; opacity: 0.5 }
                 ColumnLayout {
                     anchors.fill: parent; anchors.margins: 24; spacing: 9
                     RowLayout {
-                        StyledText { text: "HANGAR"; font.pixelSize: 24; font.bold: true; color: Colors.primary }
+                        StyledText { text: "FLIGHT LOG"; font.pixelSize: 24; font.bold: true; color: Colors.primary }
                         Item { Layout.fillWidth: true }
-                        DashButton { text: "Back"; onClicked: window.hangarOpen = false }
+                        DashButton { text: "Back"; onClicked: window.logOpen = false }
                     }
-                    StyledText { text: "Complete objectives in one flight to unlock styles."; font.pixelSize: 10 }
-                    Repeater {
-                        model: Game.styles()
-                        delegate: DashButton {
-                            required property var modelData
-                            readonly property bool available: Game.styleAvailable(modelData.id, window.careerBadges)
-                            Layout.fillWidth: true; implicitHeight: 58
-                            text: modelData.name + (available ? (window.flightStyle === modelData.id ? " · EQUIPPED" : "") : " · LOCKED")
-                            caption: available ? modelData.caption : modelData.id === "collector" ? "Collect 5 stars in one flight" : "Earn 8 near misses in one flight"
-                            enabled: available; accent: window.flightStyle === modelData.id
-                            onClicked: window.selectStyle(modelData.id)
-                        }
-                    }
+                    StyledText { text: "Movement, star chains and near misses. No abilities."; font.pixelSize: 10 }
                     StyledText { text: "CAREER OBJECTIVES"; font.pixelSize: 10; color: Colors.tertiary }
                     Repeater {
                         model: window.flightObjectives
@@ -759,7 +736,7 @@ ShellRoot {
                     Item { Layout.fillHeight: true }
                     StyledText {
                         Layout.fillWidth: true; wrapMode: Text.WordWrap; font.pixelSize: 10
-                        text: "MEDALS  Bronze 1,000 · Silver 3,000 · Gold 6,000\n" + window.loadout.name + " best: " + window.bestScore + " · " + Game.medal(window.bestScore) + "\nRecords are separate for each style, mode and difficulty."
+                        text: "MEDALS  Bronze 1,000 · Silver 3,000 · Gold 6,000\n" + "Personal best: " + window.bestScore + " · " + Game.medal(window.bestScore) + "\nRecords are separate for each mode and difficulty."
                         color: Colors.primary
                     }
                 }

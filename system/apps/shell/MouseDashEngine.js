@@ -2,34 +2,6 @@
 function playerRadius(elapsed) { return Math.min(11, 9 + elapsed * 0.025); }
 function roundDuration(mode) { return mode === "gauntlet" ? 60 : 0; }
 function roundComplete(mode, elapsed) { return roundDuration(mode) > 0 && elapsed >= roundDuration(mode); }
-function pressure(mode, elapsed) {
-    return mode === "gauntlet" ? 1 + Math.min(5, Math.floor(elapsed / 10)) * 0.08 : 1;
-}
-// Independent caps keep speed, density and hitbox growth from compounding forever.
-function enemySpeed(difficulty, elapsed, mode) {
-    return (difficulty === 1 ? 0.8 : 1) * (110 + difficulty * 35 + Math.min(60, elapsed * 0.8)) * Math.sqrt(pressure(mode, elapsed));
-}
-function spawnInterval(difficulty, elapsed, mode) {
-    const floors = [0.5, 0.4, 0.32, 0.26];
-    return Math.max(floors[difficulty], (difficulty === 1 ? 0.65 : 1 - difficulty * 0.15) / (1 + Math.min(90, elapsed) * 0.006) / pressure(mode, elapsed));
-}
-function spawn(w, h, px, py, difficulty, elapsed, mode) {
-    const speed = enemySpeed(difficulty, elapsed, mode);
-    // At least 650 ms from first appearance to a stationary cursor on this edge.
-    // Choose a distant edge instead of silently killing a player near the border.
-    const clearance = speed * 0.65 + playerRadius(elapsed);
-    const distances = [px * w, (1 - px) * w, py * h, (1 - py) * h];
-    let edges = [0, 1, 2, 3].filter(i => distances[i] >= clearance);
-    if (!edges.length) edges = [distances.indexOf(Math.max.apply(null, distances))];
-    const edge = edges[Math.floor(Math.random() * edges.length)], r = 9 + Math.random() * 16;
-    let x = Math.random() * w, y = Math.random() * h;
-    if (edge === 0) x = -r - 20;
-    if (edge === 1) x = w + r + 20;
-    if (edge === 2) y = -r - 20;
-    if (edge === 3) y = h + r + 20;
-    const angle = Math.atan2(py * h - y, px * w - x) + (Math.random() - 0.5) * 0.8;
-    return {x:x, y:y, r:r, vx:Math.cos(angle)*speed, vy:Math.sin(angle)*speed, orbiting: elapsed >= 12 && Math.random() < 0.25};
-}
 // First contact along a segment, including fast crossings with clear endpoints.
 function contact(enemies, x, y, nx, ny, radius = 9) {
     const dx = nx - x, dy = ny - y, a = dx * dx + dy * dy;
@@ -91,18 +63,6 @@ function stepTarget(target, dt, w, h, px, py, radius = 9) {
     return {target:next, collected:collected, missed:next.x < -next.r || next.x > w+next.r || next.y < -next.r || next.y > h+next.r};
 }
 
-// Curved debris turns gently; swept collision still checks every frame.
-function steerDebris(enemies, dt) {
-    const angle = dt * 0.45, c = Math.cos(angle), s = Math.sin(angle);
-    for (const e of enemies) if (e.orbiting) {
-        const vx = e.vx; e.vx = vx * c - e.vy * s; e.vy = vx * s + e.vy * c;
-    }
-}
-function pulse(enemies, x, y, radius) {
-    const live = enemies.filter(e => Math.hypot(e.x - x, e.y - y) > radius + e.r);
-    return {enemies: live, count: enemies.length - live.length};
-}
-
 // Closest point on the swept path. Actual contacts never earn a near-miss.
 function nearPass(x, y, nx, ny, cx, cy, radius) {
     const dx = nx-x, dy = ny-y, length = dx*dx+dy*dy;
@@ -121,35 +81,58 @@ function starReward(combo, age) {
     const chain = Math.min(5, combo + 1);
     return {combo:chain, points:chain * (age <= 2 ? 150 : 100), quick:age <= 2};
 }
-function award(score, points, elapsed, overdriveUntil, milestone) {
-    const next = score + points * (elapsed < overdriveUntil ? 2 : 1);
-    const reached = Math.floor(next / 1000);
-    return {score:next, milestone:Math.max(milestone,reached),
-        overdriveUntil:reached > milestone ? elapsed + 6 : overdriveUntil,
-        activated:reached > milestone};
-}
-
 // Career badges require a single flight; completed badges survive retries.
 function objectives(elapsed, stars, grazes) {
     return [
-        {id:"collector", name:"STAR COLLECTOR", progress:Math.min(5,stars), goal:5, reward:"Unlock Collector"},
-        {id:"surfer", name:"DEBRIS SURFER", progress:Math.min(8,grazes), goal:8, reward:"Unlock Surfer"},
+        {id:"collector", name:"STAR COLLECTOR", progress:Math.min(5,stars), goal:5, reward:"Career badge"},
+        {id:"surfer", name:"DEBRIS SURFER", progress:Math.min(8,grazes), goal:8, reward:"Career badge"},
         {id:"voyager", name:"VOYAGER", progress:Math.min(30,Math.floor(elapsed)), goal:30, reward:"Career badge"}
     ];
 }
-function styles() {
-    return [
-        {id:"scout", name:"SCOUT", caption:"Balanced · 115px pulse", pulseRadius:115, pickupBonus:0, grazePoints:40},
-        {id:"collector", name:"COLLECTOR", caption:"+12px star reach · 85px pulse", pulseRadius:85, pickupBonus:12, grazePoints:40},
-        {id:"surfer", name:"SURFER", caption:"+60 per near miss · 90px pulse", pulseRadius:90, pickupBonus:0, grazePoints:60}
-    ];
-}
-function styleAvailable(id, badges) {
-    return id === "scout" || ((id === "collector" || id === "surfer") && badges[id] === true);
-}
-function loadout(id) { return styles().filter(s => s.id === id)[0] || styles()[0]; }
 function medal(score) { return score >= 6000 ? "GOLD" : score >= 3000 ? "SILVER" : score >= 1000 ? "BRONZE" : "UNRANKED"; }
 function nextMedal(score) { return score < 1000 ? 1000 : score < 3000 ? 3000 : score < 6000 ? 6000 : 0; }
-function scoreKey(mode, difficulty, style) {
-    return mode + difficulty + (style === "scout" ? "" : ":" + style);
+// New rules use separate records; older scores remain untouched in settings.
+function scoreKey(mode, difficulty) { return "patterns:" + mode + difficulty; }
+
+// Snapshot the player's position once, during the warning. No homing or late aim.
+function encounter(index, w, h, difficulty, elapsed, px, py) {
+    const distances = [px, w-px, py, h-py];
+    const edge = distances.indexOf(Math.max.apply(null, distances));
+    const vertical = edge >= 2, span = vertical ? w : h;
+    const speed = Math.min(230, 135 + difficulty * 18 + Math.min(35, elapsed * 0.4));
+    const type = index % 3, events = [];
+    const gap = span * (0.25 + Math.random() * 0.5), halfGap = difficulty === 0 ? 82 : 68;
+    function meteor(lane, angleOffset, r) {
+        const x = vertical ? lane : edge === 0 ? -r-20 : w+r+20;
+        const y = vertical ? (edge === 2 ? -r-20 : h+r+20) : lane;
+        const base = edge === 0 ? 0 : edge === 1 ? Math.PI : edge === 2 ? Math.PI/2 : -Math.PI/2;
+        return {x:x,y:y,r:r,vx:Math.cos(base+angleOffset)*speed,vy:Math.sin(base+angleOffset)*speed,orbiting:false};
+    }
+    if (type === 0) {
+        const wall=[];
+        for(let lane=24;lane<span;lane+=40) if(Math.abs(lane-gap)>halfGap) wall.push(meteor(lane,0,12));
+        events.push({delay:0,enemies:wall});
+    } else if(type === 1) {
+        const origin = span * 0.5;
+        const source = meteor(origin,0,10);
+        const angle = Math.atan2(py-source.y,px-source.x);
+        const fan=[];
+        for(let i=-2;i<=2;i++) fan.push({x:source.x,y:source.y,r:10,vx:Math.cos(angle+i*0.27)*speed,vy:Math.sin(angle+i*0.27)*speed,orbiting:false});
+        events.push({delay:0,enemies:fan});
+        events.push({delay:1.1,enemies:fan.map(e=>Object.assign({},e))});
+    } else {
+        // Two parallel trains leave the rest of the arena open for routing.
+        const lane = Math.max(55,Math.min(span-55,vertical ? px : py));
+        for(let i=0;i<5;i++) events.push({delay:i*0.32,enemies:[meteor(lane-34,0,11),meteor(lane+34,0,11)]});
+    }
+    const preview=events[0].enemies.map(e=>({x:Math.max(0,Math.min(w,e.x)),y:Math.max(0,Math.min(h,e.y)),angle:Math.atan2(e.vy,e.vx)*180/Math.PI}));
+    return {name:["METEOR GATE","FAN VOLLEY","COMET TRAINS"][type],
+        hint:["Find the marked gap","Move between the spreading lanes","Leave the twin comet lanes"][type],
+        warning:1.5, events:events, preview:preview,
+        gap:type===0 ? {vertical:vertical,position:gap,half:halfGap-12,edge:edge} : null};
+}
+// A queue is advanced only by gameplay time, so pause freezes all launches.
+function launchEvents(events, age) {
+    return {launched:events.filter(e=>e.delay<=age).reduce((all,e)=>all.concat(e.enemies),[]),
+        pending:events.filter(e=>e.delay>age)};
 }

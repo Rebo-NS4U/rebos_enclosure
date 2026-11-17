@@ -1,11 +1,11 @@
-// Obstacle-dodging balance audit only: excludes mandatory touch targets.
+// Obstacle-dodging balance audit only: excludes optional stars, scoring and career objectives.
 // Not a full-game completion test or a substitute for human playtesting.
 // Usage: node desktop/tests/audit_mousedash.cjs [alternate-engine.js]
 const fs=require('fs'),vm=require('vm'),path=require('path');
 const g={};vm.createContext(g);vm.runInContext(fs.readFileSync(process.argv[2]||path.join(__dirname, '../../system/apps/shell/MouseDashEngine.js'),'utf8'),g);
 function run(seed,difficulty){
  vm.runInContext(`{let s=${seed}; Math.random=()=>{s=(Math.imul(s,1664525)+1013904223)>>>0;return s/4294967296;};}`,g);
- let x=240,y=240,vx=0,vy=0,enemies=[],spawn=0,nextDecision=0;
+ let x=240,y=240,vx=0,vy=0,enemies=[],nextEncounter=3,index=0,events=[],born=0,nextDecision=0;
  const observations=[];
  const dt=1/60, reaction=.25, speed=450;
  for(let t=0;t<60;t+=dt){
@@ -35,8 +35,8 @@ function run(seed,difficulty){
    }
    [vx,vy]=choice;
   }
-  spawn+=dt;
-  if(spawn>=g.spawnInterval(difficulty,t,'gauntlet')){spawn=0;enemies.push(g.spawn(480,480,x/480,y/480,difficulty,t,'gauntlet'));}
+  if(t>=nextEncounter){const plan=g.encounter(index++,480,480,difficulty,t,x,y);events=plan.events;born=t+plan.warning;nextEncounter=t+9;}
+  if(t>=born){const batch=g.launchEvents(events,t-born);events=batch.pending;enemies.push(...batch.launched.map(e=>({...e})));}
   const nx=x+vx*dt,ny=y+vy*dt;
   if(g.sweptHit(enemies,x,y,nx,ny,g.playerRadius(t)))return t;
   x=nx;y=ny;
