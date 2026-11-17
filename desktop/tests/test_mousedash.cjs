@@ -76,18 +76,9 @@ assert.equal(game.starReward(5,1).combo,5);
 assert.equal(game.starReward(5,1).points,750);
 console.log('Near misses and quick star rewards: PASS');
 
-// Objectives use single-flight totals, capped display values, and exact thresholds.
-let missions = game.objectives(29.99,4,7);
-assert(missions.every(o=>o.progress<o.goal));
-missions = game.objectives(30,5,8);
-assert(missions.every(o=>o.progress===o.goal));
-assert(game.objectives(1000,1000,1000).every(o=>o.progress===o.goal));
-for (const [points,medal,next] of [[0,'UNRANKED',1000],[999,'UNRANKED',1000],[1000,'BRONZE',3000],[2999,'BRONZE',3000],[3000,'SILVER',6000],[5999,'SILVER',6000],[6000,'GOLD',0]]) {
- assert.equal(game.medal(points),medal); assert.equal(game.nextMedal(points),next);
-}
+// Records remain separate across rules and modes.
 assert.equal(game.scoreKey('survival',1),'tailored:survival1');
 assert.notEqual(game.scoreKey('gauntlet',1),game.scoreKey('survival',1));
-console.log('Career objectives, medals and new-rules records: PASS');
 
 // Randomized births are visible immediately and cannot land on a nearby ship.
 vm.runInContext('{ let seed=91; Math.random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;}; }',game);
@@ -174,3 +165,8 @@ assert(Math.abs(lateEasy[0].vx)>1 && Math.abs(lateEasy[0].vy)>1);
 const easyStar=game.spawnTarget(480,480,0);
 assert.equal(Math.hypot(easyStar.vx,easyStar.vy),45);
 console.log('Distinct difficulty rules and endless boss lifecycle: PASS');
+
+const qml = fs.readFileSync(path.join(__dirname, '../../system/apps/shell/MouseDash.qml'), 'utf8');
+assert(!/logOpen|flightObjectives|careerBadges|objectiveNotice|Game\.medal/.test(qml));
+assert(qml.includes('id: targetCrystal'));
+console.log('Crystal pickups and removal of flight log and achievements: PASS');

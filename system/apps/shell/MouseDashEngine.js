@@ -81,16 +81,6 @@ function starReward(combo, age) {
     const chain = Math.min(5, combo + 1);
     return {combo:chain, points:chain * (age <= 2 ? 150 : 100), quick:age <= 2};
 }
-// Career badges require a single flight; completed badges survive retries.
-function objectives(elapsed, stars, grazes) {
-    return [
-        {id:"collector", name:"STAR COLLECTOR", progress:Math.min(5,stars), goal:5, reward:"Career badge"},
-        {id:"surfer", name:"DEBRIS SURFER", progress:Math.min(8,grazes), goal:8, reward:"Career badge"},
-        {id:"voyager", name:"VOYAGER", progress:Math.min(30,Math.floor(elapsed)), goal:30, reward:"Career badge"}
-    ];
-}
-function medal(score) { return score >= 6000 ? "GOLD" : score >= 3000 ? "SILVER" : score >= 1000 ? "BRONZE" : "UNRANKED"; }
-function nextMedal(score) { return score < 1000 ? 1000 : score < 3000 ? 3000 : score < 6000 ? 6000 : 0; }
 // New rules use separate records; older scores remain untouched in settings.
 function scoreKey(mode, difficulty) { return "tailored:" + (difficulty === 3 ? "boss" : mode) + difficulty; }
 
