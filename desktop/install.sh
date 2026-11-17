@@ -113,7 +113,7 @@ if ((!files_only)); then
     [[ -f /etc/arch-release && $(uname -m) == x86_64 ]] || die 'Requires installed x86_64 Arch Linux'
     [[ ! -d /run/archiso ]] || die 'Boot the installed system first; do not run inside the live ISO'
     command -v sudo >/dev/null || die 'Configure sudo for your normal user first'
-    if [[ $login == regreet && -L /etc/systemd/system/display-manager.service ]]; then
+    if [[ $login != keep && -L /etc/systemd/system/display-manager.service ]]; then
         active_manager=$(basename "$(readlink -f /etc/systemd/system/display-manager.service)")
         [[ $active_manager == greetd.service || $active_manager == ly@*.service || $active_manager == ly.service ]] || die "Existing display manager: $active_manager. Choose keep in the menu, or use --no-login."
     fi
@@ -150,7 +150,7 @@ if ((!files_only)); then
 fi
 for dependency in cc fish fc-cache; do command -v "$dependency" >/dev/null || die "Missing dependency: $dependency"; done
 work_dir=$(mktemp -d)
-if ((!files_only)) && [[ $login == regreet ]]; then
+if ((!files_only)) && [[ $login != keep ]]; then
     bash "$ROOT/scripts/build-greeter-cursor.sh" "$work_dir/cage-cursor.so"
     cc -O2 -shared -fPIC "$ROOT/../system/etc/rebos-greeter/layout.c" $(pkg-config --cflags --libs gtk4) -o "$work_dir/layout.so"
 fi
@@ -190,7 +190,7 @@ if ((!files_only)); then
         fi
         if command -v mkinitcpio >/dev/null; then sudo mkinitcpio -P; fi
     fi
-    if [[ $login == regreet ]]; then
+    if [[ $login != keep ]]; then
         backup_system_file /etc/pam.d/greetd
         sudo install -Dm644 "$ROOT/../system/etc/pam.d/greetd" /etc/pam.d/greetd
         for path in /etc/greetd /usr/local/lib/rebos-greeter /var/lib/rebos-greeter/theme /usr/share/icons/GoogleDot-Black; do
@@ -217,6 +217,9 @@ if ((!files_only)); then
             if [[ $unit == ly@tty2.service ]]; then sudo systemctl enable getty@tty2.service; fi
         done
         sudo systemctl disable getty@tty1.service
+        if [[ $login == quickshell ]]; then
+            sudo bash "$ROOT/scripts/install-quickshell-greeter.sh"
+        fi
         sudo systemctl enable greetd.service
     fi
     if [[ $network == networkmanager ]]; then
@@ -233,7 +236,7 @@ if ((!files_only)); then
     fi
     printf 'System backup: %s\n' "$system_backup"
 fi
-if ((!files_only)) && [[ $login == regreet ]]; then
+if ((!files_only)) && [[ $login != keep ]]; then
     python3 "$ROOT/scripts/greeter_sync.py"
 fi
 printf '\nDesktop files installed. Selected plan: ~/.local/state/rebos-desktop/installation.json\n'

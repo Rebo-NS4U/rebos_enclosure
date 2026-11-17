@@ -68,7 +68,16 @@ def main():
     css = re.sub(r'\{\{(\w+)\}\}', token, template).encode()
     info = wallpaper.stat()
     image_signature = [str(wallpaper), info.st_mtime_ns, info.st_size]
-    signature = {'image': image_signature, 'css': hashlib.sha256(css).hexdigest()}
+    # Export only appearance, never shell settings containing personal state.
+    colors = {key: value for key, value in palette.items()
+              if isinstance(value, str) and re.fullmatch(r'#[0-9a-fA-F]{6}', value)}
+    colors['foreground'] = colors.get('overBackground', '#eeeeee')
+    exported = {'palette': colors, 'metrics': {
+        'font': font, 'fontSize': int(metrics['fontSize']), 'radius': radius,
+        'style': str(theme.get('shellStyle', 'quiet'))}}
+    appearance = json.dumps(exported).encode()
+    signature = {'image': image_signature, 'css': hashlib.sha256(css).hexdigest(),
+                 'quickshell': hashlib.sha256(appearance).hexdigest()}
     stamp = CACHE / 'regreet-sync.json'
     previous = json.loads(stamp.read_text()) if stamp.exists() else {}
     if previous.get('image') != image_signature or not (TARGET / 'background.png').exists():
@@ -87,6 +96,8 @@ def main():
         atomic_write(TARGET / 'background.png', output.getvalue())
     if previous.get('css') != signature['css'] or not (TARGET / 'regreet.css').exists():
         atomic_write(TARGET / 'regreet.css', css)
+    if previous.get('quickshell') != signature['quickshell'] or not (TARGET / 'quickshell.json').exists():
+        atomic_write(TARGET / 'quickshell.json', appearance)
     if previous != signature:
         atomic_write(stamp, json.dumps(signature).encode())
         print('ReGreet wallpaper and colors synchronized', flush=True)

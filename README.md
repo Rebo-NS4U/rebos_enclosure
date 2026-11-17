@@ -251,3 +251,6 @@ Artwork rights remain with the respective artists. Collection inclusion or sourc
 attribution is not a claim of authorship by Enclosure or a grant of additional
 artwork rights. Original notices remain with their components. See
 [upstream sources and attribution details](UPSTREAM.md).
+
+The default login screen uses a theme-synced Quickshell greeter on greetd. See
+[greeter setup and rollback](desktop/QUICKSHELL-GREETER.md). ReGreet remains available as a legacy installer option.

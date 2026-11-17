@@ -97,6 +97,10 @@ class GreeterSyncTests(unittest.TestCase):
             self.assertIn('border-radius: 16px', css)
             self.assertIn('border-radius: 10px', css)
             self.assertIn('font-size: 14px', css)
+            exported = json.loads((target / 'quickshell.json').read_text())
+            self.assertEqual(exported['metrics']['radius'], 16)
+            self.assertEqual(exported['palette']['foreground'], '#112233')
+            self.assertNotIn('opacity', exported['palette'])
             self.assertNotIn('{{', css)
             self.assertNotIn('glass-texture', css)
             # GTK parses CSS without mapping a window or connecting to greetd.
@@ -115,6 +119,7 @@ class GreeterSyncTests(unittest.TestCase):
             theme.write_text('{"roundness":0,"font":"Unsafe; font","fontSize":18}')
             sync()
             css = (target / 'regreet.css').read_text()
+            self.assertEqual(json.loads((target / 'quickshell.json').read_text())['metrics']['radius'], 0)
             self.assertIn('border-radius: 0px', css)
             self.assertIn('font-size: 18px', css)
             self.assertIn('font-family: "JetBrains Mono"', css)
