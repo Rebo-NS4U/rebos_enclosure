@@ -16,6 +16,7 @@ Singleton {
         monoFontSize: metrics.fontSize || 14, ditherStrength: 20, shellTransparency: -1,
         shadowXOffset: 0, shadowYOffset: 0, shadowOpacity: 0, shadowColor: "shadow", shadowBlur: 1
     }, appearance.material || {})
+    readonly property var display: appearance.display || ({use12hFormat: true, tintEnabled: false})
     readonly property int roundness: theme.roundness
     readonly property string defaultFont: theme.font
     readonly property int animDuration: theme.animDuration || 0

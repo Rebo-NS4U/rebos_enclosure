@@ -113,6 +113,14 @@ class GreeterSyncTests(unittest.TestCase):
             self.assertEqual(exported['material']['srBg']['gradientType'], 'radial')
             self.assertEqual(exported['material']['srBg']['border'], ['primary', 2])
             self.assertNotIn('never-publish', (target / 'quickshell.json').read_text())
+            bar = theme.with_name('bar.json')
+            bar.write_text('{"use12hFormat":false,"privateSetting":"never-publish"}')
+            state = {'currentWall': str(wall), 'tintEnabled': True}
+            (cache / 'wallpapers.json').write_text(json.dumps(state))
+            sync()
+            exported = json.loads((target / 'quickshell.json').read_text())
+            self.assertEqual(exported['display'], {'use12hFormat': False, 'tintEnabled': True})
+            self.assertNotIn('never-publish', (target / 'quickshell.json').read_text())
             self.assertNotIn('{{', css)
             self.assertNotIn('glass-texture', css)
             # GTK parses CSS without mapping a window or connecting to greetd.

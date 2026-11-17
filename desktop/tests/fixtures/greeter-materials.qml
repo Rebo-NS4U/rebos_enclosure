@@ -19,10 +19,10 @@ ShellRoot {
                 Column {
                     anchors { fill: parent; margins: 36 }
                     spacing: 28
-                    Text { text: Styling.shellStyle; color: Colors.overBackground; font.pixelSize: 24 }
+                    StyledText { text: Styling.shellStyle; font.pixelSize: 24 }
                     StyledRect { width: 368; height: 100; variant: "internalbg" }
-                    StyledRect { width: 368; height: 48; variant: "focus"; controlSurface: true }
-                    StyledRect { width: 368; height: 36; variant: "primary"; controlSurface: true }
+                    SearchInput { width: 368; placeholderText: "Shared input"; passwordMode: true }
+                    ThemeButton { width: 368; text: "Sign in"; highlighted: true }
                 }
             }
         }

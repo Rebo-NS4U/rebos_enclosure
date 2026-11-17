@@ -14,7 +14,8 @@ def assemble(destination, root=ROOT):
     theme = destination / 'themes/enclosure/shell/modules'
     components = theme / 'components'
     components.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(shell / 'modules/components/StyledRect.qml', components)
+    for name in ('StyledRect.qml', 'StyledText.qml', 'ThemeButton.qml', 'SearchInput.qml', 'TintedWallpaper.qml'):
+        shutil.copy2(shell / 'modules/components' / name, components)
     for shader in ('linear_gradient', 'radial_gradient', 'halftone', 'dither_fill'):
         for stage in ('vert', 'frag'):
             for suffix in ('', '.qsb'):
@@ -22,8 +23,13 @@ def assemble(destination, root=ROOT):
                 shutil.copy2(shell / 'modules/components' / name, components)
     material = theme / 'theme'
     material.mkdir(parents=True, exist_ok=True)
-    for name in ('Styling.qml', 'Motion.qml', 'ShellStyles.js'):
+    for name in ('Styling.qml', 'Motion.qml', 'ShellStyles.js', 'Icons.qml'):
         shutil.copy2(shell / 'modules/theme' / name, material)
+
+    wallpaper = theme / 'widgets/dashboard/wallpapers'
+    wallpaper.mkdir(parents=True, exist_ok=True)
+    for name in ('palette.vert', 'palette.frag', 'palette.vert.qsb', 'palette.frag.qsb'):
+        shutil.copy2(shell / 'modules/widgets/dashboard/wallpapers' / name, wallpaper)
 
 
 if __name__ == '__main__':

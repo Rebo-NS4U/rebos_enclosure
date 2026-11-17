@@ -20,7 +20,14 @@ updated. Only explicitly allowed visual fields are published.
 The greeter uses the shell's actual `StyledRect`, `Styling`, `Motion` and
 `ShellStyles` components, including material canvases and compiled linear,
 radial, halftone and dither shaders. The panel and login controls use the same
-renderer. `prepare-quickshell-greeter.py` assembles these dependencies directly
+renderer. Buttons, input fields and labels are the canonical `ThemeButton`,
+`SearchInput` and `StyledText` components, with the shell's hinted text rendering,
+semantic colors, focus/hover/disabled states, corner sizing and layout density.
+The background uses `TintedWallpaper` and its palette shaders plus the lockscreen's
+palette-colored dim overlay. The exported display settings follow wallpaper
+tinting and the bar's 12/24-hour clock preference. Entry motion uses the shared
+Motion durations and respects zero-duration motion; capped panels scroll at
+large font sizes and keyboard focus keeps the active control visible. `prepare-quickshell-greeter.py` assembles these dependencies directly
 from canonical shell source during installation, so no separate material copy
 needs maintaining. Small Config/Colors adapters consume the public appearance
 export without loading session services.

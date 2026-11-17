@@ -72,7 +72,13 @@ def main():
     colors = {key: value for key, value in palette.items()
               if isinstance(value, str) and re.fullmatch(r'#[0-9a-fA-F]{6}', value)}
     colors['foreground'] = colors.get('overBackground', '#eeeeee')
-    exported = {'palette': colors, 'metrics': {
+    try:
+        bar = json.loads((HOME / '.config/enclosure/shell/config/bar.json').read_text())
+    except (OSError, ValueError):
+        bar = {}
+    exported = {'display': {'use12hFormat': bar.get('use12hFormat', True) is True,
+                            'tintEnabled': state.get('tintEnabled', False) is True},
+                'palette': colors, 'metrics': {
         'font': font, 'fontSize': int(metrics['fontSize']), 'radius': radius,
         'style': str(theme.get('shellStyle', 'quiet'))}}
     # Material geometry only. Do not copy the full user settings tree.

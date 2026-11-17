@@ -26,7 +26,11 @@ class MaterialAssemblyTests(unittest.TestCase):
             target = destination / 'themes/enclosure/shell/modules'
             canonical = ROOT / 'system/apps/shell/modules'
             files = ['components/StyledRect.qml', 'theme/Styling.qml',
-                     'theme/Motion.qml', 'theme/ShellStyles.js']
+                     'theme/Motion.qml', 'theme/ShellStyles.js', 'theme/Icons.qml',
+                     'components/StyledText.qml', 'components/SearchInput.qml',
+                     'components/ThemeButton.qml', 'components/TintedWallpaper.qml']
+            files += ['widgets/dashboard/wallpapers/' + name for name in
+                      ('palette.vert', 'palette.frag', 'palette.vert.qsb', 'palette.frag.qsb')]
             for shader in ('linear_gradient', 'radial_gradient', 'halftone', 'dither_fill'):
                 for stage in ('vert', 'frag'):
                     files += [f'components/{shader}.{stage}', f'components/{shader}.{stage}.qsb']
