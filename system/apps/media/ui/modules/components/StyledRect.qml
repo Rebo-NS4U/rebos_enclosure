@@ -590,30 +590,42 @@ ClippingRectangle {
                 if(finish === "canopy"){
                     // Translucent fabric drapes use the selected palette.
                     const fabric=a=>Qt.rgba(accent.r*0.65+secondaryAccent.r*0.35,accent.g*0.65+secondaryAccent.g*0.35,accent.b*0.65+secondaryAccent.b*0.35,a);
-                    // Broad asymmetrical drapes, defined by filled edges rather than seam lines.
+                    // Offset suspended folds with broad grazing light and soft contact shadows.
                     function drapedCanopy(depth, shape) {
-                        const split=0.42+(shape%3)*0.055;
-                        const cloth=ctx.createLinearGradient(0,0,0,depth);
-                        cloth.addColorStop(0,fabric(0.14));
-                        cloth.addColorStop(0.65,fabric(0.26));
-                        cloth.addColorStop(1,fabric(0.38));
-                        ctx.fillStyle=cloth;
-                        ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(width,0);
-                        ctx.lineTo(width,depth*0.12);
-                        ctx.bezierCurveTo(width*0.85,depth*0.86,
-                            width*(split+0.12),depth*0.92,width*split,depth*0.22);
-                        ctx.bezierCurveTo(width*(split-0.12),depth*1.12,
-                            width*0.12,depth*0.96,0,depth*0.14);
-                        ctx.closePath();ctx.fill();
-                        // One shallow overlapping fold gives the upper edge depth.
-                        const fold=ctx.createLinearGradient(0,0,0,depth*0.48);
-                        fold.addColorStop(0,fabric(0.12));
-                        fold.addColorStop(1,fabric(0.045));
-                        ctx.fillStyle=fold;
-                        ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(width,0);
-                        ctx.bezierCurveTo(width*0.70,depth*0.42,
-                            width*0.24,depth*0.48,0,depth*0.06);
-                        ctx.closePath();ctx.fill();
+                        const split=0.39+(shape%4)*0.055;
+                        const glow=ctx.createLinearGradient(0,0,width,depth);
+                        glow.addColorStop(0,Qt.rgba(secondaryAccent.r,secondaryAccent.g,secondaryAccent.b,0.08));
+                        glow.addColorStop(0.55,fabric(0.025));
+                        glow.addColorStop(1,Qt.rgba(accent.r,accent.g,accent.b,0.12));
+                        ctx.fillStyle=glow;ctx.fillRect(0,0,width,depth);
+                        for(let layer=0;layer<3;layer++){
+                            const reach=depth*(1-layer*0.24);
+                            const pinch=split+(layer-1)*0.11;
+                            const edge=reach*(0.12+layer*0.04);
+                            function drape(offset) {
+                                ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(width,0);
+                                ctx.lineTo(width,edge+offset);
+                                ctx.bezierCurveTo(width*0.87,reach*(0.90-layer*0.12)+offset,
+                                    width*(pinch+0.12),reach*0.96+offset,width*pinch,reach*0.20+offset);
+                                ctx.bezierCurveTo(width*(pinch-0.12),reach*1.16+offset,
+                                    width*0.10,reach*(0.87+layer*0.08)+offset,0,edge+offset);
+                                ctx.closePath();
+                            }
+                            // Broad, fading contact shadow separates the suspended sheets.
+                            const shadow=ctx.createLinearGradient(0,reach*0.25,0,reach+8);
+                            shadow.addColorStop(0,Qt.rgba(backdrop.r,backdrop.g,backdrop.b,0));
+                            shadow.addColorStop(0.7,Qt.rgba(backdrop.r,backdrop.g,backdrop.b,0.13));
+                            shadow.addColorStop(1,Qt.rgba(backdrop.r,backdrop.g,backdrop.b,0));
+                            ctx.fillStyle=shadow;drape(Math.min(6,depth*0.09));ctx.fill();
+                            const cloth=ctx.createLinearGradient(0,0,width,reach);
+                            cloth.addColorStop(0,fabric(0.12+layer*0.035));
+                            cloth.addColorStop(0.23,fabric(0.32));
+                            cloth.addColorStop(0.43,fabric(0.11));
+                            cloth.addColorStop(0.67,Qt.rgba(secondaryAccent.r,secondaryAccent.g,secondaryAccent.b,0.22));
+                            cloth.addColorStop(0.86,fabric(0.38));
+                            cloth.addColorStop(1,fabric(0.16));
+                            ctx.fillStyle=cloth;drape(0);ctx.fill();
+                        }
                     }
 
                     if(outer){
