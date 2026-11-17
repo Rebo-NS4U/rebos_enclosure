@@ -13,6 +13,7 @@ ScrollView {
     property var localTracks: []
     property string currentPath: ""
     property string notice: ""
+    property string previewStatus: ""
     property bool downloadBusy: false
     property var selected: null
     readonly property var previewTracks: selected ? selected.tracks.map(t => ({
@@ -20,6 +21,7 @@ ScrollView {
     })) : []
     readonly property var playableTracks: previewTracks.filter(row => row.local).map(row => row.local)
     signal playRequested(var list, int index)
+    signal previewRequested(string uri)
     signal downloadRequested(var mix)
     signal requested(string cmd, var args, var callback)
     function refresh() { requested("mixes_get", {}, data => { root.mixes = data; }); }
@@ -90,14 +92,21 @@ ScrollView {
                 text: root.selected ? root.selected.name + " · " + root.playableTracks.length + "/" + root.previewTracks.length + " downloaded" : ""
                 font.bold: true
             }
+            ThemeButton {
+                objectName: "music-mix-stream-preview"
+                text: "Preview in Spotify"
+                enabled: root.previewTracks.length > 0
+                onClicked: root.previewRequested(root.previewTracks[0].track.uri)
+            }
             ThemeButton { text: "Play downloaded"; enabled: root.playableTracks.length > 0; onClicked: root.playRequested(root.playableTracks, 0) }
             ThemeButton { text: "Close preview"; onClicked: root.selected = null }
         }
         StyledText {
             visible: !!root.selected && root.playableTracks.length === 0
             Layout.fillWidth: true; wrapMode: Text.WordWrap; color: Colors.overSurfaceVariant
-            text: "Download this mix to play it here. Choose a format in Downloads, then start."
+            text: "Click any song to preview it in Spotify without downloading. Download is optional and only needed for local/offline playback."
         }
+        StyledText { Layout.fillWidth: true; wrapMode: Text.WordWrap; text: root.previewStatus; visible: text.length > 0 }
         ListView {
             id: preview
             objectName: "music-mix-preview"
@@ -108,10 +117,15 @@ ScrollView {
                 required property var modelData
                 required property int index
                 width: preview.width
-                text: (index + 1) + "  " + modelData.track.title + " — " + modelData.track.artist + (modelData.local ? "" : " · Not downloaded")
-                enabled: !!modelData.local
+                text: (index + 1) + "  " + modelData.track.title + " — " + modelData.track.artist + (modelData.local ? " · Local" : " · Preview in Spotify")
+                enabled: !!modelData.track.uri
                 highlighted: !!modelData.local && modelData.local.path === root.currentPath
-                onClicked: root.playRequested(root.playableTracks, root.playableTracks.findIndex(t => t.path === modelData.local.path))
+                objectName: "music-mix-track-" + index
+                Accessible.name: (modelData.local ? "Play local track: " : "Preview in Spotify: ") + modelData.track.title
+                onClicked: {
+                    if (modelData.local) root.playRequested(root.playableTracks, root.playableTracks.findIndex(t => t.path === modelData.local.path));
+                    else root.previewRequested(modelData.track.uri);
+                }
             }
             ScrollBar.vertical: ScrollBar {}
         }

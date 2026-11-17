@@ -12,6 +12,7 @@ import re
 import urllib.error
 import urllib.parse
 import urllib.request
+import music_preview
 
 AUDIO = {'.mp3', '.flac', '.ogg', '.opus', '.m4a', '.aac', '.wav', '.wma', '.aiff'}
 LOCK = threading.Lock()
@@ -196,6 +197,12 @@ class Library:
             return dict(text='', status='Lyrics unavailable. Try this song again when online.')
 
     def dispatch(self, cmd, args):
+        media_actions = {
+            "mixes_preview": lambda: music_preview.preview(args.get("uri")),
+            "lyrics": lambda: self.lyrics(args.get("track") or {}),
+        }
+        if cmd in media_actions:
+            return media_actions[cmd]()
         if cmd == 'mixes_download':
             data = self.mixes.dispatch('mixes_get', {})
             mix = next((m for m in data['current'] + data['saved']
@@ -209,8 +216,6 @@ class Library:
             return dict(folder=str(folder), links='https://open.spotify.com/playlist/' + mix['uri'].split(':')[-1])
         if cmd in ('mixes_get', 'mixes_save', 'mixes_refresh'):
             return self.mixes.dispatch(cmd, args)
-        if cmd == 'lyrics':
-            return self.lyrics(args.get('track') or {})
         if cmd == 'scan':
             return self.scan()
         if cmd == 'save':

@@ -40,7 +40,14 @@ completion, including cancellation or partial failure, so available tracks can p
 
 The mix preview shows downloaded availability and a scrollable track list. Use
 Play downloaded or select an available track to play in mix order through Music's
-shared player (pause, seek, previous/next and queue). Missing tracks remain disabled.
+shared player (pause, seek, previous/next and queue). Missing tracks are enabled
+for direct preview through the running Spotify desktop player. Preview in Spotify
+starts the first listed track; clicking an undownloaded row plays that track.
+No spotDL job, audio-file download or library write is performed. Open Spotify
+and sign in before previewing; unavailable playback is reported without silently
+starting a download. Local playback pauses only after Spotify accepts the request.
+Spotify controls subsequent streaming playback and account/region restrictions
+apply. Spotify may manage its own normal streaming buffer/cache.
 
 Cancel stops the current download's process group. If the downloader or a child
 ignores termination, the service forces that group to stop after a two-second
