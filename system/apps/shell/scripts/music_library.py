@@ -143,9 +143,17 @@ class Library:
         # folders never leave stale saved playlists behind.
         folder_playlists = []
         if self.music.is_dir():
-            for folder in sorted(self.music.iterdir(), key=lambda p: (p.name.casefold(), p.name)):
+            folders = []
+            for folder in self.music.iterdir():
                 if not folder.is_dir():
                     continue
+                # Daily Mixes is a container: each downloaded snapshot is its
+                # own playlist. Ordinary library folders retain recursive songs.
+                if folder.name == 'Daily Mixes':
+                    folders.extend(child for child in folder.iterdir() if child.is_dir())
+                else:
+                    folders.append(folder)
+            for folder in sorted(folders, key=lambda p: (p.name.casefold(), p.name)):
                 root = folder.resolve()
                 members = [t['path'] for t in tracks if Path(t['path']).is_relative_to(root)]
                 if members:

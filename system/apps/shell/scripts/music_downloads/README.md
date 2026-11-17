@@ -73,3 +73,6 @@ selected track preview alongside the browser; narrower windows give the preview
 full width with a Mixes back action. The header stays compact and only cards and
 tracks scroll, so preview controls remain reachable. Track title and artist use
 separate themed lines; download and Spotify-preview behavior are unchanged.
+
+Downloaded Daily Mix folders appear as separate playlists in the library, including
+existing downloads. The Daily Mixes parent folder is not a combined playlist.

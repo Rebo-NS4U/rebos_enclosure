@@ -132,6 +132,22 @@ class MusicLibraryTests(unittest.TestCase):
         renamed.unlink()
         self.assertEqual(self.library.scan()['state']['playlists'], [manual])
 
+    def test_daily_mixes_are_separate_playlists(self):
+        first = self.folder / 'Daily Mixes' / 'Daily Mix 1-aaaaaaaaaaaa'
+        second = self.folder / 'Daily Mixes' / 'Daily Mix 2-bbbbbbbbbbbb'
+        for folder in (first, second):
+            folder.mkdir(parents=True)
+            shutil.copyfile(self.song, folder / 'track.flac')
+        playlists = self.library.scan()['state']['playlists']
+        self.assertEqual([p['name'] for p in playlists], [first.name, second.name])
+        self.assertEqual(playlists[0]['paths'], [str(first / 'track.flac')])
+        self.assertEqual(playlists[1]['paths'], [str(second / 'track.flac')])
+        stable_id = playlists[0]['id']
+        (second / 'track.flac').unlink()
+        playlists = self.library.scan()['state']['playlists']
+        self.assertEqual(len(playlists), 1)
+        self.assertEqual(playlists[0]['id'], stable_id)
+
     def test_automatic_lyrics_prefer_synced_and_cache_offline(self):
         track = dict(title='Song', artist='Artist', album='Album', duration=120)
         response = io.BytesIO(json.dumps(dict(syncedLyrics='[00:01]Hello', plainLyrics='Hello')).encode())
