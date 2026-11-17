@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Window
 import QtQuick.Layouts
 import QtQuick.Controls
 import QtQuick.Effects
@@ -21,7 +22,7 @@ StyledRect {
     visible: true
     radius: playerRadius
 
-    implicitHeight: 400 + equalizerSection.implicitHeight + 12
+    implicitHeight: Math.min(400, Math.max(240, (Screen.height || 1000) - equalizerSection.implicitHeight - 32)) + equalizerSection.implicitHeight + 12
 
     readonly property bool isDragging: realSeekBar.isDragging
 
@@ -561,6 +562,7 @@ StyledRect {
 
     MediaEqualizer {
         id: equalizerSection
+        reservedHeight: 400
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom

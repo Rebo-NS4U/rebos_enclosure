@@ -35,13 +35,15 @@ ShellRoot {
     tester.compare(AudioEqualizer.enabled,false);
     Config.animDuration=0;
     const speech=find(panel,"audio-eq-preset-Speech");
-    tester.verify(speech!==null && speech.visible);
-    tester.mouseClick(speech); tester.wait(500);
+    const combo=find(panel,"audio-eq-presets");
+    if(combo && combo.visible) {
+     combo.forceActiveFocus(); tester.keyClick(Qt.Key_Home); tester.keyClick(Qt.Key_Down); tester.keyClick(Qt.Key_Down); tester.wait(500);
+    } else { tester.verify(speech!==null && speech.visible); tester.mouseClick(speech); tester.wait(500); }
     tester.compare(AudioEqualizer.preset,"Speech");
     tester.compare(AudioEqualizer.gains[0],-5);
     const band=find(panel,"audio-eq-band-0");
     tester.verify(band!==null); band.forceActiveFocus();
-    tester.keyClick(Qt.Key_Right); tester.wait(500);
+    tester.keyClick(Qt.Key_Up); tester.wait(500);
     tester.compare(AudioEqualizer.gains[0],-4.5);
     tester.compare(AudioEqualizer.preset,"Custom");
     for(const style of ["canopy","orbital","metropolis","monolith","blueprint","terminal-hardware","glass-vault","radar-station","suspended-film","frosted","colorful","clear-glass"]) {
@@ -55,7 +57,7 @@ ShellRoot {
     panel.width=300; Config.theme.fontSize=24; tester.wait(50);
     tester.verify(find(panel,"audio-eq-toggle")!==null);
     console.log("AUDIO EQ UI PASSED"); Qt.quit();
-   }catch(e){console.error(e);Qt.exit(1);}
+   }catch(e){console.error(e, e.stack);Qt.exit(1);}
   } }
  }
 }'''
@@ -71,12 +73,18 @@ MEDIA_HARNESS = HARNESS.replace('import qs.modules.components', 'import qs.modul
     '    tester.verify(find(panel,"lyrics-viewport")===null);\n'
     '    tester.verify(find(standard,"media-equalizer")!==null);\n'
     '    tester.verify(find(standard,"lyrics-viewport")===null);\n'
-    '    const viewport=find(panel,"media-equalizer-scroll");\n'
-    '    const last=find(panel,"audio-eq-band-9"); last.forceActiveFocus(); tester.wait(40);\n'
-    '    tester.verify(viewport.contentY>0);\n'
-    '    const y=last.mapToItem(viewport,0,0).y;\n'
-    '    tester.verify(y>=-1 && y+last.height<=viewport.height+1);\n'
-    '    viewport.contentY=0;\n'
+    '    tester.verify(find(panel,"media-equalizer-scroll")===null);\n'
+    '    for(const size of [14,20]) { Config.theme.fontSize=size;\n'
+    '     for(const w of [420,620,900]) { panel.width=w; tester.wait(30);\n'
+    '      const eq=find(panel,"media-equalizer");\n'
+    '      for(let i=0;i<10;i++) { const slider=find(panel,"audio-eq-band-"+i);\n'
+    '       tester.compare(slider.orientation,Qt.Vertical);\n'
+    '       const pos=slider.mapToItem(eq,0,0); tester.verify(pos.x>=0 && pos.y>=0,"negative band "+i+" "+pos);\n'
+    '       if(pos.x+slider.width>eq.width+1 || pos.y+slider.height>eq.height+1) console.error("OVERFLOW",i,w,size,pos,slider.width,slider.height,eq.width,eq.height); tester.verify(pos.x+slider.width<=eq.width+1 && pos.y+slider.height<=eq.height+1,"overflow band "+i+" width "+w+" size "+size+" pos "+pos+" eq "+eq.width+"x"+eq.height);\n'
+    '      }\n'
+    '     }\n'
+    '    }\n'
+    '    Config.theme.fontSize=14; panel.width=Math.min(620,previewSurface.width-48); tester.wait(40); tester.verify(panel.height+48<=720,"Media center must fit a 720p screen");\n'
     '    Config.theme.shellStyle="orbital"; tester.wait(40);'
 )
 

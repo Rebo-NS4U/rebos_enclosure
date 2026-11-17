@@ -3,8 +3,8 @@ import QtQuick.Controls
 import qs.modules.theme
 Slider {
     id: root
-    implicitHeight: 32
-    implicitWidth: 100
+    implicitHeight: horizontal ? 32 : 140
+    implicitWidth: horizontal ? 100 : 32
     padding: 8
     focusPolicy: Qt.StrongFocus
     wheelEnabled: false
@@ -23,17 +23,22 @@ Slider {
             if (snapped !== ratio) value = from + snapped * (to - from);
         }
     }
-    background: StandardProgressBar {
+    background: Item {
         x: root.leftPadding
-        y: root.topPadding + (root.availableHeight - height) / 2
+        y: root.topPadding
         width: root.availableWidth
-        height: 2
-        value: root.position
-        rotation: root.mirrored ? 180 : 0
+        height: root.availableHeight
+        StandardProgressBar {
+            anchors.centerIn: parent
+            width: root.horizontal ? parent.width : parent.height
+            height: 2
+            value: root.position
+            rotation: root.horizontal ? (root.mirrored ? 180 : 0) : 270
+        }
     }
     handle: SliderHandle {
-        x: root.leftPadding + root.visualPosition * (root.availableWidth - width)
-        y: root.topPadding + (root.availableHeight - height) / 2
+        x: root.leftPadding + (root.horizontal ? root.visualPosition * (root.availableWidth - width) : (root.availableWidth - width) / 2)
+        y: root.topPadding + (root.horizontal ? (root.availableHeight - height) / 2 : root.visualPosition * (root.availableHeight - height))
         focused: root.activeFocus
     }
 }

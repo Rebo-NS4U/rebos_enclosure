@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Window
 import QtQuick.Layouts
 import QtQuick.Effects
 import Quickshell.Widgets
@@ -15,7 +16,8 @@ import qs.config
 Item {
     id: root
 
-    implicitWidth: Styling.spacing(440)
+    implicitWidth: Styling.spacing(620)
+    readonly property bool tightLayout: Screen.height > 0 && Screen.height < Styling.spacing(720)
     implicitHeight: mainCol.implicitHeight + Styling.spacing(36)
 
     signal backRequested()
@@ -69,8 +71,8 @@ Item {
     ColumnLayout {
         id: mainCol
         anchors.fill: parent
-        anchors.margins: Styling.spacing(18)
-        spacing: Styling.spacing(12)
+        anchors.margins: Styling.spacing(root.tightLayout ? 10 : 18)
+        spacing: Styling.spacing(root.tightLayout ? 6 : 12)
 
         StyledRect {
             objectName: "typer-media-card"
@@ -200,8 +202,8 @@ Item {
             // ── ROTATING VINYL DISC CONTAINER ──
             Item {
                 id: discContainer
-                implicitWidth: 96
-                implicitHeight: 96
+                implicitWidth: root.tightLayout ? 64 : 96
+                implicitHeight: implicitWidth
                 Layout.alignment: Qt.AlignVCenter
 
                 scale: discMouse.pressed ? 0.92 : 1.0

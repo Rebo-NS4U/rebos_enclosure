@@ -382,6 +382,7 @@ Item {
             } else if (root.currentMode === "apps" || root.currentMode === "projects") {
                 return Math.min(480, root.width - 32);
             }
+            if (root.currentMode === "media") return Math.min(Styling.spacing(620), root.width - 32);
             if (root.currentMode === "wallpapers") {
                 return Math.min(540, root.width - 32);
             }

@@ -2,12 +2,14 @@
 
 Open **Media Center** for the compact equalizer beneath the playback controls,
 in the former embedded-lyrics area. Both island and standard players use the same
-scrollable EQ controls; keyboard focus scrolls each band into view. The on-screen
+compact vertical EQ controls: all ten faders are visible together, with a preset
+dropdown and bypass/reset actions. The media panel widens within the screen bounds;
+smaller layouts wrap faders into rows and shorten them to fit available height. The on-screen
 lyrics strip remains separate. The full editor is also available at
 **Sound → EQ & mixer → Equalizer** or **Settings → Sound → Equalizer**.
 The output/input device controls and application mixer remain in the same audio
 page. The equalizer is initially bypassed; choose a preset and enable it when
-wanted. Each of the ten bands (31 Hz–16 kHz) adjusts from −12 to +12 dB in 0.5 dB
+wanted. Each of the ten vertical bands (31 Hz–16 kHz) adjusts from −12 to +12 dB in 0.5 dB
 steps using the mouse or arrow keys. Edits select Custom. Reset to flat clears the
 curve; bypass removes processing and restores the physical output route.
 
