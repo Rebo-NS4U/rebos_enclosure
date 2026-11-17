@@ -156,11 +156,34 @@ def session():
                 } else if (phase === 5 && attempts >= repeatStart + 3) {
                     const mixes = findItem(music.contentItem, "music-daily-mixes");
                     mixes.mixes = {current: [{name: "Daily Mix 1 with a very long playlist title that wraps safely across the available width", tracks: mixes.selected.tracks}], saved: [{name: "Daily Mix 1 saved snapshot with a long title", tracks: mixes.selected.tracks, savedAt: "2026-11-16T12:00:00Z"}], checked: ""};
-                    repeatStart = attempts; phase = 6;
+                    music.minimumWidth=1160; music.width=1240; repeatStart = attempts; phase = 6;
                 } else if (phase === 6 && attempts >= repeatStart + 3) {
                     const mixes = findItem(music.contentItem, "music-daily-mixes");
                     const label = findItem(music.contentItem, "music-mix-label");
-                    if (!label || label.width > mixes.availableWidth + 1 || label.parent.children[1].y < label.y + label.height - 1 || mixes.contentHeight <= mixes.availableHeight) { console.error("MIX_LAYOUT_OVERLAP_FAILED"); Qt.exit(1); return; }
+                    const preview = findItem(music.contentItem, "music-mix-preview");
+                    const nav = findItem(music.contentItem, "music-top-navigation");
+                    const tabs = findItem(music.contentItem, "music-navigation-tabs");
+                    if (!label || label.width > mixes.width || !preview || preview.height <= 100 || !nav || !tabs || nav.width < music.width - 40) { console.error("MIX_LAYOUT_FAILED"); Qt.exit(1); return; }
+                    const navButton = findItem(music.contentItem,"music-navigation-Songs");
+                    navButton.clicked();
+                    if (music.page !== "Songs") { console.error("MUSIC_TOP_NAV_FAILED"); Qt.exit(1); return; }
+                    music.navigate("Daily Mixes");
+                    const savedTab = findItem(music.contentItem,"music-mixes-saved"); savedTab.clicked();
+                    if (mixes.section !== "saved" || mixes.displayedMixes.length !== 1) { console.error("MIX_SAVED_NAV_FAILED"); Qt.exit(1); return; }
+                    findItem(music.contentItem,"music-mixes-current").clicked();
+                    const grid = findItem(music.contentItem,"music-mix-grid");
+                    if (!mixes.wide || !grid.visible || !preview.visible || grid.width + preview.width > mixes.width) { console.error("MIX_WIDE_LAYOUT_FAILED",mixes.width,mixes.wide,grid.visible,preview.visible,grid.width,preview.width); Qt.exit(1); return; }
+                    phase = 8;
+                    music.contentItem.grabToImage(result => {
+                        result.saveToFile("/tmp/enclosure-music-mixes-wide.png");
+                        music.minimumWidth=860; music.width = 900; music.height = 600; repeatStart = attempts; phase = 7;
+                    });
+                } else if (phase === 7 && attempts >= repeatStart + 3) {
+                    const mixes = findItem(music.contentItem, "music-daily-mixes");
+                    const previewCard = findItem(music.contentItem,"music-mix-preview-card");
+                    const preview = findItem(music.contentItem,"music-mix-preview");
+                    const pos = previewCard.mapToItem(mixes,0,0);
+                    if (mixes.wide || pos.x < 0 || pos.y < 0 || pos.x+previewCard.width > mixes.width+1 || pos.y+previewCard.height > mixes.height+1 || preview.height < 100) { console.error("MIX_NARROW_LAYOUT_FAILED"); Qt.exit(1); return; }
                     console.log("MIX_LAYOUT_PASSED");
                     console.log("MIX_PREVIEW_AND_DOWNLOAD_PASSED");
                     console.log("MUSIC_ACCEPTANCE_PASSED tracks=" + music.tracks.length + " queue=" + music.queue.length);

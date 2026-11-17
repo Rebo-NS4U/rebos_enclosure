@@ -53,3 +53,11 @@ Cancel stops the current download's process group. If the downloader or a child
 ignores termination, the service forces that group to stop after a two-second
 grace period. The UI shows Cancelled after completion and permits another job;
 existing downloaded files remain available. Closing the service also cancels its job.
+
+
+Music navigation is a wrapping top bar rather than a sidebar. Daily Mixes uses
+Current/Saved category tabs and a responsive card browser. Wide windows show the
+selected track preview alongside the browser; narrower windows give the preview
+full width with a Mixes back action. The header stays compact and only cards and
+tracks scroll, so preview controls remain reachable. Track title and artist use
+separate themed lines; download and Spotify-preview behavior are unchanged.

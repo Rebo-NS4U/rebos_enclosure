@@ -276,26 +276,42 @@ Window {
         anchors.fill: parent; variant: "bg"; radius: 0
         ColumnLayout {
             anchors.fill: parent; anchors.margins: 16; spacing: 12
-            RowLayout {
-                Layout.fillWidth: true; Layout.fillHeight: true; spacing: 16
-                StyledRect {
-                    Layout.preferredWidth: 180; Layout.fillHeight: true; variant: "pane"
-                    ColumnLayout {
-                        anchors.fill: parent; anchors.margins: 12; spacing: 6
+            StyledRect {
+                objectName: "music-top-navigation"
+                Layout.fillWidth: true
+                implicitHeight: topNavigation.implicitHeight + Styling.spacing(24)
+                variant: "pane"
+                ColumnLayout {
+                    id: topNavigation
+                    anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top
+                    anchors.margins: Styling.spacing(12)
+                    spacing: Styling.spacing(8)
+                    RowLayout {
+                        Layout.fillWidth: true
+                        StyledText { text: "Enclosure Music"; font.bold: true; font.pixelSize: Styling.fontSize(2) }
+                        StyledText { Layout.fillWidth: true; text: root.tracks.length + " songs"; color: Colors.overSurfaceVariant; elide: Text.ElideRight }
+                        ThemeButton { text: "Add folder"; enabled: !root.busy; onClicked: { root.busy = true; root.request("folder", {}, root.load); } }
+                        ThemeButton { text: root.busy ? "Scanning…" : "Refresh library"; enabled: !root.busy; onClicked: root.scan() }
+                    }
+                    Flow {
+                        objectName: "music-navigation-tabs"
+                        Layout.fillWidth: true
+                        spacing: Styling.spacing(6)
                         Repeater {
                             model: ["Home", "Songs", "Albums", "Artists", "Favorites", "Playlists", "Daily Mixes", "Downloads", "Now playing"]
-                            delegate: ThemeButton {
+                            ThemeButton {
                                 required property string modelData
-                                Layout.fillWidth: true; text: modelData; highlighted: root.page === modelData
+                                objectName: "music-navigation-" + modelData
+                                text: modelData
+                                highlighted: root.page === modelData
                                 onClicked: root.navigate(modelData)
                             }
                         }
-                        Item { Layout.fillHeight: true }
-                        StyledText { Layout.fillWidth: true; text: root.tracks.length + " songs in library"; wrapMode: Text.WordWrap; color: Colors.overSurfaceVariant; font.pixelSize: Styling.fontSize(-2) }
-                        ThemeButton { Layout.fillWidth: true; text: "Add folder"; enabled: !root.busy; onClicked: { root.busy = true; root.request("folder", {}, root.load); } }
-                        ThemeButton { Layout.fillWidth: true; text: root.busy ? "Scanning…" : "Refresh library"; enabled: !root.busy; onClicked: root.scan() }
                     }
                 }
+            }
+            RowLayout {
+                Layout.fillWidth: true; Layout.fillHeight: true; spacing: Styling.spacing(16)
                 ColumnLayout {
                     visible: root.page !== "Downloads" && root.page !== "Daily Mixes" && (root.width >= 1120 || root.page !== "Now playing")
                     Layout.fillWidth: true; Layout.fillHeight: true; spacing: 14
