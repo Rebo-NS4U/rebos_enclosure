@@ -18,6 +18,8 @@ assert.deepEqual(suggest('Songs','downloaded',lists,tracks,spotify), []);
 assert.deepEqual(suggest('Playlist','missing',lists,tracks,spotify), []);
 lists[0].paths.push('b');
 assert.deepEqual(suggest('Playlist','downloaded',lists,tracks,spotify), []);
+const many = {playlist:'downloaded', tracks:Array.from({length:120}, (_,i)=>({uri:'track:'+i,title:'Choice '+i,artist:'New artist'}))};
+assert.equal(suggest('Playlist','downloaded',lists,tracks,many).length,100);
 console.log('Spotify suggestions: remote tracks, duplicate exclusion, navigation and add removal passed');
 
 (async () => {
@@ -26,7 +28,7 @@ console.log('Spotify suggestions: remote tracks, duplicate exclusion, navigation
  const run = new (Object.getPrototypeOf(async function(){}).constructor)('command','Spicetify','fetch','let suggesting = false;'+block);
  let posted;
  await run({suggestion:{id:'job',uri:'spotify:playlist:'+'a'.repeat(22)}}, {Platform:{PlaylistAPI:{getRecommendedTracks:async(uri, skip, limit)=> {
-   assert.equal(uri,'spotify:playlist:'+'a'.repeat(22)); assert.equal(limit,40);
+   assert.equal(uri,'spotify:playlist:'+'a'.repeat(22)); assert.equal(limit,100);
    return [{uri:'spotify:track:'+'z'.repeat(22),name:'New Spotify song',artists:[{name:'New artist'}]}];
  }}}}, async(url, options)=>{posted=JSON.parse(options.body);});
  assert.equal(posted.suggestion_id,'job'); assert.equal(posted.tracks[0].title,'New Spotify song');

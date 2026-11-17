@@ -135,7 +135,7 @@ async function refresh() {
                     try {
                         const api = Spicetify.Platform.PlaylistAPI;
                         if (typeof api.getRecommendedTracks !== 'function') throw Error('Update the Spotify integration to load recommendations.');
-                        const rows = await api.getRecommendedTracks(job.uri, [], 40);
+                        const rows = await api.getRecommendedTracks(job.uri, [], 100);
                         tracks = rows.map(row => row.track || row).filter(t => /^spotify:track:[A-Za-z0-9]{22}$/.test(t.uri || '')).map(t => ({uri:t.uri, title:t.name || '', artist:(t.artists || []).map(a => a.name).join(', ')}));
                     } catch (e) { error = 'Could not load Spotify suggestions. ' + String(e.message || e).slice(0, 180); }
                     await fetch('http://127.0.0.1:19838/mixes', {method:'POST', credentials:'omit', headers:{'Content-Type':'application/json'}, body:JSON.stringify({suggestion_id:job.id, tracks, error})});

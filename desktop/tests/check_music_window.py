@@ -38,6 +38,33 @@ def session():
     ShellRoot {
         TestCase { id: input; when: false }
         MusicWindow { id: music }
+        QtObject {
+            id: spotify
+            property string trackTitle: "Suggested song"
+            property string trackArtists: "Suggested artist"
+            property string trackAlbum: "Spotify suggestions"
+            property string trackArtUrl: ""
+            property var metadata: ({"xesam:url":"spotify:track:" + "z".repeat(22)})
+            property real length: 180
+            property real position: 30
+            property bool isPlaying: true
+            property bool canTogglePlaying: true
+            property bool canGoNext: true
+            property bool canGoPrevious: true
+            property bool canSeek: true
+            property bool shuffleSupported: true
+            property bool loopSupported: true
+            property bool volumeSupported: true
+            property bool shuffle: false
+            property int loopState: 0
+            property real volume: 0.6
+            property int nextCalls: 0
+            property int previousCalls: 0
+            function togglePlaying() { isPlaying = !isPlaying; }
+            function pause() { isPlaying = false; }
+            function next() { nextCalls++; }
+            function previous() { previousCalls++; }
+        }
         function findItem(item, name) {
             if (item.objectName === name) return item;
             for (const child of item.children) { const found = findItem(child, name); if (found) return found; }
@@ -253,7 +280,26 @@ def session():
                     input.keyClick(Qt.Key_F11); repeatStart = attempts; phase = 94;
                 } else if (phase === 94 && attempts >= repeatStart + 3) {
                     if (!music.immersive) { console.error("MUSIC_FULLSCREEN_F11_FAILED"); Qt.exit(1); return; }
-                    console.log("MUSIC_FULLSCREEN_PASSED"); stop(); Qt.quit();
+                    console.log("MUSIC_FULLSCREEN_PASSED");
+                    music.spotifyPlayer = spotify; music.spotifyPreview = true;
+                    if (music.current.title !== "Suggested song" || music.playbackDuration !== 180000 || !music.playing) { console.error("SPOTIFY_METADATA_FAILED"); Qt.exit(1); return; }
+                    const play = findItem(music.contentItem, "music-fullscreen-play");
+                    play.clicked();
+                    if (spotify.isPlaying || music.playing || play.text !== "Play") { console.error("SPOTIFY_PAUSE_FAILED"); Qt.exit(1); return; }
+                    play.clicked();
+                    music.seek(45000);
+                    findItem(music.contentItem, "music-fullscreen-next").clicked();
+                    findItem(music.contentItem, "music-fullscreen-previous").clicked();
+                    findItem(music.contentItem, "music-fullscreen-shuffle").clicked();
+                    findItem(music.contentItem, "music-fullscreen-repeat").clicked();
+                    const volume = findItem(music.contentItem, "music-fullscreen-volume");
+                    volume.value = 0.3; volume.moved();
+                    if (!spotify.isPlaying || spotify.position !== 45 || spotify.nextCalls !== 1 || spotify.previousCalls !== 1 || !spotify.shuffle || spotify.loopState === 0 || Math.abs(spotify.volume-0.3) > 0.01) { console.error("SPOTIFY_TRANSPORT_FAILED"); Qt.exit(1); return; }
+                    spotify.canSeek = false; music.seek(60000);
+                    if (spotify.position !== 45 || findItem(music.contentItem, "music-fullscreen-seek").enabled) { console.error("SPOTIFY_CAPABILITY_FAILED"); Qt.exit(1); return; }
+                    music.select(0);
+                    if (music.spotifyPreview || spotify.isPlaying || music.current.title === "Suggested song") { console.error("SPOTIFY_LOCAL_RETURN_FAILED"); Qt.exit(1); return; }
+                    console.log("MUSIC_SPOTIFY_FULLSCREEN_PASSED"); stop(); Qt.quit();
                 }
             }
         }

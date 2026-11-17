@@ -6,6 +6,7 @@ import QtQuick.Layouts
 import QtMultimedia
 import Quickshell
 import Quickshell.Io
+import Quickshell.Services.Mpris
 import Quickshell.Widgets
 import qs.config
 import qs.modules.theme
@@ -56,8 +57,34 @@ Window {
     property real volume: 0.8
     property int requestId: 0
     property var callbacks: ({})
-    readonly property var current: currentIndex >= 0 && currentIndex < queue.length ? queue[currentIndex] : null
-    readonly property bool playing: player.playbackState === MediaPlayer.PlayingState
+    property bool spotifyPreview: false
+    property var spotifyPlayer: Mpris.players.values.find(p => p.dbusName === "org.mpris.MediaPlayer2.spotify") || null
+    readonly property var localCurrent: currentIndex >= 0 && currentIndex < queue.length ? queue[currentIndex] : null
+    readonly property var current: spotifyPreview ? (spotifyPlayer ? {
+        title: spotifyPlayer.trackTitle, artist: spotifyPlayer.trackArtists,
+        album: spotifyPlayer.trackAlbum, art: spotifyPlayer.trackArtUrl,
+        duration: spotifyPlayer.length, spotifyUri: spotifyPlayer.metadata["xesam:url"] || ""
+    } : null) : localCurrent
+    readonly property real playbackPosition: spotifyPreview ? (spotifyPlayer?.position || 0) * 1000 : player.position
+    readonly property real playbackDuration: spotifyPreview ? (spotifyPlayer?.length || 0) * 1000 : player.duration
+    onSpotifyPlayerChanged: if (spotifyPreview) Qt.callLater(findLyrics)
+    function previewTrack(uri) {
+        request("mixes_preview", {uri: uri}, data => {
+            player.pause();
+            spotifyPreview = true;
+            findLyrics();
+        });
+    }
+    Connections {
+        target: root.spotifyPreview ? root.spotifyPlayer : null
+        function onTrackTitleChanged() { Qt.callLater(root.findLyrics); }
+    }
+    Timer {
+        interval: 250; repeat: true
+        running: root.spotifyPreview && root.playing && root.visible
+        onTriggered: if (root.spotifyPlayer) root.spotifyPlayer.positionChanged()
+    }
+    readonly property bool playing: spotifyPreview ? !!spotifyPlayer?.isPlaying : player.playbackState === MediaPlayer.PlayingState
     readonly property var shownTracks: {
         let list = tracks;
         if (page === "Favorites") list = list.filter(t => favorites.indexOf(t.path) >= 0);
@@ -82,7 +109,7 @@ Window {
             const key = (t.artist + "\n" + t.title).toLowerCase();
             if (uris.has(t.uri) || identities.has(key)) return false;
             uris.add(t.uri); identities.add(key); return true;
-        }).slice(0, 20);
+        }).slice(0, 100);
     }
     function refreshSuggestions() {
         if (page !== "Playlist") return;
@@ -119,7 +146,7 @@ Window {
     readonly property bool estimatedTiming: lyricText.trim().length > 0 && Lyrics.parseLrc(lyricText).length === 0
     readonly property var lyricLines: {
         const raw = lyricText;
-        if (estimatedTiming) return Lyrics.estimatedLines(raw, player.duration > 0 ? player.duration/1000 : (current?.duration || 0));
+        if (estimatedTiming) return Lyrics.estimatedLines(raw, playbackDuration > 0 ? playbackDuration/1000 : (current?.duration || 0));
         let result = [];
         raw.split("\n").forEach(line => {
             const stamps = [];
@@ -136,7 +163,7 @@ Window {
     }
     readonly property int lyricIndex: {
         let found = -1;
-        for (let i = 0; i < lyricLines.length; i++) if (lyricLines[i].time >= 0 && lyricLines[i].time <= player.position/1000) found = i;
+        for (let i = 0; i < lyricLines.length; i++) if (lyricLines[i].time >= 0 && lyricLines[i].time <= playbackPosition/1000) found = i;
         return found;
     }
     onLyricIndexChanged: if (lyricIndex >= 0) {
@@ -168,6 +195,7 @@ Window {
     function scan() { if (busy) return; busy = true; request("scan", {}, load); }
     function save() { request("save", { favorites: favorites, playlists: playlists }); }
     function favorite(track) {
+        if (!track?.path) return;
         favorites = favorites.includes(track.path) ? favorites.filter(p => p !== track.path) : favorites.concat([track.path]); save();
     }
     function navigate(value, arg) { page = value; detail = arg || ""; query = ""; if (page === "Playlist") refreshSuggestions(); }
@@ -197,6 +225,8 @@ Window {
     }
     function select(index) {
         if (index < 0 || index >= queue.length) return;
+        if (spotifyPreview && spotifyPlayer?.isPlaying) spotifyPlayer.pause();
+        spotifyPreview = false;
         currentIndex = index;
         findLyrics();
         player.source = queue[index].url;
@@ -216,18 +246,19 @@ Window {
         });
     }
     function next(automatic) {
+        if (spotifyPreview) { if (spotifyPlayer?.canGoNext) spotifyPlayer.next(); return; }
         if (!queue.length) return;
         if (automatic && repeatMode === "Track") { player.position = 0; player.play(); return; }
         if (shuffle && queue.length > 1) { select((currentIndex + 1 + Math.floor(Math.random()*(queue.length-1)))%queue.length); return; }
         if (currentIndex+1 < queue.length) select(currentIndex+1);
         else if (repeatMode === "Playlist") select(0);
     }
-    function previous() { if (player.position > 3000) player.position = 0; else select(Math.max(0,currentIndex-1)); }
-    function toggle() { if (playing) player.pause(); else if (current) player.play(); else play(shownTracks); }
-    function seek(value) { player.position = Math.max(0, Math.min(player.duration, value)); sync(true); }
+    function previous() { if (spotifyPreview) { if (spotifyPlayer?.canGoPrevious) spotifyPlayer.previous(); return; } if (player.position > 3000) player.position = 0; else select(Math.max(0,currentIndex-1)); }
+    function toggle() { if (spotifyPreview) { if (spotifyPlayer?.canTogglePlaying) spotifyPlayer.togglePlaying(); return; } if (playing) player.pause(); else if (current) player.play(); else play(shownTracks); }
+    function seek(value) { if (spotifyPreview) { if (spotifyPlayer?.canSeek) spotifyPlayer.position = value/1000; return; } player.position = Math.max(0, Math.min(player.duration, value)); sync(true); }
     function sync(seeked) {
         if (!backend.running) return;
-        request("mpris", { track: current ? Object.assign({}, current, {lyrics: lyricText}) : null, status: !current || player.playbackState === MediaPlayer.StoppedState ? "Stopped" : playing ? "Playing" : "Paused",
+        request("mpris", { track: localCurrent ? Object.assign({}, localCurrent, {lyrics: spotifyPreview ? "" : lyricText}) : null, status: !localCurrent || player.playbackState === MediaPlayer.StoppedState ? "Stopped" : player.playbackState === MediaPlayer.PlayingState ? "Playing" : "Paused",
             position: Math.round(player.position*1000), length: Math.round(player.duration*1000),
             volume: volume, shuffle: shuffle, loop: repeatMode, canNext: queue.length > 1,
             canPrevious: currentIndex > 0, seeked: !!seeked });
@@ -464,7 +495,7 @@ Window {
                                 required property var modelData
                                 width: ListView.view.width; height: Styling.spacing(52)
                                 StyledText { Layout.fillWidth: true; text: suggestion.modelData.title + " · " + suggestion.modelData.artist; elide: Text.ElideRight }
-                                ThemeButton { text: "Play"; Accessible.name: "Play suggested track " + suggestion.modelData.title; onClicked: root.request("mixes_preview", {uri:suggestion.modelData.uri}, data => { player.pause(); }) }
+                                ThemeButton { text: "Play"; Accessible.name: "Play suggested track " + suggestion.modelData.title; onClicked: root.previewTrack(suggestion.modelData.uri) }
                                 ThemeButton {
                                     text: "Add"; Accessible.name: "Add " + suggestion.modelData.title + " to playlist"
                                     enabled: !root.busy && !downloads.busy && !root.pendingSuggestionDownload
@@ -660,7 +691,7 @@ Window {
                 Layout.fillWidth: true
                 ColumnLayout {
                     spacing: 4
-                    StyledText { text: "NOW PLAYING"; font.pixelSize: Styling.fontSize(-2); font.letterSpacing: 3; color: Colors.primary }
+                    StyledText { text: root.spotifyPreview ? "NOW PLAYING · SPOTIFY" : "NOW PLAYING"; font.pixelSize: Styling.fontSize(-2); font.letterSpacing: 3; color: Colors.primary }
                     StyledText { text: root.current?.album || "Your listening room"; elide: Text.ElideRight; Layout.maximumWidth: stage.width * 0.6; color: Colors.overSurfaceVariant }
                 }
                 Item { Layout.fillWidth: true }
@@ -723,21 +754,24 @@ Window {
                 Layout.fillWidth: true; spacing: 14
                 RowLayout {
                     Layout.fillWidth: true; spacing: 14
-                    StyledText { text: root.time(player.position); color: Colors.overSurfaceVariant }
-                    ThemeSlider { objectName: "music-fullscreen-seek"; Layout.fillWidth: true; from: 0; to: Math.max(1, player.duration); value: player.position; enabled: !!root.current; Accessible.name: "Seek"; onMoved: root.seek(value) }
-                    StyledText { text: root.time(player.duration); color: Colors.overSurfaceVariant }
+                    StyledText { text: root.time(root.playbackPosition); color: Colors.overSurfaceVariant }
+                    ThemeSlider { objectName: "music-fullscreen-seek"; Layout.fillWidth: true; from: 0; to: Math.max(1, root.playbackDuration); value: root.playbackPosition; enabled: root.spotifyPreview ? !!root.spotifyPlayer?.canSeek : !!root.current; Accessible.name: "Seek"; onMoved: root.seek(value) }
+                    StyledText { text: root.time(root.playbackDuration); color: Colors.overSurfaceVariant }
                 }
                 RowLayout {
                     Layout.fillWidth: true; spacing: 12
-                    ThemeButton { text: root.favorites.includes(root.current?.path) ? "♥" : "♡"; enabled: !!root.current; Accessible.name: "Favorite current song"; onClicked: root.favorite(root.current) }
+                    ThemeButton { text: root.favorites.includes(root.current?.path) ? "♥" : "♡"; enabled: !!root.current && !root.spotifyPreview; Accessible.name: "Favorite current song"; onClicked: root.favorite(root.current) }
                     Item { Layout.fillWidth: true }
-                    ThemeButton { text: "Shuffle"; checked: root.shuffle; onClicked: root.shuffle = !root.shuffle }
-                    ThemeButton { text: "⏮"; Accessible.name: "Previous track"; enabled: !!root.current; onClicked: root.previous() }
-                    ThemeButton { objectName: "music-fullscreen-play"; text: root.playing ? "Pause" : "Play"; highlighted: true; Layout.preferredWidth: 120; implicitHeight: 52; enabled: root.queue.length > 0 || root.shownTracks.length > 0; onClicked: root.toggle() }
-                    ThemeButton { text: "⏭"; Accessible.name: "Next track"; enabled: root.queue.length > 1; onClicked: root.next(false) }
-                    ThemeButton { text: root.repeatMode === "Track" ? "Repeat song" : "Repeat all"; checked: root.repeatMode !== "None"; onClicked: root.repeatMode = root.repeatMode === "None" ? "Playlist" : root.repeatMode === "Playlist" ? "Track" : "None" }
+                    ThemeButton { objectName: "music-fullscreen-shuffle"; text: "Shuffle"; checked: root.spotifyPreview ? !!root.spotifyPlayer?.shuffle : root.shuffle; enabled: !root.spotifyPreview || !!root.spotifyPlayer?.shuffleSupported; onClicked: { if (root.spotifyPreview) root.spotifyPlayer.shuffle = !root.spotifyPlayer.shuffle; else root.shuffle = !root.shuffle; } }
+                    ThemeButton { objectName: "music-fullscreen-previous"; text: "⏮"; Accessible.name: "Previous track"; enabled: root.spotifyPreview ? !!root.spotifyPlayer?.canGoPrevious : !!root.current; onClicked: root.previous() }
+                    ThemeButton { objectName: "music-fullscreen-play"; text: root.playing ? "Pause" : "Play"; highlighted: true; Layout.preferredWidth: 120; implicitHeight: 52; enabled: root.spotifyPreview ? !!root.spotifyPlayer?.canTogglePlaying : root.queue.length > 0 || root.shownTracks.length > 0; onClicked: root.toggle() }
+                    ThemeButton { objectName: "music-fullscreen-next"; text: "⏭"; Accessible.name: "Next track"; enabled: root.spotifyPreview ? !!root.spotifyPlayer?.canGoNext : root.queue.length > 1; onClicked: root.next(false) }
+                    ThemeButton { objectName: "music-fullscreen-repeat"; text: root.spotifyPreview ? (root.spotifyPlayer?.loopState === MprisLoopState.Track ? "Repeat song" : "Repeat all") : root.repeatMode === "Track" ? "Repeat song" : "Repeat all"; checked: root.spotifyPreview ? root.spotifyPlayer?.loopState !== MprisLoopState.None : root.repeatMode !== "None"; enabled: !root.spotifyPreview || !!root.spotifyPlayer?.loopSupported; onClicked: {
+                        if (root.spotifyPreview) root.spotifyPlayer.loopState = root.spotifyPlayer.loopState === MprisLoopState.None ? MprisLoopState.Playlist : root.spotifyPlayer.loopState === MprisLoopState.Playlist ? MprisLoopState.Track : MprisLoopState.None;
+                        else root.repeatMode = root.repeatMode === "None" ? "Playlist" : root.repeatMode === "Playlist" ? "Track" : "None";
+                    } }
                     Item { Layout.fillWidth: true }
-                    ThemeSlider { Layout.preferredWidth: 100; from: 0; to: 1; value: root.volume; Accessible.name: "Volume"; onMoved: root.volume = value }
+                    ThemeSlider { objectName: "music-fullscreen-volume"; Layout.preferredWidth: 100; from: 0; to: 1; value: root.spotifyPreview ? (root.spotifyPlayer?.volume || 0) : root.volume; enabled: !root.spotifyPreview || !!root.spotifyPlayer?.volumeSupported; Accessible.name: "Volume"; onMoved: { if (root.spotifyPreview) root.spotifyPlayer.volume = value; else root.volume = value; } }
                 }
             }
         }

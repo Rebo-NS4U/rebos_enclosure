@@ -332,7 +332,11 @@ launch (the updater does not restart active playback).
 Spotify playlist previews stream through the running Spotify desktop app. On Niri,
 previews return focus to the music window if Spotify activates itself, so Spotify
 can stay in the background. Sign in to Spotify first; previews do not download
-tracks or restart either player.
+tracks or restart either player. Playlist suggestions show up to 100 unique songs
+when Spotify supplies them. While a suggested song plays, the fullscreen view
+shows Spotify artwork, song details and lyrics, with play/pause, previous/next,
+seek, volume, shuffle and repeat controls. Controls follow Spotify's supported
+capabilities. Starting a local song pauses the Spotify preview.
 
 The library initially reads the XDG Music directory. **Add folder** includes
 other music directories without copying or modifying audio files. Albums,
