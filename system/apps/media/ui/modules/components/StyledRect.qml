@@ -816,7 +816,7 @@ ClippingRectangle {
         }
     }
 
-    // Monolith: overlapping basalt planes with softly engraved diagonal seams.
+    // Monolith: crisp basalt facets with straight seams and 45-degree cuts.
     Loader {
         anchors.fill: parent
         active: !root.hasFillColor && root.rectOpacity > 0 && (root.styleOverride || Styling.shellStyle) === "monolith"
@@ -847,36 +847,26 @@ ClippingRectangle {
                 ctx.lineWidth=0.8;ctx.strokeStyle=Qt.alpha(pigment,inset?0.045:0.085);
                 if(root.traceThemeFrame(ctx,0.8))ctx.stroke();
                 if(!inset){
-                    // Broad oblique slabs overlap at opposing corners like cut basalt.
-                    // Fade toward the face so content never sits on a hard seam.
-                    const depth=Math.min(outer?76:30,height*0.38);
-                    const extent=Math.min(width*0.58,outer?310:140);
+                    // Solid, straight-edged facets with true 45-degree cuts.
+                    const depth=Math.min(outer?64:28,height*0.36,width*0.30);
+                    const reach=Math.min(width*0.48,outer?240:108);
                     for(let i=0;i<3;i++){
-                        const offset=i*depth*0.26;
-                        const reach=extent-i*extent*0.19;
-                        const wash=ctx.createLinearGradient(0,0,0,depth);
-                        wash.addColorStop(0,Qt.alpha(accent,(outer?0.10:0.055)-i*0.012));
-                        wash.addColorStop(1,Qt.alpha(accent,0));
-                        ctx.fillStyle=wash;
-                        ctx.beginPath();ctx.moveTo(width-reach,0);
-                        ctx.lineTo(width,0);ctx.lineTo(width,depth-offset);
-                        ctx.lineTo(width-reach*0.30,depth-offset);
+                        const d=depth*(1-i*0.27);
+                        const run=reach-i*depth*0.46;
+                        ctx.fillStyle=Qt.alpha(accent,outer?0.065:0.04);
+                        ctx.beginPath();ctx.moveTo(width-run,0);ctx.lineTo(width,0);
+                        ctx.lineTo(width,d);ctx.lineTo(width-run+d,d);
                         ctx.closePath();ctx.fill();
-                        const seam=ctx.createLinearGradient(width-reach,0,width,depth);
-                        seam.addColorStop(0,Qt.alpha(pigment,0));
-                        seam.addColorStop(0.6,Qt.alpha(pigment,outer?0.12:0.065));
-                        seam.addColorStop(1,Qt.alpha(pigment,0));
-                        ctx.strokeStyle=seam;ctx.lineWidth=0.8;
-                        ctx.beginPath();ctx.moveTo(width-reach,0);
-                        ctx.lineTo(width-reach*0.30,depth-offset);
-                        ctx.lineTo(width,depth-offset);ctx.stroke();
-                        const shadow=ctx.createLinearGradient(0,height,0,height-depth);
-                        shadow.addColorStop(0,Qt.alpha(secondaryAccent,(outer?0.075:0.04)-i*0.01));
-                        shadow.addColorStop(1,Qt.alpha(secondaryAccent,0));
-                        ctx.fillStyle=shadow;
-                        ctx.beginPath();ctx.moveTo(0,height);ctx.lineTo(reach,height);
-                        ctx.lineTo(reach*0.30,height-depth+offset);
-                        ctx.lineTo(0,height-depth+offset);ctx.closePath();ctx.fill();
+                        ctx.strokeStyle=Qt.alpha(pigment,outer?0.20:0.12);ctx.lineWidth=0.8;
+                        ctx.beginPath();ctx.moveTo(width-run,0);
+                        ctx.lineTo(width-run+d,d);ctx.lineTo(width,d);ctx.stroke();
+                        ctx.fillStyle=Qt.alpha(secondaryAccent,outer?0.055:0.035);
+                        ctx.beginPath();ctx.moveTo(0,height);ctx.lineTo(run,height);
+                        ctx.lineTo(run-d,height-d);ctx.lineTo(0,height-d);
+                        ctx.closePath();ctx.fill();
+                        ctx.strokeStyle=Qt.alpha(pigment,outer?0.16:0.10);
+                        ctx.beginPath();ctx.moveTo(run,height);
+                        ctx.lineTo(run-d,height-d);ctx.lineTo(0,height-d);ctx.stroke();
                     }
                 }
                 ctx.restore();
