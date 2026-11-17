@@ -25,12 +25,13 @@ FocusScope {
             flick.contentY = Math.min(Math.max(0, content.implicitHeight - scroll.availableHeight), top + control.height - scroll.availableHeight);
     }
     Rectangle { anchors.fill: parent; color: Colors.background }
-    TintedWallpaper {
+    Image {
         anchors.fill: parent
         source: "file:///var/lib/rebos-greeter/theme/background.png"
-        tintEnabled: Config.display.tintEnabled === true
+        fillMode: Image.PreserveAspectCrop
+        asynchronous: true
+        mipmap: true
     }
-    Rectangle { anchors.fill: parent; color: Colors.background; opacity: 0.55 }
     StyledRect {
         id: panel
         variant: "bg"
