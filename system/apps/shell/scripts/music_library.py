@@ -103,6 +103,8 @@ class Library:
                      artist=tags.get('artist') or 'Unknown artist', album=tags.get('album') or 'Unknown album',
                      duration=float(fmt.get('duration') or 0), art=art, lyrics=lyrics,
                      number=int(str(tags.get('track', '0')).split('/')[0]) if str(tags.get('track', '0')).split('/')[0].isdigit() else 0)
+        if path.is_relative_to(self.music / 'Daily Mixes') and re.fullmatch(r'[A-Za-z0-9]{22}', path.stem):
+            track['spotifyUri'] = 'spotify:track:' + path.stem
         self.cache[key] = dict(signature=signature, track=track)
         return track
 
@@ -194,6 +196,18 @@ class Library:
             return dict(text='', status='Lyrics unavailable. Try this song again when online.')
 
     def dispatch(self, cmd, args):
+        if cmd == 'mixes_download':
+            data = self.mixes.dispatch('mixes_get', {})
+            mix = next((m for m in data['current'] + data['saved']
+                        if m['uri'] == args.get('uri') and m['version'] == args.get('version')), None)
+            if not mix:
+                raise ValueError('Mix changed; select it again before downloading')
+            folder = self.music / 'Daily Mixes' / (mix['name'] + '-' + mix['version'][:12])
+            if str(self.music) not in self.state['folders']:
+                self.state['folders'].append(str(self.music))
+                self.write(self.state_dir / 'library.json', self.state)
+            return dict(folder=str(folder), links=' '.join(
+                'https://open.spotify.com/track/' + t['uri'].split(':')[-1] for t in mix['tracks']))
         if cmd in ('mixes_get', 'mixes_save', 'mixes_refresh'):
             return self.mixes.dispatch(cmd, args)
         if cmd == 'lyrics':

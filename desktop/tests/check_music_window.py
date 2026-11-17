@@ -139,6 +139,19 @@ def session():
                     if (!downloads.canDownload) { console.error("MUSIC_DOWNLOAD_LINKS_FAILED"); Qt.exit(1); }
                     links.text = "";
                     if (downloads.canDownload) { console.error("MUSIC_DOWNLOAD_EMPTY_LINKS_FAILED"); Qt.exit(1); }
+                    const mixes = findItem(music.contentItem, "music-daily-mixes");
+                    const mixDownloads = findItem(music.contentItem, "music-downloads");
+                    const local = Object.assign({}, music.tracks[0], {spotifyUri: "spotify:track:" + "b".repeat(22)});
+                    music.tracks = [local, music.tracks[1]];
+                    mixes.selected = {name: "Daily Mix 1", tracks: [
+                        {uri: local.spotifyUri, title: local.title},
+                        {uri: "spotify:track:" + "c".repeat(22), title: "Not downloaded"}]};
+                    if (mixes.previewTracks.length !== 2 || mixes.playableTracks.length !== 1) { console.error("MIX_PREVIEW_MATCH_FAILED"); Qt.exit(1); }
+                    mixes.playRequested(mixes.playableTracks, 0);
+                    if (music.current.path !== local.path || music.queue.length !== 1) { console.error("MIX_PREVIEW_PLAY_FAILED"); Qt.exit(1); }
+                    if (!mixDownloads.prepareMix({links: "https://open.spotify.com/track/" + "b".repeat(22), folder: "/tmp/mix-preview-fixture"}) || !mixDownloads.mixTracks) { console.error("MIX_DOWNLOAD_PREPARE_FAILED"); Qt.exit(1); }
+                    music.navigate("Daily Mixes");
+                    console.log("MIX_PREVIEW_AND_DOWNLOAD_PASSED");
                     console.log("MUSIC_ACCEPTANCE_PASSED tracks=" + music.tracks.length + " queue=" + music.queue.length);
                     console.log('MUSIC_GEOMETRY ' + music.contentItem.width + 'x' + music.contentItem.height + ' children=' + music.contentItem.children.length + ' root=' + music.contentItem.children[music.contentItem.children.length-1].width); music.contentItem.grabToImage(result => { result.saveToFile("/tmp/enclosure-music-acceptance.png"); Qt.quit(); });
                     stop();

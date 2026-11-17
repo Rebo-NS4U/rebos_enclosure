@@ -1,4 +1,5 @@
 """Exercise the downloader protocol with a fake executable; no network or login."""
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -9,6 +10,17 @@ import unittest
 SERVICE = Path(__file__).resolve().parents[2] / 'system/apps/shell/scripts/music_downloads/service.py'
 
 class Downloads(unittest.TestCase):
+    def test_mix_download_preserves_track_identity(self):
+        spec = importlib.util.spec_from_file_location('download_commands', SERVICE.parent/'commands.py')
+        commands = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(commands)
+        links = 'https://open.spotify.com/track/'+'b'*22
+        args = commands.build_spotdl_args(0, links, '/tmp/Music/Daily Mixes/test', 'ogg', mix_tracks=True)
+        self.assertEqual(args[args.index('--output')+1], '/tmp/Music/Daily Mixes/test/{track-id}.{output-ext}')
+        self.assertEqual(args[1], links)
+        with self.assertRaises(ValueError):
+            commands.build_spotdl_args(0, 'invalid', '/tmp/Music', 'ogg', mix_tracks=True)
+
     def test_validation_completion_and_cancel(self):
         with tempfile.TemporaryDirectory() as directory:
             home = Path(directory)

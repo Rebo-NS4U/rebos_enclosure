@@ -34,7 +34,7 @@ try:
             fmt = data.get('format', 'ogg')
             if data.get('backend', 'spotdl') != 'spotdl':
                 raise ValueError('Only spotDL is supported.')
-            command = [find_spotdl(), *build_spotdl_args(mode, data.get('links', ''), folder, fmt)]
+            command = [find_spotdl(), *build_spotdl_args(mode, data.get('links', ''), folder, fmt, mix_tracks=data.get('mixTracks') is True)]
             os.makedirs(folder, exist_ok=True)
             proc = subprocess.Popen(command, stdin=subprocess.DEVNULL,
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, start_new_session=True,

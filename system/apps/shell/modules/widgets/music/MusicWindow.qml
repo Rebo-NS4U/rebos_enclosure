@@ -375,11 +375,20 @@ Window {
                     }
                 }
                 DailyMixesPane {
+                    localTracks: root.tracks
+                    currentPath: root.current?.path || ""
+                    notice: root.notice
+                    downloadBusy: downloads.busy
+                    onPlayRequested: (list, index) => root.play(list, index)
+                    onDownloadRequested: mix => root.request("mixes_download", {uri: mix.uri, version: mix.version}, data => {
+                        if (downloads.prepareMix(data)) root.navigate("Downloads");
+                    })
                     visible: root.page === "Daily Mixes"
                     Layout.fillWidth: true; Layout.fillHeight: true
                     onRequested: (cmd, args, callback) => root.request(cmd, args, callback)
                 }
                 DownloadsPane {
+                    id: downloads
                     visible: root.page === "Downloads"
                     Layout.fillWidth: true; Layout.fillHeight: true
                     onCompleted: root.scan()

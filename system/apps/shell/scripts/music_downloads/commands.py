@@ -43,7 +43,7 @@ def build_args(mode, text, folder, fmt):
     return args
 
 
-def build_spotdl_args(mode, text, folder, fmt):
+def build_spotdl_args(mode, text, folder, fmt, mix_tracks=False):
     if mode != 0:
         raise ValueError("For spotDL, paste a Spotify playlist, album, artist or track link.")
     build_args(mode, text, folder, fmt)
@@ -57,7 +57,7 @@ def build_spotdl_args(mode, text, folder, fmt):
             raise ValueError("spotDL supports music links; use Zotify for podcasts.")
         links.append("https://open.spotify.com" + path.rstrip("/"))
     return ["download", *links, "--format", fmt, "--output",
-            str(Path(folder).expanduser() / "{artists} - {title}.{output-ext}"),
+            str(Path(folder).expanduser() / ("{track-id}.{output-ext}" if mix_tracks else "{artists} - {title}.{output-ext}")),
             "--threads", "1", "--overwrite", "skip", "--simple-tui", "--max-retries", "2"]
 
 

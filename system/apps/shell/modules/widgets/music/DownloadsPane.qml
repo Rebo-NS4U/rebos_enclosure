@@ -15,17 +15,24 @@ ColumnLayout {
     property string status: "Ready"
     property bool failed: false
     property bool cancelling: false
+    property bool mixTracks: false
     property string audioFormat: "ogg"
     readonly property bool canDownload: !busy && service.running && folder.text.trim().length > 0 && links.text.trim().length > 0
     spacing: 16
     signal completed()
+    function prepareMix(data) {
+        if (busy) return false;
+        links.text = data.links; folder.text = data.folder; mixTracks = true;
+        status = "Daily Mix ready · choose format and start download";
+        return true;
+    }
     function start() {
         if (!canDownload) return;
         busy = true; failed = false; cancelling = false;
         status = "Downloading…";
         logText = "Starting…\n";
         service.write(JSON.stringify({backend: "spotdl", mode: 0,
-            links: links.text, folder: folder.text, format: audioFormat}) + "\n");
+            links: links.text, folder: folder.text, format: audioFormat, mixTracks: mixTracks}) + "\n");
     }
     Process {
         id: service
@@ -42,7 +49,7 @@ ColumnLayout {
                     root.logText += message.code === 0 ? "Finished · check log for skipped items.\n" : "Stopped or failed · see log.\n";
                     root.failed = message.code !== 0 && !root.cancelling;
                     root.status = root.cancelling ? "Cancelled" : message.code !== 0 ? "Needs attention" : "Finished";
-                    if (message.code === 0) root.completed();
+                    root.completed();
                 }
             }
         }
@@ -88,6 +95,7 @@ ColumnLayout {
                         id: links; objectName: "music-download-links"
                         Layout.fillWidth: true
                         placeholderText: "Paste track, album or playlist links"; enabled: !root.busy
+                        onSearchTextChanged: text => { root.mixTracks = false; }
                     }
                     StyledText { text: "Separate multiple links with spaces."; color: Colors.overSurfaceVariant; font.pixelSize: Styling.fontSize(-2) }
                 }
@@ -99,7 +107,7 @@ ColumnLayout {
                     anchors.fill: parent; anchors.margins: 20; spacing: 12
                     StyledText { text: "02  Save to your library"; font.bold: true; font.pixelSize: Styling.fontSize(2) }
                     StyledText { text: "Destination folder" }
-                    SearchInput { id: folder; Layout.fillWidth: true; text: "~/Music"; enabled: !root.busy }
+                    SearchInput { id: folder; Layout.fillWidth: true; text: "~/Music"; enabled: !root.busy && !root.mixTracks }
                     StyledText { text: "Audio format" }
                     RowLayout {
                         Repeater {

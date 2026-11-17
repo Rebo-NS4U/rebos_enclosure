@@ -28,3 +28,16 @@ state until the integration delivers mixes. Saved snapshots remain available off
 Use **Update Spotify playlists** on the Daily Mixes page to request an immediate
 refresh from Spotify. This updates Music’s current mixes. Requests bypass the hourly
 schedule, show progress, and time out after 90 seconds if Spotify is unavailable.
+
+
+Each current mix and saved snapshot has a **Download** action. It prepares the
+Downloads page with the snapshot's individual track links, avoiding a changing
+Daily Mix playlist URL. Choose the audio format and press Start download; existing
+files are skipped and the activity log reports failures. Downloads are stored in
+versioned folders under the XDG Music directory's Daily Mixes folder, using Spotify
+track IDs as filenames to identify local audio reliably. Library scanning runs on
+completion, including cancellation or partial failure, so available tracks can play.
+
+The mix preview shows downloaded availability and a scrollable track list. Use
+Play downloaded or select an available track to play in mix order through Music's
+shared player (pause, seek, previous/next and queue). Missing tracks remain disabled.
