@@ -431,7 +431,7 @@ window-rule {
 
 
 spawn-at-startup "sh" "-c" "exec udiskie --no-notify"
-spawn-at-startup "/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1"
+// Authentication is owned by the shell (Quickshell.Services.Polkit).
 spawn-at-startup "sh" "-c" "wl-paste --watch cliphist store"
 
 // Book typing's external chooser must be reachable after releasing the bar grab.

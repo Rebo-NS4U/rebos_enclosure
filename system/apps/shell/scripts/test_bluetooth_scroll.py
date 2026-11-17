@@ -29,6 +29,8 @@ TestCase {
     height: 240
     property var devices: []
     property var friendlyDeviceList: []
+    property var pairingPrompt: null
+    property var pairingProcess: null
     property string pairingAddress: ""
     property string pairingCode: ""
     property int pairingEntered: 0

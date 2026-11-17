@@ -23,6 +23,26 @@ class KeyboardPairingTests(unittest.TestCase):
     def setUp(self):
         self.events = []
 
+    def test_interactive_confirmation_waits_for_user_and_can_reject(self):
+        for accept in (False, True):
+            invocation = Mock()
+            agent = pairing.KeyboardAgent(DEVICE, self.events.append, interactive=True)
+            agent.handle(None, None, None, None, "RequestConfirmation",
+                         GLib.Variant("(ou)", (DEVICE, 42)), invocation)
+            invocation.return_value.assert_not_called()
+            self.assertEqual(self.events[-1]["code"], "000042")
+            agent.respond({"accept": accept})
+            self.assertEqual(invocation.return_value.called, accept)
+            self.assertEqual(invocation.return_dbus_error.called, not accept)
+
+    def test_interactive_pin_and_invalid_passkey(self):
+        for method, value, valid in (("RequestPinCode", "0012", True), ("RequestPasskey", "999999", True), ("RequestPasskey", "1000000", False)):
+            agent = pairing.KeyboardAgent(DEVICE, self.events.append, interactive=True)
+            invocation = Mock()
+            agent.handle(None, None, None, None, method, GLib.Variant("(o)", (DEVICE,)), invocation)
+            agent.respond({"accept": True, "value": value})
+            self.assertEqual(invocation.return_value.called, valid)
+
     def test_detects_keyboard_metadata(self):
         for device in ({"Icon": "input-keyboard"}, {"Class": 0x2540},
                        {"Class": 0x05C0}, {"Appearance": 0x03C1}):
@@ -99,8 +119,11 @@ class KeyboardPairingTests(unittest.TestCase):
             }},)
             with patch.object(pairing, "pair_keyboard") as keyboard:
                 pairing.pair("AA:BB:CC:DD:EE:FF", bus, session)
-                keyboard.assert_not_called()
-            self.assertEqual(session.call_sync.called, not properties.get("Paired", False))
+                if properties.get("Paired"):
+                    keyboard.assert_not_called()
+                else:
+                    keyboard.assert_called_once_with(bus, DEVICE, interactive=True)
+            session.call_sync.assert_not_called()
 
 
 if __name__ == "__main__":

@@ -17,7 +17,7 @@ class EmojiPickerTests(unittest.TestCase):
             tools = root / 'bin'
             tools.mkdir()
             for name, text in {
-                'fuzzel': '#!/bin/sh\ncat > "$SCAN_INPUT"\nprintf "%s\\n" "$SCAN_SELECTION"\nexit "$SCAN_STATUS"\n',
+                'rebos-menu': '#!/bin/sh\ncat > "$SCAN_INPUT"\nprintf "%s\\n" "$SCAN_SELECTION"\nexit "$SCAN_STATUS"\n',
                 'wl-copy': '#!/bin/sh\ncat > "$SCAN_CLIPBOARD"\n',
             }.items():
                 p = tools / name

@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import qs.modules.globals
 import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
@@ -101,9 +102,9 @@ Item {
                 actions: [
                     {
                         icon: Icons.popOpen,
-                        tooltip: "Open Blueman",
+                        tooltip: "Bluetooth settings",
                         onClicked: function () {
-                            Quickshell.execDetached(["blueman-manager"]);
+                            { GlobalShortcuts.run("settings"); GlobalStates.settingsCurrentTab = 1; };
                         }
                     },
                     {

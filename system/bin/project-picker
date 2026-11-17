@@ -145,12 +145,12 @@ copy_display_path() {
 	setsid -f sh -c 'printf %s "$1" | wl-copy' sh "$path" >/dev/null 2>&1
 }
 
-pick_project_fuzzel() {
+pick_project_menu() {
 	local prompt=$1 selection
 	selection=$(
 		ordered_projects |
 			sed "s#^$HOME/#~/#" |
-			fuzzel --dmenu --prompt="$prompt" --placeholder="Search projects..." || true
+			rebos-menu --dmenu --prompt="$prompt" --placeholder="Search projects..." || true
 	)
 	[[ -n "$selection" ]] || exit 0
 	printf '%s\n' "${selection/#\~/$HOME}"
@@ -222,18 +222,18 @@ case "${1:-choose}" in
 	--print-header) print_header ;;
 	--copy-display-path) copy_display_path "${2:?}" ;;
 	code)
-		command -v fuzzel >/dev/null 2>&1 || {
-			notify_error "fuzzel is not installed"
+		command -v rebos-menu >/dev/null 2>&1 || {
+			notify_error "rebos-menu is not installed"
 			exit 1
 		}
-		open_project code "$(pick_project_fuzzel 'Code > ')"
+		open_project code "$(pick_project_menu 'Code > ')"
 		;;
 	zed)
-		command -v fuzzel >/dev/null 2>&1 || {
-			notify_error "fuzzel is not installed"
+		command -v rebos-menu >/dev/null 2>&1 || {
+			notify_error "rebos-menu is not installed"
 			exit 1
 		}
-		open_project zed "$(pick_project_fuzzel 'Zed > ')"
+		open_project zed "$(pick_project_menu 'Zed > ')"
 		;;
 	*)
 		printf 'Usage: project-picker [choose|code|zed]\n' >&2

@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import qs.modules.globals
 import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
@@ -92,7 +93,7 @@ Item {
                         icon: Icons.popOpen,
                         tooltip: "Network settings",
                         onClicked: function () {
-                            Quickshell.execDetached(["nm-connection-editor"]);
+                            { GlobalShortcuts.run("settings"); GlobalStates.settingsCurrentTab = 0; };
                         }
                     },
                     {

@@ -2,7 +2,7 @@
 # Select an emoji with the installed Wayland launcher, then copy it.
 set -euo pipefail
 
-selection=$(fuzzel --dmenu --prompt='Emoji: ' <<'EMOJI_DATA'
+selection=$(rebos-menu --dmenu --prompt='Emoji: ' <<'EMOJI_DATA'
 ¿? question upside down reversed spanish
 ← left arrow
 ↑ up arrow

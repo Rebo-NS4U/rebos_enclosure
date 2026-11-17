@@ -346,13 +346,6 @@
       "reason": "Framework callback arity is fixed by Gio or HTTPRedirectHandler."
     },
     {
-      "path": "system/apps/shell/scripts/bluetooth_pair.py",
-      "object": "KeyboardAgent",
-      "symbol": "too-few-public-methods",
-      "ceiling": 1,
-      "reason": "A single state/action operation is the complete public interface; dummy methods add no behavior."
-    },
-    {
       "path": "system/apps/shell/scripts/display_settings.py",
       "object": "save",
       "symbol": "too-many-locals",

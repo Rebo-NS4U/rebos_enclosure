@@ -61,7 +61,7 @@ by the package manager.
   MPV remains the bundled ani-cli default player.
 - Python GObject/GTK4 support the media app and administrator dialog; Pillow
   supports wallpaper processing. FFmpeg supports video thumbnails and wallpapers.
-- Fuzzel and cliphist implement clipboard history and project selection.
+- Quickshell and cliphist implement clipboard history and selection menus. Fuzzel, Blueman and polkit-gnome remain installed for recovery until hardware and authentication checks are complete.
   Blueman and pavucontrol are opened by the shell's Bluetooth and audio controls.
 - Qt5/Qt6 theme and Wayland support, Breeze, image formats, Qt multimedia and
   syntax highlighting support the shipped application settings and QML imports.

@@ -158,6 +158,10 @@ Singleton {
         id: asyncProcessComp
         Process {
             id: internalProc
+            stdinEnabled: true
+            Component.onCompleted: {
+                if (command.indexOf("python3") === 0) root.pairingProcess = internalProc;
+            }
             property var resolve
             property var reject
             property var onOutput
@@ -275,6 +279,16 @@ Singleton {
         return runAction(["bluetoothctl", "disconnect", address]);
     }
 
+    property var pairingPrompt: null
+    property var pairingProcess: null
+    function respondPairing(accept, value = "") {
+        if (pairingProcess) pairingProcess.write(JSON.stringify({accept: accept, value: value}) + "\n");
+        pairingPrompt = null;
+    }
+    function cancelPairing() {
+        respondPairing(false);
+        if (pairingProcess) pairingProcess.write(JSON.stringify({cancel: true}) + "\n");
+    }
     function pairDevice(address: string): var {
         if (pairingAddress) return Promise.reject("Another device is already pairing");
         pairingAddress = address;
@@ -286,10 +300,14 @@ Singleton {
                 if (event.event === "keyboard-code") {
                     root.pairingCode = String(event.code);
                     root.pairingEntered = event.entered || 0;
+                } else if (event.event === "prompt") {
+                    root.pairingPrompt = event;
+                } else if (event.event === "clear-prompt") {
+                    root.pairingPrompt = null;
                 } else if (event.event === "clear-code") {
                     root.pairingCode = "";
                 }
-            } catch (error) { console.warn("Bluetooth pairing output:", data); }
+            } catch (error) { console.warn("Invalid Bluetooth pairing event"); }
         }).then(result => {
             root.clearPairingPrompt();
             return result;
@@ -300,6 +318,8 @@ Singleton {
     }
 
     function clearPairingPrompt() {
+        pairingPrompt = null;
+        pairingProcess = null;
         pairingAddress = "";
         pairingCode = "";
         pairingEntered = 0;

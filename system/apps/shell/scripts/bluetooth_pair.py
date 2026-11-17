@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Stream keyboard pairing codes to the shell; use the desktop agent otherwise."""
+"""Stream BlueZ pairing prompts to the shell without storing secrets."""
 import json
 import re
 import secrets
@@ -34,10 +34,10 @@ def is_keyboard(device):
             or int(device.get("Appearance", 0)) == 0x03C1)
 
 
-# Quality exception: A single state/action operation is the complete public interface; dummy methods add no behavior.
-# Numeric ceilings are enforced by desktop/scripts/quality.py.
-class KeyboardAgent:  # pylint: disable=too-few-public-methods
-    def __init__(self, path, output=emit):
+class KeyboardAgent:
+    def __init__(self, path, output=emit, interactive=False):
+        self.interactive = interactive
+        self.pending = None
         self.path = path
         self.output = output
         self.pin = f"{secrets.randbelow(1000000):06d}"
@@ -49,7 +49,16 @@ class KeyboardAgent:  # pylint: disable=too-few-public-methods
         if args and args[0] != self.path:
             invocation.return_dbus_error("org.bluez.Error.Rejected", "Unexpected pairing device")
             return
+        if self.interactive and method in ("RequestPinCode", "RequestPasskey", "RequestConfirmation", "RequestAuthorization", "AuthorizeService"):
+            if self.pending:
+                invocation.return_dbus_error("org.bluez.Error.Rejected", "Another prompt is pending")
+                return
+            self.pending = (method, invocation)
+            self.output({"event": "prompt", "kind": method,
+                         "code": f"{args[1]:06d}" if method == "RequestConfirmation" else ""})
+            return
         if method in ("Release", "Cancel"):
+            self.respond({"accept": False})
             self.output({"event": "clear-code"})
         elif method in ("DisplayPasskey", "DisplayPinCode", "RequestPinCode", "RequestPasskey"):
             code = f"{args[1]:06d}" if method == "DisplayPasskey" else args[1] if method == "DisplayPinCode" else self.pin
@@ -67,13 +76,52 @@ class KeyboardAgent:  # pylint: disable=too-few-public-methods
         invocation.return_value(None)
 
 
-def pair_keyboard(system_bus, path):
-    agent = KeyboardAgent(path)
+    def respond(self, response):
+        if not self.pending:
+            return
+        method, invocation = self.pending
+        self.pending = None
+        value = str(response.get("value", ""))
+        if not response.get("accept"):
+            invocation.return_dbus_error("org.bluez.Error.Rejected", "Pairing cancelled")
+        elif method == "RequestPasskey" and (not value.isdigit() or len(value) > 6):
+            invocation.return_dbus_error("org.bluez.Error.Rejected", "Invalid passkey")
+        elif method == "RequestPinCode" and not 1 <= len(value) <= 16:
+            invocation.return_dbus_error("org.bluez.Error.Rejected", "Invalid PIN")
+        else:
+            signature = "(u)" if method == "RequestPasskey" else "(s)"
+            result = GLib.Variant(signature, (int(value) if method == "RequestPasskey" else value,)) if method in ("RequestPinCode", "RequestPasskey") else None
+            invocation.return_value(result)
+        self.output({"event": "clear-prompt"})
+
+
+def pair_keyboard(system_bus, path, interactive=False, watch_input=False):
+    agent = KeyboardAgent(path, interactive=interactive)
     interface = Gio.DBusNodeInfo.new_for_xml(AGENT_XML).interfaces[0]
     registration = system_bus.register_object(AGENT_PATH, interface, agent.handle, None, None)
     registered = False
     loop = GLib.MainLoop()
     errors = []
+    input_watch = None
+    if interactive or watch_input:
+        def respond(_source, condition):
+            if condition & GLib.IO_HUP:
+                agent.respond({"accept": False})
+                cancel_pairing(system_bus, path)
+                loop.quit()
+                return False
+            try:
+                response = json.loads(sys.stdin.readline())
+                if response.get("cancel"):
+                    agent.respond({"accept": False})
+                    cancel_pairing(system_bus, path)
+                    loop.quit()
+                else:
+                    agent.respond(response)
+            except (ValueError, OSError):
+                agent.respond({"accept": False})
+            return True
+        input_watch = GLib.io_add_watch(sys.stdin, GLib.PRIORITY_DEFAULT, GLib.IO_IN | GLib.IO_HUP, respond)
 
     def paired(connection, result, _data):
         try:
@@ -86,7 +134,7 @@ def pair_keyboard(system_bus, path):
     try:
         system_bus.call_sync(
             "org.bluez", "/org/bluez", "org.bluez.AgentManager1", "RegisterAgent",
-            GLib.Variant("(os)", (AGENT_PATH, "DisplayOnly")), None,
+            GLib.Variant("(os)", (AGENT_PATH, "KeyboardDisplay" if interactive else "DisplayOnly")), None,
             Gio.DBusCallFlags.NONE, 10000, None,
         )
         registered = True
@@ -98,6 +146,9 @@ def pair_keyboard(system_bus, path):
             cancel_pairing(system_bus, path)
             raise errors[0]
     finally:
+        agent.respond({"accept": False})
+        if input_watch:
+            GLib.source_remove(input_watch)
         if registered:
             try:
                 system_bus.call_sync(
@@ -133,23 +184,9 @@ def pair(address, system_bus, session_bus):
         if device.get("Paired", False):
             return
         if is_keyboard(device):
-            pair_keyboard(system_bus, path)
+            pair_keyboard(system_bus, path, watch_input=True)
             return
-        # Other devices retain the existing desktop confirmation/input dialogs.
-        session_bus.call_sync(
-            "org.freedesktop.DBus", "/org/freedesktop/DBus", "org.freedesktop.DBus",
-            "StartServiceByName", GLib.Variant("(su)", ("org.blueman.Applet", 0)),
-            None, Gio.DBusCallFlags.NONE, 10000, None,
-        )
-        try:
-            system_bus.call_sync(
-                "org.bluez", path, "org.bluez.Device1", "Pair", None, None,
-                Gio.DBusCallFlags.NONE, 90000, None,
-            )
-        except GLib.Error as error:
-            if "Timeout" in str(error) or "timed out" in str(error).lower():
-                cancel_pairing(system_bus, path)
-            raise
+        pair_keyboard(system_bus, path, interactive=True)
         return
     raise ValueError("Device is no longer available. Put it in pairing mode and scan again.")
 

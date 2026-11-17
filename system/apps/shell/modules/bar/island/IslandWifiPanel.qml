@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import qs.modules.globals
 import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
@@ -137,7 +138,7 @@ Item {
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: Quickshell.execDetached(["nm-connection-editor"])
+                    onClicked: { GlobalShortcuts.run("settings"); GlobalStates.settingsCurrentTab = 0; }
                 }
 
                 StyledToolTip {

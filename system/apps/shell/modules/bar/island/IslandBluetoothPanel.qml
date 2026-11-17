@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import qs.modules.globals
 import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
@@ -75,7 +76,7 @@ Item {
 
             Item { Layout.fillWidth: true }
 
-            // Action 1: Open Blueman Manager (popOpen / ↗)
+            // Action 1: Bluetooth settings Manager (popOpen / ↗)
             StyledRect {
                 implicitWidth: 28
                 implicitHeight: 28
@@ -105,12 +106,12 @@ Item {
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: Quickshell.execDetached(["blueman-manager"])
+                    onClicked: { GlobalShortcuts.run("settings"); GlobalStates.settingsCurrentTab = 1; }
                 }
 
                 StyledToolTip {
                     show: settingsMouse.containsMouse
-                    tooltipText: "Open Blueman"
+                    tooltipText: "Bluetooth settings"
                 }
             }
 

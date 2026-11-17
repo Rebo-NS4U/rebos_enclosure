@@ -54,6 +54,6 @@ case "${1:-status}" in
             printf 'QuickShell: stopped\n'
         fi
         ;;
-    -h|--help|help) printf 'Usage: rice [status|prepare|start]\nNiri reloads configuration automatically. After QML code changes, run systemctl --user restart rebos-panel.service.\n' ;;
+    -h|--help|help) printf 'Usage: rice [status|prepare|start]\nNiri reloads configuration automatically. QML hot-reloads when file watching is enabled; this installation may disable it for stability. Restart rebos-panel.service only with explicit user approval.\n' ;;
     *) printf 'rice: unknown command: %s\nUsage: rice [status|prepare|start]\n' "$1" >&2; exit 2 ;;
 esac
