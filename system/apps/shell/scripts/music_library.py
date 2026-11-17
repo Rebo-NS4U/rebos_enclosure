@@ -61,6 +61,7 @@ class Library:
         self.state.setdefault('folders', [str(self.music)])
         self.state.setdefault('favorites', [])
         self.state.setdefault('playlists', [])
+        self.state.setdefault('playlistAdditions', {})
 
     @staticmethod
     def read(path, fallback):
@@ -170,6 +171,10 @@ class Library:
                     folder_playlists.append(dict(
                         id='folder:' + hashlib.sha256(str(folder.absolute()).encode()).hexdigest(),
                         name=name, paths=members, folder=True, mix=is_mix, sourceName=source_name))
+        available = {t['path'] for t in tracks}
+        for playlist in folder_playlists:
+            extras = self.state['playlistAdditions'].get(playlist['id'], [])
+            playlist['paths'] += [p for p in extras if p in available and p not in playlist['paths']]
         # Similar mixes can share leading artists; retain readable distinctions.
         counts = Counter(p['name'] for p in folder_playlists if p.get('mix'))
         used = Counter()
@@ -246,6 +251,19 @@ class Library:
         if cmd in ('mixes_get', 'mixes_save', 'mixes_refresh', 'mixes_load'):
             return self.mixes.dispatch(cmd, args)
         if cmd == 'scan':
+            return self.scan()
+        if cmd == 'playlist_add':
+            data = self.scan()
+            playlist = next((p for p in data['state']['playlists'] if p['id'] == args.get('playlist')), None)
+            path = args.get('path')
+            if playlist is None or path not in {t['path'] for t in data['tracks']}:
+                raise ValueError('Playlist or track is no longer available; rescan your library')
+            if path not in playlist['paths']:
+                if playlist.get('folder'):
+                    self.state['playlistAdditions'].setdefault(playlist['id'], []).append(path)
+                else:
+                    playlist['paths'].append(path)
+            self.write(self.state_dir / 'library.json', self.state)
             return self.scan()
         if cmd == 'save':
             for key in ('favorites', 'playlists'):

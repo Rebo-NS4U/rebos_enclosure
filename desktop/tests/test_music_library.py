@@ -39,6 +39,24 @@ class MusicLibraryTests(unittest.TestCase):
                         '-metadata', 'album=Test album', '-metadata', 'track=3/12', str(self.song)], check=True)
         self.library = music.Library(self.home)
 
+    def test_playlist_add_survives_rescan_and_reload(self):
+        folder = self.folder / 'Downloaded playlist'
+        folder.mkdir()
+        shutil.copyfile(self.song, folder / 'member.flac')
+        playlist = self.library.scan()['state']['playlists'][0]
+        args = dict(playlist=playlist['id'], path=str(self.song))
+        for _ in range(2):
+            result = self.library.dispatch('playlist_add', args)
+            updated = next(p for p in result['state']['playlists'] if p['id'] == playlist['id'])
+            self.assertEqual(updated['paths'].count(str(self.song)), 1)
+        reloaded = music.Library(self.home).scan()
+        self.assertIn(str(self.song), reloaded['state']['playlists'][0]['paths'])
+        self.library.state['playlists'] = [dict(id='manual', name='Manual', paths=[])]
+        self.library.dispatch('playlist_add', dict(playlist='manual', path=str(self.song)))
+        self.assertEqual(music.Library(self.home).state['playlists'][0]['paths'], [str(self.song)])
+        with self.assertRaises(ValueError):
+            self.library.dispatch('playlist_add', dict(playlist=playlist['id'], path='/missing'))
+
     def test_mix_download_links_and_local_playback_identity(self):
         mix = dict(uri='spotify:playlist:'+'a'*22, name='Daily Mix 1', tracks=[
             dict(uri='spotify:track:'+'b'*22, title='Test song', artist='Test artist'),

@@ -97,3 +97,5 @@ Keep cookie files private (for example, `chmod 600 /path/to/cookies.txt`), outsi
 the checkout. They grant access to your signed-in session. Refresh the export
 if the session expires. Cookies do not remove YouTube account/age restrictions
 or guarantee that a particular video can be downloaded.
+
+Playlist suggestions: open a playlist in the local library to see up to 20 other library tracks by its artists. Play listens immediately; Add keeps the song in that playlist across rescans, including folder-based downloaded playlists. Suggestions exclude existing songs and duplicate artist/title pairs. Additions reference local files without copying them; keep those files in a scanned music folder. Suggestions work offline and do not discover new online tracks.

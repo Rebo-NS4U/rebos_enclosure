@@ -70,6 +70,21 @@ Window {
         const q = query.trim().toLowerCase();
         return q ? list.filter(t => (t.title + " " + t.artist + " " + t.album).toLowerCase().includes(q)) : list;
     }
+    readonly property var suggestedTracks: {
+        if (page !== "Playlist") return [];
+        const playlist = playlists.find(p => p.id === detail);
+        if (!playlist) return [];
+        const members = tracks.filter(t => playlist.paths.includes(t.path));
+        const artists = members.map(t => t.artist.toLowerCase()).filter(a => a !== "unknown artist");
+        const identities = members.map(t => (t.artist + "\n" + t.title).toLowerCase());
+        const seen = new Set(identities);
+        return tracks.filter(t => {
+            const key = (t.artist + "\n" + t.title).toLowerCase();
+            if (playlist.paths.includes(t.path) || seen.has(key) || !artists.includes(t.artist.toLowerCase())) return false;
+            seen.add(key);
+            return true;
+        }).slice(0, 20);
+    }
     readonly property var albums: {
         const result = {};
         shownTracks.forEach(t => { const key = t.album + "\n" + t.artist;
@@ -410,6 +425,36 @@ Window {
                         }
                         ScrollBar.vertical: ScrollBar {}
                         StyledText { anchors.centerIn: parent; visible: songs.count === 0; text: root.query ? "No matching songs" : "No songs"; color: Colors.overSurfaceVariant }
+                    }
+                    ColumnLayout {
+                        visible: root.page === "Playlist"
+                        Layout.fillWidth: true
+                        StyledText { text: "Suggested tracks · From your library"; font.bold: true }
+                        StyledText {
+                            visible: root.suggestedTracks.length === 0
+                            Layout.fillWidth: true; wrapMode: Text.WordWrap
+                            text: "No more tracks by this playlist’s artists in your library. Download more music to discover suggestions here."
+                            color: Colors.overSurfaceVariant
+                        }
+                        ListView {
+                            objectName: "music-playlist-suggestions"
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: Math.min(count, 3) * Styling.spacing(52)
+                            clip: true; model: root.suggestedTracks
+                            delegate: RowLayout {
+                                id: suggestion
+                                required property var modelData
+                                width: ListView.view.width; height: Styling.spacing(52)
+                                StyledText { Layout.fillWidth: true; text: suggestion.modelData.title + " · " + suggestion.modelData.artist; elide: Text.ElideRight }
+                                ThemeButton { text: "Play"; Accessible.name: "Play suggested track " + suggestion.modelData.title; onClicked: root.play([suggestion.modelData], 0) }
+                                ThemeButton {
+                                    text: "Add"; Accessible.name: "Add " + suggestion.modelData.title + " to playlist"
+                                    enabled: !root.busy
+                                    onClicked: root.request("playlist_add", {playlist: root.detail, path: suggestion.modelData.path}, root.load)
+                                }
+                            }
+                            ScrollBar.vertical: ScrollBar {}
+                        }
                     }
                     RowLayout {
                         Layout.fillWidth: true
