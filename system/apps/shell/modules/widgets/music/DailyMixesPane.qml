@@ -18,7 +18,18 @@ ColumnLayout {
     StyledText { text: "Daily Mixes"; font.bold: true; font.pixelSize: Styling.fontSize(10) }
     StyledText {
         Layout.fillWidth: true; wrapMode: Text.WordWrap; color: Colors.overSurfaceVariant
-        text: "Keep Spotify and Music open. Open Spotify’s Made for You page once per Spotify session to discover your mixes. Updates are checked every 15 minutes. Saved snapshots keep the track list, not audio files."
+        text: "Keep Spotify and Music open. Open Spotify’s Made for You page once per Spotify session to discover your mixes. Updates are checked every hour. Saved snapshots keep the track list, not audio files."
+    }
+    ThemeButton {
+        objectName: "music-mixes-update"
+        text: root.mixes.refreshPending ? "Updating Spotify mixes…" : "Update Spotify playlists"
+        enabled: !root.mixes.refreshPending
+        onClicked: root.requested("mixes_refresh", {}, data => { root.mixes = data; })
+    }
+    StyledText {
+        Layout.fillWidth: true; wrapMode: Text.WordWrap
+        text: root.mixes.refreshStatus || ""; visible: text.length > 0
+        color: Colors.overSurfaceVariant
     }
     ThemeButton { text: "Open Made for You"; onClicked: Qt.openUrlExternally("spotify:genre:made-for-x-hub") }
     StyledText { text: root.mixes.checked ? "Last received: " + new Date(root.mixes.checked).toLocaleString() : "Waiting for Spotify’s desktop integration…"; color: Colors.overSurfaceVariant }

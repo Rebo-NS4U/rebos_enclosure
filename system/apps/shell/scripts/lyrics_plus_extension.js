@@ -62,7 +62,7 @@ async function refresh() {
         try { await fetch('http://127.0.0.1:19838/mixes', {method: 'POST', credentials: 'omit',
             headers: {'Content-Type': 'application/json'}, body: JSON.stringify(cached)}); } catch (_) {}
     }
-    async function collect() {
+    async function collect(force = false, refreshId = "") {
         if (collecting || !globalThis.Spicetify?.Platform?.PlaylistAPI) return;
         collecting = true;
         try {
@@ -73,7 +73,7 @@ async function refresh() {
                 const id = a.getAttribute('href').match(/\/playlist\/([A-Za-z0-9]{22})(?:[/?#]|$)/);
                 if (name && id) learned.set('spotify:playlist:' + id[1], name[0]);
             });
-            if (learned.size === previousSize && Date.now() - lastCollection < 15 * 60 * 1000) return;
+            if (!force && learned.size === previousSize && Date.now() - lastCollection < 60 * 60 * 1000) return;
             lastCollection = Date.now();
             const mixes = [];
             for (const [uri, name] of learned) {
@@ -95,6 +95,10 @@ async function refresh() {
                 } catch (error) { console.warn('Enclosure Daily Mix refresh failed', name, error); }
             }
             if (mixes.length) { cached = {mixes}; await publishMixes(); }
+            if (refreshId) {
+                await fetch('http://127.0.0.1:19838/mixes', {method: 'POST', credentials: 'omit',
+                    headers: {'Content-Type': 'application/json'}, body: JSON.stringify({mixes, refresh_id: refreshId})});
+            }
         } finally { collecting = false; }
     }
     collect();
@@ -105,4 +109,14 @@ async function refresh() {
         collect();
     }, 2000); }).observe(document.documentElement, {childList: true, subtree: true});
     setInterval(publishMixes, 15000);
+    // Music's explicit update button bypasses the hourly schedule.
+    setInterval(async () => {
+        if (collecting) return;
+        try {
+            const response = await fetch('http://127.0.0.1:19838/mixes', {credentials: 'omit', cache: 'no-store'});
+            if (!response.ok) return;
+            const command = await response.json();
+            if (command.refresh_id) await collect(true, command.refresh_id);
+        } catch (_) { /* Music may be closed. */ }
+    }, 5000);
 })();

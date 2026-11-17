@@ -194,7 +194,7 @@ class Library:
             return dict(text='', status='Lyrics unavailable. Try this song again when online.')
 
     def dispatch(self, cmd, args):
-        if cmd in ('mixes_get', 'mixes_save'):
+        if cmd in ('mixes_get', 'mixes_save', 'mixes_refresh'):
             return self.mixes.dispatch(cmd, args)
         if cmd == 'lyrics':
             return self.lyrics(args.get('track') or {})

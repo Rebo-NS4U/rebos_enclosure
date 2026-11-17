@@ -6,6 +6,8 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 import json
 import re
 import threading
+import time
+import uuid
 
 ORIGIN = 'https://xpui.app.spotify.com'
 
@@ -35,10 +37,20 @@ class Mixes:
     def __init__(self, path, read, write):
         self.path, self.write = path, write
         self.lock = threading.Lock()
+        self.refresh_id = ''
+        self.refresh_started = 0
+        self.refresh_status = ''
         self.data = read(path, dict(current=[], saved=[], checked=''))
 
     def dispatch(self, cmd, args):
         with self.lock:
+            if cmd == 'mixes_refresh':
+                self.refresh_id = uuid.uuid4().hex
+                self.refresh_started = time.monotonic()
+                self.refresh_status = 'Waiting for Spotify…'
+            if self.refresh_id and time.monotonic() - self.refresh_started > 90:
+                self.refresh_status = 'Spotify did not respond. Open Spotify with the updated desktop integration and try again.'
+                self.refresh_id = ''
             if cmd == 'mixes_save':
                 mix = next((m for m in self.data['current'] if m['uri'] == args.get('uri')), None)
                 if mix and args.get('version') != mix['version']:
@@ -48,7 +60,7 @@ class Mixes:
                 if not any(m['version'] == mix['version'] and m['uri'] == mix['uri'] for m in self.data['saved']):
                     self.data['saved'].append(dict(copy.deepcopy(mix), savedAt=datetime.now(timezone.utc).isoformat()))
                     self.write(self.path, self.data)
-            return copy.deepcopy(self.data)
+            return dict(copy.deepcopy(self.data), refreshPending=bool(self.refresh_id), refreshStatus=self.refresh_status)
 
     def update(self, payload):
         mixes = normalize(payload)
@@ -58,24 +70,38 @@ class Mixes:
                 mix['version'] = hashlib.sha256(json.dumps(mix['tracks'], sort_keys=True).encode()).hexdigest()
                 mix['updated'] = now
                 self.data['current'] = [m for m in self.data['current'] if m['uri'] != mix['uri']] + [mix]
-            self.data['checked'] = now
+            if mixes:
+                self.data['checked'] = now
+            if payload.get('refresh_id') and payload['refresh_id'] == self.refresh_id:
+                self.refresh_id = ''
+                self.refresh_status = ('Updated Spotify mixes.' if mixes else
+                    'No mixes received. Open Made for You in Spotify, then try again.')
             self.write(self.path, self.data)
 
     def start(self):
         store = self
         class Handler(BaseHTTPRequestHandler):
             def log_message(self, *_): pass
-            def reply(self, code):
+            def reply(self, code, data=None):
+                body = json.dumps(data).encode() if data is not None else b''
                 self.send_response(code)
                 self.send_header('Access-Control-Allow-Origin', ORIGIN)
-                self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
+                self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
                 self.send_header('Access-Control-Allow-Headers', 'Content-Type')
                 self.send_header('Access-Control-Allow-Private-Network', 'true')
-                self.send_header('Content-Length', '0')
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Cache-Control', 'no-store')
+                self.send_header('Content-Length', str(len(body)))
                 self.end_headers()
+                if body: self.wfile.write(body)
             def allowed(self):
                 return self.path == '/mixes' and self.headers.get('Origin') == ORIGIN
             def do_OPTIONS(self): self.reply(204 if self.allowed() else 403)
+            def do_GET(self):
+                if not self.allowed():
+                    self.reply(403); return
+                with store.lock:
+                    self.reply(200, dict(refresh_id=store.refresh_id))
             def do_POST(self):
                 if not self.allowed():
                     self.reply(403); return

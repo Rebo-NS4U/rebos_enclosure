@@ -13,7 +13,7 @@ Music uses the universal shell background surface. Transparent styles reveal the
 The Daily Mixes page receives track-list metadata from the existing Spicetify
 Lyrics Plus adapter. Keep Spotify and Music open and visit Spotify's Made for You
 page once per Spotify session so visible Daily Mix cards can be discovered.
-Discovered mixes refresh every 15 minutes; complete results are delivered locally
+Discovered mixes refresh every hour; complete results are delivered locally
 on port 19838. Failed refreshes retain the last good version. Save current keeps
 an immutable, dated local snapshot, deduplicated by playlist and track-list version.
 View tracks opens individual songs in Spotify. Snapshots contain metadata, not
@@ -24,3 +24,7 @@ Run `python3 scripts/setup_lyrics_plus.py` from the shell source and then
 loads the updated extension on its next normal launch; setup does not restart it.
 The desktop API is internal and can change; an empty page remains in the waiting
 state until the integration delivers mixes. Saved snapshots remain available offline.
+
+Use **Update Spotify playlists** on the Daily Mixes page to request an immediate
+refresh from Spotify. This updates Music’s current mixes. Requests bypass the hourly
+schedule, show progress, and time out after 90 seconds if Spotify is unavailable.

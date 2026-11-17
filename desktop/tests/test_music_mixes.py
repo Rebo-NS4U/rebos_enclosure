@@ -4,6 +4,7 @@ import importlib.util
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 spec = importlib.util.spec_from_file_location('music_mixes', ROOT/'system/apps/shell/scripts/music_mixes.py')
@@ -33,6 +34,23 @@ class MixTests(unittest.TestCase):
             result['saved'].clear()
             self.assertEqual(len(store.dispatch('mixes_get', {})['saved']), 1)
             self.assertTrue(writes)
+
+    def test_manual_refresh_completion_and_timeout(self):
+        store = module.Mixes(Path('/unused'), lambda *a: a[1], lambda *a: None)
+        self.assertTrue(store.dispatch('mixes_refresh', {})['refreshPending'])
+        request_id = store.refresh_id
+        # Heartbeats from the previous collection must not complete this request.
+        store.update(dict(mixes=[]))
+        self.assertTrue(store.dispatch('mixes_get', {})['refreshPending'])
+        store.update(dict(mixes=[], refresh_id=request_id))
+        result = store.dispatch('mixes_get', {})
+        self.assertFalse(result['refreshPending'])
+        self.assertIn('No mixes received', result['refreshStatus'])
+        store.dispatch('mixes_refresh', {})
+        with patch.object(module.time, 'monotonic', return_value=store.refresh_started + 91):
+            result = store.dispatch('mixes_get', {})
+        self.assertFalse(result['refreshPending'])
+        self.assertIn('did not respond', result['refreshStatus'])
 
     def test_reject_incomplete_or_untrusted_metadata(self):
         for value in [{}, {'mixes': [{}]}, {'mixes': [dict(uri='spotify:playlist:'+'a'*22, name='Daily Mix 1', tracks=[])]}]:
