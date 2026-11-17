@@ -4,6 +4,14 @@ Enclosure Music includes a Downloads page with spotDL, audio format selection, a
 
 spotDL uses the media package group or ~/.local/share/venvs/spotdl/bin/spotdl. The compatible environment can be created with requirements-spotdl.txt. Format conversion cannot improve source quality. Check the activity log for skipped tracks even after a successful exit.
 
+The download service preloads spotDL when Music opens and reuses those imports
+across jobs. Each job runs in its own process group, retaining bounded cancellation.
+Downloads use two threads. Public track metadata is cached for six hours under
+$XDG_CACHE_HOME/enclosure/music/tracks (default ~/.cache); playlist contents are
+always resolved again. No Spotify sign-in or official API credentials are added.
+Custom executable wrappers remain supported without preloading. The warm runtime
+starts on the next normal Music service launch; active playback is not restarted.
+
 The legacy Music Installer launcher is hidden; use Music for playback and downloads. Closing Music hides it, preserving playback and running downloads.
 
 Music uses the universal shell background surface. Transparent styles reveal the desktop through the window and follow the global compositor blur settings; opaque styles stay solid. Adjust background style and blur in the shared Appearance settings.

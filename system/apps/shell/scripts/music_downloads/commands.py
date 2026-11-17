@@ -58,6 +58,6 @@ def build_spotdl_args(mode, text, folder, fmt, mix_tracks=False):
         links.append("https://open.spotify.com" + path.rstrip("/"))
     return ["download", *links, "--format", fmt, "--output",
             str(Path(folder).expanduser() / ("{track-id}.{output-ext}" if mix_tracks else "{artists} - {title}.{output-ext}")),
-            "--threads", "1", "--overwrite", "skip", "--simple-tui", "--max-retries", "2"]
+            "--threads", "2", "--overwrite", "skip", "--simple-tui", "--max-retries", "2"]
 
 

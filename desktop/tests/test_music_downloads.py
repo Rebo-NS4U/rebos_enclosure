@@ -20,8 +20,64 @@ class Downloads(unittest.TestCase):
         args = commands.build_spotdl_args(0, links, '/tmp/Music/Daily Mixes/test', 'ogg', mix_tracks=True)
         self.assertEqual(args[args.index('--output')+1], '/tmp/Music/Daily Mixes/test/{track-id}.{output-ext}')
         self.assertEqual(args[1], links)
+        self.assertEqual(args[args.index('--threads')+1], '2')
+        self.assertNotIn('--use-cache-file', args)
         with self.assertRaises(ValueError):
             commands.build_spotdl_args(0, 'invalid', '/tmp/Music', 'ogg', mix_tracks=True)
+
+    def test_warm_imports_once_and_isolates_jobs(self):
+        with tempfile.TemporaryDirectory() as directory:
+            folder = Path(directory)
+            package = folder / 'spotdl/console'
+            package.mkdir(parents=True)
+            (package.parent / '__init__.py').write_text('')
+            (package / '__init__.py').write_text('')
+            (package / 'entry_point.py').write_text(
+                "import os\nprint('imported', flush=True)\n"
+                "def console_entry_point():\n"
+                "    print('job ' + str(os.getpid()), flush=True)\n")
+            (folder / 'SpotipyFree.py').write_text('class Spotify:\n    def track(self): pass\n')
+            proc = subprocess.Popen(['python3', '-u', str(SERVICE.with_name('warm.py')), '--native'],
+                stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True,
+                env={**os.environ, 'PYTHONPATH': directory, 'PYTHONDONTWRITEBYTECODE': '1'})
+            try:
+                self.assertEqual(proc.stdout.readline().strip(), 'imported')
+                pids = []
+                for _ in range(2):
+                    proc.stdin.write('["spotdl", "download"]\n'); proc.stdin.flush()
+                    pid = json.loads(proc.stdout.readline())['pid']
+                    pids.append(pid)
+                    self.assertEqual(json.loads(proc.stdout.readline())['log'], 'job ' + str(pid))
+                    self.assertEqual(json.loads(proc.stdout.readline())['code'], 0)
+                    self.assertIsNone(proc.poll())
+                self.assertNotEqual(*pids)
+            finally:
+                proc.stdin.close(); proc.wait(timeout=5); proc.stdout.close()
+
+    def test_metadata_cache_hits_expiry_and_corruption(self):
+        from unittest.mock import patch
+        spec = importlib.util.spec_from_file_location('track_cache', SERVICE.with_name('track_cache.py'))
+        cache = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(cache)
+        class Client:
+            getIsrc = False
+            def isUrl(self, value): return False
+        calls = []
+        @cache.cached_track
+        def fetch(client, identity):
+            calls.append(identity)
+            return {'id': identity}
+        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, XDG_CACHE_HOME=directory):
+            self.assertEqual(fetch(Client(), 'abc'), {'id': 'abc'})
+            fetch(Client(), 'abc')
+            self.assertEqual(len(calls), 1)
+            path = next(Path(directory).rglob('*.json'))
+            os.utime(path, (0, 0))
+            fetch(Client(), 'abc')
+            self.assertEqual(len(calls), 2)
+            path.write_text('broken')
+            fetch(Client(), 'abc')
+            self.assertEqual(len(calls), 3)
 
     def test_cancel_stubborn_parent_and_surviving_child(self):
         for mode in ('stubborn', 'childonly'):
