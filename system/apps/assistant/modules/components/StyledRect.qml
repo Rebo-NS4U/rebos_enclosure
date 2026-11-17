@@ -873,10 +873,9 @@ ClippingRectangle {
                 ctx.restore();
                 const bevel=outer?8:4;
                 ctx.lineWidth=1;
-                for(let layer=0;layer<3;layer++){
-                    ctx.strokeStyle=ink(inset?[0.12,0.055,0.02][layer]:[0.15,0.065,0.025][layer]);
-                    if(root.traceThemeFrame(ctx,2+layer*2))ctx.stroke();
-                }
+                // One broad carved arris replaces nested technical-looking rims.
+                ctx.strokeStyle=ink(inset?0.12:0.075);ctx.lineWidth=inset?1:5;
+                if(root.traceThemeFrame(ctx,inset?3:4))ctx.stroke();
                 const d=bevel,r=root.themeInsetRadius(d);
                 ctx.lineWidth=1;ctx.strokeStyle=ink(inset?0.06:0.23);
                 ctx.beginPath();ctx.moveTo(d,Math.max(d+r,height*0.60));ctx.lineTo(d,d+r);
@@ -888,6 +887,21 @@ ClippingRectangle {
                 if(outer){
                     // Natural strata terminate at the slab edge, leaving its face quiet.
                     ctx.save();if(root.traceThemeFrame(ctx,0))ctx.clip();
+                    // A split stone face: irregular mineral ribbons climb the left edge.
+                    // Keep the quiet central face free of decorative strokes.
+                    const depth=Math.min(19,width*0.055);
+                    for(let seam=0;seam<3;seam++){
+                        const x=3+seam*4;
+                        ctx.strokeStyle=ink(0.10-seam*0.022);ctx.lineWidth=seam===0?2:0.8;
+                        ctx.beginPath();ctx.moveTo(x,0);
+                        ctx.bezierCurveTo(x+depth,height*0.18,x-depth*0.5,height*0.33,x+3,height*0.51);
+                        ctx.bezierCurveTo(x+depth,height*0.68,x-2,height*0.82,x+depth*0.5,height);ctx.stroke();
+                    }
+                    // Broad mineral facets catch light along the foot of the slab.
+                    ctx.fillStyle=ink(0.045);ctx.beginPath();ctx.moveTo(0,height);
+                    ctx.lineTo(0,height-13);ctx.lineTo(width*0.28,height-5);
+                    ctx.lineTo(width*0.64,height-17);ctx.lineTo(width,height-8);
+                    ctx.lineTo(width,height);ctx.closePath();ctx.fill();
                     for(let vein=0;vein<4;vein++){
                         const y=height-10-vein*5;
                         ctx.strokeStyle=ink(0.055+vein*0.008);ctx.lineWidth=vein===0?1.5:0.7;
@@ -932,6 +946,10 @@ ClippingRectangle {
                 objectName: "surface-edge-canvas"
                 readonly property real cornerRadius: root.effectiveCornerRadius
                 readonly property color pigment: chassis.ink
+                readonly property bool outer: chassis.outer
+                readonly property bool screen: chassis.screen
+                onOuterChanged: requestPaint()
+                onScreenChanged: requestPaint()
                 onCornerRadiusChanged: requestPaint()
                 onPigmentChanged: requestPaint()
                 onWidthChanged: requestPaint()
@@ -959,6 +977,30 @@ ClippingRectangle {
                             ctx.fillStyle=Qt.alpha(pigment,0.26);ctx.fillRect(width-14,y,7,2);
                             ctx.fillStyle=Qt.alpha(pigment,0.07);ctx.fillRect(width-14,y+2,7,1);
                         }
+                        // Rack ears: paired recessed mounting rails with milled slots.
+                        // Short bars use the same housing as a compact equipment strip.
+                        const rail=ctx.createLinearGradient(0,0,14,0);
+                        rail.addColorStop(0,Qt.alpha(pigment,0.04));
+                        rail.addColorStop(0.45,Qt.alpha(pigment,0.14));
+                        rail.addColorStop(1,Qt.alpha(pigment,0.025));
+                        ctx.fillStyle=rail;ctx.fillRect(2,safe,11,Math.max(0,height-safe*2));
+                        ctx.strokeStyle=Qt.alpha(pigment,0.30);ctx.lineWidth=1;
+                        for(let y=safe+5;y<height-safe;y+=22){
+                            ctx.beginPath();ctx.moveTo(6,y);ctx.lineTo(9,y);
+                            ctx.lineTo(9,y+7);ctx.lineTo(6,y+7);ctx.closePath();ctx.stroke();
+                        }
+                        // Segmented lower retention rail and diagonal grip cuts.
+                        if(width>safe*2+40){
+                            for(let x=safe;x<width-safe-8;x+=18){
+                                ctx.fillStyle=Qt.alpha(pigment,0.12);ctx.fillRect(x,height-7,13,3);
+                                ctx.strokeStyle=Qt.alpha(pigment,0.32);ctx.lineWidth=0.8;
+                                ctx.beginPath();ctx.moveTo(x,height-7);ctx.lineTo(x+13,height-7);ctx.stroke();
+                            }
+                            for(let i=0;i<5;i++){
+                                const x=width-safe-30+i*5;
+                                ctx.beginPath();ctx.moveTo(x,4);ctx.lineTo(x-4,9);ctx.stroke();
+                            }
+                        }
                         // Brushed metal stays within the upper bezel, with recessed seams.
                         ctx.save();if(root.traceThemeFrame(ctx,0))ctx.clip();
                         for(let line=0;line<4;line++){
@@ -975,9 +1017,6 @@ ClippingRectangle {
                         if(width>safe*2+30){
                             ctx.strokeStyle=Qt.alpha(pigment,0.24);ctx.beginPath();
                             ctx.moveTo(safe,10);ctx.lineTo(width-safe,10);ctx.stroke();
-                            for(let i=0;i<4;i++){
-                                ctx.strokeStyle=Qt.alpha(pigment,0.26);ctx.strokeRect(width/2-24+i*13,height-10,9,4);
-                            }
                         }
                     }
                     ctx.restore();
