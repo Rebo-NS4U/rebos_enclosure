@@ -832,7 +832,7 @@ ClippingRectangle {
         }
     }
 
-    // Monolith: angular incisions engraved into a mineral-grained stone slab.
+    // Monolith: polished obsidian with luminous perimeter fractures.
     Loader {
         anchors.fill: parent
         active: !root.hasFillColor && root.rectOpacity > 0 && (root.styleOverride || Styling.shellStyle) === "monolith"
@@ -862,101 +862,53 @@ ClippingRectangle {
                 const ctx=getContext("2d");ctx.clearRect(0,0,width,height);
                 if(width<24||height<24)return;
                 ctx.save();if(root.traceThemeFrame(ctx,0))ctx.clip();
-                // Deterministic mineral stipple and tiny diagonal tool marks.
-                // Bound the sample count on large panels; no animation or random repaint noise.
-                const grainStep=Math.max(6,Math.ceil(Math.sqrt(width*height/10000)));
-                for(let gy=0;gy<height;gy+=grainStep){
-                    for(let gx=0;gx<width;gx+=grainStep){
-                        let hash=((gx+11)*374761393+(gy+7)*668265263)|0;
-                        hash=((hash^(hash>>>13))*1274126177)|0;
-                        const seed=(hash^(hash>>>16))>>>0;
-                        const x=gx+(seed&255)/256*grainStep;
-                        const y=gy+((seed>>>8)&255)/256*grainStep;
-                        const strength=inset?0.025:outer?0.065:0.045;
-                        ctx.fillStyle=Qt.alpha(pigment,strength*(0.55+((seed>>>16)&15)/20));
-                        const size=(seed&3)===0?1.2:0.7;
-                        ctx.fillRect(x,y,size,size);
-                        if(!inset && seed%19===0){
-                            ctx.strokeStyle=Qt.alpha(pigment,strength*0.7);ctx.lineWidth=0.6;
-                            const cut=2+((seed>>>20)&3);
-                            ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+cut,y-cut);ctx.stroke();
-                        }
-                    }
-                }
-                // A lit upper shoulder and shaded lower lip give the slab thickness.
-                const rim=ctx.createLinearGradient(0,0,width*0.25,height);
-                rim.addColorStop(0,Qt.alpha(pigment,inset?0.06:0.26));
-                rim.addColorStop(0.40,Qt.alpha(pigment,0.025));
-                rim.addColorStop(0.75,Qt.alpha(shadowInk,0.08));
-                rim.addColorStop(1,Qt.alpha(shadowInk,inset?0.16:0.48));
-                ctx.strokeStyle=rim;ctx.lineWidth=outer?3:2;
-                if(root.traceThemeFrame(ctx,1.5))ctx.stroke();
-                // A fine rim follows the selected rounded frame.
-                ctx.lineWidth=0.8;ctx.strokeStyle=Qt.alpha(pigment,inset?0.045:0.085);
-                if(root.traceThemeFrame(ctx,0.8))ctx.stroke();
+                // Polished obsidian: broad grazing reflection, no stone stipple.
+                const sheen=ctx.createLinearGradient(0,0,width*0.45,height);
+                sheen.addColorStop(0,Qt.alpha(pigment,inset?0.025:0.09));
+                sheen.addColorStop(0.18,Qt.alpha(pigment,0.015));
+                sheen.addColorStop(0.48,Qt.alpha(pigment,0));
+                sheen.addColorStop(1,Qt.alpha(shadowInk,inset?0.08:0.22));
+                ctx.fillStyle=sheen;ctx.fillRect(0,0,width,height);
+                // A hairline polished bevel catches light on the upper shoulder.
+                const bevel=ctx.createLinearGradient(0,0,width,height);
+                bevel.addColorStop(0,Qt.alpha(pigment,0.32));
+                bevel.addColorStop(0.35,Qt.alpha(pigment,0.08));
+                bevel.addColorStop(0.65,Qt.alpha(shadowInk,0.45));
+                bevel.addColorStop(1,Qt.alpha(pigment,0.14));
+                ctx.strokeStyle=bevel;ctx.lineWidth=1;
+                if(root.traceThemeFrame(ctx,0.75))ctx.stroke();
                 if(!inset){
-                    // Incised channels: shadowed upper-left walls and a lit lower-right lip.
-                    // All shading stays inside the groove; no floating cast shadow.
-                    function engrave(points,inlay){
-                        function edge(dx,dy,color,lineWidth){
-                            ctx.strokeStyle=color;ctx.lineWidth=lineWidth;ctx.beginPath();
-                            ctx.moveTo(points[0][0]+dx,points[0][1]+dy);
-                            for(let j=1;j<points.length;j++)ctx.lineTo(points[j][0]+dx,points[j][1]+dy);
+                    // Fractures stay within narrow opposing edge bands, clear of text.
+                    const band=Math.min(outer?22:12,height*0.22,width*0.12);
+                    const reach=Math.min(width*0.32,outer?190:90);
+                    function vein(points,color){
+                        const first=points[0],last=points[points.length-1];
+                        const light=ctx.createLinearGradient(first[0],first[1],last[0],last[1]);
+                        light.addColorStop(0,Qt.alpha(color,0));
+                        light.addColorStop(0.28,Qt.alpha(color,0.32));
+                        light.addColorStop(0.62,Qt.alpha(color,outer?0.85:0.55));
+                        light.addColorStop(1,Qt.alpha(color,0));
+                        function stroke(ink,size){
+                            ctx.strokeStyle=ink;ctx.lineWidth=size;ctx.beginPath();
+                            ctx.moveTo(first[0],first[1]);
+                            for(let i=1;i<points.length;i++)ctx.lineTo(points[i][0],points[i][1]);
                             ctx.stroke();
                         }
-                        // Broad dark channel, dark upper wall, then a thin catching edge.
-                        edge(0,0,Qt.alpha(shadowInk,outer?0.52:0.36),outer?3:2);
-                        edge(-0.65,-0.65,Qt.alpha(shadowInk,0.72),1.2);
-                        edge(0.9,0.9,Qt.alpha(pigment,outer?0.25:0.16),0.8);
-                        if(inlay){
-                            // A mineral inlay catches light at the angular turn, inside the cut.
-                            const first=points[0],last=points[points.length-1];
-                            const glint=ctx.createLinearGradient(first[0],first[1],last[0],last[1]);
-                            glint.addColorStop(0,Qt.alpha(inlay,0));
-                            glint.addColorStop(0.35,Qt.alpha(inlay,0.10));
-                            glint.addColorStop(0.70,Qt.alpha(inlay,outer?0.90:0.65));
-                            glint.addColorStop(0.85,Qt.alpha(inlay,outer?0.55:0.35));
-                            glint.addColorStop(1,Qt.alpha(inlay,0));
-                            edge(0,0,Qt.alpha(inlay,outer?0.10:0.06),2.4);
-                            edge(0,0,glint,outer?1.1:0.8);
-                        }
-
+                        stroke(Qt.alpha(shadowInk,0.55),3.5);
+                        stroke(Qt.alpha(color,0.055),5);
+                        stroke(light,0.9);
                     }
-                    // Paired chamfered corner grooves follow the rim instead of stacked wedges.
-                    const margin=Math.min(outer?7:4,width*0.08,height*0.08);
-                    const spacing=Math.min(4,width*0.035,height*0.035);
-                    const cut=Math.min(outer?18:10,width*0.12,height*0.12);
-                    const along=Math.min(width*0.36,outer?160:76);
-                    const down=Math.min(height*0.28,outer?64:30);
-                    for(let i=0;i<2;i++){
-                        const insetEdge=margin+i*spacing;
-                        engrave([[width-along,insetEdge],
-                            [width-insetEdge-cut,insetEdge],
-                            [width-insetEdge,insetEdge+cut],
-                            [width-insetEdge,down]],i===0?accent:null);
-                        engrave([[along,height-insetEdge],
-                            [insetEdge+cut,height-insetEdge],
-                            [insetEdge,height-insetEdge-cut],
-                            [insetEdge,height-down]],i===0?secondaryAccent:null);
-                    }
-                    // Short side carvings sit near the other two corners, leaving the middle clear.
-                    if(height>100){
-                        const side=Math.min(outer?14:7,width*0.06,height*0.035);
-                        const top=Math.min(Math.max(cornerRadius+4,12),height*0.08);
-                        const bottom=Math.min(top+110,height*0.28);
-                        for(let i=0;i<3;i++){
-                            const d=side*(1-i*0.27);
-                            const a=top+i*side*0.46,b=bottom-i*side*0.46;
-                            ctx.fillStyle=Qt.alpha(shadowInk,outer?0.055:0.035);
-                            ctx.beginPath();ctx.moveTo(0,a);ctx.lineTo(d,a+d);
-                            ctx.lineTo(d,b-d);ctx.lineTo(0,b);ctx.closePath();ctx.fill();
-                            engrave([[0,a],[d,a+d],[d,b-d],[0,b]]);
-                            const lowerA=height-b,lowerB=height-a;
-                            ctx.fillStyle=Qt.alpha(shadowInk,outer?0.045:0.025);
-                            ctx.beginPath();ctx.moveTo(width,lowerA);ctx.lineTo(width-d,lowerA+d);
-                            ctx.lineTo(width-d,lowerB-d);ctx.lineTo(width,lowerB);ctx.closePath();ctx.fill();
-                            engrave([[width,lowerA],[width-d,lowerA+d],[width-d,lowerB-d],[width,lowerB]]);
-                        }
+                    vein([[width-reach,0],[width-reach*0.72,band*0.55],
+                        [width-reach*0.45,band*0.32],[width-band,band],
+                        [width-band*0.4,band*2],[width,band*2.6]],accent);
+                    vein([[reach,height],[reach*0.68,height-band*0.65],
+                        [reach*0.38,height-band*0.4],[band,height-band],
+                        [band*0.35,height-band*2],[0,height-band*2.8]],secondaryAccent);
+                    if(height>100 && width>120){
+                        vein([[width-reach*0.45,band*0.32],
+                            [width-reach*0.38,band*0.8],[width-reach*0.24,0]],accent);
+                        vein([[reach*0.38,height-band*0.4],
+                            [reach*0.32,height-band*0.95],[reach*0.18,height]],secondaryAccent);
                     }
                 }
                 ctx.restore();

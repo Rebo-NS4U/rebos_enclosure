@@ -7,7 +7,7 @@ var styles = [
     {id: "glass-vault", label: "Glass Vault", font: "Noto Sans", description: "Polished glass blocks, soft grazing reflections and restrained rounded clasps."},
     {id: "radar-station", label: "Radar Station", font: "DejaVu Sans", description: "Etched bearing scales, radial divisions and softly illuminated scope glass."},
     {id: "suspended-film", label: "Suspended Film", font: "DejaVu Sans Mono", description: "Suspended glass sheets, curved grazing reflections and separated contact edges."},
-    {id: "monolith", label: "Monolith", font: "Noto Sans", description: "Engraved stone with catching mineral inlays and fine etched grain."},
+    {id: "monolith", label: "Monolith", font: "Noto Sans", description: "Polished obsidian with crisp bevels and luminous mineral fractures."},
     {id: "blueprint", label: "Blueprint", font: "JetBrains Mono", description: "Architectural drafting sheets, truss details, ruled scales and wire controls."},
     {id: "terminal-hardware", label: "Terminal Hardware", font: "DejaVu Sans Mono", description: "Flat machined panels, inset bezels and sparse cooling vents."},
     {id: "frosted", font: "DejaVu Sans Mono", label: "Frosted Glass", description: "Branching frost crystals, etched ice rims, fine grain and soft corner bloom."},
@@ -140,7 +140,7 @@ function surface(style, variant, p, ditherStrength) {
     if (rendered) {
         opacity = variant === "transparent" || variant === "barbg" ? 0 : 1;
         if (neutral || outlineRole) {
-            var depth = monolith ? (inset ? 0 : focused ? 0.12 : outer ? 0.075 : 0.045)
+            var depth = monolith ? (inset ? 0 : focused ? 0.075 : outer ? 0.025 : 0.015)
                 : blueprint ? (inset ? 0.015 : focused ? 0.065 : 0.025)
                 : (inset ? 0 : focused ? 0.12 : outer ? 0.085 : 0.045);
             fill = mix(p.background, p.foreground, depth);
@@ -149,7 +149,7 @@ function surface(style, variant, p, ditherStrength) {
         if (monolith) {
             border = [mix(fill, p.foreground, 0.18), focused ? 2 : inset ? 1 : 0];
             if (focused) border[0] = p.primary;
-            if (neutral && !inset) renderGradient = [[fill, 0], [mix(fill, p.primary, 0.018), 0.025], [fill, 0.075], [fill, 0.86], [mix(fill, p.background, 0.08), 0.96], [mix(fill, p.background, 0.08), 1]];
+            if (neutral && !inset) renderGradient = [[fill, 0], [mix(fill, p.foreground, 0.035), 0.015], [fill, 0.10], [fill, 0.72], [mix(fill, p.background, 0.18), 0.98], [mix(fill, p.foreground, 0.018), 1]];
         } else if (blueprint) {
             // Wire controls retain the selected accent as their ink color.
             if (!neutral && !outlineRole && opacity > 0) {
