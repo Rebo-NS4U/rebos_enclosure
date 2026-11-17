@@ -7,7 +7,7 @@ import sys
 import threading
 import tempfile
 from pathlib import Path
-from commands import build_spotdl_args, find_spotdl
+from commands import build_spotdl_args, find_spotdl, remember_playlist_source
 
 lock = threading.Lock()
 CANCEL_GRACE = 2
@@ -143,6 +143,7 @@ try:
             os.makedirs(folder, exist_ok=True)
             if worker is None or worker.poll() is not None:
                 worker = start_worker()
+            remember_playlist_source(folder, data.get('links', ''))
             job = WarmDownload(worker, command)
             emit(started=True)
             threading.Thread(target=job.watch, daemon=True).start()

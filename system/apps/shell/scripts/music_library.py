@@ -249,6 +249,13 @@ class Library:
                 folder = playlist.get('folderPath') or str(self.music / 'Suggested tracks')
                 return dict(folder=folder, links='https://open.spotify.com/track/' + uri.split(':')[-1],
                             playlist=playlist['id'], uri=uri)
+            # Downloads retain their Spotify identity independently of mix snapshots.
+            if playlist.get('folderPath'):
+                metadata = self.read(Path(playlist['folderPath']) / '.enclosure-playlist.json', {})
+                sources = metadata.get('sources', [])
+                if len(sources) == 1:
+                    from music_mixes import playlist_uri
+                    return self.mixes.suggest(playlist['id'], playlist_uri(sources[0]))
             members = [t for t in data['tracks'] if t['path'] in playlist['paths']]
             uris = {t.get('spotifyUri') for t in members if t.get('spotifyUri')}
             mixes = self.mixes.dispatch('mixes_get', {})

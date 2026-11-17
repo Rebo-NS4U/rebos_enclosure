@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 import os
+import json
 from pathlib import Path
 import re
 import shutil
@@ -76,3 +77,25 @@ def build_spotdl_args(mode, text, folder, fmt, mix_tracks=False, cookie_file="")
             "--threads", "2", "--overwrite", "skip", "--simple-tui", "--max-retries", "2"]
 
 
+
+
+def remember_playlist_source(folder, text):
+    """Keep source identity beside downloads, including folders with named files."""
+    links = text.split()
+    if len(links) != 1:
+        return
+    parsed = urlparse(links[0])
+    match = re.fullmatch(r"/(?:intl-[\w-]+/)?playlist/([A-Za-z0-9]{22})/?", parsed.path)
+    if parsed.netloc != 'open.spotify.com' or not match:
+        return
+    path = Path(folder) / '.enclosure-playlist.json'
+    try:
+        sources = json.loads(path.read_text()).get('sources', [])
+    except (OSError, ValueError):
+        sources = []
+    uri = 'spotify:playlist:' + match[1]
+    if uri not in sources:
+        sources.append(uri)
+    temporary = path.with_suffix('.tmp')
+    temporary.write_text(json.dumps(dict(sources=sources)))
+    temporary.replace(path)

@@ -65,6 +65,23 @@ class MusicLibraryTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.library.dispatch('suggestion_download', dict(playlist=playlist['id'], uri=uri))
 
+    def test_downloaded_playlist_source_without_mix_snapshot(self):
+        sys.path.insert(0, str(SCRIPT.parent / 'music_downloads'))
+        from commands import remember_playlist_source
+        folder = self.folder / 'Downloaded playlist'
+        folder.mkdir()
+        shutil.copyfile(self.song, folder / 'Artist - Named song.flac')
+        uri = 'spotify:playlist:' + 'd'*22
+        remember_playlist_source(folder, 'https://open.spotify.com/playlist/' + 'd'*22 + '?si=share')
+        playlist = self.library.scan()['state']['playlists'][0]
+        result = self.library.dispatch('suggestions_refresh', dict(playlist=playlist['id']))
+        self.assertTrue(result['pending'])
+        self.assertEqual(self.library.mixes.suggestion['uri'], uri)
+        self.assertEqual(self.library.mixes.data['current'], [])
+        remember_playlist_source(folder, 'https://open.spotify.com/playlist/' + 'e'*22)
+        with self.assertRaisesRegex(ValueError, 'source playlist not found'):
+            self.library.dispatch('suggestions_refresh', dict(playlist=playlist['id']))
+
     def test_playlist_add_survives_rescan_and_reload(self):
         folder = self.folder / 'Downloaded playlist'
         folder.mkdir()
