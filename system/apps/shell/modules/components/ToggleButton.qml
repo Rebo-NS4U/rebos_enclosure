@@ -18,6 +18,8 @@ Button {
     property int iconSize: 18
     property color iconColor: Styling.srItem("overprimary") || Colors.foreground
     property bool enableShadow: false
+    readonly property bool hardware: Styling.shellStyle === "terminal-hardware"
+    hoverEnabled: true
     // Radius handling
     property real radius: 0
     // We will let parent set start/end radius directly or use radius as fallback
@@ -27,7 +29,7 @@ Button {
     implicitWidth: 36
     implicitHeight: 36
 
-    scale: root.pressed ? 0.93 : 1.0
+    scale: root.pressed ? (root.hardware ? 0.98 : 0.93) : 1.0
 
     Behavior on scale {
         enabled: (Config.animDuration ?? 0) > 0
@@ -42,7 +44,11 @@ Button {
 
     background: StyledRect {
         id: bg
-        variant: "bg"
+        controlSurface: root.hardware
+        controlPressed: root.down
+        variant: root.hardware ? (root.down ? "internalbg" : root.hovered ? "focus" : "common") : "bg"
+        border.width: root.hardware && root.activeFocus ? 2 : (borderData?.[1] ?? 0)
+        border.color: root.hardware && root.activeFocus ? Colors.primary : Config.resolveColor(borderData?.[0] ?? "transparent")
         enableShadow: root.enableShadow && Config.showBackground
 
         topLeftRadius: root.startRadius
@@ -53,7 +59,7 @@ Button {
         Rectangle {
             anchors.fill: parent
             color: parent.item || "transparent"
-            opacity: root.pressed ? 0.5 : (root.hovered ? 0.25 : 0)
+            opacity: root.hardware ? 0 : root.pressed ? 0.5 : (root.hovered ? 0.25 : 0)
             topLeftRadius: parent.topLeftRadius
             topRightRadius: parent.topRightRadius
             bottomLeftRadius: parent.bottomLeftRadius
@@ -80,7 +86,7 @@ Button {
             textFormat: Text.RichText
             font.family: Icons.font
             font.pixelSize: Styling.fontSize(4)
-            color: root.pressed ? Colors.background : root.iconColor
+            color: root.hardware ? Colors.overBackground : root.pressed ? Colors.background : root.iconColor
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
         }

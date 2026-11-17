@@ -14,6 +14,8 @@ ClippingRectangle {
     required property string variant
     property string styleOverride: ""
     property bool barSurface: false
+    property bool controlSurface: false
+    property bool controlPressed: false
     property int canopyVariation: 0
     // Color samples need their exact fill, without a surface shader over it.
     property color fillColor: "transparent"
@@ -838,6 +840,7 @@ ClippingRectangle {
     Loader {
         anchors.fill: parent
         active: !root.hasFillColor && root.rectOpacity > 0 && (root.styleOverride || Styling.shellStyle) === "monolith"
+            && !root.controlSurface
             && ["bg", "popup", "bar", "pane", "surface", "surfaceContainer", "internalbg", "focus", "surfaceVariant"].indexOf(root.variant) !== -1
         sourceComponent: Canvas {
             anchors.fill: parent
@@ -965,10 +968,41 @@ ClippingRectangle {
         }
     }
 
+    // Flat keycaps: concentric rims and short edge notches, clear of labels.
+    Loader {
+        anchors.fill: parent
+        active: !root.hasFillColor && root.rectOpacity > 0
+            && (root.styleOverride || Styling.shellStyle) === "terminal-hardware"
+            && (root.controlSurface || ["primary", "primaryfocus", "secondary", "secondaryfocus", "tertiary", "tertiaryfocus", "error", "errorfocus"].indexOf(root.variant) !== -1)
+        sourceComponent: Canvas {
+            readonly property color pigment: root.itemColor
+            readonly property real cornerRadius: root.effectiveCornerRadius
+            readonly property bool depressed: root.controlPressed
+            onPigmentChanged: requestPaint()
+            onCornerRadiusChanged: requestPaint()
+            onDepressedChanged: requestPaint()
+            onWidthChanged: requestPaint()
+            onHeightChanged: requestPaint()
+            onPaint: {
+                const ctx=getContext("2d");ctx.clearRect(0,0,width,height);
+                if(width<18||height<18)return;
+                ctx.save();if(root.traceThemeFrame(ctx,0))ctx.clip();
+                ctx.lineWidth=1;
+                ctx.strokeStyle=Qt.alpha(pigment,depressed?0.28:0.16);
+                if(root.traceThemeFrame(ctx,depressed?2:3))ctx.stroke();
+                const mid=height/2;
+                ctx.fillStyle=Qt.alpha(pigment,depressed?0.35:0.26);
+                for(const x of [5,width-6])ctx.fillRect(x,mid-2,1,4);
+                ctx.restore();
+            }
+        }
+    }
+
     // Hardware housings and recessed displays have their own physical details.
     Loader {
         anchors.fill: parent
         active: !root.hasFillColor && root.rectOpacity > 0 && (root.styleOverride || Styling.shellStyle) === "terminal-hardware"
+            && !root.controlSurface
             && ["bg", "popup", "bar", "pane", "surface", "surfaceContainer", "internalbg", "focus", "surfaceVariant"].indexOf(root.variant) !== -1
         sourceComponent: Item {
             id: chassis
@@ -1046,6 +1080,7 @@ ClippingRectangle {
     Loader {
         anchors.fill: parent
         active: !root.hasFillColor && root.rectOpacity > 0 && (root.variant === "bg" || root.variant === "popup" || root.variant === "bar" || root.barSurface)
+            && !root.controlSurface
             && ["blueprint", "terminal-hardware"].indexOf(root.styleOverride || Styling.shellStyle) !== -1
         sourceComponent: Item {
             id: engraving
