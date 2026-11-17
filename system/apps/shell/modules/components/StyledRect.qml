@@ -619,35 +619,43 @@ ClippingRectangle {
                 if(finish === "canopy"){
                     // A translucent tree crown with palette-tinted clusters of leaves.
                     const fabric=a=>Qt.rgba(accent.r*0.65+secondaryAccent.r*0.35,accent.g*0.65+secondaryAccent.g*0.35,accent.b*0.65+secondaryAccent.b*0.35,a);
-                    // Tapered boughs and individual pointed leaves; no rounded crown bands.
+                    // An abstract organic edge: irregular growth, open gaps and varied tips.
                     function treeCanopy(depth, crowns) {
-                        const count=Math.max(10,crowns*3);
-                        const span=width/count;
-                        function leaf(x,y,length,angle) {
-                            ctx.save();ctx.translate(x,y);ctx.rotate(angle);
-                            ctx.beginPath();ctx.moveTo(0,0);
-                            ctx.bezierCurveTo(length*0.32,-length*0.24,length*0.76,-length*0.17,length,0);
-                            ctx.bezierCurveTo(length*0.68,length*0.21,length*0.25,length*0.18,0,0);
-                            ctx.closePath();ctx.fill();ctx.restore();
+                        function variation(n) {
+                            const v=Math.sin(n*127.1+43.7)*43758.5453;
+                            return v-Math.floor(v);
                         }
+                        const count=Math.max(9,crowns*2);
+                        const span=width/count;
                         for(let layer=0;layer<2;layer++){
-                            ctx.fillStyle=fabric(layer?0.40:0.27);
                             for(let i=0;i<count;i++){
-                                const x=(i+0.25+layer*0.35)*span;
-                                const reach=depth*(0.45+((i*7)%5)*0.10)*(layer?0.74:1);
-                                const lean=span*(i%2?0.30:-0.30);
-                                // A filled taper suggests a twig, with no thin gray linework.
-                                const stem=Math.max(1,Math.min(4,span*0.055));
+                                const seed=i*19+layer*137;
+                                const x=(i+variation(seed)*0.65)*span;
+                                const reach=depth*(0.34+variation(seed+1)*0.62)*(layer?0.78:1);
+                                const bend=(variation(seed+2)-0.5)*span*0.9;
+                                const stem=Math.max(1,Math.min(5,span*0.05));
+                                ctx.fillStyle=fabric(layer?0.30:0.23);
+                                // Broad curved tapers imply growth without outlining branches.
                                 ctx.beginPath();ctx.moveTo(x-stem,0);ctx.lineTo(x+stem,0);
-                                ctx.lineTo(x+lean,reach);ctx.closePath();ctx.fill();
-                                for(let pair=0;pair<3;pair++){
-                                    const t=0.24+pair*0.24;
-                                    const px=x+lean*t,py=reach*t;
-                                    const length=Math.min(span*0.70,depth*0.36)*(1-pair*0.12);
-                                    leaf(px,py,length,0.35+pair*0.15);
-                                    leaf(px,py,length*0.88,Math.PI-0.40-pair*0.12);
+                                ctx.bezierCurveTo(x+stem,reach*0.35,x+bend+stem,reach*0.72,x+bend,reach);
+                                ctx.bezierCurveTo(x+bend-stem,reach*0.65,x-stem,reach*0.28,x-stem,0);
+                                ctx.closePath();ctx.fill();
+                                const fragments=3+Math.floor(variation(seed+3)*4);
+                                for(let j=0;j<fragments;j++){
+                                    const key=seed+j*11;
+                                    const t=0.18+variation(key+4)*0.72;
+                                    const length=Math.min(span*0.8,depth*0.42)*(0.45+variation(key+5)*0.75);
+                                    const breadth=length*(0.12+variation(key+6)*0.28);
+                                    const side=variation(key+7)>0.5?1:-1;
+                                    ctx.save();ctx.translate(x+bend*t,reach*t);
+                                    ctx.rotate(side*(0.35+variation(key+8)*1.9));
+                                    ctx.fillStyle=fabric(0.22+variation(key+9)*0.19);
+                                    ctx.beginPath();ctx.moveTo(-length*0.12,0);
+                                    // Unequal soft and tapered edges avoid a repeated leaf species.
+                                    ctx.bezierCurveTo(length*0.15,-breadth,length*0.62,-breadth*0.8,length,0);
+                                    ctx.bezierCurveTo(length*0.73,breadth*0.2,length*0.36,breadth,-length*0.12,0);
+                                    ctx.closePath();ctx.fill();ctx.restore();
                                 }
-                                leaf(x+lean*0.78,reach*0.78,depth*0.24,Math.PI*0.5);
                             }
                         }
                     }
