@@ -121,3 +121,5 @@ Monolith, Blueprint and Terminal Hardware carry their material treatments into b
 Monolith keeps its surfaces free of grain, mineral seams and carved facets. Terminal Hardware uses recessed rack mounting slots, cooling louvers, diagonal grip cuts and a segmented lower retention rail. Their surface geometry remains distinct at compact bar sizes; decorations stay at the perimeter and follow the selected palette and rounded clipping frame.
 
 Canopy keeps uninterrupted fabric hems: upper support ribs and the randomized assistant header’s short vertical attachment marks are removed. Fabric silhouettes, soft shading and the stable variation per opening are preserved.
+
+Glass Vault corner clasps sit on the inset bevel with matching concentric radii, short tangent arms, rounded ends and a soft translucent seat beneath a fine highlight. Their reach is limited at compact and pill-shaped sizes. The lower reflection is centered between the mounts instead of climbing one side of the frame.

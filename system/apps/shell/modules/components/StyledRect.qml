@@ -467,25 +467,38 @@ ClippingRectangle {
                                 ctx.beginPath();ctx.moveTo(inset,12);
                                 ctx.bezierCurveTo(width*0.34,15,width*0.65,9,width-inset,12);ctx.stroke();
                             }
-                            // Small rounded corner clasps retain the vault silhouette.
-                            for (const x of [3,width-3]) for (const y of [3,height-3]) {
-                                const sx=x>width/2 ? -1 : 1,sy=y>height/2 ? -1 : 1;
-                                const r=radiusAt(3);
-                                const span=Math.min(Math.max(18,r+5),(width-6)/2,(height-6)/2);
-                                ctx.strokeStyle=ink(sy===1?0.24:0.13);ctx.lineWidth=2;
-                                ctx.beginPath();ctx.moveTo(x,y+sy*span);ctx.lineTo(x,y+sy*r);
-                                ctx.quadraticCurveTo(x,y,x+sx*r,y);ctx.lineTo(x+sx*span,y);ctx.stroke();
+                            // Clasps share the bevel's inset and radius, with short tangent arms.
+                            // Clamp their reach to half the surface so pill corners never overlap.
+                            const mount=step,r=radiusAt(mount);
+                            const reach=Math.min(r+12,(width-mount*2)/2,(height-mount*2)/2);
+                            ctx.save();ctx.lineCap="round";ctx.lineJoin="round";
+                            for(const right of [false,true])for(const bottom of [false,true]){
+                                ctx.save();
+                                ctx.translate(right?width:0,bottom?height:0);
+                                ctx.scale(right?-1:1,bottom?-1:1);
+                                const corner=()=>{
+                                    ctx.beginPath();ctx.moveTo(mount,mount+reach);
+                                    ctx.lineTo(mount,mount+r);
+                                    ctx.quadraticCurveTo(mount,mount,mount+r,mount);
+                                    ctx.lineTo(mount+reach,mount);
+                                };
+                                // A broad translucent seat and a fine glint read as one clasp.
+                                corner();ctx.lineWidth=4;ctx.strokeStyle=ink(bottom?0.07:0.11);ctx.stroke();
+                                corner();ctx.lineWidth=1.2;ctx.strokeStyle=ink(bottom?0.19:0.36);ctx.stroke();
+                                ctx.restore();
                             }
-                            // A shaded lower meniscus follows the same concentric radius.
-                            const lip=4,r=radiusAt(lip);
+                            ctx.restore();
+                            // A centered lower reflection fades before the corner mounts.
+                            const lip=step;
                             const reflection=ctx.createLinearGradient(0,0,width,0);
-                            reflection.addColorStop(0,ink(0));reflection.addColorStop(0.65,ink(0.17));
-                            reflection.addColorStop(1,ink(0.035));
-                            ctx.lineWidth=2;ctx.strokeStyle=reflection;
-                            ctx.beginPath();ctx.moveTo(Math.max(12,lip+r),height-lip);
-                            ctx.lineTo(width-lip-r,height-lip);
-                            ctx.quadraticCurveTo(width-lip,height-lip,width-lip,height-lip-r);
-                            ctx.lineTo(width-lip,Math.max(12,lip+r));ctx.stroke();
+                            reflection.addColorStop(0,ink(0));reflection.addColorStop(0.35,ink(0.12));
+                            reflection.addColorStop(0.65,ink(0.12));reflection.addColorStop(1,ink(0));
+                            ctx.lineWidth=1;ctx.strokeStyle=reflection;
+                            const end=lip+reach;
+                            if(width>end*2){
+                                ctx.beginPath();ctx.moveTo(end,height-lip);
+                                ctx.lineTo(width-end,height-lip);ctx.stroke();
+                            }
                         }
                         }
                     } else if (finish === "radar-station") {
