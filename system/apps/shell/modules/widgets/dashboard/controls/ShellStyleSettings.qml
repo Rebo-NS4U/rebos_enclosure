@@ -54,6 +54,7 @@ SettingsGroup {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 42
                         variant: "bg"
+                        materialPreview: true
                         styleOverride: card.modelData.id
                         enableBorder: false
                         radius: Styling.radius(-5)

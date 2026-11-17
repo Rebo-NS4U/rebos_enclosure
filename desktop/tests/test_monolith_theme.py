@@ -15,9 +15,10 @@ import qs.modules.components
 ShellRoot {
  FloatingWindow { visible:true; implicitWidth:640; implicitHeight:480
   Column {
-   StyledRect { width:600; height:260; variant:"bg"; styleOverride:"monolith" }
+   StyledRect { width:600; height:260; barSurface:true; variant:"bg"; styleOverride:"monolith" }
    StyledRect { width:500; height:200; variant:"popup"; styleOverride:"monolith" }
    StyledRect { width:200; height:80; variant:"bg"; styleOverride:"monolith" }
+   StyledRect { width:220; height:42; variant:"bg"; materialPreview:true; styleOverride:"monolith" }
    StyledRect { width:600; height:36; variant:"bar"; styleOverride:"monolith" }
    StyledRect { width:200; height:80; variant:"internalbg"; styleOverride:"monolith" }
    StyledRect { width:24; height:24; variant:"focus"; styleOverride:"monolith" }

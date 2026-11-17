@@ -14,6 +14,7 @@ ClippingRectangle {
 
     required property string variant
     property string styleOverride: ""
+    property bool materialPreview: false
     property bool barSurface: false
     property bool controlSurface: false
     property bool controlPressed: false
@@ -930,13 +931,14 @@ ClippingRectangle {
                 if(root.traceThemeFrame(ctx,0.75))ctx.stroke();
                 if(!inset){
                     // Fractures stay within narrow opposing edge bands, clear of text.
-                    const band=Math.min(outer?22:12,height*0.22,width*0.12);
+                    const band=Math.min(root.materialPreview?6:outer?42:12,height*0.22,width*0.12);
                     const reach=Math.min(width*0.32,outer?190:90);
                     function vein(points,color){
                         const first=points[0],last=points[points.length-1];
+                        color=Qt.tint(color,Qt.alpha(pigment,0.22));
                         const light=ctx.createLinearGradient(first[0],first[1],last[0],last[1]);
                         light.addColorStop(0,Qt.alpha(color,0));
-                        light.addColorStop(0.28,Qt.alpha(color,0.32));
+                        light.addColorStop(0.28,Qt.alpha(color,0.62));
                         light.addColorStop(0.62,Qt.alpha(color,outer?0.85:0.55));
                         light.addColorStop(1,Qt.alpha(color,0));
                         function stroke(ink,size){
@@ -946,12 +948,12 @@ ClippingRectangle {
                             ctx.stroke();
                         }
                         stroke(Qt.alpha(shadowInk,0.55),3.5);
-                        stroke(Qt.alpha(color,0.055),5);
-                        stroke(light,0.9);
+                        stroke(Qt.alpha(color,0.11),6);
+                        stroke(light,1.4);
                     }
                     // Background slabs use long, asymmetric fractures along all four edges.
                     // Compact bars and smaller surfaces keep the original corner treatment.
-                    if((root.variant === "bg" || root.variant === "popup") && !root.barSurface && width>240 && height>120){
+                    if((root.variant === "bg" || root.variant === "popup") && ((width>240 && height>120) || root.materialPreview)){
                         // Uneven fault lines double back, split and rejoin in the edge band.
                         // Each edge has its own silhouette; geometry stays static on repaint.
                         function fault(edge,knots,splinters,color){
