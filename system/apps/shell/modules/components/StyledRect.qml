@@ -619,28 +619,36 @@ ClippingRectangle {
                 if(finish === "canopy"){
                     // A translucent tree crown with palette-tinted clusters of leaves.
                     const fabric=a=>Qt.rgba(accent.r*0.65+secondaryAccent.r*0.35,accent.g*0.65+secondaryAccent.g*0.35,accent.b*0.65+secondaryAccent.b*0.35,a);
-                    // Layered leaf crowns define the top edge without branch or seam strokes.
-                    function treeCanopy(depth, lobes) {
+                    // Tapered boughs and individual pointed leaves; no rounded crown bands.
+                    function treeCanopy(depth, crowns) {
+                        const count=Math.max(10,crowns*3);
+                        const span=width/count;
+                        function leaf(x,y,length,angle) {
+                            ctx.save();ctx.translate(x,y);ctx.rotate(angle);
+                            ctx.beginPath();ctx.moveTo(0,0);
+                            ctx.bezierCurveTo(length*0.32,-length*0.24,length*0.76,-length*0.17,length,0);
+                            ctx.bezierCurveTo(length*0.68,length*0.21,length*0.25,length*0.18,0,0);
+                            ctx.closePath();ctx.fill();ctx.restore();
+                        }
                         for(let layer=0;layer<2;layer++){
-                            const span=width/lobes;
-                            const foliage=ctx.createLinearGradient(0,0,0,depth);
-                            foliage.addColorStop(0,fabric(layer?0.12:0.30));
-                            foliage.addColorStop(0.7,fabric(layer?0.19:0.38));
-                            foliage.addColorStop(1,fabric(layer?0.24:0.44));
-                            ctx.fillStyle=foliage;
-                            ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(width,0);
-                            ctx.lineTo(width,depth*0.28);
-                            for(let i=lobes-1;i>=0;i--){
-                                const x=i*span;
-                                const reach=depth*(layer?0.48:0.72)*(i%3===0?1:0.83);
-                                const tip=depth*(layer?0.15:0.28);
-                                // Uneven overlapping lobes suggest clusters of leaves.
-                                ctx.bezierCurveTo(x+span*0.96,tip+reach,
-                                    x+span*0.64,tip+reach,x+span*0.51,tip+reach*0.62);
-                                ctx.bezierCurveTo(x+span*0.30,tip+reach*1.14,
-                                    x+span*0.04,tip+reach*0.80,x,tip);
+                            ctx.fillStyle=fabric(layer?0.40:0.27);
+                            for(let i=0;i<count;i++){
+                                const x=(i+0.25+layer*0.35)*span;
+                                const reach=depth*(0.45+((i*7)%5)*0.10)*(layer?0.74:1);
+                                const lean=span*(i%2?0.30:-0.30);
+                                // A filled taper suggests a twig, with no thin gray linework.
+                                const stem=Math.max(1,Math.min(4,span*0.055));
+                                ctx.beginPath();ctx.moveTo(x-stem,0);ctx.lineTo(x+stem,0);
+                                ctx.lineTo(x+lean,reach);ctx.closePath();ctx.fill();
+                                for(let pair=0;pair<3;pair++){
+                                    const t=0.24+pair*0.24;
+                                    const px=x+lean*t,py=reach*t;
+                                    const length=Math.min(span*0.70,depth*0.36)*(1-pair*0.12);
+                                    leaf(px,py,length,0.35+pair*0.15);
+                                    leaf(px,py,length*0.88,Math.PI-0.40-pair*0.12);
+                                }
+                                leaf(x+lean*0.78,reach*0.78,depth*0.24,Math.PI*0.5);
                             }
-                            ctx.lineTo(0,0);ctx.closePath();ctx.fill();
                         }
                     }
 
