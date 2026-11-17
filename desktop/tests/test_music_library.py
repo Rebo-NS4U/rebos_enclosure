@@ -41,12 +41,14 @@ class MusicLibraryTests(unittest.TestCase):
 
     def test_mix_download_links_and_local_playback_identity(self):
         mix = dict(uri='spotify:playlist:'+'a'*22, name='Daily Mix 1', tracks=[
-            dict(uri='spotify:track:'+'b'*22, title='Test song', artist='Test artist')])
+            dict(uri='spotify:track:'+'b'*22, title='Test song', artist='Test artist'),
+            dict(uri='spotify:track:'+'c'*22, title='Second song', artist='Test artist')])
         self.library.mixes.update(dict(mixes=[mix]))
         current = self.library.mixes.dispatch('mixes_get', {})['current'][0]
         args = dict(uri=current['uri'], version=current['version'])
         download = self.library.dispatch('mixes_download', args)
-        self.assertEqual(download['links'], 'https://open.spotify.com/track/'+'b'*22)
+        self.assertEqual(download['links'], 'https://open.spotify.com/playlist/'+'a'*22)
+        self.assertEqual(len(download['links'].split()), 1)
         folder = Path(download['folder'])
         self.assertTrue(folder.is_relative_to(self.folder/'Daily Mixes'))
         folder.mkdir(parents=True)

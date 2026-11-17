@@ -206,8 +206,7 @@ class Library:
             if str(self.music) not in self.state['folders']:
                 self.state['folders'].append(str(self.music))
                 self.write(self.state_dir / 'library.json', self.state)
-            return dict(folder=str(folder), links=' '.join(
-                'https://open.spotify.com/track/' + t['uri'].split(':')[-1] for t in mix['tracks']))
+            return dict(folder=str(folder), links='https://open.spotify.com/playlist/' + mix['uri'].split(':')[-1])
         if cmd in ('mixes_get', 'mixes_save', 'mixes_refresh'):
             return self.mixes.dispatch(cmd, args)
         if cmd == 'lyrics':

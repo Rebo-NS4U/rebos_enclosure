@@ -16,7 +16,7 @@ class Downloads(unittest.TestCase):
         spec = importlib.util.spec_from_file_location('download_commands', SERVICE.parent/'commands.py')
         commands = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(commands)
-        links = 'https://open.spotify.com/track/'+'b'*22
+        links = 'https://open.spotify.com/playlist/'+'a'*22
         args = commands.build_spotdl_args(0, links, '/tmp/Music/Daily Mixes/test', 'ogg', mix_tracks=True)
         self.assertEqual(args[args.index('--output')+1], '/tmp/Music/Daily Mixes/test/{track-id}.{output-ext}')
         self.assertEqual(args[1], links)

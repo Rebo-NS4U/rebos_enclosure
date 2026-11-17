@@ -31,8 +31,8 @@ schedule, show progress, and time out after 90 seconds if Spotify is unavailable
 
 
 Each current mix and saved snapshot has a **Download** action. It prepares the
-Downloads page with the snapshot's individual track links, avoiding a changing
-Daily Mix playlist URL. Choose the audio format and press Start download; existing
+Downloads page with a single Spotify playlist link. spotDL resolves the playlist's
+current contents, including when downloading from an older saved snapshot. Choose the audio format and press Start download; existing
 files are skipped and the activity log reports failures. Downloads are stored in
 versioned folders under the XDG Music directory's Daily Mixes folder, using Spotify
 track IDs as filenames to identify local audio reliably. Library scanning runs on

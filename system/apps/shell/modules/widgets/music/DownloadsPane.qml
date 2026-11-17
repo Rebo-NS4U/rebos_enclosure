@@ -23,7 +23,7 @@ ColumnLayout {
     function prepareMix(data) {
         if (busy) return false;
         links.text = data.links; folder.text = data.folder; mixTracks = true;
-        status = "Daily Mix ready · choose format and start download";
+        status = "Spotify playlist ready · downloads its current contents";
         return true;
     }
     function start() {
