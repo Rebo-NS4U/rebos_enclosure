@@ -34,23 +34,27 @@ ShellRoot {
     tester.tryCompare(AudioEqualizer,"initialized",true,5000);
     tester.compare(AudioEqualizer.enabled,false);
     Config.animDuration=0;
-    const speech=find(panel,"audio-eq-preset-Speech");
-    const combo=find(panel,"audio-eq-presets");
-    if(combo && combo.visible) {
-     combo.forceActiveFocus(); tester.keyClick(Qt.Key_Home); tester.keyClick(Qt.Key_Down); tester.keyClick(Qt.Key_Down); tester.wait(500);
-    } else { tester.verify(speech!==null && speech.visible); tester.mouseClick(speech); tester.wait(500); }
-    tester.compare(AudioEqualizer.preset,"Speech");
-    tester.compare(AudioEqualizer.gains[0],-5);
+    const speech=find(panel,"audio-eq-preset-Pop");
+    tester.verify(speech!==null && speech.visible);
+    tester.mouseClick(speech); tester.wait(500);
+    tester.compare(AudioEqualizer.preset,"Pop");
+    tester.compare(AudioEqualizer.gains[0],2);
     const band=find(panel,"audio-eq-band-0");
     tester.verify(band!==null); band.forceActiveFocus();
     tester.keyClick(Qt.Key_Up); tester.wait(500);
-    tester.compare(AudioEqualizer.gains[0],-4.5);
+    tester.compare(AudioEqualizer.gains[0],2.5);
     tester.compare(AudioEqualizer.preset,"Custom");
     for(const style of ["canopy","orbital","metropolis","monolith","blueprint","terminal-hardware","glass-vault","radar-station","suspended-film","frosted","colorful","clear-glass"]) {
      Config.theme.shellStyle=style; tester.wait(20);
-     tester.compare(speech.contentItem.color,speech.background.itemColor);
+     tester.compare(find(speech,"preset-card-label").color,speech.background.itemColor);
      tester.verify(band.activeFocus);
     }
+    find(panel,"audio-eq-category-Other").forceActiveFocus(); tester.keyClick(Qt.Key_Space); tester.wait(40);
+    const youtube=find(panel,"audio-eq-preset-YouTube"); tester.verify(youtube!==null);
+    youtube.forceActiveFocus(); tester.keyClick(Qt.Key_Space); tester.wait(500);
+    tester.compare(AudioEqualizer.preset,"YouTube"); tester.compare(AudioEqualizer.gains[0],-2);
+    find(panel,"audio-eq-category-Music").forceActiveFocus(); tester.keyClick(Qt.Key_Space); tester.wait(40);
+    AudioEqualizer.selectPreset("Pop"); AudioEqualizer.setBand(0,2.5); tester.wait(500);
     Config.theme.shellStyle="orbital"; tester.wait(40);
     const destination=Quickshell.env("AUDIO_EQ_PREVIEW");
     if(destination) tester.grabImage(previewSurface).save(destination);
@@ -132,7 +136,7 @@ class EqualizerUiTests(unittest.TestCase):
                 self.assertNotIn('ReferenceError',output)
                 self.assertNotIn('TypeError',output)
                 saved=json.loads((Path(env['XDG_CONFIG_HOME'])/'enclosure/audio-equalizer.json').read_text())
-                self.assertEqual(saved['gains'][0],-4.5)
+                self.assertEqual(saved['gains'][0],2.5)
                 self.assertFalse(saved['enabled'])
             finally:
                 worker.terminate()

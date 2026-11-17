@@ -10,11 +10,32 @@ Singleton {
     readonly property var presets: ({
         "Flat": [0,0,0,0,0,0,0,0,0,0],
         "Music": [2,2,1,0,-1,0,1,2,1,0],
+        "Pop": [2, 2, 1, 0, -1, 0, 1, 2, 2, 1],
+        "Rock": [2, 2, 1, -1, -1, 1, 2, 3, 2, 1],
+        "Hip-Hop": [4, 4, 3, 1, -1, 0, 1, 1, 1, 0],
+        "Electronic": [4, 3, 2, 0, -1, 0, 1, 2, 3, 2],
+        "Jazz": [1, 1, 0, 0, 1, 1, 2, 1, 1, 0],
+        "Classical": [0, 0, 0, 0, 0, 1, 1, 1, 2, 1],
+        "Acoustic": [-1, 0, 1, 1, 1, 2, 2, 1, 0, 0],
+        "Lo-fi": [2, 2, 1, 0, 0, -1, -1, -2, -3, -4],
+        "YouTube": [-2, -1, 0, 0, 1, 2, 2, 1, 0, -1],
+        "Podcasts": [-4, -3, -1, 0, 1, 3, 3, 1, -1, -2],
         "Speech": [-5,-4,-2,0,1,3,3,2,0,-2],
         "Movies": [3,2,1,-1,0,2,2,1,0,-1],
         "Gaming": [-2,-2,-1,0,1,2,3,3,1,-1],
         "Bass": [5,4,3,1,0,0,0,0,0,0],
         "Treble": [0,0,0,0,0,0,1,3,4,3]
+    })
+    readonly property var presetGroups: ({
+        "Music": ["Flat", "Pop", "Rock", "Hip-Hop", "Electronic", "Jazz", "Classical", "Acoustic", "Lo-fi"],
+        "Other": ["YouTube", "Podcasts", "Movies", "Gaming"]
+    })
+    readonly property var presetDescriptions: ({
+        "Flat":"Uncolored reference", "Pop":"Vocals and sparkle", "Rock":"Guitars and punch",
+        "Hip-Hop":"Low-end weight", "Electronic":"Bass and bright detail", "Jazz":"Warmth and presence",
+        "Classical":"Air and light detail", "Acoustic":"Strings and voices", "Lo-fi":"Warm, softer highs",
+        "YouTube":"Balanced video voices", "Podcasts":"Voice intelligibility", "Movies":"Warmth and dialogue",
+        "Gaming":"Mid/high detail"
     })
     property var gains: [0,0,0,0,0,0,0,0,0,0]
     property string preset: "Flat"

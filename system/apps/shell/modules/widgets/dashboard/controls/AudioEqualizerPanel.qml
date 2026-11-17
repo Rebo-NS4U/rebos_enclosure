@@ -9,8 +9,8 @@ SettingsGroup {
     property bool compact: false
     property real availableHeight: 1000
     readonly property int bandRows: Math.ceil(10 / bandGrid.columns)
-    readonly property real bandHeight: compact ? Math.max(32, Math.min(Styling.spacing(140),
-        (availableHeight - Styling.spacing(60) - 32) / bandRows - Styling.fontSize(-4) * 2 - Styling.spacing(6))) : Styling.spacing(160)
+    readonly property real bandHeight: compact ? Math.max(32, Math.min(Styling.spacing(96),
+        (availableHeight - presetSelector.implicitHeight - Styling.spacing(60) - 32) / bandRows - Styling.fontSize(-4) * 2 - Styling.spacing(6))) : Styling.spacing(160)
     title: compact ? "" : "Output equalizer"
     description: compact ? "" : "Shape playback sound with ten adjustable bands. Microphone audio stays unchanged."
     Flow {
@@ -38,17 +38,7 @@ SettingsGroup {
             enabled: AudioEqualizer.initialized
             onClicked: AudioEqualizer.setEnabled(!AudioEqualizer.enabled)
         }
-        SettingsComboBox {
-            objectName: "audio-eq-presets"
-            Layout.fillWidth: true
-            Layout.minimumWidth: Styling.spacing(100)
-            implicitHeight: Math.max(36, Styling.spacing(36))
-            model: Object.keys(AudioEqualizer.presets)
-            currentIndex: model.indexOf(AudioEqualizer.preset)
-            displayText: AudioEqualizer.preset
-            Accessible.name: "Equalizer preset"
-            onActivated: index => AudioEqualizer.selectPreset(model[index])
-        }
+        Item { Layout.fillWidth: true }
         ThemeButton { text: "Reset"; Accessible.name: "Reset equalizer to flat"; onClicked: AudioEqualizer.selectPreset("Flat") }
     }
     StyledText {
@@ -61,20 +51,9 @@ SettingsGroup {
         color: AudioEqualizer.error ? Colors.error : Colors.overBackground
         Accessible.role: Accessible.StaticText
     }
-    Flow {
-        visible: !root.compact
+    EqualizerPresetSelector {
+        id: presetSelector
         Layout.fillWidth: true
-        spacing: Styling.spacing(8)
-        Repeater {
-            model: Object.keys(AudioEqualizer.presets)
-            ThemeButton {
-                required property string modelData
-                objectName: "audio-eq-preset-" + modelData
-                text: modelData
-                checked: AudioEqualizer.preset === modelData
-                onClicked: AudioEqualizer.selectPreset(modelData)
-            }
-        }
     }
     StyledText {
         Layout.fillWidth: true
@@ -135,7 +114,7 @@ SettingsGroup {
         Layout.fillWidth: true
         wrapMode: Text.Wrap
         visible: !root.compact
-        text: "Music: gentle balance · Speech: clearer voices · Movies: warmth and dialogue · Gaming: mid/high detail · Bass/Treble: focused boosts. Automatic headroom reduces gain when bands are boosted."
+        text: "Music presets offer starting points for different genres. Other includes YouTube, podcasts, movies and gaming. Adjust any band to create a custom curve; automatic headroom compensates for boosts."
         font.pixelSize: Styling.fontSize(-1)
     }
 }

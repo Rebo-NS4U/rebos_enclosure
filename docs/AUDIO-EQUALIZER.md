@@ -3,7 +3,8 @@
 Open **Media Center** for the compact equalizer beneath the playback controls,
 in the former embedded-lyrics area. Both island and standard players use the same
 compact vertical EQ controls: all ten faders are visible together, with a preset
-dropdown and bypass/reset actions. The media panel widens within the screen bounds;
+card carousel and bypass/reset actions. Music/Other tabs filter the cards; arrow
+buttons, touchpad scrolling and keyboard focus reveal additional cards. The media panel widens within the screen bounds;
 smaller layouts wrap faders into rows and shorten them to fit available height. The on-screen
 lyrics strip remains separate. The full editor is also available at
 **Sound → EQ & mixer → Equalizer** or **Settings → Sound → Equalizer**.
@@ -13,8 +14,9 @@ wanted. Each of the ten vertical bands (31 Hz–16 kHz) adjusts from −12 to +1
 steps using the mouse or arrow keys. Edits select Custom. Reset to flat clears the
 curve; bypass removes processing and restores the physical output route.
 
-Presets: Flat, Music (gentle balance), Speech (voice clarity), Movies (warmth and
-dialogue), Gaming (mid/high detail), Bass and Treble. These are tonal curves;
+Music cards: Flat, Pop, Rock, Hip-Hop, Electronic, Jazz, Classical, Acoustic and
+Lo-fi. Other cards: YouTube, Podcasts, Movies and Gaming. Existing Music, Speech,
+Bass and Treble saved selections remain readable as legacy presets. These are tonal curves;
 Gaming does not add surround and Movies does not add a dynamic-range compressor.
 The complete curve's frequency response is swept to calculate automatic headroom
 with a 1 dB margin above its highest steady-state response. Boosted presets can
