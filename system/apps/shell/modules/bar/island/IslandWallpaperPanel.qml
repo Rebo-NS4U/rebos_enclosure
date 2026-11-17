@@ -11,6 +11,7 @@ import qs.modules.services
 import qs.modules.globals
 import qs.modules.widgets.dashboard.wallpapers
 import qs.config
+import "../../widgets/dashboard/wallpapers/WallpaperFolders.js" as WallpaperFolders
 
 Item {
     id: root
@@ -46,6 +47,13 @@ Item {
     }
 
     property string searchText: ""
+    property string selectedFolder: ""
+    readonly property var wallpaperFolders: WallpaperFolders.groups(
+        GlobalStates.wallpaperManager?.wallpaperPaths ?? [],
+        GlobalStates.wallpaperManager?.wallpaperDir ?? "",
+        GlobalStates.wallpaperManager?.allSubdirs ?? [])
+    onVisibleChanged: if (visible) selectedFolder = ""
+
 
     readonly property string currentWallpaper: {
         if (!GlobalStates.wallpaperManager) return "";
@@ -59,15 +67,8 @@ Item {
     readonly property list<string> searchedWallpapers: {
         if (!GlobalStates.wallpaperManager)
             return [];
-        let wallpapers = GlobalStates.wallpaperManager.wallpaperPaths || [];
-        if (root.searchText.length > 0) {
-            const query = root.searchText.toLowerCase();
-            wallpapers = wallpapers.filter(path => {
-                const name = path.split("/").pop().toLowerCase();
-                return name.includes(query);
-            });
-        }
-        return wallpapers;
+        return WallpaperFolders.filter(GlobalStates.wallpaperManager.wallpaperPaths || [],
+                                       root.selectedFolder, root.searchText);
     }
 
     readonly property list<string> filteredWallpapers: wallpaperColorControls.arrangedPaths
@@ -212,8 +213,6 @@ Item {
             }
         }
 
-        WallpaperFolderPicker { Layout.fillWidth: true }
-
         Separator { Layout.fillWidth: true; implicitHeight: 1 }
 
         // ═══════════════════════════════════════════════════════════════
@@ -330,6 +329,7 @@ Item {
         }
 
         WallpaperColorControls {
+            visible: root.selectedFolder !== ""
             id: wallpaperColorControls
             Layout.fillWidth: true
             directory: GlobalStates.wallpaperManager?.wallpaperDir ?? ""
@@ -339,7 +339,17 @@ Item {
         // ═══════════════════════════════════════════════════════════════
         // WALLPAPERS GRID (Balanced 4-column edge-to-edge grid)
         // ═══════════════════════════════════════════════════════════════
+        WallpaperFolderBrowser {
+            Layout.fillWidth: true
+            Layout.fillHeight: root.selectedFolder === ""
+            folders: root.wallpaperFolders
+            selectedFolder: root.selectedFolder
+            query: root.searchText
+            onFolderSelected: folder => { root.selectedFolder = folder; searchInput.text = ""; }
+        }
+
         StyledRect {
+            visible: root.selectedFolder !== ""
             id: gridContainer
             Layout.fillWidth: true
             Layout.fillHeight: true

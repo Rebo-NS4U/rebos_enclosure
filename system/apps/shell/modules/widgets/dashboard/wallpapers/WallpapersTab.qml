@@ -15,14 +15,15 @@ FocusScope {
 
     // Propiedades personalizadas para la funcionalidad del componente.
     property string searchText: ""
-    property string selectedFolder: "*"
+    property string selectedFolder: ""
     readonly property list<var> wallpaperFolders: WallpaperFolders.groups(
         GlobalStates.wallpaperManager?.wallpaperPaths ?? [],
-        GlobalStates.wallpaperManager?.wallpaperDir ?? "")
+        GlobalStates.wallpaperManager?.wallpaperDir ?? "",
+        GlobalStates.wallpaperManager?.allSubdirs ?? [])
 
     onWallpaperFoldersChanged: {
         if (!wallpaperFolders.some(folder => folder.id === selectedFolder))
-            selectedFolder = "*";
+            selectedFolder = "";
     }
     property int selectedIndex: GlobalStates.wallpaperSelectedIndex
 
@@ -187,11 +188,6 @@ FocusScope {
     // Llama a focusSearch una vez que el componente se ha completado.
     Component.onCompleted: {
         Qt.callLater(() => {
-            const manager = GlobalStates.wallpaperManager;
-            const current = manager?.perScreenWallpapers?.[currentScreenName] ?? manager?.currentWallpaper ?? "";
-            const directory = WallpaperFolders.parentDirectory(current);
-            if (wallpaperFolders.some(folder => folder.id === directory))
-                selectedFolder = directory;
             centerTimer.start();
         });
     }
@@ -199,6 +195,7 @@ FocusScope {
     // Actualizar subcarpetas cuando la pestaña se haga visible
     onVisibleChanged: {
         if (visible) {
+            selectedFolder = "";
             if (GlobalStates.wallpaperManager) {
                 console.log("WallpapersTab became visible, updating subfolders");
                 GlobalStates.wallpaperManager.scanSubfolders();
@@ -257,8 +254,6 @@ FocusScope {
     ColumnLayout {
         anchors.fill: parent
         spacing: Styling.spacing(8)
-
-        WallpaperFolderPicker { Layout.fillWidth: true }
 
         // Header: search / wallpaper mode / scheme. Selector lists render as
         // overlays, so expanding one does not change the grid layout.
@@ -602,10 +597,10 @@ FocusScope {
                 id: folderSelector
                 objectName: "wallpaper-folder-selector"
                 Layout.fillWidth: true
-                model: wallpapersTabRoot.wallpaperFolders
+                model: [{ id: "", display: "All folders" }].concat(wallpapersTabRoot.wallpaperFolders)
                 textRole: "display"
                 valueRole: "id"
-                currentIndex: wallpapersTabRoot.wallpaperFolders.findIndex(folder => folder.id === wallpapersTabRoot.selectedFolder)
+                currentIndex: wallpapersTabRoot.selectedFolder === "" ? 0 : wallpapersTabRoot.wallpaperFolders.findIndex(folder => folder.id === wallpapersTabRoot.selectedFolder) + 1
                 onActivated: wallpapersTabRoot.selectedFolder = currentValue
                 onActiveFocusChanged: {
                     if (activeFocus)
@@ -631,6 +626,7 @@ FocusScope {
             }
         }
         WallpaperColorControls {
+            visible: wallpapersTabRoot.selectedFolder !== ""
             id: wallpaperColorControls
             Layout.fillWidth: true
             directory: GlobalStates.wallpaperManager?.wallpaperDir ?? ""
@@ -639,13 +635,23 @@ FocusScope {
         }
         StyledText {
             Layout.fillWidth: true
-            visible: wallpapersTabRoot.filteredWallpapers.length === 0
+            visible: wallpapersTabRoot.selectedFolder !== "" && wallpapersTabRoot.filteredWallpapers.length === 0
             text: wallpaperColorControls.indexing ? "Finding wallpaper colors…" : "No wallpapers match these filters."
             color: Colors.overSurfaceVariant
         }
 
+        WallpaperFolderBrowser {
+            Layout.fillWidth: true
+            Layout.fillHeight: wallpapersTabRoot.selectedFolder === ""
+            folders: wallpapersTabRoot.wallpaperFolders
+            selectedFolder: wallpapersTabRoot.selectedFolder
+            query: wallpapersTabRoot.searchText
+            onFolderSelected: folder => { wallpapersTabRoot.selectedFolder = folder; wallpapersTabRoot.searchText = ""; }
+        }
+
         // Grid de wallpapers
         ClippingRectangle {
+            visible: wallpapersTabRoot.selectedFolder !== ""
             id: wallpaperGridContainer
             Layout.fillWidth: true
             Layout.fillHeight: true

@@ -4,12 +4,15 @@ function parentDirectory(path) {
     return path.substring(0, path.lastIndexOf("/"));
 }
 
-function groups(paths, baseDirectory) {
+function groups(paths, baseDirectory, directories) {
     const base = baseDirectory.replace(/\/+$/, "");
     const counts = new Map();
     for (const path of paths) {
         const directory = parentDirectory(path);
         counts.set(directory, (counts.get(directory) || 0) + 1);
+    }
+    for (const directory of (directories || [])) {
+        if (!counts.has(directory)) counts.set(directory, 0);
     }
     const names = Array.from(counts.keys()).map(directory => directory.split("/").pop());
     const folders = Array.from(counts.keys()).map(directory => {
