@@ -948,22 +948,22 @@ ClippingRectangle {
                         edge(-0.65,-0.65,Qt.alpha(shadowInk,0.72),1.2);
                         edge(0.9,0.9,Qt.alpha(pigment,outer?0.25:0.16),0.8);
                     }
-                    // Shallow recessed planes outlined by straight 45-degree carvings.
-                    const depth=Math.min(outer?48:22,height*0.26,width*0.24);
-                    const reach=Math.min(width*0.36,outer?180:84);
-                    for(let i=0;i<3;i++){
-                        const d=depth*(1-i*0.27);
-                        const run=reach-i*depth*0.46;
-                        ctx.fillStyle=Qt.alpha(shadowInk,outer?0.055:0.035);
-                        ctx.beginPath();ctx.moveTo(width-run,0);ctx.lineTo(width,0);
-                        ctx.lineTo(width,d);ctx.lineTo(width-run+d,d);
-                        ctx.closePath();ctx.fill();
-                        engrave([[width-run,0],[width-run+d,d],[width,d]]);
-                        ctx.fillStyle=Qt.alpha(shadowInk,outer?0.045:0.025);
-                        ctx.beginPath();ctx.moveTo(0,height);ctx.lineTo(run,height);
-                        ctx.lineTo(run-d,height-d);ctx.lineTo(0,height-d);
-                        ctx.closePath();ctx.fill();
-                        engrave([[run,height],[run-d,height-d],[0,height-d]]);
+                    // Paired chamfered corner grooves follow the rim instead of stacked wedges.
+                    const margin=Math.min(outer?7:4,width*0.08,height*0.08);
+                    const spacing=Math.min(4,width*0.035,height*0.035);
+                    const cut=Math.min(outer?18:10,width*0.12,height*0.12);
+                    const along=Math.min(width*0.36,outer?160:76);
+                    const down=Math.min(height*0.28,outer?64:30);
+                    for(let i=0;i<2;i++){
+                        const insetEdge=margin+i*spacing;
+                        engrave([[width-along,insetEdge],
+                            [width-insetEdge-cut,insetEdge],
+                            [width-insetEdge,insetEdge+cut],
+                            [width-insetEdge,down]]);
+                        engrave([[along,height-insetEdge],
+                            [insetEdge+cut,height-insetEdge],
+                            [insetEdge,height-insetEdge-cut],
+                            [insetEdge,height-down]]);
                     }
                     // Short side carvings sit near the other two corners, leaving the middle clear.
                     if(height>100){
