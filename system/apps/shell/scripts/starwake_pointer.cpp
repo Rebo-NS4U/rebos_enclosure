@@ -4,6 +4,7 @@
 #include <QQuickWindow>
 #include <QQuickItem>
 #include <QPointer>
+#include <QCursor>
 #include <QTimer>
 #include <wayland-client.h>
 #include "pointer-constraints.h"
@@ -18,6 +19,13 @@ struct Fence {
     QPointer<QQuickWindow> bound;
     bool initialized = false;
     bool warned = false;
+    bool cursorHidden = false;
+    void hideCursor() {
+        if (cursorHidden) return;
+        // Application overrides include tablet tools; MouseArea only covers mouse hover.
+        QGuiApplication::setOverrideCursor(QCursor(Qt::BlankCursor));
+        cursorHidden = true;
+    }
     static void global(void *data, wl_registry *registry, uint32_t name, const char *interface, uint32_t) {
         auto *self = static_cast<Fence *>(data);
         if (!std::strcmp(interface, zwp_pointer_constraints_v1_interface.name))
@@ -34,6 +42,10 @@ struct Fence {
         if (self->bound) self->bound->contentItem()->setProperty("starwakeConfined",false);
     }
     void release() {
+        if (cursorHidden) {
+            QGuiApplication::restoreOverrideCursor();
+            cursorHidden = false;
+        }
         if (constraint) {
             zwp_confined_pointer_v1_destroy(constraint); constraint = nullptr;
             if (bound) bound->contentItem()->setProperty("starwakeConfined",false);
@@ -55,8 +67,9 @@ struct Fence {
             if (quick && (arena = findArena(quick->contentItem()))) { game = quick; break; }
         }
         if (!game || !arena->property("capturePointer").toBool() || !game->isActive() || !game->isVisible()) { release(); return; }
+        if (constraint && bound != game) release();
+        hideCursor();
         if (constraint && bound == game) return;
-        release();
         auto *native = qGuiApp->nativeInterface<QNativeInterface::QWaylandApplication>();
         if (!native) return;
         if (!initialized) {

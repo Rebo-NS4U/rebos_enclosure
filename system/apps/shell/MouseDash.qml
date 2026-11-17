@@ -306,6 +306,10 @@ ShellRoot {
                 id: arena
                 objectName: "starwakeArena"
                 property bool capturePointer: window.phase === "playing"
+                HoverHandler {
+                    acceptedDevices: PointerDevice.Stylus | PointerDevice.Airbrush
+                    cursorShape: window.phase === "playing" ? Qt.BlankCursor : Qt.ArrowCursor
+                }
                 anchors.fill: parent
                 variant: "common"
                 radius: Styling.radius(0)
