@@ -11,6 +11,8 @@ import qs.modules.theme
 ColumnLayout {
     id: root
     objectName: "music-downloads"
+    property bool settingsReady: false
+    property bool restoringSettings: false
     property bool busy: false
     property string logText: ""
     property string status: "Ready"
@@ -18,12 +20,12 @@ ColumnLayout {
     property bool cancelling: false
     property bool mixTracks: false
     property string audioFormat: "ogg"
-    readonly property bool canDownload: !busy && service.running && folder.text.trim().length > 0 && links.text.trim().length > 0
+    readonly property bool canDownload: settingsReady && !busy && service.running && folder.text.trim().length > 0 && links.text.trim().length > 0
     spacing: 16
     signal completed()
     signal rejected()
     function prepareSuggestion(data) {
-        if (busy || !service.running) return false;
+        if (busy || !service.running || !settingsReady) return false;
         links.text = data.links; folder.text = data.folder; mixTracks = true;
         status = "Downloading Spotify suggestion";
         return true;
@@ -52,11 +54,20 @@ ColumnLayout {
     Process {
         id: service
         running: true; stdinEnabled: true
+        onStarted: write('{"settingsGet":true}\n')
         command: ["python3", "-u", Qt.resolvedUrl("../../../scripts/music_downloads/service.py").toString().replace("file://", "")]
         stdout: SplitParser {
             onRead: data => {
                 let message;
                 try { message = JSON.parse(data); } catch (e) { return; }
+                if (message.settings) {
+                    if (!root.settingsReady) {
+                        root.restoringSettings = true;
+                        cookieFile.text = message.settings.cookieFile || "";
+                        root.restoringSettings = false;
+                        root.settingsReady = true;
+                    }
+                }
                 if (message.log) root.logText = (root.logText + message.log + "\n").slice(-60000);
                 if (message.error) { root.busy = !!message.busy; root.failed = true; root.status = message.busy ? "Download still running" : "Could not start"; root.logText += message.error + "\n"; if (!message.busy) root.rejected(); }
                 if (message.done) {
@@ -119,16 +130,20 @@ ColumnLayout {
                         Layout.fillWidth: true
                         SearchInput {
                             id: cookieFile; objectName: "music-download-cookie-file"
-                            Layout.fillWidth: true; enabled: !root.busy
+                            Layout.fillWidth: true
                             placeholderText: "Path to exported cookies.txt"
+                            enabled: !root.busy && root.settingsReady
+                            onTextChanged: if (root.settingsReady && !root.restoringSettings) {
+                                service.write(JSON.stringify({settingsCookieFile: text.trim()}) + "\n");
+                            }
                         }
-                        ThemeButton { text: "Browse"; enabled: !root.busy; onClicked: cookiePicker.open() }
+                        ThemeButton { text: "Browse"; enabled: !root.busy && root.settingsReady; onClicked: cookiePicker.open() }
                         ThemeButton { text: "Clear"; enabled: !root.busy && cookieFile.text.length > 0; onClicked: cookieFile.clear() }
                     }
                     StyledText {
                         Layout.fillWidth: true; wrapMode: Text.WordWrap; color: Colors.overSurfaceVariant
                         font.pixelSize: Styling.fontSize(-2)
-                        text: "For age-restricted audio, use a Netscape cookies.txt export from your signed-in, age-verified YouTube session. Leave blank for public downloads. Keep this file private; it grants access to your session."
+                        text: "This file path is remembered between sessions; Clear forgets it. For age-restricted audio, use a Netscape cookies.txt export from your signed-in, age-verified YouTube session. Leave blank for public downloads. Keep this file private; it grants access to your session."
                     }
                 }
             }

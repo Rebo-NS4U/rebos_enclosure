@@ -5,6 +5,7 @@ import signal
 import subprocess
 import sys
 import threading
+import tempfile
 from pathlib import Path
 from commands import build_spotdl_args, find_spotdl
 
@@ -15,6 +16,27 @@ CANCEL_GRACE = 2
 def emit(**data):
     with lock:
         print(json.dumps(data), flush=True)
+
+
+def cookie_settings(data):
+    path = Path(os.environ.get('XDG_STATE_HOME') or Path.home() / '.local/state') / 'enclosure/music/downloads.json'
+    if 'settingsCookieFile' in data:
+        value = data['settingsCookieFile']
+        if not isinstance(value, str) or len(value) > 4096:
+            raise ValueError('Invalid cookie file path')
+        path.parent.mkdir(parents=True, exist_ok=True)
+        fd, temporary = tempfile.mkstemp(dir=path.parent, prefix='.downloads-')
+        try:
+            with os.fdopen(fd, 'w') as stream:
+                json.dump(dict(cookieFile=value.strip()), stream)
+            os.replace(temporary, path)
+        finally:
+            Path(temporary).unlink(missing_ok=True)
+    try:
+        value = json.loads(path.read_text()).get('cookieFile', '')
+        return value if isinstance(value, str) else ''
+    except (OSError, ValueError, AttributeError):
+        return ''
 
 
 class Download:
@@ -103,6 +125,9 @@ try:
     for line in sys.stdin:
         try:
             data = json.loads(line)
+            if data.get('settingsGet') or 'settingsCookieFile' in data:
+                emit(settings=dict(cookieFile=cookie_settings(data)))
+                continue
             if data.get('cancel'):
                 if job:
                     job.cancel()

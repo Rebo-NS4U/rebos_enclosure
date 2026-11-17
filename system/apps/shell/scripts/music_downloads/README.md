@@ -99,3 +99,5 @@ if the session expires. Cookies do not remove YouTube account/age restrictions
 or guarantee that a particular video can be downloaded.
 
 Playlist suggestions: open a downloaded playlist to request recommended tracks from its original Spotify playlist through the desktop integration. Spotify must be open and signed in. Play streams through Spotify without downloading. Add downloads the track using spotDL into that playlist's folder (or links an existing local copy); additions survive rescans. Existing playlist songs and duplicate artist/title pairs are excluded. If the source is unavailable, load its Spotify playlist link in Spotify playlists first. The updated Lyrics Plus adapter must be prepared and applied; an already running Spotify client loads the extension on its next launch. No Spotify credentials cross the local bridge.
+
+The cookie-file field remembers its selected path in local music download settings. Browse or edit the path to update it; Clear forgets the selection. The original cookies.txt stays in place and its contents are not copied into settings. Download-time validation reports missing or invalid files.

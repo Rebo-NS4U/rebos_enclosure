@@ -12,6 +12,28 @@ import unittest
 SERVICE = Path(__file__).resolve().parents[2] / 'system/apps/shell/scripts/music_downloads/service.py'
 
 class Downloads(unittest.TestCase):
+    def test_cookie_selection_persists_and_clear_forgets(self):
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory)
+            env = {**os.environ, 'HOME': directory, 'XDG_STATE_HOME': str(home/'state'),
+                   'PYTHONDONTWRITEBYTECODE': '1'}
+            def session(messages):
+                result = subprocess.run(['python3', '-u', str(SERVICE)],
+                    input=''.join(json.dumps(m)+'\n' for m in messages),
+                    capture_output=True, text=True, env=env, check=True, timeout=10)
+                return [json.loads(line) for line in result.stdout.splitlines()]
+            cookie = str(home/'cookies with spaces.txt')
+            self.assertEqual(session([dict(settingsGet=True)])[0]['settings']['cookieFile'], '')
+            self.assertEqual(session([dict(settingsCookieFile=cookie)])[0]['settings']['cookieFile'], cookie)
+            self.assertEqual(session([dict(settingsGet=True)])[0]['settings']['cookieFile'], cookie)
+            saved = home/'state/enclosure/music/downloads.json'
+            self.assertEqual(saved.stat().st_mode & 0o777, 0o600)
+            self.assertEqual(json.loads(saved.read_text()), dict(cookieFile=cookie))
+            session([dict(settingsCookieFile='')])
+            self.assertEqual(session([dict(settingsGet=True)])[0]['settings']['cookieFile'], '')
+            saved.write_text('invalid json')
+            self.assertEqual(session([dict(settingsGet=True)])[0]['settings']['cookieFile'], '')
+
     def test_mix_download_preserves_track_identity(self):
         spec = importlib.util.spec_from_file_location('download_commands', SERVICE.parent/'commands.py')
         commands = importlib.util.module_from_spec(spec)
