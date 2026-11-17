@@ -151,6 +151,17 @@ def session():
                     if (music.current.path !== local.path || music.queue.length !== 1) { console.error("MIX_PREVIEW_PLAY_FAILED"); Qt.exit(1); }
                     if (!mixDownloads.prepareMix({links: "https://open.spotify.com/track/" + "b".repeat(22), folder: "/tmp/mix-preview-fixture"}) || !mixDownloads.mixTracks) { console.error("MIX_DOWNLOAD_PREPARE_FAILED"); Qt.exit(1); }
                     music.navigate("Daily Mixes");
+
+                    repeatStart = attempts; phase = 5;
+                } else if (phase === 5 && attempts >= repeatStart + 3) {
+                    const mixes = findItem(music.contentItem, "music-daily-mixes");
+                    mixes.mixes = {current: [{name: "Daily Mix 1 with a very long playlist title that wraps safely across the available width", tracks: mixes.selected.tracks}], saved: [{name: "Daily Mix 1 saved snapshot with a long title", tracks: mixes.selected.tracks, savedAt: "2026-11-16T12:00:00Z"}], checked: ""};
+                    repeatStart = attempts; phase = 6;
+                } else if (phase === 6 && attempts >= repeatStart + 3) {
+                    const mixes = findItem(music.contentItem, "music-daily-mixes");
+                    const label = findItem(music.contentItem, "music-mix-label");
+                    if (!label || label.width > mixes.availableWidth + 1 || label.parent.children[1].y < label.y + label.height - 1 || mixes.contentHeight <= mixes.availableHeight) { console.error("MIX_LAYOUT_OVERLAP_FAILED"); Qt.exit(1); return; }
+                    console.log("MIX_LAYOUT_PASSED");
                     console.log("MIX_PREVIEW_AND_DOWNLOAD_PASSED");
                     console.log("MUSIC_ACCEPTANCE_PASSED tracks=" + music.tracks.length + " queue=" + music.queue.length);
                     console.log('MUSIC_GEOMETRY ' + music.contentItem.width + 'x' + music.contentItem.height + ' children=' + music.contentItem.children.length + ' root=' + music.contentItem.children[music.contentItem.children.length-1].width); music.contentItem.grabToImage(result => { result.saveToFile("/tmp/enclosure-music-acceptance.png"); Qt.quit(); });
