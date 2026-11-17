@@ -165,6 +165,8 @@ def session():
                     const tabs = findItem(music.contentItem, "music-navigation-tabs");
                     if (!label || label.width > mixes.width || !preview || preview.height <= 100 || !nav || !tabs || nav.width < music.width - 40) { console.error("MIX_LAYOUT_FAILED"); Qt.exit(1); return; }
                     const navButton = findItem(music.contentItem,"music-navigation-Songs");
+                    const lastTab=findItem(music.contentItem,"music-navigation-Now playing");
+                    if (Math.abs(lastTab.x + lastTab.width - tabs.width) > 1) { console.error("MUSIC_TOP_NAV_FILL_FAILED"); Qt.exit(1); return; }
                     navButton.clicked();
                     if (music.page !== "Songs") { console.error("MUSIC_TOP_NAV_FAILED"); Qt.exit(1); return; }
                     music.navigate("Daily Mixes");

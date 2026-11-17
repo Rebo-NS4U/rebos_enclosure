@@ -294,13 +294,21 @@ Window {
                         ThemeButton { text: root.busy ? "Scanning…" : "Refresh library"; enabled: !root.busy; onClicked: root.scan() }
                     }
                     Flow {
+                        id: navigationTabs
                         objectName: "music-navigation-tabs"
+                        readonly property int tabCount: 9
+                        readonly property int rowCount: Math.max(1, Math.ceil(tabCount * (Styling.spacing(112) + spacing) / Math.max(1, width + spacing)))
+                        readonly property int columns: Math.ceil(tabCount / rowCount)
+                        readonly property int lastRowCount: tabCount % columns || columns
                         Layout.fillWidth: true
                         spacing: Styling.spacing(6)
                         Repeater {
                             model: ["Home", "Songs", "Albums", "Artists", "Favorites", "Playlists", "Daily Mixes", "Downloads", "Now playing"]
                             ThemeButton {
                                 required property string modelData
+                                required property int index
+                                readonly property int rowColumns: index >= navigationTabs.tabCount - navigationTabs.lastRowCount ? navigationTabs.lastRowCount : navigationTabs.columns
+                                width: Math.max(1, (navigationTabs.width - navigationTabs.spacing * (rowColumns - 1)) / rowColumns)
                                 objectName: "music-navigation-" + modelData
                                 text: modelData
                                 highlighted: root.page === modelData
