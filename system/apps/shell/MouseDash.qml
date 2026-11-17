@@ -144,31 +144,26 @@ ShellRoot {
             awardPoints(count * 40, "NEAR MISS");
             updateObjectives();
         }
-        property var activeEncounter: null
-        property var encounterEvents: []
-        property real encounterBorn: 0
-        property real nextEncounter: 1.25
-        property int encounterIndex: 0
-        readonly property bool encounterWarning: !!activeEncounter && elapsed < encounterBorn + activeEncounter.warning
+        property real nextSpawn: 0.65
         function updateSpawns() {
             if (phase !== "playing") return;
-            if (elapsed >= nextEncounter) {
-                activeEncounter = Game.encounter(encounterIndex++, arena.width, arena.height, difficulty, elapsed, playerX * arena.width, playerY * arena.height);
-                encounterBorn = elapsed; encounterEvents = activeEncounter.events;
-                nextEncounter = elapsed + Game.encounterInterval(difficulty, elapsed);
+            while (spawnVisuals.count && elapsed - spawnVisuals.get(0).born >= 0.55) spawnVisuals.remove(0);
+            if (elapsed < nextSpawn) return;
+            const spawned = Game.spawnBurst(arena.width, arena.height, difficulty, elapsed, playerX * arena.width, playerY * arena.height).slice(0,Math.max(0,70-enemies.length));
+            for (const e of spawned) {
+                e.born = elapsed;
+                spawnVisuals.append({sx:e.x,sy:e.y,size:e.r*2,born:elapsed,spin:e.spin});
             }
-            if (!activeEncounter || encounterWarning) return;
-            const launch = Game.launchEvents(encounterEvents, elapsed - encounterBorn - activeEncounter.warning);
-            encounterEvents = launch.pending;
-            if (launch.launched.length) enemies = enemies.concat(launch.launched.map(e=>Object.assign({},e,{born:elapsed})));
+            enemies = enemies.concat(spawned);
+            nextSpawn = elapsed + Game.spawnInterval(difficulty, elapsed);
         }
         property real trailClock: 0
         property bool reducedMotion: false
         readonly property bool locked: phase === "playing" || phase === "paused"
         readonly property real duration: Game.roundDuration(playMode)
         readonly property var modes: [
-            {key: "survival", name: "DEEP SPACE", caption: "Endless expedition", hint: "Fast volleys. Shifting gaps. Keep moving as waves overlap."},
-            {key: "gauntlet", name: "WARP RUN", caption: "60s · six sectors", hint: "Survive six sectors of gates, fans and comet trains. Movement is everything."}
+            {key: "survival", name: "DEEP SPACE", caption: "Endless expedition", hint: "Unpredictable meteor bursts. Chase stars and keep moving."},
+            {key: "gauntlet", name: "WARP RUN", caption: "60s · six sectors", hint: "Survive 60 seconds of rising meteor pressure. No fixed wave sequence."}
         ]
         readonly property int modeIndex: playMode === "survival" ? 0 : 1
         readonly property string recordKey: Game.scoreKey(playMode, difficulty)
@@ -204,7 +199,7 @@ ShellRoot {
             enemyVisuals.clear(); victory = false; death = null;
             pickupTarget = null; targetClock = 0; targetsCollected = 0; collection = null;
             score = 0; combo = 0;
-            activeEncounter = null; encounterEvents = []; encounterBorn = 0; nextEncounter = 1.25; encounterIndex = 0;
+            nextSpawn = 0.65; spawnVisuals.clear();
             objectiveNotice = ""; objectiveNoticeUntil = 0;
             nearMisses = 0; comboUntil = 0; notice = ""; noticeUntil = 0;
         }
@@ -264,6 +259,7 @@ ShellRoot {
         Shortcut { sequence: "Escape"; onActivated: window.pause() }
         // Resuming requires the pointer inside the arena, preventing off-arena play.
         ListModel { id: enemyVisuals }
+        ListModel { id: spawnVisuals }
         FrameAnimation {
             running: window.phase === "playing"
             onTriggered: {
@@ -326,32 +322,44 @@ ShellRoot {
                 }
                 Cosmos { anchors.fill: parent; opacity: 0.6 }
                 Repeater {
-                    model: window.encounterWarning ? window.activeEncounter.preview : []
-                    delegate: Rectangle {
-                        required property var modelData
-                        x: modelData.x; y: modelData.y - 1; width: 100; height: 2
-                        rotation: modelData.angle; transformOrigin: Item.Left
-                        color: Colors.error; opacity: 0.5
-                        Rectangle { width: 6; height: 6; radius: 3; x: 3; y: -2; color: Colors.error }
+                    model: spawnVisuals
+                    delegate: Item {
+                        id: birth
+                        required property real sx
+                        required property real sy
+                        required property real size
+                        required property real born
+                        required property real spin
+                        readonly property real progress: Math.max(0,Math.min(1,(window.elapsed-born)/0.55))
+                        x: sx; y: sy
+                        visible: progress < 1
+                        Rectangle {
+                            anchors.centerIn: parent
+                            width: birth.size * (window.reducedMotion ? 1.3 : 0.4 + birth.progress*2.8); height: width; radius: width/2
+                            color: Qt.alpha(Colors.error,0.12*(1-birth.progress))
+                            border.width: 2*(1-birth.progress)+0.5
+                            border.color: Colors.error; opacity: 1-birth.progress
+                        }
+                        Rectangle {
+                            anchors.centerIn: parent
+                            width: birth.size*(0.6+birth.progress*1.6); height: width*0.55; radius: width/2
+                            color: "transparent"; border.width: 1.5; border.color: Colors.tertiary
+                            rotation: birth.spin + birth.progress*120; opacity: (1-birth.progress)*0.8
+                            visible: !window.reducedMotion
+                        }
+                        Repeater {
+                            model: window.reducedMotion ? 0 : 7
+                            delegate: Rectangle {
+                                required property int index
+                                readonly property real angle: index*Math.PI*2/7+birth.spin*Math.PI/180
+                                readonly property real distance: birth.size*0.35+birth.progress*34
+                                x: Math.cos(angle)*distance-width/2; y: Math.sin(angle)*distance-height/2
+                                width: 2+3*(1-birth.progress); height: width; radius: 1
+                                rotation: birth.spin+index*51+birth.progress*90
+                                color: index%2 ? Colors.tertiary : Colors.error; opacity: 1-birth.progress
+                            }
+                        }
                     }
-                }
-                Rectangle {
-                    readonly property var gap: window.activeEncounter && window.encounterEvents.length ? (window.encounterEvents[0].gap || null) : null
-                    visible: !!gap
-                    x: !gap ? 0 : gap.vertical ? gap.position - width / 2 : gap.edge === 0 ? 5 : arena.width - width - 5
-                    y: !gap ? 0 : gap.vertical ? (gap.edge === 2 ? 5 : arena.height - height - 5) : gap.position - height / 2
-                    width: gap && gap.vertical ? gap.half * 2 : 12
-                    height: gap && !gap.vertical ? gap.half * 2 : 12
-                    radius: 4; color: Qt.alpha(Colors.success, 0.15); border.color: Colors.success
-                }
-                StyledText {
-                    anchors.horizontalCenter: parent.horizontalCenter; anchors.top: parent.top; anchors.topMargin: 128
-                    width: parent.width - 32; horizontalAlignment: Text.AlignHCenter
-                    visible: window.locked && !!window.activeEncounter
-                    text: !window.activeEncounter ? "" : window.encounterWarning
-                        ? window.activeEncounter.name + " · " + Math.max(0,window.encounterBorn + window.activeEncounter.warning - window.elapsed).toFixed(1) + "s\n" + window.activeEncounter.hint
-                        : window.encounterEvents.length ? window.activeEncounter.name : (window.enemies.length ? window.activeEncounter.name : "OPEN SPACE") + " · NEXT IN " + Math.max(0,window.nextEncounter - window.elapsed).toFixed(1) + "s"
-                    color: window.encounterWarning ? Colors.error : Colors.tertiary; font.pixelSize: 10
                 }
                 Repeater {
                     model: 95
@@ -385,20 +393,14 @@ ShellRoot {
                         required property real age
                         required property bool orbiting
                         required property real heading
-                        readonly property real arrival: window.reducedMotion ? 1 : Math.min(1, age / 0.65)
-                        // The rim keeps the exact collision size while its halo blooms.
+                        readonly property real arrival: window.reducedMotion ? 1 : Math.max(0,Math.min(1, age / 0.15))
+                        // The collision rim is full size from birth; only the surface brightens.
                         opacity: 0.65 + arrival * 0.35
                         x: ex - size / 2; y: ey - size / 2
                         width: size; height: size; radius: size / 2
                         visible: window.phase !== "ready"
                         color: Qt.alpha(orbiting ? Colors.tertiary : Colors.error, 0.3)
                         border.width: 1.5; border.color: Qt.alpha(Colors.error, 0.85)
-                        Rectangle {
-                            anchors.centerIn: parent; width: parent.width + 10 + (1 - parent.arrival) * 44; height: width; radius: width / 2
-                            visible: !window.reducedMotion
-                            color: "transparent"; border.width: 1 + (1 - parent.arrival) * 2
-                            border.color: Qt.alpha(Colors.error, 0.06 + (1 - parent.arrival) * 0.55)
-                        }
                         rotation: heading
                         Rectangle {
                             anchors.right: parent.left; anchors.verticalCenter: parent.verticalCenter

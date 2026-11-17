@@ -92,68 +92,40 @@ function objectives(elapsed, stars, grazes) {
 function medal(score) { return score >= 6000 ? "GOLD" : score >= 3000 ? "SILVER" : score >= 1000 ? "BRONZE" : "UNRANKED"; }
 function nextMedal(score) { return score < 1000 ? 1000 : score < 3000 ? 3000 : score < 6000 ? 6000 : 0; }
 // New rules use separate records; older scores remain untouched in settings.
-function scoreKey(mode, difficulty) { return "pressure:" + mode + difficulty; }
+function scoreKey(mode, difficulty) { return "drift:" + mode + difficulty; }
 
-function encounterInterval(difficulty, elapsed) {
-    const start = [7, 5.6, 4.8, 4.2][difficulty];
-    const floor = [6.2, 4.2, 3.7, 3.3][difficulty];
-    return Math.max(floor, start - Math.min(90, elapsed) * 0.025);
+// Irregular bursts, not a repeating formation sequence. Every meteor gets its own
+// speed and aim; grouped births sometimes share a patch of the border.
+function spawnInterval(difficulty, elapsed) {
+    const base = Math.max([0.48,0.3,0.24,0.2][difficulty], [0.8,0.55,0.43,0.35][difficulty] - Math.min(90,elapsed)*0.004);
+    return base * (0.7 + Math.random()*0.6);
 }
-
-// Snapshot the player's position once, during the warning. No homing or late aim.
-function encounter(index, w, h, difficulty, elapsed, px, py) {
-    const distances = [px, w-px, py, h-py];
-    const edge = distances.indexOf(Math.max.apply(null, distances));
-    const vertical = edge >= 2, span = vertical ? w : h;
-    const speed = Math.min([225,290,325,350][difficulty], [175,215,245,270][difficulty] + elapsed * 1.2);
-    const type = index % 3, events = [];
-    const gap = span * (0.25 + Math.random() * 0.5), halfGap = [65,49,43,39][difficulty];
-    function meteor(lane, angleOffset, r) {
-        const x = vertical ? lane : edge === 0 ? -r-20 : w+r+20;
-        const y = vertical ? (edge === 2 ? -r-20 : h+r+20) : lane;
-        const base = edge === 0 ? 0 : edge === 1 ? Math.PI : edge === 2 ? Math.PI/2 : -Math.PI/2;
-        return {x:x,y:y,r:r,vx:Math.cos(base+angleOffset)*speed,vy:Math.sin(base+angleOffset)*speed,orbiting:false};
+function spawnBurst(w, h, difficulty, elapsed, px, py) {
+    const cap = [225,290,325,350][difficulty];
+    const baseSpeed = Math.min(cap,[175,215,245,270][difficulty]+elapsed*1.2);
+    const count = 1 + Math.floor(Math.random() * (difficulty === 0 ? 3 : 4));
+    const grouped = Math.random() < 0.35;
+    const sharedLane = 0.1 + Math.random()*0.8;
+    const distances = [px,w-px,py,h-py];
+    // Exclude nearby borders rather than materializing hazards on the ship.
+    const eligible = [0,1,2,3].filter(edge=>distances[edge]>=Math.min(180,baseSpeed*0.55+35));
+    const edges = eligible.length ? eligible : [distances.indexOf(Math.max.apply(null,distances))];
+    const sharedEdge = edges[Math.floor(Math.random()*edges.length)];
+    const enemies=[];
+    for(let i=0;i<count;i++) {
+        const edge = grouped ? sharedEdge : edges[Math.floor(Math.random()*edges.length)];
+        const r = 9+Math.random()*8, vertical=edge>=2, span=vertical ? w : h;
+        const lane = Math.max(r+2, Math.min(span-r-2, grouped ? sharedLane*span+(Math.random()-0.5)*65 : r+2+Math.random()*(span-2*r-4)));
+        const x = vertical ? lane : edge===0 ? r+2 : w-r-2;
+        const y = vertical ? (edge===2 ? r+2 : h-r-2) : lane;
+        const aimed = Math.random()<0.75;
+        const tx = aimed ? px : w*(0.15+Math.random()*0.7);
+        const ty = aimed ? py : h*(0.15+Math.random()*0.7);
+        const angle = Math.atan2(ty-y,tx-x)+(Math.random()-0.5)*0.65;
+        // At least 550ms before reaching a stationary ship, even without advance cues.
+        const safeSpeed = Math.max(40,(distances[edge]-2*r-playerRadius(elapsed)-6)/0.55);
+        const speed = Math.min(cap,baseSpeed*(0.8+Math.random()*0.35),safeSpeed);
+        enemies.push({x:x,y:y,r:r,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,orbiting:false,spin:Math.random()*360});
     }
-    if (type === 0) {
-        const count = difficulty === 0 ? 2 : 3, spacing = [1.2,0.95,0.85,0.78][difficulty];
-        const direction = gap < span / 2 ? 1 : -1;
-        for(let wave=0;wave<count;wave++) {
-            const opening = Math.max(75,Math.min(span-75,gap + (wave % 2) * direction * span * 0.25));
-            const wall=[];
-            for(let lane=18;lane<span;lane+=36) if(Math.abs(lane-opening)>halfGap) wall.push(meteor(lane,0,13));
-            events.push({delay:wave*spacing,enemies:wall,gap:{vertical:vertical,position:opening,half:halfGap-13,edge:edge}});
-        }
-    } else if(type === 1) {
-        const origin = span * 0.5;
-        const source = meteor(origin,0,10);
-        const angle = Math.atan2(py-source.y,px-source.x);
-        const rays = difficulty === 0 ? 5 : 7, count = difficulty === 0 ? 2 : 3;
-        for(let wave=0;wave<count;wave++) {
-            const fan=[], offset=wave===1 ? 0.11 : wave===2 ? -0.11 : 0;
-            for(let i=-(rays-1)/2;i<=(rays-1)/2;i++) {
-                const direction=angle+i*0.22+offset;
-                fan.push({x:source.x,y:source.y,r:11,vx:Math.cos(direction)*speed,vy:Math.sin(direction)*speed,orbiting:false});
-            }
-            events.push({delay:wave*[1.1,0.85,0.75,0.65][difficulty],enemies:fan});
-        }
-    } else {
-        // The middle rail is occupied too; alternating offsets force lateral movement.
-        const lane = Math.max(100,Math.min(span-100,vertical ? px : py));
-        const count = difficulty === 0 ? 5 : 7;
-        for(let i=0;i<count;i++) {
-            const shift = Math.sin(i * Math.PI / 3) * (difficulty === 0 ? 35 : 65);
-            const rails = difficulty === 0 ? [0,65] : [-62,0,62];
-            events.push({delay:i*[0.3,0.26,0.23,0.21][difficulty],enemies:rails.map(offset=>meteor(lane+offset+shift,0,12))});
-        }
-    }
-    const preview=events[0].enemies.map(e=>({x:Math.max(0,Math.min(w,e.x)),y:Math.max(0,Math.min(h,e.y)),angle:Math.atan2(e.vy,e.vx)*180/Math.PI}));
-    return {name:["METEOR GATE","FAN VOLLEY","COMET TRAINS"][type],
-        hint:["Weave through the changing gaps","Watch the fans shift between volleys","Leave the sweeping comet rails"][type],
-        warning:[1.4,1.1,0.95,0.85][difficulty], events:events, preview:preview,
-        gap:type===0 ? events[0].gap : null};
-}
-// A queue is advanced only by gameplay time, so pause freezes all launches.
-function launchEvents(events, age) {
-    return {launched:events.filter(e=>e.delay<=age).reduce((all,e)=>all.concat(e.enemies),[]),
-        pending:events.filter(e=>e.delay>age)};
+    return enemies;
 }
