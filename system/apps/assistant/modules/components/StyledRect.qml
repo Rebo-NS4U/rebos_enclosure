@@ -568,7 +568,7 @@ ClippingRectangle {
                 ctx.save();
                 if(root.traceThemeFrame(ctx,0))ctx.clip();
                 if(finish === "canopy"){
-                    // A tensile fabric roof: broad catenary sweeps, ribs and shaded folds.
+                    // A tensile fabric roof: uninterrupted catenary sweeps and shaded folds.
                     const fabric=a=>Qt.rgba(accent.r*0.65+secondaryAccent.r*0.35,accent.g*0.65+secondaryAccent.g*0.35,accent.b*0.65+secondaryAccent.b*0.35,a);
                     if(barSurface){
                         // A sculpted header canopy; keep the conversation surface quiet.
@@ -606,14 +606,6 @@ ClippingRectangle {
                         // A broad contact shadow gives the fabric edge depth.
                         hem(3);ctx.strokeStyle=fabric(0.08);ctx.lineWidth=4;ctx.stroke();
                         hem(0);ctx.strokeStyle=fabric(0.48);ctx.lineWidth=1;ctx.stroke();
-                        // Fine attachment seams meet each peak instead of crossing the folds.
-                        let join=0;
-                        for(let i=0;i<spans.length-1;i++){
-                            join+=spans[i];
-                            ctx.beginPath();ctx.moveTo(width*join,1);
-                            ctx.lineTo(width*join,10);
-                            ctx.strokeStyle=fabric(0.22);ctx.lineWidth=1;ctx.stroke();
-                        }
                     }else if(outer){
                         const drop=Math.min(70,height*0.22);
                         // Translucent fabric spans the upper edge with a scalloped hem.
@@ -629,12 +621,6 @@ ClippingRectangle {
                         ctx.beginPath();ctx.moveTo(0,10);
                         ctx.bezierCurveTo(width*0.16,drop*1.25,width*0.30,drop*1.25,width*0.50,12);
                         ctx.bezierCurveTo(width*0.67,drop,width*0.80,drop,width,10);ctx.stroke();
-                        // Curved support ribs converge at the raised central mast.
-                        for(const end of [0.12,0.27,0.73,0.88]){
-                            ctx.strokeStyle=ink(0.13);ctx.lineWidth=1;
-                            ctx.beginPath();ctx.moveTo(width*0.50,3);
-                            ctx.quadraticCurveTo(width*end,8,width*end,drop*0.73);ctx.stroke();
-                        }
                         // Ground-level shade echoes the roof without framing the content.
                         const ground=ctx.createLinearGradient(0,height-24,0,height);
                         ground.addColorStop(0,fabric(0));ground.addColorStop(1,fabric(0.12));

@@ -1,7 +1,7 @@
 .pragma library
 
 var styles = [
-    {id: "canopy", label: "Canopy", font: "DejaVu Sans Mono", description: "Architectural canopy: sweeping fabric spans, curved support ribs and softly shaded surfaces."},
+    {id: "canopy", label: "Canopy", font: "DejaVu Sans Mono", description: "Architectural canopy: sweeping fabric spans, uninterrupted hems and softly shaded surfaces."},
     {id: "orbital", label: "Orbital", font: "JetBrains Mono", description: "Orbital space: elliptical tracks, satellite points, fixed stars and recessed glass."},
     {id: "metropolis", label: "Metropolis", font: "DejaVu Sans", description: "City glass: layered facades, architectural reflections and illuminated windows in your selected colors."},
     {id: "glass-vault", label: "Glass Vault", font: "Noto Sans", description: "Thick glass blocks, rounded clamps, refractive light bands and deep inset controls."},
