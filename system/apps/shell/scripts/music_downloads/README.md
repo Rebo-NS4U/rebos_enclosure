@@ -41,3 +41,8 @@ completion, including cancellation or partial failure, so available tracks can p
 The mix preview shows downloaded availability and a scrollable track list. Use
 Play downloaded or select an available track to play in mix order through Music's
 shared player (pause, seek, previous/next and queue). Missing tracks remain disabled.
+
+Cancel stops the current download's process group. If the downloader or a child
+ignores termination, the service forces that group to stop after a two-second
+grace period. The UI shows Cancelled after completion and permits another job;
+existing downloaded files remain available. Closing the service also cancels its job.

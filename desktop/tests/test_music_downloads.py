@@ -2,6 +2,8 @@
 import importlib.util
 import json
 import os
+import queue
+import threading
 from pathlib import Path
 import subprocess
 import tempfile
@@ -20,6 +22,59 @@ class Downloads(unittest.TestCase):
         self.assertEqual(args[1], links)
         with self.assertRaises(ValueError):
             commands.build_spotdl_args(0, 'invalid', '/tmp/Music', 'ogg', mix_tracks=True)
+
+    def test_cancel_stubborn_parent_and_surviving_child(self):
+        for mode in ('stubborn', 'childonly'):
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory() as directory:
+                home = Path(directory)
+                executable = home/'.local/share/venvs/spotdl/bin/spotdl'
+                executable.parent.mkdir(parents=True)
+                executable.write_text("""#!/usr/bin/python3
+import os, signal, sys, time
+if 'fast' in ' '.join(sys.argv):
+    print('finished fast', flush=True)
+    sys.exit(0)
+if 'stubborn' in ' '.join(sys.argv):
+    signal.signal(signal.SIGTERM, signal.SIG_IGN)
+if os.fork() == 0:
+    signal.signal(signal.SIGTERM, signal.SIG_IGN)
+    print('ready ' + str(os.getpid()), flush=True)
+    time.sleep(60)
+    sys.exit(0)
+time.sleep(60)
+""")
+                executable.chmod(0o755)
+                proc = subprocess.Popen(['python3', '-u', str(SERVICE)], stdin=subprocess.PIPE,
+                    stdout=subprocess.PIPE, text=True, env={**os.environ, 'HOME': directory, 'PYTHONDONTWRITEBYTECODE': '1'})
+                messages = queue.Queue()
+                def collect():
+                    for line in proc.stdout:
+                        messages.put(json.loads(line))
+                reader = threading.Thread(target=collect, daemon=True)
+                reader.start()
+                def send(**data):
+                    proc.stdin.write(json.dumps(data)+'\n'); proc.stdin.flush()
+                try:
+                    send(links='https://open.spotify.com/track/'+mode)
+                    self.assertTrue(messages.get(timeout=5)['started'])
+                    child_pid = int(messages.get(timeout=5)['log'].split()[-1])
+                    send(cancel=True)
+                    send(cancel=True)  # Repeated clicks must not reset the deadline.
+                    done = messages.get(timeout=6)
+                    self.assertTrue(done['done'])
+                    self.assertTrue(done['cancelled'])
+                    status = Path('/proc')/str(child_pid)/'stat'
+                    if status.exists():
+                        self.assertEqual(status.read_text().split()[2], 'Z', 'Download child is still running')
+                    send(links='https://open.spotify.com/track/fast')
+                    self.assertTrue(messages.get(timeout=5)['started'])
+                    self.assertEqual(messages.get(timeout=5)['log'], 'finished fast')
+                    self.assertEqual(messages.get(timeout=5)['code'], 0)
+                finally:
+                    proc.stdin.close()
+                    proc.wait(timeout=6)
+                    reader.join(timeout=1)
+                    proc.stdout.close()
 
     def test_validation_completion_and_cancel(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -43,12 +43,13 @@ ColumnLayout {
                 let message;
                 try { message = JSON.parse(data); } catch (e) { return; }
                 if (message.log) root.logText = (root.logText + message.log + "\n").slice(-60000);
-                if (message.error) { root.busy = false; root.failed = true; root.status = "Could not start"; root.logText += message.error + "\n"; }
+                if (message.error) { root.busy = !!message.busy; root.failed = true; root.status = message.busy ? "Download still running" : "Could not start"; root.logText += message.error + "\n"; }
                 if (message.done) {
+                    const wasCancelled = message.cancelled === true || root.cancelling;
                     root.busy = false;
-                    root.logText += message.code === 0 ? "Finished · check log for skipped items.\n" : "Stopped or failed · see log.\n";
-                    root.failed = message.code !== 0 && !root.cancelling;
-                    root.status = root.cancelling ? "Cancelled" : message.code !== 0 ? "Needs attention" : "Finished";
+                    root.logText += wasCancelled ? "Cancelled.\n" : message.code === 0 ? "Finished · check log for skipped items.\n" : "Stopped or failed · see log.\n";
+                    root.failed = message.code !== 0 && !wasCancelled;
+                    root.status = wasCancelled ? "Cancelled" : message.code !== 0 ? "Needs attention" : "Finished";
                     root.completed();
                 }
             }
@@ -71,7 +72,7 @@ ColumnLayout {
     Flow {
         Layout.fillWidth: true; Layout.preferredHeight: childrenRect.height; spacing: 8
         ThemeButton { objectName: "music-download-start"; text: root.busy ? root.status : "Start download"; enabled: root.canDownload; highlighted: true; onClicked: root.start() }
-        ThemeButton { text: root.cancelling ? "Cancelling…" : "Cancel"; visible: root.busy; enabled: !root.cancelling; onClicked: { root.cancelling = true; root.status = "Cancelling…"; service.write('{"cancel":true}\n'); } }
+        ThemeButton { objectName: "music-download-cancel"; text: root.cancelling ? "Cancelling…" : "Cancel"; visible: root.busy; enabled: !root.cancelling; onClicked: { root.cancelling = true; root.status = "Cancelling…"; service.write('{"cancel":true}\n'); } }
     }
     ScrollView {
         Layout.fillWidth: true; Layout.fillHeight: true
