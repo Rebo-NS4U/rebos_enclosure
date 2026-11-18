@@ -240,8 +240,8 @@ case "$QSGREET_COMPOSITOR" in
     cage)
         command -v cage >/dev/null || die "cage not found in PATH"
         export QSGREET_WINDOW_MODE="${QSGREET_WINDOW_MODE:-floating}"
-        # -d: no client-side decorations, -s: allow VT switching.
-        compositor=(cage -d -s --)
+        # Keep the greeter on one output, matching the previous login setup.
+        compositor=(cage -d -s -m last --)
         ;;
     niri)
         command -v niri >/dev/null || die "niri not found in PATH"

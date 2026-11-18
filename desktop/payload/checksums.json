@@ -830,7 +830,7 @@
   "system/etc/rebos-greeter/quickshell/core/QsGreet/Users.qml": "c6520c3ad065bbb6ba9caaf5ba443b1cbcf5e07fa906997930268a936ab08df5",
   "system/etc/rebos-greeter/quickshell/core/QsGreet/qmldir": "c5e2bbcd6cfbba09e2393e2a2806a7a0980032b49a0fb6e2ca6e243b75b3f636",
   "system/etc/rebos-greeter/quickshell/core/entry.qml": "0b0365c2b594219b1718d522edfa6b0f1571664209f2d1bc86a5a49aace70864",
-  "system/etc/rebos-greeter/quickshell/launcher": "6ff3a54e753ed45d9cf46229dd2c899b460a18d2ee27ce905fb10c2e2fc761ed",
+  "system/etc/rebos-greeter/quickshell/launcher": "c50d7d0097a5f45e1536f636ee1aabb7afe2a5b86904a56e8c32cd0c0f2dc399",
   "system/etc/rebos-greeter/quickshell/themes/enclosure/shell/_qsgreet-entry.qml": "cba41a89aec8ba049ba51e66c980532d2fbf5d3785042c68d870bb8220bfdd0a",
   "system/etc/rebos-greeter/quickshell/themes/enclosure/shell/_qsgreet-main.qml": "6440f84df4caeb9df626a613e45ded9bae249e6e73182cdc5dd7392ecda9ef9b",
   "system/etc/rebos-greeter/quickshell/themes/enclosure/shell/config/Config.qml": "4e7353cf86428851d48dc7860b185afbdbec1ed91b9123113ed68adbd8cdf071",
