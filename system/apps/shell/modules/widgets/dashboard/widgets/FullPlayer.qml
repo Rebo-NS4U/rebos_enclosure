@@ -215,8 +215,7 @@ StyledRect {
                 trackColor: Colors.outline
                 lineWidth: 6
                 wavy: Config.performance.wavyLine
-                waveAmplitude: player.isPlaying ? 3 : 0
-                waveFrequency: 24
+                playing: player.isPlaying
                 handleSpacing: 20
 
                 startAngleDeg: 180

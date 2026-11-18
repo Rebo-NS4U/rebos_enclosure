@@ -7,7 +7,7 @@ Item {
 
     property real value: 0
     property color activeColor: Colors.primary
-    property bool playing: true
+    property bool playing: false
     property bool pressed: false
     property bool smoothValue: true
     property bool showCursor: true

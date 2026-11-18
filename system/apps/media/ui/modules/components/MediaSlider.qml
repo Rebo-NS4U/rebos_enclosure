@@ -24,7 +24,6 @@ Slider {
             rotation: control.mirrored ? 180 : 0
             hovered: control.hovered
             pressed: control.pressed
-            focused: control.activeFocus
         }
     }
     handle: Rectangle {

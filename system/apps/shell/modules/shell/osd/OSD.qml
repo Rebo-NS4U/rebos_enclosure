@@ -161,16 +161,11 @@ PanelWindow {
                         }
                     }
 
-                    StyledSlider {
+                    StandardProgressBar {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 12
                         value: root.osdValue
-                        wavy: false
-                        enabled: false
-                        thickness: 3
-                        handleSpacing: 0
-                        progressColor: root.osdMuted ? Colors.outline : Styling.srItem("overprimary")
-                        backgroundColor: Qt.rgba(Colors.overBackground.r, Colors.overBackground.g, Colors.overBackground.b, 0.2)
+                        activeColor: root.osdMuted ? Colors.outline : Styling.srItem("overprimary")
                     }
                 }
             }

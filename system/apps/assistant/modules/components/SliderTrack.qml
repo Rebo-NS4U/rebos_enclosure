@@ -8,38 +8,35 @@ Item {
     property real value: 0
     property color activeColor: Colors.primary
     property bool pressed: false
+    property bool playing: false
     property bool hovered: false
-    property bool focused: false
+    property real thickness: 6
+    property real rippleAmplitude: 1.5
 
     implicitHeight: 22
     readonly property real filledLength: width * Math.max(0, Math.min(1, isFinite(value) ? value : 0))
     readonly property int segmentCount: Math.max(1, Math.min(64, Math.round(width / 8)))
     readonly property real pitch: width / segmentCount
-    property real energy: Motion.enabled && visible
-        ? (pressed ? 1 : activity.running ? 0.65 : 0) : 0
+    readonly property real rippleWavelength: 64
+    property real energy: Motion.enabled && visible && enabled
+        ? (pressed ? 1 : playing ? 0.65 : 0) : 0
     property real phase: 0
 
     function waveAt(position: real): real {
-        const distance = Math.abs(position - filledLength);
+        const distance = filledLength - position;
+        if (distance <= 0)
+            return 0;
         // Keep the segments nearest the thumb on the centerline.
-        const amplitude = Math.max(0, Math.min(1,
-            (distance - pitch * 0.75) / Math.max(1, Math.min(20, width / 4))));
-        return amplitude * Math.sin(phase - 2 * Math.PI * distance / Math.max(1, width));
-    }
-
-    onHoveredChanged: if (hovered && Motion.enabled) activity.restart()
-    onValueChanged: if (Motion.enabled && visible && !pressed && (hovered || focused)) activity.restart()
-
-    Timer {
-        id: activity
-        interval: Motion.base * 2
+        const taper = Math.max(0, Math.min(1, (distance - pitch * 0.75) / Math.max(1, pitch)));
+        // Anchor the wave to the rail so moving the thumb only changes the taper.
+        return taper * Math.sin(phase + 2 * Math.PI * position / rippleWavelength);
     }
 
     Behavior on energy {
         enabled: Motion.enabled && root.visible
         NumberAnimation {
-            duration: root.pressed ? Motion.enter : Motion.base * 2
-            easing.type: Motion.feedbackCurve
+            duration: Motion.base
+            easing.type: Easing.InOutSine
         }
     }
 
@@ -58,9 +55,9 @@ Item {
             required property int index
             readonly property real wave: root.waveAt(x + width / 2)
             x: index * root.pitch
-            y: (root.height - height) / 2 - 5 * root.energy * wave
+            y: (root.height - height) / 2 - root.rippleAmplitude * root.energy * wave
             width: Math.max(0, root.pitch - Math.min(3, root.pitch / 3))
-            height: 6 + root.energy * (2.5 + 2 * wave)
+            height: root.thickness
             radius: Math.min(width, height) / 2
             color: Qt.alpha(root.activeColor, root.hovered || root.pressed ? 0.35 : 0.22)
 

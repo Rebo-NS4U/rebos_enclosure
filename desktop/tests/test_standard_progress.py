@@ -10,7 +10,8 @@ class StandardProgress(unittest.TestCase):
         paths = [ROOT / 'system/apps' / name / 'StandardProgressBar.qml' for name in (
             'shell/modules/components', 'assistant/modules/components', 'media/ui/modules/components')]
         for component in ('StandardProgressBar.qml', 'SliderTrack.qml'):
-            source, *copies = [path.with_name(component).read_bytes() for path in paths[1:]]
+            selected = paths if component == "SliderTrack.qml" else paths[1:]
+            source, *copies = [path.with_name(component).read_bytes() for path in selected]
             for copy in copies:
                 self.assertEqual(source, copy)
 
@@ -22,8 +23,9 @@ import qs.config
 ShellRoot {
  Item {
   width: 300; height: 200
-  StandardProgressBar { id: rail; width: 200; value: 0.5 }
-  StandardProgressBar { id: customHandleRail; width: 200; value: 0.5; showCursor: false; playing: false }
+  StandardProgressBar { id: rail; width: 200; value: 0.5; playing: true }
+  StandardProgressBar { id: customHandleRail; width: 200; value: 0.5; showCursor: false }
+  CircularSeekBar { id: circular; width: 180; height: 180; wavy: true; playing: true; value: 0.5 }
   StyledSlider { id: horizontal; width: 200; height: 32; value: 0.5 }
   StyledSlider { id: vertical; width: 32; height: 120; vertical: true; value: 0.5 }
   ThemeSlider { id: themed; width: 200; value: 0.5 }
@@ -51,12 +53,14 @@ ShellRoot {
    function check(ok, message) { if (!ok) throw Error(message); }
    const progressTrack = rail.children[0];
    check(rail.filledLength === 100, 'Half progress must fill half the rail');
+   check(circular.waveEnergy === 0.65, 'Circular seek uses the playback ripple');
    const cursor = rail.children.find(item => item.objectName === 'progress-cursor');
    check(cursor.visible && cursor.color.toString() === "#ffffff" && cursor.x + cursor.width / 2 === rail.filledLength
     && cursor.y + cursor.height / 2 === rail.height / 2,
     'The progress cursor sits at the fill edge');
    check(!customHandleRail.children.find(item => item.objectName === 'progress-cursor').visible,
     'A caller can supply its own handle');
+   check(customHandleRail.children[0].energy === 0, 'Read-only progress is still by default');
    const sliderRail = themed.background.children[0];
    check(progressTrack.energy === 0.65 && progressTrack.thickness === sliderRail.thickness
     && rail.height === sliderRail.thickness && progressTrack.rippleAmplitude === sliderRail.rippleAmplitude,
@@ -159,6 +163,15 @@ ShellRoot {
    if (rail.filledLength !== width || rail.children[0].energy !== 0 || cursor.x !== expectedCursorX) {
     console.error('Reduced motion progress is immediate and clamped'); Qt.exit(1); return;
    }
+  }
+  if (circular.waveEnergy !== 0) {
+   console.error('Reduced motion stops the circular ripple'); Qt.exit(1); return;
+  }
+  circular.waveEnergy = 1;
+  const shortArc = circular.generateWavyArcPoints(180, 240, 0.4);
+  const longArc = circular.generateWavyArcPoints(180, 300, 0.4);
+  if (!shortArc.length || shortArc[20].x !== longArc[20].x || shortArc[20].y !== longArc[20].y) {
+   console.error('Moving the circular handle must not shift the ripple'); Qt.exit(1); return;
   }
   const progressRail = rail.children[0];
   rail.value = 0.25;
