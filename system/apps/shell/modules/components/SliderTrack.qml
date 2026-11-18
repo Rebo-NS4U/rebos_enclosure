@@ -28,7 +28,8 @@ Item {
             return 0;
         // Keep the segments nearest the thumb on the centerline.
         const taper = Math.max(0, Math.min(1, (distance - pitch * 0.75) / Math.max(1, pitch)));
-        return taper * Math.sin(phase - 2 * Math.PI * distance / rippleWavelength);
+        // Anchor the wave to the rail so moving the thumb only changes the taper.
+        return taper * Math.sin(phase + 2 * Math.PI * position / rippleWavelength);
     }
 
     Behavior on energy {

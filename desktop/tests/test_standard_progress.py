@@ -160,6 +160,17 @@ ShellRoot {
     console.error('Reduced motion progress is immediate and clamped'); Qt.exit(1); return;
    }
   }
+  const progressRail = rail.children[0];
+  rail.value = 0.25;
+  progressRail.phase = 0.4;
+  const steadyWave = progressRail.waveAt(12);
+  for (const value of [0.26, 0.95, 0.5]) {
+   rail.value = value;
+   if (progressRail.waveAt(12) !== steadyWave) {
+    console.error('The ripple phase at a filled point must be independent of cursor movement');
+    Qt.exit(1); return;
+   }
+  }
   themed.value = 0.25;
   const themedTrack = themed.background.children[0];
   horizontal.isDragging = true;
@@ -177,8 +188,8 @@ ShellRoot {
    rail.energy = 1;
    const segments = rail.children.filter(item => item.wave !== undefined);
    const first = segments[0];
-   const distance = rail.filledLength - first.x - first.width / 2;
-   rail.phase = Math.PI / 2 + 2 * Math.PI * distance / rail.rippleWavelength;
+   const sampleX = first.x + first.width / 2;
+   rail.phase = Math.PI / 2 - 2 * Math.PI * sampleX / rail.rippleWavelength;
    if (first.wave < 0.95 || segments.some(item => item.x + item.width > rail.filledLength && item.wave !== 0)) {
     console.error('The ripple runs through the filled track and stops at the thumb'); Qt.exit(1); return;
    }
