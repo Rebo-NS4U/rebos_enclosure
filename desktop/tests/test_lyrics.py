@@ -486,8 +486,6 @@ ShellRoot {
      Config.animDuration = 100;
      MprisController.isPlaying = true;
      if (!strip.captureAudio) throw Error('Lyrics must retain audio capture during playback');
-     MprisController.isPlaying = false;
-     Config.animDuration = 0;
      LyricsService.apply('[00:01]Current lyric\\n[00:05]Next', 'Test', false);
      const track = findItem(panel, 'bar-lyrics-line-progress');
      for (const position of [1, 2, 3, 5, 8, 0]) {
@@ -500,10 +498,14 @@ ShellRoot {
      if (!track.visible || track.width <= 0 || track.x < label.x
          || track.x + track.width > label.x + label.width || track.height !== 6
          || track.y < (panel.height + label.implicitHeight) / 2 || track.y + track.height > panel.height)
-      throw Error('Progress must fit beneath the lyric even with reduced motion');
+      throw Error('Progress must fit beneath the lyric during playback');
      const nextPanel = findItem(strip, 'bar-lyrics-next');
      if (findItem(nextPanel, 'bar-lyrics-line-progress').visible)
       throw Error('Upcoming line must not show elapsed progress');
+     if (track.children[0].energy !== 0 || track.children[0].playing)
+      throw Error('Lyrics progress track must stay still during playback');
+     MprisController.isPlaying = false;
+     Config.animDuration = 0;
      MprisController.position = 5;
      strip.updateLyricPosition();
      if (strip.currentText !== 'Next' || track.filledLength !== 0)

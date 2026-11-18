@@ -361,7 +361,6 @@ Item {
             opacity: currentLabel.opacity
             value: root.lineProgress
             activeColor: BarAppearance.activeColor
-            playing: MprisController.isPlaying
             smoothValue: false
         }
     }
