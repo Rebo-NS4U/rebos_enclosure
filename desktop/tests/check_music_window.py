@@ -357,19 +357,44 @@ def session():
                     firstSuggestion.playRequested();
                     if (!spotify.isPlaying) { console.error("SUGGESTION_ROW_RESUME_FAILED"); Qt.exit(1); return; }
                     spotify.canGoNext = false;
+                    music.toggleFullscreen();
+                    findItem(music.contentItem, "music-fullscreen-queue-toggle").clicked();
                     repeatStart = attempts; phase = 951;
                 } else if (phase === 951 && attempts >= repeatStart + 3) {
+                    const stage = findItem(music.contentItem, "music-fullscreen-stage");
+                    const panel = findItem(music.contentItem, "music-fullscreen-queue-panel");
+                    const art = findItem(music.contentItem, "music-fullscreen-art");
+                    const rail = findItem(music.contentItem, "music-fullscreen-seek");
+                    const next = findItem(music.contentItem, "music-fullscreen-next");
+                    const panelPos = panel.mapToItem(stage, 0, 0);
+                    const artPos = art.mapToItem(stage, 0, 0);
+                    const railPos = rail.mapToItem(stage, 0, 0);
+                    if (!music.immersive || !panel.visible || !next.visible || !next.enabled ||
+                        panelPos.x + panel.width > stage.width || artPos.x + art.width > panelPos.x ||
+                        panelPos.y + panel.height > railPos.y) { console.error("FULLSCREEN_QUEUE_BOUNDS_FAILED"); Qt.exit(1); return; }
+                    next.clicked();
+                    if (music.requestedPreview !== music.suggestedTracks[1].uri) { console.error("FULLSCREEN_NEXT_BUTTON_FAILED"); Qt.exit(1); return; }
+                    music.requestedPreview = "";
+                    music.contentItem.grabToImage(result => result.saveToFile("/tmp/enclosure-music-fullscreen-queue.png"));
                     const target = MprisController.nextPlayer(spotify);
                     if (target?.dbusName !== "org.mpris.MediaPlayer2.enclosure_music" || !music.canNext) { console.error("SUGGESTION_MEDIA_NEXT_ROUTE_FAILED"); Qt.exit(1); return; }
                     target.next();
                     repeatStart = attempts; phase = 952;
                 } else if (phase === 952 && attempts >= repeatStart + 3) {
                     if (music.requestedPreview !== music.suggestedTracks[1].uri || spotify.nextCalls !== 1) { console.error("SUGGESTION_MEDIA_NEXT_FAILED", music.requestedPreview, music.suggestedTracks[1].uri, spotify.nextCalls, music.notice); Qt.exit(1); return; }
+                    const suggestions = findItem(music.contentItem, "music-fullscreen-suggestions");
+                    spotify.metadata = {"xesam:url": music.requestedPreview};
+                    if (!music.immersive || !suggestions.visible || suggestions.currentIndex !== 1 ||
+                        !suggestions.itemAtIndex(1)?.selected) { console.error("FULLSCREEN_SUGGESTION_SELECTION_FAILED"); Qt.exit(1); return; }
                     spotify.canGoNext = true;
                     spotify.metadata = {"xesam:url": music.suggestedTracks[music.suggestedTracks.length - 1].uri};
                     if (MprisController.nextPlayer(spotify) !== spotify) { console.error("SUGGESTION_MEDIA_NEXT_FALLBACK_FAILED"); Qt.exit(1); return; }
-                    console.log("MUSIC_SUGGESTION_MEDIA_NEXT_PASSED");
+                    console.log("MUSIC_FULLSCREEN_SUGGESTION_MEDIA_NEXT_PASSED");
+                    findItem(music.contentItem, "music-fullscreen-queue-tab").clicked();
                     music.select(0);
+                    const queue = findItem(music.contentItem, "music-fullscreen-queue-list");
+                    if (!queue.visible || queue.count !== music.queue.length || queue.currentIndex !== 0) { console.error("FULLSCREEN_QUEUE_TAB_FAILED"); Qt.exit(1); return; }
+                    music.toggleFullscreen();
                     const list = findItem(music.contentItem, "music-playlist-suggestions");
                     list.positionViewAtIndex(8, ListView.Beginning);
                     repeatStart = attempts; phase = 96;
