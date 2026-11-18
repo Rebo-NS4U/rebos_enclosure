@@ -130,6 +130,18 @@ ShellRoot {
   if (themedTrack.value !== 0.25 || track.energy !== 0 || track.children[0].height !== 6) {
    console.error('Motion off applies value changes immediately and keeps the track still'); Qt.exit(1); return;
   }
+  const segments = themedTrack.children.filter(item => item.wave !== undefined);
+  const origin = segments[4];
+  themed.value = (origin.x + origin.width / 2) / themedTrack.width;
+  themedTrack.phase = Math.PI / 2;
+  if (Math.abs(origin.wave - 1) > 0.001) {
+   console.error('The crest starts at the off-center handle'); Qt.exit(1); return;
+  }
+  themedTrack.phase += 2 * Math.PI * themedTrack.pitch / themedTrack.width;
+  if (Math.abs(segments[3].wave - 1) > 0.001 || Math.abs(segments[5].wave - 1) > 0.001
+      || origin.wave >= segments[3].wave) {
+   console.error('The crest moves one segment outward on both sides'); Qt.exit(1); return;
+  }
   console.log('PASS: shared progress geometry, motion and slider input'); Qt.quit();
  }}
 }

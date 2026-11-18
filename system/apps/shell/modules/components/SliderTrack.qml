@@ -38,7 +38,7 @@ Item {
     NumberAnimation on phase {
         from: 0
         to: 2 * Math.PI
-        duration: Math.max(260, Motion.base * 4)
+        duration: Math.max(400, Motion.base * 6)
         loops: Animation.Infinite
         running: Motion.enabled && root.visible && root.energy > 0
     }
@@ -48,11 +48,12 @@ Item {
         delegate: Rectangle {
             id: segment
             required property int index
-            readonly property real wave: Math.sin(root.phase - 2 * Math.PI * index / root.segmentCount)
+            readonly property real distanceFromHandle: Math.abs(x + width / 2 - root.filledLength)
+            readonly property real wave: Math.sin(root.phase - 2 * Math.PI * distanceFromHandle / Math.max(1, root.width))
             x: index * root.pitch
-            y: (root.height - height) / 2 - 3 * root.energy * wave
+            y: (root.height - height) / 2 - root.energy * wave
             width: Math.max(0, root.pitch - Math.min(3, root.pitch / 3))
-            height: 6 + root.energy * (5 + 4 * wave)
+            height: 6 + root.energy * (2.5 + 2 * wave)
             radius: Math.min(width, height) / 2
             color: Qt.alpha(root.activeColor, root.hovered || root.pressed ? 0.35 : 0.22)
 
