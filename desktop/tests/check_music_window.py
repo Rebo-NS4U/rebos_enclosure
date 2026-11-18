@@ -315,13 +315,13 @@ def session():
                     console.log("MUSIC_SPOTIFY_FULLSCREEN_PASSED");
                     music.toggleFullscreen();
                     music.page = "Playlist"; music.detail = "test";
-                    music.spotifySuggestions = {playlist:"test",pending:false,tracks:Array.from({length:14}, (_,i)=>({uri:"spotify:track:"+String(i).padStart(22,"0"),title:"Suggestion "+i,artist:"New artist"}))};
+                    music.spotifySuggestions = {playlist:"test",pending:false,hasMore:true,tracks:Array.from({length:14}, (_,i)=>({uri:"spotify:track:"+String(i).padStart(22,"0"),title:"Suggestion "+i,artist:"New artist"}))};
                     repeatStart = attempts; phase = 95;
                 } else if (phase === 95 && attempts >= repeatStart + 3) {
                     const list = findItem(music.contentItem, "music-playlist-suggestions");
-                    if (list.count !== 14 || findItem(music.contentItem, "music-suggestions-next")) { console.error("SUGGESTIONS_CONTINUOUS_LIST_FAILED"); Qt.exit(1); return; }
+                    if (list.count !== 14 || !findItem(music.contentItem, "music-suggestions-load-more")?.enabled) { console.error("SUGGESTIONS_CONTINUOUS_LIST_FAILED"); Qt.exit(1); return; }
                     const firstSuggestion = list.itemAtIndex(0);
-                    if (!firstSuggestion || firstSuggestion.selected || firstSuggestion.height !== findItem(music.contentItem, "music-track-row-0").height) { console.error("SUGGESTION_SHARED_ROW_FAILED"); Qt.exit(1); return; }
+                    if (!firstSuggestion || firstSuggestion.selected || firstSuggestion.height >= findItem(music.contentItem, "music-track-row-0").height) { console.error("SUGGESTION_COMPACT_ROW_FAILED"); Qt.exit(1); return; }
                     spotify.metadata = {"xesam:url": firstSuggestion.track.uri};
                     spotify.play();
                     if (!firstSuggestion.selected) { console.error("SUGGESTION_SELECTION_FAILED"); Qt.exit(1); return; }
@@ -336,7 +336,12 @@ def session():
                     const list = findItem(music.contentItem, "music-playlist-suggestions");
                     const row = list.itemAtIndex(8);
                     if (list.contentY <= 0 || !row || row.modelData.title !== "Suggestion 8" || list.model[0].title !== "Suggestion 0") { console.error("SUGGESTIONS_SCROLL_LOAD_FAILED"); Qt.exit(1); return; }
-                    music.applySuggestions({playlist:"test",pending:false,hasMore:false,tracks:Array.from({length:150}, (_,i)=>({uri:"spotify:track:"+String(i).padStart(22,"0"),title:"Suggestion "+i,artist:"New artist"}))}, false);
+                    const more = findItem(music.contentItem, "music-suggestions-load-more");
+                    more.clicked();
+                    if (more.enabled || !music.spotifySuggestions.pending || list.count !== 14) { console.error("SUGGESTIONS_LOAD_MORE_FAILED"); Qt.exit(1); return; }
+                    const tracks = Array.from({length:150}, (_,i)=>({uri:"spotify:track:"+String(i).padStart(22,"0"),title:"Suggestion "+i,artist:"New artist"}));
+                    music.receive(JSON.stringify({id:music.requestId,ok:true,data:{playlist:"test",pending:false,hasMore:false,tracks:tracks}}));
+                    if (more.visible) { console.error("SUGGESTIONS_EXHAUSTED_FAILED"); Qt.exit(1); return; }
                     repeatStart = attempts; phase = 97;
                 } else if (phase === 97 && attempts >= repeatStart + 3) {
                     const list = findItem(music.contentItem, "music-playlist-suggestions");
@@ -358,7 +363,7 @@ def session():
         result=subprocess.run(['quickshell','-p',str(config)],env=env,capture_output=True,text=True,timeout=25)
         print(result.stdout)
         print(result.stderr)
-        if result.returncode or 'MUSIC_ACCEPTANCE_PASSED' not in result.stdout+result.stderr:
+        if result.returncode or 'MUSIC_SUGGESTIONS_CONTINUOUS_PASSED' not in result.stdout+result.stderr:
             raise SystemExit(1)
         import json
         state=json.loads((home/'.local/state/enclosure/music/library.json').read_text())

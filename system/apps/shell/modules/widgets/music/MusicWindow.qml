@@ -107,6 +107,7 @@ Window {
         const q = query.trim().toLowerCase();
         return q ? list.filter(t => (t.title + " " + t.artist + " " + t.album).toLowerCase().includes(q)) : list;
     }
+    readonly property real suggestionRowHeight: Styling.spacing(48)
     property var spotifySuggestions: ({tracks: [], pending: false, status: ""})
     property var pendingSuggestionDownload: null
     readonly property var suggestedTracks: {
@@ -366,7 +367,7 @@ Window {
         signal playRequested()
         signal enqueueRequested()
         width: ListView.view ? ListView.view.width : 0
-        height: Styling.spacing(70)
+        height: suggestion ? root.suggestionRowHeight : Styling.spacing(70)
         variant: selected || rowClick.containsMouse ? "focus" : "transparent"
         radius: Styling.radius(0)
         MouseArea {
@@ -377,9 +378,10 @@ Window {
             onClicked: row.playRequested()
         }
         RowLayout {
-            anchors.fill: parent; anchors.margins: 8; spacing: 12
-            ThemeButton { text: row.selected && root.playing ? "Ⅱ" : "▶"; Accessible.name: (row.selected && root.playing ? "Pause " : "Play ") + row.track.title; onClicked: row.playRequested() }
-            Cover { artwork: row.track.art || ""; Layout.preferredWidth: 48; Layout.preferredHeight: 48 }
+            anchors.fill: parent; anchors.margins: row.suggestion ? Styling.spacing(4) : 8
+            spacing: row.suggestion ? Styling.spacing(8) : 12
+            ThemeButton { topPadding: row.suggestion ? Styling.spacing(5) : padding; bottomPadding: topPadding; text: row.selected && root.playing ? "Ⅱ" : "▶"; Accessible.name: (row.selected && root.playing ? "Pause " : "Play ") + row.track.title; onClicked: row.playRequested() }
+            Cover { artwork: row.track.art || ""; Layout.preferredWidth: row.suggestion ? Styling.spacing(32) : 48; Layout.preferredHeight: Layout.preferredWidth }
             ColumnLayout {
                 Layout.fillWidth: true; spacing: 3
                 StyledText { Layout.fillWidth: true; text: row.track.title; elide: Text.ElideRight; color: row.selected ? Colors.primary : Colors.overSurface }
@@ -387,7 +389,7 @@ Window {
             }
             StyledText { visible: !!row.track.duration; text: root.time((row.track.duration || 0)*1000); color: Colors.overSurfaceVariant }
             ThemeButton { visible: !row.suggestion; text: root.favorites.includes(row.track.path) ? "♥" : "♡"; Accessible.name: "Favorite " + row.track.title; onClicked: root.favorite(row.track) }
-            ThemeButton { objectName: "music-track-queue-" + row.number; text: row.suggestion ? "Add" : "+"; enabled: row.addEnabled; Accessible.name: row.suggestion ? "Add " + row.track.title + " to playlist" : "Queue " + row.track.title; onClicked: row.enqueueRequested() }
+            ThemeButton { objectName: "music-track-queue-" + row.number; topPadding: row.suggestion ? Styling.spacing(5) : padding; bottomPadding: topPadding; text: row.suggestion ? "Add" : "+"; enabled: row.addEnabled; Accessible.name: row.suggestion ? "Add " + row.track.title + " to playlist" : "Queue " + row.track.title; onClicked: row.enqueueRequested() }
         }
     }
 
@@ -535,6 +537,13 @@ Window {
                         RowLayout {
                             Layout.fillWidth: true
                             StyledText { text: "Suggested tracks · Spotify · " + root.suggestedTracks.length; font.bold: true; Layout.fillWidth: true }
+                            ThemeButton {
+                                objectName: "music-suggestions-load-more"
+                                text: "Load more"
+                                visible: !!root.spotifySuggestions.hasMore
+                                enabled: !root.spotifySuggestions.pending
+                                onClicked: root.loadMoreSuggestions()
+                            }
                             ThemeButton { text: root.spotifySuggestions.pending ? "Loading…" : "Refresh"; enabled: !root.spotifySuggestions.pending; onClicked: root.refreshSuggestions() }
                         }
                         StyledText {
@@ -547,7 +556,7 @@ Window {
                             id: suggestionsList
                             objectName: "music-playlist-suggestions"
                             Layout.fillWidth: true
-                            Layout.preferredHeight: Math.min(count, 6) * Styling.spacing(70)
+                            Layout.preferredHeight: Math.min(count, 6) * root.suggestionRowHeight
                             clip: true; model: root.suggestedTracks
                             // ListView creates rows on demand as they enter the viewport.
                             reuseItems: true
