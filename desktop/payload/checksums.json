@@ -168,7 +168,7 @@
   "system/apps/assistant/modules/globals/GlobalStates.qml": "65293ed189717ae4bd31be9b180b7c6bfed8b50660a9504641331a45cbb7b495",
   "system/apps/assistant/modules/services/Ai.qml": "2b7edb04c5e6bca0f770a8d4220d3009c4ca6de71287d8cf2014e7e76ed22045",
   "system/apps/assistant/modules/services/AiQuestions.js": "a3cc7e2c78e43281cef6f2b54a0863b360714c5b50cd5273060c1f9e70984d8e",
-  "system/apps/assistant/modules/services/AiSession.qml": "2713d5ad67713bb33708f1f69136583622fda11c480f5df54ad50171badb8844",
+  "system/apps/assistant/modules/services/AiSession.qml": "68a3fa0961e11203a23670d4ab242f291fd3202b3c7cc76887c52a828ce90737",
   "system/apps/assistant/modules/services/DweeboDefaults.js": "409c0aa22c8d55c5d237e7ba0c34f3672827a14df755ec62970cb52d608f392b",
   "system/apps/assistant/modules/services/NiriService.qml": "e03e5648739de31b220b282017adabb884ecdaf70ef05268320c8def10a8555e",
   "system/apps/assistant/modules/services/Notifications.qml": "0599d6dc4642fc0f86f399ddeee011bb296e097c72aa83949d5b4ad085a11d93",

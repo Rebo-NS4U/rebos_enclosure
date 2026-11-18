@@ -72,6 +72,34 @@ ShellRoot {
                 currentAgentId: "distill", codexPreset: "", agentTurnActive: false
             }}));
             check(session.codexPreset === "", "other backends are preserved");
+            session.currentAgentId = "codex";
+            session.codexPreset = "coding";
+            session.sessionReady = true;
+            const targetModel = "gpt-6.1-terra";
+            options[0].options.push({value: targetModel});
+            session.updateSessionConfiguration({configOptions: options});
+            session.syntheticTransportWorks = false;
+            session.setSessionModel(targetModel);
+            check(session.codexPreset === "coding" && !session.switchingSessionModel
+                && session.currentSessionModelId === "gpt-6.2-sol",
+                "transport failure preserves the confirmed model and profile");
+            session.syntheticTransportWorks = true;
+            session.setSessionModel(targetModel);
+            check(session.codexPreset === "coding" && session.switchingSessionModel,
+                "profile remains active while confirmation is pending");
+            session.handleResponse({id: session.syntheticEnvelope.id, error: {message: "Rejected"}});
+            check(session.codexPreset === "coding" && !session.switchingSessionModel && session.modelSwitchError,
+                "backend rejection preserves the active profile");
+            session.setSessionModel(targetModel);
+            session.handleResponse({id: session.syntheticEnvelope.id, result: {configOptions: options}});
+            check(session.codexPreset === "coding" && !session.switchingSessionModel && session.modelSwitchError,
+                "a response returning the old model preserves the active profile");
+            session.setSessionModel(targetModel);
+            options[0].currentValue = targetModel;
+            session.handleResponse({id: session.syntheticEnvelope.id, result: {configOptions: options}});
+            check(session.codexPresetName === "Custom Codex" && !session.switchingSessionModel
+                && session.currentSessionModelId === targetModel && !session.modelSwitchError,
+                "confirmed manual model switch selects Custom Codex");
             session.loadChat("custom");
         }
     }

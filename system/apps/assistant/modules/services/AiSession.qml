@@ -1105,7 +1105,6 @@ Scope {
             modelSwitchError = "This model is no longer available. Reopen the model list.";
             return;
         }
-        codexPreset = ""; // A manual model choice leaves the named mode.
         codexPresetError = "";
         modelSwitchError = "";
         pendingSessionModelId = modelId;
@@ -1134,6 +1133,18 @@ Scope {
             pendingSessionModelId = "";
             modelSwitchError = "Connection lost. Reconnect to choose a model.";
         }
+    }
+
+    function finishManualModelSwitch(modelId) {
+        pendingSessionModelId = "";
+        if (currentSessionModelId !== modelId) {
+            modelSwitchError = "The backend did not confirm the selected model.";
+            return;
+        }
+        codexPreset = "";
+        modelSwitchError = "";
+        saveCurrentChat();
+        bridgeDirty = true;
     }
 
     function formatRpcError(error) {
@@ -1307,17 +1318,13 @@ Scope {
             if (entry.context.modelId) {
                 if (!Array.isArray(result.configOptions) && !result.models)
                     currentSessionModelId = entry.context.modelId;
-                pendingSessionModelId = "";
-                modelSwitchError = "";
-                saveCurrentChat();
+                finishManualModelSwitch(entry.context.modelId);
             }
             statusText = "";
             break;
         case "set_model":
             currentSessionModelId = entry.context.modelId || currentSessionModelId;
-            pendingSessionModelId = "";
-            modelSwitchError = "";
-            saveCurrentChat();
+            finishManualModelSwitch(entry.context.modelId);
             statusText = "";
             break;
         }
