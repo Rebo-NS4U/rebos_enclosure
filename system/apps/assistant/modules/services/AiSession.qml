@@ -419,7 +419,7 @@ Scope {
     property var pendingSessionAction: null
     property var queuedPrompt: null
     // Delivery belongs to the backend conversation, not the UI connection.
-    readonly property int sharedInstructionVersion: 1
+    readonly property int sharedInstructionVersion: 2
     property int deliveredSharedInstructionVersion: 0
     property string instructionSessionId: ""
     property string instructionModeGuidance: ""

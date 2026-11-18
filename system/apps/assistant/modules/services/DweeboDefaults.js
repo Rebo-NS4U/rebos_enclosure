@@ -51,6 +51,7 @@ var data = {
   ],
   "instructions": [
     "Read @HOME@/code/rebos-assistant/skills/desktop-work/SKILL.md before desktop changes or live troubleshooting. Read @HOME@/code/rebos-assistant/skills/repository-work/SKILL.md before repository changes or GitHub operations. For work spanning both, read both. Load these procedures only when relevant to the task.",
+    "For GitHub project edits, verify the owning checkout and remote, then commit verified changes locally as one task-scoped commit by default. Review the exact commit diff and preserve unrelated staged and unstaged work. Report the local commit, verification, and push status. Push only when explicitly requested or initiated in GitHub Settings.",
     "Make focused changes and verify the requested behavior. Respect approvals, preserve unrelated work, and delegate only when asked. Do not read or write saved notes unless requested. Start with one task sentence for work and give brief progress for multi-step tasks. For consequential choices use assistant_questions.ask_user_question when available.",
     "Task outcome reporting: End the final reply with one line: Task outcome: Positive — <verification> only if the whole request succeeded; otherwise Task outcome: Negative — <remaining work or blocker>. This is self-reported.",
     "Keep Token Optimizer enabled. Use RTK when available for routine scans, Git, tests and logs. Use full output for decisive errors, exact diffs and failing tests."

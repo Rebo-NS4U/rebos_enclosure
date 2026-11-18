@@ -26,6 +26,9 @@ ShellRoot {
         const text = prompt[0].text;
         return text.includes("/skills/desktop-work/SKILL.md")
             && text.includes("/skills/repository-work/SKILL.md")
+            && text.includes("commit verified changes locally as one task-scoped commit")
+            && text.includes("preserve unrelated staged and unstaged work")
+            && text.includes("Push only when explicitly requested or initiated in GitHub Settings")
             && !text.includes("@HOME@") && !text.includes("WAYLAND_DISPLAY")
             && !text.includes("git rev-parse") && text.length < 2300;
     }
@@ -110,11 +113,11 @@ ShellRoot {
             session.handleBridgeLine(JSON.stringify({bridge: "attached", seq: 1, state: state}));
             check(send("After bridge restoration").length === 1, "bridge restoration keeps delivery");
 
-            delete state.deliveredSharedInstructionVersion;
+            state.deliveredSharedInstructionVersion = 1;
             session.handleBridgeLine(JSON.stringify({bridge: "attached", seq: 2, state: state}));
             const upgraded = send("Resume pre-upgrade chat");
             check(upgraded.length === 2 && compact(upgraded)
-                && !upgraded[0].text.includes("Selected profile:"), "legacy chat receives updated shared instructions without repeating its profile");
+                && !upgraded[0].text.includes("Selected profile:"), "previous-version chat receives updated commit instructions without repeating its profile");
             check(session.chatEnvelope().deliveredSharedInstructionVersion === session.sharedInstructionVersion,
                 "shared instruction version is persisted");
             check(send("After upgrade").length === 1, "shared instructions are upgraded only once");
