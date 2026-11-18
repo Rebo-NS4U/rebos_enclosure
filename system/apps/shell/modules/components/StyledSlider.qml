@@ -169,7 +169,6 @@ Item {
                 activeColor: root.progressColor
                 hovered: root.railHovered
                 pressed: root.isDragging
-                focused: root.activeFocus
             }
 
             StyledToolTip {
@@ -222,7 +221,6 @@ Item {
                 activeColor: root.progressColor
                 hovered: root.railHovered
                 pressed: root.isDragging
-                focused: root.activeFocus
             }
 
             StyledToolTip {

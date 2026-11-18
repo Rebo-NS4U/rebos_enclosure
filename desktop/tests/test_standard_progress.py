@@ -10,7 +10,8 @@ class StandardProgress(unittest.TestCase):
         paths = [ROOT / 'system/apps' / name / 'StandardProgressBar.qml' for name in (
             'shell/modules/components', 'assistant/modules/components', 'media/ui/modules/components')]
         for component in ('StandardProgressBar.qml', 'SliderTrack.qml'):
-            source, *copies = [path.with_name(component).read_bytes() for path in paths]
+            app_paths = paths if component == 'StandardProgressBar.qml' else paths[1:]
+            source, *copies = [path.with_name(component).read_bytes() for path in app_paths]
             for copy in copies:
                 self.assertEqual(source, copy)
 
@@ -66,6 +67,7 @@ ShellRoot {
    vertical.editValue(-1); check(vertical.value === 0, 'Vertical slider input clamps');
    const sliderRail = themed.background.children[0];
    check(sliderRail.segmentCount > 10 && sliderRail.energy === 0, 'Theme slider starts with an idle segmented track');
+   sliderRail.hovered = true;
    themed.value = 0.8;
    check(sliderRail.value < themed.position, 'Programmatic slider changes ease toward their value');
    horizontal.dragPosition = 0.8;
@@ -85,10 +87,10 @@ ShellRoot {
    console.error('Moving marks must stay within the fill'); Qt.exit(1); return;
   }
   const sliderRail = themed.background.children[0];
-  if (Math.abs(sliderRail.value - 0.8) > 0.001
+  if (sliderRail.energy !== 0 || Math.abs(sliderRail.value - 0.8) > 0.001
           || Math.abs(themed.handle.x + themed.handle.width / 2
               - themed.background.x - sliderRail.x - sliderRail.width * sliderRail.value) > 0.01) {
-   console.error('Animated rail follows the value and meets the thumb'); Qt.exit(1); return;
+   console.error('Hover and value updates keep the rail still while the thumb follows the value'); Qt.exit(1); return;
   }
   travelCheck.startX = marks[0].x;
   const track = horizontal.children[0].children[0].children.find(item => item.segmentCount > 0);
@@ -111,10 +113,10 @@ ShellRoot {
    const last = segments[segments.length - 1];
    if (track.value !== 0.8 || verticalTrack.value !== 0.6 || verticalTrack.energy < 0.95
        || first.children[0].width !== first.width || last.children[0].width !== 0
-       || !segments.slice(0, 3).some((segment, index) => Math.abs(segment.y + segment.height / 2 - segmentCenters[index]) > 0.1)
-       || !segments.slice(-3).some((segment, index) =>
-           Math.abs(segment.y + segment.height / 2 - segmentCenters[segments.length - 3 + index]) > 0.1)) {
-    console.error('Dragging moves segments at both ends of the track'); Qt.exit(1); return;
+       || segments.some(segment => segment.height !== 6 || Math.abs(segment.y + segment.height / 2 - track.height / 2) > 1.5)
+       || segments.some(segment => Math.abs(segment.x + segment.width / 2 - track.filledLength) >= 40 && segment.wave !== 0)
+       || !segments.some((segment, index) => Math.abs(segment.y + segment.height / 2 - segmentCenters[index]) > 0.05)) {
+    console.error('Dragging creates a shallow, localized ripple with fixed track thickness'); Qt.exit(1); return;
    }
    horizontal.value = horizontal.dragPosition;
    horizontal.isDragging = false;
@@ -140,20 +142,14 @@ ShellRoot {
   const origin = segments[7];
   themed.value = (origin.x + origin.width / 2) / themedTrack.width;
   themedTrack.energy = 1;
-  const travelPhase = 2 * Math.PI * themedTrack.pitch / themedTrack.width;
-  themedTrack.phase = -Math.PI / 2 + 4 * travelPhase;
-  if (segments[11].y + segments[11].height / 2 < themedTrack.height / 2 + 4) {
-   console.error('The trough dips below the rail away from the thumb'); Qt.exit(1); return;
+  const phaseOffset = 2 * Math.PI * 2 * themedTrack.pitch / 40;
+  themedTrack.phase = -Math.PI / 2 + phaseOffset;
+  if (segments[5].wave >= -0.3 || segments[9].wave >= -0.3) {
+   console.error('The trough dips on both sides near the thumb'); Qt.exit(1); return;
   }
   themedTrack.phase += Math.PI;
-  if (segments[11].y + segments[11].height / 2 > themedTrack.height / 2 - 4
-      || Math.abs(segments[3].wave - 1) > 0.001) {
-   console.error('The crest rises on both sides of the thumb'); Qt.exit(1); return;
-  }
-  themedTrack.phase += travelPhase;
-  if (Math.abs(segments[2].wave - 1) > 0.001 || Math.abs(segments[12].wave - 1) > 0.001
-      || segments[11].wave >= segments[12].wave) {
-   console.error('The crest moves one segment outward on both sides'); Qt.exit(1); return;
+  if (segments[5].wave <= 0.3 || segments[9].wave <= 0.3 || segments[1].wave !== 0 || segments[13].wave !== 0) {
+   console.error('The crest rises near the thumb and the distant track stays flat'); Qt.exit(1); return;
   }
   const verticalTrack = vertical.children[1].children[0].children.find(item => item.segmentCount > 0);
   for (const [rail, thumb] of [

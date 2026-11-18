@@ -48,7 +48,6 @@ Slider {
                 : parent.height - (root.handle?.height ?? 0))
             hovered: root.hovered
             pressed: root.pressed
-            focused: root.activeFocus
             value: root.animatedPosition
             rotation: root.horizontal ? (root.mirrored ? 180 : 0) : 270
         }
