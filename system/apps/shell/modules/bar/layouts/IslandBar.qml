@@ -62,7 +62,11 @@ Item {
     property real revealProgress: isExpanded ? 1 : 0
     Behavior on revealProgress {
         enabled: Motion.enabled
-        NumberAnimation { id: revealAnimation; duration: root.morphDuration; easing.type: Easing.InOutCubic }
+        NumberAnimation {
+            id: revealAnimation
+            duration: root.isExpanded ? root.morphDuration : root.morphCollapseDuration
+            easing.type: root.isExpanded ? Easing.OutQuint : Easing.InOutCubic
+        }
     }
 
     property bool openedFromHidden: false
@@ -363,7 +367,7 @@ Item {
     }
 
     readonly property int morphDuration: Math.round(Motion.enter * 1.15)
-    readonly property int morphCollapseDuration: Math.round(Motion.enter)
+    readonly property int morphCollapseDuration: Motion.exit
     readonly property int contentFadeInDuration: Math.round(Motion.enter * 0.85)
     readonly property int contentFadeOutDuration: Math.round(Motion.enter * 0.55)
 
@@ -701,12 +705,6 @@ Item {
     Item {
         id: islandContainer
         objectName: "typing-island-container"
-        transform: Scale {
-            origin.x: islandContainer.width / 2
-            origin.y: 0
-            xScale: 1 + Math.sin(root.revealProgress * Math.PI) * 0.012
-            yScale: 1 - Math.sin(root.revealProgress * Math.PI) * 0.035
-        }
         anchors.horizontalCenter: parent.horizontalCenter
         width: root.targetWidth
         height: root.targetHeight
@@ -716,7 +714,7 @@ Item {
             enabled: Motion.enabled && (root.barNormallyVisible || root.isExpanded) && !root.retractingToHidden
             NumberAnimation {
                 duration: root.currentMode === "typing" || root.previousMode === "typing" ? Math.min(180, Motion.enter) : (root.isExpanded ? root.morphDuration : root.morphCollapseDuration)
-                easing.type: root.currentMode === "typing" || root.previousMode === "typing" ? Easing.OutQuint : Easing.InOutCubic
+                easing.type: root.currentMode === "typing" || root.previousMode === "typing" ? Easing.OutQuint : (root.isExpanded ? Easing.OutQuint : Easing.InOutCubic)
             }
         }
 
@@ -724,7 +722,7 @@ Item {
             enabled: Motion.enabled && (root.barNormallyVisible || root.isExpanded) && !root.retractingToHidden
             NumberAnimation {
                 duration: root.currentMode === "typing" || root.previousMode === "typing" ? Math.min(180, Motion.enter) : (root.isExpanded ? root.morphDuration : root.morphCollapseDuration)
-                easing.type: root.currentMode === "typing" || root.previousMode === "typing" ? Easing.OutQuint : Easing.InOutCubic
+                easing.type: root.currentMode === "typing" || root.previousMode === "typing" ? Easing.OutQuint : (root.isExpanded ? Easing.OutQuint : Easing.InOutCubic)
             }
         }
 

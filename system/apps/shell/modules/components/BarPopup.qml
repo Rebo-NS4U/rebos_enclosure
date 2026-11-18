@@ -114,7 +114,7 @@ PopupWindow {
         enabled: root.transitionMs > 0
         NumberAnimation {
             duration: root.transitionMs
-            easing.type: root.isOpen ? Motion.enterCurve : Motion.exitCurve
+            easing.type: root.isOpen ? Easing.OutQuint : Easing.InOutCubic
         }
     }
 
@@ -128,6 +128,7 @@ PopupWindow {
             ? root.shadowMargin + root.contentHeight - height
             : root.shadowMargin
         clip: true
+        opacity: Math.min(1, root.revealProgress * 2.5)
 
         StyledRect {
             id: popupContainer
