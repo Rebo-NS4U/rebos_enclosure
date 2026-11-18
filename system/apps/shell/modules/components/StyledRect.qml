@@ -656,70 +656,85 @@ ClippingRectangle {
                 const ink=a=>Qt.rgba(pigment.r,pigment.g,pigment.b,a);
                 ctx.lineWidth=1;
                 const safe=Math.max(18,cornerRadius+6);
+                if (finish === "canopy" && !barSurface && !outer) return;
                 // Clip every material layer to the shared rounded surface.
                 ctx.save();
                 if(root.traceThemeFrame(ctx,0))ctx.clip();
-                if(finish === "canopy"){
-                    // Translucent fabric drapes use the selected palette.
-                    const fabric=a=>Qt.rgba(accent.r*0.65+secondaryAccent.r*0.35,accent.g*0.65+secondaryAccent.g*0.35,accent.b*0.65+secondaryAccent.b*0.35,a);
-                    // Taut diagonal fabric sails with folded tips, grazing light and soft shadows.
-                    function drapedCanopy(depth, shape) {
-                        const split=0.39+(shape%4)*0.055;
-                        const glow=ctx.createLinearGradient(0,0,0,depth);
-                        glow.addColorStop(0,fabric(0.16));
-                        glow.addColorStop(1,fabric(0));
-                        ctx.fillStyle=glow;ctx.fillRect(0,0,width,depth);
-                        for(let layer=0;layer<3;layer++){
-                            const reach=depth*(1-layer*0.24);
-                            const pinch=split+(layer-1)*0.11;
-                            const edge=reach*(0.12+layer*0.04);
-                            function drape(offset) {
-                                ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(width,0);
-                                ctx.lineTo(width,edge+offset);
-                                // Long diagonal hems meet at a crisp folded tip, without scallops.
-                                ctx.lineTo(width*(pinch+0.16),reach*0.58+offset);
-                                ctx.lineTo(width*pinch,reach*0.88+offset);
-                                ctx.lineTo(width*(pinch+0.055),reach*0.55+offset);
-                                ctx.bezierCurveTo(width*(pinch-0.10),reach*0.54+offset,
-                                    width*0.12,reach*0.32+offset,0,edge+offset);
-                                ctx.closePath();
-                            }
-                            // Broad, fading contact shadow separates the suspended sheets.
-                            const shadow=ctx.createLinearGradient(0,reach*0.25,0,reach+8);
-                            shadow.addColorStop(0,Qt.rgba(backdrop.r,backdrop.g,backdrop.b,0));
-                            shadow.addColorStop(0.7,Qt.rgba(backdrop.r,backdrop.g,backdrop.b,0.13));
-                            shadow.addColorStop(1,Qt.rgba(backdrop.r,backdrop.g,backdrop.b,0));
-                            ctx.fillStyle=shadow;drape(Math.min(6,depth*0.09));ctx.fill();
-                            const cloth=ctx.createLinearGradient(0,0,width,reach);
-                            cloth.addColorStop(0,fabric(0.12+layer*0.035));
-                            cloth.addColorStop(0.23,fabric(0.32));
-                            cloth.addColorStop(0.43,fabric(0.11));
-                            cloth.addColorStop(0.67,Qt.rgba(secondaryAccent.r,secondaryAccent.g,secondaryAccent.b,0.22));
-                            cloth.addColorStop(0.86,fabric(0.38));
-                            cloth.addColorStop(1,fabric(0.16));
-                            ctx.fillStyle=cloth;drape(0);ctx.fill();
-                            // Catch light along the folded selvage as it turns under the sail.
-                            ctx.beginPath();
-                            ctx.moveTo(width * (pinch + 0.055), reach * 0.55);
-                            ctx.lineTo(width * pinch, reach * 0.88);
-                            ctx.lineTo(width * (pinch + 0.16), reach * 0.58);
-                            ctx.fillStyle = fabric(0.38);
-                            ctx.fill();
-                            ctx.strokeStyle = ink(0.18);
-                            ctx.stroke();
+                if (finish === "canopy") {
+                    // A high rear sail spans the opening. The two nearer sails pull
+                    // toward opposite shoulders, leaving the middle open for labels.
+                    const compact = barSurface || height < 60;
+                    const drop = compact ? Math.min(18, height * 0.42)
+                                         : Math.min(98, height * 0.31, width * 0.25);
+
+                    function sail(left, span, tip, depth, dye, reverse) {
+                        ctx.save();
+                        ctx.translate(left, 0);
+                        ctx.scale(reverse ? -span : span, depth);
+
+                        // Each bolt of cloth fans out from the same tension point.
+                        // The curved edges bow most where they are farthest from it.
+                        function fold(edge, returnToTip) {
+                            const pull = edge - tip;
+                            const shoulder = tip + pull * 0.22;
+                            const crown = tip + pull * 0.72;
+                            if (returnToTip)
+                                ctx.bezierCurveTo(crown, 0.06, shoulder, 0.38, tip, 1);
+                            else
+                                ctx.bezierCurveTo(shoulder, 0.38, crown, 0.06, edge, -0.12);
                         }
+                        function cloth(from, to) {
+                            ctx.beginPath();
+                            ctx.moveTo(tip, 1);
+                            fold(from, false);
+                            ctx.lineTo(to, -0.12);
+                            fold(to, true);
+                            ctx.closePath();
+                        }
+
+                        // A displaced silhouette gives the overhanging cloth depth.
+                        ctx.save();
+                        ctx.translate(0, 0.065);
+                        cloth(0, 1);
+                        ctx.fillStyle = Qt.alpha(backdrop, 0.44);
+                        ctx.fill();
+                        ctx.restore();
+
+                        const silk = ctx.createLinearGradient(0, 0.58, 1, 0.08);
+                        silk.addColorStop(0, Qt.alpha(dye, 0.68));
+                        silk.addColorStop(0.25, Qt.alpha(dye, 0.30));
+                        silk.addColorStop(0.58, Qt.alpha(dye, 0.54));
+                        silk.addColorStop(1, Qt.alpha(pigment, 0.34));
+                        cloth(0, 1);
+                        ctx.fillStyle = silk;
+                        ctx.fill();
+
+                        // Wide and narrow facets alternate as the fabric turns into light.
+                        const gores = [0, 0.19, 0.24, 0.58, 0.69, 1];
+                        for (let i = 1; i < gores.length; i++) {
+                            cloth(gores[i-1], gores[i]);
+                            const lit = i % 2 === 0;
+                            const foldLight = ctx.createLinearGradient(gores[i-1], 0, gores[i], 0.12);
+                            const tone = lit ? pigment : backdrop;
+                            foldLight.addColorStop(0, Qt.alpha(tone, 0.05));
+                            foldLight.addColorStop(0.65, Qt.alpha(tone, lit ? 0.29 : 0.36));
+                            foldLight.addColorStop(1, Qt.alpha(tone, lit ? 0.12 : 0.19));
+                            ctx.fillStyle = foldLight;
+                            ctx.fill();
+                        }
+                        ctx.restore();
                     }
 
-                    if(barSurface){
-                        drapedCanopy(Math.min(10,height*0.22),5);
-                    }else if(outer){
-                        const drop=Math.min(70,height*0.22);
-                        drapedCanopy(drop,5);
-                        // Ground-level shade echoes the roof without framing the content.
-                        const ground=ctx.createLinearGradient(0,height-24,0,height);
-                        ground.addColorStop(0,fabric(0));ground.addColorStop(1,fabric(0.12));
-                        ctx.fillStyle=ground;ctx.fillRect(0,height-24,width,24);
+                    sail(-width * 0.09, width * 1.17, 0.56, drop * 0.49, secondaryAccent, false);
+                    sail(width * 1.10, width * 0.75, 0.21, drop * 0.81, secondaryAccent, true);
+                    sail(-width * 0.13, width * 0.83, 0.21, drop, accent, false);
 
+                    if (!compact) {
+                        const shade = ctx.createLinearGradient(0, height * 0.80, 0, height);
+                        shade.addColorStop(0, Qt.alpha(accent, 0));
+                        shade.addColorStop(1, Qt.alpha(accent, 0.10));
+                        ctx.fillStyle = shade;
+                        ctx.fillRect(0, height * 0.80, width, height * 0.20);
                     }
                 }else if(finish === "orbital"){
                     // Elliptical orbital tracks wrap a quiet, recessed space capsule.
