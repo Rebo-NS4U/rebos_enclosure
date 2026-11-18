@@ -399,6 +399,7 @@ Window {
         property bool addEnabled: true
         property bool queueSuggestion: false
         property bool queueEntry: false
+        readonly property bool inFullscreenQueue: queueEntry || queueSuggestion
         readonly property bool compact: suggestion || queueEntry
         property bool selected: suggestion
             ? root.spotifyPreview && !!track.uri && root.current?.spotifyUri === track.uri
@@ -406,9 +407,19 @@ Window {
         signal playRequested()
         signal enqueueRequested()
         width: ListView.view ? ListView.view.width : 0
-        height: compact ? root.suggestionRowHeight : Styling.spacing(70)
+        height: inFullscreenQueue ? Styling.spacing(60) : compact ? root.suggestionRowHeight : Styling.spacing(70)
         variant: selected || rowClick.containsMouse ? "focus" : "transparent"
-        radius: queueEntry || queueSuggestion ? Styling.radius(3) : Styling.radius(0)
+        radius: inFullscreenQueue ? Styling.radius(-4) : Styling.radius(0)
+        Rectangle {
+            visible: row.inFullscreenQueue && row.selected
+            anchors.left: parent.left
+            anchors.leftMargin: Styling.spacing(3)
+            anchors.verticalCenter: parent.verticalCenter
+            width: Styling.spacing(3)
+            height: parent.height * 0.5
+            radius: width / 2
+            color: Colors.primary
+        }
         MouseArea {
             id: rowClick
             anchors.fill: parent
@@ -417,10 +428,11 @@ Window {
             onClicked: row.playRequested()
         }
         RowLayout {
-            anchors.fill: parent; anchors.margins: row.compact ? Styling.spacing(4) : 8
+            anchors.fill: parent
+            anchors.margins: row.inFullscreenQueue ? Styling.spacing(10) : row.compact ? Styling.spacing(4) : 8
             spacing: row.compact ? Styling.spacing(8) : 12
             ThemeButton { topPadding: row.compact ? Styling.spacing(5) : padding; bottomPadding: topPadding; text: row.selected && root.playing ? "Ⅱ" : "▶"; Accessible.name: (row.selected && root.playing ? "Pause " : "Play ") + row.track.title; onClicked: row.playRequested() }
-            Cover { artwork: row.track.art || ""; Layout.preferredWidth: row.compact ? Styling.spacing(32) : 48; Layout.preferredHeight: Layout.preferredWidth }
+            Cover { artwork: row.track.art || ""; Layout.preferredWidth: row.inFullscreenQueue ? Styling.spacing(40) : row.compact ? Styling.spacing(32) : 48; Layout.preferredHeight: Layout.preferredWidth }
             ColumnLayout {
                 Layout.fillWidth: true; spacing: 3
                 StyledText { Layout.fillWidth: true; text: row.track.title; font.bold: row.selected; elide: Text.ElideRight; color: row.selected ? Colors.primary : Colors.overSurface }
@@ -879,7 +891,7 @@ Window {
                     Layout.fillHeight: true
                     ColumnLayout {
                         anchors.fill: parent; anchors.margins: Styling.spacing(16)
-                        spacing: Styling.spacing(10)
+                        spacing: Styling.spacing(12)
                         RowLayout {
                             Layout.fillWidth: true
                             StyledText {
@@ -895,27 +907,34 @@ Window {
                                 onClicked: stage.queueOpen = false
                             }
                         }
-                        RowLayout {
+                        StyledRect {
                             Layout.fillWidth: true
-                            ThemeButton {
-                                objectName: "music-fullscreen-queue-tab"
-                                Layout.fillWidth: true
-                                text: "Up next · " + root.queue.length
-                                checked: !stage.showSuggestions
-                                onClicked: stage.showSuggestions = false
+                            implicitHeight: queueTabs.implicitHeight + 2 * Styling.spacing(4)
+                            variant: "internalbg"
+                            radius: Styling.radius(0)
+                            RowLayout {
+                                id: queueTabs
+                                anchors.fill: parent
+                                anchors.margins: Styling.spacing(4)
+                                spacing: Styling.spacing(4)
+                                uniformCellSizes: true
+                                ThemeButton {
+                                    objectName: "music-fullscreen-queue-tab"
+                                    Layout.fillWidth: true
+                                    Layout.minimumWidth: 0
+                                    text: "Up next · " + root.queue.length
+                                    checked: !stage.showSuggestions
+                                    onClicked: stage.showSuggestions = false
+                                }
+                                ThemeButton {
+                                    objectName: "music-fullscreen-suggestions-tab"
+                                    Layout.fillWidth: true
+                                    Layout.minimumWidth: 0
+                                    text: "Suggestions"
+                                    checked: stage.showSuggestions
+                                    onClicked: stage.showSuggestions = true
+                                }
                             }
-                            ThemeButton {
-                                objectName: "music-fullscreen-suggestions-tab"
-                                Layout.fillWidth: true
-                                text: "Suggested tracks"
-                                checked: stage.showSuggestions
-                                onClicked: stage.showSuggestions = true
-                            }
-                        }
-                        Rectangle {
-                            Layout.fillWidth: true
-                            implicitHeight: 1
-                            color: Qt.alpha(Colors.outline, 0.4)
                         }
                         ThemeButton {
                             objectName: "music-fullscreen-queue-current"
@@ -936,7 +955,7 @@ Window {
                             objectName: "music-fullscreen-queue-list"
                             visible: !stage.showSuggestions
                             Layout.fillWidth: true; Layout.fillHeight: true
-                            clip: true; spacing: 5; model: root.queue
+                            clip: true; spacing: Styling.spacing(4); model: root.queue
                             currentIndex: root.spotifyPreview ? -1 : root.currentIndex
                             onVisibleChanged: if (visible && currentIndex >= 0) positionViewAtIndex(currentIndex, ListView.Contain)
                             onCurrentIndexChanged: if (visible && currentIndex >= 0) positionViewAtIndex(currentIndex, ListView.Contain)
@@ -944,6 +963,7 @@ Window {
                                 required property var modelData
                                 required property int index
                                 objectName: "music-fullscreen-queued-track-" + index
+                                width: ListView.view.width - Styling.spacing(12)
                                 track: modelData
                                 queueEntry: true
                                 selected: !root.spotifyPreview && index === root.currentIndex
@@ -951,24 +971,21 @@ Window {
                             }
                             StyledText {
                                 anchors.centerIn: parent
+                                width: parent.width
+                                horizontalAlignment: Text.AlignHCenter
+                                wrapMode: Text.WordWrap
                                 visible: fullscreenQueue.count === 0
                                 text: "Your queue is empty."
                                 color: Colors.overSurfaceVariant
                             }
                             ScrollBar.vertical: ScrollBar {}
                         }
-                        StyledText {
-                            visible: stage.showSuggestions && root.suggestedTracks.length === 0
-                            Layout.fillWidth: true; wrapMode: Text.WordWrap
-                            text: root.page === "Playlist" ? (root.spotifySuggestions.status || "No suggestions yet. Refresh to try again.") : "Open a playlist to get Spotify suggestions."
-                            color: Colors.overSurfaceVariant
-                        }
                         ListView {
                             id: fullscreenSuggestions
                             objectName: "music-fullscreen-suggestions"
                             visible: stage.showSuggestions
                             Layout.fillWidth: true; Layout.fillHeight: true
-                            clip: true; spacing: 4; model: root.suggestedTracks
+                            clip: true; spacing: Styling.spacing(4); model: root.suggestedTracks
                             currentIndex: root.playingSuggestionIndex
                             onVisibleChanged: if (visible && currentIndex >= 0) positionViewAtIndex(currentIndex, ListView.Contain)
                             onCurrentIndexChanged: if (visible && currentIndex >= 0) positionViewAtIndex(currentIndex, ListView.Contain)
@@ -976,10 +993,20 @@ Window {
                                 required property var modelData
                                 required property int index
                                 objectName: "music-fullscreen-suggestion-" + index
+                                width: ListView.view.width - Styling.spacing(12)
                                 track: modelData; number: index; suggestion: true; queueSuggestion: true
                                 addEnabled: root.canAddSuggestion && root.queue.length < root.queueLimit
                                 onPlayRequested: { if (selected) root.toggle(); else root.previewTrack(track.uri); }
                                 onEnqueueRequested: root.addSuggestion(track, true)
+                            }
+                            StyledText {
+                                anchors.centerIn: parent
+                                width: parent.width
+                                horizontalAlignment: Text.AlignHCenter
+                                wrapMode: Text.WordWrap
+                                visible: fullscreenSuggestions.count === 0
+                                text: root.page === "Playlist" ? (root.spotifySuggestions.status || "No suggestions yet. Refresh to try again.") : "Open a playlist to get Spotify suggestions."
+                                color: Colors.overSurfaceVariant
                             }
                             ScrollBar.vertical: ScrollBar {}
                         }
