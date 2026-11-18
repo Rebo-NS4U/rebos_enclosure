@@ -227,7 +227,7 @@ Item {
         if (!mainChatArea) return;
         const inputField = mainChatArea.input;
         const chatView = mainChatArea.chat;
-        if (Ai.activeSession.isBusy || Ai.activeSession.switchingSessionModel || Ai.activeSession.switchingDistillPreset || (!inputField.text.trim() && mainChatArea.pendingAttachments.length === 0))
+        if (Ai.activeSession.waitingForCodexSignIn || Ai.activeSession.isBusy || Ai.activeSession.switchingSessionModel || Ai.activeSession.switchingDistillPreset || (!inputField.text.trim() && mainChatArea.pendingAttachments.length === 0))
             return;
         // Keep typing available while the pointer remains over this window.
         root.wantsFocus = root.tiled || panelHover.hovered;
@@ -839,7 +839,7 @@ Item {
                     Layout.leftMargin: 12
                     Layout.rightMargin: 12
                     Layout.topMargin: 8
-                    columns: width >= 640 && !presetPicker.expanded && !modelPicker.expanded ? 2 : 1
+                    columns: width >= 640 && !presetPicker.expanded && !modelPicker.expanded ? (accountButton.visible ? 3 : 2) : 1
                     columnSpacing: 8
                     rowSpacing: 6
                     visible: root.active
@@ -854,6 +854,57 @@ Item {
                         Layout.fillWidth: true
                         Layout.minimumWidth: 0
                         Layout.alignment: Qt.AlignTop
+                    }
+                    Button {
+                        id: accountButton
+                        objectName: "assistantAccountButton"
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 38
+                        Layout.alignment: Qt.AlignTop
+                        visible: Ai.activeSession.currentAgentId === "codex" || Ai.codexSignInActive
+                        text: Ai.codexSignInActive ? "Account · Finish sign-in in browser" : "Account"
+                        contentItem: StyledText {
+                            text: accountButton.text
+                            color: Colors.overSurface
+                            elide: Text.ElideRight
+                            verticalAlignment: Text.AlignVCenter
+                        }
+                        background: StyledRect {
+                            variant: accountButton.hovered || accountButton.activeFocus || accountMenu.opened ? "focus" : "internalbg"
+                            radius: Styling.radius(8)
+                        }
+                        onClicked: accountMenu.open()
+                        Menu {
+                            id: accountMenu
+                            y: accountButton.height
+                            padding: 6
+                            background: StyledRect {
+                                variant: "popup"
+                                radius: Styling.radius(8)
+                            }
+                            MenuItem {
+                                text: "Switch Codex account…"
+                                enabled: Ai.canChangeCodexAccount
+                                onTriggered: Ai.switchCodexAccount()
+                            }
+                            MenuItem {
+                                text: "Reload Codex login"
+                                enabled: Ai.canChangeCodexAccount
+                                onTriggered: Ai.reloadCodexAccount()
+                            }
+                            MenuItem {
+                                text: "Cancel sign-in"
+                                visible: Ai.codexSignInActive
+                                height: visible ? implicitHeight : 0
+                                onTriggered: Ai.cancelCodexSignIn()
+                            }
+                        }
+                        StyledToolTip {
+                            show: accountButton.hovered
+                            tooltipText: Ai.codexSignInActive ? "Choose your ChatGPT account in the browser"
+                                : Ai.canChangeCodexAccount ? "Switch or reload the login for all Codex chats"
+                                : "Finish active Codex work before switching accounts"
+                        }
                     }
                 }
 
@@ -2537,6 +2588,7 @@ Item {
                                         Layout.preferredHeight: 32
                                         flat: true
                                         visible: inputField.text.length > 0 || mainChatArea.pendingAttachments.length > 0
+                                        enabled: !mainChatArea.session.waitingForCodexSignIn
 
                                         contentItem: StyledText {
                                             text: Icons.paperPlane

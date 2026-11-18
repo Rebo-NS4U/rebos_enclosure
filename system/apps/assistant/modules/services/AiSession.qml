@@ -56,7 +56,7 @@ Scope {
     function setCodexPreset(value, duringSetup) {
         let preset = codexPresets.find(item => item.id === value);
         if (currentAgentId !== "codex" || !preset || switchingCodexPreset
-            || switchingSessionModel || switchingDistillPreset || (isBusy && !duringSetup)) return;
+            || switchingSessionModel || switchingDistillPreset || ((isBusy || waitingForCodexSignIn) && !duringSetup)) return;
         codexPresetError = "";
         if (!sessionReady) {
             codexPreset = value;
@@ -355,6 +355,8 @@ Scope {
     // App servers cache their account. Recreate an idle connection after a CLI
     // account switch, then restore the saved conversation with the new login.
     property bool codexAccountRefreshAttempted: false
+    property bool codexSignInActive: false
+    readonly property bool waitingForCodexSignIn: codexSignInActive && currentAgentId === "codex"
 
     function isAccountAuthenticationError(message) {
         return /authentication required|authentication failed|unauthorized|not signed in|not logged in|token.*expired|refresh.token.*(invalid|reused|expired)/i.test(message || "");
@@ -364,6 +366,10 @@ Scope {
         if (!featureEnabled || currentAgentId !== "codex" || isBusy
             || switchingSessionModel || switchingDistillPreset) return;
         codexAccountRefreshAttempted = true;
+        if (planUsageProcess.running) planUsageProcess.running = false;
+        planUsageSummary = "Codex remaining: not checked";
+        planUsageDetails = "";
+        usageRequestedInChat = false;
         queuedPrompt = null; // Never replay a user task during account recovery.
         pendingSessionAction = {
             kind: currentSessionId ? "load" : "new",
@@ -382,7 +388,7 @@ Scope {
     }
 
     function recoverCodexAccount() {
-        if (currentAgentId === "codex" && !isBusy && !codexAccountRefreshAttempted
+        if (currentAgentId === "codex" && !isBusy && !waitingForCodexSignIn && !codexAccountRefreshAttempted
             && isAccountAuthenticationError(lastError)) {
             refreshCodexAccount();
         }
@@ -1099,7 +1105,7 @@ Scope {
     }
 
     function setSessionModel(modelId) {
-        if (!sessionReady || isBusy || switchingDistillPreset || switchingSessionModel || !modelId || modelId === currentSessionModelId)
+        if (waitingForCodexSignIn || !sessionReady || isBusy || switchingDistillPreset || switchingSessionModel || !modelId || modelId === currentSessionModelId)
             return;
         if (!sessionModels.some(model => model.modelId === modelId)) {
             modelSwitchError = "This model is no longer available. Reopen the model list.";
@@ -1208,7 +1214,7 @@ Scope {
             hint = "\n\nThe OpenRouter request failed. If you recently replaced your API key, choose this backend again to open a fresh chat with the current key.";
         pushSystemMessage(message + hint);
         if (currentAgentId === "codex" && isAccountAuthenticationError(message)) {
-            pushSystemMessage("Codex needs its current account connection refreshed. After it reconnects, send your message again. If this continues, choose Preset → Use current Codex login.");
+            pushSystemMessage("Codex needs its current account connection refreshed. After it reconnects, send your message again. If this continues, choose Account → Reload Codex login.");
             Qt.callLater(root.recoverCodexAccount);
         }
     }
@@ -2304,7 +2310,7 @@ Scope {
     }
 
     function sendMessage(message, attachments) {
-        if (switchingSessionModel || switchingDistillPreset)
+        if (waitingForCodexSignIn || switchingSessionModel || switchingDistillPreset)
             return;
         let text = message || "";
         if (handleLocalCommand(text))
@@ -2542,6 +2548,7 @@ Scope {
     }
 
     function regenerateResponse(index) {
+        if (waitingForCodexSignIn) return;
         // ACP agents own their conversation history, so continue the failed
         // user prompt in the same session instead of regenerating history.
         if (isBusy || !sessionReady || !currentSessionId || !agentProcess.running) {

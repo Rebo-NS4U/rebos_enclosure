@@ -184,27 +184,6 @@ ColumnLayout {
                     font.pixelSize: Styling.fontSize(-2)
                 }
                 Button {
-                    objectName: "assistantRefreshCodexAccount"
-                    Layout.fillWidth: true
-                    visible: !root.session.isDistill
-                    enabled: !root.session.isBusy && !root.session.switchingSessionModel
-                        && !root.session.statusText
-                    text: "Use current Codex login"
-                    contentItem: StyledText {
-                        text: parent.text
-                        color: Colors.overSurface
-                        horizontalAlignment: Text.AlignHCenter
-                    }
-                    background: StyledRect {
-                        variant: "focus"
-                        radius: Styling.radius(4)
-                    }
-                    onClicked: {
-                        root.session.refreshCodexAccount();
-                        root.expanded = false;
-                    }
-                }
-                Button {
                     objectName: "assistantStartDistill"
                     Layout.fillWidth: true
                     visible: !root.session.isDistill
