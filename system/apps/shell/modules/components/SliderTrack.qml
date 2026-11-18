@@ -19,6 +19,17 @@ Item {
         ? (pressed ? 1 : activity.running ? 0.65 : 0) : 0
     property real phase: 0
 
+    readonly property real handleOffset: waveOffset(waveAt(filledLength))
+
+    function waveAt(position: real): real {
+        const distance = Math.abs(position - filledLength);
+        return Math.sin(phase - 2 * Math.PI * distance / Math.max(1, width));
+    }
+
+    function waveOffset(wave: real): real {
+        return -5 * energy * wave;
+    }
+
     onHoveredChanged: if (hovered && Motion.enabled) activity.restart()
     onValueChanged: if (Motion.enabled && visible && !pressed && (hovered || focused)) activity.restart()
 
@@ -48,10 +59,9 @@ Item {
         delegate: Rectangle {
             id: segment
             required property int index
-            readonly property real distanceFromHandle: Math.abs(x + width / 2 - root.filledLength)
-            readonly property real wave: Math.sin(root.phase - 2 * Math.PI * distanceFromHandle / Math.max(1, root.width))
+            readonly property real wave: root.waveAt(x + width / 2)
             x: index * root.pitch
-            y: (root.height - height) / 2 - 5 * root.energy * wave
+            y: (root.height - height) / 2 + root.waveOffset(wave)
             width: Math.max(0, root.pitch - Math.min(3, root.pitch / 3))
             height: 6 + root.energy * (2.5 + 2 * wave)
             radius: Math.min(width, height) / 2

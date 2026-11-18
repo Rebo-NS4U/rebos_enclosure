@@ -9,8 +9,10 @@ class StandardProgress(unittest.TestCase):
     def test_app_copies_match(self):
         paths = [ROOT / 'system/apps' / name / 'StandardProgressBar.qml' for name in (
             'shell/modules/components', 'assistant/modules/components', 'media/ui/modules/components')]
-        self.assertEqual(paths[0].read_bytes(), paths[1].read_bytes())
-        self.assertEqual(paths[0].read_bytes(), paths[2].read_bytes())
+        for component in ('StandardProgressBar.qml', 'SliderTrack.qml'):
+            source, *copies = [path.with_name(component).read_bytes() for path in paths]
+            for copy in copies:
+                self.assertEqual(source, copy)
 
     def test_rail_and_slider_rendering(self):
         test_lyrics.Lyrics().run_harness('''import QtQuick
@@ -24,6 +26,10 @@ ShellRoot {
   StyledSlider { id: horizontal; width: 200; height: 32; value: 0.5 }
   StyledSlider { id: vertical; width: 32; height: 120; vertical: true; value: 0.5 }
   ThemeSlider { id: themed; width: 200; value: 0.5 }
+  ThemeSlider { id: themedVertical; height: 120; orientation: Qt.Vertical; value: 0.5 }
+  ThemeSlider { id: themedMirrored; width: 200; value: 0.5
+   LayoutMirroring.enabled: true
+  }
  }
  Timer { interval: 900; running: true; onTriggered: {
   try {
@@ -149,6 +155,24 @@ ShellRoot {
   if (Math.abs(segments[3].wave - 1) > 0.001 || Math.abs(segments[5].wave - 1) > 0.001
       || origin.wave >= segments[3].wave) {
    console.error('The crest moves one segment outward on both sides'); Qt.exit(1); return;
+  }
+  const verticalTrack = vertical.children[1].children[0].children.find(item => item.segmentCount > 0);
+  for (const [rail, thumb] of [
+   [track, track.parent.children[0]],
+   [verticalTrack, verticalTrack.parent.children[0]],
+   ...[themed, themedVertical, themedMirrored].map(slider => [slider.background.children[0], slider.handle])
+  ]) {
+   rail.energy = 1;
+   for (const phase of [-Math.PI / 2, Math.PI / 2]) {
+    rail.phase = phase;
+    const center = thumb.mapToItem(rail, thumb.width / 2, thumb.height / 2);
+    if (Math.abs(center.x - rail.filledLength) > 0.01
+        || Math.abs(center.y - (rail.height / 2 - 5 * Math.sin(phase))) > 0.01) {
+     console.error('Thumb must follow the crest and trough at the current value', center,
+                   rail.filledLength, rail.handleOffset, rail.rotation);
+     Qt.exit(1); return;
+    }
+   }
   }
   console.log('PASS: shared progress geometry, motion and slider input'); Qt.quit();
  }}

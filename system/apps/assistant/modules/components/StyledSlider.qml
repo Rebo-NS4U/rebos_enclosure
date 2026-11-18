@@ -100,6 +100,13 @@ Item {
         }
     }
 
+    readonly property bool railHovered: railHover.hovered
+        && !mouseArea.isInIconArea(railHover.point.position.x, railHover.point.position.y)
+
+    HoverHandler {
+        id: railHover
+    }
+
     // Horizontal Layout
     RowLayout {
         id: horizontalLayout
@@ -125,7 +132,7 @@ Item {
 
             Rectangle {
                 id: hDragHandle
-                anchors.verticalCenter: parent.verticalCenter
+                y: (parent.height - height) / 2 + hTrack.handleOffset
                 x: parent.width * root.animatedProgress - width / 2
                 width: 4
                 height: Math.max(12, root.thickness + 6)
@@ -142,13 +149,16 @@ Item {
                 }
             }
 
-            StandardProgressBar {
+            SliderTrack {
+                id: hTrack
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
-                slider: true
                 value: root.animatedProgress
                 activeColor: root.progressColor
+                hovered: root.railHovered
+                pressed: root.isDragging
+                focused: root.activeFocus
             }
 
             StyledToolTip {
@@ -185,7 +195,7 @@ Item {
 
             Rectangle {
                 id: vDragHandle
-                anchors.horizontalCenter: parent.horizontalCenter
+                x: (parent.width - width) / 2 + vTrack.handleOffset
                 y: parent.height * (1 - root.animatedProgress) - height / 2
                 height: 4
                 width: Math.max(12, root.thickness + 6)
@@ -202,13 +212,16 @@ Item {
                 }
             }
 
-            StandardProgressBar {
+            SliderTrack {
+                id: vTrack
                 anchors.centerIn: parent
                 width: parent.height
-                slider: true
                 rotation: -90
                 value: root.animatedProgress
                 activeColor: root.progressColor
+                hovered: root.railHovered
+                pressed: root.isDragging
+                focused: root.activeFocus
             }
 
             StyledToolTip {
