@@ -23,7 +23,10 @@ Window {
     color: "transparent"
     visible: GlobalStates.musicWindowVisible
     onClosing: event => { event.accepted = false; GlobalStates.musicWindowVisible = false; }
-    onVisibleChanged: if (visible && !started) { started = true; backend.running = true; }
+    onVisibleChanged: {
+        if (!visible) pendingRemoval = null;
+        if (visible && !started) { started = true; backend.running = true; }
+    }
 
     readonly property bool immersive: visibility === Window.FullScreen
     property bool restoreMaximized: false
@@ -48,6 +51,14 @@ Window {
     property string page: "Playlists"
     property string query: ""
     property string detail: ""
+    property var pendingRemoval: null
+    onPageChanged: pendingRemoval = null
+    onDetailChanged: pendingRemoval = null
+    Timer {
+        id: removeConfirmation
+        interval: 5000
+        onTriggered: root.pendingRemoval = null
+    }
     property string side: "Queue"
     readonly property int queueLimit: 100
     property var queue: []
@@ -551,12 +562,22 @@ Window {
                 objectName: "music-track-remove-" + row.number
                 visible: row.playlistId !== ""
                 enabled: !root.busy
-                text: "Remove"
-                Accessible.name: "Remove " + row.track.title + " from playlist"
+                readonly property bool confirming: root.pendingRemoval?.playlist === row.playlistId
+                    && root.pendingRemoval?.path === row.track.path
+                text: confirming ? "Confirm remove" : "Remove"
+                Accessible.name: (confirming ? "Confirm removal of " : "Remove ") + row.track.title + " from playlist"
                 onClicked: {
+                    const removal = {playlist: row.playlistId, path: row.track.path};
+                    if (!confirming) {
+                        root.pendingRemoval = removal;
+                        removeConfirmation.restart();
+                        return;
+                    }
+                    removeConfirmation.stop();
+                    root.pendingRemoval = null;
                     root.notice = "";
                     root.busy = true;
-                    root.request("playlist_remove", {playlist: row.playlistId, path: row.track.path}, root.load);
+                    root.request("playlist_remove", removal, root.load);
                 }
             }
         }

@@ -89,7 +89,7 @@ def session():
             interval: 200; running: true; repeat: true
             onTriggered: {
                 attempts++;
-                if (attempts > 90) { console.error("MUSIC_ACCEPTANCE_TIMEOUT " + music.notice); Qt.exit(1); }
+                if (attempts > 90) { console.error("MUSIC_ACCEPTANCE_TIMEOUT", phase, music.notice); Qt.exit(1); }
                 if (phase === 0 && !music.busy && music.tracks.length === 2) {
                     const backdrop = findItem(music.contentItem, "music-background");
                     if (music.color.a !== 0 || !backdrop || backdrop.variant !== "bg") { console.error("MUSIC_SHARED_BACKGROUND_FAILED"); Qt.exit(1); }
@@ -208,6 +208,24 @@ def session():
                     if (music.currentIndex !== 0) { console.error("MUSIC_EXPLICIT_START_FAILED"); Qt.exit(1); }
                     if (music.page !== "Playlists" || music.queue[0].path !== music.tracks[1].path) { console.error("MUSIC_PLAYLIST_CARD_FAILED"); Qt.exit(1); }
                     music.control({action:"Pause"});
+                    music.navigate("Playlist", "regular-add");
+                    phase = 98;
+                } else if (phase === 98 && !music.busy) {
+                    const row = findItem(music.contentItem, "music-track-row-0");
+                    const remove = row && findItem(row, "music-track-remove-0");
+                    if (!remove?.visible) return;
+                    const requestId = music.requestId;
+                    input.mouseClick(remove, remove.width / 2, remove.height / 2);
+                    if (remove.text !== "Confirm remove" || music.requestId !== requestId || music.shownTracks.length !== 1) { console.error("MUSIC_REMOVE_FIRST_CLICK_FAILED"); Qt.exit(1); return; }
+                    phase = 980;
+                } else if (phase === 980) {
+                    const row = findItem(music.contentItem, "music-track-row-0");
+                    const remove = findItem(row, "music-track-remove-0");
+                    input.mouseClick(remove, remove.width / 2, remove.height / 2);
+                    phase = 99;
+                } else if (phase === 99 && !music.busy) {
+                    if (music.shownTracks.length !== 0 || music.tracks.length !== 2) { console.error("MUSIC_REMOVE_SECOND_CLICK_FAILED"); Qt.exit(1); return; }
+                    console.log("MUSIC_REMOVE_CONFIRMATION_PASSED");
                     music.navigate("Playlist", "test");
                     phase = 40;
                 } else if (phase === 40) {
@@ -503,8 +521,8 @@ def session():
         import json
         state=json.loads((home/'.local/state/enclosure/music/library.json').read_text())
         assert len(state['favorites'])==1 and len(state['playlists'][0]['paths'])==2, state
-        assert all(len(next(p for p in state['playlists'] if p['id'] == name)['paths']) == 1
-                   for name in ('regular-add', 'fullscreen-add')), state
+        assert next(p for p in state['playlists'] if p['id'] == 'regular-add')['paths'] == [], state
+        assert len(next(p for p in state['playlists'] if p['id'] == 'fullscreen-add')['paths']) == 1, state
         print('Music playback, queue, seek, lyrics and persisted favorites/playlists verified.')
 
 
