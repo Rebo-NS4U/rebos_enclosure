@@ -113,25 +113,19 @@ Item {
             Layout.fillWidth: true
             spacing: Styling.spacing(10)
 
-            Item {
-                implicitWidth: 22
-                implicitHeight: 22
-                Layout.alignment: Qt.AlignVCenter
+            ThemeButton {
+                id: muteButton
+                implicitWidth: Styling.spacing(36)
+                implicitHeight: implicitWidth
+                padding: 0
+                glyph: root.isMuted ? Icons.speakerSlash : (root.volume > 0.5 ? Icons.speakerHigh : (root.volume > 0 ? Icons.speakerLow : Icons.speakerSlash))
+                Accessible.name: root.isMuted ? "Unmute volume" : "Mute volume"
+                emphasized: root.isMuted
+                onClicked: Audio.toggleMute()
 
-                Text {
-                    anchors.centerIn: parent
-                    renderType: Text.NativeRendering
-                    font.hintingPreference: Font.PreferFullHinting
-                    text: root.isMuted ? Icons.speakerSlash : (root.volume > 0.5 ? Icons.speakerHigh : (root.volume > 0 ? Icons.speakerLow : Icons.speakerSlash))
-                    font.family: Icons.font
-                    font.pixelSize: Styling.fontSize(4)
-                    color: BarAppearance.controlColor(!root.isMuted)
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: Audio.toggleMute()
+                StyledToolTip {
+                    show: muteButton.hovered
+                    tooltipText: muteButton.Accessible.name
                 }
             }
 

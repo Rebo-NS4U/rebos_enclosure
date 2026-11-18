@@ -189,25 +189,15 @@ Item {
                         onTextChanged: root.searchText = text
                     }
 
-                    Text {
+                    ThemeButton {
                         visible: searchInput.text.length > 0
-                        renderType: Text.NativeRendering
-                        font.hintingPreference: Font.PreferFullHinting
-                        text: Icons.cancel
-                        font.family: Icons.font
-                        font.pixelSize: Styling.fontSize(-2)
-                        color: clearSearchMouse.containsMouse ? Colors.overBackground : Colors.overSurfaceVariant
-
-                        MouseArea {
-                            id: clearSearchMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                searchInput.text = "";
-                                root.searchText = "";
-                            }
-                        }
+                        implicitWidth: Styling.spacing(26)
+                        implicitHeight: implicitWidth
+                        padding: 0
+                        glyph: Icons.cancel
+                        glyphSize: Styling.fontSize(-2)
+                        Accessible.name: "Clear wallpaper search"
+                        onClicked: searchInput.clear()
                     }
                 }
             }

@@ -1,11 +1,9 @@
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell.Services.Notifications
 import qs.modules.theme
 import qs.modules.components
 import qs.modules.services
-import qs.config
 
 Item {
     id: root
@@ -27,52 +25,15 @@ Item {
         Repeater {
             model: root.validActions
 
-            Button {
+            ThemeButton {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 32
 
                 text: modelData.text
-                font.family: Config.theme.font
-                font.pixelSize: Config.theme.fontSize
-                font.weight: Font.Bold
-                hoverEnabled: true
-                scale: pressed ? 0.93 : 1.0
-
-                Behavior on scale {
-                    enabled: (Config.animDuration ?? 0) > 0
-                    NumberAnimation {
-                        duration: pressed ? Motion.press : Motion.feedback
-                        easing.type: Motion.feedbackCurve
-                    }
-                }
-
-                background: StyledRect {
-                    id: buttonBg
-                    readonly property color textColor: root.urgency === NotificationUrgency.Critical
-                        ? Colors.overError
-                        : buttonBg.item
-
-                    variant: root.urgency === NotificationUrgency.Critical
-                        ? "error"
-                        : (parent.pressed ? "primary" : (parent.hovered ? "focus" : "common"))
-                    radius: Styling.radius(4)
-                }
-
-                contentItem: Text {
-                    text: parent.text
-                    font: parent.font
-                    color: parent.background.textColor
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                    elide: Text.ElideRight
-
-                    Behavior on color {
-                        enabled: Config.animDuration > 0
-                        ColorAnimation {
-                            duration: Config.animDuration
-                        }
-                    }
-                }
+                font.weight: Font.DemiBold
+                padding: Styling.spacing(4)
+                danger: root.urgency === NotificationUrgency.Critical
+                emphasized: danger
 
                 onClicked: {
                     if (root.notificationObject) {

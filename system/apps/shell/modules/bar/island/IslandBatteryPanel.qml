@@ -196,132 +196,33 @@ Item {
                     spacing: Styling.spacing(8)
 
                     // 1. Power Saver
-                    StyledRect {
-                        id: saverBtn
-                        enabled: PowerProfile.availableProfiles.indexOf("power-saver") !== -1
-                        opacity: enabled ? 1 : 0.4
+                    ThemeButton {
                         Layout.fillWidth: true
-                        Layout.preferredHeight: 38
-                        radius: Styling.radius(1)
-                        variant: PowerProfile.currentProfile === "power-saver" ? "primary" : (saverMouse.containsMouse ? "focus" : "common")
-
-                        RowLayout {
-                            anchors.centerIn: parent
-                            spacing: Styling.spacing(6)
-
-                            Text {
-                                renderType: Text.NativeRendering
-                                font.hintingPreference: Font.PreferFullHinting
-                                text: Icons.powerSave
-                                font.family: Icons.font
-                                font.pixelSize: Styling.fontSize(0)
-                                color: PowerProfile.currentProfile === "power-saver" ? Colors.overPrimary : Colors.overBackground
-                            }
-
-                            Text {
-                                renderType: Text.NativeRendering
-                                font.hintingPreference: Font.PreferFullHinting
-                                text: "Power Saver"
-                                font.family: Config.theme.font
-                                font.pixelSize: Styling.fontSize(-2)
-                                font.bold: PowerProfile.currentProfile === "power-saver"
-                                color: PowerProfile.currentProfile === "power-saver" ? Colors.overPrimary : Colors.overBackground
-                            }
-                        }
-
-                        MouseArea {
-                            id: saverMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: parent.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                            onClicked: PowerProfile.setProfile("power-saver")
-                        }
+                        enabled: PowerProfile.availableProfiles.indexOf("power-saver") !== -1
+                        emphasized: PowerProfile.currentProfile === "power-saver"
+                        glyph: Icons.powerSave
+                        text: "Power Saver"
+                        onClicked: PowerProfile.setProfile("power-saver")
                     }
 
                     // 2. Balanced
-                    StyledRect {
-                        id: balBtn
-                        enabled: PowerProfile.availableProfiles.indexOf("balanced") !== -1
-                        opacity: enabled ? 1 : 0.4
+                    ThemeButton {
                         Layout.fillWidth: true
-                        Layout.preferredHeight: 38
-                        radius: Styling.radius(1)
-                        variant: PowerProfile.currentProfile === "balanced" ? "primary" : (balMouse.containsMouse ? "focus" : "common")
-
-                        RowLayout {
-                            anchors.centerIn: parent
-                            spacing: Styling.spacing(6)
-
-                            Text {
-                                renderType: Text.NativeRendering
-                                font.hintingPreference: Font.PreferFullHinting
-                                text: Icons.balanced
-                                font.family: Icons.font
-                                font.pixelSize: Styling.fontSize(0)
-                                color: PowerProfile.currentProfile === "balanced" ? Colors.overPrimary : Colors.overBackground
-                            }
-
-                            Text {
-                                renderType: Text.NativeRendering
-                                font.hintingPreference: Font.PreferFullHinting
-                                text: "Balanced"
-                                font.family: Config.theme.font
-                                font.pixelSize: Styling.fontSize(-2)
-                                font.bold: PowerProfile.currentProfile === "balanced"
-                                color: PowerProfile.currentProfile === "balanced" ? Colors.overPrimary : Colors.overBackground
-                            }
-                        }
-
-                        MouseArea {
-                            id: balMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: parent.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                            onClicked: PowerProfile.setProfile("balanced")
-                        }
+                        enabled: PowerProfile.availableProfiles.indexOf("balanced") !== -1
+                        emphasized: PowerProfile.currentProfile === "balanced"
+                        glyph: Icons.balanced
+                        text: "Balanced"
+                        onClicked: PowerProfile.setProfile("balanced")
                     }
 
                     // 3. Performance
-                    StyledRect {
-                        id: perfBtn
-                        enabled: PowerProfile.availableProfiles.indexOf("performance") !== -1
-                        opacity: enabled ? 1 : 0.4
+                    ThemeButton {
                         Layout.fillWidth: true
-                        Layout.preferredHeight: 38
-                        radius: Styling.radius(1)
-                        variant: PowerProfile.currentProfile === "performance" ? "primary" : (perfMouse.containsMouse ? "focus" : "common")
-
-                        RowLayout {
-                            anchors.centerIn: parent
-                            spacing: Styling.spacing(6)
-
-                            Text {
-                                renderType: Text.NativeRendering
-                                font.hintingPreference: Font.PreferFullHinting
-                                text: Icons.performance
-                                font.family: Icons.font
-                                font.pixelSize: Styling.fontSize(0)
-                                color: PowerProfile.currentProfile === "performance" ? Colors.overPrimary : Colors.overBackground
-                            }
-
-                            Text {
-                                renderType: Text.NativeRendering
-                                font.hintingPreference: Font.PreferFullHinting
-                                text: "Performance"
-                                font.family: Config.theme.font
-                                font.pixelSize: Styling.fontSize(-2)
-                                font.bold: PowerProfile.currentProfile === "performance"
-                                color: PowerProfile.currentProfile === "performance" ? Colors.overPrimary : Colors.overBackground
-                            }
-                        }
-
-                        MouseArea {
-                            id: perfMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: parent.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                            onClicked: PowerProfile.setProfile("performance")
-                        }
+                        enabled: PowerProfile.availableProfiles.indexOf("performance") !== -1
+                        emphasized: PowerProfile.currentProfile === "performance"
+                        glyph: Icons.performance
+                        text: "Performance"
+                        onClicked: PowerProfile.setProfile("performance")
                     }
                 }
             }

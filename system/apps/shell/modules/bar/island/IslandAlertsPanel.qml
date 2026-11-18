@@ -119,11 +119,7 @@ Item {
         anchors.margins: Styling.spacing(18)
         spacing: Styling.spacing(14)
 
-        // ═══════════════════════════════════════════════════════════════
-        // UNIFIED HEADER: Back + Title + Count + Spacer + DND + Clear All
-        // ═══════════════════════════════════════════════════════════════
         RowLayout {
-            id: headerRow
             Layout.fillWidth: true
             spacing: Styling.spacing(8)
 
@@ -136,7 +132,7 @@ Item {
             Text {
                 renderType: Text.NativeRendering
                 font.hintingPreference: Font.PreferFullHinting
-                text: "Alerts"
+                text: "Notifications"
                 font.family: Config.theme.font
                 font.pixelSize: Styling.fontSize(3)
                 font.bold: true
@@ -165,75 +161,31 @@ Item {
             }
 
             Item { Layout.fillWidth: true }
+        }
+
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: Styling.spacing(8)
+
+            Item { Layout.fillWidth: true }
 
             // DND Toggle Button
-            StyledRect {
-                implicitWidth: 32
-                implicitHeight: 28
-                radius: Styling.radius(2)
-                variant: Notifications.silent ? "primary" : (dndMouse.containsMouse ? "focus" : "common")
-                scale: dndMouse.pressed ? 0.92 : 1.0
-
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: dndMouse.pressed ? Motion.press : Motion.feedback
-                        easing.type: Motion.feedbackCurve
-                    }
-                }
-
-                Text {
-                    anchors.centerIn: parent
-                    renderType: Text.NativeRendering
-                    font.hintingPreference: Font.PreferFullHinting
-                    text: Notifications.silent ? Icons.bellZ : Icons.bell
-                    font.family: Icons.font
-                    font.pixelSize: Styling.fontSize(1)
-                    color: Notifications.silent ? Colors.overPrimary : Colors.overBackground
-                }
-
-                MouseArea {
-                    id: dndMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: Notifications.silent = !Notifications.silent
-                }
+            ThemeButton {
+                glyph: Notifications.silent ? Icons.bellZ : Icons.bell
+                text: "Do not disturb"
+                emphasized: Notifications.silent
+                Accessible.description: Notifications.silent ? "On" : "Off"
+                onClicked: Notifications.toggleSilent()
             }
 
             // Clear All Button
-            StyledRect {
-                visible: Notifications.appNameList.length > 0
-                implicitWidth: 32
-                implicitHeight: 28
-                radius: Styling.radius(2)
-                variant: root.isClearing ? "focus" : (broomMouse.containsMouse ? "error" : "common")
-                scale: broomMouse.pressed ? 0.92 : 1.0
-
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: broomMouse.pressed ? Motion.press : Motion.feedback
-                        easing.type: Motion.feedbackCurve
-                    }
-                }
-
-                Text {
-                    anchors.centerIn: parent
-                    renderType: Text.NativeRendering
-                    font.hintingPreference: Font.PreferFullHinting
-                    text: Icons.broom
-                    font.family: Icons.font
-                    font.pixelSize: Styling.fontSize(1)
-                    color: root.isClearing ? Colors.overSurfaceVariant : (broomMouse.containsMouse ? Colors.overError : Colors.overBackground)
-                }
-
-                MouseArea {
-                    id: broomMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    enabled: !root.isClearing
-                    cursorShape: root.isClearing ? Qt.ArrowCursor : Qt.PointingHandCursor
-                    onClicked: root.discardAllWithAnimation()
-                }
+            ThemeButton {
+                visible: root.totalCount > 0
+                enabled: !root.isClearing
+                glyph: Icons.broom
+                text: "Clear all"
+                danger: true
+                onClicked: root.discardAllWithAnimation()
             }
         }
 

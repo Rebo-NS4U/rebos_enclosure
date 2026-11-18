@@ -1,11 +1,19 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Layouts
 import qs.config
 import qs.modules.theme
 
 Button {
     id: root
     readonly property bool hardware: Styling.shellStyle === "terminal-hardware"
+    property string glyph: ""
+    property int glyphSize: Styling.fontSize(2)
+    property bool glyphSpinning: false
+    property bool danger: false
+    property bool emphasized: false
+    readonly property bool engaged: highlighted || checked || emphasized
+
     focusPolicy: Qt.StrongFocus
     Accessible.name: text
     hoverEnabled: true
@@ -17,17 +25,44 @@ Button {
     background: StyledRect {
         controlSurface: root.hardware
         controlPressed: root.down
-        variant: root.hardware && root.down && !root.highlighted && !root.checked ? "internalbg" : root.highlighted || root.checked ? "primary" : (root.hovered || root.down ? "focus" : "common")
+        variant: root.danger && (root.engaged || root.hovered || root.down || root.activeFocus) ? "error"
+            : root.engaged ? "primary"
+            : root.hardware && root.down ? "internalbg"
+            : root.hovered || root.down ? "focus" : "common"
         radius: Styling.radius(-4)
         border.width: root.activeFocus ? 2 : 1
-        border.color: root.activeFocus ? Colors.primary : root.hardware ? Config.resolveColor(borderData?.[0] ?? "transparent") : Qt.alpha(Colors.outline, 0.3)
+        border.color: root.activeFocus ? (root.danger ? itemColor : Colors.primary) : root.hardware ? Config.resolveColor(borderData?.[0] ?? "transparent") : Qt.alpha(Colors.outline, 0.3)
     }
-    contentItem: StyledText {
-        text: root.text
-        color: root.background.itemColor
-        horizontalAlignment: Text.AlignHCenter
-        verticalAlignment: Text.AlignVCenter
-        elide: Text.ElideRight
-        font: root.font
+    contentItem: RowLayout {
+        spacing: Styling.spacing(6)
+
+        StyledText {
+            visible: root.glyph !== ""
+            Layout.alignment: Qt.AlignHCenter
+            text: root.glyph
+            textFormat: Text.RichText
+            font.family: Icons.font
+            font.pixelSize: root.glyphSize
+            color: root.danger && root.background.variant !== "error" ? Colors.error : root.background.itemColor
+
+            RotationAnimation on rotation {
+                running: root.glyphSpinning && Config.animDuration > 0
+                from: 0
+                to: 360
+                duration: 1000
+                loops: Animation.Infinite
+            }
+        }
+
+        StyledText {
+            visible: root.text !== ""
+            Layout.fillWidth: true
+            text: root.text
+            color: root.background.itemColor
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+            elide: Text.ElideRight
+            font: root.font
+        }
     }
 }

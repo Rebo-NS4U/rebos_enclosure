@@ -1,47 +1,18 @@
 import QtQuick
-import QtQuick.Controls
 import Quickshell.Services.Notifications
 import qs.modules.theme
 import qs.modules.components
-import qs.config
 
-Button {
+ThemeButton {
     id: root
     property bool visibleWhen: true
     property int urgency: NotificationUrgency.Normal
 
     anchors.fill: parent
-    hoverEnabled: true
+    padding: 0
     visible: visibleWhen
-    scale: root.pressed ? 0.92 : 1.0
-
-    Behavior on scale {
-        enabled: (Config.animDuration ?? 0) > 0
-        NumberAnimation {
-            duration: root.pressed ? Motion.press : Motion.feedback
-            easing.type: Motion.feedbackCurve
-        }
-    }
-
-    background: StyledRect {
-        id: buttonBg
-        readonly property color iconColor: root.urgency === NotificationUrgency.Critical
-            ? Colors.overError
-            : (root.pressed ? Colors.overError : Colors.error)
-
-        variant: root.urgency === NotificationUrgency.Critical
-            ? "error"
-            : (root.pressed ? "error" : (root.hovered ? "focus" : "common"))
-        radius: Styling.radius(4)
-    }
-
-    contentItem: Text {
-        text: Icons.cancel
-        textFormat: Text.RichText
-        font.family: Icons.font
-        font.pixelSize: Styling.fontSize(2)
-        color: root.background.iconColor
-        horizontalAlignment: Text.AlignHCenter
-        verticalAlignment: Text.AlignVCenter
-    }
+    glyph: Icons.cancel
+    danger: true
+    emphasized: urgency === NotificationUrgency.Critical
+    Accessible.name: "Dismiss notification"
 }
