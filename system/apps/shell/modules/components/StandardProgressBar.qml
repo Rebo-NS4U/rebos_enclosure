@@ -10,6 +10,7 @@ Item {
     property bool playing: false
     property bool pressed: false
     property bool smoothValue: true
+    property bool showCursor: true
     readonly property real normalizedValue: Math.max(0, Math.min(1, isFinite(value) ? value : 0))
     property real displayedValue: normalizedValue
     readonly property alias filledLength: track.filledLength
@@ -38,5 +39,18 @@ Item {
         activeColor: root.activeColor
         pressed: root.pressed
         playing: root.displayedValue > 0 && (root.playing || activity.running)
+    }
+
+    Rectangle {
+        objectName: "progress-cursor"
+        visible: root.showCursor && root.width > 0
+        anchors.verticalCenter: parent.verticalCenter
+        x: Math.max(0, Math.min(root.width - width, track.filledLength - width / 2))
+        width: Math.min(4, root.width)
+        height: track.thickness + 4
+        radius: width / 2
+        color: root.activeColor
+        border.width: 1
+        border.color: Colors.surface
     }
 }

@@ -23,6 +23,7 @@ ShellRoot {
  Item {
   width: 300; height: 200
   StandardProgressBar { id: rail; width: 200; value: 0.5 }
+  StandardProgressBar { id: customHandleRail; width: 200; value: 0.5; showCursor: false }
   StyledSlider { id: horizontal; width: 200; height: 32; value: 0.5 }
   StyledSlider { id: vertical; width: 32; height: 120; vertical: true; value: 0.5 }
   ThemeSlider { id: themed; width: 200; value: 0.5 }
@@ -50,12 +51,19 @@ ShellRoot {
    function check(ok, message) { if (!ok) throw Error(message); }
    const progressTrack = rail.children[0];
    check(rail.filledLength === 100, 'Half progress must fill half the rail');
+   const cursor = rail.children.find(item => item.objectName === 'progress-cursor');
+   check(cursor.visible && cursor.x + cursor.width / 2 === rail.filledLength
+    && cursor.y + cursor.height / 2 === rail.height / 2,
+    'The progress cursor sits at the fill edge');
+   check(!customHandleRail.children.find(item => item.objectName === 'progress-cursor').visible,
+    'A caller can supply its own handle');
    const sliderRail = themed.background.children[0];
    check(progressTrack.energy === 0 && progressTrack.thickness === sliderRail.thickness
     && rail.height === sliderRail.thickness && progressTrack.rippleAmplitude === sliderRail.rippleAmplitude,
     'Progress matches the slider track thickness and ripple amplitude');
    rail.value = 0.61;
-   check(rail.filledLength < 122, 'Progress changes ease toward the new value');
+   check(rail.filledLength < 122 && cursor.x + cursor.width / 2 === rail.filledLength,
+    'The cursor and fill ease together toward the new value');
    for (const slider of [horizontal, vertical, themed]) {
     for (const quarter of [0.25, 0.5, 0.75]) {
      for (const delta of [-0.03, -0.02, 0, 0.02, 0.03])
@@ -87,7 +95,9 @@ ShellRoot {
  Timer { id: activeCheck; interval: 180; onTriggered: {
   const progressTrack = rail.children[0];
   const segments = progressTrack.children.filter(item => item.wave !== undefined);
+  const cursor = rail.children.find(item => item.objectName === 'progress-cursor');
   if (Math.abs(rail.filledLength - 122) > 0.01 || progressTrack.energy <= 0
+      || Math.abs(cursor.x + cursor.width / 2 - rail.filledLength) > 0.01
       || segments.some(item => item.x + item.width > rail.filledLength && item.wave !== 0)
       || !segments.some(item => item.wave !== 0)) {
    console.error('Progress settles at its value and ripples only on the filled track'); Qt.exit(1); return;
@@ -141,9 +151,11 @@ ShellRoot {
    console.error('Tracks must settle after movement'); Qt.exit(1); return;
   }
   Config.animDuration = 0;
+  const cursor = rail.children.find(item => item.objectName === 'progress-cursor');
   for (const [value, width] of [[0.25, 50], [-1, 0], [2, 200], [NaN, 0]]) {
    rail.value = value;
-   if (rail.filledLength !== width || rail.children[0].energy !== 0) {
+   const expectedCursorX = Math.max(0, Math.min(rail.width - cursor.width, width - cursor.width / 2));
+   if (rail.filledLength !== width || rail.children[0].energy !== 0 || cursor.x !== expectedCursorX) {
     console.error('Reduced motion progress is immediate and clamped'); Qt.exit(1); return;
    }
   }

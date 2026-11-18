@@ -92,6 +92,7 @@ Item {
 
             StandardProgressBar {
                 id: seekProgress
+                showCursor: false
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
