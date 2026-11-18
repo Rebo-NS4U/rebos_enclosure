@@ -10,6 +10,8 @@ Item {
     property bool pressed: false
     property bool playing: false
     property bool hovered: false
+    property real thickness: 6
+    property real rippleAmplitude: 1.5
 
     implicitHeight: 22
     readonly property real filledLength: width * Math.max(0, Math.min(1, isFinite(value) ? value : 0))
@@ -52,9 +54,9 @@ Item {
             required property int index
             readonly property real wave: root.waveAt(x + width / 2)
             x: index * root.pitch
-            y: (root.height - height) / 2 - 1.5 * root.energy * wave
+            y: (root.height - height) / 2 - root.rippleAmplitude * root.energy * wave
             width: Math.max(0, root.pitch - Math.min(3, root.pitch / 3))
-            height: 6
+            height: root.thickness
             radius: Math.min(width, height) / 2
             color: Qt.alpha(root.activeColor, root.hovered || root.pressed ? 0.35 : 0.22)
 

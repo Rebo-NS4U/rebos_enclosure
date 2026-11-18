@@ -490,23 +490,22 @@ ShellRoot {
      Config.animDuration = 0;
      LyricsService.apply('[00:01]Current lyric\\n[00:05]Next', 'Test', false);
      const track = findItem(panel, 'bar-lyrics-line-progress');
-     const fill = findItem(track, 'bar-lyrics-line-progress-fill');
      for (const position of [1, 2, 3, 5, 8, 0]) {
       strip.lyricPosition = position;
       const expected = Math.max(0, Math.min(1, (position - 1) / 4));
-      if (Math.abs(fill.width - track.width * expected) > 0.01)
+      if (Math.abs(track.filledLength - track.width * expected) > 0.01)
        throw Error('Underline must show elapsed line time, including seeks and bounds');
      }
      strip.lyricPosition = 3;
      if (!track.visible || track.width <= 0 || track.x < label.x
-         || track.x + track.width > label.x + label.width || fill.height !== 2)
+         || track.x + track.width > label.x + label.width || track.height !== 2)
       throw Error('Progress must fit beneath the lyric even with reduced motion');
      const nextPanel = findItem(strip, 'bar-lyrics-next');
      if (findItem(nextPanel, 'bar-lyrics-line-progress').visible)
       throw Error('Upcoming line must not show elapsed progress');
      MprisController.position = 5;
      strip.updateLyricPosition();
-     if (strip.currentText !== 'Next' || fill.width !== 0)
+     if (strip.currentText !== 'Next' || track.filledLength !== 0)
       throw Error('Next cue must reset line progress');
      Config.animDuration = 1000;
      LyricsService.apply('', 'Test', true);

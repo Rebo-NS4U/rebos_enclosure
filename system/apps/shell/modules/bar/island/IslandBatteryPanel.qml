@@ -146,25 +146,12 @@ Item {
                     }
                 }
 
-                // Battery progress bar gauge
-                StyledRect {
+                StandardProgressBar {
                     visible: Battery.available
                     Layout.fillWidth: true
                     Layout.preferredHeight: 6
-                    radius: Styling.radius(0)
-                    variant: "common"
-
-                    StyledRect {
-                        width: Math.max(6, Math.min(parent.width, parent.width * (Battery.percentage / 100)))
-                        height: parent.height
-                        radius: Styling.radius(0)
-                        variant: Battery.percentage <= 20 ? "error" : "primary"
-
-                        Behavior on width {
-                            enabled: Config.animDuration > 0
-                            NumberAnimation { duration: Motion.feedback }
-                        }
-                    }
+                    value: Battery.percentage / 100
+                    activeColor: Battery.percentage <= 20 ? Colors.error : Colors.primary
                 }
             }
         }

@@ -354,7 +354,6 @@ Item {
             // Follow the visible label width, including when long lyrics elide.
             width: Math.max(0, Math.min(currentLabel.contentWidth, currentLabel.width))
             height: 2
-            radius: height / 2
             x: currentLabel.x + (currentLabel.width - width) / 2
             y: Math.min(lineSurface.height - height - 2,
                 (lineSurface.height + currentLabel.implicitHeight) / 2 + 2)
@@ -363,8 +362,8 @@ Item {
             opacity: currentLabel.opacity
             value: root.lineProgress
             activeColor: BarAppearance.activeColor
-            foregroundColor: BarAppearance.foregroundColor
-            fillObjectName: "bar-lyrics-line-progress-fill"
+            playing: MprisController.isPlaying
+            smoothValue: false
         }
     }
     Line { id: currentPanel; objectName: "bar-lyrics-current"; x: root.edgeMargin; lyric: (root.estimatedTiming && root.currentText ? "≈ " : "") + root.currentText }

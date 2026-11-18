@@ -10,8 +10,7 @@ class StandardProgress(unittest.TestCase):
         paths = [ROOT / 'system/apps' / name / 'StandardProgressBar.qml' for name in (
             'shell/modules/components', 'assistant/modules/components', 'media/ui/modules/components')]
         for component in ('StandardProgressBar.qml', 'SliderTrack.qml'):
-            app_paths = paths if component == 'StandardProgressBar.qml' else paths[1:]
-            source, *copies = [path.with_name(component).read_bytes() for path in app_paths]
+            source, *copies = [path.with_name(component).read_bytes() for path in paths[1:]]
             for copy in copies:
                 self.assertEqual(source, copy)
 
@@ -49,22 +48,11 @@ ShellRoot {
  Timer { interval: 900; running: true; onTriggered: {
   try {
    function check(ok, message) { if (!ok) throw Error(message); }
-   const fill = rail.children.find(child => child.objectName === 'standard-progress-fill');
-   check(!fill.gradient && Qt.colorEqual(fill.color, rail.activeColor), 'Rail has a solid active fill');
-   check(fill.width === 100, 'Half progress must fill half the rail');
-   const marks = fill.children.filter(child => child.objectName === 'standard-progress-mark');
-   check(marks.length === 3 && marks.every(mark => !mark.visible), 'Idle rail is solid');
-   check(marks[1].x - marks[0].x !== marks[2].x - marks[1].x, 'Mark spacing is uneven');
-   rail.value = 0.505;
-   check(rail.pulseStrength === 1 && Math.abs(fill.width - 101) < 0.01, 'Value changes wake the marks');
-   rail.value = 0.5;
-   const tip = fill.children.find(child => child.objectName === 'standard-progress-tip');
-   check(tip.width === 4 && tip.x + tip.width === fill.width, 'Solid tip follows the filled edge');
-   check(!tip.gradient && Qt.colorEqual(tip.color, rail.foregroundColor), 'Tip uses the foreground color');
-   rail.value = 0.005; check(tip.width === fill.width, 'Tip fits short fills');
-   rail.value = -1; check(fill.width === 0 && tip.width === 0, 'Negative values clamp');
-   rail.value = 2; check(fill.width === 200, 'Overflow values clamp');
-   rail.value = NaN; check(fill.width === 0, 'Nonfinite values are safe');
+   const progressTrack = rail.children[0];
+   check(rail.filledLength === 100, 'Half progress must fill half the rail');
+   check(progressTrack.energy === 0 && progressTrack.thickness === rail.height, 'Idle progress is flat and compact');
+   rail.value = 0.61;
+   check(rail.filledLength < 122, 'Progress changes ease toward the new value');
    for (const slider of [horizontal, vertical, themed]) {
     for (const quarter of [0.25, 0.5, 0.75]) {
      for (const delta of [-0.03, -0.02, 0, 0.02, 0.03])
@@ -90,16 +78,17 @@ ShellRoot {
    vertical.isDragging = true;
    check(horizontal.animatedProgress === 0.8 && vertical.animatedProgress === 0.6,
     'Dragging tracks the value immediately in both orientations');
-   rail.value = 0.61;
    themedVertical.playing = true;
    activeCheck.start();
   } catch(error) { console.error(error); Qt.exit(1); }
  }}
  Timer { id: activeCheck; interval: 180; onTriggered: {
-  const fill = rail.children.find(child => child.objectName === 'standard-progress-fill');
-  const marks = fill.children.filter(child => child.objectName === 'standard-progress-mark');
-  if (marks.some(mark => !mark.visible || mark.x < 0 || mark.x + mark.width > fill.width)) {
-   console.error('Moving marks must stay within the fill'); Qt.exit(1); return;
+  const progressTrack = rail.children[0];
+  const segments = progressTrack.children.filter(item => item.wave !== undefined);
+  if (Math.abs(rail.filledLength - 122) > 0.01 || progressTrack.energy <= 0
+      || segments.some(item => item.x + item.width > rail.filledLength && item.wave !== 0)
+      || !segments.some(item => item.wave !== 0)) {
+   console.error('Progress settles at its value and ripples only on the filled track'); Qt.exit(1); return;
   }
   const sliderRail = themed.background.children[0];
   if (sliderRail.energy !== 0 || Math.abs(sliderRail.value - 0.8) > 0.001
@@ -107,21 +96,19 @@ ShellRoot {
               - themed.background.x - sliderRail.x - sliderRail.width * sliderRail.value) > 0.01) {
    console.error('Hover and value updates keep the rail still while the thumb follows the value'); Qt.exit(1); return;
   }
-  travelCheck.startX = marks[0].x;
+  travelCheck.progressPhase = progressTrack.phase;
   travelCheck.playbackPhase = themedVertical.background.children[0].phase;
   const track = horizontal.children[0].children[0].children.find(item => item.segmentCount > 0);
   travelCheck.segmentCenters = track.children.filter(item => item.wave !== undefined).map(item => item.y + item.height / 2);
   travelCheck.start();
  }}
  Timer { id: travelCheck; interval: 120
-  property real startX: 0
+  property real progressPhase: 0
   property real playbackPhase: 0
   property var segmentCenters: []
   onTriggered: {
-   const fill = rail.children.find(child => child.objectName === 'standard-progress-fill');
-   const mark = fill.children.find(child => child.objectName === 'standard-progress-mark');
-   if (rail.value !== 0.61 || Math.abs(mark.x - startX) < 1) {
-    console.error('Marks must travel between value updates'); Qt.exit(1); return;
+   if (rail.value !== 0.61 || rail.children[0].phase === progressPhase) {
+    console.error('The progress ripple travels between value updates'); Qt.exit(1); return;
    }
    const track = horizontal.children[0].children[0].children.find(item => item.segmentCount > 0);
    const verticalTrack = vertical.children[1].children[0].children.find(item => item.segmentCount > 0);
@@ -147,13 +134,17 @@ ShellRoot {
    idleCheck.start();
  }}
  Timer { id: idleCheck; interval: 650; onTriggered: {
-  const fill = rail.children.find(child => child.objectName === 'standard-progress-fill');
-  const mark = fill.children.find(child => child.objectName === 'standard-progress-mark');
   const track = horizontal.children[0].children[0].children.find(item => item.segmentCount > 0);
-  if (!playbackMotion.easedOut || mark.visible || themedVertical.background.children[0].energy !== 0 || track.energy !== 0 || track.children[0].height !== 6) {
+  if (!playbackMotion.easedOut || rail.children[0].energy !== 0 || themedVertical.background.children[0].energy !== 0 || track.energy !== 0 || track.children[0].height !== 6) {
    console.error('Tracks must settle after movement'); Qt.exit(1); return;
   }
   Config.animDuration = 0;
+  for (const [value, width] of [[0.25, 50], [-1, 0], [2, 200], [NaN, 0]]) {
+   rail.value = value;
+   if (rail.filledLength !== width || rail.children[0].energy !== 0) {
+    console.error('Reduced motion progress is immediate and clamped'); Qt.exit(1); return;
+   }
+  }
   themed.value = 0.25;
   const themedTrack = themed.background.children[0];
   horizontal.isDragging = true;

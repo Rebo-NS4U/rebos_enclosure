@@ -223,21 +223,15 @@ Item {
                 }
             }
 
-            StyledRect {
-                variant: "common"
+            StandardProgressBar {
                 anchors.bottom: parent.bottom
                 anchors.horizontalCenter: parent.horizontalCenter
-                height: 4
                 width: 180
-                radius: Styling.radius(0)
+                value: root.visualProgress
+                playing: root.isRunning
+                smoothValue: false
+                activeColor: Styling.srItem("overprimary")
                 opacity: root.isRunning || root.alarmActive || root.visualProgress < 1.0 ? 1.0 : 0.3
-                
-                Rectangle {
-                    height: parent.height
-                    width: root.visualProgress * parent.width
-                    radius: 2
-                    color: Styling.srItem("overprimary")
-                }
             }
 
         }
