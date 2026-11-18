@@ -274,127 +274,77 @@ ClippingRectangle {
         radius: root.radius
     }
 
-    // Frosted and Tinted have distinct perimeter construction, not a palette swap.
+    // The frosted pane scatters light. The tinted pane carries the selected dye.
     Loader {
         anchors.fill: parent
         active: !root.hasFillColor && root.rectOpacity > 0
-            && ["bg", "popup", "pane", "surface", "surfaceContainer", "internalbg", "focus"].indexOf(root.variant) !== -1
+            && ["bg", "popup", "bar", "pane", "surface", "surfaceContainer", "internalbg", "focus"].indexOf(root.variant) !== -1
             && ["frosted", "colorful"].indexOf(root.styleOverride || Styling.shellStyle) !== -1
-        sourceComponent: Item {
-            id: classic
-            readonly property bool ice: (root.styleOverride || Styling.shellStyle) === "frosted"
-            readonly property bool outer: root.variant === "bg" || root.variant === "popup"
-            readonly property color ink: root.itemColor
-            readonly property color accent: Colors.primary
+        sourceComponent: Canvas {
+            id: glassPane
+            anchors.fill: parent
+            objectName: "classic-glass-canvas"
             opacity: root.rectOpacity
-            Canvas {
+            readonly property bool ice: (root.styleOverride || Styling.shellStyle) === "frosted"
+            readonly property bool outer: root.variant === "bg" || root.variant === "popup" || root.variant === "bar"
+            readonly property color pigment: root.itemColor
+            readonly property color accent: Colors.primary
+            readonly property real cornerRadius: root.effectiveCornerRadius
+            readonly property var frameCorners: [root.topLeftRadius, root.topRightRadius, root.bottomLeftRadius, root.bottomRightRadius]
+            onIceChanged: requestPaint()
+            onOuterChanged: requestPaint()
+            onPigmentChanged: requestPaint()
+            onAccentChanged: requestPaint()
+            onCornerRadiusChanged: requestPaint()
+            onFrameCornersChanged: requestPaint()
+            onWidthChanged: requestPaint()
+            onHeightChanged: requestPaint()
+            Image {
                 anchors.fill: parent
-                readonly property color pigment: classic.ink
-                readonly property bool outer: classic.outer
-                onOuterChanged: requestPaint()
-                readonly property color accent: classic.accent
-                readonly property color secondaryTint: Colors.tertiary
-                onSecondaryTintChanged: requestPaint()
-                readonly property bool ice: classic.ice
-                objectName: "classic-glass-canvas"
-                readonly property int frostSeed: Math.floor(Math.random()*65536)
-                readonly property real cornerRadius: root.effectiveCornerRadius
-                onCornerRadiusChanged: requestPaint()
-                readonly property var frameCorners: [root.topLeftRadius, root.topRightRadius, root.bottomLeftRadius, root.bottomRightRadius]
-                onFrameCornersChanged: requestPaint()
-                onPigmentChanged: requestPaint()
-                onAccentChanged: requestPaint()
-                onIceChanged: requestPaint()
-                onWidthChanged: requestPaint()
-                onHeightChanged: requestPaint()
-                onPaint: {
-                    const ctx=getContext("2d");ctx.clearRect(0,0,width,height);
-                    if(width<24 || height<24)return;
-                    const ink=a=>Qt.rgba(pigment.r,pigment.g,pigment.b,a);
-                    const tint=a=>Qt.rgba(accent.r,accent.g,accent.b,a);
-                    ctx.save();if(root.traceThemeFrame(ctx,0))ctx.clip();
-                    ctx.lineWidth=1;
-                    if(ice){
-                        // Two soft inset rims and a broken highlight suggest etched ice.
-                        for(let layer=0;layer<2;layer++){
-                            const d=3+layer*3;
-                            ctx.strokeStyle=ink(layer?0.07:0.18);
-                            if(root.traceThemeFrame(ctx,d))ctx.stroke();
-                        }
-                        ctx.strokeStyle=ink(0.32);ctx.beginPath();ctx.moveTo(Math.max(18,cornerRadius),3);ctx.lineTo(Math.max(18,cornerRadius,width*0.38),3);ctx.stroke();
-                        if(classic.outer){
-                            // Fixed fine grain at the perimeter; no texture over text.
-                            ctx.fillStyle=ink(0.14);
-                            for(let i=0;i<Math.min(200,Math.floor((width+height)/4));i++){
-                                const x=8+((i*47)%Math.max(1,width-16));
-                                const y=i%2?height-5-(i%5):4+(i%5);
-                                ctx.fillRect(x,y,1,1);
-                            }
-                            // Stable per-surface randomness breaks the repeated crack motif.
-                            // Repainting or resizing keeps existing crystals in place.
-                            const random=i=>{
-                                const value=Math.sin((i+1)*127.1+frostSeed*311.7)*43758.5453;
-                                return value-Math.floor(value);
-                            };
-                            const edge=Math.max(22,cornerRadius+8);
-                            let x=edge+random(0)*38;
-                            for(let crystal=0;x<width-edge;crystal++){
-                                const key=crystal*13;
-                                const length=Math.min(height-9,9+random(key+2)*15);
-                                const lean=(random(key+3)-0.5)*14;
-                                ctx.strokeStyle=ink(0.20+random(key+4)*0.12);ctx.lineWidth=0.9;
-                                ctx.beginPath();ctx.moveTo(x,3);ctx.lineTo(x+lean,length);
-                                const twigs=2+Math.floor(random(key+5)*3);
-                                for(let twig=0;twig<twigs;twig++){
-                                    const t=(twig+1)/(twigs+1);
-                                    const y=3+t*(length-3),stem=x+t*lean;
-                                    const reach = (3 + random(key+6+twig)*6) * (1-t*0.6);
-                                    for (const side of [-1, 1]) {
-                                        ctx.moveTo(stem,y);
-                                        ctx.lineTo(stem + side*reach, y - reach*0.65);
-                                        ctx.moveTo(stem + side*reach*0.56, y - reach*0.36);
-                                        ctx.lineTo(stem + side*reach*0.62, y - reach*0.80);
-                                    }
-                                }
-                                ctx.stroke();
-                                x+=30+random(key+1)*76;
-                            }
-                            const bloom=ctx.createRadialGradient(width,0,0,width,0,Math.min(100,width/3,height/2));
-                            bloom.addColorStop(0,ink(0.075));bloom.addColorStop(1,ink(0));
-                            ctx.fillStyle=bloom;ctx.fillRect(0,0,width,height);
-                        }
-                    }else{
-                        // Offset accent planes, quiet inner keylines and open frame corners.
-                        const band=classic.outer?7:3;
-                        ctx.fillStyle=tint(0.22);ctx.fillRect(0,12,band,Math.max(0,height-24));
-                        ctx.fillStyle=tint(0.12);ctx.fillRect(band+2,22,2,Math.max(0,height-44));
-                        ctx.strokeStyle=tint(0.30);ctx.beginPath();
-                        const r=root.themeCornerRadius(root.topRightRadius,5);
-                        ctx.moveTo(Math.max(18,5+r),5);ctx.lineTo(width-5-r,5);
-                        ctx.quadraticCurveTo(width-5,5,width-5,5+r);
-                        ctx.lineTo(width-5,Math.max(5+r,height*0.32));ctx.stroke();
-                        ctx.strokeStyle=ink(0.09);ctx.beginPath();ctx.moveTo(Math.max(16,11+root.themeInsetRadius(11)),11);ctx.lineTo(width-Math.max(22,11+root.themeInsetRadius(11)),11);ctx.stroke();
-                        ctx.fillStyle=tint(0.23);ctx.beginPath();
-                        ctx.moveTo(width-34,height-5);ctx.lineTo(width-5,height-5);ctx.lineTo(width-5,height-16);ctx.lineTo(width-23,height-16);ctx.closePath();ctx.fill();
-                        if(classic.outer){
-                            // Layered colored glass planes recede into the upper and lower margins.
-                            for(let plane=0;plane<3;plane++){
-                                const depth=12+plane*8;
-                                const wash=ctx.createLinearGradient(0,0,0,depth+10);
-                                const dye = plane === 1 ? secondaryTint : accent;
-                                wash.addColorStop(0, Qt.alpha(dye, 0.27));
-                                wash.addColorStop(0.75, Qt.alpha(dye, 0.10));
-                                wash.addColorStop(1, Qt.alpha(dye, 0));
-                                ctx.fillStyle=wash;ctx.beginPath();ctx.moveTo(width*0.36+plane*18,0);
-                                ctx.lineTo(width,0);ctx.lineTo(width,depth);
-                                ctx.lineTo(width*0.51+plane*14,depth);ctx.closePath();ctx.fill();
-                            }
-                            ctx.fillStyle=tint(0.35);
-                            for(let i=0;i<3;i++)ctx.fillRect(18+i*9,height-7,5,2);
-                        }
-                    }
-                    ctx.restore();
+                source: glassPane.ice ? "frost-grain.png" : ""
+                fillMode: Image.Tile
+                smooth: false
+                opacity: glassPane.outer ? 0.047 : 0.025
+            }
+            onPaint: {
+                const ctx = getContext("2d");
+                ctx.clearRect(0, 0, width, height);
+                if (width < 8 || height < 8) return;
+                ctx.save();
+                if (root.traceThemeFrame(ctx, 0)) ctx.clip();
+
+                if (ice) {
+                    // Broad diffuse light over a satin-etched face.
+                    const spread = Math.min(width * 0.82, height * 1.65);
+                    const diffuse = Qt.tint(pigment, Qt.rgba(1, 1, 1, 0.58));
+                    const haze = ctx.createRadialGradient(width*0.16, 0, 0, width*0.16, 0, spread);
+                    haze.addColorStop(0, Qt.alpha(diffuse, outer ? 0.35 : 0.15));
+                    haze.addColorStop(0.48, Qt.alpha(diffuse, outer ? 0.16 : 0.065));
+                    haze.addColorStop(1, Qt.alpha(pigment, 0));
+                    ctx.fillStyle = haze;
+                    ctx.fillRect(0, 0, width, height);
+                } else {
+                    // One dyed pane, with a soft reflection across the viewing angle.
+                    const glass = ctx.createLinearGradient(0, 0, width * 0.78, height);
+                    glass.addColorStop(0, Qt.alpha(accent, outer ? 0.21 : 0.10));
+                    glass.addColorStop(0.28, Qt.alpha(accent, 0.08));
+                    glass.addColorStop(0.40, Qt.alpha(pigment, outer ? 0.16 : 0.055));
+                    glass.addColorStop(0.46, Qt.alpha(pigment, outer ? 0.075 : 0.035));
+                    glass.addColorStop(0.59, Qt.alpha(accent, 0.035));
+                    glass.addColorStop(1, Qt.alpha(accent, outer ? 0.20 : 0.08));
+                    ctx.fillStyle = glass;
+                    ctx.fillRect(0, 0, width, height);
                 }
+
+                const edge = ctx.createLinearGradient(0, 0, width * 0.5, height);
+                edge.addColorStop(0, Qt.alpha(pigment, ice ? 0.29 : 0.46));
+                edge.addColorStop(0.32, Qt.alpha(pigment, 0.09));
+                edge.addColorStop(0.70, Qt.alpha(accent, 0.045));
+                edge.addColorStop(1, Qt.alpha(ice ? pigment : accent, ice ? 0.13 : 0.48));
+                ctx.strokeStyle = edge;
+                ctx.lineWidth = 1;
+                if (root.traceThemeFrame(ctx, 0.85)) ctx.stroke();
+                ctx.restore();
             }
         }
     }
@@ -661,90 +611,70 @@ ClippingRectangle {
                 ctx.save();
                 if(root.traceThemeFrame(ctx,0))ctx.clip();
                 if (finish === "canopy") {
-                    // A high rear sail spans the opening. The two nearer sails pull
-                    // toward opposite shoulders, leaving the middle open for labels.
-                    const compact = barSurface || height < 60;
-                    const drop = compact ? Math.min(18, height * 0.42)
-                                         : Math.min(98, height * 0.31, width * 0.25);
-
-                    function sail(left, span, tip, depth, dye, reverse) {
+                    // Overhanging boughs grow in from the edges of the panel.
+                    const scale = Math.min(1.45, width / 335, height / 96);
+                    function bough(x, direction, size, foliage) {
                         ctx.save();
-                        ctx.translate(left, 0);
-                        ctx.scale(reverse ? -span : span, depth);
+                        ctx.translate(x, 0);
+                        ctx.scale(size * direction, size);
 
-                        // Each bolt of cloth fans out from the same tension point.
-                        // The curved edges bow most where they are farthest from it.
-                        function fold(edge, returnToTip) {
-                            const pull = edge - tip;
-                            const shoulder = tip + pull * 0.22;
-                            const crown = tip + pull * 0.72;
-                            if (returnToTip)
-                                ctx.bezierCurveTo(crown, 0.06, shoulder, 0.38, tip, 1);
-                            else
-                                ctx.bezierCurveTo(shoulder, 0.38, crown, 0.06, edge, -0.12);
-                        }
-                        function cloth(from, to) {
+                        const bark = Qt.tint(foliage, Qt.alpha(backdrop, 0.52));
+                        ctx.fillStyle = Qt.alpha(bark, 0.95);
+                        ctx.beginPath();
+                        ctx.moveTo(-6, 62);
+                        ctx.bezierCurveTo(20, 37, 37, 35, 63, 27);
+                        ctx.bezierCurveTo(93, 19, 115, 9, 139, -3);
+                        ctx.bezierCurveTo(113, 14, 97, 21, 65, 31);
+                        ctx.bezierCurveTo(32, 40, 15, 48, -6, 72);
+                        ctx.fill();
+
+                        function leaf(x, y, angle, length) {
+                            ctx.save();
+                            ctx.translate(x, y);
+                            ctx.rotate(angle);
                             ctx.beginPath();
-                            ctx.moveTo(tip, 1);
-                            fold(from, false);
-                            ctx.lineTo(to, -0.12);
-                            fold(to, true);
-                            ctx.closePath();
-                        }
-
-                        // A displaced silhouette gives the overhanging cloth depth.
-                        ctx.save();
-                        ctx.translate(0, 0.065);
-                        cloth(0, 1);
-                        ctx.fillStyle = Qt.alpha(backdrop, 0.44);
-                        ctx.fill();
-                        ctx.restore();
-
-                        const silk = ctx.createLinearGradient(0, 0.58, 1, 0.08);
-                        silk.addColorStop(0, Qt.alpha(dye, 0.68));
-                        silk.addColorStop(0.25, Qt.alpha(dye, 0.30));
-                        silk.addColorStop(0.58, Qt.alpha(dye, 0.54));
-                        silk.addColorStop(1, Qt.alpha(pigment, 0.34));
-                        cloth(0, 1);
-                        ctx.fillStyle = silk;
-                        ctx.fill();
-
-                        // Wide and narrow facets alternate as the fabric turns into light.
-                        const gores = [0, 0.19, 0.24, 0.58, 0.69, 1];
-                        for (let i = 1; i < gores.length; i++) {
-                            cloth(gores[i-1], gores[i]);
-                            const lit = i % 2 === 0;
-                            const foldLight = ctx.createLinearGradient(gores[i-1], 0, gores[i], 0.12);
-                            const tone = lit ? pigment : backdrop;
-                            foldLight.addColorStop(0, Qt.alpha(tone, 0.05));
-                            foldLight.addColorStop(0.65, Qt.alpha(tone, lit ? 0.29 : 0.36));
-                            foldLight.addColorStop(1, Qt.alpha(tone, lit ? 0.12 : 0.19));
-                            ctx.fillStyle = foldLight;
+                            ctx.moveTo(0, 0);
+                            ctx.bezierCurveTo(length*0.27, -length*0.38, length*0.71, -length*0.30, length, 0);
+                            ctx.bezierCurveTo(length*0.70, length*0.18, length*0.24, length*0.36, 0, 0);
+                            ctx.fillStyle = Qt.alpha(foliage, 0.76);
                             ctx.fill();
+                            ctx.beginPath();
+                            ctx.moveTo(0, 0);
+                            ctx.quadraticCurveTo(length*0.48, -length*0.06, length, 0);
+                            ctx.bezierCurveTo(length*0.71, -length*0.30, length*0.27, -length*0.38, 0, 0);
+                            ctx.fillStyle = Qt.alpha(pigment, 0.20);
+                            ctx.fill();
+                            ctx.restore();
                         }
+
+                        function twig(x, y, dx, dy, leafSize) {
+                            ctx.strokeStyle = Qt.alpha(bark, 0.90);
+                            ctx.lineWidth = 1.5;
+                            ctx.beginPath();
+                            ctx.moveTo(x, y);
+                            ctx.quadraticCurveTo(x + dx*0.62, y + dy*0.15, x + dx, y + dy);
+                            ctx.stroke();
+                            const angle = Math.atan2(dy, dx);
+                            for (let i = 1; i <= 3; i++) {
+                                const t = i / 4, u = 1 - t;
+                                const stemX = x + dx * (1.24*u*t + t*t);
+                                const stemY = y + dy * (0.30*u*t + t*t);
+                                leaf(stemX, stemY, angle + (i % 2 ? 0.96 : -1.06), leafSize * (1.10 - t*0.25));
+                            }
+                            leaf(x+dx, y+dy, angle, leafSize*0.85);
+                        }
+                        twig(10, 49, 17, -32, 17);
+                        twig(32, 40, 35, 13, 15);
+                        twig(52, 33, 18, -27, 19);
+                        twig(79, 24, 37, 9, 13);
+                        twig(99, 16, 29, -12, 12);
                         ctx.restore();
                     }
 
-                    sail(-width * 0.09, width * 1.17, 0.56, drop * 0.49, secondaryAccent, false);
-                    sail(width * 1.10, width * 0.75, 0.21, drop * 0.81, secondaryAccent, true);
-                    sail(-width * 0.13, width * 0.83, 0.21, drop, accent, false);
-
-                    if (!compact) {
-                        const shade = ctx.createLinearGradient(0, height * 0.80, 0, height);
-                        shade.addColorStop(0, Qt.alpha(accent, 0));
-                        shade.addColorStop(1, Qt.alpha(accent, 0.10));
-                        ctx.fillStyle = shade;
-                        ctx.fillRect(0, height * 0.80, width, height * 0.20);
-                    }
+                    bough(width, -1, scale * 0.73, secondaryAccent);
+                    bough(0, 1, scale, accent);
                 }else if(finish === "orbital"){
-                    // Elliptical orbital tracks wrap a quiet, recessed space capsule.
                     const rim = outer || inset ? 6 : 3;
-                    ctx.strokeStyle=ink(0.20);ctx.lineWidth=1;
-                    if(root.traceThemeFrame(ctx,outer?6:3))ctx.stroke();
-                    if(inset){
-                        ctx.strokeStyle=ink(0.08);
-                        if(root.traceThemeFrame(ctx,6))ctx.stroke();
-                    }
                     // Deterministic jitter spreads a stable star field over the entire surface.
                     // Check star centers against an inset that allows for the full cross and stroke.
                     const stars = [];
@@ -761,53 +691,19 @@ ClippingRectangle {
                     }
                     for (const {x, y, fraction} of stars) {
                         const bright = fraction > 0.88;
-                        ctx.fillStyle = ink(bright ? 0.40 : 0.14 + fraction * 0.12);
+                        ctx.fillStyle = ink(bright ? 0.95 : 0.31 + fraction * 0.34);
                         ctx.beginPath();
-                        ctx.arc(x, y, bright ? 1.15 : 0.55, 0, Math.PI * 2);
+                        ctx.arc(x, y, bright ? 1.55 : 0.82, 0, Math.PI * 2);
                         ctx.fill();
                         if (bright) {
-                            ctx.strokeStyle = ink(0.16);
-                            ctx.lineWidth = 0.7;
+                            ctx.strokeStyle = ink(0.54);
+                            ctx.lineWidth = 0.9;
                             ctx.beginPath();
                             ctx.moveTo(x - 3, y);
                             ctx.lineTo(x + 3, y);
                             ctx.moveTo(x, y - 3);
                             ctx.lineTo(x, y + 3);
                             ctx.stroke();
-                        }
-                    }
-                    if (outer) {
-                        // The rotated outer ring fits in a 56 by 23 half-extent.
-                        const side = Math.max(...frameCorners.map(value => root.themeCornerRadius(value, 0))) + rim;
-                        const scale = Math.min(1, (width / 2 - side) / 56, (height / 2 - rim) / 23);
-                        if (scale > 0) for (const bottom of [false, true]) {
-                            ctx.save();
-                            const x = side + 56 * scale;
-                            const y = rim + 23 * scale;
-                            ctx.translate(bottom ? width - x : x, bottom ? height - y : y);
-                            ctx.scale(scale, scale);
-                            ctx.rotate(bottom ? -0.24 : 0.24);
-                            const planet = ctx.createRadialGradient(-4, -3, 0, 0, 0, 9);
-                            planet.addColorStop(0, Qt.alpha(secondaryAccent, 0.65));
-                            planet.addColorStop(0.65, Qt.alpha(accent, 0.34));
-                            planet.addColorStop(1, Qt.alpha(backdrop, 0.85));
-                            ctx.fillStyle = planet;
-                            ctx.beginPath();
-                            ctx.arc(0, 0, 9, 0, Math.PI * 2);
-                            ctx.fill();
-                            ctx.scale(1, 0.32);
-                            ctx.lineWidth = 0.7;
-                            for (let ring = 0; ring < 3; ring++) {
-                                ctx.strokeStyle = Qt.rgba(accent.r, accent.g, accent.b, 0.34 - ring * 0.07);
-                                ctx.beginPath();
-                                ctx.arc(0, 0, 24 + ring * 15, 0, Math.PI * 2);
-                                ctx.stroke();
-                            }
-                            ctx.fillStyle = Qt.rgba(accent.r, accent.g, accent.b, 0.8);
-                            ctx.beginPath();
-                            ctx.ellipse(bottom ? -41.5 : 36.5, -7.8, 5, 15.6);
-                            ctx.fill();
-                            ctx.restore();
                         }
                     }
                 }else{
@@ -980,7 +876,7 @@ ClippingRectangle {
         }
     }
 
-    // Monolith: polished obsidian with luminous perimeter fractures.
+    // Monolith is an opaque slab with columnar basalt along one edge.
     Loader {
         anchors.fill: parent
         active: !root.hasFillColor && root.rectOpacity > 0 && (root.styleOverride || Styling.shellStyle) === "monolith"
@@ -993,7 +889,6 @@ ClippingRectangle {
             readonly property color pigment: root.itemColor
             readonly property color shadowInk: Qt.darker(Colors.background, 1.8)
             readonly property color accent: Colors.primary
-            readonly property color secondaryAccent: Colors.secondary
             readonly property bool outer: root.variant === "bg" || root.variant === "popup" || root.variant === "bar" || root.barSurface
             readonly property bool inset: root.variant === "internalbg"
             opacity: root.rectOpacity
@@ -1003,7 +898,6 @@ ClippingRectangle {
             onPigmentChanged: requestPaint()
             onShadowInkChanged: requestPaint()
             onAccentChanged: requestPaint()
-            onSecondaryAccentChanged: requestPaint()
             onOuterChanged: requestPaint()
             onInsetChanged: requestPaint()
             onWidthChanged: requestPaint()
@@ -1012,106 +906,66 @@ ClippingRectangle {
                 const ctx=getContext("2d");ctx.clearRect(0,0,width,height);
                 if(width<24||height<24)return;
                 ctx.save();if(root.traceThemeFrame(ctx,0))ctx.clip();
-                // Polished obsidian: broad grazing reflection, no stone stipple.
-                const sheen=ctx.createLinearGradient(0,0,width*0.45,height);
-                sheen.addColorStop(0,Qt.alpha(pigment,inset?0.025:0.09));
-                sheen.addColorStop(0.18,Qt.alpha(pigment,0.015));
-                sheen.addColorStop(0.48,Qt.alpha(pigment,0));
-                sheen.addColorStop(1,Qt.alpha(shadowInk,inset?0.08:0.22));
-                ctx.fillStyle=sheen;ctx.fillRect(0,0,width,height);
-                // A hairline polished bevel catches light on the upper shoulder.
-                const bevel=ctx.createLinearGradient(0,0,width,height);
-                bevel.addColorStop(0,Qt.alpha(pigment,0.32));
-                bevel.addColorStop(0.35,Qt.alpha(pigment,0.08));
-                bevel.addColorStop(0.65,Qt.alpha(shadowInk,0.45));
-                bevel.addColorStop(1,Qt.alpha(pigment,0.14));
-                ctx.strokeStyle=bevel;ctx.lineWidth=1;
-                if(root.traceThemeFrame(ctx,0.75))ctx.stroke();
-                if(!inset){
-                    // Fractures stay within narrow opposing edge bands, clear of text.
-                    const band=Math.min(root.materialPreview?6:outer?32:12,height*0.13,width*0.095);
-                    const reach=Math.min(width*0.32,outer?190:90);
-                    function vein(points,color){
-                        const first=points[0],last=points[points.length-1];
-                        color=Qt.tint(color,Qt.alpha(pigment,0.22));
-                        const light=ctx.createLinearGradient(first[0],first[1],last[0],last[1]);
-                        light.addColorStop(0,Qt.alpha(color,0));
-                        light.addColorStop(0.28,Qt.alpha(color,0.62));
-                        light.addColorStop(0.62,Qt.alpha(color,outer?0.85:0.55));
-                        light.addColorStop(1,Qt.alpha(color,0));
-                        function stroke(ink,size){
-                            ctx.strokeStyle=ink;ctx.lineWidth=size;ctx.beginPath();
-                            ctx.moveTo(first[0],first[1]);
-                            for(let i=1;i<points.length;i++)ctx.lineTo(points[i][0],points[i][1]);
-                            ctx.stroke();
-                        }
-                        stroke(Qt.alpha(shadowInk,0.55),3.5);
-                        stroke(Qt.alpha(color,0.11),6);
-                        stroke(light,1.4);
+                // A honed face catches light along the left arris.
+                const face = ctx.createLinearGradient(0, 0, width, height*0.25);
+                face.addColorStop(0, Qt.alpha(pigment, inset ? 0.04 : 0.14));
+                face.addColorStop(0.26, Qt.alpha(pigment, 0.02));
+                face.addColorStop(1, Qt.alpha(shadowInk, inset ? 0.10 : 0.34));
+                ctx.fillStyle = face;
+                ctx.fillRect(0, 0, width, height);
+
+                if (outer) {
+                    const scale = Math.min(root.materialPreview ? 1 : 1.7, width / 310, height / 108);
+                    ctx.save();
+                    ctx.translate(width, height);
+                    ctx.scale(scale, scale);
+
+                    // The dominant stone leans over a smaller broken shoulder.
+                    // Each plane meets on the same arris from crown to foot.
+                    function standingStone(x, y, breadth, lean, dye) {
+                        const summit = x + lean;
+                        const ridge = summit + breadth*0.36;
+                        const ledge = y + breadth*0.24;
+                        const heel = x + breadth*0.54;
+                        ctx.beginPath();
+                        ctx.moveTo(x, 0);
+                        ctx.lineTo(summit - breadth*0.06, y + breadth*0.53);
+                        ctx.lineTo(summit, y);
+                        ctx.lineTo(ridge, ledge);
+                        ctx.lineTo(heel, 0);
+                        ctx.closePath();
+                        const sun = ctx.createLinearGradient(summit, y, heel, 0);
+                        sun.addColorStop(0, Qt.alpha(dye, 0.34));
+                        sun.addColorStop(1, Qt.alpha(pigment, 0.085));
+                        ctx.fillStyle = sun;
+                        ctx.fill();
+
+                        ctx.beginPath();
+                        ctx.moveTo(heel, 0);
+                        ctx.lineTo(ridge, ledge);
+                        ctx.lineTo(summit + breadth*0.88, y + breadth*0.12);
+                        ctx.lineTo(x + breadth, 0);
+                        ctx.closePath();
+                        ctx.fillStyle = Qt.alpha(shadowInk, 0.80);
+                        ctx.fill();
+
+                        ctx.beginPath();
+                        ctx.moveTo(summit, y);
+                        ctx.lineTo(summit + breadth*0.51, y - breadth*0.17);
+                        ctx.lineTo(summit + breadth*0.88, y + breadth*0.12);
+                        ctx.lineTo(ridge, ledge);
+                        ctx.closePath();
+                        ctx.fillStyle = Qt.alpha(dye, 0.38);
+                        ctx.fill();
                     }
-                    // Background slabs use long, asymmetric fractures along all four edges.
-                    // Compact bars and smaller surfaces keep the original corner treatment.
-                    if((root.variant === "bg" || root.variant === "popup") && ((width>240 && height>120) || root.materialPreview)){
-                        // Uneven fault lines double back, split and rejoin in the edge band.
-                        // Each edge has its own silhouette; geometry stays static on repaint.
-                        function fault(edge,knots,splinters,color){
-                            function map(point){
-                                const t=point[0],d=point[1]*band;
-                                if(edge===0)return [t*width,d];
-                                if(edge===1)return [width-d,t*height];
-                                if(edge===2)return [(1-t)*width,height-d];
-                                return [d,(1-t)*height];
-                            }
-                            const ridge = knots.map(map);
-                            // The polished outer face changes plane at the mineral seam.
-                            ctx.beginPath();
-                            ctx.moveTo(...ridge[0]);
-                            for (const point of ridge.slice(1)) ctx.lineTo(...point);
-                            ctx.closePath();
-                            ctx.fillStyle = Qt.alpha(color, edge % 3 === 0 ? 0.13 : 0.055);
-                            ctx.fill();
-                            vein(ridge,color);
-                            for(let i=0;i<splinters.length;i++)vein(splinters[i].map(map),color);
-                        }
-                        fault(0,[[0.02,0],[0.11,0.35],[0.19,0.16],[0.24,1.1],
-                            [0.28,0.48],[0.32,0.72],[0.46,0.22],[0.54,1.35],
-                            [0.57,0.60],[0.72,0.28],[0.79,0.92],[0.91,0.18],[0.98,0]],[
-                            [[0.19,0.16],[0.21,0.85],[0.18,1.55],[0.26,0.9],[0.28,0.48]],
-                            [[0.54,1.35],[0.50,1.75],[0.53,2.1],[0.57,1.7]],
-                            [[0.79,0.92],[0.83,0.44],[0.81,0]]],accent);
-                        fault(1,[[0.03,0],[0.17,0.42],[0.23,1.4],[0.27,0.55],
-                            [0.40,0.22],[0.48,0.8],[0.45,1.35],[0.59,0.5],
-                            [0.74,1.12],[0.82,0.25],[0.97,0]],[
-                            [[0.23,1.4],[0.29,1.9],[0.33,1.6],[0.37,2.15]],
-                            [[0.48,0.8],[0.52,0.2],[0.57,0]],
-                            [[0.74,1.12],[0.78,1.6],[0.83,0.9],[0.82,0.25]]],accent);
-                        fault(2,[[0.01,0],[0.13,0.65],[0.22,0.26],[0.31,0.90],
-                            [0.36,0.48],[0.48,1.5],[0.52,0.62],[0.66,0.18],
-                            [0.73,1.12],[0.84,0.38],[0.97,0]],[
-                            [[0.31,0.90],[0.28,1.45],[0.34,1.9],[0.39,1.3],[0.36,0.48]],
-                            [[0.48,1.5],[0.46,1.85],[0.51,2.15]],
-                            [[0.73,1.12],[0.78,0.65],[0.75,0]]],secondaryAccent);
-                        fault(3,[[0.04,0],[0.12,0.24],[0.26,1.1],[0.31,0.4],
-                            [0.43,0.65],[0.51,0.16],[0.64,1.3],[0.61,0.7],
-                            [0.76,0.32],[0.85,0.95],[0.98,0]],[
-                            [[0.26,1.1],[0.21,1.55],[0.25,1.85]],
-                            [[0.64,1.3],[0.69,1.85],[0.74,1.35],[0.76,0.32]],
-                            [[0.85,0.95],[0.89,0.35],[0.92,0]]],secondaryAccent);
-                    }else{
-                        vein([[width-reach,0],[width-reach*0.72,band*0.55],
-                            [width-reach*0.45,band*0.32],[width-band,band],
-                            [width-band*0.4,band*2],[width,band*2.6]],accent);
-                        vein([[reach,height],[reach*0.68,height-band*0.65],
-                            [reach*0.38,height-band*0.4],[band,height-band],
-                            [band*0.35,height-band*2],[0,height-band*2.8]],secondaryAccent);
-                        if(height>100 && width>120){
-                            vein([[width-reach*0.45,band*0.32],
-                                [width-reach*0.38,band*0.8],[width-reach*0.24,0]],accent);
-                            vein([[reach*0.38,height-band*0.4],
-                                [reach*0.32,height-band*0.95],[reach*0.18,height]],secondaryAccent);
-                        }
-                    }
+                    standingStone(-38, -43, 43, 12, pigment);
+                    standingStone(-62, -81, 41, 5, accent);
+                    standingStone(-88, -19, 40, 9, pigment);
+                    ctx.restore();
                 }
+                ctx.lineWidth = 1;
+                ctx.strokeStyle = Qt.alpha(pigment, inset ? 0.08 : 0.18);
+                if (root.traceThemeFrame(ctx, 0.75)) ctx.stroke();
                 ctx.restore();
             }
         }

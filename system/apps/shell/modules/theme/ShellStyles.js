@@ -1,17 +1,17 @@
 .pragma library
 
 var styles = [
-    {id: "canopy", label: "Canopy", font: "DejaVu Sans Mono", description: "Architectural canopy: sweeping fabric spans, uninterrupted hems and softly shaded surfaces."},
-    {id: "orbital", label: "Orbital", font: "JetBrains Mono", description: "Orbital space: elliptical tracks, satellite points, fixed stars and recessed glass."},
+    {id: "canopy", label: "Canopy", font: "DejaVu Sans Mono", description: "Overhanging tree limbs and sprays of leaves in the selected palette."},
+    {id: "orbital", label: "Orbital", font: "JetBrains Mono", description: "A still star field with scattered pinpoints and brighter four-point stars."},
     {id: "metropolis", label: "Metropolis", font: "DejaVu Sans", description: "City glass: layered facades, architectural reflections and illuminated windows in your selected colors."},
     {id: "glass-vault", label: "Glass Vault", font: "Noto Sans", description: "Polished glass blocks, soft grazing reflections and restrained rounded clasps."},
     {id: "radar-station", label: "Radar Station", font: "DejaVu Sans", description: "Etched bearing scales, radial divisions and softly illuminated scope glass."},
     {id: "suspended-film", label: "Suspended Film", font: "DejaVu Sans Mono", description: "Suspended glass sheets, curved grazing reflections and separated contact edges."},
-    {id: "monolith", label: "Monolith", font: "Noto Sans", description: "Polished obsidian with crisp bevels and luminous mineral fractures."},
+    {id: "monolith", label: "Monolith", font: "Noto Sans", description: "Honed stone with tall basalt columns and angular cut faces."},
     {id: "blueprint", label: "Blueprint", font: "JetBrains Mono", description: "Architectural drafting sheets, truss details, ruled scales and wire controls."},
     {id: "terminal-hardware", label: "Terminal Hardware", font: "DejaVu Sans Mono", description: "Flat machined panels, inset bezels and sparse cooling vents."},
-    {id: "frosted", font: "DejaVu Sans Mono", label: "Frosted Glass", description: "Branching frost crystals, etched ice rims, fine grain and soft corner bloom."},
-    {id: "colorful", font: "DejaVu Sans", label: "Tinted", description: "Layered colored glass planes, offset frames and fading accent reflections."},
+    {id: "frosted", font: "DejaVu Sans Mono", label: "Frosted Glass", description: "Satin-etched glass with diffuse light and fine matte grain."},
+    {id: "colorful", font: "DejaVu Sans", label: "Tinted", description: "A single translucent pane dyed with the selected accent and a soft reflection."},
     {id: "clear-glass", label: "Clear Glass", font: "Noto Sans", description: "Clear glazing with grazing reflections, fine highlights and a subtle lower meniscus."}
 ];
 
@@ -121,7 +121,7 @@ function surface(style, variant, p, ditherStrength) {
         var inner = ["common", "internalbg"].indexOf(variant) !== -1;
         var focused = ["focus", "surfaceVariant"].indexOf(variant) !== -1;
         if (outer || inner || focused) {
-            fill = mix(mix(p.background, p.foreground, outer ? 0.07 : 0.04), p.primary, focused ? 0.14 : 0.035);
+            fill = mix(mix(p.background, p.foreground, outer ? 0.115 : 0.065), p.primary, focused ? 0.14 : 0.035);
             opacity = outer ? 0.68 : focused ? 0.84 : 0.48;
             border = [focused ? p.primary : "#40" + p.foreground.slice(-6), 1];
         }
@@ -174,7 +174,7 @@ function surface(style, variant, p, ditherStrength) {
         border = [focused ? p.primary : mix(fill, p.foreground, outer ? 0.22 : 0.12), outer || focused || inset ? 1 : 0];
     }
     if (colorful && neutral) {
-        fill=mix(mix(p.background,p.foreground,0.025),p.primary,focused?0.14:inset?0.035:0.07);
+        fill=mix(mix(p.background,p.foreground,0.025),p.primary,focused?0.22:inset?0.10:0.19);
         item=p.foreground;
         opacity=focused?0.86:inset?0.50:outer?0.74:0.62;
         border=[focused?p.primary:mix(fill,p.primary,outer?0.38:0.20),outer||focused?1:0];
@@ -184,7 +184,7 @@ function surface(style, variant, p, ditherStrength) {
         fill=mix(p.background,p.foreground,inset?0.005:focused?0.10:outer?0.075:0.045);
         item=p.foreground;
         opacity=focused?0.84:inset?0.48:outer?0.68:0.48;
-        border=[focused?p.primary:mix(fill,p.foreground,inset?0.28:0.40),focused||outer?2:1];
+        border=[focused?p.primary:fill,focused?2:0];
     }
     if (metro && neutral) {
         // Material depth uses only the selected palette; no imposed city colors.
@@ -194,12 +194,12 @@ function surface(style, variant, p, ditherStrength) {
         border=[focused?p.primary:mix(fill,p.primary,outer?0.32:0.20),focused||outer?1:0];
     }
     if (canopy && neutral) {
-        // Soft fabric shading replaces the former hard glass bezel.
-        var cloth=mix(p.primary,p.secondary,0.35);
-        fill=mix(mix(p.background,p.foreground,inset?0.015:0.035),cloth,inset?0.025:0.055);
+        // Carry a little of the foliage color into the surrounding surface.
+        var foliage=mix(p.primary,p.secondary,0.35);
+        fill=mix(mix(p.background,p.foreground,inset?0.015:0.035),foliage,inset?0.025:0.055);
         item=p.foreground;
         opacity=focused?0.80:inset?0.40:outer?0.62:0.42;
-        border=[focused?p.primary:mix(fill,cloth,outer?0.27:0.16),focused||outer?1:0];
+        border=[focused?p.primary:mix(fill,foliage,outer?0.27:0.16),focused||outer?1:0];
     }
     var containers = ["bg", "popup", "pane", "surface", "surfaceContainer", "common", "internalbg", "focus", "surfaceVariant", "bar", "barbg"];
     var dotted = dithered && strength > 0 && containers.indexOf(variant) !== -1;
