@@ -335,7 +335,8 @@ suggestions, and updating Spotify playlists) start Spotify on demand and wait fo
 it to become ready. Use **Refresh** to load suggestions for a local playlist.
 Once started, Spotify stays running to preserve playback.
 On Niri, Spotify opens without focus on its dedicated **Spotify** workspace; switch
-to that workspace when you need to sign in or use Spotify directly.
+to that workspace when you need to sign in or use Spotify directly. If Spotify
+is in the tray, use **Show Spotify** from its tray menu first.
 Spotify playlist previews stream through the running Spotify desktop app. On Niri,
 previews return focus to the music window if Spotify activates itself, so Spotify
 can stay in the background. Sign in to Spotify first; previews do not download

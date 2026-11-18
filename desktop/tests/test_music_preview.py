@@ -27,8 +27,14 @@ class MusicPreviewTests(unittest.TestCase):
         spotify = {'id': 5, 'app_id': 'Spotify'}
         with patch.object(music_preview, 'focused_window', side_effect=[player, player, spotify, player, player, player]), \
                 patch.object(music_preview.time, 'sleep'), \
-                patch.object(music_preview.subprocess, 'run') as run:
+                patch.object(music_preview.subprocess, 'run') as run, \
+                patch.object(music_preview.threading, 'Thread') as cleanup:
             result = music_preview.preview('spotify:track:' + 'a'*22)
+            self.assertEqual(run.call_count, 1)
+            self.hide.assert_not_called()
+            cleanup.assert_called_once_with(target=music_preview.keep_background, args=(player,), daemon=True)
+            cleanup.return_value.start.assert_called_once()
+            music_preview.keep_background(player)
         self.assertEqual(run.call_count, 2)
         self.assertIn('org.mpris.MediaPlayer2.Player.OpenUri', run.call_args_list[0].args[0])
         self.assertEqual(run.call_args_list[1].args[0],
@@ -66,7 +72,8 @@ class MusicPreviewTests(unittest.TestCase):
 
     def test_preview_uses_spotify_uri_without_file_writes_or_downloads(self):
         uri = 'spotify:track:' + 'a'*22
-        with patch.object(music_preview.subprocess, 'run') as run:
+        with patch.object(music_preview.subprocess, 'run') as run, \
+                patch.object(music_preview.threading, 'Thread'):
             result = music_preview.preview(uri)
         self.assertEqual(result['uri'], uri)
         args = run.call_args.args[0]

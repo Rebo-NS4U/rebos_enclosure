@@ -178,9 +178,13 @@ window-rule {
     opacity 0.88
 }
 
-// Keep Spotify artwork and text at full contrast.
+// Start on Main and keep Spotify on its own workspace.
+workspace "Main"
+workspace "Spotify"
+
 window-rule {
     match app-id=r#"^(Spotify|spotify|com\.spotify\.Client)$"#
+    open-on-workspace "Spotify"
     open-focused false
     opacity 1.0
     draw-border-with-background false

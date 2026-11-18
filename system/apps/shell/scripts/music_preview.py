@@ -3,6 +3,7 @@ import json
 import os
 import re
 import subprocess
+import threading
 import time
 
 SPOTIFY_APPS = {'Spotify', 'spotify', 'com.spotify.Client'}
@@ -59,5 +60,7 @@ def preview(uri):
     except (OSError, subprocess.SubprocessError) as error:
         raise ValueError('Spotify preview unavailable. Open Spotify, sign in and try again. '
                          'No music was downloaded.') from error
-    keep_background(previous)
+    # OpenUri may remap the window after it returns. Keep the UI response
+    # independent of compositor and tray cleanup.
+    threading.Thread(target=keep_background, args=(previous,), daemon=True).start()
     return {'uri': uri, 'status': 'Playing through Spotify in the background · no library download'}

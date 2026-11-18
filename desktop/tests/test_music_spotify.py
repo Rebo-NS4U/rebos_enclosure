@@ -1,6 +1,7 @@
 """On-demand startup reuses Spotify and gates only live Spotify operations."""
 from concurrent.futures import Future
 from pathlib import Path
+import subprocess
 import sys
 import unittest
 from unittest.mock import patch
@@ -21,17 +22,30 @@ class SpotifyStartupTests(unittest.TestCase):
         with patch.object(music_spotify, 'running', return_value=True), patch.object(music_spotify.subprocess, 'Popen') as launch:
             music_spotify.ensure_started()
             launch.assert_not_called()
-            self.hide.assert_called_once()
+            self.hide.assert_not_called()
 
     def test_cold_launch_waits_for_player(self):
-        with patch.object(music_spotify, 'running', side_effect=[False, False, True]), patch.object(music_spotify.shutil, 'which', return_value='/fixture'), patch.object(music_spotify.subprocess, 'Popen') as launch, patch.object(music_spotify.time, 'sleep') as sleep:
+        with patch.object(music_spotify, 'running', return_value=False) as running, \
+                patch.object(music_spotify.shutil, 'which', return_value='/fixture'), \
+                patch.object(music_spotify.subprocess, 'Popen') as launch, \
+                patch.object(music_spotify.subprocess, 'run') as wait, \
+                patch.object(music_spotify.threading, 'Thread') as cleanup:
             music_spotify.ensure_started()
             self.assertEqual(launch.call_args.args[0], ['gtk-launch', 'spotify-launcher'])
             self.assertTrue(launch.call_args.kwargs['start_new_session'])
-            sleep.assert_called_once()
+            self.assertEqual(wait.call_args.args[0],
+                             ['gdbus', 'wait', '--session', '--timeout=20', music_spotify.BUS_NAME])
+            running.assert_called_once()
+            cleanup.assert_called_once_with(target=music_spotify.hide_after_launch, daemon=True)
+            cleanup.return_value.start.assert_called_once()
+            self.hide.assert_not_called()
 
     def test_timeout_has_actionable_error(self):
-        with patch.object(music_spotify, 'running', return_value=False), patch.object(music_spotify.shutil, 'which', return_value='/fixture'), patch.object(music_spotify.subprocess, 'Popen'), patch.object(music_spotify.time, 'monotonic', side_effect=[0, 21]):
+        with patch.object(music_spotify, 'running', return_value=False), \
+                patch.object(music_spotify.shutil, 'which', return_value='/fixture'), \
+                patch.object(music_spotify.subprocess, 'Popen'), \
+                patch.object(music_spotify.subprocess, 'run',
+                             side_effect=subprocess.TimeoutExpired('gdbus', 21)):
             with self.assertRaisesRegex(ValueError, 'sign in'):
                 music_spotify.ensure_started()
 
