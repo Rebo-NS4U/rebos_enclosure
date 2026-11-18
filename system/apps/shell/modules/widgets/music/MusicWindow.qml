@@ -109,21 +109,36 @@ Window {
             const key = (t.artist + "\n" + t.title).toLowerCase();
             if (uris.has(t.uri) || identities.has(key)) return false;
             uris.add(t.uri); identities.add(key); return true;
-        }).slice(0, 100);
+        });
+    }
+    function applySuggestions(data, reset) {
+        const position = reset ? 0 : suggestionsList.contentY;
+        spotifySuggestions = data;
+        Qt.callLater(() => {
+            if (detail === data.playlist) suggestionsList.contentY = Math.max(0, Math.min(position, suggestionsList.contentHeight - suggestionsList.height));
+        });
+    }
+    function loadMoreSuggestions() {
+        if (page !== "Playlist" || spotifySuggestions.pending || !spotifySuggestions.hasMore) return;
+        const selected = detail;
+        spotifySuggestions = Object.assign({}, spotifySuggestions, {pending:true});
+        request("suggestions_more", {playlist:selected}, data => {
+            if (detail === selected) applySuggestions(data, false);
+        });
     }
     function refreshSuggestions() {
         if (page !== "Playlist") return;
         const selected = detail;
         spotifySuggestions = {playlist: selected, tracks: [], pending: true, status: "Loading Spotify suggestions…"};
         request("suggestions_refresh", {playlist: selected}, data => {
-            if (detail === selected) spotifySuggestions = data;
+            if (detail === selected) applySuggestions(data, true);
         });
     }
     Timer {
         interval: 2000; repeat: true
         running: root.page === "Playlist" && root.spotifySuggestions.pending
         onTriggered: root.request("suggestions_get", {}, data => {
-            if (data.playlist === root.detail) root.spotifySuggestions = data;
+            if (data.playlist === root.detail) root.applySuggestions(data, false);
         })
     }
     readonly property var albums: {
@@ -486,13 +501,26 @@ Window {
                             color: Colors.overSurfaceVariant
                         }
                         ListView {
+                            id: suggestionsList
                             objectName: "music-playlist-suggestions"
                             Layout.fillWidth: true
                             Layout.preferredHeight: Math.min(count, 6) * Styling.spacing(52)
                             clip: true; model: root.suggestedTracks
                             // ListView creates rows on demand as they enter the viewport.
                             reuseItems: true
-                            onModelChanged: positionViewAtBeginning()
+                            onContentYChanged: {
+                                if ((dragging || flicking) && contentY + height >= contentHeight - Styling.spacing(104)) Qt.callLater(root.loadMoreSuggestions);
+                            }
+                            onMovementEnded: {
+                                if (contentY + height >= contentHeight - Styling.spacing(104)) root.loadMoreSuggestions();
+                            }
+                            footer: StyledText {
+                                width: suggestionsList.width
+                                visible: root.spotifySuggestions.pending || root.spotifySuggestions.hasMore === false
+                                text: root.spotifySuggestions.pending ? "Loading more…" : root.spotifySuggestions.status || ""
+                                wrapMode: Text.WordWrap
+                                color: Colors.overSurfaceVariant
+                            }
                             delegate: RowLayout {
                                 id: suggestion
                                 required property var modelData

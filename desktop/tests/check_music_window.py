@@ -313,6 +313,11 @@ def session():
                     const list = findItem(music.contentItem, "music-playlist-suggestions");
                     const row = list.itemAtIndex(8);
                     if (list.contentY <= 0 || !row || row.modelData.title !== "Suggestion 8" || list.model[0].title !== "Suggestion 0") { console.error("SUGGESTIONS_SCROLL_LOAD_FAILED"); Qt.exit(1); return; }
+                    music.applySuggestions({playlist:"test",pending:false,hasMore:false,tracks:Array.from({length:150}, (_,i)=>({uri:"spotify:track:"+String(i).padStart(22,"0"),title:"Suggestion "+i,artist:"New artist"}))}, false);
+                    repeatStart = attempts; phase = 97;
+                } else if (phase === 97 && attempts >= repeatStart + 3) {
+                    const list = findItem(music.contentItem, "music-playlist-suggestions");
+                    if (list.count !== 150 || list.contentY <= 0) { console.error("SUGGESTIONS_APPEND_SCROLL_FAILED"); Qt.exit(1); return; }
                     music.spotifySuggestions = {playlist:"test",pending:false,tracks:[]};
                     if (list.count !== 0) { console.error("SUGGESTIONS_RESET_FAILED"); Qt.exit(1); return; }
                     console.log("MUSIC_SUGGESTIONS_CONTINUOUS_PASSED"); stop(); Qt.quit();

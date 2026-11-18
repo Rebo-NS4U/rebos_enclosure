@@ -234,6 +234,8 @@ class Library:
         }
         if cmd in media_actions:
             return media_actions[cmd]()
+        if cmd == 'suggestions_more':
+            return self.mixes.more_suggestions(args.get('playlist'))
         if cmd == 'suggestions_get':
             return self.mixes.suggestions()
         if cmd in ('suggestions_refresh', 'suggestion_download'):

@@ -60,14 +60,27 @@ class Mixes:
     def suggest(self, playlist, uri):
         with self.lock:
             self.suggestion = dict(id=uuid.uuid4().hex, playlist=playlist, uri=uri, started=time.monotonic())
-            self.suggestion_result = dict(playlist=playlist, tracks=[], pending=True, status='Waiting for Spotify…')
+            self.suggestion_result = dict(playlist=playlist, sourceUri=uri, tracks=[], pending=True, hasMore=True, status='Waiting for Spotify…')
+            return copy.deepcopy(self.suggestion_result)
+
+    def more_suggestions(self, playlist):
+        with self.lock:
+            if self.suggestion_result.get('playlist') != playlist:
+                raise ValueError('Suggestions changed; refresh and try again')
+            if self.suggestion or not self.suggestion_result.get('hasMore', False):
+                return copy.deepcopy(self.suggestion_result)
+            self.suggestion = dict(id=uuid.uuid4().hex, playlist=playlist,
+                uri=self.suggestion_result['sourceUri'],
+                skip=[t['uri'].split(':')[-1] for t in self.suggestion_result['tracks']],
+                started=time.monotonic())
+            self.suggestion_result.update(pending=True, status='Loading more suggestions…')
             return copy.deepcopy(self.suggestion_result)
 
     def suggestions(self):
         with self.lock:
             if self.suggestion and time.monotonic() - self.suggestion['started'] > 45:
                 self.suggestion = None
-                self.suggestion_result.update(pending=False, status='Spotify did not respond. Open Spotify with the updated integration, then refresh suggestions.')
+                self.suggestion_result.update(pending=False, hasMore=False, status='Spotify did not respond. Open Spotify with the updated integration, then refresh suggestions.')
             return copy.deepcopy(self.suggestion_result)
 
     def dispatch(self, cmd, args):
@@ -104,8 +117,18 @@ class Mixes:
                 name='Suggestions', tracks=tracks)]))[0]['tracks'] if tracks else []
             with self.lock:
                 if self.suggestion and payload['suggestion_id'] == self.suggestion['id']:
-                    self.suggestion_result.update(tracks=cleaned, pending=False,
-                        status=str(payload.get('error') or ('Suggestions from Spotify' if cleaned else 'Spotify returned no suggestions.'))[:300])
+                    existing = self.suggestion_result['tracks']
+                    seen = {t['uri'] for t in existing}
+                    additions = []
+                    for track in cleaned:
+                        if track['uri'] not in seen:
+                            additions.append(track)
+                            seen.add(track['uri'])
+                    error = str(payload.get('error') or '')
+                    self.suggestion_result.update(tracks=existing + additions, pending=False,
+                        hasMore=bool(additions) and not bool(error),
+                        status=(error or ('Suggestions from Spotify' if additions else
+                            'Spotify has no more new suggestions for this playlist.'))[:300])
                     self.suggestion = None
             return
         mixes = normalize(payload)

@@ -82,6 +82,32 @@ class MusicLibraryTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'source playlist not found'):
             self.library.dispatch('suggestions_refresh', dict(playlist=playlist['id']))
 
+    def test_suggestions_continue_beyond_100_without_duplicates(self):
+        mixes = self.library.mixes
+        mixes.suggest('local', 'spotify:playlist:' + 'a'*22)
+        def batch(start, end):
+            return [dict(uri='spotify:track:' + str(i).zfill(22), title=str(i), artist='Artist') for i in range(start, end)]
+        mixes.update(dict(suggestion_id=mixes.suggestion['id'], tracks=batch(0, 100)))
+        first = mixes.more_suggestions('local')
+        self.assertEqual(len(first['tracks']), 100)
+        self.assertTrue(first['pending'])
+        self.assertEqual(len(mixes.suggestion['skip']), 100)
+        job = mixes.suggestion['id']
+        mixes.more_suggestions('local')
+        self.assertEqual(mixes.suggestion['id'], job)
+        mixes.update(dict(suggestion_id='stale', tracks=batch(100, 200)))
+        self.assertEqual(len(mixes.suggestions()['tracks']), 100)
+        mixes.update(dict(suggestion_id=job, tracks=batch(90, 190)))
+        self.assertEqual(len(mixes.suggestions()['tracks']), 190)
+        mixes.more_suggestions('local')
+        mixes.update(dict(suggestion_id=mixes.suggestion['id'], tracks=batch(90, 100)))
+        result = mixes.suggestions()
+        self.assertEqual(len(result['tracks']), 190)
+        self.assertFalse(result['hasMore'])
+        self.assertFalse(mixes.more_suggestions('local')['pending'])
+        with self.assertRaises(ValueError):
+            mixes.more_suggestions('other')
+
     def test_playlist_add_survives_rescan_and_reload(self):
         folder = self.folder / 'Downloaded playlist'
         folder.mkdir()

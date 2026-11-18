@@ -332,8 +332,10 @@ launch (the updater does not restart active playback).
 Spotify playlist previews stream through the running Spotify desktop app. On Niri,
 previews return focus to the music window if Spotify activates itself, so Spotify
 can stay in the background. Sign in to Spotify first; previews do not download
-tracks or restart either player. Playlist suggestions show up to 100 unique songs
-when Spotify supplies them, with a total count and continuous scrolling.
+tracks or restart either player. Playlist suggestions fetch further batches from Spotify as you reach the bottom,
+without a total song limit. Previously returned tracks are excluded and duplicate
+results are removed. Loading stops when Spotify returns no new tracks, with a
+visible status. The list has a total count and continuous scrolling.
 Rows load as they enter the list viewport; there are no page buttons. While a suggested song plays, the fullscreen view
 shows Spotify artwork, song details and lyrics, with play/pause, previous/next,
 seek, volume, shuffle and repeat controls. Controls follow Spotify's supported
