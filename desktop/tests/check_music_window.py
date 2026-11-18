@@ -381,8 +381,10 @@ def session():
                     if (list.count !== 14 || !findItem(music.contentItem, "music-suggestions-load-more")?.enabled) { console.error("SUGGESTIONS_CONTINUOUS_LIST_FAILED"); Qt.exit(1); return; }
                     const firstSuggestion = list.itemAtIndex(0);
                     if (!firstSuggestion || firstSuggestion.selected || firstSuggestion.height >= findItem(music.contentItem, "music-track-row-0").height) { console.error("SUGGESTION_COMPACT_ROW_FAILED"); Qt.exit(1); return; }
-                    spotify.metadata = {"xesam:url": firstSuggestion.track.uri};
                     spotify.play();
+                    music.next(false);
+                    if (music.requestedPreview !== firstSuggestion.track.uri || spotify.nextCalls !== 1) { console.error("NEXT_STARTS_SUGGESTIONS_FAILED"); Qt.exit(1); return; }
+                    spotify.metadata = {"xesam:url": "https://open.spotify.com/track/" + firstSuggestion.track.uri.split(":").pop() + "?si=test"};
                     if (!firstSuggestion.selected) { console.error("SUGGESTION_SELECTION_FAILED"); Qt.exit(1); return; }
                     firstSuggestion.playRequested();
                     if (spotify.isPlaying) { console.error("SUGGESTION_ROW_PAUSE_FAILED"); Qt.exit(1); return; }
@@ -442,8 +444,13 @@ def session():
                     GlobalStates.musicWindowVisible = true;
                     console.log("MUSIC_SUGGESTION_AUTOPLAY_PASSED");
                     spotify.canGoNext = true;
-                    spotify.metadata = {"xesam:url": music.suggestedTracks[music.suggestedTracks.length - 1].uri};
-                    if (MprisController.nextPlayer(spotify) !== spotify) { console.error("SUGGESTION_MEDIA_NEXT_FALLBACK_FAILED"); Qt.exit(1); return; }
+                    const suggestions = music.suggestedTracks;
+                    spotify.metadata = {"xesam:url": suggestions[suggestions.length - 1].uri};
+                    music.navigate("Albums");
+                    music.next(false);
+                    if (!music.canNext || music.requestedPreview !== suggestions[0].uri || spotify.nextCalls !== 1) { console.error("SUGGESTION_QUEUE_WRAP_AFTER_NAVIGATION_FAILED"); Qt.exit(1); return; }
+                    music.page = "Playlist"; music.detail = "test";
+                    music.spotifySuggestions = {playlist:"test",pending:false,hasMore:true,tracks:suggestions};
                     console.log("MUSIC_FULLSCREEN_SUGGESTION_MEDIA_NEXT_PASSED");
                     findItem(music.contentItem, "music-fullscreen-queue-tab").clicked();
                     music.select(0);

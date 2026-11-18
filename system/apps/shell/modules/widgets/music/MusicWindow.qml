@@ -80,6 +80,17 @@ Window {
             spotifyPreview = true;
         }
     }
+    function spotifyTrackUri(url) {
+        const match = /^https:\/\/open\.spotify\.com\/track\/([A-Za-z0-9]{22})(?:[/?#]|$)/.exec(url || "");
+        return match ? "spotify:track:" + match[1] : url;
+    }
+    function playSuggestion(track) {
+        if (suggestedTracks.includes(track)) {
+            suggestionQueue = suggestedTracks;
+            suggestionPlaylist = detail;
+        }
+        previewTrack(track.uri);
+    }
     function previewTrack(uri) {
         request("mixes_preview", {uri: uri}, data => {
             player.pause();
@@ -117,13 +128,23 @@ Window {
     property var spotifySuggestions: ({tracks: [], pending: false, status: ""})
     property var pendingSuggestionDownload: null
     readonly property bool canAddSuggestion: !busy && !downloads.busy && !pendingSuggestionDownload
-    readonly property int playingSuggestionIndex: spotifyPreview
-        ? suggestedTracks.findIndex(track => track.uri === current?.spotifyUri) : -1
-    readonly property var playingSuggestion: suggestedTracks[playingSuggestionIndex] || null
-    readonly property var nextSuggestion: playingSuggestionIndex >= 0 ? (suggestedTracks[playingSuggestionIndex + 1] || null) : null
+    property var suggestionQueue: []
+    property string suggestionPlaylist: ""
+    readonly property string currentSpotifyUrl: current?.spotifyUri || ""
+    readonly property string currentSpotifyUri: spotifyTrackUri(currentSpotifyUrl)
+    readonly property var activeSuggestions: suggestionQueue.length ? suggestionQueue : suggestedTracks
+    readonly property int suggestionQueueIndex: spotifyPreview
+        ? activeSuggestions.findIndex(track => track.uri === currentSpotifyUri) : -1
+    readonly property var playingSuggestion: activeSuggestions[suggestionQueueIndex] || null
+    readonly property var nextSuggestion: activeSuggestions.length
+        ? activeSuggestions[(suggestionQueueIndex + 1) % activeSuggestions.length] : null
+    onSuggestedTracksChanged: {
+        if (suggestionQueue.length && suggestionPlaylist === detail && suggestedTracks.length)
+            suggestionQueue = suggestedTracks;
+    }
     property string advancedSuggestionUri: ""
     function advanceSpotifySuggestion(pollInterval) {
-        if (!nextSuggestion || spotifyPlayer.loopState === MprisLoopState.Track || playbackDuration <= 0) return;
+        if (!nextSuggestion || suggestionQueueIndex < 0 || spotifyPlayer.loopState === MprisLoopState.Track || playbackDuration <= 0) return;
         // Spotify can reset its position at the end without reporting a distinct end event.
         if (playbackDuration - playbackPosition > pollInterval + 50) {
             advancedSuggestionUri = "";
@@ -131,8 +152,9 @@ Window {
         }
         if (advancedSuggestionUri !== current.spotifyUri) next(true);
     }
-    readonly property bool canNext: spotifyPreview ? !!nextSuggestion || !!spotifyPlayer?.canGoNext : queue.length > 1
+    readonly property bool canNext: !!nextSuggestion || (spotifyPreview ? !!spotifyPlayer?.canGoNext : queue.length > 1)
     onNextSuggestionChanged: sync()
+    onCurrentSpotifyUrlChanged: sync()
     readonly property var suggestedTracks: {
         const playlist = playlists.find(p => p.id === detail);
         if (page !== "Playlist" || !playlist || spotifySuggestions.playlist !== detail) return [];
@@ -310,6 +332,8 @@ Window {
         if (index < 0 || index >= queue.length) return;
         if (spotifyPlayer?.isPlaying) spotifyPlayer.pause();
         spotifyPreview = false;
+        suggestionQueue = [];
+        suggestionPlaylist = "";
         currentIndex = index;
         findLyrics();
         player.source = queue[index].url;
@@ -329,12 +353,14 @@ Window {
         });
     }
     function next(automatic) {
+        if (nextSuggestion && (!automatic || spotifyPreview)) {
+            advancedSuggestionUri = currentSpotifyUrl;
+            if (suggestionQueue.length) previewTrack(nextSuggestion.uri);
+            else playSuggestion(nextSuggestion);
+            return;
+        }
         if (spotifyPreview) {
-            if (nextSuggestion) {
-                advancedSuggestionUri = current.spotifyUri;
-                previewTrack(nextSuggestion.uri);
-            }
-            else if (spotifyPlayer?.canGoNext) spotifyPlayer.next();
+            if (spotifyPlayer?.canGoNext) spotifyPlayer.next();
             return;
         }
         if (!queue.length) return;
@@ -351,7 +377,7 @@ Window {
         request("mpris", { track: localCurrent ? Object.assign({}, localCurrent, {lyrics: spotifyPreview ? "" : lyricText}) : null, status: !localCurrent || player.playbackState === MediaPlayer.StoppedState ? "Stopped" : player.playbackState === MediaPlayer.PlayingState ? "Playing" : "Paused",
             position: Math.round(player.position*1000), length: Math.round(player.duration*1000),
             volume: volume, shuffle: shuffle, loop: repeatMode, canNext: !!nextSuggestion || queue.length > 1,
-            suggestionNextFor: nextSuggestion ? (current?.spotifyUri || "") : "",
+            suggestionNextFor: nextSuggestion ? currentSpotifyUrl : "",
             canPrevious: currentIndex > 0, seeked: !!seeked });
     }
     function control(message) {
@@ -483,7 +509,7 @@ Window {
         readonly property bool inFullscreenQueue: queueEntry || queueSuggestion
         readonly property bool compact: suggestion || queueEntry
         property bool selected: suggestion
-            ? root.spotifyPreview && !!track.uri && root.current?.spotifyUri === track.uri
+            ? root.spotifyPreview && !!track.uri && root.currentSpotifyUri === track.uri
             : !root.spotifyPreview && !!track.path && root.current?.path === track.path
         signal playRequested()
         signal enqueueRequested()
@@ -725,7 +751,7 @@ Window {
                                 objectName: "music-suggestion-row-" + index
                                 track: modelData; number: index; suggestion: true
                                 addEnabled: root.canAddSuggestion
-                                onPlayRequested: { if (selected) root.toggle(); else root.previewTrack(track.uri); }
+                                onPlayRequested: { if (selected) root.toggle(); else root.playSuggestion(track); }
                                 onEnqueueRequested: root.addSuggestion(track, false)
                             }
                             ScrollBar.vertical: ScrollBar {}
@@ -1080,8 +1106,8 @@ Window {
                             objectName: "music-fullscreen-suggestions"
                             visible: stage.showSuggestions
                             Layout.fillWidth: true; Layout.fillHeight: true
-                            clip: true; spacing: Styling.spacing(4); model: root.suggestedTracks
-                            currentIndex: root.playingSuggestionIndex
+                            clip: true; spacing: Styling.spacing(4); model: root.activeSuggestions
+                            currentIndex: root.suggestionQueueIndex
                             onVisibleChanged: if (visible && currentIndex >= 0) positionViewAtIndex(currentIndex, ListView.Contain)
                             onCurrentIndexChanged: if (visible && currentIndex >= 0) positionViewAtIndex(currentIndex, ListView.Contain)
                             delegate: TrackRow {
@@ -1091,7 +1117,7 @@ Window {
                                 width: ListView.view.width - Styling.spacing(12)
                                 track: modelData; number: index; suggestion: true; queueSuggestion: true
                                 addEnabled: root.canAddSuggestion && root.queue.length < root.queueLimit
-                                onPlayRequested: { if (selected) root.toggle(); else root.previewTrack(track.uri); }
+                                onPlayRequested: { if (selected) root.toggle(); else root.playSuggestion(track); }
                                 onEnqueueRequested: root.addSuggestion(track, true)
                             }
                             StyledText {
