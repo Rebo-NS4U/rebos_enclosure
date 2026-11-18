@@ -156,22 +156,20 @@ Item {
                 id: hDragHandle
                 anchors.verticalCenter: parent.verticalCenter
                 x: parent.width * root.animatedProgress - width / 2
-                radius: Styling.radius(0)
-                hovered: root.railHovered
                 accent: root.progressColor
                 focused: root.activeFocus
-                pressed: root.isDragging
                 z: 2
             }
 
-            StandardProgressBar {
+            SliderTrack {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
-                slider: true
-                height: hDragHandle.railThickness
                 value: root.animatedProgress
                 activeColor: root.progressColor
+                hovered: root.railHovered
+                pressed: root.isDragging
+                focused: root.activeFocus
             }
 
             StyledToolTip {
@@ -211,22 +209,20 @@ Item {
                 vertical: true
                 anchors.horizontalCenter: parent.horizontalCenter
                 y: parent.height * (1 - root.animatedProgress) - height / 2
-                radius: Styling.radius(0)
-                hovered: root.railHovered
                 accent: root.progressColor
                 focused: root.activeFocus
-                pressed: root.isDragging
                 z: 2
             }
 
-            StandardProgressBar {
+            SliderTrack {
                 anchors.centerIn: parent
                 width: parent.height
-                slider: true
-                height: vDragHandle.railThickness
                 rotation: -90
                 value: root.animatedProgress
                 activeColor: root.progressColor
+                hovered: root.railHovered
+                pressed: root.isDragging
+                focused: root.activeFocus
             }
 
             StyledToolTip {

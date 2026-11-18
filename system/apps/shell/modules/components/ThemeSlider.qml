@@ -41,24 +41,22 @@ Slider {
         y: root.topPadding
         width: root.availableWidth
         height: root.availableHeight
-        StandardProgressBar {
+        SliderTrack {
             anchors.centerIn: parent
             width: Math.max(0, root.horizontal
                 ? parent.width - (root.handle?.width ?? 0)
                 : parent.height - (root.handle?.height ?? 0))
-            slider: true
-            height: thumb.railThickness
+            hovered: root.hovered
+            pressed: root.pressed
+            focused: root.activeFocus
             value: root.animatedPosition
             rotation: root.horizontal ? (root.mirrored ? 180 : 0) : 270
         }
     }
     handle: SliderHandle {
-        id: thumb
         vertical: !root.horizontal
-        hovered: root.hovered
         x: root.leftPadding + (root.horizontal ? root.animatedVisualPosition * (root.availableWidth - width) : (root.availableWidth - width) / 2)
         y: root.topPadding + (root.horizontal ? (root.availableHeight - height) / 2 : root.animatedVisualPosition * (root.availableHeight - height))
         focused: root.activeFocus
-        pressed: root.pressed
     }
 }

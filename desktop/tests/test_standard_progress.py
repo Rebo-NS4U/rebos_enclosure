@@ -59,7 +59,7 @@ ShellRoot {
    horizontal.editValue(2); check(horizontal.value === 1, 'Slider input clamps');
    vertical.editValue(-1); check(vertical.value === 0, 'Vertical slider input clamps');
    const sliderRail = themed.background.children[0];
-   check(sliderRail.slider && sliderRail.height === 3, 'Theme slider starts with the rounded rail');
+   check(sliderRail.segmentCount > 10 && sliderRail.energy === 0, 'Theme slider starts with an idle segmented track');
    themed.value = 0.8;
    check(sliderRail.value < themed.position, 'Programmatic slider changes ease toward their value');
    horizontal.dragPosition = 0.8;
@@ -79,53 +79,56 @@ ShellRoot {
    console.error('Moving marks must stay within the fill'); Qt.exit(1); return;
   }
   const sliderRail = themed.background.children[0];
-  if (sliderRail.height !== 3 || Math.abs(sliderRail.value - 0.8) > 0.001
+  if (Math.abs(sliderRail.value - 0.8) > 0.001
           || Math.abs(themed.handle.x + themed.handle.width / 2
               - themed.background.x - sliderRail.x - sliderRail.width * sliderRail.value) > 0.01) {
    console.error('Animated rail follows the value and meets the thumb'); Qt.exit(1); return;
   }
   travelCheck.startX = marks[0].x;
+  const track = horizontal.children[0].children[0].children.find(item => item.segmentCount > 0);
+  travelCheck.segmentHeights = track.children.filter(item => item.wave !== undefined).map(item => item.height);
   travelCheck.start();
  }}
  Timer { id: travelCheck; interval: 120
   property real startX: 0
+  property var segmentHeights: []
   onTriggered: {
    const fill = rail.children.find(child => child.objectName === 'standard-progress-fill');
    const mark = fill.children.find(child => child.objectName === 'standard-progress-mark');
    if (rail.value !== 0.61 || Math.abs(mark.x - startX) < 1) {
     console.error('Marks must travel between value updates'); Qt.exit(1); return;
    }
-   const track = horizontal.children[0].children[0].children.find(item => item.slider);
-   const thumb = horizontal.children[0].children[0].children.find(item => item.pressed === true);
-   const verticalItems = vertical.children[1].children[0].children;
-   const verticalTrack = verticalItems.find(item => item.slider);
-   const verticalThumb = verticalItems.find(item => item.pressed === true);
-   const grip = thumb.children[1].transform[0];
-   const verticalGrip = verticalThumb.children[1].transform[0];
-   if (track.height !== 5 || track.value !== 0.8 || thumb.children[0].opacity <= 0
-       || verticalTrack.height !== 5 || verticalTrack.value !== 0.6
-       || grip.xScale >= 1 || grip.yScale <= 1
-       || verticalGrip.xScale <= 1 || verticalGrip.yScale >= 1) {
-    console.error('Drag thickens the rail and compresses the thumb along its travel axis'); Qt.exit(1); return;
+   const track = horizontal.children[0].children[0].children.find(item => item.segmentCount > 0);
+   const verticalTrack = vertical.children[1].children[0].children.find(item => item.segmentCount > 0);
+   const segments = track.children.filter(item => item.wave !== undefined);
+   const first = segments[0];
+   const last = segments[segments.length - 1];
+   if (track.value !== 0.8 || verticalTrack.value !== 0.6 || verticalTrack.energy < 0.95
+       || first.children[0].width !== first.width || last.children[0].width !== 0
+       || !segments.slice(0, 3).some((segment, index) => Math.abs(segment.height - segmentHeights[index]) > 0.1)
+       || !segments.slice(-3).some((segment, index) =>
+           Math.abs(segment.height - segmentHeights[segments.length - 3 + index]) > 0.1)) {
+    console.error('Dragging animates both the filled and unfilled ends of the track'); Qt.exit(1); return;
    }
    horizontal.value = horizontal.dragPosition;
    horizontal.isDragging = false;
+   vertical.value = vertical.dragPosition;
+   vertical.isDragging = false;
    idleCheck.start();
  }}
  Timer { id: idleCheck; interval: 650; onTriggered: {
   const fill = rail.children.find(child => child.objectName === 'standard-progress-fill');
   const mark = fill.children.find(child => child.objectName === 'standard-progress-mark');
-  if (mark.visible || themed.background.children[0].height !== 3) { console.error('Pulse must settle after movement'); Qt.exit(1); return; }
-  const thumb = horizontal.children[0].children[0].children.find(item => item.focused !== undefined);
-  if (!thumb || thumb.railThickness !== 3 || thumb.children[1].transform[0].xScale !== 1) { console.error('Thumb eases back after release'); Qt.exit(1); return; }
+  const track = horizontal.children[0].children[0].children.find(item => item.segmentCount > 0);
+  if (mark.visible || track.energy !== 0 || track.children[0].height !== 6) {
+   console.error('Tracks must settle after movement'); Qt.exit(1); return;
+  }
   Config.animDuration = 0;
   themed.value = 0.25;
-  thumb.hovered = true;
-  if (thumb.railThickness !== 4 || thumb.children[0].opacity <= 0) {
-   console.error('Motion off applies hover feedback immediately'); Qt.exit(1); return;
-  }
-  if (themed.background.children[0].value !== 0.25 || themed.background.children[0].height !== 3) {
-   console.error('Motion off applies value changes immediately'); Qt.exit(1); return;
+  const themedTrack = themed.background.children[0];
+  horizontal.isDragging = true;
+  if (themedTrack.value !== 0.25 || track.energy !== 0 || track.children[0].height !== 6) {
+   console.error('Motion off applies value changes immediately and keeps the track still'); Qt.exit(1); return;
   }
   console.log('PASS: shared progress geometry, motion and slider input'); Qt.quit();
  }}
