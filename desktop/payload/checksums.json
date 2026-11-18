@@ -740,7 +740,7 @@
   "system/apps/shell/scripts/music_downloads/worker.py": "1a8208608ce6d5e2490c4a78c4a477008dd1b58486185e23cec608f7623fd25b",
   "system/apps/shell/scripts/music_library.py": "ea3c3f25095e5bb69e5561b648fddf109f0389b4d45f64ed0ca546fe88d68111",
   "system/apps/shell/scripts/music_mixes.py": "f1877bce0aa404cf892ba3cc4a28443df9770370f9e120af55b509f170005441",
-  "system/apps/shell/scripts/music_preview.py": "5aa4c29553be20c1c005a580cf912f26e3a6aa94a764296d77bf31971d897d09",
+  "system/apps/shell/scripts/music_preview.py": "7a42129e803d1c770050054bccc8a65305b3568c750f756c1e0043948361ce95",
   "system/apps/shell/scripts/music_spotify.py": "28e2811a3fb3d70116a27f09f76585adc427dd856838db6c3b7da744239552dc",
   "system/apps/shell/scripts/music_visualizer.py": "cd06c2657b601b2c6fcad0a7361798fb4e4d2c8e035e9bf60c2c650b5a576ec9",
   "system/apps/shell/scripts/nightlight.md": "234ee7df26dce28534a49f384168dd68b897538e75992dca86b0c338d7df5cdc",

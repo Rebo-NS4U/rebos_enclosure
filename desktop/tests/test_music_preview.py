@@ -15,6 +15,9 @@ import music_preview
 
 class MusicPreviewTests(unittest.TestCase):
     def setUp(self):
+        hide = patch("music_spotify.hide_window", return_value=True)
+        self.hide = hide.start()
+        self.addCleanup(hide.stop)
         self.spotify_start = patch('music_spotify.ensure_started')
         self.spotify_start.start()
         self.addCleanup(self.spotify_start.stop)
@@ -22,7 +25,7 @@ class MusicPreviewTests(unittest.TestCase):
     def test_spotify_activation_returns_focus_to_player(self):
         player = {'id': 4, 'app_id': 'org.quickshell'}
         spotify = {'id': 5, 'app_id': 'Spotify'}
-        with patch.object(music_preview, 'focused_window', side_effect=[player, player, spotify]), \
+        with patch.object(music_preview, 'focused_window', side_effect=[player, player, spotify, player, player, player]), \
                 patch.object(music_preview.time, 'sleep'), \
                 patch.object(music_preview.subprocess, 'run') as run:
             result = music_preview.preview('spotify:track:' + 'a'*22)
@@ -40,6 +43,21 @@ class MusicPreviewTests(unittest.TestCase):
                     patch.object(music_preview.subprocess, 'run') as run:
                 music_preview.keep_background(player)
                 run.assert_not_called()
+
+    def test_preview_rehides_delayed_window_without_stealing_user_focus(self):
+        player = {'id': 4, 'app_id': 'org.quickshell'}
+        other = {'id': 6, 'app_id': 'firefox'}
+        with patch.object(music_preview, 'focused_window', return_value=other), \
+                patch.object(music_preview.time, 'sleep'), \
+                patch.object(music_preview.subprocess, 'run') as run:
+            music_preview.keep_background(player)
+            self.assertEqual(self.hide.call_count, 5)
+            run.assert_not_called()
+
+    def test_hiding_does_not_require_a_focused_window(self):
+        with patch.object(music_preview.time, 'sleep'):
+            music_preview.keep_background(None)
+            self.assertEqual(self.hide.call_count, 5)
 
     def test_unavailable_compositor_does_not_break_playback(self):
         with patch.dict(os.environ, {'NIRI_SOCKET': '/fixture/socket'}), \

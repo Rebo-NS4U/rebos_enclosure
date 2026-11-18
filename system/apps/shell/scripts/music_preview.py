@@ -22,15 +22,17 @@ def focused_window():
 
 
 def keep_background(previous):
-    if not previous or previous.get('app_id') in SPOTIFY_APPS:
-        return
-    # Spotify may activate its window asynchronously after OpenUri. Never undo
-    # a switch to another application that the user makes during this interval.
+    from music_spotify import hide_window
+    # OpenUri can remap the client asynchronously. Hide it even when it does
+    # not take focus, while preserving any application switch made by the user.
+    restore_focus = bool(previous and previous.get('app_id') not in SPOTIFY_APPS)
     for _ in range(5):
         time.sleep(0.1)
-        current = focused_window()
+        current = focused_window() if restore_focus else None
+        hide_window()
         if not current:
-            return
+            restore_focus = False
+            continue
         if current['id'] == previous['id']:
             continue
         if current.get('app_id') in SPOTIFY_APPS:
@@ -39,7 +41,8 @@ def keep_background(previous):
                                check=True, capture_output=True, text=True, timeout=1)
             except (OSError, subprocess.SubprocessError):
                 pass
-        return
+        else:
+            restore_focus = False
 
 
 def preview(uri):
