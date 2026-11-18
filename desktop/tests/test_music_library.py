@@ -39,6 +39,29 @@ class MusicLibraryTests(unittest.TestCase):
                         '-metadata', 'album=Test album', '-metadata', 'track=3/12', str(self.song)], check=True)
         self.library = music.Library(self.home)
 
+    def test_sync_membership_preserves_files_and_rescans(self):
+        folder = self.folder / 'Synced'
+        folder.mkdir()
+        kept = folder / ('b'*22 + '.flac')
+        removed = folder / ('c'*22 + '.flac')
+        shutil.copyfile(self.song, kept)
+        shutil.copyfile(self.song, removed)
+        metadata = folder / '.enclosure-playlist.json'
+        metadata.write_text(json.dumps(dict(sources=['spotify:playlist:'+'a'*22],
+            tracks=[dict(uri='spotify:track:'+'b'*22)])))
+        for _ in range(2):
+            data = self.library.scan()
+            playlist = next(p for p in data['state']['playlists'] if p.get('folderPath') == str(folder))
+            self.assertEqual(playlist['paths'], [str(kept)])
+            self.assertIn(str(removed), [t['path'] for t in data['tracks']])
+            self.assertTrue(removed.is_file())
+        prepared = self.library.dispatch('playlist_sync', dict(playlist=playlist['id']))
+        self.assertTrue(prepared['syncPlaylist'])
+        metadata.write_text(json.dumps(dict(sources=['spotify:playlist:'+'a'*22], tracks=[])))
+        playlist = next(p for p in self.library.scan()['state']['playlists'] if p.get('folderPath') == str(folder))
+        self.assertEqual(playlist['paths'], [])
+        self.assertTrue(kept.exists() and removed.exists())
+
     def test_spotify_suggestions_and_download_destination(self):
         uri = 'spotify:track:' + 'b'*22
         other = 'spotify:track:' + 'c'*22

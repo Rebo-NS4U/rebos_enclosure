@@ -158,7 +158,19 @@ class Library:
             for folder in sorted(folders, key=lambda p: (p.name.casefold(), p.name)):
                 root = folder.resolve()
                 members = [t['path'] for t in tracks if Path(t['path']).is_relative_to(root)]
-                if members:
+                metadata = self.read(root / '.enclosure-playlist.json', {})
+                synced = metadata.get('tracks')
+                if isinstance(synced, list):
+                    local = [t for t in tracks if t['path'] in members]
+                    members = []
+                    for song in synced:
+                        match = next((t for t in local if t.get('spotifyUri') == song.get('uri') or
+                            'spotify:track:' + Path(t['path']).stem == song.get('uri') or
+                            (t['title'].casefold() == song.get('title', '').casefold() and
+                             t['artist'].casefold() == song.get('artist', '').casefold())), None)
+                        if match and match['path'] not in members:
+                            members.append(match['path'])
+                if members or isinstance(synced, list):
                     is_mix = folder.parent == self.music / 'Daily Mixes'
                     source_name = re.sub(r'-[a-f0-9]{12}$', '', folder.name) if is_mix else folder.name
                     name = source_name
@@ -170,10 +182,11 @@ class Library:
                             name = ' · '.join(leaders) + ' Mix'
                     folder_playlists.append(dict(
                         id='folder:' + hashlib.sha256(str(folder.absolute()).encode()).hexdigest(),
-                        name=name, paths=members, folder=True, folderPath=str(root), mix=is_mix, sourceName=source_name))
+                        name=name, paths=members, folder=True, folderPath=str(root), mix=is_mix, sourceName=source_name, synced=isinstance(synced, list),
+                        spotifySource=(metadata.get('sources') or [''])[0]))
         available = {t['path'] for t in tracks}
         for playlist in folder_playlists:
-            extras = self.state['playlistAdditions'].get(playlist['id'], [])
+            extras = [] if playlist.get('synced') else self.state['playlistAdditions'].get(playlist['id'], [])
             playlist['paths'] += [p for p in extras if p in available and p not in playlist['paths']]
         # Similar mixes can share leading artists; retain readable distinctions.
         counts = Counter(p['name'] for p in folder_playlists if p.get('mix'))
@@ -238,6 +251,13 @@ class Library:
             return self.mixes.more_suggestions(args.get('playlist'))
         if cmd == 'suggestions_get':
             return self.mixes.suggestions()
+        if cmd == 'playlist_sync':
+            playlist = next((p for p in self.scan()['state']['playlists'] if p['id'] == args.get('playlist')), None)
+            if not playlist or not playlist.get('folderPath') or not playlist.get('spotifySource'):
+                raise ValueError('This playlist has no saved Spotify source. Download it from Spotify playlists first.')
+            from music_mixes import playlist_uri
+            uri = playlist_uri(playlist['spotifySource'])
+            return dict(folder=playlist['folderPath'], links='https://open.spotify.com/playlist/' + uri.split(':')[-1], syncPlaylist=True)
         if cmd in ('suggestions_refresh', 'suggestion_download'):
             data = self.scan()
             playlist = next((p for p in data['state']['playlists'] if p['id'] == args.get('playlist')), None)

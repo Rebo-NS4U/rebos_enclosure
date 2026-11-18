@@ -432,6 +432,13 @@ Window {
                     RowLayout {
                         Layout.fillWidth: true
                         StyledText { text: root.shownTracks.length + " songs · Your library"; color: Colors.overSurfaceVariant; Layout.fillWidth: true }
+                        ThemeButton {
+                            text: "Sync Spotify playlist"; visible: root.page === "Playlist"
+                            enabled: !downloads.busy
+                            onClicked: root.request("playlist_sync", {playlist: root.detail}, data => {
+                                if (downloads.prepareMix(data)) root.navigate("Downloads");
+                            })
+                        }
                         ThemeButton { text: "Play all"; highlighted: true; enabled: root.shownTracks.length > 0; onClicked: root.play(root.shownTracks) }
                         ThemeButton { text: "Shuffle"; enabled: root.shownTracks.length > 0; onClicked: { root.shuffle = true; root.play(root.shownTracks,Math.floor(Math.random()*root.shownTracks.length)); } }
                     }
