@@ -58,7 +58,7 @@ Window {
     property int requestId: 0
     property var callbacks: ({})
     property bool spotifyPreview: false
-    property var spotifyPlayer: Mpris.players.values.find(p => p.dbusName === "org.mpris.MediaPlayer2.spotify") || null
+    property var spotifyPlayer: Mpris.players.values.find(p => (p.dbusName || "").toLowerCase().includes("spotify")) || null
     readonly property var localCurrent: currentIndex >= 0 && currentIndex < queue.length ? queue[currentIndex] : null
     readonly property var current: spotifyPreview ? (spotifyPlayer ? {
         title: spotifyPlayer.trackTitle, artist: spotifyPlayer.trackArtists,
@@ -67,7 +67,16 @@ Window {
     } : null) : localCurrent
     readonly property real playbackPosition: spotifyPreview ? (spotifyPlayer?.position || 0) * 1000 : player.position
     readonly property real playbackDuration: spotifyPreview ? (spotifyPlayer?.length || 0) * 1000 : player.duration
-    onSpotifyPlayerChanged: if (spotifyPreview) Qt.callLater(findLyrics)
+    onSpotifyPlayerChanged: {
+        followSpotify();
+        if (spotifyPreview) Qt.callLater(findLyrics);
+    }
+    function followSpotify() {
+        if (spotifyPlayer?.isPlaying) {
+            player.pause();
+            spotifyPreview = true;
+        }
+    }
     function previewTrack(uri) {
         request("mixes_preview", {uri: uri}, data => {
             player.pause();
@@ -76,8 +85,9 @@ Window {
         });
     }
     Connections {
-        target: root.spotifyPreview ? root.spotifyPlayer : null
-        function onTrackTitleChanged() { Qt.callLater(root.findLyrics); }
+        target: root.spotifyPlayer
+        function onIsPlayingChanged() { root.followSpotify(); }
+        function onTrackTitleChanged() { if (root.spotifyPreview) Qt.callLater(root.findLyrics); }
     }
     Timer {
         interval: 250; repeat: true
@@ -249,7 +259,7 @@ Window {
     }
     function select(index) {
         if (index < 0 || index >= queue.length) return;
-        if (spotifyPreview && spotifyPlayer?.isPlaying) spotifyPlayer.pause();
+        if (spotifyPlayer?.isPlaying) spotifyPlayer.pause();
         spotifyPreview = false;
         currentIndex = index;
         findLyrics();
@@ -291,15 +301,15 @@ Window {
         switch(message.action) {
         case "Raise": GlobalStates.musicWindowVisible = true; root.requestActivate(); break;
         case "PlayPause": toggle(); break;
-        case "Play": if (current) player.play(); break;
-        case "Pause": player.pause(); break;
-        case "Stop": player.stop(); break;
+        case "Play": if (spotifyPreview) { if (spotifyPlayer?.canPlay) spotifyPlayer.play(); } else if (current) player.play(); break;
+        case "Pause": if (spotifyPreview) { if (spotifyPlayer?.canPause) spotifyPlayer.pause(); } else player.pause(); break;
+        case "Stop": if (spotifyPreview) spotifyPlayer?.stop(); else player.stop(); break;
         case "Next": next(false); break;
         case "Previous": previous(); break;
-        case "Volume": volume = Math.max(0,Math.min(1,message.value)); break;
-        case "Shuffle": shuffle = message.value; break;
-        case "LoopStatus": repeatMode = message.value; break;
-        case "Seek": seek(player.position+message.offset/1000); break;
+        case "Volume": if (spotifyPreview) { if (spotifyPlayer?.volumeSupported) spotifyPlayer.volume = Math.max(0,Math.min(1,message.value)); } else volume = Math.max(0,Math.min(1,message.value)); break;
+        case "Shuffle": if (spotifyPreview) { if (spotifyPlayer?.shuffleSupported) spotifyPlayer.shuffle = message.value; } else shuffle = message.value; break;
+        case "LoopStatus": if (spotifyPreview) { if (spotifyPlayer?.loopSupported) spotifyPlayer.loopState = message.value === "Track" ? MprisLoopState.Track : message.value === "Playlist" ? MprisLoopState.Playlist : MprisLoopState.None; } else repeatMode = message.value; break;
+        case "Seek": seek(playbackPosition+message.offset/1000); break;
         case "SetPosition": seek(message.position/1000); break;
         }
     }

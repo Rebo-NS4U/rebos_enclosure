@@ -49,6 +49,8 @@ def session():
             property real position: 30
             property bool isPlaying: true
             property bool canTogglePlaying: true
+            property bool canPlay: true
+            property bool canPause: true
             property bool canGoNext: true
             property bool canGoPrevious: true
             property bool canSeek: true
@@ -62,6 +64,8 @@ def session():
             property int previousCalls: 0
             function togglePlaying() { isPlaying = !isPlaying; }
             function pause() { isPlaying = false; }
+            function play() { isPlaying = true; }
+            function stop() { isPlaying = false; }
             function next() { nextCalls++; }
             function previous() { previousCalls++; }
         }
@@ -281,7 +285,16 @@ def session():
                 } else if (phase === 94 && attempts >= repeatStart + 3) {
                     if (!music.immersive) { console.error("MUSIC_FULLSCREEN_F11_FAILED"); Qt.exit(1); return; }
                     console.log("MUSIC_FULLSCREEN_PASSED");
-                    music.spotifyPlayer = spotify; music.spotifyPreview = true;
+                    music.spotifyPlayer = spotify;
+                    if (!music.spotifyPreview) { console.error("SPOTIFY_AUTOFOLLOW_FAILED"); Qt.exit(1); return; }
+                    music.control({action:"Pause"});
+                    if (spotify.isPlaying) { console.error("SPOTIFY_REMOTE_PAUSE_FAILED"); Qt.exit(1); return; }
+                    music.control({action:"Play"});
+                    music.control({action:"Seek",offset:5000000});
+                    if (!spotify.isPlaying || spotify.position !== 35) { console.error("SPOTIFY_REMOTE_PLAY_SEEK_FAILED"); Qt.exit(1); return; }
+                    music.control({action:"Stop"});
+                    if (spotify.isPlaying) { console.error("SPOTIFY_REMOTE_STOP_FAILED"); Qt.exit(1); return; }
+                    spotify.play();
                     if (music.current.title !== "Suggested song" || music.playbackDuration !== 180000 || !music.playing) { console.error("SPOTIFY_METADATA_FAILED"); Qt.exit(1); return; }
                     const play = findItem(music.contentItem, "music-fullscreen-play");
                     play.clicked();
