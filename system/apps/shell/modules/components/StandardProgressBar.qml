@@ -1,7 +1,7 @@
 import QtQuick
 import qs.modules.theme
 
-// A compact, non-interactive progress display using the slider rail.
+// A non-interactive progress display using the slider rail.
 Item {
     id: root
 
@@ -14,7 +14,7 @@ Item {
     property real displayedValue: normalizedValue
     readonly property alias filledLength: track.filledLength
     implicitWidth: 100
-    implicitHeight: 4
+    implicitHeight: track.thickness
 
     Behavior on displayedValue {
         enabled: Motion.enabled && root.visible && root.smoothValue && !root.pressed
@@ -38,7 +38,5 @@ Item {
         activeColor: root.activeColor
         pressed: root.pressed
         playing: root.displayedValue > 0 && (root.playing || activity.running)
-        thickness: root.height
-        rippleAmplitude: Math.min(1, root.height * 0.35)
     }
 }

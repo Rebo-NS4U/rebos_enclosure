@@ -498,7 +498,8 @@ ShellRoot {
      }
      strip.lyricPosition = 3;
      if (!track.visible || track.width <= 0 || track.x < label.x
-         || track.x + track.width > label.x + label.width || track.height !== 2)
+         || track.x + track.width > label.x + label.width || track.height !== 6
+         || track.y < (panel.height + label.implicitHeight) / 2 || track.y + track.height > panel.height)
       throw Error('Progress must fit beneath the lyric even with reduced motion');
      const nextPanel = findItem(strip, 'bar-lyrics-next');
      if (findItem(nextPanel, 'bar-lyrics-line-progress').visible)

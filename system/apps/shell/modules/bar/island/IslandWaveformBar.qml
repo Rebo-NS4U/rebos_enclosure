@@ -95,7 +95,6 @@ Item {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
-                height: 2
                 value: root.displayProgress
                 playing: root.isPlaying
                 pressed: root.isDragging

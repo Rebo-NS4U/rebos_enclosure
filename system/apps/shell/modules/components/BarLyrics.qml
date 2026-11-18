@@ -353,7 +353,6 @@ Item {
             objectName: "bar-lyrics-line-progress"
             // Follow the visible label width, including when long lyrics elide.
             width: Math.max(0, Math.min(currentLabel.contentWidth, currentLabel.width))
-            height: 2
             x: currentLabel.x + (currentLabel.width - width) / 2
             y: Math.min(lineSurface.height - height - 2,
                 (lineSurface.height + currentLabel.implicitHeight) / 2 + 2)

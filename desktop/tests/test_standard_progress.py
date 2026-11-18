@@ -50,7 +50,10 @@ ShellRoot {
    function check(ok, message) { if (!ok) throw Error(message); }
    const progressTrack = rail.children[0];
    check(rail.filledLength === 100, 'Half progress must fill half the rail');
-   check(progressTrack.energy === 0 && progressTrack.thickness === rail.height, 'Idle progress is flat and compact');
+   const sliderRail = themed.background.children[0];
+   check(progressTrack.energy === 0 && progressTrack.thickness === sliderRail.thickness
+    && rail.height === sliderRail.thickness && progressTrack.rippleAmplitude === sliderRail.rippleAmplitude,
+    'Progress matches the slider track thickness and ripple amplitude');
    rail.value = 0.61;
    check(rail.filledLength < 122, 'Progress changes ease toward the new value');
    for (const slider of [horizontal, vertical, themed]) {
@@ -67,7 +70,6 @@ ShellRoot {
    horizontal.value = 0.49; check(horizontal.value === 0.49, 'External updates remain exact');
    horizontal.editValue(2); check(horizontal.value === 1, 'Slider input clamps');
    vertical.editValue(-1); check(vertical.value === 0, 'Vertical slider input clamps');
-   const sliderRail = themed.background.children[0];
    check(sliderRail.segmentCount > 10 && sliderRail.energy === 0, 'Theme slider starts with an idle segmented track');
    sliderRail.hovered = true;
    themed.value = 0.8;
