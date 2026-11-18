@@ -402,7 +402,6 @@ Item {
 
         StyledRect {
             id: sidebarBackground
-            // Concentrate the sculpted fabric finish behind the assistant toolbar.
             barSurface: true
             canopyVariation: root.canopyVariation
             anchors.fill: parent

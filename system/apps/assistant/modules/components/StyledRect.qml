@@ -453,9 +453,11 @@ ClippingRectangle {
     // Wallpaper architecture, using the selected semantic colors throughout.
     Loader {
         anchors.fill: parent
-        active: !root.hasFillColor && root.rectOpacity > 0
-            && ["bg", "popup", "pane", "surface", "surfaceContainer", "internalbg", "focus"].indexOf(root.variant) !== -1
-            && ["canopy", "orbital", "metropolis"].indexOf(root.styleOverride || Styling.shellStyle) !== -1
+        readonly property string material: root.styleOverride || Styling.shellStyle
+        active: !root.hasFillColor && root.rectOpacity > 0 && (material === "canopy"
+            ? !root.controlSurface && ["bg", "popup", "pane", "surface", "surfaceContainer", "bar"].includes(root.variant)
+            : ["orbital", "metropolis"].includes(material)
+                && ["bg", "popup", "pane", "surface", "surfaceContainer", "internalbg", "focus"].includes(root.variant))
         sourceComponent: Canvas {
             anchors.fill: parent
             objectName: "wallpaper-theme-canvas"
@@ -482,6 +484,97 @@ ClippingRectangle {
             onOuterChanged: requestPaint()
             onWidthChanged: requestPaint()
             onHeightChanged: requestPaint()
+            readonly property bool broad: root.materialPreview || (width >= 160 && height >= 80 && root.variant !== "bar")
+            readonly property bool nested: !outer && !barSurface && root.variant !== "bar"
+            onBroadChanged: requestPaint()
+            onNestedChanged: requestPaint()
+
+            function paintCanopy(ctx) {
+                const leafSize = broad ? Math.min(28, width * 0.047, height * 0.105) : Math.min(12, height * 0.23, width * 0.035)
+
+                function leaf(x, y, angle, size, foliage) {
+                    ctx.save()
+                    ctx.translate(x, y)
+                    ctx.rotate(angle)
+                    ctx.scale(size, size)
+                    ctx.beginPath()
+                    ctx.moveTo(0, 0)
+                    ctx.bezierCurveTo(0.28, -0.37, 0.64, -0.29, 1, 0)
+                    ctx.bezierCurveTo(0.64, 0.16, 0.36, 0.31, 0, 0)
+                    ctx.fillStyle = foliage
+                    ctx.fill()
+                    ctx.beginPath()
+                    ctx.moveTo(0, 0)
+                    ctx.bezierCurveTo(0.28, -0.37, 0.64, -0.29, 1, 0)
+                    ctx.quadraticCurveTo(0.52, -0.08, 0, 0)
+                    ctx.fillStyle = Qt.alpha(pigment, 0.27)
+                    ctx.fill()
+                    ctx.restore()
+                }
+
+                // Sample each curved bough so shoots grow from the wood and
+                // paired leaves follow their shoot, even on tall windows.
+                function limb(x0, y0, cx, cy, x1, y1, size, count, foliage) {
+                    const bark = Qt.tint(foliage, Qt.alpha(backdrop, 0.48))
+                    ctx.fillStyle = bark
+                    ctx.beginPath()
+                    ctx.moveTo(x0, y0 - size * 0.30)
+                    ctx.quadraticCurveTo(cx, cy - size * 0.13, x1, y1)
+                    ctx.quadraticCurveTo(cx, cy + size * 0.14, x0, y0 + size * 0.30)
+                    ctx.closePath()
+                    ctx.fill()
+                    for (let i = 0; i < count; ++i) {
+                        const t = (i + 0.52) / count, u = 1 - t
+                        const x = u*u*x0 + 2*u*t*cx + t*t*x1
+                        const y = u*u*y0 + 2*u*t*cy + t*t*y1
+                        const heading = Math.atan2(u*(cy-y0) + t*(y1-cy), u*(cx-x0) + t*(x1-cx))
+                        const side = i % 2 ? -1 : 1
+                        const shoot = size * (2.4 - t * 0.85 + (i % 3) * 0.32)
+                        ctx.save()
+                        ctx.translate(x, y)
+                        ctx.rotate(heading + side * (0.47 + (i % 3) * 0.16))
+                        const bend = side * shoot * 0.29
+                        ctx.strokeStyle = bark
+                        ctx.lineWidth = Math.max(0.8, size * 0.068)
+                        ctx.beginPath()
+                        ctx.moveTo(0, 0)
+                        ctx.quadraticCurveTo(shoot * 0.5, 0, shoot, bend)
+                        ctx.stroke()
+                        for (let j = 1; j <= 4; ++j) {
+                            const s = j / 5
+                            const tangent = Math.atan2(2 * bend * s, shoot)
+                            leaf(shoot * s, bend * s*s, tangent + (j % 2 ? 0.90 : -0.73),
+                                 size * (1.04 - s * 0.31), foliage)
+                        }
+                        leaf(shoot, bend, Math.atan2(2 * bend, shoot), size * 0.80, foliage)
+                        ctx.restore()
+                    }
+                }
+
+                if (broad) {
+                    // A distant crown crosses the reading area in silhouette.
+                    // The closer limbs overlap it at opposite edges.
+                    ctx.globalAlpha = nested ? 0.15 : 0.26
+                    limb(width * 1.03, height * 0.12, width * 0.67, height * 0.20,
+                         width * 0.21, height * 0.68, leafSize, nested ? 5 : 9, secondaryAccent)
+                    ctx.globalAlpha = nested ? 0.24 : 0.48
+                    limb(-leafSize, height * 0.98, width * 0.12, height * 0.79,
+                         width * 0.42, height * 0.78, leafSize * 0.76, 5, accent)
+                }
+                if (!nested) {
+                    // Limit the reach on a wide bar so the clock stays clear.
+                    const reach = Math.min(width * 0.29, leafSize * 9)
+                    ctx.globalAlpha = 0.70
+                    limb(-leafSize, leafSize * 2.2, reach * 0.35, leafSize * 0.35,
+                         reach, -leafSize * 0.16, leafSize * 0.78, 5, accent)
+                    if (!broad) {
+                        ctx.globalAlpha = 0.60
+                        limb(width + leafSize, leafSize * 1.6, width - reach * 0.44, leafSize * 0.9,
+                             width - reach * 0.82, 0, leafSize * 0.62, 4, secondaryAccent)
+                    }
+                }
+            }
+
             onPaint: {
                 const ctx=getContext("2d");ctx.clearRect(0,0,width,height);
                 if(width<24||height<24)return;
@@ -491,70 +584,15 @@ ClippingRectangle {
                 // Clip every material layer to the shared rounded surface.
                 ctx.save();
                 if(root.traceThemeFrame(ctx,0))ctx.clip();
-                if(finish === "canopy"){
-                    // Translucent fabric drapes use the selected palette.
-                    const fabric=a=>Qt.rgba(accent.r*0.65+secondaryAccent.r*0.35,accent.g*0.65+secondaryAccent.g*0.35,accent.b*0.65+secondaryAccent.b*0.35,a);
-                    // Taut diagonal fabric sails with folded tips, grazing light and soft shadows.
-                    function drapedCanopy(depth, shape) {
-                        const split=0.39+(shape%4)*0.055;
-                        const glow=ctx.createLinearGradient(0,0,width,depth);
-                        glow.addColorStop(0,Qt.rgba(secondaryAccent.r,secondaryAccent.g,secondaryAccent.b,0.08));
-                        glow.addColorStop(0.55,fabric(0.025));
-                        glow.addColorStop(1,Qt.rgba(accent.r,accent.g,accent.b,0.12));
-                        ctx.fillStyle=glow;ctx.fillRect(0,0,width,depth);
-                        for(let layer=0;layer<3;layer++){
-                            const reach=depth*(1-layer*0.24);
-                            const pinch=split+(layer-1)*0.11;
-                            const edge=reach*(0.12+layer*0.04);
-                            function drape(offset) {
-                                ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(width,0);
-                                ctx.lineTo(width,edge+offset);
-                                // Long diagonal hems meet at a crisp folded tip, without scallops.
-                                ctx.lineTo(width*(pinch+0.16),reach*0.58+offset);
-                                ctx.lineTo(width*pinch,reach*0.88+offset);
-                                ctx.lineTo(width*(pinch+0.055),reach*0.55+offset);
-                                ctx.bezierCurveTo(width*(pinch-0.10),reach*0.54+offset,
-                                    width*0.12,reach*0.32+offset,0,edge+offset);
-                                ctx.closePath();
-                            }
-                            // Broad, fading contact shadow separates the suspended sheets.
-                            const shadow=ctx.createLinearGradient(0,reach*0.25,0,reach+8);
-                            shadow.addColorStop(0,Qt.rgba(backdrop.r,backdrop.g,backdrop.b,0));
-                            shadow.addColorStop(0.7,Qt.rgba(backdrop.r,backdrop.g,backdrop.b,0.13));
-                            shadow.addColorStop(1,Qt.rgba(backdrop.r,backdrop.g,backdrop.b,0));
-                            ctx.fillStyle=shadow;drape(Math.min(6,depth*0.09));ctx.fill();
-                            const cloth=ctx.createLinearGradient(0,0,width,reach);
-                            cloth.addColorStop(0,fabric(0.12+layer*0.035));
-                            cloth.addColorStop(0.23,fabric(0.32));
-                            cloth.addColorStop(0.43,fabric(0.11));
-                            cloth.addColorStop(0.67,Qt.rgba(secondaryAccent.r,secondaryAccent.g,secondaryAccent.b,0.22));
-                            cloth.addColorStop(0.86,fabric(0.38));
-                            cloth.addColorStop(1,fabric(0.16));
-                            ctx.fillStyle=cloth;drape(0);ctx.fill();
+                if (finish === "canopy") {
+                    if (barSurface) {
+                        if (canopyVariation % 2) {
+                            ctx.translate(width, 0)
+                            ctx.scale(-1, 1)
                         }
+                        ctx.translate(0, (canopyVariation % 3) * height * 0.012)
                     }
-
-                    if(barSurface){
-                        // Broad drapes stay confined to the header.
-                        // Different span counts and proportions, stable until the next opening.
-                        const profiles=[
-                            [1], [0.46,0.54], [0.28,0.44,0.28],
-                            [0.22,0.28,0.28,0.22], [0.16,0.19,0.30,0.19,0.16],
-                            [0.52,0.30,0.18]
-                        ];
-                        const v=((canopyVariation % profiles.length)+profiles.length)%profiles.length;
-                        const spans=profiles[v];
-                        const roof=Math.min([72,76,68,60,52,78][v],height*0.22);
-                        drapedCanopy(roof,spans.length+3);
-                    }else if(outer){
-                        const drop=Math.min(70,height*0.22);
-                        drapedCanopy(drop,5);
-                        // Ground-level shade echoes the roof without framing the content.
-                        const ground=ctx.createLinearGradient(0,height-24,0,height);
-                        ground.addColorStop(0,fabric(0));ground.addColorStop(1,fabric(0.12));
-                        ctx.fillStyle=ground;ctx.fillRect(0,height-24,width,24);
-
-                    }
+                    paintCanopy(ctx)
                 }else if(finish === "orbital"){
                     // Elliptical orbital tracks wrap a quiet, recessed space capsule.
                     ctx.strokeStyle=ink(0.20);ctx.lineWidth=1;

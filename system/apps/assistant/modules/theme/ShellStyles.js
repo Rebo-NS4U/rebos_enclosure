@@ -1,7 +1,7 @@
 .pragma library
 
 var styles = [
-    {id: "canopy", label: "Canopy", font: "DejaVu Sans Mono", description: "Architectural canopy: sweeping fabric spans, uninterrupted hems and softly shaded surfaces."},
+    {id: "canopy", label: "Canopy", font: "DejaVu Sans Mono", description: "Overlapping tree boughs with two-tone leaf sprays across the window."},
     {id: "orbital", label: "Orbital", font: "JetBrains Mono", description: "Orbital space: elliptical tracks, satellite points, fixed stars and recessed glass."},
     {id: "metropolis", label: "Metropolis", font: "DejaVu Sans", description: "City glass: layered facades, architectural reflections and illuminated windows in your selected colors."},
     {id: "glass-vault", label: "Glass Vault", font: "Noto Sans", description: "Thick glass blocks, rounded clamps, refractive light bands and deep inset controls."},
@@ -185,12 +185,12 @@ function surface(style, variant, p, ditherStrength) {
         border=[focused?p.primary:mix(fill,p.primary,outer?0.32:0.20),focused||outer?1:0];
     }
     if (canopy && neutral) {
-        // Soft fabric shading replaces the former hard glass bezel.
-        var cloth=mix(p.primary,p.secondary,0.35);
-        fill=mix(mix(p.background,p.foreground,inset?0.015:0.035),cloth,inset?0.025:0.055);
+        // Carry a little foliage color into the surrounding surface.
+        var foliage=mix(p.primary,p.secondary,0.35);
+        fill=mix(mix(p.background,p.foreground,inset?0.015:0.035),foliage,inset?0.025:0.055);
         item=p.foreground;
         opacity=focused?0.80:inset?0.40:outer?0.62:0.42;
-        border=[focused?p.primary:mix(fill,cloth,outer?0.27:0.16),focused||outer?1:0];
+        border=[focused?p.primary:mix(fill,foliage,outer?0.27:0.16),focused||outer?1:0];
     }
     var containers = ["bg", "popup", "pane", "surface", "surfaceContainer", "common", "internalbg", "focus", "surfaceVariant", "bar", "barbg"];
     var controls = ["primary", "primaryfocus", "overprimary", "secondary", "secondaryfocus", "oversecondary", "tertiary", "tertiaryfocus", "overtertiary", "error", "errorfocus", "overerror"];

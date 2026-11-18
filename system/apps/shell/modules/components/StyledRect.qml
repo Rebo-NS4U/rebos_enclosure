@@ -409,9 +409,11 @@ ClippingRectangle {
     // Wallpaper architecture, using the selected semantic colors throughout.
     Loader {
         anchors.fill: parent
-        active: !root.hasFillColor && root.rectOpacity > 0
-            && ["bg", "popup", "pane", "surface", "surfaceContainer", "internalbg", "focus"].indexOf(root.variant) !== -1
-            && ["canopy", "orbital", "metropolis"].indexOf(root.styleOverride || Styling.shellStyle) !== -1
+        readonly property string material: root.styleOverride || Styling.shellStyle
+        active: !root.hasFillColor && root.rectOpacity > 0 && (material === "canopy"
+            ? !root.controlSurface && ["bg", "popup", "pane", "surface", "surfaceContainer", "bar"].includes(root.variant)
+            : ["orbital", "metropolis"].includes(material)
+                && ["bg", "popup", "pane", "surface", "surfaceContainer", "internalbg", "focus"].includes(root.variant))
         sourceComponent: Canvas {
             anchors.fill: parent
             objectName: "wallpaper-theme-canvas"
@@ -438,79 +440,108 @@ ClippingRectangle {
             onOuterChanged: requestPaint()
             onWidthChanged: requestPaint()
             onHeightChanged: requestPaint()
+            readonly property bool broad: root.materialPreview || (width >= 160 && height >= 80 && root.variant !== "bar")
+            readonly property bool nested: !outer && !barSurface && root.variant !== "bar"
+            onBroadChanged: requestPaint()
+            onNestedChanged: requestPaint()
+
+            function paintCanopy(ctx) {
+                const leafSize = broad ? Math.min(28, width * 0.047, height * 0.105) : Math.min(12, height * 0.23, width * 0.035)
+
+                function leaf(x, y, angle, size, foliage) {
+                    ctx.save()
+                    ctx.translate(x, y)
+                    ctx.rotate(angle)
+                    ctx.scale(size, size)
+                    ctx.beginPath()
+                    ctx.moveTo(0, 0)
+                    ctx.bezierCurveTo(0.28, -0.37, 0.64, -0.29, 1, 0)
+                    ctx.bezierCurveTo(0.64, 0.16, 0.36, 0.31, 0, 0)
+                    ctx.fillStyle = foliage
+                    ctx.fill()
+                    ctx.beginPath()
+                    ctx.moveTo(0, 0)
+                    ctx.bezierCurveTo(0.28, -0.37, 0.64, -0.29, 1, 0)
+                    ctx.quadraticCurveTo(0.52, -0.08, 0, 0)
+                    ctx.fillStyle = Qt.alpha(pigment, 0.27)
+                    ctx.fill()
+                    ctx.restore()
+                }
+
+                // Sample each curved bough so shoots grow from the wood and
+                // paired leaves follow their shoot, even on tall windows.
+                function limb(x0, y0, cx, cy, x1, y1, size, count, foliage) {
+                    const bark = Qt.tint(foliage, Qt.alpha(backdrop, 0.48))
+                    ctx.fillStyle = bark
+                    ctx.beginPath()
+                    ctx.moveTo(x0, y0 - size * 0.30)
+                    ctx.quadraticCurveTo(cx, cy - size * 0.13, x1, y1)
+                    ctx.quadraticCurveTo(cx, cy + size * 0.14, x0, y0 + size * 0.30)
+                    ctx.closePath()
+                    ctx.fill()
+                    for (let i = 0; i < count; ++i) {
+                        const t = (i + 0.52) / count, u = 1 - t
+                        const x = u*u*x0 + 2*u*t*cx + t*t*x1
+                        const y = u*u*y0 + 2*u*t*cy + t*t*y1
+                        const heading = Math.atan2(u*(cy-y0) + t*(y1-cy), u*(cx-x0) + t*(x1-cx))
+                        const side = i % 2 ? -1 : 1
+                        const shoot = size * (2.4 - t * 0.85 + (i % 3) * 0.32)
+                        ctx.save()
+                        ctx.translate(x, y)
+                        ctx.rotate(heading + side * (0.47 + (i % 3) * 0.16))
+                        const bend = side * shoot * 0.29
+                        ctx.strokeStyle = bark
+                        ctx.lineWidth = Math.max(0.8, size * 0.068)
+                        ctx.beginPath()
+                        ctx.moveTo(0, 0)
+                        ctx.quadraticCurveTo(shoot * 0.5, 0, shoot, bend)
+                        ctx.stroke()
+                        for (let j = 1; j <= 4; ++j) {
+                            const s = j / 5
+                            const tangent = Math.atan2(2 * bend * s, shoot)
+                            leaf(shoot * s, bend * s*s, tangent + (j % 2 ? 0.90 : -0.73),
+                                 size * (1.04 - s * 0.31), foliage)
+                        }
+                        leaf(shoot, bend, Math.atan2(2 * bend, shoot), size * 0.80, foliage)
+                        ctx.restore()
+                    }
+                }
+
+                if (broad) {
+                    // A distant crown crosses the reading area in silhouette.
+                    // The closer limbs overlap it at opposite edges.
+                    ctx.globalAlpha = nested ? 0.15 : 0.26
+                    limb(width * 1.03, height * 0.12, width * 0.67, height * 0.20,
+                         width * 0.21, height * 0.68, leafSize, nested ? 5 : 9, secondaryAccent)
+                    ctx.globalAlpha = nested ? 0.24 : 0.48
+                    limb(-leafSize, height * 0.98, width * 0.12, height * 0.79,
+                         width * 0.42, height * 0.78, leafSize * 0.76, 5, accent)
+                }
+                if (!nested) {
+                    // Limit the reach on a wide bar so the clock stays clear.
+                    const reach = Math.min(width * 0.29, leafSize * 9)
+                    ctx.globalAlpha = 0.70
+                    limb(-leafSize, leafSize * 2.2, reach * 0.35, leafSize * 0.35,
+                         reach, -leafSize * 0.16, leafSize * 0.78, 5, accent)
+                    if (!broad) {
+                        ctx.globalAlpha = 0.60
+                        limb(width + leafSize, leafSize * 1.6, width - reach * 0.44, leafSize * 0.9,
+                             width - reach * 0.82, 0, leafSize * 0.62, 4, secondaryAccent)
+                    }
+                }
+            }
+
             onPaint: {
                 const ctx=getContext("2d");ctx.clearRect(0,0,width,height);
                 if(width<24||height<24)return;
                 const ink=a=>Qt.rgba(pigment.r,pigment.g,pigment.b,a);
                 ctx.lineWidth=1;
                 const safe=Math.max(18,cornerRadius+6);
-                if (finish === "canopy" && !barSurface && !outer) return;
                 // Clip every material layer to the shared rounded surface.
                 ctx.save();
                 if(root.traceThemeFrame(ctx,0))ctx.clip();
                 if (finish === "canopy") {
-                    // Overhanging boughs grow in from the edges of the panel.
-                    const scale = Math.min(1.45, width / 335, height / 96);
-                    function bough(x, direction, size, foliage) {
-                        ctx.save();
-                        ctx.translate(x, 0);
-                        ctx.scale(size * direction, size);
-
-                        const bark = Qt.tint(foliage, Qt.alpha(backdrop, 0.52));
-                        ctx.fillStyle = Qt.alpha(bark, 0.95);
-                        ctx.beginPath();
-                        ctx.moveTo(-6, 62);
-                        ctx.bezierCurveTo(20, 37, 37, 35, 63, 27);
-                        ctx.bezierCurveTo(93, 19, 115, 9, 139, -3);
-                        ctx.bezierCurveTo(113, 14, 97, 21, 65, 31);
-                        ctx.bezierCurveTo(32, 40, 15, 48, -6, 72);
-                        ctx.fill();
-
-                        function leaf(x, y, angle, length) {
-                            ctx.save();
-                            ctx.translate(x, y);
-                            ctx.rotate(angle);
-                            ctx.beginPath();
-                            ctx.moveTo(0, 0);
-                            ctx.bezierCurveTo(length*0.27, -length*0.38, length*0.71, -length*0.30, length, 0);
-                            ctx.bezierCurveTo(length*0.70, length*0.18, length*0.24, length*0.36, 0, 0);
-                            ctx.fillStyle = Qt.alpha(foliage, 0.76);
-                            ctx.fill();
-                            ctx.beginPath();
-                            ctx.moveTo(0, 0);
-                            ctx.quadraticCurveTo(length*0.48, -length*0.06, length, 0);
-                            ctx.bezierCurveTo(length*0.71, -length*0.30, length*0.27, -length*0.38, 0, 0);
-                            ctx.fillStyle = Qt.alpha(pigment, 0.20);
-                            ctx.fill();
-                            ctx.restore();
-                        }
-
-                        function twig(x, y, dx, dy, leafSize) {
-                            ctx.strokeStyle = Qt.alpha(bark, 0.90);
-                            ctx.lineWidth = 1.5;
-                            ctx.beginPath();
-                            ctx.moveTo(x, y);
-                            ctx.quadraticCurveTo(x + dx*0.62, y + dy*0.15, x + dx, y + dy);
-                            ctx.stroke();
-                            const angle = Math.atan2(dy, dx);
-                            for (let i = 1; i <= 3; i++) {
-                                const t = i / 4, u = 1 - t;
-                                const stemX = x + dx * (1.24*u*t + t*t);
-                                const stemY = y + dy * (0.30*u*t + t*t);
-                                leaf(stemX, stemY, angle + (i % 2 ? 0.96 : -1.06), leafSize * (1.10 - t*0.25));
-                            }
-                            leaf(x+dx, y+dy, angle, leafSize*0.85);
-                        }
-                        twig(10, 49, 17, -32, 17);
-                        twig(32, 40, 35, 13, 15);
-                        twig(52, 33, 18, -27, 19);
-                        twig(79, 24, 37, 9, 13);
-                        twig(99, 16, 29, -12, 12);
-                        ctx.restore();
-                    }
-
-                    bough(width, -1, scale * 0.73, secondaryAccent);
-                    bough(0, 1, scale, accent);
+                    paintCanopy(ctx)
                 }else if(finish === "orbital"){
                     const rim = outer || inset ? 6 : 3;
                     // Deterministic jitter spreads a stable star field over the entire surface.

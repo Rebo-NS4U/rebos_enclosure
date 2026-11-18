@@ -44,6 +44,12 @@ Kitty exports use six-digit RGB colors. Translucent palette colors (including
 Frosted Glass borders) are composited against the terminal background; terminal
 transparency remains in Kitty’s separate `background_opacity` setting.
 
+## Canopy
+
+A tree bough crosses the window from the upper right, with closer leaves along
+the left edges. Large nested panes carry a quieter layer of foliage. Compact
+bars keep the center clear between two short leaf sprays.
+
 ## Monolith and Suspended Film
 
 Monolith uses an opaque slate face. A diagonal fault crosses the window, with
