@@ -502,9 +502,10 @@ ShellRoot {
      const nextPanel = findItem(strip, 'bar-lyrics-next');
      if (findItem(nextPanel, 'bar-lyrics-line-progress').visible)
       throw Error('Upcoming line must not show elapsed progress');
-     if (track.children[0].energy !== 0 || track.children[0].playing)
-      throw Error('Lyrics progress track must stay still during playback');
+     if (!track.children[0].playing)
+      throw Error('Lyrics progress must use the slider ripple during playback');
      MprisController.isPlaying = false;
+     if (track.children[0].playing) throw Error('Lyrics ripple must stop on pause');
      Config.animDuration = 0;
      MprisController.position = 5;
      strip.updateLyricPosition();

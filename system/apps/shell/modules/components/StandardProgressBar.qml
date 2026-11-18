@@ -7,7 +7,7 @@ Item {
 
     property real value: 0
     property color activeColor: Colors.primary
-    property bool playing: false
+    property bool playing: true
     property bool pressed: false
     property bool smoothValue: true
     property bool showCursor: true
@@ -22,23 +22,13 @@ Item {
         NumberAnimation { duration: Motion.enter; easing.type: Easing.InOutSine }
     }
 
-    onNormalizedValueChanged: {
-        if (Motion.enabled && visible && smoothValue && !pressed && !playing)
-            activity.restart();
-    }
-
-    Timer {
-        id: activity
-        interval: Motion.base * 2
-    }
-
     SliderTrack {
         id: track
         anchors.fill: parent
         value: root.displayedValue
         activeColor: root.activeColor
         pressed: root.pressed
-        playing: root.displayedValue > 0 && (root.playing || activity.running)
+        playing: root.displayedValue > 0 && root.playing
     }
 
     Rectangle {
@@ -49,7 +39,7 @@ Item {
         width: Math.min(4, root.width)
         height: track.thickness + 4
         radius: width / 2
-        color: root.activeColor
+        color: "white"
         border.width: 1
         border.color: Colors.surface
     }

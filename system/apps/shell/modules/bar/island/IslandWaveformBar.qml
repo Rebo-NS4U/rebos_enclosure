@@ -112,7 +112,7 @@ Item {
                 width: handleW
                 height: handleH
                 radius: width / 2
-                color: Colors.overBackground
+                color: "white"
 
                 Behavior on width { NumberAnimation { duration: Motion.feedback; easing.type: Easing.OutQuad } }
                 Behavior on height { NumberAnimation { duration: Motion.feedback; easing.type: Easing.OutQuad } }

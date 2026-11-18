@@ -23,7 +23,7 @@ ShellRoot {
  Item {
   width: 300; height: 200
   StandardProgressBar { id: rail; width: 200; value: 0.5 }
-  StandardProgressBar { id: customHandleRail; width: 200; value: 0.5; showCursor: false }
+  StandardProgressBar { id: customHandleRail; width: 200; value: 0.5; showCursor: false; playing: false }
   StyledSlider { id: horizontal; width: 200; height: 32; value: 0.5 }
   StyledSlider { id: vertical; width: 32; height: 120; vertical: true; value: 0.5 }
   ThemeSlider { id: themed; width: 200; value: 0.5 }
@@ -52,15 +52,15 @@ ShellRoot {
    const progressTrack = rail.children[0];
    check(rail.filledLength === 100, 'Half progress must fill half the rail');
    const cursor = rail.children.find(item => item.objectName === 'progress-cursor');
-   check(cursor.visible && cursor.x + cursor.width / 2 === rail.filledLength
+   check(cursor.visible && cursor.color.toString() === "#ffffff" && cursor.x + cursor.width / 2 === rail.filledLength
     && cursor.y + cursor.height / 2 === rail.height / 2,
     'The progress cursor sits at the fill edge');
    check(!customHandleRail.children.find(item => item.objectName === 'progress-cursor').visible,
     'A caller can supply its own handle');
    const sliderRail = themed.background.children[0];
-   check(progressTrack.energy === 0 && progressTrack.thickness === sliderRail.thickness
+   check(progressTrack.energy === 0.65 && progressTrack.thickness === sliderRail.thickness
     && rail.height === sliderRail.thickness && progressTrack.rippleAmplitude === sliderRail.rippleAmplitude,
-    'Progress matches the slider track thickness and ripple amplitude');
+    'Steady progress uses the slider track thickness and playback ripple');
    rail.value = 0.61;
    check(rail.filledLength < 122 && cursor.x + cursor.width / 2 === rail.filledLength,
     'The cursor and fill ease together toward the new value');
@@ -129,6 +129,7 @@ ShellRoot {
     console.error('Playback keeps a gentler ripple moving between position updates'); Qt.exit(1); return;
    }
    themedVertical.playing = false;
+   rail.playing = false;
    const segments = track.children.filter(item => item.wave !== undefined);
    const first = segments[0];
    const last = segments[segments.length - 1];

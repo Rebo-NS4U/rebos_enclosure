@@ -363,6 +363,7 @@ Item {
             activeColor: BarAppearance.activeColor
             smoothValue: false
         }
+            playing: MprisController.isPlaying
     }
     Line { id: currentPanel; objectName: "bar-lyrics-current"; x: root.edgeMargin; lyric: (root.estimatedTiming && root.currentText ? "≈ " : "") + root.currentText }
     Line { id: nextPanel; objectName: "bar-lyrics-next"; x: root.width - root.sideWidth - root.edgeMargin; lyric: (root.estimatedTiming && root.nextText ? "≈ " : "") + root.nextText; upcoming: true }
