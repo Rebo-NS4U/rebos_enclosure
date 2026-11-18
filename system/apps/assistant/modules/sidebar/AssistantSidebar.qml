@@ -839,7 +839,7 @@ Item {
                     Layout.leftMargin: 12
                     Layout.rightMargin: 12
                     Layout.topMargin: 8
-                    columns: width >= 640 && !presetPicker.expanded && !modelPicker.expanded ? (accountButton.visible ? 3 : 2) : 1
+                    columns: width >= 640 && !presetPicker.expanded && !modelPicker.expanded ? 2 : 1
                     columnSpacing: 8
                     rowSpacing: 6
                     visible: root.active
@@ -855,84 +855,144 @@ Item {
                         Layout.minimumWidth: 0
                         Layout.alignment: Qt.AlignTop
                     }
-                    Button {
-                        id: accountButton
-                        objectName: "assistantAccountButton"
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 38
-                        Layout.alignment: Qt.AlignTop
-                        visible: Ai.activeSession.currentAgentId === "codex" || Ai.codexSignInActive
-                        text: Ai.codexSignInActive ? "Account · Finish sign-in in browser" : "Account"
-                        contentItem: StyledText {
-                            text: accountButton.text
-                            color: Colors.overSurface
-                            elide: Text.ElideRight
-                            verticalAlignment: Text.AlignVCenter
-                        }
-                        background: StyledRect {
-                            variant: accountButton.hovered || accountButton.activeFocus || accountMenu.opened ? "focus" : "internalbg"
-                            radius: Styling.radius(8)
-                        }
-                        onClicked: accountMenu.open()
-                        Menu {
-                            id: accountMenu
-                            y: accountButton.height
-                            padding: 6
-                            background: StyledRect {
-                                variant: "popup"
-                                radius: Styling.radius(8)
-                            }
-                            MenuItem {
-                                text: "Switch Codex account…"
-                                enabled: Ai.canChangeCodexAccount
-                                onTriggered: Ai.switchCodexAccount()
-                            }
-                            MenuItem {
-                                text: "Reload Codex login"
-                                enabled: Ai.canChangeCodexAccount
-                                onTriggered: Ai.reloadCodexAccount()
-                            }
-                            MenuItem {
-                                text: "Cancel sign-in"
-                                visible: Ai.codexSignInActive
-                                height: visible ? implicitHeight : 0
-                                onTriggered: Ai.cancelCodexSignIn()
-                            }
-                        }
-                        StyledToolTip {
-                            show: accountButton.hovered
-                            tooltipText: Ai.codexSignInActive ? "Choose your ChatGPT account in the browser"
-                                : Ai.canChangeCodexAccount ? "Switch or reload the login for all Codex chats"
-                                : "Finish active Codex work before switching accounts"
-                        }
-                    }
                 }
 
-                Button {
+                RowLayout {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 26
                     Layout.leftMargin: 12
                     Layout.rightMargin: 12
                     Layout.topMargin: 4
                     Layout.bottomMargin: 8
-                    flat: true
-                    padding: 8
-                    background: StyledRect {
-                        variant: parent.hovered ? "focus" : "internalbg"
-                        radius: Math.max(0, Config.roundness)
+                    spacing: 6
+
+                    Button {
+                        id: planUsageButton
+                        Layout.fillWidth: true
+                        Layout.minimumWidth: 0
+                        Layout.preferredHeight: 34
+                        flat: true
+                        padding: 8
+                        background: StyledRect {
+                            variant: planUsageButton.hovered || planUsageButton.visualFocus ? "focus" : "internalbg"
+                            radius: Styling.radius(8)
+                        }
+                        contentItem: StyledText {
+                            text: Ai.activeSession.geminiPlanUsage ? Ai.activeSession.geminiStatusSummary : Ai.activeSession.checkingPlanUsage ? "Checking plan usage…" : Ai.activeSession.planUsageSummary
+                            color: Colors.overSurface
+                            font.pixelSize: Styling.fontSize(-2)
+                            elide: Text.ElideRight
+                            verticalAlignment: Text.AlignVCenter
+                        }
+                        StyledToolTip {
+                            show: planUsageButton.hovered
+                            tooltipText: Ai.activeSession.geminiPlanUsage ? Ai.activeSession.geminiStatusDetails : Ai.activeSession.planUsageDetails || "Click to check remaining shared Codex allowance"
+                        }
+                        onClicked: Ai.activeSession.refreshPlanUsage(true)
                     }
-                    contentItem: StyledText {
-                        text: Ai.activeSession.geminiPlanUsage ? Ai.activeSession.geminiStatusSummary : Ai.activeSession.checkingPlanUsage ? "Checking plan usage…" : Ai.activeSession.planUsageSummary
-                        color: Colors.overSurface
-                        font.pixelSize: Styling.fontSize(-2)
-                        elide: Text.ElideRight
-                        verticalAlignment: Text.AlignVCenter
+
+                    Button {
+                        id: accountButton
+                        objectName: "assistantAccountButton"
+                        Layout.preferredHeight: 34
+                        leftPadding: 10
+                        rightPadding: 10
+                        visible: Ai.activeSession.currentAgentId === "codex" || Ai.codexSignInActive
+                        text: Ai.codexSignInActive ? "Sign-in in progress" : "Account"
+                        contentItem: RowLayout {
+                            spacing: 7
+                            StyledText {
+                                text: accountButton.text
+                                color: Ai.codexSignInActive ? Colors.primary : Colors.overSurface
+                                font.pixelSize: Styling.fontSize(-2)
+                                font.weight: Font.DemiBold
+                            }
+                            StyledText {
+                                text: accountMenu.opened ? Icons.caretUp : Icons.caretDown
+                                color: Colors.primary
+                                font.family: Icons.font
+                                font.pixelSize: Styling.fontSize(-2)
+                            }
+                        }
+                        background: StyledRect {
+                            variant: accountButton.hovered || accountButton.visualFocus || accountMenu.opened ? "focus" : "internalbg"
+                            radius: Styling.radius(8)
+                            border.width: 1
+                            border.color: Qt.alpha(Colors.primary, Ai.codexSignInActive ? 0.65 : 0.22)
+                        }
+                        onClicked: accountMenu.open()
+                        StyledToolTip {
+                            show: accountButton.hovered && !accountMenu.opened
+                            tooltipText: Ai.codexSignInActive ? "Finish sign-in in your browser" : "Manage the login shared by your Codex chats"
+                        }
+
+                        Menu {
+                            id: accountMenu
+                            width: Math.min(296, sidebarContainer.width - 24)
+                            x: accountButton.width - width
+                            y: accountButton.height + 6
+                            padding: 6
+                            background: StyledRect {
+                                variant: "popup"
+                                radius: Styling.radius(8)
+                                border.width: 1
+                                border.color: Qt.alpha(Colors.primary, 0.25)
+                            }
+
+                            component AccountAction: MenuItem {
+                                id: action
+                                required property string detail
+                                height: visible ? implicitHeight : 0
+                                implicitHeight: actionLabels.implicitHeight + topPadding + bottomPadding
+                                padding: 10
+                                Accessible.description: detail
+                                background: StyledRect {
+                                    variant: action.highlighted ? "focus" : "transparent"
+                                    radius: Styling.radius(4)
+                                }
+                                contentItem: ColumnLayout {
+                                    id: actionLabels
+                                    spacing: 3
+                                    opacity: action.enabled ? 1 : 0.65
+                                    StyledText {
+                                        Layout.fillWidth: true
+                                        text: action.text
+                                        color: Colors.overSurface
+                                        font.pixelSize: Styling.fontSize(-1)
+                                        font.weight: Font.DemiBold
+                                        wrapMode: Text.WordWrap
+                                    }
+                                    StyledText {
+                                        Layout.fillWidth: true
+                                        text: action.detail
+                                        color: Colors.outline
+                                        font.pixelSize: Styling.fontSize(-2)
+                                        wrapMode: Text.WordWrap
+                                    }
+                                }
+                            }
+
+                            AccountAction {
+                                text: "Switch Codex account…"
+                                detail: enabled ? "Sign in with ChatGPT in your browser" : "Available when Codex chats are idle"
+                                visible: !Ai.codexSignInActive
+                                enabled: Ai.canChangeCodexAccount
+                                onTriggered: Ai.switchCodexAccount()
+                            }
+                            AccountAction {
+                                text: "Reload Codex login"
+                                detail: "Use the login from your Codex CLI"
+                                visible: !Ai.codexSignInActive
+                                enabled: Ai.canChangeCodexAccount
+                                onTriggered: Ai.reloadCodexAccount()
+                            }
+                            AccountAction {
+                                text: "Cancel sign-in"
+                                detail: "Finish signing in from your browser or cancel here"
+                                visible: Ai.codexSignInActive
+                                onTriggered: Ai.cancelCodexSignIn()
+                            }
+                        }
                     }
-                    StyledToolTip {
-                        show: parent.hovered
-                        tooltipText: Ai.activeSession.geminiPlanUsage ? Ai.activeSession.geminiStatusDetails : Ai.activeSession.planUsageDetails || "Click to check remaining shared Codex allowance"
-                    }
-                    onClicked: Ai.activeSession.refreshPlanUsage(true)
                 }
 
                 Item {
