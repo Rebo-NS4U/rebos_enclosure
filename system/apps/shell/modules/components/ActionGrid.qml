@@ -16,6 +16,7 @@ FocusScope {
     property int spacing: Styling.spacing(4)
     property int columns: 3 // para layout grid
     property int textSpacing: 8
+    property bool labeledTiles: false
 
     signal actionTriggered(var action)
 
@@ -100,7 +101,7 @@ FocusScope {
             variant: (repeater.count > 0 && repeater.itemAt(root.currentIndex) && repeater.itemAt(root.currentIndex).actionModel.variant) ? repeater.itemAt(root.currentIndex).actionModel.variant : "primary"
             radius: Styling.radius(4)
             z: 0 // Por debajo de los botones
-            visible: repeater.count > 0
+            visible: !root.labeledTiles && repeater.count > 0
 
             property Item targetItem: repeater.count > 0 ? repeater.itemAt(root.currentIndex) : null
 
@@ -203,7 +204,13 @@ FocusScope {
                     readonly property bool isSeparator: (modelData.type === "separator")
                     property var actionModel: modelData
 
-                    implicitWidth: isSeparator ? (root.layout === "row" ? 2 : root.buttonSize) : (root.buttonSize + (hasText ? textMetrics.width + root.textSpacing : 0))
+                    implicitWidth: {
+                        if (isSeparator)
+                            return root.layout === "row" ? 2 : root.buttonSize;
+                        if (root.labeledTiles)
+                            return Math.max(Styling.spacing(72), Math.ceil(textMetrics.width) + Styling.spacing(16));
+                        return root.buttonSize + (hasText ? textMetrics.width + root.textSpacing : 0);
+                    }
                     implicitHeight: isSeparator ? (root.layout === "row" ? root.buttonSize : 2) : root.buttonSize
                     z: 1
 
@@ -219,7 +226,7 @@ FocusScope {
                         id: textMetrics
                         text: delegateWrapper.hasText ? modelData.text : ""
                         font.family: Config.defaultFont
-                        font.pixelSize: root.iconSize * 0.7
+                        font.pixelSize: root.labeledTiles ? Styling.fontSize(-2) : root.iconSize * 0.7
                         font.weight: Font.DemiBold
                     }
 
@@ -234,6 +241,13 @@ FocusScope {
                         visible: !delegateWrapper.isSeparator
                         enabled: !delegateWrapper.isSeparator && (modelData.enabled !== undefined ? modelData.enabled : true)
                         opacity: enabled ? 1.0 : 0.5
+                        hoverEnabled: true
+                        Accessible.name: modelData.tooltip || modelData.text || ""
+                        readonly property bool selected: index === root.currentIndex
+                        readonly property color foreground: root.labeledTiles ? tileSurface.itemColor
+                            : pressed ? Styling.srItem("overprimary")
+                            : selected ? (highlight.targetItem ? highlight.item : Styling.srItem("primary"))
+                            : Colors.overBackground
                         scale: actionButton.pressed ? 0.93 : 1.0
 
                         Behavior on scale {
@@ -258,26 +272,32 @@ FocusScope {
                             }
                         }
 
-                        background: Rectangle {
-                            color: "transparent"
-                            radius: Styling.radius(4)
+                        background: StyledRect {
+                            id: tileSurface
+                            visible: root.labeledTiles
+                            radius: Styling.radius(-4)
+                            controlSurface: Styling.shellStyle === "terminal-hardware"
+                            controlPressed: actionButton.down
+                            variant: actionButton.selected ? (modelData.variant || "primary") : "common"
+                            border.width: actionButton.selected ? 2 : 1
+                            border.color: actionButton.selected ? itemColor : Qt.alpha(Colors.outline, 0.3)
                         }
 
                         contentItem: Item {
                             anchors.fill: parent
 
-                            // 1. Icono centrado en el área base del botón (siempre fijo a la izquierda)
                             Text {
                                 renderType: Text.NativeRendering
                                 font.hintingPreference: Font.PreferFullHinting
-                                width: root.buttonSize
-                                height: parent.height
+                                width: root.labeledTiles ? parent.width : root.buttonSize
+                                height: root.labeledTiles ? parent.height - label.implicitHeight - Styling.spacing(8) : parent.height
                                 anchors.left: parent.left
                                 text: modelData.icon || ""
                                 textFormat: Text.RichText
                                 font.family: Icons.font
                                 font.pixelSize: root.iconSize
-                                color: actionButton.pressed ? Styling.srItem("overprimary") : (index === root.currentIndex ? (highlight.targetItem ? highlight.item : Styling.srItem("primary")) : Colors.overBackground)
+                                color: root.labeledTiles && !actionButton.selected && modelData.variant === "error"
+                                    ? Colors.error : actionButton.foreground
                                 horizontalAlignment: Text.AlignHCenter
                                 verticalAlignment: Text.AlignVCenter
 
@@ -290,20 +310,23 @@ FocusScope {
                                 }
                             }
 
-                            // 2. Texto alineado a la derecha del área base del botón
                             Text {
+                                id: label
                                 renderType: Text.NativeRendering
                                 font.hintingPreference: Font.PreferFullHinting
                                 visible: delegateWrapper.hasText
                                 text: visible ? modelData.text : ""
-                                anchors.left: parent.left
-                                anchors.leftMargin: root.buttonSize // Empieza justo después del área del icono
-                                anchors.verticalCenter: parent.verticalCenter
+                                anchors.left: root.labeledTiles ? undefined : parent.left
+                                anchors.leftMargin: root.buttonSize
+                                anchors.horizontalCenter: root.labeledTiles ? parent.horizontalCenter : undefined
+                                anchors.verticalCenter: root.labeledTiles ? undefined : parent.verticalCenter
+                                anchors.bottom: root.labeledTiles ? parent.bottom : undefined
+                                anchors.bottomMargin: Styling.spacing(8)
 
-                                font.family: Config.defaultFont
-                                font.pixelSize: root.iconSize * 0.7
-                                font.weight: Font.DemiBold
-                                color: actionButton.pressed ? Styling.srItem("overprimary") : (index === root.currentIndex ? (highlight.targetItem ? highlight.item : Styling.srItem("primary")) : Colors.overBackground)
+                                font.family: textMetrics.font.family
+                                font.pixelSize: textMetrics.font.pixelSize
+                                font.weight: textMetrics.font.weight
+                                color: actionButton.foreground
                                 verticalAlignment: Text.AlignVCenter
 
                                 Behavior on color {

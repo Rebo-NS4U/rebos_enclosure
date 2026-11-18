@@ -105,7 +105,7 @@ Item {
         BackgroundEffect.blurRegion: BlurRegion { target: powerWrapper }
 
         color: "transparent"
-        implicitHeight: 80 + root.bottomOffset
+        implicitHeight: powerWrapper.height + root.bottomOffset
 
         // Click outside the pill dismisses.
         MouseArea {
