@@ -27,7 +27,7 @@ PanelWindow {
         if (selectionConfirmed) revealControls.restart();
         else revealControls.stop();
     }
-    Timer { id: revealControls; interval: 480; onTriggered: root.controlsRevealed = true }
+    Timer { id: revealControls; interval: Math.max(1, Motion.enter); onTriggered: root.controlsRevealed = true }
     property bool selectionInitialized: false
     property string tool: "crop"
     property string ink: "#ff5252"
@@ -112,8 +112,8 @@ PanelWindow {
             blurEnabled: true; blurMax: 32
             blur: root.selectionConfirmed ? 0.72 : 0.24
             brightness: root.selectionConfirmed ? -0.12 : -0.04
-            Behavior on blur { NumberAnimation { duration: 480; easing.type: Easing.OutCubic } }
-            Behavior on brightness { NumberAnimation { duration: 480 } }
+            Behavior on blur { NumberAnimation { duration: Motion.enter; easing.type: Easing.OutCubic } }
+            Behavior on brightness { NumberAnimation { duration: Motion.enter } }
         }
         Rectangle {
             id: frameMask
@@ -126,30 +126,30 @@ PanelWindow {
             y: root.selectionConfirmed ? scene.y + root.crop.y : 14
             width: root.selectionConfirmed ? root.crop.width : keyboard.width - 28
             height: root.selectionConfirmed ? root.crop.height : keyboard.height - 28
-            radius: root.selectionConfirmed ? Math.min(16, height / 5) : 28
+            radius: root.selectionConfirmed ? Math.min(Styling.radius(0), height / 5) : Styling.radius(0)
             color: Qt.alpha(Colors.surface, 0.22)
             layer.enabled: true
             layer.effect: MultiEffect { maskEnabled: true; maskSource: frameMask }
-            Behavior on x { NumberAnimation { duration: 480; easing.type: Easing.InOutCubic } }
-            Behavior on y { NumberAnimation { duration: 480; easing.type: Easing.InOutCubic } }
-            Behavior on width { NumberAnimation { duration: 480; easing.type: Easing.InOutCubic } }
-            Behavior on height { NumberAnimation { duration: 480; easing.type: Easing.InOutCubic } }
-            Behavior on radius { NumberAnimation { duration: 480 } }
+            Behavior on x { NumberAnimation { duration: Motion.enter; easing.type: Easing.InOutCubic } }
+            Behavior on y { NumberAnimation { duration: Motion.enter; easing.type: Easing.InOutCubic } }
+            Behavior on width { NumberAnimation { duration: Motion.enter; easing.type: Easing.InOutCubic } }
+            Behavior on height { NumberAnimation { duration: Motion.enter; easing.type: Easing.InOutCubic } }
+            Behavior on radius { NumberAnimation { duration: Motion.enter } }
             Image {
                 x: scene.x - glass.x; y: scene.y - glass.y
                 width: scene.width; height: scene.height
                 source: capture.source; fillMode: Image.Stretch; cache: false
                 opacity: root.selectionConfirmed ? 1 : 0
-                Behavior on opacity { NumberAnimation { duration: 480 } }
+                Behavior on opacity { NumberAnimation { duration: Motion.enter } }
             }
             Rectangle {
                 anchors.fill: parent; radius: glass.radius
                 gradient: Gradient {
-                    GradientStop { position: 0; color: "#18ffffff" }
-                    GradientStop { position: 0.45; color: "#02ffffff" }
-                    GradientStop { position: 1; color: "#10000000" }
+                    GradientStop { position: 0; color: Qt.alpha(Colors.primary, 0.09) }
+                    GradientStop { position: 0.45; color: "transparent" }
+                    GradientStop { position: 1; color: Qt.alpha(Colors.secondary, 0.06) }
                 }
-                border.color: Qt.alpha(root.selectionConfirmed ? Colors.primary : "white", 0.6)
+                border.color: Qt.alpha(root.selectionConfirmed ? Colors.primary : Colors.outline, 0.6)
             }
         }
         Item {
@@ -242,10 +242,11 @@ PanelWindow {
                 onCanceled: { root.dragging = false; root.draft = null; root.repaint(); }
             }
         }
-        GlassCard {
+        StyledRect {
+            variant: "popup"
             anchors.top: parent.top; anchors.topMargin: 20
             anchors.horizontalCenter: parent.horizontalCenter
-            width: Math.min(parent.width - 40, topRow.implicitWidth + 32); height: 56
+            width: Math.min(parent.width - 40, topRow.implicitWidth + 32); height: topRow.implicitHeight + Styling.spacing(16)
             RowLayout {
                 id: topRow
                 anchors.centerIn: parent
@@ -254,7 +255,8 @@ PanelWindow {
                 Action { text: "Close"; onClicked: root.controller.close(); enabled: !root.busy }
             }
         }
-        GlassCard {
+        StyledRect {
+            variant: "popup"
             id: toolbar
             width: Math.min(920, parent.width - 48)
             height: tools.implicitHeight + 80
@@ -266,14 +268,14 @@ PanelWindow {
             opacity: root.controlsRevealed ? 1 : 0
             visible: opacity > 0
             enabled: root.selectionConfirmed
-            Behavior on opacity { NumberAnimation { duration: 280 } }
-            Behavior on y { NumberAnimation { duration: 480; easing.type: Easing.OutCubic } }
+            Behavior on opacity { NumberAnimation { duration: Motion.contentIn } }
+            Behavior on y { NumberAnimation { duration: Motion.enter; easing.type: Easing.OutCubic } }
             RowLayout {
                 anchors.top: parent.top; anchors.topMargin: 18
                 anchors.left: parent.left; anchors.right: parent.right
                 anchors.leftMargin: 20; anchors.rightMargin: 20
-                StyledText { text: root.busy ? "Exporting…" : root.controller.error || root.hint; font.pixelSize: 12; Layout.fillWidth: true; elide: Text.ElideRight }
-                StyledText { text: Math.round(root.crop.width) + " × " + Math.round(root.crop.height); font.pixelSize: 11; color: Colors.primary }
+                StyledText { text: root.busy ? "Exporting…" : root.controller.error || root.hint; font.pixelSize: Styling.fontSize(-2); Layout.fillWidth: true; elide: Text.ElideRight }
+                StyledText { text: Math.round(root.crop.width) + " × " + Math.round(root.crop.height); font.pixelSize: Styling.fontSize(-3); color: Colors.primary }
             }
             Flow {
                 id: tools
@@ -308,21 +310,20 @@ PanelWindow {
                 Action { text: "Save"; enabled: root.crop.width >= 1 && !root.busy; highlighted: true; onClicked: root.exportImage("save") }
             }
         }
-        GlassCard {
+        StyledRect {
+            variant: "popup"
             id: textEntry
             property var at: ({x: 0, y: 0})
             visible: false
             anchors.centerIn: parent
-            width: Math.min(500, parent.width-40); height: 110
+            width: Math.min(500, parent.width-40); height: annotationLayout.implicitHeight + Styling.spacing(24)
             ColumnLayout {
-                anchors.fill: parent; anchors.margins: 12
+                id: annotationLayout
+                anchors.fill: parent; anchors.margins: Styling.spacing(12)
                 StyledText { text: "Annotation text · Enter to place" }
-                TextField {
+                ThemeTextField {
                     id: textInput
                     Layout.fillWidth: true
-                    color: Colors.overBackground
-                    selectionColor: Colors.primary
-                    background: Rectangle { color: Colors.surface; radius: 8; border.color: Colors.outline }
                     onAccepted: {
                         if (text.trim()) {
                             if (root.crop.width < 1) root.fullImage();
@@ -336,27 +337,4 @@ PanelWindow {
         }
     }
     component Action: ThemeButton {}
-    component GlassCard: Item {
-        id: card
-        Rectangle { id: cardMask; anchors.fill: parent; radius: 24; color: "white"; visible: false; layer.enabled: true }
-        Item {
-            anchors.fill: parent
-            layer.enabled: true
-            layer.effect: MultiEffect { maskEnabled: true; maskSource: cardMask }
-            MultiEffect {
-                x: -card.x; y: -card.y
-                width: keyboard.width; height: keyboard.height
-                source: capture; blurEnabled: true; blurMax: 48; blur: 1
-            }
-            Rectangle { anchors.fill: parent; radius: 24; color: Qt.alpha(Colors.surfaceContainer, 0.68) }
-            Rectangle {
-                anchors.fill: parent; radius: 24
-                gradient: Gradient {
-                    GradientStop { position: 0; color: "#18ffffff" }
-                    GradientStop { position: 1; color: "#04000000" }
-                }
-                border.color: "#40ffffff"
-            }
-        }
-    }
 }

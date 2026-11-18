@@ -87,23 +87,12 @@ ColumnLayout {
                 font.pixelSize: Styling.fontSize(-2)
                 color: Colors.outline
             }
-            TextField {
+            ThemeTextField {
                 id: search
                 objectName: "assistantModelSearch"
                 Layout.fillWidth: true
                 visible: Ai.activeSession.sessionModels.length > 0
                 placeholderText: "Search models…"
-                color: Colors.overSurface
-                placeholderTextColor: Colors.outline
-                font.family: Config.theme.font
-                font.pixelSize: Styling.fontSize(-1)
-                selectByMouse: true
-                background: StyledRect {
-                    variant: "common"
-                    radius: Styling.radius(4)
-                    border.width: 1
-                    border.color: Qt.alpha(Colors.primary, search.activeFocus ? 0.6 : 0.2)
-                }
                 Keys.onEscapePressed: root.expanded = false
             }
             ListView {

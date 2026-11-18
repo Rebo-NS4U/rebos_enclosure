@@ -26,12 +26,12 @@ Button {
         controlSurface: root.hardware
         controlPressed: root.down
         variant: root.danger && (root.engaged || root.hovered || root.down || root.activeFocus) ? "error"
-            : root.engaged ? "primary"
+            : root.engaged ? (root.hovered || root.down ? "primaryfocus" : "primary")
             : root.hardware && root.down ? "internalbg"
             : root.hovered || root.down ? "focus" : "common"
         radius: Styling.radius(-4)
         border.width: root.activeFocus ? 2 : 1
-        border.color: root.activeFocus ? (root.danger ? itemColor : Colors.primary) : root.hardware ? Config.resolveColor(borderData?.[0] ?? "transparent") : Qt.alpha(Colors.outline, 0.3)
+        border.color: root.activeFocus ? (root.danger || root.engaged ? itemColor : Colors.primary) : root.hardware ? Config.resolveColor(borderData?.[0] ?? "transparent") : Qt.alpha(Colors.outline, 0.3)
     }
     contentItem: RowLayout {
         spacing: Styling.spacing(6)

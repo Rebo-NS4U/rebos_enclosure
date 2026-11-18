@@ -20,8 +20,12 @@ StyledRect {
     property string icon: ""
     property int iconSize: 22
     property bool active: false
-    property color iconColor: active ? Colors.overPrimary : Colors.overBackground
-    variant: active ? "primary" : (mouseArea.containsMouse ? "focus" : "internalbg")
+    property color iconColor: itemColor
+    controlSurface: Styling.shellStyle === "terminal-hardware"
+    controlPressed: mouseArea.pressed
+    variant: active ? (mouseArea.containsMouse ? "primaryfocus" : "primary")
+        : controlSurface && controlPressed ? "internalbg"
+        : mouseArea.containsMouse ? "focus" : "internalbg"
     scale: mouseArea.pressed ? 0.92 : 1.0
 
     Behavior on scale {

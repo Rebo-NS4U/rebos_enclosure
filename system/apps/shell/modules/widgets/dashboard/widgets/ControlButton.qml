@@ -16,17 +16,21 @@ StyledRect {
 
     property bool isHovered: mouseArea.containsMouse
 
+    controlSurface: Styling.shellStyle === "terminal-hardware"
+    controlPressed: mouseArea.pressed
     variant: {
         if (isActive && isHovered)
             return "primaryfocus";
         if (isActive)
             return "primary";
+        if (controlSurface && controlPressed)
+            return "internalbg";
         if (isHovered)
             return "focus";
         return "pane";
     }
 
-    radius: root.isActive ? Styling.radius(0) : Styling.radius(4)
+    radius: Styling.radius(0)
     scale: mouseArea.pressed ? 0.90 : 1.0
 
     Behavior on scale {

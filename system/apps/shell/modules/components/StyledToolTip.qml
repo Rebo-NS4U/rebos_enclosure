@@ -16,6 +16,8 @@ Basic.ToolTip {
 
     // Keep hover hints inside the shell surface, independent of the desktop control style.
     popupType: Popup.Item
+    horizontalPadding: Styling.spacing(12)
+    verticalPadding: Styling.spacing(8)
     text: tooltipText
     delay: 1000
     timeout: -1
@@ -28,12 +30,12 @@ Basic.ToolTip {
     }
 
     contentItem: ColumnLayout {
-        spacing: Styling.spacing(0)
+        spacing: Styling.spacing(3)
 
         StyledText {
             text: root.tooltipText
             visible: root.tooltipText.trim().length > 0
-            color: Colors.overBackground
+            color: root.background.itemColor
             font.pixelSize: Config.theme.fontSize
             font.weight: Font.Bold
             font.family: Config.theme.font
@@ -42,8 +44,8 @@ Basic.ToolTip {
         StyledText {
             text: root.description
             visible: root.description.trim().length > 0
-            color: Colors.overBackground
-            font.pixelSize: Config.theme.fontSize - 2
+            color: root.background.itemColor
+            font.pixelSize: Styling.fontSize(-2)
             font.family: Config.theme.font
         }
     }
