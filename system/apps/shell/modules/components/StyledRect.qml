@@ -274,28 +274,12 @@ ClippingRectangle {
         radius: root.radius
     }
 
-    // Frosted glass adds a fine etch to the uniform translucent surface.
-    Loader {
-        anchors.fill: parent
-        active: !root.hasFillColor && root.rectOpacity > 0
-            && (root.styleOverride || Styling.shellStyle) === "frosted"
-            && ["bg", "popup", "bar", "pane", "surface", "surfaceContainer", "internalbg", "focus"].indexOf(root.variant) !== -1
-        sourceComponent: Image {
-            anchors.fill: parent
-            source: "frost-grain.png"
-            fillMode: Image.Tile
-            smooth: false
-            readonly property bool outer: root.variant === "bg" || root.variant === "popup" || root.variant === "bar"
-            opacity: root.rectOpacity * (outer ? 0.047 : 0.025)
-        }
-    }
-
     // Structural glass: perimeter details leave the central reading area clear.
     Loader {
         anchors.fill: parent
         active: !root.hasFillColor && root.rectOpacity > 0
             && ["bg", "popup", "pane", "surface", "surfaceContainer", "internalbg", "focus"].indexOf(root.variant) !== -1
-            && ["glass-vault", "radar-station", "suspended-film"].indexOf(root.styleOverride || Styling.shellStyle) !== -1
+            && ["glass-vault", "radar-station"].indexOf(root.styleOverride || Styling.shellStyle) !== -1
         sourceComponent: Item {
             id: material
             readonly property string finish: root.styleOverride || Styling.shellStyle
@@ -414,46 +398,6 @@ ClippingRectangle {
                             for(const x of [8,width-8]){ctx.beginPath();ctx.moveTo(x-4,height/2);ctx.lineTo(x+4,height/2);ctx.moveTo(x,height/2-4);ctx.lineTo(x,height/2+4);ctx.stroke();}
                             ctx.fillStyle=ink(0.25);
                             for(let i=0;i<5;i++)ctx.fillRect(width/2-19+i*8,height-7,5,2);
-                        }
-                    } else {
-                        // Floating sheets have offset edges and a narrow contact shadow.
-                        const sheet=(x,y,w,h,inset)=>{
-                            if(w<=0||h<=0)return;
-                            const r=Math.max(0,Math.min(cornerRadius-inset,w/2,h/2));
-                            ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);
-                            ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);
-                            ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);
-                            ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);
-                            ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();
-                        };
-                        const gap=material.outer?8:4;
-                        sheet(gap,3,width-gap-4,height-gap-3,3);
-                        ctx.fillStyle=ink(0.018);ctx.fill();ctx.strokeStyle=ink(0.20);ctx.stroke();
-                        sheet(3,gap,width-gap-4,height-gap-3,gap);
-                        ctx.strokeStyle=ink(0.08);ctx.stroke();
-                        // Layered lower edge supplies a visible sense of separation.
-                        ctx.lineWidth=2;ctx.strokeStyle=ink(0.09);
-                        const safe=Math.max(16,cornerRadius+gap);
-                        ctx.beginPath();ctx.moveTo(safe,height-gap-2);
-                        ctx.lineTo(Math.max(safe,width-safe),height-gap-2);ctx.stroke();
-                        ctx.lineWidth=1;ctx.strokeStyle=ink(0.23);
-                        ctx.beginPath();ctx.moveTo(safe,3);ctx.lineTo(Math.max(safe,width*0.58),3);ctx.stroke();
-                        if(material.outer){
-                            // A lifted corner exposes the darker sheet below the top film.
-                            const lift = Math.min(42, width * 0.19, height * 0.22);
-                            const right = width - gap, bottom = height - gap;
-                            ctx.fillStyle = ink(0.18);
-                            ctx.beginPath();
-                            ctx.moveTo(right-lift, bottom);
-                            ctx.quadraticCurveTo(right-3, bottom-4, right, bottom-lift);
-                            ctx.quadraticCurveTo(right-lift*0.35, bottom-lift*0.62, right-lift, bottom);
-                            ctx.fill();
-                            // Curved grazing reflections separate the suspended sheets.
-                            for(let layer=0;layer<3;layer++){
-                                ctx.strokeStyle=ink(0.09-layer*0.02);ctx.lineWidth=1;
-                                ctx.beginPath();ctx.moveTo(width*0.24,5+layer*4);
-                                ctx.bezierCurveTo(width*0.46,18+layer*4,width*0.73,2+layer*3,width-12,18+layer*5);ctx.stroke();
-                            }
                         }
                     }
                     ctx.restore();
@@ -734,86 +678,114 @@ ClippingRectangle {
         }
     }
 
-    // Monolith is an opaque slab with columnar basalt along one edge.
     Loader {
         anchors.fill: parent
-        active: !root.hasFillColor && root.rectOpacity > 0 && (root.styleOverride || Styling.shellStyle) === "monolith"
-            && !root.controlSurface
-            && ["bg", "popup", "bar", "pane", "surface", "surfaceContainer", "internalbg", "focus", "surfaceVariant"].indexOf(root.variant) !== -1
+        readonly property string finish: root.styleOverride || Styling.shellStyle
+        active: !root.hasFillColor && !root.controlSurface && root.rectOpacity > 0
+            && ["monolith", "frosted", "suspended-film"].includes(finish)
+            && ["bg", "popup", "bar", "pane", "surface", "surfaceContainer", "internalbg", "focus", "surfaceVariant"].includes(root.variant)
         sourceComponent: Canvas {
-            anchors.fill: parent
             objectName: "surface-edge-canvas"
-            readonly property real cornerRadius: root.effectiveCornerRadius
-            readonly property color pigment: root.itemColor
-            readonly property color shadowInk: Qt.darker(Colors.background, 1.8)
-            readonly property color accent: Colors.primary
-            readonly property bool outer: root.variant === "bg" || root.variant === "popup" || root.variant === "bar" || root.barSurface
-            readonly property bool inset: root.variant === "internalbg"
+            anchors.fill: parent
             opacity: root.rectOpacity
-            onCornerRadiusChanged: requestPaint()
+            readonly property string finish: root.styleOverride || Styling.shellStyle
+            readonly property color pigment: root.itemColor
+            readonly property color accent: Colors.primary
+            readonly property real cornerRadius: root.effectiveCornerRadius
             readonly property var frameCorners: [root.topLeftRadius, root.topRightRadius, root.bottomLeftRadius, root.bottomRightRadius]
-            onFrameCornersChanged: requestPaint()
+            readonly property bool outer: root.barSurface || ["bg", "popup", "bar"].includes(root.variant)
+            onFinishChanged: requestPaint()
             onPigmentChanged: requestPaint()
-            onShadowInkChanged: requestPaint()
             onAccentChanged: requestPaint()
+            onCornerRadiusChanged: requestPaint()
+            onFrameCornersChanged: requestPaint()
             onOuterChanged: requestPaint()
-            onInsetChanged: requestPaint()
             onWidthChanged: requestPaint()
             onHeightChanged: requestPaint()
-            onPaint: {
-                const ctx=getContext("2d");ctx.clearRect(0,0,width,height);
-                if(width<24||height<24)return;
-                ctx.save();if(root.traceThemeFrame(ctx,0))ctx.clip();
-                if (outer) {
-                    const scale = Math.min(root.materialPreview ? 1 : 1.7, width / 310, height / 108);
-                    ctx.save();
-                    ctx.translate(width, height);
-                    ctx.scale(scale, scale);
 
-                    // The dominant stone leans over a smaller broken shoulder.
-                    // Each plane meets on the same arris from crown to foot.
-                    function standingStone(x, y, breadth, lean, dye) {
-                        const summit = x + lean;
-                        const ridge = summit + breadth*0.36;
-                        const ledge = y + breadth*0.24;
-                        const heel = x + breadth*0.54;
-                        ctx.beginPath();
-                        ctx.moveTo(x, 0);
-                        ctx.lineTo(summit - breadth*0.06, y + breadth*0.53);
-                        ctx.lineTo(summit, y);
-                        ctx.lineTo(ridge, ledge);
-                        ctx.lineTo(heel, 0);
-                        ctx.closePath();
-                        ctx.fillStyle = Qt.alpha(dye, 0.23);
-                        ctx.fill();
-
-                        ctx.beginPath();
-                        ctx.moveTo(heel, 0);
-                        ctx.lineTo(ridge, ledge);
-                        ctx.lineTo(summit + breadth*0.88, y + breadth*0.12);
-                        ctx.lineTo(x + breadth, 0);
-                        ctx.closePath();
-                        ctx.fillStyle = Qt.alpha(shadowInk, 0.80);
-                        ctx.fill();
-
-                        ctx.beginPath();
-                        ctx.moveTo(summit, y);
-                        ctx.lineTo(summit + breadth*0.51, y - breadth*0.17);
-                        ctx.lineTo(summit + breadth*0.88, y + breadth*0.12);
-                        ctx.lineTo(ridge, ledge);
-                        ctx.closePath();
-                        ctx.fillStyle = Qt.alpha(dye, 0.38);
-                        ctx.fill();
-                    }
-                    standingStone(-38, -43, 43, 12, pigment);
-                    standingStone(-62, -81, 41, 5, accent);
-                    standingStone(-88, -19, 40, 9, pigment);
-                    ctx.restore();
+            function paintSlate(ctx) {
+                // Three exposed beds taper from a broken edge into the flat slab.
+                const reach = Math.min(width * 0.56, outer ? 250 : 86)
+                const depth = Math.min(height * 0.32, outer ? 42 : 13)
+                ctx.translate(0, height)
+                ctx.scale(reach, -depth)
+                const beds = [
+                    [[0, 1], [0.19, 0.74], [0.32, 0.77], [0.64, 0.29], [0.80, 0.23], [1, 0]],
+                    [[0, 0.78], [0.22, 0.54], [0.36, 0.57], [0.60, 0.26], [0.73, 0.18], [0.90, 0]],
+                    [[0, 0.48], [0.14, 0.36], [0.27, 0.39], [0.46, 0.13], [0.58, 0.11], [0.76, 0]]
+                ]
+                const inks = [Qt.alpha(pigment, 0.24), Qt.alpha(accent, 0.30), Qt.alpha(pigment, 0.20)]
+                for (let i = 0; i < beds.length; ++i) {
+                    ctx.beginPath()
+                    ctx.moveTo(0, 0)
+                    for (const point of beds[i]) ctx.lineTo(point[0], point[1])
+                    ctx.closePath()
+                    ctx.fillStyle = inks[i]
+                    ctx.fill()
                 }
-                ctx.lineWidth = 1;
-                ctx.strokeStyle = Qt.alpha(pigment, inset ? 0.08 : 0.18);
-                if (root.traceThemeFrame(ctx, 0.75)) ctx.stroke();
-                ctx.restore();
+            }
+
+            function paintFrost(ctx) {
+                const band = Math.min(outer ? 14 : 6, height * 0.18, width * 0.18)
+                // The polished rim encloses a sandblasted margin. Bias the grains
+                // towards the edge and keep their arrangement stable on repaint.
+                ctx.lineWidth = 1
+                ctx.strokeStyle = Qt.alpha(pigment, outer ? 0.36 : 0.19)
+                if (root.traceThemeFrame(ctx, 2.5)) ctx.stroke()
+                let seed = 3947
+                function sample() {
+                    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0
+                    return seed / 4294967296
+                }
+                const perimeter = 2 * (width + height)
+                ctx.fillStyle = Qt.alpha(pigment, outer ? 0.31 : 0.21)
+                for (let i = 0; i < Math.min(2400, perimeter * band / 6); ++i) {
+                    const along = sample() * perimeter
+                    const inset = 1 + Math.pow(sample(), 2) * band
+                    let x, y
+                    if (along < width) { x = along; y = inset }
+                    else if (along < width + height) { x = width - inset; y = along - width }
+                    else if (along < 2 * width + height) { x = along - width - height; y = height - inset }
+                    else { x = inset; y = along - 2 * width - height }
+                    ctx.fillRect(Math.floor(x), Math.floor(y), 1, 1)
+                }
+            }
+
+            function paintFilm(ctx) {
+                const mount = Math.min(width * 0.22, Math.max(8, cornerRadius + 3))
+                const lip = outer ? 4 : 2.5
+                const sag = Math.min(outer ? 24 : 8, height * 0.23)
+                // The return edge bows farther than the upper edge of the film.
+                ctx.beginPath()
+                ctx.moveTo(mount, lip)
+                ctx.quadraticCurveTo(width * 0.54, lip + sag * 0.48, width - mount, lip)
+                ctx.quadraticCurveTo(width * 0.62, lip + sag * 1.8, mount, lip)
+                ctx.closePath()
+                ctx.fillStyle = Qt.alpha(accent, outer ? 0.32 : 0.19)
+                ctx.fill()
+                ctx.strokeStyle = Qt.alpha(pigment, 0.39)
+                ctx.lineWidth = 1
+                ctx.stroke()
+                if (outer) {
+                    for (const x of [mount, width - mount]) {
+                        ctx.beginPath()
+                        ctx.arc(x, lip, 2, 0, Math.PI * 2)
+                        ctx.fillStyle = pigment
+                        ctx.fill()
+                    }
+                }
+            }
+
+            onPaint: {
+                const ctx = getContext("2d")
+                ctx.clearRect(0, 0, width, height)
+                if (width < 24 || height < 16) return
+                ctx.save()
+                if (root.traceThemeFrame(ctx, 0)) ctx.clip()
+                if (finish === "monolith") paintSlate(ctx)
+                else if (finish === "frosted") paintFrost(ctx)
+                else paintFilm(ctx)
+                ctx.restore()
             }
         }
     }

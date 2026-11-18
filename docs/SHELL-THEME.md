@@ -26,13 +26,10 @@ Instrument mode gives the island bar the same 4px corners, opaque background and
 
 ## Frosted Glass
 
-Choose **Frosted Glass** in Settings → Appearance → Theme style for the OCR
-menu’s glass treatment throughout the shell. Shared menus, panels, bar surfaces
-and controls use a three-stop highlight, translucent tinted surfaces, fine
-foreground borders and corners controlled by Appearance → Fonts and corners.
-The corner radius setting applies to Frosted Glass just as it does to the other
-styles, including zero for square corners. Text and semantic action colors
-remain solid; switching styles does not overwrite the personal corner preference.
+Choose **Frosted Glass** in Settings → Appearance → Theme style for translucent
+satin panels. A polished line follows each panel’s rim. Fine stippling thins
+toward the center, leaving the area behind text clear. The corner radius
+setting applies to the rim, including zero for square corners.
 
 Selecting this style uses 32% background transparency and enables shell blur if
 blur was off. Existing blur strength and enabled scope are preserved; both can
@@ -46,6 +43,13 @@ the appearance live without restarting the panel or active apps.
 Kitty exports use six-digit RGB colors. Translucent palette colors (including
 Frosted Glass borders) are composited against the terminal background; terminal
 transparency remains in Kitty’s separate `background_opacity` setting.
+
+## Monolith and Suspended Film
+
+Monolith uses an opaque slate face with three angular mineral layers exposed
+along its lower left edge. Suspended Film has a translucent face with a bowed
+strip of film held by two small pins along the top. Both scale down on bars
+and theme previews. Their accents follow the selected palette.
 
 ## Shared sizing and terminal styling
 

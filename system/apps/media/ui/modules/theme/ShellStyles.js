@@ -6,11 +6,11 @@ var styles = [
     {id: "metropolis", label: "Metropolis", font: "DejaVu Sans", description: "City glass: layered facades, architectural reflections and illuminated windows in your selected colors."},
     {id: "glass-vault", label: "Glass Vault", font: "Noto Sans", description: "Thick glass blocks, rounded clamps, refractive light bands and deep inset controls."},
     {id: "radar-station", label: "Radar Station", font: "DejaVu Sans", description: "Etched bearing scales, radial divisions and softly illuminated scope glass."},
-    {id: "suspended-film", label: "Suspended Film", font: "DejaVu Sans Mono", description: "Suspended glass sheets, curved grazing reflections and separated contact edges."},
-    {id: "monolith", label: "Monolith", font: "Noto Sans", description: "Polished obsidian with crisp bevels and luminous mineral fractures."},
+    {id: "suspended-film", label: "Suspended Film", font: "DejaVu Sans Mono", description: "A thin translucent membrane bows between two pin mounts."},
+    {id: "monolith", label: "Monolith", font: "Noto Sans", description: "A solid slate slab with broken mineral strata along its lower edge."},
     {id: "blueprint", label: "Blueprint", font: "JetBrains Mono", description: "Architectural drafting sheets, truss details, ruled scales and wire controls."},
     {id: "terminal-hardware", label: "Terminal Hardware", font: "DejaVu Sans Mono", description: "Flat machined panels, inset bezels and sparse cooling vents."},
-    {id: "frosted", label: "Frosted Glass", description: "Branching frost crystals, etched ice rims, fine grain and soft corner bloom."},
+    {id: "frosted", label: "Frosted Glass", description: "Satin glass with a sandblasted margin and a fine polished rim."},
     {id: "colorful", label: "Tinted", description: "Layered colored glass planes, offset frames and fading accent reflections."},
     {id: "clear-glass", label: "Clear Glass", font: "Noto Sans", description: "Clear glazing with grazing reflections, fine highlights and a subtle lower meniscus."}
 ];
@@ -114,7 +114,7 @@ function surface(style, variant, p, ditherStrength) {
         var inner = ["common", "internalbg"].indexOf(variant) !== -1;
         var focused = ["focus", "surfaceVariant"].indexOf(variant) !== -1;
         if (outer || inner || focused) {
-            fill = mix(mix(p.background, p.foreground, outer ? 0.07 : 0.04), p.primary, focused ? 0.14 : 0.035);
+            fill = mix(mix(p.background, p.foreground, outer ? 0.12 : 0.065), p.primary, focused ? 0.14 : 0.055);
             opacity = outer ? 0.68 : focused ? 0.84 : 0.48;
             border = [focused ? p.primary : "#40" + p.foreground.slice(-6), 1];
         }
@@ -130,7 +130,7 @@ function surface(style, variant, p, ditherStrength) {
     if (rendered) {
         opacity = variant === "transparent" || variant === "barbg" ? 0 : 1;
         if (neutral || outlineRole) {
-            var depth = monolith ? (inset ? 0 : focused ? 0.075 : outer ? 0.025 : 0.015)
+            var depth = monolith ? (inset ? 0 : focused ? 0.12 : outer ? 0.035 : 0.075)
                 : blueprint ? (inset ? 0.015 : focused ? 0.065 : 0.025)
                 : (inset ? 0 : focused ? 0.12 : outer ? 0.085 : 0.045);
             fill = mix(p.background, p.foreground, depth);
@@ -153,11 +153,16 @@ function surface(style, variant, p, ditherStrength) {
     }
     // Three distinct structural treatments with translucent centers.
     var vault=style === "glass-vault", radar=style === "radar-station", film=style === "suspended-film";
-    if ((vault || radar || film) && neutral) {
+    if ((vault || radar) && neutral) {
         fill=mix(p.background,p.foreground,inset?0.012:focused?0.07:0.03);
         item=p.foreground;
-        opacity=vault?(inset?0.82:focused?0.94:0.70):radar?(inset?0.76:focused?0.92:0.64):(inset?0.60:focused?0.86:0.48);
-        border=[focused?p.primary:mix(fill,p.foreground,vault?0.36:radar?0.34:0.24),vault?2:1];
+        opacity=vault?(inset?0.82:focused?0.94:0.70):(inset?0.76:focused?0.92:0.64);
+        border=[focused?p.primary:mix(fill,p.foreground,vault?0.36:0.34),vault?2:1];
+    }
+    if (film && neutral) {
+        fill = mix(p.background, p.primary, focused ? 0.14 : inset ? 0.025 : 0.06);
+        opacity = focused ? 0.86 : inset ? 0.44 : outer ? 0.58 : 0.50;
+        border = [focused ? p.primary : mix(fill, p.foreground, 0.22), outer || focused ? 1 : 0];
     }
     var clearGlass = style === "clear-glass";
     if (clearGlass && neutral) {

@@ -49,7 +49,7 @@ Use `StandardProgressBar` for linear progress in QML. Its normalized `value` is 
 ## Rendered desktop themes
 
 All styles use the selected wallpaper or color preset, including application exports.
-Monolith uses polished obsidian faces with a broad grazing reflection, fine beveled rims and luminous branching mineral fractures at opposing edges. Primary and secondary accents illuminate the veins while recessed dark channels give them depth. Large popup surfaces and window background slabs use eccentric jagged cracks spanning most of all four edges, with unequal forks, doubled-back fault lines and splinters that split and rejoin, distinct from the short opposing corner veins on panels and bars. Window cracks reach deeper into the perimeter and carry brighter mineral cores; the theme picker previews this window pattern at compact scale. Decoration stays in narrow perimeter bands and scales down for bars; inset surfaces retain only the subdued sheen. The material has no grain, tool marks or repeated corner grooves. Rendering is static and deterministic, preserves semantic palette colors and respects the selected corner frame. Shell, assistant and media share the treatment.
+Monolith uses an opaque slate face. Three angular mineral beds follow the lower left edge and taper into the slab. The detail scales down on bars, insets and theme previews.
 Blueprint uses square corners, wire controls, major and minor drafting grids, perimeter measurement ticks, registration targets and inset frames.
 Terminal Hardware uses flat faces without vertical gradients, a single inset machined bezel, sparse cooling vents on larger housings and raised mechanical controls. Split top seams and three inset slots add cover detail; short capped rails with center notches sit along both side edges on taller housings. These details stay inside the bezel, clear of rounded corners and content. Inner surfaces remain quiet without scanline texture. Action keycaps use a fine inset rim and short side notches over flat semantic fills. Shared shell buttons and shell/assistant icon buttons use a tighter inset on press, recessed neutral pressed fills and an accent keyboard-focus outline; button surfaces omit the panel housing decorations.
 Their fonts are Noto Sans, JetBrains Mono and DejaVu Sans Mono respectively.
@@ -61,21 +61,19 @@ Kitty follows the exported surface palette and opacity as well as the selected s
 
 ## Translucent materials
 
-Glass Vault uses thick stepped blocks, bold corner clamps and deep inset controls. Radar Station uses static bearing scales, partial range arcs, crosshair junctions and segmented controls. Suspended Film uses floating glass sheets, offset edges and quiet contact shadows. All three keep translucent centers, the selected semantic colors and matching native terminal profiles. Selecting one enables shell blur if off and resets the manual transparency override; existing blur location and strength preferences are preserved.
+Glass Vault uses thick stepped blocks, bold corner clamps and deep inset controls. Radar Station uses static bearing scales, partial range arcs, crosshair junctions and segmented controls. Suspended Film suspends a bowed translucent strip between two pins. Nested surfaces carry a shallower fold. All three keep translucent centers, the selected semantic colors and matching native terminal profiles. Selecting one enables shell blur if off and resets the manual transparency override; existing blur location and strength preferences are preserved.
 
 Saved Smoked Acrylic selections migrate to Glass Vault, Glass Console to Radar Station, and Circuit Glass to Suspended Film. Older predecessors migrate directly to the corresponding current theme.
 
 Clear Glass is the final theme-picker entry: restrained translucent panels, fine outer borders, borderless inner layers, gentle top highlights and soft corners. It preserves the selected colors, uses compositor blur and includes a minimal Kitty profile. Focused controls gain definition while semantic action buttons remain opaque.
 
-Frosted Glass uses etched double rims, broken highlights, fine perimeter grain and soft corner bloom, with rounded outer and inner surfaces. Tinted uses offset accent planes, open-corner frames, layered color bands and cut accent tabs. Both keep translucent layers, readable semantic action colors and their native terminal profiles; selecting either enables shell blur if it was off. All decorative details are static and concentrated at the perimeter.
+Frosted Glass uses a satin face, a fine polished rim and stippling concentrated at the perimeter. Tinted uses offset accent planes, open-corner frames, layered color bands and cut accent tabs. Both keep translucent layers, readable semantic action colors and their native terminal profiles; selecting either enables shell blur if it was off. All decorative details are static and concentrated at the perimeter.
 
 Glass Vault follows the corner-radius setting: clamps, inset seams and the lower glass lip use concentric rounded paths and repaint as the actual surface radius changes. Square and oversized radii are clamped to the available surface dimensions.
 
 Every theme now follows the shared corner-radius setting. Inset frame lines use concentric radii; canvas decorations repaint during changes, and corner brackets and attachment points follow the actual clipped surface geometry.
 
 Terminal Hardware uses a single inset bezel and a compact bank of four cooling vents on larger housings. These details stay at the perimeter, adapt to the shared corner radius and remain static.
-
-Architectural refinement: Suspended Film now uses floating offset glass sheets and contact-shadow edges, replacing tension cables and bindings. Monolith uses crisp polished obsidian fractures and luminous mineral seams. Both preserve selected colors and radius behavior; Terminal Hardware remains unchanged.
 
 ## Material themes
 
@@ -89,7 +87,7 @@ All three preserve selected semantic action colors, readable centers, compositor
 
 ## Material detail refinement
 
-The remaining nine themes share the same level of material detail as Canopy, Orbital and Metropolis. Glass Vault adds refractive grazing bands behind its rounded clamps. Radar Station adds soft scope illumination and radial divisions to its etched bearing scales. Suspended Film separates floating sheets with curved grazing reflections. Monolith keeps a clean center with hard-edged polished obsidian fractures at opposing corners. Blueprint includes a small architectural truss drawing within its ruled sheet. Terminal Hardware uses flat panel fills with inset edge details. Frosted Glass grows branching crystals from the upper rim. Tinted layers fading colored-glass planes at its upper edge. Clear Glass keeps restrained grazing reflections and a lower meniscus.
+The remaining nine themes share the same level of material detail as Canopy, Orbital and Metropolis. Glass Vault adds refractive grazing bands behind its rounded clamps. Radar Station adds soft scope illumination and radial divisions to its etched bearing scales. Blueprint includes a small architectural truss drawing within its ruled sheet. Terminal Hardware uses flat panel fills with inset edge details. Tinted layers fading colored-glass planes at its upper edge. Clear Glass keeps restrained grazing reflections and a lower meniscus.
 
 Details use selected semantic palette colors and static geometry. Glass layers clip to the shared rounded frame; inset surfaces retain simpler decoration. Clear Glass remains the final entry. No theme imposes a new palette, and native application export colors remain derived from the selected palette.
 
@@ -117,9 +115,9 @@ Glass Vault shell refinement uses a fine polished bevel, fading upper reflection
 
 Glass Vault bar surfaces use a shallow continuous rim and a narrow upper sheen, leaving the compact center clear. Expanded island panels retain the full vault treatment; switching between them repaints the material.
 
-Monolith, Blueprint and Terminal Hardware carry their material treatments into bars as well as panels. Monolith has a plain center and luminous perimeter fractures with polished palette-derived faces. Blueprint's major and minor rules fade beneath the content and strengthen toward the sheet edges. Terminal Hardware keeps flat panel fills inside its clipped housing. These finishes remain static, preserve semantic colors and share the same treatment in shell, assistant and media surfaces.
+Monolith, Blueprint and Terminal Hardware carry their material treatments into bars as well as panels. Blueprint's major and minor rules fade beneath the content and strengthen toward the sheet edges. Terminal Hardware keeps flat panel fills inside its clipped housing. These finishes remain static, preserve semantic colors and share the same treatment in shell, assistant and media surfaces.
 
-Monolith uses static polished obsidian fractures and branching mineral seams at opposing corners, leaving text areas clear. Terminal Hardware uses a single inset bezel and sparse cooling vents; repeated rack slots, grip cuts and segmented retention rails are omitted to reduce clutter. Their surface geometry remains distinct at compact bar sizes; decorations stay at the perimeter and follow the selected palette and rounded clipping frame.
+Terminal Hardware uses a single inset bezel and sparse cooling vents; repeated rack slots, grip cuts and segmented retention rails are omitted to reduce clutter. Their surface geometry remains distinct at compact bar sizes; decorations stay at the perimeter and follow the selected palette and rounded clipping frame.
 
 Canopy keeps uninterrupted fabric hems: upper support ribs and the randomized assistant header’s short vertical attachment marks are removed. Fabric silhouettes, soft shading and the stable variation per opening are preserved.
 
