@@ -293,6 +293,8 @@ ClippingRectangle {
                 readonly property bool outer: classic.outer
                 onOuterChanged: requestPaint()
                 readonly property color accent: classic.accent
+                readonly property color secondaryTint: Colors.tertiary
+                onSecondaryTintChanged: requestPaint()
                 readonly property bool ice: classic.ice
                 objectName: "classic-glass-canvas"
                 readonly property int frostSeed: Math.floor(Math.random()*65536)
@@ -340,16 +342,18 @@ ClippingRectangle {
                                 const key=crystal*13;
                                 const length=Math.min(height-9,9+random(key+2)*15);
                                 const lean=(random(key+3)-0.5)*14;
-                                ctx.strokeStyle=ink(0.08+random(key+4)*0.07);ctx.lineWidth=0.7;
+                                ctx.strokeStyle=ink(0.20+random(key+4)*0.12);ctx.lineWidth=0.9;
                                 ctx.beginPath();ctx.moveTo(x,3);ctx.lineTo(x+lean,length);
-                                const twigs=1+Math.floor(random(key+5)*3);
+                                const twigs=2+Math.floor(random(key+5)*3);
                                 for(let twig=0;twig<twigs;twig++){
                                     const t=(twig+1)/(twigs+1);
                                     const y=3+t*(length-3),stem=x+t*lean;
-                                    const reach=2+random(key+6+twig)*4;
-                                    ctx.moveTo(stem,y);ctx.lineTo(stem-reach,y+reach*0.55);
-                                    if(random(key+9+twig)>0.35){
-                                        ctx.moveTo(stem,y);ctx.lineTo(stem+reach*0.8,y-reach*0.45);
+                                    const reach = (3 + random(key+6+twig)*6) * (1-t*0.6);
+                                    for (const side of [-1, 1]) {
+                                        ctx.moveTo(stem,y);
+                                        ctx.lineTo(stem + side*reach, y - reach*0.65);
+                                        ctx.moveTo(stem + side*reach*0.56, y - reach*0.36);
+                                        ctx.lineTo(stem + side*reach*0.62, y - reach*0.80);
                                     }
                                 }
                                 ctx.stroke();
@@ -377,7 +381,10 @@ ClippingRectangle {
                             for(let plane=0;plane<3;plane++){
                                 const depth=12+plane*8;
                                 const wash=ctx.createLinearGradient(0,0,0,depth+10);
-                                wash.addColorStop(0,tint(0.10-plane*0.02));wash.addColorStop(1,tint(0));
+                                const dye = plane === 1 ? secondaryTint : accent;
+                                wash.addColorStop(0, Qt.alpha(dye, 0.27));
+                                wash.addColorStop(0.75, Qt.alpha(dye, 0.10));
+                                wash.addColorStop(1, Qt.alpha(dye, 0));
                                 ctx.fillStyle=wash;ctx.beginPath();ctx.moveTo(width*0.36+plane*18,0);
                                 ctx.lineTo(width,0);ctx.lineTo(width,depth);
                                 ctx.lineTo(width*0.51+plane*14,depth);ctx.closePath();ctx.fill();
@@ -454,7 +461,12 @@ ClippingRectangle {
                         bevel.addColorStop(1,ink(0.20));
                         ctx.strokeStyle=bevel;frame(step);
                         if(material.outer){
-                            ctx.strokeStyle=ink(0.045);frame(step+3);
+                            ctx.lineWidth = 3;
+                            ctx.strokeStyle = bevel;
+                            frame(step + 2);
+                            ctx.lineWidth = 1;
+                            ctx.strokeStyle = ink(0.18);
+                            frame(step + 4);
                             // Broad, fading reflections give the rim optical depth.
                             const depth=Math.min(48,height*0.25);
                             const wash=ctx.createLinearGradient(0,0,0,depth);
@@ -528,6 +540,16 @@ ClippingRectangle {
                             // Static scope phosphor and radial divisions enrich the bearing plate.
                             const scopeRadius=Math.min(78,width*0.26,height*0.32);
                             const pad=Math.max(14,cornerRadius*0.30+8);
+                            const bearing = Math.PI / 6;
+                            const sector = ctx.createRadialGradient(pad, pad, 0, pad, pad, radius);
+                            sector.addColorStop(0, ink(0.02));
+                            sector.addColorStop(1, ink(0.24));
+                            ctx.fillStyle = sector;
+                            ctx.beginPath();
+                            ctx.moveTo(pad, pad);
+                            ctx.arc(pad, pad, radius, bearing, bearing + Math.PI / 8);
+                            ctx.closePath();
+                            ctx.fill();
                             const glow=ctx.createRadialGradient(pad,pad,0,pad,pad,scopeRadius);
                             glow.addColorStop(0,ink(0.015));glow.addColorStop(0.72,ink(0.055));glow.addColorStop(1,ink(0));
                             ctx.fillStyle=glow;ctx.fillRect(0,0,scopeRadius+pad,scopeRadius+pad);
@@ -566,6 +588,19 @@ ClippingRectangle {
                         ctx.lineWidth=1;ctx.strokeStyle=ink(0.23);
                         ctx.beginPath();ctx.moveTo(safe,3);ctx.lineTo(Math.max(safe,width*0.58),3);ctx.stroke();
                         if(material.outer){
+                            // A lifted corner exposes the darker sheet below the top film.
+                            const lift = Math.min(42, width * 0.19, height * 0.22);
+                            const right = width - gap, bottom = height - gap;
+                            const curl = ctx.createLinearGradient(right-lift, bottom-lift, right, bottom);
+                            curl.addColorStop(0.35, ink(0));
+                            curl.addColorStop(0.66, ink(0.28));
+                            curl.addColorStop(1, ink(0.04));
+                            ctx.fillStyle = curl;
+                            ctx.beginPath();
+                            ctx.moveTo(right-lift, bottom);
+                            ctx.quadraticCurveTo(right-3, bottom-4, right, bottom-lift);
+                            ctx.quadraticCurveTo(right-lift*0.35, bottom-lift*0.62, right-lift, bottom);
+                            ctx.fill();
                             // Curved grazing reflections separate the suspended sheets.
                             for(let layer=0;layer<3;layer++){
                                 ctx.strokeStyle=ink(0.09-layer*0.02);ctx.lineWidth=1;
@@ -630,10 +665,9 @@ ClippingRectangle {
                     // Taut diagonal fabric sails with folded tips, grazing light and soft shadows.
                     function drapedCanopy(depth, shape) {
                         const split=0.39+(shape%4)*0.055;
-                        const glow=ctx.createLinearGradient(0,0,width,depth);
-                        glow.addColorStop(0,Qt.rgba(secondaryAccent.r,secondaryAccent.g,secondaryAccent.b,0.08));
-                        glow.addColorStop(0.55,fabric(0.025));
-                        glow.addColorStop(1,Qt.rgba(accent.r,accent.g,accent.b,0.12));
+                        const glow=ctx.createLinearGradient(0,0,0,depth);
+                        glow.addColorStop(0,fabric(0.16));
+                        glow.addColorStop(1,fabric(0));
                         ctx.fillStyle=glow;ctx.fillRect(0,0,width,depth);
                         for(let layer=0;layer<3;layer++){
                             const reach=depth*(1-layer*0.24);
@@ -664,6 +698,15 @@ ClippingRectangle {
                             cloth.addColorStop(0.86,fabric(0.38));
                             cloth.addColorStop(1,fabric(0.16));
                             ctx.fillStyle=cloth;drape(0);ctx.fill();
+                            // Catch light along the folded selvage as it turns under the sail.
+                            ctx.beginPath();
+                            ctx.moveTo(width * (pinch + 0.055), reach * 0.55);
+                            ctx.lineTo(width * pinch, reach * 0.88);
+                            ctx.lineTo(width * (pinch + 0.16), reach * 0.58);
+                            ctx.fillStyle = fabric(0.38);
+                            ctx.fill();
+                            ctx.strokeStyle = ink(0.18);
+                            ctx.stroke();
                         }
                     }
 
@@ -729,6 +772,14 @@ ClippingRectangle {
                             ctx.translate(bottom ? width - x : x, bottom ? height - y : y);
                             ctx.scale(scale, scale);
                             ctx.rotate(bottom ? -0.24 : 0.24);
+                            const planet = ctx.createRadialGradient(-4, -3, 0, 0, 0, 9);
+                            planet.addColorStop(0, Qt.alpha(secondaryAccent, 0.65));
+                            planet.addColorStop(0.65, Qt.alpha(accent, 0.34));
+                            planet.addColorStop(1, Qt.alpha(backdrop, 0.85));
+                            ctx.fillStyle = planet;
+                            ctx.beginPath();
+                            ctx.arc(0, 0, 9, 0, Math.PI * 2);
+                            ctx.fill();
                             ctx.scale(1, 0.32);
                             ctx.lineWidth = 0.7;
                             for (let ring = 0; ring < 3; ring++) {
@@ -825,7 +876,7 @@ ClippingRectangle {
                         let index=0;
                         for(let x=safe-8;x<width-safe-12;index++){
                             const towerWidth=[29,41,24,35,31][index%5];
-                            const towerHeight=Math.min(height*0.18,[36,54,29,66,43,48,32][index%7]);
+                            const towerHeight=Math.min(1, height * 0.24 / 66) * [36,54,29,66,43,48,32][index%7];
                             const right=Math.min(width-safe,x+towerWidth);
                             const roof=base-towerHeight;
                             const setback=Math.min(7,(right-x)*0.20);
@@ -835,6 +886,9 @@ ClippingRectangle {
                             ctx.lineTo(right-setback,roof+5);ctx.lineTo(right,roof+5);
                             ctx.lineTo(right,base);ctx.closePath();ctx.fill();
                             ctx.strokeStyle=frame(index%3===0?0.32:0.17);ctx.lineWidth=1;ctx.stroke();
+                            // A narrow return face gives each tower a sunlit and a shaded elevation.
+                            ctx.fillStyle = frame(0.14);
+                            ctx.fillRect(right-setback, roof+6, setback, Math.max(0, towerHeight-6));
                             // Lit rooms are sparse and irregular, rather than a repeated checkerboard.
                             for(let floor=0;floor<Math.floor((towerHeight-12)/7);floor++){
                                 for(let column=0;column<Math.floor((right-x-8)/7);column++){
@@ -893,8 +947,16 @@ ClippingRectangle {
                 ctx.fillStyle=reflection;ctx.fillRect(0,0,width,Math.min(height,outer?32:12));
                 if(outer){
                     const safe=Math.max(18,cornerRadius+5);
-                    ctx.strokeStyle=ink(0.20);ctx.lineWidth=0.8;
-                    ctx.beginPath();ctx.moveTo(safe,3);ctx.lineTo(Math.max(safe,width*0.44),3);ctx.stroke();
+                    const glint = ctx.createLinearGradient(0, 0, width, 0);
+                    glint.addColorStop(0, ink(0));
+                    glint.addColorStop(0.19, ink(0.48));
+                    glint.addColorStop(0.43, ink(0.05));
+                    glint.addColorStop(0.69, ink(0));
+                    glint.addColorStop(0.91, ink(0.18));
+                    glint.addColorStop(1, ink(0));
+                    ctx.strokeStyle = glint;
+                    ctx.lineWidth = 1;
+                    if (root.traceThemeFrame(ctx, 1.5)) ctx.stroke();
                     ctx.strokeStyle=ink(0.08);
                     ctx.beginPath();ctx.moveTo(width*0.56,height-4);ctx.lineTo(Math.max(width*0.56,width-safe),height-4);ctx.stroke();
                 }
@@ -952,7 +1014,7 @@ ClippingRectangle {
                 if(root.traceThemeFrame(ctx,0.75))ctx.stroke();
                 if(!inset){
                     // Fractures stay within narrow opposing edge bands, clear of text.
-                    const band=Math.min(root.materialPreview?6:outer?42:12,height*0.22,width*0.12);
+                    const band=Math.min(root.materialPreview?6:outer?32:12,height*0.13,width*0.095);
                     const reach=Math.min(width*0.32,outer?190:90);
                     function vein(points,color){
                         const first=points[0],last=points[points.length-1];
@@ -985,7 +1047,15 @@ ClippingRectangle {
                                 if(edge===2)return [(1-t)*width,height-d];
                                 return [d,(1-t)*height];
                             }
-                            vein(knots.map(map),color);
+                            const ridge = knots.map(map);
+                            // The polished outer face changes plane at the mineral seam.
+                            ctx.beginPath();
+                            ctx.moveTo(...ridge[0]);
+                            for (const point of ridge.slice(1)) ctx.lineTo(...point);
+                            ctx.closePath();
+                            ctx.fillStyle = Qt.alpha(color, edge % 3 === 0 ? 0.13 : 0.055);
+                            ctx.fill();
+                            vein(ridge,color);
                             for(let i=0;i<splinters.length;i++)vein(splinters[i].map(map),color);
                         }
                         fault(0,[[0.02,0],[0.11,0.35],[0.19,0.16],[0.24,1.1],
@@ -1089,6 +1159,8 @@ ClippingRectangle {
                 objectName: "surface-edge-canvas"
                 readonly property real cornerRadius: root.effectiveCornerRadius
                 readonly property color pigment: chassis.ink
+                readonly property color slotColor: Colors.background
+                onSlotColorChanged: requestPaint()
                 readonly property bool outer: chassis.outer
                 readonly property bool screen: chassis.screen
                 onOuterChanged: requestPaint()
@@ -1133,10 +1205,13 @@ ClippingRectangle {
                             }
                         }
                         if(width>safe*2+40 && height>safe*2+24){
-                            for(let i=0;i<4;i++){
-                                const y=safe+i*6;
-                                ctx.fillStyle=Qt.alpha(pigment,0.16);
-                                ctx.fillRect(width-12,y,5,1);
+                            // Recessed louvers catch light on the lower lip of each cutout.
+                            for (let slot = 0; slot < 6; slot++) {
+                                const x = width - safe - 42 + slot * 7;
+                                ctx.fillStyle = Qt.alpha(slotColor, 0.84);
+                                ctx.fillRect(x, height - 15, 4, 7);
+                                ctx.fillStyle = Qt.alpha(pigment, 0.30);
+                                ctx.fillRect(x, height - 8, 4, 1);
                             }
                         }
                     }
@@ -1255,6 +1330,21 @@ ClippingRectangle {
                         ctx.strokeStyle=Qt.alpha(pigment,0.16);ctx.lineWidth=0.8;
                         ctx.beginPath();ctx.moveTo(left,bottom);ctx.lineTo(right,bottom);
                         ctx.moveTo(left,bottom);ctx.quadraticCurveTo((left+right)/2,0,right,bottom);ctx.stroke();
+                        if (height > 90) {
+                            const baseline = bottom + 7;
+                            ctx.strokeStyle = Qt.alpha(pigment, 0.38);
+                            ctx.beginPath();
+                            ctx.moveTo(left, baseline);
+                            ctx.lineTo(right, baseline);
+                            for (const x of [left, right]) {
+                                ctx.moveTo(x, bottom + 2);
+                                ctx.lineTo(x, baseline + 4);
+                                ctx.moveTo(x - 3, baseline + 3);
+                                ctx.lineTo(x + 3, baseline - 3);
+                            }
+                            ctx.stroke();
+                            ctx.strokeStyle = Qt.alpha(pigment, 0.16);
+                        }
                         for(let x=left+12;x<right;x+=16){
                             const t=(x-left)/(right-left),top=bottom-56*t*(1-t);
                             ctx.beginPath();ctx.moveTo(x,top);ctx.lineTo(x,bottom);
