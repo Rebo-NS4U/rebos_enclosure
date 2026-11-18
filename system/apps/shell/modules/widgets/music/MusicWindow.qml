@@ -99,6 +99,9 @@ Window {
     }
     property var spotifySuggestions: ({tracks: [], pending: false, status: ""})
     property var pendingSuggestionDownload: null
+    property int suggestionPage: 0
+    readonly property int suggestionsPerPage: 6
+    onSuggestedTracksChanged: suggestionPage = Math.min(suggestionPage, Math.max(0, Math.ceil(suggestedTracks.length / suggestionsPerPage) - 1))
     readonly property var suggestedTracks: {
         const playlist = playlists.find(p => p.id === detail);
         if (page !== "Playlist" || !playlist || spotifySuggestions.playlist !== detail) return [];
@@ -112,6 +115,7 @@ Window {
         }).slice(0, 100);
     }
     function refreshSuggestions() {
+        suggestionPage = 0;
         if (page !== "Playlist") return;
         const selected = detail;
         spotifySuggestions = {playlist: selected, tracks: [], pending: true, status: "Loading Spotify suggestions…"};
@@ -476,7 +480,7 @@ Window {
                         Layout.fillWidth: true
                         RowLayout {
                             Layout.fillWidth: true
-                            StyledText { text: "Suggested tracks · Spotify"; font.bold: true; Layout.fillWidth: true }
+                            StyledText { text: "Suggested tracks · Spotify · " + root.suggestedTracks.length; font.bold: true; Layout.fillWidth: true }
                             ThemeButton { text: root.spotifySuggestions.pending ? "Loading…" : "Refresh"; enabled: !root.spotifySuggestions.pending; onClicked: root.refreshSuggestions() }
                         }
                         StyledText {
@@ -488,8 +492,8 @@ Window {
                         ListView {
                             objectName: "music-playlist-suggestions"
                             Layout.fillWidth: true
-                            Layout.preferredHeight: Math.min(count, 3) * Styling.spacing(52)
-                            clip: true; model: root.suggestedTracks
+                            Layout.preferredHeight: Math.min(count, root.suggestionsPerPage) * Styling.spacing(52)
+                            clip: true; model: root.suggestedTracks.slice(root.suggestionPage * root.suggestionsPerPage, (root.suggestionPage + 1) * root.suggestionsPerPage)
                             delegate: RowLayout {
                                 id: suggestion
                                 required property var modelData
@@ -512,6 +516,24 @@ Window {
                                 }
                             }
                             ScrollBar.vertical: ScrollBar {}
+                        }
+                        RowLayout {
+                            visible: root.suggestedTracks.length > root.suggestionsPerPage
+                            Layout.fillWidth: true
+                            ThemeButton {
+                                objectName: "music-suggestions-previous"
+                                text: "Previous"; enabled: root.suggestionPage > 0
+                                onClicked: root.suggestionPage--
+                            }
+                            StyledText {
+                                Layout.fillWidth: true; horizontalAlignment: Text.AlignHCenter
+                                text: (root.suggestionPage * root.suggestionsPerPage + 1) + "–" + Math.min((root.suggestionPage + 1) * root.suggestionsPerPage, root.suggestedTracks.length) + " of " + root.suggestedTracks.length
+                            }
+                            ThemeButton {
+                                objectName: "music-suggestions-next"
+                                text: "Next"; enabled: (root.suggestionPage + 1) * root.suggestionsPerPage < root.suggestedTracks.length
+                                onClicked: root.suggestionPage++
+                            }
                         }
                     }
                     RowLayout {

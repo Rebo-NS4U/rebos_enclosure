@@ -299,7 +299,25 @@ def session():
                     if (spotify.position !== 45 || findItem(music.contentItem, "music-fullscreen-seek").enabled) { console.error("SPOTIFY_CAPABILITY_FAILED"); Qt.exit(1); return; }
                     music.select(0);
                     if (music.spotifyPreview || spotify.isPlaying || music.current.title === "Suggested song") { console.error("SPOTIFY_LOCAL_RETURN_FAILED"); Qt.exit(1); return; }
-                    console.log("MUSIC_SPOTIFY_FULLSCREEN_PASSED"); stop(); Qt.quit();
+                    console.log("MUSIC_SPOTIFY_FULLSCREEN_PASSED");
+                    music.toggleFullscreen();
+                    music.page = "Playlist"; music.detail = "test";
+                    music.spotifySuggestions = {playlist:"test",pending:false,tracks:Array.from({length:14}, (_,i)=>({uri:"spotify:track:"+String(i).padStart(22,"0"),title:"Suggestion "+i,artist:"New artist"}))};
+                    repeatStart = attempts; phase = 95;
+                } else if (phase === 95 && attempts >= repeatStart + 3) {
+                    const list = findItem(music.contentItem, "music-playlist-suggestions");
+                    const next = findItem(music.contentItem, "music-suggestions-next");
+                    const previous = findItem(music.contentItem, "music-suggestions-previous");
+                    if (list.count !== 6 || previous.enabled || !next.enabled) { console.error("SUGGESTIONS_FIRST_PAGE_FAILED"); Qt.exit(1); return; }
+                    next.clicked();
+                    if (list.model[0].title !== "Suggestion 6") { console.error("SUGGESTIONS_NEXT_FAILED"); Qt.exit(1); return; }
+                    next.clicked();
+                    if (list.count !== 2 || next.enabled || !previous.enabled) { console.error("SUGGESTIONS_LAST_PAGE_FAILED"); Qt.exit(1); return; }
+                    previous.clicked();
+                    if (list.model[0].title !== "Suggestion 6") { console.error("SUGGESTIONS_PREVIOUS_FAILED"); Qt.exit(1); return; }
+                    music.spotifySuggestions = {playlist:"test",pending:false,tracks:[]};
+                    if (music.suggestionPage !== 0 || list.count !== 0) { console.error("SUGGESTIONS_RESET_FAILED"); Qt.exit(1); return; }
+                    console.log("MUSIC_SUGGESTIONS_PAGING_PASSED"); stop(); Qt.quit();
                 }
             }
         }
