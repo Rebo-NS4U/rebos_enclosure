@@ -358,7 +358,11 @@ Window {
         objectName: "music-track-row-" + number
         required property var track
         property int number: 0
-        property bool selected: root.current?.path === track.path
+        property bool suggestion: false
+        property bool addEnabled: true
+        property bool selected: suggestion
+            ? root.spotifyPreview && !!track.uri && root.current?.spotifyUri === track.uri
+            : !root.spotifyPreview && !!track.path && root.current?.path === track.path
         signal playRequested()
         signal enqueueRequested()
         width: ListView.view ? ListView.view.width : 0
@@ -375,15 +379,15 @@ Window {
         RowLayout {
             anchors.fill: parent; anchors.margins: 8; spacing: 12
             ThemeButton { text: row.selected && root.playing ? "Ⅱ" : "▶"; Accessible.name: (row.selected && root.playing ? "Pause " : "Play ") + row.track.title; onClicked: row.playRequested() }
-            Cover { artwork: row.track.art; Layout.preferredWidth: 48; Layout.preferredHeight: 48 }
+            Cover { artwork: row.track.art || ""; Layout.preferredWidth: 48; Layout.preferredHeight: 48 }
             ColumnLayout {
                 Layout.fillWidth: true; spacing: 3
                 StyledText { Layout.fillWidth: true; text: row.track.title; elide: Text.ElideRight; color: row.selected ? Colors.primary : Colors.overSurface }
-                StyledText { Layout.fillWidth: true; text: row.track.artist + " · " + row.track.album; color: Colors.overSurfaceVariant; font.pixelSize: Styling.fontSize(-2); elide: Text.ElideRight }
+                StyledText { Layout.fillWidth: true; text: [row.track.artist, row.track.album].filter(Boolean).join(" · "); color: Colors.overSurfaceVariant; font.pixelSize: Styling.fontSize(-2); elide: Text.ElideRight }
             }
-            StyledText { text: root.time(row.track.duration*1000); color: Colors.overSurfaceVariant }
-            ThemeButton { text: root.favorites.includes(row.track.path) ? "♥" : "♡"; Accessible.name: "Favorite " + row.track.title; onClicked: root.favorite(row.track) }
-            ThemeButton { objectName: "music-track-queue-" + row.number; text: "+"; Accessible.name: "Queue " + row.track.title; onClicked: row.enqueueRequested() }
+            StyledText { visible: !!row.track.duration; text: root.time((row.track.duration || 0)*1000); color: Colors.overSurfaceVariant }
+            ThemeButton { visible: !row.suggestion; text: root.favorites.includes(row.track.path) ? "♥" : "♡"; Accessible.name: "Favorite " + row.track.title; onClicked: root.favorite(row.track) }
+            ThemeButton { objectName: "music-track-queue-" + row.number; text: row.suggestion ? "Add" : "+"; enabled: row.addEnabled; Accessible.name: row.suggestion ? "Add " + row.track.title + " to playlist" : "Queue " + row.track.title; onClicked: row.enqueueRequested() }
         }
     }
 
@@ -543,7 +547,7 @@ Window {
                             id: suggestionsList
                             objectName: "music-playlist-suggestions"
                             Layout.fillWidth: true
-                            Layout.preferredHeight: Math.min(count, 6) * Styling.spacing(52)
+                            Layout.preferredHeight: Math.min(count, 6) * Styling.spacing(70)
                             clip: true; model: root.suggestedTracks
                             // ListView creates rows on demand as they enter the viewport.
                             reuseItems: true
@@ -560,25 +564,23 @@ Window {
                                 wrapMode: Text.WordWrap
                                 color: Colors.overSurfaceVariant
                             }
-                            delegate: RowLayout {
-                                id: suggestion
+                            delegate: TrackRow {
+                                id: suggestionRow
                                 required property var modelData
-                                width: ListView.view.width; height: Styling.spacing(52)
-                                StyledText { Layout.fillWidth: true; text: suggestion.modelData.title + " · " + suggestion.modelData.artist; elide: Text.ElideRight }
-                                ThemeButton { text: "Play"; Accessible.name: "Play suggested track " + suggestion.modelData.title; onClicked: root.previewTrack(suggestion.modelData.uri) }
-                                ThemeButton {
-                                    text: "Add"; Accessible.name: "Add " + suggestion.modelData.title + " to playlist"
-                                    enabled: !root.busy && !downloads.busy && !root.pendingSuggestionDownload
-                                    onClicked: {
-                                        const local = root.tracks.find(t => t.spotifyUri === suggestion.modelData.uri);
+                                required property int index
+                                objectName: "music-suggestion-row-" + index
+                                track: modelData; number: index; suggestion: true
+                                addEnabled: !root.busy && !downloads.busy && !root.pendingSuggestionDownload
+                                onPlayRequested: { if (selected) root.toggle(); else root.previewTrack(track.uri); }
+                                onEnqueueRequested: {
+                                        const local = root.tracks.find(t => t.spotifyUri === suggestionRow.modelData.uri);
                                         if (local) root.request("playlist_add", {playlist:root.detail, path:local.path}, root.load);
-                                        else root.request("suggestion_download", {playlist:root.detail, uri:suggestion.modelData.uri}, data => {
+                                        else root.request("suggestion_download", {playlist:root.detail, uri:suggestionRow.modelData.uri}, data => {
                                             if (downloads.prepareSuggestion(data)) {
                                                 root.pendingSuggestionDownload = data;
                                                 downloads.start();
                                             }
                                         });
-                                    }
                                 }
                             }
                             ScrollBar.vertical: ScrollBar {}

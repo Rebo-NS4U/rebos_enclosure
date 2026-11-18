@@ -320,6 +320,16 @@ def session():
                 } else if (phase === 95 && attempts >= repeatStart + 3) {
                     const list = findItem(music.contentItem, "music-playlist-suggestions");
                     if (list.count !== 14 || findItem(music.contentItem, "music-suggestions-next")) { console.error("SUGGESTIONS_CONTINUOUS_LIST_FAILED"); Qt.exit(1); return; }
+                    const firstSuggestion = list.itemAtIndex(0);
+                    if (!firstSuggestion || firstSuggestion.selected || firstSuggestion.height !== findItem(music.contentItem, "music-track-row-0").height) { console.error("SUGGESTION_SHARED_ROW_FAILED"); Qt.exit(1); return; }
+                    spotify.metadata = {"xesam:url": firstSuggestion.track.uri};
+                    spotify.play();
+                    if (!firstSuggestion.selected) { console.error("SUGGESTION_SELECTION_FAILED"); Qt.exit(1); return; }
+                    firstSuggestion.playRequested();
+                    if (spotify.isPlaying) { console.error("SUGGESTION_ROW_PAUSE_FAILED"); Qt.exit(1); return; }
+                    firstSuggestion.playRequested();
+                    if (!spotify.isPlaying) { console.error("SUGGESTION_ROW_RESUME_FAILED"); Qt.exit(1); return; }
+                    music.select(0);
                     list.positionViewAtIndex(8, ListView.Beginning);
                     repeatStart = attempts; phase = 96;
                 } else if (phase === 96 && attempts >= repeatStart + 3) {
