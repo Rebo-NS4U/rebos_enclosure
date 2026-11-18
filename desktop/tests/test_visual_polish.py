@@ -141,7 +141,7 @@ ShellRoot {
  }
 }''', assistant=True)
 
-    def test_assistant_slider_thumb_follows_the_track(self):
+    def test_assistant_slider_thumb_anchors_the_wave(self):
         self.check_qml('assistant', '''import QtQuick
 import QtTest
 import Quickshell
@@ -159,10 +159,13 @@ ShellRoot {
      const layout = slider.children[slider.vertical ? 1 : 0];
      const [thumb, rail] = layout.children[0].children;
      const center = thumb.mapToItem(rail, thumb.width / 2, thumb.height / 2);
+     const aligned = rail.children.some(item => item.wave === 0
+      && Math.abs(item.x + item.width / 2 - center.x) <= rail.pitch * 0.75
+      && Math.abs(item.y + item.height / 2 - center.y) < 0.01);
      if (!slider.isDragging || rail.energy < 0.5
          || Math.abs(center.x - rail.filledLength) > 0.01
-         || Math.abs(center.y - rail.height / 2 - rail.handleOffset) > 0.01)
-      throw Error("Assistant slider thumb must follow the moving track during a drag");
+         || Math.abs(center.y - rail.height / 2) > 0.01 || !aligned)
+      throw Error("Assistant slider thumb must anchor the moving track during a drag");
      test.mouseRelease(slider, slider.width / 2, slider.height / 2);
     }
     console.log("VISUAL POLISH PASSED"); Qt.quit();
@@ -198,10 +201,13 @@ ShellRoot {
      test.wait(220);
      const thumb = slider.handle;
      const center = thumb.mapToItem(rail, thumb.width / 2, thumb.height / 2);
+     const aligned = rail.children.some(item => item.wave === 0
+      && Math.abs(item.x + item.width / 2 - center.x) <= rail.pitch * 0.75
+      && Math.abs(item.y + item.height / 2 - center.y) < 0.01);
      if (!slider.pressed || rail.energy < 0.5
          || Math.abs(center.x - rail.filledLength) > 0.01
-         || Math.abs(center.y - rail.height / 2 - rail.handleOffset) > 0.01)
-      throw Error("Media slider thumb must follow the moving track during a drag");
+         || Math.abs(center.y - rail.height / 2) > 0.01 || !aligned)
+      throw Error("Media slider thumb must anchor the moving track during a drag");
      test.mouseRelease(slider, slider.width / 2, slider.height / 2);
     }
     let c=Qt.createComponent("AnimeMenu.qml");

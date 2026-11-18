@@ -154,7 +154,7 @@ Item {
 
             SliderHandle {
                 id: hDragHandle
-                y: (parent.height - height) / 2 + hTrack.handleOffset
+                anchors.verticalCenter: parent.verticalCenter
                 x: parent.width * root.animatedProgress - width / 2
                 accent: root.progressColor
                 focused: root.activeFocus
@@ -162,7 +162,6 @@ Item {
             }
 
             SliderTrack {
-                id: hTrack
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
@@ -208,7 +207,7 @@ Item {
             SliderHandle {
                 id: vDragHandle
                 vertical: true
-                x: (parent.width - width) / 2 + vTrack.handleOffset
+                anchors.horizontalCenter: parent.horizontalCenter
                 y: parent.height * (1 - root.animatedProgress) - height / 2
                 accent: root.progressColor
                 focused: root.activeFocus
@@ -216,7 +215,6 @@ Item {
             }
 
             SliderTrack {
-                id: vTrack
                 anchors.centerIn: parent
                 width: parent.height
                 rotation: -90

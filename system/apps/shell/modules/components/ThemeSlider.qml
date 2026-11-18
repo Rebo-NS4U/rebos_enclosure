@@ -42,7 +42,6 @@ Slider {
         width: root.availableWidth
         height: root.availableHeight
         SliderTrack {
-            id: track
             anchors.centerIn: parent
             width: Math.max(0, root.horizontal
                 ? parent.width - (root.handle?.width ?? 0)
@@ -58,9 +57,9 @@ Slider {
         vertical: !root.horizontal
         x: root.leftPadding + (root.horizontal
             ? root.animatedVisualPosition * (root.availableWidth - width)
-            : (root.availableWidth - width) / 2 + track.handleOffset)
+            : (root.availableWidth - width) / 2)
         y: root.topPadding + (root.horizontal
-            ? (root.availableHeight - height) / 2 + (root.mirrored ? -track.handleOffset : track.handleOffset)
+            ? (root.availableHeight - height) / 2
             : root.animatedVisualPosition * (root.availableHeight - height))
         focused: root.activeFocus
     }

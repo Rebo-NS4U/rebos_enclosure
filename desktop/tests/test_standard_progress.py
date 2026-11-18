@@ -137,23 +137,22 @@ ShellRoot {
    console.error('Motion off applies value changes immediately and keeps the track still'); Qt.exit(1); return;
   }
   const segments = themedTrack.children.filter(item => item.wave !== undefined);
-  const origin = segments[4];
+  const origin = segments[7];
   themed.value = (origin.x + origin.width / 2) / themedTrack.width;
   themedTrack.energy = 1;
-  themedTrack.phase = -Math.PI / 2;
-  if (origin.y + origin.height / 2 < themedTrack.height / 2 + 4) {
-   console.error('The trough dips below the rail center'); Qt.exit(1); return;
+  const travelPhase = 2 * Math.PI * themedTrack.pitch / themedTrack.width;
+  themedTrack.phase = -Math.PI / 2 + 4 * travelPhase;
+  if (segments[11].y + segments[11].height / 2 < themedTrack.height / 2 + 4) {
+   console.error('The trough dips below the rail away from the thumb'); Qt.exit(1); return;
   }
-  themedTrack.phase = Math.PI / 2;
-  if (origin.y + origin.height / 2 > themedTrack.height / 2 - 4) {
-   console.error('The crest rises above the rail center'); Qt.exit(1); return;
+  themedTrack.phase += Math.PI;
+  if (segments[11].y + segments[11].height / 2 > themedTrack.height / 2 - 4
+      || Math.abs(segments[3].wave - 1) > 0.001) {
+   console.error('The crest rises on both sides of the thumb'); Qt.exit(1); return;
   }
-  if (Math.abs(origin.wave - 1) > 0.001) {
-   console.error('The crest starts at the off-center handle'); Qt.exit(1); return;
-  }
-  themedTrack.phase += 2 * Math.PI * themedTrack.pitch / themedTrack.width;
-  if (Math.abs(segments[3].wave - 1) > 0.001 || Math.abs(segments[5].wave - 1) > 0.001
-      || origin.wave >= segments[3].wave) {
+  themedTrack.phase += travelPhase;
+  if (Math.abs(segments[2].wave - 1) > 0.001 || Math.abs(segments[12].wave - 1) > 0.001
+      || segments[11].wave >= segments[12].wave) {
    console.error('The crest moves one segment outward on both sides'); Qt.exit(1); return;
   }
   const verticalTrack = vertical.children[1].children[0].children.find(item => item.segmentCount > 0);
@@ -163,13 +162,17 @@ ShellRoot {
    ...[themed, themedVertical, themedMirrored].map(slider => [slider.background.children[0], slider.handle])
   ]) {
    rail.energy = 1;
+   const nearest = rail.children.filter(item => item.wave !== undefined)
+    .reduce((best, item) => Math.abs(item.x + item.width / 2 - rail.filledLength)
+     < Math.abs(best.x + best.width / 2 - rail.filledLength) ? item : best);
    for (const phase of [-Math.PI / 2, Math.PI / 2]) {
     rail.phase = phase;
     const center = thumb.mapToItem(rail, thumb.width / 2, thumb.height / 2);
     if (Math.abs(center.x - rail.filledLength) > 0.01
-        || Math.abs(center.y - (rail.height / 2 - 5 * Math.sin(phase))) > 0.01) {
-     console.error('Thumb must follow the crest and trough at the current value', center,
-                   rail.filledLength, rail.handleOffset, rail.rotation);
+        || Math.abs(center.y - rail.height / 2) > 0.01
+        || Math.abs(nearest.y + nearest.height / 2 - center.y) > 0.01) {
+     console.error('The track and stationary thumb must meet at the current value', center,
+                   rail.filledLength, rail.rotation);
      Qt.exit(1); return;
     }
    }

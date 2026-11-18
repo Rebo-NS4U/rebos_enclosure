@@ -19,15 +19,12 @@ Item {
         ? (pressed ? 1 : activity.running ? 0.65 : 0) : 0
     property real phase: 0
 
-    readonly property real handleOffset: waveOffset(waveAt(filledLength))
-
     function waveAt(position: real): real {
         const distance = Math.abs(position - filledLength);
-        return Math.sin(phase - 2 * Math.PI * distance / Math.max(1, width));
-    }
-
-    function waveOffset(wave: real): real {
-        return -5 * energy * wave;
+        // Keep the segments nearest the thumb on the centerline.
+        const amplitude = Math.max(0, Math.min(1,
+            (distance - pitch * 0.75) / Math.max(1, Math.min(20, width / 4))));
+        return amplitude * Math.sin(phase - 2 * Math.PI * distance / Math.max(1, width));
     }
 
     onHoveredChanged: if (hovered && Motion.enabled) activity.restart()
@@ -61,7 +58,7 @@ Item {
             required property int index
             readonly property real wave: root.waveAt(x + width / 2)
             x: index * root.pitch
-            y: (root.height - height) / 2 + root.waveOffset(wave)
+            y: (root.height - height) / 2 - 5 * root.energy * wave
             width: Math.max(0, root.pitch - Math.min(3, root.pitch / 3))
             height: 6 + root.energy * (2.5 + 2 * wave)
             radius: Math.min(width, height) / 2

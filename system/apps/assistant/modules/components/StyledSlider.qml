@@ -132,7 +132,7 @@ Item {
 
             Rectangle {
                 id: hDragHandle
-                y: (parent.height - height) / 2 + hTrack.handleOffset
+                anchors.verticalCenter: parent.verticalCenter
                 x: parent.width * root.animatedProgress - width / 2
                 width: 4
                 height: Math.max(12, root.thickness + 6)
@@ -150,7 +150,6 @@ Item {
             }
 
             SliderTrack {
-                id: hTrack
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
@@ -195,7 +194,7 @@ Item {
 
             Rectangle {
                 id: vDragHandle
-                x: (parent.width - width) / 2 + vTrack.handleOffset
+                anchors.horizontalCenter: parent.horizontalCenter
                 y: parent.height * (1 - root.animatedProgress) - height / 2
                 height: 4
                 width: Math.max(12, root.thickness + 6)
@@ -213,7 +212,6 @@ Item {
             }
 
             SliderTrack {
-                id: vTrack
                 anchors.centerIn: parent
                 width: parent.height
                 rotation: -90

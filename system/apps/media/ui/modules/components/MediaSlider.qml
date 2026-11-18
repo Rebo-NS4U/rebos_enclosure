@@ -18,7 +18,6 @@ Slider {
         height: control.availableHeight
 
         SliderTrack {
-            id: track
             anchors.centerIn: parent
             width: Math.max(0, parent.width - control.handle.width)
             value: control.position
@@ -32,7 +31,6 @@ Slider {
         objectName: "media-slider-handle"
         x: control.leftPadding + control.visualPosition * (control.availableWidth - width)
         y: control.topPadding + (control.availableHeight - height) / 2
-            + (control.mirrored ? -track.handleOffset : track.handleOffset)
         width: 18; height: 18; radius: 9
         color: control.pressed ? Colors.overSurface : Colors.primary
         border.width: control.activeFocus ? 2 : 0
