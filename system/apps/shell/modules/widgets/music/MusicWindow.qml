@@ -89,10 +89,10 @@ Window {
             suggestionQueue = suggestedTracks;
             suggestionPlaylist = detail;
         }
-        previewTrack(track.uri);
+        previewSuggestion(track.uri);
     }
-    function previewTrack(uri) {
-        request("mixes_preview", {uri: uri}, data => {
+    function previewSuggestion(uri) {
+        request("suggestions_play", {uri: uri}, data => {
             player.pause();
             spotifyPreview = true;
             findLyrics();
@@ -355,7 +355,7 @@ Window {
     function next(automatic) {
         if (nextSuggestion && (!automatic || spotifyPreview)) {
             advancedSuggestionUri = currentSpotifyUrl;
-            if (suggestionQueue.length) previewTrack(nextSuggestion.uri);
+            if (suggestionQueue.length) previewSuggestion(nextSuggestion.uri);
             else playSuggestion(nextSuggestion);
             return;
         }

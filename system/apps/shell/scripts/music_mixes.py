@@ -1,4 +1,5 @@
 """Local Daily Mix metadata snapshots; credentials never cross the bridge."""
+from concurrent.futures import Future
 import copy
 from datetime import datetime, timezone
 import hashlib
@@ -51,6 +52,7 @@ class Mixes:
         self.lock = threading.Lock()
         self.refresh_id = ''
         self.refresh_uri = ''
+        self.preview = None
         self.suggestion = None
         self.suggestion_result = dict(tracks=[], pending=False, status='')
         self.playlist_write = None
@@ -58,6 +60,29 @@ class Mixes:
         self.refresh_started = 0
         self.refresh_status = ''
         self.data = read(path, dict(current=[], saved=[], checked=''))
+
+    def play_suggestion(self, uri):
+        if not isinstance(uri, str) or not re.fullmatch(r'spotify:track:[A-Za-z0-9]{22}', uri):
+            raise ValueError('Choose a valid Spotify track to preview')
+        from music_spotify import running
+        if not running():
+            raise ValueError('Open Spotify once, then play the suggestion again.')
+        job = dict(id=uuid.uuid4().hex, uri=uri)
+        result = Future()
+        with self.lock:
+            if self.preview:
+                raise ValueError('Wait for the current Spotify preview to finish.')
+            self.preview = (job, result)
+        try:
+            error = result.result(timeout=10)
+            if error:
+                raise ValueError(error)
+            return dict(uri=uri, status='Playing through Spotify in the background')
+        except TimeoutError:
+            raise ValueError('Spotify did not confirm playback. Check that Spotify has the updated integration.') from None
+        finally:
+            with self.lock:
+                self.preview = None
 
     def replace_playlist(self, uri, tracks):
         uri = playlist_uri(uri)
@@ -130,6 +155,13 @@ class Mixes:
             return dict(copy.deepcopy(self.data), refreshPending=bool(self.refresh_id), refreshStatus=self.refresh_status)
 
     def update(self, payload):
+        if 'preview_id' in payload:
+            with self.lock:
+                if self.preview:
+                    job, result = self.preview
+                    if job['id'] == payload['preview_id'] and not result.done():
+                        result.set_result(str(payload.get('error') or '')[:300])
+            return
         if 'playlist_write_id' in payload:
             with self.lock:
                 if self.playlist_write and payload['playlist_write_id'] == self.playlist_write['id']:
@@ -204,7 +236,7 @@ class Mixes:
                 if not self.allowed():
                     self.reply(403); return
                 with store.lock:
-                    self.reply(200, dict(refresh_id=store.refresh_id, playlist_uri=store.refresh_uri, playlist_write=({k: v for k, v in store.playlist_write.items() if k != "started"} if store.playlist_write else None), suggestion=({k: v for k, v in store.suggestion.items() if k != "started"} if store.suggestion else None)))
+                    self.reply(200, dict(preview=store.preview[0] if store.preview else None, refresh_id=store.refresh_id, playlist_uri=store.refresh_uri, playlist_write=({k: v for k, v in store.playlist_write.items() if k != "started"} if store.playlist_write else None), suggestion=({k: v for k, v in store.suggestion.items() if k != "started"} if store.suggestion else None)))
             def do_POST(self):
                 if not self.allowed():
                     self.reply(403); return

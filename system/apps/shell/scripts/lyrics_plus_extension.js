@@ -156,6 +156,34 @@ async function syncPlaylist(api, uri, tracks) {
         collect();
     }, 2000); }).observe(document.documentElement, {childList: true, subtree: true});
     setInterval(publishMixes, 15000);
+    let lastPreview;
+    async function pollPreview() {
+        try {
+            if (!Spicetify.Player?.origin?.play) return;
+            const response = await fetch('http://127.0.0.1:19838/mixes', {credentials: 'omit', cache: 'no-store'});
+            if (!response.ok) return;
+            const {preview} = await response.json();
+            if (!preview) return;
+            if (lastPreview?.preview_id !== preview.id) {
+                let error = '';
+                try {
+                    if (!/^spotify:track:[A-Za-z0-9]{22}$/.test(preview.uri)) throw Error('Invalid Spotify track');
+                    await Spicetify.Player.playUri(preview.uri);
+                } catch (e) {
+                    error = 'Spotify could not play this suggestion. ' + String(e.message || e).slice(0, 180);
+                }
+                lastPreview = {preview_id: preview.id, error};
+            }
+            await fetch('http://127.0.0.1:19838/mixes', {method: 'POST', credentials: 'omit',
+                headers: {'Content-Type': 'application/json'}, body: JSON.stringify(lastPreview)});
+        } catch (_) { /* Music may be closed. Retry an unacknowledged result. */ }
+        finally {
+            // Schedule from the completed network request to avoid a chained
+            // interval being throttled while Spotify is in the tray.
+            setTimeout(pollPreview, 500);
+        }
+    }
+    pollPreview();
     // Music's explicit update button bypasses the hourly schedule.
     setInterval(async () => {
         if (collecting) return;

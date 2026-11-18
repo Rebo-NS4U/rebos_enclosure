@@ -1,4 +1,5 @@
 """On-demand startup reuses Spotify and gates only live Spotify operations."""
+from concurrent.futures import Future
 from pathlib import Path
 import sys
 import unittest
@@ -7,6 +8,7 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'system/apps/shell/scripts'))
 import music_spotify
 import music_library
+import music_mixes
 
 
 class SpotifyStartupTests(unittest.TestCase):
@@ -50,6 +52,39 @@ class SpotifyStartupTests(unittest.TestCase):
     def test_opening_music_does_not_launch_spotify(self):
         script = Path(music_library.__file__).with_name('open_music.sh').read_text()
         self.assertNotIn('spotify', script.lower())
+
+
+class SuggestedPlaybackTests(unittest.TestCase):
+    def test_suggestion_waits_for_spotify_to_confirm_background_playback(self):
+        store = music_mixes.Mixes(Path('/unused'), lambda _, default: default, lambda *_: None)
+        library = object.__new__(music_library.Library)
+        library.mixes = store
+        uri = 'spotify:track:' + 'a' * 22
+        result = Future()
+        wait = result.result
+
+        def confirm(timeout):
+            job, pending = store.preview
+            self.assertEqual(job['uri'], uri)
+            store.update({'preview_id': 'stale'})
+            self.assertFalse(pending.done())
+            store.update({'preview_id': job['id']})
+            return wait(timeout)
+
+        with patch.object(music_spotify, 'running', return_value=True), \
+                patch.object(music_mixes, 'Future', return_value=result), \
+                patch.object(result, 'result', side_effect=confirm):
+            self.assertEqual(library.dispatch('suggestions_play', {'uri': uri})['uri'], uri)
+        self.assertIsNone(store.preview)
+
+    def test_closed_spotify_does_not_launch_from_suggested_playback(self):
+        store = music_mixes.Mixes(Path('/unused'), lambda _, default: default, lambda *_: None)
+        with patch.object(music_spotify, 'running', return_value=False), \
+                patch.object(music_spotify.subprocess, 'Popen') as launch:
+            with self.assertRaisesRegex(ValueError, 'Open Spotify once'):
+                store.play_suggestion('spotify:track:' + 'a' * 22)
+            launch.assert_not_called()
+        self.assertIsNone(store.preview)
 
 
 class SpotifyTrayTests(unittest.TestCase):

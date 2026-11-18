@@ -42,7 +42,7 @@ def session():
         MusicWindow {
             id: music
             property string requestedPreview: ""
-            function previewTrack(uri) { requestedPreview = uri; }
+            function previewSuggestion(uri) { requestedPreview = uri; }
         }
         QtObject {
             id: spotify
@@ -382,6 +382,9 @@ def session():
                     if (Math.abs(list.height - 4 * music.suggestionRowHeight) > 1) { console.error("SUGGESTIONS_VIEWPORT_HEIGHT_FAILED"); Qt.exit(1); return; }
                     const firstSuggestion = list.itemAtIndex(0);
                     if (!firstSuggestion || firstSuggestion.selected || firstSuggestion.height >= findItem(music.contentItem, "music-track-row-0").height) { console.error("SUGGESTION_COMPACT_ROW_FAILED"); Qt.exit(1); return; }
+                    firstSuggestion.playRequested();
+                    if (music.requestedPreview !== firstSuggestion.track.uri) { console.error("SUGGESTION_ROW_PLAY_FAILED"); Qt.exit(1); return; }
+                    music.requestedPreview = "";
                     spotify.play();
                     music.next(false);
                     if (music.requestedPreview !== firstSuggestion.track.uri || spotify.nextCalls !== 1) { console.error("NEXT_STARTS_SUGGESTIONS_FAILED"); Qt.exit(1); return; }

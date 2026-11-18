@@ -256,6 +256,8 @@ class Library:
                    'suggestions_more', 'playlist_to_spotify'):
             from music_spotify import ensure_started
             ensure_started()
+        if cmd == 'suggestions_play':
+            return self.mixes.play_suggestion(args.get('uri'))
         media_actions = {
             "mixes_preview": lambda: music_preview.preview(args.get("uri")),
             "lyrics": lambda: self.lyrics(args.get("track") or {}),
