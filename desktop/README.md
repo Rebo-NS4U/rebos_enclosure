@@ -343,7 +343,7 @@ Playback settings include Subtitle font: OpenDyslexic, Noto Sans, Noto Serif or 
 
 Caption refreshes reuse their VLC channel without clearing between heartbeats, and use a long OSD lifetime refreshed before fading. Cue ends still clear immediately. Caption generation fills the nearest missing chunk in order, without jumping over dialogue to meet a moving lookahead target. No mouse or keyboard activity is required.
 
-New Dweebo Codex chats default to **dweebo-Do** (Sol, medium reasoning). Saved chats retain their selected preset. Choose **dweebo-Deep** for complex coding and research with Sol at high reasoning.
+New Dweebo Codex chats default to **dweebo-Do** (Sol 6.2, medium reasoning). Saved chats retain their selected preset. Choose **dweebo-Deep** for complex coding and research with Astra 6.2 at high reasoning. **dweebo-Symphony** uses Sol 6.2 at medium reasoning; **dweebo-Light**, **dweebo-Quick** and **dweebo-Know** use Terra 6.1 at low reasoning.
 
 The composer’s **Auto approve** switch beside **Add image** approves pending and future tool requests for the current chat until switched off. New or reopened chats start off. It uses one-time approval options; requests without that option still require review. Questions remain manual.
 

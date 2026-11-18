@@ -41,7 +41,7 @@ ShellRoot {
             session.createNewChat();
             check(session.codexPreset === "coding", "new chats select dweebo-Do");
             let defaultMode = session.codexPresets.find(item => item.id === session.codexPreset);
-            check(defaultMode.name === "dweebo-Do" && defaultMode.model === "gpt-6.1-sol" && defaultMode.effort === "medium", "default selects the Do model and effort");
+            check(defaultMode.name === "dweebo-Do" && defaultMode.model === "gpt-6.2-sol" && defaultMode.effort === "medium", "default selects the Do model and effort");
             // Exercise every role through the actual prompt builder and mode-change gate.
             const roleMarkers = {
                 coding: "Coding mode:", deep: "root-cause debugging",
@@ -59,7 +59,7 @@ ShellRoot {
                 check(session.standingInstructions(role, true)[0].text === role.guidance, role.id + " guidance restored for forced delivery");
             }
             let deep = session.codexPresets.find(item => item.id === "deep");
-            check(deep && deep.model === defaultMode.model && deep.effort === "high", "Deep offers Sol with high reasoning");
+            check(deep && deep.model === "gpt-6.2-astra" && deep.effort === "high", "Deep offers Astra 6.2 with high reasoning");
             session.sessionConfigOptions = [
                 {id: "model", currentValue: deep.model},
                 {id: "reasoning_effort", currentValue: "medium"}

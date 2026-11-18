@@ -22,20 +22,20 @@ ShellRoot {
                 currentAgentId: "codex", codexPreset: "", sessionReady: true,
                 currentSessionId: "startup-test", agentTurnActive: true,
                 sessionConfigOptions: [
-                    {id: "model", currentValue: "gpt-6-luna", options: [{value: "gpt-6.1-sol"}]},
+                    {id: "model", currentValue: "gpt-6.1-terra", options: [{value: "gpt-6.2-sol"}]},
                     {id: "reasoning_effort", currentValue: "low", options: [{value: "medium"}]}
                 ]
             }}));
             check(session.codexPresetName === "dweebo-Do", "custom checkpoint selects Do");
-            check(session.agentTurnActive && session.currentSessionModelId !== "gpt-6.1-sol", "restored work is retained");
+            check(session.agentTurnActive && session.currentSessionModelId !== "gpt-6.2-sol", "restored work is retained");
             check(!session.syntheticEnvelope.method && session.syntheticRestarts === 0, "startup sends no model RPC or restart");
             session.agentTurnActive = false;
             session.queuedPrompt = {text: "Next message", attachments: []};
             session.dispatchQueuedPrompt();
             check(session.syntheticEnvelope.method === "session/set_config_option", "model change precedes prompt");
-            check(session.syntheticEnvelope.params.value === "gpt-6.1-sol" && session.queuedPrompt, "Do model requested and prompt waits");
+            check(session.syntheticEnvelope.params.value === "gpt-6.2-sol" && session.queuedPrompt, "Do model requested and prompt waits");
             let options = JSON.parse(JSON.stringify(session.sessionConfigOptions));
-            options[0].currentValue = "gpt-6.1-sol";
+            options[0].currentValue = "gpt-6.2-sol";
             session.handleResponse({id: session.syntheticEnvelope.id, result: {configOptions: options}});
             check(session.syntheticEnvelope.params.value === "medium" && session.queuedPrompt, "effort confirmation also precedes prompt");
             options[1].currentValue = "medium";
