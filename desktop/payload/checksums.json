@@ -463,7 +463,7 @@
   "system/apps/shell/modules/components/Separator.qml": "58985bb25a6031dfb7c6d6d687d16b9391ec1e952e63d6bf0eec850337cee133",
   "system/apps/shell/modules/components/SliderHandle.qml": "48bfb3592c37c3ed4c9126082701d280c3baacaed57bc57b3978d13e2c795641",
   "system/apps/shell/modules/components/StandardProgressBar.qml": "ac24a255d31bf5b9a20a3aabd1e7623a1d7c2169478466e4b5dd0fdc6a741c10",
-  "system/apps/shell/modules/components/StyledRect.qml": "46532a7c14104eddc166dc49d290793b385b94d8147df7acd7c39a070200ece6",
+  "system/apps/shell/modules/components/StyledRect.qml": "04baf6d5b20db52b66be1af2818366b9f2bcbe07e438c6dd682176faab0c8101",
   "system/apps/shell/modules/components/StyledSlider.qml": "ccbf87de8b9b9ce3d16317be6704a91906a50dab0938b379b12128f38fa040db",
   "system/apps/shell/modules/components/StyledSwitch.qml": "f86ad6bea1f329843bac84ed54e80c3677158accd1e7e24bec58a2932eed0fb6",
   "system/apps/shell/modules/components/StyledText.qml": "e6e57f60a0404bfabf319bc0d04f28fb1ade36cab356d6d7d16da1f5dc365c99",

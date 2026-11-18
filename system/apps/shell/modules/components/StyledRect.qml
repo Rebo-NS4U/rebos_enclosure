@@ -680,6 +680,7 @@ ClippingRectangle {
                     }
                 }else if(finish === "orbital"){
                     // Elliptical orbital tracks wrap a quiet, recessed space capsule.
+                    const rim = outer || inset ? 6 : 3;
                     ctx.strokeStyle=ink(0.20);ctx.lineWidth=1;
                     if(root.traceThemeFrame(ctx,outer?6:3))ctx.stroke();
                     if(inset){
@@ -687,41 +688,61 @@ ClippingRectangle {
                         if(root.traceThemeFrame(ctx,6))ctx.stroke();
                     }
                     // Deterministic jitter spreads a stable star field over the entire surface.
-                    // Low opacity keeps stars behind content, with occasional brighter points.
-                    for(let row=0;row<Math.ceil(height/46);row++){
-                        for(let col=0;col<Math.ceil(width/54);col++){
-                            const seed=Math.abs(Math.sin((col+1)*127.1+(row+1)*311.7)*43758.5453);
-                            const fraction=seed-Math.floor(seed);
-                            const x=col*54+7+fraction*38;
-                            const y=row*46+6+((fraction*7.31)%1)*32;
-                            const bright=fraction>0.88;
-                            ctx.fillStyle=ink(bright?0.40:0.14+fraction*0.12);
-                            ctx.beginPath();ctx.arc(x,y,bright?1.15:0.55,0,Math.PI*2);ctx.fill();
-                            if(bright){
-                                ctx.strokeStyle=ink(0.16);ctx.lineWidth=0.7;
-                                ctx.beginPath();ctx.moveTo(x-3,y);ctx.lineTo(x+3,y);
-                                ctx.moveTo(x,y-3);ctx.lineTo(x,y+3);ctx.stroke();
+                    // Check star centers against an inset that allows for the full cross and stroke.
+                    const stars = [];
+                    if (root.traceThemeFrame(ctx, rim + 4)) {
+                        for (let row = 0; row < Math.ceil(height / 46); row++) {
+                            for (let col = 0; col < Math.ceil(width / 54); col++) {
+                                const seed = Math.abs(Math.sin((col + 1) * 127.1 + (row + 1) * 311.7) * 43758.5453);
+                                const fraction = seed - Math.floor(seed);
+                                const x = col * 54 + 7 + fraction * 38;
+                                const y = row * 46 + 6 + (fraction * 7.31 % 1) * 32;
+                                if (ctx.isPointInPath(x, y)) stars.push({x, y, fraction});
                             }
                         }
                     }
-                    if(outer){
-                        for(const bottom of [false,true]){
+                    for (const {x, y, fraction} of stars) {
+                        const bright = fraction > 0.88;
+                        ctx.fillStyle = ink(bright ? 0.40 : 0.14 + fraction * 0.12);
+                        ctx.beginPath();
+                        ctx.arc(x, y, bright ? 1.15 : 0.55, 0, Math.PI * 2);
+                        ctx.fill();
+                        if (bright) {
+                            ctx.strokeStyle = ink(0.16);
+                            ctx.lineWidth = 0.7;
+                            ctx.beginPath();
+                            ctx.moveTo(x - 3, y);
+                            ctx.lineTo(x + 3, y);
+                            ctx.moveTo(x, y - 3);
+                            ctx.lineTo(x, y + 3);
+                            ctx.stroke();
+                        }
+                    }
+                    if (outer) {
+                        // The rotated outer ring fits in a 56 by 23 half-extent.
+                        const side = Math.max(...frameCorners.map(value => root.themeCornerRadius(value, 0))) + rim;
+                        const scale = Math.min(1, (width / 2 - side) / 56, (height / 2 - rim) / 23);
+                        if (scale > 0) for (const bottom of [false, true]) {
                             ctx.save();
-                            ctx.translate(bottom?width-safe:safe,bottom?height-8:8);
-                            ctx.rotate(bottom?-0.24:0.24);
-                            ctx.scale(1,0.32);
-                            for(let ring=0;ring<3;ring++){
-                                ctx.strokeStyle=Qt.rgba(accent.r,accent.g,accent.b,0.34-ring*0.07);
-                                ctx.beginPath();ctx.arc(0,0,24+ring*15,0,Math.PI*2);ctx.stroke();
+                            const x = side + 56 * scale;
+                            const y = rim + 23 * scale;
+                            ctx.translate(bottom ? width - x : x, bottom ? height - y : y);
+                            ctx.scale(scale, scale);
+                            ctx.rotate(bottom ? -0.24 : 0.24);
+                            ctx.scale(1, 0.32);
+                            ctx.lineWidth = 0.7;
+                            for (let ring = 0; ring < 3; ring++) {
+                                ctx.strokeStyle = Qt.rgba(accent.r, accent.g, accent.b, 0.34 - ring * 0.07);
+                                ctx.beginPath();
+                                ctx.arc(0, 0, 24 + ring * 15, 0, Math.PI * 2);
+                                ctx.stroke();
                             }
+                            ctx.fillStyle = Qt.rgba(accent.r, accent.g, accent.b, 0.8);
+                            ctx.beginPath();
+                            ctx.ellipse(bottom ? -41.5 : 36.5, -7.8, 5, 15.6);
+                            ctx.fill();
                             ctx.restore();
                         }
-                        // Satellites remain attached to the perimeter orbit tracks.
-                        ctx.fillStyle=Qt.rgba(accent.r,accent.g,accent.b,0.8);
-                        for(const point of [[safe+35,14],[width-safe-35,height-14]]){
-                            ctx.beginPath();ctx.arc(point[0],point[1],2.5,0,Math.PI*2);ctx.fill();
-                        }
-
                     }
                 }else{
                     // City architecture follows the selected palette for glass, frames and windows.

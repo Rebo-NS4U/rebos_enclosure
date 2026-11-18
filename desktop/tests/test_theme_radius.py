@@ -63,6 +63,7 @@ ShellRoot {
   return null;
  }
  Window { visible: true; width: 300; height: 240
+  StyledRect { id: orbitalPane; width: 256; height: 129; variant: "pane"; styleOverride: "orbital"; radius: 16 }
   Grid { columns: 3; spacing: 2
    Repeater { id: cards
     model: ["glass-vault","radar-station","suspended-film","monolith","blueprint","terminal-hardware","frosted","colorful","clear-glass","canopy","orbital","metropolis"]
@@ -76,6 +77,13 @@ ShellRoot {
   onTriggered: {
    const values = [0,16,40,100];
    if (step === values.length) { Qt.quit(); return; }
+   if (step === 1) {
+    const ctx = decoration(orbitalPane).getContext("2d");
+    const interiorStar = ctx.getImageData(41, 23, 1, 1).data[3];
+    const clippedCross = ctx.getImageData(204, 124, 1, 1).data[3];
+    if (!(interiorStar > 0) || clippedCross !== 0)
+     console.error("THEME_RADIUS_FAILED orbital pane star clipping", interiorStar, clippedCross);
+   }
    const expected = values[step++];
    Config.theme.roundness = expected;
    Qt.callLater(() => {
