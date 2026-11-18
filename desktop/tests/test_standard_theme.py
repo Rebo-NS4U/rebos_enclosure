@@ -41,6 +41,23 @@ class StandardThemeTests(unittest.TestCase):
             self.assertIn('match app-id="org.kde.dolphin"\n    opacity 0.8400', rules)
             self.assertIn('match app-id="thunar"\n    opacity 0.68', rules)
 
+    def test_stylesheet_only_change_notifies_qtct_directory_watcher(self):
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory)
+            apply_desktop(PALETTE, home)
+            qt = home / '.config/qt6ct/qt6ct.conf'
+            palette = home / '.config/qt6ct/colors/rebos_shell.conf'
+            initial_config = qt.read_bytes()
+            initial_inode = qt.stat().st_ino
+            palette_inode = palette.stat().st_ino
+            apply_desktop({**PALETTE, 'primaryContainer': '#345678'}, home)
+            self.assertEqual(qt.read_bytes(), initial_config)
+            self.assertNotEqual(qt.stat().st_ino, initial_inode)
+            self.assertEqual(palette.stat().st_ino, palette_inode)
+            refreshed_inode = qt.stat().st_ino
+            apply_desktop({**PALETTE, 'primaryContainer': '#345678'}, home)
+            self.assertEqual(qt.stat().st_ino, refreshed_inode)
+
     def test_preserves_custom_css_qt_sheets_and_unrelated_settings(self):
         with tempfile.TemporaryDirectory() as directory:
             home = Path(directory)

@@ -197,8 +197,10 @@ DolphinMainWindow QDockWidget QListView::item:hover:!selected {{ background: {ho
 DolphinMainWindow QDockWidget QListView::item:selected {{
   background: {selected}; color: {selected_text};
 }}
-DolphinMainWindow DolphinViewContainer QGraphicsView {{
+DolphinMainWindow KItemListContainer,
+DolphinMainWindow KItemListContainerViewport {{
   background: {inset}; border: 1px solid {edge}; border-radius: {radius}px;
+  alternate-background-color: {pane}; color: {p['overSurface']};
   selection-background-color: {accent}; selection-color: {p['overPrimary']};
 }}
 DolphinMainWindow QTabBar::tab {{
@@ -247,7 +249,7 @@ def apply(p, home):  # pylint: disable=too-many-locals
         update_ini(directory / 'settings.ini', {'Settings': {
             'gtk-font-name': f'{m["font"]} {m["size"] * .75:g}'}})
     stylesheet = cfg / 'enclosure/theme/widgets.qss'
-    write(stylesheet, qt_css(p, m) + dolphin_css(p, m))
+    stylesheet_changed = write(stylesheet, qt_css(p, m) + dolphin_css(p, m))
     for version in (5, 6):
         target = cfg / f'qt{version}ct/qt{version}ct.conf'
         # qtct uses a QStringList; retain user stylesheets, replacing only ours.
@@ -259,7 +261,8 @@ def apply(p, home):  # pylint: disable=too-many-locals
         weight = 50 if version == 5 else 400
         font = f'"{m["font"]},{m["size"]*.75:g},-1,5,{weight},0,0,0,0,0"'
         update_ini(target, {'Fonts': {'general': font, 'fixed': font},
-                            'Interface': {'stylesheets': ', '.join(entries)}})
+                            'Interface': {'stylesheets': ', '.join(entries)}},
+                   force=stylesheet_changed)
     update_ini(cfg / 'kdeglobals', {'General': {
         'font': f'{m["font"]},{m["size"]*.75:g},-1,5,50,0,0,0,0,0',
         'menuFont': f'{m["font"]},{m["size"]*.75:g},-1,5,50,0,0,0,0,0'}})
