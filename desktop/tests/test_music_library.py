@@ -42,6 +42,40 @@ class MusicLibraryTests(unittest.TestCase):
                         '-metadata', 'album=Test album', '-metadata', 'track=3/12', str(self.song)], check=True)
         self.library = music.Library(self.home)
 
+    def test_remove_song_persists_for_saved_and_folder_playlists(self):
+        folder = self.folder / 'Downloaded'
+        folder.mkdir()
+        song = folder / ('b' * 22 + '.flac')
+        shutil.copyfile(self.song, song)
+        path = str(song)
+        self.library.dispatch('save', dict(favorites=[path], playlists=[
+            dict(id='saved', name='Saved', paths=[str(self.song), path]),
+            dict(id='other', name='Other', paths=[path]),
+        ]))
+        folder_id = next(p['id'] for p in self.library.scan()['state']['playlists'] if p.get('folder'))
+        for playlist_id, remaining in [('saved', [str(self.song)]), (folder_id, [])]:
+            args = dict(playlist=playlist_id, path=path)
+            self.library.dispatch('playlist_remove', args)
+            self.library.dispatch('playlist_remove', args)
+            self.library = music.Library(self.home)
+            data = self.library.scan()
+            playlists = {p['id']: p['paths'] for p in data['state']['playlists']}
+            self.assertEqual(playlists[playlist_id], remaining)
+            self.assertEqual(playlists['other'], [path])
+            self.assertEqual(data['state']['favorites'], [path])
+            self.assertIn(path, [t['path'] for t in data['tracks']])
+            self.assertTrue(song.is_file())
+
+        (folder / '.enclosure-playlist.json').write_text(json.dumps(
+            dict(tracks=[dict(uri='spotify:track:' + 'b' * 22)])))
+        restored = self.library.dispatch('playlist_add', dict(playlist=folder_id, path=path))
+        self.assertEqual(next(p['paths'] for p in restored['state']['playlists']
+                              if p['id'] == folder_id), [path])
+        self.library.dispatch('playlist_remove', dict(playlist=folder_id, path=path))
+        synced = music.Library(self.home).scan()
+        self.assertEqual(next(p['paths'] for p in synced['state']['playlists']
+                              if p['id'] == folder_id), [])
+
     def test_sync_membership_preserves_files_and_rescans(self):
         folder = self.folder / 'Synced'
         folder.mkdir()

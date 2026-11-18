@@ -479,6 +479,7 @@ Window {
         property bool addEnabled: true
         property bool queueSuggestion: false
         property bool queueEntry: false
+        property string playlistId: ""
         readonly property bool inFullscreenQueue: queueEntry || queueSuggestion
         readonly property bool compact: suggestion || queueEntry
         property bool selected: suggestion
@@ -521,6 +522,18 @@ Window {
             StyledText { visible: !row.queueSuggestion && !!row.track.duration; text: root.time((row.track.duration || 0)*1000); color: Colors.overSurfaceVariant }
             ThemeButton { visible: !row.compact; text: root.favorites.includes(row.track.path) ? "♥" : "♡"; Accessible.name: "Favorite " + row.track.title; onClicked: root.favorite(row.track) }
             ThemeButton { objectName: "music-track-queue-" + row.number; visible: !row.queueEntry; topPadding: row.compact ? Styling.spacing(5) : padding; bottomPadding: topPadding; text: row.queueSuggestion ? "Queue" : row.suggestion ? "Add" : "+"; enabled: row.addEnabled; Accessible.name: row.suggestion && !row.queueSuggestion ? "Add " + row.track.title + " to playlist" : "Queue " + row.track.title; onClicked: row.enqueueRequested() }
+            ThemeButton {
+                objectName: "music-track-remove-" + row.number
+                visible: row.playlistId !== ""
+                enabled: !root.busy
+                text: "Remove"
+                Accessible.name: "Remove " + row.track.title + " from playlist"
+                onClicked: {
+                    root.notice = "";
+                    root.busy = true;
+                    root.request("playlist_remove", {playlist: row.playlistId, path: row.track.path}, root.load);
+                }
+            }
         }
     }
 
@@ -657,6 +670,7 @@ Window {
                             required property int index
                             track: modelData; number: index
                             onPlayRequested: { if (selected) root.toggle(); else root.play(root.shownTracks,index); }
+                            playlistId: root.page === "Playlist" ? root.detail : ""
                             onEnqueueRequested: root.enqueue(track)
                         }
                         ScrollBar.vertical: ScrollBar {}
@@ -721,7 +735,7 @@ Window {
                         Layout.fillWidth: true
                         SearchInput { id: playlistName; Layout.fillWidth: true; placeholderText: "Name a playlist from the queue" }
                         ThemeButton {
-                            text: "Save queue"; enabled: playlistName.text.trim() !== "" && root.queue.length > 0
+                            text: "Save queue"; enabled: !root.busy && playlistName.text.trim() !== "" && root.queue.length > 0
                             onClicked: {
                                 root.playlists = root.playlists.concat([{id: Date.now().toString(),name: playlistName.text.trim(),paths: root.queue.map(t=>t.path)}]);
                                 root.save(); playlistName.clear(); root.navigate("Playlists");

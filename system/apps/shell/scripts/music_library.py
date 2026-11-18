@@ -62,6 +62,7 @@ class Library:
         self.state.setdefault('favorites', [])
         self.state.setdefault('playlists', [])
         self.state.setdefault('playlistAdditions', {})
+        self.state.setdefault('playlistRemovals', {})
 
     @staticmethod
     def read(path, fallback):
@@ -196,6 +197,8 @@ class Library:
         for playlist in folder_playlists:
             extras = [] if playlist.get('synced') else self.state['playlistAdditions'].get(playlist['id'], [])
             playlist['paths'] += [p for p in extras if p in available and p not in playlist['paths']]
+            removed = set(self.state['playlistRemovals'].get(playlist['id'], []))
+            playlist['paths'] = [p for p in playlist['paths'] if p not in removed]
         # Similar mixes can share leading artists; retain readable distinctions.
         counts = Counter(p['name'] for p in folder_playlists if p.get('mix'))
         used = Counter()
@@ -347,15 +350,26 @@ class Library:
             return self.mixes.dispatch(cmd, args)
         if cmd == 'scan':
             return self.scan()
-        if cmd == 'playlist_add':
+        if cmd in ('playlist_add', 'playlist_remove'):
             data = self.scan()
             playlist = next((p for p in data['state']['playlists'] if p['id'] == args.get('playlist')), None)
             path = args.get('path')
             if playlist is None or path not in {t['path'] for t in data['tracks']}:
                 raise ValueError('Playlist or track is no longer available; rescan your library')
-            if path not in playlist['paths']:
+            if cmd == 'playlist_remove':
+                if path in playlist['paths']:
+                    if playlist.get('folder'):
+                        # Keep a local override for membership derived from files or Spotify.
+                        self.state['playlistRemovals'].setdefault(playlist['id'], []).append(path)
+                    else:
+                        playlist['paths'] = [p for p in playlist['paths'] if p != path]
+            elif path not in playlist['paths']:
                 if playlist.get('folder'):
-                    self.state['playlistAdditions'].setdefault(playlist['id'], []).append(path)
+                    removed = self.state['playlistRemovals'].get(playlist['id'], [])
+                    if path in removed:
+                        removed.remove(path)
+                    elif not playlist.get('synced'):
+                        self.state['playlistAdditions'].setdefault(playlist['id'], []).append(path)
                 else:
                     playlist['paths'].append(path)
             self.write(self.state_dir / 'library.json', self.state)
