@@ -379,6 +379,7 @@ def session():
                 } else if (phase === 95 && attempts >= repeatStart + 3) {
                     const list = findItem(music.contentItem, "music-playlist-suggestions");
                     if (list.count !== 14 || !findItem(music.contentItem, "music-suggestions-load-more")?.enabled) { console.error("SUGGESTIONS_CONTINUOUS_LIST_FAILED"); Qt.exit(1); return; }
+                    if (Math.abs(list.height - 4 * music.suggestionRowHeight) > 1) { console.error("SUGGESTIONS_VIEWPORT_HEIGHT_FAILED"); Qt.exit(1); return; }
                     const firstSuggestion = list.itemAtIndex(0);
                     if (!firstSuggestion || firstSuggestion.selected || firstSuggestion.height >= findItem(music.contentItem, "music-track-row-0").height) { console.error("SUGGESTION_COMPACT_ROW_FAILED"); Qt.exit(1); return; }
                     spotify.play();

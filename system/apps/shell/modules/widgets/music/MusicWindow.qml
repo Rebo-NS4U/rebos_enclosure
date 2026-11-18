@@ -727,7 +727,7 @@ Window {
                             id: suggestionsList
                             objectName: "music-playlist-suggestions"
                             Layout.fillWidth: true
-                            Layout.preferredHeight: Math.min(count, 6) * root.suggestionRowHeight
+                            Layout.preferredHeight: Math.min(count, 4) * root.suggestionRowHeight
                             clip: true; model: root.suggestedTracks
                             // ListView creates rows on demand as they enter the viewport.
                             reuseItems: true
