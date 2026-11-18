@@ -144,6 +144,11 @@ class Mixes:
             # Reuse the strict metadata validation for Spotify tracks.
             cleaned = normalize(dict(mixes=[dict(uri='spotify:playlist:' + 'a'*22,
                 name='Suggestions', tracks=tracks)]))[0]['tracks'] if tracks else []
+            for track, source in zip(cleaned, tracks):
+                art = source.get('art')
+                image = re.fullmatch(r'(?:spotify:image:|https://i\.scdn\.co/image/)([a-fA-F0-9]{40})', art) if isinstance(art, str) else None
+                if image:
+                    track['art'] = 'https://i.scdn.co/image/' + image[1]
             with self.lock:
                 if self.suggestion and payload['suggestion_id'] == self.suggestion['id']:
                     existing = self.suggestion_result['tracks']

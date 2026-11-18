@@ -91,11 +91,19 @@ class MusicLibraryTests(unittest.TestCase):
         self.assertTrue(pending['pending'])
         self.assertEqual(self.library.mixes.suggestion['uri'], mix['uri'])
         job = self.library.mixes.suggestion['id']
-        result = dict(suggestion_id=job, tracks=[dict(uri=other, title='New online song', artist='Other artist')])
+        result = dict(suggestion_id=job, tracks=[
+            dict(uri=other, title='New online song', artist='Other artist', art='spotify:image:' + 'f'*40),
+            dict(uri='spotify:track:'+'d'*22, title='Another song', art='https://example.com/image'),
+            dict(uri='spotify:track:'+'e'*22, title='Third song', art='https://i.scdn.co/image/' + 'a'*40),
+        ])
         self.library.mixes.update(dict(result, suggestion_id='stale'))
         self.assertTrue(self.library.mixes.suggestions()['pending'])
         self.library.mixes.update(result)
-        self.assertEqual(self.library.dispatch('suggestions_get', {})['tracks'][0]['uri'], other)
+        suggestions = self.library.dispatch('suggestions_get', {})['tracks']
+        self.assertEqual(suggestions[0]['uri'], other)
+        self.assertEqual(suggestions[0]['art'], 'https://i.scdn.co/image/' + 'f'*40)
+        self.assertNotIn('art', suggestions[1])
+        self.assertEqual(suggestions[2]['art'], 'https://i.scdn.co/image/' + 'a'*40)
         download = self.library.dispatch('suggestion_download', dict(playlist=playlist['id'], uri=other))
         self.assertEqual(download['folder'], str(folder))
         self.assertEqual(download['links'], 'https://open.spotify.com/track/'+'c'*22)

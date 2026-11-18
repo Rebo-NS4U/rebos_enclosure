@@ -29,9 +29,10 @@ console.log('Spotify suggestions: remote tracks, duplicate exclusion, navigation
  let posted;
  await run({suggestion:{id:'job',uri:'spotify:playlist:'+'a'.repeat(22),skip:['already-seen']}}, {Platform:{PlaylistAPI:{getRecommendedTracks:async(uri, skip, limit)=> {
    assert.equal(uri,'spotify:playlist:'+'a'.repeat(22)); assert.equal(limit,100); assert.deepEqual(skip,['already-seen']);
-   return [{uri:'spotify:track:'+'z'.repeat(22),name:'New Spotify song',artists:[{name:'New artist'}]}];
+   return [{uri:'spotify:track:'+'z'.repeat(22),name:'New Spotify song',artists:[{name:'New artist'}],album:{imageUrl:'https://i.scdn.co/image/'+'f'.repeat(40)}}];
  }}}}, async(url, options)=>{posted=JSON.parse(options.body);});
  assert.equal(posted.suggestion_id,'job'); assert.equal(posted.tracks[0].title,'New Spotify song');
+ assert.equal(posted.tracks[0].art,'https://i.scdn.co/image/'+'f'.repeat(40));
  await run({suggestion:{id:'error',uri:'spotify:playlist:'+'a'.repeat(22)}}, {Platform:{PlaylistAPI:{}}}, async(url, options)=>{posted=JSON.parse(options.body);});
  assert.match(posted.error,/Could not load Spotify suggestions/);
  console.log('Spotify recommendation adapter request, metadata and failure handling passed');
