@@ -45,7 +45,6 @@ Slider {
                 ? parent.width - (root.handle?.width ?? 0)
                 : parent.height - (root.handle?.height ?? 0))
             slider: true
-            pressed: root.pressed
             value: root.animatedPosition
             rotation: root.horizontal ? (root.mirrored ? 180 : 0) : 270
         }

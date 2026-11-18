@@ -44,7 +44,7 @@ For consistently themed open menus in Zen/Firefox as well, load `<script src="dr
 
 ## Progress rails
 
-Use `StandardProgressBar` for linear progress in QML. Its normalized `value` is clamped to 0–1; `activeColor` and `foregroundColor` use semantic theme defaults. The 2px rail uses a solid accent fill, a bright tip and quarter markers. Three uneven marks drift near the filled edge during motion and fade at rest. Slider wrappers opt into a rounded fill that grows and highlights its leading edge during adjustment, then settles using the shared Motion timings. Shell, assistant and media package identical copies so each app installs independently; keep these copies synchronized. Vertical sliders rotate the same rail. Shell sliders gently snap pointer drags within three percentage points of the 25%, 50% and 75% positions. Keyboard, wheel and external value updates remain exact so small adjustments can leave those positions.
+Use `StandardProgressBar` for linear progress in QML. Its normalized `value` is clamped to 0–1; `activeColor` and `foregroundColor` use semantic theme defaults. The 2px rail uses a solid accent fill, a bright tip and quarter markers. Three uneven marks drift near the filled edge during motion and fade at rest. Slider wrappers opt into a solid 3px rail and a compact thumb that eases into a slight press, using the shared Motion timings. Shell, assistant and media package identical copies so each app installs independently; keep these copies synchronized. Vertical sliders rotate the same rail. Shell sliders gently snap pointer drags within three percentage points of the 25%, 50% and 75% positions. Keyboard, wheel and external value updates remain exact so small adjustments can leave those positions.
 
 ## Rendered desktop themes
 

@@ -127,19 +127,13 @@ Item {
                 id: hDragHandle
                 anchors.verticalCenter: parent.verticalCenter
                 x: parent.width * root.animatedProgress - width / 2
-                width: root.isDragging ? 2 : 4
-                height: root.isDragging ? Math.max(20, root.thickness + 12) : Math.max(16, root.thickness + 8)
+                width: 4
+                height: Math.max(12, root.thickness + 6)
                 radius: Styling.radius(0)
                 color: Colors.overBackground
                 z: 2
-                Behavior on width {
-                    enabled: root.smoothDrag && Motion.enabled
-                    NumberAnimation {
-                        duration: Motion.feedback
-                        easing.type: Motion.feedbackCurve
-                    }
-                }
-                Behavior on height {
+                scale: root.isDragging ? 0.92 : 1
+                Behavior on scale {
                     enabled: root.smoothDrag && Motion.enabled
                     NumberAnimation {
                         duration: Motion.feedback
@@ -153,7 +147,6 @@ Item {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 slider: true
-                pressed: root.isDragging
                 value: root.animatedProgress
                 activeColor: root.progressColor
             }
@@ -194,19 +187,13 @@ Item {
                 id: vDragHandle
                 anchors.horizontalCenter: parent.horizontalCenter
                 y: parent.height * (1 - root.animatedProgress) - height / 2
-                height: root.isDragging ? 2 : 4
-                width: root.isDragging ? Math.max(20, root.thickness + 12) : Math.max(16, root.thickness + 8)
+                height: 4
+                width: Math.max(12, root.thickness + 6)
                 radius: Styling.radius(0)
                 color: iconColor
                 z: 2
-                Behavior on width {
-                    enabled: root.smoothDrag && Motion.enabled
-                    NumberAnimation {
-                        duration: Motion.feedback
-                        easing.type: Motion.feedbackCurve
-                    }
-                }
-                Behavior on height {
+                scale: root.isDragging ? 0.92 : 1
+                Behavior on scale {
                     enabled: root.smoothDrag && Motion.enabled
                     NumberAnimation {
                         duration: Motion.feedback
@@ -219,7 +206,6 @@ Item {
                 anchors.centerIn: parent
                 width: parent.height
                 slider: true
-                pressed: root.isDragging
                 rotation: -90
                 value: root.animatedProgress
                 activeColor: root.progressColor

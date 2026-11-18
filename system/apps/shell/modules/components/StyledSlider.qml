@@ -148,8 +148,6 @@ Item {
                 id: hDragHandle
                 anchors.verticalCenter: parent.verticalCenter
                 x: parent.width * root.animatedProgress - width / 2
-                width: 16
-                height: 16
                 radius: Styling.radius(0)
                 focused: root.activeFocus
                 pressed: root.isDragging
@@ -161,7 +159,6 @@ Item {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 slider: true
-                pressed: root.isDragging
                 value: root.animatedProgress
                 activeColor: root.progressColor
             }
@@ -202,8 +199,6 @@ Item {
                 id: vDragHandle
                 anchors.horizontalCenter: parent.horizontalCenter
                 y: parent.height * (1 - root.animatedProgress) - height / 2
-                height: 16
-                width: 16
                 radius: Styling.radius(0)
                 focused: root.activeFocus
                 pressed: root.isDragging
@@ -214,7 +209,6 @@ Item {
                 anchors.centerIn: parent
                 width: parent.height
                 slider: true
-                pressed: root.isDragging
                 rotation: -90
                 value: root.animatedProgress
                 activeColor: root.progressColor

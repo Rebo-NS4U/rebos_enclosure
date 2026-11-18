@@ -6,31 +6,22 @@ Rectangle {
     id: root
     property real value: 0
     property bool slider: false
-    property bool pressed: false
     readonly property real normalizedValue: Math.max(0, Math.min(1, isFinite(value) ? value : 0))
     property color activeColor: Colors.primary
     property color foregroundColor: Colors.overSurface
     property string fillObjectName: "standard-progress-fill"
     implicitWidth: 100
-    implicitHeight: slider ? 4 + 3 * engagement : 2
-    property real engagement: slider && (pressed || pulseStrength > 0) ? 1 : 0
-    Behavior on engagement {
-        enabled: Motion.enabled
-        NumberAnimation {
-            duration: root.pressed ? Motion.feedback : Motion.enter
-            easing.type: Motion.feedbackCurve
-        }
-    }
+    implicitHeight: slider ? 3 : 2
     radius: height / 2
     color: Qt.alpha(activeColor, 0.10)
     readonly property real pulseStrength: Motion.enabled && settleTimer.running ? 1 : 0
     onNormalizedValueChanged: {
-        if (Motion.enabled && visible) settleTimer.restart();
+        if (!slider && Motion.enabled && visible) settleTimer.restart();
     }
 
     Timer {
         id: settleTimer
-        interval: root.slider ? Motion.enter : 420
+        interval: 420
     }
 
     Rectangle {
@@ -58,7 +49,7 @@ Rectangle {
             running: root.visible && Motion.enabled && progressFill.width > 0 && progressFill.markOpacity > 0
         }
 
-        property real markOpacity: root.slider ? 0 : root.pulseStrength
+        property real markOpacity: root.pulseStrength
         Behavior on markOpacity {
             NumberAnimation { duration: Motion.feedback; easing.type: Easing.InOutQuad }
         }
@@ -81,21 +72,6 @@ Rectangle {
         }
 
         Rectangle {
-            objectName: "slider-highlight"
-            anchors.right: parent.right
-            width: Math.min(parent.width, 12 + 28 * root.engagement)
-            height: parent.height
-            radius: parent.radius
-            visible: root.slider && opacity > 0 && width > 0
-            opacity: 0.42 * root.engagement
-            gradient: Gradient {
-                orientation: Gradient.Horizontal
-                GradientStop { position: 0; color: Qt.alpha(root.foregroundColor, 0) }
-                GradientStop { position: 1; color: root.foregroundColor }
-            }
-        }
-
-        Rectangle {
             objectName: "standard-progress-tip"
             visible: !root.slider
             anchors.right: parent.right
@@ -110,7 +86,8 @@ Rectangle {
         delegate: Rectangle {
             required property int index
             x: (index + 1) * root.width / 4
-            y: root.slider ? (root.height - height) / 2 : -1
+            visible: !root.slider
+            y: -1
             width: 1
             height: 4
             radius: 0.5

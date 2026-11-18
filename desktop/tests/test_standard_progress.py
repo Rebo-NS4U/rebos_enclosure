@@ -59,7 +59,7 @@ ShellRoot {
    horizontal.editValue(2); check(horizontal.value === 1, 'Slider input clamps');
    vertical.editValue(-1); check(vertical.value === 0, 'Vertical slider input clamps');
    const sliderRail = themed.background.children[0];
-   check(sliderRail.slider && sliderRail.height === 4, 'Theme slider starts with the rounded rail');
+   check(sliderRail.slider && sliderRail.height === 3, 'Theme slider starts with the rounded rail');
    themed.value = 0.8;
    check(sliderRail.value < themed.position, 'Programmatic slider changes ease toward their value');
    horizontal.dragPosition = 0.8;
@@ -75,7 +75,7 @@ ShellRoot {
    console.error('Moving marks must stay within the fill'); Qt.exit(1); return;
   }
   const sliderRail = themed.background.children[0];
-  if (sliderRail.height <= 4 || Math.abs(sliderRail.value - 0.8) > 0.001
+  if (sliderRail.height !== 3 || Math.abs(sliderRail.value - 0.8) > 0.001
           || Math.abs(themed.handle.x + themed.handle.width / 2
               - themed.background.x - sliderRail.x - sliderRail.width * sliderRail.value) > 0.01) {
    console.error('Animated rail follows the value and meets the thumb'); Qt.exit(1); return;
@@ -92,10 +92,9 @@ ShellRoot {
     console.error('Marks must travel between value updates'); Qt.exit(1); return;
    }
    const track = horizontal.children[0].children[0].children.find(item => item.slider);
-   const highlight = track.children.find(item => item.objectName === 'standard-progress-fill')
-       .children.find(item => item.objectName === 'slider-highlight');
-   if (track.height !== 7 || track.value !== 0.8 || !highlight.visible || highlight.x < 0) {
-    console.error('Dragged rail stays expanded with a contained highlight'); Qt.exit(1); return;
+   const thumb = horizontal.children[0].children[0].children.find(item => item.pressed === true);
+   if (track.height !== 3 || track.value !== 0.8 || !thumb || thumb.scale !== 0.92) {
+    console.error('Dragging keeps a slim track and gently compresses the thumb'); Qt.exit(1); return;
    }
    horizontal.value = horizontal.dragPosition;
    horizontal.isDragging = false;
@@ -104,10 +103,12 @@ ShellRoot {
  Timer { id: idleCheck; interval: 650; onTriggered: {
   const fill = rail.children.find(child => child.objectName === 'standard-progress-fill');
   const mark = fill.children.find(child => child.objectName === 'standard-progress-mark');
-  if (mark.visible || themed.background.children[0].height !== 4) { console.error('Pulse must settle after movement'); Qt.exit(1); return; }
+  if (mark.visible || themed.background.children[0].height !== 3) { console.error('Pulse must settle after movement'); Qt.exit(1); return; }
+  const thumb = horizontal.children[0].children[0].children.find(item => item.focused !== undefined);
+  if (!thumb || thumb.scale !== 1) { console.error('Thumb eases back after release'); Qt.exit(1); return; }
   Config.animDuration = 0;
   themed.value = 0.25;
-  if (themed.background.children[0].value !== 0.25 || themed.background.children[0].height !== 4) {
+  if (themed.background.children[0].value !== 0.25 || themed.background.children[0].height !== 3) {
    console.error('Motion off applies value changes immediately'); Qt.exit(1); return;
   }
   console.log('PASS: shared progress geometry, motion and slider input'); Qt.quit();
