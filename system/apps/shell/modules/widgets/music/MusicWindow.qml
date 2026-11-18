@@ -110,6 +110,9 @@ Window {
     readonly property real suggestionRowHeight: Styling.spacing(48)
     property var spotifySuggestions: ({tracks: [], pending: false, status: ""})
     property var pendingSuggestionDownload: null
+    readonly property bool canAddSuggestion: !busy && !downloads.busy && !pendingSuggestionDownload
+    readonly property var playingSuggestion: spotifyPreview
+        ? suggestedTracks.find(track => track.uri === current?.spotifyUri) : null
     readonly property var suggestedTracks: {
         const playlist = playlists.find(p => p.id === detail);
         if (page !== "Playlist" || !playlist || spotifySuggestions.playlist !== detail) return [];
@@ -120,6 +123,30 @@ Window {
             const key = (t.artist + "\n" + t.title).toLowerCase();
             if (uris.has(t.uri) || identities.has(key)) return false;
             uris.add(t.uri); identities.add(key); return true;
+        });
+    }
+    function addSuggestion(track, toQueue) {
+        if (!canAddSuggestion) return;
+        if (toQueue && queue.length >= queueLimit) {
+            notice = "Queue is full (" + queueLimit + " songs).";
+            return;
+        }
+        const playlist = detail;
+        const local = tracks.find(t => t.spotifyUri === track.uri);
+        if (local) {
+            if (toQueue) enqueue(local);
+            else request("playlist_add", {playlist: playlist, path: local.path}, load);
+            return;
+        }
+        busy = true;
+        request("suggestion_download", {playlist: playlist, uri: track.uri, toQueue: toQueue}, data => {
+            busy = false;
+            if (!downloads.prepareSuggestion(data)) {
+                notice = "Download could not start. Check Downloads for details.";
+                return;
+            }
+            pendingSuggestionDownload = Object.assign({}, data, {toQueue: toQueue});
+            downloads.start();
         });
     }
     function applySuggestions(data, reset) {
@@ -289,7 +316,7 @@ Window {
         else if (repeatMode === "Playlist") select(0);
     }
     function previous() { if (spotifyPreview) { if (spotifyPlayer?.canGoPrevious) spotifyPlayer.previous(); return; } if (player.position > 3000) player.position = 0; else select(Math.max(0,currentIndex-1)); }
-    function toggle() { if (spotifyPreview) { if (spotifyPlayer?.canTogglePlaying) spotifyPlayer.togglePlaying(); return; } if (playing) player.pause(); else if (current) player.play(); else play(shownTracks); }
+    function toggle() { if (spotifyPreview) { if (spotifyPlayer?.canTogglePlaying) spotifyPlayer.togglePlaying(); return; } if (playing) player.pause(); else if (current) player.play(); else if (queue.length) select(0); else play(shownTracks); }
     function seek(value) { if (spotifyPreview) { if (spotifyPlayer?.canSeek) spotifyPlayer.position = value/1000; return; } player.position = Math.max(0, Math.min(player.duration, value)); sync(true); }
     function sync(seeked) {
         if (!backend.running) return;
@@ -361,6 +388,7 @@ Window {
         property int number: 0
         property bool suggestion: false
         property bool addEnabled: true
+        property bool queueSuggestion: false
         property bool selected: suggestion
             ? root.spotifyPreview && !!track.uri && root.current?.spotifyUri === track.uri
             : !root.spotifyPreview && !!track.path && root.current?.path === track.path
@@ -389,7 +417,7 @@ Window {
             }
             StyledText { visible: !!row.track.duration; text: root.time((row.track.duration || 0)*1000); color: Colors.overSurfaceVariant }
             ThemeButton { visible: !row.suggestion; text: root.favorites.includes(row.track.path) ? "♥" : "♡"; Accessible.name: "Favorite " + row.track.title; onClicked: root.favorite(row.track) }
-            ThemeButton { objectName: "music-track-queue-" + row.number; topPadding: row.suggestion ? Styling.spacing(5) : padding; bottomPadding: topPadding; text: row.suggestion ? "Add" : "+"; enabled: row.addEnabled; Accessible.name: row.suggestion ? "Add " + row.track.title + " to playlist" : "Queue " + row.track.title; onClicked: row.enqueueRequested() }
+            ThemeButton { objectName: "music-track-queue-" + row.number; topPadding: row.suggestion ? Styling.spacing(5) : padding; bottomPadding: topPadding; text: row.queueSuggestion ? "Queue" : row.suggestion ? "Add" : "+"; enabled: row.addEnabled; Accessible.name: row.suggestion && !row.queueSuggestion ? "Add " + row.track.title + " to playlist" : "Queue " + row.track.title; onClicked: row.enqueueRequested() }
         }
     }
 
@@ -579,18 +607,9 @@ Window {
                                 required property int index
                                 objectName: "music-suggestion-row-" + index
                                 track: modelData; number: index; suggestion: true
-                                addEnabled: !root.busy && !downloads.busy && !root.pendingSuggestionDownload
+                                addEnabled: root.canAddSuggestion
                                 onPlayRequested: { if (selected) root.toggle(); else root.previewTrack(track.uri); }
-                                onEnqueueRequested: {
-                                        const local = root.tracks.find(t => t.spotifyUri === suggestionRow.modelData.uri);
-                                        if (local) root.request("playlist_add", {playlist:root.detail, path:local.path}, root.load);
-                                        else root.request("suggestion_download", {playlist:root.detail, uri:suggestionRow.modelData.uri}, data => {
-                                            if (downloads.prepareSuggestion(data)) {
-                                                root.pendingSuggestionDownload = data;
-                                                downloads.start();
-                                            }
-                                        });
-                                }
+                                onEnqueueRequested: root.addSuggestion(track, false)
                             }
                             ScrollBar.vertical: ScrollBar {}
                         }
@@ -638,8 +657,9 @@ Window {
                         root.request("scan", {}, data => {
                             root.load(data);
                             const track = data.tracks.find(t => t.spotifyUri === pending.uri);
-                            if (track) root.request("playlist_add", {playlist:pending.playlist, path:track.path}, root.load);
-                            else root.notice = "Track was not downloaded. Check the Downloads activity log and try again.";
+                            if (!track) root.notice = "Track was not downloaded. Check the Downloads activity log and try again.";
+                            else if (pending.toQueue) root.enqueue(track);
+                            else root.request("playlist_add", {playlist:pending.playlist, path:track.path}, root.load);
                         });
                     }
                 }
@@ -765,6 +785,10 @@ Window {
         }
         readonly property real inset: Math.max(24, Math.min(width * 0.045, 80))
         readonly property bool wide: width >= 1100
+        readonly property real queueWidth: Math.min(400, width * 0.48)
+        readonly property bool showLyrics: wide && (!queueOpen || width >= 1450)
+        property bool queueOpen: false
+        property bool showSuggestions: false
         ColumnLayout {
             anchors.fill: parent; anchors.margins: stage.inset
             spacing: Math.max(18, stage.height * 0.025)
@@ -776,6 +800,12 @@ Window {
                     StyledText { text: root.current?.album || "Your listening room"; elide: Text.ElideRight; Layout.maximumWidth: stage.width * 0.6; color: Colors.overSurfaceVariant }
                 }
                 Item { Layout.fillWidth: true }
+                ThemeButton {
+                    objectName: "music-fullscreen-queue-toggle"
+                    text: "Queue · " + root.queue.length
+                    checked: stage.queueOpen
+                    onClicked: stage.queueOpen = !stage.queueOpen
+                }
                 ThemeButton { objectName: "music-fullscreen-exit"; text: "Exit fullscreen · Esc"; onClicked: root.toggleFullscreen() }
             }
             RowLayout {
@@ -789,7 +819,7 @@ Window {
                     Cover {
                         objectName: "music-fullscreen-art"
                         Layout.alignment: Qt.AlignHCenter
-                        Layout.preferredWidth: Math.max(100, Math.min(stage.wide ? stage.width * 0.36 : stage.width * 0.5, stage.height * 0.46))
+                        Layout.preferredWidth: Math.max(100, Math.min((stage.queueOpen ? stage.width * (stage.showLyrics ? 0.22 : 0.32) : stage.width * (stage.wide ? 0.36 : 0.5)), stage.height * 0.46))
                         Layout.preferredHeight: width
                         artwork: root.current?.art || ""
                         radius: Styling.radius(8)
@@ -803,7 +833,7 @@ Window {
                     Item { Layout.fillHeight: true }
                 }
                 ColumnLayout {
-                    visible: stage.wide
+                    visible: stage.showLyrics
                     Layout.fillWidth: true; Layout.fillHeight: true
                     Layout.preferredWidth: stage.width * 0.45
                     spacing: 16
@@ -828,6 +858,91 @@ Window {
                         StyledText { anchors.centerIn: parent; width: parent.width; text: root.lyricStatus || "Let the music speak."; visible: root.lyricLines.length === 0; wrapMode: Text.WordWrap; font.pixelSize: Styling.fontSize(8); color: Colors.overSurfaceVariant }
                     }
                     StyledText { visible: root.estimatedTiming; text: "Estimated lyric timing"; color: Colors.overSurfaceVariant; font.pixelSize: Styling.fontSize(-2) }
+                }
+                StyledRect {
+                    objectName: "music-fullscreen-queue-panel"
+                    visible: stage.queueOpen
+                    variant: "pane"
+                    Layout.preferredWidth: stage.queueWidth
+                    Layout.fillHeight: true
+                    ColumnLayout {
+                        anchors.fill: parent; anchors.margins: 14
+                        RowLayout {
+                            ThemeButton { text: "Queue"; checked: !stage.showSuggestions; onClicked: stage.showSuggestions = false }
+                            ThemeButton {
+                                objectName: "music-fullscreen-suggestions-tab"
+                                text: "Suggested tracks"
+                                checked: stage.showSuggestions
+                                onClicked: stage.showSuggestions = true
+                            }
+                        }
+                        ThemeButton {
+                            objectName: "music-fullscreen-queue-current"
+                            visible: !!root.playingSuggestion
+                            text: "Queue current suggestion"
+                            enabled: root.canAddSuggestion && root.queue.length < root.queueLimit
+                            onClicked: root.addSuggestion(root.playingSuggestion, true)
+                        }
+                        StyledText {
+                            visible: !!root.pendingSuggestionDownload?.toQueue
+                            Layout.fillWidth: true; wrapMode: Text.WordWrap
+                            text: "Downloading track for the queue…"
+                            color: Colors.overSurfaceVariant
+                        }
+                        ListView {
+                            id: fullscreenQueue
+                            visible: !stage.showSuggestions
+                            Layout.fillWidth: true; Layout.fillHeight: true
+                            clip: true; spacing: 5; model: root.queue
+                            delegate: ThemeButton {
+                                required property var modelData
+                                required property int index
+                                width: fullscreenQueue.width
+                                text: (index + 1) + "  " + modelData.title
+                                highlighted: !root.spotifyPreview && index === root.currentIndex
+                                onClicked: root.select(index)
+                            }
+                            StyledText { visible: fullscreenQueue.count === 0; text: "Your queue is empty."; color: Colors.overSurfaceVariant }
+                            ScrollBar.vertical: ScrollBar {}
+                        }
+                        StyledText {
+                            visible: stage.showSuggestions && root.suggestedTracks.length === 0
+                            Layout.fillWidth: true; wrapMode: Text.WordWrap
+                            text: root.page === "Playlist" ? (root.spotifySuggestions.status || "No suggestions yet. Refresh to try again.") : "Open a playlist to get Spotify suggestions."
+                            color: Colors.overSurfaceVariant
+                        }
+                        ListView {
+                            id: fullscreenSuggestions
+                            objectName: "music-fullscreen-suggestions"
+                            visible: stage.showSuggestions
+                            Layout.fillWidth: true; Layout.fillHeight: true
+                            clip: true; model: root.suggestedTracks
+                            delegate: TrackRow {
+                                required property var modelData
+                                required property int index
+                                objectName: "music-fullscreen-suggestion-" + index
+                                track: modelData; number: index; suggestion: true; queueSuggestion: true
+                                addEnabled: root.canAddSuggestion && root.queue.length < root.queueLimit
+                                onPlayRequested: { if (selected) root.toggle(); else root.previewTrack(track.uri); }
+                                onEnqueueRequested: root.addSuggestion(track, true)
+                            }
+                            ScrollBar.vertical: ScrollBar {}
+                        }
+                        RowLayout {
+                            visible: stage.showSuggestions && root.page === "Playlist"
+                            ThemeButton {
+                                text: root.spotifySuggestions.pending ? "Loading…" : "Refresh"
+                                enabled: !root.spotifySuggestions.pending
+                                onClicked: root.refreshSuggestions()
+                            }
+                            ThemeButton {
+                                visible: !!root.spotifySuggestions.hasMore
+                                text: "Load more"
+                                enabled: !root.spotifySuggestions.pending
+                                onClicked: root.loadMoreSuggestions()
+                            }
+                        }
+                    }
                 }
             }
             StyledText { visible: root.notice !== ""; Layout.fillWidth: true; text: root.notice; elide: Text.ElideRight; color: Colors.error }

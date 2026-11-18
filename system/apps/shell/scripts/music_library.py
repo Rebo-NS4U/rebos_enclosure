@@ -299,7 +299,9 @@ class Library:
                 uri = args.get('uri')
                 if result.get('playlist') != playlist['id'] or not any(t['uri'] == uri for t in result['tracks']):
                     raise ValueError('Suggestions changed; refresh and try again')
-                folder = playlist.get('folderPath') or str(self.music / 'Suggested tracks')
+                folder = str(self.music / 'Suggested tracks')
+                if args.get('toQueue') is not True:
+                    folder = playlist.get('folderPath') or folder
                 return dict(folder=folder, links='https://open.spotify.com/track/' + uri.split(':')[-1],
                             playlist=playlist['id'], uri=uri)
             # Downloads retain their Spotify identity independently of mix snapshots.

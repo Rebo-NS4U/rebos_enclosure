@@ -107,6 +107,10 @@ class MusicLibraryTests(unittest.TestCase):
         download = self.library.dispatch('suggestion_download', dict(playlist=playlist['id'], uri=other))
         self.assertEqual(download['folder'], str(folder))
         self.assertEqual(download['links'], 'https://open.spotify.com/track/'+'c'*22)
+        queued_download = self.library.dispatch(
+            'suggestion_download', dict(playlist=playlist['id'], uri=other, toQueue=True))
+        self.assertEqual(queued_download['folder'], str(self.library.music / 'Suggested tracks'))
+        self.assertEqual(queued_download['links'], download['links'])
         with self.assertRaises(ValueError):
             self.library.dispatch('suggestion_download', dict(playlist=playlist['id'], uri=uri))
 

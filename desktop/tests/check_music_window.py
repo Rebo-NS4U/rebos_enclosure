@@ -310,6 +310,27 @@ def session():
                     if (!spotify.isPlaying || spotify.position !== 45 || spotify.nextCalls !== 1 || spotify.previousCalls !== 1 || !spotify.shuffle || spotify.loopState === 0 || Math.abs(spotify.volume-0.3) > 0.01) { console.error("SPOTIFY_TRANSPORT_FAILED"); Qt.exit(1); return; }
                     spotify.canSeek = false; music.seek(60000);
                     if (spotify.position !== 45 || findItem(music.contentItem, "music-fullscreen-seek").enabled) { console.error("SPOTIFY_CAPABILITY_FAILED"); Qt.exit(1); return; }
+                    const originalTracks = music.tracks;
+                    const originalQueue = music.queue;
+                    const originalPlaylists = music.playlists;
+                    const uri = spotify.metadata["xesam:url"];
+                    const suggestion = {uri: uri, title: "Suggested song", artist: "Suggested artist"};
+                    music.tracks = originalTracks.map((track, i) => i === 0 ? Object.assign({}, track, {spotifyUri: uri}) : track);
+                    music.playlists = originalPlaylists.concat([{id: "queue-test", paths: []}]);
+                    music.navigate("Playlist", "queue-test");
+                    music.spotifySuggestions = {playlist: "queue-test", pending: false, tracks: [suggestion]};
+                    findItem(music.contentItem, "music-fullscreen-queue-toggle").clicked();
+                    findItem(music.contentItem, "music-fullscreen-suggestions-tab").clicked();
+                    const queueCurrent = findItem(music.contentItem, "music-fullscreen-queue-current");
+                    const suggestions = findItem(music.contentItem, "music-fullscreen-suggestions");
+                    if (!queueCurrent.visible || !queueCurrent.enabled || !suggestions.visible || suggestions.count !== 1) { console.error("FULLSCREEN_QUEUE_MENU_FAILED"); Qt.exit(1); return; }
+                    queueCurrent.clicked();
+                    if (music.queue.length !== originalQueue.length + 1 || music.queue[music.queue.length - 1].spotifyUri !== uri || !spotify.isPlaying || music.playlists[music.playlists.length - 1].paths.length !== 0) { console.error("FULLSCREEN_QUEUE_SUGGESTION_FAILED"); Qt.exit(1); return; }
+                    findItem(music.contentItem, "music-fullscreen-queue-toggle").clicked();
+                    music.tracks = originalTracks;
+                    music.queue = originalQueue;
+                    music.playlists = originalPlaylists;
+                    console.log("MUSIC_FULLSCREEN_QUEUE_PASSED");
                     music.select(0);
                     if (music.spotifyPreview || spotify.isPlaying || music.current.title === "Suggested song") { console.error("SPOTIFY_LOCAL_RETURN_FAILED"); Qt.exit(1); return; }
                     console.log("MUSIC_SPOTIFY_FULLSCREEN_PASSED");
