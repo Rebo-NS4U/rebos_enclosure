@@ -28,6 +28,7 @@ ShellRoot {
   try {
    function check(ok, message) { if (!ok) throw Error(message); }
    const fill = rail.children.find(child => child.objectName === 'standard-progress-fill');
+   check(!fill.gradient && Qt.colorEqual(fill.color, rail.activeColor), 'Rail has a solid active fill');
    check(fill.width === 100, 'Half progress must fill half the rail');
    rail.value = -1; check(fill.width === 0, 'Negative values clamp');
    rail.value = 2; check(fill.width === 200, 'Overflow values clamp');
@@ -46,7 +47,7 @@ ShellRoot {
    horizontal.value = 0.49; check(horizontal.value === 0.49, 'External updates remain exact');
    horizontal.editValue(2); check(horizontal.value === 1, 'Slider input clamps');
    vertical.editValue(-1); check(vertical.value === 0, 'Vertical slider input clamps');
-   check(themed.background.height === 2, 'Theme slider uses thin shared rail');
+   check(themed.background.children[0].height === 2, 'Theme slider uses thin shared rail');
    console.log('PASS: shared progress geometry and slider input'); Qt.quit();
   } catch(error) { console.error(error); Qt.exit(1); }
  }}

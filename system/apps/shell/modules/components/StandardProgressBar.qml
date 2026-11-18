@@ -13,48 +13,12 @@ Rectangle {
     implicitHeight: 2
     radius: height / 2
     color: Qt.alpha(activeColor, 0.10)
-    // Layered translucent rails give a soft bloom without a blur pass.
     Rectangle {
-        width: progressFill.width
-        height: 8
-        y: (parent.height - height) / 2
-        radius: height / 2
-        color: Qt.alpha(root.activeColor, 0.07)
-        visible: width > 0
-    }
-    Rectangle {
-        width: progressFill.width
-        height: 4
-        y: (parent.height - height) / 2
-        radius: height / 2
-        color: Qt.alpha(root.activeColor, 0.18)
-        visible: width > 0
-    }
-    Rectangle {
-        id: progressFill
         objectName: root.fillObjectName
         width: parent.width * root.normalizedValue
         height: parent.height
         radius: parent.radius
-        gradient: Gradient {
-            orientation: Gradient.Horizontal
-            GradientStop { position: 0; color: Qt.alpha(root.activeColor, 0.38) }
-            GradientStop { position: 0.6; color: root.activeColor }
-            GradientStop { position: 1; color: root.foregroundColor }
-        }
-    }
-    Rectangle {
-        // A short, bright streak marks the advancing edge, not a syllable.
-        width: Math.min(18, progressFill.width)
-        height: parent.height
-        x: progressFill.width - width
-        radius: parent.radius
-        visible: width > 0
-        gradient: Gradient {
-            orientation: Gradient.Horizontal
-            GradientStop { position: 0; color: "transparent" }
-            GradientStop { position: 1; color: Qt.alpha(root.foregroundColor, 0.95) }
-        }
+        color: root.activeColor
     }
     Repeater {
         model: 3

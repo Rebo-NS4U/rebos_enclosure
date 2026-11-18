@@ -18,7 +18,7 @@ for (const light of [false,true]) {
  const get = role => surface('frosted',role,p);
  for (const role of ['bg','popup','bar','pane','surface','surfaceContainer']) {
   assert.equal(get(role).opacity,0.68);
-  assert.equal(get(role).gradient.length,3);
+  assert.equal(get(role).gradient.length,1);
   assert.equal(get(role).border[1],1);
   for (const stop of get(role).gradient) assert.ok(contrast(stop[0],get(role).itemColor)>=4.5,role+' contrast');
  }
@@ -45,7 +45,7 @@ for (const light of [false,true]) {
  assert.equal(tinted('internalbg').opacity,0.50);
  assert.equal(tinted('focus').border[0],p.primary);
  for(const role of ['bg','popup','pane','internalbg','focus']){
-  assert.equal(tinted(role).gradient.length,3);
+  assert.equal(tinted(role).gradient.length,1);
   for(const stop of tinted(role).gradient)assert.ok(contrast(stop[0],tinted(role).itemColor)>=4.5,'tinted '+role);
  }
  for(const role of ['primary','secondary','tertiary','error']){
