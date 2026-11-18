@@ -178,9 +178,14 @@ window-rule {
     opacity 0.88
 }
 
+// Keep Spotify available to Music without showing it on the current workspace.
+workspace "Spotify"
+
 // Keep Spotify artwork and text at full contrast.
 window-rule {
     match app-id=r#"^(Spotify|spotify|com\.spotify\.Client)$"#
+    open-on-workspace "Spotify"
+    open-focused false
     opacity 1.0
     draw-border-with-background false
     background-effect {
