@@ -1,7 +1,7 @@
 import QtQuick
 import qs.modules.theme
 
-// Shared lyrics-style rail. Values are normalized; callers own interaction.
+// Shared progress rail. Values are normalized; callers own interaction.
 Rectangle {
     id: root
     property real value: 0
@@ -13,21 +13,6 @@ Rectangle {
     implicitHeight: 2
     radius: height / 2
     color: Qt.alpha(activeColor, 0.10)
-    // Two translucent bands give the filled rail a soft edge.
-    Rectangle {
-        anchors.verticalCenter: parent.verticalCenter
-        width: progressFill.width
-        height: parent.height + 6
-        radius: height / 2
-        color: Qt.alpha(root.activeColor, 0.07)
-    }
-    Rectangle {
-        anchors.verticalCenter: parent.verticalCenter
-        width: progressFill.width
-        height: parent.height + 2
-        radius: height / 2
-        color: Qt.alpha(root.activeColor, 0.18)
-    }
     Rectangle {
         id: progressFill
         objectName: root.fillObjectName
@@ -35,6 +20,23 @@ Rectangle {
         height: parent.height
         radius: parent.radius
         color: root.activeColor
+        readonly property int stepSpacing: 4
+        readonly property list<int> stepRise: [1, 3, 6, 4, 2]
+
+        Repeater {
+            model: Math.ceil(root.width / progressFill.stepSpacing)
+            delegate: Rectangle {
+                required property int index
+                objectName: "standard-progress-step"
+                x: index * progressFill.stepSpacing
+                anchors.verticalCenter: parent.verticalCenter
+                width: Math.max(0, Math.min(2, progressFill.width - x))
+                height: progressFill.height + progressFill.stepRise[index % progressFill.stepRise.length]
+                radius: width / 2
+                color: root.activeColor
+                visible: width > 0
+            }
+        }
 
         Rectangle {
             objectName: "standard-progress-tip"

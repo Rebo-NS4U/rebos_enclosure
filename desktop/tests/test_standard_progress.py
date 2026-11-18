@@ -30,6 +30,13 @@ ShellRoot {
    const fill = rail.children.find(child => child.objectName === 'standard-progress-fill');
    check(!fill.gradient && Qt.colorEqual(fill.color, rail.activeColor), 'Rail has a solid active fill');
    check(fill.width === 100, 'Half progress must fill half the rail');
+   const steps = fill.children.filter(child => child.objectName === 'standard-progress-step');
+   check(steps.slice(0, 5).map(step => step.height).join(',') === '3,5,8,6,4',
+     'Pulse rises and falls in repeating steps');
+   check(!steps[25].visible, 'Pulse stops at the fill edge');
+   rail.value = 0.505;
+   check(Math.abs(steps[25].width - 1) < 0.01 && steps[25].visible, 'Partial step follows the fill');
+   rail.value = 0.5;
    const tip = fill.children.find(child => child.objectName === 'standard-progress-tip');
    check(tip.width === 4 && tip.x + tip.width === fill.width, 'Solid tip follows the filled edge');
    check(!tip.gradient && Qt.colorEqual(tip.color, rail.foregroundColor), 'Tip uses the foreground color');
