@@ -45,7 +45,7 @@ Window {
     property var favorites: []
     property var playlists: []
     property var folders: []
-    property string page: "Albums"
+    property string page: "Playlists"
     property string query: ""
     property string detail: ""
     property string side: "Queue"

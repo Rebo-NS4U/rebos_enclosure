@@ -11,7 +11,7 @@ ShellRoot {
     Component.onCompleted: GlobalStates.musicWindowVisible = true
     IpcHandler {
         target: "music"
-        function open(): void { GlobalStates.musicWindowVisible = true; music.requestActivate(); }
+        function open(): void { music.navigate("Playlists"); GlobalStates.musicWindowVisible = true; music.requestActivate(); }
         function showDownloadedMixes(): void { music.navigate("Playlists"); GlobalStates.musicWindowVisible = true; music.requestActivate(); }
         function showPlaylist(id: string): void {
             if (music.playlists.some(p => p.id === id)) music.navigate("Playlist", id);

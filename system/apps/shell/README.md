@@ -306,7 +306,7 @@ The typer adapts to each output’s logical resolution (Qt handles DPI scaling).
 
 Open **Enclosure Music** from the application launcher, or use **Music library**
 inside the media center. `bash ~/.config/quickshell/scripts/open_music.sh` opens
-or raises the same window without interrupting its queue. Music runs in its own
+or raises the same window on the **Playlists** menu without interrupting its queue. Music runs in its own
 Quickshell instance, so it does not require a panel restart and keeps playing
 when the window is hidden. It uses the shared shell theme, including palette,
 font, density, corner radius and surface style.
