@@ -32,8 +32,8 @@ Item {
     Behavior on energy {
         enabled: Motion.enabled && root.visible
         NumberAnimation {
-            duration: Motion.feedback
-            easing.type: Motion.feedbackCurve
+            duration: Motion.base
+            easing.type: Easing.InOutSine
         }
     }
 

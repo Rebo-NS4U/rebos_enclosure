@@ -32,6 +32,20 @@ ShellRoot {
    LayoutMirroring.enabled: true
   }
  }
+ Connections {
+  id: playbackMotion
+  target: themedVertical.background.children[0]
+  property bool easedIn: false
+  property bool easedOut: false
+  function onEnergyChanged() {
+   if (target.energy <= 0 || target.energy >= 0.65)
+    return;
+   if (themedVertical.playing)
+    easedIn = true;
+   else
+    easedOut = true;
+  }
+ }
  Timer { interval: 900; running: true; onTriggered: {
   try {
    function check(ok, message) { if (!ok) throw Error(message); }
@@ -112,7 +126,7 @@ ShellRoot {
    const track = horizontal.children[0].children[0].children.find(item => item.segmentCount > 0);
    const verticalTrack = vertical.children[1].children[0].children.find(item => item.segmentCount > 0);
    const playbackTrack = themedVertical.background.children[0];
-   if (playbackTrack.pressed || playbackTrack.energy !== 0.65 || playbackTrack.phase === playbackPhase) {
+   if (!playbackMotion.easedIn || playbackTrack.pressed || playbackTrack.energy !== 0.65 || playbackTrack.phase === playbackPhase) {
     console.error('Playback keeps a gentler ripple moving between position updates'); Qt.exit(1); return;
    }
    themedVertical.playing = false;
@@ -136,7 +150,7 @@ ShellRoot {
   const fill = rail.children.find(child => child.objectName === 'standard-progress-fill');
   const mark = fill.children.find(child => child.objectName === 'standard-progress-mark');
   const track = horizontal.children[0].children[0].children.find(item => item.segmentCount > 0);
-  if (mark.visible || themedVertical.background.children[0].energy !== 0 || track.energy !== 0 || track.children[0].height !== 6) {
+  if (!playbackMotion.easedOut || mark.visible || themedVertical.background.children[0].energy !== 0 || track.energy !== 0 || track.children[0].height !== 6) {
    console.error('Tracks must settle after movement'); Qt.exit(1); return;
   }
   Config.animDuration = 0;
