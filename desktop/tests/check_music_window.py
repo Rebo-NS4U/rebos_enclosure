@@ -306,18 +306,16 @@ def session():
                     repeatStart = attempts; phase = 95;
                 } else if (phase === 95 && attempts >= repeatStart + 3) {
                     const list = findItem(music.contentItem, "music-playlist-suggestions");
-                    const next = findItem(music.contentItem, "music-suggestions-next");
-                    const previous = findItem(music.contentItem, "music-suggestions-previous");
-                    if (list.count !== 6 || previous.enabled || !next.enabled) { console.error("SUGGESTIONS_FIRST_PAGE_FAILED"); Qt.exit(1); return; }
-                    next.clicked();
-                    if (list.model[0].title !== "Suggestion 6") { console.error("SUGGESTIONS_NEXT_FAILED"); Qt.exit(1); return; }
-                    next.clicked();
-                    if (list.count !== 2 || next.enabled || !previous.enabled) { console.error("SUGGESTIONS_LAST_PAGE_FAILED"); Qt.exit(1); return; }
-                    previous.clicked();
-                    if (list.model[0].title !== "Suggestion 6") { console.error("SUGGESTIONS_PREVIOUS_FAILED"); Qt.exit(1); return; }
+                    if (list.count !== 14 || findItem(music.contentItem, "music-suggestions-next")) { console.error("SUGGESTIONS_CONTINUOUS_LIST_FAILED"); Qt.exit(1); return; }
+                    list.positionViewAtIndex(8, ListView.Beginning);
+                    repeatStart = attempts; phase = 96;
+                } else if (phase === 96 && attempts >= repeatStart + 3) {
+                    const list = findItem(music.contentItem, "music-playlist-suggestions");
+                    const row = list.itemAtIndex(8);
+                    if (list.contentY <= 0 || !row || row.modelData.title !== "Suggestion 8" || list.model[0].title !== "Suggestion 0") { console.error("SUGGESTIONS_SCROLL_LOAD_FAILED"); Qt.exit(1); return; }
                     music.spotifySuggestions = {playlist:"test",pending:false,tracks:[]};
-                    if (music.suggestionPage !== 0 || list.count !== 0) { console.error("SUGGESTIONS_RESET_FAILED"); Qt.exit(1); return; }
-                    console.log("MUSIC_SUGGESTIONS_PAGING_PASSED"); stop(); Qt.quit();
+                    if (list.count !== 0) { console.error("SUGGESTIONS_RESET_FAILED"); Qt.exit(1); return; }
+                    console.log("MUSIC_SUGGESTIONS_CONTINUOUS_PASSED"); stop(); Qt.quit();
                 }
             }
         }
