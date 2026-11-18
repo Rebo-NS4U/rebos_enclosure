@@ -17,15 +17,21 @@ def configure(home):
                         'Enable automatic wallpaper and color updates for Quickshell greeter',
                         '--', '/usr/bin/chown', '-R', f'{os.getuid()}:{os.getgid()}', str(theme)],
                        check=True)
-    subprocess.run(['systemctl', '--user', 'daemon-reload'], check=True)
     # Older desktops used a separate exporter watching the same palette. Leaving
     # both enabled can race theme writes and exhaust the old unit's start limit.
+    units = home / '.config/systemd/user'
     for name in ('rebos-greeter-sync.path', 'rebos-greeter-sync.service',
                  'regreet-sync.path', 'regreet-sync.timer', 'regreet-sync.service'):
-        if (home / '.config/systemd/user' / name).exists():
+        unit = units / name
+        if unit.exists():
             action = ['disable', '--now'] if name.endswith(('.path', '.timer')) else ['stop']
             subprocess.run(['systemctl', '--user', *action, name], check=True)
-            (home / '.config/systemd/user' / name).unlink(missing_ok=True)
+        # The payload may already have removed the old unit's source file.
+        unit.unlink(missing_ok=True)
+        for directory in (*units.glob('*.wants'), *units.glob('*.requires')):
+            link = directory / name
+            if link.is_symlink():
+                link.unlink()
     subprocess.run(['systemctl', '--user', 'daemon-reload'], check=True)
     subprocess.run(['systemctl', '--user', 'enable', '--now',
                     'greeter-sync.path', 'greeter-sync.timer'], check=True)
