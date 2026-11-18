@@ -31,6 +31,15 @@ Rectangle {
         radius: parent.radius
         color: root.activeColor
         readonly property int stepSpacing: 4
+        property real travelPhase: 0
+        NumberAnimation on travelPhase {
+            from: 0
+            to: 2 * Math.PI
+            duration: 480
+            loops: Animation.Infinite
+            running: root.visible && Motion.enabled && progressFill.width > 0 && progressFill.pulseHeight > 0
+        }
+
         property real pulseHeight: 6 * root.pulseStrength
         Behavior on pulseHeight {
             NumberAnimation { duration: Motion.feedback; easing.type: Easing.InOutQuad }
@@ -44,11 +53,12 @@ Rectangle {
                 x: index * progressFill.stepSpacing
                 anchors.verticalCenter: parent.verticalCenter
                 width: Math.max(0, Math.min(2, progressFill.width - x))
-                // The crests follow the fill in either direction as its edge moves.
-                readonly property real phase: (x - progressFill.width) * (2 * Math.PI / 20)
-                height: progressFill.height + progressFill.pulseHeight * (0.5 + 0.5 * Math.cos(phase))
+                readonly property real phase: (x - progressFill.width) * (2 * Math.PI / 24) - progressFill.travelPhase
+                readonly property real crest: (1 + Math.cos(phase)) / 2
+                height: progressFill.height + progressFill.pulseHeight * crest * crest
                 radius: width / 2
-                color: root.activeColor
+                color: Qt.tint(root.activeColor,
+                    Qt.alpha(root.foregroundColor, 0.55 * crest * crest * progressFill.pulseHeight / 6))
                 visible: width > 0 && progressFill.pulseHeight > 0
             }
         }
