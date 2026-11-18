@@ -64,6 +64,9 @@ Window {
     property var queue: []
     property int currentIndex: -1
     property bool shuffle: false
+    property var shuffleHistory: []
+    property int shuffleCursor: -1
+    readonly property bool canPreviousLocal: shuffle ? shuffleCursor > 0 : currentIndex > 0
     property string repeatMode: "Playlist"
     property real volume: 0.8
     property int requestId: 0
@@ -339,8 +342,13 @@ Window {
         if (kind === "Artists") return tracks.filter(t => t.artist === key);
         return tracks.filter(t => t.album + "\n" + t.artist === key).slice().sort((a,b) => a.number - b.number);
     }
-    function select(index) {
+    function resetShuffleHistory(index) {
+        shuffleHistory = shuffle && index >= 0 ? [index] : [];
+        shuffleCursor = shuffleHistory.length - 1;
+    }
+    function select(index, fromShuffle) {
         if (index < 0 || index >= queue.length) return;
+        if (!fromShuffle) resetShuffleHistory(index);
         if (spotifyPlayer?.isPlaying) spotifyPlayer.pause();
         spotifyPreview = false;
         suggestionQueue = [];
@@ -375,11 +383,37 @@ Window {
         }
         if (!queue.length) return;
         if (automatic && repeatMode === "Track") { player.position = 0; player.play(); return; }
-        if (shuffle && queue.length > 1) { select((currentIndex + 1 + Math.floor(Math.random()*(queue.length-1)))%queue.length); return; }
+        if (shuffle && queue.length > 1 && currentIndex >= 0) {
+            if (shuffleCursor + 1 === shuffleHistory.length) {
+                const offset = 1 + Math.floor(Math.random() * (queue.length - 1));
+                const index = (currentIndex + offset) % queue.length;
+                shuffleHistory = shuffleHistory.concat([index]).slice(-queueLimit);
+                shuffleCursor = shuffleHistory.length - 1;
+            } else {
+                shuffleCursor++;
+            }
+            select(shuffleHistory[shuffleCursor], true);
+            return;
+        }
         if (currentIndex+1 < queue.length) select(currentIndex+1);
         else if (repeatMode === "Playlist") select(0);
     }
-    function previous() { if (spotifyPreview) { if (spotifyPlayer?.canGoPrevious) spotifyPlayer.previous(); return; } if (player.position > 3000) player.position = 0; else select(Math.max(0,currentIndex-1)); }
+    function previous() {
+        if (spotifyPreview) {
+            if (spotifyPlayer?.canGoPrevious) spotifyPlayer.previous();
+            return;
+        }
+        if (player.position > 3000) {
+            player.position = 0;
+        } else if (shuffle) {
+            if (shuffleCursor > 0) {
+                shuffleCursor--;
+                select(shuffleHistory[shuffleCursor], true);
+            }
+        } else if (currentIndex >= 0) {
+            select(Math.max(0, currentIndex - 1));
+        }
+    }
     function toggle() { if (spotifyPreview) { if (spotifyPlayer?.canTogglePlaying) spotifyPlayer.togglePlaying(); return; } if (playing) player.pause(); else if (current) player.play(); else if (queue.length) select(0); else play(shownTracks); }
     function seek(value) { if (spotifyPreview) { if (spotifyPlayer?.canSeek) spotifyPlayer.position = value/1000; return; } player.position = Math.max(0, Math.min(player.duration, value)); sync(true); }
     function sync(seeked) {
@@ -388,7 +422,7 @@ Window {
             position: Math.round(player.position*1000), length: Math.round(player.duration*1000),
             volume: volume, shuffle: shuffle, loop: repeatMode, canNext: !!nextSuggestion || queue.length > 1,
             suggestionNextFor: nextSuggestion ? currentSpotifyUrl : "",
-            canPrevious: currentIndex > 0, seeked: !!seeked });
+            canPrevious: canPreviousLocal, seeked: !!seeked });
     }
     function control(message) {
         switch(message.action) {
@@ -407,7 +441,10 @@ Window {
         }
     }
     onVolumeChanged: sync()
-    onShuffleChanged: sync()
+    onShuffleChanged: {
+        resetShuffleHistory(currentIndex);
+        sync();
+    }
     onRepeatModeChanged: sync()
     onPlayingChanged: sync()
 

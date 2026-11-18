@@ -141,6 +141,15 @@ def session():
                     if (music.currentIndex < 0 || music.currentIndex >= music.queue.length) { console.error("MUSIC_RANDOM_START_FAILED"); Qt.exit(1); }
                     music.play(music.queue, 0);
                     if (music.currentIndex !== 0) { console.error("MUSIC_EXPLICIT_START_FAILED"); Qt.exit(1); }
+                    music.shuffle = true;
+                    music.next(false);
+                    if (music.currentIndex !== 1 || !music.canPreviousLocal) { console.error("MUSIC_SHUFFLE_NEXT_FAILED"); Qt.exit(1); return; }
+                    music.previous();
+                    if (music.currentIndex !== 0 || music.canPreviousLocal) { console.error("MUSIC_SHUFFLE_PREVIOUS_FAILED"); Qt.exit(1); return; }
+                    music.next(false);
+                    if (music.currentIndex !== 1 || music.shuffleHistory.length !== 2) { console.error("MUSIC_SHUFFLE_RETRACE_FAILED"); Qt.exit(1); return; }
+                    music.shuffle = false;
+                    music.play(music.queue, 0);
                     if (music.page !== "Albums" || music.queue.length !== 2) { console.error("MUSIC_CARD_PLAY_FAILED"); Qt.exit(1); }
                     phase = 1;
                 } else if (phase === 1 && music.playing) {

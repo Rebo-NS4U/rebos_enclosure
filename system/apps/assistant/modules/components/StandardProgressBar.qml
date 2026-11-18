@@ -13,6 +13,16 @@ Rectangle {
     implicitHeight: 2
     radius: height / 2
     color: Qt.alpha(activeColor, 0.10)
+    readonly property real pulseStrength: Motion.enabled && settleTimer.running ? 1 : 0
+    onNormalizedValueChanged: {
+        if (Motion.enabled && visible) settleTimer.restart();
+    }
+
+    Timer {
+        id: settleTimer
+        interval: 420
+    }
+
     Rectangle {
         id: progressFill
         objectName: root.fillObjectName
@@ -21,7 +31,10 @@ Rectangle {
         radius: parent.radius
         color: root.activeColor
         readonly property int stepSpacing: 4
-        readonly property list<int> stepRise: [1, 3, 6, 4, 2]
+        property real pulseHeight: 6 * root.pulseStrength
+        Behavior on pulseHeight {
+            NumberAnimation { duration: Motion.feedback; easing.type: Easing.InOutQuad }
+        }
 
         Repeater {
             model: Math.ceil(root.width / progressFill.stepSpacing)
@@ -31,10 +44,12 @@ Rectangle {
                 x: index * progressFill.stepSpacing
                 anchors.verticalCenter: parent.verticalCenter
                 width: Math.max(0, Math.min(2, progressFill.width - x))
-                height: progressFill.height + progressFill.stepRise[index % progressFill.stepRise.length]
+                // The crests follow the fill in either direction as its edge moves.
+                readonly property real phase: (x - progressFill.width) * (2 * Math.PI / 20)
+                height: progressFill.height + progressFill.pulseHeight * (0.5 + 0.5 * Math.cos(phase))
                 radius: width / 2
                 color: root.activeColor
-                visible: width > 0
+                visible: width > 0 && progressFill.pulseHeight > 0
             }
         }
 

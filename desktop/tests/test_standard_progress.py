@@ -24,19 +24,20 @@ ShellRoot {
   StyledSlider { id: vertical; width: 32; height: 120; vertical: true; value: 0.5 }
   ThemeSlider { id: themed; width: 200; value: 0.5 }
  }
- Timer { interval: 500; running: true; onTriggered: {
+ Timer { interval: 900; running: true; onTriggered: {
   try {
    function check(ok, message) { if (!ok) throw Error(message); }
    const fill = rail.children.find(child => child.objectName === 'standard-progress-fill');
    check(!fill.gradient && Qt.colorEqual(fill.color, rail.activeColor), 'Rail has a solid active fill');
    check(fill.width === 100, 'Half progress must fill half the rail');
    const steps = fill.children.filter(child => child.objectName === 'standard-progress-step');
-   check(steps.slice(0, 5).map(step => step.height).join(',') === '3,5,8,6,4',
-     'Pulse rises and falls in repeating steps');
-   check(!steps[25].visible, 'Pulse stops at the fill edge');
+   check(!steps[0].visible && rail.pulseStrength === 0, 'Idle rail is solid');
+   const idlePhase = steps[25].phase;
    rail.value = 0.505;
-   check(Math.abs(steps[25].width - 1) < 0.01 && steps[25].visible, 'Partial step follows the fill');
+   check(rail.pulseStrength === 1 && steps[25].phase < idlePhase, 'Pulse follows increasing values');
+   check(Math.abs(steps[25].width - 1) < 0.01, 'Partial step follows the fill');
    rail.value = 0.5;
+   check(steps[25].phase === idlePhase && steps[25].width === 0, 'Pulse reverses with the fill');
    const tip = fill.children.find(child => child.objectName === 'standard-progress-tip');
    check(tip.width === 4 && tip.x + tip.width === fill.width, 'Solid tip follows the filled edge');
    check(!tip.gradient && Qt.colorEqual(tip.color, rail.foregroundColor), 'Tip uses the foreground color');
@@ -59,8 +60,23 @@ ShellRoot {
    horizontal.editValue(2); check(horizontal.value === 1, 'Slider input clamps');
    vertical.editValue(-1); check(vertical.value === 0, 'Vertical slider input clamps');
    check(themed.background.children[0].height === 2, 'Theme slider uses thin shared rail');
-   console.log('PASS: shared progress geometry and slider input'); Qt.quit();
+   rail.value = 0.61;
+   activeCheck.start();
   } catch(error) { console.error(error); Qt.exit(1); }
+ }}
+ Timer { id: activeCheck; interval: 250; onTriggered: {
+  const fill = rail.children.find(child => child.objectName === 'standard-progress-fill');
+  const steps = fill.children.filter(child => child.objectName === 'standard-progress-step');
+  if (!steps[0].visible || Math.abs(steps[0].height - steps[2].height) < 1) {
+   console.error('Pulse bars must vary in height during movement'); Qt.exit(1); return;
+  }
+  idleCheck.start();
+ }}
+ Timer { id: idleCheck; interval: 650; onTriggered: {
+  const fill = rail.children.find(child => child.objectName === 'standard-progress-fill');
+  const step = fill.children.find(child => child.objectName === 'standard-progress-step');
+  if (step.visible) { console.error('Pulse must settle after movement'); Qt.exit(1); return; }
+  console.log('PASS: shared progress geometry, motion and slider input'); Qt.quit();
  }}
 }
 ''')
