@@ -49,7 +49,7 @@ ShellRoot {
                 currentAgentId: "distill", codexPreset: "", agentTurnActive: false
             }}));
             check(session.codexPreset === "", "other backends are preserved");
-            console.log("PASS GitHub policy delivery, restoration, retries and multiple backends");
+            console.log("PASS compact context, profile switches, restoration and retries");
             Qt.quit();
         }
     }
@@ -60,7 +60,7 @@ ShellRoot {
 class AssistantStartupPresetTest(unittest.TestCase):
     def test_startup_and_confirmation(self):
         with patch.object(harness, "SCENARIO", SCENARIO):
-            harness.AssistantGithubWorkflowTest("test_policy_delivery").test_policy_delivery()
+            harness.AssistantInstructionsTest("test_prompt_delivery").test_prompt_delivery()
 
 
 if __name__ == "__main__":

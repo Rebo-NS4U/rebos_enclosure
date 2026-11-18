@@ -64,7 +64,9 @@ for _, profile in ipairs(data.profiles) do
   local build = a.handlers.request.build_messages
   local initial = build(a, {messages={{role='user', content='Do my task',_meta={}}}, capabilities={}})
   assert(initial[1].text:find(profile.guidance,1,true))
-  assert(initial[1].text:find('GitHub workflow:',1,true))
+  assert(initial[1].text:find('repository-work/SKILL.md',1,true))
+  assert(initial[1].text:find('desktop-work/SKILL.md',1,true))
+  assert(not initial[1].text:find('git rev-parse',1,true))
   assert(initial[1].text:find('not open in the editor',1,true))
   assert(initial[1].text:find('Keep Token Optimizer enabled',1,true))
   assert(initial[#initial].text == 'Do my task')

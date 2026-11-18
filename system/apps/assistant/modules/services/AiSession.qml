@@ -408,9 +408,6 @@ Scope {
     property var queuedPrompt: null
     // Delivery belongs to the backend conversation, not the UI connection.
     property string instructionSessionId: ""
-    property string instructionGithubSessionId: ""
-    // Resend desktop guidance once after a UI reload, including restored chats.
-    property string instructionDesktopSessionId: ""
     property string instructionModeGuidance: ""
     property string agentStderrTail: ""
     property bool turnFailureHandled: false
@@ -614,7 +611,7 @@ Scope {
         "initialized", "authenticated", "sessionReady", "suppressReplay",
         "agentCapabilities", "authMethods", "pendingRpc", "nextRpcId",
         "activePromptRequestId", "pendingSessionAction", "queuedPrompt", "agentStderrTail",
-        "instructionSessionId", "instructionModeGuidance", "instructionGithubSessionId",
+        "instructionSessionId", "instructionModeGuidance",
         "turnFailureHandled", "taskOutcome", "outcomeVersion", "outcomeFinding", "backendEvidence", "sessionConfigOptions", "sessionModels", "currentSessionModelId",
         "pendingSessionModelId", "modelSwitchError", "availableCommands", "currentModeId",
         "codexPreset", "pendingCodexPreset", "codexPresetError",
@@ -2350,21 +2347,19 @@ Scope {
 
     function standingInstructions(mode, force) {
         let prompt = [];
-        // A changed mode needs new guidance; shared preferences stay in history.
-        if (mode && (force || instructionSessionId !== currentSessionId || instructionModeGuidance !== mode.guidance))
-            prompt.push({type: "text", text: mode.guidance});
-        if (force || instructionDesktopSessionId !== currentSessionId)
-            prompt.push({type: "text", text: Defaults.data.instructions[0].replace(/@HOME@/g, Quickshell.env("HOME"))});
-        let sendSharedInstructions = force || instructionSessionId !== currentSessionId;
-        if (force || instructionGithubSessionId !== currentSessionId + ":checkout-discovery-v5")
-            prompt.push({type: "text", text: Defaults.data.instructions[1].replace(/@HOME@/g, Quickshell.env("HOME"))});
-        if (sendSharedInstructions) {
-            prompt.push({type: "text", text: Defaults.data.instructions[2].replace(/@HOME@/g, Quickshell.env("HOME"))});
-            prompt.push({type: "text", text: Defaults.data.instructions[3].replace(/@HOME@/g, Quickshell.env("HOME"))});
-            prompt.push({type: "text", text: Defaults.data.instructions[4].replace(/@HOME@/g, Quickshell.env("HOME"))});
-            if (!isDistill)
-                prompt.push({type: "text", text: Defaults.data.instructions[5].replace(/@HOME@/g, Quickshell.env("HOME"))});
+        const newSession = force || instructionSessionId !== currentSessionId;
+        const home = Quickshell.env("HOME");
+        if (mode && (newSession || instructionModeGuidance !== mode.guidance)) {
+            let guidance = `Selected profile: ${mode.name}. This profile governs subsequent turns and supersedes earlier profile guidance. ${mode.guidance}`;
+            if (!newSession && mode.id === "deep")
+                guidance += " For ongoing work, carry forward the symptom, evidence and remaining uncertainty.";
+            prompt.push({type: "text", text: guidance.replace(/@HOME@/g, home)});
+        } else if (!mode && !newSession && instructionModeGuidance) {
+            prompt.push({type: "text", text: "No Dweebo profile is selected. Earlier profile guidance no longer governs subsequent turns."});
         }
+        if (newSession)
+            for (const instruction of Defaults.data.instructions)
+                prompt.push({type: "text", text: instruction.replace(/@HOME@/g, home)});
 
         return prompt;
     }
@@ -2400,10 +2395,9 @@ Scope {
             let preferences = prompt.map(item => item.text || "").join("\n\n");
             prompt = [{type: "text", text: "Standing preferences (context only, not the current task):\n"
                 + preferences
-                + "\nEnd of standing preferences. Apply them only when relevant to the user's actual request below. Do not initiate desktop checks, repository work, or tool use merely because these preferences describe those procedures. A greeting should receive a greeting."}];
+                + "\nEnd of standing preferences. Apply only when relevant to the request below."}];
         }
-        // Preferences precede the user's request so backends do not interpret
-        // the final desktop-policy block as the task they should answer.
+        // Keep the actual task after any standing context.
         if (queued.text)
             prompt.push({
                 type: "text",
@@ -2436,8 +2430,6 @@ Scope {
             return;
         }
         instructionSessionId = currentSessionId;
-        instructionGithubSessionId = currentSessionId + ":checkout-discovery-v5";
-        instructionDesktopSessionId = currentSessionId;
         instructionModeGuidance = mode ? mode.guidance : "";
         saveCurrentChat();
         bridgeDirty = true;
@@ -2510,7 +2502,6 @@ Scope {
     function createNewChat() {
         cancelGeneration(false);
         instructionSessionId = "";
-        instructionGithubSessionId = "";
         instructionModeGuidance = "";
         codexPreset = currentAgentId === "codex" ? "coding" : "";
         currentChat = [];
@@ -2595,7 +2586,6 @@ Scope {
             agentId: currentChatAgentId || currentAgentId,
             sessionId: currentSessionId,
             instructionSessionId: instructionSessionId,
-            instructionGithubSessionId: instructionGithubSessionId,
             instructionModeGuidance: instructionModeGuidance,
             distillPreset: distillPreset,
             codexPreset: codexPreset,
@@ -2736,7 +2726,6 @@ for path in files:
                 root.currentChatId = targetId;
                 root.currentSessionId = isLegacy ? "" : (payload.sessionId || "");
                 root.instructionSessionId = isLegacy ? "" : (payload.instructionSessionId || "");
-                root.instructionGithubSessionId = isLegacy ? "" : (payload.instructionGithubSessionId || "");
                 root.instructionModeGuidance = isLegacy ? "" : (payload.instructionModeGuidance || "");
                 root.currentChatCwd = isLegacy ? root.workingDirectory() : (payload.cwd || root.workingDirectory());
                 root.sessionReady = false;
