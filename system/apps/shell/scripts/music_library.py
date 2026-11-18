@@ -82,7 +82,7 @@ class Library:
         # Lyrics and folder artwork may change while the audio file stays untouched.
         related = [path.with_suffix('.lrc')] + [path.parent / n for n in
                    ('cover.jpg', 'cover.png', 'folder.jpg', 'folder.png', 'front.jpg')]
-        signature = [2, stat.st_mtime_ns, stat.st_size] + [
+        signature = [3, stat.st_mtime_ns, stat.st_size] + [
             [str(p), p.stat().st_mtime_ns, p.stat().st_size] for p in related if p.is_file()]
         if self.cache.get(key, {}).get('signature') == signature:
             return self.cache[key]['track']
@@ -106,7 +106,12 @@ class Library:
                      artist=tags.get('artist') or 'Unknown artist', album=tags.get('album') or 'Unknown album',
                      duration=float(fmt.get('duration') or 0), art=art, lyrics=lyrics,
                      number=int(str(tags.get('track', '0')).split('/')[0]) if str(tags.get('track', '0')).split('/')[0].isdigit() else 0)
-        if path.is_relative_to(self.music / 'Daily Mixes') and re.fullmatch(r'[A-Za-z0-9]{22}', path.stem):
+        # spotDL stores the original Spotify link in the audio source URL tag.
+        spotify_link = re.fullmatch(r'https://open\.spotify\.com/track/([A-Za-z0-9]{22})/?(?:\?[^#]*)?(?:#.*)?',
+                                    tags.get('woas', ''))
+        if spotify_link:
+            track['spotifyUri'] = 'spotify:track:' + spotify_link[1]
+        elif path.is_relative_to(self.music / 'Daily Mixes') and re.fullmatch(r'[A-Za-z0-9]{22}', path.stem):
             track['spotifyUri'] = 'spotify:track:' + path.stem
         self.cache[key] = dict(signature=signature, track=track)
         return track
@@ -164,10 +169,13 @@ class Library:
                     local = [t for t in tracks if t['path'] in members]
                     members = []
                     for song in synced:
-                        match = next((t for t in local if t.get('spotifyUri') == song.get('uri') or
-                            'spotify:track:' + Path(t['path']).stem == song.get('uri') or
-                            (t['title'].casefold() == song.get('title', '').casefold() and
-                             t['artist'].casefold() == song.get('artist', '').casefold())), None)
+                        uri = song.get('uri', '')
+                        match = next((t for t in local if t.get('spotifyUri') == uri), None)
+                        if match is None:
+                            match = next((t for t in local if not t.get('spotifyUri') and (
+                                'spotify:track:' + Path(t['path']).stem == uri or
+                                (t['title'].casefold() == song.get('title', '').casefold() and
+                                 t['artist'].casefold() == song.get('artist', '').casefold()))), None)
                         if match and match['path'] not in members:
                             members.append(match['path'])
                 if members or isinstance(synced, list):

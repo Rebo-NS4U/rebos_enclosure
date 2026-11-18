@@ -76,6 +76,24 @@ class MusicLibraryTests(unittest.TestCase):
         self.assertEqual(playlist['paths'], [])
         self.assertTrue(kept.exists() and removed.exists())
 
+    def test_push_legacy_download_uses_embedded_spotify_track_link(self):
+        folder = self.folder / 'Legacy download'
+        folder.mkdir()
+        song = folder / 'Test artist - Test song.ogg'
+        track_id = 'b' * 22
+        subprocess.run(['ffmpeg', '-v', 'error', '-i', str(self.song), '-c:a', 'libvorbis',
+                        '-metadata', 'WOAS=https://open.spotify.com/track/' + track_id + '?si=share',
+                        str(song)], check=True)
+        (folder / '.enclosure-playlist.json').write_text(json.dumps(
+            dict(sources=['spotify:playlist:' + 'a' * 22])))
+        stat = song.stat()
+        self.library.cache[str(song)] = dict(signature=[2, stat.st_mtime_ns, stat.st_size],
+                                            track=dict(path=str(song)))
+        playlist = self.library.scan()['state']['playlists'][0]
+        result = self.library.dispatch('playlist_to_spotify', dict(playlist=playlist['id']))
+        self.assertTrue(result['pending'])
+        self.assertEqual(self.library.mixes.playlist_write['tracks'], ['spotify:track:' + track_id])
+
     def test_spotify_suggestions_and_download_destination(self):
         uri = 'spotify:track:' + 'b'*22
         other = 'spotify:track:' + 'c'*22

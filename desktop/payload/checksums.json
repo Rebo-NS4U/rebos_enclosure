@@ -740,7 +740,7 @@
   "system/apps/shell/scripts/music_downloads/track_cache.py": "24d1d4f5c20b0a65a2efffdfd16f114fee030deffb19593878926ce4571dca66",
   "system/apps/shell/scripts/music_downloads/warm.py": "188ebbacd5e171d18a8ef21b7c99fbf85acf594d994325723d4cd1eb16fa54cb",
   "system/apps/shell/scripts/music_downloads/worker.py": "1a8208608ce6d5e2490c4a78c4a477008dd1b58486185e23cec608f7623fd25b",
-  "system/apps/shell/scripts/music_library.py": "a102336543d4a6652f4882ead18b3a2c9c0020440db7ec7b462741faf3d6019d",
+  "system/apps/shell/scripts/music_library.py": "26b7e2c3dc2f893135e086ddf60cb887054d0e661bdb407e6b77f13dcbdaf581",
   "system/apps/shell/scripts/music_mixes.py": "46ccca9a97b0ed58d9d10878b5061967569500afe42364ed833accc119b622d1",
   "system/apps/shell/scripts/music_preview.py": "7a42129e803d1c770050054bccc8a65305b3568c750f756c1e0043948361ce95",
   "system/apps/shell/scripts/music_spotify.py": "28e2811a3fb3d70116a27f09f76585adc427dd856838db6c3b7da744239552dc",
