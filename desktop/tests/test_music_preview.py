@@ -14,6 +14,11 @@ import music_preview
 
 
 class MusicPreviewTests(unittest.TestCase):
+    def setUp(self):
+        self.spotify_start = patch('music_spotify.ensure_started')
+        self.spotify_start.start()
+        self.addCleanup(self.spotify_start.stop)
+
     def test_spotify_activation_returns_focus_to_player(self):
         player = {'id': 4, 'app_id': 'org.quickshell'}
         spotify = {'id': 5, 'app_id': 'Spotify'}
@@ -146,13 +151,14 @@ ShellRoot {
     t.findChild(pane,"music-mixes-current").clicked(); t.compare(pane.displayedMixes.length,1);
     t.findChild(pane,"music-mixes-saved").clicked(); t.compare(pane.displayedMixes.length,0);
     music.tracks=pane.localTracks; music.playlists=pane.importedPlaylists;
-    const previewTab=t.findChild(music.contentItem,"music-navigation-Previews");
-    t.verify(previewTab!==null); previewTab.clicked(); t.compare(music.page,"Previews");
-    const musicPane=t.findChild(music.contentItem,"music-daily-mixes");
-    t.verify(musicPane.previewOnly); t.compare(musicPane.importedSources.length,2);
-    t.compare(musicPane.importedSources[0].tracks.length,2);
+    music.navigate("Playlist", "imported");
+    t.verify(!music.spotifySuggestions.pending);
+    t.compare(music.spotifySuggestions.tracks.length,0);
+    t.verify(music.spotifySuggestions.status.includes("Refresh"));
     t.findChild(music.contentItem,"music-navigation-Spotify playlists").clicked();
-    t.verify(!musicPane.previewOnly); t.compare(musicPane.section,"current");
+    t.compare(music.page,"Spotify playlists");
+    const musicPane=t.findChild(music.contentItem,"music-daily-mixes");
+    t.verify(!musicPane.previewOnly);
     console.log("STREAM_PREVIEW_PASSED"); Qt.quit();
    } catch(e) {console.error(e,e.stack);Qt.exit(1);}
   } }

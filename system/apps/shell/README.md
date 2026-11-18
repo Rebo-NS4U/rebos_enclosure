@@ -329,7 +329,11 @@ Daily Mixes remain available in the same section. Playlist loading uses the
 bundled local Spotify adapter; after updating it, Spotify loads it on its next
 launch (the updater does not restart active playback).
 
-Opening Music automatically starts Spotify if needed, preserving existing playback.
+Opening Music and browsing local playlists leave Spotify closed. Explicit Spotify
+actions (streamed previews, loading or refreshing Spotify playlists, refreshing
+suggestions, and updating Spotify playlists) start Spotify on demand and wait for
+it to become ready. Use **Refresh** to load suggestions for a local playlist.
+Once started, Spotify stays running to preserve playback.
 On Niri, Spotify opens without focus on its dedicated **Spotify** workspace; switch
 to that workspace when you need to sign in or use Spotify directly.
 Spotify playlist previews stream through the running Spotify desktop app. On Niri,

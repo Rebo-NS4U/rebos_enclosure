@@ -222,7 +222,7 @@ Window {
         if (!track?.path) return;
         favorites = favorites.includes(track.path) ? favorites.filter(p => p !== track.path) : favorites.concat([track.path]); save();
     }
-    function navigate(value, arg) { page = value; detail = arg || ""; query = ""; if (page === "Playlist") refreshSuggestions(); }
+    function navigate(value, arg) { page = value; detail = arg || ""; query = ""; if (page === "Playlist") spotifySuggestions = {tracks: [], pending: false, status: "Refresh to load Spotify suggestions."}; }
     function play(list, index) {
         if (!list.length) return;
         const selected = index === undefined ? Math.floor(Math.random() * list.length) : index;

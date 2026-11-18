@@ -241,6 +241,10 @@ class Library:
             return dict(text='', status='Lyrics unavailable. Try this song again when online.')
 
     def dispatch(self, cmd, args):
+        if cmd in ('mixes_refresh', 'mixes_load', 'suggestions_refresh',
+                   'suggestions_more', 'playlist_to_spotify'):
+            from music_spotify import ensure_started
+            ensure_started()
         media_actions = {
             "mixes_preview": lambda: music_preview.preview(args.get("uri")),
             "lyrics": lambda: self.lyrics(args.get("track") or {}),

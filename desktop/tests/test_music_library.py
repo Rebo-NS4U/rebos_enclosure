@@ -23,6 +23,9 @@ spec.loader.exec_module(music)
 @unittest.skipUnless(shutil.which('ffmpeg') and shutil.which('ffprobe'), 'ffmpeg is required')
 class MusicLibraryTests(unittest.TestCase):
     def setUp(self):
+        self.spotify_start = patch('music_spotify.ensure_started')
+        self.spotify_start.start()
+        self.addCleanup(self.spotify_start.stop)
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.home = Path(self.temp.name)

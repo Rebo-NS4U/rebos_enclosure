@@ -45,6 +45,8 @@ def keep_background(previous):
 def preview(uri):
     if not isinstance(uri, str) or not re.fullmatch(r'spotify:track:[A-Za-z0-9]{22}', uri):
         raise ValueError('Choose a valid Spotify track to preview')
+    from music_spotify import ensure_started
+    ensure_started()
     previous = focused_window()
     try:
         subprocess.run(['gdbus', 'call', '--session', '--dest', 'org.mpris.MediaPlayer2.spotify',
