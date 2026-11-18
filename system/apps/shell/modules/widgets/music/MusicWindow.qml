@@ -94,8 +94,11 @@ Window {
     }
     Timer {
         interval: 250; repeat: true
-        running: root.spotifyPreview && root.playing && root.visible
-        onTriggered: if (root.spotifyPlayer) root.spotifyPlayer.positionChanged()
+        running: root.spotifyPreview && root.playing && (root.visible || !!root.nextSuggestion)
+        onTriggered: {
+            root.spotifyPlayer.positionChanged();
+            root.advanceSpotifySuggestion(interval);
+        }
     }
     readonly property bool playing: spotifyPreview ? !!spotifyPlayer?.isPlaying : player.playbackState === MediaPlayer.PlayingState
     readonly property var shownTracks: {
@@ -118,6 +121,16 @@ Window {
         ? suggestedTracks.findIndex(track => track.uri === current?.spotifyUri) : -1
     readonly property var playingSuggestion: suggestedTracks[playingSuggestionIndex] || null
     readonly property var nextSuggestion: playingSuggestionIndex >= 0 ? (suggestedTracks[playingSuggestionIndex + 1] || null) : null
+    property string advancedSuggestionUri: ""
+    function advanceSpotifySuggestion(pollInterval) {
+        if (!nextSuggestion || spotifyPlayer.loopState === MprisLoopState.Track || playbackDuration <= 0) return;
+        // Spotify can reset its position at the end without reporting a distinct end event.
+        if (playbackDuration - playbackPosition > pollInterval + 50) {
+            advancedSuggestionUri = "";
+            return;
+        }
+        if (advancedSuggestionUri !== current.spotifyUri) next(true);
+    }
     readonly property bool canNext: spotifyPreview ? !!nextSuggestion || !!spotifyPlayer?.canGoNext : queue.length > 1
     onNextSuggestionChanged: sync()
     readonly property var suggestedTracks: {
@@ -317,7 +330,10 @@ Window {
     }
     function next(automatic) {
         if (spotifyPreview) {
-            if (nextSuggestion) previewTrack(nextSuggestion.uri);
+            if (nextSuggestion) {
+                advancedSuggestionUri = current.spotifyUri;
+                previewTrack(nextSuggestion.uri);
+            }
             else if (spotifyPlayer?.canGoNext) spotifyPlayer.next();
             return;
         }
@@ -377,7 +393,7 @@ Window {
             volume: root.volume
             device: mediaDevices.defaultAudioOutput
         }
-        onMediaStatusChanged: if (mediaStatus === MediaPlayer.EndOfMedia) root.next(true)
+        onMediaStatusChanged: if (!root.spotifyPreview && mediaStatus === MediaPlayer.EndOfMedia) root.next(true)
         onErrorOccurred: (error, errorString) => { root.notice = errorString; }
     }
     Timer { interval: 500; running: root.playing; repeat: true; onTriggered: root.sync() }

@@ -33,6 +33,7 @@ def session():
     import QtQuick
     import QtTest
     import Quickshell
+    import Quickshell.Services.Mpris
     import qs.modules.widgets.music
     import qs.modules.globals
     import qs.modules.services
@@ -417,6 +418,29 @@ def session():
                     spotify.metadata = {"xesam:url": music.requestedPreview};
                     if (!music.immersive || !suggestions.visible || suggestions.currentIndex !== 1 ||
                         !suggestions.itemAtIndex(1)?.selected) { console.error("FULLSCREEN_SUGGESTION_SELECTION_FAILED"); Qt.exit(1); return; }
+                    music.requestedPreview = "";
+                    GlobalStates.musicWindowVisible = false;
+                    spotify.pause();
+                    spotify.position = spotify.length - 0.1;
+                    repeatStart = attempts; phase = 953;
+                } else if (phase === 953 && attempts >= repeatStart + 3) {
+                    if (music.requestedPreview) { console.error("PAUSED_SUGGESTION_ADVANCED"); Qt.exit(1); return; }
+                    spotify.loopState = MprisLoopState.Track;
+                    spotify.play();
+                    repeatStart = attempts; phase = 954;
+                } else if (phase === 954 && attempts >= repeatStart + 3) {
+                    if (music.requestedPreview) { console.error("LOOPING_SUGGESTION_ADVANCED"); Qt.exit(1); return; }
+                    spotify.loopState = MprisLoopState.None;
+                    repeatStart = attempts; phase = 955;
+                } else if (phase === 955 && attempts >= repeatStart + 3) {
+                    if (music.requestedPreview !== music.suggestedTracks[2].uri) { console.error("HIDDEN_SUGGESTION_AUTOPLAY_FAILED"); Qt.exit(1); return; }
+                    music.requestedPreview = "";
+                    repeatStart = attempts; phase = 956;
+                } else if (phase === 956 && attempts >= repeatStart + 3) {
+                    if (music.requestedPreview) { console.error("SUGGESTION_AUTOPLAY_REPEATED"); Qt.exit(1); return; }
+                    spotify.position = 30;
+                    GlobalStates.musicWindowVisible = true;
+                    console.log("MUSIC_SUGGESTION_AUTOPLAY_PASSED");
                     spotify.canGoNext = true;
                     spotify.metadata = {"xesam:url": music.suggestedTracks[music.suggestedTracks.length - 1].uri};
                     if (MprisController.nextPlayer(spotify) !== spotify) { console.error("SUGGESTION_MEDIA_NEXT_FALLBACK_FAILED"); Qt.exit(1); return; }
