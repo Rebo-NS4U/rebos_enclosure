@@ -24,18 +24,41 @@ Singleton {
         "Movies": [3,2,1,-1,0,2,2,1,0,-1],
         "Gaming": [-2,-2,-1,0,1,2,3,3,1,-1],
         "Bass": [5,4,3,1,0,0,0,0,0,0],
-        "Treble": [0,0,0,0,0,0,1,3,4,3]
+        "Treble": [0,0,0,0,0,0,1,3,4,3],
+        "Music Extreme": [6, 6, 3, 0, -3, 0, 3, 6, 3, 0],
+        "Pop Extreme": [6, 6, 3, 0, -3, 0, 3, 6, 6, 3],
+        "Rock Extreme": [6, 6, 3, -3, -3, 3, 6, 9, 6, 3],
+        "Hip-Hop Extreme": [12, 12, 9, 3, -3, 0, 3, 3, 3, 0],
+        "Electronic Extreme": [12, 9, 6, 0, -3, 0, 3, 6, 9, 6],
+        "Jazz Extreme": [3, 3, 0, 0, 3, 3, 6, 3, 3, 0],
+        "Classical Extreme": [0, 0, 0, 0, 0, 3, 3, 3, 6, 3],
+        "Acoustic Extreme": [-3, 0, 3, 3, 3, 6, 6, 3, 0, 0],
+        "Lo-fi Extreme": [6, 6, 3, 0, 0, -3, -3, -6, -9, -12],
+        "YouTube Extreme": [-6, -3, 0, 0, 3, 6, 6, 3, 0, -3],
+        "Podcasts Extreme": [-12, -9, -3, 0, 3, 9, 9, 3, -3, -6],
+        "Speech Extreme": [-12, -12, -6, 0, 3, 9, 9, 6, 0, -6],
+        "Movies Extreme": [9, 6, 3, -3, 0, 6, 6, 3, 0, -3],
+        "Gaming Extreme": [-6, -6, -3, 0, 3, 6, 9, 9, 3, -3],
+        "Bass Extreme": [12, 12, 9, 3, 0, 0, 0, 0, 0, 0],
+        "Treble Extreme": [0, 0, 0, 0, 0, 0, 3, 9, 12, 9]
     })
     readonly property var presetGroups: ({
         "Music": ["Flat", "Pop", "Rock", "Hip-Hop", "Electronic", "Jazz", "Classical", "Acoustic", "Lo-fi"],
-        "Other": ["YouTube", "Podcasts", "Movies", "Gaming"]
+        "Other": ["YouTube", "Podcasts", "Movies", "Gaming"],
+        "Extreme": [
+            "Music Extreme", "Pop Extreme", "Rock Extreme", "Hip-Hop Extreme",
+            "Electronic Extreme", "Jazz Extreme", "Classical Extreme", "Acoustic Extreme",
+            "Lo-fi Extreme", "YouTube Extreme", "Podcasts Extreme", "Speech Extreme",
+            "Movies Extreme", "Gaming Extreme", "Bass Extreme", "Treble Extreme"
+        ]
     })
     readonly property var presetDescriptions: ({
         "Flat":"Uncolored reference", "Pop":"Vocals and sparkle", "Rock":"Guitars and punch",
         "Hip-Hop":"Low-end weight", "Electronic":"Bass and bright detail", "Jazz":"Warmth and presence",
         "Classical":"Air and light detail", "Acoustic":"Strings and voices", "Lo-fi":"Warm, softer highs",
         "YouTube":"Balanced video voices", "Podcasts":"Voice intelligibility", "Movies":"Warmth and dialogue",
-        "Gaming":"Mid/high detail"
+        "Gaming":"Mid/high detail",
+        "Music":"Balanced music", "Speech":"Voice clarity", "Bass":"Low-end boost", "Treble":"High-end boost"
     })
     property var gains: [0,0,0,0,0,0,0,0,0,0]
     property string preset: "Flat"
@@ -49,6 +72,12 @@ Singleton {
     property var queued: null
     readonly property bool busy: client.running || debounce.running
 
+    function categoryForPreset(name) {
+        for (const category of Object.keys(presetGroups)) {
+            if (presetGroups[category].includes(name)) return category;
+        }
+        return "";
+    }
     function settings() { return {action:"configure", enabled:enabled, gains:gains, preset:preset, target:target}; }
     function apply() { queued = settings(); debounce.restart(); }
     function setBand(index, value) {
