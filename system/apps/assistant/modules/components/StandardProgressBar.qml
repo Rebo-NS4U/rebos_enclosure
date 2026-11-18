@@ -30,36 +30,43 @@ Rectangle {
         height: parent.height
         radius: parent.radius
         color: root.activeColor
-        readonly property int stepSpacing: 4
+        readonly property var marks: [
+            { offset: 0, width: 2, height: 2, lift: 2 },
+            { offset: 5, width: 5, height: 3, lift: -1 },
+            { offset: 14, width: 8, height: 2, lift: 3 }
+        ]
+        readonly property real markScale: Math.min(1, width / 30)
+        readonly property real sweep: (1 - Math.cos(travelPhase)) / 2
+        readonly property real clusterStart: width - 28 * markScale
+            - Math.min(28, Math.max(0, width - 28 * markScale)) * sweep
         property real travelPhase: 0
         NumberAnimation on travelPhase {
             from: 0
             to: 2 * Math.PI
-            duration: 480
+            duration: 760
             loops: Animation.Infinite
-            running: root.visible && Motion.enabled && progressFill.width > 0 && progressFill.pulseHeight > 0
+            running: root.visible && Motion.enabled && progressFill.width > 0 && progressFill.markOpacity > 0
         }
 
-        property real pulseHeight: 6 * root.pulseStrength
-        Behavior on pulseHeight {
+        property real markOpacity: root.pulseStrength
+        Behavior on markOpacity {
             NumberAnimation { duration: Motion.feedback; easing.type: Easing.InOutQuad }
         }
 
         Repeater {
-            model: Math.ceil(root.width / progressFill.stepSpacing)
+            model: progressFill.marks
             delegate: Rectangle {
-                required property int index
-                objectName: "standard-progress-step"
-                x: index * progressFill.stepSpacing
-                anchors.verticalCenter: parent.verticalCenter
-                width: Math.max(0, Math.min(2, progressFill.width - x))
-                readonly property real phase: (x - progressFill.width) * (2 * Math.PI / 24) - progressFill.travelPhase
-                readonly property real crest: (1 + Math.cos(phase)) / 2
-                height: progressFill.height + progressFill.pulseHeight * crest * crest
-                radius: width / 2
-                color: Qt.tint(root.activeColor,
-                    Qt.alpha(root.foregroundColor, 0.55 * crest * crest * progressFill.pulseHeight / 6))
-                visible: width > 0 && progressFill.pulseHeight > 0
+                required property var modelData
+                objectName: "standard-progress-mark"
+                x: progressFill.clusterStart + modelData.offset * progressFill.markScale
+                y: (progressFill.height - height) / 2
+                    - modelData.lift * (0.5 + 0.5 * progressFill.sweep)
+                width: modelData.width * progressFill.markScale
+                height: modelData.height
+                radius: Math.min(width, height) / 2
+                color: root.foregroundColor
+                opacity: progressFill.markOpacity
+                visible: width > 0 && opacity > 0
             }
         }
 
