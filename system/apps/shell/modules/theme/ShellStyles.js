@@ -4,15 +4,15 @@ var styles = [
     {id: "canopy", label: "Canopy", font: "DejaVu Sans Mono", description: "Overhanging tree limbs and sprays of leaves in the selected palette."},
     {id: "orbital", label: "Orbital", font: "JetBrains Mono", description: "A still star field with scattered pinpoints and brighter four-point stars."},
     {id: "metropolis", label: "Metropolis", font: "DejaVu Sans", description: "City glass: layered facades, architectural reflections and illuminated windows in your selected colors."},
-    {id: "glass-vault", label: "Glass Vault", font: "Noto Sans", description: "Polished glass blocks, soft grazing reflections and restrained rounded clasps."},
-    {id: "radar-station", label: "Radar Station", font: "DejaVu Sans", description: "Etched bearing scales, radial divisions and softly illuminated scope glass."},
+    {id: "glass-vault", label: "Glass Vault", font: "Noto Sans", description: "Thick glass blocks with stepped rims and rounded corner clasps."},
+    {id: "radar-station", label: "Radar Station", font: "DejaVu Sans", description: "Etched bearing scales, radial divisions and a marked sector."},
     {id: "suspended-film", label: "Suspended Film", font: "DejaVu Sans Mono", description: "Suspended glass sheets, curved grazing reflections and separated contact edges."},
     {id: "monolith", label: "Monolith", font: "Noto Sans", description: "Honed stone with tall basalt columns and angular cut faces."},
     {id: "blueprint", label: "Blueprint", font: "JetBrains Mono", description: "Architectural drafting sheets, truss details, ruled scales and wire controls."},
     {id: "terminal-hardware", label: "Terminal Hardware", font: "DejaVu Sans Mono", description: "Flat machined panels, inset bezels and sparse cooling vents."},
-    {id: "frosted", font: "DejaVu Sans Mono", label: "Frosted Glass", description: "Satin-etched glass with diffuse light and fine matte grain."},
-    {id: "colorful", font: "DejaVu Sans", label: "Tinted", description: "A single translucent pane dyed with the selected accent and a soft reflection."},
-    {id: "clear-glass", label: "Clear Glass", font: "Noto Sans", description: "Clear glazing with grazing reflections, fine highlights and a subtle lower meniscus."}
+    {id: "frosted", font: "DejaVu Sans Mono", label: "Frosted Glass", description: "Translucent etched glass with an even, fine-grained surface."},
+    {id: "colorful", font: "DejaVu Sans", label: "Tinted", description: "A translucent pane with a uniform tint from the selected accent."},
+    {id: "clear-glass", label: "Clear Glass", font: "Noto Sans", description: "Clear glazing with a fine perimeter line and a narrow lower lip."}
 ];
 
 // Custom and unknown styles preserve the user's selected typeface.

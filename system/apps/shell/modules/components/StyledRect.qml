@@ -274,78 +274,19 @@ ClippingRectangle {
         radius: root.radius
     }
 
-    // The frosted pane scatters light. The tinted pane carries the selected dye.
+    // Frosted glass adds a fine etch to the uniform translucent surface.
     Loader {
         anchors.fill: parent
         active: !root.hasFillColor && root.rectOpacity > 0
+            && (root.styleOverride || Styling.shellStyle) === "frosted"
             && ["bg", "popup", "bar", "pane", "surface", "surfaceContainer", "internalbg", "focus"].indexOf(root.variant) !== -1
-            && ["frosted", "colorful"].indexOf(root.styleOverride || Styling.shellStyle) !== -1
-        sourceComponent: Canvas {
-            id: glassPane
+        sourceComponent: Image {
             anchors.fill: parent
-            objectName: "classic-glass-canvas"
-            opacity: root.rectOpacity
-            readonly property bool ice: (root.styleOverride || Styling.shellStyle) === "frosted"
+            source: "frost-grain.png"
+            fillMode: Image.Tile
+            smooth: false
             readonly property bool outer: root.variant === "bg" || root.variant === "popup" || root.variant === "bar"
-            readonly property color pigment: root.itemColor
-            readonly property color accent: Colors.primary
-            readonly property real cornerRadius: root.effectiveCornerRadius
-            readonly property var frameCorners: [root.topLeftRadius, root.topRightRadius, root.bottomLeftRadius, root.bottomRightRadius]
-            onIceChanged: requestPaint()
-            onOuterChanged: requestPaint()
-            onPigmentChanged: requestPaint()
-            onAccentChanged: requestPaint()
-            onCornerRadiusChanged: requestPaint()
-            onFrameCornersChanged: requestPaint()
-            onWidthChanged: requestPaint()
-            onHeightChanged: requestPaint()
-            Image {
-                anchors.fill: parent
-                source: glassPane.ice ? "frost-grain.png" : ""
-                fillMode: Image.Tile
-                smooth: false
-                opacity: glassPane.outer ? 0.047 : 0.025
-            }
-            onPaint: {
-                const ctx = getContext("2d");
-                ctx.clearRect(0, 0, width, height);
-                if (width < 8 || height < 8) return;
-                ctx.save();
-                if (root.traceThemeFrame(ctx, 0)) ctx.clip();
-
-                if (ice) {
-                    // Broad diffuse light over a satin-etched face.
-                    const spread = Math.min(width * 0.82, height * 1.65);
-                    const diffuse = Qt.tint(pigment, Qt.rgba(1, 1, 1, 0.58));
-                    const haze = ctx.createRadialGradient(width*0.16, 0, 0, width*0.16, 0, spread);
-                    haze.addColorStop(0, Qt.alpha(diffuse, outer ? 0.35 : 0.15));
-                    haze.addColorStop(0.48, Qt.alpha(diffuse, outer ? 0.16 : 0.065));
-                    haze.addColorStop(1, Qt.alpha(pigment, 0));
-                    ctx.fillStyle = haze;
-                    ctx.fillRect(0, 0, width, height);
-                } else {
-                    // One dyed pane, with a soft reflection across the viewing angle.
-                    const glass = ctx.createLinearGradient(0, 0, width * 0.78, height);
-                    glass.addColorStop(0, Qt.alpha(accent, outer ? 0.21 : 0.10));
-                    glass.addColorStop(0.28, Qt.alpha(accent, 0.08));
-                    glass.addColorStop(0.40, Qt.alpha(pigment, outer ? 0.16 : 0.055));
-                    glass.addColorStop(0.46, Qt.alpha(pigment, outer ? 0.075 : 0.035));
-                    glass.addColorStop(0.59, Qt.alpha(accent, 0.035));
-                    glass.addColorStop(1, Qt.alpha(accent, outer ? 0.20 : 0.08));
-                    ctx.fillStyle = glass;
-                    ctx.fillRect(0, 0, width, height);
-                }
-
-                const edge = ctx.createLinearGradient(0, 0, width * 0.5, height);
-                edge.addColorStop(0, Qt.alpha(pigment, ice ? 0.29 : 0.46));
-                edge.addColorStop(0.32, Qt.alpha(pigment, 0.09));
-                edge.addColorStop(0.70, Qt.alpha(accent, 0.045));
-                edge.addColorStop(1, Qt.alpha(ice ? pigment : accent, ice ? 0.13 : 0.48));
-                ctx.strokeStyle = edge;
-                ctx.lineWidth = 1;
-                if (root.traceThemeFrame(ctx, 0.85)) ctx.stroke();
-                ctx.restore();
-            }
+            opacity: root.rectOpacity * (outer ? 0.047 : 0.025)
         }
     }
 
@@ -390,51 +331,20 @@ ClippingRectangle {
                             if(root.traceThemeFrame(ctx,inset))ctx.stroke();
                         };
                         if(barSurface){
-                            // A shallow continuous rim suits the compact bar; keep its center clear.
-                            const rim=ctx.createLinearGradient(0,0,0,height);
-                            rim.addColorStop(0,ink(0.25));
-                            rim.addColorStop(0.35,ink(0.055));
-                            rim.addColorStop(0.75,ink(0.025));
-                            rim.addColorStop(1,ink(0.12));
-                            ctx.strokeStyle=rim;frame(1.5);
-                            const depth=Math.min(7,height*0.18);
-                            const sheen=ctx.createLinearGradient(0,0,0,depth);
-                            sheen.addColorStop(0,ink(0.055));sheen.addColorStop(1,ink(0));
-                            ctx.fillStyle=sheen;ctx.fillRect(0,0,width,depth);
+                            ctx.strokeStyle = ink(0.17);
+                            frame(1.5);
                         }else{
                         // A polished bevel defines the block without boxing in its content.
                         const step=material.outer ? 6 : 2;
-                        const bevel=ctx.createLinearGradient(0,0,width,height);
-                        bevel.addColorStop(0,ink(0.38));
-                        bevel.addColorStop(0.32,ink(0.10));
-                        bevel.addColorStop(0.70,ink(0.035));
-                        bevel.addColorStop(1,ink(0.20));
-                        ctx.strokeStyle=bevel;frame(step);
+                        ctx.strokeStyle = ink(0.18);
+                        frame(step);
                         if(material.outer){
                             ctx.lineWidth = 3;
-                            ctx.strokeStyle = bevel;
+                            ctx.strokeStyle = ink(0.09);
                             frame(step + 2);
                             ctx.lineWidth = 1;
                             ctx.strokeStyle = ink(0.18);
                             frame(step + 4);
-                            // Broad, fading reflections give the rim optical depth.
-                            const depth=Math.min(48,height*0.25);
-                            const wash=ctx.createLinearGradient(0,0,0,depth);
-                            wash.addColorStop(0,ink(0.09));
-                            wash.addColorStop(0.35,ink(0.025));
-                            wash.addColorStop(1,ink(0));
-                            ctx.fillStyle=wash;ctx.fillRect(0,0,width,depth);
-                            const grazing=ctx.createLinearGradient(0,0,width,0);
-                            grazing.addColorStop(0,ink(0));
-                            grazing.addColorStop(0.24,ink(0.22));
-                            grazing.addColorStop(0.62,ink(0.06));
-                            grazing.addColorStop(1,ink(0));
-                            ctx.strokeStyle=grazing;ctx.lineWidth=1;
-                            const inset=Math.max(14,cornerRadius+3);
-                            if(width>inset*2){
-                                ctx.beginPath();ctx.moveTo(inset,12);
-                                ctx.bezierCurveTo(width*0.34,15,width*0.65,9,width-inset,12);ctx.stroke();
-                            }
                             // Clasps share the bevel's inset and radius, with short tangent arms.
                             // Clamp their reach to half the surface so pill corners never overlap.
                             const mount=step,r=radiusAt(mount);
@@ -456,12 +366,9 @@ ClippingRectangle {
                                 ctx.restore();
                             }
                             ctx.restore();
-                            // A centered lower reflection fades before the corner mounts.
-                            const lip=step;
-                            const reflection=ctx.createLinearGradient(0,0,width,0);
-                            reflection.addColorStop(0,ink(0));reflection.addColorStop(0.35,ink(0.12));
-                            reflection.addColorStop(0.65,ink(0.12));reflection.addColorStop(1,ink(0));
-                            ctx.lineWidth=1;ctx.strokeStyle=reflection;
+                            const lip = step;
+                            ctx.lineWidth = 1;
+                            ctx.strokeStyle = ink(0.13);
                             const end=lip+reach;
                             if(width>end*2){
                                 ctx.beginPath();ctx.moveTo(end,height-lip);
@@ -491,18 +398,12 @@ ClippingRectangle {
                             const scopeRadius=Math.min(78,width*0.26,height*0.32);
                             const pad=Math.max(14,cornerRadius*0.30+8);
                             const bearing = Math.PI / 6;
-                            const sector = ctx.createRadialGradient(pad, pad, 0, pad, pad, radius);
-                            sector.addColorStop(0, ink(0.02));
-                            sector.addColorStop(1, ink(0.24));
-                            ctx.fillStyle = sector;
+                            ctx.fillStyle = ink(0.13);
                             ctx.beginPath();
                             ctx.moveTo(pad, pad);
                             ctx.arc(pad, pad, radius, bearing, bearing + Math.PI / 8);
                             ctx.closePath();
                             ctx.fill();
-                            const glow=ctx.createRadialGradient(pad,pad,0,pad,pad,scopeRadius);
-                            glow.addColorStop(0,ink(0.015));glow.addColorStop(0.72,ink(0.055));glow.addColorStop(1,ink(0));
-                            ctx.fillStyle=glow;ctx.fillRect(0,0,scopeRadius+pad,scopeRadius+pad);
                             ctx.strokeStyle=ink(0.08);
                             for(const angle of [Math.PI/8,Math.PI/4,Math.PI*3/8]){
                                 ctx.beginPath();ctx.moveTo(pad+12*Math.cos(angle),pad+12*Math.sin(angle));
@@ -541,11 +442,7 @@ ClippingRectangle {
                             // A lifted corner exposes the darker sheet below the top film.
                             const lift = Math.min(42, width * 0.19, height * 0.22);
                             const right = width - gap, bottom = height - gap;
-                            const curl = ctx.createLinearGradient(right-lift, bottom-lift, right, bottom);
-                            curl.addColorStop(0.35, ink(0));
-                            curl.addColorStop(0.66, ink(0.28));
-                            curl.addColorStop(1, ink(0.04));
-                            ctx.fillStyle = curl;
+                            ctx.fillStyle = ink(0.18);
                             ctx.beginPath();
                             ctx.moveTo(right-lift, bottom);
                             ctx.quadraticCurveTo(right-3, bottom-4, right, bottom-lift);
@@ -558,9 +455,6 @@ ClippingRectangle {
                                 ctx.bezierCurveTo(width*0.46,18+layer*4,width*0.73,2+layer*3,width-12,18+layer*5);ctx.stroke();
                             }
                         }
-                        const sheen=ctx.createLinearGradient(0,0,width,height);
-                        sheen.addColorStop(0,ink(0.035));sheen.addColorStop(0.38,ink(0.01));sheen.addColorStop(1,ink(0));
-                        ctx.fillStyle=sheen;ctx.fillRect(0,0,width,height);
                     }
                     ctx.restore();
                 }
@@ -713,11 +607,6 @@ ClippingRectangle {
                     const facade=a=>Qt.rgba(backdrop.r,backdrop.g,backdrop.b,a);
                     ctx.lineWidth=1;ctx.strokeStyle=frame(outer?0.24:0.12);
                     if(root.traceThemeFrame(ctx,outer?5:3))ctx.stroke();
-                    // A narrow reflected sky band gives depth without tinting all content.
-                    const sky=ctx.createLinearGradient(0,0,0,Math.min(height,85));
-                    sky.addColorStop(0,frame(outer?0.12:0.045));
-                    sky.addColorStop(0.5,frame(0.025));sky.addColorStop(1,frame(0));
-                    ctx.fillStyle=sky;ctx.fillRect(0,0,width,Math.min(height,85));
                     if(outer && barSurface){
                         // A structural lintel and a few skyline clusters, rather than
                         // repeating tiny towers across the entire reading area.
@@ -763,24 +652,6 @@ ClippingRectangle {
                             ctx.lineTo(x,height-8);ctx.stroke();
                         }
                     }else if(outer){
-                        // Soft cloud banks hang from the upper edge, fading before the content.
-                        const cloudDepth=Math.min(52,height*0.18);
-                        for(let layer=0;layer<2;layer++){
-                            const mist=ctx.createLinearGradient(0,0,0,cloudDepth);
-                            mist.addColorStop(0,layer===0?ink(0.07):frame(0.10));
-                            mist.addColorStop(0.48,layer===0?ink(0.045):frame(0.055));
-                            mist.addColorStop(1,frame(0));
-                            ctx.fillStyle=mist;ctx.beginPath();ctx.moveTo(-48,0);
-                            ctx.lineTo(-48,cloudDepth*0.40);
-                            const span=layer===0?126:94;
-                            for(let x=-48;x<width+span;x+=span){
-                                const rise=cloudDepth*(0.55+0.18*Math.sin(x*0.023+layer*2));
-                                const base=cloudDepth*(layer===0?0.30:0.18);
-                                ctx.bezierCurveTo(x+span*0.18,rise,x+span*0.40,rise,x+span*0.52,base+cloudDepth*0.12);
-                                ctx.bezierCurveTo(x+span*0.68,base+cloudDepth*0.40,x+span*0.86,base+cloudDepth*0.30,x+span,base);
-                            }
-                            ctx.lineTo(width+span*2,0);ctx.closePath();ctx.fill();
-                        }
                         // Overlapping facades vary in width, setback and roof height.
                         // Their silhouettes remain in the lower margin, below the reading area.
                         const base=height-5;
@@ -811,16 +682,13 @@ ClippingRectangle {
                             }
                             x+=towerWidth+4;
                         }
-                        // Slender vertical mullions and palette-colored lobby light frame the city glass.
+                        // Slender vertical mullions frame the city glass.
                         for(const x of [8,width-9]){
                             ctx.strokeStyle=frame(0.22);ctx.beginPath();
                             ctx.moveTo(x,safe);ctx.lineTo(x,height-safe);ctx.stroke();
                             ctx.strokeStyle=frame(0.07);ctx.beginPath();
                             ctx.moveTo(x+3,safe+12);ctx.lineTo(x+3,height-safe-12);ctx.stroke();
                         }
-                        const lobby=ctx.createLinearGradient(0,height-18,0,height);
-                        lobby.addColorStop(0,windowLight(0));lobby.addColorStop(1,windowLight(0.09));
-                        ctx.fillStyle=lobby;ctx.fillRect(0,height-18,width,18);
                     }
                 }
                 ctx.restore();
@@ -853,19 +721,9 @@ ClippingRectangle {
                 if(width<24||height<24)return;
                 const ink=a=>Qt.rgba(pigment.r,pigment.g,pigment.b,a);
                 ctx.save();if(root.traceThemeFrame(ctx,0))ctx.clip();
-                const reflection=ctx.createLinearGradient(0,0,0,Math.min(height,outer?32:12));
-                reflection.addColorStop(0,ink(outer?0.07:0.025));reflection.addColorStop(1,ink(0));
-                ctx.fillStyle=reflection;ctx.fillRect(0,0,width,Math.min(height,outer?32:12));
                 if(outer){
                     const safe=Math.max(18,cornerRadius+5);
-                    const glint = ctx.createLinearGradient(0, 0, width, 0);
-                    glint.addColorStop(0, ink(0));
-                    glint.addColorStop(0.19, ink(0.48));
-                    glint.addColorStop(0.43, ink(0.05));
-                    glint.addColorStop(0.69, ink(0));
-                    glint.addColorStop(0.91, ink(0.18));
-                    glint.addColorStop(1, ink(0));
-                    ctx.strokeStyle = glint;
+                    ctx.strokeStyle = ink(0.14);
                     ctx.lineWidth = 1;
                     if (root.traceThemeFrame(ctx, 1.5)) ctx.stroke();
                     ctx.strokeStyle=ink(0.08);
@@ -906,14 +764,6 @@ ClippingRectangle {
                 const ctx=getContext("2d");ctx.clearRect(0,0,width,height);
                 if(width<24||height<24)return;
                 ctx.save();if(root.traceThemeFrame(ctx,0))ctx.clip();
-                // A honed face catches light along the left arris.
-                const face = ctx.createLinearGradient(0, 0, width, height*0.25);
-                face.addColorStop(0, Qt.alpha(pigment, inset ? 0.04 : 0.14));
-                face.addColorStop(0.26, Qt.alpha(pigment, 0.02));
-                face.addColorStop(1, Qt.alpha(shadowInk, inset ? 0.10 : 0.34));
-                ctx.fillStyle = face;
-                ctx.fillRect(0, 0, width, height);
-
                 if (outer) {
                     const scale = Math.min(root.materialPreview ? 1 : 1.7, width / 310, height / 108);
                     ctx.save();
@@ -934,10 +784,7 @@ ClippingRectangle {
                         ctx.lineTo(ridge, ledge);
                         ctx.lineTo(heel, 0);
                         ctx.closePath();
-                        const sun = ctx.createLinearGradient(summit, y, heel, 0);
-                        sun.addColorStop(0, Qt.alpha(dye, 0.34));
-                        sun.addColorStop(1, Qt.alpha(pigment, 0.085));
-                        ctx.fillStyle = sun;
+                        ctx.fillStyle = Qt.alpha(dye, 0.23);
                         ctx.fill();
 
                         ctx.beginPath();
@@ -1111,18 +958,13 @@ ClippingRectangle {
                 onPaint: {
                     const ctx=getContext("2d");ctx.clearRect(0,0,width,height);
                     ctx.save();if(root.traceThemeFrame(ctx,0))ctx.clip();
-                    // Ruled vellum: crisp near its edges, quiet beneath content.
+                    // Major and minor rules use two uniform ink weights.
                     for(let axis=0;axis<2;axis++){
                         const extent=axis?height:width;
                         for(let n=20;n<extent;n+=20){
                             const major=n%80===0;
-                            const wash=ctx.createLinearGradient(axis?0:n,axis?n:0,axis?width:n,axis?n:height);
-                            const alpha=major?0.13:0.055;
-                            wash.addColorStop(0,Qt.alpha(pigment,alpha));
-                            wash.addColorStop(0.22,Qt.alpha(pigment,alpha*0.22));
-                            wash.addColorStop(0.78,Qt.alpha(pigment,alpha*0.22));
-                            wash.addColorStop(1,Qt.alpha(pigment,alpha));
-                            ctx.strokeStyle=wash;ctx.lineWidth=major?0.8:0.5;
+                            ctx.strokeStyle = Qt.alpha(pigment, major ? 0.085 : 0.035);
+                            ctx.lineWidth = major ? 0.8 : 0.5;
                             ctx.beginPath();ctx.moveTo(axis?0:n,axis?n:0);
                             ctx.lineTo(axis?width:n,axis?n:height);ctx.stroke();
                         }
