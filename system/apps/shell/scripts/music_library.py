@@ -183,7 +183,7 @@ class Library:
                     folder_playlists.append(dict(
                         id='folder:' + hashlib.sha256(str(folder.absolute()).encode()).hexdigest(),
                         name=name, paths=members, folder=True, folderPath=str(root), mix=is_mix, sourceName=source_name, synced=isinstance(synced, list),
-                        spotifySource=(metadata.get('sources') or [''])[0]))
+                        spotifySource=(metadata['sources'][0] if len(metadata.get('sources', [])) == 1 else '')))
         available = {t['path'] for t in tracks}
         for playlist in folder_playlists:
             extras = [] if playlist.get('synced') else self.state['playlistAdditions'].get(playlist['id'], [])
@@ -251,6 +251,33 @@ class Library:
             return self.mixes.more_suggestions(args.get('playlist'))
         if cmd == 'suggestions_get':
             return self.mixes.suggestions()
+        if cmd == 'playlist_write_status':
+            return self.mixes.playlist_write_status()
+        if cmd == 'playlist_to_spotify':
+            data = self.scan()
+            playlist = next((p for p in data['state']['playlists'] if p['id'] == args.get('playlist')), None)
+            if not playlist or not playlist.get('spotifySource'):
+                raise ValueError('Choose a downloaded playlist with a linked Spotify source.')
+            indexed = {t['path']: t for t in data['tracks']}
+            metadata = self.read(Path(playlist['folderPath']) / '.enclosure-playlist.json', {})
+            uris = []
+            for path in playlist['paths']:
+                track = indexed.get(path)
+                if not track:
+                    raise ValueError('A playlist file is missing. Rescan before updating Spotify.')
+                uri = track.get('spotifyUri')
+                if not uri and re.fullmatch(r'[A-Za-z0-9]{22}', Path(path).stem):
+                    uri = 'spotify:track:' + Path(path).stem
+                if not uri:
+                    matches = {t['uri'] for t in metadata.get('tracks', []) if
+                        t.get('title', '').casefold() == track['title'].casefold() and
+                        t.get('artist', '').casefold() == track['artist'].casefold()}
+                    if len(matches) == 1:
+                        uri = matches.pop()
+                if not uri:
+                    raise ValueError('Spotify identity unknown for ' + track['title'] + '. Sync from Spotify first; no remote changes made.')
+                uris.append(uri)
+            return self.mixes.replace_playlist(playlist['spotifySource'], uris)
         if cmd == 'playlist_sync':
             playlist = next((p for p in self.scan()['state']['playlists'] if p['id'] == args.get('playlist')), None)
             if not playlist or not playlist.get('folderPath') or not playlist.get('spotifySource'):

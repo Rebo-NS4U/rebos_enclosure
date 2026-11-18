@@ -105,3 +105,9 @@ The cookie-file field remembers its selected path in local music download settin
 ## Sync a downloaded Spotify playlist
 
 Open a downloaded playlist and choose **Sync Spotify playlist**, then **Sync playlist** on Downloads. The saved Spotify source is resolved again; new tracks download and local playlist membership mirrors the latest result, in Spotify order. Songs removed from Spotify stay on disk and in Songs, but no longer appear in that playlist, including after rescans. An empty source leaves an empty playlist. Failed or cancelled jobs retain the previous membership. This is a manual, one-way update from Spotify; it does not change Spotify itself. Playlists need one saved Spotify source (downloads made from a single Spotify playlist link record it).
+
+## Replace Spotify with Music
+
+On a downloaded playlist with one linked Spotify source, **Replace Spotify with Music** replaces the remote playlist contents with the local playlist's tracks in their current order, including clearing an empty playlist. This changes Spotify immediately when the signed-in desktop integration receives the command; audio files remain untouched. Every track must have a known Spotify identity; unknown or ambiguous local songs block the whole request before any write. Spotify must grant edit permission: Spotify-owned Daily Mixes and other read-only playlists cannot be replaced.
+
+The bridge uses Spotify's playlist-items API, replacing the first 100 entries and appending subsequent batches. Permission/network errors are displayed; failure during a later batch may leave partial remote contents. Check Spotify before retrying an unconfirmed operation. Acknowledgement retries do not repeat writes within the same Spotify session. No automatic background or two-way sync runs. Prepare/apply the updated Lyrics Plus extension; an already running Spotify client loads it on its next normal launch.

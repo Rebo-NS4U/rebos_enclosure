@@ -192,6 +192,15 @@ Window {
         if (callback) callbacks[id] = callback;
         backend.write(JSON.stringify({id: id, cmd: cmd, args: args || {}}) + "\n");
     }
+    property bool spotifyWritePending: false
+    property string spotifyWriteStatus: ""
+    Timer {
+        interval: 2000; repeat: true; running: root.spotifyWritePending
+        onTriggered: root.request("playlist_write_status", {}, data => {
+            root.spotifyWritePending = data.pending;
+            root.spotifyWriteStatus = data.status;
+        })
+    }
     function receive(data) {
         let message;
         try { message = JSON.parse(data); } catch (e) { return; }
@@ -433,6 +442,15 @@ Window {
                         Layout.fillWidth: true
                         StyledText { text: root.shownTracks.length + " songs · Your library"; color: Colors.overSurfaceVariant; Layout.fillWidth: true }
                         ThemeButton {
+                            text: root.spotifyWritePending ? "Updating Spotify…" : "Replace Spotify with Music"
+                            visible: root.page === "Playlist"
+                            enabled: !root.spotifyWritePending
+                            onClicked: root.request("playlist_to_spotify", {playlist: root.detail}, data => {
+                                root.spotifyWritePending = data.pending;
+                                root.spotifyWriteStatus = data.status;
+                            })
+                        }
+                        ThemeButton {
                             text: "Sync Spotify playlist"; visible: root.page === "Playlist"
                             enabled: !downloads.busy
                             onClicked: root.request("playlist_sync", {playlist: root.detail}, data => {
@@ -441,6 +459,10 @@ Window {
                         }
                         ThemeButton { text: "Play all"; highlighted: true; enabled: root.shownTracks.length > 0; onClicked: root.play(root.shownTracks) }
                         ThemeButton { text: "Shuffle"; enabled: root.shownTracks.length > 0; onClicked: { root.shuffle = true; root.play(root.shownTracks,Math.floor(Math.random()*root.shownTracks.length)); } }
+                    }
+                    StyledText {
+                        visible: root.page === "Playlist" && root.spotifyWriteStatus !== ""
+                        text: root.spotifyWriteStatus; Layout.fillWidth: true; wrapMode: Text.WordWrap
                     }
                     // Album shelves and artist cards follow the downloaded reference's library layout.
                     GridView {

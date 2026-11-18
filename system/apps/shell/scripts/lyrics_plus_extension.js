@@ -55,6 +55,8 @@ async function refresh() {
 (function dailyMixes() {
     let collecting = false;
     let suggesting = false;
+    let writing = false;
+    const written = new Map();
     let lastCollection = 0;
     let cached = null;
     const learned = new Map();
@@ -127,6 +129,30 @@ async function refresh() {
             const response = await fetch('http://127.0.0.1:19838/mixes', {credentials: 'omit', cache: 'no-store'});
             if (!response.ok) return;
             const command = await response.json();
+            if (command.playlist_write && !writing) {
+                const job = command.playlist_write;
+                writing = true;
+                try {
+                    if (!written.has(job.id)) {
+                        let error = '';
+                        try {
+                            if (!/^spotify:playlist:[A-Za-z0-9]{22}$/.test(job.uri) ||
+                                !Array.isArray(job.tracks) || job.tracks.length > 10000 ||
+                                job.tracks.some(uri => !/^spotify:track:[A-Za-z0-9]{22}$/.test(uri)))
+                                throw Error('Invalid playlist update');
+                            const endpoint = 'https://api.spotify.com/v1/playlists/' + job.uri.split(':').pop() + '/items';
+                            await Spicetify.CosmosAsync.put(endpoint, {uris: job.tracks.slice(0, 100)});
+                            for (let offset = 100; offset < job.tracks.length; offset += 100)
+                                await Spicetify.CosmosAsync.post(endpoint, {uris: job.tracks.slice(offset, offset + 100)});
+                        } catch (e) {
+                            error = 'Spotify update failed or may be partial. Check playlist edit permission and its contents before retrying. ' + String(e.message || e).slice(0, 180);
+                        }
+                        written.set(job.id, error);
+                    }
+                    await fetch('http://127.0.0.1:19838/mixes', {method:'POST', credentials:'omit',
+                        headers:{'Content-Type':'application/json'}, body:JSON.stringify({playlist_write_id:job.id, error:written.get(job.id)})});
+                } finally { writing = false; }
+            }
             if (command.suggestion && !suggesting) {
                 suggesting = true;
                 const job = command.suggestion;

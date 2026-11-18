@@ -57,6 +57,17 @@ class MusicLibraryTests(unittest.TestCase):
             self.assertTrue(removed.is_file())
         prepared = self.library.dispatch('playlist_sync', dict(playlist=playlist['id']))
         self.assertTrue(prepared['syncPlaylist'])
+        result = self.library.dispatch('playlist_to_spotify', dict(playlist=playlist['id']))
+        self.assertTrue(result['pending'])
+        self.assertEqual(self.library.mixes.playlist_write['tracks'], ['spotify:track:'+'b'*22])
+        self.library.mixes.update(dict(playlist_write_id=self.library.mixes.playlist_write['id']))
+        unsafe = self.library.scan()
+        target = next(p for p in unsafe['state']['playlists'] if p['id'] == playlist['id'])
+        target['paths'].append(str(self.song))
+        with patch.object(self.library, 'scan', return_value=unsafe):
+            with self.assertRaisesRegex(ValueError, 'identity unknown'):
+                self.library.dispatch('playlist_to_spotify', dict(playlist=playlist['id']))
+        self.assertIsNone(self.library.mixes.playlist_write)
         metadata.write_text(json.dumps(dict(sources=['spotify:playlist:'+'a'*22], tracks=[])))
         playlist = next(p for p in self.library.scan()['state']['playlists'] if p.get('folderPath') == str(folder))
         self.assertEqual(playlist['paths'], [])

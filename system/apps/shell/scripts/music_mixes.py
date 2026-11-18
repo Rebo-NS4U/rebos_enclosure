@@ -53,9 +53,31 @@ class Mixes:
         self.refresh_uri = ''
         self.suggestion = None
         self.suggestion_result = dict(tracks=[], pending=False, status='')
+        self.playlist_write = None
+        self.write_result = dict(pending=False, status='')
         self.refresh_started = 0
         self.refresh_status = ''
         self.data = read(path, dict(current=[], saved=[], checked=''))
+
+    def replace_playlist(self, uri, tracks):
+        uri = playlist_uri(uri)
+        if not isinstance(tracks, list) or len(tracks) > 10000 or any(
+                not isinstance(t, str) or not re.fullmatch(r'spotify:track:[A-Za-z0-9]{22}', t) for t in tracks):
+            raise ValueError('Every Music track needs a known Spotify identity before updating Spotify.')
+        with self.lock:
+            if self.playlist_write:
+                raise ValueError('A Spotify playlist update is already pending.')
+            self.playlist_write = dict(id=uuid.uuid4().hex, uri=uri, tracks=tracks,
+                                       started=time.monotonic())
+            self.write_result = dict(pending=True, status='Waiting for Spotify…')
+            return copy.deepcopy(self.write_result)
+
+    def playlist_write_status(self):
+        with self.lock:
+            if self.playlist_write and time.monotonic() - self.playlist_write['started'] > 120:
+                self.playlist_write = None
+                self.write_result = dict(pending=False, status='Spotify update could not be confirmed. Check the playlist in Spotify before retrying.')
+            return copy.deepcopy(self.write_result)
 
     def suggest(self, playlist, uri):
         with self.lock:
@@ -108,6 +130,13 @@ class Mixes:
             return dict(copy.deepcopy(self.data), refreshPending=bool(self.refresh_id), refreshStatus=self.refresh_status)
 
     def update(self, payload):
+        if 'playlist_write_id' in payload:
+            with self.lock:
+                if self.playlist_write and payload['playlist_write_id'] == self.playlist_write['id']:
+                    error = str(payload.get('error') or '')[:500]
+                    self.write_result = dict(pending=False, status=error or 'Spotify playlist now matches Music.')
+                    self.playlist_write = None
+            return
         if 'suggestion_id' in payload:
             tracks = payload.get('tracks', [])
             if not isinstance(tracks, list) or len(tracks) > 100:
@@ -170,7 +199,7 @@ class Mixes:
                 if not self.allowed():
                     self.reply(403); return
                 with store.lock:
-                    self.reply(200, dict(refresh_id=store.refresh_id, playlist_uri=store.refresh_uri, suggestion=({k: v for k, v in store.suggestion.items() if k != "started"} if store.suggestion else None)))
+                    self.reply(200, dict(refresh_id=store.refresh_id, playlist_uri=store.refresh_uri, playlist_write=({k: v for k, v in store.playlist_write.items() if k != "started"} if store.playlist_write else None), suggestion=({k: v for k, v in store.suggestion.items() if k != "started"} if store.suggestion else None)))
             def do_POST(self):
                 if not self.allowed():
                     self.reply(403); return
