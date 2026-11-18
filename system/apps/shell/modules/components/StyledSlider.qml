@@ -83,11 +83,12 @@ Item {
         return Math.max(0, Math.min(1, Math.round(val / stepSize) * stepSize));
     }
 
-    property real animatedProgress: progressRatio
-    Behavior on animatedProgress {
-        enabled: root.smoothDrag && Motion.enabled
+    readonly property real animatedProgress: isDragging ? dragPosition : easedProgress
+    property real easedProgress: progressRatio
+    Behavior on easedProgress {
+        enabled: !root.isDragging && root.smoothDrag && Motion.enabled
         NumberAnimation {
-            duration: root.isDragging ? Motion.press : Motion.feedback
+            duration: Motion.enter
             easing.type: Motion.feedbackCurve
         }
     }
@@ -121,6 +122,13 @@ Item {
         }
     }
 
+    readonly property bool railHovered: railHover.hovered
+        && !mouseArea.isInIconArea(railHover.point.position.x, railHover.point.position.y)
+
+    HoverHandler {
+        id: railHover
+    }
+
     // Horizontal Layout
     RowLayout {
         id: horizontalLayout
@@ -149,6 +157,8 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 x: parent.width * root.animatedProgress - width / 2
                 radius: Styling.radius(0)
+                hovered: root.railHovered
+                accent: root.progressColor
                 focused: root.activeFocus
                 pressed: root.isDragging
                 z: 2
@@ -159,6 +169,7 @@ Item {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 slider: true
+                height: hDragHandle.railThickness
                 value: root.animatedProgress
                 activeColor: root.progressColor
             }
@@ -197,9 +208,12 @@ Item {
 
             SliderHandle {
                 id: vDragHandle
+                vertical: true
                 anchors.horizontalCenter: parent.horizontalCenter
                 y: parent.height * (1 - root.animatedProgress) - height / 2
                 radius: Styling.radius(0)
+                hovered: root.railHovered
+                accent: root.progressColor
                 focused: root.activeFocus
                 pressed: root.isDragging
                 z: 2
@@ -209,6 +223,7 @@ Item {
                 anchors.centerIn: parent
                 width: parent.height
                 slider: true
+                height: vDragHandle.railThickness
                 rotation: -90
                 value: root.animatedProgress
                 activeColor: root.progressColor
@@ -300,12 +315,12 @@ Item {
                 return;
             }
             root.forceActiveFocus();
-            root.isDragging = true;
             let pos = calculatePosition(mouse.x, mouse.y);
             if (root.snapMode === "always") {
                 pos = root.applyStep(pos);
             }
             root.dragPosition = pos;
+            root.isDragging = true;
             if (!root.updateOnRelease) {
                 root.value = root.snapMode === "always" ? pos : root.dragPosition;
             }

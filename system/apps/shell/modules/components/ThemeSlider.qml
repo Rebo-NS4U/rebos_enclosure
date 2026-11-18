@@ -8,14 +8,16 @@ Slider {
     padding: 8
     focusPolicy: Qt.StrongFocus
     wheelEnabled: false
+    hoverEnabled: true
     opacity: enabled ? 1 : 0.45
-    property real animatedPosition: position
+    readonly property real animatedPosition: pressed ? position : easedPosition
+    property real easedPosition: position
     readonly property real animatedVisualPosition: (!horizontal || mirrored)
         ? 1 - animatedPosition : animatedPosition
-    Behavior on animatedPosition {
-        enabled: Motion.enabled
+    Behavior on easedPosition {
+        enabled: !root.pressed && Motion.enabled
         NumberAnimation {
-            duration: root.pressed ? Motion.press : Motion.feedback
+            duration: Motion.enter
             easing.type: Motion.feedbackCurve
         }
     }
@@ -45,11 +47,15 @@ Slider {
                 ? parent.width - (root.handle?.width ?? 0)
                 : parent.height - (root.handle?.height ?? 0))
             slider: true
+            height: thumb.railThickness
             value: root.animatedPosition
             rotation: root.horizontal ? (root.mirrored ? 180 : 0) : 270
         }
     }
     handle: SliderHandle {
+        id: thumb
+        vertical: !root.horizontal
+        hovered: root.hovered
         x: root.leftPadding + (root.horizontal ? root.animatedVisualPosition * (root.availableWidth - width) : (root.availableWidth - width) / 2)
         y: root.topPadding + (root.horizontal ? (root.availableHeight - height) / 2 : root.animatedVisualPosition * (root.availableHeight - height))
         focused: root.activeFocus

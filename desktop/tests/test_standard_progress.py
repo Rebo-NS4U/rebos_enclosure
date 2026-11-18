@@ -64,6 +64,10 @@ ShellRoot {
    check(sliderRail.value < themed.position, 'Programmatic slider changes ease toward their value');
    horizontal.dragPosition = 0.8;
    horizontal.isDragging = true;
+   vertical.dragPosition = 0.6;
+   vertical.isDragging = true;
+   check(horizontal.animatedProgress === 0.8 && vertical.animatedProgress === 0.6,
+    'Dragging tracks the value immediately in both orientations');
    rail.value = 0.61;
    activeCheck.start();
   } catch(error) { console.error(error); Qt.exit(1); }
@@ -93,8 +97,16 @@ ShellRoot {
    }
    const track = horizontal.children[0].children[0].children.find(item => item.slider);
    const thumb = horizontal.children[0].children[0].children.find(item => item.pressed === true);
-   if (track.height !== 3 || track.value !== 0.8 || !thumb || thumb.scale !== 0.92) {
-    console.error('Dragging keeps a slim track and gently compresses the thumb'); Qt.exit(1); return;
+   const verticalItems = vertical.children[1].children[0].children;
+   const verticalTrack = verticalItems.find(item => item.slider);
+   const verticalThumb = verticalItems.find(item => item.pressed === true);
+   const grip = thumb.children[1].transform[0];
+   const verticalGrip = verticalThumb.children[1].transform[0];
+   if (track.height !== 5 || track.value !== 0.8 || thumb.children[0].opacity <= 0
+       || verticalTrack.height !== 5 || verticalTrack.value !== 0.6
+       || grip.xScale >= 1 || grip.yScale <= 1
+       || verticalGrip.xScale <= 1 || verticalGrip.yScale >= 1) {
+    console.error('Drag thickens the rail and compresses the thumb along its travel axis'); Qt.exit(1); return;
    }
    horizontal.value = horizontal.dragPosition;
    horizontal.isDragging = false;
@@ -105,9 +117,13 @@ ShellRoot {
   const mark = fill.children.find(child => child.objectName === 'standard-progress-mark');
   if (mark.visible || themed.background.children[0].height !== 3) { console.error('Pulse must settle after movement'); Qt.exit(1); return; }
   const thumb = horizontal.children[0].children[0].children.find(item => item.focused !== undefined);
-  if (!thumb || thumb.scale !== 1) { console.error('Thumb eases back after release'); Qt.exit(1); return; }
+  if (!thumb || thumb.railThickness !== 3 || thumb.children[1].transform[0].xScale !== 1) { console.error('Thumb eases back after release'); Qt.exit(1); return; }
   Config.animDuration = 0;
   themed.value = 0.25;
+  thumb.hovered = true;
+  if (thumb.railThickness !== 4 || thumb.children[0].opacity <= 0) {
+   console.error('Motion off applies hover feedback immediately'); Qt.exit(1); return;
+  }
   if (themed.background.children[0].value !== 0.25 || themed.background.children[0].height !== 3) {
    console.error('Motion off applies value changes immediately'); Qt.exit(1); return;
   }
