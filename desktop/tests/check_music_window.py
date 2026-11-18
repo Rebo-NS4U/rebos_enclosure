@@ -152,8 +152,26 @@ def session():
                     favorite.clicked();
                     if (favorite.checked || music.favorites.includes(music.current.path)) { console.error("MUSIC_FAVORITE_REMOVE_FAILED"); Qt.exit(1); }
                     favorite.clicked();
-                    music.playlists = [{id:"test",name:"Acceptance",paths:music.queue.map(t=>t.path).reverse()}];
+                    music.playlists = [
+                        {id:"test",name:"Acceptance",paths:music.queue.map(t=>t.path).reverse()},
+                        {id:"regular-add",name:"Regular add",paths:[]},
+                        {id:"fullscreen-add",name:"Fullscreen add",paths:[]}
+                    ];
                     music.save();
+                    const add = findItem(music.contentItem, "music-add-current-to-playlist");
+                    input.mouseClick(add, add.width / 2, add.height / 2);
+                    phase = 12;
+                } else if (phase === 12) {
+                    const choices = findItem(music.contentItem, "music-playlist-choices");
+                    if (!choices?.itemAtIndex(1)) return;
+                    if (choices.itemAtIndex(0).enabled) { console.error("MUSIC_PLAYLIST_DUPLICATE_ENABLED"); Qt.exit(1); return; }
+                    const choice = choices.itemAtIndex(1);
+                    input.mouseClick(choice, choice.width / 2, choice.height / 2);
+                    phase = 13;
+                } else if (phase === 13 && !music.busy) {
+                    if (music.playlists[1].paths[0] !== music.tracks[0].path) { console.error("MUSIC_REGULAR_PLAYLIST_ADD_FAILED"); Qt.exit(1); return; }
+                    input.keyClick(Qt.Key_Escape);
+                    if (!music.visible || findItem(music.contentItem, "music-playlist-choices")?.visible) { console.error("MUSIC_PLAYLIST_PICKER_ESCAPE_FAILED"); Qt.exit(1); return; }
                     findItem(music.contentItem, "music-repeat").clicked();
                     if (music.repeatMode !== "Track") { console.error("MUSIC_REPEAT_TOGGLE_FAILED"); Qt.exit(1); }
                     music.seek(3800);
@@ -272,6 +290,19 @@ def session():
                     if (!music.immersive || !stage.visible || !art.visible || art.width < 100 || !transport.enabled || !rail.enabled) { console.error("MUSIC_FULLSCREEN_ENTER_FAILED"); Qt.exit(1); return; }
                     const pos = transport.mapToItem(stage, 0, 0);
                     if (pos.y < 0 || pos.y + transport.height > stage.height) { console.error("MUSIC_FULLSCREEN_BOUNDS_FAILED"); Qt.exit(1); return; }
+                    const add = findItem(music.contentItem, "music-fullscreen-add-current-to-playlist");
+                    input.mouseClick(add, add.width / 2, add.height / 2);
+                    phase = 901;
+                } else if (phase === 901) {
+                    const choices = findItem(music.contentItem, "music-playlist-choices");
+                    if (!choices?.itemAtIndex(2)) return;
+                    const choice = choices.itemAtIndex(2);
+                    input.mouseClick(choice, choice.width / 2, choice.height / 2);
+                    phase = 902;
+                } else if (phase === 902 && !music.busy) {
+                    if (music.playlists[2].paths[0] !== music.current.path) { console.error("MUSIC_FULLSCREEN_PLAYLIST_ADD_FAILED"); Qt.exit(1); return; }
+                    input.keyClick(Qt.Key_Escape);
+                    if (!music.immersive || findItem(music.contentItem, "music-playlist-choices")?.visible) { console.error("MUSIC_FULLSCREEN_PLAYLIST_PICKER_ESCAPE_FAILED"); Qt.exit(1); return; }
                     const selected = music.current.path;
                     findItem(music.contentItem, "music-fullscreen-exit").clicked();
                     if (music.immersive || music.current.path !== selected) { console.error("MUSIC_FULLSCREEN_RESTORE_FAILED"); Qt.exit(1); return; }
@@ -434,6 +465,8 @@ def session():
         import json
         state=json.loads((home/'.local/state/enclosure/music/library.json').read_text())
         assert len(state['favorites'])==1 and len(state['playlists'][0]['paths'])==2, state
+        assert all(len(next(p for p in state['playlists'] if p['id'] == name)['paths']) == 1
+                   for name in ('regular-add', 'fullscreen-add')), state
         print('Music playback, queue, seek, lyrics and persisted favorites/playlists verified.')
 
 

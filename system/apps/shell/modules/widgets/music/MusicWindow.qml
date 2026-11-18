@@ -65,6 +65,9 @@ Window {
         album: spotifyPlayer.trackAlbum, art: spotifyPlayer.trackArtUrl,
         duration: spotifyPlayer.length, spotifyUri: spotifyPlayer.metadata["xesam:url"] || ""
     } : null) : localCurrent
+    readonly property string currentPlaylistPath: spotifyPreview
+        ? (current?.spotifyUri ? tracks.find(track => track.spotifyUri === current.spotifyUri)?.path || "" : "")
+        : localCurrent?.path || ""
     readonly property real playbackPosition: spotifyPreview ? (spotifyPlayer?.position || 0) * 1000 : player.position
     readonly property real playbackDuration: spotifyPreview ? (spotifyPlayer?.length || 0) * 1000 : player.duration
     onSpotifyPlayerChanged: {
@@ -262,7 +265,8 @@ Window {
     function save() { request("save", { favorites: favorites, playlists: playlists }); }
     function favorite(track) {
         if (!track?.path) return;
-        favorites = favorites.includes(track.path) ? favorites.filter(p => p !== track.path) : favorites.concat([track.path]); save();
+        favorites = favorites.includes(track.path) ? favorites.filter(p => p !== track.path) : favorites.concat([track.path]);
+        request("save", {favorites: favorites});
     }
     function navigate(value, arg) { page = value; detail = arg || ""; query = ""; if (page === "Playlist") spotifySuggestions = {tracks: [], pending: false, status: "Refresh to load Spotify suggestions."}; }
     function play(list, index) {
@@ -377,10 +381,70 @@ Window {
         onErrorOccurred: (error, errorString) => { root.notice = errorString; }
     }
     Timer { interval: 500; running: root.playing; repeat: true; onTriggered: root.sync() }
-    Shortcut { sequence: "Space"; enabled: root.immersive || (root.page !== "Downloads" && root.page !== "Spotify playlists" && !search.inputActiveFocus && !playlistName.inputActiveFocus); onActivated: root.toggle() }
+    Shortcut { sequence: "Space"; enabled: !playlistPicker.visible && (root.immersive || (root.page !== "Downloads" && root.page !== "Spotify playlists" && !search.inputActiveFocus && !playlistName.inputActiveFocus)); onActivated: root.toggle() }
     Shortcut { sequence: "Ctrl+F"; enabled: root.page !== "Downloads" && root.page !== "Spotify playlists"; onActivated: search.focusInput() }
     Shortcut { sequence: "F11"; onActivated: root.toggleFullscreen() }
-    Shortcut { sequence: "Escape"; onActivated: { if (root.immersive) root.toggleFullscreen(); else GlobalStates.musicWindowVisible = false; } }
+    Shortcut { sequence: "Escape"; enabled: !playlistPicker.visible; onActivated: { if (root.immersive) root.toggleFullscreen(); else GlobalStates.musicWindowVisible = false; } }
+
+    component AddCurrentToPlaylistButton: ThemeButton {
+        text: "Add to playlist"
+        enabled: !!root.currentPlaylistPath && !root.busy
+        Accessible.name: "Add current song to playlist"
+        onClicked: {
+            playlistPicker.trackPath = root.currentPlaylistPath;
+            playlistPicker.trackTitle = root.current.title;
+            playlistPicker.open();
+        }
+    }
+
+    Popup {
+        id: playlistPicker
+        objectName: "music-playlist-picker"
+        property string trackPath: ""
+        property string trackTitle: ""
+        anchors.centerIn: Overlay.overlay
+        width: Math.min(420, root.width - 32)
+        padding: 16
+        modal: true
+        focus: true
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+        background: StyledRect { variant: "pane" }
+        contentItem: ColumnLayout {
+            StyledText { text: "Add to playlist"; font.bold: true }
+            StyledText { Layout.fillWidth: true; text: playlistPicker.trackTitle; elide: Text.ElideRight; color: Colors.overSurfaceVariant }
+            StyledText {
+                visible: root.playlists.length === 0
+                Layout.fillWidth: true
+                text: "Create a playlist with Save queue in the Music library."
+                wrapMode: Text.WordWrap
+            }
+            ListView {
+                id: playlistChoices
+                objectName: "music-playlist-choices"
+                Layout.fillWidth: true
+                Layout.preferredHeight: Math.min(contentHeight, 280)
+                visible: count > 0
+                clip: true
+                spacing: 4
+                model: root.playlists
+                delegate: ThemeButton {
+                    required property var modelData
+                    readonly property bool alreadyAdded: modelData.paths.includes(playlistPicker.trackPath)
+                    width: playlistChoices.width
+                    text: modelData.name + (alreadyAdded ? " · Added" : "")
+                    enabled: !alreadyAdded && !root.busy
+                    onClicked: {
+                        root.notice = "";
+                        root.busy = true;
+                        root.request("playlist_add", {playlist: modelData.id, path: playlistPicker.trackPath}, root.load);
+                    }
+                }
+                ScrollBar.vertical: ScrollBar {}
+            }
+            StyledText { visible: root.notice !== ""; Layout.fillWidth: true; text: root.notice; wrapMode: Text.WordWrap; color: Colors.error }
+            ThemeButton { Layout.alignment: Qt.AlignRight; text: "Done"; onClicked: playlistPicker.close() }
+        }
+    }
 
     component Cover: ClippingRectangle {
         id: cover
@@ -768,6 +832,7 @@ Window {
                             }
                             StyledText { Layout.fillWidth: true; text: root.current?.artist || "Local music library"; elide: Text.ElideRight; color: Colors.overSurfaceVariant; font.pixelSize: Styling.fontSize(-2) }
                         }
+                        AddCurrentToPlaylistButton { objectName: "music-add-current-to-playlist" }
                         ThemeButton { text: "Shuffle"; checked: root.shuffle; onClicked: root.shuffle = !root.shuffle }
                         ThemeButton { text: "⏮"; Accessible.name: "Previous track"; enabled: !!root.current; onClicked: root.previous() }
                         ThemeButton { text: root.playing ? "Pause" : "Play"; highlighted: true; enabled: root.queue.length > 0 || root.shownTracks.length > 0; onClicked: root.toggle() }
@@ -1039,6 +1104,7 @@ Window {
                 RowLayout {
                     Layout.fillWidth: true; spacing: 12
                     ThemeButton { text: root.favorites.includes(root.current?.path) ? "♥" : "♡"; enabled: !!root.current && !root.spotifyPreview; Accessible.name: "Favorite current song"; onClicked: root.favorite(root.current) }
+                    AddCurrentToPlaylistButton { objectName: "music-fullscreen-add-current-to-playlist" }
                     Item { Layout.fillWidth: true }
                     ThemeButton { objectName: "music-fullscreen-shuffle"; text: "Shuffle"; checked: root.spotifyPreview ? !!root.spotifyPlayer?.shuffle : root.shuffle; enabled: !root.spotifyPreview || !!root.spotifyPlayer?.shuffleSupported; onClicked: { if (root.spotifyPreview) root.spotifyPlayer.shuffle = !root.spotifyPlayer.shuffle; else root.shuffle = !root.shuffle; } }
                     ThemeButton { objectName: "music-fullscreen-previous"; text: "⏮"; Accessible.name: "Previous track"; enabled: root.spotifyPreview ? !!root.spotifyPlayer?.canGoPrevious : !!root.current; onClicked: root.previous() }
