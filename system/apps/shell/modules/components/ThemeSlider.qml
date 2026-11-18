@@ -10,6 +10,7 @@ Slider {
     wheelEnabled: false
     hoverEnabled: true
     opacity: enabled ? 1 : 0.45
+    property bool playing: false
     readonly property real animatedPosition: pressed ? position : easedPosition
     property real easedPosition: position
     readonly property real animatedVisualPosition: (!horizontal || mirrored)
@@ -48,6 +49,7 @@ Slider {
                 : parent.height - (root.handle?.height ?? 0))
             hovered: root.hovered
             pressed: root.pressed
+            playing: root.playing
             value: root.animatedPosition
             rotation: root.horizontal ? (root.mirrored ? 180 : 0) : 270
         }

@@ -45,7 +45,7 @@ Item {
     property color progressColor: Colors.primary
     property color backgroundColor: Colors.outlineVariant
     property bool wavy: false
-    property bool playing: false // Nuevo estado para controlar la animación
+    property bool playing: false
     property real wavyAmplitude: 0.8
     property real wavyFrequency: 8
     property real heightMultiplier: 8
@@ -169,6 +169,7 @@ Item {
                 activeColor: root.progressColor
                 hovered: root.railHovered
                 pressed: root.isDragging
+                playing: root.playing
             }
 
             StyledToolTip {
@@ -221,6 +222,7 @@ Item {
                 activeColor: root.progressColor
                 hovered: root.railHovered
                 pressed: root.isDragging
+                playing: root.playing
             }
 
             StyledToolTip {

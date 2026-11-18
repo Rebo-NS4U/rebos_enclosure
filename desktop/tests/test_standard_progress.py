@@ -77,6 +77,7 @@ ShellRoot {
    check(horizontal.animatedProgress === 0.8 && vertical.animatedProgress === 0.6,
     'Dragging tracks the value immediately in both orientations');
    rail.value = 0.61;
+   themedVertical.playing = true;
    activeCheck.start();
   } catch(error) { console.error(error); Qt.exit(1); }
  }}
@@ -93,12 +94,14 @@ ShellRoot {
    console.error('Hover and value updates keep the rail still while the thumb follows the value'); Qt.exit(1); return;
   }
   travelCheck.startX = marks[0].x;
+  travelCheck.playbackPhase = themedVertical.background.children[0].phase;
   const track = horizontal.children[0].children[0].children.find(item => item.segmentCount > 0);
   travelCheck.segmentCenters = track.children.filter(item => item.wave !== undefined).map(item => item.y + item.height / 2);
   travelCheck.start();
  }}
  Timer { id: travelCheck; interval: 120
   property real startX: 0
+  property real playbackPhase: 0
   property var segmentCenters: []
   onTriggered: {
    const fill = rail.children.find(child => child.objectName === 'standard-progress-fill');
@@ -108,13 +111,18 @@ ShellRoot {
    }
    const track = horizontal.children[0].children[0].children.find(item => item.segmentCount > 0);
    const verticalTrack = vertical.children[1].children[0].children.find(item => item.segmentCount > 0);
+   const playbackTrack = themedVertical.background.children[0];
+   if (playbackTrack.pressed || playbackTrack.energy !== 0.65 || playbackTrack.phase === playbackPhase) {
+    console.error('Playback keeps a gentler ripple moving between position updates'); Qt.exit(1); return;
+   }
+   themedVertical.playing = false;
    const segments = track.children.filter(item => item.wave !== undefined);
    const first = segments[0];
    const last = segments[segments.length - 1];
    if (track.value !== 0.8 || verticalTrack.value !== 0.6 || verticalTrack.energy < 0.95
        || first.children[0].width !== first.width || last.children[0].width !== 0
        || segments.some(segment => segment.height !== 6 || Math.abs(segment.y + segment.height / 2 - track.height / 2) > 1.5)
-       || segments.some(segment => Math.abs(segment.x + segment.width / 2 - track.filledLength) >= 40 && segment.wave !== 0)
+       || segments.some(segment => Math.abs(segment.x + segment.width / 2 - track.filledLength) >= 64 && segment.wave !== 0)
        || !segments.some((segment, index) => Math.abs(segment.y + segment.height / 2 - segmentCenters[index]) > 0.05)) {
     console.error('Dragging creates a shallow, localized ripple with fixed track thickness'); Qt.exit(1); return;
    }
@@ -128,28 +136,33 @@ ShellRoot {
   const fill = rail.children.find(child => child.objectName === 'standard-progress-fill');
   const mark = fill.children.find(child => child.objectName === 'standard-progress-mark');
   const track = horizontal.children[0].children[0].children.find(item => item.segmentCount > 0);
-  if (mark.visible || track.energy !== 0 || track.children[0].height !== 6) {
+  if (mark.visible || themedVertical.background.children[0].energy !== 0 || track.energy !== 0 || track.children[0].height !== 6) {
    console.error('Tracks must settle after movement'); Qt.exit(1); return;
   }
   Config.animDuration = 0;
   themed.value = 0.25;
   const themedTrack = themed.background.children[0];
   horizontal.isDragging = true;
-  if (themedTrack.value !== 0.25 || track.energy !== 0 || track.children[0].height !== 6) {
+  themed.playing = true;
+  if (themedTrack.energy !== 0 || themedTrack.value !== 0.25 || track.energy !== 0 || track.children[0].height !== 6) {
    console.error('Motion off applies value changes immediately and keeps the track still'); Qt.exit(1); return;
   }
   const segments = themedTrack.children.filter(item => item.wave !== undefined);
-  const origin = segments[7];
+  const origin = segments[9];
   themed.value = (origin.x + origin.width / 2) / themedTrack.width;
   themedTrack.energy = 1;
-  const phaseOffset = 2 * Math.PI * 2 * themedTrack.pitch / 40;
+  const phaseOffset = 2 * Math.PI * 2 * themedTrack.pitch / 64;
   themedTrack.phase = -Math.PI / 2 + phaseOffset;
-  if (segments[5].wave >= -0.3 || segments[9].wave >= -0.3) {
+  if (segments[7].wave >= -0.3 || segments[11].wave >= -0.3) {
    console.error('The trough dips on both sides near the thumb'); Qt.exit(1); return;
   }
   themedTrack.phase += Math.PI;
-  if (segments[5].wave <= 0.3 || segments[9].wave <= 0.3 || segments[1].wave !== 0 || segments[13].wave !== 0) {
+  if (segments[7].wave <= 0.3 || segments[11].wave <= 0.3 || segments[0].wave !== 0 || segments[18].wave !== 0) {
    console.error('The crest rises near the thumb and the distant track stays flat'); Qt.exit(1); return;
+  }
+  themedTrack.phase = Math.PI / 2 + 2 * Math.PI * 6 * themedTrack.pitch / 64;
+  if (segments[15].wave < 0.15) {
+   console.error('The ripple reaches past the previous 40-pixel limit'); Qt.exit(1); return;
   }
   const verticalTrack = vertical.children[1].children[0].children.find(item => item.segmentCount > 0);
   for (const [rail, thumb] of [

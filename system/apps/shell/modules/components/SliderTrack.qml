@@ -8,21 +8,24 @@ Item {
     property real value: 0
     property color activeColor: Colors.primary
     property bool pressed: false
+    property bool playing: false
     property bool hovered: false
 
     implicitHeight: 22
     readonly property real filledLength: width * Math.max(0, Math.min(1, isFinite(value) ? value : 0))
     readonly property int segmentCount: Math.max(1, Math.min(64, Math.round(width / 8)))
     readonly property real pitch: width / segmentCount
-    property real energy: Motion.enabled && visible && pressed ? 1 : 0
+    readonly property real rippleReach: 64
+    property real energy: Motion.enabled && visible && enabled
+        ? (pressed ? 1 : playing ? 0.65 : 0) : 0
     property real phase: 0
 
     function waveAt(position: real): real {
         const distance = Math.abs(position - filledLength);
-        // Hold the thumb on the centerline and fade out within 40 pixels.
+        // Hold the thumb on the centerline and fade out toward the ends of the ripple.
         const innerFade = Math.max(0, Math.min(1, (distance - pitch * 0.75) / Math.max(1, pitch)));
-        const outerFade = Math.max(0, 1 - distance / 40);
-        return innerFade * outerFade * Math.sin(phase - 2 * Math.PI * distance / 40);
+        const outerFade = Math.max(0, 1 - distance / rippleReach);
+        return innerFade * outerFade * Math.sin(phase - 2 * Math.PI * distance / rippleReach);
     }
 
     Behavior on energy {

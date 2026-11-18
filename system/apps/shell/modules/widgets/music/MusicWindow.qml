@@ -972,7 +972,7 @@ Window {
                     RowLayout {
                         Layout.fillWidth: true
                         StyledText { text: root.time(player.position); font.pixelSize: Styling.fontSize(-2) }
-                        ThemeSlider { id: seekSlider; Layout.fillWidth: true; from: 0; to: Math.max(1,player.duration); value: player.position; enabled: !!root.current; Accessible.name: "Seek"; onMoved: root.seek(value) }
+                        ThemeSlider { id: seekSlider; Layout.fillWidth: true; from: 0; to: Math.max(1,player.duration); value: player.position; playing: player.playbackState === MediaPlayer.PlayingState; enabled: !!root.current; Accessible.name: "Seek"; onMoved: root.seek(value) }
                         StyledText { text: root.time(player.duration); font.pixelSize: Styling.fontSize(-2) }
                     }
                 }
@@ -1219,7 +1219,7 @@ Window {
                 RowLayout {
                     Layout.fillWidth: true; spacing: 14
                     StyledText { text: root.time(root.playbackPosition); color: Colors.overSurfaceVariant }
-                    ThemeSlider { objectName: "music-fullscreen-seek"; Layout.fillWidth: true; from: 0; to: Math.max(1, root.playbackDuration); value: root.playbackPosition; enabled: root.spotifyPreview ? !!root.spotifyPlayer?.canSeek : !!root.current; Accessible.name: "Seek"; onMoved: root.seek(value) }
+                    ThemeSlider { objectName: "music-fullscreen-seek"; Layout.fillWidth: true; from: 0; to: Math.max(1, root.playbackDuration); value: root.playbackPosition; playing: root.playing; enabled: root.spotifyPreview ? !!root.spotifyPlayer?.canSeek : !!root.current; Accessible.name: "Seek"; onMoved: root.seek(value) }
                     StyledText { text: root.time(root.playbackDuration); color: Colors.overSurfaceVariant }
                 }
                 RowLayout {
