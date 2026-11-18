@@ -26,6 +26,21 @@ class StandardThemeTests(unittest.TestCase):
             self.assertIn('fish_color_command', fish.read_text())
             self.assertIn('#555652', (home / '.config/gtk-4.0/enclosure-standard.css').read_text())
 
+    def test_dolphin_uses_shell_accent_corners_and_readable_glass(self):
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory)
+            theme = home / '.config/enclosure/shell/config/theme.json'
+            theme.parent.mkdir(parents=True)
+            theme.write_text(json.dumps({'roundness': 23}))
+            apply_desktop({**PALETTE, 'opacity': 0.68, 'primaryContainer': '#41351d'}, home)
+            stylesheet = home / '.config/enclosure/theme/widgets.qss'
+            dolphin = stylesheet.read_text().split('/* Dolphin navigation, Places, and file view */')[1]
+            self.assertIn('border-radius: 23px', dolphin)
+            self.assertIn('selection-background-color: #41351d', dolphin)
+            rules = (home / '.cache/rebos_shell/niri-colors.kdl').read_text()
+            self.assertIn('match app-id="org.kde.dolphin"\n    opacity 0.8400', rules)
+            self.assertIn('match app-id="thunar"\n    opacity 0.68', rules)
+
     def test_preserves_custom_css_qt_sheets_and_unrelated_settings(self):
         with tempfile.TemporaryDirectory() as directory:
             home = Path(directory)

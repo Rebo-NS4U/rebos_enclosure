@@ -96,6 +96,7 @@ def apply_niri_theme(p, home):
     accent = p['primary']
     # Niri watches this final shared rule for palette and corner changes.
     radius = theme_radius(home)
+    opacity = max(0, min(1, float(p.get('opacity', 1))))
     write(home / '.cache/rebos_shell/niri-colors.kdl',
           '// Generated from the effective QuickShell palette and theme geometry.\n'
           'layout {\n'
@@ -116,8 +117,13 @@ def apply_niri_theme(p, home):
           '    }\n'
           '}\n'
           'window-rule {\n'
-          '    match app-id=r#"^(org\\.kde\\.dolphin|thunar)$"#\n'
-          f'    opacity {float(max(0, min(1, float(p.get("opacity", 1)))))}\n'
+          '    match app-id="thunar"\n'
+          f'    opacity {float(opacity)}\n'
+          '}\n'
+          # Keep file contents legible while retaining the shell's glass effect.
+          'window-rule {\n'
+          '    match app-id="org.kde.dolphin"\n'
+          f'    opacity {(1 + opacity) / 2:.4f}\n'
           '}\n'
           # Whole-window alpha also fades artwork and text; keep Spotify crisp.
           'window-rule {\n'
