@@ -35,11 +35,17 @@ def session():
     import Quickshell
     import qs.modules.widgets.music
     import qs.modules.globals
+    import qs.modules.services
     ShellRoot {
         TestCase { id: input; when: false }
-        MusicWindow { id: music }
+        MusicWindow {
+            id: music
+            property string requestedPreview: ""
+            function previewTrack(uri) { requestedPreview = uri; }
+        }
         QtObject {
             id: spotify
+            property string dbusName: "org.mpris.MediaPlayer2.spotify"
             property string trackTitle: "Suggested song"
             property string trackArtists: "Suggested artist"
             property string trackAlbum: "Spotify suggestions"
@@ -350,7 +356,21 @@ def session():
                     if (spotify.isPlaying) { console.error("SUGGESTION_ROW_PAUSE_FAILED"); Qt.exit(1); return; }
                     firstSuggestion.playRequested();
                     if (!spotify.isPlaying) { console.error("SUGGESTION_ROW_RESUME_FAILED"); Qt.exit(1); return; }
+                    spotify.canGoNext = false;
+                    repeatStart = attempts; phase = 951;
+                } else if (phase === 951 && attempts >= repeatStart + 3) {
+                    const target = MprisController.nextPlayer(spotify);
+                    if (target?.dbusName !== "org.mpris.MediaPlayer2.enclosure_music" || !music.canNext) { console.error("SUGGESTION_MEDIA_NEXT_ROUTE_FAILED"); Qt.exit(1); return; }
+                    target.next();
+                    repeatStart = attempts; phase = 952;
+                } else if (phase === 952 && attempts >= repeatStart + 3) {
+                    if (music.requestedPreview !== music.suggestedTracks[1].uri || spotify.nextCalls !== 1) { console.error("SUGGESTION_MEDIA_NEXT_FAILED", music.requestedPreview, music.suggestedTracks[1].uri, spotify.nextCalls, music.notice); Qt.exit(1); return; }
+                    spotify.canGoNext = true;
+                    spotify.metadata = {"xesam:url": music.suggestedTracks[music.suggestedTracks.length - 1].uri};
+                    if (MprisController.nextPlayer(spotify) !== spotify) { console.error("SUGGESTION_MEDIA_NEXT_FALLBACK_FAILED"); Qt.exit(1); return; }
+                    console.log("MUSIC_SUGGESTION_MEDIA_NEXT_PASSED");
                     music.select(0);
+                    const list = findItem(music.contentItem, "music-playlist-suggestions");
                     list.positionViewAtIndex(8, ListView.Beginning);
                     repeatStart = attempts; phase = 96;
                 } else if (phase === 96 && attempts >= repeatStart + 3) {

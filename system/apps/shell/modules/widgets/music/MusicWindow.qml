@@ -111,8 +111,12 @@ Window {
     property var spotifySuggestions: ({tracks: [], pending: false, status: ""})
     property var pendingSuggestionDownload: null
     readonly property bool canAddSuggestion: !busy && !downloads.busy && !pendingSuggestionDownload
-    readonly property var playingSuggestion: spotifyPreview
-        ? suggestedTracks.find(track => track.uri === current?.spotifyUri) : null
+    readonly property int playingSuggestionIndex: spotifyPreview
+        ? suggestedTracks.findIndex(track => track.uri === current?.spotifyUri) : -1
+    readonly property var playingSuggestion: suggestedTracks[playingSuggestionIndex] || null
+    readonly property var nextSuggestion: playingSuggestionIndex >= 0 ? (suggestedTracks[playingSuggestionIndex + 1] || null) : null
+    readonly property bool canNext: spotifyPreview ? !!nextSuggestion || !!spotifyPlayer?.canGoNext : queue.length > 1
+    onNextSuggestionChanged: sync()
     readonly property var suggestedTracks: {
         const playlist = playlists.find(p => p.id === detail);
         if (page !== "Playlist" || !playlist || spotifySuggestions.playlist !== detail) return [];
@@ -308,7 +312,11 @@ Window {
         });
     }
     function next(automatic) {
-        if (spotifyPreview) { if (spotifyPlayer?.canGoNext) spotifyPlayer.next(); return; }
+        if (spotifyPreview) {
+            if (nextSuggestion) previewTrack(nextSuggestion.uri);
+            else if (spotifyPlayer?.canGoNext) spotifyPlayer.next();
+            return;
+        }
         if (!queue.length) return;
         if (automatic && repeatMode === "Track") { player.position = 0; player.play(); return; }
         if (shuffle && queue.length > 1) { select((currentIndex + 1 + Math.floor(Math.random()*(queue.length-1)))%queue.length); return; }
@@ -322,7 +330,8 @@ Window {
         if (!backend.running) return;
         request("mpris", { track: localCurrent ? Object.assign({}, localCurrent, {lyrics: spotifyPreview ? "" : lyricText}) : null, status: !localCurrent || player.playbackState === MediaPlayer.StoppedState ? "Stopped" : player.playbackState === MediaPlayer.PlayingState ? "Playing" : "Paused",
             position: Math.round(player.position*1000), length: Math.round(player.duration*1000),
-            volume: volume, shuffle: shuffle, loop: repeatMode, canNext: queue.length > 1,
+            volume: volume, shuffle: shuffle, loop: repeatMode, canNext: !!nextSuggestion || queue.length > 1,
+            suggestionNextFor: nextSuggestion ? (current?.spotifyUri || "") : "",
             canPrevious: currentIndex > 0, seeked: !!seeked });
     }
     function control(message) {
@@ -748,7 +757,7 @@ Window {
                         ThemeButton { text: "Shuffle"; checked: root.shuffle; onClicked: root.shuffle = !root.shuffle }
                         ThemeButton { text: "⏮"; Accessible.name: "Previous track"; enabled: !!root.current; onClicked: root.previous() }
                         ThemeButton { text: root.playing ? "Pause" : "Play"; highlighted: true; enabled: root.queue.length > 0 || root.shownTracks.length > 0; onClicked: root.toggle() }
-                        ThemeButton { text: "⏭"; Accessible.name: "Next track"; enabled: root.queue.length > 1; onClicked: root.next(false) }
+                        ThemeButton { text: "⏭"; Accessible.name: "Next track"; enabled: root.canNext; onClicked: root.next(false) }
                         ThemeButton {
                             objectName: "music-repeat"
                             text: root.repeatMode === "Track" ? "Repeat song" : root.repeatMode === "Playlist" ? "Repeat all" : "Repeat off"
@@ -961,7 +970,7 @@ Window {
                     ThemeButton { objectName: "music-fullscreen-shuffle"; text: "Shuffle"; checked: root.spotifyPreview ? !!root.spotifyPlayer?.shuffle : root.shuffle; enabled: !root.spotifyPreview || !!root.spotifyPlayer?.shuffleSupported; onClicked: { if (root.spotifyPreview) root.spotifyPlayer.shuffle = !root.spotifyPlayer.shuffle; else root.shuffle = !root.shuffle; } }
                     ThemeButton { objectName: "music-fullscreen-previous"; text: "⏮"; Accessible.name: "Previous track"; enabled: root.spotifyPreview ? !!root.spotifyPlayer?.canGoPrevious : !!root.current; onClicked: root.previous() }
                     ThemeButton { objectName: "music-fullscreen-play"; text: root.playing ? "Pause" : "Play"; highlighted: true; Layout.preferredWidth: 120; implicitHeight: 52; enabled: root.spotifyPreview ? !!root.spotifyPlayer?.canTogglePlaying : root.queue.length > 0 || root.shownTracks.length > 0; onClicked: root.toggle() }
-                    ThemeButton { objectName: "music-fullscreen-next"; text: "⏭"; Accessible.name: "Next track"; enabled: root.spotifyPreview ? !!root.spotifyPlayer?.canGoNext : root.queue.length > 1; onClicked: root.next(false) }
+                    ThemeButton { objectName: "music-fullscreen-next"; text: "⏭"; Accessible.name: "Next track"; enabled: root.canNext; onClicked: root.next(false) }
                     ThemeButton { objectName: "music-fullscreen-repeat"; text: root.spotifyPreview ? (root.spotifyPlayer?.loopState === MprisLoopState.Track ? "Repeat song" : "Repeat all") : root.repeatMode === "Track" ? "Repeat song" : "Repeat all"; checked: root.spotifyPreview ? root.spotifyPlayer?.loopState !== MprisLoopState.None : root.repeatMode !== "None"; enabled: !root.spotifyPreview || !!root.spotifyPlayer?.loopSupported; onClicked: {
                         if (root.spotifyPreview) root.spotifyPlayer.loopState = root.spotifyPlayer.loopState === MprisLoopState.None ? MprisLoopState.Playlist : root.spotifyPlayer.loopState === MprisLoopState.Playlist ? MprisLoopState.Track : MprisLoopState.None;
                         else root.repeatMode = root.repeatMode === "None" ? "Playlist" : root.repeatMode === "Playlist" ? "Track" : "None";

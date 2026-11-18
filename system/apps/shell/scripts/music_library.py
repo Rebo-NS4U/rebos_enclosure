@@ -448,6 +448,9 @@ def start_mpris():
                 'xesam:artist': dbus.Array([track.get('artist', '')], signature='s'),
                 'xesam:album': track.get('album', ''), 'mpris:artUrl': track.get('art', ''),
                 'xesam:url': track.get('url', ''), 'xesam:asText': track.get('lyrics', '')}, signature='sv')
+            # The shell matches this URI before routing Spotify's Next to Music.
+            if data.get('suggestionNextFor'):
+                metadata['enclosure:suggestionNextFor'] = data['suggestionNextFor']
             values = dict(PlaybackStatus=data['status'], Position=dbus.Int64(data['position']),
                           Volume=data['volume'], Shuffle=data['shuffle'], LoopStatus=data['loop'],
                           Metadata=metadata, CanGoNext=data['canNext'], CanGoPrevious=data['canPrevious'],

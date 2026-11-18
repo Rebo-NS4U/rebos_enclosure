@@ -33,7 +33,7 @@ Singleton {
     property bool isPlaying: activePlayer ? activePlayer.isPlaying : false
     property bool canTogglePlaying: activePlayer ? activePlayer.canTogglePlaying : false
     property bool canGoPrevious: activePlayer ? activePlayer.canGoPrevious : false
-    property bool canGoNext: activePlayer ? activePlayer.canGoNext : false
+    property bool canGoNext: !!activePlayer && !!nextPlayer(activePlayer)
     property bool canChangeVolume: activePlayer && activePlayer.volumeSupported && activePlayer.canControl
     property bool loopSupported: activePlayer && activePlayer.loopSupported && activePlayer.canControl
     property int loopState: activePlayer ? activePlayer.loopState : (typeof MprisLoopState !== 'undefined' ? MprisLoopState.None : 0)
@@ -127,10 +127,18 @@ Singleton {
         }
     }
 
-    function next() {
-        if (root.canGoNext) {
-            root.activePlayer.next();
+    function nextPlayer(player) {
+        if (!player) return null;
+        if ((player.dbusName || "").toLowerCase().includes("spotify")) {
+            const uri = player.metadata["xesam:url"];
+            const music = filteredPlayers.find(candidate => candidate.dbusName === "org.mpris.MediaPlayer2.enclosure_music");
+            if (uri && music?.metadata["enclosure:suggestionNextFor"] === uri) return music;
         }
+        return player.canGoNext ? player : null;
+    }
+
+    function next() {
+        nextPlayer(activePlayer)?.next();
     }
 
     function setLoopState(loopState) {

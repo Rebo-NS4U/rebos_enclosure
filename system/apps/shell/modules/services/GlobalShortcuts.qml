@@ -131,7 +131,8 @@ Singleton {
             if (!player) return false;
             MprisController.setActivePlayer(player);
             // Keep playback commands on D-Bus, including Stop which has no QML helper.
-            Quickshell.execDetached(["busctl", "--user", "call", player.dbusName,
+            const target = action === "Next" ? (MprisController.nextPlayer(player) || player) : player;
+            Quickshell.execDetached(["busctl", "--user", "call", target.dbusName,
                 "/org/mpris/MediaPlayer2", "org.mpris.MediaPlayer2.Player", action]);
             root.revealMediaFeedback();
             return true;
