@@ -85,7 +85,7 @@ Window {
         return match ? "spotify:track:" + match[1] : url;
     }
     function playSuggestion(track) {
-        if (suggestedTracks.includes(track)) {
+        if (suggestedTracks.some(suggestion => suggestion.uri === track.uri)) {
             suggestionQueue = suggestedTracks;
             suggestionPlaylist = detail;
         }
@@ -136,8 +136,8 @@ Window {
     readonly property int suggestionQueueIndex: spotifyPreview
         ? activeSuggestions.findIndex(track => track.uri === currentSpotifyUri) : -1
     readonly property var playingSuggestion: activeSuggestions[suggestionQueueIndex] || null
-    readonly property var nextSuggestion: activeSuggestions.length
-        ? activeSuggestions[(suggestionQueueIndex + 1) % activeSuggestions.length] : null
+    readonly property var nextSuggestion: suggestionQueueIndex >= 0 && suggestionQueue.length > 1
+        ? suggestionQueue[(suggestionQueueIndex + 1) % suggestionQueue.length] : null
     onSuggestedTracksChanged: {
         if (suggestionQueue.length && suggestionPlaylist === detail && suggestedTracks.length)
             suggestionQueue = suggestedTracks;
@@ -353,10 +353,9 @@ Window {
         });
     }
     function next(automatic) {
-        if (nextSuggestion && (!automatic || spotifyPreview)) {
+        if (nextSuggestion) {
             advancedSuggestionUri = currentSpotifyUrl;
-            if (suggestionQueue.length) previewSuggestion(nextSuggestion.uri);
-            else playSuggestion(nextSuggestion);
+            previewSuggestion(nextSuggestion.uri);
             return;
         }
         if (spotifyPreview) {
