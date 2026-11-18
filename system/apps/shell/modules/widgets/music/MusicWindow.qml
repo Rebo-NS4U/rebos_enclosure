@@ -442,7 +442,7 @@ Window {
                         Layout.fillWidth: true
                         StyledText { text: root.shownTracks.length + " songs · Your library"; color: Colors.overSurfaceVariant; Layout.fillWidth: true }
                         ThemeButton {
-                            text: root.spotifyWritePending ? "Updating Spotify…" : "Replace Spotify with Music"
+                            text: root.spotifyWritePending ? "Syncing Music → Spotify…" : "Sync Music → Spotify"
                             visible: root.page === "Playlist"
                             enabled: !root.spotifyWritePending
                             onClicked: root.request("playlist_to_spotify", {playlist: root.detail}, data => {
@@ -451,7 +451,7 @@ Window {
                             })
                         }
                         ThemeButton {
-                            text: "Sync Spotify playlist"; visible: root.page === "Playlist"
+                            text: "Sync Spotify → Music"; visible: root.page === "Playlist"
                             enabled: !downloads.busy
                             onClicked: root.request("playlist_sync", {playlist: root.detail}, data => {
                                 if (downloads.prepareMix(data)) root.navigate("Downloads");
