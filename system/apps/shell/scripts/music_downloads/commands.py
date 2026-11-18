@@ -99,3 +99,18 @@ def remember_playlist_source(folder, text):
     temporary = path.with_suffix('.tmp')
     temporary.write_text(json.dumps(dict(sources=sources)))
     temporary.replace(path)
+
+
+def publish_playlist(folder, result):
+    """Publish membership only after a successful job; never delete audio."""
+    songs = json.loads(Path(result).read_text())
+    if not isinstance(songs, list) or any(not isinstance(s, dict) or
+            not re.fullmatch(r'[A-Za-z0-9]{22}', s.get('song_id', '')) for s in songs):
+        raise ValueError('Invalid Spotify playlist result; previous membership retained')
+    path = Path(folder) / '.enclosure-playlist.json'
+    metadata = json.loads(path.read_text())
+    metadata['tracks'] = [dict(uri='spotify:track:' + s['song_id'],
+        title=s.get('name', ''), artist=s.get('artist', '')) for s in songs]
+    temporary = path.with_suffix('.tmp')
+    temporary.write_text(json.dumps(metadata))
+    temporary.replace(path)

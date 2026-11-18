@@ -62,6 +62,7 @@ class Library:
         self.state.setdefault('favorites', [])
         self.state.setdefault('playlists', [])
         self.state.setdefault('playlistAdditions', {})
+        self.state.setdefault('playlistRemovals', {})
 
     @staticmethod
     def read(path, fallback):
@@ -82,7 +83,7 @@ class Library:
         # Lyrics and folder artwork may change while the audio file stays untouched.
         related = [path.with_suffix('.lrc')] + [path.parent / n for n in
                    ('cover.jpg', 'cover.png', 'folder.jpg', 'folder.png', 'front.jpg')]
-        signature = [2, stat.st_mtime_ns, stat.st_size] + [
+        signature = [3, stat.st_mtime_ns, stat.st_size] + [
             [str(p), p.stat().st_mtime_ns, p.stat().st_size] for p in related if p.is_file()]
         if self.cache.get(key, {}).get('signature') == signature:
             return self.cache[key]['track']
@@ -106,7 +107,12 @@ class Library:
                      artist=tags.get('artist') or 'Unknown artist', album=tags.get('album') or 'Unknown album',
                      duration=float(fmt.get('duration') or 0), art=art, lyrics=lyrics,
                      number=int(str(tags.get('track', '0')).split('/')[0]) if str(tags.get('track', '0')).split('/')[0].isdigit() else 0)
-        if path.is_relative_to(self.music / 'Daily Mixes') and re.fullmatch(r'[A-Za-z0-9]{22}', path.stem):
+        # spotDL stores the original Spotify link in the audio source URL tag.
+        spotify_link = re.fullmatch(r'https://open\.spotify\.com/track/([A-Za-z0-9]{22})/?(?:\?[^#]*)?(?:#.*)?',
+                                    tags.get('woas', ''))
+        if spotify_link:
+            track['spotifyUri'] = 'spotify:track:' + spotify_link[1]
+        elif path.is_relative_to(self.music / 'Daily Mixes') and re.fullmatch(r'[A-Za-z0-9]{22}', path.stem):
             track['spotifyUri'] = 'spotify:track:' + path.stem
         self.cache[key] = dict(signature=signature, track=track)
         return track
@@ -158,7 +164,22 @@ class Library:
             for folder in sorted(folders, key=lambda p: (p.name.casefold(), p.name)):
                 root = folder.resolve()
                 members = [t['path'] for t in tracks if Path(t['path']).is_relative_to(root)]
-                if members:
+                metadata = self.read(root / '.enclosure-playlist.json', {})
+                synced = metadata.get('tracks')
+                if isinstance(synced, list):
+                    local = [t for t in tracks if t['path'] in members]
+                    members = []
+                    for song in synced:
+                        uri = song.get('uri', '')
+                        match = next((t for t in local if t.get('spotifyUri') == uri), None)
+                        if match is None:
+                            match = next((t for t in local if not t.get('spotifyUri') and (
+                                'spotify:track:' + Path(t['path']).stem == uri or
+                                (t['title'].casefold() == song.get('title', '').casefold() and
+                                 t['artist'].casefold() == song.get('artist', '').casefold()))), None)
+                        if match and match['path'] not in members:
+                            members.append(match['path'])
+                if members or isinstance(synced, list):
                     is_mix = folder.parent == self.music / 'Daily Mixes'
                     source_name = re.sub(r'-[a-f0-9]{12}$', '', folder.name) if is_mix else folder.name
                     name = source_name
@@ -170,11 +191,14 @@ class Library:
                             name = ' · '.join(leaders) + ' Mix'
                     folder_playlists.append(dict(
                         id='folder:' + hashlib.sha256(str(folder.absolute()).encode()).hexdigest(),
-                        name=name, paths=members, folder=True, folderPath=str(root), mix=is_mix, sourceName=source_name))
+                        name=name, paths=members, folder=True, folderPath=str(root), mix=is_mix, sourceName=source_name, synced=isinstance(synced, list),
+                        spotifySource=(metadata['sources'][0] if len(metadata.get('sources', [])) == 1 else '')))
         available = {t['path'] for t in tracks}
         for playlist in folder_playlists:
             extras = self.state['playlistAdditions'].get(playlist['id'], [])
             playlist['paths'] += [p for p in extras if p in available and p not in playlist['paths']]
+            removed = set(self.state['playlistRemovals'].get(playlist['id'], []))
+            playlist['paths'] = [p for p in playlist['paths'] if p not in removed]
         # Similar mixes can share leading artists; retain readable distinctions.
         counts = Counter(p['name'] for p in folder_playlists if p.get('mix'))
         used = Counter()
@@ -228,14 +252,56 @@ class Library:
             return dict(text='', status='Lyrics unavailable. Try this song again when online.')
 
     def dispatch(self, cmd, args):
+        if cmd in ('mixes_refresh', 'mixes_load', 'suggestions_refresh',
+                   'suggestions_more', 'playlist_to_spotify'):
+            from music_spotify import ensure_started
+            ensure_started()
+        if cmd == 'suggestions_play':
+            return self.mixes.play_suggestion(args.get('uri'))
         media_actions = {
             "mixes_preview": lambda: music_preview.preview(args.get("uri")),
             "lyrics": lambda: self.lyrics(args.get("track") or {}),
         }
         if cmd in media_actions:
             return media_actions[cmd]()
+        if cmd == 'suggestions_more':
+            return self.mixes.more_suggestions(args.get('playlist'))
         if cmd == 'suggestions_get':
             return self.mixes.suggestions()
+        if cmd == 'playlist_write_status':
+            return self.mixes.playlist_write_status()
+        if cmd == 'playlist_to_spotify':
+            data = self.scan()
+            playlist = next((p for p in data['state']['playlists'] if p['id'] == args.get('playlist')), None)
+            if not playlist or not playlist.get('spotifySource'):
+                raise ValueError('Choose a downloaded playlist with a linked Spotify source.')
+            indexed = {t['path']: t for t in data['tracks']}
+            metadata = self.read(Path(playlist['folderPath']) / '.enclosure-playlist.json', {})
+            uris = []
+            for path in playlist['paths']:
+                track = indexed.get(path)
+                if not track:
+                    raise ValueError('A playlist file is missing. Rescan before updating Spotify.')
+                uri = track.get('spotifyUri')
+                if not uri and re.fullmatch(r'[A-Za-z0-9]{22}', Path(path).stem):
+                    uri = 'spotify:track:' + Path(path).stem
+                if not uri:
+                    matches = {t['uri'] for t in metadata.get('tracks', []) if
+                        t.get('title', '').casefold() == track['title'].casefold() and
+                        t.get('artist', '').casefold() == track['artist'].casefold()}
+                    if len(matches) == 1:
+                        uri = matches.pop()
+                if not uri:
+                    raise ValueError('Spotify identity unknown for ' + track['title'] + '. Sync from Spotify first; no remote changes made.')
+                uris.append(uri)
+            return self.mixes.replace_playlist(playlist['spotifySource'], uris)
+        if cmd == 'playlist_sync':
+            playlist = next((p for p in self.scan()['state']['playlists'] if p['id'] == args.get('playlist')), None)
+            if not playlist or not playlist.get('folderPath') or not playlist.get('spotifySource'):
+                raise ValueError('This playlist has no saved Spotify source. Download it from Spotify playlists first.')
+            from music_mixes import playlist_uri
+            uri = playlist_uri(playlist['spotifySource'])
+            return dict(folder=playlist['folderPath'], links='https://open.spotify.com/playlist/' + uri.split(':')[-1], syncPlaylist=True)
         if cmd in ('suggestions_refresh', 'suggestion_download'):
             data = self.scan()
             playlist = next((p for p in data['state']['playlists'] if p['id'] == args.get('playlist')), None)
@@ -246,7 +312,9 @@ class Library:
                 uri = args.get('uri')
                 if result.get('playlist') != playlist['id'] or not any(t['uri'] == uri for t in result['tracks']):
                     raise ValueError('Suggestions changed; refresh and try again')
-                folder = playlist.get('folderPath') or str(self.music / 'Suggested tracks')
+                folder = str(self.music / 'Suggested tracks')
+                if args.get('toQueue') is not True:
+                    folder = playlist.get('folderPath') or folder
                 return dict(folder=folder, links='https://open.spotify.com/track/' + uri.split(':')[-1],
                             playlist=playlist['id'], uri=uri)
             # Downloads retain their Spotify identity independently of mix snapshots.
@@ -284,15 +352,26 @@ class Library:
             return self.mixes.dispatch(cmd, args)
         if cmd == 'scan':
             return self.scan()
-        if cmd == 'playlist_add':
+        if cmd in ('playlist_add', 'playlist_remove'):
             data = self.scan()
             playlist = next((p for p in data['state']['playlists'] if p['id'] == args.get('playlist')), None)
             path = args.get('path')
             if playlist is None or path not in {t['path'] for t in data['tracks']}:
                 raise ValueError('Playlist or track is no longer available; rescan your library')
-            if path not in playlist['paths']:
+            if cmd == 'playlist_remove':
+                if path in playlist['paths']:
+                    if playlist.get('folder'):
+                        # Keep a local override for membership derived from files or Spotify.
+                        self.state['playlistRemovals'].setdefault(playlist['id'], []).append(path)
+                    else:
+                        playlist['paths'] = [p for p in playlist['paths'] if p != path]
+            elif path not in playlist['paths']:
                 if playlist.get('folder'):
-                    self.state['playlistAdditions'].setdefault(playlist['id'], []).append(path)
+                    removed = self.state['playlistRemovals'].get(playlist['id'], [])
+                    if path in removed:
+                        removed.remove(path)
+                    else:
+                        self.state['playlistAdditions'].setdefault(playlist['id'], []).append(path)
                 else:
                     playlist['paths'].append(path)
             self.write(self.state_dir / 'library.json', self.state)
@@ -393,6 +472,9 @@ def start_mpris():
                 'xesam:artist': dbus.Array([track.get('artist', '')], signature='s'),
                 'xesam:album': track.get('album', ''), 'mpris:artUrl': track.get('art', ''),
                 'xesam:url': track.get('url', ''), 'xesam:asText': track.get('lyrics', '')}, signature='sv')
+            # The shell matches this URI before routing Spotify's Next to Music.
+            if data.get('suggestionNextFor'):
+                metadata['enclosure:suggestionNextFor'] = data['suggestionNextFor']
             values = dict(PlaybackStatus=data['status'], Position=dbus.Int64(data['position']),
                           Volume=data['volume'], Shuffle=data['shuffle'], LoopStatus=data['loop'],
                           Metadata=metadata, CanGoNext=data['canNext'], CanGoPrevious=data['canPrevious'],

@@ -65,138 +65,53 @@ Item {
             Item { Layout.fillWidth: true }
 
             // Action 1: Captive Portal (Globe)
-            StyledRect {
-                implicitWidth: 28
-                implicitHeight: 28
-                radius: Styling.radius(0)
-                variant: globeMouse.containsMouse ? "focus" : "common"
+            ThemeButton {
+                id: portalButton
+                implicitWidth: Styling.spacing(36)
+                implicitHeight: implicitWidth
+                padding: 0
+                glyph: Icons.globe
+                Accessible.name: "Open captive portal"
                 enabled: NetworkService.wifiStatus === "limited"
-                scale: globeMouse.pressed ? 0.92 : 1.0
-
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: globeMouse.pressed ? Motion.press : Motion.feedback
-                        easing.type: Motion.feedbackCurve
-                    }
-                }
-
-                Text {
-                    anchors.centerIn: parent
-                    renderType: Text.NativeRendering
-                    font.hintingPreference: Font.PreferFullHinting
-                    text: Icons.globe
-                    font.family: Icons.font
-                    font.pixelSize: Styling.fontSize(0)
-                    color: NetworkService.wifiStatus === "limited" ? Styling.srItem("overprimary") : (globeMouse.containsMouse ? Colors.overBackground : Colors.overSurfaceVariant)
-                }
-
-                MouseArea {
-                    id: globeMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: NetworkService.wifiStatus === "limited" ? Qt.PointingHandCursor : Qt.ArrowCursor
-                    onClicked: {
-                        if (NetworkService.wifiStatus === "limited") {
-                            NetworkService.openPublicWifiPortal();
-                        }
-                    }
-                }
+                onClicked: NetworkService.openPublicWifiPortal()
 
                 StyledToolTip {
-                    show: globeMouse.containsMouse
-                    tooltipText: "Open captive portal"
+                    show: portalButton.hovered
+                    tooltipText: portalButton.Accessible.name
                 }
             }
 
             // Action 2: Network Settings (popOpen / ↗)
-            StyledRect {
-                implicitWidth: 28
-                implicitHeight: 28
-                radius: Styling.radius(0)
-                variant: settingsMouse.containsMouse ? "focus" : "common"
-                scale: settingsMouse.pressed ? 0.92 : 1.0
-
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: settingsMouse.pressed ? Motion.press : Motion.feedback
-                        easing.type: Motion.feedbackCurve
-                    }
-                }
-
-                Text {
-                    anchors.centerIn: parent
-                    renderType: Text.NativeRendering
-                    font.hintingPreference: Font.PreferFullHinting
-                    text: Icons.popOpen
-                    font.family: Icons.font
-                    font.pixelSize: Styling.fontSize(0)
-                    color: Colors.overBackground
-                }
-
-                MouseArea {
-                    id: settingsMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: { GlobalShortcuts.run("settings"); GlobalStates.settingsCurrentTab = 0; }
-                }
+            ThemeButton {
+                id: networkSettings
+                implicitWidth: Styling.spacing(36)
+                implicitHeight: implicitWidth
+                padding: 0
+                glyph: Icons.popOpen
+                Accessible.name: "Network settings"
+                onClicked: { GlobalShortcuts.run("settings"); GlobalStates.settingsCurrentTab = 0; }
 
                 StyledToolTip {
-                    show: settingsMouse.containsMouse
-                    tooltipText: "Network settings"
+                    show: networkSettings.hovered
+                    tooltipText: networkSettings.Accessible.name
                 }
             }
 
             // Action 3: Rescan networks (arrowsClockwise / 🔄)
-            StyledRect {
-                implicitWidth: 28
-                implicitHeight: 28
-                radius: Styling.radius(0)
-                variant: rescanMouse.containsMouse ? "focus" : "common"
-                enabled: NetworkService.wifiEnabled && !NetworkService.wifiScanning && !NetworkService.isUpdating
-                scale: rescanMouse.pressed ? 0.92 : 1.0
-
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: rescanMouse.pressed ? Motion.press : Motion.feedback
-                        easing.type: Motion.feedbackCurve
-                    }
-                }
-
-                Text {
-                    id: rescanIcon
-                    anchors.centerIn: parent
-                    renderType: Text.NativeRendering
-                    font.hintingPreference: Font.PreferFullHinting
-                    text: Icons.arrowsClockwise
-                    font.family: Icons.font
-                    font.pixelSize: Styling.fontSize(0)
-                    color: (NetworkService.wifiScanning || NetworkService.isUpdating) ? Styling.srItem("overprimary") : (NetworkService.wifiEnabled ? Colors.overBackground : Colors.outline)
-
-                    RotationAnimation on rotation {
-                        running: NetworkService.wifiScanning || NetworkService.isUpdating
-                        from: 0
-                        to: 360
-                        duration: 1000
-                        loops: Animation.Infinite
-                    }
-                }
-
-                MouseArea {
-                    id: rescanMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: NetworkService.wifiEnabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                    onClicked: {
-                        if (NetworkService.wifiEnabled) {
-                            NetworkService.rescanWifi();
-                        }
-                    }
-                }
+            ThemeButton {
+                id: networkScan
+                implicitWidth: Styling.spacing(36)
+                implicitHeight: implicitWidth
+                padding: 0
+                glyph: Icons.arrowsClockwise
+                Accessible.name: "Rescan networks"
+                enabled: NetworkService.wifiEnabled && !glyphSpinning
+                glyphSpinning: NetworkService.wifiScanning || NetworkService.isUpdating
+                onClicked: NetworkService.rescanWifi()
 
                 StyledToolTip {
-                    show: rescanMouse.containsMouse
-                    tooltipText: "Rescan networks"
+                    show: networkScan.hovered
+                    tooltipText: networkScan.Accessible.name
                 }
             }
 

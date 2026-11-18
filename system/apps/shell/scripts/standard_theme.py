@@ -125,6 +125,99 @@ QProgressBar::chunk {{ background: {accent}; border-radius: {r}px; }}
 '''
 
 
+
+def dolphin_css(p, m):
+    radius = m['radius']
+    compact = radius // 2
+    pane = p['surfaceContainer']
+    inset = p['surfaceContainerLowest']
+    hover = p['surfaceContainerHigh']
+    edge = p['outlineVariant']
+    accent = p['primary']
+    selected = p.get('primaryContainer', hover)
+    selected_text = p.get('overPrimaryContainer', p['overSurface'])
+    return f'''
+/* Dolphin navigation, Places, and file view */
+DolphinMainWindow QToolBar {{
+  background: {pane}; border: 1px solid {edge}; border-radius: {radius}px;
+  padding: 4px 6px; margin: 6px; spacing: 4px;
+}}
+DolphinMainWindow QToolBar QToolButton,
+DolphinMainWindow DolphinUrlNavigator QToolButton {{
+  background: transparent; border: 1px solid transparent; border-radius: {compact}px;
+  min-height: 24px; padding: 3px 7px;
+}}
+DolphinMainWindow QToolBar QToolButton:has-menu {{
+  padding-right: 16px;
+}}
+DolphinMainWindow QToolBar QToolButton::menu-indicator {{
+  subcontrol-origin: border; subcontrol-position: right center;
+  width: 9px; height: 9px; right: 4px;
+}}
+DolphinMainWindow QToolBar QToolButton::menu-button {{
+  subcontrol-origin: border; subcontrol-position: right center;
+  width: 16px; border: 0; background: transparent;
+}}
+DolphinMainWindow QToolBar QToolButton::menu-arrow {{
+  subcontrol-position: center; width: 9px; height: 9px;
+}}
+DolphinMainWindow QToolBar QToolButton:hover,
+DolphinMainWindow DolphinUrlNavigator QToolButton:hover {{
+  background: {hover}; border-color: {edge};
+}}
+DolphinMainWindow QToolBar QToolButton:checked {{
+  background: {selected}; color: {selected_text};
+  border-color: {accent};
+}}
+DolphinMainWindow QToolBar QToolButton:focus,
+DolphinMainWindow DolphinUrlNavigator QToolButton:focus {{
+  border-color: {accent};
+}}
+DolphinMainWindow DolphinUrlNavigator {{
+  background: {inset}; border: 1px solid {edge}; border-radius: {compact}px;
+}}
+DolphinMainWindow DolphinUrlNavigator QLineEdit {{
+  min-height: 24px; padding: 2px 8px; border-radius: {compact}px;
+}}
+DolphinMainWindow QDockWidget {{
+  background: {pane}; border: 1px solid {edge}; border-radius: {radius}px;
+}}
+DolphinMainWindow QDockWidget::title {{
+  background: transparent; text-align: left; padding: 7px 10px;
+}}
+DolphinMainWindow QDockWidget QAbstractItemView {{
+  background: {pane}; border: 0; border-radius: {radius}px; padding: 3px; min-width: 198px;
+  selection-background-color: {selected};
+  selection-color: {selected_text};
+}}
+DolphinMainWindow QDockWidget QListView::item {{
+  min-height: 24px; padding: 3px 6px; border-radius: {compact}px;
+}}
+DolphinMainWindow QDockWidget QListView::item:hover:!selected {{ background: {hover}; }}
+DolphinMainWindow QDockWidget QListView::item:selected {{
+  background: {selected}; color: {selected_text};
+}}
+DolphinMainWindow KItemListContainer,
+DolphinMainWindow KItemListContainerViewport {{
+  background: {inset}; border: 1px solid {edge}; border-radius: {radius}px;
+  alternate-background-color: {pane}; color: {p['overSurface']};
+  selection-background-color: {accent}; selection-color: {p['overPrimary']};
+}}
+DolphinMainWindow QTabBar::tab {{
+  min-height: 24px; padding: 4px 12px; margin: 2px;
+  border: 1px solid transparent; border-radius: {compact}px; background: {pane};
+}}
+DolphinMainWindow QTabBar::tab:hover {{ background: {hover}; }}
+DolphinMainWindow QTabBar::tab:selected {{
+  background: {selected}; color: {selected_text};
+  border-color: {accent};
+}}
+DolphinMainWindow DolphinStatusBar {{
+  background: {pane}; border-radius: {compact}px;
+}}
+'''
+
+
 def browser_css(p, m):
     return f'''\n/* Enclosure standard components */
 #navigator-toolbox, menupopup, panel, #urlbar, #searchbar {{ font-family: "{m['font']}" !important; font-size: {m['size']}px !important; }}
@@ -156,7 +249,7 @@ def apply(p, home):  # pylint: disable=too-many-locals
         update_ini(directory / 'settings.ini', {'Settings': {
             'gtk-font-name': f'{m["font"]} {m["size"] * .75:g}'}})
     stylesheet = cfg / 'enclosure/theme/widgets.qss'
-    write(stylesheet, qt_css(p, m))
+    stylesheet_changed = write(stylesheet, qt_css(p, m) + dolphin_css(p, m))
     for version in (5, 6):
         target = cfg / f'qt{version}ct/qt{version}ct.conf'
         # qtct uses a QStringList; retain user stylesheets, replacing only ours.
@@ -168,7 +261,8 @@ def apply(p, home):  # pylint: disable=too-many-locals
         weight = 50 if version == 5 else 400
         font = f'"{m["font"]},{m["size"]*.75:g},-1,5,{weight},0,0,0,0,0"'
         update_ini(target, {'Fonts': {'general': font, 'fixed': font},
-                            'Interface': {'stylesheets': ', '.join(entries)}})
+                            'Interface': {'stylesheets': ', '.join(entries)}},
+                   force=stylesheet_changed)
     update_ini(cfg / 'kdeglobals', {'General': {
         'font': f'{m["font"]},{m["size"]*.75:g},-1,5,50,0,0,0,0,0',
         'menuFont': f'{m["font"]},{m["size"]*.75:g},-1,5,50,0,0,0,0,0'}})

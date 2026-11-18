@@ -1,61 +1,23 @@
 import QtQuick
-import QtQuick.Controls
 import qs.modules.theme
 import qs.modules.components
 import qs.config
 
-Button {
+ThemeButton {
     id: root
     property int count: 1
     property bool expanded: false
     property real fontSize: Config.theme.fontSize
 
     visible: count > 1
-    implicitWidth: contentRow.implicitWidth + 12
-    implicitHeight: 24
-    scale: root.pressed ? 0.90 : 1.0
-
-    Behavior on scale {
-        enabled: (Config.animDuration ?? 0) > 0
-        NumberAnimation {
-            duration: root.pressed ? Motion.press : Motion.feedback
-            easing.type: Motion.feedbackCurve
-        }
-    }
-
-    background: StyledRect {
-        id: buttonBackground
-        variant: root.expanded ? (root.hovered ? "primaryfocus" : "primary") : (root.hovered ? "focus" : "common")
-        radius: Styling.radius(0)
-    }
-
-    contentItem: Row {
-        id: contentRow
-        spacing: Styling.spacing(2)
-        anchors.centerIn: parent
-
-        Text {
-            renderType: Text.NativeRendering
-            font.hintingPreference: Font.PreferFullHinting
-            text: root.count.toString()
-            font.family: Config.theme.font
-            font.pixelSize: Config.theme.fontSize
-            font.weight: Font.Bold
-            color: buttonBackground.item
-            anchors.verticalCenter: parent.verticalCenter
-            leftPadding: 4
-            rightPadding: 4
-        }
-
-        Text {
-            renderType: Text.NativeRendering
-            font.hintingPreference: Font.PreferFullHinting
-            text: root.expanded ? Icons.caretUp : Icons.caretDown
-            textFormat: Text.RichText
-            font.family: Icons.font
-            font.pixelSize: Config.theme.fontSize
-            color: buttonBackground.item
-            anchors.verticalCenter: parent.verticalCenter
-        }
-    }
+    implicitWidth: contentItem.implicitWidth + Styling.spacing(12)
+    implicitHeight: Styling.spacing(26)
+    padding: 0
+    text: String(count)
+    glyph: expanded ? Icons.caretUp : Icons.caretDown
+    glyphSize: fontSize
+    font.pixelSize: fontSize
+    font.weight: Font.Bold
+    emphasized: expanded
+    Accessible.name: expanded ? "Collapse notifications" : "Expand " + count + " notifications"
 }

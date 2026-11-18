@@ -50,7 +50,7 @@ for (const id of ids) {
 }
 const p = palettes[0];
 assert.equal(surface('monolith', 'bg', p).border[1], 0);
-assert.equal(surface('monolith', 'bg', p).gradient.length, 6);
+assert.equal(surface('monolith', 'bg', p).gradient.length, 1);
 assert.equal(surface('monolith', 'bg', p).radius, undefined);
 assert.equal(surface('monolith', 'internalbg', p).gradient[0][0], p.background);
 assert.equal(surface('blueprint', 'bg', p).radius, undefined);
@@ -78,6 +78,7 @@ for (const id of materials) {
    const s = surface(id, role, palette);
    assert.ok(s.opacity > 0 && s.opacity < 1);
    assert.equal(s.itemColor, palette.foreground);
+   assert.equal(s.gradient.length, 1, id + ' flat ' + role);
    for (const stop of s.gradient) assert.ok(contrast(stop[0], s.itemColor) >= 4.5, id + ' ' + role);
   }
   for (const role of ['primary','secondary','tertiary','error']) {

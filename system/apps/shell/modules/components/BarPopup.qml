@@ -44,7 +44,9 @@ PopupWindow {
     // boundary keeps the content stationary and sharp.
     property real revealProgress: 0
     // Mutable duration so sibling switches can use a snappier close/open.
-    property int transitionMs: Motion.enter
+    readonly property int openMs: Math.round(Motion.base * 1.15)
+    readonly property int closeMs: Math.round(Motion.base * 0.95)
+    property int transitionMs: openMs
 
     // Total size including shadow margin
     readonly property int totalWidth: contentWidth + shadowMargin * 2
@@ -114,7 +116,7 @@ PopupWindow {
         enabled: root.transitionMs > 0
         NumberAnimation {
             duration: root.transitionMs
-            easing.type: root.isOpen ? Motion.enterCurve : Motion.exitCurve
+            easing.type: Easing.InOutCubic
         }
     }
 
@@ -154,8 +156,8 @@ PopupWindow {
         closeTimer.stop();
         resetTransitionTimer.stop();
 
-        // Snappy full-duration open for a clean settle.
-        transitionMs = Motion.enter;
+        // Give the reveal time to accelerate and settle.
+        transitionMs = openMs;
 
         // One bar popup at a time; a replaced sibling uses a quicker collapse.
         Visibilities.claimBarPopup(root);
@@ -193,7 +195,7 @@ PopupWindow {
         focusActive = false;
         Visibilities.releaseBarPopup(root);
 
-        transitionMs = quick ? Motion.feedback : Motion.exit;
+        transitionMs = quick ? Math.round(closeMs * 0.7) : closeMs;
 
         revealProgress = 0;
 
@@ -225,7 +227,7 @@ PopupWindow {
         id: resetTransitionTimer
         interval: 50
         onTriggered: {
-            root.transitionMs = Motion.enter;
+            root.transitionMs = root.openMs;
         }
     }
 }

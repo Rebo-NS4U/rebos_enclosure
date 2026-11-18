@@ -7,7 +7,7 @@ import sys
 import threading
 import tempfile
 from pathlib import Path
-from commands import build_spotdl_args, find_spotdl, remember_playlist_source
+from commands import build_spotdl_args, find_spotdl, remember_playlist_source, publish_playlist
 
 lock = threading.Lock()
 CANCEL_GRACE = 2
@@ -55,7 +55,8 @@ class Download:
 
 class WarmDownload(Download):
     """Use a preloaded parent, keeping each job in a separate process group."""
-    def __init__(self, worker, command):
+    def __init__(self, worker, command, membership=None):
+        self.membership = membership
         self.worker = worker
         self.pid = None
         self.cancelled = threading.Event()
@@ -94,7 +95,18 @@ class WarmDownload(Download):
         finally:
             if self.cancelled.is_set():
                 self.signal_group(signal.SIGKILL)
-            self.finished.set()
+        if self.membership:
+            folder, result = self.membership
+            try:
+                if code == 0 and not self.cancelled.is_set():
+                    publish_playlist(folder, result)
+                    emit(log='Playlist synced. Removed entries keep their audio files.')
+            except Exception as error:
+                code = 1
+                emit(log='Playlist sync failed: ' + str(error))
+            finally:
+                Path(result).unlink(missing_ok=True)
+        self.finished.set()
         emit(done=True, code=code, cancelled=self.cancelled.is_set())
 
 
@@ -144,7 +156,16 @@ try:
             if worker is None or worker.poll() is not None:
                 worker = start_worker()
             remember_playlist_source(folder, data.get('links', ''))
-            job = WarmDownload(worker, command)
+            membership = None
+            if data.get('syncPlaylist') is True:
+                metadata = json.loads((Path(folder) / '.enclosure-playlist.json').read_text())
+                if len(metadata.get('sources', [])) != 1:
+                    raise ValueError('Sync requires one Spotify source playlist.')
+                fd, result = tempfile.mkstemp(suffix='.spotdl')
+                os.close(fd)
+                command += ['--save-file', result]
+                membership = (folder, result)
+            job = WarmDownload(worker, command, membership)
             emit(started=True)
             threading.Thread(target=job.watch, daemon=True).start()
         except Exception as error:

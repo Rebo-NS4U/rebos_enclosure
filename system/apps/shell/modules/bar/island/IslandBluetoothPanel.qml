@@ -77,94 +77,36 @@ Item {
             Item { Layout.fillWidth: true }
 
             // Action 1: Bluetooth settings Manager (popOpen / ↗)
-            StyledRect {
-                implicitWidth: 28
-                implicitHeight: 28
-                radius: Styling.radius(0)
-                variant: settingsMouse.containsMouse ? "focus" : "common"
-                scale: settingsMouse.pressed ? 0.92 : 1.0
-
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: settingsMouse.pressed ? Motion.press : Motion.feedback
-                        easing.type: Motion.feedbackCurve
-                    }
-                }
-
-                Text {
-                    anchors.centerIn: parent
-                    renderType: Text.NativeRendering
-                    font.hintingPreference: Font.PreferFullHinting
-                    text: Icons.popOpen
-                    font.family: Icons.font
-                    font.pixelSize: Styling.fontSize(0)
-                    color: Colors.overBackground
-                }
-
-                MouseArea {
-                    id: settingsMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: { GlobalShortcuts.run("settings"); GlobalStates.settingsCurrentTab = 1; }
-                }
+            ThemeButton {
+                id: bluetoothSettings
+                implicitWidth: Styling.spacing(36)
+                implicitHeight: implicitWidth
+                padding: 0
+                glyph: Icons.popOpen
+                Accessible.name: "Bluetooth settings"
+                onClicked: { GlobalShortcuts.run("settings"); GlobalStates.settingsCurrentTab = 1; }
 
                 StyledToolTip {
-                    show: settingsMouse.containsMouse
-                    tooltipText: "Bluetooth settings"
+                    show: bluetoothSettings.hovered
+                    tooltipText: bluetoothSettings.Accessible.name
                 }
             }
 
             // Action 2: Rescan / Scan for devices (arrowsClockwise / 🔄)
-            StyledRect {
-                implicitWidth: 28
-                implicitHeight: 28
-                radius: Styling.radius(0)
-                variant: rescanMouse.containsMouse ? "focus" : "common"
+            ThemeButton {
+                id: bluetoothScan
+                implicitWidth: Styling.spacing(36)
+                implicitHeight: implicitWidth
+                padding: 0
+                glyph: Icons.arrowsClockwise
+                Accessible.name: "Scan for devices"
                 enabled: BluetoothService.enabled
-                scale: rescanMouse.pressed ? 0.92 : 1.0
-
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: rescanMouse.pressed ? Motion.press : Motion.feedback
-                        easing.type: Motion.feedbackCurve
-                    }
-                }
-
-                Text {
-                    id: rescanIcon
-                    anchors.centerIn: parent
-                    renderType: Text.NativeRendering
-                    font.hintingPreference: Font.PreferFullHinting
-                    text: Icons.arrowsClockwise
-                    font.family: Icons.font
-                    font.pixelSize: Styling.fontSize(0)
-                    color: (BluetoothService.discovering || BluetoothService.isUpdating) ? Styling.srItem("overprimary") : (BluetoothService.enabled ? Colors.overBackground : Colors.outline)
-
-                    RotationAnimation on rotation {
-                        running: BluetoothService.discovering || BluetoothService.isUpdating
-                        from: 0
-                        to: 360
-                        duration: 1000
-                        loops: Animation.Infinite
-                    }
-                }
-
-                MouseArea {
-                    id: rescanMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: BluetoothService.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                    onClicked: {
-                        if (BluetoothService.enabled) {
-                            BluetoothService.startDiscovery();
-                        }
-                    }
-                }
+                glyphSpinning: BluetoothService.discovering || BluetoothService.isUpdating
+                onClicked: BluetoothService.startDiscovery()
 
                 StyledToolTip {
-                    show: rescanMouse.containsMouse
-                    tooltipText: "Scan for devices"
+                    show: bluetoothScan.hovered
+                    tooltipText: bluetoothScan.Accessible.name
                 }
             }
 

@@ -256,15 +256,14 @@ ClippingRectangle {
     // look soft/hazy. Widget chrome shadows live on dedicated shadow items
     // instead of on text-bearing containers.
 
-    // Frosted and Tinted have distinct perimeter construction, not a palette swap.
+    // Layered accent planes for Tinted.
     Loader {
         anchors.fill: parent
         active: !root.hasFillColor && root.rectOpacity > 0
             && ["bg", "popup", "pane", "surface", "surfaceContainer", "internalbg", "focus"].indexOf(root.variant) !== -1
-            && ["frosted", "colorful"].indexOf(root.styleOverride || Styling.shellStyle) !== -1
+            && (root.styleOverride || Styling.shellStyle) === "colorful"
         sourceComponent: Item {
             id: classic
-            readonly property bool ice: (root.styleOverride || Styling.shellStyle) === "frosted"
             readonly property bool outer: root.variant === "bg" || root.variant === "popup"
             readonly property color ink: root.itemColor
             readonly property color accent: Colors.primary
@@ -275,14 +274,11 @@ ClippingRectangle {
                 readonly property bool outer: classic.outer
                 onOuterChanged: requestPaint()
                 readonly property color accent: classic.accent
-                readonly property bool ice: classic.ice
                 objectName: "classic-glass-canvas"
-                readonly property int frostSeed: Math.floor(Math.random()*65536)
                 readonly property real cornerRadius: root.effectiveCornerRadius
                 onCornerRadiusChanged: requestPaint()
                 onPigmentChanged: requestPaint()
                 onAccentChanged: requestPaint()
-                onIceChanged: requestPaint()
                 onWidthChanged: requestPaint()
                 onHeightChanged: requestPaint()
                 onPaint: {
@@ -292,83 +288,30 @@ ClippingRectangle {
                     const tint=a=>Qt.rgba(accent.r,accent.g,accent.b,a);
                     ctx.save();if(root.traceThemeFrame(ctx,0))ctx.clip();
                     ctx.lineWidth=1;
-                    if(ice){
-                        // Two soft inset rims and a broken highlight suggest etched ice.
-                        for(let layer=0;layer<2;layer++){
-                            const d=3+layer*3,r=root.themeInsetRadius(d);
-                            ctx.strokeStyle=ink(layer?0.07:0.18);
-                            ctx.beginPath();ctx.moveTo(d+r,d);ctx.lineTo(width-d-r,d);
-                            ctx.quadraticCurveTo(width-d,d,width-d,d+r);ctx.lineTo(width-d,height-d-r);
-                            ctx.quadraticCurveTo(width-d,height-d,width-d-r,height-d);ctx.lineTo(d+r,height-d);
-                            ctx.quadraticCurveTo(d,height-d,d,height-d-r);ctx.lineTo(d,d+r);
-                            ctx.quadraticCurveTo(d,d,d+r,d);ctx.stroke();
+                    // Offset accent planes, quiet inner keylines and open frame corners.
+                    const band=classic.outer?7:3;
+                    ctx.fillStyle=tint(0.22);ctx.fillRect(0,12,band,Math.max(0,height-24));
+                    ctx.fillStyle=tint(0.12);ctx.fillRect(band+2,22,2,Math.max(0,height-44));
+                    ctx.strokeStyle=tint(0.30);ctx.beginPath();
+                    const r=root.themeInsetRadius(5);
+                    ctx.moveTo(Math.max(18,5+r),5);ctx.lineTo(width-5-r,5);
+                    ctx.quadraticCurveTo(width-5,5,width-5,5+r);
+                    ctx.lineTo(width-5,Math.max(5+r,height*0.32));ctx.stroke();
+                    ctx.strokeStyle=ink(0.09);ctx.beginPath();ctx.moveTo(Math.max(16,11+root.themeInsetRadius(11)),11);ctx.lineTo(width-Math.max(22,11+root.themeInsetRadius(11)),11);ctx.stroke();
+                    ctx.fillStyle=tint(0.23);ctx.beginPath();
+                    ctx.moveTo(width-34,height-5);ctx.lineTo(width-5,height-5);ctx.lineTo(width-5,height-16);ctx.lineTo(width-23,height-16);ctx.closePath();ctx.fill();
+                    if(classic.outer){
+                        // Layered colored glass planes recede into the upper and lower margins.
+                        for(let plane=0;plane<3;plane++){
+                            const depth=12+plane*8;
+                            const wash=ctx.createLinearGradient(0,0,0,depth+10);
+                            wash.addColorStop(0,tint(0.10-plane*0.02));wash.addColorStop(1,tint(0));
+                            ctx.fillStyle=wash;ctx.beginPath();ctx.moveTo(width*0.36+plane*18,0);
+                            ctx.lineTo(width,0);ctx.lineTo(width,depth);
+                            ctx.lineTo(width*0.51+plane*14,depth);ctx.closePath();ctx.fill();
                         }
-                        ctx.strokeStyle=ink(0.32);ctx.beginPath();ctx.moveTo(Math.max(18,cornerRadius),3);ctx.lineTo(Math.max(18,cornerRadius,width*0.38),3);ctx.stroke();
-                        if(classic.outer){
-                            // Fixed fine grain at the perimeter; no texture over text.
-                            ctx.fillStyle=ink(0.14);
-                            for(let i=0;i<Math.min(200,Math.floor((width+height)/4));i++){
-                                const x=8+((i*47)%Math.max(1,width-16));
-                                const y=i%2?height-5-(i%5):4+(i%5);
-                                ctx.fillRect(x,y,1,1);
-                            }
-                            // Stable per-surface randomness breaks the repeated crack motif.
-                            // Repainting or resizing keeps existing crystals in place.
-                            const random=i=>{
-                                const value=Math.sin((i+1)*127.1+frostSeed*311.7)*43758.5453;
-                                return value-Math.floor(value);
-                            };
-                            const edge=Math.max(22,cornerRadius+8);
-                            let x=edge+random(0)*38;
-                            for(let crystal=0;x<width-edge;crystal++){
-                                const key=crystal*13;
-                                const length=Math.min(height-9,9+random(key+2)*15);
-                                const lean=(random(key+3)-0.5)*14;
-                                ctx.strokeStyle=ink(0.08+random(key+4)*0.07);ctx.lineWidth=0.7;
-                                ctx.beginPath();ctx.moveTo(x,3);ctx.lineTo(x+lean,length);
-                                const twigs=1+Math.floor(random(key+5)*3);
-                                for(let twig=0;twig<twigs;twig++){
-                                    const t=(twig+1)/(twigs+1);
-                                    const y=3+t*(length-3),stem=x+t*lean;
-                                    const reach=2+random(key+6+twig)*4;
-                                    ctx.moveTo(stem,y);ctx.lineTo(stem-reach,y+reach*0.55);
-                                    if(random(key+9+twig)>0.35){
-                                        ctx.moveTo(stem,y);ctx.lineTo(stem+reach*0.8,y-reach*0.45);
-                                    }
-                                }
-                                ctx.stroke();
-                                x+=30+random(key+1)*76;
-                            }
-                            const bloom=ctx.createRadialGradient(width,0,0,width,0,Math.min(100,width/3,height/2));
-                            bloom.addColorStop(0,ink(0.075));bloom.addColorStop(1,ink(0));
-                            ctx.fillStyle=bloom;ctx.fillRect(0,0,width,height);
-                        }
-                    }else{
-                        // Offset accent planes, quiet inner keylines and open frame corners.
-                        const band=classic.outer?7:3;
-                        ctx.fillStyle=tint(0.22);ctx.fillRect(0,12,band,Math.max(0,height-24));
-                        ctx.fillStyle=tint(0.12);ctx.fillRect(band+2,22,2,Math.max(0,height-44));
-                        ctx.strokeStyle=tint(0.30);ctx.beginPath();
-                        const r=root.themeInsetRadius(5);
-                        ctx.moveTo(Math.max(18,5+r),5);ctx.lineTo(width-5-r,5);
-                        ctx.quadraticCurveTo(width-5,5,width-5,5+r);
-                        ctx.lineTo(width-5,Math.max(5+r,height*0.32));ctx.stroke();
-                        ctx.strokeStyle=ink(0.09);ctx.beginPath();ctx.moveTo(Math.max(16,11+root.themeInsetRadius(11)),11);ctx.lineTo(width-Math.max(22,11+root.themeInsetRadius(11)),11);ctx.stroke();
-                        ctx.fillStyle=tint(0.23);ctx.beginPath();
-                        ctx.moveTo(width-34,height-5);ctx.lineTo(width-5,height-5);ctx.lineTo(width-5,height-16);ctx.lineTo(width-23,height-16);ctx.closePath();ctx.fill();
-                        if(classic.outer){
-                            // Layered colored glass planes recede into the upper and lower margins.
-                            for(let plane=0;plane<3;plane++){
-                                const depth=12+plane*8;
-                                const wash=ctx.createLinearGradient(0,0,0,depth+10);
-                                wash.addColorStop(0,tint(0.10-plane*0.02));wash.addColorStop(1,tint(0));
-                                ctx.fillStyle=wash;ctx.beginPath();ctx.moveTo(width*0.36+plane*18,0);
-                                ctx.lineTo(width,0);ctx.lineTo(width,depth);
-                                ctx.lineTo(width*0.51+plane*14,depth);ctx.closePath();ctx.fill();
-                            }
-                            ctx.fillStyle=tint(0.35);
-                            for(let i=0;i<3;i++)ctx.fillRect(18+i*9,height-7,5,2);
-                        }
+                        ctx.fillStyle=tint(0.35);
+                        for(let i=0;i<3;i++)ctx.fillRect(18+i*9,height-7,5,2);
                     }
                     ctx.restore();
                 }
@@ -381,7 +324,7 @@ ClippingRectangle {
         anchors.fill: parent
         active: !root.hasFillColor && root.rectOpacity > 0
             && ["bg", "popup", "pane", "surface", "surfaceContainer", "internalbg", "focus"].indexOf(root.variant) !== -1
-            && ["glass-vault", "radar-station", "suspended-film"].indexOf(root.styleOverride || Styling.shellStyle) !== -1
+            && ["glass-vault", "radar-station"].indexOf(root.styleOverride || Styling.shellStyle) !== -1
         sourceComponent: Item {
             id: material
             readonly property string finish: root.styleOverride || Styling.shellStyle
@@ -500,40 +443,6 @@ ClippingRectangle {
                             ctx.fillStyle=ink(0.25);
                             for(let i=0;i<5;i++)ctx.fillRect(width/2-19+i*8,height-7,5,2);
                         }
-                    } else {
-                        // Floating sheets have offset edges and a narrow contact shadow.
-                        const sheet=(x,y,w,h,inset)=>{
-                            if(w<=0||h<=0)return;
-                            const r=Math.max(0,Math.min(cornerRadius-inset,w/2,h/2));
-                            ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);
-                            ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);
-                            ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);
-                            ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);
-                            ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();
-                        };
-                        const gap=material.outer?8:4;
-                        sheet(gap,3,width-gap-4,height-gap-3,3);
-                        ctx.fillStyle=ink(0.018);ctx.fill();ctx.strokeStyle=ink(0.20);ctx.stroke();
-                        sheet(3,gap,width-gap-4,height-gap-3,gap);
-                        ctx.strokeStyle=ink(0.08);ctx.stroke();
-                        // Layered lower edge supplies a visible sense of separation.
-                        ctx.lineWidth=2;ctx.strokeStyle=ink(0.09);
-                        const safe=Math.max(16,cornerRadius+gap);
-                        ctx.beginPath();ctx.moveTo(safe,height-gap-2);
-                        ctx.lineTo(Math.max(safe,width-safe),height-gap-2);ctx.stroke();
-                        ctx.lineWidth=1;ctx.strokeStyle=ink(0.23);
-                        ctx.beginPath();ctx.moveTo(safe,3);ctx.lineTo(Math.max(safe,width*0.58),3);ctx.stroke();
-                        if(material.outer){
-                            // Curved grazing reflections separate the suspended sheets.
-                            for(let layer=0;layer<3;layer++){
-                                ctx.strokeStyle=ink(0.09-layer*0.02);ctx.lineWidth=1;
-                                ctx.beginPath();ctx.moveTo(width*0.24,5+layer*4);
-                                ctx.bezierCurveTo(width*0.46,18+layer*4,width*0.73,2+layer*3,width-12,18+layer*5);ctx.stroke();
-                            }
-                        }
-                        const sheen=ctx.createLinearGradient(0,0,width,height);
-                        sheen.addColorStop(0,ink(0.035));sheen.addColorStop(0.38,ink(0.01));sheen.addColorStop(1,ink(0));
-                        ctx.fillStyle=sheen;ctx.fillRect(0,0,width,height);
                     }
                     ctx.restore();
                 }
@@ -544,9 +453,11 @@ ClippingRectangle {
     // Wallpaper architecture, using the selected semantic colors throughout.
     Loader {
         anchors.fill: parent
-        active: !root.hasFillColor && root.rectOpacity > 0
-            && ["bg", "popup", "pane", "surface", "surfaceContainer", "internalbg", "focus"].indexOf(root.variant) !== -1
-            && ["canopy", "orbital", "metropolis"].indexOf(root.styleOverride || Styling.shellStyle) !== -1
+        readonly property string material: root.styleOverride || Styling.shellStyle
+        active: !root.hasFillColor && root.rectOpacity > 0 && (material === "canopy"
+            ? !root.controlSurface && ["bg", "popup", "pane", "surface", "surfaceContainer", "bar"].includes(root.variant)
+            : ["orbital", "metropolis"].includes(material)
+                && ["bg", "popup", "pane", "surface", "surfaceContainer", "internalbg", "focus"].includes(root.variant))
         sourceComponent: Canvas {
             anchors.fill: parent
             objectName: "wallpaper-theme-canvas"
@@ -573,6 +484,105 @@ ClippingRectangle {
             onOuterChanged: requestPaint()
             onWidthChanged: requestPaint()
             onHeightChanged: requestPaint()
+            readonly property bool broad: root.materialPreview || (width >= 160 && height >= 80 && root.variant !== "bar")
+            readonly property bool nested: !outer && !barSurface && root.variant !== "bar"
+            onBroadChanged: requestPaint()
+            onNestedChanged: requestPaint()
+
+            function paintCanopy(ctx) {
+                const leafSize = broad ? Math.min(28, width * 0.047, height * 0.105) : Math.min(12, height * 0.23, width * 0.035)
+
+                function leaf(x, y, angle, size, breadth, foliage) {
+                    ctx.save()
+                    ctx.translate(x, y)
+                    ctx.rotate(angle)
+                    ctx.scale(size, size * breadth)
+                    ctx.beginPath()
+                    ctx.moveTo(0, 0)
+                    ctx.bezierCurveTo(0.27, -0.42, 0.65, -0.25, 1, -0.10)
+                    ctx.bezierCurveTo(0.73, 0.02, 0.38, 0.42, 0, 0)
+                    ctx.fillStyle = foliage
+                    ctx.fill()
+                    ctx.beginPath()
+                    ctx.moveTo(0, 0)
+                    ctx.bezierCurveTo(0.27, -0.42, 0.65, -0.25, 1, -0.10)
+                    ctx.quadraticCurveTo(0.49, -0.02, 0, 0)
+                    ctx.fillStyle = Qt.alpha(pigment, 0.27)
+                    ctx.fill()
+                    ctx.restore()
+                }
+
+                // Sample each curved bough so shoots grow from the wood and
+                // paired leaves follow their shoot, even on tall windows.
+                function limb(x0, y0, cx, cy, x1, y1, size, count, foliage) {
+                    const bark = Qt.tint(foliage, Qt.alpha(backdrop, 0.48))
+                    ctx.fillStyle = bark
+                    ctx.beginPath()
+                    ctx.moveTo(x0, y0 - size * 0.30)
+                    ctx.quadraticCurveTo(cx, cy - size * 0.13, x1, y1)
+                    ctx.quadraticCurveTo(cx, cy + size * 0.14, x0, y0 + size * 0.30)
+                    ctx.closePath()
+                    ctx.fill()
+                    for (let i = 0; i < count; ++i) {
+                        const t = (i + 0.52) / count, u = 1 - t
+                        const x = u*u*x0 + 2*u*t*cx + t*t*x1
+                        const y = u*u*y0 + 2*u*t*cy + t*t*y1
+                        const heading = Math.atan2(u*(cy-y0) + t*(y1-cy), u*(cx-x0) + t*(x1-cx))
+                        const side = i % 2 ? -1 : 1
+                        const shoot = size * (2.4 - t * 0.85 + (i % 3) * 0.32)
+                        ctx.save()
+                        ctx.translate(x, y)
+                        ctx.rotate(heading + side * (0.47 + (i % 3) * 0.16))
+                        const bend = side * shoot * 0.29
+                        // Two curves meet at a fine tip; leaves attach along their centerline.
+                        const stem = Math.max(0.55, size * 0.055)
+                        ctx.fillStyle = bark
+                        ctx.beginPath()
+                        ctx.moveTo(0, -stem)
+                        ctx.quadraticCurveTo(shoot * 0.5, -stem * 0.35, shoot, bend)
+                        ctx.quadraticCurveTo(shoot * 0.5, stem * 0.35, 0, stem)
+                        ctx.closePath()
+                        ctx.fill()
+
+                        const leaves = 3 + i % 3
+                        for (let j = 1; j <= leaves; ++j) {
+                            const s = j / (leaves + 1)
+                            const tangent = Math.atan2(2 * bend * s, shoot)
+                            const spread = (j % 2 ? 1 : -1) * (1.05 - 0.48 * s)
+                            const breadth = 0.76 + 0.12 * ((i + j) % 4)
+                            leaf(shoot * s, bend * s*s, tangent + spread,
+                                 size * (1.13 - s * 0.47), breadth, foliage)
+                        }
+                        leaf(shoot, bend, Math.atan2(2 * bend, shoot), size * 0.66, 0.74, foliage)
+                        ctx.restore()
+                    }
+                }
+
+                if (broad) {
+                    // A distant crown crosses the reading area in silhouette.
+                    // The closer limbs overlap it at opposite edges.
+                    ctx.globalAlpha = nested ? 0.15 : 0.26
+                    limb(width * 1.03, height * 0.12, width * 0.67, height * 0.20,
+                         width * 0.21, height * 0.68, leafSize, nested ? 5 : 9, secondaryAccent)
+                    ctx.globalAlpha = nested ? 0.24 : 0.48
+                    limb(-leafSize, height * 0.98, width * 0.12, height * 0.79,
+                         width * 0.42, height * 0.78, leafSize * 0.76, 5, accent)
+                }
+                if (!nested) {
+                    // Limit the reach on a wide bar so the clock stays clear.
+                    const reach = Math.min(width * 0.29, leafSize * 9)
+                    const crownSize = leafSize * (broad ? 0.60 : 0.78)
+                    ctx.globalAlpha = broad ? 0.55 : 0.70
+                    limb(-leafSize, crownSize * 1.75, reach * 0.35, crownSize * 0.35,
+                         reach, -crownSize * 0.24, crownSize, 5, accent)
+                    if (!broad) {
+                        ctx.globalAlpha = 0.60
+                        limb(width + leafSize, leafSize * 1.6, width - reach * 0.44, leafSize * 0.9,
+                             width - reach * 0.82, 0, leafSize * 0.62, 4, secondaryAccent)
+                    }
+                }
+            }
+
             onPaint: {
                 const ctx=getContext("2d");ctx.clearRect(0,0,width,height);
                 if(width<24||height<24)return;
@@ -582,70 +592,15 @@ ClippingRectangle {
                 // Clip every material layer to the shared rounded surface.
                 ctx.save();
                 if(root.traceThemeFrame(ctx,0))ctx.clip();
-                if(finish === "canopy"){
-                    // Translucent fabric drapes use the selected palette.
-                    const fabric=a=>Qt.rgba(accent.r*0.65+secondaryAccent.r*0.35,accent.g*0.65+secondaryAccent.g*0.35,accent.b*0.65+secondaryAccent.b*0.35,a);
-                    // Taut diagonal fabric sails with folded tips, grazing light and soft shadows.
-                    function drapedCanopy(depth, shape) {
-                        const split=0.39+(shape%4)*0.055;
-                        const glow=ctx.createLinearGradient(0,0,width,depth);
-                        glow.addColorStop(0,Qt.rgba(secondaryAccent.r,secondaryAccent.g,secondaryAccent.b,0.08));
-                        glow.addColorStop(0.55,fabric(0.025));
-                        glow.addColorStop(1,Qt.rgba(accent.r,accent.g,accent.b,0.12));
-                        ctx.fillStyle=glow;ctx.fillRect(0,0,width,depth);
-                        for(let layer=0;layer<3;layer++){
-                            const reach=depth*(1-layer*0.24);
-                            const pinch=split+(layer-1)*0.11;
-                            const edge=reach*(0.12+layer*0.04);
-                            function drape(offset) {
-                                ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(width,0);
-                                ctx.lineTo(width,edge+offset);
-                                // Long diagonal hems meet at a crisp folded tip, without scallops.
-                                ctx.lineTo(width*(pinch+0.16),reach*0.58+offset);
-                                ctx.lineTo(width*pinch,reach*0.88+offset);
-                                ctx.lineTo(width*(pinch+0.055),reach*0.55+offset);
-                                ctx.bezierCurveTo(width*(pinch-0.10),reach*0.54+offset,
-                                    width*0.12,reach*0.32+offset,0,edge+offset);
-                                ctx.closePath();
-                            }
-                            // Broad, fading contact shadow separates the suspended sheets.
-                            const shadow=ctx.createLinearGradient(0,reach*0.25,0,reach+8);
-                            shadow.addColorStop(0,Qt.rgba(backdrop.r,backdrop.g,backdrop.b,0));
-                            shadow.addColorStop(0.7,Qt.rgba(backdrop.r,backdrop.g,backdrop.b,0.13));
-                            shadow.addColorStop(1,Qt.rgba(backdrop.r,backdrop.g,backdrop.b,0));
-                            ctx.fillStyle=shadow;drape(Math.min(6,depth*0.09));ctx.fill();
-                            const cloth=ctx.createLinearGradient(0,0,width,reach);
-                            cloth.addColorStop(0,fabric(0.12+layer*0.035));
-                            cloth.addColorStop(0.23,fabric(0.32));
-                            cloth.addColorStop(0.43,fabric(0.11));
-                            cloth.addColorStop(0.67,Qt.rgba(secondaryAccent.r,secondaryAccent.g,secondaryAccent.b,0.22));
-                            cloth.addColorStop(0.86,fabric(0.38));
-                            cloth.addColorStop(1,fabric(0.16));
-                            ctx.fillStyle=cloth;drape(0);ctx.fill();
+                if (finish === "canopy") {
+                    if (barSurface) {
+                        if (canopyVariation % 2) {
+                            ctx.translate(width, 0)
+                            ctx.scale(-1, 1)
                         }
+                        ctx.translate(0, (canopyVariation % 3) * height * 0.012)
                     }
-
-                    if(barSurface){
-                        // Broad drapes stay confined to the header.
-                        // Different span counts and proportions, stable until the next opening.
-                        const profiles=[
-                            [1], [0.46,0.54], [0.28,0.44,0.28],
-                            [0.22,0.28,0.28,0.22], [0.16,0.19,0.30,0.19,0.16],
-                            [0.52,0.30,0.18]
-                        ];
-                        const v=((canopyVariation % profiles.length)+profiles.length)%profiles.length;
-                        const spans=profiles[v];
-                        const roof=Math.min([72,76,68,60,52,78][v],height*0.22);
-                        drapedCanopy(roof,spans.length+3);
-                    }else if(outer){
-                        const drop=Math.min(70,height*0.22);
-                        drapedCanopy(drop,5);
-                        // Ground-level shade echoes the roof without framing the content.
-                        const ground=ctx.createLinearGradient(0,height-24,0,height);
-                        ground.addColorStop(0,fabric(0));ground.addColorStop(1,fabric(0.12));
-                        ctx.fillStyle=ground;ctx.fillRect(0,height-24,width,24);
-
-                    }
+                    paintCanopy(ctx)
                 }else if(finish === "orbital"){
                     // Elliptical orbital tracks wrap a quiet, recessed space capsule.
                     ctx.strokeStyle=ink(0.20);ctx.lineWidth=1;
@@ -837,129 +792,156 @@ ClippingRectangle {
         }
     }
 
-    // Monolith: polished obsidian with luminous perimeter fractures.
     Loader {
         anchors.fill: parent
-        active: !root.hasFillColor && root.rectOpacity > 0 && (root.styleOverride || Styling.shellStyle) === "monolith"
-            && !root.controlSurface
-            && ["bg", "popup", "bar", "pane", "surface", "surfaceContainer", "internalbg", "focus", "surfaceVariant"].indexOf(root.variant) !== -1
+        readonly property string finish: root.styleOverride || Styling.shellStyle
+        active: !root.hasFillColor && !root.controlSurface && root.rectOpacity > 0
+            && ["monolith", "frosted", "suspended-film"].includes(finish)
+            && ["bg", "popup", "bar", "pane", "surface", "surfaceContainer", "internalbg", "focus", "surfaceVariant"].includes(root.variant)
         sourceComponent: Canvas {
-            anchors.fill: parent
             objectName: "surface-edge-canvas"
-            readonly property real cornerRadius: root.effectiveCornerRadius
-            readonly property color pigment: root.itemColor
-            readonly property color shadowInk: Qt.darker(Colors.background, 1.8)
-            readonly property color accent: Colors.primary
-            readonly property color secondaryAccent: Colors.secondary
-            readonly property bool outer: root.variant === "bg" || root.variant === "popup" || root.variant === "bar" || root.barSurface
-            readonly property bool inset: root.variant === "internalbg"
+            anchors.fill: parent
             opacity: root.rectOpacity
-            onCornerRadiusChanged: requestPaint()
+            readonly property string finish: root.styleOverride || Styling.shellStyle
+            readonly property color pigment: root.itemColor
+            readonly property color accent: Colors.primary
+            readonly property real cornerRadius: root.effectiveCornerRadius
+            readonly property var frameCorners: [root.topLeftRadius, root.topRightRadius, root.bottomLeftRadius, root.bottomRightRadius]
+            readonly property bool outer: root.barSurface || ["bg", "popup", "bar"].includes(root.variant)
+            readonly property bool wideSlate: !root.barSurface && root.variant !== "bar"
+                && (root.materialPreview || (width >= 160 && height >= 80))
+                && ["bg", "popup", "pane", "surface", "surfaceContainer"].includes(root.variant)
+            onWideSlateChanged: requestPaint()
+            onFinishChanged: requestPaint()
             onPigmentChanged: requestPaint()
-            onShadowInkChanged: requestPaint()
             onAccentChanged: requestPaint()
-            onSecondaryAccentChanged: requestPaint()
+            onCornerRadiusChanged: requestPaint()
+            onFrameCornersChanged: requestPaint()
             onOuterChanged: requestPaint()
-            onInsetChanged: requestPaint()
             onWidthChanged: requestPaint()
             onHeightChanged: requestPaint()
-            onPaint: {
-                const ctx=getContext("2d");ctx.clearRect(0,0,width,height);
-                if(width<24||height<24)return;
-                ctx.save();if(root.traceThemeFrame(ctx,0))ctx.clip();
-                // Polished obsidian: broad grazing reflection, no stone stipple.
-                const sheen=ctx.createLinearGradient(0,0,width*0.45,height);
-                sheen.addColorStop(0,Qt.alpha(pigment,inset?0.025:0.09));
-                sheen.addColorStop(0.18,Qt.alpha(pigment,0.015));
-                sheen.addColorStop(0.48,Qt.alpha(pigment,0));
-                sheen.addColorStop(1,Qt.alpha(shadowInk,inset?0.08:0.22));
-                ctx.fillStyle=sheen;ctx.fillRect(0,0,width,height);
-                // A hairline polished bevel catches light on the upper shoulder.
-                const bevel=ctx.createLinearGradient(0,0,width,height);
-                bevel.addColorStop(0,Qt.alpha(pigment,0.32));
-                bevel.addColorStop(0.35,Qt.alpha(pigment,0.08));
-                bevel.addColorStop(0.65,Qt.alpha(shadowInk,0.45));
-                bevel.addColorStop(1,Qt.alpha(pigment,0.14));
-                ctx.strokeStyle=bevel;ctx.lineWidth=1;
-                if(root.traceThemeFrame(ctx,0.75))ctx.stroke();
-                if(!inset){
-                    // Fractures stay within narrow opposing edge bands, clear of text.
-                    const band=Math.min(root.materialPreview?6:outer?42:12,height*0.22,width*0.12);
-                    const reach=Math.min(width*0.32,outer?190:90);
-                    function vein(points,color){
-                        const first=points[0],last=points[points.length-1];
-                        color=Qt.tint(color,Qt.alpha(pigment,0.22));
-                        const light=ctx.createLinearGradient(first[0],first[1],last[0],last[1]);
-                        light.addColorStop(0,Qt.alpha(color,0));
-                        light.addColorStop(0.28,Qt.alpha(color,0.62));
-                        light.addColorStop(0.62,Qt.alpha(color,outer?0.85:0.55));
-                        light.addColorStop(1,Qt.alpha(color,0));
-                        function stroke(ink,size){
-                            ctx.strokeStyle=ink;ctx.lineWidth=size;ctx.beginPath();
-                            ctx.moveTo(first[0],first[1]);
-                            for(let i=1;i<points.length;i++)ctx.lineTo(points[i][0],points[i][1]);
-                            ctx.stroke();
-                        }
-                        stroke(Qt.alpha(shadowInk,0.55),3.5);
-                        stroke(Qt.alpha(color,0.11),6);
-                        stroke(light,1.4);
+
+            function paintSlateFace(ctx) {
+                // Positions follow the slab as it resizes. The third coordinate
+                // is the local thickness of each exposed mineral bed.
+                const strength = outer ? 1 : 0.65
+                const thickness = Math.min(32, height * 0.065)
+                function bed(points, dye, alpha) {
+                    ctx.beginPath()
+                    ctx.moveTo(points[0][0] * width, points[0][1] * height)
+                    for (const [x, y] of points) ctx.lineTo(x * width, y * height)
+                    for (let i = points.length - 1; i >= 0; --i) {
+                        const [x, y, weight] = points[i]
+                        ctx.lineTo(x * width, y * height + weight * thickness)
                     }
-                    // Background slabs use long, asymmetric fractures along all four edges.
-                    // Compact bars and smaller surfaces keep the original corner treatment.
-                    if((root.variant === "bg" || root.variant === "popup") && ((width>240 && height>120) || root.materialPreview)){
-                        // Uneven fault lines double back, split and rejoin in the edge band.
-                        // Each edge has its own silhouette; geometry stays static on repaint.
-                        function fault(edge,knots,splinters,color){
-                            function map(point){
-                                const t=point[0],d=point[1]*band;
-                                if(edge===0)return [t*width,d];
-                                if(edge===1)return [width-d,t*height];
-                                if(edge===2)return [(1-t)*width,height-d];
-                                return [d,(1-t)*height];
-                            }
-                            vein(knots.map(map),color);
-                            for(let i=0;i<splinters.length;i++)vein(splinters[i].map(map),color);
-                        }
-                        fault(0,[[0.02,0],[0.11,0.35],[0.19,0.16],[0.24,1.1],
-                            [0.28,0.48],[0.32,0.72],[0.46,0.22],[0.54,1.35],
-                            [0.57,0.60],[0.72,0.28],[0.79,0.92],[0.91,0.18],[0.98,0]],[
-                            [[0.19,0.16],[0.21,0.85],[0.18,1.55],[0.26,0.9],[0.28,0.48]],
-                            [[0.54,1.35],[0.50,1.75],[0.53,2.1],[0.57,1.7]],
-                            [[0.79,0.92],[0.83,0.44],[0.81,0]]],accent);
-                        fault(1,[[0.03,0],[0.17,0.42],[0.23,1.4],[0.27,0.55],
-                            [0.40,0.22],[0.48,0.8],[0.45,1.35],[0.59,0.5],
-                            [0.74,1.12],[0.82,0.25],[0.97,0]],[
-                            [[0.23,1.4],[0.29,1.9],[0.33,1.6],[0.37,2.15]],
-                            [[0.48,0.8],[0.52,0.2],[0.57,0]],
-                            [[0.74,1.12],[0.78,1.6],[0.83,0.9],[0.82,0.25]]],accent);
-                        fault(2,[[0.01,0],[0.13,0.65],[0.22,0.26],[0.31,0.90],
-                            [0.36,0.48],[0.48,1.5],[0.52,0.62],[0.66,0.18],
-                            [0.73,1.12],[0.84,0.38],[0.97,0]],[
-                            [[0.31,0.90],[0.28,1.45],[0.34,1.9],[0.39,1.3],[0.36,0.48]],
-                            [[0.48,1.5],[0.46,1.85],[0.51,2.15]],
-                            [[0.73,1.12],[0.78,0.65],[0.75,0]]],secondaryAccent);
-                        fault(3,[[0.04,0],[0.12,0.24],[0.26,1.1],[0.31,0.4],
-                            [0.43,0.65],[0.51,0.16],[0.64,1.3],[0.61,0.7],
-                            [0.76,0.32],[0.85,0.95],[0.98,0]],[
-                            [[0.26,1.1],[0.21,1.55],[0.25,1.85]],
-                            [[0.64,1.3],[0.69,1.85],[0.74,1.35],[0.76,0.32]],
-                            [[0.85,0.95],[0.89,0.35],[0.92,0]]],secondaryAccent);
-                    }else{
-                        vein([[width-reach,0],[width-reach*0.72,band*0.55],
-                            [width-reach*0.45,band*0.32],[width-band,band],
-                            [width-band*0.4,band*2],[width,band*2.6]],accent);
-                        vein([[reach,height],[reach*0.68,height-band*0.65],
-                            [reach*0.38,height-band*0.4],[band,height-band],
-                            [band*0.35,height-band*2],[0,height-band*2.8]],secondaryAccent);
-                        if(height>100 && width>120){
-                            vein([[width-reach*0.45,band*0.32],
-                                [width-reach*0.38,band*0.8],[width-reach*0.24,0]],accent);
-                            vein([[reach*0.38,height-band*0.4],
-                                [reach*0.32,height-band*0.95],[reach*0.18,height]],secondaryAccent);
-                        }
+                    ctx.closePath()
+                    ctx.fillStyle = Qt.alpha(dye, alpha * strength)
+                    ctx.fill()
+                }
+
+                // A diagonal cleavage plane breaks into parallel seams and
+                // tapers into narrow, brighter inclusions near the edges.
+                const fault = [[0,.78,.95],[.14,.66,.65],[.22,.65,.38],[.35,.53,.55],
+                               [.47,.51,.14],[.61,.40,.34],[.69,.40,.16],[.88,.21,.85],[1,.17,.48]]
+                bed(fault, pigment, 0.085)
+                bed([[0,.77,.21],[.14,.66,.17],[.22,.65,.04],[.35,.53,0]], accent, 0.34)
+                bed([[.47,.51,0],[.59,.45,.21],[.64,.45,.11],[.78,.32,0]], pigment, 0.16)
+                bed([[.69,.40,0],[.80,.275,.13],[.88,.21,.37],[1,.17,.12]], accent, 0.27)
+
+                bed([[.16,.62,0],[.205,.62,.08],[.28,.575,.18],[.35,.53,0]], pigment, 0.22)
+                bed([[.78,.31,0],[.84,.225,.12],[.90,.195,0]], pigment, 0.26)
+
+                // Offset beds give the slab a second plane on either side of
+                // the main seam. Their widths vary independently.
+                bed([[.29,-.045,.30],[.42,.006,.72],[.54,.026,.62],[.65,.018,.38],[.72,-.04,0]], pigment, 0.13)
+                bed([[.56,1,0],[.68,.90,.86],[.76,.895,.52],[.86,.78,.38],[1,.70,1.3]], accent, 0.14)
+                bed([[.76,.895,0],[.83,.795,.10],[.86,.78,.19],[.95,.729,0]], pigment, 0.26)
+            }
+
+            function paintSlate(ctx) {
+                if (wideSlate) paintSlateFace(ctx)
+                // Three exposed beds taper from a broken edge into the flat slab.
+                const reach = Math.min(width * 0.56, outer ? 250 : 86)
+                const depth = Math.min(height * 0.32, outer ? 42 : 13)
+                ctx.translate(0, height)
+                ctx.scale(reach, -depth)
+                const beds = [
+                    [[0, 1], [0.19, 0.74], [0.32, 0.77], [0.64, 0.29], [0.80, 0.23], [1, 0]],
+                    [[0, 0.78], [0.22, 0.54], [0.36, 0.57], [0.60, 0.26], [0.73, 0.18], [0.90, 0]],
+                    [[0, 0.48], [0.14, 0.36], [0.27, 0.39], [0.46, 0.13], [0.58, 0.11], [0.76, 0]]
+                ]
+                const inks = [Qt.alpha(pigment, 0.24), Qt.alpha(accent, 0.30), Qt.alpha(pigment, 0.20)]
+                for (let i = 0; i < beds.length; ++i) {
+                    ctx.beginPath()
+                    ctx.moveTo(0, 0)
+                    for (const point of beds[i]) ctx.lineTo(point[0], point[1])
+                    ctx.closePath()
+                    ctx.fillStyle = inks[i]
+                    ctx.fill()
+                }
+            }
+
+            function paintFrost(ctx) {
+                const band = Math.min(outer ? 14 : 6, height * 0.18, width * 0.18)
+                // The polished rim encloses a sandblasted margin. Bias the grains
+                // towards the edge and keep their arrangement stable on repaint.
+                ctx.lineWidth = 1
+                ctx.strokeStyle = Qt.alpha(pigment, outer ? 0.36 : 0.19)
+                if (root.traceThemeFrame(ctx, 2.5)) ctx.stroke()
+                let seed = 3947
+                function sample() {
+                    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0
+                    return seed / 4294967296
+                }
+                const perimeter = 2 * (width + height)
+                ctx.fillStyle = Qt.alpha(pigment, outer ? 0.31 : 0.21)
+                for (let i = 0; i < Math.min(2400, perimeter * band / 6); ++i) {
+                    const along = sample() * perimeter
+                    const inset = 1 + Math.pow(sample(), 2) * band
+                    let x, y
+                    if (along < width) { x = along; y = inset }
+                    else if (along < width + height) { x = width - inset; y = along - width }
+                    else if (along < 2 * width + height) { x = along - width - height; y = height - inset }
+                    else { x = inset; y = along - 2 * width - height }
+                    ctx.fillRect(Math.floor(x), Math.floor(y), 1, 1)
+                }
+            }
+
+            function paintFilm(ctx) {
+                const mount = Math.min(width * 0.22, Math.max(8, cornerRadius + 3))
+                const lip = outer ? 4 : 2.5
+                const sag = Math.min(outer ? 24 : 8, height * 0.23)
+                // The return edge bows farther than the upper edge of the film.
+                ctx.beginPath()
+                ctx.moveTo(mount, lip)
+                ctx.quadraticCurveTo(width * 0.54, lip + sag * 0.48, width - mount, lip)
+                ctx.quadraticCurveTo(width * 0.62, lip + sag * 1.8, mount, lip)
+                ctx.closePath()
+                ctx.fillStyle = Qt.alpha(accent, outer ? 0.32 : 0.19)
+                ctx.fill()
+                ctx.strokeStyle = Qt.alpha(pigment, 0.39)
+                ctx.lineWidth = 1
+                ctx.stroke()
+                if (outer) {
+                    for (const x of [mount, width - mount]) {
+                        ctx.beginPath()
+                        ctx.arc(x, lip, 2, 0, Math.PI * 2)
+                        ctx.fillStyle = pigment
+                        ctx.fill()
                     }
                 }
-                ctx.restore();
+            }
+
+            onPaint: {
+                const ctx = getContext("2d")
+                ctx.clearRect(0, 0, width, height)
+                if (width < 24 || height < 16) return
+                ctx.save()
+                if (root.traceThemeFrame(ctx, 0)) ctx.clip()
+                if (finish === "monolith") paintSlate(ctx)
+                else if (finish === "frosted") paintFrost(ctx)
+                else paintFilm(ctx)
+                ctx.restore()
             }
         }
     }

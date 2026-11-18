@@ -10,6 +10,10 @@ layout {
     }
 }
 window-rule {
-    match app-id=r#"^(Spotify|spotify|com\.spotify\.Client|org\.kde\.dolphin|thunar)$"#
+    match app-id=r#"^(org\.kde\.dolphin|thunar)$"#
+    opacity 1.0
+}
+window-rule {
+    match app-id=r#"^(Spotify|spotify|com\.spotify\.Client)$"#
     opacity 1.0
 }

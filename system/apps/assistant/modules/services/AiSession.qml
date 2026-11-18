@@ -37,6 +37,12 @@ Scope {
         return preset ? preset.name : "Custom Codex";
     }
 
+    function restoredCodexPreset(agentId, savedPreset) {
+        if (agentId !== "codex" || savedPreset === "")
+            return "";
+        return codexPresets.some(item => item.id === savedPreset) ? savedPreset : "coding";
+    }
+
     function codexOption(id) {
         return sessionConfigOptions.find(option => option.id === id);
     }
@@ -50,7 +56,7 @@ Scope {
     function setCodexPreset(value, duringSetup) {
         let preset = codexPresets.find(item => item.id === value);
         if (currentAgentId !== "codex" || !preset || switchingCodexPreset
-            || switchingSessionModel || switchingDistillPreset || (isBusy && !duringSetup)) return;
+            || switchingSessionModel || switchingDistillPreset || ((isBusy || waitingForCodexSignIn) && !duringSetup)) return;
         codexPresetError = "";
         if (!sessionReady) {
             codexPreset = value;
@@ -349,6 +355,8 @@ Scope {
     // App servers cache their account. Recreate an idle connection after a CLI
     // account switch, then restore the saved conversation with the new login.
     property bool codexAccountRefreshAttempted: false
+    property bool codexSignInActive: false
+    readonly property bool waitingForCodexSignIn: codexSignInActive && currentAgentId === "codex"
 
     function isAccountAuthenticationError(message) {
         return /authentication required|authentication failed|unauthorized|not signed in|not logged in|token.*expired|refresh.token.*(invalid|reused|expired)/i.test(message || "");
@@ -358,6 +366,10 @@ Scope {
         if (!featureEnabled || currentAgentId !== "codex" || isBusy
             || switchingSessionModel || switchingDistillPreset) return;
         codexAccountRefreshAttempted = true;
+        if (planUsageProcess.running) planUsageProcess.running = false;
+        planUsageSummary = "Codex remaining: not checked";
+        planUsageDetails = "";
+        usageRequestedInChat = false;
         queuedPrompt = null; // Never replay a user task during account recovery.
         pendingSessionAction = {
             kind: currentSessionId ? "load" : "new",
@@ -376,7 +388,7 @@ Scope {
     }
 
     function recoverCodexAccount() {
-        if (currentAgentId === "codex" && !isBusy && !codexAccountRefreshAttempted
+        if (currentAgentId === "codex" && !isBusy && !waitingForCodexSignIn && !codexAccountRefreshAttempted
             && isAccountAuthenticationError(lastError)) {
             refreshCodexAccount();
         }
@@ -407,10 +419,9 @@ Scope {
     property var pendingSessionAction: null
     property var queuedPrompt: null
     // Delivery belongs to the backend conversation, not the UI connection.
+    readonly property int sharedInstructionVersion: 1
+    property int deliveredSharedInstructionVersion: 0
     property string instructionSessionId: ""
-    property string instructionGithubSessionId: ""
-    // Resend desktop guidance once after a UI reload, including restored chats.
-    property string instructionDesktopSessionId: ""
     property string instructionModeGuidance: ""
     property string agentStderrTail: ""
     property bool turnFailureHandled: false
@@ -614,7 +625,7 @@ Scope {
         "initialized", "authenticated", "sessionReady", "suppressReplay",
         "agentCapabilities", "authMethods", "pendingRpc", "nextRpcId",
         "activePromptRequestId", "pendingSessionAction", "queuedPrompt", "agentStderrTail",
-        "instructionSessionId", "instructionModeGuidance", "instructionGithubSessionId",
+        "instructionSessionId", "instructionModeGuidance", "deliveredSharedInstructionVersion",
         "turnFailureHandled", "taskOutcome", "outcomeVersion", "outcomeFinding", "backendEvidence", "sessionConfigOptions", "sessionModels", "currentSessionModelId",
         "pendingSessionModelId", "modelSwitchError", "availableCommands", "currentModeId",
         "codexPreset", "pendingCodexPreset", "codexPresetError",
@@ -663,6 +674,7 @@ Scope {
         }
     }
 
+    onCodexPresetChanged: bridgeDirty = true
     onCurrentChatChanged: bridgeDirty = true
     onStatusTextChanged: bridgeDirty = true
 
@@ -701,15 +713,13 @@ Scope {
                 taskOutcome = "";
                 outcomeFinding = "";
                 backendEvidence = "";
+                deliveredSharedInstructionVersion = 0;
                 for (let key of bridgeStateKeys) {
                     if (event.state[key] !== undefined)
                         root[key] = event.state[key];
                 }
-                // Legacy/custom checkpoints must not erase the startup default.
-                // Do not send model RPCs while a restored turn is running; the
-                // next prompt confirms the selected model and effort first.
-                if (currentAgentId === "codex" && !codexPreset && !pendingCodexPreset)
-                    codexPreset = "coding";
+                // Restore the selection without sending model RPCs during an active turn.
+                codexPreset = restoredCodexPreset(currentAgentId, event.state.codexPreset);
                 // Older checkpoints marked every end_turn as successful.
                 if (event.state.outcomeVersion !== 1 && taskOutcome === "Positive")
                     taskOutcome = "";
@@ -1095,13 +1105,12 @@ Scope {
     }
 
     function setSessionModel(modelId) {
-        if (!sessionReady || isBusy || switchingDistillPreset || switchingSessionModel || !modelId || modelId === currentSessionModelId)
+        if (waitingForCodexSignIn || !sessionReady || isBusy || switchingDistillPreset || switchingSessionModel || !modelId || modelId === currentSessionModelId)
             return;
         if (!sessionModels.some(model => model.modelId === modelId)) {
             modelSwitchError = "This model is no longer available. Reopen the model list.";
             return;
         }
-        codexPreset = ""; // A manual model choice leaves the named mode.
         codexPresetError = "";
         modelSwitchError = "";
         pendingSessionModelId = modelId;
@@ -1130,6 +1139,18 @@ Scope {
             pendingSessionModelId = "";
             modelSwitchError = "Connection lost. Reconnect to choose a model.";
         }
+    }
+
+    function finishManualModelSwitch(modelId) {
+        pendingSessionModelId = "";
+        if (currentSessionModelId !== modelId) {
+            modelSwitchError = "The backend did not confirm the selected model.";
+            return;
+        }
+        codexPreset = "";
+        modelSwitchError = "";
+        saveCurrentChat();
+        bridgeDirty = true;
     }
 
     function formatRpcError(error) {
@@ -1193,7 +1214,7 @@ Scope {
             hint = "\n\nThe OpenRouter request failed. If you recently replaced your API key, choose this backend again to open a fresh chat with the current key.";
         pushSystemMessage(message + hint);
         if (currentAgentId === "codex" && isAccountAuthenticationError(message)) {
-            pushSystemMessage("Codex needs its current account connection refreshed. After it reconnects, send your message again. If this continues, choose Preset → Use current Codex login.");
+            pushSystemMessage("Codex needs its current account connection refreshed. After it reconnects, send your message again. If this continues, choose Account → Reload Codex login.");
             Qt.callLater(root.recoverCodexAccount);
         }
     }
@@ -1303,17 +1324,13 @@ Scope {
             if (entry.context.modelId) {
                 if (!Array.isArray(result.configOptions) && !result.models)
                     currentSessionModelId = entry.context.modelId;
-                pendingSessionModelId = "";
-                modelSwitchError = "";
-                saveCurrentChat();
+                finishManualModelSwitch(entry.context.modelId);
             }
             statusText = "";
             break;
         case "set_model":
             currentSessionModelId = entry.context.modelId || currentSessionModelId;
-            pendingSessionModelId = "";
-            modelSwitchError = "";
-            saveCurrentChat();
+            finishManualModelSwitch(entry.context.modelId);
             statusText = "";
             break;
         }
@@ -2293,7 +2310,7 @@ Scope {
     }
 
     function sendMessage(message, attachments) {
-        if (switchingSessionModel || switchingDistillPreset)
+        if (waitingForCodexSignIn || switchingSessionModel || switchingDistillPreset)
             return;
         let text = message || "";
         if (handleLocalCommand(text))
@@ -2350,21 +2367,19 @@ Scope {
 
     function standingInstructions(mode, force) {
         let prompt = [];
-        // A changed mode needs new guidance; shared preferences stay in history.
-        if (mode && (force || instructionSessionId !== currentSessionId || instructionModeGuidance !== mode.guidance))
-            prompt.push({type: "text", text: mode.guidance});
-        if (force || instructionDesktopSessionId !== currentSessionId)
-            prompt.push({type: "text", text: Defaults.data.instructions[0].replace(/@HOME@/g, Quickshell.env("HOME"))});
-        let sendSharedInstructions = force || instructionSessionId !== currentSessionId;
-        if (force || instructionGithubSessionId !== currentSessionId + ":checkout-discovery-v5")
-            prompt.push({type: "text", text: Defaults.data.instructions[1].replace(/@HOME@/g, Quickshell.env("HOME"))});
-        if (sendSharedInstructions) {
-            prompt.push({type: "text", text: Defaults.data.instructions[2].replace(/@HOME@/g, Quickshell.env("HOME"))});
-            prompt.push({type: "text", text: Defaults.data.instructions[3].replace(/@HOME@/g, Quickshell.env("HOME"))});
-            prompt.push({type: "text", text: Defaults.data.instructions[4].replace(/@HOME@/g, Quickshell.env("HOME"))});
-            if (!isDistill)
-                prompt.push({type: "text", text: Defaults.data.instructions[5].replace(/@HOME@/g, Quickshell.env("HOME"))});
+        const newSession = force || instructionSessionId !== currentSessionId;
+        const home = Quickshell.env("HOME");
+        if (mode && (newSession || instructionModeGuidance !== mode.guidance)) {
+            let guidance = `Selected profile: ${mode.name}. This profile governs subsequent turns and supersedes earlier profile guidance. ${mode.guidance}`;
+            if (!newSession && mode.id === "deep")
+                guidance += " For ongoing work, carry forward the symptom, evidence and remaining uncertainty.";
+            prompt.push({type: "text", text: guidance.replace(/@HOME@/g, home)});
+        } else if (!mode && !newSession && instructionModeGuidance) {
+            prompt.push({type: "text", text: "No Dweebo profile is selected. Earlier profile guidance no longer governs subsequent turns."});
         }
+        if (newSession || deliveredSharedInstructionVersion !== sharedInstructionVersion)
+            for (const instruction of Defaults.data.instructions)
+                prompt.push({type: "text", text: instruction.replace(/@HOME@/g, home)});
 
         return prompt;
     }
@@ -2400,10 +2415,9 @@ Scope {
             let preferences = prompt.map(item => item.text || "").join("\n\n");
             prompt = [{type: "text", text: "Standing preferences (context only, not the current task):\n"
                 + preferences
-                + "\nEnd of standing preferences. Apply them only when relevant to the user's actual request below. Do not initiate desktop checks, repository work, or tool use merely because these preferences describe those procedures. A greeting should receive a greeting."}];
+                + "\nEnd of standing preferences. Apply only when relevant to the request below."}];
         }
-        // Preferences precede the user's request so backends do not interpret
-        // the final desktop-policy block as the task they should answer.
+        // Keep the actual task after any standing context.
         if (queued.text)
             prompt.push({
                 type: "text",
@@ -2436,8 +2450,7 @@ Scope {
             return;
         }
         instructionSessionId = currentSessionId;
-        instructionGithubSessionId = currentSessionId + ":checkout-discovery-v5";
-        instructionDesktopSessionId = currentSessionId;
+        deliveredSharedInstructionVersion = sharedInstructionVersion;
         instructionModeGuidance = mode ? mode.guidance : "";
         saveCurrentChat();
         bridgeDirty = true;
@@ -2510,7 +2523,7 @@ Scope {
     function createNewChat() {
         cancelGeneration(false);
         instructionSessionId = "";
-        instructionGithubSessionId = "";
+        deliveredSharedInstructionVersion = 0;
         instructionModeGuidance = "";
         codexPreset = currentAgentId === "codex" ? "coding" : "";
         currentChat = [];
@@ -2535,6 +2548,7 @@ Scope {
     }
 
     function regenerateResponse(index) {
+        if (waitingForCodexSignIn) return;
         // ACP agents own their conversation history, so continue the failed
         // user prompt in the same session instead of regenerating history.
         if (isBusy || !sessionReady || !currentSessionId || !agentProcess.running) {
@@ -2595,7 +2609,7 @@ Scope {
             agentId: currentChatAgentId || currentAgentId,
             sessionId: currentSessionId,
             instructionSessionId: instructionSessionId,
-            instructionGithubSessionId: instructionGithubSessionId,
+            deliveredSharedInstructionVersion: deliveredSharedInstructionVersion,
             instructionModeGuidance: instructionModeGuidance,
             distillPreset: distillPreset,
             codexPreset: codexPreset,
@@ -2731,12 +2745,12 @@ for path in files:
                 root.currentChatAgentId = agent.id;
                 root.distillPreset = root.distillPresets.some(item => item.id === payload.distillPreset) ? payload.distillPreset : "auto";
                 root.distillPresetReady = false;
-                root.codexPreset = root.codexPresets.some(item => item.id === payload.codexPreset) ? payload.codexPreset : (agent.id === "codex" ? "coding" : "");
+                root.codexPreset = root.restoredCodexPreset(agent.id, payload.codexPreset);
                 root.currentChat = isLegacy ? payload : (payload.messages || []);
                 root.currentChatId = targetId;
                 root.currentSessionId = isLegacy ? "" : (payload.sessionId || "");
                 root.instructionSessionId = isLegacy ? "" : (payload.instructionSessionId || "");
-                root.instructionGithubSessionId = isLegacy ? "" : (payload.instructionGithubSessionId || "");
+                root.deliveredSharedInstructionVersion = isLegacy ? 0 : (payload.deliveredSharedInstructionVersion || 0);
                 root.instructionModeGuidance = isLegacy ? "" : (payload.instructionModeGuidance || "");
                 root.currentChatCwd = isLegacy ? root.workingDirectory() : (payload.cwd || root.workingDirectory());
                 root.sessionReady = false;

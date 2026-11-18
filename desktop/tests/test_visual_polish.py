@@ -141,6 +141,39 @@ ShellRoot {
  }
 }''', assistant=True)
 
+    def test_assistant_slider_thumb_anchors_the_wave(self):
+        self.check_qml('assistant', '''import QtQuick
+import QtTest
+import Quickshell
+import qs.modules.components
+ShellRoot {
+ FloatingWindow { visible: true; implicitWidth: 320; implicitHeight: 140
+  StyledSlider { id: horizontal; width: 160; height: 32 }
+  StyledSlider { id: vertical; x: 200; width: 32; height: 120; vertical: true }
+  TestCase { id: test; when: false }
+  Timer { interval: 600; running: true; onTriggered: {
+   try {
+    for (const slider of [horizontal, vertical]) {
+     test.mousePress(slider, slider.width / 2, slider.height / 2);
+     test.wait(220);
+     const layout = slider.children[slider.vertical ? 1 : 0];
+     const [thumb, rail] = layout.children[0].children;
+     const center = thumb.mapToItem(rail, thumb.width / 2, thumb.height / 2);
+     const aligned = rail.children.some(item => item.wave === 0
+      && Math.abs(item.x + item.width / 2 - center.x) <= rail.pitch * 0.75
+      && Math.abs(item.y + item.height / 2 - center.y) < 0.01);
+     if (!slider.isDragging || rail.energy < 0.5
+         || Math.abs(center.x - rail.filledLength) > 0.01
+         || Math.abs(center.y - rail.height / 2) > 0.01 || !aligned)
+      throw Error("Assistant slider thumb must anchor the moving track during a drag");
+     test.mouseRelease(slider, slider.width / 2, slider.height / 2);
+    }
+    console.log("VISUAL POLISH PASSED"); Qt.quit();
+   } catch (error) { console.error(error); Qt.exit(1); }
+  }}
+ }
+}''', assistant=True)
+
     def test_media_controls_keyboard_and_themed_sheet(self):
         self.check_qml('media/ui', '''import QtQuick
 import QtTest
@@ -162,6 +195,21 @@ ShellRoot {
     if(volume.value!==85)throw Error("Volume units or keyboard step changed");
     delay.forceActiveFocus();test.keyClick(Qt.Key_Left);
     if(Math.abs(delay.value+0.1)>0.001)throw Error("Caption timing units changed");
+    for (const slider of [volume, delay]) {
+     const rail = slider.background.children[0];
+     test.mousePress(slider, slider.width / 2, slider.height / 2);
+     test.wait(220);
+     const thumb = slider.handle;
+     const center = thumb.mapToItem(rail, thumb.width / 2, thumb.height / 2);
+     const aligned = rail.children.some(item => item.wave === 0
+      && Math.abs(item.x + item.width / 2 - center.x) <= rail.pitch * 0.75
+      && Math.abs(item.y + item.height / 2 - center.y) < 0.01);
+     if (!slider.pressed || rail.energy < 0.5
+         || Math.abs(center.x - rail.filledLength) > 0.01
+         || Math.abs(center.y - rail.height / 2) > 0.01 || !aligned)
+      throw Error("Media slider thumb must anchor the moving track during a drag");
+     test.mouseRelease(slider, slider.width / 2, slider.height / 2);
+    }
     let c=Qt.createComponent("AnimeMenu.qml");
     if(c.status!==Component.Ready)throw Error(c.errorString());
     let menu=c.createObject(null);test.wait(50);

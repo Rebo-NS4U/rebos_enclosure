@@ -91,11 +91,14 @@ Item {
             }
 
             StandardProgressBar {
+                id: seekProgress
+                showCursor: false
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
-                height: 2
                 value: root.displayProgress
+                playing: root.isPlaying
+                pressed: root.isDragging
             }
 
             // Playhead handle: vertical rounded capsule matching reference
@@ -104,12 +107,12 @@ Item {
                 property real handleW: waveMouseArea.containsMouse || root.isDragging ? 5 : 4
                 property real handleH: waveMouseArea.containsMouse || root.isDragging ? 18 : 16
 
-                x: Math.max(0, Math.min(waveformArea.width - width, waveformArea.width * root.displayProgress - width / 2))
+                x: Math.max(0, Math.min(waveformArea.width - width, seekProgress.filledLength - width / 2))
                 anchors.verticalCenter: parent.verticalCenter
                 width: handleW
                 height: handleH
                 radius: width / 2
-                color: Colors.overBackground
+                color: "white"
 
                 Behavior on width { NumberAnimation { duration: Motion.feedback; easing.type: Easing.OutQuad } }
                 Behavior on height { NumberAnimation { duration: Motion.feedback; easing.type: Easing.OutQuad } }

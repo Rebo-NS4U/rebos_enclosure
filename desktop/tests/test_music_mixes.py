@@ -12,6 +12,28 @@ module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 
 class MixTests(unittest.TestCase):
+    def test_playlist_write_validation_result_and_timeout(self):
+        store = module.Mixes(Path('/unused'), lambda *a: a[1], lambda *a: None)
+        uri = 'spotify:playlist:' + 'a'*22
+        with self.assertRaises(ValueError):
+            store.replace_playlist(uri, ['file:///song'])
+        tracks = ['spotify:track:' + 'b'*22, 'spotify:track:' + 'c'*22]
+        self.assertTrue(store.replace_playlist(uri, tracks)['pending'])
+        self.assertEqual(store.playlist_write['tracks'], tracks)
+        with self.assertRaises(ValueError):
+            store.replace_playlist(uri, [])
+        store.update(dict(playlist_write_id='stale', error='failed'))
+        self.assertTrue(store.playlist_write_status()['pending'])
+        store.update(dict(playlist_write_id=store.playlist_write['id']))
+        self.assertFalse(store.playlist_write_status()['pending'])
+        store.replace_playlist(uri, [])
+        store.update(dict(playlist_write_id=store.playlist_write['id'], error='No edit permission'))
+        self.assertEqual(store.playlist_write_status()['status'], 'No edit permission')
+        store.replace_playlist(uri, tracks)
+        store.playlist_write['started'] -= 121
+        self.assertFalse(store.playlist_write_status()['pending'])
+        self.assertIn('could not be confirmed', store.playlist_write_status()['status'])
+
     def test_load_any_playlist_and_report_access_failure(self):
         store = module.Mixes(Path('/unused'), lambda *a: a[1], lambda *a: None)
         uri = 'spotify:playlist:' + 'c'*22

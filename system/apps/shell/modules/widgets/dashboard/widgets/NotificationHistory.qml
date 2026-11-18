@@ -145,62 +145,35 @@ Item {
                         }
                     }
 
-                    StyledRect {
-                        id: dndToggle
-                        variant: Notifications.silent ? "primary" : (dndHover.containsMouse ? "focus" : "internalbg")
-                        Layout.preferredWidth: 32
+                    ThemeButton {
                         Layout.fillHeight: true
-                        radius: Notifications.silent ? Styling.radius(-4) : Styling.radius(0)
+                        implicitWidth: Styling.spacing(36)
+                        padding: 0
+                        Accessible.name: "Do not disturb"
+                        glyph: Notifications.silent ? Icons.bellZ : Icons.bell
+                        emphasized: Notifications.silent
+                        Accessible.description: Notifications.silent ? "On" : "Off"
+                        onClicked: Notifications.toggleSilent()
 
-                        readonly property color dndItem: Notifications.silent ? itemColor : Styling.srItem("overprimary")
-
-                        Text {
-                            renderType: Text.NativeRendering
-                            font.hintingPreference: Font.PreferFullHinting
-                            anchors.centerIn: parent
-                            text: Notifications.silent ? Icons.bellZ : Icons.bell
-                            textFormat: Text.RichText
-                            font.family: Icons.font
-                            font.pixelSize: Styling.fontSize(4)
-                            color: dndToggle.dndItem
-                        }
-
-                        MouseArea {
-                            id: dndHover
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            hoverEnabled: true
-                            onClicked: Notifications.silent = !Notifications.silent
+                        StyledToolTip {
+                            show: parent.hovered
+                            tooltipText: "Do not disturb"
                         }
                     }
 
-                    StyledRect {
-                        id: clearButton
-                        variant: root.isClearing ? "focus" : (broomHover.pressed ? "error" : (broomHover.containsMouse ? "focus" : "internalbg"))
-                        Layout.preferredWidth: 32
+                    ThemeButton {
                         Layout.fillHeight: true
-                        radius: Styling.radius(0)
+                        implicitWidth: Styling.spacing(36)
+                        padding: 0
+                        Accessible.name: "Clear all notifications"
+                        glyph: Icons.broom
+                        danger: true
+                        enabled: !root.isClearing
+                        onClicked: root.discardAllWithAnimation()
 
-                        readonly property color clearItem: root.isClearing ? Colors.overSurfaceVariant : (broomHover.pressed ? itemColor : Styling.srItem("overerror"))
-
-                        Text {
-                            renderType: Text.NativeRendering
-                            font.hintingPreference: Font.PreferFullHinting
-                            anchors.centerIn: parent
-                            text: Icons.broom
-                            textFormat: Text.RichText
-                            font.family: Icons.font
-                            font.pixelSize: Styling.fontSize(4)
-                            color: clearButton.clearItem
-                        }
-
-                        MouseArea {
-                            id: broomHover
-                            anchors.fill: parent
-                            cursorShape: root.isClearing ? Qt.ArrowCursor : Qt.PointingHandCursor
-                            hoverEnabled: true
-                            enabled: !root.isClearing
-                            onClicked: root.discardAllWithAnimation()
+                        StyledToolTip {
+                            show: parent.hovered
+                            tooltipText: "Clear all notifications"
                         }
                     }
                 }

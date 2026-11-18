@@ -37,7 +37,7 @@ ShellRoot {
       throw Error("Menu/control radius did not follow setting: " + radius);
     }
     Config.theme.roundness = 4;
-    if (Styling.getStyledRectConfig("bg").gradient.length !== 3) throw Error("Glass highlights missing");
+    if (Styling.getStyledRectConfig("bg").gradient.length !== 1) throw Error("Frosted glass must have a flat base fill");
     Config.theme.shellTransparency = 10; tester.wait(10);
     if (Math.abs(Styling.getStyledRectConfig("bg").opacity - 0.9) > 0.001) throw Error("Glass transparency override");
     Config.theme.shellTransparency = -1;

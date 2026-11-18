@@ -279,167 +279,30 @@ Item {
             Layout.fillWidth: true
             spacing: Styling.spacing(8)
 
-            // Alerts / Notifications button
-            StyledRect {
-                implicitHeight: 36
+            ThemeButton {
+                objectName: "dashboardAlerts"
                 Layout.fillWidth: true
-                Layout.minimumWidth: alertsRow.implicitWidth + 20
-                radius: Styling.radius(2)
-                variant: alertsMouse.containsMouse ? "focus" : "internalbg"
-                scale: alertsMouse.pressed ? 0.98 : 1.0
-
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: alertsMouse.pressed ? Motion.press : Motion.feedback
-                        easing.type: Motion.feedbackCurve
-                    }
-                }
-
-                RowLayout {
-                    id: alertsRow
-                    anchors.centerIn: parent
-                    spacing: Styling.spacing(6)
-
-                    StyledText {
-                        renderType: Text.NativeRendering
-                        font.hintingPreference: Font.PreferFullHinting
-                        text: Notifications.silent ? Icons.bellZ : Icons.bell
-                        font.family: Icons.font
-                        font.pixelSize: Styling.fontSize(1)
-                        color: Notifications.silent ? Colors.primary : Colors.overBackground
-                    }
-
-                    StyledText {
-                        text: "Alerts"
-                        font.pixelSize: Styling.fontSize(-1)
-                    }
-
-                    StyledRect {
-                        visible: root.alertsCount > 0
-                        implicitWidth: alertBadgeText.implicitWidth + 8
-                        implicitHeight: 16
-                        radius: Styling.radius(0)
-                        variant: "primary"
-
-                        StyledText {
-                            id: alertBadgeText
-                            anchors.centerIn: parent
-                            renderType: Text.NativeRendering
-                            font.hintingPreference: Font.PreferFullHinting
-                            text: root.alertsCount > 99 ? "99+" : String(root.alertsCount)
-                            font.family: Config.theme.monoFont
-                            font.pixelSize: Styling.fontSize(-4)
-                            font.bold: true
-                            color: Colors.overPrimary
-                        }
-                    }
-                }
-
-                MouseArea {
-                    id: alertsMouse
-                    objectName: "dashboardAlerts"
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.openAlerts()
-                }
+                glyph: Notifications.silent ? Icons.bellZ : Icons.bell
+                text: root.alertsCount > 0 ? "Alerts (" + Math.min(root.alertsCount, 99) + (root.alertsCount > 99 ? "+" : "") + ")" : "Alerts"
+                emphasized: Notifications.silent
+                onClicked: root.openAlerts()
             }
 
-            // Settings button
-            StyledRect {
-                implicitHeight: 36
+            ThemeButton {
+                objectName: "dashboardSettings"
                 Layout.fillWidth: true
-                Layout.minimumWidth: settingsLabel.implicitWidth + 44
-                radius: Styling.radius(2)
-                variant: settingsMouse.containsMouse ? "focus" : "internalbg"
-                scale: settingsMouse.pressed ? 0.98 : 1.0
-
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: settingsMouse.pressed ? Motion.press : Motion.feedback
-                        easing.type: Motion.feedbackCurve
-                    }
-                }
-
-                StyledText {
-                    anchors.left: parent.left
-                    anchors.leftMargin: 10
-                    anchors.verticalCenter: parent.verticalCenter
-                    renderType: Text.NativeRendering
-                    font.hintingPreference: Font.PreferFullHinting
-                    text: Icons.gear
-                    font.family: Icons.font
-                    font.pixelSize: Styling.fontSize(1)
-                    color: Colors.overBackground
-                }
-
-                StyledText {
-                    id: settingsLabel
-                    anchors.centerIn: parent
-                    anchors.horizontalCenterOffset: 10
-                    text: "Settings"
-                    font.pixelSize: Styling.fontSize(-1)
-                    color: Colors.overBackground
-                }
-
-                MouseArea {
-                    id: settingsMouse
-                    objectName: "dashboardSettings"
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        GlobalShortcuts.run("settings");
-                    }
-                }
+                glyph: Icons.gear
+                text: "Settings"
+                onClicked: GlobalShortcuts.run("settings")
             }
 
-            // Power Menu trigger button
-            StyledRect {
-                implicitHeight: 36
+            ThemeButton {
+                objectName: "dashboardPower"
                 Layout.fillWidth: true
-                Layout.minimumWidth: powerLabel.implicitWidth + 44
-                radius: Styling.radius(2)
-                variant: powerMouse.containsMouse ? "error" : "internalbg"
-                scale: powerMouse.pressed ? 0.98 : 1.0
-
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: powerMouse.pressed ? Motion.press : Motion.feedback
-                        easing.type: Motion.feedbackCurve
-                    }
-                }
-
-                StyledText {
-                    anchors.left: parent.left
-                    anchors.leftMargin: 10
-                    anchors.verticalCenter: parent.verticalCenter
-                    anchors.verticalCenterOffset: 2
-                    renderType: Text.NativeRendering
-                    font.hintingPreference: Font.PreferFullHinting
-                    text: Icons.shutdown
-                    font.family: Icons.font
-                    font.pixelSize: Styling.fontSize(1)
-                    color: powerMouse.containsMouse ? Colors.overError : Colors.red
-                }
-
-                StyledText {
-                    id: powerLabel
-                    anchors.centerIn: parent
-                    anchors.horizontalCenterOffset: 10
-                    text: "Power"
-                    font.pixelSize: Styling.fontSize(-1)
-                    color: powerMouse.containsMouse ? Colors.overError : Colors.overBackground
-                }
-
-                MouseArea {
-                    id: powerMouse
-                    objectName: "dashboardPower"
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.openPower()
-                }
+                glyph: Icons.shutdown
+                text: "Power"
+                danger: true
+                onClicked: root.openPower()
             }
         }
 

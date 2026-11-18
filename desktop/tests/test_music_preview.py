@@ -14,13 +14,27 @@ import music_preview
 
 
 class MusicPreviewTests(unittest.TestCase):
+    def setUp(self):
+        hide = patch("music_spotify.hide_window", return_value=True)
+        self.hide = hide.start()
+        self.addCleanup(hide.stop)
+        self.spotify_start = patch('music_spotify.ensure_started')
+        self.spotify_start.start()
+        self.addCleanup(self.spotify_start.stop)
+
     def test_spotify_activation_returns_focus_to_player(self):
         player = {'id': 4, 'app_id': 'org.quickshell'}
         spotify = {'id': 5, 'app_id': 'Spotify'}
-        with patch.object(music_preview, 'focused_window', side_effect=[player, player, spotify]), \
+        with patch.object(music_preview, 'focused_window', side_effect=[player, player, spotify, player, player, player]), \
                 patch.object(music_preview.time, 'sleep'), \
-                patch.object(music_preview.subprocess, 'run') as run:
+                patch.object(music_preview.subprocess, 'run') as run, \
+                patch.object(music_preview.threading, 'Thread') as cleanup:
             result = music_preview.preview('spotify:track:' + 'a'*22)
+            self.assertEqual(run.call_count, 1)
+            self.hide.assert_not_called()
+            cleanup.assert_called_once_with(target=music_preview.keep_background, args=(player,), daemon=True)
+            cleanup.return_value.start.assert_called_once()
+            music_preview.keep_background(player)
         self.assertEqual(run.call_count, 2)
         self.assertIn('org.mpris.MediaPlayer2.Player.OpenUri', run.call_args_list[0].args[0])
         self.assertEqual(run.call_args_list[1].args[0],
@@ -36,6 +50,21 @@ class MusicPreviewTests(unittest.TestCase):
                 music_preview.keep_background(player)
                 run.assert_not_called()
 
+    def test_preview_rehides_delayed_window_without_stealing_user_focus(self):
+        player = {'id': 4, 'app_id': 'org.quickshell'}
+        other = {'id': 6, 'app_id': 'firefox'}
+        with patch.object(music_preview, 'focused_window', return_value=other), \
+                patch.object(music_preview.time, 'sleep'), \
+                patch.object(music_preview.subprocess, 'run') as run:
+            music_preview.keep_background(player)
+            self.assertEqual(self.hide.call_count, 5)
+            run.assert_not_called()
+
+    def test_hiding_does_not_require_a_focused_window(self):
+        with patch.object(music_preview.time, 'sleep'):
+            music_preview.keep_background(None)
+            self.assertEqual(self.hide.call_count, 5)
+
     def test_unavailable_compositor_does_not_break_playback(self):
         with patch.dict(os.environ, {'NIRI_SOCKET': '/fixture/socket'}), \
                 patch.object(music_preview.subprocess, 'run', side_effect=FileNotFoundError()):
@@ -43,7 +72,8 @@ class MusicPreviewTests(unittest.TestCase):
 
     def test_preview_uses_spotify_uri_without_file_writes_or_downloads(self):
         uri = 'spotify:track:' + 'a'*22
-        with patch.object(music_preview.subprocess, 'run') as run:
+        with patch.object(music_preview.subprocess, 'run') as run, \
+                patch.object(music_preview.threading, 'Thread'):
             result = music_preview.preview(uri)
         self.assertEqual(result['uri'], uri)
         args = run.call_args.args[0]
@@ -146,13 +176,14 @@ ShellRoot {
     t.findChild(pane,"music-mixes-current").clicked(); t.compare(pane.displayedMixes.length,1);
     t.findChild(pane,"music-mixes-saved").clicked(); t.compare(pane.displayedMixes.length,0);
     music.tracks=pane.localTracks; music.playlists=pane.importedPlaylists;
-    const previewTab=t.findChild(music.contentItem,"music-navigation-Previews");
-    t.verify(previewTab!==null); previewTab.clicked(); t.compare(music.page,"Previews");
-    const musicPane=t.findChild(music.contentItem,"music-daily-mixes");
-    t.verify(musicPane.previewOnly); t.compare(musicPane.importedSources.length,2);
-    t.compare(musicPane.importedSources[0].tracks.length,2);
+    music.navigate("Playlist", "imported");
+    t.verify(!music.spotifySuggestions.pending);
+    t.compare(music.spotifySuggestions.tracks.length,0);
+    t.verify(music.spotifySuggestions.status.includes("Refresh"));
     t.findChild(music.contentItem,"music-navigation-Spotify playlists").clicked();
-    t.verify(!musicPane.previewOnly); t.compare(musicPane.section,"current");
+    t.compare(music.page,"Spotify playlists");
+    const musicPane=t.findChild(music.contentItem,"music-daily-mixes");
+    t.verify(!musicPane.previewOnly);
     console.log("STREAM_PREVIEW_PASSED"); Qt.quit();
    } catch(e) {console.error(e,e.stack);Qt.exit(1);}
   } }

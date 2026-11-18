@@ -33,13 +33,20 @@ def session():
     import QtQuick
     import QtTest
     import Quickshell
+    import Quickshell.Services.Mpris
     import qs.modules.widgets.music
     import qs.modules.globals
+    import qs.modules.services
     ShellRoot {
         TestCase { id: input; when: false }
-        MusicWindow { id: music }
+        MusicWindow {
+            id: music
+            property string requestedPreview: ""
+            function previewSuggestion(uri) { requestedPreview = uri; }
+        }
         QtObject {
             id: spotify
+            property string dbusName: "org.mpris.MediaPlayer2.spotify"
             property string trackTitle: "Suggested song"
             property string trackArtists: "Suggested artist"
             property string trackAlbum: "Spotify suggestions"
@@ -49,6 +56,8 @@ def session():
             property real position: 30
             property bool isPlaying: true
             property bool canTogglePlaying: true
+            property bool canPlay: true
+            property bool canPause: true
             property bool canGoNext: true
             property bool canGoPrevious: true
             property bool canSeek: true
@@ -62,6 +71,8 @@ def session():
             property int previousCalls: 0
             function togglePlaying() { isPlaying = !isPlaying; }
             function pause() { isPlaying = false; }
+            function play() { isPlaying = true; }
+            function stop() { isPlaying = false; }
             function next() { nextCalls++; }
             function previous() { previousCalls++; }
         }
@@ -75,10 +86,11 @@ def session():
             property int attempts: 0
             property int phase: 0
             property int repeatStart: 0
+            property bool checkedShortPlaylist: false
             interval: 200; running: true; repeat: true
             onTriggered: {
                 attempts++;
-                if (attempts > 90) { console.error("MUSIC_ACCEPTANCE_TIMEOUT " + music.notice); Qt.exit(1); }
+                if (attempts > 90) { console.error("MUSIC_ACCEPTANCE_TIMEOUT", phase, music.notice); Qt.exit(1); }
                 if (phase === 0 && !music.busy && music.tracks.length === 2) {
                     const backdrop = findItem(music.contentItem, "music-background");
                     if (music.color.a !== 0 || !backdrop || backdrop.variant !== "bg") { console.error("MUSIC_SHARED_BACKGROUND_FAILED"); Qt.exit(1); }
@@ -130,6 +142,15 @@ def session():
                     if (music.currentIndex < 0 || music.currentIndex >= music.queue.length) { console.error("MUSIC_RANDOM_START_FAILED"); Qt.exit(1); }
                     music.play(music.queue, 0);
                     if (music.currentIndex !== 0) { console.error("MUSIC_EXPLICIT_START_FAILED"); Qt.exit(1); }
+                    music.shuffle = true;
+                    music.next(false);
+                    if (music.currentIndex !== 1 || !music.canPreviousLocal) { console.error("MUSIC_SHUFFLE_NEXT_FAILED"); Qt.exit(1); return; }
+                    music.previous();
+                    if (music.currentIndex !== 0 || music.canPreviousLocal) { console.error("MUSIC_SHUFFLE_PREVIOUS_FAILED"); Qt.exit(1); return; }
+                    music.next(false);
+                    if (music.currentIndex !== 1 || music.shuffleHistory.length !== 2) { console.error("MUSIC_SHUFFLE_RETRACE_FAILED"); Qt.exit(1); return; }
+                    music.shuffle = false;
+                    music.play(music.queue, 0);
                     if (music.page !== "Albums" || music.queue.length !== 2) { console.error("MUSIC_CARD_PLAY_FAILED"); Qt.exit(1); }
                     phase = 1;
                 } else if (phase === 1 && music.playing) {
@@ -142,8 +163,26 @@ def session():
                     favorite.clicked();
                     if (favorite.checked || music.favorites.includes(music.current.path)) { console.error("MUSIC_FAVORITE_REMOVE_FAILED"); Qt.exit(1); }
                     favorite.clicked();
-                    music.playlists = [{id:"test",name:"Acceptance",paths:music.queue.map(t=>t.path).reverse()}];
+                    music.playlists = [
+                        {id:"test",name:"Acceptance",paths:music.queue.map(t=>t.path).reverse()},
+                        {id:"regular-add",name:"Regular add",paths:[]},
+                        {id:"fullscreen-add",name:"Fullscreen add",paths:[]}
+                    ];
                     music.save();
+                    const add = findItem(music.contentItem, "music-add-current-to-playlist");
+                    input.mouseClick(add, add.width / 2, add.height / 2);
+                    phase = 12;
+                } else if (phase === 12) {
+                    const choices = findItem(music.contentItem, "music-playlist-choices");
+                    if (!choices?.itemAtIndex(1)) return;
+                    if (choices.itemAtIndex(0).enabled) { console.error("MUSIC_PLAYLIST_DUPLICATE_ENABLED"); Qt.exit(1); return; }
+                    const choice = choices.itemAtIndex(1);
+                    input.mouseClick(choice, choice.width / 2, choice.height / 2);
+                    phase = 13;
+                } else if (phase === 13 && !music.busy) {
+                    if (music.playlists[1].paths[0] !== music.tracks[0].path) { console.error("MUSIC_REGULAR_PLAYLIST_ADD_FAILED"); Qt.exit(1); return; }
+                    input.keyClick(Qt.Key_Escape);
+                    if (!music.visible || findItem(music.contentItem, "music-playlist-choices")?.visible) { console.error("MUSIC_PLAYLIST_PICKER_ESCAPE_FAILED"); Qt.exit(1); return; }
                     findItem(music.contentItem, "music-repeat").clicked();
                     if (music.repeatMode !== "Track") { console.error("MUSIC_REPEAT_TOGGLE_FAILED"); Qt.exit(1); }
                     music.seek(3800);
@@ -179,6 +218,24 @@ def session():
                     if (music.currentIndex !== 0) { console.error("MUSIC_EXPLICIT_START_FAILED"); Qt.exit(1); }
                     if (music.page !== "Playlists" || music.queue[0].path !== music.tracks[1].path) { console.error("MUSIC_PLAYLIST_CARD_FAILED"); Qt.exit(1); }
                     music.control({action:"Pause"});
+                    music.navigate("Playlist", "regular-add");
+                    phase = 98;
+                } else if (phase === 98 && !music.busy) {
+                    const row = findItem(music.contentItem, "music-track-row-0");
+                    const remove = row && findItem(row, "music-track-remove-0");
+                    if (!remove?.visible) return;
+                    const requestId = music.requestId;
+                    input.mouseClick(remove, remove.width / 2, remove.height / 2);
+                    if (remove.text !== "Confirm remove" || music.requestId !== requestId || music.shownTracks.length !== 1) { console.error("MUSIC_REMOVE_FIRST_CLICK_FAILED"); Qt.exit(1); return; }
+                    phase = 980;
+                } else if (phase === 980) {
+                    const row = findItem(music.contentItem, "music-track-row-0");
+                    const remove = findItem(row, "music-track-remove-0");
+                    input.mouseClick(remove, remove.width / 2, remove.height / 2);
+                    phase = 99;
+                } else if (phase === 99 && !music.busy) {
+                    if (music.shownTracks.length !== 0 || music.tracks.length !== 2) { console.error("MUSIC_REMOVE_SECOND_CLICK_FAILED"); Qt.exit(1); return; }
+                    console.log("MUSIC_REMOVE_CONFIRMATION_PASSED");
                     music.navigate("Playlist", "test");
                     phase = 40;
                 } else if (phase === 40) {
@@ -262,6 +319,19 @@ def session():
                     if (!music.immersive || !stage.visible || !art.visible || art.width < 100 || !transport.enabled || !rail.enabled) { console.error("MUSIC_FULLSCREEN_ENTER_FAILED"); Qt.exit(1); return; }
                     const pos = transport.mapToItem(stage, 0, 0);
                     if (pos.y < 0 || pos.y + transport.height > stage.height) { console.error("MUSIC_FULLSCREEN_BOUNDS_FAILED"); Qt.exit(1); return; }
+                    const add = findItem(music.contentItem, "music-fullscreen-add-current-to-playlist");
+                    input.mouseClick(add, add.width / 2, add.height / 2);
+                    phase = 901;
+                } else if (phase === 901) {
+                    const choices = findItem(music.contentItem, "music-playlist-choices");
+                    if (!choices?.itemAtIndex(2)) return;
+                    const choice = choices.itemAtIndex(2);
+                    input.mouseClick(choice, choice.width / 2, choice.height / 2);
+                    phase = 902;
+                } else if (phase === 902 && !music.busy) {
+                    if (music.playlists[2].paths[0] !== music.current.path) { console.error("MUSIC_FULLSCREEN_PLAYLIST_ADD_FAILED"); Qt.exit(1); return; }
+                    input.keyClick(Qt.Key_Escape);
+                    if (!music.immersive || findItem(music.contentItem, "music-playlist-choices")?.visible) { console.error("MUSIC_FULLSCREEN_PLAYLIST_PICKER_ESCAPE_FAILED"); Qt.exit(1); return; }
                     const selected = music.current.path;
                     findItem(music.contentItem, "music-fullscreen-exit").clicked();
                     if (music.immersive || music.current.path !== selected) { console.error("MUSIC_FULLSCREEN_RESTORE_FAILED"); Qt.exit(1); return; }
@@ -281,7 +351,16 @@ def session():
                 } else if (phase === 94 && attempts >= repeatStart + 3) {
                     if (!music.immersive) { console.error("MUSIC_FULLSCREEN_F11_FAILED"); Qt.exit(1); return; }
                     console.log("MUSIC_FULLSCREEN_PASSED");
-                    music.spotifyPlayer = spotify; music.spotifyPreview = true;
+                    music.spotifyPlayer = spotify;
+                    if (!music.spotifyPreview) { console.error("SPOTIFY_AUTOFOLLOW_FAILED"); Qt.exit(1); return; }
+                    music.control({action:"Pause"});
+                    if (spotify.isPlaying) { console.error("SPOTIFY_REMOTE_PAUSE_FAILED"); Qt.exit(1); return; }
+                    music.control({action:"Play"});
+                    music.control({action:"Seek",offset:5000000});
+                    if (!spotify.isPlaying || spotify.position !== 35) { console.error("SPOTIFY_REMOTE_PLAY_SEEK_FAILED"); Qt.exit(1); return; }
+                    music.control({action:"Stop"});
+                    if (spotify.isPlaying) { console.error("SPOTIFY_REMOTE_STOP_FAILED"); Qt.exit(1); return; }
+                    spotify.play();
                     if (music.current.title !== "Suggested song" || music.playbackDuration !== 180000 || !music.playing) { console.error("SPOTIFY_METADATA_FAILED"); Qt.exit(1); return; }
                     const play = findItem(music.contentItem, "music-fullscreen-play");
                     play.clicked();
@@ -297,9 +376,159 @@ def session():
                     if (!spotify.isPlaying || spotify.position !== 45 || spotify.nextCalls !== 1 || spotify.previousCalls !== 1 || !spotify.shuffle || spotify.loopState === 0 || Math.abs(spotify.volume-0.3) > 0.01) { console.error("SPOTIFY_TRANSPORT_FAILED"); Qt.exit(1); return; }
                     spotify.canSeek = false; music.seek(60000);
                     if (spotify.position !== 45 || findItem(music.contentItem, "music-fullscreen-seek").enabled) { console.error("SPOTIFY_CAPABILITY_FAILED"); Qt.exit(1); return; }
+                    const originalTracks = music.tracks;
+                    const originalQueue = music.queue;
+                    const originalPlaylists = music.playlists;
+                    const uri = spotify.metadata["xesam:url"];
+                    const suggestion = {uri: uri, title: "Suggested song", artist: "Suggested artist"};
+                    music.tracks = originalTracks.map((track, i) => i === 0 ? Object.assign({}, track, {spotifyUri: uri}) : track);
+                    music.playlists = originalPlaylists.concat([{id: "queue-test", paths: []}]);
+                    music.navigate("Playlist", "queue-test");
+                    music.spotifySuggestions = {playlist: "queue-test", pending: false, tracks: [suggestion]};
+                    findItem(music.contentItem, "music-fullscreen-queue-toggle").clicked();
+                    findItem(music.contentItem, "music-fullscreen-suggestions-tab").clicked();
+                    const queueCurrent = findItem(music.contentItem, "music-fullscreen-queue-current");
+                    const suggestions = findItem(music.contentItem, "music-fullscreen-suggestions");
+                    if (!queueCurrent.visible || !queueCurrent.enabled || !suggestions.visible || suggestions.count !== 1) { console.error("FULLSCREEN_QUEUE_MENU_FAILED"); Qt.exit(1); return; }
+                    queueCurrent.clicked();
+                    if (music.queue.length !== originalQueue.length + 1 || music.queue[music.queue.length - 1].spotifyUri !== uri || !spotify.isPlaying || music.playlists[music.playlists.length - 1].paths.length !== 0) { console.error("FULLSCREEN_QUEUE_SUGGESTION_FAILED"); Qt.exit(1); return; }
+                    findItem(music.contentItem, "music-fullscreen-queue-toggle").clicked();
+                    music.tracks = originalTracks;
+                    music.queue = originalQueue;
+                    music.playlists = originalPlaylists;
+                    console.log("MUSIC_FULLSCREEN_QUEUE_PASSED");
                     music.select(0);
                     if (music.spotifyPreview || spotify.isPlaying || music.current.title === "Suggested song") { console.error("SPOTIFY_LOCAL_RETURN_FAILED"); Qt.exit(1); return; }
-                    console.log("MUSIC_SPOTIFY_FULLSCREEN_PASSED"); stop(); Qt.quit();
+                    console.log("MUSIC_SPOTIFY_FULLSCREEN_PASSED");
+                    music.toggleFullscreen();
+                    // Resize the content area directly because the tiled window is sized by Niri.
+                    findItem(music.contentItem, "music-background").anchors.bottomMargin = -200;
+                    music.page = "Playlist"; music.detail = "test";
+                    music.spotifySuggestions = {playlist:"test",pending:false,hasMore:true,tracks:Array.from({length:14}, (_,i)=>({uri:"spotify:track:"+String(i).padStart(22,"0"),title:"Suggestion "+i,artist:"New artist"}))};
+                    repeatStart = attempts; phase = 95;
+                } else if (phase === 950) {
+                    const suggestions = findItem(music.contentItem, "music-playlist-suggestions");
+                    const songs = findItem(music.contentItem, "music-track-row-0")?.ListView.view;
+                    if (suggestions.height >= 4 * music.suggestionRowHeight || !songs || songs.height < songs.contentHeight) {
+                        console.error("MUSIC_SHORT_PLAYLIST_LAYOUT_FAILED", suggestions.height, songs?.height, songs?.contentHeight);
+                        Qt.exit(1); return;
+                    }
+                    findItem(music.contentItem, "music-background").anchors.bottomMargin = -200;
+                    repeatStart = attempts; phase = 95;
+                } else if (phase === 95 && attempts >= repeatStart + 3) {
+                    const list = findItem(music.contentItem, "music-playlist-suggestions");
+                    if (list.count !== 14 || !findItem(music.contentItem, "music-suggestions-load-more")?.enabled) { console.error("SUGGESTIONS_CONTINUOUS_LIST_FAILED"); Qt.exit(1); return; }
+                    if (Math.abs(list.height - 4 * music.suggestionRowHeight) > 1) { console.error("SUGGESTIONS_VIEWPORT_HEIGHT_FAILED", list.height); Qt.exit(1); return; }
+                    if (!checkedShortPlaylist) {
+                        checkedShortPlaylist = true;
+                        findItem(music.contentItem, "music-background").anchors.bottomMargin = 0;
+                        phase = 950;
+                        return;
+                    }
+                    const firstSuggestion = list.itemAtIndex(0);
+                    if (!firstSuggestion || firstSuggestion.selected || firstSuggestion.height >= findItem(music.contentItem, "music-track-row-0").height) { console.error("SUGGESTION_COMPACT_ROW_FAILED"); Qt.exit(1); return; }
+                    music.play(music.tracks, 0);
+                    music.next(false);
+                    if (music.currentIndex !== 1 || music.requestedPreview) { console.error("PLAYLIST_NEXT_SKIPPED_LOCAL_QUEUE"); Qt.exit(1); return; }
+                    firstSuggestion.playRequested();
+                    if (music.requestedPreview !== firstSuggestion.track.uri) { console.error("SUGGESTION_ROW_PLAY_FAILED"); Qt.exit(1); return; }
+                    music.requestedPreview = "";
+                    spotify.play();
+                    music.next(false);
+                    if (music.requestedPreview || spotify.nextCalls !== 2) { console.error("NEXT_RESTARTED_SUGGESTIONS"); Qt.exit(1); return; }
+                    spotify.metadata = {"xesam:url": "https://open.spotify.com/track/" + firstSuggestion.track.uri.split(":").pop() + "?si=test"};
+                    if (!firstSuggestion.selected) { console.error("SUGGESTION_SELECTION_FAILED"); Qt.exit(1); return; }
+                    firstSuggestion.playRequested();
+                    if (spotify.isPlaying) { console.error("SUGGESTION_ROW_PAUSE_FAILED"); Qt.exit(1); return; }
+                    firstSuggestion.playRequested();
+                    if (!spotify.isPlaying) { console.error("SUGGESTION_ROW_RESUME_FAILED"); Qt.exit(1); return; }
+                    spotify.canGoNext = false;
+                    music.toggleFullscreen();
+                    findItem(music.contentItem, "music-fullscreen-queue-toggle").clicked();
+                    repeatStart = attempts; phase = 951;
+                } else if (phase === 951 && attempts >= repeatStart + 3) {
+                    const stage = findItem(music.contentItem, "music-fullscreen-stage");
+                    const panel = findItem(music.contentItem, "music-fullscreen-queue-panel");
+                    const art = findItem(music.contentItem, "music-fullscreen-art");
+                    const rail = findItem(music.contentItem, "music-fullscreen-seek");
+                    const next = findItem(music.contentItem, "music-fullscreen-next");
+                    const panelPos = panel.mapToItem(stage, 0, 0);
+                    const artPos = art.mapToItem(stage, 0, 0);
+                    const railPos = rail.mapToItem(stage, 0, 0);
+                    if (!music.immersive || !panel.visible || !next.visible || !next.enabled ||
+                        panelPos.x + panel.width > stage.width || artPos.x + art.width > panelPos.x ||
+                        panelPos.y + panel.height > railPos.y) { console.error("FULLSCREEN_QUEUE_BOUNDS_FAILED"); Qt.exit(1); return; }
+                    next.clicked();
+                    if (music.requestedPreview !== music.suggestedTracks[1].uri) { console.error("FULLSCREEN_NEXT_BUTTON_FAILED"); Qt.exit(1); return; }
+                    music.requestedPreview = "";
+                    music.contentItem.grabToImage(result => result.saveToFile("/tmp/enclosure-music-fullscreen-queue.png"));
+                    const target = MprisController.nextPlayer(spotify);
+                    if (target?.dbusName !== "org.mpris.MediaPlayer2.enclosure_music" || !music.canNext) { console.error("SUGGESTION_MEDIA_NEXT_ROUTE_FAILED"); Qt.exit(1); return; }
+                    target.next();
+                    repeatStart = attempts; phase = 952;
+                } else if (phase === 952 && attempts >= repeatStart + 3) {
+                    if (music.requestedPreview !== music.suggestedTracks[1].uri || spotify.nextCalls !== 2) { console.error("SUGGESTION_MEDIA_NEXT_FAILED", music.requestedPreview, music.suggestedTracks[1].uri, spotify.nextCalls, music.notice); Qt.exit(1); return; }
+                    const suggestions = findItem(music.contentItem, "music-fullscreen-suggestions");
+                    spotify.metadata = {"xesam:url": music.requestedPreview};
+                    if (!music.immersive || !suggestions.visible || suggestions.currentIndex !== 1 ||
+                        !suggestions.itemAtIndex(1)?.selected) { console.error("FULLSCREEN_SUGGESTION_SELECTION_FAILED"); Qt.exit(1); return; }
+                    music.requestedPreview = "";
+                    GlobalStates.musicWindowVisible = false;
+                    spotify.pause();
+                    spotify.position = spotify.length - 0.1;
+                    repeatStart = attempts; phase = 953;
+                } else if (phase === 953 && attempts >= repeatStart + 3) {
+                    if (music.requestedPreview) { console.error("PAUSED_SUGGESTION_ADVANCED"); Qt.exit(1); return; }
+                    spotify.loopState = MprisLoopState.Track;
+                    spotify.play();
+                    repeatStart = attempts; phase = 954;
+                } else if (phase === 954 && attempts >= repeatStart + 3) {
+                    if (music.requestedPreview) { console.error("LOOPING_SUGGESTION_ADVANCED"); Qt.exit(1); return; }
+                    spotify.loopState = MprisLoopState.None;
+                    repeatStart = attempts; phase = 955;
+                } else if (phase === 955 && attempts >= repeatStart + 3) {
+                    if (music.requestedPreview !== music.suggestedTracks[2].uri) { console.error("HIDDEN_SUGGESTION_AUTOPLAY_FAILED"); Qt.exit(1); return; }
+                    music.requestedPreview = "";
+                    repeatStart = attempts; phase = 956;
+                } else if (phase === 956 && attempts >= repeatStart + 3) {
+                    if (music.requestedPreview) { console.error("SUGGESTION_AUTOPLAY_REPEATED"); Qt.exit(1); return; }
+                    spotify.position = 30;
+                    GlobalStates.musicWindowVisible = true;
+                    console.log("MUSIC_SUGGESTION_AUTOPLAY_PASSED");
+                    spotify.canGoNext = true;
+                    const suggestions = music.suggestedTracks;
+                    spotify.metadata = {"xesam:url": suggestions[suggestions.length - 1].uri};
+                    music.navigate("Albums");
+                    music.next(false);
+                    if (!music.canNext || music.requestedPreview !== suggestions[0].uri || spotify.nextCalls !== 2) { console.error("SUGGESTION_QUEUE_WRAP_AFTER_NAVIGATION_FAILED"); Qt.exit(1); return; }
+                    music.page = "Playlist"; music.detail = "test";
+                    music.spotifySuggestions = {playlist:"test",pending:false,hasMore:true,tracks:suggestions};
+                    console.log("MUSIC_FULLSCREEN_SUGGESTION_MEDIA_NEXT_PASSED");
+                    findItem(music.contentItem, "music-fullscreen-queue-tab").clicked();
+                    music.select(0);
+                    const queue = findItem(music.contentItem, "music-fullscreen-queue-list");
+                    if (!queue.visible || queue.count !== music.queue.length || queue.currentIndex !== 0) { console.error("FULLSCREEN_QUEUE_TAB_FAILED"); Qt.exit(1); return; }
+                    music.toggleFullscreen();
+                    const list = findItem(music.contentItem, "music-playlist-suggestions");
+                    list.positionViewAtIndex(8, ListView.Beginning);
+                    repeatStart = attempts; phase = 96;
+                } else if (phase === 96 && attempts >= repeatStart + 3) {
+                    const list = findItem(music.contentItem, "music-playlist-suggestions");
+                    const row = list.itemAtIndex(8);
+                    if (list.contentY <= 0 || !row || row.modelData.title !== "Suggestion 8" || list.model[0].title !== "Suggestion 0") { console.error("SUGGESTIONS_SCROLL_LOAD_FAILED"); Qt.exit(1); return; }
+                    const more = findItem(music.contentItem, "music-suggestions-load-more");
+                    more.clicked();
+                    if (more.enabled || !music.spotifySuggestions.pending || list.count !== 14) { console.error("SUGGESTIONS_LOAD_MORE_FAILED"); Qt.exit(1); return; }
+                    const tracks = Array.from({length:150}, (_,i)=>({uri:"spotify:track:"+String(i).padStart(22,"0"),title:"Suggestion "+i,artist:"New artist"}));
+                    music.receive(JSON.stringify({id:music.requestId,ok:true,data:{playlist:"test",pending:false,hasMore:false,tracks:tracks}}));
+                    if (more.visible) { console.error("SUGGESTIONS_EXHAUSTED_FAILED"); Qt.exit(1); return; }
+                    repeatStart = attempts; phase = 97;
+                } else if (phase === 97 && attempts >= repeatStart + 3) {
+                    const list = findItem(music.contentItem, "music-playlist-suggestions");
+                    if (list.count !== 150 || list.contentY <= 0) { console.error("SUGGESTIONS_APPEND_SCROLL_FAILED"); Qt.exit(1); return; }
+                    music.spotifySuggestions = {playlist:"test",pending:false,tracks:[]};
+                    if (list.count !== 0) { console.error("SUGGESTIONS_RESET_FAILED"); Qt.exit(1); return; }
+                    console.log("MUSIC_SUGGESTIONS_CONTINUOUS_PASSED"); stop(); Qt.quit();
                 }
             }
         }
@@ -314,11 +543,13 @@ def session():
         result=subprocess.run(['quickshell','-p',str(config)],env=env,capture_output=True,text=True,timeout=25)
         print(result.stdout)
         print(result.stderr)
-        if result.returncode or 'MUSIC_ACCEPTANCE_PASSED' not in result.stdout+result.stderr:
+        if result.returncode or 'MUSIC_SUGGESTIONS_CONTINUOUS_PASSED' not in result.stdout+result.stderr:
             raise SystemExit(1)
         import json
         state=json.loads((home/'.local/state/enclosure/music/library.json').read_text())
         assert len(state['favorites'])==1 and len(state['playlists'][0]['paths'])==2, state
+        assert next(p for p in state['playlists'] if p['id'] == 'regular-add')['paths'] == [], state
+        assert len(next(p for p in state['playlists'] if p['id'] == 'fullscreen-add')['paths']) == 1, state
         print('Music playback, queue, seek, lyrics and persisted favorites/playlists verified.')
 
 

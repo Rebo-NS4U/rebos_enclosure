@@ -23,7 +23,10 @@ Window {
     color: "transparent"
     visible: GlobalStates.musicWindowVisible
     onClosing: event => { event.accepted = false; GlobalStates.musicWindowVisible = false; }
-    onVisibleChanged: if (visible && !started) { started = true; backend.running = true; }
+    onVisibleChanged: {
+        if (!visible) pendingRemoval = null;
+        if (visible && !started) { started = true; backend.running = true; }
+    }
 
     readonly property bool immersive: visibility === Window.FullScreen
     property bool restoreMaximized: false
@@ -45,44 +48,82 @@ Window {
     property var favorites: []
     property var playlists: []
     property var folders: []
-    property string page: "Albums"
+    property string page: "Playlists"
     property string query: ""
     property string detail: ""
+    property var pendingRemoval: null
+    onPageChanged: pendingRemoval = null
+    onDetailChanged: pendingRemoval = null
+    Timer {
+        id: removeConfirmation
+        interval: 5000
+        onTriggered: root.pendingRemoval = null
+    }
     property string side: "Queue"
     readonly property int queueLimit: 100
     property var queue: []
     property int currentIndex: -1
     property bool shuffle: false
+    property var shuffleHistory: []
+    property int shuffleCursor: -1
+    readonly property bool canPreviousLocal: shuffle ? shuffleCursor > 0 : currentIndex > 0
     property string repeatMode: "Playlist"
     property real volume: 0.8
     property int requestId: 0
     property var callbacks: ({})
     property bool spotifyPreview: false
-    property var spotifyPlayer: Mpris.players.values.find(p => p.dbusName === "org.mpris.MediaPlayer2.spotify") || null
+    property var spotifyPlayer: Mpris.players.values.find(p => (p.dbusName || "").toLowerCase().includes("spotify")) || null
     readonly property var localCurrent: currentIndex >= 0 && currentIndex < queue.length ? queue[currentIndex] : null
     readonly property var current: spotifyPreview ? (spotifyPlayer ? {
         title: spotifyPlayer.trackTitle, artist: spotifyPlayer.trackArtists,
         album: spotifyPlayer.trackAlbum, art: spotifyPlayer.trackArtUrl,
         duration: spotifyPlayer.length, spotifyUri: spotifyPlayer.metadata["xesam:url"] || ""
     } : null) : localCurrent
+    readonly property string currentPlaylistPath: spotifyPreview
+        ? (current?.spotifyUri ? tracks.find(track => track.spotifyUri === current.spotifyUri)?.path || "" : "")
+        : localCurrent?.path || ""
     readonly property real playbackPosition: spotifyPreview ? (spotifyPlayer?.position || 0) * 1000 : player.position
     readonly property real playbackDuration: spotifyPreview ? (spotifyPlayer?.length || 0) * 1000 : player.duration
-    onSpotifyPlayerChanged: if (spotifyPreview) Qt.callLater(findLyrics)
-    function previewTrack(uri) {
-        request("mixes_preview", {uri: uri}, data => {
+    onSpotifyPlayerChanged: {
+        followSpotify();
+        if (spotifyPreview) Qt.callLater(findLyrics);
+    }
+    function followSpotify() {
+        if (spotifyPlayer?.isPlaying) {
+            player.pause();
+            spotifyPreview = true;
+        }
+    }
+    function spotifyTrackUri(url) {
+        const match = /^https:\/\/open\.spotify\.com\/track\/([A-Za-z0-9]{22})(?:[/?#]|$)/.exec(url || "");
+        return match ? "spotify:track:" + match[1] : url;
+    }
+    function playSuggestion(track) {
+        if (suggestedTracks.some(suggestion => suggestion.uri === track.uri)) {
+            suggestionQueue = suggestedTracks;
+            suggestionPlaylist = detail;
+        }
+        previewSuggestion(track.uri);
+    }
+    function previewSuggestion(uri) {
+        request("suggestions_play", {uri: uri}, data => {
             player.pause();
             spotifyPreview = true;
             findLyrics();
         });
     }
     Connections {
-        target: root.spotifyPreview ? root.spotifyPlayer : null
-        function onTrackTitleChanged() { Qt.callLater(root.findLyrics); }
+        target: root.spotifyPlayer
+        function onIsPlayingChanged() { root.followSpotify(); }
+        function onTrackTitleChanged() { if (root.spotifyPreview) Qt.callLater(root.findLyrics); }
     }
     Timer {
         interval: 250; repeat: true
-        running: root.spotifyPreview && root.playing && root.visible
-        onTriggered: if (root.spotifyPlayer) root.spotifyPlayer.positionChanged()
+        running: root.spotifyPreview && root.playing && (root.visible || !!root.nextSuggestion)
+        onTriggered: {
+            root.spotifyPlayer.positionChanged();
+            root.advanceSpotifySuggestion(interval);
+        }
     }
     readonly property bool playing: spotifyPreview ? !!spotifyPlayer?.isPlaying : player.playbackState === MediaPlayer.PlayingState
     readonly property var shownTracks: {
@@ -97,8 +138,38 @@ Window {
         const q = query.trim().toLowerCase();
         return q ? list.filter(t => (t.title + " " + t.artist + " " + t.album).toLowerCase().includes(q)) : list;
     }
+    readonly property real trackRowHeight: Styling.spacing(70)
+    readonly property real suggestionRowHeight: Styling.spacing(48)
     property var spotifySuggestions: ({tracks: [], pending: false, status: ""})
     property var pendingSuggestionDownload: null
+    readonly property bool canAddSuggestion: !busy && !downloads.busy && !pendingSuggestionDownload
+    property var suggestionQueue: []
+    property string suggestionPlaylist: ""
+    readonly property string currentSpotifyUrl: current?.spotifyUri || ""
+    readonly property string currentSpotifyUri: spotifyTrackUri(currentSpotifyUrl)
+    readonly property var activeSuggestions: suggestionQueue.length ? suggestionQueue : suggestedTracks
+    readonly property int suggestionQueueIndex: spotifyPreview
+        ? activeSuggestions.findIndex(track => track.uri === currentSpotifyUri) : -1
+    readonly property var playingSuggestion: activeSuggestions[suggestionQueueIndex] || null
+    readonly property var nextSuggestion: suggestionQueueIndex >= 0 && suggestionQueue.length > 1
+        ? suggestionQueue[(suggestionQueueIndex + 1) % suggestionQueue.length] : null
+    onSuggestedTracksChanged: {
+        if (suggestionQueue.length && suggestionPlaylist === detail && suggestedTracks.length)
+            suggestionQueue = suggestedTracks;
+    }
+    property string advancedSuggestionUri: ""
+    function advanceSpotifySuggestion(pollInterval) {
+        if (!nextSuggestion || suggestionQueueIndex < 0 || spotifyPlayer.loopState === MprisLoopState.Track || playbackDuration <= 0) return;
+        // Spotify can reset its position at the end without reporting a distinct end event.
+        if (playbackDuration - playbackPosition > pollInterval + 50) {
+            advancedSuggestionUri = "";
+            return;
+        }
+        if (advancedSuggestionUri !== current.spotifyUri) next(true);
+    }
+    readonly property bool canNext: !!nextSuggestion || (spotifyPreview ? !!spotifyPlayer?.canGoNext : queue.length > 1)
+    onNextSuggestionChanged: sync()
+    onCurrentSpotifyUrlChanged: sync()
     readonly property var suggestedTracks: {
         const playlist = playlists.find(p => p.id === detail);
         if (page !== "Playlist" || !playlist || spotifySuggestions.playlist !== detail) return [];
@@ -109,21 +180,60 @@ Window {
             const key = (t.artist + "\n" + t.title).toLowerCase();
             if (uris.has(t.uri) || identities.has(key)) return false;
             uris.add(t.uri); identities.add(key); return true;
-        }).slice(0, 100);
+        });
+    }
+    function addSuggestion(track, toQueue) {
+        if (!canAddSuggestion) return;
+        if (toQueue && queue.length >= queueLimit) {
+            notice = "Queue is full (" + queueLimit + " songs).";
+            return;
+        }
+        const playlist = detail;
+        const local = tracks.find(t => t.spotifyUri === track.uri);
+        if (local) {
+            if (toQueue) enqueue(local);
+            else request("playlist_add", {playlist: playlist, path: local.path}, load);
+            return;
+        }
+        busy = true;
+        request("suggestion_download", {playlist: playlist, uri: track.uri, toQueue: toQueue}, data => {
+            busy = false;
+            if (!downloads.prepareSuggestion(data)) {
+                notice = "Download could not start. Check Downloads for details.";
+                return;
+            }
+            pendingSuggestionDownload = Object.assign({}, data, {toQueue: toQueue});
+            downloads.start();
+        });
+    }
+    function applySuggestions(data, reset) {
+        const position = reset ? 0 : suggestionsList.contentY;
+        spotifySuggestions = data;
+        Qt.callLater(() => {
+            if (detail === data.playlist) suggestionsList.contentY = Math.max(0, Math.min(position, suggestionsList.contentHeight - suggestionsList.height));
+        });
+    }
+    function loadMoreSuggestions() {
+        if (page !== "Playlist" || spotifySuggestions.pending || !spotifySuggestions.hasMore) return;
+        const selected = detail;
+        spotifySuggestions = Object.assign({}, spotifySuggestions, {pending:true});
+        request("suggestions_more", {playlist:selected}, data => {
+            if (detail === selected) applySuggestions(data, false);
+        });
     }
     function refreshSuggestions() {
         if (page !== "Playlist") return;
         const selected = detail;
         spotifySuggestions = {playlist: selected, tracks: [], pending: true, status: "Loading Spotify suggestions…"};
         request("suggestions_refresh", {playlist: selected}, data => {
-            if (detail === selected) spotifySuggestions = data;
+            if (detail === selected) applySuggestions(data, true);
         });
     }
     Timer {
         interval: 2000; repeat: true
         running: root.page === "Playlist" && root.spotifySuggestions.pending
         onTriggered: root.request("suggestions_get", {}, data => {
-            if (data.playlist === root.detail) root.spotifySuggestions = data;
+            if (data.playlist === root.detail) root.applySuggestions(data, false);
         })
     }
     readonly property var albums: {
@@ -177,6 +287,15 @@ Window {
         if (callback) callbacks[id] = callback;
         backend.write(JSON.stringify({id: id, cmd: cmd, args: args || {}}) + "\n");
     }
+    property bool spotifyWritePending: false
+    property string spotifyWriteStatus: ""
+    Timer {
+        interval: 2000; repeat: true; running: root.spotifyWritePending
+        onTriggered: root.request("playlist_write_status", {}, data => {
+            root.spotifyWritePending = data.pending;
+            root.spotifyWriteStatus = data.status;
+        })
+    }
     function receive(data) {
         let message;
         try { message = JSON.parse(data); } catch (e) { return; }
@@ -196,9 +315,10 @@ Window {
     function save() { request("save", { favorites: favorites, playlists: playlists }); }
     function favorite(track) {
         if (!track?.path) return;
-        favorites = favorites.includes(track.path) ? favorites.filter(p => p !== track.path) : favorites.concat([track.path]); save();
+        favorites = favorites.includes(track.path) ? favorites.filter(p => p !== track.path) : favorites.concat([track.path]);
+        request("save", {favorites: favorites});
     }
-    function navigate(value, arg) { page = value; detail = arg || ""; query = ""; if (page === "Playlist") refreshSuggestions(); }
+    function navigate(value, arg) { page = value; detail = arg || ""; query = ""; if (page === "Playlist") spotifySuggestions = {tracks: [], pending: false, status: "Refresh to load Spotify suggestions."}; }
     function play(list, index) {
         if (!list.length) return;
         const selected = index === undefined ? Math.floor(Math.random() * list.length) : index;
@@ -223,10 +343,17 @@ Window {
         if (kind === "Artists") return tracks.filter(t => t.artist === key);
         return tracks.filter(t => t.album + "\n" + t.artist === key).slice().sort((a,b) => a.number - b.number);
     }
-    function select(index) {
+    function resetShuffleHistory(index) {
+        shuffleHistory = shuffle && index >= 0 ? [index] : [];
+        shuffleCursor = shuffleHistory.length - 1;
+    }
+    function select(index, fromShuffle) {
         if (index < 0 || index >= queue.length) return;
-        if (spotifyPreview && spotifyPlayer?.isPlaying) spotifyPlayer.pause();
+        if (!fromShuffle) resetShuffleHistory(index);
+        if (spotifyPlayer?.isPlaying) spotifyPlayer.pause();
         spotifyPreview = false;
+        suggestionQueue = [];
+        suggestionPlaylist = "";
         currentIndex = index;
         findLyrics();
         player.source = queue[index].url;
@@ -246,41 +373,79 @@ Window {
         });
     }
     function next(automatic) {
-        if (spotifyPreview) { if (spotifyPlayer?.canGoNext) spotifyPlayer.next(); return; }
+        if (nextSuggestion) {
+            advancedSuggestionUri = currentSpotifyUrl;
+            previewSuggestion(nextSuggestion.uri);
+            return;
+        }
+        if (spotifyPreview) {
+            if (spotifyPlayer?.canGoNext) spotifyPlayer.next();
+            return;
+        }
         if (!queue.length) return;
         if (automatic && repeatMode === "Track") { player.position = 0; player.play(); return; }
-        if (shuffle && queue.length > 1) { select((currentIndex + 1 + Math.floor(Math.random()*(queue.length-1)))%queue.length); return; }
+        if (shuffle && queue.length > 1 && currentIndex >= 0) {
+            if (shuffleCursor + 1 === shuffleHistory.length) {
+                const offset = 1 + Math.floor(Math.random() * (queue.length - 1));
+                const index = (currentIndex + offset) % queue.length;
+                shuffleHistory = shuffleHistory.concat([index]).slice(-queueLimit);
+                shuffleCursor = shuffleHistory.length - 1;
+            } else {
+                shuffleCursor++;
+            }
+            select(shuffleHistory[shuffleCursor], true);
+            return;
+        }
         if (currentIndex+1 < queue.length) select(currentIndex+1);
         else if (repeatMode === "Playlist") select(0);
     }
-    function previous() { if (spotifyPreview) { if (spotifyPlayer?.canGoPrevious) spotifyPlayer.previous(); return; } if (player.position > 3000) player.position = 0; else select(Math.max(0,currentIndex-1)); }
-    function toggle() { if (spotifyPreview) { if (spotifyPlayer?.canTogglePlaying) spotifyPlayer.togglePlaying(); return; } if (playing) player.pause(); else if (current) player.play(); else play(shownTracks); }
+    function previous() {
+        if (spotifyPreview) {
+            if (spotifyPlayer?.canGoPrevious) spotifyPlayer.previous();
+            return;
+        }
+        if (player.position > 3000) {
+            player.position = 0;
+        } else if (shuffle) {
+            if (shuffleCursor > 0) {
+                shuffleCursor--;
+                select(shuffleHistory[shuffleCursor], true);
+            }
+        } else if (currentIndex >= 0) {
+            select(Math.max(0, currentIndex - 1));
+        }
+    }
+    function toggle() { if (spotifyPreview) { if (spotifyPlayer?.canTogglePlaying) spotifyPlayer.togglePlaying(); return; } if (playing) player.pause(); else if (current) player.play(); else if (queue.length) select(0); else play(shownTracks); }
     function seek(value) { if (spotifyPreview) { if (spotifyPlayer?.canSeek) spotifyPlayer.position = value/1000; return; } player.position = Math.max(0, Math.min(player.duration, value)); sync(true); }
     function sync(seeked) {
         if (!backend.running) return;
         request("mpris", { track: localCurrent ? Object.assign({}, localCurrent, {lyrics: spotifyPreview ? "" : lyricText}) : null, status: !localCurrent || player.playbackState === MediaPlayer.StoppedState ? "Stopped" : player.playbackState === MediaPlayer.PlayingState ? "Playing" : "Paused",
             position: Math.round(player.position*1000), length: Math.round(player.duration*1000),
-            volume: volume, shuffle: shuffle, loop: repeatMode, canNext: queue.length > 1,
-            canPrevious: currentIndex > 0, seeked: !!seeked });
+            volume: volume, shuffle: shuffle, loop: repeatMode, canNext: !!nextSuggestion || queue.length > 1,
+            suggestionNextFor: nextSuggestion ? currentSpotifyUrl : "",
+            canPrevious: canPreviousLocal, seeked: !!seeked });
     }
     function control(message) {
         switch(message.action) {
         case "Raise": GlobalStates.musicWindowVisible = true; root.requestActivate(); break;
         case "PlayPause": toggle(); break;
-        case "Play": if (current) player.play(); break;
-        case "Pause": player.pause(); break;
-        case "Stop": player.stop(); break;
+        case "Play": if (spotifyPreview) { if (spotifyPlayer?.canPlay) spotifyPlayer.play(); } else if (current) player.play(); break;
+        case "Pause": if (spotifyPreview) { if (spotifyPlayer?.canPause) spotifyPlayer.pause(); } else player.pause(); break;
+        case "Stop": if (spotifyPreview) spotifyPlayer?.stop(); else player.stop(); break;
         case "Next": next(false); break;
         case "Previous": previous(); break;
-        case "Volume": volume = Math.max(0,Math.min(1,message.value)); break;
-        case "Shuffle": shuffle = message.value; break;
-        case "LoopStatus": repeatMode = message.value; break;
-        case "Seek": seek(player.position+message.offset/1000); break;
+        case "Volume": if (spotifyPreview) { if (spotifyPlayer?.volumeSupported) spotifyPlayer.volume = Math.max(0,Math.min(1,message.value)); } else volume = Math.max(0,Math.min(1,message.value)); break;
+        case "Shuffle": if (spotifyPreview) { if (spotifyPlayer?.shuffleSupported) spotifyPlayer.shuffle = message.value; } else shuffle = message.value; break;
+        case "LoopStatus": if (spotifyPreview) { if (spotifyPlayer?.loopSupported) spotifyPlayer.loopState = message.value === "Track" ? MprisLoopState.Track : message.value === "Playlist" ? MprisLoopState.Playlist : MprisLoopState.None; } else repeatMode = message.value; break;
+        case "Seek": seek(playbackPosition+message.offset/1000); break;
         case "SetPosition": seek(message.position/1000); break;
         }
     }
     onVolumeChanged: sync()
-    onShuffleChanged: sync()
+    onShuffleChanged: {
+        resetShuffleHistory(currentIndex);
+        sync();
+    }
     onRepeatModeChanged: sync()
     onPlayingChanged: sync()
 
@@ -302,14 +467,74 @@ Window {
             volume: root.volume
             device: mediaDevices.defaultAudioOutput
         }
-        onMediaStatusChanged: if (mediaStatus === MediaPlayer.EndOfMedia) root.next(true)
+        onMediaStatusChanged: if (!root.spotifyPreview && mediaStatus === MediaPlayer.EndOfMedia) root.next(true)
         onErrorOccurred: (error, errorString) => { root.notice = errorString; }
     }
     Timer { interval: 500; running: root.playing; repeat: true; onTriggered: root.sync() }
-    Shortcut { sequence: "Space"; enabled: root.immersive || (root.page !== "Downloads" && root.page !== "Spotify playlists" && !search.inputActiveFocus && !playlistName.inputActiveFocus); onActivated: root.toggle() }
+    Shortcut { sequence: "Space"; enabled: !playlistPicker.visible && (root.immersive || (root.page !== "Downloads" && root.page !== "Spotify playlists" && !search.inputActiveFocus && !playlistName.inputActiveFocus)); onActivated: root.toggle() }
     Shortcut { sequence: "Ctrl+F"; enabled: root.page !== "Downloads" && root.page !== "Spotify playlists"; onActivated: search.focusInput() }
     Shortcut { sequence: "F11"; onActivated: root.toggleFullscreen() }
-    Shortcut { sequence: "Escape"; onActivated: { if (root.immersive) root.toggleFullscreen(); else GlobalStates.musicWindowVisible = false; } }
+    Shortcut { sequence: "Escape"; enabled: !playlistPicker.visible; onActivated: { if (root.immersive) root.toggleFullscreen(); else GlobalStates.musicWindowVisible = false; } }
+
+    component AddCurrentToPlaylistButton: ThemeButton {
+        text: "Add to playlist"
+        enabled: !!root.currentPlaylistPath && !root.busy
+        Accessible.name: "Add current song to playlist"
+        onClicked: {
+            playlistPicker.trackPath = root.currentPlaylistPath;
+            playlistPicker.trackTitle = root.current.title;
+            playlistPicker.open();
+        }
+    }
+
+    Popup {
+        id: playlistPicker
+        objectName: "music-playlist-picker"
+        property string trackPath: ""
+        property string trackTitle: ""
+        anchors.centerIn: Overlay.overlay
+        width: Math.min(420, root.width - 32)
+        padding: 16
+        modal: true
+        focus: true
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+        background: StyledRect { variant: "pane" }
+        contentItem: ColumnLayout {
+            StyledText { text: "Add to playlist"; font.bold: true }
+            StyledText { Layout.fillWidth: true; text: playlistPicker.trackTitle; elide: Text.ElideRight; color: Colors.overSurfaceVariant }
+            StyledText {
+                visible: root.playlists.length === 0
+                Layout.fillWidth: true
+                text: "Create a playlist with Save queue in the Music library."
+                wrapMode: Text.WordWrap
+            }
+            ListView {
+                id: playlistChoices
+                objectName: "music-playlist-choices"
+                Layout.fillWidth: true
+                Layout.preferredHeight: Math.min(contentHeight, 280)
+                visible: count > 0
+                clip: true
+                spacing: 4
+                model: root.playlists
+                delegate: ThemeButton {
+                    required property var modelData
+                    readonly property bool alreadyAdded: modelData.paths.includes(playlistPicker.trackPath)
+                    width: playlistChoices.width
+                    text: modelData.name + (alreadyAdded ? " · Added" : "")
+                    enabled: !alreadyAdded && !root.busy
+                    onClicked: {
+                        root.notice = "";
+                        root.busy = true;
+                        root.request("playlist_add", {playlist: modelData.id, path: playlistPicker.trackPath}, root.load);
+                    }
+                }
+                ScrollBar.vertical: ScrollBar {}
+            }
+            StyledText { visible: root.notice !== ""; Layout.fillWidth: true; text: root.notice; wrapMode: Text.WordWrap; color: Colors.error }
+            ThemeButton { Layout.alignment: Qt.AlignRight; text: "Done"; onClicked: playlistPicker.close() }
+        }
+    }
 
     component Cover: ClippingRectangle {
         id: cover
@@ -324,13 +549,32 @@ Window {
         objectName: "music-track-row-" + number
         required property var track
         property int number: 0
-        property bool selected: root.current?.path === track.path
+        property bool suggestion: false
+        property bool addEnabled: true
+        property bool queueSuggestion: false
+        property bool queueEntry: false
+        property string playlistId: ""
+        readonly property bool inFullscreenQueue: queueEntry || queueSuggestion
+        readonly property bool compact: suggestion || queueEntry
+        property bool selected: suggestion
+            ? root.spotifyPreview && !!track.uri && root.currentSpotifyUri === track.uri
+            : !root.spotifyPreview && !!track.path && root.current?.path === track.path
         signal playRequested()
         signal enqueueRequested()
         width: ListView.view ? ListView.view.width : 0
-        height: Styling.spacing(70)
+        height: inFullscreenQueue ? Styling.spacing(60) : compact ? root.suggestionRowHeight : root.trackRowHeight
         variant: selected || rowClick.containsMouse ? "focus" : "transparent"
-        radius: Styling.radius(0)
+        radius: inFullscreenQueue ? Styling.radius(-4) : Styling.radius(0)
+        Rectangle {
+            visible: row.inFullscreenQueue && row.selected
+            anchors.left: parent.left
+            anchors.leftMargin: Styling.spacing(3)
+            anchors.verticalCenter: parent.verticalCenter
+            width: Styling.spacing(3)
+            height: parent.height * 0.5
+            radius: width / 2
+            color: Colors.primary
+        }
         MouseArea {
             id: rowClick
             anchors.fill: parent
@@ -339,17 +583,41 @@ Window {
             onClicked: row.playRequested()
         }
         RowLayout {
-            anchors.fill: parent; anchors.margins: 8; spacing: 12
-            ThemeButton { text: row.selected && root.playing ? "Ⅱ" : "▶"; Accessible.name: (row.selected && root.playing ? "Pause " : "Play ") + row.track.title; onClicked: row.playRequested() }
-            Cover { artwork: row.track.art; Layout.preferredWidth: 48; Layout.preferredHeight: 48 }
+            anchors.fill: parent
+            anchors.margins: row.inFullscreenQueue ? Styling.spacing(10) : row.compact ? Styling.spacing(4) : 8
+            spacing: row.compact ? Styling.spacing(8) : 12
+            ThemeButton { topPadding: row.compact ? Styling.spacing(5) : padding; bottomPadding: topPadding; text: row.selected && root.playing ? "Ⅱ" : "▶"; Accessible.name: (row.selected && root.playing ? "Pause " : "Play ") + row.track.title; onClicked: row.playRequested() }
+            Cover { artwork: row.track.art || ""; Layout.preferredWidth: row.inFullscreenQueue ? Styling.spacing(40) : row.compact ? Styling.spacing(32) : 48; Layout.preferredHeight: Layout.preferredWidth }
             ColumnLayout {
                 Layout.fillWidth: true; spacing: 3
-                StyledText { Layout.fillWidth: true; text: row.track.title; elide: Text.ElideRight; color: row.selected ? Colors.primary : Colors.overSurface }
-                StyledText { Layout.fillWidth: true; text: row.track.artist + " · " + row.track.album; color: Colors.overSurfaceVariant; font.pixelSize: Styling.fontSize(-2); elide: Text.ElideRight }
+                StyledText { Layout.fillWidth: true; text: row.track.title; font.bold: row.selected; elide: Text.ElideRight; color: row.selected ? Colors.primary : Colors.overSurface }
+                StyledText { Layout.fillWidth: true; text: [row.track.artist, row.track.album].filter(Boolean).join(" · "); color: Colors.overSurfaceVariant; font.pixelSize: Styling.fontSize(-2); elide: Text.ElideRight }
             }
-            StyledText { text: root.time(row.track.duration*1000); color: Colors.overSurfaceVariant }
-            ThemeButton { text: root.favorites.includes(row.track.path) ? "♥" : "♡"; Accessible.name: "Favorite " + row.track.title; onClicked: root.favorite(row.track) }
-            ThemeButton { objectName: "music-track-queue-" + row.number; text: "+"; Accessible.name: "Queue " + row.track.title; onClicked: row.enqueueRequested() }
+            StyledText { visible: !row.queueSuggestion && !!row.track.duration; text: root.time((row.track.duration || 0)*1000); color: Colors.overSurfaceVariant }
+            ThemeButton { visible: !row.compact; text: root.favorites.includes(row.track.path) ? "♥" : "♡"; Accessible.name: "Favorite " + row.track.title; onClicked: root.favorite(row.track) }
+            ThemeButton { objectName: "music-track-queue-" + row.number; visible: !row.queueEntry; topPadding: row.compact ? Styling.spacing(5) : padding; bottomPadding: topPadding; text: row.queueSuggestion ? "Queue" : row.suggestion ? "Add" : "+"; enabled: row.addEnabled; Accessible.name: row.suggestion && !row.queueSuggestion ? "Add " + row.track.title + " to playlist" : "Queue " + row.track.title; onClicked: row.enqueueRequested() }
+            ThemeButton {
+                objectName: "music-track-remove-" + row.number
+                visible: row.playlistId !== ""
+                enabled: !root.busy
+                readonly property bool confirming: root.pendingRemoval?.playlist === row.playlistId
+                    && root.pendingRemoval?.path === row.track.path
+                text: confirming ? "Confirm remove" : "Remove"
+                Accessible.name: (confirming ? "Confirm removal of " : "Remove ") + row.track.title + " from playlist"
+                onClicked: {
+                    const removal = {playlist: row.playlistId, path: row.track.path};
+                    if (!confirming) {
+                        root.pendingRemoval = removal;
+                        removeConfirmation.restart();
+                        return;
+                    }
+                    removeConfirmation.stop();
+                    root.pendingRemoval = null;
+                    root.notice = "";
+                    root.busy = true;
+                    root.request("playlist_remove", removal, root.load);
+                }
+            }
         }
     }
 
@@ -417,8 +685,28 @@ Window {
                     RowLayout {
                         Layout.fillWidth: true
                         StyledText { text: root.shownTracks.length + " songs · Your library"; color: Colors.overSurfaceVariant; Layout.fillWidth: true }
+                        ThemeButton {
+                            text: root.spotifyWritePending ? "Syncing Music → Spotify…" : "Sync Music → Spotify"
+                            visible: root.page === "Playlist"
+                            enabled: !root.spotifyWritePending
+                            onClicked: root.request("playlist_to_spotify", {playlist: root.detail}, data => {
+                                root.spotifyWritePending = data.pending;
+                                root.spotifyWriteStatus = data.status;
+                            })
+                        }
+                        ThemeButton {
+                            text: "Sync Spotify → Music"; visible: root.page === "Playlist"
+                            enabled: !downloads.busy
+                            onClicked: root.request("playlist_sync", {playlist: root.detail}, data => {
+                                if (downloads.prepareMix(data)) root.navigate("Downloads");
+                            })
+                        }
                         ThemeButton { text: "Play all"; highlighted: true; enabled: root.shownTracks.length > 0; onClicked: root.play(root.shownTracks) }
                         ThemeButton { text: "Shuffle"; enabled: root.shownTracks.length > 0; onClicked: { root.shuffle = true; root.play(root.shownTracks,Math.floor(Math.random()*root.shownTracks.length)); } }
+                    }
+                    StyledText {
+                        visible: root.page === "Playlist" && root.spotifyWriteStatus !== ""
+                        text: root.spotifyWriteStatus; Layout.fillWidth: true; wrapMode: Text.WordWrap
                     }
                     // Album shelves and artist cards follow the downloaded reference's library layout.
                     GridView {
@@ -460,12 +748,17 @@ Window {
                         id: songs
                         visible: !cards.visible
                         Layout.fillWidth: true; Layout.fillHeight: true; clip: true; spacing: 4
+                        // Keep the first three playlist rows in view while Suggested contracts.
+                        Layout.minimumHeight: root.page === "Playlist"
+                            ? Math.max(0, Math.min(count, 3) * (root.trackRowHeight + spacing) - spacing) : 0
+                        Layout.preferredHeight: Layout.minimumHeight
                         model: root.shownTracks
                         delegate: TrackRow {
                             required property var modelData
                             required property int index
                             track: modelData; number: index
                             onPlayRequested: { if (selected) root.toggle(); else root.play(root.shownTracks,index); }
+                            playlistId: root.page === "Playlist" ? root.detail : ""
                             onEnqueueRequested: root.enqueue(track)
                         }
                         ScrollBar.vertical: ScrollBar {}
@@ -474,9 +767,17 @@ Window {
                     ColumnLayout {
                         visible: root.page === "Playlist"
                         Layout.fillWidth: true
+                        Layout.fillHeight: true
                         RowLayout {
                             Layout.fillWidth: true
-                            StyledText { text: "Suggested tracks · Spotify"; font.bold: true; Layout.fillWidth: true }
+                            StyledText { text: "Suggested tracks · Spotify · " + root.suggestedTracks.length; font.bold: true; Layout.fillWidth: true }
+                            ThemeButton {
+                                objectName: "music-suggestions-load-more"
+                                text: "Load more"
+                                visible: !!root.spotifySuggestions.hasMore
+                                enabled: !root.spotifySuggestions.pending
+                                onClicked: root.loadMoreSuggestions()
+                            }
                             ThemeButton { text: root.spotifySuggestions.pending ? "Loading…" : "Refresh"; enabled: !root.spotifySuggestions.pending; onClicked: root.refreshSuggestions() }
                         }
                         StyledText {
@@ -486,30 +787,37 @@ Window {
                             color: Colors.overSurfaceVariant
                         }
                         ListView {
+                            id: suggestionsList
                             objectName: "music-playlist-suggestions"
                             Layout.fillWidth: true
-                            Layout.preferredHeight: Math.min(count, 3) * Styling.spacing(52)
+                            Layout.fillHeight: true
+                            Layout.preferredHeight: Math.min(count, 4) * root.suggestionRowHeight
+                            Layout.maximumHeight: Layout.preferredHeight
                             clip: true; model: root.suggestedTracks
-                            delegate: RowLayout {
-                                id: suggestion
+                            // ListView creates rows on demand as they enter the viewport.
+                            reuseItems: true
+                            onContentYChanged: {
+                                if ((dragging || flicking) && contentY + height >= contentHeight - Styling.spacing(104)) Qt.callLater(root.loadMoreSuggestions);
+                            }
+                            onMovementEnded: {
+                                if (contentY + height >= contentHeight - Styling.spacing(104)) root.loadMoreSuggestions();
+                            }
+                            footer: StyledText {
+                                width: suggestionsList.width
+                                visible: root.spotifySuggestions.pending || root.spotifySuggestions.hasMore === false
+                                text: root.spotifySuggestions.pending ? "Loading more…" : root.spotifySuggestions.status || ""
+                                wrapMode: Text.WordWrap
+                                color: Colors.overSurfaceVariant
+                            }
+                            delegate: TrackRow {
+                                id: suggestionRow
                                 required property var modelData
-                                width: ListView.view.width; height: Styling.spacing(52)
-                                StyledText { Layout.fillWidth: true; text: suggestion.modelData.title + " · " + suggestion.modelData.artist; elide: Text.ElideRight }
-                                ThemeButton { text: "Play"; Accessible.name: "Play suggested track " + suggestion.modelData.title; onClicked: root.previewTrack(suggestion.modelData.uri) }
-                                ThemeButton {
-                                    text: "Add"; Accessible.name: "Add " + suggestion.modelData.title + " to playlist"
-                                    enabled: !root.busy && !downloads.busy && !root.pendingSuggestionDownload
-                                    onClicked: {
-                                        const local = root.tracks.find(t => t.spotifyUri === suggestion.modelData.uri);
-                                        if (local) root.request("playlist_add", {playlist:root.detail, path:local.path}, root.load);
-                                        else root.request("suggestion_download", {playlist:root.detail, uri:suggestion.modelData.uri}, data => {
-                                            if (downloads.prepareSuggestion(data)) {
-                                                root.pendingSuggestionDownload = data;
-                                                downloads.start();
-                                            }
-                                        });
-                                    }
-                                }
+                                required property int index
+                                objectName: "music-suggestion-row-" + index
+                                track: modelData; number: index; suggestion: true
+                                addEnabled: root.canAddSuggestion
+                                onPlayRequested: { if (selected) root.toggle(); else root.playSuggestion(track); }
+                                onEnqueueRequested: root.addSuggestion(track, false)
                             }
                             ScrollBar.vertical: ScrollBar {}
                         }
@@ -518,7 +826,7 @@ Window {
                         Layout.fillWidth: true
                         SearchInput { id: playlistName; Layout.fillWidth: true; placeholderText: "Name a playlist from the queue" }
                         ThemeButton {
-                            text: "Save queue"; enabled: playlistName.text.trim() !== "" && root.queue.length > 0
+                            text: "Save queue"; enabled: !root.busy && playlistName.text.trim() !== "" && root.queue.length > 0
                             onClicked: {
                                 root.playlists = root.playlists.concat([{id: Date.now().toString(),name: playlistName.text.trim(),paths: root.queue.map(t=>t.path)}]);
                                 root.save(); playlistName.clear(); root.navigate("Playlists");
@@ -557,8 +865,9 @@ Window {
                         root.request("scan", {}, data => {
                             root.load(data);
                             const track = data.tracks.find(t => t.spotifyUri === pending.uri);
-                            if (track) root.request("playlist_add", {playlist:pending.playlist, path:track.path}, root.load);
-                            else root.notice = "Track was not downloaded. Check the Downloads activity log and try again.";
+                            if (!track) root.notice = "Track was not downloaded. Check the Downloads activity log and try again.";
+                            else if (pending.toQueue) root.enqueue(track);
+                            else root.request("playlist_add", {playlist:pending.playlist, path:track.path}, root.load);
                         });
                     }
                 }
@@ -644,10 +953,11 @@ Window {
                             }
                             StyledText { Layout.fillWidth: true; text: root.current?.artist || "Local music library"; elide: Text.ElideRight; color: Colors.overSurfaceVariant; font.pixelSize: Styling.fontSize(-2) }
                         }
+                        AddCurrentToPlaylistButton { objectName: "music-add-current-to-playlist" }
                         ThemeButton { text: "Shuffle"; checked: root.shuffle; onClicked: root.shuffle = !root.shuffle }
                         ThemeButton { text: "⏮"; Accessible.name: "Previous track"; enabled: !!root.current; onClicked: root.previous() }
                         ThemeButton { text: root.playing ? "Pause" : "Play"; highlighted: true; enabled: root.queue.length > 0 || root.shownTracks.length > 0; onClicked: root.toggle() }
-                        ThemeButton { text: "⏭"; Accessible.name: "Next track"; enabled: root.queue.length > 1; onClicked: root.next(false) }
+                        ThemeButton { text: "⏭"; Accessible.name: "Next track"; enabled: root.canNext; onClicked: root.next(false) }
                         ThemeButton {
                             objectName: "music-repeat"
                             text: root.repeatMode === "Track" ? "Repeat song" : root.repeatMode === "Playlist" ? "Repeat all" : "Repeat off"
@@ -662,7 +972,7 @@ Window {
                     RowLayout {
                         Layout.fillWidth: true
                         StyledText { text: root.time(player.position); font.pixelSize: Styling.fontSize(-2) }
-                        ThemeSlider { id: seekSlider; Layout.fillWidth: true; from: 0; to: Math.max(1,player.duration); value: player.position; enabled: !!root.current; Accessible.name: "Seek"; onMoved: root.seek(value) }
+                        ThemeSlider { id: seekSlider; Layout.fillWidth: true; from: 0; to: Math.max(1,player.duration); value: player.position; playing: player.playbackState === MediaPlayer.PlayingState; enabled: !!root.current; Accessible.name: "Seek"; onMoved: root.seek(value) }
                         StyledText { text: root.time(player.duration); font.pixelSize: Styling.fontSize(-2) }
                     }
                 }
@@ -684,6 +994,10 @@ Window {
         }
         readonly property real inset: Math.max(24, Math.min(width * 0.045, 80))
         readonly property bool wide: width >= 1100
+        readonly property real queueWidth: Math.min(420, width * 0.48)
+        readonly property bool showLyrics: wide && (!queueOpen || width >= 1450)
+        property bool queueOpen: false
+        property bool showSuggestions: false
         ColumnLayout {
             anchors.fill: parent; anchors.margins: stage.inset
             spacing: Math.max(18, stage.height * 0.025)
@@ -695,6 +1009,13 @@ Window {
                     StyledText { text: root.current?.album || "Your listening room"; elide: Text.ElideRight; Layout.maximumWidth: stage.width * 0.6; color: Colors.overSurfaceVariant }
                 }
                 Item { Layout.fillWidth: true }
+                ThemeButton {
+                    objectName: "music-fullscreen-queue-toggle"
+                    text: "Queue · " + root.queue.length
+                    checked: stage.queueOpen
+                    Accessible.description: stage.queueOpen ? "Hide queue panel" : "Show queue panel"
+                    onClicked: stage.queueOpen = !stage.queueOpen
+                }
                 ThemeButton { objectName: "music-fullscreen-exit"; text: "Exit fullscreen · Esc"; onClicked: root.toggleFullscreen() }
             }
             RowLayout {
@@ -708,7 +1029,7 @@ Window {
                     Cover {
                         objectName: "music-fullscreen-art"
                         Layout.alignment: Qt.AlignHCenter
-                        Layout.preferredWidth: Math.max(100, Math.min(stage.wide ? stage.width * 0.36 : stage.width * 0.5, stage.height * 0.46))
+                        Layout.preferredWidth: Math.max(100, Math.min((stage.queueOpen ? stage.width * (stage.showLyrics ? 0.22 : 0.32) : stage.width * (stage.wide ? 0.36 : 0.5)), stage.height * 0.46))
                         Layout.preferredHeight: width
                         artwork: root.current?.art || ""
                         radius: Styling.radius(8)
@@ -722,7 +1043,7 @@ Window {
                     Item { Layout.fillHeight: true }
                 }
                 ColumnLayout {
-                    visible: stage.wide
+                    visible: stage.showLyrics
                     Layout.fillWidth: true; Layout.fillHeight: true
                     Layout.preferredWidth: stage.width * 0.45
                     spacing: 16
@@ -748,6 +1069,149 @@ Window {
                     }
                     StyledText { visible: root.estimatedTiming; text: "Estimated lyric timing"; color: Colors.overSurfaceVariant; font.pixelSize: Styling.fontSize(-2) }
                 }
+                StyledRect {
+                    objectName: "music-fullscreen-queue-panel"
+                    visible: stage.queueOpen
+                    variant: "pane"
+                    Layout.preferredWidth: stage.queueWidth
+                    Layout.fillHeight: true
+                    ColumnLayout {
+                        anchors.fill: parent; anchors.margins: Styling.spacing(16)
+                        spacing: Styling.spacing(12)
+                        RowLayout {
+                            Layout.fillWidth: true
+                            StyledText {
+                                Layout.fillWidth: true
+                                text: "Playback queue"
+                                font.bold: true
+                                font.pixelSize: Styling.fontSize(3)
+                                elide: Text.ElideRight
+                            }
+                            ThemeButton {
+                                text: "×"
+                                Accessible.name: "Close queue panel"
+                                onClicked: stage.queueOpen = false
+                            }
+                        }
+                        StyledRect {
+                            Layout.fillWidth: true
+                            implicitHeight: queueTabs.implicitHeight + 2 * Styling.spacing(4)
+                            variant: "internalbg"
+                            radius: Styling.radius(0)
+                            RowLayout {
+                                id: queueTabs
+                                anchors.fill: parent
+                                anchors.margins: Styling.spacing(4)
+                                spacing: Styling.spacing(4)
+                                uniformCellSizes: true
+                                ThemeButton {
+                                    objectName: "music-fullscreen-queue-tab"
+                                    Layout.fillWidth: true
+                                    Layout.minimumWidth: 0
+                                    text: "Up next · " + root.queue.length
+                                    checked: !stage.showSuggestions
+                                    onClicked: stage.showSuggestions = false
+                                }
+                                ThemeButton {
+                                    objectName: "music-fullscreen-suggestions-tab"
+                                    Layout.fillWidth: true
+                                    Layout.minimumWidth: 0
+                                    text: "Suggestions"
+                                    checked: stage.showSuggestions
+                                    onClicked: stage.showSuggestions = true
+                                }
+                            }
+                        }
+                        ThemeButton {
+                            objectName: "music-fullscreen-queue-current"
+                            Layout.fillWidth: true
+                            visible: !!root.playingSuggestion
+                            text: "Queue current suggestion"
+                            enabled: root.canAddSuggestion && root.queue.length < root.queueLimit
+                            onClicked: root.addSuggestion(root.playingSuggestion, true)
+                        }
+                        StyledText {
+                            visible: !!root.pendingSuggestionDownload?.toQueue
+                            Layout.fillWidth: true; wrapMode: Text.WordWrap
+                            text: "Downloading track for the queue…"
+                            color: Colors.overSurfaceVariant
+                        }
+                        ListView {
+                            id: fullscreenQueue
+                            objectName: "music-fullscreen-queue-list"
+                            visible: !stage.showSuggestions
+                            Layout.fillWidth: true; Layout.fillHeight: true
+                            clip: true; spacing: Styling.spacing(4); model: root.queue
+                            currentIndex: root.spotifyPreview ? -1 : root.currentIndex
+                            onVisibleChanged: if (visible && currentIndex >= 0) positionViewAtIndex(currentIndex, ListView.Contain)
+                            onCurrentIndexChanged: if (visible && currentIndex >= 0) positionViewAtIndex(currentIndex, ListView.Contain)
+                            delegate: TrackRow {
+                                required property var modelData
+                                required property int index
+                                objectName: "music-fullscreen-queued-track-" + index
+                                width: ListView.view.width - Styling.spacing(12)
+                                track: modelData
+                                queueEntry: true
+                                selected: !root.spotifyPreview && index === root.currentIndex
+                                onPlayRequested: { if (selected) root.toggle(); else root.select(index); }
+                            }
+                            StyledText {
+                                anchors.centerIn: parent
+                                width: parent.width
+                                horizontalAlignment: Text.AlignHCenter
+                                wrapMode: Text.WordWrap
+                                visible: fullscreenQueue.count === 0
+                                text: "Your queue is empty."
+                                color: Colors.overSurfaceVariant
+                            }
+                            ScrollBar.vertical: ScrollBar {}
+                        }
+                        ListView {
+                            id: fullscreenSuggestions
+                            objectName: "music-fullscreen-suggestions"
+                            visible: stage.showSuggestions
+                            Layout.fillWidth: true; Layout.fillHeight: true
+                            clip: true; spacing: Styling.spacing(4); model: root.activeSuggestions
+                            currentIndex: root.suggestionQueueIndex
+                            onVisibleChanged: if (visible && currentIndex >= 0) positionViewAtIndex(currentIndex, ListView.Contain)
+                            onCurrentIndexChanged: if (visible && currentIndex >= 0) positionViewAtIndex(currentIndex, ListView.Contain)
+                            delegate: TrackRow {
+                                required property var modelData
+                                required property int index
+                                objectName: "music-fullscreen-suggestion-" + index
+                                width: ListView.view.width - Styling.spacing(12)
+                                track: modelData; number: index; suggestion: true; queueSuggestion: true
+                                addEnabled: root.canAddSuggestion && root.queue.length < root.queueLimit
+                                onPlayRequested: { if (selected) root.toggle(); else root.playSuggestion(track); }
+                                onEnqueueRequested: root.addSuggestion(track, true)
+                            }
+                            StyledText {
+                                anchors.centerIn: parent
+                                width: parent.width
+                                horizontalAlignment: Text.AlignHCenter
+                                wrapMode: Text.WordWrap
+                                visible: fullscreenSuggestions.count === 0
+                                text: root.page === "Playlist" ? (root.spotifySuggestions.status || "No suggestions yet. Refresh to try again.") : "Open a playlist to get Spotify suggestions."
+                                color: Colors.overSurfaceVariant
+                            }
+                            ScrollBar.vertical: ScrollBar {}
+                        }
+                        RowLayout {
+                            visible: stage.showSuggestions && root.page === "Playlist"
+                            ThemeButton {
+                                text: root.spotifySuggestions.pending ? "Loading…" : "Refresh"
+                                enabled: !root.spotifySuggestions.pending
+                                onClicked: root.refreshSuggestions()
+                            }
+                            ThemeButton {
+                                visible: !!root.spotifySuggestions.hasMore
+                                text: "Load more"
+                                enabled: !root.spotifySuggestions.pending
+                                onClicked: root.loadMoreSuggestions()
+                            }
+                        }
+                    }
+                }
             }
             StyledText { visible: root.notice !== ""; Layout.fillWidth: true; text: root.notice; elide: Text.ElideRight; color: Colors.error }
             ColumnLayout {
@@ -755,17 +1219,18 @@ Window {
                 RowLayout {
                     Layout.fillWidth: true; spacing: 14
                     StyledText { text: root.time(root.playbackPosition); color: Colors.overSurfaceVariant }
-                    ThemeSlider { objectName: "music-fullscreen-seek"; Layout.fillWidth: true; from: 0; to: Math.max(1, root.playbackDuration); value: root.playbackPosition; enabled: root.spotifyPreview ? !!root.spotifyPlayer?.canSeek : !!root.current; Accessible.name: "Seek"; onMoved: root.seek(value) }
+                    ThemeSlider { objectName: "music-fullscreen-seek"; Layout.fillWidth: true; from: 0; to: Math.max(1, root.playbackDuration); value: root.playbackPosition; playing: root.playing; enabled: root.spotifyPreview ? !!root.spotifyPlayer?.canSeek : !!root.current; Accessible.name: "Seek"; onMoved: root.seek(value) }
                     StyledText { text: root.time(root.playbackDuration); color: Colors.overSurfaceVariant }
                 }
                 RowLayout {
                     Layout.fillWidth: true; spacing: 12
                     ThemeButton { text: root.favorites.includes(root.current?.path) ? "♥" : "♡"; enabled: !!root.current && !root.spotifyPreview; Accessible.name: "Favorite current song"; onClicked: root.favorite(root.current) }
+                    AddCurrentToPlaylistButton { objectName: "music-fullscreen-add-current-to-playlist" }
                     Item { Layout.fillWidth: true }
                     ThemeButton { objectName: "music-fullscreen-shuffle"; text: "Shuffle"; checked: root.spotifyPreview ? !!root.spotifyPlayer?.shuffle : root.shuffle; enabled: !root.spotifyPreview || !!root.spotifyPlayer?.shuffleSupported; onClicked: { if (root.spotifyPreview) root.spotifyPlayer.shuffle = !root.spotifyPlayer.shuffle; else root.shuffle = !root.shuffle; } }
                     ThemeButton { objectName: "music-fullscreen-previous"; text: "⏮"; Accessible.name: "Previous track"; enabled: root.spotifyPreview ? !!root.spotifyPlayer?.canGoPrevious : !!root.current; onClicked: root.previous() }
                     ThemeButton { objectName: "music-fullscreen-play"; text: root.playing ? "Pause" : "Play"; highlighted: true; Layout.preferredWidth: 120; implicitHeight: 52; enabled: root.spotifyPreview ? !!root.spotifyPlayer?.canTogglePlaying : root.queue.length > 0 || root.shownTracks.length > 0; onClicked: root.toggle() }
-                    ThemeButton { objectName: "music-fullscreen-next"; text: "⏭"; Accessible.name: "Next track"; enabled: root.spotifyPreview ? !!root.spotifyPlayer?.canGoNext : root.queue.length > 1; onClicked: root.next(false) }
+                    ThemeButton { objectName: "music-fullscreen-next"; text: "⏭"; Accessible.name: "Next track"; enabled: root.canNext; onClicked: root.next(false) }
                     ThemeButton { objectName: "music-fullscreen-repeat"; text: root.spotifyPreview ? (root.spotifyPlayer?.loopState === MprisLoopState.Track ? "Repeat song" : "Repeat all") : root.repeatMode === "Track" ? "Repeat song" : "Repeat all"; checked: root.spotifyPreview ? root.spotifyPlayer?.loopState !== MprisLoopState.None : root.repeatMode !== "None"; enabled: !root.spotifyPreview || !!root.spotifyPlayer?.loopSupported; onClicked: {
                         if (root.spotifyPreview) root.spotifyPlayer.loopState = root.spotifyPlayer.loopState === MprisLoopState.None ? MprisLoopState.Playlist : root.spotifyPlayer.loopState === MprisLoopState.Playlist ? MprisLoopState.Track : MprisLoopState.None;
                         else root.repeatMode = root.repeatMode === "None" ? "Playlist" : root.repeatMode === "Playlist" ? "Track" : "None";

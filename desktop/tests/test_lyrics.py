@@ -353,7 +353,7 @@ ShellRoot {
     }
     if (opens !== 2) throw Error('Media open signal missing');
     LyricsService.apply('', 'Test', false);
-    if (!strip.showVisualizer) throw Error('Missing lyrics must use visualizer');
+    if (!current.showVisualizer || !next.showVisualizer) throw Error('Missing lyrics must use visualizer');
     const click = current.children.find(child => child.cursorShape === Qt.PointingHandCursor);
     click.clicked(null);
     if (opens !== 3) throw Error('Visualizer must open media');
@@ -470,14 +470,15 @@ ShellRoot {
      LyricsService.apply('[00:01]Lyrics', 'Test', false);
      phase++; return;
     }
+    const current = strip.children.find(item => item.objectName === 'bar-lyrics-current');
     if (phase === 1) {
-     if (strip.visualizerMix !== 0) throw Error('Lyrics must dim the background spectrum');
+     if (current.visualizerMix !== 0) throw Error('Lyrics must dim the background spectrum');
      function findItem(item, name) {
       if (item.objectName === name) return item;
       for (const child of item.children || []) { const found = findItem(child, name); if (found) return found; }
       return null;
      }
-     const panel = findItem(strip, 'bar-lyrics-current');
+     const panel = current;
      const spectrum = findItem(panel, 'bar-lyrics-visualizer');
      const label = findItem(panel, 'bar-lyrics-text');
      if (!spectrum.visible || spectrum.opacity < 0.2 || spectrum.opacity > 0.3 || label.opacity !== 1)
@@ -485,34 +486,37 @@ ShellRoot {
      Config.animDuration = 100;
      MprisController.isPlaying = true;
      if (!strip.captureAudio) throw Error('Lyrics must retain audio capture during playback');
-     MprisController.isPlaying = false;
-     Config.animDuration = 0;
      LyricsService.apply('[00:01]Current lyric\\n[00:05]Next', 'Test', false);
      const track = findItem(panel, 'bar-lyrics-line-progress');
-     const fill = findItem(track, 'bar-lyrics-line-progress-fill');
      for (const position of [1, 2, 3, 5, 8, 0]) {
       strip.lyricPosition = position;
       const expected = Math.max(0, Math.min(1, (position - 1) / 4));
-      if (Math.abs(fill.width - track.width * expected) > 0.01)
+      if (Math.abs(track.filledLength - track.width * expected) > 0.01)
        throw Error('Underline must show elapsed line time, including seeks and bounds');
      }
      strip.lyricPosition = 3;
      if (!track.visible || track.width <= 0 || track.x < label.x
-         || track.x + track.width > label.x + label.width || fill.height !== 2)
-      throw Error('Progress must fit beneath the lyric even with reduced motion');
+         || track.x + track.width > label.x + label.width || track.height !== 6
+         || track.y < (panel.height + label.implicitHeight) / 2 || track.y + track.height > panel.height)
+      throw Error('Progress must fit beneath the lyric during playback');
      const nextPanel = findItem(strip, 'bar-lyrics-next');
      if (findItem(nextPanel, 'bar-lyrics-line-progress').visible)
       throw Error('Upcoming line must not show elapsed progress');
+     if (!track.children[0].playing)
+      throw Error('Lyrics progress must use the slider ripple during playback');
+     MprisController.isPlaying = false;
+     if (track.children[0].playing) throw Error('Lyrics ripple must stop on pause');
+     Config.animDuration = 0;
      MprisController.position = 5;
      strip.updateLyricPosition();
-     if (strip.currentText !== 'Next' || fill.width !== 0)
+     if (strip.currentText !== 'Next' || track.filledLength !== 0)
       throw Error('Next cue must reset line progress');
      Config.animDuration = 1000;
      LyricsService.apply('', 'Test', true);
      phase++; return;
     }
     if (phase === 2) {
-     if (strip.visualizerMix <= 0 || strip.visualizerMix >= 1) throw Error('Fallback must crossfade');
+     if (current.visualizerMix <= 0 || current.visualizerMix >= 1) throw Error('Fallback must crossfade');
      if (!strip.captureAudio) throw Error('Ordinary app audio must work without MPRIS playback');
      MprisController.trackTitle = '';
      strip.levels = Array(32).fill(0.5);
@@ -521,11 +525,11 @@ ShellRoot {
      phase++; return;
     }
     if (phase === 3) {
-     if (strip.visualizerMix !== 1 || strip.currentText || strip.nextText) throw Error('No lyrics must show visualizer without status labels: ' + JSON.stringify([strip.visualizerMix, strip.currentText, strip.nextText, LyricsService.hasText, LyricsService.status]));
+     if (current.visualizerMix !== 1 || strip.currentText || strip.nextText) throw Error('No lyrics must show visualizer without status labels: ' + JSON.stringify([current.visualizerMix, strip.currentText, strip.nextText, LyricsService.hasText, LyricsService.status]));
      LyricsService.apply('[00:01]Returned', 'Test', false);
      phase++; return;
     }
-    if (strip.visualizerMix !== 0 || strip.currentText !== 'Returned') throw Error('Lyrics must restore the dim background spectrum');
+    if (current.visualizerMix !== 0 || strip.currentText !== 'Returned') throw Error('Lyrics must restore the dim background spectrum');
     console.log('PASS: visualizer fallback, crossfade, pause, reduced motion and restored lyrics'); Qt.quit();
    } catch(error) { console.error(error); Qt.exit(1); }
   }
@@ -533,7 +537,7 @@ ShellRoot {
 }
 ''')
 
-    def test_visualizer_after_final_lyric(self):
+    def test_visualizer_during_lyric_breaks(self):
         self.run_harness('''import QtQuick
 import Quickshell
 import qs.modules.components
@@ -549,24 +553,30 @@ ShellRoot {
     Config.animDuration = 0;
     if (phase === 0) {
      LyricsService.refresh();
-     LyricsService.apply('[00:01]Last lyric\\n[00:05]', 'Test', false);
-     MprisController.position = 2;
+     LyricsService.apply('[00:01]First lyric\\n[00:03]\\n[00:05]Last lyric\\n[00:07]', 'Test', false);
      phase++; return;
     }
-    if (phase === 1) {
-     if (strip.showVisualizer || strip.currentText !== 'Last lyric') throw Error('Lyric must remain readable');
-     MprisController.position = 6;
-     phase++; return;
+    const panels = ['current', 'next'].map(side =>
+     strip.children.find(item => item.objectName === 'bar-lyrics-' + side));
+    for (const [position, current, next] of [
+     [0, '', 'First lyric'],
+     [2, 'First lyric', ''],
+     [4, '', 'Last lyric'],
+     [6, 'Last lyric', ''],
+     [8, '', ''],
+     [2, 'First lyric', '']
+    ]) {
+     MprisController.position = position;
+     for (const [index, text] of [current, next].entries()) {
+      const panel = panels[index];
+      const spectrum = panel.children.find(item => item.objectName === 'bar-lyrics-visualizer');
+      const label = panel.children.find(item => item.objectName === 'bar-lyrics-text');
+      if (!panel.visible || !spectrum.visible || spectrum.opacity !== (text ? 0.24 : 1)
+          || label.opacity !== (text ? 1 : 0) || (text && label.text !== text))
+       throw Error('Incorrect lyric or spectrum at ' + position + ' on side ' + index);
+     }
     }
-    if (phase === 2) {
-     if (!strip.visible || !strip.showVisualizer || strip.visualizerMix !== 1)
-      throw Error('Empty outro must show full visualizer');
-     MprisController.position = 2;
-     phase++; return;
-    }
-    if (strip.showVisualizer || strip.visualizerMix !== 0 || strip.currentText !== 'Last lyric')
-     throw Error('Seeking back must restore lyrics');
-    console.log('PASS: full outro spectrum and seek back'); Qt.quit();
+    console.log('PASS: independent visualizers during intro, lyric gaps, outro and seeks'); Qt.quit();
    } catch(error) { console.error(error); Qt.exit(1); }
   }
  }

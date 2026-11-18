@@ -1,16 +1,16 @@
 .pragma library
 
 var styles = [
-    {id: "canopy", label: "Canopy", font: "DejaVu Sans Mono", description: "Architectural canopy: sweeping fabric spans, uninterrupted hems and softly shaded surfaces."},
+    {id: "canopy", label: "Canopy", font: "DejaVu Sans Mono", description: "Overlapping tree boughs with two-tone leaf sprays across the window."},
     {id: "orbital", label: "Orbital", font: "JetBrains Mono", description: "Orbital space: elliptical tracks, satellite points, fixed stars and recessed glass."},
     {id: "metropolis", label: "Metropolis", font: "DejaVu Sans", description: "City glass: layered facades, architectural reflections and illuminated windows in your selected colors."},
     {id: "glass-vault", label: "Glass Vault", font: "Noto Sans", description: "Thick glass blocks, rounded clamps, refractive light bands and deep inset controls."},
     {id: "radar-station", label: "Radar Station", font: "DejaVu Sans", description: "Etched bearing scales, radial divisions and softly illuminated scope glass."},
-    {id: "suspended-film", label: "Suspended Film", font: "DejaVu Sans Mono", description: "Suspended glass sheets, curved grazing reflections and separated contact edges."},
-    {id: "monolith", label: "Monolith", font: "Noto Sans", description: "Polished obsidian with crisp bevels and luminous mineral fractures."},
+    {id: "suspended-film", label: "Suspended Film", font: "DejaVu Sans Mono", description: "A thin translucent membrane bows between two pin mounts."},
+    {id: "monolith", label: "Monolith", font: "Noto Sans", description: "Layered slate with a diagonal fault, tapered mineral seams and exposed edges."},
     {id: "blueprint", label: "Blueprint", font: "JetBrains Mono", description: "Architectural drafting sheets, truss details, ruled scales and wire controls."},
     {id: "terminal-hardware", label: "Terminal Hardware", font: "DejaVu Sans Mono", description: "Flat machined panels, inset bezels and sparse cooling vents."},
-    {id: "frosted", label: "Frosted Glass", description: "Branching frost crystals, etched ice rims, fine grain and soft corner bloom."},
+    {id: "frosted", label: "Frosted Glass", description: "Satin glass with a sandblasted margin and a fine polished rim."},
     {id: "colorful", label: "Tinted", description: "Layered colored glass planes, offset frames and fading accent reflections."},
     {id: "clear-glass", label: "Clear Glass", font: "Noto Sans", description: "Clear glazing with grazing reflections, fine highlights and a subtle lower meniscus."}
 ];
@@ -109,14 +109,12 @@ function surface(style, variant, p, ditherStrength) {
             if (variant === "focus" || variant === "surfaceVariant") border[0] = mix(fill, p.primary, 0.48);
         }
     }
-    var frostedContainer = false;
     if (style === "frosted") {
         var outer = ["bg", "popup", "bar", "pane", "surface", "surfaceContainer"].indexOf(variant) !== -1;
         var inner = ["common", "internalbg"].indexOf(variant) !== -1;
         var focused = ["focus", "surfaceVariant"].indexOf(variant) !== -1;
-        frostedContainer = outer || inner || focused;
-        if (frostedContainer) {
-            fill = mix(mix(p.background, p.foreground, outer ? 0.07 : 0.04), p.primary, focused ? 0.14 : 0.035);
+        if (outer || inner || focused) {
+            fill = mix(mix(p.background, p.foreground, outer ? 0.12 : 0.065), p.primary, focused ? 0.14 : 0.055);
             opacity = outer ? 0.68 : focused ? 0.84 : 0.48;
             border = [focused ? p.primary : "#40" + p.foreground.slice(-6), 1];
         }
@@ -129,11 +127,10 @@ function surface(style, variant, p, ditherStrength) {
     var focused = variant === "focus" || variant === "surfaceVariant";
     var neutral = ["bg", "popup", "bar", "pane", "surface", "surfaceContainer", "common", "internalbg", "focus", "surfaceVariant"].indexOf(variant) !== -1;
     var outlineRole = variant.indexOf("over") === 0;
-    var renderGradient;
     if (rendered) {
         opacity = variant === "transparent" || variant === "barbg" ? 0 : 1;
         if (neutral || outlineRole) {
-            var depth = monolith ? (inset ? 0 : focused ? 0.075 : outer ? 0.025 : 0.015)
+            var depth = monolith ? (inset ? 0 : focused ? 0.12 : outer ? 0.035 : 0.075)
                 : blueprint ? (inset ? 0.015 : focused ? 0.065 : 0.025)
                 : (inset ? 0 : focused ? 0.12 : outer ? 0.085 : 0.045);
             fill = mix(p.background, p.foreground, depth);
@@ -142,7 +139,6 @@ function surface(style, variant, p, ditherStrength) {
         if (monolith) {
             border = [mix(fill, p.foreground, 0.18), focused ? 2 : inset ? 1 : 0];
             if (focused) border[0] = p.primary;
-            if (neutral && !inset) renderGradient = [[fill, 0], [mix(fill, p.foreground, 0.035), 0.015], [fill, 0.10], [fill, 0.72], [mix(fill, p.background, 0.18), 0.98], [mix(fill, p.foreground, 0.018), 1]];
         } else if (blueprint) {
             // Wire controls retain the selected accent as their ink color.
             if (!neutral && !outlineRole && opacity > 0) {
@@ -153,19 +149,20 @@ function surface(style, variant, p, ditherStrength) {
         } else {
             border = [mix(fill, p.foreground, inset ? 0.26 : 0.38), focused || outer ? 2 : 1];
             if (focused) border[0] = p.primary;
-            // Flat faces: machined detail comes from the perimeter geometry.
-            renderGradient = [[fill, 0]];
         }
     }
     // Three distinct structural treatments with translucent centers.
     var vault=style === "glass-vault", radar=style === "radar-station", film=style === "suspended-film";
-    if ((vault || radar || film) && neutral) {
+    if ((vault || radar) && neutral) {
         fill=mix(p.background,p.foreground,inset?0.012:focused?0.07:0.03);
         item=p.foreground;
-        opacity=vault?(inset?0.82:focused?0.94:0.70):radar?(inset?0.76:focused?0.92:0.64):(inset?0.60:focused?0.86:0.48);
-        border=[focused?p.primary:mix(fill,p.foreground,vault?0.36:radar?0.34:0.24),vault?2:1];
-        renderGradient=vault?[[mix(fill,p.foreground,0.05),0],[fill,0.06],[fill,0.92],[mix(fill,p.background,0.40),1]]
-            :radar?[[fill,0]]:[[mix(fill,p.foreground,0.015),0],[fill,0.25],[fill,1]];
+        opacity=vault?(inset?0.82:focused?0.94:0.70):(inset?0.76:focused?0.92:0.64);
+        border=[focused?p.primary:mix(fill,p.foreground,vault?0.36:0.34),vault?2:1];
+    }
+    if (film && neutral) {
+        fill = mix(p.background, p.primary, focused ? 0.14 : inset ? 0.025 : 0.06);
+        opacity = focused ? 0.86 : inset ? 0.44 : outer ? 0.58 : 0.50;
+        border = [focused ? p.primary : mix(fill, p.foreground, 0.22), outer || focused ? 1 : 0];
     }
     var clearGlass = style === "clear-glass";
     if (clearGlass && neutral) {
@@ -173,14 +170,12 @@ function surface(style, variant, p, ditherStrength) {
         item = p.foreground;
         opacity = focused ? 0.78 : inset ? 0.38 : outer ? 0.52 : 0.32;
         border = [focused ? p.primary : mix(fill, p.foreground, outer ? 0.22 : 0.12), outer || focused || inset ? 1 : 0];
-        renderGradient = [[mix(fill, p.foreground, 0.02), 0], [fill, 0.18], [fill, 1]];
     }
     if (colorful && neutral) {
         fill=mix(mix(p.background,p.foreground,0.025),p.primary,focused?0.14:inset?0.035:0.07);
         item=p.foreground;
         opacity=focused?0.86:inset?0.50:outer?0.74:0.62;
         border=[focused?p.primary:mix(fill,p.primary,outer?0.38:0.20),outer||focused?1:0];
-        renderGradient=[[mix(fill,p.foreground,0.025),0],[fill,0.24],[mix(fill,p.background,0.12),1]];
     }
     var canopy=style === "canopy", orbital=style === "orbital", metro=style === "metropolis";
     if (orbital && neutral) {
@@ -188,8 +183,6 @@ function surface(style, variant, p, ditherStrength) {
         item=p.foreground;
         opacity=focused?0.84:inset?0.48:outer?0.68:0.48;
         border=[focused?p.primary:mix(fill,p.foreground,inset?0.28:0.40),focused||outer?2:1];
-        renderGradient=inset?[[fill,0],[fill,0.94],[mix(fill,p.foreground,0.05),1]]
-            :[[mix(fill,p.foreground,0.07),0],[fill,0.04],[fill,0.90],[mix(fill,p.background,0.55),1]];
     }
     if (metro && neutral) {
         // Material depth uses only the selected palette; no imposed city colors.
@@ -197,16 +190,14 @@ function surface(style, variant, p, ditherStrength) {
         item=p.foreground;
         opacity=focused?0.82:inset?0.42:outer?0.64:0.44;
         border=[focused?p.primary:mix(fill,p.primary,outer?0.32:0.20),focused||outer?1:0];
-        renderGradient=[[mix(fill,p.primary,0.045),0],[fill,0.20],[fill,0.80],[mix(fill,p.background,0.30),1]];
     }
     if (canopy && neutral) {
-        // Soft fabric shading replaces the former hard glass bezel.
-        var cloth=mix(p.primary,p.secondary,0.35);
-        fill=mix(mix(p.background,p.foreground,inset?0.015:0.035),cloth,inset?0.025:0.055);
+        // Carry a little foliage color into the surrounding surface.
+        var foliage=mix(p.primary,p.secondary,0.35);
+        fill=mix(mix(p.background,p.foreground,inset?0.015:0.035),foliage,inset?0.025:0.055);
         item=p.foreground;
         opacity=focused?0.80:inset?0.40:outer?0.62:0.42;
-        border=[focused?p.primary:mix(fill,cloth,outer?0.27:0.16),focused||outer?1:0];
-        renderGradient=[[mix(fill,cloth,0.045),0],[fill,0.30],[fill,0.78],[mix(fill,p.background,0.12),1]];
+        border=[focused?p.primary:mix(fill,foliage,outer?0.27:0.16),focused||outer?1:0];
     }
     var containers = ["bg", "popup", "pane", "surface", "surfaceContainer", "common", "internalbg", "focus", "surfaceVariant", "bar", "barbg"];
     var dotted = dithered && strength > 0 && containers.indexOf(variant) !== -1;
@@ -216,7 +207,7 @@ function surface(style, variant, p, ditherStrength) {
     if (dithered && ["pane", "surface", "surfaceContainer", "common", "internalbg"].indexOf(variant) !== -1)
         border[0] = mix(fill, p.primary, 0.12);
     return {
-        gradient: renderGradient ? renderGradient : frostedContainer ? [[mix(fill, p.foreground, 0.08), 0], [fill, 0.45], [mix(fill, p.background, 0.12), 1]] : [[fill, 0]], gradientType: dotted ? "halftone" : "linear", gradientAngle: 0,
+        gradient: [[fill, 0]], gradientType: dotted ? "halftone" : "linear", gradientAngle: 0,
         gradientCenterX: 0.5, gradientCenterY: 0.5,
         halftoneDotMin: dotted ? dotMax : 0, halftoneDotMax: dotted ? dotMax : 0, halftoneStart: 0, halftoneEnd: 1,
         halftoneDotColor: dotted ? dotColor(fill, item, strength * 0.001) : fill, halftoneBackgroundColor: fill,

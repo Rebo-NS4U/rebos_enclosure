@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Widgets
@@ -427,35 +426,15 @@ Item {
                 Repeater {
                     model: root.validActions
 
-                    Button {
+                    ThemeButton {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 32
 
                         text: modelData.text
-                        font.family: Config.theme.font
-                        font.pixelSize: Config.theme.fontSize
-                        font.weight: Font.Bold
-                        hoverEnabled: true
-
-                        background: StyledRect {
-                            id: delegateBtnBg
-                            readonly property bool isCritical: latestNotification && NotificationUtils.isCriticalUrgency(latestNotification?.urgency)
-                            readonly property color textColor: isCritical ? Colors.overError : delegateBtnBg.item
-
-                            variant: isCritical
-                                ? "error"
-                                : (parent.pressed ? "primary" : (parent.hovered ? "focus" : "common"))
-                            radius: Styling.radius(4)
-                        }
-
-                        contentItem: Text {
-                            text: parent.text
-                            font: parent.font
-                            color: parent.background.textColor
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                            elide: Text.ElideRight
-                        }
+                        font.weight: Font.DemiBold
+                        padding: Styling.spacing(4)
+                        danger: !!latestNotification && NotificationUtils.isCriticalUrgency(latestNotification.urgency)
+                        emphasized: danger
 
                         onClicked: {
                             if (latestNotification) {

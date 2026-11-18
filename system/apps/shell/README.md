@@ -306,7 +306,7 @@ The typer adapts to each output’s logical resolution (Qt handles DPI scaling).
 
 Open **Enclosure Music** from the application launcher, or use **Music library**
 inside the media center. `bash ~/.config/quickshell/scripts/open_music.sh` opens
-or raises the same window without interrupting its queue. Music runs in its own
+or raises the same window on the **Playlists** menu without interrupting its queue. Music runs in its own
 Quickshell instance, so it does not require a panel restart and keeps playing
 when the window is hidden. It uses the shared shell theme, including palette,
 font, density, corner radius and surface style.
@@ -329,11 +329,22 @@ Daily Mixes remain available in the same section. Playlist loading uses the
 bundled local Spotify adapter; after updating it, Spotify loads it on its next
 launch (the updater does not restart active playback).
 
+Opening Music and browsing local playlists leave Spotify closed. Explicit Spotify
+actions (streamed previews, loading or refreshing Spotify playlists, refreshing
+suggestions, and updating Spotify playlists) start Spotify on demand and wait for
+it to become ready. Use **Refresh** to load suggestions for a local playlist.
+Once started, Spotify stays running to preserve playback.
+On Niri, Spotify opens without focus on its dedicated **Spotify** workspace; switch
+to that workspace when you need to sign in or use Spotify directly. If Spotify
+is in the tray, use **Show Spotify** from its tray menu first.
 Spotify playlist previews stream through the running Spotify desktop app. On Niri,
 previews return focus to the music window if Spotify activates itself, so Spotify
 can stay in the background. Sign in to Spotify first; previews do not download
-tracks or restart either player. Playlist suggestions show up to 100 unique songs
-when Spotify supplies them. While a suggested song plays, the fullscreen view
+tracks or restart either player. Playlist suggestions fetch further batches from Spotify as you reach the bottom,
+without a total song limit. Previously returned tracks are excluded and duplicate
+results are removed. Loading stops when Spotify returns no new tracks, with a
+visible status. The list has a total count and continuous scrolling.
+Rows load as they enter the list viewport; there are no page buttons. While a suggested song plays, the fullscreen view
 shows Spotify artwork, song details and lyrics, with play/pause, previous/next,
 seek, volume, shuffle and repeat controls. Controls follow Spotify's supported
 capabilities. Starting a local song pauses the Spotify preview.

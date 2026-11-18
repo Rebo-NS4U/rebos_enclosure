@@ -18,6 +18,7 @@ ColumnLayout {
     property string status: "Ready"
     property bool failed: false
     property bool cancelling: false
+    property bool syncPlaylist: false
     property bool mixTracks: false
     property string audioFormat: "ogg"
     readonly property bool canDownload: settingsReady && !busy && service.running && folder.text.trim().length > 0 && links.text.trim().length > 0
@@ -26,13 +27,13 @@ ColumnLayout {
     signal rejected()
     function prepareSuggestion(data) {
         if (busy || !service.running || !settingsReady) return false;
-        links.text = data.links; folder.text = data.folder; mixTracks = true;
+        links.text = data.links; folder.text = data.folder; mixTracks = true; syncPlaylist = data.syncPlaylist === true;
         status = "Downloading Spotify suggestion";
         return true;
     }
     function prepareMix(data) {
         if (busy) return false;
-        links.text = data.links; folder.text = data.folder; mixTracks = true;
+        links.text = data.links; folder.text = data.folder; mixTracks = true; syncPlaylist = data.syncPlaylist === true;
         status = "Spotify playlist ready · downloads its current contents";
         return true;
     }
@@ -42,7 +43,7 @@ ColumnLayout {
         status = "Downloading…";
         logText = "Starting…\n";
         service.write(JSON.stringify({backend: "spotdl", mode: 0,
-            links: links.text, folder: folder.text, format: audioFormat, cookieFile: cookieFile.text.trim(), mixTracks: mixTracks}) + "\n");
+            links: links.text, folder: folder.text, format: audioFormat, cookieFile: cookieFile.text.trim(), mixTracks: mixTracks, syncPlaylist: syncPlaylist}) + "\n");
     }
     FileDialog {
         id: cookiePicker
@@ -97,7 +98,7 @@ ColumnLayout {
     }
     Flow {
         Layout.fillWidth: true; Layout.preferredHeight: childrenRect.height; spacing: 8
-        ThemeButton { objectName: "music-download-start"; text: root.busy ? root.status : "Start download"; enabled: root.canDownload; highlighted: true; onClicked: root.start() }
+        ThemeButton { objectName: "music-download-start"; text: root.busy ? root.status : root.syncPlaylist ? "Sync playlist" : "Start download"; enabled: root.canDownload; highlighted: true; onClicked: root.start() }
         ThemeButton { objectName: "music-download-cancel"; text: root.cancelling ? "Cancelling…" : "Cancel"; visible: root.busy; enabled: !root.cancelling; onClicked: { root.cancelling = true; root.status = "Cancelling…"; service.write('{"cancel":true}\n'); } }
     }
     ScrollView {
@@ -122,7 +123,7 @@ ColumnLayout {
                         id: links; objectName: "music-download-links"
                         Layout.fillWidth: true
                         placeholderText: "Paste track, album or playlist links"; enabled: !root.busy
-                        onSearchTextChanged: text => { root.mixTracks = false; }
+                        onSearchTextChanged: text => { root.mixTracks = false; root.syncPlaylist = false; }
                     }
                     StyledText { text: "Separate multiple links with spaces."; color: Colors.overSurfaceVariant; font.pixelSize: Styling.fontSize(-2) }
                     StyledText { text: "YouTube cookie file (optional)"; font.bold: true }
@@ -166,7 +167,7 @@ ColumnLayout {
                             }
                         }
                     }
-                    StyledText { Layout.fillWidth: true; text: "The format sets the output file type; it cannot improve the source audio quality."; wrapMode: Text.WordWrap; color: Colors.overSurfaceVariant; font.pixelSize: Styling.fontSize(-2) }
+                    StyledText { Layout.fillWidth: true; text: root.syncPlaylist ? "Sync mirrors Spotify playlist membership. Removed songs stay in your music folder." : "The format sets the output file type; it cannot improve the source audio quality."; wrapMode: Text.WordWrap; color: Colors.overSurfaceVariant; font.pixelSize: Styling.fontSize(-2) }
 
                 }
             }

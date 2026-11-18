@@ -64,9 +64,9 @@ Item {
 
     property real animatedProgress: progressRatio
     Behavior on animatedProgress {
-        enabled: root.smoothDrag && Config.animDuration > 0
+        enabled: root.smoothDrag && Motion.enabled
         NumberAnimation {
-            duration: Motion.feedback
+            duration: root.isDragging ? Motion.press : Motion.feedback
             easing.type: Motion.feedbackCurve
         }
     }
@@ -100,6 +100,13 @@ Item {
         }
     }
 
+    readonly property bool railHovered: railHover.hovered
+        && !mouseArea.isInIconArea(railHover.point.position.x, railHover.point.position.y)
+
+    HoverHandler {
+        id: railHover
+    }
+
     // Horizontal Layout
     RowLayout {
         id: horizontalLayout
@@ -127,20 +134,14 @@ Item {
                 id: hDragHandle
                 anchors.verticalCenter: parent.verticalCenter
                 x: parent.width * root.animatedProgress - width / 2
-                width: root.isDragging ? 2 : 4
-                height: root.isDragging ? Math.max(20, root.thickness + 12) : Math.max(16, root.thickness + 8)
+                width: 4
+                height: Math.max(12, root.thickness + 6)
                 radius: Styling.radius(0)
                 color: Colors.overBackground
                 z: 2
-                Behavior on width {
-                    enabled: root.smoothDrag
-                    NumberAnimation {
-                        duration: Motion.feedback
-                        easing.type: Motion.feedbackCurve
-                    }
-                }
-                Behavior on height {
-                    enabled: root.smoothDrag
+                scale: root.isDragging ? 0.92 : 1
+                Behavior on scale {
+                    enabled: root.smoothDrag && Motion.enabled
                     NumberAnimation {
                         duration: Motion.feedback
                         easing.type: Motion.feedbackCurve
@@ -148,13 +149,15 @@ Item {
                 }
             }
 
-            StandardProgressBar {
+            SliderTrack {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
-                height: 2
                 value: root.animatedProgress
                 activeColor: root.progressColor
+                hovered: root.railHovered
+                pressed: root.isDragging
+                playing: root.playing
             }
 
             StyledToolTip {
@@ -193,20 +196,14 @@ Item {
                 id: vDragHandle
                 anchors.horizontalCenter: parent.horizontalCenter
                 y: parent.height * (1 - root.animatedProgress) - height / 2
-                height: root.isDragging ? 2 : 4
-                width: root.isDragging ? Math.max(20, root.thickness + 12) : Math.max(16, root.thickness + 8)
+                height: 4
+                width: Math.max(12, root.thickness + 6)
                 radius: Styling.radius(0)
                 color: iconColor
                 z: 2
-                Behavior on width {
-                    enabled: root.smoothDrag
-                    NumberAnimation {
-                        duration: Motion.feedback
-                        easing.type: Motion.feedbackCurve
-                    }
-                }
-                Behavior on height {
-                    enabled: root.smoothDrag
+                scale: root.isDragging ? 0.92 : 1
+                Behavior on scale {
+                    enabled: root.smoothDrag && Motion.enabled
                     NumberAnimation {
                         duration: Motion.feedback
                         easing.type: Motion.feedbackCurve
@@ -214,13 +211,15 @@ Item {
                 }
             }
 
-            StandardProgressBar {
+            SliderTrack {
                 anchors.centerIn: parent
                 width: parent.height
-                height: 2
                 rotation: -90
                 value: root.animatedProgress
                 activeColor: root.progressColor
+                hovered: root.railHovered
+                pressed: root.isDragging
+                playing: root.playing
             }
 
             StyledToolTip {

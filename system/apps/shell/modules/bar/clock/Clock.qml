@@ -637,8 +637,8 @@ Item {
         Behavior on revealProgress {
             enabled: Config.animDuration > 0
             NumberAnimation {
-                duration: Config.animDuration
-                easing.type: dashboardPopup.isOpen ? Easing.OutCubic : Easing.InCubic
+                duration: Math.round(Motion.base * (dashboardPopup.isOpen ? 1.15 : 0.95))
+                easing.type: Easing.InOutCubic
             }
         }
 
@@ -679,7 +679,7 @@ Item {
 
         Timer {
             id: closeTimer
-            interval: Config.animDuration > 0 ? Config.animDuration + 40 : 40
+            interval: Math.round(Motion.base * 0.95) + 40
             onTriggered: {
                 if (!dashboardPopup.isOpen)
                     dashboardPopup.menuShown = false;

@@ -67,6 +67,12 @@ ShellRoot {
     const youtube=find(panel,"audio-eq-preset-YouTube"); tester.verify(youtube!==null);
     youtube.forceActiveFocus(); tester.keyClick(Qt.Key_Space); tester.wait(500);
     tester.compare(AudioEqualizer.preset,"YouTube"); tester.compare(AudioEqualizer.gains[0],-2);
+    find(panel,"audio-eq-category-Extreme").forceActiveFocus(); tester.keyClick(Qt.Key_Space); tester.wait(40);
+    tester.compare(selector.category,"Extreme");
+    const extreme=find(panel,"audio-eq-preset-Pop Extreme"); tester.verify(extreme!==null);
+    extreme.forceActiveFocus(); tester.keyClick(Qt.Key_Space); tester.wait(500);
+    tester.compare(AudioEqualizer.preset,"Pop Extreme"); tester.compare(AudioEqualizer.gains[0],6);
+    tester.compare(AudioEqualizer.error,"");
     find(panel,"audio-eq-category-Music").forceActiveFocus(); tester.keyClick(Qt.Key_Space); tester.wait(40);
     AudioEqualizer.selectPreset("Pop"); AudioEqualizer.setBand(0,2.5); tester.wait(500);
     Config.theme.shellStyle="orbital"; tester.wait(40);

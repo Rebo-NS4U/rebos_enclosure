@@ -51,12 +51,14 @@ StyledRect {
         textField.text = "";
     }
 
-    implicitHeight: 48
+    implicitHeight: Styling.spacing(48)
+    border.width: inputActiveFocus ? 2 : (enableBorder ? (borderData?.[1] ?? 0) : 0)
+    border.color: inputActiveFocus ? Colors.primary : Config.resolveColor(borderData?.[0] ?? "transparent")
     radius: Styling.radius(4)
 
     RowLayout {
         anchors.fill: parent
-        anchors.margins: 8
+        anchors.margins: Styling.spacing(8)
         spacing: Styling.spacing(8)
 
         Text {
@@ -72,8 +74,8 @@ StyledRect {
         // Prefix indicator
         StyledRect {
             variant: "primary"
-            Layout.preferredWidth: 32
-            Layout.preferredHeight: 32
+            Layout.preferredWidth: Styling.spacing(32)
+            Layout.preferredHeight: Styling.spacing(32)
             radius: Styling.radius(-4)
             visible: root.prefixText.length > 0 || root.prefixIcon.length > 0
 
@@ -84,7 +86,7 @@ StyledRect {
                 anchors.centerIn: parent
                 text: root.prefixIcon.length > 0 ? root.prefixIcon : root.prefixText.trim()
                 font.family: root.prefixIcon.length > 0 ? Icons.font : Config.theme.font
-                font.pixelSize: root.prefixIcon.length > 0 ? 18 : Config.theme.fontSize - 1
+                font.pixelSize: root.prefixIcon.length > 0 ? Styling.fontSize(4) : Styling.fontSize(-1)
                 // font.weight: Font.Bold
                 color: Styling.srItem("primary")
             }
@@ -93,11 +95,13 @@ StyledRect {
         TextField {
             id: textField
             Layout.fillWidth: true
-            placeholderTextColor: Colors.outline
+            placeholderTextColor: Colors.overSurfaceVariant
+            selectionColor: Colors.primary
+            selectedTextColor: Colors.overPrimary
             font.family: Config.theme.font
             font.pixelSize: Config.theme.fontSize
             font.hintingPreference: Font.PreferFullHinting
-            color: Colors.overBackground
+            color: root.itemColor
             background: null
             echoMode: root.passwordMode ? TextInput.Password : TextInput.Normal
             horizontalAlignment: root.centerText ? TextInput.AlignHCenter : TextInput.AlignLeft

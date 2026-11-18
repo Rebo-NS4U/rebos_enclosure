@@ -186,25 +186,9 @@ Item {
                             }
                         }
 
-                        // Progress Bar Track
-                        StyledRect {
-                            id: cpuTrack
+                        StandardProgressBar {
                             Layout.fillWidth: true
-                            Layout.preferredHeight: 4
-                            radius: Styling.radius(0)
-                            variant: "common"
-                            clip: true
-
-                            StyledRect {
-                                height: parent.height
-                                width: (SystemResources.cpuUsage > 0) ? Math.max(2, cpuTrack.width * Math.min(1.0, SystemResources.cpuUsage / 100)) : 0
-                                radius: Styling.radius(0)
-                                variant: "primary"
-
-                                Behavior on width {
-                                    NumberAnimation { duration: Motion.feedback; easing.type: Easing.OutCubic }
-                                }
-                            }
+                            value: SystemResources.cpuUsage / 100
                         }
                     }
 
@@ -280,25 +264,9 @@ Item {
                             }
                         }
 
-                        // Progress Bar Track
-                        StyledRect {
-                            id: ramTrack
+                        StandardProgressBar {
                             Layout.fillWidth: true
-                            Layout.preferredHeight: 4
-                            radius: Styling.radius(0)
-                            variant: "common"
-                            clip: true
-
-                            StyledRect {
-                                height: parent.height
-                                width: (SystemResources.ramUsage > 0) ? Math.max(2, ramTrack.width * Math.min(1.0, SystemResources.ramUsage / 100)) : 0
-                                radius: Styling.radius(0)
-                                variant: "primary"
-
-                                Behavior on width {
-                                    NumberAnimation { duration: Motion.feedback; easing.type: Easing.OutCubic }
-                                }
-                            }
+                            value: SystemResources.ramUsage / 100
                         }
                     }
 
@@ -388,24 +356,9 @@ Item {
                                 }
                             }
 
-                            StyledRect {
-                                id: gpuTrack
+                            StandardProgressBar {
                                 Layout.fillWidth: true
-                                Layout.preferredHeight: 4
-                                radius: Styling.radius(0)
-                                variant: "common"
-                                clip: true
-
-                                StyledRect {
-                                    height: parent.height
-                                    width: (gpuDelegate.gpuUsageVal > 0) ? Math.max(2, gpuTrack.width * Math.min(1.0, gpuDelegate.gpuUsageVal / 100)) : 0
-                                    radius: Styling.radius(0)
-                                    variant: "primary"
-
-                                    Behavior on width {
-                                        NumberAnimation { duration: Motion.feedback; easing.type: Easing.OutCubic }
-                                    }
-                                }
+                                value: gpuDelegate.gpuUsageVal / 100
                             }
 
                             Rectangle {
@@ -489,24 +442,9 @@ Item {
                                 }
                             }
 
-                            StyledRect {
-                                id: diskTrack
+                            StandardProgressBar {
                                 Layout.fillWidth: true
-                                Layout.preferredHeight: 4
-                                radius: Styling.radius(0)
-                                variant: "common"
-                                clip: true
-
-                                StyledRect {
-                                    height: parent.height
-                                    width: (diskDelegate.diskUsageVal > 0) ? Math.max(2, diskTrack.width * Math.min(1.0, diskDelegate.diskUsageVal / 100)) : 0
-                                    radius: Styling.radius(0)
-                                    variant: "primary"
-
-                                    Behavior on width {
-                                        NumberAnimation { duration: Motion.feedback; easing.type: Easing.OutCubic }
-                                    }
-                                }
+                                value: diskDelegate.diskUsageVal / 100
                             }
 
                             Rectangle {

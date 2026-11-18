@@ -7,6 +7,7 @@ import QtQuick.Effects
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
+import qs.config
 import qs.modules.components
 import qs.modules.globals
 import qs.modules.theme
@@ -124,8 +125,8 @@ ShellRoot {
                 blurMax: 32
                 blur: window.collapsed ? 0.72 : 0.24
                 brightness: window.collapsed ? -0.12 : -0.04
-                Behavior on blur { NumberAnimation { duration: 500; easing.type: Easing.OutCubic } }
-                Behavior on brightness { NumberAnimation { duration: 500 } }
+                Behavior on blur { NumberAnimation { duration: Motion.enter; easing.type: Easing.OutCubic } }
+                Behavior on brightness { NumberAnimation { duration: Motion.enter } }
             }
             Rectangle { id: glassMask; width: glass.width; height: glass.height; radius: glass.radius; color: "white"; visible: false; layer.enabled: true }
             // A single glass surface changes geometry: full screen -> exact selection.
@@ -137,37 +138,37 @@ ShellRoot {
                 y: window.collapsed ? window.selection.y : 14
                 width: window.collapsed ? window.selection.width : window.width - 28
                 height: window.collapsed ? window.selection.height : window.height - 28
-                radius: window.collapsed ? Math.min(16, height / 5) : 28
+                radius: window.collapsed ? Math.min(Styling.radius(0), height / 5) : Styling.radius(0)
                 color: Qt.alpha(Colors.surface, window.collapsed ? 0.10 : 0.22)
                 border.width: 1
-                border.color: Qt.alpha(window.collapsed ? root.accent : "white", 0.65)
+                border.color: Qt.alpha(window.collapsed ? root.accent : Colors.outline, 0.65)
                 clip: true
-                Behavior on x { NumberAnimation { duration: 480; easing.type: Easing.InOutCubic } }
-                Behavior on y { NumberAnimation { duration: 480; easing.type: Easing.InOutCubic } }
-                Behavior on width { NumberAnimation { duration: 480; easing.type: Easing.InOutCubic } }
-                Behavior on height { NumberAnimation { duration: 480; easing.type: Easing.InOutCubic } }
-                Behavior on radius { NumberAnimation { duration: 480 } }
+                Behavior on x { NumberAnimation { duration: Motion.enter; easing.type: Easing.InOutCubic } }
+                Behavior on y { NumberAnimation { duration: Motion.enter; easing.type: Easing.InOutCubic } }
+                Behavior on width { NumberAnimation { duration: Motion.enter; easing.type: Easing.InOutCubic } }
+                Behavior on height { NumberAnimation { duration: Motion.enter; easing.type: Easing.InOutCubic } }
+                Behavior on radius { NumberAnimation { duration: Motion.enter } }
                 Image {
                     x: -glass.x; y: -glass.y
                     width: window.width; height: window.height
                     source: desktop.source
                     fillMode: Image.Stretch
                     opacity: window.collapsed ? 1 : 0
-                    Behavior on opacity { NumberAnimation { duration: 480 } }
+                    Behavior on opacity { NumberAnimation { duration: Motion.enter } }
                 }
                 Rectangle {
                     anchors.fill: parent
                     gradient: Gradient {
-                        GradientStop { position: 0; color: "#18ffffff" }
-                        GradientStop { position: 0.45; color: "#02ffffff" }
-                        GradientStop { position: 1; color: "#10000000" }
+                        GradientStop { position: 0; color: Qt.alpha(Colors.primary, 0.09) }
+                        GradientStop { position: 0.45; color: "transparent" }
+                        GradientStop { position: 1; color: Qt.alpha(Colors.secondary, 0.06) }
                     }
                 }
                 Rectangle {
                     anchors.fill: parent; anchors.margins: 1
                     radius: Math.max(0, glass.radius - 1)
                     color: "transparent"
-                    border.color: "#25ffffff"
+                    border.color: Qt.alpha(Colors.outline, 0.15)
                 }
             }
             MouseArea {
@@ -208,20 +209,20 @@ ShellRoot {
                     StyledText {
                         id: dimensions; anchors.centerIn: parent
                         text: Math.round(window.selection.width) + " × " + Math.round(window.selection.height)
-                        font.pixelSize: 11
+                        font.pixelSize: Styling.fontSize(-3)
                     }
                 }
             }
-            Rectangle {
+            StyledRect {
+                variant: "popup"
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.bottom: parent.bottom; anchors.bottomMargin: 36
-                width: hint.implicitWidth + 36; height: 40; radius: 20
-                color: Qt.alpha(Colors.background, 0.7)
-                border.color: "#22ffffff"
+                width: hint.implicitWidth + 36; height: hint.implicitHeight + Styling.spacing(20)
                 visible: root.phase === "selecting"
-                StyledText { id: hint; anchors.centerIn: parent; text: "Drag to select    ·    Esc to dismiss"; font.pixelSize: 12 }
+                StyledText { id: hint; anchors.centerIn: parent; color: parent.itemColor; text: "Drag to select    ·    Esc to dismiss"; font.pixelSize: Styling.fontSize(-2) }
             }
-            Rectangle {
+            StyledRect {
+                variant: "popup"
                 id: resultCard
                 width: Math.min(580, window.width - 48)
                 height: Math.min(320, window.height - 48)
@@ -233,36 +234,13 @@ ShellRoot {
                 opacity: window.collapsed && reveal.running === false ? 1 : 0
                 visible: opacity > 0
                 scale: opacity > 0 ? 1 : 0.96
-                color: "transparent"
-                radius: 24
-                border.color: "#40ffffff"
-                Behavior on opacity { NumberAnimation { duration: 280; easing.type: Easing.OutCubic } }
-                Behavior on scale { NumberAnimation { duration: 320; easing.type: Easing.OutCubic } }
-                Timer { id: reveal; interval: 500; running: window.collapsed; repeat: false }
-                Rectangle { id: cardMask; anchors.fill: parent; radius: 24; color: "white"; visible: false; layer.enabled: true }
-                Item {
-                    anchors.fill: parent
-                    layer.enabled: true
-                    layer.effect: MultiEffect { maskEnabled: true; maskSource: cardMask }
-                    MultiEffect {
-                        x: -resultCard.x; y: -resultCard.y
-                        width: window.width; height: window.height
-                        source: desktop; blurEnabled: true; blurMax: 48; blur: 1
-                    }
-                    Rectangle { anchors.fill: parent; color: Qt.alpha(Colors.surfaceContainer, 0.68); radius: 24 }
-                    Rectangle {
-                        anchors.fill: parent; radius: 24
-                        gradient: Gradient {
-                            GradientStop { position: 0; color: "#18ffffff" }
-                            GradientStop { position: 1; color: "#04000000" }
-                        }
-                        border.color: "#40ffffff"
-                    }
-                }
+                Behavior on opacity { NumberAnimation { duration: Motion.contentIn; easing.type: Easing.OutCubic } }
+                Behavior on scale { NumberAnimation { duration: Motion.contentIn; easing.type: Easing.OutCubic } }
+                Timer { id: reveal; interval: Math.max(1, Motion.enter); running: window.collapsed; repeat: false }
                 ColumnLayout {
                     anchors.fill: parent; anchors.margins: 22; spacing: 12
                     RowLayout {
-                        StyledText { text: root.phase === "reading" ? "Reading…" : "Text"; font.pixelSize: 20; font.bold: true }
+                        StyledText { color: resultCard.itemColor; text: root.phase === "reading" ? "Reading…" : "Text"; font.pixelSize: Styling.fontSize(6); font.bold: true }
                         Item { Layout.fillWidth: true }
                     }
                     ScrollView {
@@ -275,14 +253,20 @@ ShellRoot {
                             textFormat: TextEdit.PlainText
                             wrapMode: TextEdit.Wrap
                             selectByMouse: true
-                            color: Colors.overBackground
+                            color: background.itemColor
+                            selectedTextColor: Colors.overPrimary
                             selectionColor: root.accent
-                            font.family: "JetBrains Mono"; font.pixelSize: 14
+                            font.family: Config.theme.font
+                            font.pixelSize: Styling.fontSize(0)
                             padding: 12
-                            background: Rectangle { radius: 12; color: "#24000000"; border.color: "#15ffffff" }
+                            background: StyledRect {
+                                variant: "internalbg"
+                                border.width: editor.activeFocus ? 2 : 1
+                                border.color: editor.activeFocus ? Colors.primary : Colors.outlineVariant
+                            }
                         }
                     }
-                    StyledText { visible: root.phase === "result" && root.message.length > 0; text: root.message; font.pixelSize: 11; opacity: 0.7; Layout.fillWidth: true; wrapMode: Text.Wrap }
+                    StyledText { visible: root.phase === "result" && root.message.length > 0; text: root.message; font.pixelSize: Styling.fontSize(-3); opacity: 0.7; Layout.fillWidth: true; wrapMode: Text.Wrap }
                     RowLayout {
                         ThemeButton { text: "Close"; onClicked: root.finish() }
                         Item { Layout.fillWidth: true }

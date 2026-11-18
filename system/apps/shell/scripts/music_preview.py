@@ -3,6 +3,7 @@ import json
 import os
 import re
 import subprocess
+import threading
 import time
 
 SPOTIFY_APPS = {'Spotify', 'spotify', 'com.spotify.Client'}
@@ -22,15 +23,17 @@ def focused_window():
 
 
 def keep_background(previous):
-    if not previous or previous.get('app_id') in SPOTIFY_APPS:
-        return
-    # Spotify may activate its window asynchronously after OpenUri. Never undo
-    # a switch to another application that the user makes during this interval.
+    from music_spotify import hide_window
+    # OpenUri can remap the client asynchronously. Hide it even when it does
+    # not take focus, while preserving any application switch made by the user.
+    restore_focus = bool(previous and previous.get('app_id') not in SPOTIFY_APPS)
     for _ in range(5):
         time.sleep(0.1)
-        current = focused_window()
+        current = focused_window() if restore_focus else None
+        hide_window()
         if not current:
-            return
+            restore_focus = False
+            continue
         if current['id'] == previous['id']:
             continue
         if current.get('app_id') in SPOTIFY_APPS:
@@ -39,12 +42,15 @@ def keep_background(previous):
                                check=True, capture_output=True, text=True, timeout=1)
             except (OSError, subprocess.SubprocessError):
                 pass
-        return
+        else:
+            restore_focus = False
 
 
 def preview(uri):
     if not isinstance(uri, str) or not re.fullmatch(r'spotify:track:[A-Za-z0-9]{22}', uri):
         raise ValueError('Choose a valid Spotify track to preview')
+    from music_spotify import ensure_started
+    ensure_started()
     previous = focused_window()
     try:
         subprocess.run(['gdbus', 'call', '--session', '--dest', 'org.mpris.MediaPlayer2.spotify',
@@ -54,5 +60,7 @@ def preview(uri):
     except (OSError, subprocess.SubprocessError) as error:
         raise ValueError('Spotify preview unavailable. Open Spotify, sign in and try again. '
                          'No music was downloaded.') from error
-    keep_background(previous)
+    # OpenUri may remap the window after it returns. Keep the UI response
+    # independent of compositor and tray cleanup.
+    threading.Thread(target=keep_background, args=(previous,), daemon=True).start()
     return {'uri': uri, 'status': 'Playing through Spotify in the background · no library download'}

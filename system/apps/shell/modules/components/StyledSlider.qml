@@ -45,7 +45,7 @@ Item {
     property color progressColor: Colors.primary
     property color backgroundColor: Colors.outlineVariant
     property bool wavy: false
-    property bool playing: false // Nuevo estado para controlar la animación
+    property bool playing: false
     property real wavyAmplitude: 0.8
     property real wavyFrequency: 8
     property real heightMultiplier: 8
@@ -83,11 +83,12 @@ Item {
         return Math.max(0, Math.min(1, Math.round(val / stepSize) * stepSize));
     }
 
-    property real animatedProgress: progressRatio
-    Behavior on animatedProgress {
-        enabled: root.smoothDrag && Config.animDuration > 0
+    readonly property real animatedProgress: isDragging ? dragPosition : easedProgress
+    property real easedProgress: progressRatio
+    Behavior on easedProgress {
+        enabled: !root.isDragging && root.smoothDrag && Motion.enabled
         NumberAnimation {
-            duration: Motion.feedback
+            duration: Motion.enter
             easing.type: Motion.feedbackCurve
         }
     }
@@ -121,6 +122,13 @@ Item {
         }
     }
 
+    readonly property bool railHovered: railHover.hovered
+        && !mouseArea.isInIconArea(railHover.point.position.x, railHover.point.position.y)
+
+    HoverHandler {
+        id: railHover
+    }
+
     // Horizontal Layout
     RowLayout {
         id: horizontalLayout
@@ -148,34 +156,20 @@ Item {
                 id: hDragHandle
                 anchors.verticalCenter: parent.verticalCenter
                 x: parent.width * root.animatedProgress - width / 2
-                width: 16
-                height: 16
-                radius: Styling.radius(0)
+                accent: root.progressColor
                 focused: root.activeFocus
                 z: 2
-                Behavior on width {
-                    enabled: root.smoothDrag
-                    NumberAnimation {
-                        duration: Motion.feedback
-                        easing.type: Motion.feedbackCurve
-                    }
-                }
-                Behavior on height {
-                    enabled: root.smoothDrag
-                    NumberAnimation {
-                        duration: Motion.feedback
-                        easing.type: Motion.feedbackCurve
-                    }
-                }
             }
 
-            StandardProgressBar {
+            SliderTrack {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
-                height: 2
                 value: root.animatedProgress
                 activeColor: root.progressColor
+                hovered: root.railHovered
+                pressed: root.isDragging
+                playing: root.playing
             }
 
             StyledToolTip {
@@ -212,36 +206,23 @@ Item {
 
             SliderHandle {
                 id: vDragHandle
+                vertical: true
                 anchors.horizontalCenter: parent.horizontalCenter
                 y: parent.height * (1 - root.animatedProgress) - height / 2
-                height: 16
-                width: 16
-                radius: Styling.radius(0)
+                accent: root.progressColor
                 focused: root.activeFocus
                 z: 2
-                Behavior on width {
-                    enabled: root.smoothDrag
-                    NumberAnimation {
-                        duration: Motion.feedback
-                        easing.type: Motion.feedbackCurve
-                    }
-                }
-                Behavior on height {
-                    enabled: root.smoothDrag
-                    NumberAnimation {
-                        duration: Motion.feedback
-                        easing.type: Motion.feedbackCurve
-                    }
-                }
             }
 
-            StandardProgressBar {
+            SliderTrack {
                 anchors.centerIn: parent
                 width: parent.height
-                height: 2
                 rotation: -90
                 value: root.animatedProgress
                 activeColor: root.progressColor
+                hovered: root.railHovered
+                pressed: root.isDragging
+                playing: root.playing
             }
 
             StyledToolTip {
@@ -330,12 +311,12 @@ Item {
                 return;
             }
             root.forceActiveFocus();
-            root.isDragging = true;
             let pos = calculatePosition(mouse.x, mouse.y);
             if (root.snapMode === "always") {
                 pos = root.applyStep(pos);
             }
             root.dragPosition = pos;
+            root.isDragging = true;
             if (!root.updateOnRelease) {
                 root.value = root.snapMode === "always" ? pos : root.dragPosition;
             }

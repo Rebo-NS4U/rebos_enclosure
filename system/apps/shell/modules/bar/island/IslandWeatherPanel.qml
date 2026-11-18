@@ -74,48 +74,19 @@ Item {
             Item { Layout.fillWidth: true }
 
             // Refresh button
-            StyledRect {
-                implicitWidth: 28
-                implicitHeight: 28
-                radius: Styling.radius(0)
-                variant: refreshMouse.containsMouse ? "focus" : "common"
-                scale: refreshMouse.pressed ? 0.92 : 1.0
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: refreshMouse.pressed ? Motion.press : Motion.feedback
-                        easing.type: Motion.feedbackCurve
-                    }
-                }
-
-                StyledText {
-                    anchors.centerIn: parent
-                    renderType: Text.NativeRendering
-                    font.hintingPreference: Font.PreferFullHinting
-                    text: Icons.arrowsClockwise
-                    font.family: Icons.font
-                    font.pixelSize: Styling.fontSize(0)
-                    color: WeatherService.isLoading ? Colors.primary : Colors.overBackground
-
-                    RotationAnimation on rotation {
-                        running: WeatherService.isLoading
-                        loops: Animation.Infinite
-                        from: 0
-                        to: 360
-                        duration: 1000
-                    }
-                }
-
-                MouseArea {
-                    id: refreshMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    enabled: !WeatherService.isLoading
-                    onClicked: WeatherService.updateWeather()
-                }
+            ThemeButton {
+                id: refreshButton
+                implicitWidth: Styling.spacing(36)
+                implicitHeight: implicitWidth
+                padding: 0
+                glyph: Icons.arrowsClockwise
+                glyphSpinning: WeatherService.isLoading
+                enabled: !WeatherService.isLoading
+                Accessible.name: "Refresh weather"
+                onClicked: WeatherService.updateWeather()
 
                 StyledToolTip {
-                    show: refreshMouse.containsMouse
+                    show: refreshButton.hovered
                     tooltipText: "Refresh weather"
                 }
             }

@@ -23,6 +23,9 @@ spec.loader.exec_module(music)
 @unittest.skipUnless(shutil.which('ffmpeg') and shutil.which('ffprobe'), 'ffmpeg is required')
 class MusicLibraryTests(unittest.TestCase):
     def setUp(self):
+        self.spotify_start = patch('music_spotify.ensure_started')
+        self.spotify_start.start()
+        self.addCleanup(self.spotify_start.stop)
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.home = Path(self.temp.name)
@@ -39,6 +42,113 @@ class MusicLibraryTests(unittest.TestCase):
                         '-metadata', 'album=Test album', '-metadata', 'track=3/12', str(self.song)], check=True)
         self.library = music.Library(self.home)
 
+    def test_remove_song_persists_for_saved_and_folder_playlists(self):
+        folder = self.folder / 'Downloaded'
+        folder.mkdir()
+        song = folder / ('b' * 22 + '.flac')
+        shutil.copyfile(self.song, song)
+        path = str(song)
+        self.library.dispatch('save', dict(favorites=[path], playlists=[
+            dict(id='saved', name='Saved', paths=[str(self.song), path]),
+            dict(id='other', name='Other', paths=[path]),
+        ]))
+        folder_id = next(p['id'] for p in self.library.scan()['state']['playlists'] if p.get('folder'))
+        for playlist_id, remaining in [('saved', [str(self.song)]), (folder_id, [])]:
+            args = dict(playlist=playlist_id, path=path)
+            self.library.dispatch('playlist_remove', args)
+            self.library.dispatch('playlist_remove', args)
+            self.library = music.Library(self.home)
+            data = self.library.scan()
+            playlists = {p['id']: p['paths'] for p in data['state']['playlists']}
+            self.assertEqual(playlists[playlist_id], remaining)
+            self.assertEqual(playlists['other'], [path])
+            self.assertEqual(data['state']['favorites'], [path])
+            self.assertIn(path, [t['path'] for t in data['tracks']])
+            self.assertTrue(song.is_file())
+
+        (folder / '.enclosure-playlist.json').write_text(json.dumps(
+            dict(tracks=[dict(uri='spotify:track:' + 'b' * 22)])))
+        restored = self.library.dispatch('playlist_add', dict(playlist=folder_id, path=path))
+        self.assertEqual(next(p['paths'] for p in restored['state']['playlists']
+                              if p['id'] == folder_id), [path])
+        self.library.dispatch('playlist_remove', dict(playlist=folder_id, path=path))
+        synced = music.Library(self.home).scan()
+        self.assertEqual(next(p['paths'] for p in synced['state']['playlists']
+                              if p['id'] == folder_id), [])
+
+    def test_sync_membership_preserves_files_and_rescans(self):
+        folder = self.folder / 'Synced'
+        folder.mkdir()
+        kept = folder / ('b'*22 + '.flac')
+        removed = folder / ('c'*22 + '.flac')
+        shutil.copyfile(self.song, kept)
+        shutil.copyfile(self.song, removed)
+        metadata = folder / '.enclosure-playlist.json'
+        metadata.write_text(json.dumps(dict(sources=['spotify:playlist:'+'a'*22],
+            tracks=[dict(uri='spotify:track:'+'b'*22)])))
+        for _ in range(2):
+            data = self.library.scan()
+            playlist = next(p for p in data['state']['playlists'] if p.get('folderPath') == str(folder))
+            self.assertEqual(playlist['paths'], [str(kept)])
+            self.assertIn(str(removed), [t['path'] for t in data['tracks']])
+            self.assertTrue(removed.is_file())
+        prepared = self.library.dispatch('playlist_sync', dict(playlist=playlist['id']))
+        self.assertTrue(prepared['syncPlaylist'])
+        result = self.library.dispatch('playlist_to_spotify', dict(playlist=playlist['id']))
+        self.assertTrue(result['pending'])
+        self.assertEqual(self.library.mixes.playlist_write['tracks'], ['spotify:track:'+'b'*22])
+        self.library.mixes.update(dict(playlist_write_id=self.library.mixes.playlist_write['id']))
+        unsafe = self.library.scan()
+        target = next(p for p in unsafe['state']['playlists'] if p['id'] == playlist['id'])
+        target['paths'].append(str(self.song))
+        with patch.object(self.library, 'scan', return_value=unsafe):
+            with self.assertRaisesRegex(ValueError, 'identity unknown'):
+                self.library.dispatch('playlist_to_spotify', dict(playlist=playlist['id']))
+        self.assertIsNone(self.library.mixes.playlist_write)
+        metadata.write_text(json.dumps(dict(sources=['spotify:playlist:'+'a'*22], tracks=[])))
+        playlist = next(p for p in self.library.scan()['state']['playlists'] if p.get('folderPath') == str(folder))
+        self.assertEqual(playlist['paths'], [])
+        self.assertTrue(kept.exists() and removed.exists())
+
+    def test_push_includes_tracks_explicitly_added_to_linked_playlist(self):
+        folder = self.folder / 'Linked'
+        folder.mkdir()
+        original = folder / ('b' * 22 + '.flac')
+        added = self.folder / ('c' * 22 + '.flac')
+        shutil.copyfile(self.song, original)
+        shutil.copyfile(self.song, added)
+        original_uri, added_uri = ['spotify:track:' + p.stem for p in (original, added)]
+        (folder / '.enclosure-playlist.json').write_text(json.dumps(dict(
+            sources=['spotify:playlist:' + 'a' * 22], tracks=[dict(uri=original_uri)])))
+        playlist = self.library.scan()['state']['playlists'][0]
+        self.assertEqual(playlist['paths'], [str(original)])
+
+        args = dict(playlist=playlist['id'], path=str(added))
+        result = self.library.dispatch('playlist_add', args)
+        self.assertEqual(result['state']['playlists'][0]['paths'], [str(original), str(added)])
+
+        library = music.Library(self.home)
+        library.dispatch('playlist_to_spotify', dict(playlist=playlist['id']))
+        self.assertEqual(library.mixes.playlist_write['tracks'], [original_uri, added_uri])
+
+    def test_push_legacy_download_uses_embedded_spotify_track_link(self):
+        folder = self.folder / 'Legacy download'
+        folder.mkdir()
+        song = folder / 'Test artist - Test song.ogg'
+        track_id = 'b' * 22
+        subprocess.run(['ffmpeg', '-v', 'error', '-i', str(self.song), '-c:a', 'libvorbis',
+                        '-metadata', 'WOAS=https://open.spotify.com/track/' + track_id + '?si=share',
+                        str(song)], check=True)
+        (folder / '.enclosure-playlist.json').write_text(json.dumps(
+            dict(sources=['spotify:playlist:' + 'a' * 22])))
+        stat = song.stat()
+        self.library.cache[str(song)] = dict(signature=[2, stat.st_mtime_ns, stat.st_size],
+                                            track=dict(path=str(song)))
+        playlist = self.library.scan()['state']['playlists'][0]
+        result = self.library.dispatch('playlist_to_spotify', dict(playlist=playlist['id']))
+        self.assertTrue(result['pending'])
+        self.assertEqual(self.library.mixes.playlist_write['tracks'], ['spotify:track:' + track_id])
+
     def test_spotify_suggestions_and_download_destination(self):
         uri = 'spotify:track:' + 'b'*22
         other = 'spotify:track:' + 'c'*22
@@ -54,14 +164,26 @@ class MusicLibraryTests(unittest.TestCase):
         self.assertTrue(pending['pending'])
         self.assertEqual(self.library.mixes.suggestion['uri'], mix['uri'])
         job = self.library.mixes.suggestion['id']
-        result = dict(suggestion_id=job, tracks=[dict(uri=other, title='New online song', artist='Other artist')])
+        result = dict(suggestion_id=job, tracks=[
+            dict(uri=other, title='New online song', artist='Other artist', art='spotify:image:' + 'f'*40),
+            dict(uri='spotify:track:'+'d'*22, title='Another song', art='https://example.com/image'),
+            dict(uri='spotify:track:'+'e'*22, title='Third song', art='https://i.scdn.co/image/' + 'a'*40),
+        ])
         self.library.mixes.update(dict(result, suggestion_id='stale'))
         self.assertTrue(self.library.mixes.suggestions()['pending'])
         self.library.mixes.update(result)
-        self.assertEqual(self.library.dispatch('suggestions_get', {})['tracks'][0]['uri'], other)
+        suggestions = self.library.dispatch('suggestions_get', {})['tracks']
+        self.assertEqual(suggestions[0]['uri'], other)
+        self.assertEqual(suggestions[0]['art'], 'https://i.scdn.co/image/' + 'f'*40)
+        self.assertNotIn('art', suggestions[1])
+        self.assertEqual(suggestions[2]['art'], 'https://i.scdn.co/image/' + 'a'*40)
         download = self.library.dispatch('suggestion_download', dict(playlist=playlist['id'], uri=other))
         self.assertEqual(download['folder'], str(folder))
         self.assertEqual(download['links'], 'https://open.spotify.com/track/'+'c'*22)
+        queued_download = self.library.dispatch(
+            'suggestion_download', dict(playlist=playlist['id'], uri=other, toQueue=True))
+        self.assertEqual(queued_download['folder'], str(self.library.music / 'Suggested tracks'))
+        self.assertEqual(queued_download['links'], download['links'])
         with self.assertRaises(ValueError):
             self.library.dispatch('suggestion_download', dict(playlist=playlist['id'], uri=uri))
 
@@ -81,6 +203,32 @@ class MusicLibraryTests(unittest.TestCase):
         remember_playlist_source(folder, 'https://open.spotify.com/playlist/' + 'e'*22)
         with self.assertRaisesRegex(ValueError, 'source playlist not found'):
             self.library.dispatch('suggestions_refresh', dict(playlist=playlist['id']))
+
+    def test_suggestions_continue_beyond_100_without_duplicates(self):
+        mixes = self.library.mixes
+        mixes.suggest('local', 'spotify:playlist:' + 'a'*22)
+        def batch(start, end):
+            return [dict(uri='spotify:track:' + str(i).zfill(22), title=str(i), artist='Artist') for i in range(start, end)]
+        mixes.update(dict(suggestion_id=mixes.suggestion['id'], tracks=batch(0, 100)))
+        first = mixes.more_suggestions('local')
+        self.assertEqual(len(first['tracks']), 100)
+        self.assertTrue(first['pending'])
+        self.assertEqual(len(mixes.suggestion['skip']), 100)
+        job = mixes.suggestion['id']
+        mixes.more_suggestions('local')
+        self.assertEqual(mixes.suggestion['id'], job)
+        mixes.update(dict(suggestion_id='stale', tracks=batch(100, 200)))
+        self.assertEqual(len(mixes.suggestions()['tracks']), 100)
+        mixes.update(dict(suggestion_id=job, tracks=batch(90, 190)))
+        self.assertEqual(len(mixes.suggestions()['tracks']), 190)
+        mixes.more_suggestions('local')
+        mixes.update(dict(suggestion_id=mixes.suggestion['id'], tracks=batch(90, 100)))
+        result = mixes.suggestions()
+        self.assertEqual(len(result['tracks']), 190)
+        self.assertFalse(result['hasMore'])
+        self.assertFalse(mixes.more_suggestions('local')['pending'])
+        with self.assertRaises(ValueError):
+            mixes.more_suggestions('other')
 
     def test_playlist_add_survives_rescan_and_reload(self):
         folder = self.folder / 'Downloaded playlist'

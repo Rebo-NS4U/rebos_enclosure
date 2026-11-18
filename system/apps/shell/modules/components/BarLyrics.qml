@@ -48,7 +48,7 @@ Item {
     readonly property int estimatedBaseIndex: Math.max(0, estimatedClock.activeIndex)
     readonly property int lineIndex: estimatedTiming
         ? Math.max(0, Math.min(displayLines.length - 1, estimatedBaseIndex + estimatedOffset))
-        : Math.max(0, LyricsService.currentLine)
+        : LyricsService.currentLine
     // Show elapsed time within the current line; no word or syllable timing is inferred.
     property real lyricPosition: 0
     function updateLyricPosition() {
@@ -104,31 +104,6 @@ Item {
     visible: available && LyricsService.stripEnabled && (MprisController.trackTitle !== "" || levels.some(value => value > 0.001)) && sideWidth >= 120
     onVisibleChanged: if (!visible) calibrationOpen = false
     property var levels: Array(32).fill(0)
-    property real visualizerMix: 1
-    property bool modeReady: false
-    // A timed empty outro cue ends the lyrics without ending playback.
-    readonly property bool showVisualizer: !LyricsService.hasText
-        || (!currentText.trim() && !nextText.trim())
-    function updateMode() {
-        modeTransition.stop();
-        const destination = showVisualizer ? 1 : 0;
-        if (modeReady && Motion.enabled && visible) {
-            modeTransition.to = destination;
-            modeTransition.restart();
-        } else visualizerMix = destination;
-    }
-    onShowVisualizerChanged: updateMode()
-    NumberAnimation {
-        id: modeTransition
-        target: root
-        property: "visualizerMix"
-        duration: Motion.enter * 1.5
-        easing.type: Easing.InOutCubic
-    }
-    Connections {
-        target: Motion
-        function onEnabledChanged() { if (!Motion.enabled) root.updateMode(); }
-    }
     readonly property bool captureAudio: available && LyricsService.stripEnabled && sideWidth >= 120 && Motion.enabled
     Process {
         id: spectrumProcess
@@ -155,7 +130,7 @@ Item {
         onTriggered: if (root.captureAudio) spectrumProcess.running = true
     }
     // Inline surfaces share the bar hitbox; line controls retain their own actions.
-    Component.onCompleted: { LyricsService.viewers++; modeReady = true; updateMode(); }
+    Component.onCompleted: { LyricsService.viewers++; }
     Component.onDestruction: LyricsService.viewers = Math.max(0, LyricsService.viewers - 1)
 
     component PanelControl: ThemeButton {
@@ -205,7 +180,25 @@ Item {
         readonly property alias forwardControl: forwardBadge
         width: root.sideWidth
         height: root.stripHeight
-        visible: lyric.trim() !== "" || root.visualizerMix > 0 || (upcoming && root.estimatedTiming)
+
+        property real visualizerMix: 1
+        readonly property bool showVisualizer: lyric.trim() === ""
+        function updateMode() {
+            modeTransition.stop();
+            const destination = showVisualizer ? 1 : 0;
+            if (ready && Motion.enabled && visible) {
+                modeTransition.to = destination;
+                modeTransition.restart();
+            } else visualizerMix = destination;
+        }
+        onShowVisualizerChanged: updateMode()
+        NumberAnimation {
+            id: modeTransition
+            target: lineSurface
+            property: "visualizerMix"
+            duration: Motion.enter * 1.5
+            easing.type: Easing.InOutCubic
+        }
         variant: "bg"
         backgroundOpacity: root.inlineMode ? 0 : BarAppearance.panelOpacity(false)
         topLeftRadius: root.inlineMode ? (BarAppearance.framed ? Styling.radius(4) : 0) : Math.min(height / 2, Styling.radius(4))
@@ -229,7 +222,7 @@ Item {
             enabled: lineSurface.upcoming ? root.estimatedTiming : root.canStepBack
             opacity: (root.estimatedTiming || lineSurface.upcoming) && !enabled ? 0.35 : 1
             text: lineSurface.upcoming ? (root.estimatedTiming ? "◎" : "♪")
-                : root.estimatedTiming ? "‹" : root.visualizerMix > 0.5 ? "≋" : "♪"
+                : root.estimatedTiming ? "‹" : lineSurface.visualizerMix > 0.5 ? "≋" : "♪"
             Accessible.name: lineSurface.upcoming ? "Calibrate estimated lyrics" : "Previous estimated lyric line"
             onClicked: {
                 if (lineSurface.upcoming) root.calibrationOpen = !root.calibrationOpen;
@@ -274,11 +267,15 @@ Item {
             } else progress = 1;
         }
         onLyricChanged: updateText()
-        Component.onCompleted: { updateText(); ready = true; }
+        Component.onCompleted: { updateText(); ready = true; updateMode(); }
         Connections {
             target: Motion
             function onEnabledChanged() {
-                if (!Motion.enabled) { lyricTransition.stop(); lineSurface.progress = 1; }
+                if (!Motion.enabled) {
+                    lyricTransition.stop();
+                    lineSurface.progress = 1;
+                    lineSurface.updateMode();
+                }
             }
         }
         NumberAnimation {
@@ -296,7 +293,7 @@ Item {
             anchors.leftMargin: lineSurface.upcoming ? 16 : 44
             anchors.rightMargin: lineSurface.upcoming ? 44 : 16
             // Retain a quiet spectrum behind readable foreground lyrics.
-            opacity: 0.24 + root.visualizerMix * 0.76
+            opacity: 0.24 + lineSurface.visualizerMix * 0.76
             visible: opacity > 0
             // Leave a generous quiet pocket around the actual text, with a
             // feathered edge so the spectrum does not end in a hard rectangle.
@@ -324,9 +321,9 @@ Item {
                         GradientStop { position: 1; color: Qt.alpha(BarAppearance.activeColor, 0.42) }
                     }
                     readonly property real textDistance: Math.abs(x + width / 2 - visualizer.textCenter)
-                    readonly property real quietMix: lineSurface.lyric.trim() === "" ? 0
+                    readonly property real quietMix: lineSurface.displayedText.trim() === "" ? 0
                         : Math.max(0, Math.min(1, (visualizer.textHalfWidth
-                            + visualizer.textPadding + 12 - textDistance) / 12)) * (1 - root.visualizerMix)
+                            + visualizer.textPadding + 12 - textDistance) / 12)) * (1 - lineSurface.visualizerMix)
                     opacity: (0.24 + level * 0.76 * visualizer.activity) * (1 - quietMix * 0.92)
                     Behavior on height {
                         enabled: Motion.enabled
@@ -339,7 +336,7 @@ Item {
             upcoming: lineSurface.upcoming
             objectName: "bar-lyrics-previous-text"
             text: lineSurface.previousText
-            opacity: (1 - lineSurface.progress) * (1 - root.visualizerMix)
+            opacity: (1 - lineSurface.progress) * (1 - lineSurface.visualizerMix)
             visible: opacity > 0
             transform: Translate { y: -4 * lineSurface.progress }
         }
@@ -348,7 +345,7 @@ Item {
             upcoming: lineSurface.upcoming
             objectName: "bar-lyrics-text"
             text: lineSurface.displayedText
-            opacity: lineSurface.progress * (1 - root.visualizerMix)
+            opacity: lineSurface.progress * (1 - lineSurface.visualizerMix)
             transform: Translate { y: 4 * (1 - lineSurface.progress) }
         }
         StandardProgressBar {
@@ -356,8 +353,6 @@ Item {
             objectName: "bar-lyrics-line-progress"
             // Follow the visible label width, including when long lyrics elide.
             width: Math.max(0, Math.min(currentLabel.contentWidth, currentLabel.width))
-            height: 2
-            radius: height / 2
             x: currentLabel.x + (currentLabel.width - width) / 2
             y: Math.min(lineSurface.height - height - 2,
                 (lineSurface.height + currentLabel.implicitHeight) / 2 + 2)
@@ -366,9 +361,9 @@ Item {
             opacity: currentLabel.opacity
             value: root.lineProgress
             activeColor: BarAppearance.activeColor
-            foregroundColor: BarAppearance.foregroundColor
-            fillObjectName: "bar-lyrics-line-progress-fill"
+            smoothValue: false
         }
+            playing: MprisController.isPlaying
     }
     Line { id: currentPanel; objectName: "bar-lyrics-current"; x: root.edgeMargin; lyric: (root.estimatedTiming && root.currentText ? "≈ " : "") + root.currentText }
     Line { id: nextPanel; objectName: "bar-lyrics-next"; x: root.width - root.sideWidth - root.edgeMargin; lyric: (root.estimatedTiming && root.nextText ? "≈ " : "") + root.nextText; upcoming: true }

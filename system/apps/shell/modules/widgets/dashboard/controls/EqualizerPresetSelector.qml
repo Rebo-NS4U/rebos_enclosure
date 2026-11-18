@@ -10,7 +10,7 @@ ColumnLayout {
     objectName: "audio-eq-presets"
     spacing: Styling.spacing(6)
     property bool showEqActions: false
-    property string category: AudioEqualizer.presetGroups.Other.includes(AudioEqualizer.preset) ? "Other" : "Music"
+    property string category: AudioEqualizer.categoryForPreset(AudioEqualizer.preset) || "Music"
     readonly property var choices: AudioEqualizer.presetGroups[category]
     readonly property int cardsPerPage: Math.max(1, Math.min(3, Math.floor((pages.width + Styling.spacing(6)) / Styling.spacing(145))))
     readonly property int pageCount: Math.ceil(choices.length / cardsPerPage)
@@ -38,8 +38,8 @@ ColumnLayout {
     Connections {
         target: AudioEqualizer
         function onPresetChanged() {
-            if (AudioEqualizer.presetGroups.Other.includes(AudioEqualizer.preset)) root.category = "Other";
-            else if (AudioEqualizer.presetGroups.Music.includes(AudioEqualizer.preset)) root.category = "Music";
+            const category = AudioEqualizer.categoryForPreset(AudioEqualizer.preset);
+            if (category) root.category = category;
             Qt.callLater(root.revealSelection);
         }
     }
@@ -72,6 +72,13 @@ ColumnLayout {
             onClicked: root.category = "Other"
         }
         ThemeButton {
+            id: extremeButton
+            objectName: "audio-eq-category-Extreme"
+            text: "Extreme"
+            checked: root.category === "Extreme"
+            onClicked: root.category = "Extreme"
+        }
+        ThemeButton {
             id: resetButton
             objectName: "audio-eq-compact-reset"
             visible: root.showEqActions
@@ -80,9 +87,9 @@ ColumnLayout {
             onClicked: AudioEqualizer.selectPreset("Flat")
         }
         StyledText {
-            width: Math.max(Styling.spacing(80), parent.width - musicButton.width - otherButton.width
+            width: Math.max(Styling.spacing(80), parent.width - musicButton.width - otherButton.width - extremeButton.width
                 - (root.showEqActions ? enableButton.width + resetButton.width : 0)
-                - parent.spacing * (root.showEqActions ? 4 : 2))
+                - parent.spacing * (root.showEqActions ? 5 : 3))
             height: musicButton.height
             verticalAlignment: Text.AlignVCenter
             text: AudioEqualizer.preset + " · " + (pages.currentIndex + 1) + "/" + root.pageCount
@@ -142,11 +149,13 @@ ColumnLayout {
                         required property int index
                         readonly property int choiceIndex: page.index * root.cardsPerPage + index
                         readonly property string choice: root.choices[choiceIndex] || ""
+                        readonly property string label: root.category === "Extreme" ? choice.replace(/ Extreme$/, "") : choice
+                        readonly property string description: AudioEqualizer.presetDescriptions[label] || ""
                         objectName: "audio-eq-preset-" + choice
                         width: (pages.width - (root.cardsPerPage - 1) * page.spacing) / root.cardsPerPage
                         height: pages.height
                         checked: AudioEqualizer.preset === choice
-                        Accessible.name: choice + ": " + AudioEqualizer.presetDescriptions[choice]
+                        Accessible.name: choice + ": " + description
                         onClicked: AudioEqualizer.selectPreset(choice)
                         onActiveFocusChanged: if (activeFocus && pages.currentIndex !== page.index) {
                             pages.currentIndex = page.index;
@@ -166,14 +175,14 @@ ColumnLayout {
                             spacing: Styling.spacing(2)
                             StyledText {
                                 objectName: "preset-card-label"
-                                text: (card.checked ? "✓ " : "") + card.choice
+                                text: (card.checked ? "✓ " : "") + card.label
                                 font.bold: true
                                 color: card.background.itemColor
                                 Layout.fillWidth: true
                                 elide: Text.ElideRight
                             }
                             StyledText {
-                                text: AudioEqualizer.presetDescriptions[card.choice] || ""
+                                text: card.description
                                 font.pixelSize: Styling.fontSize(-3)
                                 color: card.background.itemColor
                                 Layout.fillWidth: true

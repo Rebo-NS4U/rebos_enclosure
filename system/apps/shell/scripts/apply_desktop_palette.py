@@ -8,11 +8,11 @@ import sys
 import tempfile
 
 
-def write(path, content):
+def write(path, content, *, force=False):
     # Resolve dotfile symlinks rather than replacing the links themselves.
     path = path.resolve()
     path.parent.mkdir(parents=True, exist_ok=True)
-    if path.exists() and path.read_text() == content:
+    if not force and path.exists() and path.read_text() == content:
         return False
     mode = path.stat().st_mode & 0o777 if path.exists() else 0o644
     fd, temporary = tempfile.mkstemp(prefix='.' + path.name, dir=path.parent)
@@ -27,7 +27,7 @@ def write(path, content):
     return True
 
 
-def update_ini(path, sections):
+def update_ini(path, sections, *, force=False):
     """Patch owned keys, preserving comments, ordering and all other keys."""
     text = path.read_text() if path.exists() else ''
     for group, values in sections.items():
@@ -50,7 +50,7 @@ def update_ini(path, sections):
             else:
                 body = body.rstrip() + '\n' + line + '\n'
         text = text[:start] + body + text[end:]
-    return write(path, text)
+    return write(path, text, force=force)
 
 
 def apply_ladybird_palette(p, home):
@@ -96,6 +96,7 @@ def apply_niri_theme(p, home):
     accent = p['primary']
     # Niri watches this final shared rule for palette and corner changes.
     radius = theme_radius(home)
+    opacity = max(0, min(1, float(p.get('opacity', 1))))
     write(home / '.cache/rebos_shell/niri-colors.kdl',
           '// Generated from the effective QuickShell palette and theme geometry.\n'
           'layout {\n'
@@ -116,8 +117,18 @@ def apply_niri_theme(p, home):
           '    }\n'
           '}\n'
           'window-rule {\n'
-          '    match app-id=r#"^(Spotify|spotify|com\\.spotify\\.Client|org\\.kde\\.dolphin|thunar)$"#\n'
-          f'    opacity {float(max(0, min(1, float(p.get("opacity", 1)))))}\n'
+          '    match app-id="thunar"\n'
+          f'    opacity {float(opacity)}\n'
+          '}\n'
+          # Keep file contents legible while retaining the shell's glass effect.
+          'window-rule {\n'
+          '    match app-id="org.kde.dolphin"\n'
+          f'    opacity {(1 + opacity) / 2:.4f}\n'
+          '}\n'
+          # Whole-window alpha also fades artwork and text; keep Spotify crisp.
+          'window-rule {\n'
+          '    match app-id=r#"^(Spotify|spotify|com\\.spotify\\.Client)$"#\n'
+          '    opacity 1.0\n'
           '}\n')
 
 
@@ -214,11 +225,9 @@ def apply(p, home):  # pylint: disable=too-many-branches,too-many-locals,too-man
         target = directory / 'colors/rebos_shell.conf'
         palette_changed = write(target, palette)
         settings_path = directory / f'qt{version}ct.conf'
-        settings_changed = update_ini(settings_path, {'Appearance': {
-            'color_scheme_path': target, 'custom_palette': 'true'}})
-        # qtct watches its settings file; the palette path itself stays fixed.
-        if palette_changed and not settings_changed:
-            settings_path.touch()
+        # qtct watches the config directory, so replace the INI when its palette changes.
+        update_ini(settings_path, {'Appearance': {
+            'color_scheme_path': target, 'custom_palette': 'true'}}, force=palette_changed)
 
     rgb = lambda c: ','.join(str(int(c[i:i+2], 16)) for i in (1, 3, 5))
     kde = {}

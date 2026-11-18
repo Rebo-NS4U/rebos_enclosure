@@ -77,7 +77,7 @@ ColumnLayout {
                 spacing: 5
                 StyledText {
                     Layout.fillWidth: true
-                    text: !root.session.isDistill ? "Choose a mode for this chat. Model and reasoning changes are confirmed before sending. RTK and Token Optimizer stay enabled." : root.session.isBusy ? "Change the preset after this reply finishes." : root.session.switchingDistillPreset ? "Waiting for Distill to confirm…" : "Saved separately for this chat."
+                    text: !root.session.isDistill ? "Choose a mode for this chat. Model and reasoning changes are confirmed before sending. The selected profile guides subsequent turns. Start a new chat for unrelated work. Token Optimizer status is unavailable here." : root.session.isBusy ? "Change the preset after this reply finishes." : root.session.switchingDistillPreset ? "Waiting for Distill to confirm…" : "Saved separately for this chat."
                     wrapMode: Text.WordWrap
                     color: Colors.outline
                     font.pixelSize: Styling.fontSize(-2)
@@ -182,27 +182,6 @@ ColumnLayout {
                     wrapMode: Text.WordWrap
                     color: Colors.overSurface
                     font.pixelSize: Styling.fontSize(-2)
-                }
-                Button {
-                    objectName: "assistantRefreshCodexAccount"
-                    Layout.fillWidth: true
-                    visible: !root.session.isDistill
-                    enabled: !root.session.isBusy && !root.session.switchingSessionModel
-                        && !root.session.statusText
-                    text: "Use current Codex login"
-                    contentItem: StyledText {
-                        text: parent.text
-                        color: Colors.overSurface
-                        horizontalAlignment: Text.AlignHCenter
-                    }
-                    background: StyledRect {
-                        variant: "focus"
-                        radius: Styling.radius(4)
-                    }
-                    onClicked: {
-                        root.session.refreshCodexAccount();
-                        root.expanded = false;
-                    }
                 }
                 Button {
                     objectName: "assistantStartDistill"

@@ -18,11 +18,11 @@
   --dw-onTertiary: #402d04;
   --dw-error: #ffb4ab;
   --dw-onError: #690005;
-  --dw-bg: color-mix(in srgb, #382827 78%, transparent);
-  --dw-pane: color-mix(in srgb, #3d2b2a 78%, transparent);
+  --dw-bg: color-mix(in srgb, #2f2121 74%, transparent);
+  --dw-pane: color-mix(in srgb, #2f2121 62%, transparent);
   --dw-texture: none;
   --dw-texture-size: 1px;
-  --dw-focus: color-mix(in srgb, #604342 92%, transparent);
+  --dw-focus: color-mix(in srgb, #3e2c2b 86%, transparent);
 }
 .dweebo[data-style="glass"] {
   color-scheme: dark;
@@ -72,11 +72,11 @@
   --dw-onTertiary: #402d04;
   --dw-error: #ffb4ab;
   --dw-onError: #690005;
-  --dw-bg: color-mix(in srgb, #221818 100%, transparent);
-  --dw-pane: color-mix(in srgb, #2c1f1f 100%, transparent);
-  --dw-texture: radial-gradient(#4a3c3c 0.65px, transparent 0.85px);
-  --dw-texture-size: 1.8px;
-  --dw-focus: color-mix(in srgb, #3e2c2b 100%, transparent);
+  --dw-bg: color-mix(in srgb, #251a1a 100%, transparent);
+  --dw-pane: color-mix(in srgb, #2a1d1d 100%, transparent);
+  --dw-texture: none;
+  --dw-texture-size: 1px;
+  --dw-focus: color-mix(in srgb, #382827 100%, transparent);
 }
 .dweebo[data-theme="black"],
 .dweebo[data-theme="black"][data-style="colorful"] {
@@ -91,11 +91,11 @@
   --dw-onTertiary: #000000;
   --dw-error: #eeeeee;
   --dw-onError: #000000;
-  --dw-bg: color-mix(in srgb, #1f1f1f 78%, transparent);
-  --dw-pane: color-mix(in srgb, #242424 78%, transparent);
+  --dw-bg: color-mix(in srgb, #161616 74%, transparent);
+  --dw-pane: color-mix(in srgb, #161616 62%, transparent);
   --dw-texture: none;
   --dw-texture-size: 1px;
-  --dw-focus: color-mix(in srgb, #484848 92%, transparent);
+  --dw-focus: color-mix(in srgb, #262626 86%, transparent);
 }
 .dweebo[data-theme="black"][data-style="glass"] {
   color-scheme: dark;
@@ -145,11 +145,11 @@
   --dw-onTertiary: #000000;
   --dw-error: #eeeeee;
   --dw-onError: #000000;
-  --dw-bg: color-mix(in srgb, #090909 100%, transparent);
-  --dw-pane: color-mix(in srgb, #141414 100%, transparent);
-  --dw-texture: radial-gradient(#353535 0.65px, transparent 0.85px);
-  --dw-texture-size: 1.8px;
-  --dw-focus: color-mix(in srgb, #262626 100%, transparent);
+  --dw-bg: color-mix(in srgb, #0b0b0b 100%, transparent);
+  --dw-pane: color-mix(in srgb, #101010 100%, transparent);
+  --dw-texture: none;
+  --dw-texture-size: 1px;
+  --dw-focus: color-mix(in srgb, #1f1f1f 100%, transparent);
 }
 .dweebo[data-theme="white"],
 .dweebo[data-theme="white"][data-style="colorful"] {
@@ -164,11 +164,11 @@
   --dw-onTertiary: #ffffff;
   --dw-error: #161616;
   --dw-onError: #ffffff;
-  --dw-bg: color-mix(in srgb, #e1e1e1 78%, transparent);
-  --dw-pane: color-mix(in srgb, #dcdcdc 78%, transparent);
+  --dw-bg: color-mix(in srgb, #e9e9e9 74%, transparent);
+  --dw-pane: color-mix(in srgb, #e9e9e9 62%, transparent);
   --dw-texture: none;
   --dw-texture-size: 1px;
-  --dw-focus: color-mix(in srgb, #b8b8b8 92%, transparent);
+  --dw-focus: color-mix(in srgb, #d9d9d9 86%, transparent);
 }
 .dweebo[data-theme="white"][data-style="glass"] {
   color-scheme: light;
@@ -218,9 +218,9 @@
   --dw-onTertiary: #ffffff;
   --dw-error: #161616;
   --dw-onError: #ffffff;
-  --dw-bg: color-mix(in srgb, #f6f6f6 100%, transparent);
-  --dw-pane: color-mix(in srgb, #ebebeb 100%, transparent);
-  --dw-texture: radial-gradient(#cbcbcb 0.65px, transparent 0.85px);
-  --dw-texture-size: 1.8px;
-  --dw-focus: color-mix(in srgb, #d9d9d9 100%, transparent);
+  --dw-bg: color-mix(in srgb, #f4f4f4 100%, transparent);
+  --dw-pane: color-mix(in srgb, #efefef 100%, transparent);
+  --dw-texture: none;
+  --dw-texture-size: 1px;
+  --dw-focus: color-mix(in srgb, #e1e1e1 100%, transparent);
 }

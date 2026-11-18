@@ -437,184 +437,94 @@ Item {
             spacing: Styling.spacing(12)
 
             // Shuffle button
-            StyledRect {
-                implicitWidth: 34
-                implicitHeight: 34
-                radius: Styling.radius(0)
-                variant: MprisController.hasShuffle ? "primary" : (shuffleMouse.containsMouse ? "focus" : "common")
-                opacity: MprisController.shuffleSupported ? 1.0 : 0.4
-                scale: shuffleMouse.pressed ? 0.92 : 1.0
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: shuffleMouse.pressed ? Motion.press : Motion.feedback
-                        easing.type: Motion.feedbackCurve
-                    }
-                }
+            ThemeButton {
+                id: shuffleButton
+                implicitWidth: Styling.spacing(36)
+                implicitHeight: implicitWidth
+                padding: 0
+                glyph: Icons.shuffle
+                Accessible.name: "Shuffle"
+                emphasized: MprisController.hasShuffle
+                enabled: MprisController.shuffleSupported
+                onClicked: MprisController.setShuffle(!MprisController.hasShuffle)
 
-                Text {
-                    anchors.centerIn: parent
-                    renderType: Text.NativeRendering
-                    font.hintingPreference: Font.PreferFullHinting
-                    text: Icons.shuffle
-                    font.family: Icons.font
-                    font.pixelSize: Styling.fontSize(1)
-                    color: MprisController.hasShuffle ? Colors.overPrimary : Colors.overBackground
-                }
-
-                MouseArea {
-                    id: shuffleMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    enabled: MprisController.shuffleSupported
-                    onClicked: MprisController.setShuffle(!MprisController.hasShuffle)
+                StyledToolTip {
+                    show: shuffleButton.hovered
+                    tooltipText: shuffleButton.Accessible.name
                 }
             }
 
             Item { Layout.fillWidth: true }
 
             // Previous track button
-            StyledRect {
-                implicitWidth: 38
-                implicitHeight: 38
-                radius: Styling.radius(0)
-                variant: prevMouse.containsMouse ? "focus" : "common"
-                opacity: MprisController.canGoPrevious ? 1.0 : 0.4
-                scale: prevMouse.pressed ? 0.92 : 1.0
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: prevMouse.pressed ? Motion.press : Motion.feedback
-                        easing.type: Motion.feedbackCurve
-                    }
-                }
+            ThemeButton {
+                id: previousButton
+                implicitWidth: Styling.spacing(38)
+                implicitHeight: implicitWidth
+                padding: 0
+                glyph: Icons.previous
+                Accessible.name: "Previous track"
+                enabled: MprisController.canGoPrevious
+                onClicked: MprisController.previous()
 
-                Text {
-                    anchors.centerIn: parent
-                    renderType: Text.NativeRendering
-                    font.hintingPreference: Font.PreferFullHinting
-                    text: Icons.previous
-                    font.family: Icons.font
-                    font.pixelSize: Styling.fontSize(2)
-                    color: Colors.overBackground
-                }
-
-                MouseArea {
-                    id: prevMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    enabled: MprisController.canGoPrevious
-                    onClicked: MprisController.previous()
+                StyledToolTip {
+                    show: previousButton.hovered
+                    tooltipText: previousButton.Accessible.name
                 }
             }
 
             // Play / Pause HERO button
-            StyledRect {
-                implicitWidth: 46
-                implicitHeight: 46
-                radius: Styling.radius(0)
-                variant: "primary"
-                opacity: playMouse.containsMouse ? 0.9 : 1.0
-                scale: playMouse.pressed ? 0.92 : 1.0
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: playMouse.pressed ? Motion.press : Motion.feedback
-                        easing.type: Motion.feedbackCurve
-                    }
-                }
+            ThemeButton {
+                id: playbackButton
+                implicitWidth: Styling.spacing(46)
+                implicitHeight: implicitWidth
+                padding: 0
+                glyph: root.isPlaying ? Icons.pause : Icons.play
+                Accessible.name: root.isPlaying ? "Pause" : "Play"
+                emphasized: true
+                glyphSize: Styling.fontSize(6)
+                onClicked: MprisController.togglePlaying()
 
-                Text {
-                    anchors.centerIn: parent
-                    renderType: Text.NativeRendering
-                    font.hintingPreference: Font.PreferFullHinting
-                    text: root.isPlaying ? Icons.pause : Icons.play
-                    font.family: Icons.font
-                    font.pixelSize: Styling.fontSize(6)
-                    color: Colors.overPrimary
-                }
-
-                MouseArea {
-                    id: playMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: MprisController.togglePlaying()
+                StyledToolTip {
+                    show: playbackButton.hovered
+                    tooltipText: playbackButton.Accessible.name
                 }
             }
 
             // Next track button
-            StyledRect {
-                implicitWidth: 38
-                implicitHeight: 38
-                radius: Styling.radius(0)
-                variant: nextMouse.containsMouse ? "focus" : "common"
-                opacity: MprisController.canGoNext ? 1.0 : 0.4
-                scale: nextMouse.pressed ? 0.92 : 1.0
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: nextMouse.pressed ? Motion.press : Motion.feedback
-                        easing.type: Motion.feedbackCurve
-                    }
-                }
+            ThemeButton {
+                id: nextButton
+                implicitWidth: Styling.spacing(38)
+                implicitHeight: implicitWidth
+                padding: 0
+                glyph: Icons.next
+                Accessible.name: "Next track"
+                enabled: MprisController.canGoNext
+                onClicked: MprisController.next()
 
-                Text {
-                    anchors.centerIn: parent
-                    renderType: Text.NativeRendering
-                    font.hintingPreference: Font.PreferFullHinting
-                    text: Icons.next
-                    font.family: Icons.font
-                    font.pixelSize: Styling.fontSize(2)
-                    color: Colors.overBackground
-                }
-
-                MouseArea {
-                    id: nextMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    enabled: MprisController.canGoNext
-                    onClicked: MprisController.next()
+                StyledToolTip {
+                    show: nextButton.hovered
+                    tooltipText: nextButton.Accessible.name
                 }
             }
 
             Item { Layout.fillWidth: true }
 
             // Loop / Repeat button
-            StyledRect {
-                implicitWidth: 34
-                implicitHeight: 34
-                radius: Styling.radius(0)
-                variant: MprisController.loopState !== 0 ? "primary" : (loopMouse.containsMouse ? "focus" : "common")
-                opacity: MprisController.loopSupported ? 1.0 : 0.4
-                scale: loopMouse.pressed ? 0.92 : 1.0
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: loopMouse.pressed ? Motion.press : Motion.feedback
-                        easing.type: Motion.feedbackCurve
-                    }
-                }
+            ThemeButton {
+                id: repeatButton
+                implicitWidth: Styling.spacing(36)
+                implicitHeight: implicitWidth
+                padding: 0
+                glyph: MprisController.loopState === 2 ? Icons.repeatOnce : Icons.repeat
+                Accessible.name: MprisController.loopState === 2 ? "Repeat track" : "Repeat"
+                emphasized: MprisController.loopState !== 0
+                enabled: MprisController.loopSupported
+                onClicked: MprisController.setLoopState((MprisController.loopState + 1) % 3)
 
-                Text {
-                    anchors.centerIn: parent
-                    renderType: Text.NativeRendering
-                    font.hintingPreference: Font.PreferFullHinting
-                    text: MprisController.loopState === 2 ? Icons.repeatOnce : Icons.repeat
-                    font.family: Icons.font
-                    font.pixelSize: Styling.fontSize(1)
-                    color: MprisController.loopState !== 0 ? Colors.overPrimary : Colors.overBackground
-                }
-
-                MouseArea {
-                    id: loopMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    enabled: MprisController.loopSupported
-                    onClicked: {
-                        // None (0) -> Playlist (1) -> Track (2) -> None (0)
-                        const nextState = (MprisController.loopState + 1) % 3;
-                        MprisController.setLoopState(nextState);
-                    }
+                StyledToolTip {
+                    show: repeatButton.hovered
+                    tooltipText: repeatButton.Accessible.name
                 }
             }
         }

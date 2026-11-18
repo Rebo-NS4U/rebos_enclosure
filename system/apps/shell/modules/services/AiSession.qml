@@ -25,23 +25,23 @@ Scope {
     ]
     // Start with Do; named per-chat choices still survive restoration.
     readonly property var codexPresets: [
-        {id: "coding", name: "dweebo-Do", model: "gpt-6.1-sol", effort: "medium",
-            description: "Sol · medium reasoning. Implement, debug and verify code efficiently.",
+        {id: "coding", name: "dweebo-Do", model: "gpt-6.2-sol", effort: "medium",
+            description: "Sol 6.2 · medium reasoning. Implement, debug and verify code efficiently.",
             guidance: "Coding mode: Make focused changes, inspect only relevant context, and run checks that verify the requested behavior. Keep explanations concise. Do not delegate unless requested."},
-        {id: "deep", name: "dweebo-Deep", model: "gpt-6.1-sol", effort: "high",
-            description: "Sol · high reasoning. Complex coding, debugging and research.",
+        {id: "deep", name: "dweebo-Deep", model: "gpt-6.2-astra", effort: "high",
+            description: "Astra 6.2 · high reasoning. Complex coding, debugging and research.",
             guidance: "Deep reasoning mode: Work carefully through complex coding and research. Inspect relevant evidence, compare plausible explanations and approaches, and verify conclusions. For code, make focused changes and run checks that verify the requested behavior. For research, consult primary sources, cite evidence, and distinguish findings from assumptions and uncertainty. Keep explanations concise. Do not delegate unless requested."},
-        {id: "symphony", name: "dweebo-Symphony", model: "gpt-6.1-sol", effort: "medium",
+        {id: "symphony", name: "dweebo-Symphony", model: "gpt-6.2-sol", effort: "medium",
             description: "Workflow-driven issue execution with isolated workspaces, validation and review handoff.",
             guidance: "Symphony coding profile (inspired by https://github.com/openai/symphony/blob/main/SPEC.md; interactive execution through the existing backend, without a polling daemon): Treat the requested issue as one bounded unit of work. Read repository instructions and WORKFLOW.md when present; use its prompt and applicable policy, and report unsupported runtime settings rather than claiming to enforce them. Confirm the issue identity, acceptance criteria, current eligibility and blockers using available tracker tools when an issue is supplied. Do not invent tracker state or credentials. Verify the owning checkout and remote, then use an isolated per-issue Git worktree for issue work; sanitize identifiers to letters, digits, dot, underscore and hyphen, reject empty or dot-only identifiers, and ensure resolved workspace paths remain beneath the selected workspace root. Preserve existing workspaces and unrelated changes; never remove them automatically. Make a short plan, implement focused changes, run relevant validation and inspect the final diff. Recheck issue eligibility before continuing after a failure or handing off; stop if canceled, terminal or blocked. Retry only transient failures with bounded exponential backoff, at most three attempts; report persistent errors and do not loop indefinitely. Keep progress, verification evidence and remaining blockers visible. Follow repository policy for local commits; do not push, open PRs or change tracker state without user authorization. End with a concrete handoff including changes, tests, workspace or branch, commit and unresolved blockers. Human review is a valid completion state; never claim Done from an agent exit alone. Preserve tool approvals, sandboxing and secret boundaries. Do not delegate unless requested. This profile does not provide background polling, concurrency scheduling, automatic reconciliation or service restart recovery."},
-        {id: "light_coding", name: "dweebo-Light", model: "gpt-6-luna", effort: "low",
-            description: "Luna · low reasoning. Linux configs, terminal tasks and small scripts.",
+        {id: "light_coding", name: "dweebo-Light", model: "gpt-6.1-terra", effort: "low",
+            description: "Terra 6.1 · low reasoning. Linux configs, terminal tasks and small scripts.",
             guidance: "Light coding mode: Edit requested app source, desktop UI, Linux configs and scripts. Linux specialization is guidance, not a restriction. Check the distro, shell and relevant tool version. Distinguish user and system services. Back up configs; preserve unrelated edits, permissions and symlink targets. Validate syntax and behavior; reload only what is needed. Suggest Coding for complex debugging; never switch models silently or delegate unless requested."},
-        {id: "quick", name: "dweebo-Quick", model: "gpt-6-luna", effort: "low",
-            description: "Luna · low reasoning. Short, direct answers with minimal overhead.",
+        {id: "quick", name: "dweebo-Quick", model: "gpt-6.1-terra", effort: "low",
+            description: "Terra 6.1 · low reasoning. Short, direct answers with minimal overhead.",
             guidance: "Quick question mode: Answer directly, usually in 1–3 sentences. Avoid plans, repository scans, memory reads and tools unless needed to answer accurately or explicitly requested. Verify current or uncertain facts when needed. Ask only essential clarifying questions. Do not change files unless explicitly asked."},
-        {id: "knowledge", name: "dweebo-Know", model: "gpt-6-luna", effort: "low",
-            description: "Luna · low reasoning. Clear explanations and useful factual context.",
+        {id: "knowledge", name: "dweebo-Know", model: "gpt-6.1-terra", effort: "low",
+            description: "Terra 6.1 · low reasoning. Clear explanations and useful factual context.",
             guidance: "General knowledge mode: Give a clear, concise explanation with enough context to understand it. Use examples when helpful. Search for current or uncertain facts and cite sources; avoid unnecessary local inspection. Do not change files unless explicitly asked. If the question needs deeper reasoning, explain the limitation rather than silently claiming certainty."}
     ]
     property string codexPreset: "coding"

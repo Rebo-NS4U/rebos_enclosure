@@ -1,6 +1,7 @@
 pragma Singleton
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import qs.modules.services
 import qs.modules.globals
 
@@ -18,6 +19,49 @@ AiSession {
     property Component sessionFactory: Component { AiSession {} }
     property alias sessionModel: viewModel
     ListModel { id: viewModel }
+
+    codexSignInActive: codexLogin.running
+    readonly property bool canChangeCodexAccount: activeSession.featureEnabled
+        && activeSession.currentAgentId === "codex" && !codexSignInActive
+        && !sessions.some(session => session.currentAgentId === "codex"
+            && (session.isBusy || session.switchingSessionModel))
+
+    function switchCodexAccount() {
+        if (!canChangeCodexAccount) return;
+        codexLogin.cancelled = false;
+        codexLogin.running = true;
+    }
+
+    function cancelCodexSignIn() {
+        codexLogin.cancelled = true;
+        codexLogin.running = false;
+    }
+
+    function reloadCodexAccount() {
+        if (canChangeCodexAccount)
+            refreshOpenCodexChats();
+    }
+
+    function refreshOpenCodexChats() {
+        for (let session of sessions) {
+            if (session.currentAgentId === "codex")
+                session.refreshCodexAccount();
+        }
+    }
+
+    Process {
+        id: codexLogin
+        property bool cancelled: false
+        // Use the same login-shell PATH as the Codex backend. Keep OAuth
+        // output out of chat history and bridge checkpoints.
+        command: ["sh", "-lc", "exec codex login"]
+        onExited: code => {
+            if (code === 0)
+                root.refreshOpenCodexChats();
+            else if (!cancelled)
+                root.activeSession.pushSystemMessage("Codex sign-in did not finish. Open Account to try again.");
+        }
+    }
 
     function syncRequestNotifications() {
         let pendingKeys = [];
@@ -96,7 +140,11 @@ AiSession {
             session = root;
             root.sessionEnabled = true;
         } else {
-            session = sessionFactory.createObject(root, {channelId: channel, preferredAgentId: agentId || ""});
+            session = sessionFactory.createObject(root, {
+                channelId: channel,
+                preferredAgentId: agentId || "",
+                codexSignInActive: Qt.binding(() => root.codexSignInActive)
+            });
         }
         if (!session) return null;
         session.foreground = Qt.binding(() => GlobalStates.assistantVisible && root.activeSession === session);

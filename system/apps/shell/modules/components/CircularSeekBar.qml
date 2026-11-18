@@ -24,10 +24,8 @@ Item {
     property bool dashed: false      // Enable dashed style for progress
     property bool dashedActive: false// Animate dashes (breathing/marquee)
     
-    // Wavy properties kept for compatibility (ignored in Shape version)
     property bool wavy: false
-    property real waveAmplitude: 0
-    property real waveFrequency: 0
+    property bool playing: false
 
     // =========================================================================
     // Signals
@@ -69,26 +67,28 @@ Item {
     readonly property real cycleLength: baseDashLength + targetSpacing
     
     NumberAnimation on phase {
-        running: (root.dashedActive || root.wavy) && root.visible
+        running: Motion.enabled && root.dashed && root.dashedActive && root.visible
         from: 0
         to: -root.cycleLength // Move forward along path
         duration: 1000 // Adjust speed
         loops: Animation.Infinite
     }
 
-    // Wave Animation
+    property real waveEnergy: Motion.enabled && visible && wavy && effectiveValue > 0
+        ? (isDragging ? 1 : playing ? 0.65 : 0) : 0
     property real wavePhase: 0
-    
-    // Animate phase using a Timer to control framerate (30 FPS) for performance
-    // Full 60 FPS shape regeneration can be too heavy
-    Timer {
-        id: waveTimer
-        interval: 32 // ~30 FPS
-        running: root.wavy && root.visible && (root.value > 0 || root.isDragging)
-        repeat: true
-        onTriggered: {
-            root.wavePhase = (root.wavePhase + 0.1) % (Math.PI * 2)
-        }
+
+    Behavior on waveEnergy {
+        enabled: Motion.enabled && root.visible
+        NumberAnimation { duration: Motion.base; easing.type: Easing.InOutSine }
+    }
+
+    NumberAnimation on wavePhase {
+        from: 0
+        to: 2 * Math.PI
+        duration: Math.max(400, Motion.base * 6)
+        loops: Animation.Infinite
+        running: Motion.enabled && root.visible && root.waveEnergy > 0
     }
 
     // Geometry Helpers
@@ -120,14 +120,16 @@ Item {
         let centerX = root.width / 2;
         let centerY = root.height / 2;
         let baseR = root.radius;
-        let waveFreq = root.waveFrequency;
-        let waveAmp = root.waveAmplitude;
+        const arcScale = baseR * Math.PI / 180;
 
         for (let angleDeg = startDeg; angleDeg <= endDeg + 0.001; angleDeg += step) {
              let clampedDeg = Math.min(angleDeg, endDeg);
              let angleRad = clampedDeg * Math.PI / 180;
              
-             let waveOffset = Math.sin((angleRad * waveFreq) + phase) * waveAmp;
+             const position = (clampedDeg - startDeg) * arcScale;
+             const distance = (endDeg - clampedDeg) * arcScale;
+             const taper = Math.max(0, Math.min(1, (distance - 6) / 8));
+             const waveOffset = 1.5 * root.waveEnergy * taper * Math.sin(phase + 2 * Math.PI * position / 64);
              let r = baseR + waveOffset;
              
              points.push(Qt.point(centerX + r * Math.cos(angleRad), centerY + r * Math.sin(angleRad)));

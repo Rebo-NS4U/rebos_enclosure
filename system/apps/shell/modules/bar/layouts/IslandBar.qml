@@ -62,7 +62,11 @@ Item {
     property real revealProgress: isExpanded ? 1 : 0
     Behavior on revealProgress {
         enabled: Motion.enabled
-        NumberAnimation { id: revealAnimation; duration: root.morphDuration; easing.type: Easing.InOutCubic }
+        NumberAnimation {
+            id: revealAnimation
+            duration: root.isExpanded ? root.morphDuration : root.morphCollapseDuration
+            easing.type: Easing.InOutCubic
+        }
     }
 
     property bool openedFromHidden: false
@@ -362,8 +366,8 @@ Item {
         barHoverAnim.start();
     }
 
-    readonly property int morphDuration: Math.round(Motion.enter * 1.15)
-    readonly property int morphCollapseDuration: Math.round(Motion.enter)
+    readonly property int morphDuration: Math.round(Motion.base * 1.15)
+    readonly property int morphCollapseDuration: Math.round(Motion.base * 0.95)
     readonly property int contentFadeInDuration: Math.round(Motion.enter * 0.85)
     readonly property int contentFadeOutDuration: Math.round(Motion.enter * 0.55)
 
@@ -666,7 +670,7 @@ Item {
             ? root.targetWidth : collapsedView.width
         Behavior on centerWidth {
             enabled: Motion.enabled
-            NumberAnimation { duration: root.morphDuration; easing.type: Easing.InOutCubic }
+            NumberAnimation { duration: root.isExpanded ? root.morphDuration : root.morphCollapseDuration; easing.type: Easing.InOutCubic }
         }
         islandLeft: (width - centerWidth) / 2
         islandRight: (width + centerWidth) / 2
@@ -701,12 +705,6 @@ Item {
     Item {
         id: islandContainer
         objectName: "typing-island-container"
-        transform: Scale {
-            origin.x: islandContainer.width / 2
-            origin.y: 0
-            xScale: 1 + Math.sin(root.revealProgress * Math.PI) * 0.012
-            yScale: 1 - Math.sin(root.revealProgress * Math.PI) * 0.035
-        }
         anchors.horizontalCenter: parent.horizontalCenter
         width: root.targetWidth
         height: root.targetHeight
@@ -1208,8 +1206,7 @@ Item {
             IslandDashboard {
                 id: dashboardView
                 transformOrigin: Item.Top
-                scale: 0.985 + opacity * 0.015
-                transform: Translate { y: (1 - dashboardView.opacity) * Motion.offset }
+
                 screen: root.screen
                 anchors.top: parent.top
                 anchors.horizontalCenter: parent.horizontalCenter
@@ -1258,8 +1255,7 @@ Item {
                     property bool revealReady: false
                     Component.onCompleted: revealReady = true
                     transformOrigin: Item.Top
-                    scale: 0.985 + opacity * 0.015
-                    transform: Translate { y: (1 - powerContent.opacity) * Motion.offset }
+
 
                     anchors.top: parent.top
                     anchors.horizontalCenter: parent.horizontalCenter
@@ -1299,8 +1295,7 @@ Item {
                     property bool revealReady: false
                     Component.onCompleted: revealReady = true
                     transformOrigin: Item.Top
-                    scale: 0.985 + opacity * 0.015
-                    transform: Translate { y: (1 - soundContent.opacity) * Motion.offset }
+
 
                     anchors.top: parent.top
                     anchors.horizontalCenter: parent.horizontalCenter
@@ -1339,8 +1334,7 @@ Item {
                     property bool revealReady: false
                     Component.onCompleted: revealReady = true
                     transformOrigin: Item.Top
-                    scale: 0.985 + opacity * 0.015
-                    transform: Translate { y: (1 - micContent.opacity) * Motion.offset }
+
 
                     anchors.top: parent.top
                     anchors.horizontalCenter: parent.horizontalCenter
@@ -1379,8 +1373,7 @@ Item {
                     property bool revealReady: false
                     Component.onCompleted: revealReady = true
                     transformOrigin: Item.Top
-                    scale: 0.985 + opacity * 0.015
-                    transform: Translate { y: (1 - wifiContent.opacity) * Motion.offset }
+
 
                     anchors.top: parent.top
                     anchors.horizontalCenter: parent.horizontalCenter
@@ -1419,8 +1412,7 @@ Item {
                     property bool revealReady: false
                     Component.onCompleted: revealReady = true
                     transformOrigin: Item.Top
-                    scale: 0.985 + opacity * 0.015
-                    transform: Translate { y: (1 - bluetoothContent.opacity) * Motion.offset }
+
 
                     anchors.top: parent.top
                     anchors.horizontalCenter: parent.horizontalCenter
@@ -1459,8 +1451,7 @@ Item {
                     property bool revealReady: false
                     Component.onCompleted: revealReady = true
                     transformOrigin: Item.Top
-                    scale: 0.985 + opacity * 0.015
-                    transform: Translate { y: (1 - statsContent.opacity) * Motion.offset }
+
 
                     anchors.top: parent.top
                     anchors.horizontalCenter: parent.horizontalCenter
@@ -1499,8 +1490,7 @@ Item {
                     property bool revealReady: false
                     Component.onCompleted: revealReady = true
                     transformOrigin: Item.Top
-                    scale: 0.985 + opacity * 0.015
-                    transform: Translate { y: (1 - alertsContent.opacity) * Motion.offset }
+
 
                     anchors.top: parent.top
                     anchors.horizontalCenter: parent.horizontalCenter
@@ -1539,8 +1529,7 @@ Item {
                     property bool revealReady: false
                     Component.onCompleted: revealReady = true
                     transformOrigin: Item.Top
-                    scale: 0.985 + opacity * 0.015
-                    transform: Translate { y: (1 - wallpapersContent.opacity) * Motion.offset }
+
 
                     screen: root.screen
                     anchors.top: parent.top
@@ -1580,8 +1569,7 @@ Item {
                     property bool revealReady: false
                     Component.onCompleted: revealReady = true
                     transformOrigin: Item.Top
-                    scale: 0.985 + opacity * 0.015
-                    transform: Translate { y: (1 - batteryContent.opacity) * Motion.offset }
+
 
                     anchors.top: parent.top
                     anchors.horizontalCenter: parent.horizontalCenter
@@ -1620,8 +1608,7 @@ Item {
                     property bool revealReady: false
                     Component.onCompleted: revealReady = true
                     transformOrigin: Item.Top
-                    scale: 0.985 + opacity * 0.015
-                    transform: Translate { y: (1 - weatherContent.opacity) * Motion.offset }
+
 
                     anchors.top: parent.top
                     anchors.horizontalCenter: parent.horizontalCenter
@@ -1660,8 +1647,7 @@ Item {
                     property bool revealReady: false
                     Component.onCompleted: revealReady = true
                     transformOrigin: Item.Top
-                    scale: 0.985 + opacity * 0.015
-                    transform: Translate { y: (1 - mediaContent.opacity) * Motion.offset }
+
 
                     reader: typingView
                     onOpenReaderRequested: root.expand("typing")
@@ -1702,8 +1688,7 @@ Item {
                     property bool revealReady: false
                     Component.onCompleted: revealReady = true
                     transformOrigin: Item.Top
-                    scale: 0.985 + opacity * 0.015
-                    transform: Translate { y: (1 - calendarContent.opacity) * Motion.offset }
+
 
                     anchors.top: parent.top
                     anchors.horizontalCenter: parent.horizontalCenter
@@ -1731,8 +1716,7 @@ Item {
             Item {
                 id: launcherViewWrapper
                 transformOrigin: Item.Top
-                scale: 0.985 + opacity * 0.015
-                transform: Translate { y: (1 - launcherViewWrapper.opacity) * Motion.offset }
+
                 anchors.top: parent.top
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: root.targetWidth

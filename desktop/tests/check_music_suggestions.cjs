@@ -2,7 +2,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const qml = fs.readFileSync(path.join(__dirname, '../../system/apps/shell/modules/widgets/music/MusicWindow.qml'), 'utf8');
-const body = qml.split('readonly property var suggestedTracks: {')[1].split('    function refreshSuggestions()')[0].trim().slice(0, -1);
+const body = qml.split('readonly property var suggestedTracks: {')[1].split('    function addSuggestion(')[0].trim().slice(0, -1);
 const suggest = new Function('page', 'detail', 'playlists', 'tracks', 'spotifySuggestions', body);
 const tracks = [
  {path:'a', title:'One', artist:'Artist'},
@@ -19,7 +19,7 @@ assert.deepEqual(suggest('Playlist','missing',lists,tracks,spotify), []);
 lists[0].paths.push('b');
 assert.deepEqual(suggest('Playlist','downloaded',lists,tracks,spotify), []);
 const many = {playlist:'downloaded', tracks:Array.from({length:120}, (_,i)=>({uri:'track:'+i,title:'Choice '+i,artist:'New artist'}))};
-assert.equal(suggest('Playlist','downloaded',lists,tracks,many).length,100);
+assert.equal(suggest('Playlist','downloaded',lists,tracks,many).length,120);
 console.log('Spotify suggestions: remote tracks, duplicate exclusion, navigation and add removal passed');
 
 (async () => {
@@ -27,12 +27,39 @@ console.log('Spotify suggestions: remote tracks, duplicate exclusion, navigation
  const block = adapter.slice(adapter.indexOf('            if (command.suggestion && !suggesting)'), adapter.indexOf('            if (command.refresh_id)'));
  const run = new (Object.getPrototypeOf(async function(){}).constructor)('command','Spicetify','fetch','let suggesting = false;'+block);
  let posted;
- await run({suggestion:{id:'job',uri:'spotify:playlist:'+'a'.repeat(22)}}, {Platform:{PlaylistAPI:{getRecommendedTracks:async(uri, skip, limit)=> {
-   assert.equal(uri,'spotify:playlist:'+'a'.repeat(22)); assert.equal(limit,100);
-   return [{uri:'spotify:track:'+'z'.repeat(22),name:'New Spotify song',artists:[{name:'New artist'}]}];
+ await run({suggestion:{id:'job',uri:'spotify:playlist:'+'a'.repeat(22),skip:['already-seen']}}, {Platform:{PlaylistAPI:{getRecommendedTracks:async(uri, skip, limit)=> {
+   assert.equal(uri,'spotify:playlist:'+'a'.repeat(22)); assert.equal(limit,100); assert.deepEqual(skip,['already-seen']);
+   return [{uri:'spotify:track:'+'z'.repeat(22),name:'New Spotify song',artists:[{name:'New artist'}],album:{imageUrl:'https://i.scdn.co/image/'+'f'.repeat(40)}}];
  }}}}, async(url, options)=>{posted=JSON.parse(options.body);});
  assert.equal(posted.suggestion_id,'job'); assert.equal(posted.tracks[0].title,'New Spotify song');
+ assert.equal(posted.tracks[0].art,'https://i.scdn.co/image/'+'f'.repeat(40));
  await run({suggestion:{id:'error',uri:'spotify:playlist:'+'a'.repeat(22)}}, {Platform:{PlaylistAPI:{}}}, async(url, options)=>{posted=JSON.parse(options.body);});
  assert.match(posted.error,/Could not load Spotify suggestions/);
  console.log('Spotify recommendation adapter request, metadata and failure handling passed');
+})().catch(e=>{console.error(e);process.exitCode=1;});
+
+(async () => {
+ const adapter = fs.readFileSync(path.join(__dirname, '../../system/apps/shell/scripts/lyrics_plus_extension.js'), 'utf8');
+ const block = adapter.slice(adapter.indexOf('    let lastPreview;'), adapter.indexOf("    // Music's explicit update"));
+ const uri = 'spotify:track:' + 'z'.repeat(22);
+ const played = [];
+ const posted = [];
+ let poll;
+ const player = {playUri:async track => played.push(track)};
+ const fetch = async (_url, options) => {
+   if (options.method === 'POST') {
+     posted.push(JSON.parse(options.body));
+     if (posted.length === 1) throw Error('Temporary connection failure');
+   }
+   return {ok:true, json:async () => ({preview:{id:'job', uri}})};
+ };
+ new Function('Spicetify', 'fetch', 'setTimeout', block)(
+   {Player:player}, fetch, callback => { poll = callback; });
+ assert.deepEqual(played, []);
+ player.origin = {play() {}};
+ await poll();
+ await poll();
+ assert.deepEqual(played, [uri]);
+ assert.deepEqual(posted, [{preview_id:'job',error:''}, {preview_id:'job',error:''}]);
+ console.log('Spotify suggestion plays in the client and retries acknowledgment without replaying');
 })().catch(e=>{console.error(e);process.exitCode=1;});

@@ -1,4 +1,4 @@
-"""Verify GitHub workflow delivery in real QML with isolated synthetic transport."""
+"""Verify compact standing context and profile delivery in real QML with isolated synthetic transport."""
 import os
 from pathlib import Path
 import shutil
@@ -22,9 +22,12 @@ ShellRoot {
         session.dispatchQueuedPrompt();
         return session.syntheticEnvelope.params.prompt;
     }
-    function policy(prompt) {
-        let item = prompt.find(item => item.text && item.text.includes("GitHub workflow:"));
-        return item ? {text: item.text.slice(item.text.indexOf("GitHub workflow:"))} : null;
+    function compact(prompt) {
+        const text = prompt[0].text;
+        return text.includes("/skills/desktop-work/SKILL.md")
+            && text.includes("/skills/repository-work/SKILL.md")
+            && !text.includes("@HOME@") && !text.includes("WAYLAND_DISPLAY")
+            && !text.includes("git rev-parse") && text.length < 2300;
     }
     Timer {
         interval: 100; running: true
@@ -41,7 +44,7 @@ ShellRoot {
             session.createNewChat();
             check(session.codexPreset === "coding", "new chats select dweebo-Do");
             let defaultMode = session.codexPresets.find(item => item.id === session.codexPreset);
-            check(defaultMode.name === "dweebo-Do" && defaultMode.model === "gpt-6.1-sol" && defaultMode.effort === "medium", "default selects the Do model and effort");
+            check(defaultMode.name === "dweebo-Do" && defaultMode.model === "gpt-6.2-sol" && defaultMode.effort === "medium", "default selects the Do model and effort");
             // Exercise every role through the actual prompt builder and mode-change gate.
             const roleMarkers = {
                 coding: "Coding mode:", deep: "root-cause debugging",
@@ -50,16 +53,17 @@ ShellRoot {
             };
             session.currentSessionId = "role-specialization-test";
             session.instructionSessionId = session.currentSessionId;
+            session.deliveredSharedInstructionVersion = session.sharedInstructionVersion;
             for (const role of session.codexPresets) {
                 session.instructionModeGuidance = "previous role";
                 const changed = session.standingInstructions(role, false);
-                check(changed[0].text === role.guidance && changed[0].text.includes(roleMarkers[role.id]), role.id + " specialized guidance delivered after switching");
+                check(changed.length === 1 && changed[0].text.includes(roleMarkers[role.id]) && changed[0].text.includes("governs subsequent turns"), role.id + " specialized guidance delivered after switching");
                 session.instructionModeGuidance = role.guidance;
-                check(!session.standingInstructions(role, false).some(item => item.text === role.guidance), role.id + " guidance does not repeat");
-                check(session.standingInstructions(role, true)[0].text === role.guidance, role.id + " guidance restored for forced delivery");
+                check(session.standingInstructions(role, false).length === 0, role.id + " guidance does not repeat");
+                check(session.standingInstructions(role, true)[0].text.includes(roleMarkers[role.id]), role.id + " guidance restored for forced delivery");
             }
             let deep = session.codexPresets.find(item => item.id === "deep");
-            check(deep && deep.model === defaultMode.model && deep.effort === "high", "Deep offers Sol with high reasoning");
+            check(deep && deep.model === "gpt-6.2-astra" && deep.effort === "high", "Deep offers Astra 6.2 with high reasoning");
             session.sessionConfigOptions = [
                 {id: "model", currentValue: deep.model},
                 {id: "reasoning_effort", currentValue: "medium"}
@@ -70,8 +74,8 @@ ShellRoot {
                 {id: "reasoning_effort", currentValue: "high"}
             ];
             check(session.codexPresetMatches(deep), "confirmed high reasoning matches Deep");
-            let deepGuidance = session.standingInstructions(deep, false);
-            check(deepGuidance.some(item => item.text.includes("primary sources") && item.text.includes("verify the requested behavior")), "Deep coding and research guidance reaches the prompt");
+            let deepGuidance = session.standingInstructions(deep, false)[0].text;
+            check(deepGuidance.includes("deep-investigation/SKILL.md") && deepGuidance.includes("two most plausible causes") && deepGuidance.includes("symptom, evidence and remaining uncertainty"), "Deep switch carries evidence into investigation");
             let symphony = session.codexPresets.find(item => item.id === "symphony");
             check(symphony && symphony.model === defaultMode.model, "Symphony uses the existing Codex backend");
             session.currentSessionId = "symphony-test";
@@ -83,44 +87,50 @@ ShellRoot {
             check(!session.standingInstructions(defaultMode, false).some(item => item.text.includes("Symphony coding profile")), "switching away does not resend Symphony guidance");
             session.sessionReady = true;
             session.codexPreset = "";
-            session.currentSessionId = "github-session";
-            let initial = send("Edit a GitHub project");
-            check(initial[initial.length - 1].text === "Edit a GitHub project", "actual task follows standing context");
-            let github = policy(initial);
-            check(initial[0].text.startsWith("Standing preferences (context only"), "guidance is explicitly marked as context");
-            check(initial[initial.length - 1].text === "Edit a GitHub project", "user task follows standing preferences");
-            check(github && github.text.includes("all GitHub-related project work") && github.text.includes("automatically committing tested task-scoped changes locally"), "policy covers all GitHub projects");
-            check(github.text.includes("Do not push automatically") && github.text.includes("Push button in GitHub Settings") && !github.text.includes("automatically committing and pushing"), "commits stay local until explicitly published");
-            check(github.text.includes("sandbox_permissions=require_escalated") && github.text.includes("Never log out, delete credentials"), "network approval and credential guidance reaches the agent");
-            check(github.text.includes("Dweebo enables network access") && github.text.includes("Host or administrator restrictions"), "guidance reflects configured access and managed limits");
-            check(github.text.includes("preserve unrelated work") && github.text.includes("Never force-push"), "preserves work and approvals");
-            check(github.text.includes("~/rebos_enclosure first") && github.text.includes("git rev-parse --show-toplevel") && github.text.includes("git remote -v"), "checkout discovery reaches the agent");
-            check(github.text.includes("missing .git") && github.text.includes("recover any missed focused changes"), "copied installs require checkout discovery and source reconciliation");
-            check(send("Follow up").length === 1, "policy is sent only once per conversation");
-            let chat = session.chatEnvelope();
-            let state = session.bridgeState();
-            check(chat.instructionGithubSessionId === "github-session:checkout-discovery-v5" && state.instructionGithubSessionId === "github-session:checkout-discovery-v5", "delivery persists in chat and bridge state");
-            session.instructionGithubSessionId = "github-session:commit-only-v4"; // Previous policy version.
-            session.syntheticTransportWorks = false;
-            session.queuedPrompt = {text: "Offline", attachments: []};
-            session.dispatchQueuedPrompt();
-            check(session.instructionGithubSessionId === "github-session:commit-only-v4", "failed transport does not consume policy delivery");
-            session.syntheticTransportWorks = true;
-            let legacy = send("Continue an older chat");
-            check(legacy.length === 2 && policy(legacy), "older chats receive only the new policy");
-            check(send("Continue").length === 1, "older chat policy does not repeat");
+            session.currentSessionId = "quick-session";
+            let quick = session.codexPresets.find(item => item.id === "quick");
+            session.codexPreset = quick.id;
+            session.sessionConfigOptions = [
+                {id: "model", currentValue: quick.model},
+                {id: "reasoning_effort", currentValue: quick.effort}
+            ];
+            let initial = send("Hi");
+            check(initial.length === 2 && initial[1].text === "Hi" && compact(initial), "fresh Quick chat receives compact context before the task");
+            check(initial[0].text.startsWith("Standing preferences (context only"), "guidance is marked as context");
+            check(send("Follow up").length === 1, "shared context is sent once");
+            session.codexPreset = "";
+            const customPrompt = send("Use custom settings");
+            check(customPrompt.length === 2 && customPrompt[0].text.includes("No Dweebo profile is selected"), "custom settings retire earlier profile guidance");
+            session.codexPreset = quick.id;
+            const switched = send("Return to Quick");
+            check(switched.length === 2 && switched[0].text.includes("Selected profile: dweebo-Quick")
+                && !switched[0].text.includes("/skills/repository-work/"), "switch sends only new profile guidance");
+            const state = session.bridgeState();
+            check(session.chatEnvelope().instructionSessionId === "quick-session" && state.instructionSessionId === "quick-session", "delivery persists in chat and bridge state");
             session.handleBridgeLine(JSON.stringify({bridge: "attached", seq: 1, state: state}));
-            check(session.codexPreset === "coding", "custom checkpoints adopt the startup default");
-            session.codexPreset = ""; // Keep policy-only assertions independent of mode changes.
-            check(send("After bridge restoration").length === 1, "bridge restoration keeps policy delivery");
-            session.currentSessionId = "fresh-github-session";
-            check(policy(send("New chat")), "fresh conversations receive policy");
+            check(send("After bridge restoration").length === 1, "bridge restoration keeps delivery");
+
+            delete state.deliveredSharedInstructionVersion;
+            session.handleBridgeLine(JSON.stringify({bridge: "attached", seq: 2, state: state}));
+            const upgraded = send("Resume pre-upgrade chat");
+            check(upgraded.length === 2 && compact(upgraded)
+                && !upgraded[0].text.includes("Selected profile:"), "legacy chat receives updated shared instructions without repeating its profile");
+            check(session.chatEnvelope().deliveredSharedInstructionVersion === session.sharedInstructionVersion,
+                "shared instruction version is persisted");
+            check(send("After upgrade").length === 1, "shared instructions are upgraded only once");
+
+            session.currentSessionId = "fresh-session";
+            session.syntheticTransportWorks = false;
+            send("Offline");
+            check(session.instructionSessionId === "quick-session", "failed transport does not consume delivery");
+            session.syntheticTransportWorks = true;
+            check(compact(send("Try again")), "retry receives compact context");
             session.currentAgentId = "distill";
             session.distillPresetReady = true;
             session.distillNeedsChatGPT = false;
-            session.currentSessionId = "distill-github-session";
-            check(policy(send("Other backend")), "policy reaches other assistant backends");
-            check(send("Backend follow up").length === 1, "other backends do not repeat policy");
+            session.currentSessionId = "distill-session";
+            check(compact(send("Other backend")), "Distill receives compact context");
+            check(send("Backend follow up").length === 1, "Distill does not repeat shared context");
             session.currentAgentId = "free-code";
             session.currentSessionId = "free-model-policy-test";
             let freePrompt = send("Say hello");
@@ -130,13 +140,13 @@ ShellRoot {
             session.performSessionAction();
             let configuration = session.syntheticEnvelope.params;
             check(configuration.systemPrompt.mode === "append", "free backend receives standing instructions separately");
-            check(policy(configuration.systemPrompt.content), "free system prompt retains GitHub policy");
+            check(compact([{text: configuration.systemPrompt.content.map(item => item.text).join("\n")}]), "free system prompt routes task-specific procedures");
             session.currentAgentId = "google";
             let google = session.findAgent("google");
             check(google && google.command[2].includes("google_agent.py"), "Google backend is registered");
             check(session.chooseAuthMethod({authMethods: [{id: "oauth-personal"}, {id: "gemini-api-key"}]}) === "gemini-api-key", "Google authenticates with its API key");
             check(session.chooseAuthMethod({authMethods: [{id: "oauth-personal"}]}) === "", "Google never falls back to personal OAuth");
-            console.log("PASS GitHub policy delivery, restoration, retries and multiple backends");
+            console.log("PASS compact context, profile switches, restoration and retries");
             Qt.quit();
         }
     }
@@ -144,9 +154,9 @@ ShellRoot {
 '''
 
 @unittest.skipUnless(shutil.which("qs"), "Quickshell required")
-class AssistantGithubWorkflowTest(unittest.TestCase):
-    def test_policy_delivery(self):
-        with tempfile.TemporaryDirectory(prefix="ai-github-workflow-") as temporary:
+class AssistantInstructionsTest(unittest.TestCase):
+    def test_prompt_delivery(self):
+        with tempfile.TemporaryDirectory(prefix="ai-instructions-") as temporary:
             base = Path(temporary)
             package = base / "package"
             shutil.copytree(Path(__file__).parent / "fixtures/ai_sidebar", package)
@@ -175,17 +185,23 @@ class AssistantGithubWorkflowTest(unittest.TestCase):
 """ + source[end:]
             service.write_text(source)
             (package / "shell.qml").write_text(SCENARIO)
+            chats = base / "chats"
+            chats.mkdir()
+            (chats / "custom.json").write_text(
+                '{"version":2,"protocol":"acp","agentId":"codex","sessionId":"saved-custom","codexPreset":"","messages":[]}'
+            )
             runtime = base / "runtime"
             runtime.mkdir(mode=0o700)
             environment = dict(os.environ, QT_QPA_PLATFORM="offscreen", QT_QPA_PLATFORMTHEME="",
-                               XDG_RUNTIME_DIR=str(runtime), XDG_CACHE_HOME=str(base / "cache"))
+                               XDG_RUNTIME_DIR=str(runtime), XDG_CACHE_HOME=str(base / "cache"),
+                               DWEEBO_TEST_CHAT_DIR=str(chats))
             result = subprocess.run(["qs", "-p", str(package), "--no-color"], env=environment,
                                     capture_output=True, text=True, timeout=8)
             output = result.stdout + result.stderr
             self.assertEqual(result.returncode, 0, output[-4000:])
             self.assertNotIn("FAIL", output)
             self.assertNotIn("TypeError", output)
-            self.assertIn("PASS GitHub policy delivery, restoration, retries and multiple backends", output)
+            self.assertIn("PASS compact context, profile switches, restoration and retries", output)
 
 if __name__ == "__main__":
     unittest.main()

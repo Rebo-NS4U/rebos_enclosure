@@ -58,7 +58,7 @@ def private_session(root):
         command('pactl', 'load-module', 'module-null-sink', 'sink_name=eq_test')
         command('pactl', 'set-default-sink', 'eq_test')
         equalizer = Equalizer()
-        for preset in ('Flat', 'Bass'):
+        for preset in ('Flat', 'Bass', 'Bass Extreme'):
             equalizer.configure({'enabled': True, 'gains': PRESETS[preset], 'preset':preset})
             equalizer.tick()
             assert not equalizer.error, equalizer.error

@@ -149,7 +149,7 @@ Column {
                                 }
                             }
                         }
-                        TextField {
+                        ThemeTextField {
                             id: answer
                             objectName: "questionInput_" + field.modelData.key
                             Layout.fillWidth: true
@@ -157,19 +157,8 @@ Column {
                             enabled: root.session.bridgeAttached
                             text: field.value === undefined ? "" : String(field.value)
                             placeholderText: field.modelData.required ? "Your answer…" : "Optional answer…"
-                            placeholderTextColor: Colors.outline
-                            color: Colors.overSurface
                             echoMode: field.modelData.secret ? TextInput.Password : TextInput.Normal
-                            selectByMouse: true
-                            font.family: Config.theme.font
-                            font.pixelSize: Styling.fontSize(-1)
                             onTextEdited: root.session.setQuestionAnswer(card.request.requestId, field.modelData.key, text)
-                            background: StyledRect {
-                                variant: "common"
-                                radius: Styling.radius(4)
-                                border.width: 1
-                                border.color: Qt.alpha(Colors.primary, answer.activeFocus ? 0.6 : 0.2)
-                            }
                         }
                     }
                 }

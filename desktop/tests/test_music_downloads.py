@@ -12,6 +12,29 @@ import unittest
 SERVICE = Path(__file__).resolve().parents[2] / 'system/apps/shell/scripts/music_downloads/service.py'
 
 class Downloads(unittest.TestCase):
+    def test_sync_publication_validates_and_keeps_audio(self):
+        spec = importlib.util.spec_from_file_location('download_commands', SERVICE.parent/'commands.py')
+        commands = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(commands)
+        with tempfile.TemporaryDirectory() as directory:
+            folder = Path(directory)
+            commands.remember_playlist_source(folder, 'https://open.spotify.com/playlist/'+'a'*22)
+            audio = folder/'old.ogg'
+            audio.write_bytes(b'audio')
+            result = folder/'result.spotdl'
+            result.write_text(json.dumps([dict(song_id='b'*22, name='Song', artist='Artist')]))
+            commands.publish_playlist(folder, result)
+            metadata = folder/'.enclosure-playlist.json'
+            before = metadata.read_text()
+            result.write_text('[{}]')
+            with self.assertRaises(ValueError):
+                commands.publish_playlist(folder, result)
+            self.assertEqual(metadata.read_text(), before)
+            result.write_text('[]')
+            commands.publish_playlist(folder, result)
+            self.assertEqual(json.loads(metadata.read_text())['tracks'], [])
+            self.assertEqual(audio.read_bytes(), b'audio')
+
     def test_cookie_selection_persists_and_clear_forgets(self):
         with tempfile.TemporaryDirectory() as directory:
             home = Path(directory)

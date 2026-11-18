@@ -28,11 +28,13 @@ ColumnLayout {
         MetricAction { text: "Close window"; onClicked: SystemResources.controlWindow("close") }
         MetricAction {
             text: "Terminate"
+            danger: true
             enabled: !!root.processData.start
             onClicked: SystemResources.controlWindow("terminate")
         }
         MetricAction {
             text: "Force kill"
+            danger: true
             enabled: !!root.processData.start
             onClicked: SystemResources.controlWindow("kill")
         }

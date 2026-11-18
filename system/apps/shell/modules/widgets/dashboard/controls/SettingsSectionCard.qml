@@ -15,8 +15,8 @@ Button {
     property bool selected: false
     Layout.fillWidth: true
     Layout.minimumWidth: 0
-    implicitHeight: Math.max(80, contentItem.implicitHeight + padding * 2)
-    padding: 16
+    implicitHeight: Math.max(Styling.spacing(80), contentItem.implicitHeight + padding * 2)
+    padding: Styling.spacing(16)
     hoverEnabled: true
     background: StyledRect {
         variant: root.hovered || root.down ? "focus" : "common"
@@ -25,20 +25,28 @@ Button {
         border.color: root.activeFocus || root.selected ? Colors.primary : Qt.alpha(Colors.outline, 0.3)
     }
     contentItem: RowLayout {
-        spacing: 16
-        StyledText {
+        spacing: Styling.spacing(12)
+        StyledRect {
+            id: iconTile
             visible: root.glyph.length > 0
-            text: root.glyph
-            font.family: Icons.font
-            font.pixelSize: Styling.fontSize(6)
-            color: Colors.primary
+            Layout.preferredWidth: Styling.spacing(36)
+            Layout.preferredHeight: Styling.spacing(36)
+            variant: root.selected ? "primary" : "oversecondary"
+            StyledText {
+                anchors.centerIn: parent
+                text: root.glyph
+                color: iconTile.itemColor
+                font.family: Icons.font
+                font.pixelSize: Styling.fontSize(5)
+            }
         }
         ColumnLayout {
             Layout.fillWidth: true
-            spacing: 6
+            spacing: Styling.spacing(6)
             StyledText {
                 Layout.fillWidth: true
                 text: root.text
+                color: root.background.itemColor
                 font.bold: true
                 wrapMode: Text.WordWrap
             }

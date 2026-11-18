@@ -10,6 +10,17 @@ sys.path.insert(0, str(SCRIPTS))
 from apply_desktop_palette import apply_niri_theme
 
 class ThemeRadiusTests(unittest.TestCase):
+    def test_spotify_stays_opaque_with_transparent_theme(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary)
+            apply_niri_theme(dict(primary='#112233', secondary='#223344',
+                                 outlineVariant='#334455', opacity=0.68), home)
+            rules = (home / '.cache/rebos_shell/niri-colors.kdl').read_text()
+            spotify = next(block for block in rules.split('window-rule {') if 'Spotify' in block)
+            self.assertIn('opacity 1.0', spotify)
+            self.assertNotIn('dolphin', spotify)
+            self.assertIn('opacity 0.68', rules)
+
     def test_generated_window_and_popup_corners_follow_theme(self):
         with tempfile.TemporaryDirectory() as temporary:
             home = Path(temporary)
@@ -52,6 +63,7 @@ ShellRoot {
   return null;
  }
  Window { visible: true; width: 300; height: 240
+  StyledRect { id: orbitalPane; width: 256; height: 129; variant: "pane"; styleOverride: "orbital"; radius: 16 }
   Grid { columns: 3; spacing: 2
    Repeater { id: cards
     model: ["glass-vault","radar-station","suspended-film","monolith","blueprint","terminal-hardware","frosted","colorful","clear-glass","canopy","orbital","metropolis"]
@@ -65,6 +77,13 @@ ShellRoot {
   onTriggered: {
    const values = [0,16,40,100];
    if (step === values.length) { Qt.quit(); return; }
+   if (step === 1) {
+    const ctx = decoration(orbitalPane).getContext("2d");
+    const interiorStar = ctx.getImageData(41, 23, 1, 1).data[3];
+    const clippedCross = ctx.getImageData(204, 124, 1, 1).data[3];
+    if (!(interiorStar > 0) || clippedCross !== 0)
+     console.error("THEME_RADIUS_FAILED orbital pane star clipping", interiorStar, clippedCross);
+   }
    const expected = values[step++];
    Config.theme.roundness = expected;
    Qt.callLater(() => {
