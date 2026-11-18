@@ -86,12 +86,12 @@ ShellRoot {
   }
   travelCheck.startX = marks[0].x;
   const track = horizontal.children[0].children[0].children.find(item => item.segmentCount > 0);
-  travelCheck.segmentHeights = track.children.filter(item => item.wave !== undefined).map(item => item.height);
+  travelCheck.segmentCenters = track.children.filter(item => item.wave !== undefined).map(item => item.y + item.height / 2);
   travelCheck.start();
  }}
  Timer { id: travelCheck; interval: 120
   property real startX: 0
-  property var segmentHeights: []
+  property var segmentCenters: []
   onTriggered: {
    const fill = rail.children.find(child => child.objectName === 'standard-progress-fill');
    const mark = fill.children.find(child => child.objectName === 'standard-progress-mark');
@@ -105,10 +105,10 @@ ShellRoot {
    const last = segments[segments.length - 1];
    if (track.value !== 0.8 || verticalTrack.value !== 0.6 || verticalTrack.energy < 0.95
        || first.children[0].width !== first.width || last.children[0].width !== 0
-       || !segments.slice(0, 3).some((segment, index) => Math.abs(segment.height - segmentHeights[index]) > 0.1)
+       || !segments.slice(0, 3).some((segment, index) => Math.abs(segment.y + segment.height / 2 - segmentCenters[index]) > 0.1)
        || !segments.slice(-3).some((segment, index) =>
-           Math.abs(segment.height - segmentHeights[segments.length - 3 + index]) > 0.1)) {
-    console.error('Dragging animates both the filled and unfilled ends of the track'); Qt.exit(1); return;
+           Math.abs(segment.y + segment.height / 2 - segmentCenters[segments.length - 3 + index]) > 0.1)) {
+    console.error('Dragging moves segments at both ends of the track'); Qt.exit(1); return;
    }
    horizontal.value = horizontal.dragPosition;
    horizontal.isDragging = false;
@@ -133,7 +133,15 @@ ShellRoot {
   const segments = themedTrack.children.filter(item => item.wave !== undefined);
   const origin = segments[4];
   themed.value = (origin.x + origin.width / 2) / themedTrack.width;
+  themedTrack.energy = 1;
+  themedTrack.phase = -Math.PI / 2;
+  if (origin.y + origin.height / 2 < themedTrack.height / 2 + 4) {
+   console.error('The trough dips below the rail center'); Qt.exit(1); return;
+  }
   themedTrack.phase = Math.PI / 2;
+  if (origin.y + origin.height / 2 > themedTrack.height / 2 - 4) {
+   console.error('The crest rises above the rail center'); Qt.exit(1); return;
+  }
   if (Math.abs(origin.wave - 1) > 0.001) {
    console.error('The crest starts at the off-center handle'); Qt.exit(1); return;
   }

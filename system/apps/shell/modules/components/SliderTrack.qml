@@ -51,7 +51,7 @@ Item {
             readonly property real distanceFromHandle: Math.abs(x + width / 2 - root.filledLength)
             readonly property real wave: Math.sin(root.phase - 2 * Math.PI * distanceFromHandle / Math.max(1, root.width))
             x: index * root.pitch
-            y: (root.height - height) / 2 - root.energy * wave
+            y: (root.height - height) / 2 - 5 * root.energy * wave
             width: Math.max(0, root.pitch - Math.min(3, root.pitch / 3))
             height: 6 + root.energy * (2.5 + 2 * wave)
             radius: Math.min(width, height) / 2
