@@ -147,6 +147,17 @@ ShellRoot {
   if (themedTrack.energy !== 0 || themedTrack.value !== 0.25 || track.energy !== 0 || track.children[0].height !== 6) {
    console.error('Motion off applies value changes immediately and keeps the track still'); Qt.exit(1); return;
   }
+  themed.value = 0.75;
+  themedTrack.energy = 1;
+  const playbackSegments = themedTrack.children.filter(item => item.wave !== undefined);
+  const first = playbackSegments[0];
+  const distance = themedTrack.filledLength - first.x - first.width / 2;
+  themedTrack.phase = Math.PI / 2 + 2 * Math.PI * distance / 64;
+  if (first.wave < 0.95 || playbackSegments.some(item => item.x + item.width > themedTrack.filledLength && item.wave !== 0)) {
+   console.error('Playback ripples across the filled track and stops at the thumb'); Qt.exit(1); return;
+  }
+  themed.playing = false;
+  themedTrack.energy = 0;
   const segments = themedTrack.children.filter(item => item.wave !== undefined);
   const origin = segments[9];
   themed.value = (origin.x + origin.width / 2) / themedTrack.width;

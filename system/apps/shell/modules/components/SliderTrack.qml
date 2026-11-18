@@ -19,12 +19,20 @@ Item {
     property real energy: Motion.enabled && visible && enabled
         ? (pressed ? 1 : playing ? 0.65 : 0) : 0
     property real phase: 0
+    // Keep the playback shape while its energy fades after a pause.
+    property bool playbackRipple: false
+    onPlayingChanged: if (playing) playbackRipple = true
+    onPressedChanged: if (pressed && !playing) playbackRipple = false
+    onEnergyChanged: if (energy === 0 && !playing) playbackRipple = false
 
     function waveAt(position: real): real {
-        const distance = Math.abs(position - filledLength);
-        // Hold the thumb on the centerline and fade out toward the ends of the ripple.
+        const offset = filledLength - position;
+        if (playbackRipple && offset <= 0)
+            return 0;
+        const distance = Math.abs(offset);
+        // Keep the segments nearest the thumb on the centerline.
         const innerFade = Math.max(0, Math.min(1, (distance - pitch * 0.75) / Math.max(1, pitch)));
-        const outerFade = Math.max(0, 1 - distance / rippleReach);
+        const outerFade = playbackRipple ? 1 : Math.max(0, 1 - distance / rippleReach);
         return innerFade * outerFade * Math.sin(phase - 2 * Math.PI * distance / rippleReach);
     }
 
