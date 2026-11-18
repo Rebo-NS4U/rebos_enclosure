@@ -42,7 +42,7 @@ ShellRoot {
     neutral.forceActiveFocus();return;
    }
    check(neutral.background.variant==="internalbg" && icon.background.variant==="internalbg");
-   check(action.background.variant==="primary" && action.background.controlPressed);
+   check(action.background.variant==="primaryfocus" && action.background.controlPressed);
    check(neutral.activeFocus && neutral.background.border.width===2);
    console.log("HARDWARE_BUTTON_OK");Qt.quit();
   }

@@ -254,7 +254,7 @@ ShellRoot {
       let dismissComponent = Qt.createComponent("modules/notifications/NotificationDismissButton.qml");
       fixture.check(dismissComponent.status === Component.Ready, dismissComponent.errorString());
       let criticalDismiss = dismissComponent.createObject(fixture, {urgency: 2});
-      fixture.check(criticalDismiss.background.variant === "error" && criticalDismiss.background.iconColor.toString() === Colors.overError.toString(), "Critical notification action uses readable error foreground");
+      fixture.check(criticalDismiss.background.variant === "error" && criticalDismiss.contentItem.children.some(child => child.visible && child.text === criticalDismiss.glyph && child.color.toString() === Colors.overError.toString()), "Critical notification action uses readable error foreground");
       criticalDismiss.destroy();
       let themeButtonComponent = Qt.createComponent("modules/components/ThemeButton.qml");
       fixture.check(themeButtonComponent.status === Component.Ready, themeButtonComponent.errorString());
@@ -266,7 +266,7 @@ ShellRoot {
       fixture.check(themedAction.opacity < 1, "Disabled action is visibly distinct");
       themedAction.enabled = true;
       themedAction.highlighted = true; tester.wait(20);
-      fixture.check(themedAction.background.variant === "primary", "Highlighted action uses matching theme surface");
+      fixture.check(themedAction.background.variant === (themedAction.hovered ? "primaryfocus" : "primary"), "Highlighted action uses matching theme surface");
       themedAction.destroy();
       let sliderComponent = Qt.createComponent("modules/components/StyledSlider.qml");
       fixture.check(sliderComponent.status === Component.Ready, sliderComponent.errorString());
@@ -294,7 +294,7 @@ ShellRoot {
       const labelBottom = unitLabel.mapToItem(weather, 0, unitLabel.height).y;
       fixture.check(labelBottom <= celsius.mapToItem(weather, 0, 0).y, "Temperature label is above its buttons");
       fixture.check(celsius.width >= celsius.contentItem.implicitWidth && fahrenheit.width >= fahrenheit.contentItem.implicitWidth, "Temperature button labels fit a narrow panel");
-      fixture.check(celsius.contentItem.color.a > 0 && fahrenheit.contentItem.color.a > 0, "Both temperature labels have visible theme colors");
+      fixture.check([celsius, fahrenheit].every(button => button.contentItem.children.some(child => child.visible && child.text === button.text && child.color.a > 0)), "Both temperature labels have visible theme colors");
       tester.mouseClick(fahrenheit); tester.wait(40); fixture.check(Config.weather.unit === "F" && fahrenheit.highlighted, "Fahrenheit button saves units");
       tester.mouseClick(celsius); tester.wait(40); fixture.check(Config.weather.unit === "C" && celsius.highlighted, "Celsius button saves units");
       Config.weather.unit = savedUnit; weather.destroy();

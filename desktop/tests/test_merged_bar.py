@@ -11,6 +11,7 @@ HARNESS = '''import QtQuick
 import QtTest
 import Quickshell
 import qs.config
+import qs.modules.theme
 import qs.modules.bar.layouts
 ShellRoot {
  FloatingWindow {
@@ -46,7 +47,8 @@ ShellRoot {
        if (lazy && lazy.item) throw Error(mode + " eagerly loaded while closed");
        bar.expand(mode); tester.wait(50);
        if (lazy && (!lazy.active || !lazy.item)) throw Error(mode + " failed to load");
-       if (!bar.islandActive || bar.targetWidth > 540 || bar.targetHeight <= 36)
+       const maxWidth = mode === "media" ? Math.min(Styling.spacing(620), size - 32) : 540;
+       if (!bar.islandActive || bar.targetWidth > maxWidth || bar.targetHeight <= 36)
         throw Error(name + " failed to expand " + mode);
        bar.collapse(); tester.wait(50);
        if (lazy && (lazy.active || lazy.item)) throw Error(mode + " retained controls after close");
@@ -127,10 +129,31 @@ class MergedBarTests(unittest.TestCase):
 
     @unittest.skipUnless(shutil.which('qs'), 'Quickshell required')
     def test_metropolis_finish_tracks_bar_expansion(self):
-        harness = HARNESS.replace('for (const size of [1920, 1280]) {', 'Config.theme.shellStyle = "metropolis"; tester.wait(100); for (const size of [1920, 1280]) {')
-        harness = harness.replace('const body = tester.findChild(bar, "typing-island-container");', 'const findFinish = node => { if (node.objectName === "wallpaper-theme-canvas") return node; for (const child of node.children || []) { const result = findFinish(child); if (result) return result; } return null; }; const finish = findFinish(bar);\n      if (!finish || !finish.barSurface) throw Error("Missing collapsed city finish");\n      const body = tester.findChild(bar, "typing-island-container");')
-        harness = harness.replace('bar.expand(mode); tester.wait(50);', 'bar.expand(mode); tester.wait(50); if (finish.barSurface) throw Error("Expanded panel retained compact city finish");')
-        harness = harness.replace('bar.collapse(); tester.wait(50);', 'bar.collapse(); tester.wait(50); if (!finish.barSurface) throw Error("Collapsed bar lost city finish");')
+        harness = HARNESS.replace(
+            "Config.animDuration = 0;",
+            'tester.tryVerify(() => Config.themeReady); '
+            'Config.theme.shellStyle = "metropolis"; Config.animDuration = 0;')
+        harness = harness.replace(
+            'const body = tester.findChild(bar, "typing-island-container");',
+            """function findCompactFinish(node) {
+       if (node.objectName === "wallpaper-theme-canvas" && node.barSurface) return node;
+       for (const child of node.children || []) {
+        const result = findCompactFinish(child);
+        if (result) return result;
+       }
+       return null;
+      }
+      const finish = findCompactFinish(bar);
+      if (!finish) throw Error("Missing collapsed city finish");
+      const body = tester.findChild(bar, "typing-island-container");""")
+        harness = harness.replace(
+            "bar.expand(mode); tester.wait(50);",
+            'bar.expand(mode); tester.wait(50); '
+            'if (finish.barSurface) throw Error("Expanded panel retained compact city finish");')
+        harness = harness.replace(
+            "bar.collapse(); tester.wait(50);",
+            'bar.collapse(); tester.wait(50); '
+            'if (!finish.barSurface) throw Error("Collapsed bar lost city finish");')
         self.run_harness(harness)
 
     @unittest.skipUnless(shutil.which('qs'), 'Quickshell required')

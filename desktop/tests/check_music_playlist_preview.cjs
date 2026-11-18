@@ -2,8 +2,7 @@
 const fs = require('node:fs');
 const vm = require('node:vm');
 const assert = require('node:assert/strict');
-const source = fs.readFileSync('system/apps/shell/scripts/lyrics_plus_extension.js', 'utf8')
-    .split('// Daily Mix metadata only.')[1];
+const source = fs.readFileSync('system/apps/shell/scripts/lyrics_plus_extension.js', 'utf8');
 const uri = 'spotify:playlist:' + 'c'.repeat(22);
 const track = {track: {uri: 'spotify:track:' + 'b'.repeat(22), name: 'Song', artists: [{name: 'Artist'}]}};
 const intervals = [], posts = [], offsets = [];
@@ -30,7 +29,7 @@ const context = {
     }
 };
 (async () => {
-    vm.runInNewContext('//' + source, context);
+    vm.runInNewContext(source, context);
     await new Promise(resolve => setImmediate(resolve));
     const poll = intervals.find(t => t.ms === 5000).fn;
     await poll();

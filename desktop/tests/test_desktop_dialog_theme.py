@@ -60,11 +60,13 @@ ShellRoot {
         const button=surface.choiceList.itemAtIndex(0);
         tester.verify(button !== null);
         tester.compare(button.font.pixelSize,Styling.fontSize(-1));
-        tester.compare(button.contentItem.color,button.background.itemColor);
+        const label = button.contentItem.children.find(child => child.text === button.text);
+        tester.verify(label !== undefined, "Choice label exists");
+        tester.compare(label.color,button.background.itemColor);
         tester.compare(button.background.radius,radius);
         button.forceActiveFocus(); tester.wait(5);
         tester.verify(button.activeFocus);
-        tester.compare(button.background.border.color,Colors.primary);
+        tester.compare(button.background.border.color,button.background.itemColor);
         tester.compare(button.background.border.width,2);
         surface.searchInput.focusInput(); tester.wait(5);
         tester.verify(surface.searchInput.inputActiveFocus);

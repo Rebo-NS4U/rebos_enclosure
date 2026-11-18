@@ -2,7 +2,7 @@
 const fs = require('node:fs');
 const vm = require('node:vm');
 const assert = require('node:assert/strict');
-const source = fs.readFileSync('system/apps/shell/scripts/lyrics_plus_extension.js', 'utf8').split('// Daily Mix metadata only.')[1];
+const source = fs.readFileSync('system/apps/shell/scripts/lyrics_plus_extension.js', 'utf8');
 let now = 3600000, calls = 0, command = '', posts = [];
 const intervals = [];
 const settle = () => new Promise(resolve => setImmediate(resolve));
@@ -27,7 +27,7 @@ const context = {
     }
 };
 (async () => {
-    vm.runInNewContext("//" + source, context);
+    vm.runInNewContext(source, context);
     await settle(); assert.equal(calls, 1);
     const scheduled = intervals.find(t => t.ms === 60000).fn;
     now += 3599999; await scheduled(); assert.equal(calls, 1);
