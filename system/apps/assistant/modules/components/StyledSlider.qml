@@ -64,9 +64,9 @@ Item {
 
     property real animatedProgress: progressRatio
     Behavior on animatedProgress {
-        enabled: root.smoothDrag && Config.animDuration > 0
+        enabled: root.smoothDrag && Motion.enabled
         NumberAnimation {
-            duration: Motion.feedback
+            duration: root.isDragging ? Motion.press : Motion.feedback
             easing.type: Motion.feedbackCurve
         }
     }
@@ -133,14 +133,14 @@ Item {
                 color: Colors.overBackground
                 z: 2
                 Behavior on width {
-                    enabled: root.smoothDrag
+                    enabled: root.smoothDrag && Motion.enabled
                     NumberAnimation {
                         duration: Motion.feedback
                         easing.type: Motion.feedbackCurve
                     }
                 }
                 Behavior on height {
-                    enabled: root.smoothDrag
+                    enabled: root.smoothDrag && Motion.enabled
                     NumberAnimation {
                         duration: Motion.feedback
                         easing.type: Motion.feedbackCurve
@@ -152,7 +152,8 @@ Item {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
-                height: 2
+                slider: true
+                pressed: root.isDragging
                 value: root.animatedProgress
                 activeColor: root.progressColor
             }
@@ -199,14 +200,14 @@ Item {
                 color: iconColor
                 z: 2
                 Behavior on width {
-                    enabled: root.smoothDrag
+                    enabled: root.smoothDrag && Motion.enabled
                     NumberAnimation {
                         duration: Motion.feedback
                         easing.type: Motion.feedbackCurve
                     }
                 }
                 Behavior on height {
-                    enabled: root.smoothDrag
+                    enabled: root.smoothDrag && Motion.enabled
                     NumberAnimation {
                         duration: Motion.feedback
                         easing.type: Motion.feedbackCurve
@@ -217,7 +218,8 @@ Item {
             StandardProgressBar {
                 anchors.centerIn: parent
                 width: parent.height
-                height: 2
+                slider: true
+                pressed: root.isDragging
                 rotation: -90
                 value: root.animatedProgress
                 activeColor: root.progressColor
