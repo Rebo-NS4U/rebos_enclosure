@@ -10,10 +10,16 @@ import music_library
 
 
 class SpotifyStartupTests(unittest.TestCase):
+    def setUp(self):
+        hide = patch.object(music_spotify, "hide_window", return_value=True)
+        self.hide = hide.start()
+        self.addCleanup(hide.stop)
+
     def test_running_player_is_never_launched_or_raised(self):
         with patch.object(music_spotify, 'running', return_value=True), patch.object(music_spotify.subprocess, 'Popen') as launch:
             music_spotify.ensure_started()
             launch.assert_not_called()
+            self.hide.assert_called_once()
 
     def test_cold_launch_waits_for_player(self):
         with patch.object(music_spotify, 'running', side_effect=[False, False, True]), patch.object(music_spotify.shutil, 'which', return_value='/fixture'), patch.object(music_spotify.subprocess, 'Popen') as launch, patch.object(music_spotify.time, 'sleep') as sleep:
@@ -44,6 +50,33 @@ class SpotifyStartupTests(unittest.TestCase):
     def test_opening_music_does_not_launch_spotify(self):
         script = Path(music_library.__file__).with_name('open_music.sh').read_text()
         self.assertNotIn('spotify', script.lower())
+
+
+class SpotifyTrayTests(unittest.TestCase):
+    def test_only_visible_minimize_action_is_clicked(self):
+        from types import SimpleNamespace
+        for hidden in (False, True):
+            properties = "'label': <'Minimize to Tray'>"
+            if hidden:
+                properties += ", 'visible': <false>"
+            outputs = [
+                "(<[':1.99/org/ayatana/NotificationItem/spotify_client']>,)",
+                "(<objectpath '/Menu'>,)",
+                "(uint32 2, (0, {}, [<(2, {" + properties + "}, @av [])>, <(5, {'label': <'Exit'>}, @av [])>]))",
+                "()",
+            ]
+            with self.subTest(hidden=hidden), patch.object(
+                    music_spotify.subprocess, 'run',
+                    side_effect=[SimpleNamespace(stdout=value) for value in outputs]) as run:
+                self.assertEqual(music_spotify.hide_window(), not hidden)
+                self.assertEqual(run.call_count, 3 if hidden else 4)
+                if not hidden:
+                    self.assertEqual(run.call_args.args[0][-4:],
+                                     ['2', 'clicked', '<int32 0>', '0'])
+
+    def test_missing_tray_does_not_break_playback(self):
+        with patch.object(music_spotify.subprocess, 'run', side_effect=OSError):
+            self.assertFalse(music_spotify.hide_window())
 
 
 if __name__ == '__main__':

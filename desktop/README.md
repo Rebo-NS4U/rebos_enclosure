@@ -600,3 +600,5 @@ The bonsai glass enclosure is flat and front-facing, with a low charcoal base di
 The integrated Sound settings include an optional ten-band output equalizer with Music, Speech, Movies, Gaming, Bass and Treble presets. See [audio equalizer](../docs/AUDIO-EQUALIZER.md) for routing, bypass and verification.
 
 Music navigation uses Songs, Albums, Artists, Favorites, Playlists, Spotify playlists, Downloads and Now playing. Albums is the initial view. Playlists includes downloaded mixes with their source labels; Spotify playlists contains a Previews mode for imported playlist previews.
+
+Spotify features reuse the running client and minimize its window through its tray menu, keeping playback active without a dedicated workspace. Use the Spotify tray menu to show the client again for sign-in or settings. If the tray is unavailable, Music leaves the client running.
