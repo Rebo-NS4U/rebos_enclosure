@@ -30,7 +30,11 @@ ShellRoot {
    const fill = rail.children.find(child => child.objectName === 'standard-progress-fill');
    check(!fill.gradient && Qt.colorEqual(fill.color, rail.activeColor), 'Rail has a solid active fill');
    check(fill.width === 100, 'Half progress must fill half the rail');
-   rail.value = -1; check(fill.width === 0, 'Negative values clamp');
+   const tip = fill.children.find(child => child.objectName === 'standard-progress-tip');
+   check(tip.width === 4 && tip.x + tip.width === fill.width, 'Solid tip follows the filled edge');
+   check(!tip.gradient && Qt.colorEqual(tip.color, rail.foregroundColor), 'Tip uses the foreground color');
+   rail.value = 0.005; check(tip.width === fill.width, 'Tip fits short fills');
+   rail.value = -1; check(fill.width === 0 && tip.width === 0, 'Negative values clamp');
    rail.value = 2; check(fill.width === 200, 'Overflow values clamp');
    rail.value = NaN; check(fill.width === 0, 'Nonfinite values are safe');
    for (const slider of [horizontal, vertical, themed]) {

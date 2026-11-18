@@ -13,12 +13,37 @@ Rectangle {
     implicitHeight: 2
     radius: height / 2
     color: Qt.alpha(activeColor, 0.10)
+    // Two translucent bands give the filled rail a soft edge.
     Rectangle {
+        anchors.verticalCenter: parent.verticalCenter
+        width: progressFill.width
+        height: parent.height + 6
+        radius: height / 2
+        color: Qt.alpha(root.activeColor, 0.07)
+    }
+    Rectangle {
+        anchors.verticalCenter: parent.verticalCenter
+        width: progressFill.width
+        height: parent.height + 2
+        radius: height / 2
+        color: Qt.alpha(root.activeColor, 0.18)
+    }
+    Rectangle {
+        id: progressFill
         objectName: root.fillObjectName
         width: parent.width * root.normalizedValue
         height: parent.height
         radius: parent.radius
         color: root.activeColor
+
+        Rectangle {
+            objectName: "standard-progress-tip"
+            anchors.right: parent.right
+            width: Math.min(parent.width, parent.height * 2)
+            height: parent.height
+            radius: parent.radius
+            color: root.foregroundColor
+        }
     }
     Repeater {
         model: 3
