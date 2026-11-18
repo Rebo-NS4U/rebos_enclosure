@@ -122,9 +122,9 @@ ShellRoot {
    if (track.value !== 0.8 || verticalTrack.value !== 0.6 || verticalTrack.energy < 0.95
        || first.children[0].width !== first.width || last.children[0].width !== 0
        || segments.some(segment => segment.height !== 6 || Math.abs(segment.y + segment.height / 2 - track.height / 2) > 1.5)
-       || segments.some(segment => Math.abs(segment.x + segment.width / 2 - track.filledLength) >= 64 && segment.wave !== 0)
+       || segments.some(segment => segment.x + segment.width > track.filledLength && segment.wave !== 0)
        || !segments.some((segment, index) => Math.abs(segment.y + segment.height / 2 - segmentCenters[index]) > 0.05)) {
-    console.error('Dragging creates a shallow, localized ripple with fixed track thickness'); Qt.exit(1); return;
+    console.error('Dragging creates a shallow ripple only on the filled track'); Qt.exit(1); return;
    }
    horizontal.value = horizontal.dragPosition;
    horizontal.isDragging = false;
@@ -148,33 +148,6 @@ ShellRoot {
    console.error('Motion off applies value changes immediately and keeps the track still'); Qt.exit(1); return;
   }
   themed.value = 0.75;
-  themedTrack.energy = 1;
-  const playbackSegments = themedTrack.children.filter(item => item.wave !== undefined);
-  const first = playbackSegments[0];
-  const distance = themedTrack.filledLength - first.x - first.width / 2;
-  themedTrack.phase = Math.PI / 2 + 2 * Math.PI * distance / 64;
-  if (first.wave < 0.95 || playbackSegments.some(item => item.x + item.width > themedTrack.filledLength && item.wave !== 0)) {
-   console.error('Playback ripples across the filled track and stops at the thumb'); Qt.exit(1); return;
-  }
-  themed.playing = false;
-  themedTrack.energy = 0;
-  const segments = themedTrack.children.filter(item => item.wave !== undefined);
-  const origin = segments[9];
-  themed.value = (origin.x + origin.width / 2) / themedTrack.width;
-  themedTrack.energy = 1;
-  const phaseOffset = 2 * Math.PI * 2 * themedTrack.pitch / 64;
-  themedTrack.phase = -Math.PI / 2 + phaseOffset;
-  if (segments[7].wave >= -0.3 || segments[11].wave >= -0.3) {
-   console.error('The trough dips on both sides near the thumb'); Qt.exit(1); return;
-  }
-  themedTrack.phase += Math.PI;
-  if (segments[7].wave <= 0.3 || segments[11].wave <= 0.3 || segments[0].wave !== 0 || segments[18].wave !== 0) {
-   console.error('The crest rises near the thumb and the distant track stays flat'); Qt.exit(1); return;
-  }
-  themedTrack.phase = Math.PI / 2 + 2 * Math.PI * 6 * themedTrack.pitch / 64;
-  if (segments[15].wave < 0.15) {
-   console.error('The ripple reaches past the previous 40-pixel limit'); Qt.exit(1); return;
-  }
   const verticalTrack = vertical.children[1].children[0].children.find(item => item.segmentCount > 0);
   for (const [rail, thumb] of [
    [track, track.parent.children[0]],
@@ -182,8 +155,14 @@ ShellRoot {
    ...[themed, themedVertical, themedMirrored].map(slider => [slider.background.children[0], slider.handle])
   ]) {
    rail.energy = 1;
-   const nearest = rail.children.filter(item => item.wave !== undefined)
-    .reduce((best, item) => Math.abs(item.x + item.width / 2 - rail.filledLength)
+   const segments = rail.children.filter(item => item.wave !== undefined);
+   const first = segments[0];
+   const distance = rail.filledLength - first.x - first.width / 2;
+   rail.phase = Math.PI / 2 + 2 * Math.PI * distance / rail.rippleWavelength;
+   if (first.wave < 0.95 || segments.some(item => item.x + item.width > rail.filledLength && item.wave !== 0)) {
+    console.error('The ripple runs through the filled track and stops at the thumb'); Qt.exit(1); return;
+   }
+   const nearest = segments.reduce((best, item) => Math.abs(item.x + item.width / 2 - rail.filledLength)
      < Math.abs(best.x + best.width / 2 - rail.filledLength) ? item : best);
    for (const phase of [-Math.PI / 2, Math.PI / 2]) {
     rail.phase = phase;

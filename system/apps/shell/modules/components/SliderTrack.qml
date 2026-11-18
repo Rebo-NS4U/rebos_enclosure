@@ -15,25 +15,18 @@ Item {
     readonly property real filledLength: width * Math.max(0, Math.min(1, isFinite(value) ? value : 0))
     readonly property int segmentCount: Math.max(1, Math.min(64, Math.round(width / 8)))
     readonly property real pitch: width / segmentCount
-    readonly property real rippleReach: 64
+    readonly property real rippleWavelength: 64
     property real energy: Motion.enabled && visible && enabled
         ? (pressed ? 1 : playing ? 0.65 : 0) : 0
     property real phase: 0
-    // Keep the playback shape while its energy fades after a pause.
-    property bool playbackRipple: false
-    onPlayingChanged: if (playing) playbackRipple = true
-    onPressedChanged: if (pressed && !playing) playbackRipple = false
-    onEnergyChanged: if (energy === 0 && !playing) playbackRipple = false
 
     function waveAt(position: real): real {
-        const offset = filledLength - position;
-        if (playbackRipple && offset <= 0)
+        const distance = filledLength - position;
+        if (distance <= 0)
             return 0;
-        const distance = Math.abs(offset);
         // Keep the segments nearest the thumb on the centerline.
-        const innerFade = Math.max(0, Math.min(1, (distance - pitch * 0.75) / Math.max(1, pitch)));
-        const outerFade = playbackRipple ? 1 : Math.max(0, 1 - distance / rippleReach);
-        return innerFade * outerFade * Math.sin(phase - 2 * Math.PI * distance / rippleReach);
+        const taper = Math.max(0, Math.min(1, (distance - pitch * 0.75) / Math.max(1, pitch)));
+        return taper * Math.sin(phase - 2 * Math.PI * distance / rippleWavelength);
     }
 
     Behavior on energy {
