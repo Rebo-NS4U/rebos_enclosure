@@ -492,21 +492,21 @@ ClippingRectangle {
             function paintCanopy(ctx) {
                 const leafSize = broad ? Math.min(28, width * 0.047, height * 0.105) : Math.min(12, height * 0.23, width * 0.035)
 
-                function leaf(x, y, angle, size, foliage) {
+                function leaf(x, y, angle, size, breadth, foliage) {
                     ctx.save()
                     ctx.translate(x, y)
                     ctx.rotate(angle)
-                    ctx.scale(size, size)
+                    ctx.scale(size, size * breadth)
                     ctx.beginPath()
                     ctx.moveTo(0, 0)
-                    ctx.bezierCurveTo(0.28, -0.37, 0.64, -0.29, 1, 0)
-                    ctx.bezierCurveTo(0.64, 0.16, 0.36, 0.31, 0, 0)
+                    ctx.bezierCurveTo(0.27, -0.42, 0.65, -0.25, 1, -0.10)
+                    ctx.bezierCurveTo(0.73, 0.02, 0.38, 0.42, 0, 0)
                     ctx.fillStyle = foliage
                     ctx.fill()
                     ctx.beginPath()
                     ctx.moveTo(0, 0)
-                    ctx.bezierCurveTo(0.28, -0.37, 0.64, -0.29, 1, 0)
-                    ctx.quadraticCurveTo(0.52, -0.08, 0, 0)
+                    ctx.bezierCurveTo(0.27, -0.42, 0.65, -0.25, 1, -0.10)
+                    ctx.quadraticCurveTo(0.49, -0.02, 0, 0)
                     ctx.fillStyle = Qt.alpha(pigment, 0.27)
                     ctx.fill()
                     ctx.restore()
@@ -534,19 +534,26 @@ ClippingRectangle {
                         ctx.translate(x, y)
                         ctx.rotate(heading + side * (0.47 + (i % 3) * 0.16))
                         const bend = side * shoot * 0.29
-                        ctx.strokeStyle = bark
-                        ctx.lineWidth = Math.max(0.8, size * 0.068)
+                        // Two curves meet at a fine tip; leaves attach along their centerline.
+                        const stem = Math.max(0.55, size * 0.055)
+                        ctx.fillStyle = bark
                         ctx.beginPath()
-                        ctx.moveTo(0, 0)
-                        ctx.quadraticCurveTo(shoot * 0.5, 0, shoot, bend)
-                        ctx.stroke()
-                        for (let j = 1; j <= 4; ++j) {
-                            const s = j / 5
+                        ctx.moveTo(0, -stem)
+                        ctx.quadraticCurveTo(shoot * 0.5, -stem * 0.35, shoot, bend)
+                        ctx.quadraticCurveTo(shoot * 0.5, stem * 0.35, 0, stem)
+                        ctx.closePath()
+                        ctx.fill()
+
+                        const leaves = 3 + i % 3
+                        for (let j = 1; j <= leaves; ++j) {
+                            const s = j / (leaves + 1)
                             const tangent = Math.atan2(2 * bend * s, shoot)
-                            leaf(shoot * s, bend * s*s, tangent + (j % 2 ? 0.90 : -0.73),
-                                 size * (1.04 - s * 0.31), foliage)
+                            const spread = (j % 2 ? 1 : -1) * (1.05 - 0.48 * s)
+                            const breadth = 0.76 + 0.12 * ((i + j) % 4)
+                            leaf(shoot * s, bend * s*s, tangent + spread,
+                                 size * (1.13 - s * 0.47), breadth, foliage)
                         }
-                        leaf(shoot, bend, Math.atan2(2 * bend, shoot), size * 0.80, foliage)
+                        leaf(shoot, bend, Math.atan2(2 * bend, shoot), size * 0.66, 0.74, foliage)
                         ctx.restore()
                     }
                 }
@@ -564,9 +571,10 @@ ClippingRectangle {
                 if (!nested) {
                     // Limit the reach on a wide bar so the clock stays clear.
                     const reach = Math.min(width * 0.29, leafSize * 9)
-                    ctx.globalAlpha = 0.70
-                    limb(-leafSize, leafSize * 2.2, reach * 0.35, leafSize * 0.35,
-                         reach, -leafSize * 0.16, leafSize * 0.78, 5, accent)
+                    const crownSize = leafSize * (broad ? 0.60 : 0.78)
+                    ctx.globalAlpha = broad ? 0.55 : 0.70
+                    limb(-leafSize, crownSize * 1.75, reach * 0.35, crownSize * 0.35,
+                         reach, -crownSize * 0.24, crownSize, 5, accent)
                     if (!broad) {
                         ctx.globalAlpha = 0.60
                         limb(width + leafSize, leafSize * 1.6, width - reach * 0.44, leafSize * 0.9,
