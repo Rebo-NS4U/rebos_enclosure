@@ -53,6 +53,7 @@ ShellRoot {
             };
             session.currentSessionId = "role-specialization-test";
             session.instructionSessionId = session.currentSessionId;
+            session.deliveredSharedInstructionVersion = session.sharedInstructionVersion;
             for (const role of session.codexPresets) {
                 session.instructionModeGuidance = "previous role";
                 const changed = session.standingInstructions(role, false);
@@ -108,6 +109,15 @@ ShellRoot {
             check(session.chatEnvelope().instructionSessionId === "quick-session" && state.instructionSessionId === "quick-session", "delivery persists in chat and bridge state");
             session.handleBridgeLine(JSON.stringify({bridge: "attached", seq: 1, state: state}));
             check(send("After bridge restoration").length === 1, "bridge restoration keeps delivery");
+
+            delete state.deliveredSharedInstructionVersion;
+            session.handleBridgeLine(JSON.stringify({bridge: "attached", seq: 2, state: state}));
+            const upgraded = send("Resume pre-upgrade chat");
+            check(upgraded.length === 2 && compact(upgraded)
+                && !upgraded[0].text.includes("Selected profile:"), "legacy chat receives updated shared instructions without repeating its profile");
+            check(session.chatEnvelope().deliveredSharedInstructionVersion === session.sharedInstructionVersion,
+                "shared instruction version is persisted");
+            check(send("After upgrade").length === 1, "shared instructions are upgraded only once");
 
             session.currentSessionId = "fresh-session";
             session.syntheticTransportWorks = false;
@@ -175,10 +185,16 @@ class AssistantInstructionsTest(unittest.TestCase):
 """ + source[end:]
             service.write_text(source)
             (package / "shell.qml").write_text(SCENARIO)
+            chats = base / "chats"
+            chats.mkdir()
+            (chats / "custom.json").write_text(
+                '{"version":2,"protocol":"acp","agentId":"codex","sessionId":"saved-custom","codexPreset":"","messages":[]}'
+            )
             runtime = base / "runtime"
             runtime.mkdir(mode=0o700)
             environment = dict(os.environ, QT_QPA_PLATFORM="offscreen", QT_QPA_PLATFORMTHEME="",
-                               XDG_RUNTIME_DIR=str(runtime), XDG_CACHE_HOME=str(base / "cache"))
+                               XDG_RUNTIME_DIR=str(runtime), XDG_CACHE_HOME=str(base / "cache"),
+                               DWEEBO_TEST_CHAT_DIR=str(chats))
             result = subprocess.run(["qs", "-p", str(package), "--no-color"], env=environment,
                                     capture_output=True, text=True, timeout=8)
             output = result.stdout + result.stderr

@@ -10,7 +10,23 @@ import QtQuick
 import Quickshell
 import qs.modules.services
 ShellRoot {
-    AiSession { id: session; sessionEnabled: false }
+    AiSession {
+        id: session
+        sessionEnabled: false
+        chatDir: Quickshell.env("DWEEBO_TEST_CHAT_DIR")
+    }
+    Connections {
+        target: session
+        function onCurrentChatIdChanged() {
+            if (session.currentChatId !== "custom") return;
+            Qt.callLater(() => {
+                check(session.currentSessionId === "saved-custom" && session.codexPreset === "",
+                    "saved custom chat reopens without picking Do");
+                console.log("PASS compact context, profile switches, restoration and retries");
+                Qt.quit();
+            });
+        }
+    }
     function check(ok, message) {
         if (!ok) { console.error("FAIL", message); Qt.exit(1); throw new Error(message); }
     }
@@ -19,14 +35,14 @@ ShellRoot {
         onTriggered: {
             check(session.codexPreset === "coding", "fresh startup selects Do");
             session.handleBridgeLine(JSON.stringify({bridge: "attached", state: {
-                currentAgentId: "codex", codexPreset: "", sessionReady: true,
+                currentAgentId: "codex", sessionReady: true,
                 currentSessionId: "startup-test", agentTurnActive: true,
                 sessionConfigOptions: [
                     {id: "model", currentValue: "gpt-6.1-terra", options: [{value: "gpt-6.2-sol"}]},
                     {id: "reasoning_effort", currentValue: "low", options: [{value: "medium"}]}
                 ]
             }}));
-            check(session.codexPresetName === "dweebo-Do", "custom checkpoint selects Do");
+            check(session.codexPresetName === "dweebo-Do", "legacy checkpoint with no saved selection selects Do");
             check(session.agentTurnActive && session.currentSessionModelId !== "gpt-6.2-sol", "restored work is retained");
             check(!session.syntheticEnvelope.method && session.syntheticRestarts === 0, "startup sends no model RPC or restart");
             session.agentTurnActive = false;
@@ -46,11 +62,17 @@ ShellRoot {
             }}));
             check(session.codexPreset === "light_coding", "explicit named choice is preserved");
             session.handleBridgeLine(JSON.stringify({bridge: "attached", state: {
+                currentAgentId: "codex", codexPreset: "", agentTurnActive: false
+            }}));
+            check(session.codexPresetName === "Custom Codex", "explicit custom checkpoint stays custom");
+            session.queuedPrompt = {text: "Continue with custom settings", attachments: []};
+            session.dispatchQueuedPrompt();
+            check(session.syntheticEnvelope.method === "session/prompt", "custom checkpoint sends prompt without overriding model or effort");
+            session.handleBridgeLine(JSON.stringify({bridge: "attached", state: {
                 currentAgentId: "distill", codexPreset: "", agentTurnActive: false
             }}));
             check(session.codexPreset === "", "other backends are preserved");
-            console.log("PASS compact context, profile switches, restoration and retries");
-            Qt.quit();
+            session.loadChat("custom");
         }
     }
 }

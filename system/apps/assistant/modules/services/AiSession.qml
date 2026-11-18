@@ -37,6 +37,12 @@ Scope {
         return preset ? preset.name : "Custom Codex";
     }
 
+    function restoredCodexPreset(agentId, savedPreset) {
+        if (agentId !== "codex" || savedPreset === "")
+            return "";
+        return codexPresets.some(item => item.id === savedPreset) ? savedPreset : "coding";
+    }
+
     function codexOption(id) {
         return sessionConfigOptions.find(option => option.id === id);
     }
@@ -407,6 +413,8 @@ Scope {
     property var pendingSessionAction: null
     property var queuedPrompt: null
     // Delivery belongs to the backend conversation, not the UI connection.
+    readonly property int sharedInstructionVersion: 1
+    property int deliveredSharedInstructionVersion: 0
     property string instructionSessionId: ""
     property string instructionModeGuidance: ""
     property string agentStderrTail: ""
@@ -611,7 +619,7 @@ Scope {
         "initialized", "authenticated", "sessionReady", "suppressReplay",
         "agentCapabilities", "authMethods", "pendingRpc", "nextRpcId",
         "activePromptRequestId", "pendingSessionAction", "queuedPrompt", "agentStderrTail",
-        "instructionSessionId", "instructionModeGuidance",
+        "instructionSessionId", "instructionModeGuidance", "deliveredSharedInstructionVersion",
         "turnFailureHandled", "taskOutcome", "outcomeVersion", "outcomeFinding", "backendEvidence", "sessionConfigOptions", "sessionModels", "currentSessionModelId",
         "pendingSessionModelId", "modelSwitchError", "availableCommands", "currentModeId",
         "codexPreset", "pendingCodexPreset", "codexPresetError",
@@ -660,6 +668,7 @@ Scope {
         }
     }
 
+    onCodexPresetChanged: bridgeDirty = true
     onCurrentChatChanged: bridgeDirty = true
     onStatusTextChanged: bridgeDirty = true
 
@@ -698,15 +707,13 @@ Scope {
                 taskOutcome = "";
                 outcomeFinding = "";
                 backendEvidence = "";
+                deliveredSharedInstructionVersion = 0;
                 for (let key of bridgeStateKeys) {
                     if (event.state[key] !== undefined)
                         root[key] = event.state[key];
                 }
-                // Legacy/custom checkpoints must not erase the startup default.
-                // Do not send model RPCs while a restored turn is running; the
-                // next prompt confirms the selected model and effort first.
-                if (currentAgentId === "codex" && !codexPreset && !pendingCodexPreset)
-                    codexPreset = "coding";
+                // Restore the selection without sending model RPCs during an active turn.
+                codexPreset = restoredCodexPreset(currentAgentId, event.state.codexPreset);
                 // Older checkpoints marked every end_turn as successful.
                 if (event.state.outcomeVersion !== 1 && taskOutcome === "Positive")
                     taskOutcome = "";
@@ -2357,7 +2364,7 @@ Scope {
         } else if (!mode && !newSession && instructionModeGuidance) {
             prompt.push({type: "text", text: "No Dweebo profile is selected. Earlier profile guidance no longer governs subsequent turns."});
         }
-        if (newSession)
+        if (newSession || deliveredSharedInstructionVersion !== sharedInstructionVersion)
             for (const instruction of Defaults.data.instructions)
                 prompt.push({type: "text", text: instruction.replace(/@HOME@/g, home)});
 
@@ -2430,6 +2437,7 @@ Scope {
             return;
         }
         instructionSessionId = currentSessionId;
+        deliveredSharedInstructionVersion = sharedInstructionVersion;
         instructionModeGuidance = mode ? mode.guidance : "";
         saveCurrentChat();
         bridgeDirty = true;
@@ -2502,6 +2510,7 @@ Scope {
     function createNewChat() {
         cancelGeneration(false);
         instructionSessionId = "";
+        deliveredSharedInstructionVersion = 0;
         instructionModeGuidance = "";
         codexPreset = currentAgentId === "codex" ? "coding" : "";
         currentChat = [];
@@ -2586,6 +2595,7 @@ Scope {
             agentId: currentChatAgentId || currentAgentId,
             sessionId: currentSessionId,
             instructionSessionId: instructionSessionId,
+            deliveredSharedInstructionVersion: deliveredSharedInstructionVersion,
             instructionModeGuidance: instructionModeGuidance,
             distillPreset: distillPreset,
             codexPreset: codexPreset,
@@ -2721,11 +2731,12 @@ for path in files:
                 root.currentChatAgentId = agent.id;
                 root.distillPreset = root.distillPresets.some(item => item.id === payload.distillPreset) ? payload.distillPreset : "auto";
                 root.distillPresetReady = false;
-                root.codexPreset = root.codexPresets.some(item => item.id === payload.codexPreset) ? payload.codexPreset : (agent.id === "codex" ? "coding" : "");
+                root.codexPreset = root.restoredCodexPreset(agent.id, payload.codexPreset);
                 root.currentChat = isLegacy ? payload : (payload.messages || []);
                 root.currentChatId = targetId;
                 root.currentSessionId = isLegacy ? "" : (payload.sessionId || "");
                 root.instructionSessionId = isLegacy ? "" : (payload.instructionSessionId || "");
+                root.deliveredSharedInstructionVersion = isLegacy ? 0 : (payload.deliveredSharedInstructionVersion || 0);
                 root.instructionModeGuidance = isLegacy ? "" : (payload.instructionModeGuidance || "");
                 root.currentChatCwd = isLegacy ? root.workingDirectory() : (payload.cwd || root.workingDirectory());
                 root.sessionReady = false;
