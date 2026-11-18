@@ -113,7 +113,7 @@ Singleton {
         return true;
     }
 
-    // Playback keys select Spotify and reveal the same panel as the bar's media button.
+    // Playback keys control the active player and reveal the bar's media panel.
     IpcHandler {
         target: "media"
 
@@ -126,10 +126,8 @@ Singleton {
         function control(action: string): bool {
             if (["PlayPause", "Pause", "Next", "Previous", "Stop"].indexOf(action) === -1)
                 return false;
-            const player = MprisController.filteredPlayers.find(p =>
-                (p.dbusName || "").toLowerCase().includes("spotify"));
+            const player = MprisController.activePlayer;
             if (!player) return false;
-            MprisController.setActivePlayer(player);
             // Keep playback commands on D-Bus, including Stop which has no QML helper.
             const target = action === "Next" ? (MprisController.nextPlayer(player) || player) : player;
             Quickshell.execDetached(["busctl", "--user", "call", target.dbusName,
