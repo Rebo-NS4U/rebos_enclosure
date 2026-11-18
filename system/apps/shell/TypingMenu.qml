@@ -2588,7 +2588,13 @@ Item {
                                                     keyFeedback.restart();
                                                 }
                                                 onIncorrectChanged: { if (!incorrect && failedFeedback) stopFeedback(); }
-                                                function stopFeedback() { keyFeedback.stop(); spark = 0; failedFeedback = false; root.forgetGlyph(glyph); }
+                                                function stopFeedback() {
+                                                    if (!keyFeedback.running && !spark && !failedFeedback) return;
+                                                    keyFeedback.stop();
+                                                    spark = 0;
+                                                    failedFeedback = false;
+                                                    root.forgetGlyph(glyph);
+                                                }
                                                 NumberAnimation {
                                                     id: keyFeedback
                                                     target: glyph
@@ -2652,17 +2658,13 @@ Item {
                                                 font: Qt.font({family: root.readingFont.family, pixelSize: root.readingFont.pixelSize, weight: root.readingFont.weight, hintingPreference: root.readingFont.hintingPreference, underline: glyph.incorrect})
                                                 height: root.passageLineHeight
                                                 lineHeight: root.sourceOffsets.length ? 1.55 : 1.45
-                                                property real inkOpacity: caretHere || typed ? 1 : (word?.modelData?.line === root.scrollLine ? 0.85 : 0.65)
-                                                Behavior on inkOpacity {
-                                                    enabled: Motion.enabled && glyph.initialized && !root.restoring && !root.busy
-                                                    NumberAnimation { duration: 110; easing.type: Easing.OutCubic }
-                                                }
+                                                // A row change can update dozens of glyphs at once.
+                                                // Keep the row highlight and key feedback as the transition effects.
+                                                opacity: caretHere || typed ? 1 : (word?.modelData?.line === root.scrollLine ? 0.85 : 0.65)
                                                 Behavior on color {
                                                     enabled: Motion.enabled && glyph.initialized && !root.restoring && !root.busy && !glyph.incorrect
                                                     ColorAnimation { duration: 130; easing.type: Easing.OutCubic }
                                                 }
-                                                opacity: caretHere ? 1 : inkOpacity
-
                                                 color: typed && incorrect ? Colors.error : Colors.overSurface
 
                                             }
