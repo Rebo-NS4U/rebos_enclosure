@@ -147,6 +147,20 @@ DolphinMainWindow DolphinUrlNavigator QToolButton {{
   background: transparent; border: 1px solid transparent; border-radius: {compact}px;
   min-height: 24px; padding: 3px 7px;
 }}
+DolphinMainWindow QToolBar QToolButton:has-menu {{
+  padding-right: 16px;
+}}
+DolphinMainWindow QToolBar QToolButton::menu-indicator {{
+  subcontrol-origin: border; subcontrol-position: right center;
+  width: 9px; height: 9px; right: 4px;
+}}
+DolphinMainWindow QToolBar QToolButton::menu-button {{
+  subcontrol-origin: border; subcontrol-position: right center;
+  width: 16px; border: 0; background: transparent;
+}}
+DolphinMainWindow QToolBar QToolButton::menu-arrow {{
+  subcontrol-position: center; width: 9px; height: 9px;
+}}
 DolphinMainWindow QToolBar QToolButton:hover,
 DolphinMainWindow DolphinUrlNavigator QToolButton:hover {{
   background: {hover}; border-color: {edge};

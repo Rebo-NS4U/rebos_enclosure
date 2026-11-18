@@ -759,7 +759,7 @@
   "system/apps/shell/scripts/screen_text.py": "9887cb64083f75cae902dac9e0b0aa9497cc6a1d10f7d83ce511f145aeeac999",
   "system/apps/shell/scripts/screenshot_editor.py": "f9c1de8e1e0b15179141a3f61a0ecefc039d51de11aaac432730c2b415d10648",
   "system/apps/shell/scripts/setup_lyrics_plus.py": "56161c94ad96eada6cfb751493a8750376bb4aa912ae5e7e9c048c221d519138",
-  "system/apps/shell/scripts/standard_theme.py": "c454856d2ff0a87d86a7aceac8951f3e75415b6265dc3f5d79ce429ac4b39ecd",
+  "system/apps/shell/scripts/standard_theme.py": "11b52a9ac13c7587114e3657a672db1bcdd7e0070d4cb0f90712ea37eafea2b6",
   "system/apps/shell/scripts/starwake_pointer.cpp": "cda0211241189ab0e67809047f2b8bf0a7149782d0534e56c5c60a1182f5de53",
   "system/apps/shell/scripts/system_monitor.py": "d8323355923cff4ec8342152a9de1a955b56a5c4346c8dabc6fbff2d2daaf283",
   "system/apps/shell/scripts/test_bluetooth_pair.py": "a0061fec5bac3a8b94512d78e591d45d870c562b82bfc341bff6bfb75fe5c0ec",
