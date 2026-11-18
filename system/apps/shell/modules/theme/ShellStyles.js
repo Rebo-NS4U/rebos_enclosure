@@ -7,7 +7,7 @@ var styles = [
     {id: "glass-vault", label: "Glass Vault", font: "Noto Sans", description: "Thick glass blocks with stepped rims and rounded corner clasps."},
     {id: "radar-station", label: "Radar Station", font: "DejaVu Sans", description: "Etched bearing scales, radial divisions and a marked sector."},
     {id: "suspended-film", label: "Suspended Film", font: "DejaVu Sans Mono", description: "A thin translucent membrane bows between two pin mounts."},
-    {id: "monolith", label: "Monolith", font: "Noto Sans", description: "A solid slate slab with broken mineral strata along its lower edge."},
+    {id: "monolith", label: "Monolith", font: "Noto Sans", description: "Layered slate with a diagonal fault, tapered mineral seams and exposed edges."},
     {id: "blueprint", label: "Blueprint", font: "JetBrains Mono", description: "Architectural drafting sheets, truss details, ruled scales and wire controls."},
     {id: "terminal-hardware", label: "Terminal Hardware", font: "DejaVu Sans Mono", description: "Flat machined panels, inset bezels and sparse cooling vents."},
     {id: "frosted", font: "DejaVu Sans Mono", label: "Frosted Glass", description: "Satin glass with a sandblasted margin and a fine polished rim."},

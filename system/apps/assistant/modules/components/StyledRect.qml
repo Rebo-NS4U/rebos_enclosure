@@ -762,6 +762,10 @@ ClippingRectangle {
             readonly property real cornerRadius: root.effectiveCornerRadius
             readonly property var frameCorners: [root.topLeftRadius, root.topRightRadius, root.bottomLeftRadius, root.bottomRightRadius]
             readonly property bool outer: root.barSurface || ["bg", "popup", "bar"].includes(root.variant)
+            readonly property bool wideSlate: !root.barSurface && root.variant !== "bar"
+                && (root.materialPreview || (width >= 160 && height >= 80))
+                && ["bg", "popup", "pane", "surface", "surfaceContainer"].includes(root.variant)
+            onWideSlateChanged: requestPaint()
             onFinishChanged: requestPaint()
             onPigmentChanged: requestPaint()
             onAccentChanged: requestPaint()
@@ -771,7 +775,45 @@ ClippingRectangle {
             onWidthChanged: requestPaint()
             onHeightChanged: requestPaint()
 
+            function paintSlateFace(ctx) {
+                // Positions follow the slab as it resizes. The third coordinate
+                // is the local thickness of each exposed mineral bed.
+                const strength = outer ? 1 : 0.65
+                const thickness = Math.min(32, height * 0.065)
+                function bed(points, dye, alpha) {
+                    ctx.beginPath()
+                    ctx.moveTo(points[0][0] * width, points[0][1] * height)
+                    for (const [x, y] of points) ctx.lineTo(x * width, y * height)
+                    for (let i = points.length - 1; i >= 0; --i) {
+                        const [x, y, weight] = points[i]
+                        ctx.lineTo(x * width, y * height + weight * thickness)
+                    }
+                    ctx.closePath()
+                    ctx.fillStyle = Qt.alpha(dye, alpha * strength)
+                    ctx.fill()
+                }
+
+                // A diagonal cleavage plane breaks into parallel seams and
+                // tapers into narrow, brighter inclusions near the edges.
+                const fault = [[0,.78,.95],[.14,.66,.65],[.22,.65,.38],[.35,.53,.55],
+                               [.47,.51,.14],[.61,.40,.34],[.69,.40,.16],[.88,.21,.85],[1,.17,.48]]
+                bed(fault, pigment, 0.085)
+                bed([[0,.77,.21],[.14,.66,.17],[.22,.65,.04],[.35,.53,0]], accent, 0.34)
+                bed([[.47,.51,0],[.59,.45,.21],[.64,.45,.11],[.78,.32,0]], pigment, 0.16)
+                bed([[.69,.40,0],[.80,.275,.13],[.88,.21,.37],[1,.17,.12]], accent, 0.27)
+
+                bed([[.16,.62,0],[.205,.62,.08],[.28,.575,.18],[.35,.53,0]], pigment, 0.22)
+                bed([[.78,.31,0],[.84,.225,.12],[.90,.195,0]], pigment, 0.26)
+
+                // Offset beds give the slab a second plane on either side of
+                // the main seam. Their widths vary independently.
+                bed([[.29,-.045,.30],[.42,.006,.72],[.54,.026,.62],[.65,.018,.38],[.72,-.04,0]], pigment, 0.13)
+                bed([[.56,1,0],[.68,.90,.86],[.76,.895,.52],[.86,.78,.38],[1,.70,1.3]], accent, 0.14)
+                bed([[.76,.895,0],[.83,.795,.10],[.86,.78,.19],[.95,.729,0]], pigment, 0.26)
+            }
+
             function paintSlate(ctx) {
+                if (wideSlate) paintSlateFace(ctx)
                 // Three exposed beds taper from a broken edge into the flat slab.
                 const reach = Math.min(width * 0.56, outer ? 250 : 86)
                 const depth = Math.min(height * 0.32, outer ? 42 : 13)

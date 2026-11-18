@@ -46,8 +46,10 @@ transparency remains in Kitty’s separate `background_opacity` setting.
 
 ## Monolith and Suspended Film
 
-Monolith uses an opaque slate face with three angular mineral layers exposed
-along its lower left edge. Suspended Film has a translucent face with a bowed
+Monolith uses an opaque slate face. A diagonal fault crosses the window, with
+thin mineral seams along its broken edges and offset beds above and below.
+The markings recede on nested panes. Compact bars retain the exposed layers
+along the lower left edge. Suspended Film has a translucent face with a bowed
 strip of film held by two small pins along the top. Both scale down on bars
 and theme previews. Their accents follow the selected palette.
 
