@@ -110,6 +110,27 @@ class MusicLibraryTests(unittest.TestCase):
         self.assertEqual(playlist['paths'], [])
         self.assertTrue(kept.exists() and removed.exists())
 
+    def test_push_includes_tracks_explicitly_added_to_linked_playlist(self):
+        folder = self.folder / 'Linked'
+        folder.mkdir()
+        original = folder / ('b' * 22 + '.flac')
+        added = self.folder / ('c' * 22 + '.flac')
+        shutil.copyfile(self.song, original)
+        shutil.copyfile(self.song, added)
+        original_uri, added_uri = ['spotify:track:' + p.stem for p in (original, added)]
+        (folder / '.enclosure-playlist.json').write_text(json.dumps(dict(
+            sources=['spotify:playlist:' + 'a' * 22], tracks=[dict(uri=original_uri)])))
+        playlist = self.library.scan()['state']['playlists'][0]
+        self.assertEqual(playlist['paths'], [str(original)])
+
+        args = dict(playlist=playlist['id'], path=str(added))
+        result = self.library.dispatch('playlist_add', args)
+        self.assertEqual(result['state']['playlists'][0]['paths'], [str(original), str(added)])
+
+        library = music.Library(self.home)
+        library.dispatch('playlist_to_spotify', dict(playlist=playlist['id']))
+        self.assertEqual(library.mixes.playlist_write['tracks'], [original_uri, added_uri])
+
     def test_push_legacy_download_uses_embedded_spotify_track_link(self):
         folder = self.folder / 'Legacy download'
         folder.mkdir()

@@ -195,7 +195,7 @@ class Library:
                         spotifySource=(metadata['sources'][0] if len(metadata.get('sources', [])) == 1 else '')))
         available = {t['path'] for t in tracks}
         for playlist in folder_playlists:
-            extras = [] if playlist.get('synced') else self.state['playlistAdditions'].get(playlist['id'], [])
+            extras = self.state['playlistAdditions'].get(playlist['id'], [])
             playlist['paths'] += [p for p in extras if p in available and p not in playlist['paths']]
             removed = set(self.state['playlistRemovals'].get(playlist['id'], []))
             playlist['paths'] = [p for p in playlist['paths'] if p not in removed]
@@ -368,7 +368,7 @@ class Library:
                     removed = self.state['playlistRemovals'].get(playlist['id'], [])
                     if path in removed:
                         removed.remove(path)
-                    elif not playlist.get('synced'):
+                    else:
                         self.state['playlistAdditions'].setdefault(playlist['id'], []).append(path)
                 else:
                     playlist['paths'].append(path)
