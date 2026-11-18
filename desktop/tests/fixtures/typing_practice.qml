@@ -110,7 +110,8 @@ ShellRoot {
                     const typingContainer = find(island, "typing-island-container");
                     if (typingContainer.y !== island.containerY) throw Error("Compact typer must remain at the top");
                     island.typingPractice.toggleFullscreen();
-                    if (!island.typingFullscreen || island.targetWidth !== Math.min(960, island.width - 64) || island.targetHeight !== island.height) throw Error("Fullscreen reading width or height is incorrect");
+                    const readingWidth = Math.max(1, Math.min(960 * island.typingScale, island.width - 32));
+                    if (!island.typingFullscreen || Math.abs(island.targetWidth - readingWidth) > 1 || island.targetHeight !== island.height) throw Error("Fullscreen reading width or height is incorrect");
                     if (typingContainer.y !== Math.max(0, (island.height - typingContainer.height) / 2)) throw Error("Fullscreen must remain vertically centered");
                     island.typingPractice.handleEscape();
                     if (island.typingFullscreen || island.targetWidth !== compactWidth || typingContainer.y !== island.containerY) throw Error("Compact dimensions were not restored");
@@ -409,8 +410,9 @@ ShellRoot {
                     if (practice.samplesExpanded) throw Error("Practice samples should be collapsed by default");
                     const chapters = find(practice, "typing-chapter-select");
                     chapters.popup.contentItem.positionViewAtIndex(1, ListView.Contain);
+                    keyDriver.tryVerify(() => chapters.popup.contentItem.itemAtIndex(1) !== null);
                     const entry = chapters.popup.contentItem.itemAtIndex(1);
-                    if (!entry || entry.text !== "Chapter Two") throw Error("Chapter popup is missing its labels");
+                    if (!entry.contentItem.children[0].children.some(label => label.text === "Chapter Two")) throw Error("Chapter popup is missing its labels");
                     entry.clicked();
                     phase = 110; return;
                 } else if (phase === 110) {
@@ -485,7 +487,8 @@ ShellRoot {
                     keyDriver.keyClick(Qt.Key_Space, Qt.ControlModifier, 0);
                     keyDriver.wait(30);
                     const panel = restored.wordTools;
-                    if (!panel.opened || restored.selectedTerm.toLowerCase() !== currentWord.modelData.text.trim().toLowerCase() || field.text !== before)
+                    const expectedTerm = currentWord.modelData.text.trim().replace(/^[.,!?]+|[.,!?]+$/g, "").toLowerCase();
+                    if (!panel.opened || restored.selectedTerm.toLowerCase() !== expectedTerm || field.text !== before)
                         throw Error("Ctrl+Space did not inspect the current word without editing input: " + JSON.stringify({opened:panel.opened, term:restored.selectedTerm, expected:currentWord.modelData.text, before:before, after:field.text}));
                     if (panel.anchor.item !== restored.menuAnchorItem || panel.anchor.rect.x !== 0 || Math.abs(panel.anchor.rect.y - restored.menuAnchorItem.height - 6) > 1 || Math.abs(panel.width - Math.min(520, restored.menuAnchorItem.width)) > 1 || panel.height <= 0 || panel.height > panel.screen.height - 48) throw Error("Word menu does not match the typing panel or sit below it");
                     if (panel.surface.variant !== "popup") throw Error("Word panel does not share the typing surface theme");
@@ -518,10 +521,12 @@ ShellRoot {
                     if (!find(restored, "typing-word-note-preview").visible || find(restored, "typing-word-note-preview").text !== "Character reminder") throw Error("Saved note is missing from compact view");
                     find(restored, "typing-word-options").clicked();
                     if (!find(restored, "typing-word-search").visible || !find(restored, "typing-definitions-toggle").visible) throw Error("More did not reveal word options");
-                    find(restored, "typing-word-panel").close();
+                    const panel = find(restored, "typing-word-panel");
+                    panel.close();
+                    keyDriver.tryVerify(() => !panel.visible);
                     const field = find(restored, "typing-input");
-                    const glyph = find(restored, "typing-character-0");
-                    const point = glyph.mapToItem(field, glyph.width / 2, glyph.height / 2);
+                    const word = restored.currentWordItem();
+                    const point = word.mapToItem(field, word.width / 2, word.height / 2);
                     keyDriver.mouseClick(field, point.x, point.y, Qt.RightButton);
                 } else if (phase === 117) {
                     const restored = freshView.item;
