@@ -549,7 +549,7 @@
   "system/apps/shell/modules/services/MprisController.qml": "c28130da0e65ae44ed5a7e3fd37277e033339a35331933abb7b49614ed5dd71a",
   "system/apps/shell/modules/services/NetworkService.qml": "7dff27a6f7561c6cd9a4f5bf27aca80b450b07ba2203a76c0fcd7e71ec916c63",
   "system/apps/shell/modules/services/NightLightService.qml": "8613c6095863c5b448532691b53551c91ccc1e68a052f948a33b790e197b42de",
-  "system/apps/shell/modules/services/NiriService.qml": "53fa926587733c2e3adf27614128c56a12c9661bf6a5a4e1dd828e8cd096a1f0",
+  "system/apps/shell/modules/services/NiriService.qml": "e413bb53ac81422bf97a2b6cfc3acdde5b74a5a212e7cc2b5d0d8b5e6aa128c5",
   "system/apps/shell/modules/services/Notifications.qml": "6ecf10b29bc25ca87ba9097a94583bd6d4d59ccef6216ff24de380f6dfff0953",
   "system/apps/shell/modules/services/PowerProfile.qml": "43c720a1b2526275fb8916797d88649bb9c4caa478d76373082baebd01ce97cb",
   "system/apps/shell/modules/services/ProjectPickerService.qml": "743d9deca2b03e936fc34c128420e2590b47b0f58537030138d3c160df3aa6fc",
