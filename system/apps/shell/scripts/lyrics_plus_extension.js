@@ -51,6 +51,49 @@ async function refresh() {
     setInterval(publish, 5000);
 })();
 
+async function playlistItems(api, uri) {
+    const items = [];
+    while (true) {
+        const page = await api.getContents(uri, {offset: items.length, limit: 100});
+        if (!Array.isArray(page.items)) throw Error('Missing playlist contents');
+        items.push(...page.items);
+        if (page.items.length < 100 || items.length >= page.totalLength) return items;
+        if (items.length >= 10000) throw Error('Playlist exceeds 10,000 tracks');
+    }
+}
+
+async function syncPlaylist(api, uri, tracks) {
+    if (!api?.add || !api?.remove || !api?.resync) throw Error('Spotify playlist editing is unavailable');
+    await api.resync(uri);
+    const items = await playlistItems(api, uri);
+    const removals = [];
+    const insertions = [];
+    let offset = 0;
+    // Keep existing rows that already appear in the requested relative order.
+    for (const {uri: itemUri, uid} of items) {
+        const next = tracks.indexOf(itemUri, offset);
+        if (next === -1) {
+            removals.push({uri: itemUri, uid});
+        } else {
+            if (next > offset) insertions.push({tracks: tracks.slice(offset, next), location: {before: {uid}}});
+            offset = next + 1;
+        }
+    }
+    if (offset < tracks.length) insertions.push({tracks: tracks.slice(offset), location: {after: 'end'}});
+    if (removals.some(item => !item.uid) || insertions.some(batch => batch.location.before && !batch.location.before.uid))
+        throw Error('Spotify did not return the playlist row IDs needed to edit it');
+    for (let i = 0; i < removals.length; i += 100)
+        await api.remove(uri, removals.slice(i, i + 100));
+    for (const batch of insertions) {
+        for (let i = 0; i < batch.tracks.length; i += 100)
+            await api.add(uri, batch.tracks.slice(i, i + 100), batch.location);
+    }
+    await api.resync(uri);
+    const saved = await playlistItems(api, uri);
+    if (saved.length !== tracks.length || saved.some((item, i) => item.uri !== tracks[i]))
+        throw Error('Spotify did not confirm the requested playlist contents');
+}
+
 // Daily Mix metadata only. Learn playlist links from Spotify's visible Daily Mix cards.
 (function dailyMixes() {
     let collecting = false;
@@ -84,16 +127,7 @@ async function refresh() {
             const targets = requested ? [[playlistUri, 'Playlist ' + playlistUri.split(':').pop()]] : [...learned];
             for (const [uri, name] of targets) {
                 try {
-                    const items = [];
-                    let offset = 0;
-                    while (true) {
-                        const page = await Spicetify.Platform.PlaylistAPI.getContents(uri, {offset, limit: 100});
-                        if (!Array.isArray(page.items)) throw Error('Missing playlist contents');
-                        items.push(...page.items);
-                        offset += page.items.length;
-                        if (page.items.length < 100 || offset >= page.totalLength) break;
-                        if (offset >= 10000) throw Error('Playlist exceeds 10,000 tracks');
-                    }
+                    const items = await playlistItems(Spicetify.Platform.PlaylistAPI, uri);
                     const tracks = items.map(row => row.track || row).filter(t => t && /^spotify:track:[A-Za-z0-9]{22}$/.test(t.uri || '')).map(t => ({uri: t.uri,
                         title: t.name || '', artist: (t.artists || []).map(a => a.name).join(', ')}));
                     if (!tracks.length) throw Error('No playable Spotify tracks in this playlist');
@@ -140,10 +174,7 @@ async function refresh() {
                                 !Array.isArray(job.tracks) || job.tracks.length > 10000 ||
                                 job.tracks.some(uri => !/^spotify:track:[A-Za-z0-9]{22}$/.test(uri)))
                                 throw Error('Invalid playlist update');
-                            const endpoint = 'https://api.spotify.com/v1/playlists/' + job.uri.split(':').pop() + '/items';
-                            await Spicetify.CosmosAsync.put(endpoint, {uris: job.tracks.slice(0, 100)});
-                            for (let offset = 100; offset < job.tracks.length; offset += 100)
-                                await Spicetify.CosmosAsync.post(endpoint, {uris: job.tracks.slice(offset, offset + 100)});
+                            await syncPlaylist(Spicetify.Platform.PlaylistAPI, job.uri, job.tracks);
                         } catch (e) {
                             error = 'Spotify update failed or may be partial. Check playlist edit permission and its contents before retrying. ' + String(e.message || e).slice(0, 180);
                         }

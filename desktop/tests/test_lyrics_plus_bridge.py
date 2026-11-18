@@ -56,3 +56,43 @@ const plain = vm.runInContext("payload({uri:'track'}, {provider:'Spotify',unsync
 assert.equal(plain.synced, false); assert.equal(plain.lines[0].text, 'Test');
 '''.replace('SOURCE', json.dumps(source))
         subprocess.run(['node', '-e', script], check=True, capture_output=True, text=True)
+
+    def test_sync_adds_at_requested_position_and_checks_spotify_readback(self):
+        source = (SCRIPTS / 'lyrics_plus_extension.js').read_text()
+        script = '''const vm = require('vm'); const assert = require('node:assert/strict');
+const context = vm.createContext({setTimeout() {}, setInterval() {},
+    MutationObserver: class { observe() {} }, document: {documentElement: {}}});
+vm.runInContext(SOURCE, context);
+const sync = vm.runInContext('syncPlaylist', context);
+const old = [{uri: 'existing', uid: 'original'}];
+let rows = old.slice();
+let ignored = false;
+let refreshes = 0;
+const api = {
+    async resync() { refreshes++; },
+    async getContents(_, {offset, limit}) {
+        return {items: rows.slice(offset, offset + limit), totalLength: rows.length};
+    },
+    async remove(_, items) { rows = rows.filter(row => !items.some(item => item.uid === row.uid)); },
+    async add(_, tracks, location) {
+        if (ignored) return;
+        const index = location.before ? rows.findIndex(row => row.uid === location.before.uid) : rows.length;
+        assert.ok(index >= 0);
+        rows.splice(index, 0, ...Array.from(tracks, uri => ({uri, uid: uri})));
+    },
+};
+(async () => {
+    await sync(api, 'playlist', ['new', 'existing']);
+    assert.deepEqual(rows.map(row => row.uri), ['new', 'existing']);
+    assert.equal(rows[1], old[0]);
+    assert.equal(refreshes, 2);
+    await sync(api, 'playlist', ['existing']);
+    assert.deepEqual(rows, old);
+    const many = Array.from({length: 101}, (_, i) => String(i));
+    await sync(api, 'playlist', [...many, 'existing']);
+    assert.deepEqual(rows.map(row => row.uri), [...many, 'existing']);
+    ignored = true;
+    await assert.rejects(sync(api, 'playlist', [...many, 'existing', 'ignored']), /did not confirm/);
+})().catch(error => { console.error(error); process.exitCode = 1; });
+'''.replace('SOURCE', json.dumps(source))
+        subprocess.run(['node', '-e', script], check=True)
