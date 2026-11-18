@@ -86,6 +86,7 @@ def session():
             property int attempts: 0
             property int phase: 0
             property int repeatStart: 0
+            property bool checkedShortPlaylist: false
             interval: 200; running: true; repeat: true
             onTriggered: {
                 attempts++;
@@ -400,13 +401,30 @@ def session():
                     if (music.spotifyPreview || spotify.isPlaying || music.current.title === "Suggested song") { console.error("SPOTIFY_LOCAL_RETURN_FAILED"); Qt.exit(1); return; }
                     console.log("MUSIC_SPOTIFY_FULLSCREEN_PASSED");
                     music.toggleFullscreen();
+                    // Resize the content area directly because the tiled window is sized by Niri.
+                    findItem(music.contentItem, "music-background").anchors.bottomMargin = -200;
                     music.page = "Playlist"; music.detail = "test";
                     music.spotifySuggestions = {playlist:"test",pending:false,hasMore:true,tracks:Array.from({length:14}, (_,i)=>({uri:"spotify:track:"+String(i).padStart(22,"0"),title:"Suggestion "+i,artist:"New artist"}))};
+                    repeatStart = attempts; phase = 95;
+                } else if (phase === 950) {
+                    const suggestions = findItem(music.contentItem, "music-playlist-suggestions");
+                    const songs = findItem(music.contentItem, "music-track-row-0")?.ListView.view;
+                    if (suggestions.height >= 4 * music.suggestionRowHeight || !songs || songs.height < songs.contentHeight) {
+                        console.error("MUSIC_SHORT_PLAYLIST_LAYOUT_FAILED", suggestions.height, songs?.height, songs?.contentHeight);
+                        Qt.exit(1); return;
+                    }
+                    findItem(music.contentItem, "music-background").anchors.bottomMargin = -200;
                     repeatStart = attempts; phase = 95;
                 } else if (phase === 95 && attempts >= repeatStart + 3) {
                     const list = findItem(music.contentItem, "music-playlist-suggestions");
                     if (list.count !== 14 || !findItem(music.contentItem, "music-suggestions-load-more")?.enabled) { console.error("SUGGESTIONS_CONTINUOUS_LIST_FAILED"); Qt.exit(1); return; }
-                    if (Math.abs(list.height - 4 * music.suggestionRowHeight) > 1) { console.error("SUGGESTIONS_VIEWPORT_HEIGHT_FAILED"); Qt.exit(1); return; }
+                    if (Math.abs(list.height - 4 * music.suggestionRowHeight) > 1) { console.error("SUGGESTIONS_VIEWPORT_HEIGHT_FAILED", list.height); Qt.exit(1); return; }
+                    if (!checkedShortPlaylist) {
+                        checkedShortPlaylist = true;
+                        findItem(music.contentItem, "music-background").anchors.bottomMargin = 0;
+                        phase = 950;
+                        return;
+                    }
                     const firstSuggestion = list.itemAtIndex(0);
                     if (!firstSuggestion || firstSuggestion.selected || firstSuggestion.height >= findItem(music.contentItem, "music-track-row-0").height) { console.error("SUGGESTION_COMPACT_ROW_FAILED"); Qt.exit(1); return; }
                     music.play(music.tracks, 0);

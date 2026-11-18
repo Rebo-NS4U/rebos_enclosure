@@ -138,6 +138,7 @@ Window {
         const q = query.trim().toLowerCase();
         return q ? list.filter(t => (t.title + " " + t.artist + " " + t.album).toLowerCase().includes(q)) : list;
     }
+    readonly property real trackRowHeight: Styling.spacing(70)
     readonly property real suggestionRowHeight: Styling.spacing(48)
     property var spotifySuggestions: ({tracks: [], pending: false, status: ""})
     property var pendingSuggestionDownload: null
@@ -561,7 +562,7 @@ Window {
         signal playRequested()
         signal enqueueRequested()
         width: ListView.view ? ListView.view.width : 0
-        height: inFullscreenQueue ? Styling.spacing(60) : compact ? root.suggestionRowHeight : Styling.spacing(70)
+        height: inFullscreenQueue ? Styling.spacing(60) : compact ? root.suggestionRowHeight : root.trackRowHeight
         variant: selected || rowClick.containsMouse ? "focus" : "transparent"
         radius: inFullscreenQueue ? Styling.radius(-4) : Styling.radius(0)
         Rectangle {
@@ -747,6 +748,10 @@ Window {
                         id: songs
                         visible: !cards.visible
                         Layout.fillWidth: true; Layout.fillHeight: true; clip: true; spacing: 4
+                        // Keep the first three playlist rows in view while Suggested contracts.
+                        Layout.minimumHeight: root.page === "Playlist"
+                            ? Math.max(0, Math.min(count, 3) * (root.trackRowHeight + spacing) - spacing) : 0
+                        Layout.preferredHeight: Layout.minimumHeight
                         model: root.shownTracks
                         delegate: TrackRow {
                             required property var modelData
@@ -762,6 +767,7 @@ Window {
                     ColumnLayout {
                         visible: root.page === "Playlist"
                         Layout.fillWidth: true
+                        Layout.fillHeight: true
                         RowLayout {
                             Layout.fillWidth: true
                             StyledText { text: "Suggested tracks · Spotify · " + root.suggestedTracks.length; font.bold: true; Layout.fillWidth: true }
@@ -784,7 +790,9 @@ Window {
                             id: suggestionsList
                             objectName: "music-playlist-suggestions"
                             Layout.fillWidth: true
+                            Layout.fillHeight: true
                             Layout.preferredHeight: Math.min(count, 4) * root.suggestionRowHeight
+                            Layout.maximumHeight: Layout.preferredHeight
                             clip: true; model: root.suggestedTracks
                             // ListView creates rows on demand as they enter the viewport.
                             reuseItems: true
