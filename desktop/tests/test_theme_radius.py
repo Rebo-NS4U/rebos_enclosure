@@ -10,6 +10,17 @@ sys.path.insert(0, str(SCRIPTS))
 from apply_desktop_palette import apply_niri_theme
 
 class ThemeRadiusTests(unittest.TestCase):
+    def test_spotify_stays_opaque_with_transparent_theme(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary)
+            apply_niri_theme(dict(primary='#112233', secondary='#223344',
+                                 outlineVariant='#334455', opacity=0.68), home)
+            rules = (home / '.cache/rebos_shell/niri-colors.kdl').read_text()
+            spotify = next(block for block in rules.split('window-rule {') if 'Spotify' in block)
+            self.assertIn('opacity 1.0', spotify)
+            self.assertNotIn('dolphin', spotify)
+            self.assertIn('opacity 0.68', rules)
+
     def test_generated_window_and_popup_corners_follow_theme(self):
         with tempfile.TemporaryDirectory() as temporary:
             home = Path(temporary)

@@ -116,8 +116,13 @@ def apply_niri_theme(p, home):
           '    }\n'
           '}\n'
           'window-rule {\n'
-          '    match app-id=r#"^(Spotify|spotify|com\\.spotify\\.Client|org\\.kde\\.dolphin|thunar)$"#\n'
+          '    match app-id=r#"^(org\\.kde\\.dolphin|thunar)$"#\n'
           f'    opacity {float(max(0, min(1, float(p.get("opacity", 1)))))}\n'
+          '}\n'
+          # Whole-window alpha also fades artwork and text; keep Spotify crisp.
+          'window-rule {\n'
+          '    match app-id=r#"^(Spotify|spotify|com\\.spotify\\.Client)$"#\n'
+          '    opacity 1.0\n'
           '}\n')
 
 

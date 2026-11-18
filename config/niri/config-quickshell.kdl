@@ -178,10 +178,10 @@ window-rule {
     opacity 0.88
 }
 
-// Spotify glass: preserve the dark palette while revealing the wallpaper.
+// Keep Spotify artwork and text at full contrast.
 window-rule {
     match app-id=r#"^(Spotify|spotify|com\.spotify\.Client)$"#
-    opacity 0.80
+    opacity 1.0
     draw-border-with-background false
     background-effect {
         blur true
