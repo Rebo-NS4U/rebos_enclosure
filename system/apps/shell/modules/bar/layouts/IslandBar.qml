@@ -65,7 +65,7 @@ Item {
         NumberAnimation {
             id: revealAnimation
             duration: root.isExpanded ? root.morphDuration : root.morphCollapseDuration
-            easing.type: root.isExpanded ? Easing.OutQuint : Easing.InOutCubic
+            easing.type: Easing.InOutCubic
         }
     }
 
@@ -366,8 +366,8 @@ Item {
         barHoverAnim.start();
     }
 
-    readonly property int morphDuration: Math.round(Motion.enter * 1.15)
-    readonly property int morphCollapseDuration: Motion.exit
+    readonly property int morphDuration: Math.round(Motion.base * 1.15)
+    readonly property int morphCollapseDuration: Math.round(Motion.base * 0.95)
     readonly property int contentFadeInDuration: Math.round(Motion.enter * 0.85)
     readonly property int contentFadeOutDuration: Math.round(Motion.enter * 0.55)
 
@@ -670,7 +670,7 @@ Item {
             ? root.targetWidth : collapsedView.width
         Behavior on centerWidth {
             enabled: Motion.enabled
-            NumberAnimation { duration: root.morphDuration; easing.type: Easing.InOutCubic }
+            NumberAnimation { duration: root.isExpanded ? root.morphDuration : root.morphCollapseDuration; easing.type: Easing.InOutCubic }
         }
         islandLeft: (width - centerWidth) / 2
         islandRight: (width + centerWidth) / 2
@@ -714,7 +714,7 @@ Item {
             enabled: Motion.enabled && (root.barNormallyVisible || root.isExpanded) && !root.retractingToHidden
             NumberAnimation {
                 duration: root.currentMode === "typing" || root.previousMode === "typing" ? Math.min(180, Motion.enter) : (root.isExpanded ? root.morphDuration : root.morphCollapseDuration)
-                easing.type: root.currentMode === "typing" || root.previousMode === "typing" ? Easing.OutQuint : (root.isExpanded ? Easing.OutQuint : Easing.InOutCubic)
+                easing.type: root.currentMode === "typing" || root.previousMode === "typing" ? Easing.OutQuint : Easing.InOutCubic
             }
         }
 
@@ -722,7 +722,7 @@ Item {
             enabled: Motion.enabled && (root.barNormallyVisible || root.isExpanded) && !root.retractingToHidden
             NumberAnimation {
                 duration: root.currentMode === "typing" || root.previousMode === "typing" ? Math.min(180, Motion.enter) : (root.isExpanded ? root.morphDuration : root.morphCollapseDuration)
-                easing.type: root.currentMode === "typing" || root.previousMode === "typing" ? Easing.OutQuint : (root.isExpanded ? Easing.OutQuint : Easing.InOutCubic)
+                easing.type: root.currentMode === "typing" || root.previousMode === "typing" ? Easing.OutQuint : Easing.InOutCubic
             }
         }
 
@@ -1206,8 +1206,7 @@ Item {
             IslandDashboard {
                 id: dashboardView
                 transformOrigin: Item.Top
-                scale: 0.985 + opacity * 0.015
-                transform: Translate { y: (1 - dashboardView.opacity) * Motion.offset }
+
                 screen: root.screen
                 anchors.top: parent.top
                 anchors.horizontalCenter: parent.horizontalCenter
@@ -1256,8 +1255,7 @@ Item {
                     property bool revealReady: false
                     Component.onCompleted: revealReady = true
                     transformOrigin: Item.Top
-                    scale: 0.985 + opacity * 0.015
-                    transform: Translate { y: (1 - powerContent.opacity) * Motion.offset }
+
 
                     anchors.top: parent.top
                     anchors.horizontalCenter: parent.horizontalCenter
@@ -1297,8 +1295,7 @@ Item {
                     property bool revealReady: false
                     Component.onCompleted: revealReady = true
                     transformOrigin: Item.Top
-                    scale: 0.985 + opacity * 0.015
-                    transform: Translate { y: (1 - soundContent.opacity) * Motion.offset }
+
 
                     anchors.top: parent.top
                     anchors.horizontalCenter: parent.horizontalCenter
@@ -1337,8 +1334,7 @@ Item {
                     property bool revealReady: false
                     Component.onCompleted: revealReady = true
                     transformOrigin: Item.Top
-                    scale: 0.985 + opacity * 0.015
-                    transform: Translate { y: (1 - micContent.opacity) * Motion.offset }
+
 
                     anchors.top: parent.top
                     anchors.horizontalCenter: parent.horizontalCenter
@@ -1377,8 +1373,7 @@ Item {
                     property bool revealReady: false
                     Component.onCompleted: revealReady = true
                     transformOrigin: Item.Top
-                    scale: 0.985 + opacity * 0.015
-                    transform: Translate { y: (1 - wifiContent.opacity) * Motion.offset }
+
 
                     anchors.top: parent.top
                     anchors.horizontalCenter: parent.horizontalCenter
@@ -1417,8 +1412,7 @@ Item {
                     property bool revealReady: false
                     Component.onCompleted: revealReady = true
                     transformOrigin: Item.Top
-                    scale: 0.985 + opacity * 0.015
-                    transform: Translate { y: (1 - bluetoothContent.opacity) * Motion.offset }
+
 
                     anchors.top: parent.top
                     anchors.horizontalCenter: parent.horizontalCenter
@@ -1457,8 +1451,7 @@ Item {
                     property bool revealReady: false
                     Component.onCompleted: revealReady = true
                     transformOrigin: Item.Top
-                    scale: 0.985 + opacity * 0.015
-                    transform: Translate { y: (1 - statsContent.opacity) * Motion.offset }
+
 
                     anchors.top: parent.top
                     anchors.horizontalCenter: parent.horizontalCenter
@@ -1497,8 +1490,7 @@ Item {
                     property bool revealReady: false
                     Component.onCompleted: revealReady = true
                     transformOrigin: Item.Top
-                    scale: 0.985 + opacity * 0.015
-                    transform: Translate { y: (1 - alertsContent.opacity) * Motion.offset }
+
 
                     anchors.top: parent.top
                     anchors.horizontalCenter: parent.horizontalCenter
@@ -1537,8 +1529,7 @@ Item {
                     property bool revealReady: false
                     Component.onCompleted: revealReady = true
                     transformOrigin: Item.Top
-                    scale: 0.985 + opacity * 0.015
-                    transform: Translate { y: (1 - wallpapersContent.opacity) * Motion.offset }
+
 
                     screen: root.screen
                     anchors.top: parent.top
@@ -1578,8 +1569,7 @@ Item {
                     property bool revealReady: false
                     Component.onCompleted: revealReady = true
                     transformOrigin: Item.Top
-                    scale: 0.985 + opacity * 0.015
-                    transform: Translate { y: (1 - batteryContent.opacity) * Motion.offset }
+
 
                     anchors.top: parent.top
                     anchors.horizontalCenter: parent.horizontalCenter
@@ -1618,8 +1608,7 @@ Item {
                     property bool revealReady: false
                     Component.onCompleted: revealReady = true
                     transformOrigin: Item.Top
-                    scale: 0.985 + opacity * 0.015
-                    transform: Translate { y: (1 - weatherContent.opacity) * Motion.offset }
+
 
                     anchors.top: parent.top
                     anchors.horizontalCenter: parent.horizontalCenter
@@ -1658,8 +1647,7 @@ Item {
                     property bool revealReady: false
                     Component.onCompleted: revealReady = true
                     transformOrigin: Item.Top
-                    scale: 0.985 + opacity * 0.015
-                    transform: Translate { y: (1 - mediaContent.opacity) * Motion.offset }
+
 
                     reader: typingView
                     onOpenReaderRequested: root.expand("typing")
@@ -1700,8 +1688,7 @@ Item {
                     property bool revealReady: false
                     Component.onCompleted: revealReady = true
                     transformOrigin: Item.Top
-                    scale: 0.985 + opacity * 0.015
-                    transform: Translate { y: (1 - calendarContent.opacity) * Motion.offset }
+
 
                     anchors.top: parent.top
                     anchors.horizontalCenter: parent.horizontalCenter
@@ -1729,8 +1716,7 @@ Item {
             Item {
                 id: launcherViewWrapper
                 transformOrigin: Item.Top
-                scale: 0.985 + opacity * 0.015
-                transform: Translate { y: (1 - launcherViewWrapper.opacity) * Motion.offset }
+
                 anchors.top: parent.top
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: root.targetWidth

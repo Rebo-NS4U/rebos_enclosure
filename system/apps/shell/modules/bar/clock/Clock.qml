@@ -637,8 +637,8 @@ Item {
         Behavior on revealProgress {
             enabled: Config.animDuration > 0
             NumberAnimation {
-                duration: dashboardPopup.isOpen ? Motion.enter : Motion.exit
-                easing.type: dashboardPopup.isOpen ? Easing.OutQuint : Easing.InOutCubic
+                duration: Math.round(Motion.base * (dashboardPopup.isOpen ? 1.15 : 0.95))
+                easing.type: Easing.InOutCubic
             }
         }
 
@@ -679,7 +679,7 @@ Item {
 
         Timer {
             id: closeTimer
-            interval: Motion.exit > 0 ? Motion.exit + 40 : 40
+            interval: Math.round(Motion.base * 0.95) + 40
             onTriggered: {
                 if (!dashboardPopup.isOpen)
                     dashboardPopup.menuShown = false;
@@ -705,7 +705,6 @@ Item {
             id: cardReveal
 
             visible: dashboardPopup.menuShown
-            opacity: Math.min(1, dashboardPopup.revealProgress * 2.5)
             width: dashboardLoader.item ? dashboardLoader.item.implicitWidth + dashboardPopup.contentPadding * 2 : 916
             height: (dashboardLoader.item
                 ? dashboardLoader.item.implicitHeight + dashboardPopup.contentPadding * 2
