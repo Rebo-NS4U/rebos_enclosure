@@ -74,15 +74,19 @@ class Mixes:
                 raise ValueError('Wait for the current Spotify preview to finish.')
             self.preview = (job, result)
         try:
-            error = result.result(timeout=10)
+            error = result.result(timeout=3)
             if error:
                 raise ValueError(error)
             return dict(uri=uri, status='Playing through Spotify in the background')
         except TimeoutError:
-            raise ValueError('Spotify did not confirm playback. Check that Spotify has the updated integration.') from None
+            # Spotify may throttle its integration while the app is in the tray.
+            pass
         finally:
             with self.lock:
                 self.preview = None
+
+        from music_preview import preview
+        return preview(uri, start=False)
 
     def replace_playlist(self, uri, tracks):
         uri = playlist_uri(uri)
