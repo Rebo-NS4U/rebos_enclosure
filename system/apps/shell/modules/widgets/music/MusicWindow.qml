@@ -1047,10 +1047,11 @@ Window {
                     Layout.fillWidth: true; Layout.fillHeight: true
                     Layout.preferredWidth: stage.width * 0.45
                     spacing: 16
-                    StyledText { text: "LYRICS"; font.pixelSize: Styling.fontSize(-2); font.letterSpacing: 3; color: Colors.primary }
+                    StyledText { visible: fullscreenLyrics.visible; text: "LYRICS"; font.pixelSize: Styling.fontSize(-2); font.letterSpacing: 3; color: Colors.primary }
                     ListView {
                         id: fullscreenLyrics
                         objectName: "music-fullscreen-lyrics"
+                        visible: root.lyricLines.length > 0
                         Layout.fillWidth: true; Layout.fillHeight: true
                         clip: true; spacing: 26
                         model: root.lyricLines
@@ -1065,7 +1066,50 @@ Window {
                             color: index === root.lyricIndex ? Colors.primary : Colors.overSurfaceVariant
                             opacity: index === root.lyricIndex ? 1 : 0.55
                         }
-                        StyledText { anchors.centerIn: parent; width: parent.width; text: root.lyricStatus || "Let the music speak."; visible: root.lyricLines.length === 0; wrapMode: Text.WordWrap; font.pixelSize: Styling.fontSize(8); color: Colors.overSurfaceVariant }
+                    }
+                    Item {
+                        objectName: "music-fullscreen-vinyl"
+                        visible: root.lyricLines.length === 0
+                        Layout.fillWidth: true; Layout.fillHeight: true
+                        Rectangle {
+                            id: record
+                            anchors.centerIn: parent
+                            width: Math.min(parent.width * 0.9, parent.height * 0.85)
+                            height: width
+                            radius: width / 2
+                            border.color: Qt.alpha(Colors.outline, 0.35)
+                            gradient: Gradient {
+                                GradientStop { position: 0; color: Qt.tint(Colors.surface, Qt.alpha(Colors.primary, 0.22)) }
+                                GradientStop { position: 0.5; color: Colors.surface }
+                                GradientStop { position: 1; color: Qt.tint(Colors.surface, Qt.alpha(Colors.primary, 0.14)) }
+                            }
+                            Repeater {
+                                model: 15
+                                delegate: Rectangle {
+                                    required property int index
+                                    anchors.centerIn: parent
+                                    width: record.width * (0.4 + index * 0.039)
+                                    height: width
+                                    radius: width / 2
+                                    color: "transparent"
+                                    border.color: Qt.alpha(Colors.outline, index % 4 === 0 ? 0.32 : 0.15)
+                                }
+                            }
+                            Rectangle {
+                                anchors.centerIn: parent
+                                width: record.width * 0.35
+                                height: width
+                                radius: width / 2
+                                color: Qt.tint(Colors.surface, Qt.alpha(Colors.primary, 0.55))
+                                Rectangle {
+                                    anchors.centerIn: parent
+                                    width: parent.width * 0.09
+                                    height: width
+                                    radius: width / 2
+                                    color: Colors.surface
+                                }
+                            }
+                        }
                     }
                     StyledText { visible: root.estimatedTiming; text: "Estimated lyric timing"; color: Colors.overSurfaceVariant; font.pixelSize: Styling.fontSize(-2) }
                 }

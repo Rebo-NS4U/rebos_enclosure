@@ -317,6 +317,15 @@ def session():
                     const transport = findItem(music.contentItem, "music-fullscreen-play");
                     const rail = findItem(music.contentItem, "music-fullscreen-seek");
                     if (!music.immersive || !stage.visible || !art.visible || art.width < 100 || !transport.enabled || !rail.enabled) { console.error("MUSIC_FULLSCREEN_ENTER_FAILED"); Qt.exit(1); return; }
+                    const lyrics = findItem(music.contentItem, "music-fullscreen-lyrics");
+                    const vinyl = findItem(music.contentItem, "music-fullscreen-vinyl");
+                    const savedLyrics = music.lyricText;
+                    music.lyricText = "";
+                    if (lyrics.visible || !vinyl.visible || vinyl.width < 100 || vinyl.height < 100) { console.error("MUSIC_FULLSCREEN_VINYL_FAILED"); Qt.exit(1); return; }
+                    music.lyricText = "[00:00.00]Fullscreen test lyric";
+                    if (!lyrics.visible || vinyl.visible) { console.error("MUSIC_FULLSCREEN_LYRICS_RESTORE_FAILED"); Qt.exit(1); return; }
+                    music.lyricText = savedLyrics;
+                    console.log("MUSIC_FULLSCREEN_LYRICS_FALLBACK_PASSED");
                     const pos = transport.mapToItem(stage, 0, 0);
                     if (pos.y < 0 || pos.y + transport.height > stage.height) { console.error("MUSIC_FULLSCREEN_BOUNDS_FAILED"); Qt.exit(1); return; }
                     const add = findItem(music.contentItem, "music-fullscreen-add-current-to-playlist");
