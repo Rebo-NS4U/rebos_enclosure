@@ -198,24 +198,12 @@ esac
                     favorite.clicked();
                     music.playlists = [
                         {id:"test",name:"Acceptance",paths:music.queue.map(t=>t.path).reverse()},
-                        {id:"regular-add",name:"Regular add",paths:[]},
-                        {id:"fullscreen-add",name:"Fullscreen add",paths:[]}
+                        {id:"remove-test",name:"Remove test",paths:[music.tracks[0].path]}
                     ];
                     music.save();
-                    const add = findItem(music.contentItem, "music-add-current-to-playlist");
-                    input.mouseClick(add, add.width / 2, add.height / 2);
-                    phase = 12;
-                } else if (phase === 12) {
-                    const choices = findItem(music.contentItem, "music-playlist-choices");
-                    if (!choices?.itemAtIndex(1)) return;
-                    if (choices.itemAtIndex(0).enabled) { console.error("MUSIC_PLAYLIST_DUPLICATE_ENABLED"); Qt.exit(1); return; }
-                    const choice = choices.itemAtIndex(1);
-                    input.mouseClick(choice, choice.width / 2, choice.height / 2);
-                    phase = 13;
-                } else if (phase === 13 && !music.busy) {
-                    if (music.playlists[1].paths[0] !== music.tracks[0].path) { console.error("MUSIC_REGULAR_PLAYLIST_ADD_FAILED"); Qt.exit(1); return; }
-                    input.keyClick(Qt.Key_Escape);
-                    if (!music.visible || findItem(music.contentItem, "music-playlist-choices")?.visible) { console.error("MUSIC_PLAYLIST_PICKER_ESCAPE_FAILED"); Qt.exit(1); return; }
+                    if (findItem(music.contentItem, "music-add-current-to-playlist")?.visible) {
+                        console.error("LOCAL_PLAYLIST_ADD_VISIBLE"); Qt.exit(1); return;
+                    }
                     findItem(music.contentItem, "music-repeat").clicked();
                     if (music.repeatMode !== "Track") { console.error("MUSIC_REPEAT_TOGGLE_FAILED"); Qt.exit(1); }
                     music.seek(3800);
@@ -251,7 +239,7 @@ esac
                     if (music.currentIndex !== 0) { console.error("MUSIC_EXPLICIT_START_FAILED"); Qt.exit(1); }
                     if (music.page !== "Playlists" || music.queue[0].path !== music.tracks[1].path) { console.error("MUSIC_PLAYLIST_CARD_FAILED"); Qt.exit(1); }
                     music.control({action:"Pause"});
-                    music.navigate("Playlist", "regular-add");
+                    music.navigate("Playlist", "remove-test");
                     phase = 98;
                 } else if (phase === 98 && !music.busy) {
                     const row = findItem(music.contentItem, "music-track-row-0");
@@ -370,23 +358,9 @@ esac
                     if (pos.y < 0 || pos.y + transport.height > stage.height) { console.error("MUSIC_FULLSCREEN_BOUNDS_FAILED"); Qt.exit(1); return; }
                     const add = findItem(music.contentItem, "music-fullscreen-add-current-to-playlist");
                     const exit = findItem(music.contentItem, "music-fullscreen-exit");
-                    if (!add || add.parent !== exit.parent || add.text !== "Add to playlist") { console.error("MUSIC_FULLSCREEN_PLAYLIST_HEADER_FAILED"); Qt.exit(1); return; }
-                    stop();
-                    if (!transport.activeFocus || !tabTo(add)) { console.error("FULLSCREEN_INITIAL_FOCUS_FAILED", music.activeFocusItem); Qt.exit(1); return; }
-                    input.keyClick(Qt.Key_Return);
-                    phase = 901;
-                    start();
-                } else if (phase === 901) {
-                    const choices = findItem(music.contentItem, "music-playlist-choices");
-                    if (!choices?.itemAtIndex(2)) return;
-                    if (!choices.activeFocus) { console.error("PLAYLIST_KEYBOARD_FOCUS_FAILED", music.activeFocusItem); Qt.exit(1); return; }
-                    input.keyClick(Qt.Key_End);
-                    input.keyClick(Qt.Key_Return);
-                    phase = 902;
-                } else if (phase === 902 && !music.busy) {
-                    if (music.playlists[2].paths[0] !== music.current.path) { console.error("MUSIC_FULLSCREEN_PLAYLIST_ADD_FAILED"); Qt.exit(1); return; }
-                    input.keyClick(Qt.Key_Escape);
-                    if (!music.immersive || findItem(music.contentItem, "music-playlist-choices")?.visible) { console.error("MUSIC_FULLSCREEN_PLAYLIST_PICKER_ESCAPE_FAILED"); Qt.exit(1); return; }
+                    if (!add || add.visible || add.parent !== exit.parent || !transport.activeFocus) {
+                        console.error("FULLSCREEN_LOCAL_PLAYLIST_HEADER_FAILED"); Qt.exit(1); return;
+                    }
                     const selected = music.current.path;
                     findItem(music.contentItem, "music-fullscreen-exit").clicked();
                     if (music.immersive || music.current.path !== selected) { console.error("MUSIC_FULLSCREEN_RESTORE_FAILED"); Qt.exit(1); return; }
@@ -494,7 +468,7 @@ esac
                     music.spotifySuggestions = {playlist: "queue-test", pending: false, tracks: [suggestion]};
                     spotify.metadata = {"xesam:url": "https://open.spotify.com/track/" + uri.split(":").pop() + "?si=test"};
                     const add = findItem(music.contentItem, "music-fullscreen-add-current-to-playlist");
-                    if (music.currentPlaylistPath || !add.enabled || !tabTo(add)) { console.error("UNDOWNLOADED_SUGGESTION_ADD_DISABLED"); Qt.exit(1); return; }
+                    if (!add.visible || !add.enabled || !tabTo(add)) { console.error("UNDOWNLOADED_SUGGESTION_ADD_DISABLED"); Qt.exit(1); return; }
                     input.keyClick(Qt.Key_Return);
                     if (findItem(music.contentItem, "music-playlist-choices")?.visible ||
                         !music.busy || !music.callbacks[music.requestId] || add.enabled) {
@@ -503,7 +477,6 @@ esac
                     // The private backend has no Spotify session, so consume its expected rejection.
                     music.receive(JSON.stringify({id:music.requestId,ok:false,error:"Test suggestion download rejected"}));
                     music.tracks = originalTracks.map((track, i) => i === 0 ? Object.assign({}, track, {spotifyUri: uri}) : track);
-                    if (music.currentPlaylistPath !== originalTracks[0].path) { console.error("SPOTIFY_URL_LOCAL_MATCH_FAILED"); Qt.exit(1); return; }
                     console.log("MUSIC_SUGGESTION_DIRECT_ADD_PASSED");
                     input.keyClick(Qt.Key_Q);
                     if (!tabTo(findItem(music.contentItem, "music-fullscreen-suggestions-tab"))) { console.error("SUGGESTIONS_TAB_FOCUS_FAILED"); Qt.exit(1); return; }
@@ -732,8 +705,7 @@ esac
         import json
         state=json.loads((home/'.local/state/enclosure/music/library.json').read_text())
         assert len(state['favorites'])==1 and len(state['playlists'][0]['paths'])==2, state
-        assert next(p for p in state['playlists'] if p['id'] == 'regular-add')['paths'] == [], state
-        assert len(next(p for p in state['playlists'] if p['id'] == 'fullscreen-add')['paths']) == 1, state
+        assert next(p for p in state['playlists'] if p['id'] == 'remove-test')['paths'] == [], state
         print('Music playback, queue, seek, lyrics and persisted favorites/playlists verified.')
 
 
