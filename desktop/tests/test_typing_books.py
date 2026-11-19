@@ -33,8 +33,14 @@ class Books(unittest.TestCase):
                        stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, timeout=120)
         imported = self.library.handle({'action': 'import', 'path': str(mobi)})
         self.assertEqual(imported['title'], 'Mobi regression book')
-        self.assertIn('Hello from a real MOBI book.', imported['passage'])
-        self.assertGreaterEqual(len(imported['chapters']), 2)
+        titles = [chapter['title'] for chapter in imported['chapters']]
+        first = titles.index('Chapter One')
+        second = titles.index('Chapter Two')
+        self.assertLess(first, second)
+        for index, passage in ((first, 'Hello from a real MOBI book.'),
+                               (second, 'The next chapter begins here.')):
+            chapter = self.library.handle({'action': 'chapter', 'id': imported['id'], 'index': index})
+            self.assertIn(passage, chapter['passage'])
 
     def test_mobi_import_preserves_metadata_and_chapters(self):
         source = Path(self.temp.name) / 'book with spaces.MOBI'

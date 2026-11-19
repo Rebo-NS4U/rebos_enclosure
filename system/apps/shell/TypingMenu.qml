@@ -2290,7 +2290,7 @@ Item {
                                     spacing: 6
                                     RowLayout {
                                         Layout.fillWidth: true
-                                        StyledText { text: root.chapters[chapterOption.index].title; Layout.fillWidth: true; Layout.minimumWidth: 0; elide: Text.ElideRight }
+                                        StyledText { text: root.chapters[chapterOption.index]?.title ?? ""; Layout.fillWidth: true; Layout.minimumWidth: 0; elide: Text.ElideRight }
                                         StyledText { text: (root.chapterCompletion(chapterOption.index) * 100).toFixed(1) + "%"; color: Colors.primary; font.pixelSize: 12 }
                                     }
                                     StandardProgressBar {

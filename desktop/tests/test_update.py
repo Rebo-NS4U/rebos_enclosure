@@ -112,7 +112,7 @@ class PackageApprovalTests(unittest.TestCase):
                     migrate.assert_called_once_with(root, root)
                     run.assert_called_once_with('python3', str(sync))
 
-    def test_package_upgrade_approval_command(self):
+    def test_package_upgrade_ensures_music_dbus_dependency(self):
         for helper_exists in (True, False):
             with self.subTest(helper_exists=helper_exists), tempfile.TemporaryDirectory() as temporary:
                 home = Path(temporary)
@@ -132,10 +132,10 @@ class PackageApprovalTests(unittest.TestCase):
                      patch.object(update, 'apply_snapshot'), \
                      patch.object(update, 'validate'):
                     update.main()
-                expected = (str(helper), '--reason',
-                            'Upgrade installed system packages before updating the desktop',
-                            '--', 'pacman', '-Syu') if helper_exists else ('sudo', 'pacman', '-Syu')
-                self.assertEqual(run.call_args_list[1].args, expected)
+                prefix = (str(helper), '--reason',
+                          'Upgrade system packages and ensure Music D-Bus support before updating the desktop',
+                          '--') if helper_exists else ('sudo',)
+                self.assertEqual(run.call_args_list[1].args, (*prefix, 'pacman', '-Syu', '--needed', 'python-dbus'))
 
 
 @unittest.skipIf(os.geteuid() == 0, 'Updater intentionally refuses root')

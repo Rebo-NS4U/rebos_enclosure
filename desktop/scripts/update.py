@@ -128,19 +128,21 @@ def apply_fetched_snapshot(snapshot, home, args):
     print(f'Updating desktop to {commit}', flush=True)
     apply_snapshot(snapshot, home, dry_run=True)
     if args.dry_run:
-        print('Would upgrade installed packages' if not args.files_only else 'Package upgrades skipped')
+        print('Would upgrade installed packages and ensure Music D-Bus support' if not args.files_only else 'Package upgrades skipped')
         return
     if not args.files_only:
         if not Path('/etc/arch-release').exists():
             raise ValueError('Package upgrades require Arch Linux; use --files-only elsewhere')
         import shutil
         sudo = home / '.local/bin/assistant-sudo'
+        # Existing installations may predate Music's MPRIS dependency.
+        packages = ('pacman', '-Syu', '--needed', 'python-dbus')
         if sudo.is_file():
             run(str(sudo), '--reason',
-                'Upgrade installed system packages before updating the desktop',
-                '--', 'pacman', '-Syu')
+                'Upgrade system packages and ensure Music D-Bus support before updating the desktop',
+                '--', *packages)
         else:
-            run('sudo', 'pacman', '-Syu')
+            run('sudo', *packages)
         helper = shutil.which('paru') or shutil.which('yay')
         if helper and not args.no_aur:
             run(helper, '-Sua')

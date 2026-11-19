@@ -24,6 +24,14 @@ class GreeterSyncTests(unittest.TestCase):
                       'regreet-sync.path', 'regreet-sync.timer', 'regreet-sync.service')
             for name in legacy:
                 (units / name).touch()
+            timer = units / 'regreet-sync.timer'
+            timer.unlink()
+            timer.symlink_to(home / 'removed-timer-source')
+            wants = units / 'timers.target.wants'
+            wants.mkdir()
+            (wants / timer.name).symlink_to(timer)
+            replacement_link = wants / 'greeter-sync.timer'
+            replacement_link.symlink_to(units / replacement_link.name)
             with patch.object(greeter_sync.os, 'access', return_value=True), \
                     patch.object(greeter_sync, 'Path') as path, \
                     patch.object(greeter_sync.subprocess, 'run') as run:
@@ -32,10 +40,13 @@ class GreeterSyncTests(unittest.TestCase):
             commands = [call.args[0] for call in run.call_args_list]
             replacement = commands.index(['systemctl', '--user', 'enable', '--now',
                                           'greeter-sync.path', 'greeter-sync.timer'])
-            for name in legacy:
+            for name in set(legacy) - {timer.name}:
                 action = ['disable', '--now'] if name.endswith(('.path', '.timer')) else ['stop']
                 self.assertLess(commands.index(['systemctl', '--user', *action, name]),
                                 replacement)
+            self.assertFalse(timer.is_symlink())
+            self.assertFalse((wants / timer.name).is_symlink())
+            self.assertTrue(replacement_link.is_symlink())
 
     def test_wallpaper_and_color_changes(self):
         script = runpy.run_path(str(ROOT.parent / 'system/bin/greeter-sync'))

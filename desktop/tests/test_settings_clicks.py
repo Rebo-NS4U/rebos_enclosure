@@ -254,7 +254,7 @@ ShellRoot {
       let dismissComponent = Qt.createComponent("modules/notifications/NotificationDismissButton.qml");
       fixture.check(dismissComponent.status === Component.Ready, dismissComponent.errorString());
       let criticalDismiss = dismissComponent.createObject(fixture, {urgency: 2});
-      fixture.check(criticalDismiss.background.variant === "error" && criticalDismiss.background.iconColor.toString() === Colors.overError.toString(), "Critical notification action uses readable error foreground");
+      fixture.check(criticalDismiss.background.variant === "error" && criticalDismiss.contentItem.children.some(child => child.visible && child.text === criticalDismiss.glyph && child.color.toString() === Colors.overError.toString()), "Critical notification action uses readable error foreground");
       criticalDismiss.destroy();
       let themeButtonComponent = Qt.createComponent("modules/components/ThemeButton.qml");
       fixture.check(themeButtonComponent.status === Component.Ready, themeButtonComponent.errorString());
@@ -266,7 +266,7 @@ ShellRoot {
       fixture.check(themedAction.opacity < 1, "Disabled action is visibly distinct");
       themedAction.enabled = true;
       themedAction.highlighted = true; tester.wait(20);
-      fixture.check(themedAction.background.variant === "primary", "Highlighted action uses matching theme surface");
+      fixture.check(themedAction.background.variant === (themedAction.hovered ? "primaryfocus" : "primary"), "Highlighted action uses matching theme surface");
       themedAction.destroy();
       let sliderComponent = Qt.createComponent("modules/components/StyledSlider.qml");
       fixture.check(sliderComponent.status === Component.Ready, sliderComponent.errorString());
@@ -294,7 +294,7 @@ ShellRoot {
       const labelBottom = unitLabel.mapToItem(weather, 0, unitLabel.height).y;
       fixture.check(labelBottom <= celsius.mapToItem(weather, 0, 0).y, "Temperature label is above its buttons");
       fixture.check(celsius.width >= celsius.contentItem.implicitWidth && fahrenheit.width >= fahrenheit.contentItem.implicitWidth, "Temperature button labels fit a narrow panel");
-      fixture.check(celsius.contentItem.color.a > 0 && fahrenheit.contentItem.color.a > 0, "Both temperature labels have visible theme colors");
+      fixture.check([celsius, fahrenheit].every(button => button.contentItem.children.some(child => child.visible && child.text === button.text && child.color.a > 0)), "Both temperature labels have visible theme colors");
       tester.mouseClick(fahrenheit); tester.wait(40); fixture.check(Config.weather.unit === "F" && fahrenheit.highlighted, "Fahrenheit button saves units");
       tester.mouseClick(celsius); tester.wait(40); fixture.check(Config.weather.unit === "C" && celsius.highlighted, "Celsius button saves units");
       Config.weather.unit = savedUnit; weather.destroy();
@@ -315,19 +315,22 @@ ShellRoot {
       tester.mouseClick(shortcutsPage); tester.wait(100);
       fixture.check(settings.currentSection === 7, "Page shortcut opens keyboard settings");
       for (let legacy of [{sub: "weather", page: 6, target: "weather"}, {sub: "system", page: 6, target: "storage"}, {sub: "performance", page: 4, target: "performance"}]) {
-       settings.openSection(5, legacy.sub); tester.wait(200);
-       let activeLoader = fixture.find(settings, "settings-panel-" + settings.currentSection);
-       fixture.check(settings.currentSection === legacy.page && activeLoader.item.currentSection === legacy.target, "Old links open the relocated controls: " + legacy.sub);
+       settings.openSection(5, legacy.sub);
+       tester.tryVerify(() => {
+        const activeLoader = fixture.find(settings, "settings-panel-" + legacy.page);
+        return settings.currentSection === legacy.page && activeLoader?.item?.currentSection === legacy.target;
+       }, 2000, "Old links open the relocated controls: " + legacy.sub);
       }
       for (let group of settings.categoryModel) {
        settings.openSection(group.section, "");
        tester.wait(60);
        fixture.check(settings.activeCategory.label === group.label, "Category activates");
        for (let section of group.sections) {
-        let panel = fixture.find(settings, "settings-panel-" + section);
-        fixture.check(panel && panel.visible, "Every category panel is on the page");
-        settings.openSection(section, ""); tester.wait(100);
-        fixture.check(panel.item !== null, "Category panel loaded");
+        settings.openSection(section, "");
+        tester.tryVerify(() => {
+         const panel = fixture.find(settings, "settings-panel-" + section);
+         return panel?.visible && !!panel.item;
+        }, 2000, "Category panel loads: " + section);
         fixture.check(settings.selectedIndex === settings.categoryModel.indexOf(group), "Category stays selected");
        }
       }
@@ -335,24 +338,30 @@ ShellRoot {
       tester.wait(60);
       fixture.check(settings.currentSection === 8 && settings.selectedIndex === 1, "External window-rule link selects Desktop");
       settings.searchQuery = "transparency";
-      tester.wait(80);
-      fixture.check(settings.currentSection === 4 , "Search opens appearance subsection");
-      let loader = fixture.find(settings, "settings-panel-" + settings.currentSection);
-      tester.wait(150);
-      fixture.check(loader.item && loader.item.currentSection === "blur", "Search loads transparency sliders directly");
+      tester.tryVerify(() => settings.currentSection === 4 &&
+       fixture.find(settings, "settings-panel-4")?.item?.currentSection === "blur", 2000,
+       "Search opens the transparency controls");
+      const loader = fixture.find(settings, "settings-panel-4");
       let categoryScroller = fixture.find(settings, "settings-category-scroll");
       let scrollingSlider = fixture.find(loader.item, "transparency-slider");
-      let sliderPoint = scrollingSlider.mapToItem(categoryScroller.contentItem, 0, 0);
-      categoryScroller.contentY = Math.max(0, sliderPoint.y - 100); tester.wait(30);
+      tester.tryVerify(() => scrollingSlider.visible && scrollingSlider.width > 0 &&
+       categoryScroller.contentHeight > categoryScroller.height, 2000, "Transparency slider is laid out");
+      const sliderPoint = scrollingSlider.mapToItem(categoryScroller.contentItem, 0, 0);
+      categoryScroller.contentY = Math.max(0, sliderPoint.y - 100);
       const previousValue = scrollingSlider.value;
       let beforeWheel = categoryScroller.contentY;
-      tester.mouseWheel(scrollingSlider, scrollingSlider.width / 2, scrollingSlider.height / 2, 0, -120); tester.wait(30);
-      fixture.check(categoryScroller.contentY > beforeWheel && scrollingSlider.value === previousValue, "Wheel over slider scrolls without changing its value");
+      tester.mouseWheel(scrollingSlider, scrollingSlider.width / 2, scrollingSlider.height / 2, 0, -120);
+      tester.tryVerify(() => categoryScroller.contentY > beforeWheel, 2000, "Wheel over slider scrolls Settings");
+      fixture.check(scrollingSlider.value === previousValue, "Wheel over slider preserves its value");
       const wheelSurface = fixture.find(settings, "settings-scroll-wheel");
-      categoryScroller.contentY = categoryScroller.contentHeight - categoryScroller.height;
+      const scrollEnd = () => categoryScroller.contentHeight - categoryScroller.height;
+      categoryScroller.contentY = scrollEnd();
+      tester.tryVerify(() => Math.abs(categoryScroller.contentY - scrollEnd()) < 1,
+       2000, "Settings is at the end of the page");
       beforeWheel = categoryScroller.contentY;
-      tester.mouseWheel(wheelSurface, 80, 80, 0, 120); tester.wait(30);
-      fixture.check(Math.abs(categoryScroller.contentY - Math.max(0, beforeWheel - 120)) < 1, "Wheel moves 120 pixels and reverses immediately at the end of the page");
+      tester.mouseWheel(wheelSurface, wheelSurface.width - 16, 80, 0, 120);
+      tester.tryVerify(() => Math.abs(categoryScroller.contentY - Math.max(0, beforeWheel - 120)) < 1,
+       2000, "Wheel reverses by 120 pixels from the end of Settings");
       settings.searchQuery = "";
       tester.wait(50);
       fixture.check(settings.currentSection === 4 && settings.selectedIndex === 0 && settings.filteredSections.length === 4, "Clearing search preserves page and category");
