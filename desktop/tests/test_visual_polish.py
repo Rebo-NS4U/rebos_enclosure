@@ -10,7 +10,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def run_qml(app, harness, *, assistant=False, fixtures=None):
+def run_qml(app, harness, *, assistant=False):
     with tempfile.TemporaryDirectory(prefix='enclosure-polish-') as directory:
         root = Path(directory)
         for name in ('modules', 'config', 'assets'):
@@ -42,10 +42,6 @@ Singleton {
 }''')
             ai = root / 'modules/services/Ai.qml'
             ai.write_text(ai.read_text().replace('root.sessionEnabled = true;', 'root.sessionEnabled = false;'))
-        for name, content in (fixtures or {}).items():
-            path = root / name
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(content)
         (root / 'shell.qml').write_text(harness)
         (root / 'runtime').mkdir(mode=0o700)
         env = dict(os.environ, HOME=directory, XDG_RUNTIME_DIR=str(root / 'runtime'),

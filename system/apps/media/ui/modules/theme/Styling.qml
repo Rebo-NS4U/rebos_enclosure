@@ -1,7 +1,6 @@
 pragma Singleton
 import QtQuick
 import Quickshell
-import Quickshell.Io
 import qs.config
 import qs.modules.theme
 import "ShellStyles.js" as ShellStyles
@@ -24,37 +23,6 @@ Singleton {
     readonly property bool unifiedStyle: shellStyle !== "custom"
     readonly property real ditherCellSize: ShellStyles.ditherCellSize(Config.theme.ditherStrength)
     readonly property real ditherEdgeWidth: Math.max(1, Math.round(ditherCellSize * 0.75))
-
-    // Settings writes this shared selection for the desktop and standalone apps.
-    readonly property string wallpaperCacheDir: Quickshell.env("HOME") + "/.cache/rebos_shell"
-
-    FileView {
-        id: wallpaperSettings
-        path: root.wallpaperCacheDir + "/wallpapers.json"
-        watchChanges: true
-        printErrors: false
-        onFileChanged: reload()
-
-        JsonAdapter {
-            property string currentWall: ""
-            property string wallPath: ""
-            property var perScreenWallpapers: ({})
-        }
-    }
-
-    function wallpaperBackdrop(screenName: string): string {
-        let path = wallpaperSettings.adapter.perScreenWallpapers?.[screenName]
-            || wallpaperSettings.adapter.currentWall;
-        if (!path || !path.startsWith("/")) return "";
-
-        // Reuse the Settings thumbnail for formats displayed through mpvpaper.
-        if (/\.(mp4|webm|mov|avi|mkv|webp|gif)$/i.test(path)) {
-            const folder = wallpaperSettings.adapter.wallPath.replace(/\/$/, "") + "/";
-            const relativePath = path.startsWith(folder) ? path.slice(folder.length) : path.slice(1);
-            path = wallpaperCacheDir + "/thumbnails/" + relativePath + ".jpg";
-        }
-        return "file://" + path.split("/").map(part => encodeURIComponent(part)).join("/");
-    }
 
     function radius(offset: real): real {
         // Keep the argument for existing callers; all corners share one metric.
