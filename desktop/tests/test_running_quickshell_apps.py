@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Exercise the merged application list and registry close targeting in isolation."""
+"""Exercise the merged application list and targeted app closes in isolation."""
 import os
 from pathlib import Path
 import shutil
@@ -31,6 +31,17 @@ else:
     sys.exit(2)
 ''')
     mock.chmod(0o755)
+    niri = root/'bin/niri'
+    niri.write_text("""#!/usr/bin/env python3
+import os, sys
+from pathlib import Path
+
+if sys.argv[1:5] != ['msg', 'action', 'close-window', '--id'] or len(sys.argv) != 6:
+    sys.exit(2)
+with Path(os.environ['NIRI_TEST_STATE']).open('a') as log:
+    print(sys.argv[5], file=log)
+""")
+    niri.chmod(0o755)
     (root/'shell.qml').write_text('''import QtQuick
 import Quickshell
 import qs.modules.bar.island
@@ -71,10 +82,12 @@ ShellRoot {
                     Qt.exit(1);
                     return;
                 }
-                apps.closeApp(apps.instances[0]); phase = 1;
-            } else if (phase === 1 && apps.instances.length === 0 && apps.actionMessage === "Close requested.") {
-                apps.closeApp({id:"failure-instance"}); phase = 2;
-            } else if (phase === 2 && apps.actionMessage.indexOf("Could not close") === 0 && apps.closingId === "") {
+                apps.closeApp(rows[1]); phase = 1;
+            } else if (phase === 1 && apps.closingId === "" && apps.actionMessage === "Close requested.") {
+                apps.closeApp(apps.applications[0]); phase = 2;
+            } else if (phase === 2 && apps.instances.length === 0 && apps.actionMessage === "Close requested.") {
+                apps.closeApp({key: "quickshell:failure-instance", instance: {id: "failure-instance"}}); phase = 3;
+            } else if (phase === 3 && apps.actionMessage.startsWith("Some close requests failed") && apps.closingId === "") {
                 console.log("CLOSE_TEST_OK"); Qt.quit();
             }
         }
@@ -84,11 +97,12 @@ ShellRoot {
     env = {**os.environ, 'HOME':str(root), 'XDG_CONFIG_HOME':str(root/'user-config'),
            'XDG_CACHE_HOME':str(root/'cache'), 'XDG_DATA_HOME':str(root/'data'),
            'XDG_RUNTIME_DIR':str(root/'runtime'), 'QT_QPA_PLATFORM':'offscreen',
-           'NIRI_SOCKET':str(root/'niri.sock'),
+           'NIRI_SOCKET':str(root/'niri.sock'), 'NIRI_TEST_STATE':str(root/'window-closes'),
            'PATH':str(root/'bin')+os.pathsep+os.environ['PATH'], 'QS_TEST_STATE':str(root/'closed')}
     result = subprocess.run([QS, '-p', str(root)], env=env, capture_output=True, text=True, timeout=15)
     log = result.stdout + result.stderr
     assert result.returncode == 0 and 'CLOSE_TEST_OK' in log, log
+    assert (root/'window-closes').read_text().splitlines() == ['2', '3']
     assert (root/'closed').read_text() == 'closed fixture-instance'
     assert not any(message in log for message in ('TypeError:', 'ReferenceError:', 'Binding loop')), log
-    print('PASS: merged app rows, window grouping, specific-instance close, refresh, and failure feedback')
+    print('PASS: merged app rows, window grouping, grouped window closes, specific-instance close, refresh, and failure feedback')

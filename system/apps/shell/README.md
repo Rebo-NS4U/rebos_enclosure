@@ -427,8 +427,10 @@ Open **Applications** in System Monitor or the island’s **System Resources**
 view. Windows with the same app ID share a row. Use **Focus** to switch to a
 window. Each Quickshell instance has its own row with its PID and config path,
 including instances without a window. Windows whose PID matches a Quickshell
-instance are covered by that instance’s row.
+instance are covered by that instance’s row. Hover over truncated details to
+read the full title or config path.
 
 Quickshell instances refresh every three seconds while the section is visible.
-Use **Close** to stop a specific instance. Closing Enclosure Shell also closes
-the monitor. The list refreshes after a close request and shows any failure.
+Use **Close** on any row to request a normal close for all its windows or stop
+that specific Quickshell instance. Closing Enclosure Shell also closes the
+monitor. The list refreshes after a close request and shows any failure.

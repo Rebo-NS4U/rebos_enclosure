@@ -8,7 +8,7 @@ import qs.config
 
 Item {
     id: root
-    implicitWidth: SystemResources.detailMetric === "" ? 250 : 400
+    implicitWidth: SystemResources.detailMetric === "" ? 320 : 400
     implicitHeight: body.implicitHeight
 
     readonly property string networkLabel: {
