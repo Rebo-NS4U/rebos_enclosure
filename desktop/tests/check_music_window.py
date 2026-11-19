@@ -398,6 +398,27 @@ esac
                     if (!music.immersive) { console.error("MUSIC_FULLSCREEN_F11_FAILED"); Qt.exit(1); return; }
                     stop();
                     console.log("MUSIC_FULLSCREEN_PASSED");
+                    const library = findItem(music.contentItem, "music-background");
+                    const close = findItem(music.contentItem, "music-fullscreen-library-close");
+                    const previousPage = music.page, previousDetail = music.detail, previousQuery = music.query;
+                    input.keyClick(Qt.Key_B, Qt.ControlModifier);
+                    input.tryCompare(library, "reveal", 1, 2000);
+                    if (!music.immersive || !close.activeFocus) { console.error("FULLSCREEN_LIBRARY_SHORTCUT_FAILED"); Qt.exit(1); return; }
+                    for (const page of ["Songs", "Albums", "Artists", "Favorites", "Playlists", "Spotify playlists", "Downloads", "Now playing"]) {
+                        input.mouseClick(findItem(music.contentItem, "music-navigation-" + page));
+                        if (music.page !== page || !music.immersive) { console.error("FULLSCREEN_LIBRARY_NAVIGATION_FAILED", page); Qt.exit(1); return; }
+                    }
+                    input.keyClick(Qt.Key_Escape);
+                    input.tryCompare(library, "visible", false, 2000);
+                    if (!music.immersive) { console.error("FULLSCREEN_LIBRARY_ESCAPE_EXITED_FULLSCREEN"); Qt.exit(1); return; }
+                    input.mouseMove(music.contentItem, music.width / 2, music.height / 2);
+                    input.mouseMove(music.contentItem, music.width / 2, music.height - 2);
+                    input.tryCompare(library, "reveal", 1, 2000);
+                    input.keyClick(Qt.Key_B, Qt.ControlModifier);
+                    input.tryCompare(library, "visible", false, 2000);
+                    music.navigate(previousPage, previousDetail);
+                    music.query = previousQuery;
+                    console.log("MUSIC_FULLSCREEN_LIBRARY_PASSED");
                     music.spotifyPlayer = spotify;
                     if (!music.spotifyPreview) { console.error("SPOTIFY_AUTOFOLLOW_FAILED"); Qt.exit(1); return; }
                     music.control({action:"Pause"});
