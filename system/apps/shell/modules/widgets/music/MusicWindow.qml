@@ -144,8 +144,21 @@ Window {
         }
     }
     readonly property bool playing: spotifyPreview ? !!spotifyPlayer?.isPlaying : player.playbackState === MediaPlayer.PlayingState
+    readonly property string activeTab: ({Album: "Albums", Artist: "Artists", Playlist: "Playlists"})[page] || page
+    readonly property var shownPlaylists: {
+        const term = query.trim().toLowerCase();
+        return term ? playlists.filter(p => [p.name, p.sourceName || ""].join(" ").toLowerCase().includes(term)) : playlists;
+    }
+    function countLabel(count, noun) { return count + " " + noun + (count === 1 ? "" : "s"); }
     readonly property var shownTracks: {
         let list = tracks;
+        if (page === "Playlists") {
+            const paths = new Set();
+            for (const playlist of shownPlaylists) {
+                for (const path of playlist.paths) paths.add(path);
+            }
+            return tracks.filter(t => paths.has(t.path));
+        }
         if (page === "Favorites") list = list.filter(t => favorites.indexOf(t.path) >= 0);
         if (page === "Album") list = list.filter(t => t.album + "\n" + t.artist === detail).slice().sort((a,b) => a.number - b.number);
         if (page === "Artist") list = list.filter(t => t.artist === detail);
@@ -700,7 +713,7 @@ Window {
                     RowLayout {
                         Layout.fillWidth: true
                         StyledText { text: "Enclosure Music"; font.bold: true; font.pixelSize: Styling.fontSize(2) }
-                        StyledText { Layout.fillWidth: true; text: root.tracks.length + " songs"; color: Colors.overSurfaceVariant; elide: Text.ElideRight }
+                        StyledText { Layout.fillWidth: true; text: root.countLabel(root.tracks.length, "song"); color: Colors.overSurfaceVariant; elide: Text.ElideRight }
                         ThemeButton { objectName: "music-fullscreen-enter"; visible: !root.immersive; text: "Fullscreen"; Accessible.name: "Enter fullscreen listening view (F11)"; onClicked: root.toggleFullscreen() }
                         KeyboardButton {
                             id: libraryClose
@@ -715,9 +728,13 @@ Window {
                     Flow {
                         id: navigationTabs
                         objectName: "music-navigation-tabs"
+                        FontMetrics { id: tabMetrics; font.family: Config.theme.font; font.pixelSize: Styling.fontSize(-1) }
+                        readonly property var tabWidths: navigationModel.map(label =>
+                            Math.max(Styling.spacing(112), Math.ceil(tabMetrics.advanceWidth(label)) + 2 * Styling.spacing(5)))
+                        readonly property real singleRowWidth: tabWidths.reduce((sum, w) => sum + w, 0) + (tabCount - 1) * spacing
                         readonly property int tabCount: navigationModel.length
                         readonly property var navigationModel: ["Songs", "Albums", "Artists", "Favorites", "Playlists", "Spotify playlists", "Downloads", "Now playing"]
-                        readonly property int rowCount: Math.max(1, Math.ceil(tabCount * (Styling.spacing(112) + spacing) / Math.max(1, width + spacing)))
+                        readonly property int rowCount: Math.max(1, Math.ceil(singleRowWidth / Math.max(1, width)))
                         readonly property int columns: Math.ceil(tabCount / rowCount)
                         readonly property int lastRowCount: tabCount % columns || columns
                         Layout.fillWidth: true
@@ -728,10 +745,13 @@ Window {
                                 required property string modelData
                                 required property int index
                                 readonly property int rowColumns: index >= navigationTabs.tabCount - navigationTabs.lastRowCount ? navigationTabs.lastRowCount : navigationTabs.columns
-                                width: Math.max(1, (navigationTabs.width - navigationTabs.spacing * (rowColumns - 1)) / rowColumns)
+                                width: navigationTabs.rowCount === 1
+                                    ? navigationTabs.tabWidths[index] + (navigationTabs.width - navigationTabs.singleRowWidth) / navigationTabs.tabCount
+                                    : Math.max(1, (navigationTabs.width - navigationTabs.spacing * (rowColumns - 1)) / rowColumns)
+                                leftPadding: Styling.spacing(5); rightPadding: leftPadding
                                 objectName: "music-navigation-" + modelData
                                 text: modelData
-                                highlighted: root.page === modelData
+                                highlighted: root.activeTab === modelData
                                 onClicked: root.navigate(modelData)
                             }
                         }
@@ -741,17 +761,22 @@ Window {
             RowLayout {
                 Layout.fillWidth: true; Layout.fillHeight: true; spacing: Styling.spacing(16)
                 ColumnLayout {
-                    visible: root.page !== "Downloads" && root.page !== "Spotify playlists" && (root.width >= 1120 || root.page !== "Now playing")
+                    visible: root.page !== "Downloads" && root.page !== "Spotify playlists" && root.page !== "Now playing"
                     Layout.fillWidth: true; Layout.fillHeight: true; spacing: 14
                     RowLayout {
                         Layout.fillWidth: true
+                        ThemeButton {
+                            visible: root.page !== root.activeTab
+                            text: "‹ " + root.activeTab
+                            onClicked: root.navigate(root.activeTab)
+                        }
                         StyledText { text: root.pageTitle; font.pixelSize: Styling.fontSize(14); font.bold: true; Layout.fillWidth: true; elide: Text.ElideRight }
-                        SearchInput { id: search; Layout.preferredWidth: Math.min(300, root.width*0.25); placeholderText: "Search music"; text: root.query; onSearchTextChanged: text => root.query = text }
+                        SearchInput { id: search; Layout.preferredWidth: Math.min(300, root.width*0.25); placeholderText: root.page === "Playlists" ? "Search playlists" : "Search music"; text: root.query; onSearchTextChanged: text => root.query = text }
                     }
                     StyledText { Layout.fillWidth: true; visible: root.notice !== ""; text: root.notice; wrapMode: Text.WordWrap; color: Colors.error }
                     RowLayout {
                         Layout.fillWidth: true
-                        StyledText { text: root.shownTracks.length + " songs · Your library"; color: Colors.overSurfaceVariant; Layout.fillWidth: true }
+                        StyledText { text: root.page === "Albums" ? root.countLabel(cards.count, "album") : root.page === "Artists" ? root.countLabel(cards.count, "artist") : root.page === "Playlists" ? root.countLabel(cards.count, "playlist") : root.countLabel(root.shownTracks.length, "song"); color: Colors.overSurfaceVariant; Layout.fillWidth: true }
                         ThemeButton {
                             text: root.spotifyWritePending ? "Syncing Music → Spotify…" : "Sync Music → Spotify"
                             visible: root.page === "Playlist"
@@ -780,21 +805,27 @@ Window {
                         id: cards
                         visible: ["Albums","Artists","Playlists"].includes(root.page)
                         Layout.fillWidth: true; Layout.fillHeight: true; clip: true
-                        cellWidth: Math.max(160, Math.floor(width/Math.max(1,Math.floor(width/190))))
-                        cellHeight: cellWidth + 62
-                        model: root.page === "Artists" ? root.artists : (root.page === "Playlists") ? root.playlists.map(p => ({key:p.id,title:p.name,subtitle:(p.mix ? p.sourceName + " · " : "") + p.paths.length + " songs",art:root.tracks.find(t=>t.path === p.paths[0])?.art || ""})) : root.albums
+                        readonly property bool compact: height < Styling.spacing(300)
+                        cellWidth: Math.floor(width / Math.max(1, Math.floor(width / Styling.spacing(compact ? 300 : 190))))
+                        cellHeight: compact ? Styling.spacing(108) : cellWidth + 62
+                        model: root.page === "Artists" ? root.artists : (root.page === "Playlists") ? root.shownPlaylists.map(p => ({key:p.id,title:p.name,subtitle:(p.mix ? p.sourceName + " · " : "") + root.countLabel(p.paths.length, "song"),art:root.tracks.find(t=>t.path === p.paths[0])?.art || ""})) : root.albums
                         delegate: Item {
                             id: card
                             required property var modelData
                             readonly property var playableTracks: root.cardTracks(root.page, modelData.key)
                             width: cards.cellWidth; height: cards.cellHeight
-                            ColumnLayout {
-                                anchors.fill: parent; anchors.margins: 8; spacing: 6
+                            GridLayout {
+                                anchors.fill: parent; anchors.margins: 8
+                                columns: cards.compact ? 2 : 1
+                                rowSpacing: 4; columnSpacing: 6
                                 Cover {
-                                    Layout.fillWidth: true; Layout.preferredHeight: card.width-16; artwork: card.modelData.art
+                                    Layout.rowSpan: cards.compact ? 2 : 1
+                                    Layout.fillWidth: !cards.compact
+                                    Layout.preferredWidth: cards.compact ? Styling.spacing(60) : card.width-16
+                                    Layout.preferredHeight: Layout.preferredWidth; artwork: card.modelData.art
                                     ThemeButton {
                                         objectName: "music-card-play"
-                                        anchors.right: parent.right; anchors.bottom: parent.bottom; anchors.margins: 10
+                                        anchors.right: parent.right; anchors.bottom: parent.bottom; anchors.margins: cards.compact ? 2 : 10
                                         text: "▶"; highlighted: true
                                         Accessible.name: "Play " + card.modelData.title
                                         enabled: card.playableTracks.length > 0
@@ -809,7 +840,7 @@ Window {
                             }
                         }
                         ScrollBar.vertical: ScrollBar {}
-                        StyledText { anchors.centerIn: parent; width: parent.width-48; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap; visible: cards.count === 0; text: root.busy ? "Scanning music…" : root.page === "Playlists" ? "Create a playlist from the queue below or download a mix from Spotify playlists." : "No music found.\nAdd a folder or change the search."; color: Colors.overSurfaceVariant }
+                        StyledText { anchors.centerIn: parent; width: parent.width-48; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap; visible: cards.count === 0; text: root.busy ? "Scanning music…" : root.query.trim() ? "No matching " + root.page.toLowerCase() : root.page === "Playlists" ? "Create a playlist from the queue below or download a mix from Spotify playlists." : "No music found.\nAdd a folder or change the search."; color: Colors.overSurfaceVariant }
                     }
                     ListView {
                         id: songs
@@ -829,7 +860,7 @@ Window {
                             onEnqueueRequested: root.enqueue(track)
                         }
                         ScrollBar.vertical: ScrollBar {}
-                        StyledText { anchors.centerIn: parent; visible: songs.count === 0; text: root.query ? "No matching songs" : "No songs"; color: Colors.overSurfaceVariant }
+                        StyledText { anchors.centerIn: parent; visible: songs.count === 0; text: root.query.trim() ? "No matching songs" : root.page === "Favorites" ? "Select the heart on a song to see it here." : "No songs"; color: Colors.overSurfaceVariant }
                     }
                     ColumnLayout {
                         visible: root.page === "Playlist"
@@ -890,6 +921,7 @@ Window {
                         }
                     }
                     RowLayout {
+                        visible: root.activeTab === "Playlists"
                         Layout.fillWidth: true
                         SearchInput { id: playlistName; Layout.fillWidth: true; placeholderText: "Name a playlist from the queue" }
                         ThemeButton {
@@ -944,14 +976,33 @@ Window {
                 }
                 StyledRect {
                     visible: root.page !== "Downloads" && root.page !== "Spotify playlists" && (root.width >= 1120 || root.page === "Now playing")
-                    Layout.fillWidth: root.width < 1120
+                    id: listeningPane
+                    readonly property bool dedicated: root.page === "Now playing"
+                    Layout.fillWidth: dedicated
                     Layout.preferredWidth: 280; Layout.fillHeight: true; variant: "pane"
-                    ColumnLayout {
-                        anchors.fill: parent; anchors.margins: 14; spacing: 12
-                        Cover { Layout.fillWidth: true; Layout.preferredHeight: 230; artwork: root.current?.art || "" }
-                        StyledText { Layout.fillWidth: true; text: root.current?.title || "Nothing playing"; wrapMode: Text.WordWrap; font.bold: true; font.pixelSize: Styling.fontSize(4) }
-                        StyledText { Layout.fillWidth: true; text: root.current?.artist || "Select a song to play"; elide: Text.ElideRight; color: Colors.overSurfaceVariant }
+                    GridLayout {
+                        anchors.fill: parent; anchors.margins: 14
+                        columns: listeningPane.dedicated ? 2 : 1
+                        rowSpacing: 8; columnSpacing: 20
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: listeningPane.dedicated
+                            Layout.preferredWidth: listeningPane.dedicated ? listeningPane.width * 0.35 : 240
+                            Layout.rowSpan: listeningPane.dedicated ? 3 : 1
+                            spacing: 6
+                            StyledText { visible: listeningPane.dedicated; text: "Now playing"; font.bold: true; font.pixelSize: Styling.fontSize(8) }
+                            Cover {
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                                Layout.preferredHeight: listeningPane.dedicated ? 260 : Math.min(230, listeningPane.height * 0.42)
+                                artwork: root.current?.art || ""
+                            }
+                            StyledText { Layout.fillWidth: true; text: root.current?.title || "Nothing playing"; elide: Text.ElideRight; font.bold: true; font.pixelSize: Styling.fontSize(4) }
+                            StyledText { Layout.fillWidth: true; text: root.current?.artist || "Select a song to play"; elide: Text.ElideRight; color: Colors.overSurfaceVariant }
+                        }
                         RowLayout {
+                            Layout.fillWidth: true
+                            Layout.preferredWidth: listeningPane.dedicated ? listeningPane.width * 0.6 : 240
                             ThemeButton { text: "Queue"; highlighted: root.side === "Queue"; onClicked: root.side = "Queue" }
                             ThemeButton { text: "Lyrics"; highlighted: root.side === "Lyrics"; onClicked: root.side = "Lyrics" }
                             Item { Layout.fillWidth: true }
@@ -960,6 +1011,12 @@ Window {
                             id: queueList
                             visible: root.side === "Queue"; Layout.fillWidth: true; Layout.fillHeight: true; clip: true; spacing: 5
                             model: root.queue
+                            StyledText {
+                                anchors.centerIn: parent
+                                visible: queueList.count === 0
+                                text: "Your queue is empty"
+                                color: Colors.overSurfaceVariant
+                            }
                             delegate: ThemeButton {
                                 required property var modelData
                                 required property int index
@@ -1007,7 +1064,8 @@ Window {
                                 StyledText {
                                     Layout.minimumWidth: 0
                                     Layout.preferredWidth: implicitWidth
-                                    Layout.maximumWidth: Math.max(0, parent.width - currentFavorite.width - parent.spacing)
+                                    Layout.maximumWidth: implicitWidth
+                                    Layout.fillWidth: true
                                     text: root.current?.title || "Enclosure Music"; elide: Text.ElideRight
                                 }
                                 ThemeButton {

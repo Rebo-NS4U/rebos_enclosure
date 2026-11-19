@@ -145,6 +145,10 @@ esac
                     if (!downloadedTab) { console.error("DOWNLOADED_MIX_NAV_MISSING"); Qt.exit(1); }
                     downloadedTab.clicked();
                     if (music.page !== "Playlists" || music.playlists.length !== 2 || music.shownTracks.length !== 2 || music.cardTracks(music.page, "mix")[0].path !== music.tracks[0].path) { console.error("DOWNLOADED_MIX_SECTION_FAILED"); Qt.exit(1); }
+                    music.query = "Daily Mix";
+                    if (music.shownPlaylists.length !== 1 || music.shownTracks.length !== 1 || music.shownTracks[0].path !== music.tracks[0].path) { console.error("MUSIC_PLAYLIST_SEARCH_FAILED"); Qt.exit(1); return; }
+                    music.navigate("Artist", "Enclosure");
+                    if (!findItem(music.contentItem, "music-navigation-Artists").highlighted) { console.error("MUSIC_DETAIL_TAB_FAILED"); Qt.exit(1); return; }
                     music.playlists = previousPlaylists;
                     music.navigate("Albums");
                     music.volume = 0;

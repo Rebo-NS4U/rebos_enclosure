@@ -109,10 +109,7 @@ ColumnLayout {
             implicitWidth: statusLabel.implicitWidth + 28; implicitHeight: 36
             StyledText { id: statusLabel; anchors.centerIn: parent; text: root.status; color: root.failed ? Colors.error : Colors.primary }
         }
-    }
-    Flow {
-        Layout.fillWidth: true; Layout.preferredHeight: childrenRect.height; spacing: 8
-        ThemeButton { objectName: "music-download-start"; text: root.busy ? root.status : root.syncPlaylist ? "Sync playlist" : "Start download"; enabled: root.canDownload; highlighted: true; onClicked: root.start() }
+        ThemeButton { objectName: "music-download-start"; visible: !root.busy; text: root.syncPlaylist ? "Sync playlist" : "Start download"; enabled: root.canDownload; highlighted: true; onClicked: root.start() }
         ThemeButton { objectName: "music-download-cancel"; text: root.cancelling ? "Cancelling…" : "Cancel"; visible: root.busy; enabled: !root.cancelling; onClicked: { root.cancelling = true; root.status = "Cancelling…"; service.write('{"cancel":true}\n'); } }
     }
     ScrollView {
