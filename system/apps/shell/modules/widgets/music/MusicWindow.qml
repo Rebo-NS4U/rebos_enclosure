@@ -1137,45 +1137,61 @@ Window {
                         }
                     }
                     Item {
-                        objectName: "music-fullscreen-vinyl"
+                        id: spectrum
+                        objectName: "music-fullscreen-spectrum"
                         visible: root.lyricLines.length === 0
                         Layout.fillWidth: true; Layout.fillHeight: true
-                        Rectangle {
-                            id: record
-                            anchors.centerIn: parent
-                            width: Math.min(parent.width * 0.9, parent.height * 0.85)
-                            height: width
-                            radius: width / 2
-                            border.color: Qt.alpha(Colors.outline, 0.35)
-                            gradient: Gradient {
-                                GradientStop { position: 0; color: Qt.tint(Colors.surface, Qt.alpha(Colors.primary, 0.22)) }
-                                GradientStop { position: 0.5; color: Colors.surface }
-                                GradientStop { position: 1; color: Qt.tint(Colors.surface, Qt.alpha(Colors.primary, 0.14)) }
-                            }
-                            Repeater {
-                                model: 15
-                                delegate: Rectangle {
-                                    required property int index
-                                    anchors.centerIn: parent
-                                    width: record.width * (0.4 + index * 0.039)
-                                    height: width
-                                    radius: width / 2
-                                    color: "transparent"
-                                    border.color: Qt.alpha(Colors.outline, index % 4 === 0 ? 0.32 : 0.15)
+
+                        readonly property int bandCount: 32
+                        property var levels: []
+                        readonly property bool captureAudio: visible && root.playing && Motion.enabled
+                        onCaptureAudioChanged: if (!captureAudio) levels = []
+
+                        Process {
+                            command: ["python3", "-u", Qt.resolvedUrl("../../../scripts/music_visualizer.py").toString().replace("file://", "")]
+                            running: spectrum.captureAudio
+                            stdout: SplitParser {
+                                onRead: data => {
+                                    if (!spectrum.captureAudio) return;
+                                    try {
+                                        const bands = JSON.parse(data);
+                                        if (Array.isArray(bands) && bands.length === spectrum.bandCount
+                                            && bands.every(value => typeof value === "number" && Number.isFinite(value)))
+                                            spectrum.levels = bands.map(value => Math.max(0, Math.min(1, value)));
+                                    } catch (_) {}
                                 }
                             }
-                            Rectangle {
-                                anchors.centerIn: parent
-                                width: record.width * 0.35
-                                height: width
-                                radius: width / 2
-                                color: Qt.tint(Colors.surface, Qt.alpha(Colors.primary, 0.55))
-                                Rectangle {
-                                    anchors.centerIn: parent
-                                    width: parent.width * 0.09
-                                    height: width
-                                    radius: width / 2
-                                    color: Colors.surface
+                            onExited: spectrum.levels = []
+                        }
+
+                        Item {
+                            id: bands
+                            anchors.centerIn: parent
+                            width: Math.min(parent.width * 0.94, Styling.spacing(600))
+                            height: Math.min(parent.height * 0.62, Styling.spacing(320))
+                            readonly property real pitch: width / spectrum.bandCount
+
+                            Repeater {
+                                model: spectrum.bandCount
+                                delegate: Rectangle {
+                                    required property int index
+                                    objectName: "music-spectrum-band-" + index
+                                    readonly property real level: spectrum.levels[index] ?? 0
+                                    x: (index + 0.5) * bands.pitch - width / 2
+                                    y: (bands.height - height) / 2
+                                    width: bands.pitch * 0.64
+                                    height: 3 + level * Math.max(0, bands.height - 3)
+                                    radius: Math.min(width, height) / 2
+                                    opacity: 0.28 + level * 0.72
+                                    gradient: Gradient {
+                                        GradientStop { position: 0; color: Qt.alpha(Colors.primary, 0.55) }
+                                        GradientStop { position: 0.5; color: Colors.primary }
+                                        GradientStop { position: 1; color: Qt.alpha(Colors.primary, 0.55) }
+                                    }
+                                    Behavior on height {
+                                        enabled: Motion.enabled
+                                        NumberAnimation { duration: Motion.feedback; easing.type: Easing.OutCubic }
+                                    }
                                 }
                             }
                         }

@@ -23,6 +23,25 @@ def session():
         config.mkdir()
         for name in ('modules','config','scripts','assets','version'):
             (config/name).symlink_to(source/name, target_is_directory=True)
+        audio_bin = root/'audio-bin'
+        audio_bin.mkdir()
+        # Give the real spectrum reader a deterministic music stream in the private session.
+        (audio_bin/'pactl').write_text(r"""#!/bin/sh
+case "$4" in
+  sink-inputs) printf '%s\n' '[{"index":1,"sink":7,"properties":{"media.role":"music"}}]' ;;
+  sinks) printf '%s\n' '[{"index":7,"monitor_source_name":"test.monitor"}]' ;;
+esac
+""")
+        (audio_bin/'parec').write_text(
+            '#!/usr/bin/env python3\n'
+            'import math, struct, sys, time\n'
+            'frame = struct.pack("<1000h", *(int(18000 * math.sin(2 * math.pi * i / 200)) for i in range(1000)))\n'
+            'while True:\n'
+            '    sys.stdout.buffer.write(frame)\n'
+            '    sys.stdout.buffer.flush()\n'
+            '    time.sleep(1000 / 24000)\n')
+        for command in audio_bin.iterdir():
+            command.chmod(0o755)
         for index in range(2):
             subprocess.run(['ffmpeg','-v','error','-f','lavfi','-i','anullsrc=r=44100:cl=stereo',
                 '-t','4','-metadata',f'title=Acceptance song {index+1}','-metadata','artist=Enclosure',
@@ -322,12 +341,12 @@ def session():
                     const rail = findItem(music.contentItem, "music-fullscreen-seek");
                     if (!music.immersive || !stage.visible || !art.visible || art.width < 100 || !transport.enabled || !rail.enabled) { console.error("MUSIC_FULLSCREEN_ENTER_FAILED"); Qt.exit(1); return; }
                     const lyrics = findItem(music.contentItem, "music-fullscreen-lyrics");
-                    const vinyl = findItem(music.contentItem, "music-fullscreen-vinyl");
+                    const spectrum = findItem(music.contentItem, "music-fullscreen-spectrum");
                     const savedLyrics = music.lyricText;
                     music.lyricText = "";
-                    if (lyrics.visible || !vinyl.visible || vinyl.width < 100 || vinyl.height < 100) { console.error("MUSIC_FULLSCREEN_VINYL_FAILED"); Qt.exit(1); return; }
+                    if (lyrics.visible || !spectrum.visible || spectrum.width < 100 || spectrum.height < 100) { console.error("MUSIC_FULLSCREEN_SPECTRUM_MISSING"); Qt.exit(1); return; }
                     music.lyricText = "[00:00.00]Fullscreen test lyric";
-                    if (!lyrics.visible || vinyl.visible) { console.error("MUSIC_FULLSCREEN_LYRICS_RESTORE_FAILED"); Qt.exit(1); return; }
+                    if (!lyrics.visible || spectrum.visible || spectrum.captureAudio) { console.error("MUSIC_FULLSCREEN_LYRICS_RESTORE_FAILED"); Qt.exit(1); return; }
                     music.lyricText = savedLyrics;
                     console.log("MUSIC_FULLSCREEN_LYRICS_FALLBACK_PASSED");
                     const pos = transport.mapToItem(stage, 0, 0);
@@ -380,9 +399,24 @@ def session():
                     if (spotify.isPlaying) { console.error("SPOTIFY_REMOTE_STOP_FAILED"); Qt.exit(1); return; }
                     spotify.play();
                     if (music.current.title !== "Suggested song" || music.playbackDuration !== 180000 || !music.playing) { console.error("SPOTIFY_METADATA_FAILED"); Qt.exit(1); return; }
+                    music.lyricText = "";
+                    phase = 941;
+                    repeatStart = attempts;
+                    start();
+                } else if (phase === 941 && attempts >= repeatStart + 4) {
+                    stop();
+                    const spectrum = findItem(music.contentItem, "music-fullscreen-spectrum");
+                    const peak = Math.max(...spectrum.levels);
+                    const band = findItem(spectrum, "music-spectrum-band-" + spectrum.levels.indexOf(peak));
+                    if (!spectrum.visible || !spectrum.captureAudio || peak < 0.25 || !band || band.height < 20) {
+                        console.error("MUSIC_FULLSCREEN_SPECTRUM_RESPONSE_FAILED", spectrum.visible, spectrum.captureAudio, peak, band?.height);
+                        Qt.exit(1); return;
+                    }
                     const play = findItem(music.contentItem, "music-fullscreen-play");
                     input.keyClick(Qt.Key_Space);
                     if (spotify.isPlaying || music.playing || play.text !== "Play") { console.error("SPOTIFY_PAUSE_FAILED"); Qt.exit(1); return; }
+                    if (spectrum.captureAudio || spectrum.levels.length !== 0) { console.error("MUSIC_FULLSCREEN_SPECTRUM_PAUSE_FAILED"); Qt.exit(1); return; }
+                    console.log("MUSIC_FULLSCREEN_SPECTRUM_PASSED");
                     input.keyClick(Qt.Key_K);
                     const rail = findItem(music.contentItem, "music-fullscreen-seek");
                     if (!tabTo(rail)) { console.error("FULLSCREEN_SEEK_FOCUS_FAILED"); Qt.exit(1); return; }
@@ -578,7 +612,7 @@ def session():
     }
     '''
         (config/'shell.qml').write_text(qml)
-        env={**os.environ,'HOME':str(home),'XDG_CONFIG_HOME':str(home/'.config'),
+        env={**os.environ,'PATH':f"{audio_bin}:{os.environ['PATH']}",'HOME':str(home),'XDG_CONFIG_HOME':str(home/'.config'),
              'XDG_STATE_HOME':str(home/'.local/state'),'XDG_CACHE_HOME':str(home/'.cache'),
              'XDG_DATA_HOME':str(home/'.local/share'),'QT_QPA_PLATFORM':os.environ.get('MUSIC_TEST_PLATFORM','offscreen'),
              'QT_AUDIO_BACKEND':os.environ.get('QT_AUDIO_BACKEND','pulseaudio'),
