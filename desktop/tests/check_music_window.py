@@ -270,11 +270,22 @@ esac
                     if (music.shownTracks.length !== 0 || music.tracks.length !== 2) { console.error("MUSIC_REMOVE_SECOND_CLICK_FAILED"); Qt.exit(1); return; }
                     console.log("MUSIC_REMOVE_CONFIRMATION_PASSED");
                     music.navigate("Playlist", "test");
+                    const otherTrack = music.tracks.findIndex(track => track.path !== music.shownTracks[0].path);
+                    music.play(music.tracks, otherTrack);
+                    music.control({action:"Pause"});
                     phase = 40;
                 } else if (phase === 40) {
                     const row = findItem(music.contentItem, "music-track-row-0");
                     if (!row || row.width < 100) return;
+                    const play = findItem(music.contentItem, "music-play");
+                    const previousTrack = music.current.path;
+                    const wasPlaying = music.playing;
                     input.mouseClick(row, row.width * 0.45, row.height / 2);
+                    if (findItem(row, "music-track-play-0")?.visible || !row.pendingSelection ||
+                        music.current.path !== previousTrack || music.playing !== wasPlaying || play.text !== "Play") {
+                        console.error("MUSIC_ROW_SELECTION_FAILED", row.pendingSelection, music.current.path === previousTrack, music.playing === wasPlaying, play.text); Qt.exit(1); return;
+                    }
+                    input.mouseClick(play, play.width / 2, play.height / 2);
                     phase = 41;
                 } else if (phase === 41 && music.playing) {
                     if (music.current.path !== music.playlists[0].paths[0]) { console.error("MUSIC_ROW_CLICK_WRONG_TRACK"); Qt.exit(1); }
@@ -282,8 +293,11 @@ esac
                     const length = music.queue.length;
                     input.mouseClick(queue, queue.width / 2, queue.height / 2);
                     if (music.queue.length !== length + 1 || !music.playing) { console.error("MUSIC_ROW_QUEUE_CLICK_FAILED"); Qt.exit(1); }
-                    console.log("MUSIC_FULL_ROW_CLICK_PASSED");
-                    music.control({action:"Pause"});
+                    const play = findItem(music.contentItem, "music-play");
+                    if (play.text !== "Pause") { console.error("MUSIC_TRANSPORT_PLAY_FAILED"); Qt.exit(1); return; }
+                    input.mouseClick(play, play.width / 2, play.height / 2);
+                    if (music.playing) { console.error("MUSIC_TRANSPORT_PAUSE_FAILED"); Qt.exit(1); return; }
+                    console.log("MUSIC_ROW_SELECTION_AND_TRANSPORT_PASSED");
                     music.navigate("Downloads");
                     const downloads = findItem(music.contentItem, "music-downloads");
                     const start = findItem(music.contentItem, "music-download-start");
