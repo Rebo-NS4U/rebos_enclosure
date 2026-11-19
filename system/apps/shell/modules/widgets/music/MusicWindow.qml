@@ -549,11 +549,15 @@ Window {
 
     component AddCurrentToPlaylistButton: KeyboardButton {
         text: "Add to playlist"
-        enabled: !root.busy && (!!root.currentPlaylistPath || (!!root.playingSuggestion && root.canAddSuggestion))
+        enabled: root.playingSuggestion ? root.canAddSuggestion : !!root.currentPlaylistPath && !root.busy
         Accessible.name: "Add current song to playlist"
         onClicked: {
-            playlistPicker.suggestion = root.playingSuggestion;
-            playlistPicker.localPath = root.currentPlaylistPath;
+            if (root.playingSuggestion) {
+                const playlist = root.suggestionQueue.length ? root.suggestionPlaylist : root.detail;
+                root.addSuggestion(root.playingSuggestion, false, playlist);
+                return;
+            }
+            playlistPicker.trackPath = root.currentPlaylistPath;
             playlistPicker.trackTitle = root.current.title;
             playlistPicker.open();
         }
@@ -562,11 +566,7 @@ Window {
     Popup {
         id: playlistPicker
         objectName: "music-playlist-picker"
-        property var suggestion: null
-        property string localPath: ""
-        readonly property string trackPath: localPath || (suggestion
-            ? root.tracks.find(track => track.spotifyUri === suggestion.uri)?.path || "" : "")
-        readonly property bool canAdd: !root.busy && (!!trackPath || (!!suggestion && root.canAddSuggestion))
+        property string trackPath: ""
         property string trackTitle: ""
         anchors.centerIn: Overlay.overlay
         width: Math.min(420, root.width - 32)
@@ -583,11 +583,7 @@ Window {
             }
         }
         function addToPlaylist(playlist) {
-            if (!playlist || !canAdd || playlist.paths.includes(trackPath)) return;
-            if (!trackPath) {
-                root.addSuggestion(suggestion, false, playlist.id);
-                return;
-            }
+            if (!playlist || root.busy || playlist.paths.includes(trackPath)) return;
             root.notice = "";
             root.busy = true;
             root.request("playlist_add", {playlist: playlist.id, path: trackPath}, root.load);
@@ -621,14 +617,10 @@ Window {
                     readonly property bool alreadyAdded: modelData.paths.includes(playlistPicker.trackPath)
                     width: playlistChoices.width
                     text: modelData.name + (alreadyAdded ? " · Added" : "")
-                    enabled: !alreadyAdded && playlistPicker.canAdd
+                    enabled: !alreadyAdded && !root.busy
                     onClicked: playlistPicker.addToPlaylist(modelData)
                 }
                 ScrollBar.vertical: ScrollBar {}
-            }
-            StyledText {
-                visible: !!playlistPicker.suggestion && root.pendingSuggestionDownload?.uri === playlistPicker.suggestion.uri
-                text: "Downloading Spotify suggestion…"
             }
             StyledText { visible: root.notice !== ""; Layout.fillWidth: true; text: root.notice; wrapMode: Text.WordWrap; color: Colors.error }
             KeyboardButton { id: playlistDone; Layout.alignment: Qt.AlignRight; text: "Done"; onClicked: playlistPicker.close() }

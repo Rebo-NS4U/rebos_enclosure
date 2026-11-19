@@ -496,17 +496,15 @@ esac
                     const add = findItem(music.contentItem, "music-fullscreen-add-current-to-playlist");
                     if (music.currentPlaylistPath || !add.enabled || !tabTo(add)) { console.error("UNDOWNLOADED_SUGGESTION_ADD_DISABLED"); Qt.exit(1); return; }
                     input.keyClick(Qt.Key_Return);
-                    const choices = findItem(music.contentItem, "music-playlist-choices");
-                    if (!choices?.activeFocus) { console.error("SUGGESTION_PLAYLIST_PICKER_FAILED"); Qt.exit(1); return; }
-                    input.keyClick(Qt.Key_Home);
-                    input.keyClick(Qt.Key_Return);
-                    if (!music.busy || !music.callbacks[music.requestId]) { console.error("SUGGESTION_DOWNLOAD_NOT_REQUESTED"); Qt.exit(1); return; }
+                    if (findItem(music.contentItem, "music-playlist-choices")?.visible ||
+                        !music.busy || !music.callbacks[music.requestId] || add.enabled) {
+                        console.error("SUGGESTION_DIRECT_ADD_FAILED"); Qt.exit(1); return;
+                    }
                     // The private backend has no Spotify session, so consume its expected rejection.
                     music.receive(JSON.stringify({id:music.requestId,ok:false,error:"Test suggestion download rejected"}));
-                    input.keyClick(Qt.Key_Escape);
                     music.tracks = originalTracks.map((track, i) => i === 0 ? Object.assign({}, track, {spotifyUri: uri}) : track);
                     if (music.currentPlaylistPath !== originalTracks[0].path) { console.error("SPOTIFY_URL_LOCAL_MATCH_FAILED"); Qt.exit(1); return; }
-                    console.log("MUSIC_SUGGESTION_PLAYLIST_PICKER_PASSED");
+                    console.log("MUSIC_SUGGESTION_DIRECT_ADD_PASSED");
                     input.keyClick(Qt.Key_Q);
                     if (!tabTo(findItem(music.contentItem, "music-fullscreen-suggestions-tab"))) { console.error("SUGGESTIONS_TAB_FOCUS_FAILED"); Qt.exit(1); return; }
                     input.keyClick(Qt.Key_Return);
