@@ -165,6 +165,10 @@ Item {
         id: body
         width: parent.width
         spacing: Styling.spacing(10)
+        RunningApplications {
+            width: parent.width
+            visible: SystemResources.detailMetric === ""
+        }
         MetricAction {
             width: parent.width
             visible: SystemResources.detailMetric !== "window"
