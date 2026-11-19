@@ -490,6 +490,7 @@ Window {
     Shortcut { sequence: "K"; enabled: root.fullscreenKeys; autoRepeat: false; onActivated: root.toggle() }
     Shortcut { sequence: "H"; enabled: root.fullscreenKeys && fullscreenPrevious.enabled; autoRepeat: false; onActivated: fullscreenPrevious.click() }
     Shortcut { sequence: "L"; enabled: root.fullscreenKeys && fullscreenNext.enabled; autoRepeat: false; onActivated: fullscreenNext.click() }
+    Shortcut { sequence: "A"; enabled: root.fullscreenKeys && fullscreenAdd.enabled; autoRepeat: false; onActivated: fullscreenAdd.click() }
     Shortcut {
         sequence: "Q"; enabled: root.fullscreenKeys; autoRepeat: false
         onActivated: {
@@ -1095,7 +1096,11 @@ Window {
                     text: "Library · Ctrl+B"
                     onClicked: root.setFullscreenLibraryOpen(true)
                 }
-                AddPlayingSuggestionButton { id: fullscreenAdd; objectName: "music-fullscreen-add-current-to-playlist" }
+                AddPlayingSuggestionButton {
+                    id: fullscreenAdd
+                    objectName: "music-fullscreen-add-current-to-playlist"
+                    text: "Add to playlist · A"
+                }
                 KeyboardButton { id: fullscreenExit; objectName: "music-fullscreen-exit"; text: "Exit fullscreen · Esc"; onClicked: root.toggleFullscreen() }
             }
             RowLayout {

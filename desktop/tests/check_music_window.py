@@ -468,8 +468,8 @@ esac
                     music.spotifySuggestions = {playlist: "queue-test", pending: false, tracks: [suggestion]};
                     spotify.metadata = {"xesam:url": "https://open.spotify.com/track/" + uri.split(":").pop() + "?si=test"};
                     const add = findItem(music.contentItem, "music-fullscreen-add-current-to-playlist");
-                    if (!add.visible || !add.enabled || !tabTo(add)) { console.error("UNDOWNLOADED_SUGGESTION_ADD_DISABLED"); Qt.exit(1); return; }
-                    input.keyClick(Qt.Key_Return);
+                    if (!add.visible || !add.enabled || add.activeFocus) { console.error("UNDOWNLOADED_SUGGESTION_ADD_DISABLED"); Qt.exit(1); return; }
+                    input.keyClick(Qt.Key_A);
                     if (findItem(music.contentItem, "music-playlist-choices")?.visible ||
                         !music.busy || !music.callbacks[music.requestId] || add.enabled) {
                         console.error("SUGGESTION_DIRECT_ADD_FAILED"); Qt.exit(1); return;
