@@ -91,6 +91,22 @@ class SuggestedPlaybackTests(unittest.TestCase):
             self.assertEqual(library.dispatch('suggestions_play', {'uri': uri})['uri'], uri)
         self.assertIsNone(store.preview)
 
+    def test_missing_confirmation_falls_back_to_native_playback(self):
+        store = music_mixes.Mixes(Path('/unused'), lambda _, default: default, lambda *_: None)
+        uri = 'spotify:track:' + 'b' * 22
+
+        def play(requested, *, start):
+            self.assertEqual(requested, uri)
+            self.assertFalse(start)
+            self.assertIsNone(store.preview)
+            return {'uri': requested}
+
+        with patch.object(music_spotify, 'running', return_value=True), \
+                patch.object(Future, 'result', side_effect=TimeoutError), \
+                patch('music_preview.preview', side_effect=play) as fallback:
+            self.assertEqual(store.play_suggestion(uri), {'uri': uri})
+            fallback.assert_called_once_with(uri, start=False)
+
     def test_closed_spotify_does_not_launch_from_suggested_playback(self):
         store = music_mixes.Mixes(Path('/unused'), lambda _, default: default, lambda *_: None)
         with patch.object(music_spotify, 'running', return_value=False), \

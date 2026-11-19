@@ -100,6 +100,38 @@ ShellRoot {
             check(session.codexPresetName === "Custom Codex" && !session.switchingSessionModel
                 && session.currentSessionModelId === targetModel && !session.modelSwitchError,
                 "confirmed manual model switch selects Custom Codex");
+            const warning = 'Warning: This session was recorded with model `gpt-6.1-terra` but is resuming with `gpt-6.2-sol`. Consider switching back to `gpt-6.1-terra` as it may affect Codex performance.\n\n';
+            function deliver(text, messageId) {
+                session.handleSessionUpdate({sessionId: session.currentSessionId, update: {
+                    sessionUpdate: "agent_message_chunk", messageId, content: {type: "text", text}
+                }});
+                session.flushAssistantText();
+            }
+            session.turnFailureHandled = false;
+            session.codexPreset = "knowledge";
+            options[0].currentValue = "gpt-6.2-sol";
+            options[1].currentValue = "low";
+            session.updateSessionConfiguration({configOptions: options});
+            session.setCodexPreset("knowledge", true);
+            deliver(warning);
+            check(session.pendingCodexResumeWarning && !JSON.stringify(session.currentChat).includes(warning.trim()),
+                "the resume warning waits for the selected model to be confirmed");
+            options[0].currentValue = targetModel;
+            session.handleResponse({id: session.syntheticEnvelope.id, result: {configOptions: options}});
+            deliver(warning);
+            check(!session.pendingCodexResumeWarning && !JSON.stringify(session.currentChat).includes(warning.trim()),
+                "early and late warnings are dropped when the recorded model is restored");
+            session.codexPreset = "knowledge";
+            options[0].currentValue = "gpt-6.2-sol";
+            session.updateSessionConfiguration({configOptions: options});
+            session.setCodexPreset("knowledge", true);
+            deliver(warning);
+            session.handleResponse({id: session.syntheticEnvelope.id, error: {message: "Rejected"}});
+            check(session.currentChat.some(item => item.role === "system" && item.content === warning.trim()),
+                "the warning is visible when the recorded model could not be restored");
+            deliver("Warning: A tool configuration changed.\n\n");
+            check(JSON.stringify(session.currentChat).includes("A tool configuration changed"),
+                "unrelated warnings remain visible");
             session.loadChat("custom");
         }
     }

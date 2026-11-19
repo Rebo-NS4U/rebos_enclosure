@@ -1022,12 +1022,12 @@ Item {
                 if (words[middle].start <= visualCursor) { line = words[middle].line; low = middle + 1; }
                 else high = middle - 1;
             }
-            // Only reposition for a new row or a cursor outside the viewport.
-            // Same-row keystrokes must not fight manual scrolling or churn delegates.
+            // Keep visible rows still so crossing a line does not rebuild the
+            // viewport's edge glyphs. Recenter when the caret leaves the viewport.
             const rowY = line * passageLineHeight;
             const caretY = rowY + passageVisuals.centerPadding;
             const middle = Math.max(0, (passageVisuals.height - passageLineHeight) / 2);
-            if (line !== scrollLine || caretY < passageVisuals.contentY
+            if (caretY < passageVisuals.contentY
                     || caretY + passageLineHeight > passageVisuals.contentY + passageVisuals.height)
                 passageVisuals.contentY = Math.max(0, Math.min(caretY - middle,
                     passageVisuals.contentHeight - passageVisuals.height));

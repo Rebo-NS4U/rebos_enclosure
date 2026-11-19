@@ -29,7 +29,16 @@ Window {
     }
 
     readonly property bool immersive: visibility === Window.FullScreen
-    onImmersiveChanged: if (immersive) fullscreenPlay.forceActiveFocus(Qt.TabFocusReason)
+    property bool fullscreenLibraryOpen: false
+    onImmersiveChanged: {
+        if (immersive) fullscreenPlay.forceActiveFocus(Qt.TabFocusReason);
+        else fullscreenLibraryOpen = false;
+    }
+    function setFullscreenLibraryOpen(open) {
+        fullscreenLibraryOpen = open;
+        if (open) libraryClose.forceActiveFocus(Qt.ShortcutFocusReason);
+        else fullscreenPlay.forceActiveFocus(Qt.ShortcutFocusReason);
+    }
     property bool restoreMaximized: false
     function toggleFullscreen() {
         if (immersive) {
@@ -407,12 +416,12 @@ Window {
         }
         select(index);
     }
-    function previous() {
+    function previous(skipRestart) {
         if (spotifyPreview) {
             if (spotifyPlayer?.canGoPrevious) spotifyPlayer.previous();
             return;
         }
-        if (player.position > 3000) {
+        if (!skipRestart && player.position > 3000) {
             player.position = 0;
         } else if (shuffle) {
             if (shuffleCursor > 0) {
@@ -479,9 +488,11 @@ Window {
         onErrorOccurred: (error, errorString) => { root.notice = errorString; }
     }
     Timer { interval: 500; running: root.playing; repeat: true; onTriggered: root.sync() }
-    readonly property bool fullscreenKeys: immersive && !playlistPicker.visible && !queueSearch.inputActiveFocus
+    readonly property bool fullscreenKeys: immersive && !fullscreenLibraryOpen && !playlistPicker.visible && !queueSearch.inputActiveFocus
     Shortcut { sequence: "Space"; enabled: !root.immersive && !playlistPicker.visible && root.page !== "Downloads" && root.page !== "Spotify playlists" && !search.inputActiveFocus && !playlistName.inputActiveFocus; onActivated: root.toggle() }
     Shortcut { sequence: "K"; enabled: root.fullscreenKeys; autoRepeat: false; onActivated: root.toggle() }
+    Shortcut { sequence: "H"; enabled: root.fullscreenKeys && fullscreenPrevious.enabled; autoRepeat: false; onActivated: fullscreenPrevious.click() }
+    Shortcut { sequence: "L"; enabled: root.fullscreenKeys && fullscreenNext.enabled; autoRepeat: false; onActivated: fullscreenNext.click() }
     Shortcut {
         sequence: "Q"; enabled: root.fullscreenKeys; autoRepeat: false
         onActivated: {
@@ -491,11 +502,17 @@ Window {
     }
     Shortcut {
         sequence: "Ctrl+F"
-        enabled: !playlistPicker.visible && (root.immersive || (root.page !== "Downloads" && root.page !== "Spotify playlists"))
-        onActivated: if (root.immersive) stage.openSongPicker(); else search.focusInput()
+        enabled: !playlistPicker.visible && ((root.immersive && !root.fullscreenLibraryOpen) || search.visible)
+        onActivated: if (root.immersive && !root.fullscreenLibraryOpen) stage.openSongPicker(); else search.focusInput()
+    }
+    Shortcut {
+        sequence: "Ctrl+B"
+        enabled: root.immersive && !playlistPicker.visible
+        autoRepeat: false
+        onActivated: root.setFullscreenLibraryOpen(!root.fullscreenLibraryOpen)
     }
     Shortcut { sequence: "F11"; enabled: !playlistPicker.visible; onActivated: root.toggleFullscreen() }
-    Shortcut { sequence: "Escape"; enabled: !playlistPicker.visible && !queueSearch.inputActiveFocus; onActivated: { if (root.immersive) root.toggleFullscreen(); else GlobalStates.musicWindowVisible = false; } }
+    Shortcut { sequence: "Escape"; enabled: !playlistPicker.visible && !queueSearch.inputActiveFocus; onActivated: { if (root.fullscreenLibraryOpen) root.setFullscreenLibraryOpen(false); else if (root.immersive) root.toggleFullscreen(); else GlobalStates.musicWindowVisible = false; } }
 
     component KeyboardButton: ThemeButton {
         Keys.onReturnPressed: event => { if (!event.isAutoRepeat) click(); }
@@ -633,11 +650,17 @@ Window {
         signal enqueueRequested()
         width: ListView.view ? ListView.view.width : 0
         height: inFullscreenQueue ? Styling.spacing(60) : compact ? root.suggestionRowHeight : root.trackRowHeight
+        activeFocusOnTab: !inFullscreenQueue
+        Keys.onPressed: event => {
+            if (inFullscreenQueue || (event.key !== Qt.Key_Return && event.key !== Qt.Key_Enter)) return;
+            event.accepted = true;
+            playRequested();
+        }
         variant: selected || rowClick.containsMouse ? "focus" : "transparent"
         radius: inFullscreenQueue ? Styling.radius(-4) : Styling.radius(0)
         Rectangle {
             anchors.fill: parent
-            visible: row.keyboardSelected
+            visible: row.keyboardSelected || (!row.inFullscreenQueue && row.activeFocus)
             color: "transparent"
             radius: row.radius
             border.width: 2
@@ -664,7 +687,7 @@ Window {
             anchors.fill: parent
             anchors.margins: row.inFullscreenQueue ? Styling.spacing(10) : row.compact ? Styling.spacing(4) : 8
             spacing: row.compact ? Styling.spacing(8) : 12
-            ThemeButton { focusPolicy: row.inFullscreenQueue ? Qt.NoFocus : Qt.StrongFocus; topPadding: row.compact ? Styling.spacing(5) : padding; bottomPadding: topPadding; text: row.selected && root.playing ? "Ⅱ" : "▶"; Accessible.name: (row.selected && root.playing ? "Pause " : "Play ") + row.track.title; onClicked: row.playRequested() }
+            ThemeButton { objectName: "music-track-play-" + row.number; visible: row.inFullscreenQueue; focusPolicy: Qt.NoFocus; topPadding: row.compact ? Styling.spacing(5) : padding; bottomPadding: topPadding; text: row.selected && root.playing ? "Ⅱ" : "▶"; Accessible.name: (row.selected && root.playing ? "Pause " : "Play ") + row.track.title; onClicked: row.playRequested() }
             Cover { artwork: row.track.art || ""; Layout.preferredWidth: row.inFullscreenQueue ? Styling.spacing(40) : row.compact ? Styling.spacing(32) : 48; Layout.preferredHeight: Layout.preferredWidth }
             ColumnLayout {
                 Layout.fillWidth: true; spacing: 3
@@ -700,9 +723,24 @@ Window {
     }
 
     StyledRect {
-        visible: !root.immersive
+        readonly property bool revealed: !root.immersive || root.fullscreenLibraryOpen
+        property real reveal: root.fullscreenLibraryOpen ? 1 : 0
+        visible: revealed || reveal > 0
+        enabled: revealed
         objectName: "music-background"
-        anchors.fill: parent; variant: "bg"; radius: 0
+        anchors.fill: parent
+        transform: Translate { y: root.immersive ? (reveal - 1) * height : 0 }
+        z: root.immersive ? 1 : 0
+        variant: "bg"; radius: 0
+        fillColor: root.immersive ? Colors.surface : "transparent"
+        backgroundOpacity: root.immersive ? 1 : -1
+        Behavior on reveal {
+            enabled: root.immersive && Motion.enabled
+            NumberAnimation {
+                duration: root.fullscreenLibraryOpen ? Motion.enter : Motion.exit
+                easing.type: root.fullscreenLibraryOpen ? Motion.enterCurve : Motion.exitCurve
+            }
+        }
         ColumnLayout {
             anchors.fill: parent; anchors.margins: 16; spacing: 12
             StyledRect {
@@ -719,7 +757,14 @@ Window {
                         Layout.fillWidth: true
                         StyledText { text: "Enclosure Music"; font.bold: true; font.pixelSize: Styling.fontSize(2) }
                         StyledText { Layout.fillWidth: true; text: root.tracks.length + " songs"; color: Colors.overSurfaceVariant; elide: Text.ElideRight }
-                        ThemeButton { objectName: "music-fullscreen-enter"; text: "Fullscreen"; Accessible.name: "Enter fullscreen listening view (F11)"; onClicked: root.toggleFullscreen() }
+                        ThemeButton { objectName: "music-fullscreen-enter"; visible: !root.immersive; text: "Fullscreen"; Accessible.name: "Enter fullscreen listening view (F11)"; onClicked: root.toggleFullscreen() }
+                        KeyboardButton {
+                            id: libraryClose
+                            objectName: "music-fullscreen-library-close"
+                            visible: root.immersive
+                            text: "Back to listening · Esc"
+                            onClicked: root.setFullscreenLibraryOpen(false)
+                        }
                         ThemeButton { text: "Add folder"; enabled: !root.busy; onClicked: { root.busy = true; root.request("folder", {}, root.load); } }
                         ThemeButton { text: root.busy ? "Scanning…" : "Refresh library"; enabled: !root.busy; onClicked: root.scan() }
                     }
@@ -835,7 +880,7 @@ Window {
                             required property var modelData
                             required property int index
                             track: modelData; number: index
-                            onPlayRequested: { if (selected) root.toggle(); else root.play(root.shownTracks,index); }
+                            onPlayRequested: { if (selected) root.toggle(); else root.play(root.shownTracks, index); }
                             playlistId: root.page === "Playlist" ? root.detail : ""
                             onEnqueueRequested: root.enqueue(track)
                         }
@@ -1000,6 +1045,7 @@ Window {
                 }
             }
             StyledRect {
+                visible: !root.immersive
                 Layout.fillWidth: true; implicitHeight: 112; variant: "pane"
                 ColumnLayout {
                     anchors.fill: parent; anchors.margins: 12; spacing: 2
@@ -1034,7 +1080,7 @@ Window {
                         AddCurrentToPlaylistButton { objectName: "music-add-current-to-playlist" }
                         ThemeButton { text: "Shuffle"; checked: root.shuffle; onClicked: root.shuffle = !root.shuffle }
                         ThemeButton { text: "⏮"; Accessible.name: "Previous track"; enabled: !!root.current; onClicked: root.previous() }
-                        ThemeButton { text: root.playing ? "Pause" : "Play"; highlighted: true; enabled: root.queue.length > 0 || root.shownTracks.length > 0; onClicked: root.toggle() }
+                        ThemeButton { objectName: "music-play"; text: root.playing ? "Pause" : "Play"; highlighted: true; enabled: root.queue.length > 0 || root.shownTracks.length > 0; onClicked: root.toggle() }
                         ThemeButton { text: "⏭"; Accessible.name: "Next track"; enabled: root.canNext; onClicked: root.next(false) }
                         ThemeButton {
                             objectName: "music-repeat"
@@ -1058,12 +1104,27 @@ Window {
         }
     }
 
+    Item {
+        anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom
+        height: Styling.spacing(12)
+        visible: root.immersive
+        z: 2
+        HoverHandler {
+            acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+            onHoveredChanged: {
+                if (hovered && !playlistPicker.visible && !root.fullscreenLibraryOpen)
+                    root.setFullscreenLibraryOpen(true);
+            }
+        }
+    }
+
     // A listening stage: artwork, lyrics and transport share the existing player.
     Rectangle {
         id: stage
         objectName: "music-fullscreen-stage"
         anchors.fill: parent
         visible: root.immersive
+        enabled: !root.fullscreenLibraryOpen
         Keys.onSpacePressed: event => { if (root.fullscreenKeys && !event.isAutoRepeat) root.toggle(); }
         color: Colors.surface
         gradient: Gradient {
@@ -1093,6 +1154,10 @@ Window {
                     StyledText { text: root.current?.album || "Your listening room"; elide: Text.ElideRight; Layout.maximumWidth: stage.width * 0.6; color: Colors.overSurfaceVariant }
                 }
                 Item { Layout.fillWidth: true }
+                KeyboardButton {
+                    text: "Library · Ctrl+B"
+                    onClicked: root.setFullscreenLibraryOpen(true)
+                }
                 AddCurrentToPlaylistButton { id: fullscreenAdd; objectName: "music-fullscreen-add-current-to-playlist" }
                 KeyboardButton { id: fullscreenExit; objectName: "music-fullscreen-exit"; text: "Exit fullscreen · Esc"; onClicked: root.toggleFullscreen() }
             }
@@ -1516,9 +1581,9 @@ Window {
                     KeyboardButton { text: root.favorites.includes(root.current?.path) ? "♥" : "♡"; enabled: !!root.current && !root.spotifyPreview; Accessible.name: "Favorite current song"; onClicked: root.favorite(root.current) }
                     Item { Layout.fillWidth: true }
                     KeyboardButton { objectName: "music-fullscreen-shuffle"; text: "Shuffle"; checked: root.spotifyPreview ? !!root.spotifyPlayer?.shuffle : root.shuffle; enabled: !root.spotifyPreview || !!root.spotifyPlayer?.shuffleSupported; onClicked: { if (root.spotifyPreview) root.spotifyPlayer.shuffle = !root.spotifyPlayer.shuffle; else root.shuffle = !root.shuffle; } }
-                    KeyboardButton { objectName: "music-fullscreen-previous"; text: "⏮"; Accessible.name: "Previous track"; enabled: root.spotifyPreview ? !!root.spotifyPlayer?.canGoPrevious : !!root.current; onClicked: root.previous() }
+                    KeyboardButton { id: fullscreenPrevious; objectName: "music-fullscreen-previous"; text: "⏮"; Accessible.name: "Previous track"; enabled: root.spotifyPreview ? !!root.spotifyPlayer?.canGoPrevious : root.canPreviousLocal; onClicked: root.previous(true) }
                     KeyboardButton { id: fullscreenPlay; objectName: "music-fullscreen-play"; text: root.playing ? "Pause" : "Play"; highlighted: true; Layout.preferredWidth: 120; implicitHeight: 52; enabled: root.spotifyPreview ? !!root.spotifyPlayer?.canTogglePlaying : root.queue.length > 0 || root.shownTracks.length > 0; onClicked: root.toggle() }
-                    KeyboardButton { objectName: "music-fullscreen-next"; text: "⏭"; Accessible.name: "Next track"; enabled: root.canNext; onClicked: root.next(false) }
+                    KeyboardButton { id: fullscreenNext; objectName: "music-fullscreen-next"; text: "⏭"; Accessible.name: "Next track"; enabled: root.canNext; onClicked: root.next(false) }
                     KeyboardButton { objectName: "music-fullscreen-repeat"; text: root.spotifyPreview ? (root.spotifyPlayer?.loopState === MprisLoopState.Track ? "Repeat song" : "Repeat all") : root.repeatMode === "Track" ? "Repeat song" : "Repeat all"; checked: root.spotifyPreview ? root.spotifyPlayer?.loopState !== MprisLoopState.None : root.repeatMode !== "None"; enabled: !root.spotifyPreview || !!root.spotifyPlayer?.loopSupported; onClicked: {
                         if (root.spotifyPreview) root.spotifyPlayer.loopState = root.spotifyPlayer.loopState === MprisLoopState.None ? MprisLoopState.Playlist : root.spotifyPlayer.loopState === MprisLoopState.Playlist ? MprisLoopState.Track : MprisLoopState.None;
                         else root.repeatMode = root.repeatMode === "None" ? "Playlist" : root.repeatMode === "Playlist" ? "Track" : "None";

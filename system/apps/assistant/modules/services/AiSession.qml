@@ -31,6 +31,7 @@ Scope {
     property string codexPreset: "coding"
     property var pendingCodexPreset: null
     property string codexPresetError: ""
+    property var pendingCodexResumeWarning: null
     readonly property bool switchingCodexPreset: pendingCodexPreset !== null
     readonly property string codexPresetName: {
         let preset = codexPresets.find(item => item.id === codexPreset);
@@ -88,6 +89,7 @@ Scope {
         codexPreset = preset.id;
         pendingCodexPreset = null;
         codexPresetError = "";
+        resolveCodexResumeWarning();
         saveCurrentChat();
         bridgeDirty = true;
         if (queuedPrompt) dispatchQueuedPrompt();
@@ -104,6 +106,7 @@ Scope {
         let previous = codexPresets.find(item => item.id === codexPreset);
         if (previous && !codexPresetMatches(previous)) codexPreset = "";
         codexPresetError = message;
+        resolveCodexResumeWarning();
         if (queuedPrompt) {
             queuedPrompt = null;
             turnWatchdog.stop();
@@ -628,7 +631,7 @@ Scope {
         "instructionSessionId", "instructionModeGuidance", "deliveredSharedInstructionVersion",
         "turnFailureHandled", "taskOutcome", "outcomeVersion", "outcomeFinding", "backendEvidence", "sessionConfigOptions", "sessionModels", "currentSessionModelId",
         "pendingSessionModelId", "modelSwitchError", "availableCommands", "currentModeId",
-        "codexPreset", "pendingCodexPreset", "codexPresetError",
+        "codexPreset", "pendingCodexPreset", "codexPresetError", "pendingCodexResumeWarning",
         "distillPreset", "pendingDistillPreset", "distillPresetError", "distillPresetReady", "distillNeedsChatGPT",
         "contextUsed", "contextSize", "sessionCost", "sessionCostCurrency",
         "activeAssistantMessageId", "activeAssistantIndex", "pendingPermissions", "isLoading",
@@ -814,6 +817,7 @@ Scope {
         currentSessionModelId = "";
         pendingSessionModelId = "";
         pendingCodexPreset = null;
+        pendingCodexResumeWarning = null;
         codexPresetError = "";
         pendingDistillPreset = "";
         distillPresetReady = false;
@@ -1008,6 +1012,7 @@ Scope {
         if (isDistill)
             params._meta = {autoMode: true, yoloMode: false};
 
+        pendingCodexResumeWarning = null;
         if (action.kind === "load" && action.sessionId) {
             let sessionCapabilities = agentCapabilities && agentCapabilities.sessionCapabilities
                 ? agentCapabilities.sessionCapabilities : {};
@@ -2039,6 +2044,32 @@ Scope {
         resolvePermission(index, false);
     }
 
+    function resolveCodexResumeWarning() {
+        const warning = pendingCodexResumeWarning;
+        pendingCodexResumeWarning = null;
+        if (warning && warning.sessionId === currentSessionId && codexOption("model")?.currentValue !== warning.recordedModel)
+            pushSystemMessage(warning.text.trim());
+    }
+
+    function handleCodexResumeWarning(update, sessionId) {
+        if (currentAgentId !== "codex" || update.messageId || update.content?.type !== "text")
+            return false;
+        // Codex ACP sends this backend notice as one unlabelled text chunk.
+        const text = update.content.text;
+        const match = /^Warning: This session was recorded with model `([^`]+)` but is resuming with `[^`]+`\. Consider switching back to `\1` as it may affect Codex performance\.\n\n$/.exec(text);
+        if (!match || sessionId !== currentSessionId)
+            return false;
+        const preset = codexPresets.find(item => item.id === codexPreset);
+        if (preset?.model !== match[1])
+            return false;
+        // A reconnect can report the server default before it restores the selected profile.
+        if (!sessionReady || switchingCodexPreset) {
+            pendingCodexResumeWarning = {sessionId, recordedModel: match[1], text};
+            return true;
+        }
+        return codexOption("model")?.currentValue === match[1];
+    }
+
     function handleSessionUpdate(params) {
         if (params.sessionId && currentSessionId && params.sessionId !== currentSessionId)
             return;
@@ -2052,6 +2083,7 @@ Scope {
             flushAssistantText();
         switch (update.sessionUpdate) {
         case "agent_message_chunk":
+            if (handleCodexResumeWarning(update, params.sessionId)) break;
             queueAssistantText(update);
             statusText = "Responding…";
             break;
