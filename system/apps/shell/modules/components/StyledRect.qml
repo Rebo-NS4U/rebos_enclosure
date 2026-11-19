@@ -431,10 +431,7 @@ ClippingRectangle {
             readonly property bool inset: root.variant === "internalbg"
             onInsetChanged: requestPaint()
             readonly property bool outer: root.variant === "bg" || root.variant === "popup"
-            readonly property bool hasHighway: finish === "metropolis" && broad
-            readonly property real skylineOpacity: hasHighway ? root.rectOpacity : 1
-            onSkylineOpacityChanged: requestPaint()
-            opacity: hasHighway ? 1 : root.rectOpacity
+            opacity: root.rectOpacity
             onCornerRadiusChanged: requestPaint()
             readonly property var frameCorners: [root.topLeftRadius, root.topRightRadius, root.bottomLeftRadius, root.bottomRightRadius]
             onFrameCornersChanged: requestPaint()
@@ -547,7 +544,7 @@ ClippingRectangle {
                 const compact = !broad
                 const rise = Math.min(height * (nested ? 0.44 : 0.64), width * 0.42)
                 const color = (ink, strength) => Qt.tint(backdrop, Qt.alpha(ink, strength))
-                ctx.globalAlpha = (nested ? 0.62 : 1) * skylineOpacity
+                ctx.globalAlpha = nested ? 0.62 : 1
 
                 // Setbacks, a recessed side face and continuous vertical fins give
                 // each tower a readable silhouette even when its windows disappear.
@@ -627,78 +624,6 @@ ClippingRectangle {
                 tower(0.755 * width, 0.085 * width, rise * 0.72, 2, 7)
                 tower(0.845 * width, 0.055 * width, rise * 0.44, 0, 5)
                 tower(0.91 * width, 0.115 * width, rise * 0.53, 1, 4)
-
-                // Paint an opaque foreground up to the parapet. Recessed
-                // bays are shaded concrete, so windows never show through them.
-                ctx.globalAlpha = 1
-                const concrete = Qt.alpha(backdrop, 1)
-                const tone = (color, amount) => Qt.tint(concrete, Qt.alpha(color, nested ? amount * 0.65 : amount))
-                // Project identical bays at equal intervals along a straight viaduct.
-                // Every horizontal edge converges on the same point in the skyline.
-                const horizonX = width * 0.72
-                const horizonY = base - rise * 0.18
-                const nearX = -width * 0.12
-                const foot = base + rise * 0.075
-                const top = base - rise * 0.56
-                const scale = bay => 1 / (1 + bay * 0.48)
-                const x = bay => horizonX + (nearX - horizonX) * scale(bay)
-                const y = (bay, elevation) => horizonY + (foot - elevation - horizonY) * scale(bay)
-                const viaductHeight = foot - top
-
-                ctx.beginPath()
-                ctx.moveTo(nearX, top)
-                ctx.lineTo(horizonX, horizonY)
-                ctx.lineTo(nearX, foot)
-                ctx.closePath()
-                const face = ctx.createLinearGradient(nearX, 0, horizonX, 0)
-                face.addColorStop(0, tone(accent, 0.34))
-                face.addColorStop(1, tone(accent, 0.15))
-                ctx.fillStyle = face
-                ctx.fill()
-
-                for (let bay = 0; x(bay + 1) - x(bay) >= 1.5; ++bay) {
-                    const right = bay + 0.89
-                    const spring = viaductHeight * 0.31
-                    const crown = viaductHeight * 0.85
-                    // Project each jamb and crown separately so the near jamb is taller.
-                    for (const reveal of [0, 0.055]) {
-                        const left = bay + 0.09 + reveal
-                        ctx.beginPath()
-                        ctx.moveTo(x(left), y(left, 0))
-                        ctx.lineTo(x(left), y(left, spring))
-                        ctx.bezierCurveTo(x(left), y(left, crown), x(right), y(right, crown),
-                                          x(right), y(right, spring))
-                        ctx.lineTo(x(right), y(right, 0))
-                        ctx.closePath()
-                        const shadow = ctx.createLinearGradient(0, y(left, crown), 0, y(left, 0))
-                        shadow.addColorStop(0, tone(accent, reveal === 0 ? 0.22 : 0.045))
-                        shadow.addColorStop(1, tone(accent, reveal === 0 ? 0.13 : 0.12))
-                        ctx.fillStyle = shadow
-                        ctx.fill()
-                    }
-                }
-                const capHeight = Math.min(5, viaductHeight * 0.058)
-                ctx.beginPath()
-                ctx.moveTo(nearX, top)
-                ctx.lineTo(horizonX, horizonY)
-                ctx.lineTo(nearX, top + capHeight)
-                ctx.closePath()
-                ctx.fillStyle = tone(secondaryAccent, 0.44)
-                ctx.fill()
-
-                // A few lamps establish street scale before the deck recedes from view.
-                for (let bay = 0.5; x(bay + 1) - x(bay) > 7; bay += 1) {
-                    const postX = x(bay)
-                    const roadY = y(bay, viaductHeight)
-                    const postHeight = Math.min(16, viaductHeight * 0.22) * scale(bay)
-                    if (postHeight < 2) break
-                    const gauge = Math.max(0.65, scale(bay) * 1.4)
-                    const arm = postHeight * 0.42
-                    ctx.fillStyle = tone(accent, 0.38)
-                    ctx.fillRect(postX, roadY - postHeight, gauge, postHeight)
-                    ctx.fillStyle = tone(secondaryAccent, 0.76)
-                    ctx.fillRect(postX, roadY - postHeight, arm, gauge)
-                }
             }
 
             onPaint: {

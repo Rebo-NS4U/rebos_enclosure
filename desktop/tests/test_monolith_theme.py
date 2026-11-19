@@ -78,56 +78,21 @@ ShellRoot {
     throw Error("Compact Canopy must frame the bar center");
    if (!hasMarks(metro, 35, 82, 40, 45) || !hasMarks(metro, 370, 139, 50, 46))
     throw Error("Missing Metropolis towers on either side of the window");
-   // Check the painted pixels and the item opacity applied by the compositor.
-   for (const panel of [metro, metroPane, metroPreview]) {
-    const city = decoration(panel);
-    const x = Math.floor(panel.width * 0.12), y = Math.floor(panel.height * 0.96);
-    const pixels = city.getContext("2d").getImageData(x, y, 5, 1).data;
-    for (let i = 3; i < pixels.length; i += 4) {
-     if (pixels[i] * city.opacity < 254.5)
-      throw Error("Translucent highway on " + panel.variant + ": pixel alpha " + pixels[i] + ", item opacity " + city.opacity);
-    }
-   }
-   const highway = decoration(metro);
-   const highwayContext = highway.getContext("2d");
-   for (const [x, y] of [[40, 201], [25, 235], [55, 233]]) {
-    if (highwayContext.getImageData(x, y, 1, 1).data[3] * highway.opacity < 254.5)
-     throw Error("Background shows through the deck, arch or pier at " + x + ", " + y);
-   }
-   // Both edges of the viaduct approach the horizon as its profile shrinks.
-   const profiles = [20, 140, 250].map(x => {
-    const column = highwayContext.getImageData(x, 0, 1, metro.height).data;
-    const solid = [];
-    for (let row = 0; row < metro.height; ++row)
-     if (column[row * 4 + 3] === 255) solid.push(row);
-    if (!solid.length) throw Error("Missing highway span at " + x);
-    return {foot: solid[solid.length - 1], height: solid.length};
-   });
-   for (let i = 1; i < profiles.length; ++i) {
-    if (profiles[i].foot >= profiles[i - 1].foot || profiles[i].height >= profiles[i - 1].height * 0.75)
-     throw Error("Distant highway spans must rise toward the horizon and contract");
-   }
    if (hasMarks(metro, 190, 40, 120, 110)) throw Error("City encroaches on the open sky");
    if (!hasMarks(metroPane, 17, 85, 18, 22) || !hasMarks(metroPreview, 15, 17, 15, 10))
     throw Error("Missing skyline on a nested pane or theme preview");
    if (!hasMarks(metroBar, 15, 20, 80, 19) || !hasMarks(metroBar, 500, 20, 60, 19)
        || hasMarks(metroBar, 180, 0, 220, 40))
     throw Error("Metropolis rooftops must frame the bar center");
-   Colors.background = "#202020";
-   for (const redRoad of [true, false]) {
-    Colors.primary = redRoad ? "#f04028" : "#2854f0";
-    Colors.tertiary = redRoad ? "#2854f0" : "#f04028";
+   // The middle contains only the distant, translucent skyline after resizing.
+   for (const width of [240, 500, 960]) {
+    metro.width = width;
     test.wait(100);
-    const pier = highwayContext.getImageData(77, 230, 1, 1).data;
-    const parapetFace = highwayContext.getImageData(77, 182, 1, 1).data;
-    const cap = highwayContext.getImageData(20, 167, 1, 1).data;
-    for (let channel = 0; channel < 4; ++channel) {
-     if (parapetFace[channel] !== pier[channel])
-      throw Error("The parapet and pier should form a continuous concrete face");
-    }
-    const direction = redRoad ? 1 : -1;
-    if ((pier[0] - pier[2]) * direction < 25 || (cap[2] - cap[0]) * direction < 25)
-     throw Error("Highway concrete and parapet cap must track their respective palette colors");
+    const ctx = decoration(metro).getContext("2d");
+    const column = ctx.getImageData(Math.floor(width / 2), 0, 1, metro.height).data;
+    if (column[column.length - 1] < 4) throw Error("Missing distant skyline at width " + width);
+    for (let i = 3; i < column.length; i += 4)
+     if (column[i] > 64) throw Error("Foreground crosses the central skyline at width " + width);
    }
    console.log("MATERIAL_RENDER_OK");
    Qt.quit();
