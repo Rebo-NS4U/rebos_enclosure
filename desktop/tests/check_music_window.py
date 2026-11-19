@@ -428,6 +428,14 @@ esac
                     if (spectrum.captureAudio || spectrum.levels.length !== 0) { console.error("MUSIC_FULLSCREEN_SPECTRUM_PAUSE_FAILED"); Qt.exit(1); return; }
                     console.log("MUSIC_FULLSCREEN_SPECTRUM_PASSED");
                     input.keyClick(Qt.Key_K);
+                    input.keyClick(Qt.Key_H);
+                    input.keyClick(Qt.Key_L);
+                    if (spotify.previousCalls !== 1 || spotify.nextCalls !== 1) {
+                        console.error("FULLSCREEN_TRACK_SHORTCUT_FAILED", spotify.previousCalls, spotify.nextCalls);
+                        Qt.exit(1); return;
+                    }
+                    spotify.previousCalls = 0;
+                    spotify.nextCalls = 0;
                     const rail = findItem(music.contentItem, "music-fullscreen-seek");
                     if (!tabTo(rail)) { console.error("FULLSCREEN_SEEK_FOCUS_FAILED"); Qt.exit(1); return; }
                     input.keyClick(Qt.Key_Right);
@@ -484,7 +492,9 @@ esac
                     input.keyClick(Qt.Key_Q);
                     input.keyClick(Qt.Key_K);
                     input.keyClick(Qt.Key_Space);
-                    if (queueSearch.text.toLowerCase() !== "qk " || library.count !== 0) { console.error("QUEUE_SEARCH_SHORTCUT_CONFLICT", queueSearch.text, library.count); Qt.exit(1); return; }
+                    input.keyClick(Qt.Key_H);
+                    input.keyClick(Qt.Key_L);
+                    if (queueSearch.text.toLowerCase() !== "qk hl" || library.count !== 0) { console.error("QUEUE_SEARCH_SHORTCUT_CONFLICT", queueSearch.text, library.count); Qt.exit(1); return; }
                     input.keyClick(Qt.Key_A, Qt.ControlModifier);
                     input.keyClick(Qt.Key_2);
                     if (queueSearch.text !== "2" || library.count !== 1) { console.error("QUEUE_LIBRARY_FILTER_FAILED", queueSearch.text, library.count); Qt.exit(1); return; }
