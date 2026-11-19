@@ -4,11 +4,16 @@ import argparse
 from pathlib import Path
 import subprocess
 
-FILES = ['Utils.js', 'ProviderLRCLIB.js', 'ProviderMusixmatch.js', 'ProviderNetease.js', 'Providers.js']
+FILES = ['Utils.js', 'ProviderLRCLIB.js', 'ProviderNetease.js', 'Providers.js']
+# Older packages include Musixmatch. Newer packages use Lyricsfile for LRCLIB.
+OPTIONAL_FILES = ['ProviderMusixmatch.js', 'Lyricsfile.js']
 
 
 def bundle(package, adapter):
-    return '(() => {\n' + '\n'.join((package / name).read_text() for name in FILES) + '\n' + adapter.read_text() + '\n})();\n'
+    sources = [package / name for name in FILES]
+    sources.extend(package / name for name in OPTIONAL_FILES if (package / name).is_file())
+    sources.append(adapter)
+    return '(() => {\n' + '\n'.join(source.read_text() for source in sources) + '\n})();\n'
 
 
 def main():
