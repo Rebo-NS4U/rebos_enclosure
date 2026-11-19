@@ -82,8 +82,6 @@ FloatingWindow {
         active: settingsWindow.visible
         sourceComponent: StyledRect {
             variant: "bg"
-            // Match the compact slate used by the assistant sidebar.
-            barSurface: Styling.shellStyle === "monolith"
             radius: Config.roundness
             SettingsTab {
                 anchors.fill: parent

@@ -60,7 +60,7 @@ ShellRoot {
                 for error in ('ReferenceError', 'TypeError', 'QML StyledRect: SyntaxError', 'Error loading QML', 'Unable to assign'):
                     self.assertNotIn(error, output)
 
-    def test_settings_uses_assistant_sidebar_slate(self):
+    def test_settings_renders_full_monolith_cracks(self):
         status, output = run_qml(ROOT / 'system/apps/shell', '''import QtQuick
 import QtTest
 import Quickshell
@@ -79,11 +79,18 @@ ShellRoot {
     GlobalStates.settingsWindowVisible = true;
     const loader = test.findChild(settings.contentItem, "settingsContentLoader");
     const slate = test.findChild(loader.item, "surface-edge-canvas");
-    if (!slate || !slate.outer || slate.wideSlate)
-     throw Error("Settings must use the assistant sidebar's compact Monolith slate");
-    Config.theme.shellStyle = "blueprint";
-    if (loader.item.barSurface)
-     throw Error("Blueprint must use the standard Settings surface");
+    if (!slate || !slate.wideSlate)
+     throw Error("Settings must use the full Monolith slate");
+    test.wait(150);
+    const ctx = slate.getContext("2d");
+    for (const [x, y] of [[0.16, 0.52], [0.43, 0.38], [0.75, 0.12]]) {
+     const pixels = ctx.getImageData(Math.floor(slate.width * x), Math.floor(slate.height * y),
+         Math.floor(slate.width * 0.16), Math.floor(slate.height * 0.18)).data;
+     let index = 3;
+     while (index < pixels.length && pixels[index] <= 3) index += 4;
+     if (index >= pixels.length)
+      throw Error("Missing Monolith cracks across Settings at " + x + ", " + y);
+    }
     console.log("SETTINGS_SLATE_OK");
     Qt.quit();
    } catch (error) {

@@ -594,7 +594,7 @@
   "system/apps/shell/modules/theme/ThemeWriter.qml": "7517f3677f4796fcaf1d06590721fcb8d04795cfdcadf81ce184749e2dc3634d",
   "system/apps/shell/modules/widgets/config/AiPanel.qml": "3afdf6ac2ee3b67362fa44a59215960bc0a0f94868486f599c811d249666c270",
   "system/apps/shell/modules/widgets/config/FanControlWindow.qml": "aaba475bc8d683287b601b4bda993803fda1615774a5425f5652d6cc5cebee22",
-  "system/apps/shell/modules/widgets/config/SettingsWindow.qml": "b3b5ecaf056e9d5d5b048fc4eda7041d5b016e46295b1982d17182e10c9f6073",
+  "system/apps/shell/modules/widgets/config/SettingsWindow.qml": "f6458c172d9e33666b4c7146a46a3a9533a452d3a0b6be0dfa35994160469c44",
   "system/apps/shell/modules/widgets/dashboard/Dashboard.qml": "61e75bdd65ff463d10e4be881f8d3e59dbdbedc03e5c8db5aacec4f44fc439a6",
   "system/apps/shell/modules/widgets/dashboard/DashboardView.qml": "d2a30fc2a090e8f11de5d3d655b0d81ed6da7e45d37655fe689fdd76027f1c41",
   "system/apps/shell/modules/widgets/dashboard/controls/AudioDeviceItem.qml": "054b594d5a22013f28c6d2e87ce3cf740b0ab532c0d6b29e16e3a79e47e57235",
