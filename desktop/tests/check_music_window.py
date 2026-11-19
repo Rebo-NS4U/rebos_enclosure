@@ -81,6 +81,10 @@ def session():
             for (const child of item.children) { const found = findItem(child, name); if (found) return found; }
             return null;
         }
+        function tabTo(item) {
+            for (let i = 0; item && !item.activeFocus && i < 24; i++) input.keyClick(Qt.Key_Tab);
+            return item?.activeFocus;
+        }
         Component.onCompleted: GlobalStates.musicWindowVisible = true
         Timer {
             property int attempts: 0
@@ -329,13 +333,17 @@ def session():
                     const pos = transport.mapToItem(stage, 0, 0);
                     if (pos.y < 0 || pos.y + transport.height > stage.height) { console.error("MUSIC_FULLSCREEN_BOUNDS_FAILED"); Qt.exit(1); return; }
                     const add = findItem(music.contentItem, "music-fullscreen-add-current-to-playlist");
-                    input.mouseClick(add, add.width / 2, add.height / 2);
+                    stop();
+                    if (!transport.activeFocus || !tabTo(add)) { console.error("FULLSCREEN_INITIAL_FOCUS_FAILED", music.activeFocusItem); Qt.exit(1); return; }
+                    input.keyClick(Qt.Key_Return);
                     phase = 901;
+                    start();
                 } else if (phase === 901) {
                     const choices = findItem(music.contentItem, "music-playlist-choices");
                     if (!choices?.itemAtIndex(2)) return;
-                    const choice = choices.itemAtIndex(2);
-                    input.mouseClick(choice, choice.width / 2, choice.height / 2);
+                    if (!choices.activeFocus) { console.error("PLAYLIST_KEYBOARD_FOCUS_FAILED", music.activeFocusItem); Qt.exit(1); return; }
+                    input.keyClick(Qt.Key_End);
+                    input.keyClick(Qt.Key_Return);
                     phase = 902;
                 } else if (phase === 902 && !music.busy) {
                     if (music.playlists[2].paths[0] !== music.current.path) { console.error("MUSIC_FULLSCREEN_PLAYLIST_ADD_FAILED"); Qt.exit(1); return; }
@@ -359,6 +367,7 @@ def session():
                     input.keyClick(Qt.Key_F11); repeatStart = attempts; phase = 94;
                 } else if (phase === 94 && attempts >= repeatStart + 3) {
                     if (!music.immersive) { console.error("MUSIC_FULLSCREEN_F11_FAILED"); Qt.exit(1); return; }
+                    stop();
                     console.log("MUSIC_FULLSCREEN_PASSED");
                     music.spotifyPlayer = spotify;
                     if (!music.spotifyPreview) { console.error("SPOTIFY_AUTOFOLLOW_FAILED"); Qt.exit(1); return; }
@@ -372,17 +381,25 @@ def session():
                     spotify.play();
                     if (music.current.title !== "Suggested song" || music.playbackDuration !== 180000 || !music.playing) { console.error("SPOTIFY_METADATA_FAILED"); Qt.exit(1); return; }
                     const play = findItem(music.contentItem, "music-fullscreen-play");
-                    play.clicked();
+                    input.keyClick(Qt.Key_Space);
                     if (spotify.isPlaying || music.playing || play.text !== "Play") { console.error("SPOTIFY_PAUSE_FAILED"); Qt.exit(1); return; }
-                    play.clicked();
-                    music.seek(45000);
-                    findItem(music.contentItem, "music-fullscreen-next").clicked();
-                    findItem(music.contentItem, "music-fullscreen-previous").clicked();
-                    findItem(music.contentItem, "music-fullscreen-shuffle").clicked();
-                    findItem(music.contentItem, "music-fullscreen-repeat").clicked();
+                    input.keyClick(Qt.Key_K);
+                    const rail = findItem(music.contentItem, "music-fullscreen-seek");
+                    if (!tabTo(rail)) { console.error("FULLSCREEN_SEEK_FOCUS_FAILED"); Qt.exit(1); return; }
+                    input.keyClick(Qt.Key_Right);
+                    input.keyClick(Qt.Key_Right);
+                    for (const name of ["next", "previous", "shuffle", "repeat"]) {
+                        if (!tabTo(findItem(music.contentItem, "music-fullscreen-" + name))) { console.error("FULLSCREEN_TRANSPORT_FOCUS_FAILED", name); Qt.exit(1); return; }
+                        input.keyClick(Qt.Key_Return);
+                    }
                     const volume = findItem(music.contentItem, "music-fullscreen-volume");
-                    volume.value = 0.3; volume.moved();
-                    if (!spotify.isPlaying || spotify.position !== 45 || spotify.nextCalls !== 1 || spotify.previousCalls !== 1 || !spotify.shuffle || spotify.loopState === 0 || Math.abs(spotify.volume-0.3) > 0.01) { console.error("SPOTIFY_TRANSPORT_FAILED"); Qt.exit(1); return; }
+                    const initialVolume = spotify.volume;
+                    if (!tabTo(volume)) { console.error("FULLSCREEN_VOLUME_FOCUS_FAILED"); Qt.exit(1); return; }
+                    input.keyClick(Qt.Key_Left);
+                    if (!spotify.isPlaying || spotify.position !== 45 || spotify.nextCalls !== 1 || spotify.previousCalls !== 1 || !spotify.shuffle || spotify.loopState === 0 || Math.abs(spotify.volume - (initialVolume - 0.05)) > 0.001) {
+                        console.error("SPOTIFY_TRANSPORT_FAILED", spotify.isPlaying, spotify.position, spotify.nextCalls, spotify.previousCalls, spotify.shuffle, spotify.loopState, spotify.volume);
+                        Qt.exit(1); return;
+                    }
                     spotify.canSeek = false; music.seek(60000);
                     if (spotify.position !== 45 || findItem(music.contentItem, "music-fullscreen-seek").enabled) { console.error("SPOTIFY_CAPABILITY_FAILED"); Qt.exit(1); return; }
                     const originalTracks = music.tracks;
@@ -394,18 +411,34 @@ def session():
                     music.playlists = originalPlaylists.concat([{id: "queue-test", paths: []}]);
                     music.navigate("Playlist", "queue-test");
                     music.spotifySuggestions = {playlist: "queue-test", pending: false, tracks: [suggestion]};
-                    findItem(music.contentItem, "music-fullscreen-queue-toggle").clicked();
-                    findItem(music.contentItem, "music-fullscreen-suggestions-tab").clicked();
+                    input.keyClick(Qt.Key_Q);
+                    if (!tabTo(findItem(music.contentItem, "music-fullscreen-suggestions-tab"))) { console.error("SUGGESTIONS_TAB_FOCUS_FAILED"); Qt.exit(1); return; }
+                    input.keyClick(Qt.Key_Return);
                     const queueCurrent = findItem(music.contentItem, "music-fullscreen-queue-current");
                     const suggestions = findItem(music.contentItem, "music-fullscreen-suggestions");
                     if (!queueCurrent.visible || !queueCurrent.enabled || !suggestions.visible || suggestions.count !== 1) { console.error("FULLSCREEN_QUEUE_MENU_FAILED"); Qt.exit(1); return; }
-                    queueCurrent.clicked();
+                    if (!tabTo(suggestions)) { console.error("SUGGESTIONS_LIST_FOCUS_FAILED"); Qt.exit(1); return; }
+                    input.keyClick(Qt.Key_Down);
+                    input.keyClick(Qt.Key_Return);
+                    if (spotify.isPlaying) { console.error("SUGGESTION_KEYBOARD_PLAY_FAILED"); Qt.exit(1); return; }
+                    input.keyClick(Qt.Key_Return);
+                    input.keyClick(Qt.Key_Right);
                     if (music.queue.length !== originalQueue.length + 1 || music.queue[music.queue.length - 1].spotifyUri !== uri || !spotify.isPlaying || music.playlists[music.playlists.length - 1].paths.length !== 0) { console.error("FULLSCREEN_QUEUE_SUGGESTION_FAILED"); Qt.exit(1); return; }
-                    findItem(music.contentItem, "music-fullscreen-queue-toggle").clicked();
+                    if (!tabTo(findItem(music.contentItem, "music-fullscreen-queue-tab"))) { console.error("QUEUE_TAB_FOCUS_FAILED"); Qt.exit(1); return; }
+                    input.keyClick(Qt.Key_Return);
+                    const queue = findItem(music.contentItem, "music-fullscreen-queue-list");
+                    if (!tabTo(queue)) { console.error("QUEUE_LIST_FOCUS_FAILED"); Qt.exit(1); return; }
+                    input.keyClick(Qt.Key_Down);
+                    input.keyClick(Qt.Key_Return);
+                    if (music.spotifyPreview || music.currentIndex !== originalQueue.length || spotify.isPlaying) { console.error("QUEUE_KEYBOARD_SELECT_FAILED"); Qt.exit(1); return; }
+                    if (!tabTo(findItem(music.contentItem, "music-fullscreen-suggestions-tab"))) { console.error("SUGGESTIONS_TAB_RESTORE_FAILED"); Qt.exit(1); return; }
+                    input.keyClick(Qt.Key_Return);
+                    input.keyClick(Qt.Key_Q);
                     music.tracks = originalTracks;
                     music.queue = originalQueue;
                     music.playlists = originalPlaylists;
                     console.log("MUSIC_FULLSCREEN_QUEUE_PASSED");
+                    console.log("MUSIC_FULLSCREEN_KEYBOARD_PASSED");
                     music.select(0);
                     if (music.spotifyPreview || spotify.isPlaying || music.current.title === "Suggested song") { console.error("SPOTIFY_LOCAL_RETURN_FAILED"); Qt.exit(1); return; }
                     console.log("MUSIC_SPOTIFY_FULLSCREEN_PASSED");
@@ -415,6 +448,7 @@ def session():
                     music.page = "Playlist"; music.detail = "test";
                     music.spotifySuggestions = {playlist:"test",pending:false,hasMore:true,tracks:Array.from({length:14}, (_,i)=>({uri:"spotify:track:"+String(i).padStart(22,"0"),title:"Suggestion "+i,artist:"New artist"}))};
                     repeatStart = attempts; phase = 95;
+                    start();
                 } else if (phase === 950) {
                     const suggestions = findItem(music.contentItem, "music-playlist-suggestions");
                     const songs = findItem(music.contentItem, "music-track-row-0")?.ListView.view;
