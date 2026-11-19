@@ -637,6 +637,18 @@ esac
                     const nextTitle = findItem(music.contentItem, "music-fullscreen-up-next-title");
                     if (!nextTitle.visible || nextTitle.text !== music.queue[1].title) { console.error("FULLSCREEN_LOCAL_NEXT_TITLE_FAILED"); Qt.exit(1); return; }
                     console.log("MUSIC_FULLSCREEN_UP_NEXT_PASSED");
+                    music.play(music.tracks, 1);
+                    phase = 957;
+                } else if (phase === 957 && music.playing && music.playbackDuration > 3500) {
+                    music.toggle();
+                    music.seek(3400);
+                    phase = 958;
+                } else if (phase === 958 && music.playbackPosition > 3000) {
+                    const previous = findItem(music.contentItem, "music-fullscreen-previous");
+                    if (!music.immersive || !previous.enabled) { console.error("FULLSCREEN_PREVIOUS_UNAVAILABLE"); Qt.exit(1); return; }
+                    previous.click();
+                    if (music.currentIndex !== 0) { console.error("FULLSCREEN_PREVIOUS_LOCAL_FAILED"); Qt.exit(1); return; }
+                    console.log("MUSIC_FULLSCREEN_PREVIOUS_LOCAL_PASSED");
                     music.toggleFullscreen();
                     const list = findItem(music.contentItem, "music-playlist-suggestions");
                     list.positionViewAtIndex(8, ListView.Beginning);

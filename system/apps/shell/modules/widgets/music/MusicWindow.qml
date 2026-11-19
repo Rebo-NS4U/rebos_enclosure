@@ -407,12 +407,12 @@ Window {
         }
         select(index);
     }
-    function previous() {
+    function previous(skipRestart) {
         if (spotifyPreview) {
             if (spotifyPlayer?.canGoPrevious) spotifyPlayer.previous();
             return;
         }
-        if (player.position > 3000) {
+        if (!skipRestart && player.position > 3000) {
             player.position = 0;
         } else if (shuffle) {
             if (shuffleCursor > 0) {
@@ -1526,7 +1526,7 @@ Window {
                     AddCurrentToPlaylistButton { objectName: "music-fullscreen-add-current-to-playlist" }
                     Item { Layout.fillWidth: true }
                     KeyboardButton { objectName: "music-fullscreen-shuffle"; text: "Shuffle"; checked: root.spotifyPreview ? !!root.spotifyPlayer?.shuffle : root.shuffle; enabled: !root.spotifyPreview || !!root.spotifyPlayer?.shuffleSupported; onClicked: { if (root.spotifyPreview) root.spotifyPlayer.shuffle = !root.spotifyPlayer.shuffle; else root.shuffle = !root.shuffle; } }
-                    KeyboardButton { id: fullscreenPrevious; objectName: "music-fullscreen-previous"; text: "⏮"; Accessible.name: "Previous track"; enabled: root.spotifyPreview ? !!root.spotifyPlayer?.canGoPrevious : !!root.current; onClicked: root.previous() }
+                    KeyboardButton { id: fullscreenPrevious; objectName: "music-fullscreen-previous"; text: "⏮"; Accessible.name: "Previous track"; enabled: root.spotifyPreview ? !!root.spotifyPlayer?.canGoPrevious : root.canPreviousLocal; onClicked: root.previous(true) }
                     KeyboardButton { id: fullscreenPlay; objectName: "music-fullscreen-play"; text: root.playing ? "Pause" : "Play"; highlighted: true; Layout.preferredWidth: 120; implicitHeight: 52; enabled: root.spotifyPreview ? !!root.spotifyPlayer?.canTogglePlaying : root.queue.length > 0 || root.shownTracks.length > 0; onClicked: root.toggle() }
                     KeyboardButton { id: fullscreenNext; objectName: "music-fullscreen-next"; text: "⏭"; Accessible.name: "Next track"; enabled: root.canNext; onClicked: root.next(false) }
                     KeyboardButton { objectName: "music-fullscreen-repeat"; text: root.spotifyPreview ? (root.spotifyPlayer?.loopState === MprisLoopState.Track ? "Repeat song" : "Repeat all") : root.repeatMode === "Track" ? "Repeat song" : "Repeat all"; checked: root.spotifyPreview ? root.spotifyPlayer?.loopState !== MprisLoopState.None : root.repeatMode !== "None"; enabled: !root.spotifyPreview || !!root.spotifyPlayer?.loopSupported; onClicked: {
