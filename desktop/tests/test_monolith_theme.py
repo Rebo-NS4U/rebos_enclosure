@@ -94,6 +94,19 @@ ShellRoot {
     if (highwayContext.getImageData(x, y, 1, 1).data[3] * highway.opacity < 254.5)
      throw Error("Background shows through the deck, arch or pier at " + x + ", " + y);
    }
+   // Both edges of the viaduct approach the horizon as its profile shrinks.
+   const profiles = [20, 140, 250].map(x => {
+    const column = highwayContext.getImageData(x, 0, 1, metro.height).data;
+    const solid = [];
+    for (let row = 0; row < metro.height; ++row)
+     if (column[row * 4 + 3] === 255) solid.push(row);
+    if (!solid.length) throw Error("Missing highway span at " + x);
+    return {foot: solid[solid.length - 1], height: solid.length};
+   });
+   for (let i = 1; i < profiles.length; ++i) {
+    if (profiles[i].foot >= profiles[i - 1].foot || profiles[i].height >= profiles[i - 1].height * 0.75)
+     throw Error("Distant highway spans must rise toward the horizon and contract");
+   }
    if (hasMarks(metro, 190, 40, 120, 110)) throw Error("City encroaches on the open sky");
    if (!hasMarks(metroPane, 17, 85, 18, 22) || !hasMarks(metroPreview, 15, 17, 15, 10))
     throw Error("Missing skyline on a nested pane or theme preview");
@@ -105,12 +118,12 @@ ShellRoot {
     Colors.primary = redRoad ? "#f04028" : "#2854f0";
     Colors.tertiary = redRoad ? "#2854f0" : "#f04028";
     test.wait(100);
-    const pier = highwayContext.getImageData(55, 233, 1, 1).data;
-    const parapetFace = highwayContext.getImageData(20, 198, 1, 1).data;
-    const cap = highwayContext.getImageData(20, 195, 1, 1).data;
+    const pier = highwayContext.getImageData(77, 230, 1, 1).data;
+    const parapetFace = highwayContext.getImageData(77, 182, 1, 1).data;
+    const cap = highwayContext.getImageData(20, 167, 1, 1).data;
     for (let channel = 0; channel < 4; ++channel) {
      if (parapetFace[channel] !== pier[channel])
-      throw Error("The former lane stripe should be solid concrete in side view");
+      throw Error("The parapet and pier should form a continuous concrete face");
     }
     const direction = redRoad ? 1 : -1;
     if ((pier[0] - pier[2]) * direction < 25 || (cap[2] - cap[0]) * direction < 25)

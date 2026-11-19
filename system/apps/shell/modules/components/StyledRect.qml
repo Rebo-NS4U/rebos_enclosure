@@ -633,46 +633,52 @@ ClippingRectangle {
                 ctx.globalAlpha = 1
                 const concrete = Qt.alpha(backdrop, 1)
                 const tone = (color, amount) => Qt.tint(concrete, Qt.alpha(color, nested ? amount * 0.65 : amount))
-                const roadWidth = width * 0.67
-                const roadHeight = rise * 0.33
-                const edge = base - roadHeight
-                const bend = base - roadHeight * 0.24
+                // Project identical bays at equal intervals along a straight viaduct.
+                // Every horizontal edge converges on the same point in the skyline.
+                const horizonX = width * 0.72
+                const horizonY = base - rise * 0.18
+                const nearX = -width * 0.12
+                const foot = base + rise * 0.075
+                const top = base - rise * 0.56
+                const scale = bay => 1 / (1 + bay * 0.48)
+                const x = bay => horizonX + (nearX - horizonX) * scale(bay)
+                const y = (bay, elevation) => horizonY + (foot - elevation - horizonY) * scale(bay)
+                const viaductHeight = foot - top
 
                 ctx.beginPath()
-                ctx.moveTo(0, edge)
-                ctx.quadraticCurveTo(roadWidth / 2, bend, roadWidth, base)
-                ctx.lineTo(0, base)
+                ctx.moveTo(nearX, top)
+                ctx.lineTo(horizonX, horizonY)
+                ctx.lineTo(nearX, foot)
                 ctx.closePath()
-                ctx.fillStyle = tone(accent, 0.27)
+                const face = ctx.createLinearGradient(nearX, 0, horizonX, 0)
+                face.addColorStop(0, tone(accent, 0.34))
+                face.addColorStop(1, tone(accent, 0.15))
+                ctx.fillStyle = face
                 ctx.fill()
 
-                const piers = [-0.12, 0.16, 0.39, 0.57, 0.71, 0.82, 0.90, 0.96]
-                for (let i = 1; i < piers.length; ++i) {
-                    const gap = piers[i] - piers[i - 1]
-                    const left = (piers[i - 1] + gap * 0.09) * roadWidth
-                    const right = (piers[i] - gap * 0.09) * roadWidth
-                    const mid = (piers[i] + piers[i - 1]) / 2
-                    const archHeight = roadHeight * (1 - mid) * (1 - 0.52 * mid) * 0.63
-                    // The near reveal catches ambient light on one side of the bay.
-                    for (const inset of [0, gap * roadWidth * 0.067]) {
-                        const spring = base - archHeight * 0.38
-                        const crown = base - archHeight
+                for (let bay = 0; x(bay + 1) - x(bay) >= 1.5; ++bay) {
+                    const right = bay + 0.89
+                    const spring = viaductHeight * 0.31
+                    const crown = viaductHeight * 0.85
+                    // Project each jamb and crown separately so the near jamb is taller.
+                    for (const reveal of [0, 0.055]) {
+                        const left = bay + 0.09 + reveal
                         ctx.beginPath()
-                        ctx.moveTo(left + inset, base)
-                        ctx.lineTo(left + inset, spring)
-                        ctx.bezierCurveTo(left + inset, crown, right, crown, right, spring)
-                        ctx.lineTo(right, base)
+                        ctx.moveTo(x(left), y(left, 0))
+                        ctx.lineTo(x(left), y(left, spring))
+                        ctx.bezierCurveTo(x(left), y(left, crown), x(right), y(right, crown),
+                                          x(right), y(right, spring))
+                        ctx.lineTo(x(right), y(right, 0))
                         ctx.closePath()
-                        ctx.fillStyle = inset === 0 ? tone(accent, 0.13) : tone(accent, 0.035)
+                        ctx.fillStyle = reveal === 0 ? tone(accent, 0.13) : tone(accent, 0.035)
                         ctx.fill()
                     }
                 }
-                // A narrow coping follows the top of the vertical concrete face.
-                const capHeight = Math.min(3, roadHeight * 0.055)
+                const capHeight = Math.min(5, viaductHeight * 0.058)
                 ctx.beginPath()
-                ctx.moveTo(0, edge)
-                ctx.quadraticCurveTo(roadWidth / 2, bend, roadWidth, base)
-                ctx.quadraticCurveTo(roadWidth / 2, bend + capHeight * 0.25, 0, edge + capHeight)
+                ctx.moveTo(nearX, top)
+                ctx.lineTo(horizonX, horizonY)
+                ctx.lineTo(nearX, top + capHeight)
                 ctx.closePath()
                 ctx.fillStyle = tone(secondaryAccent, 0.44)
                 ctx.fill()

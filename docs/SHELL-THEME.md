@@ -53,7 +53,8 @@ bars keep the center clear between two short leaf sprays.
 ## Metropolis
 
 Stepped towers frame a low skyline, with lit window bays and an elevated highway
-receding into the distance. Seen from the side, its opaque concrete arches and parapet
+receding toward a vanishing point in the skyline. Each successive arch is
+narrower and shorter. Seen from the side, its opaque concrete arches and parapet
 use the primary color. A thin cap along the parapet uses the tertiary color.
 Large panes carry a subdued skyline. Compact bars show rooftop clusters at either end,
 leaving the clock clear.
