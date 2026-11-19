@@ -61,12 +61,23 @@ Window {
         onTriggered: root.pendingRemoval = null
     }
     property string side: "Queue"
-    readonly property int queueLimit: 100
+    readonly property int shuffleHistoryLimit: 100
     property var queue: []
     property int currentIndex: -1
     property bool shuffle: false
     property var shuffleHistory: []
     property int shuffleCursor: -1
+    // Keep the shuffle choice stable until Next consumes it.
+    property real shuffleRoll: Math.random()
+    readonly property int nextLocalIndex: {
+        if (queue.length === 0) return -1;
+        if (shuffle && queue.length > 1 && currentIndex >= 0) {
+            if (shuffleCursor + 1 < shuffleHistory.length) return shuffleHistory[shuffleCursor + 1];
+            return (currentIndex + 1 + Math.floor(shuffleRoll * (queue.length - 1))) % queue.length;
+        }
+        if (currentIndex + 1 < queue.length) return currentIndex + 1;
+        return repeatMode === "Playlist" ? 0 : -1;
+    }
     readonly property bool canPreviousLocal: shuffle ? shuffleCursor > 0 : currentIndex > 0
     property string repeatMode: "Playlist"
     property real volume: 0.8
@@ -168,7 +179,8 @@ Window {
         }
         if (advancedSuggestionUri !== current.spotifyUri) next(true);
     }
-    readonly property bool canNext: !!nextSuggestion || (spotifyPreview ? !!spotifyPlayer?.canGoNext : queue.length > 1)
+    readonly property var nextQueueTrack: spotifyPreview ? nextSuggestion : queue[nextLocalIndex] || null
+    readonly property bool canNext: spotifyPreview ? !!nextSuggestion || !!spotifyPlayer?.canGoNext : nextLocalIndex >= 0
     onNextSuggestionChanged: sync()
     onCurrentSpotifyUrlChanged: sync()
     readonly property var suggestedTracks: {
@@ -185,10 +197,6 @@ Window {
     }
     function addSuggestion(track, toQueue) {
         if (!canAddSuggestion) return;
-        if (toQueue && queue.length >= queueLimit) {
-            notice = "Queue is full (" + queueLimit + " songs).";
-            return;
-        }
         const playlist = detail;
         const local = tracks.find(t => t.spotifyUri === track.uri);
         if (local) {
@@ -324,16 +332,11 @@ Window {
         if (!list.length) return;
         const selected = index === undefined ? Math.floor(Math.random() * list.length) : index;
         if (selected < 0 || selected >= list.length) return;
-        const start = selected >= queueLimit ? Math.min(selected, Math.max(0, list.length - queueLimit)) : 0;
-        queue = list.slice(start, start + queueLimit);
-        notice = list.length > queueLimit ? "Queue limited to " + queueLimit + " songs." : "";
-        select(selected - start);
+        queue = list.slice();
+        notice = "";
+        select(selected);
     }
     function enqueue(track) {
-        if (queue.length >= queueLimit) {
-            notice = "Queue is full (" + queueLimit + " songs).";
-            return;
-        }
         queue = queue.concat([track]);
     }
     function cardTracks(kind, key) {
@@ -347,6 +350,7 @@ Window {
     function resetShuffleHistory(index) {
         shuffleHistory = shuffle && index >= 0 ? [index] : [];
         shuffleCursor = shuffleHistory.length - 1;
+        if (shuffle) shuffleRoll = Math.random();
     }
     function select(index, fromShuffle) {
         if (index < 0 || index >= queue.length) return;
@@ -385,20 +389,20 @@ Window {
         }
         if (!queue.length) return;
         if (automatic && repeatMode === "Track") { player.position = 0; player.play(); return; }
+        const index = nextLocalIndex;
+        if (index < 0) return;
         if (shuffle && queue.length > 1 && currentIndex >= 0) {
             if (shuffleCursor + 1 === shuffleHistory.length) {
-                const offset = 1 + Math.floor(Math.random() * (queue.length - 1));
-                const index = (currentIndex + offset) % queue.length;
-                shuffleHistory = shuffleHistory.concat([index]).slice(-queueLimit);
+                shuffleHistory = shuffleHistory.concat([index]).slice(-shuffleHistoryLimit);
                 shuffleCursor = shuffleHistory.length - 1;
+                shuffleRoll = Math.random();
             } else {
                 shuffleCursor++;
             }
-            select(shuffleHistory[shuffleCursor], true);
+            select(index, true);
             return;
         }
-        if (currentIndex+1 < queue.length) select(currentIndex+1);
-        else if (repeatMode === "Playlist") select(0);
+        select(index);
     }
     function previous() {
         if (spotifyPreview) {
@@ -422,7 +426,7 @@ Window {
         if (!backend.running) return;
         request("mpris", { track: localCurrent ? Object.assign({}, localCurrent, {lyrics: spotifyPreview ? "" : lyricText}) : null, status: !localCurrent || player.playbackState === MediaPlayer.StoppedState ? "Stopped" : player.playbackState === MediaPlayer.PlayingState ? "Playing" : "Paused",
             position: Math.round(player.position*1000), length: Math.round(player.duration*1000),
-            volume: volume, shuffle: shuffle, loop: repeatMode, canNext: !!nextSuggestion || queue.length > 1,
+            volume: volume, shuffle: shuffle, loop: repeatMode, canNext: !!nextSuggestion || nextLocalIndex >= 0,
             suggestionNextFor: nextSuggestion ? currentSpotifyUrl : "",
             canPrevious: canPreviousLocal, seeked: !!seeked });
     }
@@ -1237,7 +1241,7 @@ Window {
                                     objectName: "music-fullscreen-queue-tab"
                                     Layout.fillWidth: true
                                     Layout.minimumWidth: 0
-                                    text: "Up next · " + root.queue.length
+                                    text: "Queue · " + root.queue.length
                                     checked: !stage.showSuggestions
                                     onClicked: stage.showSuggestions = false
                                 }
@@ -1251,12 +1255,50 @@ Window {
                                 }
                             }
                         }
+                        StyledRect {
+                            objectName: "music-fullscreen-up-next"
+                            visible: root.canNext
+                            Layout.fillWidth: true
+                            implicitHeight: nextTrackDetails.implicitHeight + 2 * Styling.spacing(10)
+                            variant: "internalbg"
+                            RowLayout {
+                                id: nextTrackDetails
+                                anchors.left: parent.left; anchors.right: parent.right
+                                anchors.verticalCenter: parent.verticalCenter
+                                anchors.margins: Styling.spacing(10)
+                                Cover {
+                                    visible: !!root.nextQueueTrack
+                                    artwork: root.nextQueueTrack?.art || ""
+                                    Layout.preferredWidth: Styling.spacing(40)
+                                    Layout.preferredHeight: Layout.preferredWidth
+                                }
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 3
+                                    StyledText { text: "Up next"; color: Colors.primary; font.pixelSize: Styling.fontSize(-2) }
+                                    StyledText {
+                                        objectName: "music-fullscreen-up-next-title"
+                                        Layout.fillWidth: true
+                                        text: root.nextQueueTrack?.title || "Chosen by Spotify"
+                                        font.bold: true
+                                        elide: Text.ElideRight
+                                    }
+                                    StyledText {
+                                        Layout.fillWidth: true
+                                        visible: text !== ""
+                                        text: root.nextQueueTrack?.artist || ""
+                                        color: Colors.overSurfaceVariant
+                                        elide: Text.ElideRight
+                                    }
+                                }
+                            }
+                        }
                         KeyboardButton {
                             objectName: "music-fullscreen-queue-current"
                             Layout.fillWidth: true
                             visible: !!root.playingSuggestion
                             text: "Queue current suggestion"
-                            enabled: root.canAddSuggestion && root.queue.length < root.queueLimit
+                            enabled: root.canAddSuggestion
                             onClicked: root.addSuggestion(root.playingSuggestion, true)
                         }
                         StyledText {
@@ -1267,7 +1309,7 @@ Window {
                         }
                         KeyboardList {
                             id: fullscreenQueue
-                            Accessible.name: "Up next"
+                            Accessible.name: "Playback queue"
                             onEntryActivated: index => {
                                 if (!root.spotifyPreview && index === root.currentIndex) root.toggle();
                                 else root.select(index);
@@ -1310,7 +1352,7 @@ Window {
                                 else root.playSuggestion(track);
                             }
                             Keys.onRightPressed: event => {
-                                if (!event.isAutoRepeat && keyboardIndex >= 0 && root.canAddSuggestion && root.queue.length < root.queueLimit)
+                                if (!event.isAutoRepeat && keyboardIndex >= 0 && root.canAddSuggestion)
                                     root.addSuggestion(root.activeSuggestions[keyboardIndex], true);
                                 event.accepted = true;
                             }
@@ -1327,7 +1369,7 @@ Window {
                                 objectName: "music-fullscreen-suggestion-" + index
                                 width: ListView.view.width - Styling.spacing(12)
                                 track: modelData; number: index; suggestion: true; queueSuggestion: true
-                                addEnabled: root.canAddSuggestion && root.queue.length < root.queueLimit
+                                addEnabled: root.canAddSuggestion
                                 keyboardSelected: fullscreenSuggestions.activeFocus && fullscreenSuggestions.keyboardIndex === index
                                 onPlayRequested: fullscreenSuggestions.entryActivated(index)
                                 onEnqueueRequested: root.addSuggestion(track, true)

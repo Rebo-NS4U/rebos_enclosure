@@ -150,12 +150,22 @@ esac
                     music.volume = 0;
                     const largeQueue = Array.from({length: 150}, (_, i) => Object.assign({}, music.tracks[i % 2], {title: "Queue song " + i}));
                     music.play(largeQueue, 0);
-                    if (music.queue.length !== 100 || music.currentIndex !== 0) { console.error("MUSIC_QUEUE_CAP_FAILED"); Qt.exit(1); }
+                    if (music.queue.length !== 150 || music.currentIndex !== 0 || music.notice !== "" ||
+                        music.nextQueueTrack?.title !== "Queue song 1") { console.error("MUSIC_LARGE_QUEUE_FAILED"); Qt.exit(1); return; }
                     const firstQueued = music.queue[0];
                     music.enqueue(music.tracks[0]);
-                    if (music.queue.length !== 100 || music.queue[0] !== firstQueued || !music.notice.includes("full")) { console.error("MUSIC_QUEUE_FULL_FAILED"); Qt.exit(1); }
+                    if (music.queue.length !== 151 || music.queue[0] !== firstQueued || music.notice !== "") { console.error("MUSIC_LARGE_QUEUE_APPEND_FAILED"); Qt.exit(1); return; }
+                    music.shuffle = true;
+                    const shuffledNext = music.nextQueueTrack;
+                    music.next();
+                    if (shuffledNext === firstQueued || music.current !== shuffledNext) { console.error("MUSIC_SHUFFLE_PREDICTION_FAILED"); Qt.exit(1); return; }
+                    music.shuffle = false;
                     music.play(largeQueue, 149);
-                    if (music.queue.length !== 100 || music.current.title !== "Queue song 149") { console.error("MUSIC_QUEUE_SELECTED_FAILED"); Qt.exit(1); }
+                    if (music.queue.length !== 150 || music.currentIndex !== 149 || music.current.title !== "Queue song 149" ||
+                        music.nextQueueTrack?.title !== "Queue song 0" || music.notice !== "") { console.error("MUSIC_LARGE_QUEUE_SELECTED_FAILED"); Qt.exit(1); return; }
+                    music.repeatMode = "None";
+                    if (music.nextQueueTrack || music.canNext) { console.error("MUSIC_END_OF_QUEUE_FAILED"); Qt.exit(1); return; }
+                    music.repeatMode = "Playlist";
                     music.play(music.tracks.slice(0, 1), 0);
                     music.enqueue(music.tracks[1]);
                     if (music.queue.length !== 2 || music.queue[1].path !== music.tracks[1].path) { console.error("MUSIC_QUEUE_APPEND_FAILED"); Qt.exit(1); }
@@ -535,6 +545,8 @@ esac
                     if (!music.immersive || !panel.visible || !next.visible || !next.enabled ||
                         panelPos.x + panel.width > stage.width || artPos.x + art.width > panelPos.x ||
                         panelPos.y + panel.height > railPos.y) { console.error("FULLSCREEN_QUEUE_BOUNDS_FAILED"); Qt.exit(1); return; }
+                    const nextTitle = findItem(music.contentItem, "music-fullscreen-up-next-title");
+                    if (!nextTitle.visible || nextTitle.text !== music.suggestedTracks[1].title) { console.error("FULLSCREEN_SUGGESTED_NEXT_TITLE_FAILED"); Qt.exit(1); return; }
                     next.clicked();
                     if (music.requestedPreview !== music.suggestedTracks[1].uri) { console.error("FULLSCREEN_NEXT_BUTTON_FAILED"); Qt.exit(1); return; }
                     music.requestedPreview = "";
@@ -585,6 +597,9 @@ esac
                     music.select(0);
                     const queue = findItem(music.contentItem, "music-fullscreen-queue-list");
                     if (!queue.visible || queue.count !== music.queue.length || queue.currentIndex !== 0) { console.error("FULLSCREEN_QUEUE_TAB_FAILED"); Qt.exit(1); return; }
+                    const nextTitle = findItem(music.contentItem, "music-fullscreen-up-next-title");
+                    if (!nextTitle.visible || nextTitle.text !== music.queue[1].title) { console.error("FULLSCREEN_LOCAL_NEXT_TITLE_FAILED"); Qt.exit(1); return; }
+                    console.log("MUSIC_FULLSCREEN_UP_NEXT_PASSED");
                     music.toggleFullscreen();
                     const list = findItem(music.contentItem, "music-playlist-suggestions");
                     list.positionViewAtIndex(8, ListView.Beginning);
