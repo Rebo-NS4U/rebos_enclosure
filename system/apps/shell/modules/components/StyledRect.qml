@@ -543,90 +543,90 @@ ClippingRectangle {
             }
 
             function paintMetropolis(ctx) {
-                // The low valley between the two districts leaves room for labels.
-                const compact = !broad
-                const reach = compact ? Math.min(width * 0.29, 92) : width
-                const rise = compact ? Math.min(height * 0.38, 20) : height * (nested ? 0.44 : 0.64)
                 const base = height
-                const glass = Qt.tint(backdrop, Qt.alpha(accent, 0.24))
-                ctx.globalAlpha = (nested ? 0.48 : 0.88) * skylineOpacity
+                const compact = !broad
+                const rise = Math.min(height * (nested ? 0.44 : 0.64), width * 0.42)
+                const color = (ink, strength) => Qt.tint(backdrop, Qt.alpha(ink, strength))
+                ctx.globalAlpha = (nested ? 0.62 : 1) * skylineOpacity
 
-                function tower(x, span, tall, crowned, seed) {
-                    const top = base - tall
-                    const shoulder = crowned ? tall * 0.23 : 0
-                    const trim = span * 0.18
-                    const face = ctx.createLinearGradient(x, 0, x + span, 0)
-                    face.addColorStop(0, glass)
-                    face.addColorStop(1, Qt.tint(backdrop, Qt.alpha(accent, 0.07)))
-                    ctx.fillStyle = face
-                    ctx.strokeStyle = Qt.alpha(accent, 0.41)
-                    ctx.lineWidth = 0.8
+                // Setbacks, a recessed side face and continuous vertical fins give
+                // each tower a readable silhouette even when its windows disappear.
+                function tower(x, span, tall, steps, seed) {
+                    const roof = base - tall
+                    const setback = span * 0.11
+                    const tier = tall * 0.085
+                    const facade = ctx.createLinearGradient(0, roof, 0, base)
+                    facade.addColorStop(0, color(accent, 0.38))
+                    facade.addColorStop(1, color(accent, 0.10))
+                    ctx.fillStyle = facade
                     ctx.beginPath()
                     ctx.moveTo(x, base)
-                    ctx.lineTo(x, top + shoulder)
-                    ctx.lineTo(x + trim, top + shoulder)
-                    ctx.lineTo(x + trim, top + shoulder * 0.46)
-                    ctx.lineTo(x + 2 * trim, top + shoulder * 0.46)
-                    ctx.lineTo(x + 2 * trim, top)
-                    ctx.lineTo(x + span - trim, top)
-                    ctx.lineTo(x + span - trim, top + shoulder)
-                    ctx.lineTo(x + span, top + shoulder)
+                    for (let i = 0; i <= steps; ++i) {
+                        const level = roof + (steps - i) * tier
+                        ctx.lineTo(x + i * setback, level)
+                        ctx.lineTo(x + (i + 1) * setback, level)
+                    }
+                    for (let i = steps; i >= 0; --i) {
+                        const level = roof + (steps - i) * tier
+                        ctx.lineTo(x + span - i * setback, level)
+                        ctx.lineTo(x + span - i * setback, level + tier)
+                    }
                     ctx.lineTo(x + span, base)
                     ctx.closePath()
                     ctx.fill()
-                    ctx.stroke()
-                    ctx.fillStyle = Qt.alpha(backdrop, 0.58)
-                    ctx.fillRect(x + span - trim, top + shoulder, trim, tall - shoulder)
-                    if (crowned) {
-                        ctx.fillStyle = Qt.alpha(pigment, 0.54)
-                        ctx.fillRect(x + span * 0.55, top - tall * 0.13, 1, tall * 0.13)
+
+                    const shoulder = roof + steps * tier
+                    ctx.fillStyle = Qt.alpha(backdrop, 0.53)
+                    ctx.fillRect(x + span * 0.77, shoulder, span * 0.23, base - shoulder)
+                    if (steps === 2) {
+                        ctx.fillStyle = color(secondaryAccent, 0.56)
+                        ctx.fillRect(x + span * 0.48, roof - tall * 0.09, 1, tall * 0.09)
                     }
-                    // Three vertical window bays. Lit floors break into short bands.
-                    const floors = compact ? 2 : Math.min(15, Math.floor((tall - shoulder) / 6))
-                    const pitch = (tall - shoulder) / (floors + 1)
-                    for (let floor = 1; floor <= floors; ++floor) {
-                        for (let bay = 0; bay < 3; ++bay) {
-                            const room = (floor * 7 + bay * 3 + seed + Math.floor(floor / 3)) % 11
-                            if (room > 6) continue
-                            ctx.fillStyle = Qt.alpha(room < 3 ? secondaryAccent : accent, room < 3 ? 0.78 : 0.34)
-                            ctx.fillRect(x + span * (0.10 + bay * 0.25), top + shoulder + pitch * floor,
-                                         Math.max(1, span * 0.13), Math.min(2.4, pitch * 0.42))
+                    if (tall < 14 || span < 10) return
+                    const bays = Math.min(9, Math.max(2, Math.floor(span / 5)))
+                    const pitch = span * 0.68 / bays
+                    const floorHeight = Math.max(4, (base - shoulder) / 22)
+                    for (let bay = 0; bay < bays; ++bay) {
+                        const left = x + span * 0.05 + bay * pitch
+                        const start = roof + (steps - Math.min(steps, Math.floor((left - x) / setback))) * tier + 2
+                        ctx.fillStyle = Qt.alpha(backdrop, 0.46)
+                        ctx.fillRect(left, start, pitch * 0.56, base - start)
+                        for (let floor = 1; shoulder + floor * floorHeight < base; ++floor) {
+                            const light = (floor * 7 + bay * 11 + seed * 3 + Math.floor(floor / 3) * bay) % 19
+                            if (light > 6) continue
+                            ctx.fillStyle = Qt.alpha(light < 3 ? secondaryAccent : pigment, light < 3 ? 0.88 : 0.36)
+                            ctx.fillRect(left, shoulder + floor * floorHeight, pitch * 0.56, Math.min(2, floorHeight * 0.39))
                         }
                     }
                 }
 
                 if (compact) {
-                    tower(0, reach * 0.46, rise * 0.52, false, 1)
-                    tower(reach * 0.40, reach * 0.28, rise, true, 3)
-                    tower(reach * 0.66, reach * 0.32, rise * 0.34, false, 4)
-                    tower(width - reach * 0.77, reach * 0.36, rise * 0.65, true, 5)
-                    tower(width - reach * 0.43, reach * 0.48, rise * 0.48, false, 6)
+                    const reach = Math.min(width * 0.26, 85)
+                    const roof = Math.min(height * 0.42, 19)
+                    tower(0, reach * 0.36, roof * 0.54, 0, 1)
+                    tower(reach * 0.32, reach * 0.23, roof, 2, 2)
+                    tower(reach * 0.53, reach * 0.38, roof * 0.42, 1, 3)
+                    tower(width - reach * 0.78, reach * 0.28, roof * 0.72, 1, 4)
+                    tower(width - reach * 0.52, reach * 0.54, roof * 0.48, 0, 5)
                     return
                 }
 
-                // The distant ridge is one silhouette, softened by atmospheric haze.
-                const haze = ctx.createLinearGradient(0, base - rise * 0.78, 0, base)
-                haze.addColorStop(0, Qt.alpha(secondaryAccent, 0.25))
-                haze.addColorStop(1, Qt.alpha(accent, 0.04))
-                ctx.fillStyle = haze
-                const roofs = [0.39, 0.62, 0.50, 0.31, 0.36, 0.21, 0.27, 0.18, 0.29, 0.46, 0.72, 0.55, 0.38]
-                ctx.beginPath()
-                ctx.moveTo(0, base)
+                // Smaller, softer blocks across the horizon connect the two districts.
+                ctx.fillStyle = Qt.alpha(secondaryAccent, 0.16)
+                const roofs = [0.36, 0.54, 0.42, 0.61, 0.27, 0.31, 0.18, 0.22, 0.13,
+                              0.17, 0.12, 0.23, 0.16, 0.28, 0.41, 0.30, 0.55, 0.39, 0.48]
                 for (let i = 0; i < roofs.length; ++i) {
-                    const roof = base - roofs[i] * rise
-                    ctx.lineTo(width * i / roofs.length, roof)
-                    ctx.lineTo(width * (i + 1) / roofs.length, roof)
+                    const tall = roofs[i] * rise
+                    ctx.fillRect(i * width / roofs.length, base - tall, width / roofs.length, tall)
                 }
-                ctx.lineTo(width, base)
-                ctx.closePath()
-                ctx.fill()
-
-                tower(-0.025 * width, 0.11 * width, 0.53 * rise, false, 3)
-                tower(0.065 * width, 0.10 * width, rise, true, 2)
-                tower(0.145 * width, 0.12 * width, 0.39 * rise, false, 6)
-                tower(0.68 * width, 0.07 * width, 0.34 * rise, false, 1)
-                tower(0.735 * width, 0.12 * width, 0.67 * rise, true, 7)
-                tower(0.88 * width, 0.14 * width, 0.41 * rise, false, 4)
+                tower(-0.028 * width, 0.11 * width, rise * 0.58, 1, 3)
+                tower(0.07 * width, 0.075 * width, rise, 2, 2)
+                tower(0.15 * width, 0.05 * width, rise * 0.50, 0, 6)
+                tower(0.20 * width, 0.087 * width, rise * 0.34, 1, 1)
+                tower(0.67 * width, 0.085 * width, rise * 0.30, 0, 1)
+                tower(0.755 * width, 0.085 * width, rise * 0.72, 2, 7)
+                tower(0.845 * width, 0.055 * width, rise * 0.44, 0, 5)
+                tower(0.91 * width, 0.115 * width, rise * 0.53, 1, 4)
 
                 // Paint an opaque foreground up to the parapet. Recessed
                 // bays are shaded concrete, so windows never show through them.
@@ -670,7 +670,10 @@ ClippingRectangle {
                                           x(right), y(right, spring))
                         ctx.lineTo(x(right), y(right, 0))
                         ctx.closePath()
-                        ctx.fillStyle = reveal === 0 ? tone(accent, 0.13) : tone(accent, 0.035)
+                        const shadow = ctx.createLinearGradient(0, y(left, crown), 0, y(left, 0))
+                        shadow.addColorStop(0, tone(accent, reveal === 0 ? 0.22 : 0.045))
+                        shadow.addColorStop(1, tone(accent, reveal === 0 ? 0.13 : 0.12))
+                        ctx.fillStyle = shadow
                         ctx.fill()
                     }
                 }
@@ -682,6 +685,20 @@ ClippingRectangle {
                 ctx.closePath()
                 ctx.fillStyle = tone(secondaryAccent, 0.44)
                 ctx.fill()
+
+                // A few lamps establish street scale before the deck recedes from view.
+                for (let bay = 0.5; x(bay + 1) - x(bay) > 7; bay += 1) {
+                    const postX = x(bay)
+                    const roadY = y(bay, viaductHeight)
+                    const postHeight = Math.min(16, viaductHeight * 0.22) * scale(bay)
+                    if (postHeight < 2) break
+                    const gauge = Math.max(0.65, scale(bay) * 1.4)
+                    const arm = postHeight * 0.42
+                    ctx.fillStyle = tone(accent, 0.38)
+                    ctx.fillRect(postX, roadY - postHeight, gauge, postHeight)
+                    ctx.fillStyle = tone(secondaryAccent, 0.76)
+                    ctx.fillRect(postX, roadY - postHeight, arm, gauge)
+                }
             }
 
             onPaint: {
