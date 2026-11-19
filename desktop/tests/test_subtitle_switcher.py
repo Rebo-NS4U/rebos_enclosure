@@ -3,7 +3,7 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'system/apps/media'))
 from vlc_session import VlcSession
 from menu_backend import Engine
@@ -19,8 +19,10 @@ class SubtitleSwitcherTests(unittest.TestCase):
         session.generation = 0
         session.provided_cues = [(i*5, i*5+3, f'I think you should come here now. What do we do? {i}') for i in range(30)]
         session.whisper_cues = [(0, 2, 'Generated English')]
-        session.whisper_only = True
+        session.validate_provider = True
+        session.subtitle_loading = False
         session.subtitle_source = 'provided'
+        session.caption_error = ''
         session.caption_requested = True
         session.caption_text = 'Previous source'
         session.last_caption = 0
@@ -40,7 +42,7 @@ class SubtitleSwitcherTests(unittest.TestCase):
             self.assertEqual(session.cues, expected)
             self.assertEqual(session.subtitle_tracks()['selected'], source)
             self.assertEqual(session.caption_requested, source != 'off')
-        self.assertTrue(all(call.args[0] == 'clear-caption' for call in session.api.call_args_list))
+        self.assertTrue(all(call.args[0] in ('clear-caption', 'subtitle') for call in session.api.call_args_list))
 
     def test_provider_is_preserved_when_generated_worker_stops_or_updates(self):
         session = self.session()
@@ -57,14 +59,14 @@ class SubtitleSwitcherTests(unittest.TestCase):
 
     def test_native_tracks_are_english_and_selection_disables_generated_osd(self):
         session = self.session()
-        session.whisper_only = True
+        session.validate_provider = True
         session.last_state = {'sid': 2, 'subtitles': [{'id': 2, 'name': 'English'}, {'id': 3, 'name': 'Japanese'}]}
         choices = {row['id'] for row in session.subtitle_tracks()['options']}
         self.assertIn('native:2', choices)
         self.assertNotIn('native:3', choices)
         session.apply(['subtitle-source', 'native:2'])
         self.assertFalse(session.caption_requested)
-        self.assertFalse(session.whisper_only)
+        self.assertTrue(session.validate_provider)
         session.api.assert_called_with('subtitle', value=2)
         session.apply(['subtitle-source', 'whisper'])
         session.api.assert_called_with('subtitle', value=-1)
@@ -77,18 +79,32 @@ class SubtitleSwitcherTests(unittest.TestCase):
         self.assertNotIn('provided', {row['id'] for row in tracks['options']})
         session.emit.assert_any_call({'event':'property-change','name':'subtitle-tracks','data':tracks})
 
-    def test_worker_starts_only_for_explicit_whisper_and_invalid_selection_is_rejected(self):
+    def test_manual_whisper_selection_waits_for_player_and_rejects_invalid_tracks(self):
         engine = Mock()
         engine.session = self.session()
         engine.session.command = Mock()
         engine.file_loaded = True
         Engine.select_subtitles(engine, 'whisper')
-        engine.start_captions.assert_called_once_with(force=True)
-        engine.start_captions.reset_mock()
+        engine.session.command.assert_called_once_with(['subtitle-source', 'whisper'])
+        engine.start_captions.assert_not_called()
         Engine.select_subtitles(engine, 'off')
         engine.start_captions.assert_not_called()
         with self.assertRaises(ValueError):
             Engine.select_subtitles(engine, 'native:99')
+
+    def test_auto_transcription_starts_only_after_the_player_selects_fallback(self):
+        engine = Mock(settings={'live_subtitles': True}, links=('video', '', '', ''), position=0, duration=100)
+        engine.session = self.session()
+        engine.session.show_captions = Mock()
+        with patch('menu_backend.LiveSubtitles') as worker:
+            for source in ('off', 'provided', 'native:2'):
+                engine.session.subtitle_source = source
+                Engine.start_captions(engine)
+            worker.assert_not_called()
+            engine.session.subtitle_source = 'whisper'
+            Engine.start_captions(engine)
+            worker.assert_called_once()
+            engine.session.show_captions.assert_called_once()
 
     def test_vlc_keeps_an_explicit_native_track_and_off_disables_it(self):
         import shutil
@@ -120,10 +136,9 @@ assert(handler(nil,"").sid==-1)
         result = subprocess.run(['lua5.1', '-', str(script)], input=harness, capture_output=True, text=True, timeout=10)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
-    def test_enabling_generated_captions_after_starting_with_captions_disabled(self):
+    def test_show_captions_preserves_explicit_off(self):
         session = self.session()
-        session.subtitle_source = 'off'
-        session.caption_requested = False
+        session.select_subtitle_source('off')
         session.apply(['captions-show'])
-        self.assertEqual(session.subtitle_source, 'whisper')
-        self.assertTrue(session.caption_requested)
+        self.assertEqual(session.subtitle_source, 'off')
+        self.assertFalse(session.caption_requested)

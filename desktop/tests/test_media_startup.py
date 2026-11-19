@@ -64,7 +64,7 @@ class StartupTests(unittest.TestCase):
             session = self.session(folder)
             session.generation = 2
             session.loaded = session.requested = True
-            session.finished = session.whisper_only = False
+            session.finished = session.validate_provider = False
             session.apply(['subtitle-ready', 1, 0, '/tmp/old.srt', []])
             session.api.assert_not_called()
             session.subtitle_revision = 1
@@ -75,23 +75,25 @@ class StartupTests(unittest.TestCase):
         cues = [(i*5, i*5+3, f'I think you should come here now. What do we do? {i}') for i in range(30)]
         with tempfile.TemporaryDirectory() as folder:
             session = self.session(folder)
-            session.loaded = session.requested = session.whisper_only = True
+            session.loaded = session.requested = session.validate_provider = True
             session.finished = False
             session.last_state = {'duration': 150}
-            session.subtitle_source = 'whisper'
+            session.subtitle_source = 'off'
             session.apply(['subtitle-ready', 0, 0, '/tmp/sub.srt', cues])
+            session._poll_subtitles(session.last_state)
             self.assertEqual(session.subtitle_source, 'provided')
             self.assertEqual(session.cues, cues)
-            session.subtitle_source = 'off'
-            session.subtitle_revision = 1
+            session.whisper_cues = []
+            session.select_subtitle_source('off')
             session.apply(['subtitle-ready', 0, 0, '/tmp/sub.srt', cues])
+            session._poll_subtitles(session.last_state)
             self.assertEqual(session.subtitle_source, 'off')
 
     def test_captions_wait_for_input_before_attaching(self):
         with tempfile.TemporaryDirectory() as folder:
             session = self.session(folder)
             session.requested = True
-            session.loaded = session.finished = session.whisper_only = False
+            session.loaded = session.finished = session.validate_provider = False
             session.apply(['subtitle-ready', 0, 0, '/tmp/sub.srt', []])
             session.api.assert_not_called()
             session.loaded = True

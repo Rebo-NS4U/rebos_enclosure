@@ -7,9 +7,10 @@ from vlc_session import VlcSession
 
 
 class CaptionPolicyTests(unittest.TestCase):
-    def session(self):
+    def load(self, validate_provider=True):
         session = object.__new__(VlcSession)
         session.audio_normalization = True
+        session.live_enabled = True
         session.api = Mock()
         session.public_stream = lambda url, referer: url
         session.subtitle_path = Mock(return_value='/provided.srt')
@@ -19,43 +20,44 @@ class CaptionPolicyTests(unittest.TestCase):
         session.commands = queue.Queue()
         session.logpath = Mock()
         session.logpath.stat.return_value.st_size = 0
-        return session
-
-    def load(self, whisper_only):
-        session = self.session()
         with patch('vlc_session.threading.Thread') as worker:
             worker.return_value.start.side_effect = lambda: worker.call_args.kwargs['target']()
-            session.apply(['load', ('https://video', '', 'https://subtitle', ''), 'title', False, whisper_only])
-        return session, json.loads(session.api.call_args.kwargs['data'])
-
-    def test_invalid_provider_captions_fall_back_without_native_track(self):
-        session, data = self.load(True)
-        session.subtitle_path.assert_called_once()
-        self.assertIn('sub-track=-1', data['options'])
-        self.assertIn('no-sub-autodetect-file', data['options'])
-        self.assertTrue(data['whisper_only'])
-        session.apply(['set_property', 'sid', 2])
-        self.assertEqual(session.api.call_count, 1)
-
-    def test_youtube_retains_native_captions(self):
-        session, data = self.load(False)
-        session.subtitle_path.assert_called_once()
-        self.assertNotIn('sub-file=/provided.srt', data['options'])
+            session.apply(['load', ('https://video', '', 'https://subtitle', ''), 'title', False, validate_provider])
         session.loaded = True
+        return session
+
+    def test_embedded_english_is_preferred_and_disables_generated_overlay(self):
+        session = self.load()
+        data = json.loads(session.api.call_args.kwargs['data'])
+        self.assertNotIn('sub-track=-1', data['options'])
+        self.assertFalse(data['whisper_only'])
+        session.apply(session.commands.get_nowait())
+        session._poll_subtitles({})
+        self.assertEqual(session.subtitle_source, 'whisper')
+        session._poll_subtitles(dict(sid=-1, subtitles=[dict(id=3, name='English')]))
+        session.api.assert_called_with('subtitle', value=3)
+        self.assertEqual(session.subtitle_source, 'native:3')
+        self.assertFalse(session.caption_requested)
+
+    def test_waits_for_provider_then_uses_ai_when_provider_is_unavailable(self):
+        session = self.load()
+        session._poll_subtitles({})
+        self.assertEqual(session.subtitle_source, 'off')
+        session.apply(session.commands.get_nowait())
+        session._poll_subtitles({})
+        self.assertEqual(session.subtitle_source, 'whisper')
+        self.assertTrue(session.caption_requested)
+        session.live_enabled = False
+        session._poll_subtitles({})
+        self.assertEqual(session.subtitle_source, 'off')
+
+    def test_youtube_retains_native_provider_captions(self):
+        session = self.load(validate_provider=False)
         session.apply(session.commands.get_nowait())
         session.api.assert_called_with('addsubtitle', value='/provided.srt', select='true')
-        self.assertNotIn('sub-track=-1', data['options'])
-        session.apply(['captions-show'])
+        session._poll_subtitles(dict(sid=2, subtitles=[dict(id=2, name='Provided English')]))
+        self.assertEqual(session.subtitle_source, 'native:2')
         self.assertFalse(session.caption_requested)
-
-    def test_whisper_uses_one_osd_without_native_subtitle_track(self):
-        session, data = self.load(True)
-        session.apply(['captions-show'])
-        self.assertTrue(session.caption_requested)
-        self.assertEqual(session.api.call_count, 1)
-        session.apply(['captions-clear'])
-        self.assertFalse(session.caption_requested)
-        session.api.assert_called_with('clear-caption')
 
 
 if __name__ == '__main__':

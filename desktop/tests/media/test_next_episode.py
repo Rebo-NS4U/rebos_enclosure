@@ -175,7 +175,7 @@ class ChapterPollingTests(unittest.TestCase):
         session = object.__new__(VlcSession)
         session.requested = session.loaded = True
         session.finished = session.caption_requested = False
-        session.whisper_only = True
+        session.subtitle_revision = 1
         session.last = {}
         session.caption_text = ''
         session.emit = Mock()

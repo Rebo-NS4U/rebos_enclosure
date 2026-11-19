@@ -101,7 +101,7 @@ class VlcSession:  # pylint: disable=too-many-instance-attributes
         self.closed = threading.Event()
         self.loaded = False
         self.generation = 0
-        self.subtitle_revision = 0
+        self.subtitle_revision = 0  # A nonzero revision records a manual choice for this input.
         self.pending_subtitle = None
         self.requested = False
         self.finished = False
@@ -117,8 +117,8 @@ class VlcSession:  # pylint: disable=too-many-instance-attributes
         self.subtitle_source = 'off'
         self.caption_error = ''
         self.live_enabled = settings.get('live_subtitles', True)
-        self.whisper_only = True
-        self.caption_registered = False
+        self.validate_provider = True
+        self.subtitle_loading = False
         self.caption_text = None
         self.last_caption = 0
         self.last_state = {}
@@ -186,8 +186,8 @@ class VlcSession:  # pylint: disable=too-many-instance-attributes
         if not self.closed.is_set():
             self.commands.put(command)
 
-    def load(self, links, title, paused=False, whisper_only=True):
-        self.command(['load', links, title, paused, whisper_only])
+    def load(self, links, title, paused=False, validate_provider=True):
+        self.command(['load', links, title, paused, validate_provider])
 
     def public_stream(self, url, referer=''):
         if not url or not url.startswith('https://'):
@@ -232,15 +232,9 @@ class VlcSession:  # pylint: disable=too-many-instance-attributes
         if self.provided_cues:
             options.append(dict(id='provided', label='Provided English · checked'))
         options.append(dict(id='whisper', label='Whisper English · local AI'))
-        for track in state.get('subtitles', []):
-            name = str(track.get('name', ''))
-            if track.get('id', -1) >= 0 and re.search(r'\b(english|eng|en)\b', name, re.I):
-                options.append(dict(id='native:' + str(track['id']), label='Video English · ' + name))
+        options.extend(dict(id=f"native:{track['id']}", label='Video English · ' + str(track['name']))
+                       for track in self.english_tracks(state))
         source = self.subtitle_source
-        if not self.whisper_only and (source in ('native', 'off') or source.startswith('native:')) and state.get('sid', -1) >= 0:
-            source = 'native:' + str(state['sid'])
-        if source.startswith('native:') and state.get('sid', -1) < 0:
-            source = 'off'
         if source not in {row['id'] for row in options}:
             source = 'off'
         return dict(selected=source, options=options, available=bool(self.loaded),
@@ -253,14 +247,22 @@ class VlcSession:  # pylint: disable=too-many-instance-attributes
         self.subtitle_revision += 1
         self.api('clear-caption')
         self.caption_text = ''
+        self.set_caption_source(source)
+        if source.startswith('native:'):
+            self.api('subtitle', value=int(source.split(':')[1]))
+        else:
+            self.api('subtitle', value=-1)
+
+    @staticmethod
+    def english_tracks(state):
+        return [track for track in state.get('subtitles', [])
+                if track.get('id', -1) >= 0 and re.search(r'\b(english|eng|en)\b', str(track.get('name', '')), re.I)]
+
+    def set_caption_source(self, source):
         self.subtitle_source = source
         self.caption_requested = source in ('provided', 'whisper')
         self.cues = self.provided_cues if source == 'provided' else self.whisper_cues if source == 'whisper' else []
         self.cue_starts = [cue[0] for cue in self.cues]
-        if source.startswith('native:'):
-            self.whisper_only = False
-        if not self.whisper_only:
-            self.api('subtitle', value=int(source.split(':')[1]) if source.startswith('native:') else -1)
 
     def apply_pending_subtitle(self):
         if not self.loaded or self.pending_subtitle is None:
@@ -269,16 +271,11 @@ class VlcSession:  # pylint: disable=too-many-instance-attributes
         self.pending_subtitle = None
         if generation != self.generation:
             return
-        if self.whisper_only:
-            if not provided_cues_usable(cues, self.last_state.get('duration', 0)):
-                return
-            self.provided_cues = cues
-            if revision == self.subtitle_revision:
-                self.subtitle_source = 'provided'
-                self.cues = cues
-                self.cue_starts = [cue[0] for cue in cues]
-                self.caption_requested = True
-        else:
+        self.subtitle_loading = False
+        if self.validate_provider:
+            if provided_cues_usable(cues, self.last_state.get('duration', 0)):
+                self.provided_cues = cues
+        elif path:
             try:
                 self.api('addsubtitle', value=path, select='true' if revision == self.subtitle_revision else 'false')
             except (OSError, ValueError, RuntimeError):
@@ -295,7 +292,7 @@ class VlcSession:  # pylint: disable=too-many-instance-attributes
         video, referer, _subtitle, audio = links
         options = ['no-start-paused', 'input-repeat=0', 'audio-language=eng,en', 'sub-language=eng,en']
         if video.startswith(('https://', 'http://')):
-            options.extend(['network-caching=' + ('1500' if self.whisper_only else '500'), 'prefetch-buffer-size=65536'])
+            options.extend(['network-caching=' + ('1500' if self.validate_provider else '500'), 'prefetch-buffer-size=65536'])
             if str(getattr(links, 'format_name', '')).startswith('mov,'):
                 options.append('demux=avformat')
         if self.audio_normalization:
@@ -307,37 +304,32 @@ class VlcSession:  # pylint: disable=too-many-instance-attributes
         return options
 
     def prepare_subtitle(self, subtitle, referer):
-        generation, revision, whisper_only = self.generation, self.subtitle_revision, self.whisper_only
+        generation, revision, validate_provider = self.generation, self.subtitle_revision, self.validate_provider
         def prepare_subtitle():
+            path, cues = '', []
             try:
                 path = self.subtitle_path(subtitle, referer)
-                cues = read_cues(path) if path and whisper_only else []
-                if whisper_only and not provided_cues_usable(cues):
-                    return
-                if path:
-                    self.command(['subtitle-ready', generation, revision, path, cues])
+                if path and validate_provider:
+                    cues = read_cues(path)
             except (OSError, ValueError, ImportError):
                 pass  # Captions must never delay or prevent playback.
+            self.command(['subtitle-ready', generation, revision, path, cues])
         threading.Thread(target=prepare_subtitle, daemon=True, name='media-subtitle').start()
 
 
     def _command_load(self, command):
-        links, title, paused, self.whisper_only = command[1:]
+        links, title, paused, self.validate_provider = command[1:]
         video, referer, subtitle, audio = links
         options = self.input_options(links)
         self.provided_cues = []
         self.whisper_cues = []
         self.caption_error = ''
-        if self.whisper_only:
-            options.extend(['sub-track=-1', 'sub-track-id=-1', 'no-sub-autodetect-file'])
         self.generation += 1
         self.pending_subtitle = None
+        self.subtitle_revision = 0
+        self.subtitle_loading = bool(subtitle)
         self.loaded = self.finished = self.input_error = False
-        self.caption_registered = self.caption_requested = False
-        self.cues = self.provided_cues
-        self.cue_starts = [cue[0] for cue in self.cues]
-        self.caption_requested = bool(self.provided_cues)
-        self.subtitle_source = 'provided' if self.provided_cues else ('whisper' if self.whisper_only and getattr(self, 'live_enabled', True) else 'native' if not self.whisper_only else 'off')
+        self.set_caption_source('off')
         self.last = {}
         self.last_state = {}
         self.requested = True
@@ -346,7 +338,7 @@ class VlcSession:  # pylint: disable=too-many-instance-attributes
         local = self.public_stream(video, referer)
         sources = [local] + [option.partition('=')[2] for option in options if option.startswith('input-slave=')]
         with stream_relay.playback(self, sources):
-            self.api('load', data=json.dumps(dict(url=local, title=title, options=options, generation=self.generation, whisper_only=self.whisper_only)))
+            self.api('load', data=json.dumps(dict(url=local, title=title, options=options, generation=self.generation, whisper_only=False)))
         if subtitle:
             self.prepare_subtitle(subtitle, referer)
 
@@ -372,8 +364,6 @@ class VlcSession:  # pylint: disable=too-many-instance-attributes
 
 
     def _command_captions_show(self, command):
-        if self.subtitle_source == 'off':
-            self.subtitle_source = 'whisper'
         self.caption_requested = self.subtitle_source in ('provided', 'whisper')
 
 
@@ -382,7 +372,8 @@ class VlcSession:  # pylint: disable=too-many-instance-attributes
         if self.subtitle_source != 'provided':
             self.cues, self.cue_starts = [], []
             self.caption_requested = False
-        self.api('clear-caption')
+            self.caption_text = ''
+            self.api('clear-caption')
 
 
     def _command_observe_property(self, command):
@@ -402,8 +393,7 @@ class VlcSession:  # pylint: disable=too-many-instance-attributes
         if command[1] == "pause":
             self.api('pause', value='true' if command[2] else 'false')
         elif command[1] == "sid":
-            if not self.whisper_only:
-                self.api('subtitle', value=command[2])
+            self.select_subtitle_source('native:' + str(command[2]) if command[2] >= 0 else 'off')
 
 
     def _poll_ended(self, state):
@@ -448,26 +438,35 @@ class VlcSession:  # pylint: disable=too-many-instance-attributes
         if self.provided_cues and not provided_cues_usable(self.provided_cues, state.get('duration', 0)):
             self.provided_cues = []
             if self.subtitle_source == 'provided':
-                self.cues, self.cue_starts = [], []
-                self.caption_requested = False
-                self.subtitle_source = 'whisper' if self.live_enabled else 'off'
-        if not self.whisper_only and state.get('sid', -1) >= 0:
-            if 'native:' + str(state['sid']) not in {row['id'] for row in self.subtitle_tracks()['options']}:
+                self.subtitle_revision = 0
+        if self.subtitle_revision:
+            return
+
+        sid = state.get('sid', -1)
+        native_ids = [track['id'] for track in self.english_tracks(state)]
+        if native_ids:
+            preferred = sid if sid in native_ids else native_ids[0]
+            if sid != preferred:
+                self.api('subtitle', value=preferred)
+            source = f'native:{preferred}'
+        else:
+            if sid >= 0:
                 self.api('subtitle', value=-1)
-                state = dict(state, sid=-1)
-                self.last_state = state
-                self.subtitle_source = 'off'
-        if not self.whisper_only and state.get('sid', -1) >= 0:
-            # Reflect native VLC track changes and prevent duplicate OSD captions.
-            self.subtitle_source = 'native:' + str(state['sid'])
-            self.caption_requested = False
-        return state
+            source = 'off'
+            if self.provided_cues:
+                source = 'provided'
+            elif not self.subtitle_loading and self.live_enabled:
+                source = 'whisper'
+        if source != self.subtitle_source:
+            self.set_caption_source(source)
 
     def _publish_properties(self, state):
         whisper_active = self.subtitle_source in ('provided', 'whisper') and self.caption_requested
+        native_active = self.subtitle_source.startswith('native:')
+        subtitle_id = int(self.subtitle_source.split(':')[1]) if native_active else False
         values = {'time-pos':state.get('time',0), 'duration':state.get('duration',0), 'pause':state.get('state') == 'paused',
-                  'sid': self.subtitle_source if whisper_active else (False if self.whisper_only else state.get('sid', -1)),
-                  'sub-visibility': whisper_active or (not self.whisper_only and state.get('sid', -1) >= 0),
+                  'sid': self.subtitle_source if whisper_active else subtitle_id,
+                  'sub-visibility': whisper_active or native_active,
                   'whisper-captions': whisper_active and self.subtitle_source == 'whisper',
                   'subtitle-tracks': self.subtitle_tracks(),
                   'chapter-info': {'index': state.get('chapter', -1), 'count': state.get('chapter_count', 0),
@@ -503,7 +502,7 @@ class VlcSession:  # pylint: disable=too-many-instance-attributes
         state = self._poll_loading(state)
         if not self.loaded:
             return
-        state = self._poll_subtitles(state)
+        self._poll_subtitles(state)
         whisper_active = self._publish_properties(state)
         self._render_caption(state, whisper_active)
 

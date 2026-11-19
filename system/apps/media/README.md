@@ -17,7 +17,7 @@ npm install --prefix ~/.local/share/anime-streamer/browser playwright
 ~/.local/share/anime-streamer/browser/node_modules/.bin/playwright install chromium
 ```
 
-Live transcription is optional and requires the existing Whisper/model setup. Accounts, progress, settings and caches remain in the existing `anime-streamer` user data directories; none are bundled. TorBox credentials and YouTube browser accounts are connected through Settings.
+Playback defaults to available English video or provider subtitles. When no suitable source is available, live transcription can generate English subtitles using the optional Whisper/model setup. You can choose a subtitle source or turn subtitles off in the player. Accounts, progress, settings and caches remain in the existing `anime-streamer` user data directories; none are bundled. TorBox credentials and YouTube browser accounts are connected through Settings.
 
 A single left click on the VLC video toggles pause/play when `vlc-pause-click-plugin` is installed. Double-click still toggles fullscreen. Enclosure’s optional media group installs this plugin; standalone installations need to install it separately. Streamer enables the plugin automatically when VLC reports it available.
 
