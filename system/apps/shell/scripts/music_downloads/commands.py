@@ -23,6 +23,18 @@ def find_spotdl():
     raise RuntimeError("spotDL is not installed. Install the AUR package spotdl or see the app README.")
 
 
+def spotify_links(text):
+    links = text.split()
+    if not links:
+        raise ValueError("Paste at least one Spotify link.")
+    for link in links:
+        url = urlparse(link)
+        if url.scheme != "https" or url.netloc != "open.spotify.com" or not re.fullmatch(
+                r"/(?:intl-[\w-]+/)?(?:track|album|playlist|artist|episode|show)/[A-Za-z0-9]+/?", url.path):
+            raise ValueError("Use full open.spotify.com links copied with Share → Copy link.")
+    return links
+
+
 def build_args(mode, text, folder, fmt):
     folder = Path(folder).expanduser()
     if not folder.is_absolute():
@@ -30,33 +42,33 @@ def build_args(mode, text, folder, fmt):
     args = ["--root-path", str(folder), "--root-podcast-path", str(folder),
             "--download-format", fmt, "--skip-existing", "True", "--no-splash"]
     if mode == 0:
-        links = text.split()
-        if not links:
-            raise ValueError("Paste at least one Spotify link.")
-        for link in links:
-            url = urlparse(link)
-            if url.scheme != "https" or url.netloc != "open.spotify.com" or not re.fullmatch(
-                    r"/(?:intl-[\w-]+/)?(?:track|album|playlist|artist|episode|show)/[A-Za-z0-9]+/?", url.path):
-                raise ValueError("Use full open.spotify.com links copied with Share → Copy link.")
-        args += links
+        args += spotify_links(text)
     else:
         args += ["--liked" if mode == 1 else "--followed"]
     return args
 
 
-def build_spotdl_args(mode, text, folder, fmt, mix_tracks=False, cookie_file=""):
+def music_links(text):
+    links = []
+    for link in spotify_links(text):
+        parsed = urlparse(link)
+        path = re.sub(r"^/intl-[\w-]+", "", parsed.path).rstrip("/")
+        if path.split("/")[1] in ("episode", "show"):
+            raise ValueError("spotDL supports music links only.")
+        links.append("https://open.spotify.com" + path)
+    return list(dict.fromkeys(links))
+
+
+def build_spotdl_args(mode, text, folder, fmt, mix_tracks=False, cookie_file="", threads=4):
     if mode != 0:
         raise ValueError("For spotDL, paste a Spotify playlist, album, artist or track link.")
-    build_args(mode, text, folder, fmt)
+    if not Path(folder).expanduser().is_absolute():
+        raise ValueError("Choose an absolute download folder.")
     if fmt not in ("ogg", "mp3", "flac", "wav"):
         raise ValueError("Choose a supported audio format.")
-    links = []
-    for link in text.split():
-        parsed = urlparse(link)
-        path = re.sub(r"^/intl-[\w-]+", "", parsed.path)
-        if path.split("/")[1] in ("episode", "show"):
-            raise ValueError("spotDL supports music links; use Zotify for podcasts.")
-        links.append("https://open.spotify.com" + path.rstrip("/"))
+    if type(threads) is not int or threads not in (1, 2, 4):
+        raise ValueError("Choose 1, 2 or 4 parallel tracks.")
+    links = music_links(text)
     cookie_args = []
     if cookie_file:
         if not isinstance(cookie_file, str):
@@ -74,14 +86,14 @@ def build_spotdl_args(mode, text, folder, fmt, mix_tracks=False, cookie_file="")
         cookie_args = ["--cookie-file", str(cookies)]
     return ["download", *links, *cookie_args, "--format", fmt, "--output",
             str(Path(folder).expanduser() / ("{track-id}.{output-ext}" if mix_tracks else "{artists} - {title}.{output-ext}")),
-            "--threads", "2", "--overwrite", "skip", "--simple-tui", "--max-retries", "2"]
+            "--threads", str(threads), "--overwrite", "skip", "--simple-tui", "--max-retries", "2"]
 
 
 
 
 def remember_playlist_source(folder, text):
     """Keep source identity beside downloads, including folders with named files."""
-    links = text.split()
+    links = music_links(text)
     if len(links) != 1:
         return
     parsed = urlparse(links[0])

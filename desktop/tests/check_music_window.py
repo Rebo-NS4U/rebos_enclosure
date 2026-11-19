@@ -284,7 +284,18 @@ esac
                     const start = findItem(music.contentItem, "music-download-start");
                     if (!downloads || start.enabled) { console.error("MUSIC_DOWNLOAD_EMPTY_LINKS_FAILED"); Qt.exit(1); }
                     const links = findItem(music.contentItem, "music-download-links");
+                    const folder = findItem(downloads, "music-download-folder");
+                    const options = findItem(downloads, "music-download-options");
+                    const workers = findItem(downloads, "music-download-workers-2");
+                    if (workers.visible || downloads.parallelTracks !== 4) { console.error("MUSIC_DOWNLOAD_DEFAULTS_FAILED"); Qt.exit(1); return; }
+                    options.click();
+                    workers.click();
+                    if (!workers.visible || downloads.parallelTracks !== 2) { console.error("MUSIC_DOWNLOAD_OPTIONS_FAILED"); Qt.exit(1); return; }
+                    options.click();
+                    folder.text = "/tmp/manual-destination";
+                    downloads.prepareMix({links: "https://open.spotify.com/playlist/example", folder: "/tmp/prepared", syncPlaylist: true});
                     links.text = "https://open.spotify.com/track/example";
+                    if (folder.text !== "/tmp/manual-destination" || downloads.syncPlaylist || downloads.mixTracks) { console.error("MUSIC_DOWNLOAD_MANUAL_DESTINATION_FAILED"); Qt.exit(1); return; }
                     if (!downloads.canDownload) { console.error("MUSIC_DOWNLOAD_LINKS_FAILED"); Qt.exit(1); }
                     links.text = "";
                     if (downloads.canDownload) { console.error("MUSIC_DOWNLOAD_EMPTY_LINKS_FAILED"); Qt.exit(1); }

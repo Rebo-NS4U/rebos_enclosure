@@ -151,11 +151,15 @@ try:
             fmt = data.get('format', 'ogg')
             if data.get('backend', 'spotdl') != 'spotdl':
                 raise ValueError('Only spotDL is supported.')
-            command = [find_spotdl(), *build_spotdl_args(mode, data.get('links', ''), folder, fmt, mix_tracks=data.get('mixTracks') is True, cookie_file=data.get('cookieFile', ''))]
+            links = data.get('links', '')
+            command = [find_spotdl(), *build_spotdl_args(
+                mode, links, folder, fmt, mix_tracks=data.get('mixTracks') is True,
+                cookie_file=data.get('cookieFile', ''), threads=data.get('threads', 4),
+            )]
             os.makedirs(folder, exist_ok=True)
             if worker is None or worker.poll() is not None:
                 worker = start_worker()
-            remember_playlist_source(folder, data.get('links', ''))
+            remember_playlist_source(folder, links)
             membership = None
             if data.get('syncPlaylist') is True:
                 metadata = json.loads((Path(folder) / '.enclosure-playlist.json').read_text())

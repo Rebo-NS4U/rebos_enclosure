@@ -65,7 +65,16 @@ class Downloads(unittest.TestCase):
         args = commands.build_spotdl_args(0, links, '/tmp/Music/Daily Mixes/test', 'ogg', mix_tracks=True)
         self.assertEqual(args[args.index('--output')+1], '/tmp/Music/Daily Mixes/test/{track-id}.{output-ext}')
         self.assertEqual(args[1], links)
-        self.assertEqual(args[args.index('--threads')+1], '2')
+        self.assertEqual(args[args.index('--threads')+1], '4')
+        duplicate = links.replace('/playlist/', '/intl-en/playlist/') + '/?si=share'
+        batch = f'{links} https://open.spotify.com/track/example {duplicate}'
+        for workers in (1, 2, 4):
+            args = commands.build_spotdl_args(0, batch, '/tmp/Music', 'ogg', threads=workers)
+            self.assertEqual(args[1:args.index('--format')], [links, 'https://open.spotify.com/track/example'])
+            self.assertEqual(args[args.index('--threads')+1], str(workers))
+        for invalid in (True, 0, 3, '4'):
+            with self.assertRaises(ValueError):
+                commands.build_spotdl_args(0, links, '/tmp/Music', 'ogg', threads=invalid)
         self.assertNotIn('--use-cache-file', args)
         with self.assertRaises(ValueError):
             commands.build_spotdl_args(0, 'invalid', '/tmp/Music', 'ogg', mix_tracks=True)

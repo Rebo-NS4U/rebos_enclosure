@@ -20,21 +20,34 @@ ColumnLayout {
     property bool cancelling: false
     property bool syncPlaylist: false
     property bool mixTracks: false
+    property int parallelTracks: 4
+    property string manualFolder: "~/Music"
+    property bool preparing: false
     property string audioFormat: "ogg"
     readonly property bool canDownload: settingsReady && !busy && service.running && folder.text.trim().length > 0 && links.text.trim().length > 0
     spacing: 16
     signal completed()
     signal rejected()
+    function prepare(data) {
+        preparing = true;
+        if (!mixTracks) manualFolder = folder.text;
+        links.text = data.links;
+        folder.text = data.folder;
+        mixTracks = true;
+        syncPlaylist = data.syncPlaylist === true;
+        preparing = false;
+        failed = false;
+    }
     function prepareSuggestion(data) {
         if (busy || !service.running || !settingsReady) return false;
-        links.text = data.links; folder.text = data.folder; mixTracks = true; syncPlaylist = data.syncPlaylist === true;
+        prepare(data);
         status = "Downloading Spotify suggestion";
         return true;
     }
     function prepareMix(data) {
         if (busy) return false;
-        links.text = data.links; folder.text = data.folder; mixTracks = true; syncPlaylist = data.syncPlaylist === true;
-        status = "Spotify playlist ready · downloads its current contents";
+        prepare(data);
+        status = syncPlaylist ? "Ready to sync" : "Playlist ready";
         return true;
     }
     function start() {
@@ -43,7 +56,12 @@ ColumnLayout {
         status = "Downloading…";
         logText = "Starting…\n";
         service.write(JSON.stringify({backend: "spotdl", mode: 0,
-            links: links.text, folder: folder.text, format: audioFormat, cookieFile: cookieFile.text.trim(), mixTracks: mixTracks, syncPlaylist: syncPlaylist}) + "\n");
+            threads: parallelTracks, links: links.text, folder: folder.text, format: audioFormat, cookieFile: cookieFile.text.trim(), mixTracks: mixTracks, syncPlaylist: syncPlaylist}) + "\n");
+    }
+    FolderDialog {
+        id: destinationPicker
+        title: "Choose download folder"
+        onAccepted: folder.text = decodeURIComponent(selectedFolder.toString().replace(/^file:\/\//, ""))
     }
     FileDialog {
         id: cookiePicker
@@ -85,11 +103,7 @@ ColumnLayout {
     }
     RowLayout {
         Layout.fillWidth: true
-        ColumnLayout {
-            Layout.fillWidth: true
-            StyledText { text: "Downloads"; font.pixelSize: Styling.fontSize(14); font.bold: true }
-            StyledText { text: "Bring your music home."; color: Colors.overSurfaceVariant }
-        }
+        StyledText { text: "Downloads"; Layout.fillWidth: true; font.pixelSize: Styling.fontSize(14); font.bold: true }
         StyledRect {
             variant: root.failed ? "focus" : "common"
             implicitWidth: statusLabel.implicitWidth + 28; implicitHeight: 36
@@ -113,39 +127,26 @@ ColumnLayout {
                 ColumnLayout {
                     id: setup
                     anchors.fill: parent; anchors.margins: 20; spacing: 12
-                    StyledText { text: "01  Choose your source"; font.bold: true; font.pixelSize: Styling.fontSize(2) }
+                    StyledText { text: "Spotify links"; font.bold: true; font.pixelSize: Styling.fontSize(2) }
                     StyledText {
                         Layout.fillWidth: true; wrapMode: Text.WordWrap; color: Colors.overSurfaceVariant
                         text: "spotDL matches Spotify links to YouTube audio. No Spotify sign-in needed."
                     }
-                    StyledText { text: "Spotify links"; font.bold: true }
                     SearchInput {
                         id: links; objectName: "music-download-links"
                         Layout.fillWidth: true
-                        placeholderText: "Paste track, album or playlist links"; enabled: !root.busy
-                        onSearchTextChanged: text => { root.mixTracks = false; root.syncPlaylist = false; }
-                    }
-                    StyledText { text: "Separate multiple links with spaces."; color: Colors.overSurfaceVariant; font.pixelSize: Styling.fontSize(-2) }
-                    StyledText { text: "YouTube cookie file (optional)"; font.bold: true }
-                    RowLayout {
-                        Layout.fillWidth: true
-                        SearchInput {
-                            id: cookieFile; objectName: "music-download-cookie-file"
-                            Layout.fillWidth: true
-                            placeholderText: "Path to exported cookies.txt"
-                            enabled: !root.busy && root.settingsReady
-                            onTextChanged: if (root.settingsReady && !root.restoringSettings) {
-                                service.write(JSON.stringify({settingsCookieFile: text.trim()}) + "\n");
+                        placeholderText: "Paste track, album, artist or playlist links"; enabled: !root.busy
+                        onSearchTextChanged: {
+                            if (root.mixTracks && !root.preparing) {
+                                root.mixTracks = false;
+                                root.syncPlaylist = false;
+                                folder.text = root.manualFolder;
+                                root.status = "Ready";
                             }
                         }
-                        ThemeButton { text: "Browse"; enabled: !root.busy && root.settingsReady; onClicked: cookiePicker.open() }
-                        ThemeButton { text: "Clear"; enabled: !root.busy && cookieFile.text.length > 0; onClicked: cookieFile.clear() }
                     }
-                    StyledText {
-                        Layout.fillWidth: true; wrapMode: Text.WordWrap; color: Colors.overSurfaceVariant
-                        font.pixelSize: Styling.fontSize(-2)
-                        text: "This file path is remembered between sessions; Clear forgets it. For age-restricted audio, use a Netscape cookies.txt export from your signed-in, age-verified YouTube session. Leave blank for public downloads. Keep this file private; it grants access to your session."
-                    }
+                    StyledText { text: "Separate multiple links with spaces."; color: Colors.overSurfaceVariant; font.pixelSize: Styling.fontSize(-2) }
+
                 }
             }
             StyledRect {
@@ -153,9 +154,13 @@ ColumnLayout {
                 ColumnLayout {
                     id: destination
                     anchors.fill: parent; anchors.margins: 20; spacing: 12
-                    StyledText { text: "02  Save to your library"; font.bold: true; font.pixelSize: Styling.fontSize(2) }
+                    StyledText { text: "Save to library"; font.bold: true; font.pixelSize: Styling.fontSize(2) }
                     StyledText { text: "Destination folder" }
-                    SearchInput { id: folder; Layout.fillWidth: true; text: "~/Music"; enabled: !root.busy && !root.mixTracks }
+                    RowLayout {
+                        Layout.fillWidth: true
+                        SearchInput { id: folder; objectName: "music-download-folder"; Layout.fillWidth: true; text: "~/Music"; enabled: !root.busy && !root.mixTracks }
+                        ThemeButton { text: "Browse"; enabled: folder.enabled; onClicked: destinationPicker.open() }
+                    }
                     StyledText { text: "Audio format" }
                     RowLayout {
                         Repeater {
@@ -167,7 +172,52 @@ ColumnLayout {
                             }
                         }
                     }
-                    StyledText { Layout.fillWidth: true; text: root.syncPlaylist ? "Sync mirrors Spotify playlist membership. Removed songs stay in your music folder." : "The format sets the output file type; it cannot improve the source audio quality."; wrapMode: Text.WordWrap; color: Colors.overSurfaceVariant; font.pixelSize: Styling.fontSize(-2) }
+                    StyledText { Layout.fillWidth: true; text: root.syncPlaylist ? "Sync mirrors Spotify playlist membership. Removed songs stay in your music folder." : "Existing audio files are skipped."; wrapMode: Text.WordWrap; color: Colors.overSurfaceVariant; font.pixelSize: Styling.fontSize(-2) }
+                    ThemeButton {
+                        id: options
+                        objectName: "music-download-options"
+                        text: checked ? "Hide download options" : "More download options"
+                        checkable: true
+                    }
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        visible: options.checked
+                        StyledText { text: "Parallel tracks" }
+                        RowLayout {
+                            Repeater {
+                                model: [1, 2, 4]
+                                delegate: ThemeButton {
+                                    required property int modelData
+                                    objectName: "music-download-workers-" + modelData
+                                    text: String(modelData)
+                                    Accessible.name: modelData + " parallel tracks"
+                                    checked: root.parallelTracks === modelData
+                                    enabled: !root.busy
+                                    onClicked: root.parallelTracks = modelData
+                                }
+                            }
+                        }
+                        StyledText { text: "YouTube cookie file (optional)"; font.bold: true }
+                        RowLayout {
+                            Layout.fillWidth: true
+                            SearchInput {
+                                id: cookieFile; objectName: "music-download-cookie-file"
+                                Layout.fillWidth: true
+                                placeholderText: "Path to exported cookies.txt"
+                                enabled: !root.busy && root.settingsReady
+                                onTextChanged: if (root.settingsReady && !root.restoringSettings) {
+                                    service.write(JSON.stringify({settingsCookieFile: text.trim()}) + "\n");
+                                }
+                            }
+                            ThemeButton { text: "Browse"; enabled: !root.busy && root.settingsReady; onClicked: cookiePicker.open() }
+                            ThemeButton { text: "Clear"; enabled: !root.busy && cookieFile.text.length > 0; onClicked: cookieFile.clear() }
+                        }
+                        StyledText {
+                            Layout.fillWidth: true; wrapMode: Text.WordWrap; color: Colors.overSurfaceVariant
+                            font.pixelSize: Styling.fontSize(-2)
+                            text: "Choose a private Netscape cookies.txt export for audio that requires YouTube sign-in. Music remembers the path until you clear it."
+                        }
+                    }
 
                 }
             }
