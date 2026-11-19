@@ -680,7 +680,7 @@ ClippingRectangle {
                 tower(0.735 * width, 0.12 * width, 0.67 * rise, true, 7)
                 tower(0.88 * width, 0.14 * width, 0.41 * rise, false, 4)
 
-                // Paint an opaque foreground up to the far parapet. Recessed
+                // Paint an opaque foreground up to the parapet. Recessed
                 // bays are shaded concrete, so windows never show through them.
                 ctx.globalAlpha = 1
                 const concrete = Qt.alpha(backdrop, 1)
@@ -689,19 +689,6 @@ ClippingRectangle {
                 const roadHeight = rise * 0.33
                 const edge = base - roadHeight
                 const bend = base - roadHeight * 0.24
-
-                // Each quadratic shares a vanishing point. The near edge drops
-                // faster than the far edge, giving the asphalt a visible top face.
-                function deckBand(top, bottom, color) {
-                    ctx.fillStyle = color
-                    ctx.beginPath()
-                    ctx.moveTo(0, edge + roadHeight * top)
-                    ctx.quadraticCurveTo(roadWidth / 2, bend + roadHeight * top * 0.25, roadWidth, base)
-                    ctx.quadraticCurveTo(roadWidth / 2, bend + roadHeight * bottom * 0.25,
-                                         0, edge + roadHeight * bottom)
-                    ctx.closePath()
-                    ctx.fill()
-                }
 
                 ctx.beginPath()
                 ctx.moveTo(0, edge)
@@ -732,22 +719,15 @@ ClippingRectangle {
                         ctx.fill()
                     }
                 }
-                deckBand(0, 0.24, tone(accent, 0.12))
-                deckBand(0.20, 0.25, tone(secondaryAccent, 0.44))
-                deckBand(0.25, 0.34, tone(accent, 0.18))
-
-                // Short painted lane dashes shrink with the spacing of the piers.
-                for (let i = 1; i < piers.length; ++i) {
-                    const start = piers[i - 1] + (piers[i] - piers[i - 1]) * 0.46
-                    const end = start + (piers[i] - piers[i - 1]) * 0.33
-                    const laneY = t => base - roadHeight * 0.90 * (1 - t) * (1 - 0.52 * t)
-                    ctx.beginPath()
-                    ctx.moveTo(roadWidth * start, laneY(start))
-                    ctx.lineTo(roadWidth * end, laneY(end))
-                    ctx.lineWidth = Math.max(0.45, Math.min(2, roadHeight * 0.033) * (1 - start))
-                    ctx.strokeStyle = tone(secondaryAccent, 0.60)
-                    ctx.stroke()
-                }
+                // A narrow coping follows the top of the vertical concrete face.
+                const capHeight = Math.min(3, roadHeight * 0.055)
+                ctx.beginPath()
+                ctx.moveTo(0, edge)
+                ctx.quadraticCurveTo(roadWidth / 2, bend, roadWidth, base)
+                ctx.quadraticCurveTo(roadWidth / 2, bend + capHeight * 0.25, 0, edge + capHeight)
+                ctx.closePath()
+                ctx.fillStyle = tone(secondaryAccent, 0.44)
+                ctx.fill()
             }
 
             onPaint: {

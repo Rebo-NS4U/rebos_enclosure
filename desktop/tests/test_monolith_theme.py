@@ -106,10 +106,15 @@ ShellRoot {
     Colors.tertiary = redRoad ? "#2854f0" : "#f04028";
     test.wait(100);
     const pier = highwayContext.getImageData(55, 233, 1, 1).data;
-    const stripe = highwayContext.getImageData(20, 198, 1, 1).data;
+    const parapetFace = highwayContext.getImageData(20, 198, 1, 1).data;
+    const cap = highwayContext.getImageData(20, 195, 1, 1).data;
+    for (let channel = 0; channel < 4; ++channel) {
+     if (parapetFace[channel] !== pier[channel])
+      throw Error("The former lane stripe should be solid concrete in side view");
+    }
     const direction = redRoad ? 1 : -1;
-    if ((pier[0] - pier[2]) * direction < 25 || (stripe[2] - stripe[0]) * direction < 25)
-     throw Error("Highway concrete and lane paint must track their respective palette colors");
+    if ((pier[0] - pier[2]) * direction < 25 || (cap[2] - cap[0]) * direction < 25)
+     throw Error("Highway concrete and parapet cap must track their respective palette colors");
    }
    console.log("MATERIAL_RENDER_OK");
    Qt.quit();
