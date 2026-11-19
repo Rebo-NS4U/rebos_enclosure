@@ -147,6 +147,9 @@ Window {
             const pl = playlists.find(p => p.id === detail);
             list = pl ? pl.paths.map(p => tracks.find(t => t.path === p)).filter(Boolean) : [];
         }
+        return matchingTracks(list, query);
+    }
+    function matchingTracks(list, query) {
         const q = query.trim().toLowerCase();
         return q ? list.filter(t => (t.title + " " + t.artist + " " + t.album).toLowerCase().includes(q)) : list;
     }
@@ -476,7 +479,7 @@ Window {
         onErrorOccurred: (error, errorString) => { root.notice = errorString; }
     }
     Timer { interval: 500; running: root.playing; repeat: true; onTriggered: root.sync() }
-    readonly property bool fullscreenKeys: immersive && !playlistPicker.visible
+    readonly property bool fullscreenKeys: immersive && !playlistPicker.visible && !queueSearch.inputActiveFocus
     Shortcut { sequence: "Space"; enabled: !root.immersive && !playlistPicker.visible && root.page !== "Downloads" && root.page !== "Spotify playlists" && !search.inputActiveFocus && !playlistName.inputActiveFocus; onActivated: root.toggle() }
     Shortcut { sequence: "K"; enabled: root.fullscreenKeys; autoRepeat: false; onActivated: root.toggle() }
     Shortcut {
@@ -486,9 +489,13 @@ Window {
             stage.queueOpen = !stage.queueOpen;
         }
     }
-    Shortcut { sequence: "Ctrl+F"; enabled: !root.immersive && root.page !== "Downloads" && root.page !== "Spotify playlists"; onActivated: search.focusInput() }
+    Shortcut {
+        sequence: "Ctrl+F"
+        enabled: !playlistPicker.visible && (root.immersive || (root.page !== "Downloads" && root.page !== "Spotify playlists"))
+        onActivated: if (root.immersive) stage.openSongPicker(); else search.focusInput()
+    }
     Shortcut { sequence: "F11"; enabled: !playlistPicker.visible; onActivated: root.toggleFullscreen() }
-    Shortcut { sequence: "Escape"; enabled: !playlistPicker.visible; onActivated: { if (root.immersive) root.toggleFullscreen(); else GlobalStates.musicWindowVisible = false; } }
+    Shortcut { sequence: "Escape"; enabled: !playlistPicker.visible && !queueSearch.inputActiveFocus; onActivated: { if (root.immersive) root.toggleFullscreen(); else GlobalStates.musicWindowVisible = false; } }
 
     component KeyboardButton: ThemeButton {
         Keys.onReturnPressed: event => { if (!event.isAutoRepeat) click(); }
@@ -1069,7 +1076,12 @@ Window {
         readonly property real queueWidth: Math.min(420, width * 0.48)
         readonly property bool showLyrics: wide && (!queueOpen || width >= 1450)
         property bool queueOpen: false
-        property bool showSuggestions: false
+        property string queueMode: "queue"
+        function openSongPicker() {
+            queueOpen = true;
+            queueMode = "add";
+            queueSearch.focusInput();
+        }
         ColumnLayout {
             anchors.fill: parent; anchors.margins: stage.inset
             spacing: Math.max(18, stage.height * 0.025)
@@ -1242,16 +1254,25 @@ Window {
                                     Layout.fillWidth: true
                                     Layout.minimumWidth: 0
                                     text: "Queue · " + root.queue.length
-                                    checked: !stage.showSuggestions
-                                    onClicked: stage.showSuggestions = false
+                                    checked: stage.queueMode === "queue"
+                                    onClicked: stage.queueMode = "queue"
                                 }
                                 KeyboardButton {
                                     objectName: "music-fullscreen-suggestions-tab"
                                     Layout.fillWidth: true
                                     Layout.minimumWidth: 0
                                     text: "Suggestions"
-                                    checked: stage.showSuggestions
-                                    onClicked: stage.showSuggestions = true
+                                    checked: stage.queueMode === "suggestions"
+                                    onClicked: stage.queueMode = "suggestions"
+                                }
+                                KeyboardButton {
+                                    id: addSongsTab
+                                    objectName: "music-fullscreen-add-songs"
+                                    Layout.fillWidth: true
+                                    Layout.minimumWidth: 0
+                                    text: "Add songs"
+                                    checked: stage.queueMode === "add"
+                                    onClicked: stage.openSongPicker()
                                 }
                             }
                         }
@@ -1315,7 +1336,7 @@ Window {
                                 else root.select(index);
                             }
                             objectName: "music-fullscreen-queue-list"
-                            visible: !stage.showSuggestions
+                            visible: stage.queueMode === "queue"
                             Layout.fillWidth: true; Layout.fillHeight: true
                             clip: true; spacing: Styling.spacing(4); model: root.queue
                             currentIndex: root.spotifyPreview ? -1 : root.currentIndex
@@ -1343,6 +1364,79 @@ Window {
                             }
                             ScrollBar.vertical: ScrollBar {}
                         }
+                        ColumnLayout {
+                            id: songPicker
+                            visible: stage.queueMode === "add"
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            spacing: Styling.spacing(8)
+                            property string addedTitle: ""
+                            function queueTrack(track) {
+                                root.enqueue(track);
+                                addedTitle = track.title;
+                            }
+
+                            SearchInput {
+                                id: queueSearch
+                                objectName: "music-fullscreen-queue-search"
+                                Layout.fillWidth: true
+                                placeholderText: "Search title, artist or album"
+                                clearOnEscape: false
+                                onSearchTextChanged: songPicker.addedTitle = ""
+                                onEscapePressed: addSongsTab.forceActiveFocus(Qt.ShortcutFocusReason)
+                                onDownPressed: focusResults()
+                                onAccepted: focusResults()
+                                function focusResults() {
+                                    if (queueLibrary.count > 0) {
+                                        queueLibrary.forceActiveFocus(Qt.TabFocusReason);
+                                        queueLibrary.moveCursor(0);
+                                    }
+                                }
+                            }
+                            StyledText {
+                                objectName: "music-fullscreen-queue-added"
+                                Layout.fillWidth: true
+                                visible: songPicker.addedTitle !== ""
+                                text: "Queued · " + songPicker.addedTitle
+                                elide: Text.ElideRight
+                                color: Colors.primary
+                            }
+                            KeyboardList {
+                                id: queueLibrary
+                                objectName: "music-fullscreen-queue-library"
+                                Accessible.name: "Library songs to queue"
+                                Layout.fillWidth: true; Layout.fillHeight: true
+                                clip: true
+                                spacing: Styling.spacing(4)
+                                model: songPicker.visible ? root.matchingTracks(root.tracks, queueSearch.text) : []
+                                onModelChanged: {
+                                    keyboardIndex = -1;
+                                    positionViewAtBeginning();
+                                }
+                                onEntryActivated: index => songPicker.queueTrack(model[index])
+                                delegate: ThemeButton {
+                                    required property var modelData
+                                    required property int index
+                                    objectName: "music-fullscreen-queue-library-song-" + index
+                                    width: queueLibrary.width - Styling.spacing(12)
+                                    focusPolicy: Qt.NoFocus
+                                    text: "+  " + [modelData.title, modelData.artist].filter(Boolean).join(" · ")
+                                    Accessible.name: "Queue " + modelData.title
+                                    emphasized: queueLibrary.activeFocus && queueLibrary.keyboardIndex === index
+                                    onClicked: songPicker.queueTrack(modelData)
+                                }
+                                StyledText {
+                                    anchors.centerIn: parent
+                                    width: parent.width
+                                    visible: queueLibrary.count === 0
+                                    horizontalAlignment: Text.AlignHCenter
+                                    wrapMode: Text.WordWrap
+                                    text: queueSearch.text.trim() ? "No matching songs." : "Your music library is empty."
+                                    color: Colors.overSurfaceVariant
+                                }
+                                ScrollBar.vertical: ScrollBar {}
+                            }
+                        }
                         KeyboardList {
                             id: fullscreenSuggestions
                             Accessible.name: "Suggestions"
@@ -1357,7 +1451,7 @@ Window {
                                 event.accepted = true;
                             }
                             objectName: "music-fullscreen-suggestions"
-                            visible: stage.showSuggestions
+                            visible: stage.queueMode === "suggestions"
                             Layout.fillWidth: true; Layout.fillHeight: true
                             clip: true; spacing: Styling.spacing(4); model: root.activeSuggestions
                             currentIndex: root.suggestionQueueIndex
@@ -1386,7 +1480,7 @@ Window {
                             ScrollBar.vertical: ScrollBar {}
                         }
                         RowLayout {
-                            visible: stage.showSuggestions && root.page === "Playlist"
+                            visible: stage.queueMode === "suggestions" && root.page === "Playlist"
                             KeyboardButton {
                                 text: root.spotifySuggestions.pending ? "Loading…" : "Refresh"
                                 enabled: !root.spotifySuggestions.pending
@@ -1408,7 +1502,9 @@ Window {
                 color: Colors.overSurfaceVariant
                 font.pixelSize: Styling.fontSize(-2)
                 elide: Text.ElideRight
-                text: stage.queueOpen && stage.showSuggestions
+                text: stage.queueOpen && stage.queueMode === "add"
+                    ? "Ctrl+F Search · ↑/↓ Select · Enter Add to queue"
+                    : stage.queueOpen && stage.queueMode === "suggestions"
                     ? "↑/↓ Select · Enter Play · → Add to queue · Q Close queue"
                     : stage.queueOpen
                     ? "↑/↓ Select · Enter Play · Q Close queue"

@@ -475,6 +475,33 @@ esac
                     input.keyClick(Qt.Key_Down);
                     input.keyClick(Qt.Key_Return);
                     if (music.spotifyPreview || music.currentIndex !== originalQueue.length || spotify.isPlaying) { console.error("QUEUE_KEYBOARD_SELECT_FAILED"); Qt.exit(1); return; }
+                    const addSongs = findItem(music.contentItem, "music-fullscreen-add-songs");
+                    const queueSearch = findItem(music.contentItem, "music-fullscreen-queue-search");
+                    const library = findItem(music.contentItem, "music-fullscreen-queue-library");
+                    if (!tabTo(addSongs)) { console.error("QUEUE_ADD_SONGS_FOCUS_FAILED"); Qt.exit(1); return; }
+                    input.keyClick(Qt.Key_Return);
+                    if (!queueSearch.inputActiveFocus || library.count !== originalTracks.length) { console.error("QUEUE_LIBRARY_OPEN_FAILED"); Qt.exit(1); return; }
+                    input.keyClick(Qt.Key_Q);
+                    input.keyClick(Qt.Key_K);
+                    input.keyClick(Qt.Key_Space);
+                    if (queueSearch.text.toLowerCase() !== "qk " || library.count !== 0) { console.error("QUEUE_SEARCH_SHORTCUT_CONFLICT", queueSearch.text, library.count); Qt.exit(1); return; }
+                    input.keyClick(Qt.Key_A, Qt.ControlModifier);
+                    input.keyClick(Qt.Key_2);
+                    if (queueSearch.text !== "2" || library.count !== 1) { console.error("QUEUE_LIBRARY_FILTER_FAILED", queueSearch.text, library.count); Qt.exit(1); return; }
+                    const queuedCount = music.queue.length;
+                    const playingIndex = music.currentIndex;
+                    input.keyClick(Qt.Key_Down);
+                    input.keyClick(Qt.Key_Return);
+                    if (music.queue.length !== queuedCount + 1 || music.queue[queuedCount].path !== originalTracks[1].path ||
+                        music.currentIndex !== playingIndex) { console.error("QUEUE_LIBRARY_KEYBOARD_FAILED"); Qt.exit(1); return; }
+                    const result = library.itemAtIndex(0);
+                    if (!result) { console.error("QUEUE_LIBRARY_RESULT_MISSING"); Qt.exit(1); return; }
+                    input.mouseClick(result, result.width / 2, result.height / 2);
+                    if (music.queue.length !== queuedCount + 2 || music.queue[queuedCount + 1].path !== originalTracks[1].path ||
+                        music.currentIndex !== playingIndex || !findItem(music.contentItem, "music-fullscreen-queue-added").visible) {
+                        console.error("QUEUE_LIBRARY_CLICK_FAILED"); Qt.exit(1); return;
+                    }
+                    console.log("MUSIC_FULLSCREEN_QUEUE_LIBRARY_PASSED");
                     if (!tabTo(findItem(music.contentItem, "music-fullscreen-suggestions-tab"))) { console.error("SUGGESTIONS_TAB_RESTORE_FAILED"); Qt.exit(1); return; }
                     input.keyClick(Qt.Key_Return);
                     input.keyClick(Qt.Key_Q);
