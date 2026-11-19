@@ -362,6 +362,8 @@ esac
                     const pos = transport.mapToItem(stage, 0, 0);
                     if (pos.y < 0 || pos.y + transport.height > stage.height) { console.error("MUSIC_FULLSCREEN_BOUNDS_FAILED"); Qt.exit(1); return; }
                     const add = findItem(music.contentItem, "music-fullscreen-add-current-to-playlist");
+                    const exit = findItem(music.contentItem, "music-fullscreen-exit");
+                    if (!add || add.parent !== exit.parent || add.text !== "Add to playlist") { console.error("MUSIC_FULLSCREEN_PLAYLIST_HEADER_FAILED"); Qt.exit(1); return; }
                     stop();
                     if (!transport.activeFocus || !tabTo(add)) { console.error("FULLSCREEN_INITIAL_FOCUS_FAILED", music.activeFocusItem); Qt.exit(1); return; }
                     input.keyClick(Qt.Key_Return);
@@ -558,7 +560,7 @@ esac
                     if (!spotify.isPlaying) { console.error("SUGGESTION_ROW_RESUME_FAILED"); Qt.exit(1); return; }
                     spotify.canGoNext = false;
                     music.toggleFullscreen();
-                    findItem(music.contentItem, "music-fullscreen-queue-toggle").clicked();
+                    input.keyClick(Qt.Key_Q);
                     repeatStart = attempts; phase = 951;
                 } else if (phase === 951 && attempts >= repeatStart + 3) {
                     const stage = findItem(music.contentItem, "music-fullscreen-stage");

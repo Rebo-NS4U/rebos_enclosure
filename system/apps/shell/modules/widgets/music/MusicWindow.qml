@@ -485,7 +485,7 @@ Window {
     Shortcut {
         sequence: "Q"; enabled: root.fullscreenKeys; autoRepeat: false
         onActivated: {
-            queueToggle.forceActiveFocus(Qt.ShortcutFocusReason);
+            (fullscreenAdd.enabled ? fullscreenAdd : fullscreenExit).forceActiveFocus(Qt.ShortcutFocusReason);
             stage.queueOpen = !stage.queueOpen;
         }
     }
@@ -1093,15 +1093,8 @@ Window {
                     StyledText { text: root.current?.album || "Your listening room"; elide: Text.ElideRight; Layout.maximumWidth: stage.width * 0.6; color: Colors.overSurfaceVariant }
                 }
                 Item { Layout.fillWidth: true }
-                KeyboardButton {
-                    id: queueToggle
-                    objectName: "music-fullscreen-queue-toggle"
-                    text: "Queue · " + root.queue.length
-                    checked: stage.queueOpen
-                    Accessible.description: stage.queueOpen ? "Hide queue panel" : "Show queue panel"
-                    onClicked: stage.queueOpen = !stage.queueOpen
-                }
-                KeyboardButton { objectName: "music-fullscreen-exit"; text: "Exit fullscreen · Esc"; onClicked: root.toggleFullscreen() }
+                AddCurrentToPlaylistButton { id: fullscreenAdd; objectName: "music-fullscreen-add-current-to-playlist" }
+                KeyboardButton { id: fullscreenExit; objectName: "music-fullscreen-exit"; text: "Exit fullscreen · Esc"; onClicked: root.toggleFullscreen() }
             }
             RowLayout {
                 Layout.fillWidth: true; Layout.fillHeight: true
@@ -1235,7 +1228,7 @@ Window {
                             KeyboardButton {
                                 text: "×"
                                 Accessible.name: "Close queue panel"
-                                onClicked: { queueToggle.forceActiveFocus(); stage.queueOpen = false; }
+                                onClicked: { (fullscreenAdd.enabled ? fullscreenAdd : fullscreenExit).forceActiveFocus(); stage.queueOpen = false; }
                             }
                         }
                         StyledRect {
@@ -1521,7 +1514,6 @@ Window {
                 RowLayout {
                     Layout.fillWidth: true; spacing: 12
                     KeyboardButton { text: root.favorites.includes(root.current?.path) ? "♥" : "♡"; enabled: !!root.current && !root.spotifyPreview; Accessible.name: "Favorite current song"; onClicked: root.favorite(root.current) }
-                    AddCurrentToPlaylistButton { objectName: "music-fullscreen-add-current-to-playlist" }
                     Item { Layout.fillWidth: true }
                     KeyboardButton { objectName: "music-fullscreen-shuffle"; text: "Shuffle"; checked: root.spotifyPreview ? !!root.spotifyPlayer?.shuffle : root.shuffle; enabled: !root.spotifyPreview || !!root.spotifyPlayer?.shuffleSupported; onClicked: { if (root.spotifyPreview) root.spotifyPlayer.shuffle = !root.spotifyPlayer.shuffle; else root.shuffle = !root.shuffle; } }
                     KeyboardButton { objectName: "music-fullscreen-previous"; text: "⏮"; Accessible.name: "Previous track"; enabled: root.spotifyPreview ? !!root.spotifyPlayer?.canGoPrevious : !!root.current; onClicked: root.previous() }
