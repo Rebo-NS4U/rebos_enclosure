@@ -10,6 +10,7 @@ class WindowMaterialTests(unittest.TestCase):
         for app in ('shell', 'assistant', 'media/ui'):
             with self.subTest(app=app):
                 status, output = run_qml(ROOT / 'system/apps' / app, '''import QtQuick
+import QtQuick.Controls
 import Quickshell
 import qs.modules.components
 ShellRoot {
@@ -33,9 +34,20 @@ ShellRoot {
   StyledRect { id: canopyPane; width:220; height:130; variant:"pane"; styleOverride:"canopy" }
   StyledRect { id: canopyBar; width:580; height:40; variant:"bar"; barSurface:true; styleOverride:"canopy" }
   Column {
-   StyledRect { width:600; height:260; barSurface:true; variant:"bg"; styleOverride:"monolith" }
+   StyledRect { id: sidebar; width:600; height:180; barSurface:true; variant:"bg"; styleOverride:"monolith" }
    StyledRect { id: popup; width:500; height:200; variant:"popup"; styleOverride:"monolith" }
-   StyledRect { width:200; height:80; variant:"bg"; styleOverride:"monolith" }
+   Row {
+    Button {
+     id: button
+     width: 140; height: 36; text: "Apply"
+     background: StyledRect { variant:"common"; styleOverride:"monolith" }
+    }
+    Button {
+     id: selected
+     width: 140; height: 36; text: "Selected"
+     background: StyledRect { variant:"primary"; styleOverride:"monolith" }
+    }
+   }
    StyledRect { width:220; height:42; variant:"bg"; materialPreview:true; styleOverride:"monolith" }
    StyledRect { id: bar; width:600; height:36; variant:"bar"; styleOverride:"monolith" }
    StyledRect { width:200; height:80; variant:"internalbg"; styleOverride:"monolith" }
@@ -45,7 +57,13 @@ ShellRoot {
  Timer { interval:400; running:true; onTriggered: { try {
    if (!hasMarks(popup, 375, 0, 125, 80) || !hasMarks(popup, 170, 65, 160, 70))
     throw Error("Missing slate across the window");
-   if (hasMarks(bar, 260, 8, 80, 20)) throw Error("Slate obscures compact bar");
+   if (!hasMarks(sidebar, 215, 65, 155, 60)) throw Error("Missing slate across the sidebar");
+   for (const surface of [button.background, selected.background]) {
+    if (!hasMarks(surface, 52, 14, 41, 9)) throw Error("Missing crack across the button face");
+    if (hasMarks(surface, 0, 32, 23, 4)) throw Error("Corner accent remains on button");
+   }
+   if (hasMarks(popup, 0, 168, 100, 32)) throw Error("Corner accent remains on window");
+   if (decoration(bar)) throw Error("Slate obscures compact bar");
    if (!hasMarks(canopy, 195, 70, 125, 95) || !hasMarks(canopy, 0, 165, 145, 74))
     throw Error("Missing Canopy foliage across the window");
    if (!hasMarks(canopyPane, 82, 35, 70, 63)) throw Error("Missing nested foliage");
@@ -79,7 +97,7 @@ ShellRoot {
     GlobalStates.settingsWindowVisible = true;
     const loader = test.findChild(settings.contentItem, "settingsContentLoader");
     const slate = test.findChild(loader.item, "surface-edge-canvas");
-    if (!slate || !slate.wideSlate)
+    if (!slate)
      throw Error("Settings must use the full Monolith slate");
     test.wait(150);
     const ctx = slate.getContext("2d");

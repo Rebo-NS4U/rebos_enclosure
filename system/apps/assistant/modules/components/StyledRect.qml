@@ -795,9 +795,10 @@ ClippingRectangle {
     Loader {
         anchors.fill: parent
         readonly property string finish: root.styleOverride || Styling.shellStyle
-        active: !root.hasFillColor && !root.controlSurface && root.rectOpacity > 0
-            && ["monolith", "frosted", "suspended-film"].includes(finish)
-            && ["bg", "popup", "bar", "pane", "surface", "surfaceContainer", "internalbg", "focus", "surfaceVariant"].includes(root.variant)
+        readonly property bool panel: ["bg", "popup", "pane", "surface", "surfaceContainer", "internalbg", "focus", "surfaceVariant"].includes(root.variant)
+        active: !root.hasFillColor && root.rectOpacity > 0 && (finish === "monolith"
+            ? panel || root.controlSurface || ["common", "primary", "primaryfocus", "secondary", "secondaryfocus", "tertiary", "tertiaryfocus", "error", "errorfocus"].includes(root.variant)
+            : !root.controlSurface && ["frosted", "suspended-film"].includes(finish) && (panel || root.variant === "bar"))
         sourceComponent: Canvas {
             objectName: "surface-edge-canvas"
             anchors.fill: parent
@@ -808,10 +809,6 @@ ClippingRectangle {
             readonly property real cornerRadius: root.effectiveCornerRadius
             readonly property var frameCorners: [root.topLeftRadius, root.topRightRadius, root.bottomLeftRadius, root.bottomRightRadius]
             readonly property bool outer: root.barSurface || ["bg", "popup", "bar"].includes(root.variant)
-            readonly property bool wideSlate: !root.barSurface && root.variant !== "bar"
-                && (root.materialPreview || (width >= 160 && height >= 80))
-                && ["bg", "popup", "pane", "surface", "surfaceContainer"].includes(root.variant)
-            onWideSlateChanged: requestPaint()
             onFinishChanged: requestPaint()
             onPigmentChanged: requestPaint()
             onAccentChanged: requestPaint()
@@ -825,7 +822,7 @@ ClippingRectangle {
                 // Positions follow the slab as it resizes. The third coordinate
                 // is the local thickness of each exposed mineral bed.
                 const strength = outer ? 1 : 0.65
-                const thickness = Math.min(32, height * 0.065)
+                const thickness = Math.min(32, Math.max(2.5, height * 0.065))
                 function bed(points, dye, alpha) {
                     ctx.beginPath()
                     ctx.moveTo(points[0][0] * width, points[0][1] * height)
@@ -856,29 +853,6 @@ ClippingRectangle {
                 bed([[.29,-.045,.30],[.42,.006,.72],[.54,.026,.62],[.65,.018,.38],[.72,-.04,0]], pigment, 0.13)
                 bed([[.56,1,0],[.68,.90,.86],[.76,.895,.52],[.86,.78,.38],[1,.70,1.3]], accent, 0.14)
                 bed([[.76,.895,0],[.83,.795,.10],[.86,.78,.19],[.95,.729,0]], pigment, 0.26)
-            }
-
-            function paintSlate(ctx) {
-                if (wideSlate) paintSlateFace(ctx)
-                // Three exposed beds taper from a broken edge into the flat slab.
-                const reach = Math.min(width * 0.56, outer ? 250 : 86)
-                const depth = Math.min(height * 0.32, outer ? 42 : 13)
-                ctx.translate(0, height)
-                ctx.scale(reach, -depth)
-                const beds = [
-                    [[0, 1], [0.19, 0.74], [0.32, 0.77], [0.64, 0.29], [0.80, 0.23], [1, 0]],
-                    [[0, 0.78], [0.22, 0.54], [0.36, 0.57], [0.60, 0.26], [0.73, 0.18], [0.90, 0]],
-                    [[0, 0.48], [0.14, 0.36], [0.27, 0.39], [0.46, 0.13], [0.58, 0.11], [0.76, 0]]
-                ]
-                const inks = [Qt.alpha(pigment, 0.24), Qt.alpha(accent, 0.30), Qt.alpha(pigment, 0.20)]
-                for (let i = 0; i < beds.length; ++i) {
-                    ctx.beginPath()
-                    ctx.moveTo(0, 0)
-                    for (const point of beds[i]) ctx.lineTo(point[0], point[1])
-                    ctx.closePath()
-                    ctx.fillStyle = inks[i]
-                    ctx.fill()
-                }
             }
 
             function paintFrost(ctx) {
@@ -938,7 +912,7 @@ ClippingRectangle {
                 if (width < 24 || height < 16) return
                 ctx.save()
                 if (root.traceThemeFrame(ctx, 0)) ctx.clip()
-                if (finish === "monolith") paintSlate(ctx)
+                if (finish === "monolith") paintSlateFace(ctx)
                 else if (finish === "frosted") paintFrost(ctx)
                 else paintFilm(ctx)
                 ctx.restore()

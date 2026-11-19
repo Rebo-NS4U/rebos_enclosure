@@ -49,7 +49,7 @@ Use `StandardProgressBar` for linear progress in QML. Its normalized `value` is 
 ## Rendered desktop themes
 
 All styles use the selected wallpaper or color preset, including application exports.
-Monolith uses an opaque slate face. A diagonal fault crosses larger windows and panes, with tapered accent seams and offset mineral beds above and below. Nested panes use lower contrast. Compact bars and insets retain the exposed beds at the lower left. Theme previews show the whole slab.
+Monolith uses an opaque slate face. A diagonal fault crosses windows, panes, and buttons, with tapered accent seams and offset mineral beds above and below. Nested surfaces use lower contrast. Theme previews show the whole slab.
 Blueprint uses square corners, wire controls, major and minor drafting grids, perimeter measurement ticks, registration targets and inset frames.
 Terminal Hardware uses flat faces without vertical gradients, a single inset machined bezel, sparse cooling vents on larger housings and raised mechanical controls. Split top seams and three inset slots add cover detail; short capped rails with center notches sit along both side edges on taller housings. These details stay inside the bezel, clear of rounded corners and content. Inner surfaces remain quiet without scanline texture. Action keycaps use a fine inset rim and short side notches over flat semantic fills. Shared shell buttons and shell/assistant icon buttons use a tighter inset on press, recessed neutral pressed fills and an accent keyboard-focus outline; button surfaces omit the panel housing decorations.
 Their fonts are Noto Sans, JetBrains Mono and DejaVu Sans Mono respectively.
