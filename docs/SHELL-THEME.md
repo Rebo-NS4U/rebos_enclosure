@@ -52,10 +52,11 @@ bars keep the center clear between two short leaf sprays.
 
 ## Metropolis
 
-Stepped towers frame a low skyline, with lit window bays and an arched railway
-viaduct receding into the distance. The glass and lights follow the selected
-palette. Large panes carry a subdued skyline. Compact bars show rooftop clusters
-at either end, leaving the clock clear.
+Stepped towers frame a low skyline, with lit window bays and an elevated highway
+receding into the distance. Its opaque asphalt and concrete pick up the primary
+color, with the tertiary color along the parapet and lane markings. Large panes
+carry a subdued skyline. Compact bars show rooftop clusters at either end,
+leaving the clock clear.
 
 ## Monolith and Suspended Film
 

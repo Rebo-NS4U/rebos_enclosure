@@ -431,7 +431,10 @@ ClippingRectangle {
             readonly property bool inset: root.variant === "internalbg"
             onInsetChanged: requestPaint()
             readonly property bool outer: root.variant === "bg" || root.variant === "popup"
-            opacity: root.rectOpacity
+            readonly property bool hasHighway: finish === "metropolis" && broad
+            readonly property real skylineOpacity: hasHighway ? root.rectOpacity : 1
+            onSkylineOpacityChanged: requestPaint()
+            opacity: hasHighway ? 1 : root.rectOpacity
             onCornerRadiusChanged: requestPaint()
             readonly property var frameCorners: [root.topLeftRadius, root.topRightRadius, root.bottomLeftRadius, root.bottomRightRadius]
             onFrameCornersChanged: requestPaint()
@@ -546,7 +549,7 @@ ClippingRectangle {
                 const rise = compact ? Math.min(height * 0.38, 20) : height * (nested ? 0.44 : 0.64)
                 const base = height
                 const glass = Qt.tint(backdrop, Qt.alpha(accent, 0.24))
-                ctx.globalAlpha = nested ? 0.48 : 0.88
+                ctx.globalAlpha = (nested ? 0.48 : 0.88) * skylineOpacity
 
                 function tower(x, span, tall, crowned, seed) {
                     const top = base - tall
@@ -625,32 +628,74 @@ ClippingRectangle {
                 tower(0.735 * width, 0.12 * width, 0.67 * rise, true, 7)
                 tower(0.88 * width, 0.14 * width, 0.41 * rise, false, 4)
 
-                // An elevated railway approaches from the left. Both the arches
-                // and the deck recede toward the same low point on the horizon.
-                const piers = [-0.04, 0.12, 0.255, 0.365, 0.45, 0.515, 0.565, 0.60]
-                const deck = t => base - rise * (0.26 - 0.36 * t)
-                ctx.beginPath()
-                ctx.moveTo(width * piers[0], deck(piers[0]))
-                ctx.lineTo(width * 0.60, deck(0.60))
-                ctx.lineTo(width * 0.60, base)
-                for (let i = piers.length - 1; i > 0; --i) {
-                    const left = piers[i - 1], right = piers[i]
-                    const gap = right - left
-                    const arch = deck((left + right) / 2)
-                    ctx.lineTo(width * (right - gap * 0.10), base)
-                    ctx.bezierCurveTo(width * (right - gap * 0.10), arch,
-                                      width * (left + gap * 0.10), arch,
-                                      width * (left + gap * 0.10), base)
+                // Paint an opaque foreground up to the far parapet. Recessed
+                // bays are shaded concrete, so windows never show through them.
+                ctx.globalAlpha = 1
+                const concrete = Qt.alpha(backdrop, 1)
+                const tone = (color, amount) => Qt.tint(concrete, Qt.alpha(color, nested ? amount * 0.65 : amount))
+                const roadWidth = width * 0.67
+                const roadHeight = rise * 0.33
+                const edge = base - roadHeight
+                const bend = base - roadHeight * 0.24
+
+                // Each quadratic shares a vanishing point. The near edge drops
+                // faster than the far edge, giving the asphalt a visible top face.
+                function deckBand(top, bottom, color) {
+                    ctx.fillStyle = color
+                    ctx.beginPath()
+                    ctx.moveTo(0, edge + roadHeight * top)
+                    ctx.quadraticCurveTo(roadWidth / 2, bend + roadHeight * top * 0.25, roadWidth, base)
+                    ctx.quadraticCurveTo(roadWidth / 2, bend + roadHeight * bottom * 0.25,
+                                         0, edge + roadHeight * bottom)
+                    ctx.closePath()
+                    ctx.fill()
                 }
-                ctx.lineTo(width * piers[0], base)
-                ctx.closePath()
-                ctx.fillStyle = Qt.tint(backdrop, Qt.alpha(secondaryAccent, 0.14))
-                ctx.fill()
+
                 ctx.beginPath()
-                ctx.moveTo(width * piers[0], deck(piers[0]))
-                ctx.lineTo(width * 0.60, deck(0.60))
-                ctx.strokeStyle = Qt.alpha(secondaryAccent, 0.62)
-                ctx.stroke()
+                ctx.moveTo(0, edge)
+                ctx.quadraticCurveTo(roadWidth / 2, bend, roadWidth, base)
+                ctx.lineTo(0, base)
+                ctx.closePath()
+                ctx.fillStyle = tone(accent, 0.27)
+                ctx.fill()
+
+                const piers = [-0.12, 0.16, 0.39, 0.57, 0.71, 0.82, 0.90, 0.96]
+                for (let i = 1; i < piers.length; ++i) {
+                    const gap = piers[i] - piers[i - 1]
+                    const left = (piers[i - 1] + gap * 0.09) * roadWidth
+                    const right = (piers[i] - gap * 0.09) * roadWidth
+                    const mid = (piers[i] + piers[i - 1]) / 2
+                    const archHeight = roadHeight * (1 - mid) * (1 - 0.52 * mid) * 0.63
+                    // The near reveal catches ambient light on one side of the bay.
+                    for (const inset of [0, gap * roadWidth * 0.067]) {
+                        const spring = base - archHeight * 0.38
+                        const crown = base - archHeight
+                        ctx.beginPath()
+                        ctx.moveTo(left + inset, base)
+                        ctx.lineTo(left + inset, spring)
+                        ctx.bezierCurveTo(left + inset, crown, right, crown, right, spring)
+                        ctx.lineTo(right, base)
+                        ctx.closePath()
+                        ctx.fillStyle = inset === 0 ? tone(accent, 0.13) : tone(accent, 0.035)
+                        ctx.fill()
+                    }
+                }
+                deckBand(0, 0.24, tone(accent, 0.12))
+                deckBand(0.20, 0.25, tone(secondaryAccent, 0.44))
+                deckBand(0.25, 0.34, tone(accent, 0.18))
+
+                // Short painted lane dashes shrink with the spacing of the piers.
+                for (let i = 1; i < piers.length; ++i) {
+                    const start = piers[i - 1] + (piers[i] - piers[i - 1]) * 0.46
+                    const end = start + (piers[i] - piers[i - 1]) * 0.33
+                    const laneY = t => base - roadHeight * 0.90 * (1 - t) * (1 - 0.52 * t)
+                    ctx.beginPath()
+                    ctx.moveTo(roadWidth * start, laneY(start))
+                    ctx.lineTo(roadWidth * end, laneY(end))
+                    ctx.lineWidth = Math.max(0.45, Math.min(2, roadHeight * 0.033) * (1 - start))
+                    ctx.strokeStyle = tone(secondaryAccent, 0.60)
+                    ctx.stroke()
+                }
             }
 
             onPaint: {

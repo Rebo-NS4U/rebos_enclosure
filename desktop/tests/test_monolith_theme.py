@@ -11,9 +11,12 @@ class WindowMaterialTests(unittest.TestCase):
             with self.subTest(app=app):
                 status, output = run_qml(ROOT / 'system/apps' / app, '''import QtQuick
 import QtQuick.Controls
+import QtTest
+import qs.modules.theme
 import Quickshell
 import qs.modules.components
 ShellRoot {
+ TestCase { id: test; when: false }
  function decoration(item) {
   if (["surface-edge-canvas", "wallpaper-theme-canvas"].includes(item.objectName)) return item;
   for (const child of item.children || []) {
@@ -30,7 +33,7 @@ ShellRoot {
   return false;
  }
  FloatingWindow { visible:true; implicitWidth:640; implicitHeight:480
-  StyledRect { id: metro; width:500; height:240; variant:"popup"; styleOverride:"metropolis" }
+  StyledRect { id: metro; width:500; height:240; backgroundOpacity:0.20; variant:"popup"; styleOverride:"metropolis" }
   StyledRect { id: metroPane; width:220; height:130; variant:"pane"; styleOverride:"metropolis" }
   StyledRect { id: metroBar; width:580; height:40; variant:"bar"; styleOverride:"metropolis" }
   StyledRect { id: metroPreview; width:200; height:42; materialPreview:true; variant:"bg"; styleOverride:"metropolis" }
@@ -75,12 +78,39 @@ ShellRoot {
     throw Error("Compact Canopy must frame the bar center");
    if (!hasMarks(metro, 35, 82, 40, 45) || !hasMarks(metro, 370, 139, 50, 46))
     throw Error("Missing Metropolis towers on either side of the window");
+   // Check the painted pixels and the item opacity applied by the compositor.
+   for (const panel of [metro, metroPane, metroPreview]) {
+    const city = decoration(panel);
+    const x = Math.floor(panel.width * 0.12), y = Math.floor(panel.height * 0.96);
+    const pixels = city.getContext("2d").getImageData(x, y, 5, 1).data;
+    for (let i = 3; i < pixels.length; i += 4) {
+     if (pixels[i] * city.opacity < 254.5)
+      throw Error("Translucent highway on " + panel.variant + ": pixel alpha " + pixels[i] + ", item opacity " + city.opacity);
+    }
+   }
+   const highway = decoration(metro);
+   const highwayContext = highway.getContext("2d");
+   for (const [x, y] of [[40, 201], [25, 235], [55, 233]]) {
+    if (highwayContext.getImageData(x, y, 1, 1).data[3] * highway.opacity < 254.5)
+     throw Error("Background shows through the deck, arch or pier at " + x + ", " + y);
+   }
    if (hasMarks(metro, 190, 40, 120, 110)) throw Error("City encroaches on the open sky");
    if (!hasMarks(metroPane, 17, 85, 18, 22) || !hasMarks(metroPreview, 15, 17, 15, 10))
     throw Error("Missing skyline on a nested pane or theme preview");
    if (!hasMarks(metroBar, 15, 20, 80, 19) || !hasMarks(metroBar, 500, 20, 60, 19)
        || hasMarks(metroBar, 180, 0, 220, 40))
     throw Error("Metropolis rooftops must frame the bar center");
+   Colors.background = "#202020";
+   for (const redRoad of [true, false]) {
+    Colors.primary = redRoad ? "#f04028" : "#2854f0";
+    Colors.tertiary = redRoad ? "#2854f0" : "#f04028";
+    test.wait(100);
+    const pier = highwayContext.getImageData(55, 233, 1, 1).data;
+    const stripe = highwayContext.getImageData(20, 198, 1, 1).data;
+    const direction = redRoad ? 1 : -1;
+    if ((pier[0] - pier[2]) * direction < 25 || (stripe[2] - stripe[0]) * direction < 25)
+     throw Error("Highway concrete and lane paint must track their respective palette colors");
+   }
    console.log("MATERIAL_RENDER_OK");
    Qt.quit();
   } catch (e) { console.error(e); Qt.exit(1); } } }
