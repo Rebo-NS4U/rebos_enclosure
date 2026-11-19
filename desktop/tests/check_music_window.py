@@ -277,15 +277,8 @@ esac
                 } else if (phase === 40) {
                     const row = findItem(music.contentItem, "music-track-row-0");
                     if (!row || row.width < 100) return;
-                    const play = findItem(music.contentItem, "music-play");
-                    const previousTrack = music.current.path;
-                    const wasPlaying = music.playing;
+                    if (findItem(row, "music-track-play-0")?.visible) { console.error("MUSIC_ROW_PLAY_BUTTON_VISIBLE"); Qt.exit(1); return; }
                     input.mouseClick(row, row.width * 0.45, row.height / 2);
-                    if (findItem(row, "music-track-play-0")?.visible || !row.pendingSelection ||
-                        music.current.path !== previousTrack || music.playing !== wasPlaying || play.text !== "Play") {
-                        console.error("MUSIC_ROW_SELECTION_FAILED", row.pendingSelection, music.current.path === previousTrack, music.playing === wasPlaying, play.text); Qt.exit(1); return;
-                    }
-                    input.mouseClick(play, play.width / 2, play.height / 2);
                     phase = 41;
                 } else if (phase === 41 && music.playing) {
                     if (music.current.path !== music.playlists[0].paths[0]) { console.error("MUSIC_ROW_CLICK_WRONG_TRACK"); Qt.exit(1); }
@@ -297,7 +290,7 @@ esac
                     if (play.text !== "Pause") { console.error("MUSIC_TRANSPORT_PLAY_FAILED"); Qt.exit(1); return; }
                     input.mouseClick(play, play.width / 2, play.height / 2);
                     if (music.playing) { console.error("MUSIC_TRANSPORT_PAUSE_FAILED"); Qt.exit(1); return; }
-                    console.log("MUSIC_ROW_SELECTION_AND_TRANSPORT_PASSED");
+                    console.log("MUSIC_ROW_PLAY_AND_TRANSPORT_PASSED");
                     music.navigate("Downloads");
                     const downloads = findItem(music.contentItem, "music-downloads");
                     const start = findItem(music.contentItem, "music-download-start");
@@ -589,7 +582,8 @@ esac
                     music.play(music.tracks, 0);
                     music.next(false);
                     if (music.currentIndex !== 1 || music.requestedPreview) { console.error("PLAYLIST_NEXT_SKIPPED_LOCAL_QUEUE"); Qt.exit(1); return; }
-                    firstSuggestion.playRequested();
+                    if (findItem(firstSuggestion, "music-track-play-0")?.visible) { console.error("SUGGESTION_ROW_PLAY_BUTTON_VISIBLE"); Qt.exit(1); return; }
+                    input.mouseClick(firstSuggestion, firstSuggestion.width * 0.45, firstSuggestion.height / 2);
                     if (music.requestedPreview !== firstSuggestion.track.uri) { console.error("SUGGESTION_ROW_PLAY_FAILED"); Qt.exit(1); return; }
                     music.requestedPreview = "";
                     spotify.play();
