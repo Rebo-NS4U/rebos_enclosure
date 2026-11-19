@@ -795,6 +795,21 @@ ClippingRectangle {
 
     Loader {
         anchors.fill: parent
+        active: !root.hasFillColor && !root.controlSurface && !root.barSurface && root.rectOpacity > 0
+            && (root.styleOverride || Styling.shellStyle) === "monolith"
+            && (root.variant === "bg" || root.variant === "popup")
+        sourceComponent: Image {
+            objectName: "monolith-backdrop"
+            source: Styling.wallpaperBackdrop(root.Window.window?.screen?.name ?? "")
+            asynchronous: true
+            fillMode: Image.PreserveAspectCrop
+            sourceSize: Qt.size(width, height)
+            opacity: 0.32 * root.rectOpacity
+        }
+    }
+
+    Loader {
+        anchors.fill: parent
         readonly property string finish: root.styleOverride || Styling.shellStyle
         active: !root.hasFillColor && !root.controlSurface && root.rectOpacity > 0
             && ["monolith", "frosted", "suspended-film"].includes(finish)

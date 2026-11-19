@@ -59,3 +59,80 @@ ShellRoot {
                 self.assertIn('MATERIAL_RENDER_OK', output)
                 for error in ('ReferenceError', 'TypeError', 'QML StyledRect: SyntaxError', 'Error loading QML', 'Unable to assign'):
                     self.assertNotIn(error, output)
+
+    def test_backdrop_follows_settings_across_apps(self):
+        fixtures = {
+            '.cache/rebos_shell/wallpapers.json': '{}',
+            'first #wall.ppm': 'P3\n1 1\n255\n255 0 0\n',
+            'second wall.ppm': 'P3\n1 1\n255\n0 255 0\n',
+        }
+        for app in ('shell', 'assistant', 'media/ui'):
+            with self.subTest(app=app):
+                status, output = run_qml(ROOT / 'system/apps' / app, '''import QtQuick
+import QtTest
+import Quickshell
+import Quickshell.Io
+import qs.modules.components
+import qs.modules.theme
+ShellRoot {
+ readonly property string home: Quickshell.env("HOME")
+ FileView {
+  id: settings
+  path: home + "/.cache/rebos_shell/wallpapers.json"
+  JsonAdapter {
+   property string currentWall: ""
+   property var perScreenWallpapers: ({})
+  }
+ }
+ FloatingWindow {
+  visible: true
+  implicitWidth: 640
+  implicitHeight: 480
+  Column {
+   StyledRect { id: panel; width: 320; height: 180; variant: "bg"; styleOverride: "monolith" }
+   StyledRect { id: popup; width: 320; height: 140; variant: "popup"; styleOverride: "monolith" }
+   StyledRect { id: bar; width: 320; height: 36; variant: "bg"; styleOverride: "monolith"; barSurface: true }
+   StyledRect { id: other; width: 320; height: 100; variant: "bg"; styleOverride: "blueprint" }
+  }
+  TestCase { id: test; when: false }
+  Timer {
+   interval: 200
+   running: true
+   onTriggered: {
+    try {
+     const backdrop = test.findChild(panel, "monolith-backdrop");
+     const popupBackdrop = test.findChild(popup, "monolith-backdrop");
+     test.verify(backdrop && popupBackdrop, "window and popup backdrop");
+     test.verify(!test.findChild(bar, "monolith-backdrop"), "exclude bar");
+     test.verify(!test.findChild(other, "monolith-backdrop"), "exclude Blueprint");
+     test.compare(backdrop.status, Image.Null);
+
+     settings.adapter.currentWall = home + "/first #wall.ppm";
+     settings.writeAdapter();
+     test.tryCompare(backdrop, "status", Image.Ready);
+     test.tryCompare(popupBackdrop, "status", Image.Ready);
+     test.verify(backdrop.visible && backdrop.width === panel.width && backdrop.height === panel.height);
+     test.verify(decodeURIComponent(backdrop.source.toString()).endsWith("first #wall.ppm"));
+
+     settings.adapter.currentWall = home + "/second wall.ppm";
+     settings.adapter.perScreenWallpapers = {"test-output": home + "/first #wall.ppm"};
+     settings.writeAdapter();
+     test.tryVerify(() => decodeURIComponent(backdrop.source.toString()).endsWith("second wall.ppm"));
+     test.tryCompare(backdrop, "status", Image.Ready);
+     test.verify(Styling.wallpaperBackdrop("test-output").endsWith("first%20%23wall.ppm"));
+
+     settings.adapter.currentWall = "";
+     settings.writeAdapter();
+     test.tryCompare(backdrop, "status", Image.Null);
+     console.log("MONOLITH_BACKDROP_OK");
+     Qt.quit();
+    } catch (error) {
+     console.error(error, error.stack);
+     Qt.exit(1);
+    }
+   }
+  }
+ }
+}''', fixtures=fixtures)
+                self.assertEqual(status, 0, output[-6000:])
+                self.assertIn('MONOLITH_BACKDROP_OK', output)
