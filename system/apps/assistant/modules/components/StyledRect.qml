@@ -454,9 +454,9 @@ ClippingRectangle {
     Loader {
         anchors.fill: parent
         readonly property string material: root.styleOverride || Styling.shellStyle
-        active: !root.hasFillColor && root.rectOpacity > 0 && (material === "canopy"
+        active: !root.hasFillColor && root.rectOpacity > 0 && (["canopy", "metropolis"].includes(material)
             ? !root.controlSurface && ["bg", "popup", "pane", "surface", "surfaceContainer", "bar"].includes(root.variant)
-            : ["orbital", "metropolis"].includes(material)
+            : material === "orbital"
                 && ["bg", "popup", "pane", "surface", "surfaceContainer", "internalbg", "focus"].includes(root.variant))
         sourceComponent: Canvas {
             anchors.fill: parent
@@ -583,6 +583,120 @@ ClippingRectangle {
                 }
             }
 
+            function paintMetropolis(ctx) {
+                // The low valley between the two districts leaves room for labels.
+                const compact = !broad
+                const reach = compact ? Math.min(width * 0.29, 92) : width
+                const rise = compact ? Math.min(height * 0.38, 20) : height * (nested ? 0.44 : 0.64)
+                const base = height
+                const glass = Qt.tint(backdrop, Qt.alpha(accent, 0.24))
+                ctx.globalAlpha = nested ? 0.48 : 0.88
+
+                function tower(x, span, tall, crowned, seed) {
+                    const top = base - tall
+                    const shoulder = crowned ? tall * 0.23 : 0
+                    const trim = span * 0.18
+                    const face = ctx.createLinearGradient(x, 0, x + span, 0)
+                    face.addColorStop(0, glass)
+                    face.addColorStop(1, Qt.tint(backdrop, Qt.alpha(accent, 0.07)))
+                    ctx.fillStyle = face
+                    ctx.strokeStyle = Qt.alpha(accent, 0.41)
+                    ctx.lineWidth = 0.8
+                    ctx.beginPath()
+                    ctx.moveTo(x, base)
+                    ctx.lineTo(x, top + shoulder)
+                    ctx.lineTo(x + trim, top + shoulder)
+                    ctx.lineTo(x + trim, top + shoulder * 0.46)
+                    ctx.lineTo(x + 2 * trim, top + shoulder * 0.46)
+                    ctx.lineTo(x + 2 * trim, top)
+                    ctx.lineTo(x + span - trim, top)
+                    ctx.lineTo(x + span - trim, top + shoulder)
+                    ctx.lineTo(x + span, top + shoulder)
+                    ctx.lineTo(x + span, base)
+                    ctx.closePath()
+                    ctx.fill()
+                    ctx.stroke()
+                    ctx.fillStyle = Qt.alpha(backdrop, 0.58)
+                    ctx.fillRect(x + span - trim, top + shoulder, trim, tall - shoulder)
+                    if (crowned) {
+                        ctx.fillStyle = Qt.alpha(pigment, 0.54)
+                        ctx.fillRect(x + span * 0.55, top - tall * 0.13, 1, tall * 0.13)
+                    }
+                    // Three vertical window bays. Lit floors break into short bands.
+                    const floors = compact ? 2 : Math.min(15, Math.floor((tall - shoulder) / 6))
+                    const pitch = (tall - shoulder) / (floors + 1)
+                    for (let floor = 1; floor <= floors; ++floor) {
+                        for (let bay = 0; bay < 3; ++bay) {
+                            const room = (floor * 7 + bay * 3 + seed + Math.floor(floor / 3)) % 11
+                            if (room > 6) continue
+                            ctx.fillStyle = Qt.alpha(room < 3 ? secondaryAccent : accent, room < 3 ? 0.78 : 0.34)
+                            ctx.fillRect(x + span * (0.10 + bay * 0.25), top + shoulder + pitch * floor,
+                                         Math.max(1, span * 0.13), Math.min(2.4, pitch * 0.42))
+                        }
+                    }
+                }
+
+                if (compact) {
+                    tower(0, reach * 0.46, rise * 0.52, false, 1)
+                    tower(reach * 0.40, reach * 0.28, rise, true, 3)
+                    tower(reach * 0.66, reach * 0.32, rise * 0.34, false, 4)
+                    tower(width - reach * 0.77, reach * 0.36, rise * 0.65, true, 5)
+                    tower(width - reach * 0.43, reach * 0.48, rise * 0.48, false, 6)
+                    return
+                }
+
+                // The distant ridge is one silhouette, softened by atmospheric haze.
+                const haze = ctx.createLinearGradient(0, base - rise * 0.78, 0, base)
+                haze.addColorStop(0, Qt.alpha(secondaryAccent, 0.25))
+                haze.addColorStop(1, Qt.alpha(accent, 0.04))
+                ctx.fillStyle = haze
+                const roofs = [0.39, 0.62, 0.50, 0.31, 0.36, 0.21, 0.27, 0.18, 0.29, 0.46, 0.72, 0.55, 0.38]
+                ctx.beginPath()
+                ctx.moveTo(0, base)
+                for (let i = 0; i < roofs.length; ++i) {
+                    const roof = base - roofs[i] * rise
+                    ctx.lineTo(width * i / roofs.length, roof)
+                    ctx.lineTo(width * (i + 1) / roofs.length, roof)
+                }
+                ctx.lineTo(width, base)
+                ctx.closePath()
+                ctx.fill()
+
+                tower(-0.025 * width, 0.11 * width, 0.53 * rise, false, 3)
+                tower(0.065 * width, 0.10 * width, rise, true, 2)
+                tower(0.145 * width, 0.12 * width, 0.39 * rise, false, 6)
+                tower(0.68 * width, 0.07 * width, 0.34 * rise, false, 1)
+                tower(0.735 * width, 0.12 * width, 0.67 * rise, true, 7)
+                tower(0.88 * width, 0.14 * width, 0.41 * rise, false, 4)
+
+                // An elevated railway approaches from the left. Both the arches
+                // and the deck recede toward the same low point on the horizon.
+                const piers = [-0.04, 0.12, 0.255, 0.365, 0.45, 0.515, 0.565, 0.60]
+                const deck = t => base - rise * (0.26 - 0.36 * t)
+                ctx.beginPath()
+                ctx.moveTo(width * piers[0], deck(piers[0]))
+                ctx.lineTo(width * 0.60, deck(0.60))
+                ctx.lineTo(width * 0.60, base)
+                for (let i = piers.length - 1; i > 0; --i) {
+                    const left = piers[i - 1], right = piers[i]
+                    const gap = right - left
+                    const arch = deck((left + right) / 2)
+                    ctx.lineTo(width * (right - gap * 0.10), base)
+                    ctx.bezierCurveTo(width * (right - gap * 0.10), arch,
+                                      width * (left + gap * 0.10), arch,
+                                      width * (left + gap * 0.10), base)
+                }
+                ctx.lineTo(width * piers[0], base)
+                ctx.closePath()
+                ctx.fillStyle = Qt.tint(backdrop, Qt.alpha(secondaryAccent, 0.14))
+                ctx.fill()
+                ctx.beginPath()
+                ctx.moveTo(width * piers[0], deck(piers[0]))
+                ctx.lineTo(width * 0.60, deck(0.60))
+                ctx.strokeStyle = Qt.alpha(secondaryAccent, 0.62)
+                ctx.stroke()
+            }
+
             onPaint: {
                 const ctx=getContext("2d");ctx.clearRect(0,0,width,height);
                 if(width<24||height<24)return;
@@ -646,108 +760,8 @@ ClippingRectangle {
                         }
 
                     }
-                }else{
-                    // City architecture follows the selected palette for glass, frames and windows.
-                    const frame=a=>Qt.rgba(accent.r,accent.g,accent.b,a);
-                    const windowLight=a=>Qt.rgba(secondaryAccent.r,secondaryAccent.g,secondaryAccent.b,a);
-                    const facade=a=>Qt.rgba(backdrop.r,backdrop.g,backdrop.b,a);
-                    ctx.lineWidth=1;ctx.strokeStyle=frame(outer?0.24:0.12);
-                    if(root.traceThemeFrame(ctx,outer?5:3))ctx.stroke();
-                    // A narrow reflected sky band gives depth without tinting all content.
-                    const sky=ctx.createLinearGradient(0,0,0,Math.min(height,85));
-                    sky.addColorStop(0,frame(outer?0.12:0.045));
-                    sky.addColorStop(0.5,frame(0.025));sky.addColorStop(1,frame(0));
-                    ctx.fillStyle=sky;ctx.fillRect(0,0,width,Math.min(height,85));
-                    if(outer && barSurface){
-                        // A city cornice designed for the bar's shallow proportions.
-                        // Architecture occupies only the bottom eight pixels; controls stay clear.
-                        const margin=Math.max(16,cornerRadius+4),base=height-2;
-                        ctx.strokeStyle=frame(0.30);ctx.lineWidth=0.8;
-                        ctx.beginPath();ctx.moveTo(margin,base);ctx.lineTo(width-margin,base);ctx.stroke();
-                        let building=0;
-                        for(let x=margin+5;x<width-margin-8;x+=22,building++){
-                            const roof=base-[4,7,5,8,3,6][building%6];
-                            const right=Math.min(width-margin,x+16);
-                            ctx.fillStyle=facade(0.30);ctx.fillRect(x,roof,right-x,base-roof);
-                            ctx.strokeStyle=frame(building%3===0?0.38:0.20);
-                            ctx.beginPath();ctx.moveTo(x,base);ctx.lineTo(x,roof);
-                            ctx.lineTo(right,roof);ctx.lineTo(right,base);ctx.stroke();
-                            ctx.fillStyle=windowLight(building%3===0?0.58:0.30);
-                            for(let column=0;column<3;column++){
-                                if((building+column)%3!==0 && x+3+column*4<right-1)
-                                    ctx.fillRect(x+3+column*4,base-3,1.5,1.5);
-                            }
-                        }
-                        // A luminous roofline and stepped end caps frame the skyline.
-                        const crown=ctx.createLinearGradient(0,0,width,0);
-                        crown.addColorStop(0,frame(0));crown.addColorStop(0.25,frame(0.22));
-                        crown.addColorStop(0.50,frame(0.38));crown.addColorStop(0.75,frame(0.22));crown.addColorStop(1,frame(0));
-                        ctx.strokeStyle=crown;ctx.lineWidth=1;
-                        ctx.beginPath();ctx.moveTo(margin,3);ctx.lineTo(width-margin,3);ctx.stroke();
-                        for(const side of [0,1]){
-                            ctx.save();if(side){ctx.translate(width,0);ctx.scale(-1,1);}
-                            ctx.strokeStyle=frame(0.36);ctx.lineWidth=1;
-                            ctx.beginPath();ctx.moveTo(5,height*0.66);ctx.lineTo(5,height*0.40);
-                            ctx.lineTo(8,height*0.40);ctx.lineTo(8,height*0.25);
-                            ctx.lineTo(12,height*0.25);ctx.stroke();ctx.restore();
-                        }
-                    }else if(outer){
-                        // Soft cloud banks hang from the upper edge, fading before the content.
-                        const cloudDepth=Math.min(52,height*0.18);
-                        for(let layer=0;layer<2;layer++){
-                            const mist=ctx.createLinearGradient(0,0,0,cloudDepth);
-                            mist.addColorStop(0,layer===0?ink(0.07):frame(0.10));
-                            mist.addColorStop(0.48,layer===0?ink(0.045):frame(0.055));
-                            mist.addColorStop(1,frame(0));
-                            ctx.fillStyle=mist;ctx.beginPath();ctx.moveTo(-48,0);
-                            ctx.lineTo(-48,cloudDepth*0.40);
-                            const span=layer===0?126:94;
-                            for(let x=-48;x<width+span;x+=span){
-                                const rise=cloudDepth*(0.55+0.18*Math.sin(x*0.023+layer*2));
-                                const base=cloudDepth*(layer===0?0.30:0.18);
-                                ctx.bezierCurveTo(x+span*0.18,rise,x+span*0.40,rise,x+span*0.52,base+cloudDepth*0.12);
-                                ctx.bezierCurveTo(x+span*0.68,base+cloudDepth*0.40,x+span*0.86,base+cloudDepth*0.30,x+span,base);
-                            }
-                            ctx.lineTo(width+span*2,0);ctx.closePath();ctx.fill();
-                        }
-                        // Overlapping facades vary in width, setback and roof height.
-                        // Their silhouettes remain in the lower margin, below the reading area.
-                        const base=height-5;
-                        let index=0;
-                        for(let x=safe-8;x<width-safe-12;index++){
-                            const towerWidth=[29,41,24,35,31][index%5];
-                            const towerHeight=Math.min(height*0.18,[36,54,29,66,43,48,32][index%7]);
-                            const right=Math.min(width-safe,x+towerWidth);
-                            const roof=base-towerHeight;
-                            const setback=Math.min(7,(right-x)*0.20);
-                            ctx.fillStyle=facade(0.42);ctx.beginPath();ctx.moveTo(x,base);
-                            ctx.lineTo(x,roof+7);ctx.lineTo(x+setback,roof+7);
-                            ctx.lineTo(x+setback,roof);ctx.lineTo(right-setback,roof);
-                            ctx.lineTo(right-setback,roof+5);ctx.lineTo(right,roof+5);
-                            ctx.lineTo(right,base);ctx.closePath();ctx.fill();
-                            ctx.strokeStyle=frame(index%3===0?0.32:0.17);ctx.lineWidth=1;ctx.stroke();
-                            // Lit rooms are sparse and irregular, rather than a repeated checkerboard.
-                            for(let floor=0;floor<Math.floor((towerHeight-12)/7);floor++){
-                                for(let column=0;column<Math.floor((right-x-8)/7);column++){
-                                    const room=(index*13+floor*7+column*11)%9;
-                                    if(room<4)continue;
-                                    ctx.fillStyle=room===8?frame(0.36):windowLight(room===7?0.58:0.30);
-                                    ctx.fillRect(x+5+column*7,roof+12+floor*7,2,3);
-                                }
-                            }
-                            x+=towerWidth+4;
-                        }
-                        // Slender vertical mullions and palette-colored lobby light frame the city glass.
-                        for(const x of [8,width-9]){
-                            ctx.strokeStyle=frame(0.22);ctx.beginPath();
-                            ctx.moveTo(x,safe);ctx.lineTo(x,height-safe);ctx.stroke();
-                            ctx.strokeStyle=frame(0.07);ctx.beginPath();
-                            ctx.moveTo(x+3,safe+12);ctx.lineTo(x+3,height-safe-12);ctx.stroke();
-                        }
-                        const lobby=ctx.createLinearGradient(0,height-18,0,height);
-                        lobby.addColorStop(0,windowLight(0));lobby.addColorStop(1,windowLight(0.09));
-                        ctx.fillStyle=lobby;ctx.fillRect(0,height-18,width,18);
-                    }
+                } else {
+                    paintMetropolis(ctx)
                 }
                 ctx.restore();
             }

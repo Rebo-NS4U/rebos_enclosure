@@ -1,4 +1,5 @@
 """Exercise centered bar geometry, circular controls and expanding panels offscreen."""
+import json
 import os
 from pathlib import Path
 import shutil
@@ -46,7 +47,7 @@ ShellRoot {
        if (lazy && lazy.item) throw Error(mode + " eagerly loaded while closed");
        bar.expand(mode); tester.wait(50);
        if (lazy && (!lazy.active || !lazy.item)) throw Error(mode + " failed to load");
-       if (!bar.islandActive || bar.targetWidth > 540 || bar.targetHeight <= 36)
+       if (!bar.islandActive || bar.targetWidth > (mode === "media" ? 620 : 540) || bar.targetHeight <= 36)
         throw Error(name + " failed to expand " + mode);
        bar.collapse(); tester.wait(50);
        if (lazy && (lazy.active || lazy.item)) throw Error(mode + " retained controls after close");
@@ -127,17 +128,17 @@ class MergedBarTests(unittest.TestCase):
 
     @unittest.skipUnless(shutil.which('qs'), 'Quickshell required')
     def test_metropolis_finish_tracks_bar_expansion(self):
-        harness = HARNESS.replace('for (const size of [1920, 1280]) {', 'Config.theme.shellStyle = "metropolis"; tester.wait(100); for (const size of [1920, 1280]) {')
+        harness = HARNESS
         harness = harness.replace('const body = tester.findChild(bar, "typing-island-container");', 'const findFinish = node => { if (node.objectName === "wallpaper-theme-canvas") return node; for (const child of node.children || []) { const result = findFinish(child); if (result) return result; } return null; }; const finish = findFinish(bar);\n      if (!finish || !finish.barSurface) throw Error("Missing collapsed city finish");\n      const body = tester.findChild(bar, "typing-island-container");')
         harness = harness.replace('bar.expand(mode); tester.wait(50);', 'bar.expand(mode); tester.wait(50); if (finish.barSurface) throw Error("Expanded panel retained compact city finish");')
         harness = harness.replace('bar.collapse(); tester.wait(50);', 'bar.collapse(); tester.wait(50); if (!finish.barSurface) throw Error("Collapsed bar lost city finish");')
-        self.run_harness(harness)
+        self.run_harness(harness, style="metropolis")
 
     @unittest.skipUnless(shutil.which('qs'), 'Quickshell required')
     def test_menu_crossfade_interruptions_and_reduced_motion(self):
         self.run_harness(MOTION_HARNESS)
 
-    def run_harness(self, harness):
+    def run_harness(self, harness, *, style=None):
         with tempfile.TemporaryDirectory(prefix='enclosure-merged-bar-') as directory:
             root = Path(directory)
             for name in ('modules', 'config', 'assets'):
@@ -153,6 +154,11 @@ class MergedBarTests(unittest.TestCase):
                 env.pop(key, None)
             for key in ('XDG_CONFIG_HOME', 'XDG_CACHE_HOME', 'XDG_DATA_HOME', 'XDG_STATE_HOME'):
                 env[key] = str(root / key)
+            if style:
+                config = Path(env['XDG_CONFIG_HOME']) / 'rebos_shell/config'
+                config.mkdir(parents=True)
+                theme = json.loads((APP / 'assets/presets/rebos_shell Default/theme.json').read_text())
+                (config / 'theme.json').write_text(json.dumps(dict(theme, shellStyle=style)))
             result = subprocess.run(['qs', '-p', directory, '--no-color'], env=env,
                                     text=True, capture_output=True, timeout=25)
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)

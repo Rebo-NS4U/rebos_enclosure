@@ -30,6 +30,10 @@ ShellRoot {
   return false;
  }
  FloatingWindow { visible:true; implicitWidth:640; implicitHeight:480
+  StyledRect { id: metro; width:500; height:240; variant:"popup"; styleOverride:"metropolis" }
+  StyledRect { id: metroPane; width:220; height:130; variant:"pane"; styleOverride:"metropolis" }
+  StyledRect { id: metroBar; width:580; height:40; variant:"bar"; styleOverride:"metropolis" }
+  StyledRect { id: metroPreview; width:200; height:42; materialPreview:true; variant:"bg"; styleOverride:"metropolis" }
   StyledRect { id: canopy; width:500; height:240; variant:"bg"; styleOverride:"canopy" }
   StyledRect { id: canopyPane; width:220; height:130; variant:"pane"; styleOverride:"canopy" }
   StyledRect { id: canopyBar; width:580; height:40; variant:"bar"; barSurface:true; styleOverride:"canopy" }
@@ -69,6 +73,14 @@ ShellRoot {
    if (!hasMarks(canopyPane, 82, 35, 70, 63)) throw Error("Missing nested foliage");
    if (!hasMarks(canopyBar, 0, 0, 120, 39) || hasMarks(canopyBar, 250, 0, 80, 39))
     throw Error("Compact Canopy must frame the bar center");
+   if (!hasMarks(metro, 35, 82, 40, 45) || !hasMarks(metro, 370, 139, 50, 46))
+    throw Error("Missing Metropolis towers on either side of the window");
+   if (hasMarks(metro, 190, 40, 120, 110)) throw Error("City encroaches on the open sky");
+   if (!hasMarks(metroPane, 17, 85, 18, 22) || !hasMarks(metroPreview, 15, 17, 15, 10))
+    throw Error("Missing skyline on a nested pane or theme preview");
+   if (!hasMarks(metroBar, 15, 20, 80, 19) || !hasMarks(metroBar, 500, 20, 60, 19)
+       || hasMarks(metroBar, 180, 0, 220, 40))
+    throw Error("Metropolis rooftops must frame the bar center");
    console.log("MATERIAL_RENDER_OK");
    Qt.quit();
   } catch (e) { console.error(e); Qt.exit(1); } } }

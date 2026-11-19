@@ -50,6 +50,13 @@ A tree bough crosses the window from the upper right, with closer leaves along
 the left edges. Large nested panes carry a quieter layer of foliage. Compact
 bars keep the center clear between two short leaf sprays.
 
+## Metropolis
+
+Stepped towers frame a low skyline, with lit window bays and an arched railway
+viaduct receding into the distance. The glass and lights follow the selected
+palette. Large panes carry a subdued skyline. Compact bars show rooftop clusters
+at either end, leaving the clock clear.
+
 ## Monolith and Suspended Film
 
 Monolith uses an opaque slate face. A diagonal fault crosses the window, with
