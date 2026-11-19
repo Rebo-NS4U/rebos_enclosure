@@ -180,6 +180,19 @@ class MusicLibraryTests(unittest.TestCase):
         download = self.library.dispatch('suggestion_download', dict(playlist=playlist['id'], uri=other))
         self.assertEqual(download['folder'], str(folder))
         self.assertEqual(download['links'], 'https://open.spotify.com/track/'+'c'*22)
+        self.library.dispatch('save', dict(playlists=[dict(id='destination', name='Destination', paths=[])]))
+        chosen_download = self.library.dispatch(
+            'suggestion_download', dict(playlist='destination', uri=other))
+        self.assertEqual(chosen_download['playlist'], 'destination')
+        self.assertEqual(chosen_download['folder'], str(self.library.music / 'Suggested tracks'))
+        self.assertEqual(chosen_download['links'], download['links'])
+        downloaded = Path(chosen_download['folder']) / ('c'*22 + '.flac')
+        downloaded.parent.mkdir(parents=True)
+        shutil.copyfile(self.song, downloaded)
+        self.library.dispatch('playlist_add', dict(playlist=chosen_download['playlist'], path=str(downloaded)))
+        playlists = self.library.scan()['state']['playlists']
+        self.assertEqual(next(p for p in playlists if p['id'] == 'destination')['paths'], [str(downloaded)])
+        self.assertNotIn(str(downloaded), next(p for p in playlists if p['id'] == playlist['id'])['paths'])
         queued_download = self.library.dispatch(
             'suggestion_download', dict(playlist=playlist['id'], uri=other, toQueue=True))
         self.assertEqual(queued_download['folder'], str(self.library.music / 'Suggested tracks'))

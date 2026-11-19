@@ -310,7 +310,7 @@ class Library:
             if cmd == 'suggestion_download':
                 result = self.mixes.suggestions()
                 uri = args.get('uri')
-                if result.get('playlist') != playlist['id'] or not any(t['uri'] == uri for t in result['tracks']):
+                if not any(t['uri'] == uri for t in result['tracks']):
                     raise ValueError('Suggestions changed; refresh and try again')
                 folder = str(self.music / 'Suggested tracks')
                 if args.get('toQueue') is not True:
