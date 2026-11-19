@@ -606,6 +606,7 @@ esac
                     music.contentItem.grabToImage(result => result.saveToFile("/tmp/enclosure-music-fullscreen-queue.png"));
                     const target = MprisController.nextPlayer(spotify);
                     if (target?.dbusName !== "org.mpris.MediaPlayer2.enclosure_music" || !music.canNext) { console.error("SUGGESTION_MEDIA_NEXT_ROUTE_FAILED"); Qt.exit(1); return; }
+                    if (MprisController.previousPlayer(spotify) !== target) { console.error("SUGGESTION_MEDIA_PREVIOUS_ROUTE_FAILED"); Qt.exit(1); return; }
                     target.next();
                     repeatStart = attempts; phase = 952;
                 } else if (phase === 952 && attempts >= repeatStart + 3) {
@@ -614,7 +615,36 @@ esac
                     spotify.metadata = {"xesam:url": music.requestedPreview};
                     if (!music.immersive || !suggestions.visible || suggestions.currentIndex !== 1 ||
                         !suggestions.itemAtIndex(1)?.selected) { console.error("FULLSCREEN_SUGGESTION_SELECTION_FAILED"); Qt.exit(1); return; }
+                    const originalTracks = music.tracks;
+                    const originalPlaylists = music.playlists;
+                    const saved = music.suggestedTracks[1];
+                    const savedTrack = Object.assign({}, originalTracks[0], {path: "/fixture/saved.flac", spotifyUri: saved.uri});
+                    music.load({tracks: originalTracks.concat([savedTrack]), errors: [],
+                        state: {favorites: music.favorites, folders: music.folders, playlists: originalPlaylists.map(p =>
+                            p.id === "test" ? Object.assign({}, p, {paths: p.paths.concat([savedTrack.path])}) : p)}});
+                    if (music.suggestedTracks.some(t => t.uri === saved.uri) || suggestions.currentIndex !== 1) {
+                        console.error("SAVED_SUGGESTION_LOST_PLAYBACK_POSITION"); Qt.exit(1); return;
+                    }
+                    spotify.canGoPrevious = false;
+                    const previous = findItem(music.contentItem, "music-fullscreen-previous");
+                    const next = findItem(music.contentItem, "music-fullscreen-next");
+                    if (!previous.enabled || !next.enabled) {
+                        console.error("SAVED_SUGGESTION_SKIP_DISABLED"); Qt.exit(1); return;
+                    }
+                    input.keyClick(Qt.Key_H);
+                    if (music.requestedPreview !== suggestions.itemAtIndex(0).track.uri) {
+                        console.error("SAVED_SUGGESTION_PREVIOUS_FAILED"); Qt.exit(1); return;
+                    }
+                    input.keyClick(Qt.Key_L);
+                    if (music.requestedPreview !== music.suggestionQueue[2].uri) {
+                        console.error("SAVED_SUGGESTION_NEXT_FAILED"); Qt.exit(1); return;
+                    }
+                    spotify.canGoPrevious = true;
+                    music.tracks = originalTracks;
+                    music.playlists = originalPlaylists;
+                    console.log("MUSIC_SAVED_SUGGESTION_NAVIGATION_PASSED");
                     music.requestedPreview = "";
+                    music.advancedSuggestionUri = "";
                     GlobalStates.musicWindowVisible = false;
                     spotify.pause();
                     spotify.position = spotify.length - 0.1;

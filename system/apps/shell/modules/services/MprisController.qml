@@ -32,7 +32,7 @@ Singleton {
 
     property bool isPlaying: activePlayer ? activePlayer.isPlaying : false
     property bool canTogglePlaying: activePlayer ? activePlayer.canTogglePlaying : false
-    property bool canGoPrevious: activePlayer ? activePlayer.canGoPrevious : false
+    property bool canGoPrevious: !!activePlayer && !!previousPlayer(activePlayer)
     property bool canGoNext: !!activePlayer && !!nextPlayer(activePlayer)
     property bool canChangeVolume: activePlayer && activePlayer.volumeSupported && activePlayer.canControl
     property bool loopSupported: activePlayer && activePlayer.loopSupported && activePlayer.canControl
@@ -122,19 +122,25 @@ Singleton {
     }
 
     function previous() {
-        if (root.canGoPrevious) {
-            root.activePlayer.previous();
-        }
+        previousPlayer(activePlayer)?.previous();
+    }
+
+    function previousPlayer(player) {
+        return suggestionPlayer(player) || (player?.canGoPrevious ? player : null);
     }
 
     function nextPlayer(player) {
+        return suggestionPlayer(player) || (player?.canGoNext ? player : null);
+    }
+
+    function suggestionPlayer(player) {
         if (!player) return null;
         if ((player.dbusName || "").toLowerCase().includes("spotify")) {
             const uri = player.metadata["xesam:url"];
             const music = filteredPlayers.find(candidate => candidate.dbusName === "org.mpris.MediaPlayer2.enclosure_music");
             if (uri && music?.metadata["enclosure:suggestionNextFor"] === uri) return music;
         }
-        return player.canGoNext ? player : null;
+        return null;
     }
 
     function next() {

@@ -174,9 +174,14 @@ Window {
     readonly property var playingSuggestion: activeSuggestions[suggestionQueueIndex] || null
     readonly property var nextSuggestion: suggestionQueueIndex >= 0 && suggestionQueue.length > 1
         ? suggestionQueue[(suggestionQueueIndex + 1) % suggestionQueue.length] : null
+    readonly property var previousSuggestion: suggestionQueueIndex >= 0 && suggestionQueue.length > 1
+        ? suggestionQueue[(suggestionQueueIndex + suggestionQueue.length - 1) % suggestionQueue.length] : null
     onSuggestedTracksChanged: {
-        if (suggestionQueue.length && suggestionPlaylist === detail && suggestedTracks.length)
-            suggestionQueue = suggestedTracks;
+        if (!suggestionQueue.length || suggestionPlaylist !== detail) return;
+        // Keep playback order when saving a track filters it out of the playlist's suggestions.
+        const queuedUris = new Set(suggestionQueue.map(track => track.uri));
+        const additions = suggestedTracks.filter(track => !queuedUris.has(track.uri));
+        if (additions.length) suggestionQueue = suggestionQueue.concat(additions);
     }
     property string advancedSuggestionUri: ""
     function advanceSpotifySuggestion(pollInterval) {
@@ -414,6 +419,11 @@ Window {
         select(index);
     }
     function previous(skipRestart) {
+        if (previousSuggestion) {
+            advancedSuggestionUri = currentSpotifyUrl;
+            previewSuggestion(previousSuggestion.uri);
+            return;
+        }
         if (spotifyPreview) {
             if (spotifyPlayer?.canGoPrevious) spotifyPlayer.previous();
             return;
@@ -437,7 +447,7 @@ Window {
             position: Math.round(player.position*1000), length: Math.round(player.duration*1000),
             volume: volume, shuffle: shuffle, loop: repeatMode, canNext: !!nextSuggestion || nextLocalIndex >= 0,
             suggestionNextFor: nextSuggestion ? currentSpotifyUrl : "",
-            canPrevious: canPreviousLocal, seeked: !!seeked });
+            canPrevious: !!previousSuggestion || canPreviousLocal, seeked: !!seeked });
     }
     function control(message) {
         switch(message.action) {
@@ -1523,7 +1533,7 @@ Window {
                     KeyboardButton { text: root.favorites.includes(root.current?.path) ? "♥" : "♡"; enabled: !!root.current && !root.spotifyPreview; Accessible.name: "Favorite current song"; onClicked: root.favorite(root.current) }
                     Item { Layout.fillWidth: true }
                     KeyboardButton { objectName: "music-fullscreen-shuffle"; text: "Shuffle"; checked: root.spotifyPreview ? !!root.spotifyPlayer?.shuffle : root.shuffle; enabled: !root.spotifyPreview || !!root.spotifyPlayer?.shuffleSupported; onClicked: { if (root.spotifyPreview) root.spotifyPlayer.shuffle = !root.spotifyPlayer.shuffle; else root.shuffle = !root.shuffle; } }
-                    KeyboardButton { id: fullscreenPrevious; objectName: "music-fullscreen-previous"; text: "⏮"; Accessible.name: "Previous track"; enabled: root.spotifyPreview ? !!root.spotifyPlayer?.canGoPrevious : root.canPreviousLocal; onClicked: root.previous(true) }
+                    KeyboardButton { id: fullscreenPrevious; objectName: "music-fullscreen-previous"; text: "⏮"; Accessible.name: "Previous track"; enabled: root.spotifyPreview ? !!root.previousSuggestion || !!root.spotifyPlayer?.canGoPrevious : root.canPreviousLocal; onClicked: root.previous(true) }
                     KeyboardButton { id: fullscreenPlay; objectName: "music-fullscreen-play"; text: root.playing ? "Pause" : "Play"; highlighted: true; Layout.preferredWidth: 120; implicitHeight: 52; enabled: root.spotifyPreview ? !!root.spotifyPlayer?.canTogglePlaying : root.queue.length > 0 || root.shownTracks.length > 0; onClicked: root.toggle() }
                     KeyboardButton { id: fullscreenNext; objectName: "music-fullscreen-next"; text: "⏭"; Accessible.name: "Next track"; enabled: root.canNext; onClicked: root.next(false) }
                     KeyboardButton { objectName: "music-fullscreen-repeat"; text: root.spotifyPreview ? (root.spotifyPlayer?.loopState === MprisLoopState.Track ? "Repeat song" : "Repeat all") : root.repeatMode === "Track" ? "Repeat song" : "Repeat all"; checked: root.spotifyPreview ? root.spotifyPlayer?.loopState !== MprisLoopState.None : root.repeatMode !== "None"; enabled: !root.spotifyPreview || !!root.spotifyPlayer?.loopSupported; onClicked: {
