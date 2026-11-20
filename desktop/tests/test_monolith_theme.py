@@ -84,8 +84,17 @@ ShellRoot {
     const {width, height} = surface;
     if (!hasMarks(surface, 10, height - 24, 32, 16) || !hasMarks(surface, width - 42, 8, 32, 16))
      throw Error("Missing Ceramic glaze inside the rim on " + surface.variant);
-    if (hasMarks(surface, Math.floor(width * 0.42), 7, Math.floor(width * 0.16), height - 14))
-     throw Error("Ceramic glaze crosses the center on " + surface.variant);
+    const column = decoration(surface).getContext("2d").getImageData(Math.floor(width / 2), 6, 1, height - 12).data;
+    let peak = 0;
+    let clear = false;
+    for (let i = 3; i < column.length; i += 4) {
+     peak = Math.max(peak, column[i]);
+     if (column[i] === 0) clear = true;
+    }
+    if (peak < 8 || peak > 65 || !clear)
+     throw Error("Expected a translucent glaze band and exposed clay across " + surface.variant + ", peak " + peak);
+    if (surface.color.a < 0.75 || surface.color.a > 0.89)
+     throw Error("Expected slightly transparent Ceramic fill on " + surface.variant + ", alpha " + surface.color.a);
    }
    if (!hasMarks(popup, 375, 0, 125, 80) || !hasMarks(popup, 170, 65, 160, 70))
     throw Error("Missing slate across the window");

@@ -6,7 +6,7 @@ var styles = [
     {id: "metropolis", label: "Metropolis", font: "DejaVu Sans", description: "Stepped towers and lit windows frame a low city skyline."},
     {id: "glass-vault", label: "Glass Vault", font: "Noto Sans", description: "Thick glass blocks with stepped rims and rounded corner clasps."},
     {id: "radar-station", label: "Radar Station", font: "DejaVu Sans", description: "Etched bearing scales, radial divisions and a marked sector."},
-    {id: "frosted-ceramic", label: "Frosted Ceramic", font: "Noto Sans", description: "Scalloped underglaze fans frame matte panels with softly raised rims."},
+    {id: "frosted-ceramic", label: "Frosted Ceramic", font: "Noto Sans", description: "A translucent ceramic glaze pools in flowing bands between scalloped fan stamps."},
     {id: "monolith", label: "Monolith", font: "Noto Sans", description: "Layered slate with a diagonal fault, tapered mineral seams and exposed edges."},
     {id: "blueprint", label: "Blueprint", font: "JetBrains Mono", description: "Architectural drafting sheets, truss details, ruled scales and wire controls."},
     {id: "terminal-hardware", label: "Terminal Hardware", font: "DejaVu Sans Mono", description: "Flat machined panels, inset bezels and sparse cooling vents."},
@@ -170,7 +170,7 @@ function surface(style, variant, p, ditherStrength) {
         var raised = outer || variant === "bar";
         fill = mix(p.background, p.foreground, inset ? 0.025 : focused ? 0.12 : 0.075);
         item = p.foreground;
-        opacity = focused ? 0.98 : raised ? 0.96 : inset ? 0.84 : 0.91;
+        opacity = focused ? 0.93 : raised ? 0.85 : inset ? 0.76 : 0.83;
         border = [focused ? p.primary : mix(fill, p.foreground, raised ? 0.21 : 0.13), 1];
     }
     var clearGlass = style === "clear-glass";
