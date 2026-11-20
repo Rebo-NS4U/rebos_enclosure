@@ -33,6 +33,10 @@ ShellRoot {
   return false;
  }
  FloatingWindow { visible:true; implicitWidth:640; implicitHeight:480
+  StyledRect { id: frost; width:500; height:240; variant:"popup"; styleOverride:"frosted" }
+  StyledRect { id: frostPane; width:240; height:120; variant:"pane"; styleOverride:"frosted" }
+  StyledRect { id: frostPreview; width:180; height:42; materialPreview:true; variant:"bg"; styleOverride:"frosted" }
+  StyledRect { id: frostBar; width:580; height:40; variant:"bar"; barSurface:true; styleOverride:"frosted" }
   StyledRect { id: metro; width:500; height:240; backgroundOpacity:0.20; variant:"popup"; styleOverride:"metropolis" }
   StyledRect { id: metroPane; width:220; height:130; variant:"pane"; styleOverride:"metropolis" }
   StyledRect { id: metroBar; width:580; height:40; variant:"bar"; styleOverride:"metropolis" }
@@ -62,6 +66,14 @@ ShellRoot {
   }
  }
  Timer { interval:400; running:true; onTriggered: { try {
+   for (const [surface, inset, depth] of [[frost, 54, 25], [frostPane, 26, 12],
+                                         [frostPreview, 17, 8], [frostBar, 16, 8]]) {
+    if (!hasMarks(surface, surface.width - inset, depth, 8, 6)
+        || !hasMarks(surface, inset, surface.height - depth - 6, 8, 6))
+     throw Error("Missing frost inside corners on " + surface.variant);
+    if (hasMarks(surface, surface.width / 2 - 10, surface.height / 2 - 5, 20, 10))
+     throw Error("Frost obscures center of " + surface.variant);
+   }
    if (!hasMarks(popup, 375, 0, 125, 80) || !hasMarks(popup, 170, 65, 160, 70))
     throw Error("Missing slate across the window");
    if (!hasMarks(sidebar, 215, 65, 155, 60)) throw Error("Missing slate across the sidebar");

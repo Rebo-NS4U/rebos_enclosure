@@ -844,29 +844,79 @@ ClippingRectangle {
             }
 
             function paintFrost(ctx) {
-                const band = Math.min(outer ? 14 : 6, height * 0.18, width * 0.18)
-                // The polished rim encloses a sandblasted margin. Bias the grains
-                // towards the edge and keep their arrangement stable on repaint.
+                // Grow tapered ice needles along a spine. The illuminated side
+                // of each needle follows the ink, the shaded side the accent.
+                const reach = Math.min(width * 0.34, height * 1.32, outer ? 196 : 98)
+                const strength = outer ? 1 : 0.58
+                function plume(length, angle, pairs) {
+                    ctx.save()
+                    ctx.rotate(angle)
+                    const base = Math.min(3.5, length * 0.026)
+                    ctx.fillStyle = Qt.alpha(accent, 0.30 * strength)
+                    ctx.beginPath()
+                    ctx.moveTo(0, base)
+                    ctx.lineTo(length, 0)
+                    ctx.lineTo(0, -base)
+                    ctx.fill()
+                    for (let i = 1; i <= pairs; ++i) {
+                        const t = i / (pairs + 1)
+                        const x = length * t
+                        const blade = length * (1 - t) * 0.32
+                        for (const side of [-1, 1]) {
+                            const offset = side === 1 ? base : 0
+                            const tipX = x + blade + offset
+                            const tipY = side * blade * (side === 1 ? 0.64 : 0.8)
+                            ctx.fillStyle = Qt.alpha(side === 1 ? accent : pigment, 0.36 * strength)
+                            ctx.beginPath()
+                            ctx.moveTo(x, 0)
+                            ctx.lineTo(tipX, tipY)
+                            ctx.lineTo(x + blade * 0.28, side * base * 0.45)
+                            ctx.fill()
+                            // Longer needles carry smaller parallel offshoots.
+                            if (blade > 12) {
+                                ctx.beginPath()
+                                for (const joint of [0.42, 0.66]) {
+                                    const jointX = x + (tipX - x) * joint
+                                    const jointY = tipY * joint
+                                    ctx.moveTo(jointX, jointY)
+                                    ctx.lineTo(jointX + blade * 0.16, jointY + tipY * (1 - joint))
+                                    ctx.lineTo(jointX + base * 0.6, jointY)
+                                    ctx.closePath()
+                                }
+                                ctx.fill()
+                            }
+                        }
+                    }
+                    ctx.restore()
+                }
+
+                function corner(scale) {
+                    const length = reach * scale
+                    // A diffuse patch under the etching fades into clear glass.
+                    const bloom = ctx.createRadialGradient(0, 0, 0, 0, 0, length)
+                    bloom.addColorStop(0, Qt.alpha(pigment, 0.21 * strength))
+                    bloom.addColorStop(1, Qt.alpha(pigment, 0))
+                    ctx.fillStyle = bloom
+                    ctx.fillRect(0, 0, length, length)
+                    plume(length, 0.32, 8)
+                    plume(length * 0.70, 0.82, 6)
+                    plume(length * 0.44, 1.26, 4)
+                }
+
+                ctx.save()
+                ctx.translate(width, 0)
+                ctx.scale(-1, 1)
+                corner(1)
+                ctx.restore()
+                ctx.save()
+                ctx.translate(0, height)
+                ctx.scale(1, -1)
+                corner(0.70)
+                ctx.restore()
+
                 ctx.lineWidth = 1
-                ctx.strokeStyle = Qt.alpha(pigment, outer ? 0.36 : 0.19)
-                if (root.traceThemeFrame(ctx, 2.5)) ctx.stroke()
-                let seed = 3947
-                function sample() {
-                    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0
-                    return seed / 4294967296
-                }
-                const perimeter = 2 * (width + height)
-                ctx.fillStyle = Qt.alpha(pigment, outer ? 0.31 : 0.21)
-                for (let i = 0; i < Math.min(2400, perimeter * band / 6); ++i) {
-                    const along = sample() * perimeter
-                    const inset = 1 + Math.pow(sample(), 2) * band
-                    let x, y
-                    if (along < width) { x = along; y = inset }
-                    else if (along < width + height) { x = width - inset; y = along - width }
-                    else if (along < 2 * width + height) { x = along - width - height; y = height - inset }
-                    else { x = inset; y = along - 2 * width - height }
-                    ctx.fillRect(Math.floor(x), Math.floor(y), 1, 1)
-                }
+                ctx.strokeStyle = Qt.alpha(pigment, 0.24 * strength)
+                if (root.traceThemeFrame(ctx, 1.5)) ctx.stroke()
             }
 
             function paintFilm(ctx) {
