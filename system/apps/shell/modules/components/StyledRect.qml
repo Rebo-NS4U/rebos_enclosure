@@ -778,7 +778,35 @@ ClippingRectangle {
                 bed([[.76,.895,0],[.83,.795,.10],[.86,.78,.19],[.95,.729,0]], pigment, 0.26)
             }
 
-            function paintCeramicRim(ctx) {
+            function paintGlazeFans(ctx) {
+                // Two staggered rows of fan stamps taper toward the panel center.
+                const size = Math.min(outer ? 23 : 15, width * 0.05, height * 0.27)
+                if (size < 4) return
+                ctx.lineWidth = Math.max(0.8, size * 0.075)
+                for (let row = 0; row < 2; ++row) {
+                    const count = row === 0 ? 3 : 2
+                    for (let column = 0; column < count; ++column) {
+                        const x = 5 + size * (1 + 2 * column + row * 0.55)
+                        const y = height - 5 - size * row * 0.90
+                        const strength = (outer ? 0.54 : 0.32) * (1 - column * 0.15)
+                        ctx.beginPath()
+                        ctx.moveTo(x, y)
+                        ctx.arc(x, y, size, -Math.PI * 0.91, -Math.PI * 0.09)
+                        ctx.closePath()
+                        ctx.fillStyle = Qt.alpha(accent, strength * 0.22)
+                        ctx.fill()
+                        ctx.strokeStyle = Qt.alpha(accent, strength)
+                        ctx.stroke()
+                        for (const band of [0.47, 0.72]) {
+                            ctx.beginPath()
+                            ctx.arc(x, y, size * band, -Math.PI * 0.91, -Math.PI * 0.09)
+                            ctx.stroke()
+                        }
+                    }
+                }
+            }
+
+            function paintCeramic(ctx) {
                 const rimWidth = outer ? 3 : 1.5
                 if (!root.traceThemeFrame(ctx, rimWidth)) return
                 const light = outer ? 0.20 : 0.12
@@ -791,6 +819,10 @@ ClippingRectangle {
                 ctx.strokeStyle = rim
                 ctx.lineWidth = rimWidth
                 ctx.stroke()
+                paintGlazeFans(ctx)
+                ctx.translate(width, height)
+                ctx.rotate(Math.PI)
+                paintGlazeFans(ctx)
             }
 
             onPaint: {
@@ -800,7 +832,7 @@ ClippingRectangle {
                 ctx.save()
                 if (root.traceThemeFrame(ctx, 0)) ctx.clip()
                 if (finish === "monolith") paintSlateFace(ctx)
-                else paintCeramicRim(ctx)
+                else paintCeramic(ctx)
                 ctx.restore()
             }
         }

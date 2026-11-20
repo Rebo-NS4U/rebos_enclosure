@@ -43,6 +43,10 @@ ShellRoot {
   StyledRect { id: metroPane; width:220; height:130; variant:"pane"; styleOverride:"metropolis" }
   StyledRect { id: metroBar; width:580; height:40; variant:"bar"; styleOverride:"metropolis" }
   StyledRect { id: metroPreview; width:200; height:42; materialPreview:true; variant:"bg"; styleOverride:"metropolis" }
+  StyledRect { id: ceramic; width:500; height:240; variant:"popup"; styleOverride:"frosted-ceramic" }
+  StyledRect { id: ceramicPane; width:220; height:130; variant:"pane"; styleOverride:"frosted-ceramic" }
+  StyledRect { id: ceramicPreview; width:180; height:42; materialPreview:true; variant:"bg"; styleOverride:"frosted-ceramic" }
+  StyledRect { id: ceramicBar; width:580; height:40; barSurface:true; variant:"bar"; styleOverride:"frosted-ceramic" }
   StyledRect { id: canopy; width:500; height:240; variant:"bg"; styleOverride:"canopy" }
   StyledRect { id: canopyPane; width:220; height:130; variant:"pane"; styleOverride:"canopy" }
   StyledRect { id: canopyBar; width:580; height:40; variant:"bar"; barSurface:true; styleOverride:"canopy" }
@@ -75,6 +79,13 @@ ShellRoot {
    for (const surface of [frost, frostPane, frostPreview, frostBar]) {
     if (decoration(surface) || !surface.isSingleColorGradient || surface.border.width !== 1)
      throw Error("Expected a plain Frosted fill and fine rim on " + surface.variant);
+   }
+   for (const surface of [ceramic, ceramicPane, ceramicPreview, ceramicBar]) {
+    const {width, height} = surface;
+    if (!hasMarks(surface, 10, height - 24, 32, 16) || !hasMarks(surface, width - 42, 8, 32, 16))
+     throw Error("Missing Ceramic glaze inside the rim on " + surface.variant);
+    if (hasMarks(surface, Math.floor(width * 0.42), 7, Math.floor(width * 0.16), height - 14))
+     throw Error("Ceramic glaze crosses the center on " + surface.variant);
    }
    if (!hasMarks(popup, 375, 0, 125, 80) || !hasMarks(popup, 170, 65, 160, 70))
     throw Error("Missing slate across the window");
