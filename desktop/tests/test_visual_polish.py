@@ -145,6 +145,16 @@ ShellRoot {
     Ai.currentChat=[{role:"assistant",content:"",functionCall:{name:"run_shell_command",args:{command:"echo approval details"}},functionPending:true}];
     test.wait(100);command=test.findChild(sidebar,"assistantToolCommand_0");
     if(!command||!command.visible)throw Error("Pending approvals must retain visible command details");
+    Ai.currentChat=[];
+    const greeting=test.findChild(sidebar,"assistantWelcomeMessage");
+    if(!greeting)throw Error("Missing welcome message");
+    greeting.parent.username="W".repeat(24);
+    host.width=440;test.wait(150);
+    if(!greeting.visible || !greeting.truncated || greeting.lineCount !== 1)
+     throw Error("Long welcome messages must elide on one line");
+    host.width=1200;test.wait(150);
+    if(greeting.truncated)
+     throw Error("Welcome messages must display in full when they fit");
     console.log("VISUAL POLISH PASSED");Qt.quit();
    }catch(e){console.error(e);Qt.exit(1);}
   }}

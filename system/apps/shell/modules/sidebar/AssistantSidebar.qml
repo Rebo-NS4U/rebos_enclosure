@@ -1068,24 +1068,24 @@ Item {
                         }
                         property bool isWelcome: mainChatArea.session.currentChat.length === 0
 
-                        ColumnLayout {
+                        StyledText {
+                            objectName: "assistantWelcomeMessage"
+                            anchors.left: inputContainer.left
+                            anchors.right: inputContainer.right
                             anchors.bottom: inputContainer.top
                             anchors.bottomMargin: 24
-                            anchors.horizontalCenter: parent.horizontalCenter
                             visible: mainChatArea.isWelcome
-                            spacing: Styling.spacing(8)
-
-                            StyledText {
-                                renderType: Text.NativeRendering
-                                font.hintingPreference: Font.PreferFullHinting
-                                text: "Assistant"
-                                font.family: Config.theme.font
-                                font.pixelSize: Styling.fontSize(18)
-                                font.weight: Font.Bold
-                                textFormat: Text.StyledText
-                                Layout.alignment: Qt.AlignHCenter
-                                color: Colors.overBackground
-                            }
+                            renderType: Text.NativeRendering
+                            font.hintingPreference: Font.PreferFullHinting
+                            text: "Assistant"
+                            font.family: Config.theme.font
+                            font.pixelSize: Styling.fontSize(18)
+                            font.weight: Font.Bold
+                            textFormat: Text.StyledText
+                            horizontalAlignment: Text.AlignHCenter
+                            wrapMode: Text.NoWrap
+                            elide: Text.ElideRight
+                            color: Colors.overBackground
                         }
 
                         ColumnLayout {
