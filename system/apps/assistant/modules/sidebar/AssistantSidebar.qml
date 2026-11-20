@@ -2316,7 +2316,8 @@ Item {
                             id: inputContainer
                             objectName: "assistantComposer"
                             property int attachmentPreviewHeight: attachmentPreview.visible ? Math.min(attachmentPreview.contentHeight, 120) + 8 : 0
-                            height: attachmentPreviewHeight + Math.min(150, Math.max(48, inputField.contentHeight + 24))
+                            height: attachmentPreviewHeight + composerActions.implicitHeight + composerLayout.spacing
+                                + Math.min(150, Math.max(48, inputField.contentHeight + 24))
 
                             anchors.bottom: parent.bottom
                             property real centerMargin: (parent.height / 2) - (height / 2)
@@ -2356,6 +2357,7 @@ Item {
                                 }
 
                                 ColumnLayout {
+                                    id: composerLayout
                                     anchors.fill: parent
                                     spacing: 6
 
@@ -2434,20 +2436,17 @@ Item {
                                         }
                                     }
 
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Layout.fillHeight: true
-                                    Layout.leftMargin: 16
-                                    Layout.rightMargin: 16
-                                    Layout.topMargin: attachmentPreview.visible ? 0 : 8
-                                    Layout.bottomMargin: 8
-
                                     ScrollView {
+                                        objectName: "assistantTypingArea"
                                         Layout.fillWidth: true
                                         Layout.fillHeight: true
+                                        Layout.leftMargin: 16
+                                        Layout.rightMargin: 16
+                                        Layout.topMargin: attachmentPreview.visible ? 0 : 8
 
                                         TextArea {
                                             id: inputField
+                                            objectName: "assistantDraft"
                                             focus: true
                                             activeFocusOnTab: true
                                             cursorVisible: activeFocus && root.wantsFocus && root.windowFocused
@@ -2558,120 +2557,133 @@ Item {
                                         }
                                     }
 
-                                    Button {
-                                        id: autoApproveButton
-                                        objectName: "assistantAutoApproveButton"
-                                        Layout.preferredWidth: implicitWidth
-                                        Layout.preferredHeight: 36
-                                        implicitWidth: autoApproveContent.implicitWidth + 16
-                                        padding: 8
-                                        flat: true
-                                        checkable: true
-                                        checked: mainChatArea.session.autoApprove
-                                        onClicked: {
-                                            mainChatArea.session.autoApprove = !mainChatArea.session.autoApprove;
-                                            root.requestKeyboardFocus();
-                                            inputField.forceActiveFocus();
-                                        }
-                                        Accessible.name: "Auto approve tool requests for this chat"
-                                        contentItem: RowLayout {
-                                            id: autoApproveContent
-                                            spacing: 8
-                                            Rectangle {
-                                                Layout.preferredWidth: 28
-                                                Layout.preferredHeight: 16
-                                                radius: 8
-                                                color: Qt.alpha(Colors.primary, mainChatArea.session.autoApprove ? 0.18 : 0.04)
-                                                border.width: 1
-                                                border.color: mainChatArea.session.autoApprove ? Colors.primary : Colors.outline
+                                    RowLayout {
+                                        id: composerActions
+                                        objectName: "assistantComposerActions"
+                                        Layout.fillWidth: true
+                                        Layout.leftMargin: 16
+                                        Layout.rightMargin: 16
+                                        Layout.bottomMargin: 8
+
+                                        Button {
+                                            id: autoApproveButton
+                                            objectName: "assistantAutoApproveButton"
+                                            Layout.preferredWidth: implicitWidth
+                                            Layout.preferredHeight: 36
+                                            implicitWidth: autoApproveContent.implicitWidth + 16
+                                            padding: 8
+                                            flat: true
+                                            checkable: true
+                                            checked: mainChatArea.session.autoApprove
+                                            onClicked: {
+                                                mainChatArea.session.autoApprove = !mainChatArea.session.autoApprove;
+                                                root.requestKeyboardFocus();
+                                                inputField.forceActiveFocus();
+                                            }
+                                            Accessible.name: "Auto approve tool requests for this chat"
+                                            contentItem: RowLayout {
+                                                id: autoApproveContent
+                                                spacing: 8
                                                 Rectangle {
-                                                    width: 10
-                                                    height: 10
-                                                    radius: 5
-                                                    anchors.verticalCenter: parent.verticalCenter
-                                                    x: mainChatArea.session.autoApprove ? parent.width - width - 3 : 3
-                                                    color: mainChatArea.session.autoApprove ? Colors.primary : Colors.outline
-                                                    Behavior on x {
-                                                        enabled: Config.animDuration > 0
-                                                        NumberAnimation { duration: Config.animDuration / 2 }
+                                                    Layout.preferredWidth: 28
+                                                    Layout.preferredHeight: 16
+                                                    radius: 8
+                                                    color: Qt.alpha(Colors.primary, mainChatArea.session.autoApprove ? 0.18 : 0.04)
+                                                    border.width: 1
+                                                    border.color: mainChatArea.session.autoApprove ? Colors.primary : Colors.outline
+                                                    Rectangle {
+                                                        width: 10
+                                                        height: 10
+                                                        radius: 5
+                                                        anchors.verticalCenter: parent.verticalCenter
+                                                        x: mainChatArea.session.autoApprove ? parent.width - width - 3 : 3
+                                                        color: mainChatArea.session.autoApprove ? Colors.primary : Colors.outline
+                                                        Behavior on x {
+                                                            enabled: Config.animDuration > 0
+                                                            NumberAnimation { duration: Config.animDuration / 2 }
+                                                        }
                                                     }
                                                 }
+                                                StyledText {
+                                                    text: "Auto approve"
+                                                    font.pixelSize: Styling.fontSize(-1)
+                                                    color: mainChatArea.session.autoApprove ? Colors.primary : Colors.overSurface
+                                                }
                                             }
-                                            StyledText {
-                                                text: "Auto approve"
-                                                font.pixelSize: Styling.fontSize(-1)
-                                                color: mainChatArea.session.autoApprove ? Colors.primary : Colors.overSurface
+                                            background: Rectangle {
+                                                radius: Styling.radius(8)
+                                                color: Qt.alpha(Colors.primary, autoApproveButton.down ? 0.16 : autoApproveButton.hovered ? 0.08 : 0)
+                                                border.width: autoApproveButton.visualFocus ? 1 : 0
+                                                border.color: Colors.primary
+                                            }
+                                            StyledToolTip {
+                                                show: autoApproveButton.hovered
+                                                tooltipText: mainChatArea.session.autoApprove
+                                                    ? "Auto approve is on for this chat · Click to turn off"
+                                                    : "Auto approve is off · Click to approve tool requests in this chat"
                                             }
                                         }
-                                        background: Rectangle {
-                                            radius: Styling.radius(8)
-                                            color: Qt.alpha(Colors.primary, autoApproveButton.down ? 0.16 : autoApproveButton.hovered ? 0.08 : 0)
-                                            border.width: autoApproveButton.visualFocus ? 1 : 0
-                                            border.color: Colors.primary
-                                        }
-                                        StyledToolTip {
-                                            show: autoApproveButton.hovered
-                                            tooltipText: mainChatArea.session.autoApprove
-                                                ? "Auto approve is on for this chat · Click to turn off"
-                                                : "Auto approve is off · Click to approve tool requests in this chat"
-                                        }
-                                    }
 
-                                    Button {
-                                        Layout.preferredWidth: 96
-                                        Layout.preferredHeight: 32
-                                        flat: true
+                                        Button {
+                                            Layout.preferredWidth: 96
+                                            Layout.preferredHeight: 32
+                                            flat: true
 
-                                        contentItem: StyledText {
-                                            text: "Add image"
-                                            font.pixelSize: Styling.fontSize(0)
-                                            color: Colors.outline
-                                            horizontalAlignment: Text.AlignHCenter
-                                            verticalAlignment: Text.AlignVCenter
+                                            contentItem: StyledText {
+                                                text: "Add image"
+                                                font.pixelSize: Styling.fontSize(0)
+                                                color: Colors.outline
+                                                horizontalAlignment: Text.AlignHCenter
+                                                verticalAlignment: Text.AlignVCenter
+                                            }
+
+                                            background: Rectangle {
+                                                color: parent.hovered ? Colors.surfaceBright : "transparent"
+                                                radius: 16
+                                            }
+
+                                            Accessible.name: "Add image"
+                                            StyledToolTip {
+                                                show: parent.hovered
+                                                tooltipText: "Choose a picture, paste with Ctrl+V, or drop it here"
+                                            }
+                                            onClicked: zenityProcess.running = true
                                         }
-
-                                        background: Rectangle {
-                                            color: parent.hovered ? Colors.surfaceBright : "transparent"
-                                            radius: 16
+                                        Item {
+                                            Layout.fillWidth: true
                                         }
 
-                                        Accessible.name: "Add image"
-                                        StyledToolTip {
-                                            show: parent.hovered
-                                            tooltipText: "Choose a picture, paste with Ctrl+V, or drop it here"
-                                        }
-                                        onClicked: zenityProcess.running = true
-                                    }
-                                    Button {
-                                        Layout.preferredWidth: 32
-                                        Layout.preferredHeight: 32
-                                        flat: true
-                                        visible: inputField.text.length > 0 || mainChatArea.pendingAttachments.length > 0
-                                        enabled: !mainChatArea.session.waitingForCodexSignIn
+                                        Button {
+                                            Layout.preferredWidth: 32
+                                            Layout.preferredHeight: 32
+                                            flat: true
+                                            Accessible.name: "Send"
+                                            visible: inputField.text.length > 0 || mainChatArea.pendingAttachments.length > 0
+                                            enabled: !mainChatArea.session.waitingForCodexSignIn
 
-                                        contentItem: StyledText {
-                                            text: Icons.paperPlane
-                                            font.family: Icons.font
-                                            font.pixelSize: Styling.fontSize(6)
-                                            color: Styling.srItem("overprimary")
-                                            horizontalAlignment: Text.AlignHCenter
-                                            verticalAlignment: Text.AlignVCenter
-                                        }
+                                            contentItem: StyledText {
+                                                text: Icons.paperPlane
+                                                font.family: Icons.font
+                                                font.pixelSize: Styling.fontSize(6)
+                                                color: Styling.srItem("overprimary")
+                                                horizontalAlignment: Text.AlignHCenter
+                                                verticalAlignment: Text.AlignVCenter
+                                            }
 
-                                        background: Rectangle {
-                                            color: parent.hovered ? Colors.surfaceBright : "transparent"
-                                            radius: 16
-                                        }
+                                            background: Rectangle {
+                                                color: parent.hovered ? Colors.surfaceBright : "transparent"
+                                                radius: 16
+                                            }
 
-                                        onClicked: {
-                                            if (inputField.text.trim().length > 0 || mainChatArea.pendingAttachments.length > 0) {
-                                                root.sendCurrentMessage();
+                                            onClicked: {
+                                                if (inputField.text.trim().length > 0 || mainChatArea.pendingAttachments.length > 0) {
+                                                    root.sendCurrentMessage();
+                                                }
                                             }
                                         }
                                     }
                                 }
                             }
-                        }
 
                             // Slash suggestions sit above the input (sibling of the input pane so
                             // they are not clipped by it). Not a Popup — avoids overlay ghost text.

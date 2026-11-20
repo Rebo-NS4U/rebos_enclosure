@@ -118,6 +118,9 @@ ShellRoot {
     if(c.status!==Component.Ready)throw Error(c.errorString());
     let sidebar=c.createObject(host,{targetScreen:Quickshell.screens[0],tiled:true});
     test.wait(350);
+    const draft=test.findChild(sidebar,"assistantDraft");
+    if(!draft)throw Error("Missing composer draft");
+    draft.text="A draft message";
     for(let width of [1200,440]) {
      host.width=width;test.wait(250);
      let composer=test.findChild(sidebar,"assistantComposer");
@@ -125,6 +128,13 @@ ShellRoot {
      let selectors=test.findChild(sidebar,"assistantSelectors");
      if(!composer||!messages||Math.abs(composer.width-messages.width)>1)throw Error("Composer and conversation must share width");
      if(composer.width>1000||composer.width>width||composer.width<width-80&&width<1000)throw Error("Responsive composer size");
+     const typing=test.findChild(composer,"assistantTypingArea");
+     const actions=test.findChild(composer,"assistantComposerActions");
+     if(!typing || !actions || typing.width !== actions.width || typing.width !== composer.width - 32)
+      throw Error("Typing box and action row must span the composer");
+     if(typing.mapToItem(composer,0,typing.height).y > actions.mapToItem(composer,0,0).y
+        || actions.mapToItem(composer,0,actions.height).y > composer.height)
+      throw Error("Composer actions must fit below the typing box");
      if(selectors.columns!==(width>640?2:1))throw Error("Header must adapt to available width");
     }
     let button=test.findChild(sidebar,"assistantToolDetails_1");
