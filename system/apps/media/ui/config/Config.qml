@@ -21,6 +21,8 @@ Singleton {
     const values = JSON.parse(text());
     if (values === null || Array.isArray(values) || typeof values !== "object")
      throw new Error("Expected a theme object");
+    if (["suspended-film", "circuit-glass", "prism-glass", "optical-instrument"].includes(values.shellStyle))
+     values.shellStyle = "frosted-ceramic";
     root.savedTheme = values;
    } catch (error) {
     console.warn("Keeping the last Streamer theme settings:", error);

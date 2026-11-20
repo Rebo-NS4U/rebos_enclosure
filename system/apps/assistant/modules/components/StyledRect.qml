@@ -722,7 +722,7 @@ ClippingRectangle {
         readonly property bool panel: ["bg", "popup", "pane", "surface", "surfaceContainer", "internalbg", "focus", "surfaceVariant"].includes(root.variant)
         active: !root.hasFillColor && root.rectOpacity > 0 && (finish === "monolith"
             ? panel || root.controlSurface || ["common", "primary", "primaryfocus", "secondary", "secondaryfocus", "tertiary", "tertiaryfocus", "error", "errorfocus"].includes(root.variant)
-            : !root.controlSurface && finish === "suspended-film" && (panel || root.variant === "bar"))
+            : !root.controlSurface && finish === "frosted-ceramic" && (panel || root.variant === "bar"))
         sourceComponent: Canvas {
             objectName: "surface-edge-canvas"
             anchors.fill: parent
@@ -779,29 +779,19 @@ ClippingRectangle {
                 bed([[.76,.895,0],[.83,.795,.10],[.86,.78,.19],[.95,.729,0]], pigment, 0.26)
             }
 
-            function paintFilm(ctx) {
-                const mount = Math.min(width * 0.22, Math.max(8, cornerRadius + 3))
-                const lip = outer ? 4 : 2.5
-                const sag = Math.min(outer ? 24 : 8, height * 0.23)
-                // The return edge bows farther than the upper edge of the film.
-                ctx.beginPath()
-                ctx.moveTo(mount, lip)
-                ctx.quadraticCurveTo(width * 0.54, lip + sag * 0.48, width - mount, lip)
-                ctx.quadraticCurveTo(width * 0.62, lip + sag * 1.8, mount, lip)
-                ctx.closePath()
-                ctx.fillStyle = Qt.alpha(accent, outer ? 0.32 : 0.19)
-                ctx.fill()
-                ctx.strokeStyle = Qt.alpha(pigment, 0.39)
-                ctx.lineWidth = 1
+            function paintCeramicRim(ctx) {
+                const rimWidth = outer ? 3 : 1.5
+                if (!root.traceThemeFrame(ctx, rimWidth)) return
+                const light = outer ? 0.20 : 0.12
+                const shadow = outer ? 0.24 : 0.14
+                const rim = ctx.createLinearGradient(0, 0, width * 0.35, height)
+                rim.addColorStop(0, Qt.rgba(1, 1, 1, light))
+                rim.addColorStop(0.46, Qt.rgba(1, 1, 1, 0.025))
+                rim.addColorStop(0.54, Qt.rgba(0, 0, 0, 0.025))
+                rim.addColorStop(1, Qt.rgba(0, 0, 0, shadow))
+                ctx.strokeStyle = rim
+                ctx.lineWidth = rimWidth
                 ctx.stroke()
-                if (outer) {
-                    for (const x of [mount, width - mount]) {
-                        ctx.beginPath()
-                        ctx.arc(x, lip, 2, 0, Math.PI * 2)
-                        ctx.fillStyle = pigment
-                        ctx.fill()
-                    }
-                }
             }
 
             onPaint: {
@@ -811,7 +801,7 @@ ClippingRectangle {
                 ctx.save()
                 if (root.traceThemeFrame(ctx, 0)) ctx.clip()
                 if (finish === "monolith") paintSlateFace(ctx)
-                else paintFilm(ctx)
+                else paintCeramicRim(ctx)
                 ctx.restore()
             }
         }

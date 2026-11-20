@@ -31,7 +31,7 @@ ShellRoot {
   for (const role of ["overSurface","background","overPrimary","primary","surfaceContainerLow","outline","red","lightRed","green","lightGreen","yellow","lightYellow","lightBlue","magenta","lightMagenta","cyan","lightCyan","overSurfaceVariant","outlineVariant","error","surface","secondary","overSecondary","tertiary","overTertiary"]) p[role] = "#112233";
   p.background = "#262724"; p.outlineVariant = "#40e3e3dc"; p.opacity = 0.68;
   console.log("KITTY_CONFIG:" + JSON.stringify(generator.render(p)));
-  for (const style of ["monolith", "blueprint", "terminal-hardware", "frosted", "colorful", "glass-vault", "radar-station", "suspended-film", "clear-glass", "canopy", "orbital", "metropolis"]) {
+  for (const style of ["monolith", "blueprint", "terminal-hardware", "frosted", "colorful", "glass-vault", "radar-station", "frosted-ceramic", "clear-glass", "canopy", "orbital", "metropolis"]) {
    p.style = style;
    console.log("STYLE_CONFIG:" + JSON.stringify({style:style, config:generator.render(p)}));
   }
@@ -55,7 +55,7 @@ ShellRoot {
                 'clear-glass': ('14 16', '0.5pt', 'beam', 'fade'),
                 'glass-vault': ('18 20', '2pt', 'block', 'separator'),
                 'radar-station': ('14 18', '1pt', 'underline', 'separator'),
-                'suspended-film': ('14 18', '0.5pt', 'beam', 'fade'),
+                'frosted-ceramic': ('14 18', '1pt', 'block', 'fade'),
                 'monolith': ('16 20', '0pt', 'block', 'separator'),
                 'blueprint': ('12 16', '1pt', 'underline', 'separator'),
                 'terminal-hardware': ('14 18', '2pt', 'block', 'powerline'),

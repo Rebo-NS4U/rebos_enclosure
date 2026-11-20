@@ -6,7 +6,7 @@ var styles = [
     {id: "metropolis", label: "Metropolis", font: "DejaVu Sans", description: "Stepped towers and lit windows frame a low city skyline."},
     {id: "glass-vault", label: "Glass Vault", font: "Noto Sans", description: "Thick glass blocks with stepped rims and rounded corner clasps."},
     {id: "radar-station", label: "Radar Station", font: "DejaVu Sans", description: "Etched bearing scales, radial divisions and a marked sector."},
-    {id: "suspended-film", label: "Suspended Film", font: "DejaVu Sans Mono", description: "A thin translucent membrane bows between two pin mounts."},
+    {id: "frosted-ceramic", label: "Frosted Ceramic", font: "Noto Sans", description: "Matte panels with softly raised rims and recessed inner surfaces."},
     {id: "monolith", label: "Monolith", font: "Noto Sans", description: "Layered slate with a diagonal fault, tapered mineral seams and exposed edges."},
     {id: "blueprint", label: "Blueprint", font: "JetBrains Mono", description: "Architectural drafting sheets, truss details, ruled scales and wire controls."},
     {id: "terminal-hardware", label: "Terminal Hardware", font: "DejaVu Sans Mono", description: "Flat machined panels, inset bezels and sparse cooling vents."},
@@ -158,18 +158,20 @@ function surface(style, variant, p, ditherStrength) {
             if (focused) border[0] = p.primary;
         }
     }
-    // Three distinct structural treatments with translucent centers.
-    var vault=style === "glass-vault", radar=style === "radar-station", film=style === "suspended-film";
+    // Glass and ceramic finishes preserve the selected palette.
+    var vault=style === "glass-vault", radar=style === "radar-station", ceramic=style === "frosted-ceramic";
     if ((vault || radar) && neutral) {
         fill=mix(p.background,p.foreground,inset?0.012:focused?0.07:0.03);
         item=p.foreground;
         opacity=vault?(inset?0.82:focused?0.94:0.70):(inset?0.76:focused?0.92:0.64);
         border=[focused?p.primary:mix(fill,p.foreground,vault?0.24:0.34),1];
     }
-    if (film && neutral) {
-        fill = mix(p.background, p.primary, focused ? 0.14 : inset ? 0.025 : 0.06);
-        opacity = focused ? 0.86 : inset ? 0.44 : outer ? 0.58 : 0.50;
-        border = [focused ? p.primary : mix(fill, p.foreground, 0.22), outer || focused ? 1 : 0];
+    if (ceramic && neutral) {
+        var raised = outer || variant === "bar";
+        fill = mix(p.background, p.foreground, inset ? 0.025 : focused ? 0.12 : 0.075);
+        item = p.foreground;
+        opacity = focused ? 0.98 : raised ? 0.96 : inset ? 0.84 : 0.91;
+        border = [focused ? p.primary : mix(fill, p.foreground, raised ? 0.21 : 0.13), 1];
     }
     var clearGlass = style === "clear-glass";
     if (clearGlass && neutral) {

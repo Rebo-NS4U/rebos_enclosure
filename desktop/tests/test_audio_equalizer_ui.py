@@ -58,7 +58,7 @@ ShellRoot {
     tester.keyClick(Qt.Key_Up); tester.wait(500);
     tester.compare(AudioEqualizer.gains[0],2.5);
     tester.compare(AudioEqualizer.preset,"Custom");
-    for(const style of ["canopy","orbital","metropolis","monolith","blueprint","terminal-hardware","glass-vault","radar-station","suspended-film","frosted","colorful","clear-glass"]) {
+    for(const style of ["canopy","orbital","metropolis","monolith","blueprint","terminal-hardware","glass-vault","radar-station","frosted-ceramic","frosted","colorful","clear-glass"]) {
      Config.theme.shellStyle=style; tester.wait(20);
      tester.compare(find(speech,"preset-card-label").color,speech.background.itemColor);
      tester.verify(band.activeFocus);

@@ -61,9 +61,9 @@ Kitty follows the exported surface palette and opacity as well as the selected s
 
 ## Translucent materials
 
-Glass Vault uses thick stepped blocks, bold corner clamps and deep inset controls. Radar Station uses static bearing scales, partial range arcs, crosshair junctions and segmented controls. Suspended Film suspends a bowed translucent strip between two pins. Nested surfaces carry a shallower fold. All three keep translucent centers, the selected semantic colors and matching native terminal profiles. Selecting one enables shell blur if off and resets the manual transparency override; existing blur location and strength preferences are preserved.
+Glass Vault uses thick stepped blocks, bold corner clamps and deep inset controls. Radar Station uses static bearing scales, partial range arcs, crosshair junctions and segmented controls. Frosted Ceramic uses a nearly opaque matte face with softly raised rims and recessed inner surfaces. All three preserve the selected semantic colors and provide matching native terminal profiles. Selecting one enables shell blur if off and resets the manual transparency override; existing blur location and strength preferences are preserved.
 
-Saved Smoked Acrylic selections migrate to Glass Vault, Glass Console to Radar Station, and Circuit Glass to Suspended Film. Older predecessors migrate directly to the corresponding current theme.
+Saved Smoked Acrylic selections migrate to Glass Vault, Glass Console to Radar Station, and Suspended Film and Circuit Glass to Frosted Ceramic. Older predecessors migrate directly to the corresponding current theme.
 
 Clear Glass is the final theme-picker entry: restrained translucent panels, fine outer borders, borderless inner layers, gentle top highlights and soft corners. It preserves the selected colors, uses compositor blur and includes a minimal Kitty profile. Focused controls gain definition while semantic action buttons remain opaque.
 
