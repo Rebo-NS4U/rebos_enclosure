@@ -266,69 +266,6 @@ ClippingRectangle {
         radius: root.radius
     }
 
-    // Layered accent planes for Tinted.
-    Loader {
-        anchors.fill: parent
-        active: !root.hasFillColor && root.rectOpacity > 0
-            && ["bg", "popup", "pane", "surface", "surfaceContainer", "internalbg", "focus"].indexOf(root.variant) !== -1
-            && (root.styleOverride || Styling.shellStyle) === "colorful"
-        sourceComponent: Item {
-            id: classic
-            readonly property bool outer: root.variant === "bg" || root.variant === "popup"
-            readonly property color ink: root.itemColor
-            readonly property color accent: Colors.primary
-            opacity: root.rectOpacity
-            Canvas {
-                anchors.fill: parent
-                readonly property color pigment: classic.ink
-                readonly property bool outer: classic.outer
-                onOuterChanged: requestPaint()
-                readonly property color accent: classic.accent
-                objectName: "classic-glass-canvas"
-                readonly property real cornerRadius: root.effectiveCornerRadius
-                onCornerRadiusChanged: requestPaint()
-                onPigmentChanged: requestPaint()
-                onAccentChanged: requestPaint()
-                onWidthChanged: requestPaint()
-                onHeightChanged: requestPaint()
-                onPaint: {
-                    const ctx=getContext("2d");ctx.clearRect(0,0,width,height);
-                    if(width<24 || height<24)return;
-                    const ink=a=>Qt.rgba(pigment.r,pigment.g,pigment.b,a);
-                    const tint=a=>Qt.rgba(accent.r,accent.g,accent.b,a);
-                    ctx.save();if(root.traceThemeFrame(ctx,0))ctx.clip();
-                    ctx.lineWidth=1;
-                    // Offset accent planes, quiet inner keylines and open frame corners.
-                    const band=classic.outer?7:3;
-                    ctx.fillStyle=tint(0.22);ctx.fillRect(0,12,band,Math.max(0,height-24));
-                    ctx.fillStyle=tint(0.12);ctx.fillRect(band+2,22,2,Math.max(0,height-44));
-                    ctx.strokeStyle=tint(0.30);ctx.beginPath();
-                    const r=root.themeInsetRadius(5);
-                    ctx.moveTo(Math.max(18,5+r),5);ctx.lineTo(width-5-r,5);
-                    ctx.quadraticCurveTo(width-5,5,width-5,5+r);
-                    ctx.lineTo(width-5,Math.max(5+r,height*0.32));ctx.stroke();
-                    ctx.strokeStyle=ink(0.09);ctx.beginPath();ctx.moveTo(Math.max(16,11+root.themeInsetRadius(11)),11);ctx.lineTo(width-Math.max(22,11+root.themeInsetRadius(11)),11);ctx.stroke();
-                    ctx.fillStyle=tint(0.23);ctx.beginPath();
-                    ctx.moveTo(width-34,height-5);ctx.lineTo(width-5,height-5);ctx.lineTo(width-5,height-16);ctx.lineTo(width-23,height-16);ctx.closePath();ctx.fill();
-                    if(classic.outer){
-                        // Layered colored glass planes recede into the upper and lower margins.
-                        for(let plane=0;plane<3;plane++){
-                            const depth=12+plane*8;
-                            const wash=ctx.createLinearGradient(0,0,0,depth+10);
-                            wash.addColorStop(0,tint(0.10-plane*0.02));wash.addColorStop(1,tint(0));
-                            ctx.fillStyle=wash;ctx.beginPath();ctx.moveTo(width*0.36+plane*18,0);
-                            ctx.lineTo(width,0);ctx.lineTo(width,depth);
-                            ctx.lineTo(width*0.51+plane*14,depth);ctx.closePath();ctx.fill();
-                        }
-                        ctx.fillStyle=tint(0.35);
-                        for(let i=0;i<3;i++)ctx.fillRect(18+i*9,height-7,5,2);
-                    }
-                    ctx.restore();
-                }
-            }
-        }
-    }
-
     // Structural glass: perimeter details leave the central reading area clear.
     Loader {
         anchors.fill: parent

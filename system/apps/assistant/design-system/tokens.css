@@ -18,11 +18,11 @@
   --dw-onTertiary: #402d04;
   --dw-error: #ffb4ab;
   --dw-onError: #690005;
-  --dw-bg: color-mix(in srgb, #2f2121 74%, transparent);
-  --dw-pane: color-mix(in srgb, #2f2121 62%, transparent);
+  --dw-bg: color-mix(in srgb, #432f2e 74%, transparent);
+  --dw-pane: color-mix(in srgb, #4c3534 62%, transparent);
   --dw-texture: none;
   --dw-texture-size: 1px;
-  --dw-focus: color-mix(in srgb, #3e2c2b 86%, transparent);
+  --dw-focus: color-mix(in srgb, #533a39 86%, transparent);
 }
 .dweebo[data-style="glass"] {
   color-scheme: dark;
@@ -91,11 +91,11 @@
   --dw-onTertiary: #000000;
   --dw-error: #eeeeee;
   --dw-onError: #000000;
-  --dw-bg: color-mix(in srgb, #161616 74%, transparent);
-  --dw-pane: color-mix(in srgb, #161616 62%, transparent);
+  --dw-bg: color-mix(in srgb, #2b2b2b 74%, transparent);
+  --dw-pane: color-mix(in srgb, #343434 62%, transparent);
   --dw-texture: none;
   --dw-texture-size: 1px;
-  --dw-focus: color-mix(in srgb, #262626 86%, transparent);
+  --dw-focus: color-mix(in srgb, #3b3b3b 86%, transparent);
 }
 .dweebo[data-theme="black"][data-style="glass"] {
   color-scheme: dark;
@@ -164,11 +164,11 @@
   --dw-onTertiary: #ffffff;
   --dw-error: #161616;
   --dw-onError: #ffffff;
-  --dw-bg: color-mix(in srgb, #e9e9e9 74%, transparent);
-  --dw-pane: color-mix(in srgb, #e9e9e9 62%, transparent);
+  --dw-bg: color-mix(in srgb, #d5d5d5 74%, transparent);
+  --dw-pane: color-mix(in srgb, #cccccc 62%, transparent);
   --dw-texture: none;
   --dw-texture-size: 1px;
-  --dw-focus: color-mix(in srgb, #d9d9d9 86%, transparent);
+  --dw-focus: color-mix(in srgb, #c5c5c5 86%, transparent);
 }
 .dweebo[data-theme="white"][data-style="glass"] {
   color-scheme: light;

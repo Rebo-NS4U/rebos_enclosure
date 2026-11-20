@@ -67,7 +67,7 @@ Saved Smoked Acrylic selections migrate to Glass Vault, Glass Console to Radar S
 
 Clear Glass is the final theme-picker entry: restrained translucent panels, fine outer borders, borderless inner layers, gentle top highlights and soft corners. It preserves the selected colors, uses compositor blur and includes a minimal Kitty profile. Focused controls gain definition while semantic action buttons remain opaque.
 
-Frosted Glass uses a satin face, a fine polished rim and stippling concentrated at the perimeter. Tinted uses offset accent planes, open-corner frames, layered color bands and cut accent tabs. Both keep translucent layers, readable semantic action colors and their native terminal profiles; selecting either enables shell blur if it was off. All decorative details are static and concentrated at the perimeter.
+Frosted Glass has a satin face and a fine accent-colored rim. Tinted carries more of the accent into its glass, with a soft wash on insets and a stronger fill on raised panels. Windows and bars have a single fine border. Both styles use semantic action colors and enable shell blur when selected.
 
 Glass Vault follows the corner-radius setting: clamps, inset seams and the lower glass lip use concentric rounded paths and repaint as the actual surface radius changes. Square and oversized radii are clamped to the available surface dimensions.
 
@@ -87,7 +87,7 @@ All three preserve selected semantic action colors, readable centers, compositor
 
 ## Material detail refinement
 
-The remaining nine themes share the same level of material detail as Canopy, Orbital and Metropolis. Glass Vault adds refractive grazing bands behind its rounded clamps. Radar Station adds soft scope illumination and radial divisions to its etched bearing scales. Blueprint includes a small architectural truss drawing within its ruled sheet. Terminal Hardware uses flat panel fills with inset edge details. Tinted layers fading colored-glass planes at its upper edge. Clear Glass keeps restrained grazing reflections and a lower meniscus.
+The remaining nine themes share the same level of material detail as Canopy, Orbital and Metropolis. Glass Vault adds refractive grazing bands behind its rounded clamps. Radar Station adds soft scope illumination and radial divisions to its etched bearing scales. Blueprint includes a small architectural truss drawing within its ruled sheet. Terminal Hardware uses flat panel fills with inset edge details. Clear Glass keeps restrained grazing reflections and a lower meniscus.
 
 Details use selected semantic palette colors and static geometry. Glass layers clip to the shared rounded frame; inset surfaces retain simpler decoration. Clear Glass remains the final entry. No theme imposes a new palette, and native application export colors remain derived from the selected palette.
 

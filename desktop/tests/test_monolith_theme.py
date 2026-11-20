@@ -33,6 +33,8 @@ ShellRoot {
   return false;
  }
  FloatingWindow { visible:true; implicitWidth:640; implicitHeight:480
+  StyledRect { id: tinted; width:500; height:240; variant:"popup"; styleOverride:"colorful" }
+  StyledRect { id: tintedBar; width:580; height:40; variant:"bar"; styleOverride:"colorful" }
   StyledRect { id: frost; width:500; height:240; variant:"popup"; styleOverride:"frosted" }
   StyledRect { id: frostPane; width:240; height:120; variant:"pane"; styleOverride:"frosted" }
   StyledRect { id: frostPreview; width:180; height:42; materialPreview:true; variant:"bg"; styleOverride:"frosted" }
@@ -66,6 +68,10 @@ ShellRoot {
   }
  }
  Timer { interval:400; running:true; onTriggered: { try {
+   for (const surface of [tinted, tintedBar]) {
+    if (test.findChild(surface, "classic-glass-canvas") || !surface.isSingleColorGradient || surface.border.width !== 1)
+     throw Error("Expected a flat Tinted surface with one rim on " + surface.variant);
+   }
    for (const surface of [frost, frostPane, frostPreview, frostBar]) {
     if (decoration(surface) || !surface.isSingleColorGradient || surface.border.width !== 1)
      throw Error("Expected a plain Frosted fill and fine rim on " + surface.variant);

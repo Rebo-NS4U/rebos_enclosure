@@ -43,6 +43,8 @@ for (const light of [false,true]) {
  const tinted=role=>surface('colorful',role,p);
  assert.equal(tinted('bg').radius, undefined);
  assert.equal(tinted('pane').radius, undefined);
+ const levels = ['internalbg','bg','pane','focus'].map(role => tinted(role).gradient[0][0]);
+ assert.equal(new Set(levels).size, levels.length);
  assert.equal(tinted('bg').opacity,0.74);
  assert.equal(tinted('internalbg').opacity,0.50);
  assert.equal(tinted('focus').border[0],p.primary);

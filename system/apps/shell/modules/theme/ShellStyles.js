@@ -11,7 +11,7 @@ var styles = [
     {id: "blueprint", label: "Blueprint", font: "JetBrains Mono", description: "Architectural drafting sheets, truss details, ruled scales and wire controls."},
     {id: "terminal-hardware", label: "Terminal Hardware", font: "DejaVu Sans Mono", description: "Flat machined panels, inset bezels and sparse cooling vents."},
     {id: "frosted", font: "DejaVu Sans Mono", label: "Frosted Glass", description: "Softly tinted glass with a fine accent rim and a blurred backdrop."},
-    {id: "colorful", font: "DejaVu Sans", label: "Tinted", description: "A translucent pane with a uniform tint from the selected accent."},
+    {id: "colorful", font: "DejaVu Sans", label: "Tinted", description: "Smooth accent-tinted glass with a fine border and softly raised panels."},
     {id: "clear-glass", label: "Clear Glass", font: "Noto Sans", description: "Clear glazing with a fine perimeter line and a narrow lower lip."}
 ];
 
@@ -179,10 +179,12 @@ function surface(style, variant, p, ditherStrength) {
         border = [focused ? p.primary : mix(fill, p.foreground, outer ? 0.22 : 0.12), outer || focused || inset ? 1 : 0];
     }
     if (colorful && neutral) {
-        fill=mix(mix(p.background,p.foreground,0.025),p.primary,focused?0.22:inset?0.10:0.19);
-        item=p.foreground;
-        opacity=focused?0.86:inset?0.50:outer?0.74:0.62;
-        border=[focused?p.primary:mix(fill,p.primary,outer?0.38:0.20),outer||focused?1:0];
+        var framed = outer || variant === "bar";
+        var accentWeight = focused ? 0.23 : inset ? 0.10 : framed ? 0.16 : 0.20;
+        fill = mix(mix(p.background, p.foreground, 0.025), p.primary, accentWeight);
+        item = p.foreground;
+        opacity = focused ? 0.86 : inset ? 0.50 : outer ? 0.74 : 0.62;
+        border = [focused ? p.primary : mix(fill, p.primary, 0.38), framed || focused ? 1 : 0];
     }
     var canopy=style === "canopy", orbital=style === "orbital", metro=style === "metropolis";
     if (orbital && neutral) {
