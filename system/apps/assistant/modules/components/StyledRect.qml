@@ -722,7 +722,7 @@ ClippingRectangle {
         readonly property bool panel: ["bg", "popup", "pane", "surface", "surfaceContainer", "internalbg", "focus", "surfaceVariant"].includes(root.variant)
         active: !root.hasFillColor && root.rectOpacity > 0 && (finish === "monolith"
             ? panel || root.controlSurface || ["common", "primary", "primaryfocus", "secondary", "secondaryfocus", "tertiary", "tertiaryfocus", "error", "errorfocus"].includes(root.variant)
-            : finish === "guilloche" && !root.barSurface && !root.controlSurface && (root.variant === "bg" || root.variant === "popup"))
+            : finish === "guilloche" && !root.controlSurface && (root.barSurface || ["bg", "popup", "bar"].includes(root.variant)))
         sourceComponent: Canvas {
             objectName: "surface-edge-canvas"
             anchors.fill: parent
@@ -779,34 +779,42 @@ ClippingRectangle {
                 bed([[.76,.895,0],[.83,.795,.10],[.86,.78,.19],[.95,.729,0]], pigment, 0.26)
             }
 
+            readonly property bool ribbonBar: root.barSurface || root.variant === "bar"
+            onRibbonBarChanged: requestPaint()
+
             function paintGuilloche(ctx) {
-                const radius = Math.min(72, width * 0.18, height * 0.48)
-                if (radius < 6) return
-                // Each phase shifts the lobes of an engraved ring. Show only
-                // the inward-facing portion of the medallion at each corner.
-                const rings = radius < 28 ? 3 : 6
-                ctx.save()
+                const vertical = ribbonBar && height > width
+                const length = vertical ? height : width
+                const breadth = vertical ? width : height
+                const compact = ribbonBar || breadth < 70
+                const strands = ribbonBar ? 3 : compact ? 5 : 13
+                const steps = Math.min(240, Math.max(48, Math.ceil(length / 5)))
+                const amplitude = ribbonBar ? Math.min(3, breadth * 0.08) : breadth * 0.21
+                const ink = ctx.createLinearGradient(0, 0, vertical ? 0 : length, vertical ? length : 0)
+                ink.addColorStop(0, Qt.alpha(accent, 0.32))
+                ink.addColorStop(0.43, Qt.alpha(pigment, 0.12))
+                ink.addColorStop(0.65, Qt.alpha(accent, 0.19))
+                ink.addColorStop(1, Qt.alpha(accent, 0.32))
+                ctx.strokeStyle = ink
                 ctx.lineWidth = 1
-                for (let corner = 0; corner < 2; ++corner) {
-                    for (let ring = 0; ring < rings; ++ring) {
-                        const phase = ring * 2 * Math.PI / rings
-                        ctx.beginPath()
-                        for (let step = 0; step <= 96; ++step) {
-                            const angle = step * Math.PI / 192
-                            const r = radius * (0.68 + 0.12 * Math.cos(12 * angle + phase)
-                                + 0.14 * ring / (rings - 1))
-                            const x = radius * 0.03 + r * Math.cos(angle)
-                            const y = radius * 0.03 + r * Math.sin(angle)
-                            if (step === 0) ctx.moveTo(x, y)
-                            else ctx.lineTo(x, y)
-                        }
-                        ctx.strokeStyle = ring % 2 ? Qt.alpha(pigment, 0.18) : Qt.alpha(accent, 0.31)
-                        ctx.stroke()
+                // Parallel cuts fan open, twist through one another, then
+                // spread again along a shallow S-shaped sweep.
+                for (let strand = 0; strand < strands; ++strand) {
+                    const offset = strand / (strands - 1) - 0.5
+                    ctx.beginPath()
+                    for (let step = 0; step <= steps; ++step) {
+                        const t = step / steps
+                        const sweep = Math.sin(2 * Math.PI * (t - 0.12))
+                        const axis = ribbonBar ? breadth * 0.85 : breadth * (0.50 + 0.22 * sweep)
+                        const twist = 2 * Math.PI * (1.45 * t + 0.10 * sweep)
+                        const cross = axis + amplitude * Math.sin(twist + offset * 2.8)
+                        const x = vertical ? cross : t * length
+                        const y = vertical ? t * length : cross
+                        if (step === 0) ctx.moveTo(x, y)
+                        else ctx.lineTo(x, y)
                     }
-                    ctx.translate(width, height)
-                    ctx.rotate(Math.PI)
+                    ctx.stroke()
                 }
-                ctx.restore()
             }
 
             onPaint: {

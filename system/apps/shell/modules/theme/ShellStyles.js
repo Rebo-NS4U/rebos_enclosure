@@ -6,7 +6,7 @@ var styles = [
     {id: "metropolis", label: "Metropolis", font: "DejaVu Sans", description: "Stepped towers and lit windows frame a low city skyline."},
     {id: "glass-vault", label: "Glass Vault", font: "Noto Sans", description: "Thick glass blocks with stepped rims and rounded corner clasps."},
     {id: "radar-station", label: "Radar Station", font: "DejaVu Sans", description: "Etched bearing scales, radial divisions and a marked sector."},
-    {id: "guilloche", label: "Guilloché", font: "Noto Sans", description: "Interlaced corner rosettes engraved into a softly tinted face."},
+    {id: "guilloche", label: "Guilloché", font: "Noto Sans", description: "A ribbon of fine engraved lines twists across softly tinted panels."},
     {id: "monolith", label: "Monolith", font: "Noto Sans", description: "Layered slate with a diagonal fault, tapered mineral seams and exposed edges."},
     {id: "blueprint", label: "Blueprint", font: "JetBrains Mono", description: "Architectural drafting sheets, truss details, ruled scales and wire controls."},
     {id: "terminal-hardware", label: "Terminal Hardware", font: "DejaVu Sans Mono", description: "Flat machined panels, inset bezels and sparse cooling vents."},

@@ -46,6 +46,7 @@ ShellRoot {
   StyledRect { id: engraved; width:500; height:240; variant:"popup"; styleOverride:"guilloche" }
   StyledRect { id: engravedPane; width:220; height:130; variant:"pane"; styleOverride:"guilloche" }
   StyledRect { id: engravedPreview; width:180; height:42; materialPreview:true; variant:"bg"; styleOverride:"guilloche" }
+  StyledRect { id: engravedRail; width:40; height:360; barSurface:true; variant:"bg"; styleOverride:"guilloche" }
   StyledRect { id: engravedBar; width:580; height:40; barSurface:true; variant:"bar"; styleOverride:"guilloche" }
   StyledRect { id: canopy; width:500; height:240; variant:"bg"; styleOverride:"canopy" }
   StyledRect { id: canopyPane; width:220; height:130; variant:"pane"; styleOverride:"canopy" }
@@ -80,9 +81,9 @@ ShellRoot {
     if (decoration(surface) || !surface.isSingleColorGradient || surface.border.width !== 1)
      throw Error("Expected a plain Frosted fill and fine rim on " + surface.variant);
    }
-   for (const surface of [engraved, engravedPane, engravedPreview, engravedBar]) {
+   for (const surface of [engraved, engravedPane, engravedPreview, engravedBar, engravedRail]) {
     const {width, height} = surface;
-    if (surface === engravedPane || surface === engravedBar) {
+    if (surface === engravedPane) {
      if (decoration(surface)) throw Error("Expected a plain Guilloché " + surface.variant);
     } else {
      const pixels = decoration(surface).getContext("2d").getImageData(0, 0, width, height).data;
@@ -93,13 +94,18 @@ ShellRoot {
       peak = Math.max(peak, pixels[i]);
      }
      const coverage = marked / (width * height);
-     const edge = Math.floor(width * 0.22);
-     if (coverage < 0.002 || coverage > 0.05 || peak < 50 || peak > 215 ||
-         !hasMarks(surface, 0, 0, edge, height / 2) || !hasMarks(surface, width - edge, height / 2, edge, height / 2) ||
-         hasMarks(surface, 0, height / 2, edge, height / 2) || hasMarks(surface, width - edge, 0, edge, height / 2) ||
-         hasMarks(surface, edge, 0, width - 2 * edge, height))
-      throw Error("Expected visible Guilloché engraving around a clear center on " + surface.variant +
-                  ", coverage " + coverage + ", peak " + peak);
+     for (let slice = 0; slice < 7; ++slice) {
+      const rail = surface === engravedRail;
+      const span = Math.floor((rail ? height : width) / 7);
+      if (!hasMarks(surface, rail ? 0 : slice * span, rail ? slice * span : 0, rail ? width : span, rail ? span : height))
+       throw Error("Missing continuous Guilloché ribbon in slice " + slice + " of " + surface.variant);
+     }
+     if (coverage < 0.015 || coverage > 0.25 || peak < 25 || peak > 170)
+      throw Error("Unexpected engraving density on " + surface.variant + ", coverage " + coverage + ", peak " + peak);
+     if (surface === engravedRail && hasMarks(surface, 0, 0, width / 2, height))
+      throw Error("Vertical bar engraving must stay beside labels");
+     if (surface === engravedBar && hasMarks(surface, 0, 0, width, height / 2))
+      throw Error("Bar engraving must stay below labels");
     }
     if (surface.color.a < 0.75 || surface.color.a > 0.89)
      throw Error("Expected slightly transparent Guilloché fill on " + surface.variant + ", alpha " + surface.color.a);

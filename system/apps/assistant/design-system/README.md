@@ -63,7 +63,7 @@ Kitty follows the exported surface palette and opacity as well as the selected s
 
 ## Translucent materials
 
-Glass Vault uses thick stepped blocks, bold corner clamps and deep inset controls. Radar Station uses static bearing scales, partial range arcs, crosshair junctions and segmented controls. Guilloché engraves two opposite window and popup corners with interlaced rosettes. Bars and inner panes use a plain tinted fill. All three preserve the selected semantic colors and provide matching native terminal profiles. Selecting one enables shell blur if off and resets the manual transparency override; existing blur location and strength preferences are preserved.
+Glass Vault uses thick stepped blocks, bold corner clamps and deep inset controls. Radar Station uses static bearing scales, partial range arcs, crosshair junctions and segmented controls. Guilloché sweeps a twisted ribbon of engraved lines across tinted windows and popups. Bars carry a fine three-strand version along one edge and nested panes stay plain. All three preserve the selected semantic colors and provide matching native terminal profiles. Selecting one enables shell blur if off and resets the manual transparency override; existing blur location and strength preferences are preserved.
 
 Saved Smoked Acrylic selections migrate to Glass Vault, Glass Console to Radar Station, and Frosted Ceramic, Suspended Film and Circuit Glass to Guilloché. Older predecessors migrate directly to the corresponding current theme.
 

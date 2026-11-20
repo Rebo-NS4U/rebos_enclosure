@@ -61,8 +61,9 @@ leaving the clock clear.
 Monolith uses an opaque slate face. A diagonal fault crosses the window, with
 thin mineral seams along its broken edges and offset beds above and below.
 The markings recede on nested panes. Compact bars retain the exposed layers
-along the lower left edge. Guilloché pairs a softly tinted face with fine interlaced rosettes in the upper left
-and lower right corners of windows and popups. Bars and inner panes stay plain.
+along the lower left edge. Guilloché carries a ribbon of fine engraved lines across each window and popup.
+The strands fan out and twist together, fading through the middle of the panel.
+Bars carry a narrow three-strand version along one edge. Inner panes stay plain.
 Both themes follow the selected
 palette and saved corner radius. Existing Frosted Ceramic and Suspended Film selections migrate
 to Guilloché.
