@@ -200,6 +200,10 @@ Item {
                         property bool exclusiveSettingsGroups: !root.tabbedNavigation
                         columnSpacing: Styling.spacing(12)
                         rowSpacing: Styling.spacing(12)
+                    WallpaperSettings {
+                        visible: !root.tabbedNavigation || root.navigationTab === "wallpaper"
+                        collapsible: !root.tabbedNavigation
+                    }
                     PaletteSettings {
                         collapsible: !root.tabbedNavigation
                         onCurrentPageChanged: mainFlickable.contentY = 0

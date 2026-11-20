@@ -43,7 +43,7 @@ def main():
         else:
             step = -1 if args.action == 'previous' else 1
             chosen = paths[(paths.index(current) + step) % len(paths)]
-        subprocess.run([str(HOME / '.local/bin/wallpaper'), '--crop', chosen], check=True)
+        subprocess.run([str(HOME / '.local/bin/wallpaper'), chosen], check=True)
 
 
 if __name__ == '__main__':

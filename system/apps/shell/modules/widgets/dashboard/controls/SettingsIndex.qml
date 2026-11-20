@@ -18,6 +18,7 @@ QtObject {
         { label: "Motion", keywords: "animation animations movement speed duration smooth quick reduced off transitions", section: 4, subSection: "motion", subLabel: "Appearance > Motion", icon: Icons.lightning, isIcon: true },
         { label: "Transparency and blur", keywords: "transparency opacity strength slider gpu graphics performance video glass lighter shell panels off full blur", section: 4, subSection: "blur", subLabel: "Appearance > Transparency and blur", icon: Icons.drop, isIcon: true },
         { label: "Shadows", keywords: "opacity blur offset color", section: 4, subSection: "shadow", subLabel: "Appearance > Shadow", icon: Icons.drop, isIcon: true },
+        { label: "Wallpaper", keywords: "desktop background library folder directory path picture auto fit fitting crop stretch center monitor", section: 4, subSection: "wallpaper", subLabel: "Appearance > Wallpaper", icon: Icons.paintBrush, isIcon: true },
         { label: "Colors", keywords: "folder directory path icons tint matugen wallpaper eyedropper picker bonsai main accent custom automatic scheme palette oled light dark kitty fish spotify zen vscode opacity refresh", section: 4, subSection: "colors", subLabel: "Appearance > Colors", icon: Icons.palette, isIcon: true },
 
         { label: "Custom surfaces", keywords: "variant gradient border halftone shell colors", section: 4, subSection: "variants", subLabel: "Appearance > Custom surfaces", icon: Icons.palette, isIcon: true },

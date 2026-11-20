@@ -6,5 +6,5 @@
   "tintEnabled": false,
   "wallPath": "@HOME@/.local/share/wallpapers",
   "wallpaperAccentColors": {},
-  "wallpaperMode": "crop"
+  "wallpaperMode": "auto"
 }

@@ -278,9 +278,9 @@ Singleton {
 
         function wallpaper(path: string, mode: string): bool {
             const manager = GlobalStates.wallpaperManager;
-            if (!manager || !path || manager.supportedWallpaperModes.indexOf(mode) === -1)
+            if (!manager || !path || (mode && manager.supportedWallpaperModes.indexOf(mode) === -1))
                 return false;
-            manager.setWallpaperMode(mode);
+            if (mode) manager.setWallpaperMode(mode);
             manager.setWallpaper(path);
             return true;
         }
@@ -310,6 +310,8 @@ Singleton {
                 border: Config.theme.ditherBorder,
                 wallpaperStrength: Config.theme.wallpaperDitherStrength,
                 wallpaper: manager?.currentWallpaper ?? "",
+                wallpaperMode: manager?.wallpaperMode ?? "",
+                effectiveWallpaperMode: manager?.effectiveMode ?? "",
                 renderedWallpaper: manager?.renderedWallpaper ?? "",
                 themeColorSource: manager ? manager.getColorSource(manager.currentWallpaper) : "",
                 converting: DitheredWallpapers.busy,

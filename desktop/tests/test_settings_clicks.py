@@ -384,7 +384,7 @@ ShellRoot {
       }
       fixture.check(paletteGrid.columns === 1 && loader.item.contentWidth < narrowWidth, "Color sections reflow when shrinking");
       fixture.check(!fixture.find(loader.item, "palette-navigation"), "No color subsection navigation");
-      for (const pageId of ["picker", "presets", "wallpaper", "apps", "palette"])
+      for (const pageId of ["picker", "presets", "apps", "palette"])
        fixture.check(fixture.find(loader.item, "palette-page-" + pageId).visible, "Color controls visible together: " + pageId);
       let scroll = fixture.find(settings, "settings-category-scroll");
       fixture.check(scroll.contentHeight > scroll.height, "Category scrolls through combined panels");
@@ -401,6 +401,7 @@ ShellRoot {
       const expectedTabs = [
        {id: "style", anchors: []},
        {id: "colors", anchors: ["colors"]},
+       {id: "wallpaper", anchors: ["wallpaper"]},
        {id: "typography", anchors: ["general"]},
        {id: "effects", anchors: ["performance", "motion", "blur", "shadow", "variants", "variants"]},
        {id: "panels", anchors: ["weather", "storage", "bar", "lockscreen", "system", "sidebar"]}

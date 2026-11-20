@@ -60,7 +60,7 @@ def main():
     if args.help:
         print_help()
 
-    resize = "crop"
+    resize = "crop" if args.crop else ""
     if args.fit:
         resize = "fit"
     elif args.stretch:

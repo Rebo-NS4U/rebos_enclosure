@@ -80,7 +80,14 @@ PanelWindow {
     property alias wallpaperMode: wallpaperAdapter.wallpaperMode
     property int thumbnailsVersion: 0
 
-    readonly property var supportedWallpaperModes: ["crop", "fit", "stretch", "center"]
+    readonly property var wallpaperModes: [
+        { id: "auto", label: "Auto fit" },
+        { id: "crop", label: "Crop" },
+        { id: "fit", label: "Fit" },
+        { id: "stretch", label: "Stretch" },
+        { id: "center", label: "Center" }
+    ]
+    readonly property var supportedWallpaperModes: wallpaperModes.map(entry => entry.id)
 
     // ---- Lockshot: pre-lock desktop capture -------------------------------
     // Captures this screen's actual desktop (windows included) BEFORE the
@@ -196,8 +203,16 @@ PanelWindow {
     }
 
 
+    WallpaperFit {
+        id: fit
+        sourceFile: wallpaper.renderedWallpaper
+        mode: wallpaper.wallpaperMode
+        screenAspect: wallpaper.height > 0 ? wallpaper.width / wallpaper.height : 0
+    }
+    readonly property string effectiveMode: fit.effectiveMode
+
     readonly property int wallpaperFillMode: {
-        switch (wallpaperMode) {
+        switch (effectiveMode) {
         case "fit":
             return Image.PreserveAspectFit;
         case "stretch":
@@ -571,7 +586,7 @@ PanelWindow {
         }
 
         if (supportedWallpaperModes.indexOf(mode) === -1)
-            mode = "crop";
+            mode = "auto";
 
         if (wallpaperConfig.adapter.wallpaperMode === mode)
             return;
@@ -993,7 +1008,7 @@ PanelWindow {
                 wallpaperConfig.adapter.matugenScheme = "scheme-tonal-spot";
             }
             if (supportedWallpaperModes.indexOf(wallpaperConfig.adapter.wallpaperMode) === -1) {
-                wallpaperConfig.adapter.wallpaperMode = "crop";
+                wallpaperConfig.adapter.wallpaperMode = "auto";
             }
             // Update the currentMatugenScheme property to trigger UI updates
             currentMatugenScheme = Qt.binding(function () {
@@ -1011,7 +1026,7 @@ PanelWindow {
             property var wallpaperAccentColors: ({})
             property string activeColorPreset: ""
             property bool tintEnabled: false
-            property string wallpaperMode: "crop"
+            property string wallpaperMode: "auto"
             property var perScreenWallpapers: ({})
 
             onActiveColorPresetChanged: {
@@ -1664,6 +1679,7 @@ PanelWindow {
                     id: rawImage
                     anchors.fill: parent
                     source: parent.sourceFile ? "file://" + parent.sourceFile : ""
+                    autoTransform: true
                     fillMode: wallpaper.wallpaperFillMode
                     asynchronous: true
                     smooth: !DitheredWallpapers.active
@@ -1724,7 +1740,7 @@ PanelWindow {
                 Process {
                     id: mpvpaperProcess
                     running: false
-                    command: sourceFile && wallpaper.currentScreenName ? ["bash", scriptPath, sourceFile, (wallpaper.tintEnabled ? wallpaper.mpvShaderPath : ""), wallpaper.currentScreenName, wallpaper.wallpaperMode] : []
+                    command: sourceFile && wallpaper.currentScreenName ? ["bash", scriptPath, sourceFile, (wallpaper.tintEnabled ? wallpaper.mpvShaderPath : ""), wallpaper.currentScreenName, wallpaper.effectiveMode] : []
 
                     stdout: StdioCollector {
                         onStreamFinished: {
@@ -1749,7 +1765,7 @@ PanelWindow {
 
                 Connections {
                     target: wallpaper
-                    function onWallpaperModeChanged() {
+                    function onEffectiveModeChanged() {
                         if (!sourceFile)
                             return;
                         mpvpaperProcess.running = false;

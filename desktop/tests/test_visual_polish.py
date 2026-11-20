@@ -84,10 +84,10 @@ ShellRoot {
      if(label.mapToItem(page,label.width,0).x>slider.mapToItem(page,0,0).x)throw Error("Shadow label covers slider");
     }
     Config.theme.fontSize=14; page.currentSection="general";test.wait(50);
-    let folder=test.findChild(page,"palette-wallpaper-folder");
+    let folder=test.findChild(page,"wallpaper-folder");
     if(!folder || folder.visible)throw Error("Wallpaper control belongs outside Fonts and corners");
-    page.currentSection="colors";test.wait(50);
-    if(!folder.visible)throw Error("Wallpaper folder must be reachable in Colors");
+    page.currentSection="wallpaper";test.wait(50);
+    if(!folder.visible)throw Error("Wallpaper folder must be reachable in Wallpaper");
     console.log("VISUAL POLISH PASSED");Qt.quit();
    }catch(e){console.error(e);Qt.exit(1);}
   }}

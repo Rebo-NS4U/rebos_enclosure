@@ -24,6 +24,8 @@ function results(query) { context.query = query; return vm.runInContext('search(
 function top(query, label) { assert.equal(results(query)[0]?.label, label, query); }
 top('Sound', 'Sound');
 top('  SOUND!  ', 'Sound');
+top('wallpaper', 'Wallpaper');
+top('auto fit', 'Wallpaper');
 top('wireless', 'Network');
 top('wi-fi', 'Network');
 top('microphone', 'Sound');

@@ -26,7 +26,8 @@ Item {
     property string appearanceTab: "style"
     function themeTabFor(section, subSection) {
         if (section === 6) return "panels";
-        if (["colors", "palette", "picker", "presets", "wallpaper", "apps"].includes(subSection)) return "colors";
+        if (subSection === "wallpaper") return "wallpaper";
+        if (["colors", "palette", "picker", "presets", "apps"].includes(subSection)) return "colors";
         if (subSection === "general") return "typography";
         if (["performance", "motion", "blur", "shadow", "variants"].includes(subSection)) return "effects";
         return "style";
@@ -34,6 +35,7 @@ Item {
     readonly property var appearancePages: [
         {label: "Style", section: 4, subSection: "style", tab: "style"},
         {label: "Colors", section: 4, subSection: "colors", tab: "colors"},
+        {label: "Wallpaper", section: 4, subSection: "wallpaper", tab: "wallpaper"},
         {label: "Typography", section: 4, subSection: "general", tab: "typography"},
         {label: "Effects", section: 4, subSection: "performance", tab: "effects"},
         {label: "Panels & widgets", section: 6, subSection: "", tab: "panels"}

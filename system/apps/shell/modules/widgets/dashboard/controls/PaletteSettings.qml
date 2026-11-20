@@ -365,68 +365,6 @@ SettingsGroup {
 
         }
         ColorSection {
-            title: "Wallpaper library"
-            objectName: "palette-page-wallpaper"
-            property string settingsAnchor: "wallpaper"
-            Layout.columnSpan: !collapsible || expanded ? paletteGrid.columns : 1
-            // Wallpaper Path
-            RowLayout {
-                Layout.fillWidth: true
-                spacing: Styling.spacing(8)
-
-                StyledText {
-                    renderType: Text.NativeRendering
-                    font.hintingPreference: Font.PreferFullHinting
-                    text: "Folder"
-                    font.family: Config.theme.font
-                    font.pixelSize: Styling.fontSize(0)
-                    color: Colors.overBackground
-                    Layout.preferredWidth: 80
-                }
-
-                StyledRect {
-                    variant: "common"
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 32
-                    radius: Styling.radius(-2)
-
-                    TextInput {
-                        renderType: Text.NativeRendering
-                        font.hintingPreference: Font.PreferFullHinting
-                        id: wallPathInput
-                        objectName: "palette-wallpaper-folder"
-                        Accessible.name: "Wallpaper folder"
-                        anchors.fill: parent
-                        anchors.margins: 8
-                        font.family: Config.theme.font
-                        font.pixelSize: Styling.fontSize(0)
-                        color: Colors.overBackground
-                        selectByMouse: true
-                        clip: true
-                        verticalAlignment: TextInput.AlignVCenter
-
-                        // Placeholder for default path
-                        StyledText {
-                            anchors.fill: parent
-                            verticalAlignment: Text.AlignVCenter
-                            text: "Default"
-                            font: parent.font
-                            color: Colors.overSurfaceVariant
-                            visible: !parent.text && !parent.activeFocus
-                        }
-
-                        text: GlobalStates.wallpaperManager?.wallpaperDir ?? ""
-
-                        onEditingFinished: {
-                            GlobalStates.wallpaperManager?.setWallpaperDirectory(text);
-                        }
-                    }
-                }
-            }
-
-
-        }
-        ColorSection {
             title: "App appearance"
             objectName: "palette-page-apps"
             property string settingsAnchor: "apps"

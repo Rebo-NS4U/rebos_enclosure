@@ -13,12 +13,7 @@ import qs.config
 Item {
     id: root
 
-    readonly property var modes: [
-        { id: "crop", label: "Crop" },
-        { id: "fit", label: "Fit" },
-        { id: "stretch", label: "Stretch" },
-        { id: "center", label: "Center" }
-    ]
+    readonly property var modes: GlobalStates.wallpaperManager?.wallpaperModes ?? []
     property bool modeListExpanded: false
     property int selectedModeIndex: -1
     property bool keyboardNavigationActive: false
@@ -31,12 +26,12 @@ Item {
     function currentModeId() {
         const manager = GlobalStates.wallpaperManager;
         if (!manager || !manager.wallpaperMode)
-            return "crop";
+            return "auto";
         for (let i = 0; i < modes.length; i++) {
             if (modes[i].id === manager.wallpaperMode)
                 return manager.wallpaperMode;
         }
-        return "crop";
+        return "auto";
     }
 
     function currentModeLabel() {
@@ -45,7 +40,7 @@ Item {
             if (modes[i].id === mode)
                 return modes[i].label;
         }
-        return modes[0].label;
+        return modes[0]?.label ?? "Auto fit";
     }
 
     function updateSelectedIndex() {
@@ -114,6 +109,7 @@ Item {
         }
     }
 
+    enabled: modes.length > 0
     implicitWidth: 150
     implicitHeight: 48
 
@@ -141,7 +137,7 @@ Item {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 40
                 text: root.modeListExpanded
-                    ? modes[selectedModeIndex >= 0 ? selectedModeIndex : 0].label
+                    ? (modes[selectedModeIndex >= 0 ? selectedModeIndex : 0]?.label ?? root.currentModeLabel())
                     : root.currentModeLabel()
                 focus: true
                 focusPolicy: Qt.StrongFocus
