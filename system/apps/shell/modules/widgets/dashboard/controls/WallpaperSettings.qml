@@ -2,7 +2,6 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import qs.modules.globals
-import qs.modules.services
 import qs.modules.components
 
 SettingsGroup {
@@ -11,13 +10,18 @@ SettingsGroup {
     property string settingsAnchor: "wallpaper"
     readonly property var manager: GlobalStates.wallpaperManager
 
-    SettingsButton {
-        text: "Choose wallpaper"
-        enabled: !!root.manager
-        onClicked: {
-            GlobalStates.settingsWindowVisible = false;
-            GlobalShortcuts.toggleWallpapers();
-        }
+    WallpaperGallery {
+        id: gallery
+        manager: root.manager
+        screenName: root.Window.window?.screen?.name ?? ""
+        Layout.fillWidth: true
+        Layout.preferredHeight: Math.min(440, Math.ceil(count / columns) * cellHeight)
+        visible: (root.manager?.wallpaperPaths.length ?? 0) > 0
+    }
+    StyledText {
+        visible: !gallery.visible
+        Layout.fillWidth: true
+        text: "No wallpapers in this folder."
     }
     StyledText { text: "Wallpaper folder" }
     SettingsTextField {

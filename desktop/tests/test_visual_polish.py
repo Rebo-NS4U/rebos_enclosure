@@ -63,6 +63,61 @@ class VisualPolishTests(unittest.TestCase):
         self.assertEqual(status, 0, output[-7000:])
         self.assertIn('VISUAL POLISH PASSED', output)
 
+    def test_wallpaper_gallery(self):
+        self.check_qml('shell', '''import QtQuick
+import QtTest
+import Quickshell
+import qs.modules.globals
+import qs.modules.widgets.dashboard.controls
+ShellRoot {
+ FloatingWindow {
+  visible: true; implicitWidth: 1024; implicitHeight: 760
+  WallpaperSettings { id: page; width: 900 }
+  QtObject {
+   id: library
+   readonly property string wallpaperDir: Quickshell.shellPath("assets/wallpapers_example")
+   property var wallpaperPaths: Array.from({length: 10}, (_, i) =>
+      wallpaperDir + "/rebos_shell-" + String(i + 1).padStart(2, "0") + ".png")
+   property string currentWallpaper: wallpaperPaths[0]
+   property var perScreenWallpapers: ({})
+   readonly property var wallpaperModes: [{id:"auto",label:"Auto fit"}]
+   readonly property string wallpaperMode: "auto"
+   function getFileType(path) { return "image"; }
+   function setWallpaper(path, screen) {
+    if (screen) perScreenWallpapers = ({[screen]: path});
+    else currentWallpaper = path;
+   }
+  }
+  TestCase { id: test; when: false }
+  Timer { interval: 100; running: true; onTriggered: {
+   try {
+    GlobalStates.wallpaperManager = library;
+    GlobalStates.settingsWindowVisible = true;
+    const grid = test.findChild(page, "wallpaper-gallery");
+    test.tryVerify(() => grid.count === 10 && grid.itemAtIndex(1) !== null);
+    if (grid.columns !== 3 || grid.cellWidth < 248) throw Error("Expected large previews");
+    grid.screenName = "test-monitor";
+    const second = grid.itemAtIndex(1);
+    const preview = test.findChild(second, "wallpaper-preview");
+    test.tryVerify(() => preview.status === Image.Ready && preview.width >= 230 && preview.height >= 120);
+    test.mouseClick(second);
+    if (!second.selected || library.currentWallpaper !== library.wallpaperPaths[1]
+      || !GlobalStates.settingsWindowVisible) throw Error("Inline selection failed");
+    library.perScreenWallpapers = ({"test-monitor":library.wallpaperPaths[0]});
+    test.keyClick(Qt.Key_Right);
+    test.keyClick(Qt.Key_Return);
+    if (library.perScreenWallpapers["test-monitor"] !== library.wallpaperPaths[2]
+      || library.currentWallpaper !== library.wallpaperPaths[1]) throw Error("Keyboard selection or monitor target failed");
+    page.width = 400; test.wait(30);
+    if (grid.columns !== 1 || grid.contentHeight <= grid.height) throw Error("Narrow gallery must reflow and scroll");
+    library.wallpaperPaths = [];
+    test.tryVerify(() => !grid.visible && grid.count === 0);
+    console.log("VISUAL POLISH PASSED"); Qt.quit();
+   } catch (error) { console.error(error); Qt.exit(1); }
+  }}
+ }
+}''')
+
     def test_shadow_labels_and_moved_wallpaper_controls(self):
         self.check_qml('shell', '''import QtQuick
 import QtTest
