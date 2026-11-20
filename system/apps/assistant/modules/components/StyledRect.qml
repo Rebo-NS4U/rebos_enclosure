@@ -780,11 +780,21 @@ ClippingRectangle {
             }
 
             function paintCeramic(ctx) {
-                const wash = ctx.createLinearGradient(0, 0, 0, height * 0.65)
-                wash.addColorStop(0, Qt.alpha(accent, 0.11))
-                wash.addColorStop(1, Qt.alpha(accent, 0))
-                ctx.fillStyle = wash
-                ctx.fillRect(0, 0, width, height)
+                // Dry mineral flecks repeat at the margins in a fixed clay-grain pattern.
+                const grains = [[6, 8, 1.2], [9, 11, 0.65], [14, 32, 0.95], [7, 49, 0.75]]
+                ctx.fillStyle = Qt.alpha(pigment, 0.22)
+                ctx.beginPath()
+                for (let y = 0; y < height; y += 64) {
+                    for (const [inset, offset, radius] of grains) {
+                        const leftY = y + offset
+                        const rightY = y + 60 - offset
+                        ctx.moveTo(inset + radius, leftY)
+                        ctx.arc(inset, leftY, radius, 0, Math.PI * 2)
+                        ctx.moveTo(width - inset + radius, rightY)
+                        ctx.arc(width - inset, rightY, radius, 0, Math.PI * 2)
+                    }
+                }
+                ctx.fill()
             }
 
             onPaint: {

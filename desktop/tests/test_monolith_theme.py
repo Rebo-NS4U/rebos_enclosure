@@ -86,10 +86,16 @@ ShellRoot {
      if (decoration(surface)) throw Error("Expected a plain matte Ceramic " + surface.variant);
     } else {
      const pixels = decoration(surface).getContext("2d").getImageData(0, 0, width, height).data;
+     let marked = 0;
      let peak = 0;
-     for (let i = 3; i < pixels.length; i += 4) peak = Math.max(peak, pixels[i]);
-     if (peak < 8 || peak > 32 || hasMarks(surface, 8, Math.floor(height * 0.7), width - 16, 4))
-      throw Error("Expected a soft Ceramic wash fading into matte clay, peak " + peak);
+     for (let i = 3; i < pixels.length; i += 4) {
+      if (pixels[i] > 0) ++marked;
+      peak = Math.max(peak, pixels[i]);
+     }
+     if (marked > width * height * 0.012 || peak > 65 ||
+         !hasMarks(surface, 0, 0, 18, height) || !hasMarks(surface, width - 18, 0, 18, height) ||
+         hasMarks(surface, 18, 0, width - 36, height))
+      throw Error("Expected sparse Ceramic edge flecks and a clear center on " + surface.variant);
     }
     if (surface.color.a < 0.75 || surface.color.a > 0.89)
      throw Error("Expected slightly transparent Ceramic fill on " + surface.variant + ", alpha " + surface.color.a);
