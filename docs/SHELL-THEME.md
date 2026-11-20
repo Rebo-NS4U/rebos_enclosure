@@ -27,7 +27,7 @@ Instrument mode gives the island bar the same 4px corners, opaque background and
 ## Frosted Glass
 
 Choose **Frosted Glass** in Settings → Appearance → Theme style for translucent
-satin panels with an even tint and a fine rim. Inset surfaces use a lighter
+satin panels with an even tint and a fine accent-colored rim. Inset surfaces use a lighter
 wash, and focused controls pick up the selected accent. The corner radius
 setting applies to the rim, including zero for square corners.
 

@@ -19,11 +19,12 @@ for (const light of [false,true]) {
  for (const role of ['bg','popup','bar','pane','surface','surfaceContainer']) {
   assert.equal(get(role).opacity,0.68);
   assert.equal(get(role).gradient.length,1);
-  assert.equal(get(role).border[1],1);
+  assert.deepEqual(get(role).border,['#60'+p.primary.slice(-6),1]);
   for (const stop of get(role).gradient) assert.ok(contrast(stop[0],get(role).itemColor)>=4.5,role+' contrast');
  }
  assert.equal(get('bg').radius, undefined);
  assert.equal(get('pane').radius, undefined);
+ for (const role of ['common','internalbg']) assert.deepEqual(get(role).border,['#38'+p.primary.slice(-6),1]);
  assert.equal(get('common').opacity,0.48);
  assert.equal(get('focus').opacity,0.84);
  assert.equal(get('focus').border[0],p.primary);
@@ -35,6 +36,7 @@ for (const light of [false,true]) {
  assert.equal(get('transparent').opacity,0);
  assert.equal(get('barbg').opacity,0);
  const palette = appPalette('frosted',{...p,overBackground:p.foreground,overPrimary:p.onPrimary,overSecondary:p.onSecondary,overTertiary:p.onTertiary,overError:p.onError},1);
+ assert.equal(palette.outlineVariant,get('bg').border[0]);
  assert.equal(palette.opacity,0.68);
  assert.equal(palette.background,get('bg').gradient[0][0]);
  assert.equal(palette.surface,get('pane').gradient[0][0]);

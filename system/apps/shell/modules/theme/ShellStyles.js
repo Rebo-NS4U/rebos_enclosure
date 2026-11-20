@@ -10,7 +10,7 @@ var styles = [
     {id: "monolith", label: "Monolith", font: "Noto Sans", description: "Layered slate with a diagonal fault, tapered mineral seams and exposed edges."},
     {id: "blueprint", label: "Blueprint", font: "JetBrains Mono", description: "Architectural drafting sheets, truss details, ruled scales and wire controls."},
     {id: "terminal-hardware", label: "Terminal Hardware", font: "DejaVu Sans Mono", description: "Flat machined panels, inset bezels and sparse cooling vents."},
-    {id: "frosted", font: "DejaVu Sans Mono", label: "Frosted Glass", description: "Softly tinted glass with a fine rim and a blurred backdrop."},
+    {id: "frosted", font: "DejaVu Sans Mono", label: "Frosted Glass", description: "Softly tinted glass with a fine accent rim and a blurred backdrop."},
     {id: "colorful", font: "DejaVu Sans", label: "Tinted", description: "A translucent pane with a uniform tint from the selected accent."},
     {id: "clear-glass", label: "Clear Glass", font: "Noto Sans", description: "Clear glazing with a fine perimeter line and a narrow lower lip."}
 ];
@@ -123,7 +123,7 @@ function surface(style, variant, p, ditherStrength) {
         if (outer || inner || focused) {
             fill = mix(mix(p.background, p.foreground, outer ? 0.12 : 0.065), p.primary, focused ? 0.14 : 0.055);
             opacity = outer ? 0.68 : focused ? 0.84 : 0.48;
-            border = [focused ? p.primary : "#40" + p.foreground.slice(-6), 1];
+            border = [focused ? p.primary : (outer ? "#60" : "#38") + p.primary.slice(-6), 1];
         }
     }
     // Render treatments use semantic palette roles without choosing a color scheme.
