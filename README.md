@@ -53,7 +53,7 @@ assistant Codex adapter needs Node/npm from the development group.
 
 ### Material themes and wallpaper collections
 
-Choose Canopy, Orbital, Metropolis, Glass Vault, Radar Station, Frosted Ceramic,
+Choose Canopy, Orbital, Metropolis, Glass Vault, Radar Station, Guilloché,
 Monolith, Blueprint, Terminal Hardware, Frosted Glass, Tinted or Clear Glass.
 Materials follow the chosen palette and corner radius; typography and Kitty
 geometry, cursor and tabs follow the selected style. Custom font names remain

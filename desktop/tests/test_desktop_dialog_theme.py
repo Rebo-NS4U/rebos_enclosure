@@ -38,7 +38,7 @@ ShellRoot {
   Timer { interval:500; running:true; onTriggered: {
    try {
     Config.animDuration = 0;
-    const styles = ["canopy","orbital","metropolis","monolith","blueprint","terminal-hardware","glass-vault","radar-station","frosted-ceramic","frosted","colorful","clear-glass","custom"];
+    const styles = ["canopy","orbital","metropolis","monolith","blueprint","terminal-hardware","glass-vault","radar-station","guilloche","frosted","colorful","clear-glass","custom"];
     let cases = 0;
     let previousImage = null;
     for (const light of [false,true]) {

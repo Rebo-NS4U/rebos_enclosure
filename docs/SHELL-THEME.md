@@ -56,16 +56,16 @@ Stepped towers with fluted facades and small lit windows frame a low skyline.
 Large panes carry a subdued skyline. Compact bars show rooftop clusters at either end,
 leaving the clock clear.
 
-## Monolith and Frosted Ceramic
+## Monolith and Guilloché
 
 Monolith uses an opaque slate face. A diagonal fault crosses the window, with
 thin mineral seams along its broken edges and offset beds above and below.
 The markings recede on nested panes. Compact bars retain the exposed layers
-along the lower left edge. Frosted Ceramic uses carved herringbone bands along the sides
-of windows and popups. Bars and inner panes use a plain translucent matte fill.
+along the lower left edge. Guilloché pairs a softly tinted face with fine interlaced rosettes in the upper left
+and lower right corners of windows and popups. Bars and inner panes stay plain.
 Both themes follow the selected
-palette and saved corner radius. Existing Suspended Film selections migrate
-to Frosted Ceramic.
+palette and saved corner radius. Existing Frosted Ceramic and Suspended Film selections migrate
+to Guilloché.
 
 ## Shared sizing and terminal styling
 

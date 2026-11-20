@@ -722,7 +722,7 @@ ClippingRectangle {
         readonly property bool panel: ["bg", "popup", "pane", "surface", "surfaceContainer", "internalbg", "focus", "surfaceVariant"].includes(root.variant)
         active: !root.hasFillColor && root.rectOpacity > 0 && (finish === "monolith"
             ? panel || root.controlSurface || ["common", "primary", "primaryfocus", "secondary", "secondaryfocus", "tertiary", "tertiaryfocus", "error", "errorfocus"].includes(root.variant)
-            : finish === "frosted-ceramic" && !root.barSurface && !root.controlSurface && (root.variant === "bg" || root.variant === "popup"))
+            : finish === "guilloche" && !root.barSurface && !root.controlSurface && (root.variant === "bg" || root.variant === "popup"))
         sourceComponent: Canvas {
             objectName: "surface-edge-canvas"
             anchors.fill: parent
@@ -779,34 +779,29 @@ ClippingRectangle {
                 bed([[.76,.895,0],[.83,.795,.10],[.86,.78,.19],[.95,.729,0]], pigment, 0.26)
             }
 
-            function paintCeramic(ctx) {
-                const pitch = Math.min(28, width * 0.058, height * 0.28)
-                if (pitch < 4) return
-                // Alternating tool cuts form a herringbone band with two flat facets per cut.
+            function paintGuilloche(ctx) {
+                const radius = Math.min(72, width * 0.18, height * 0.48)
+                if (radius < 6) return
+                // Each phase shifts the lobes of an engraved ring. Show only
+                // the inward-facing portion of the medallion at each corner.
+                const rings = radius < 28 ? 3 : 6
                 ctx.save()
-                for (let side = 0; side < 2; ++side) {
-                    for (let column = 0; column < 3; ++column) {
-                        const x = pitch * (column + 0.7)
-                        const lean = column % 2 === 0 ? 1 : -1
-                        const halfWidth = pitch * 0.42
-                        const rise = lean * pitch * 0.28
-                        const lip = pitch * 0.15
-                        const startY = height * (0.12 + column * 0.14)
-                        for (let y = startY; y < height + pitch; y += pitch * 0.74) {
-                            ctx.fillStyle = Qt.alpha(accent, 0.35)
-                            ctx.beginPath()
-                            ctx.moveTo(x - halfWidth, y + rise)
-                            ctx.quadraticCurveTo(x, y - lip * 2, x + halfWidth, y - rise)
-                            ctx.closePath()
-                            ctx.fill()
-
-                            ctx.fillStyle = Qt.alpha(pigment, 0.16)
-                            ctx.beginPath()
-                            ctx.moveTo(x + halfWidth, y - rise)
-                            ctx.quadraticCurveTo(x, y + lip * 2, x - halfWidth, y + rise)
-                            ctx.closePath()
-                            ctx.fill()
+                ctx.lineWidth = 1
+                for (let corner = 0; corner < 2; ++corner) {
+                    for (let ring = 0; ring < rings; ++ring) {
+                        const phase = ring * 2 * Math.PI / rings
+                        ctx.beginPath()
+                        for (let step = 0; step <= 96; ++step) {
+                            const angle = step * Math.PI / 192
+                            const r = radius * (0.68 + 0.12 * Math.cos(12 * angle + phase)
+                                + 0.14 * ring / (rings - 1))
+                            const x = radius * 0.03 + r * Math.cos(angle)
+                            const y = radius * 0.03 + r * Math.sin(angle)
+                            if (step === 0) ctx.moveTo(x, y)
+                            else ctx.lineTo(x, y)
                         }
+                        ctx.strokeStyle = ring % 2 ? Qt.alpha(pigment, 0.18) : Qt.alpha(accent, 0.31)
+                        ctx.stroke()
                     }
                     ctx.translate(width, height)
                     ctx.rotate(Math.PI)
@@ -821,7 +816,7 @@ ClippingRectangle {
                 ctx.save()
                 if (root.traceThemeFrame(ctx, 0)) ctx.clip()
                 if (finish === "monolith") paintSlateFace(ctx)
-                else paintCeramic(ctx)
+                else paintGuilloche(ctx)
                 ctx.restore()
             }
         }

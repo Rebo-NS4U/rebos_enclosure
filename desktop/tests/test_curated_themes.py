@@ -6,14 +6,14 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 
 class CuratedThemeTests(unittest.TestCase):
-    def test_frosted_ceramic_migrates_saved_selections(self):
+    def test_guilloche_migrates_saved_selections(self):
         for app in ('shell', 'assistant'):
             with self.subTest(app=app):
                 source = (ROOT / f'system/apps/{app}/config/ConfigValidator.js').read_text().replace('.pragma library', '')
                 subprocess.run(['node', '-e', source + '''
 const assert = require('node:assert/strict');
-for (const style of ['suspended-film', 'circuit-glass', 'prism-glass', 'optical-instrument', 'frosted-ceramic']) {
- assert.equal(validate({shellStyle: style}, {shellStyle: 'frosted'}).shellStyle, 'frosted-ceramic');
+for (const style of ['frosted-ceramic', 'suspended-film', 'circuit-glass', 'prism-glass', 'optical-instrument', 'guilloche']) {
+ assert.equal(validate({shellStyle: style}, {shellStyle: 'frosted'}).shellStyle, 'guilloche');
 }
 '''], check=True)
 
@@ -25,7 +25,7 @@ for (const style of ['suspended-film', 'circuit-glass', 'prism-glass', 'optical-
 const assert = require('node:assert/strict');
 const ids = ['monolith','blueprint','terminal-hardware'];
 assert.deepEqual(styles.slice(0,3).map(s=>s.id), ['canopy','orbital','metropolis']);
-assert.deepEqual(styles.map(s => s.id).sort(), [...ids, 'frosted', 'colorful', 'glass-vault', 'radar-station', 'frosted-ceramic', 'canopy', 'orbital', 'metropolis', 'clear-glass'].sort());
+assert.deepEqual(styles.map(s => s.id).sort(), [...ids, 'frosted', 'colorful', 'glass-vault', 'radar-station', 'guilloche', 'canopy', 'orbital', 'metropolis', 'clear-glass'].sort());
 assert.ok(!styles.some(s => ['botanical-archive','condensation','optical-instrument'].includes(s.id)));
 for (const id of ids) {
  assert.ok(styles.some(s => s.id === id));
@@ -77,7 +77,7 @@ assert.equal(surface('terminal-hardware', 'primary', p).gradient.length, 1);
 assert.equal(surface('terminal-hardware', 'internalbg', p).gradient[0][0], p.background);
 for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++)
  assert.notDeepEqual(surface(ids[i], 'bg', p), surface(ids[j], 'bg', p));
-const materials = ['glass-vault','radar-station','frosted-ceramic','clear-glass','canopy','orbital','metropolis'];
+const materials = ['glass-vault','radar-station','guilloche','clear-glass','canopy','orbital','metropolis'];
 assert.equal(styles[styles.length - 1].id, 'clear-glass');
 for (const id of materials) {
  assert.equal(themePalette(id), null);
@@ -110,9 +110,9 @@ assert.equal(surface('clear-glass', 'bg', p).radius, undefined);
 assert.equal(surface('clear-glass', 'pane', p).border[1], 0);
 assert.equal(surface('glass-vault', 'bg', p).radius, undefined);
 assert.equal(surface('radar-station', 'bg', p).radius, undefined);
-assert.equal(surface('frosted-ceramic', 'bg', p).radius, undefined);
-assert.ok(surface('frosted-ceramic', 'bg', p).opacity > surface('frosted-ceramic', 'internalbg', p).opacity);
-assert.equal(surface('frosted-ceramic', 'focus', p).border[0], p.primary);
+assert.equal(surface('guilloche', 'bg', p).radius, undefined);
+assert.ok(surface('guilloche', 'bg', p).opacity > surface('guilloche', 'internalbg', p).opacity);
+assert.equal(surface('guilloche', 'focus', p).border[0], p.primary);
 for (let i=0; i<materials.length; i++) for (let j=i+1; j<materials.length; j++)
  assert.notDeepEqual(surface(materials[i], 'bg', p), surface(materials[j], 'bg', p));
 // A neutral selected palette must stay neutral through every material theme.

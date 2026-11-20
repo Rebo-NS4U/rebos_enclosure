@@ -43,10 +43,10 @@ ShellRoot {
   StyledRect { id: metroPane; width:220; height:130; variant:"pane"; styleOverride:"metropolis" }
   StyledRect { id: metroBar; width:580; height:40; variant:"bar"; styleOverride:"metropolis" }
   StyledRect { id: metroPreview; width:200; height:42; materialPreview:true; variant:"bg"; styleOverride:"metropolis" }
-  StyledRect { id: ceramic; width:500; height:240; variant:"popup"; styleOverride:"frosted-ceramic" }
-  StyledRect { id: ceramicPane; width:220; height:130; variant:"pane"; styleOverride:"frosted-ceramic" }
-  StyledRect { id: ceramicPreview; width:180; height:42; materialPreview:true; variant:"bg"; styleOverride:"frosted-ceramic" }
-  StyledRect { id: ceramicBar; width:580; height:40; barSurface:true; variant:"bar"; styleOverride:"frosted-ceramic" }
+  StyledRect { id: engraved; width:500; height:240; variant:"popup"; styleOverride:"guilloche" }
+  StyledRect { id: engravedPane; width:220; height:130; variant:"pane"; styleOverride:"guilloche" }
+  StyledRect { id: engravedPreview; width:180; height:42; materialPreview:true; variant:"bg"; styleOverride:"guilloche" }
+  StyledRect { id: engravedBar; width:580; height:40; barSurface:true; variant:"bar"; styleOverride:"guilloche" }
   StyledRect { id: canopy; width:500; height:240; variant:"bg"; styleOverride:"canopy" }
   StyledRect { id: canopyPane; width:220; height:130; variant:"pane"; styleOverride:"canopy" }
   StyledRect { id: canopyBar; width:580; height:40; variant:"bar"; barSurface:true; styleOverride:"canopy" }
@@ -80,10 +80,10 @@ ShellRoot {
     if (decoration(surface) || !surface.isSingleColorGradient || surface.border.width !== 1)
      throw Error("Expected a plain Frosted fill and fine rim on " + surface.variant);
    }
-   for (const surface of [ceramic, ceramicPane, ceramicPreview, ceramicBar]) {
+   for (const surface of [engraved, engravedPane, engravedPreview, engravedBar]) {
     const {width, height} = surface;
-    if (surface === ceramicPane || surface === ceramicBar) {
-     if (decoration(surface)) throw Error("Expected a plain matte Ceramic " + surface.variant);
+    if (surface === engravedPane || surface === engravedBar) {
+     if (decoration(surface)) throw Error("Expected a plain Guilloché " + surface.variant);
     } else {
      const pixels = decoration(surface).getContext("2d").getImageData(0, 0, width, height).data;
      let marked = 0;
@@ -94,14 +94,15 @@ ShellRoot {
      }
      const coverage = marked / (width * height);
      const edge = Math.floor(width * 0.22);
-     if (coverage < 0.025 || coverage > 0.17 || peak < 55 || peak > 145 ||
-         !hasMarks(surface, 0, 0, edge, height) || !hasMarks(surface, width - edge, 0, edge, height) ||
+     if (coverage < 0.002 || coverage > 0.05 || peak < 50 || peak > 215 ||
+         !hasMarks(surface, 0, 0, edge, height / 2) || !hasMarks(surface, width - edge, height / 2, edge, height / 2) ||
+         hasMarks(surface, 0, height / 2, edge, height / 2) || hasMarks(surface, width - edge, 0, edge, height / 2) ||
          hasMarks(surface, edge, 0, width - 2 * edge, height))
-      throw Error("Expected visible Ceramic carving around a clear center on " + surface.variant +
+      throw Error("Expected visible Guilloché engraving around a clear center on " + surface.variant +
                   ", coverage " + coverage + ", peak " + peak);
     }
     if (surface.color.a < 0.75 || surface.color.a > 0.89)
-     throw Error("Expected slightly transparent Ceramic fill on " + surface.variant + ", alpha " + surface.color.a);
+     throw Error("Expected slightly transparent Guilloché fill on " + surface.variant + ", alpha " + surface.color.a);
    }
    if (!hasMarks(popup, 375, 0, 125, 80) || !hasMarks(popup, 170, 65, 160, 70))
     throw Error("Missing slate across the window");

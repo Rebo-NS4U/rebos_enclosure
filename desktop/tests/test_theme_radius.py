@@ -66,7 +66,7 @@ ShellRoot {
   StyledRect { id: orbitalPane; width: 256; height: 129; variant: "pane"; styleOverride: "orbital"; radius: 16 }
   Grid { columns: 3; spacing: 2
    Repeater { id: cards
-    model: ["glass-vault","radar-station","frosted-ceramic","monolith","blueprint","terminal-hardware","frosted","colorful","clear-glass","canopy","orbital","metropolis"]
+    model: ["glass-vault","radar-station","guilloche","monolith","blueprint","terminal-hardware","frosted","colorful","clear-glass","canopy","orbital","metropolis"]
     StyledRect { required property string modelData; width:96; height:72; variant:"bg"; styleOverride:modelData; animateRadius:false }
    }
   }

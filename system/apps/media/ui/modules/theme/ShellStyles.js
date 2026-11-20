@@ -6,7 +6,7 @@ var styles = [
     {id: "metropolis", label: "Metropolis", font: "DejaVu Sans", description: "Stepped towers and lit windows frame a low city skyline."},
     {id: "glass-vault", label: "Glass Vault", font: "Noto Sans", description: "Thick glass blocks, rounded clamps, refractive light bands and deep inset controls."},
     {id: "radar-station", label: "Radar Station", font: "DejaVu Sans", description: "Etched bearing scales, radial divisions and softly illuminated scope glass."},
-    {id: "frosted-ceramic", label: "Frosted Ceramic", font: "Noto Sans", description: "Staggered herringbone cuts frame translucent matte clay."},
+    {id: "guilloche", label: "Guilloché", font: "Noto Sans", description: "Interlaced corner rosettes engraved into a softly tinted face."},
     {id: "monolith", label: "Monolith", font: "Noto Sans", description: "Layered slate with a diagonal fault, tapered mineral seams and exposed edges."},
     {id: "blueprint", label: "Blueprint", font: "JetBrains Mono", description: "Architectural drafting sheets, truss details, ruled scales and wire controls."},
     {id: "terminal-hardware", label: "Terminal Hardware", font: "DejaVu Sans Mono", description: "Flat machined panels, inset bezels and sparse cooling vents."},
@@ -151,17 +151,17 @@ function surface(style, variant, p, ditherStrength) {
             if (focused) border[0] = p.primary;
         }
     }
-    // Glass and ceramic finishes preserve the selected palette.
-    var vault=style === "glass-vault", radar=style === "radar-station", ceramic=style === "frosted-ceramic";
+    // Glass and engraved finishes preserve the selected palette.
+    var vault=style === "glass-vault", radar=style === "radar-station", engraved=style === "guilloche";
     if ((vault || radar) && neutral) {
         fill=mix(p.background,p.foreground,inset?0.012:focused?0.07:0.03);
         item=p.foreground;
         opacity=vault?(inset?0.82:focused?0.94:0.70):(inset?0.76:focused?0.92:0.64);
         border=[focused?p.primary:mix(fill,p.foreground,vault?0.36:0.34),vault?2:1];
     }
-    if (ceramic && neutral) {
+    if (engraved && neutral) {
         var raised = outer || variant === "bar";
-        fill = mix(p.background, p.foreground, inset ? 0.025 : focused ? 0.12 : 0.075);
+        fill = mix(p.background, p.primary, inset ? 0.025 : focused ? 0.12 : 0.065);
         item = p.foreground;
         opacity = focused ? 0.93 : raised ? 0.85 : inset ? 0.76 : 0.83;
         border = [focused ? p.primary : mix(fill, p.foreground, raised ? 0.21 : 0.13), 1];
