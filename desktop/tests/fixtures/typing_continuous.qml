@@ -81,8 +81,27 @@ ShellRoot {
                 if (phase === 4) {
                     if (practice.position !== expectedPosition || input.text !== expectedInput)
                         throw Error("Full-height rolling window lost progress");
-                    practice.saveProgress();
-                    console.log("PASS: bounded continuous windows preserve the compact viewport, context, input, chapter progress, page transitions and fullscreen font reflow");
+                    practice.fullscreen = false;
+                    practice.send({action: "add", title: "Previous paragraph test",
+                        text: "First 😀 paragraph.\n\nSecond paragraph.\n\nThird paragraph."});
+                    phase++; return;
+                }
+                if (phase === 5) {
+                    practice.seek(practice.characters("First 😀 paragraph. Second paragraph. ").length);
+                    phase++; return;
+                }
+                if (phase === 6) {
+                    if (practice.pageHistory.length || !practice.position || input.text.length)
+                        throw Error("Previous-page fallback was not set up");
+                    practice.previousPage();
+                    phase++; return;
+                }
+                if (phase === 7) {
+                    if (input.text !== "\tFirst 😀 paragraph.\n\n\tSecond paragraph.")
+                        throw Error("Previous-page fallback misaligned input: " + JSON.stringify(input.text));
+                    if (!practice.passage.startsWith(input.text) || practice.correctCount() !== practice.characters(input.text).length)
+                        throw Error("Restored input registered as mistyped");
+                    console.log("PASS: bounded continuous windows preserve the compact viewport, context, input, chapter progress, page transitions, fullscreen font reflow and correctly formatted backtracking");
                     Qt.quit();
                 }
             } catch (error) { console.error(error); Qt.exit(1); }

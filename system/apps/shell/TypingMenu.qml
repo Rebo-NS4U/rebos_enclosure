@@ -782,7 +782,7 @@ Item {
             widthCache[text] = Math.max(0, typingMetrics.advanceWidth(text));
         return widthCache[text];
     }
-    property real pendingScrollShift: 0
+    property int pendingScrollRows: 0
     property bool slidingWindow: false
     property string fittedSource: ""
     property string fittedGeometry: ""
@@ -1022,12 +1022,12 @@ Item {
                 if (words[middle].start <= visualCursor) { line = words[middle].line; low = middle + 1; }
                 else high = middle - 1;
             }
-            // Keep visible rows still so crossing a line does not rebuild the
-            // viewport's edge glyphs. Recenter when the caret leaves the viewport.
+            // Follow each new row after the passage reaches the midpoint.
+            // Same-row keystrokes allow manual scrolling while the caret stays visible.
             const rowY = line * passageLineHeight;
             const caretY = rowY + passageVisuals.centerPadding;
             const middle = Math.max(0, (passageVisuals.height - passageLineHeight) / 2);
-            if (caretY < passageVisuals.contentY
+            if (line !== scrollLine || caretY < passageVisuals.contentY
                     || caretY + passageLineHeight > passageVisuals.contentY + passageVisuals.height)
                 passageVisuals.contentY = Math.max(0, Math.min(caretY - middle,
                     passageVisuals.contentHeight - passageVisuals.height));
@@ -1223,7 +1223,8 @@ Item {
                 }
                 send({action: "previous", id: bookId, resolved: true,
                     position: data.previousStart + characters(data.previousText.slice(0, last)).length,
-                    typed: readingMode ? "" : characters(text).slice(0, -1).join(""), loops: data.loops});
+                    typed: readingMode ? "" : characters(text).slice(0, -1).join(""),
+                    source_typed: !readingMode, loops: data.loops});
                 return;
             }
             if (data.empty) { busy = false; practicing = false; return; }
@@ -1272,9 +1273,11 @@ Item {
             position = data.position; rounds = data.loops; sourceOffsets = data.sourceOffsets || []; bookRevision = data.revision === undefined ? -1 : data.revision; if (data.chapters) chapters = data.chapters;
             resetPageCaret();
             paragraphStarts = data.paragraphStarts || [];
-            if (continuingWindow)
-                passageVisuals.contentY = Math.max(0, passageVisuals.contentY - pendingScrollShift);
-            pendingScrollShift = 0;
+            if (continuingWindow) {
+                passageVisuals.contentY = Math.max(0, passageVisuals.contentY - pendingScrollRows * passageLineHeight);
+                scrollLine -= pendingScrollRows;
+            }
+            pendingScrollRows = 0;
             pageSource = data.passage; fitPage(continuingWindow);
             answer.text = data.typed; answer.cursorPosition = answer.length;
             if (continuingWindow) speedBaseline = correctCount();
@@ -1569,7 +1572,7 @@ Item {
             pageHistory = pageHistory.concat([{position: position, rounds: rounds,
                 typed: answer.text, width: width, lines: pageLineLimit}]).slice(-128);
             const consumed = sourceCount(characters(passage.slice(0, offset)).length);
-            pendingScrollShift = (pageLayout.words.find(word => word.start === offset)?.line || 0) * passageLineHeight;
+            pendingScrollRows = pageLayout.words.find(word => word.start === offset)?.line || 0;
             slidingWindow = true;
             dirty = false; turningPage = true; pageDirection = 1;
             send({action: "next", id: bookId, position: position + consumed,

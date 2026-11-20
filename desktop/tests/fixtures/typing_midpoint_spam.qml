@@ -5,7 +5,7 @@ ShellRoot {
     Window {
         visible: true
         width: 800; height: 640
-        TypingMenu { id: practice; anchors.fill: parent }
+        TypingMenu { id: practice; anchors.fill: parent; viewportHeight: 720 }
     }
     function find(item, name) {
         if (item.objectName === name) return item;
@@ -30,11 +30,11 @@ ShellRoot {
                     input.text = practice.passage.slice(0, early.start); input.cursorPosition = input.length;
                     practice.syncCaret();
                     if (scroll.contentY !== 0) throw Error("Scrolled before the middle");
-                    const later = practice.pageLayout.words.find(word => word.line * practice.passageLineHeight + scroll.centerPadding + practice.passageLineHeight > scroll.height);
+                    const later = practice.pageLayout.words.find(word => word.line * practice.passageLineHeight + scroll.centerPadding > middle);
                     input.text = practice.passage.slice(0, later.start); input.cursorPosition = input.length;
                     practice.syncCaret();
                     const screenY = later.line * practice.passageLineHeight + scroll.centerPadding - scroll.contentY;
-                    if (scroll.contentY <= 0 || Math.abs(screenY - middle) > 1) throw Error("Offscreen row did not recenter the fullscreen viewport");
+                    if (scroll.contentY <= 0 || Math.abs(screenY - middle) > 1) throw Error("Fullscreen row did not center at the midpoint");
                     practice.fullscreen = false; practice.fitPage(); phase++; return;
                 }
                 if (phase === 2) {
@@ -46,7 +46,6 @@ ShellRoot {
                 }
                 if (phase === 3) {
                     const newline = practice.pageLayout.words.find(word => word.line === 4 && word.text === "\n");
-                    const beforeReturn = scroll.contentY;
                     const nextGlyph = practice.glyphItems[newline.start + 2];
                     if (!nextGlyph) throw Error("Next row was not rendered");
                     if (!practice.handleWhitespaceKey({key: Qt.Key_Return, modifiers: 0})
@@ -54,14 +53,15 @@ ShellRoot {
                         throw Error("Return did not insert the required newline");
                     if (practice.scrollLine !== 5 || Math.abs(nextGlyph.opacity - 0.85) > 0.001)
                         throw Error("Return did not highlight the next row immediately");
-                    if (beforeReturn !== 0 || scroll.contentY !== beforeReturn)
-                        throw Error("Return scrolled while the next row was visible");
+                    if (Math.abs(5 * practice.passageLineHeight + scroll.centerPadding - scroll.contentY - middle) > 1)
+                        throw Error("Return did not center the active row");
                     const nextReturn = practice.pageLayout.words.find(word => word.line === 5 && word.text === "\n");
                     input.text = practice.passage.slice(0, nextReturn.start); input.cursorPosition = input.length;
-                    const beforeOffscreenReturn = scroll.contentY;
+                    const beforeNextReturn = scroll.contentY;
                     practice.handleWhitespaceKey({key: Qt.Key_Return, modifiers: 0});
-                    if (beforeOffscreenReturn !== 0 || scroll.contentY <= 0 || Math.abs(6 * practice.passageLineHeight + scroll.centerPadding - scroll.contentY - middle) > 1)
-                        throw Error("Return did not recenter for an offscreen row");
+                    if (Math.abs(scroll.contentY - beforeNextReturn - practice.passageLineHeight) > 1
+                            || Math.abs(6 * practice.passageLineHeight + scroll.centerPadding - scroll.contentY - middle) > 1)
+                        throw Error("Return did not keep the next row centered");
                     input.text = ""; input.cursorPosition = 0;
                     practice.focusPassage();
                     const started = Date.now();
@@ -80,7 +80,7 @@ ShellRoot {
                     if (input.text !== "x".repeat(200) || practice.pendingKeys !== "a".repeat(199) + "\t\n") throw Error("Transition buffer lost input");
                     practice.queueTyping("😀"); practice.undoQueuedKey();
                     if (!practice.pendingKeys.endsWith("\t\n")) throw Error("Queued Unicode backspace split a character");
-                    console.log("PASS: stable visible rows, recentering for offscreen rows, immediate Return highlighting, rapid keys retained, transition buffering and Unicode backspace");
+                    console.log("PASS: centered compact and fullscreen rows, immediate Return highlighting, rapid keys retained, transition buffering and Unicode backspace");
                     running = false;
                     Qt.quit();
                 }
