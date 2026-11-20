@@ -1272,7 +1272,7 @@ Item {
             position = data.position; rounds = data.loops; sourceOffsets = data.sourceOffsets || []; bookRevision = data.revision === undefined ? -1 : data.revision; if (data.chapters) chapters = data.chapters;
             resetPageCaret();
             paragraphStarts = data.paragraphStarts || [];
-            if (continuingWindow && fullscreen)
+            if (continuingWindow)
                 passageVisuals.contentY = Math.max(0, passageVisuals.contentY - pendingScrollShift);
             pendingScrollShift = 0;
             pageSource = data.passage; fitPage(continuingWindow);
