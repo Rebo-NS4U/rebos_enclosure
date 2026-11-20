@@ -61,10 +61,9 @@ leaving the clock clear.
 Monolith uses an opaque slate face. A diagonal fault crosses the window, with
 thin mineral seams along its broken edges and offset beds above and below.
 The markings recede on nested panes. Compact bars retain the exposed layers
-along the lower left edge. Frosted Ceramic has a translucent matte base with a softly
-raised rim. A pool of glaze sweeps across the face in the palette’s primary
-and secondary colors, with a fine tide line along its edge. Staggered fans in the selected accent frame opposite corners,
-scaling down to small stamps on bars and previews. Both follow the selected
+along the lower left edge. Frosted Ceramic uses one soft accent wash along the top of
+windows and popups. Bars and inner panes use a plain translucent matte fill.
+Both themes follow the selected
 palette and saved corner radius. Existing Suspended Film selections migrate
 to Frosted Ceramic.
 

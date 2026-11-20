@@ -722,7 +722,7 @@ ClippingRectangle {
         readonly property bool panel: ["bg", "popup", "pane", "surface", "surfaceContainer", "internalbg", "focus", "surfaceVariant"].includes(root.variant)
         active: !root.hasFillColor && root.rectOpacity > 0 && (finish === "monolith"
             ? panel || root.controlSurface || ["common", "primary", "primaryfocus", "secondary", "secondaryfocus", "tertiary", "tertiaryfocus", "error", "errorfocus"].includes(root.variant)
-            : !root.controlSurface && finish === "frosted-ceramic" && (panel || root.variant === "bar"))
+            : finish === "frosted-ceramic" && !root.barSurface && !root.controlSurface && (root.variant === "bg" || root.variant === "popup"))
         sourceComponent: Canvas {
             objectName: "surface-edge-canvas"
             anchors.fill: parent
@@ -730,14 +730,12 @@ ClippingRectangle {
             readonly property string finish: root.styleOverride || Styling.shellStyle
             readonly property color pigment: root.itemColor
             readonly property color accent: Colors.primary
-            readonly property color glazeColor: Colors.secondary
             readonly property real cornerRadius: root.effectiveCornerRadius
             readonly property var frameCorners: [root.topLeftRadius, root.topRightRadius, root.bottomLeftRadius, root.bottomRightRadius]
             readonly property bool outer: root.barSurface || ["bg", "popup", "bar"].includes(root.variant)
             onFinishChanged: requestPaint()
             onPigmentChanged: requestPaint()
             onAccentChanged: requestPaint()
-            onGlazeColorChanged: requestPaint()
             onCornerRadiusChanged: requestPaint()
             onFrameCornersChanged: requestPaint()
             onOuterChanged: requestPaint()
@@ -781,81 +779,12 @@ ClippingRectangle {
                 bed([[.76,.895,0],[.83,.795,.10],[.86,.78,.19],[.95,.729,0]], pigment, 0.26)
             }
 
-            function paintGlazeFans(ctx) {
-                // Two staggered rows of fan stamps taper toward the panel center.
-                const size = Math.min(outer ? 23 : 15, width * 0.05, height * 0.27)
-                if (size < 4) return
-                ctx.lineWidth = Math.max(0.8, size * 0.075)
-                for (let row = 0; row < 2; ++row) {
-                    const count = row === 0 ? 3 : 2
-                    for (let column = 0; column < count; ++column) {
-                        const x = 5 + size * (1 + 2 * column + row * 0.55)
-                        const y = height - 5 - size * row * 0.90
-                        const strength = (outer ? 0.54 : 0.32) * (1 - column * 0.15)
-                        ctx.beginPath()
-                        ctx.moveTo(x, y)
-                        ctx.arc(x, y, size, -Math.PI * 0.91, -Math.PI * 0.09)
-                        ctx.closePath()
-                        ctx.fillStyle = Qt.alpha(accent, strength * 0.22)
-                        ctx.fill()
-                        ctx.strokeStyle = Qt.alpha(accent, strength)
-                        ctx.stroke()
-                        for (const band of [0.47, 0.72]) {
-                            ctx.beginPath()
-                            ctx.arc(x, y, size * band, -Math.PI * 0.91, -Math.PI * 0.09)
-                            ctx.stroke()
-                        }
-                    }
-                }
-            }
-
-            function paintPooledGlaze(ctx) {
-                const depth = outer ? 1 : 0.68
-                const glaze = ctx.createLinearGradient(0, height, width, 0)
-                glaze.addColorStop(0, Qt.alpha(glazeColor, 0.24 * depth))
-                glaze.addColorStop(0.48, Qt.alpha(glazeColor, 0.09 * depth))
-                glaze.addColorStop(1, Qt.alpha(accent, 0.23 * depth))
-
-                // A wide pool narrows into a neck before flowing up the far edge.
-                ctx.beginPath()
-                ctx.moveTo(0, height * 0.38)
-                ctx.bezierCurveTo(width * 0.19, height * 0.34, width * 0.28, height * 0.83, width * 0.53, height * 0.65)
-                ctx.bezierCurveTo(width * 0.76, height * 0.48, width * 0.74, height * 0.19, width, height * 0.14)
-                ctx.lineTo(width, height * 0.43)
-                ctx.bezierCurveTo(width * 0.81, height * 0.35, width * 0.74, height * 0.66, width * 0.54, height * 0.74)
-                ctx.bezierCurveTo(width * 0.28, height * 0.88, width * 0.18, height * 0.54, 0, height * 0.79)
-                ctx.closePath()
-                ctx.fillStyle = glaze
-                ctx.fill()
-
-                // A fine tide line records where the liquid glaze receded.
-                ctx.beginPath()
-                ctx.moveTo(0, height * 0.75)
-                ctx.bezierCurveTo(width * 0.18, height * 0.52, width * 0.29, height * 0.85, width * 0.53, height * 0.72)
-                ctx.bezierCurveTo(width * 0.76, height * 0.61, width * 0.81, height * 0.31, width, height * 0.39)
-                ctx.lineWidth = outer ? 1.2 : 0.8
-                ctx.strokeStyle = Qt.alpha(pigment, 0.12 * depth)
-                ctx.stroke()
-            }
-
             function paintCeramic(ctx) {
-                paintPooledGlaze(ctx)
-                const rimWidth = outer ? 3 : 1.5
-                if (!root.traceThemeFrame(ctx, rimWidth)) return
-                const light = outer ? 0.20 : 0.12
-                const shadow = outer ? 0.24 : 0.14
-                const rim = ctx.createLinearGradient(0, 0, width * 0.35, height)
-                rim.addColorStop(0, Qt.rgba(1, 1, 1, light))
-                rim.addColorStop(0.46, Qt.rgba(1, 1, 1, 0.025))
-                rim.addColorStop(0.54, Qt.rgba(0, 0, 0, 0.025))
-                rim.addColorStop(1, Qt.rgba(0, 0, 0, shadow))
-                ctx.strokeStyle = rim
-                ctx.lineWidth = rimWidth
-                ctx.stroke()
-                paintGlazeFans(ctx)
-                ctx.translate(width, height)
-                ctx.rotate(Math.PI)
-                paintGlazeFans(ctx)
+                const wash = ctx.createLinearGradient(0, 0, 0, height * 0.65)
+                wash.addColorStop(0, Qt.alpha(accent, 0.11))
+                wash.addColorStop(1, Qt.alpha(accent, 0))
+                ctx.fillStyle = wash
+                ctx.fillRect(0, 0, width, height)
             }
 
             onPaint: {

@@ -82,17 +82,15 @@ ShellRoot {
    }
    for (const surface of [ceramic, ceramicPane, ceramicPreview, ceramicBar]) {
     const {width, height} = surface;
-    if (!hasMarks(surface, 10, height - 24, 32, 16) || !hasMarks(surface, width - 42, 8, 32, 16))
-     throw Error("Missing Ceramic glaze inside the rim on " + surface.variant);
-    const column = decoration(surface).getContext("2d").getImageData(Math.floor(width / 2), 6, 1, height - 12).data;
-    let peak = 0;
-    let clear = false;
-    for (let i = 3; i < column.length; i += 4) {
-     peak = Math.max(peak, column[i]);
-     if (column[i] === 0) clear = true;
+    if (surface === ceramicPane || surface === ceramicBar) {
+     if (decoration(surface)) throw Error("Expected a plain matte Ceramic " + surface.variant);
+    } else {
+     const pixels = decoration(surface).getContext("2d").getImageData(0, 0, width, height).data;
+     let peak = 0;
+     for (let i = 3; i < pixels.length; i += 4) peak = Math.max(peak, pixels[i]);
+     if (peak < 8 || peak > 32 || hasMarks(surface, 8, Math.floor(height * 0.7), width - 16, 4))
+      throw Error("Expected a soft Ceramic wash fading into matte clay, peak " + peak);
     }
-    if (peak < 8 || peak > 65 || !clear)
-     throw Error("Expected a translucent glaze band and exposed clay across " + surface.variant + ", peak " + peak);
     if (surface.color.a < 0.75 || surface.color.a > 0.89)
      throw Error("Expected slightly transparent Ceramic fill on " + surface.variant + ", alpha " + surface.color.a);
    }
