@@ -63,7 +63,7 @@ Kitty follows the exported surface palette and opacity as well as the selected s
 
 ## Translucent materials
 
-Glass Vault uses thick stepped blocks, bold corner clamps and deep inset controls. Radar Station uses static bearing scales, partial range arcs, crosshair junctions and segmented controls. Frosted Ceramic adds fine stoneware speckles along the side edges of windows and popups. Bars and inner panes use a plain translucent matte fill. All three preserve the selected semantic colors and provide matching native terminal profiles. Selecting one enables shell blur if off and resets the manual transparency override; existing blur location and strength preferences are preserved.
+Glass Vault uses thick stepped blocks, bold corner clamps and deep inset controls. Radar Station uses static bearing scales, partial range arcs, crosshair junctions and segmented controls. Frosted Ceramic adds carved herringbone bands along the sides of windows and popups. Bars and inner panes use a plain translucent matte fill. All three preserve the selected semantic colors and provide matching native terminal profiles. Selecting one enables shell blur if off and resets the manual transparency override; existing blur location and strength preferences are preserved.
 
 Saved Smoked Acrylic selections migrate to Glass Vault, Glass Console to Radar Station, and Suspended Film and Circuit Glass to Frosted Ceramic. Older predecessors migrate directly to the corresponding current theme.
 

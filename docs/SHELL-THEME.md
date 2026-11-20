@@ -61,7 +61,7 @@ leaving the clock clear.
 Monolith uses an opaque slate face. A diagonal fault crosses the window, with
 thin mineral seams along its broken edges and offset beds above and below.
 The markings recede on nested panes. Compact bars retain the exposed layers
-along the lower left edge. Frosted Ceramic uses fine stoneware speckles along the side edges
+along the lower left edge. Frosted Ceramic uses carved herringbone bands along the sides
 of windows and popups. Bars and inner panes use a plain translucent matte fill.
 Both themes follow the selected
 palette and saved corner radius. Existing Suspended Film selections migrate

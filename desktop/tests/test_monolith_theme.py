@@ -92,10 +92,13 @@ ShellRoot {
       if (pixels[i] > 0) ++marked;
       peak = Math.max(peak, pixels[i]);
      }
-     if (marked > width * height * 0.012 || peak > 65 ||
-         !hasMarks(surface, 0, 0, 18, height) || !hasMarks(surface, width - 18, 0, 18, height) ||
-         hasMarks(surface, 18, 0, width - 36, height))
-      throw Error("Expected sparse Ceramic edge flecks and a clear center on " + surface.variant);
+     const coverage = marked / (width * height);
+     const edge = Math.floor(width * 0.22);
+     if (coverage < 0.025 || coverage > 0.17 || peak < 55 || peak > 145 ||
+         !hasMarks(surface, 0, 0, edge, height) || !hasMarks(surface, width - edge, 0, edge, height) ||
+         hasMarks(surface, edge, 0, width - 2 * edge, height))
+      throw Error("Expected visible Ceramic carving around a clear center on " + surface.variant +
+                  ", coverage " + coverage + ", peak " + peak);
     }
     if (surface.color.a < 0.75 || surface.color.a > 0.89)
      throw Error("Expected slightly transparent Ceramic fill on " + surface.variant + ", alpha " + surface.color.a);

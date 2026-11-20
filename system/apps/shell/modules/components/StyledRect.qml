@@ -797,21 +797,38 @@ ClippingRectangle {
             }
 
             function paintCeramic(ctx) {
-                // Dry mineral flecks repeat at the margins in a fixed clay-grain pattern.
-                const grains = [[6, 8, 1.2], [9, 11, 0.65], [14, 32, 0.95], [7, 49, 0.75]]
-                ctx.fillStyle = Qt.alpha(pigment, 0.22)
-                ctx.beginPath()
-                for (let y = 0; y < height; y += 64) {
-                    for (const [inset, offset, radius] of grains) {
-                        const leftY = y + offset
-                        const rightY = y + 60 - offset
-                        ctx.moveTo(inset + radius, leftY)
-                        ctx.arc(inset, leftY, radius, 0, Math.PI * 2)
-                        ctx.moveTo(width - inset + radius, rightY)
-                        ctx.arc(width - inset, rightY, radius, 0, Math.PI * 2)
+                const pitch = Math.min(28, width * 0.058, height * 0.28)
+                if (pitch < 4) return
+                // Alternating tool cuts form a herringbone band with two flat facets per cut.
+                ctx.save()
+                for (let side = 0; side < 2; ++side) {
+                    for (let column = 0; column < 3; ++column) {
+                        const x = pitch * (column + 0.7)
+                        const lean = column % 2 === 0 ? 1 : -1
+                        const halfWidth = pitch * 0.42
+                        const rise = lean * pitch * 0.28
+                        const lip = pitch * 0.15
+                        const startY = height * (0.12 + column * 0.14)
+                        for (let y = startY; y < height + pitch; y += pitch * 0.74) {
+                            ctx.fillStyle = Qt.alpha(accent, 0.35)
+                            ctx.beginPath()
+                            ctx.moveTo(x - halfWidth, y + rise)
+                            ctx.quadraticCurveTo(x, y - lip * 2, x + halfWidth, y - rise)
+                            ctx.closePath()
+                            ctx.fill()
+
+                            ctx.fillStyle = Qt.alpha(pigment, 0.16)
+                            ctx.beginPath()
+                            ctx.moveTo(x + halfWidth, y - rise)
+                            ctx.quadraticCurveTo(x, y + lip * 2, x - halfWidth, y + rise)
+                            ctx.closePath()
+                            ctx.fill()
+                        }
                     }
+                    ctx.translate(width, height)
+                    ctx.rotate(Math.PI)
                 }
-                ctx.fill()
+                ctx.restore()
             }
 
             onPaint: {
