@@ -1101,9 +1101,19 @@ Window {
                     }
                     RowLayout {
                         Layout.fillWidth: true
-                        StyledText { text: root.time(player.position); font.pixelSize: Styling.fontSize(-2) }
-                        ThemeSlider { id: seekSlider; Layout.fillWidth: true; from: 0; to: Math.max(1,player.duration); value: player.position; playing: player.playbackState === MediaPlayer.PlayingState; enabled: !!root.current; Accessible.name: "Seek"; onMoved: root.seek(value) }
-                        StyledText { text: root.time(player.duration); font.pixelSize: Styling.fontSize(-2) }
+                        StyledText { text: root.time(root.playbackPosition); font.pixelSize: Styling.fontSize(-2) }
+                        ThemeSlider {
+                            objectName: "music-seek"
+                            Layout.fillWidth: true
+                            to: Math.max(1, root.playbackDuration)
+                            value: root.playbackPosition
+                            playing: root.playing
+                            enabled: root.spotifyPreview ? !!root.spotifyPlayer?.canSeek : !!root.current
+                            snapValueOnMove: false
+                            Accessible.name: "Seek"
+                            onMoved: root.seek(pressed ? snapQuarter(value / to) * to : value)
+                        }
+                        StyledText { text: root.time(root.playbackDuration); font.pixelSize: Styling.fontSize(-2) }
                     }
                 }
             }
@@ -1583,7 +1593,18 @@ Window {
                 RowLayout {
                     Layout.fillWidth: true; spacing: 14
                     StyledText { text: root.time(root.playbackPosition); color: Colors.overSurfaceVariant }
-                    ThemeSlider { objectName: "music-fullscreen-seek"; Layout.fillWidth: true; stepSize: Math.min(5000, Math.max(100, root.playbackDuration / 20)); from: 0; to: Math.max(1, root.playbackDuration); value: root.playbackPosition; playing: root.playing; enabled: root.spotifyPreview ? !!root.spotifyPlayer?.canSeek : !!root.current; Accessible.name: "Seek"; onMoved: root.seek(value) }
+                    ThemeSlider {
+                        objectName: "music-fullscreen-seek"
+                        Layout.fillWidth: true
+                        stepSize: Math.min(5000, Math.max(100, root.playbackDuration / 20))
+                        to: Math.max(1, root.playbackDuration)
+                        value: root.playbackPosition
+                        playing: root.playing
+                        enabled: root.spotifyPreview ? !!root.spotifyPlayer?.canSeek : !!root.current
+                        snapValueOnMove: false
+                        Accessible.name: "Seek"
+                        onMoved: root.seek(pressed ? snapQuarter(value / to) * to : value)
+                    }
                     StyledText { text: root.time(root.playbackDuration); color: Colors.overSurfaceVariant }
                 }
                 RowLayout {

@@ -192,6 +192,11 @@ esac
                     phase = 1;
                 } else if (phase === 1 && music.playing) {
                     if (music.lyricLines.length !== 2 || music.estimatedTiming) { console.error("MUSIC_LYRICS_FAILED"); Qt.exit(1); }
+                    const rail = findItem(music.contentItem, "music-seek");
+                    const handleWidth = rail.handle.width;
+                    const x = rail.leftPadding + handleWidth / 2 + (rail.availableWidth - handleWidth) * 0.26;
+                    input.mouseClick(rail, x, rail.height / 2);
+                    if (Math.abs(music.playbackPosition - 1000) > 50) { console.error("MUSIC_PROGRESS_SNAP_FAILED", music.playbackPosition); Qt.exit(1); return; }
                     music.seek(1200);
                     const favorite = findItem(music.contentItem, "music-favorite-current");
                     if (favorite.parent.children[0].text !== music.current.title) { console.error("MUSIC_FAVORITE_PLACEMENT_FAILED"); Qt.exit(1); }
@@ -214,6 +219,8 @@ esac
                     repeatStart = attempts;
                     phase = 10;
                 } else if (phase === 10 && attempts >= repeatStart + 4) {
+                    const rail = findItem(music.contentItem, "music-seek");
+                    if (rail.value !== music.playbackPosition) { console.error("MUSIC_PROGRESS_STALE", rail.value, music.playbackPosition); Qt.exit(1); return; }
                     if (!music.playing || music.currentIndex !== 0 || music.lyricIndex !== 0) { console.error("MUSIC_REPEAT_SONG_FAILED"); Qt.exit(1); }
                     music.next(false);
                     phase = 2;
@@ -428,6 +435,16 @@ esac
                     if (spotify.isPlaying) { console.error("SPOTIFY_REMOTE_STOP_FAILED"); Qt.exit(1); return; }
                     spotify.play();
                     if (music.current.title !== "Suggested song" || music.playbackDuration !== 180000 || !music.playing) { console.error("SPOTIFY_METADATA_FAILED"); Qt.exit(1); return; }
+                    const rail = findItem(music.contentItem, "music-fullscreen-seek");
+                    const handleWidth = rail.handle.width;
+                    const x = rail.leftPadding + handleWidth / 2 + (rail.availableWidth - handleWidth) * 0.26;
+                    input.mouseClick(rail, x, rail.height / 2);
+                    if (spotify.position !== 45) { console.error("SPOTIFY_PROGRESS_SNAP_FAILED", spotify.position); Qt.exit(1); return; }
+                    spotify.position = 35;
+                    const windowedRail = findItem(music.contentItem, "music-seek");
+                    if (rail.value !== 35000 || windowedRail.value !== 35000 || windowedRail.to !== 180000) {
+                        console.error("SPOTIFY_PROGRESS_STALE", rail.value, windowedRail.value, windowedRail.to); Qt.exit(1); return;
+                    }
                     music.lyricText = "";
                     phase = 941;
                     repeatStart = attempts;

@@ -11,6 +11,7 @@ Slider {
     hoverEnabled: true
     opacity: enabled ? 1 : 0.45
     property bool playing: false
+    property bool snapValueOnMove: true
     readonly property real animatedPosition: pressed ? position : easedPosition
     property real easedPosition: position
     readonly property real animatedVisualPosition: (!horizontal || mirrored)
@@ -31,7 +32,7 @@ Slider {
     }
 
     onMoved: {
-        if (pressed && to !== from) {
+        if (snapValueOnMove && pressed && to !== from) {
             const ratio = (value - from) / (to - from);
             const snapped = snapQuarter(ratio);
             if (snapped !== ratio) value = from + snapped * (to - from);
