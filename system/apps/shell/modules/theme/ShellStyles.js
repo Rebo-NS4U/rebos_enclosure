@@ -10,7 +10,7 @@ var styles = [
     {id: "monolith", label: "Monolith", font: "Noto Sans", description: "Layered slate with a diagonal fault, tapered mineral seams and exposed edges."},
     {id: "blueprint", label: "Blueprint", font: "JetBrains Mono", description: "Architectural drafting sheets, truss details, ruled scales and wire controls."},
     {id: "terminal-hardware", label: "Terminal Hardware", font: "DejaVu Sans Mono", description: "Flat machined panels, inset bezels and sparse cooling vents."},
-    {id: "frosted", font: "DejaVu Sans Mono", label: "Frosted Glass", description: "Feathery ice crystals bloom from opposite corners of a satin glass pane."},
+    {id: "frosted", font: "DejaVu Sans Mono", label: "Frosted Glass", description: "Softly tinted glass with a fine rim and a blurred backdrop."},
     {id: "colorful", font: "DejaVu Sans", label: "Tinted", description: "A translucent pane with a uniform tint from the selected accent."},
     {id: "clear-glass", label: "Clear Glass", font: "Noto Sans", description: "Clear glazing with a fine perimeter line and a narrow lower lip."}
 ];

@@ -66,13 +66,9 @@ ShellRoot {
   }
  }
  Timer { interval:400; running:true; onTriggered: { try {
-   for (const [surface, inset, depth] of [[frost, 54, 25], [frostPane, 26, 12],
-                                         [frostPreview, 17, 8], [frostBar, 16, 8]]) {
-    if (!hasMarks(surface, surface.width - inset, depth, 8, 6)
-        || !hasMarks(surface, inset, surface.height - depth - 6, 8, 6))
-     throw Error("Missing frost inside corners on " + surface.variant);
-    if (hasMarks(surface, surface.width / 2 - 10, surface.height / 2 - 5, 20, 10))
-     throw Error("Frost obscures center of " + surface.variant);
+   for (const surface of [frost, frostPane, frostPreview, frostBar]) {
+    if (decoration(surface) || !surface.isSingleColorGradient || surface.border.width !== 1)
+     throw Error("Expected a plain Frosted fill and fine rim on " + surface.variant);
    }
    if (!hasMarks(popup, 375, 0, 125, 80) || !hasMarks(popup, 170, 65, 160, 70))
     throw Error("Missing slate across the window");

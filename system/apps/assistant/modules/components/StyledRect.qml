@@ -785,7 +785,7 @@ ClippingRectangle {
         readonly property bool panel: ["bg", "popup", "pane", "surface", "surfaceContainer", "internalbg", "focus", "surfaceVariant"].includes(root.variant)
         active: !root.hasFillColor && root.rectOpacity > 0 && (finish === "monolith"
             ? panel || root.controlSurface || ["common", "primary", "primaryfocus", "secondary", "secondaryfocus", "tertiary", "tertiaryfocus", "error", "errorfocus"].includes(root.variant)
-            : !root.controlSurface && ["frosted", "suspended-film"].includes(finish) && (panel || root.variant === "bar"))
+            : !root.controlSurface && finish === "suspended-film" && (panel || root.variant === "bar"))
         sourceComponent: Canvas {
             objectName: "surface-edge-canvas"
             anchors.fill: parent
@@ -842,82 +842,6 @@ ClippingRectangle {
                 bed([[.76,.895,0],[.83,.795,.10],[.86,.78,.19],[.95,.729,0]], pigment, 0.26)
             }
 
-            function paintFrost(ctx) {
-                // Grow tapered ice needles along a spine. The illuminated side
-                // of each needle follows the ink, the shaded side the accent.
-                const reach = Math.min(width * 0.34, height * 1.32, outer ? 196 : 98)
-                const strength = outer ? 1 : 0.58
-                function plume(length, angle, pairs) {
-                    ctx.save()
-                    ctx.rotate(angle)
-                    const base = Math.min(3.5, length * 0.026)
-                    ctx.fillStyle = Qt.alpha(accent, 0.30 * strength)
-                    ctx.beginPath()
-                    ctx.moveTo(0, base)
-                    ctx.lineTo(length, 0)
-                    ctx.lineTo(0, -base)
-                    ctx.fill()
-                    for (let i = 1; i <= pairs; ++i) {
-                        const t = i / (pairs + 1)
-                        const x = length * t
-                        const blade = length * (1 - t) * 0.32
-                        for (const side of [-1, 1]) {
-                            const offset = side === 1 ? base : 0
-                            const tipX = x + blade + offset
-                            const tipY = side * blade * (side === 1 ? 0.64 : 0.8)
-                            ctx.fillStyle = Qt.alpha(side === 1 ? accent : pigment, 0.36 * strength)
-                            ctx.beginPath()
-                            ctx.moveTo(x, 0)
-                            ctx.lineTo(tipX, tipY)
-                            ctx.lineTo(x + blade * 0.28, side * base * 0.45)
-                            ctx.fill()
-                            // Longer needles carry smaller parallel offshoots.
-                            if (blade > 12) {
-                                ctx.beginPath()
-                                for (const joint of [0.42, 0.66]) {
-                                    const jointX = x + (tipX - x) * joint
-                                    const jointY = tipY * joint
-                                    ctx.moveTo(jointX, jointY)
-                                    ctx.lineTo(jointX + blade * 0.16, jointY + tipY * (1 - joint))
-                                    ctx.lineTo(jointX + base * 0.6, jointY)
-                                    ctx.closePath()
-                                }
-                                ctx.fill()
-                            }
-                        }
-                    }
-                    ctx.restore()
-                }
-
-                function corner(scale) {
-                    const length = reach * scale
-                    // A diffuse patch under the etching fades into clear glass.
-                    const bloom = ctx.createRadialGradient(0, 0, 0, 0, 0, length)
-                    bloom.addColorStop(0, Qt.alpha(pigment, 0.21 * strength))
-                    bloom.addColorStop(1, Qt.alpha(pigment, 0))
-                    ctx.fillStyle = bloom
-                    ctx.fillRect(0, 0, length, length)
-                    plume(length, 0.32, 8)
-                    plume(length * 0.70, 0.82, 6)
-                    plume(length * 0.44, 1.26, 4)
-                }
-
-                ctx.save()
-                ctx.translate(width, 0)
-                ctx.scale(-1, 1)
-                corner(1)
-                ctx.restore()
-                ctx.save()
-                ctx.translate(0, height)
-                ctx.scale(1, -1)
-                corner(0.70)
-                ctx.restore()
-
-                ctx.lineWidth = 1
-                ctx.strokeStyle = Qt.alpha(pigment, 0.24 * strength)
-                if (root.traceThemeFrame(ctx, 1.5)) ctx.stroke()
-            }
-
             function paintFilm(ctx) {
                 const mount = Math.min(width * 0.22, Math.max(8, cornerRadius + 3))
                 const lip = outer ? 4 : 2.5
@@ -950,7 +874,6 @@ ClippingRectangle {
                 ctx.save()
                 if (root.traceThemeFrame(ctx, 0)) ctx.clip()
                 if (finish === "monolith") paintSlateFace(ctx)
-                else if (finish === "frosted") paintFrost(ctx)
                 else paintFilm(ctx)
                 ctx.restore()
             }

@@ -27,10 +27,8 @@ Instrument mode gives the island bar the same 4px corners, opaque background and
 ## Frosted Glass
 
 Choose **Frosted Glass** in Settings → Appearance → Theme style for translucent
-satin panels. Etched ice crystals fan inward from the upper right and lower left,
-with a soft haze beneath each cluster and a narrow polished rim. Nested
-panes carry a fainter etching. The pattern scales down on bars and theme
-previews, leaving the center clear for labels. The corner radius
+satin panels with an even tint and a fine rim. Inset surfaces use a lighter
+wash, and focused controls pick up the selected accent. The corner radius
 setting applies to the rim, including zero for square corners.
 
 Selecting this style uses 32% background transparency and enables shell blur if
