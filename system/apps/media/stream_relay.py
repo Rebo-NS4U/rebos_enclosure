@@ -23,6 +23,9 @@ from relay_transport import PublicHTTPSHandler
 # Long YouTube HLS playlists include signed URLs for thousands of segments.
 MAX_PLAYLIST_BYTES = 16 * 1024 * 1024
 MAX_ROUTES = 32768
+MAX_SEEK_SEGMENTS = 16
+MAX_SEEK_SEGMENT_BYTES = 4 * 1024 * 1024
+SEEK_SEGMENT_TTL = 120
 
 
 def failure_kind(error):
@@ -83,9 +86,10 @@ class RelayRequestHandler(BaseHTTPRequestHandler):
             self.serve(body)
 
     def serve_preloaded(self, body, source):
-        with self.server.relay.lock:
-            entry = self.server.relay.preloaded.get(self.path)
-        if entry is None or time.monotonic() - entry[0] >= 300:
+        relay = self.server.relay
+        conditional = any(name.lower().startswith('if-') for name in self.headers)
+        entry = relay.cached_payload(self.path, conditional)
+        if entry is None:
             return False
         _, data, total, metadata = entry
         requested = self.headers.get('Range')
@@ -115,7 +119,8 @@ class RelayRequestHandler(BaseHTTPRequestHandler):
         except (OSError, ValueError, HTTPException) as error:
             # Headers have already been sent: never append an error page.
             with self.server.relay.lock:
-                self.server.relay.preloaded.pop(self.path, None)
+                relay.preloaded.pop(self.path, None)
+                relay.lifetime.seek_segments.pop(self.path, None)
             self.server.relay.record_failure(self.path, error)
             self.close_connection = True
         return True
@@ -125,7 +130,8 @@ class RelayRequestHandler(BaseHTTPRequestHandler):
         self.wfile.write(data[start:min(end + 1, len(data))])
         self.wfile.flush()
         with self.server.relay.lock:
-            self.server.relay.preload_hits += 1
+            if self.server.relay.preloaded.get(self.path) is entry:
+                self.server.relay.preload_hits += 1
         offset = len(data)
         if offset <= end:
             url, headers, _ = source
@@ -188,14 +194,33 @@ class RelayRequestHandler(BaseHTTPRequestHandler):
                 response_started = True
                 self.close_connection = True
                 if body:
-                    self.wfile.write(prefix)
-                    # Forward available bytes without waiting to fill 64 KB.
-                    while chunk := upstream.read1(65536):
-                        self.wfile.write(chunk)
+                    self.stream_body(upstream, prefix)
         except (BrokenPipeError, ConnectionResetError):
             pass
         except (OSError, ValueError, HTTPException) as error:
             self.upstream_failure(error, response_started)
+
+    def stream_body(self, upstream, prefix):
+        relay = self.server.relay
+        with relay.lock:
+            vod_segment = self.path in relay.lifetime.vod_segments
+        length = upstream.length
+        directives = upstream.headers.get('Cache-Control', '').lower().split(',')
+        complete_response = upstream.status == 200 and self.headers.get('Range') is None
+        cache = (vod_segment and complete_response and length is not None
+                 and not any(directive.strip() in ('no-store', 'no-cache') for directive in directives)
+                 and 0 < length + len(prefix) <= MAX_SEEK_SEGMENT_BYTES)
+        segment = bytearray(prefix) if cache else None
+        self.wfile.write(prefix)
+        # Forward available bytes while filling the cache for later skips.
+        while chunk := upstream.read1(65536):
+            self.wfile.write(chunk)
+            if segment is not None:
+                segment.extend(chunk)
+        if segment is not None and len(segment) == length + len(prefix):
+            metadata = {key: upstream.headers[key] for key in ('Content-Type', 'ETag', 'Last-Modified')
+                        if upstream.headers.get(key)}
+            relay.remember_segment(self.path, bytes(segment), metadata)
 
     def upstream_failure(self, error, response_started):
         self.server.relay.record_failure(self.path, error)
@@ -229,6 +254,28 @@ class StreamRelay:  # pylint: disable=too-many-instance-attributes
         self.lifetime = RelayRoutes(self)
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
         self.thread.start()
+
+    def remember_segment(self, path, data, metadata):
+        with self.lock:
+            segments = self.lifetime.seek_segments
+            segments[path] = (time.monotonic(), data, len(data), metadata)
+            segments.move_to_end(path)
+            while len(segments) > MAX_SEEK_SEGMENTS:
+                segments.popitem(last=False)
+
+    def cached_payload(self, path, conditional):
+        now = time.monotonic()
+        with self.lock:
+            entry = self.preloaded.get(path)
+            if entry is not None and now - entry[0] < 300:
+                return entry
+            if not conditional:
+                segments = self.lifetime.seek_segments
+                entry = segments.get(path)
+                if entry is not None and now - entry[0] < SEEK_SEGMENT_TTL:
+                    segments.move_to_end(path)
+                    return entry
+        return None
 
     def preload(self, local, size=4 * 1024 * 1024):
         path = self.lifetime.local_path(local)
@@ -347,15 +394,22 @@ class StreamRelay:  # pylint: disable=too-many-instance-attributes
             forwarded = options.headers if urlparse(target).hostname == urlparse(base).hostname else {key:value for key,value in options.headers.items() if key.lower() not in ('cookie','authorization')}
             entries.append(self.source_entry(target, forwarded, options.height))
             return marker + str(len(entries) - 1) + '__'
-        lines = []
-        for line in playlist_lines(playlist, options.height):
+        lines = playlist_lines(playlist, options.height)
+        vod = '#EXT-X-ENDLIST' in lines
+        segments = []
+        for index, line in enumerate(lines):
             if line.startswith('#'):
                 line = re.sub(r'URI="([^"]+)"', lambda match: 'URI="' + local(match[1]) + '"', line)
-            elif line.strip():
-                line = local(line.strip())
-            lines.append(line)
+            elif uri := line.strip():
+                if vod and not uri.startswith('data:'):
+                    segments.append(len(entries))
+                line = local(uri)
+            lines[index] = line
         rewritten = '\n'.join(lines) + '\n'
         routes = self.lifetime.register(entries, options.root, MAX_ROUTES)
+        with self.lock:
+            self.lifetime.vod_segments.update(path for index in segments
+                                              if (path := urlsplit(routes[index]).path) in self.sources)
         return re.sub(re.escape(marker) + r'(\d+)__', lambda match: routes[int(match[1])], rewritten)
 
     def close(self):

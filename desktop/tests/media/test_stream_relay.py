@@ -39,6 +39,7 @@ class RelayTests(unittest.TestCase):
             def __init__(self,*args,**kwargs): super().__init__(*args,directory=folder,**kwargs)
             def log_message(self,*args): pass
             def do_GET(self):
+                self.server.requests.append(self.path)
                 self.server.last_range = self.headers.get('Range')
                 if self.path.startswith('/ranged'):
                     self.server.ranges.append(self.headers.get('Range'))
@@ -57,6 +58,7 @@ class RelayTests(unittest.TestCase):
                 super().do_GET()
         self.origin=http.server.ThreadingHTTPServer(('127.0.0.1',0),Handler)
         self.origin.ranges = []
+        self.origin.requests = []
         threading.Thread(target=self.origin.serve_forever,daemon=True).start()
         self.base=f'http://127.0.0.1:{self.origin.server_port}/'
         self.relay=StreamRelay(allow_local=True)
@@ -234,6 +236,44 @@ class RelayTests(unittest.TestCase):
         path='/' + other.splitlines()[1].split('/',3)[3]
         _,headers,_=self.relay.sources[path]
         self.assertNotIn('Cookie',headers);self.assertNotIn('Authorization',headers)
+
+    def test_repeated_vod_segment_reads_stay_local_until_cache_expires(self):
+        data = b'segment bytes' * 6000
+        self.path.joinpath('segment.ts').write_bytes(data)
+        self.path.joinpath('vod.m3u8').write_text('#EXTM3U\n#EXTINF:5,\nsegment.ts\n#EXT-X-ENDLIST\n')
+        with urlopen(self.relay.register(self.base + 'vod.m3u8')) as response:
+            segment_url = response.read().decode().splitlines()[2]
+        cached = threading.Event()
+        remember = self.relay.remember_segment
+        def remember_and_signal(*args):
+            remember(*args)
+            cached.set()
+        with patch.object(self.relay, 'remember_segment', side_effect=remember_and_signal):
+            with urlopen(segment_url) as response:
+                self.assertEqual(response.read(), data)
+            self.assertTrue(cached.wait(2))
+        with urlopen(Request(segment_url, headers={'Range': 'bytes=100-199'})) as response:
+            self.assertEqual(response.status, 206)
+            self.assertEqual(response.read(), data[100:200])
+        with urlopen(segment_url) as response:
+            self.assertEqual(response.read(), data)
+        self.assertEqual(self.origin.requests.count('/segment.ts'), 1)
+        with patch('stream_relay.SEEK_SEGMENT_TTL', 0), urlopen(segment_url) as response:
+            self.assertEqual(response.read(), data)
+        self.assertEqual(self.origin.requests.count('/segment.ts'), 2)
+
+    def test_live_playlist_segments_keep_loading_from_origin(self):
+        segment = self.path / 'segment.ts'
+        segment.write_bytes(b'first')
+        self.path.joinpath('live.m3u8').write_text('#EXTM3U\n#EXTINF:5,\nsegment.ts\n')
+        with urlopen(self.relay.register(self.base + 'live.m3u8')) as response:
+            segment_url = response.read().decode().splitlines()[2]
+        with urlopen(segment_url) as response:
+            self.assertEqual(response.read(), b'first')
+        segment.write_bytes(b'next')
+        with urlopen(segment_url) as response:
+            self.assertEqual(response.read(), b'next')
+        self.assertEqual(self.origin.requests.count('/segment.ts'), 2)
 
     def test_quality_filters_video_variants_but_keeps_audio(self):
         master='#EXTM3U\n#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="audio",LANGUAGE="en",URI="audio"\n#EXT-X-STREAM-INF:BANDWIDTH=1,RESOLUTION=1280x720,AUDIO="audio"\nvideo720\n#EXT-X-STREAM-INF:BANDWIDTH=2,RESOLUTION=1920x1080,AUDIO="audio"\nvideo1080\n'
