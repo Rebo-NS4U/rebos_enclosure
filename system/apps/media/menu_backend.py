@@ -262,6 +262,7 @@ class Engine(app.Browser):  # pylint: disable=too-many-instance-attributes
         send(dict(event='subtitle-tracks', selected='off', options=[dict(id='off', label='Off')], available=False))
         self.links = links
         self.file_loaded = False
+        Engine.reset_seek_preview(self)
         self.duration = self.position = 0
         self.chapter, self.chapter_count = -1, 0
         self.chapter_name = ''
@@ -384,6 +385,36 @@ class Engine(app.Browser):  # pylint: disable=too-many-instance-attributes
                 self.subtitle_choices[show['id']] = option['label'] if source.startswith('native:') else source
                 app.save_json(SUBTITLE_CHOICES, self.subtitle_choices)
 
+    def publish_seek_preview(self, available, target=None):
+        send(dict(event='seek-preview', available=available, target=target))
+
+    def skip(self, seconds):
+        if not self.file_loaded or self.session is None or self.duration <= 0:
+            raise ValueError('Start playback before skipping.')
+        pending = getattr(self, 'seek_request', None)
+        base = pending[0] if pending and abs(self.position - pending[0]) > 1 else self.position
+        target = min(max(0, self.duration - 1), max(0, round(base + seconds)))
+        started = time.monotonic()
+        request = self.seek_request = (target, started)
+        self.publish_seek_preview(True, target)
+        self.session.command(['seek', target])
+
+        def check_arrival():
+            if getattr(self, 'seek_request', None) is not request:
+                return False
+            age = time.monotonic() - started
+            if age < 1 or (age < 15 and abs(self.position - target) > 1):
+                return True
+            self.seek_request = None
+            self.publish_seek_preview(True)
+            return False
+
+        GLib.timeout_add(250, check_arrival)
+
+    def reset_seek_preview(self):
+        self.seek_request = None
+        Engine.publish_seek_preview(self, False)
+
     def _event_loaded(self, event, token, context):
         show, episodes, index, _ = context
         self.file_loaded = True
@@ -431,6 +462,8 @@ class Engine(app.Browser):  # pylint: disable=too-many-instance-attributes
                 self.play_status.set_text(('Paused' if self.paused else 'Playing') + ' · ' + self.media_title(show, episodes[index]))
         if event.get('name') == 'duration':
             self.duration = event.get('data') or 0
+            pending = getattr(self, 'seek_request', None)
+            Engine.publish_seek_preview(self, self.duration > 0, pending[0] if pending else None)
         elif event.get('name') == 'chapter-info':
             info = event.get('data') or {}
             self.chapter = info.get('index', -1)
@@ -495,6 +528,8 @@ class Engine(app.Browser):  # pylint: disable=too-many-instance-attributes
         kind = event.get('event')
         if kind == 'end-file':
             send(dict(event='subtitle-tracks', selected='off', options=[dict(id='off', label='Off')], available=False))
+        if kind in ('end-file', 'process-exited'):
+            Engine.reset_seek_preview(self)
         if kind == 'process-exited':
             self.save_progress(force=True)
             self.close_captions()
@@ -545,6 +580,7 @@ class Engine(app.Browser):  # pylint: disable=too-many-instance-attributes
         self.play_token += 1
         self.close_captions()
         self.file_loaded = False
+        Engine.reset_seek_preview(self)
         if self.session is not None:
             self.session.close()
         self.session = None

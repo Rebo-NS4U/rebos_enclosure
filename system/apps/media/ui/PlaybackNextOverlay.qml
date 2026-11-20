@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Wayland
@@ -17,7 +18,10 @@ PanelWindow {
     property var playerPosition: [0, 0]
     property var playerSize: [0, 0]
     property bool fullscreen: true
+    property bool seekAvailable: false
+    property string seekTargetText: ""
     signal activated()
+    signal skip(string direction)
 
     screen: Quickshell.screens.find(value => value.name === outputName) ?? Quickshell.screens[0]
     anchors { top: true; bottom: true; left: true; right: true }
@@ -28,12 +32,63 @@ PanelWindow {
     WlrLayershell.namespace: "rebos_shell-playback-next"
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.keyboardFocus: offered ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
-    mask: Region { item: overlay.offered ? nextCard : null }
+    mask: Region {
+        item: overlay.offered ? nextCard : null
+        regions: [Region { item: overlay.seekAvailable ? seekButtons : null }]
+    }
 
     readonly property real cardX: nextCard.x
     readonly property real cardY: nextCard.y
     readonly property real cardWidth: nextCard.width
     readonly property real cardHeight: nextCard.height
+
+    ColumnLayout {
+        visible: overlay.seekAvailable
+        anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 90 }
+        spacing: 6
+
+        StyledRect {
+            visible: overlay.seekTargetText.length > 0
+            Layout.alignment: Qt.AlignHCenter
+            implicitWidth: seekLabel.implicitWidth + 24
+            implicitHeight: seekLabel.implicitHeight + 14
+            variant: "bg"
+            radius: Styling.radius(8)
+            StyledText {
+                id: seekLabel
+                anchors.centerIn: parent
+                text: overlay.seekTargetText
+                font.bold: true
+                font.pixelSize: Styling.fontSize(4)
+            }
+        }
+
+        RowLayout {
+            id: seekButtons
+            Layout.alignment: Qt.AlignHCenter
+            Repeater {
+                model: ["back", "forward"]
+                delegate: Button {
+                    id: skipButton
+                    required property string modelData
+                    text: modelData === "back" ? "−10 s" : "+10 s"
+                    Accessible.name: modelData === "back" ? "Skip back 10 seconds" : "Skip forward 10 seconds"
+                    hoverEnabled: true
+                    padding: 8
+                    contentItem: StyledText {
+                        text: skipButton.text
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                    background: StyledRect {
+                        variant: skipButton.hovered ? "focus" : "bg"
+                        radius: Styling.radius(8)
+                    }
+                    onClicked: overlay.skip(modelData)
+                }
+            }
+        }
+    }
 
     StyledRect {
         id: nextCard

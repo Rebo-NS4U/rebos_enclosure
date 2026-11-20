@@ -41,6 +41,8 @@ PanelWindow {
     property string message: "Choose a show to see its details"
     property string playback: ""
     property bool playbackPaused: false
+    property bool seekAvailable: false
+    property string seekTargetText: ""
     property bool nextEpisodeAvailable: false
     property string nextEpisodeLabel: "Next episode"
     property string nextEpisodeTitle: ""
@@ -55,6 +57,8 @@ PanelWindow {
         && ((playbackWindowTitle.length > 0 && (playbackClient?.title ?? "").startsWith(playbackWindowTitle))
             || (nextEpisodeAvailable && /Media Browser EOF/.test(playbackClient?.title ?? "")))
     readonly property bool nextOverlayVisible: ready && nextEpisodeAvailable && playbackWindowFocused
+        && !opened && !GlobalStates.lockscreenVisible && !NiriService.overviewOpen
+    readonly property bool seekOverlayVisible: ready && seekAvailable && playbackWindowFocused
         && !opened && !GlobalStates.lockscreenVisible && !NiriService.overviewOpen
     onPlayerWindowPresentChanged: { if (playerWindowPresent) backendStarted = true; }
     Component.onCompleted: { if (playerWindowPresent) backendStarted = true; }
@@ -128,6 +132,13 @@ PanelWindow {
     }
     function send(data): void {
         if (ready) backend.write(JSON.stringify(data) + "\n");
+    }
+    function seekTime(seconds: real): string {
+        const time = Math.floor(seconds);
+        const hours = Math.floor(time / 3600);
+        const minutes = Math.floor(time / 60) % 60;
+        const remainder = (time % 60).toString().padStart(2, "0");
+        return hours ? hours + ":" + minutes.toString().padStart(2, "0") + ":" + remainder : minutes + ":" + remainder;
     }
     function switchMedia(kind: string): void {
         if (mediaKind === kind) return;
@@ -409,6 +420,9 @@ PanelWindow {
                 nextEpisodeResumesPlayback = data.resumes ?? false;
             } else if (data.event === "paused") {
                 playbackPaused = data.value;
+            } else if (data.event === "seek-preview") {
+                seekAvailable = data.available;
+                seekTargetText = data.target == null ? "" : "Seeking to " + seekTime(data.target);
             } else if (data.event === "captions") {
                 captionStatus = data.text;
             } else if (data.event === "subtitle-tracks") {
@@ -503,6 +517,8 @@ PanelWindow {
             root.ready = false;
             root.nextEpisodeAvailable = false;
             root.nextEpisodeResumesPlayback = false;
+            root.seekAvailable = false;
+            root.seekTargetText = "";
             root.backendStarted = false;
             root.loading = false;
             root.detailLoading = false;
@@ -517,6 +533,8 @@ PanelWindow {
     PlaybackNextOverlay {
         id: nextOverlay
         offered: root.nextOverlayVisible
+        seekAvailable: root.seekOverlayVisible
+        seekTargetText: root.seekTargetText
         buttonLabel: root.nextEpisodeLabel
         destination: root.nextEpisodeTitle
         outputName: root.playbackClient?.monitor ?? ""
@@ -524,6 +542,7 @@ PanelWindow {
         playerSize: root.playbackClient?.size ?? [0, 0]
         fullscreen: NiriService.fullscreenOutputs.includes(outputName)
         onActivated: root.send({action: "next_episode"})
+        onSkip: direction => root.send({action: "skip", direction: direction})
     }
     ListModel { id: shows }
     onActiveChanged: fillGridTimer.restart()
@@ -1379,6 +1398,12 @@ PanelWindow {
                     onActivated: root.send({action: "subtitle_source", source: root.subtitleTracks.options[currentIndex].id})
                 }
                 MenuButton { text: "Stop"; onClicked: root.send({action: "stop"}) }
+            }
+            RowLayout {
+                visible: root.ready && root.seekAvailable
+                MenuButton { text: "−10 s"; Accessible.name: "Skip back 10 seconds"; onClicked: root.send({action: "skip", direction: "back"}) }
+                MenuButton { text: "+10 s"; Accessible.name: "Skip forward 10 seconds"; onClicked: root.send({action: "skip", direction: "forward"}) }
+                StyledText { text: root.seekTargetText; font.bold: true }
             }
         }
     }
