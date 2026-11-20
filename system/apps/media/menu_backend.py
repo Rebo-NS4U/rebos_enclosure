@@ -19,6 +19,7 @@ from vlc_session import VlcSession
 from live_subtitles import LiveSubtitles, CaptionOptions
 
 OUTPUT_LOCK = threading.Lock()
+SUBTITLE_CHOICES = app.STATE / 'subtitle-choices.json'
 ENDING_CHAPTER = re.compile(r'(?:end|ending|closing)(?: credits| titles)?|credits|outro|ed(?: \d+)?')
 
 
@@ -88,6 +89,7 @@ class Engine(app.Browser):  # pylint: disable=too-many-instance-attributes
         self.file_loaded = False
         self.subtitle_sid = False
         self.subtitles_visible = True
+        self.subtitle_choices = app.read_json(SUBTITLE_CHOICES, {})
         self.whisper_selected = False
         self.last_progress_save = 0
         self.next_requested = False
@@ -265,7 +267,10 @@ class Engine(app.Browser):  # pylint: disable=too-many-instance-attributes
         self.publish_next_episode()
         try:
             self.ensure_player(token)
-            self.session.load(links, self.media_title(show, episodes[index]), paused=paused, validate_provider=media_sources.kind_of(show) != 'youtube')
+            kind = media_sources.kind_of(show)
+            choice = self.subtitle_choices.get(show['id']) if kind in ('anime', 'tv') else None
+            self.session.load(links, self.media_title(show, episodes[index]), paused=paused,
+                              validate_provider=kind != 'youtube', subtitle_choice=choice)
             self.stop_button.set_sensitive(True)
         except OSError as error:
             self.error(str(error))
@@ -360,10 +365,16 @@ class Engine(app.Browser):  # pylint: disable=too-many-instance-attributes
         if self.session is None or not self.file_loaded:
             raise ValueError('Start a video before choosing subtitles.')
         tracks = self.session.subtitle_tracks()
-        if source not in {row['id'] for row in tracks['options']}:
+        option = next((row for row in tracks['options'] if row['id'] == source), None)
+        if option is None:
             raise ValueError('This subtitle source is not available for this video.')
         self.session.caption_error = ''
         self.session.command(['subtitle-source', source])
+        if self.context:
+            show = self.context.show
+            if media_sources.kind_of(show) in ('anime', 'tv'):
+                self.subtitle_choices[show['id']] = option['label'] if source.startswith('native:') else source
+                app.save_json(SUBTITLE_CHOICES, self.subtitle_choices)
 
     def _event_loaded(self, event, token, context):
         show, episodes, index, _ = context

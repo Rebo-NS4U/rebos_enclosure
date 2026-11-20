@@ -4,6 +4,7 @@ from urllib.error import HTTPError
 from urllib.request import Request
 import menu_backend
 from stream_relay import StreamRelay
+from vlc_session import INPUT_ERROR, VlcSession
 
 
 class RecoveryTests(unittest.TestCase):
@@ -47,6 +48,21 @@ class RecoveryTests(unittest.TestCase):
             self.assertEqual([self.engine.recover_stream(7) for _ in range(4)], [True, True, True, False])
             clock.return_value = 221
             self.assertTrue(self.engine.recover_stream(7))
+
+
+class VlcRecoveryTests(unittest.TestCase):
+    def test_recoverable_log_errors_do_not_mark_input_failed(self):
+        self.assertIsNone(INPUT_ERROR.search('main input error: ES_OUT_SET_(GROUP_)PCR  is called too late'))
+        self.assertIsNone(INPUT_ERROR.search('main input error: INPUT_CONTROL_SET_TIME 278255499 failed'))
+        self.assertIsNotNone(INPUT_ERROR.search('main stream error: cannot pre fill buffer'))
+
+    def test_rejected_seek_reports_error_without_closing_player(self):
+        session = object.__new__(VlcSession)
+        session.api = Mock(side_effect=RuntimeError)
+        session.emit = Mock()
+        session.apply(['seek', 120])
+        session.emit.assert_called_once_with(
+            {'event': 'command-error', 'error': 'VLC could not seek in this stream.'})
 
 
 class UpstreamRetryTests(unittest.TestCase):
