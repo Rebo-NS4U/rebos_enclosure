@@ -16,7 +16,8 @@ ClippingRectangle {
     property string styleOverride: ""
     property bool materialPreview: false
     property bool barSurface: false
-    property bool controlSurface: false
+    property bool buttonSurface: false
+    readonly property bool controlSurface: buttonSurface && (styleOverride || Styling.shellStyle) === "terminal-hardware"
     property bool controlPressed: false
     // Color samples need their exact fill, without a surface shader over it.
     property color fillColor: "transparent"
@@ -272,6 +273,23 @@ ClippingRectangle {
         color: Qt.alpha(Config.resolveColor(Config.theme.shadowColor), Config.theme.shadowOpacity)
         blur: Config.theme.shadowBlur * 16
         radius: root.radius
+    }
+
+    Loader {
+        anchors.fill: parent
+        active: Config.theme.backgroundFinish !== "default" && !root.buttonSurface
+            && !root.hasFillColor && root.rectOpacity > 0
+            && (root.barSurface || ["bg", "popup", "bar"].includes(root.variant))
+        sourceComponent: Rectangle {
+            objectName: "background-finish"
+            opacity: root.rectOpacity
+            gradient: Gradient {
+                orientation: Config.theme.backgroundFinish === "two-tone" ? Gradient.Horizontal : Gradient.Vertical
+                GradientStop { position: 0; color: Qt.alpha(Colors.primary, 0.26) }
+                GradientStop { position: 0.55; color: Qt.alpha(Colors.primary, 0) }
+                GradientStop { position: 1; color: Qt.alpha(Colors.tertiary, Config.theme.backgroundFinish === "two-tone" ? 0.26 : 0) }
+            }
+        }
     }
 
     // Structural glass: perimeter details leave the central reading area clear.
@@ -1117,6 +1135,40 @@ ClippingRectangle {
                         color: engraving.ink; opacity: 0.28
                     }
                 }
+            }
+        }
+    }
+
+    Loader {
+        anchors.fill: parent
+        active: root.buttonSurface && Config.theme.buttonFinish !== "default"
+            && !root.hasFillColor && root.rectOpacity > 0
+        sourceComponent: Item {
+            objectName: "button-finish"
+            readonly property bool inset: Config.theme.buttonFinish === "inset"
+            readonly property real margin: root.controlPressed ? 2 : 3
+            opacity: root.rectOpacity
+            Rectangle {
+                visible: parent.inset
+                anchors.fill: parent
+                anchors.margins: parent.margin
+                color: "transparent"
+                border.width: 1
+                border.color: Qt.alpha(root.itemColor, 0.48)
+                topLeftRadius: root.themeCornerRadius(root.topLeftRadius, parent.margin)
+                topRightRadius: root.themeCornerRadius(root.topRightRadius, parent.margin)
+                bottomLeftRadius: root.themeCornerRadius(root.bottomLeftRadius, parent.margin)
+                bottomRightRadius: root.themeCornerRadius(root.bottomRightRadius, parent.margin)
+            }
+            Rectangle {
+                visible: !parent.inset
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.bottom: parent.bottom
+                anchors.bottomMargin: parent.margin
+                width: Math.min(parent.width * 0.48, 48)
+                height: 2
+                radius: 1
+                color: Qt.alpha(root.itemColor, 0.72)
             }
         }
     }

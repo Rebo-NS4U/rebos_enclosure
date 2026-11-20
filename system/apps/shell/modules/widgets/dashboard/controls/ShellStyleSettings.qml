@@ -14,6 +14,43 @@ SettingsGroup {
     description: ""
     property string settingsSection: "style"
 
+    component FinishPicker: ColumnLayout {
+        id: picker
+        required property string label
+        required property string setting
+        required property var options
+        Layout.fillWidth: true
+
+        StyledText { text: picker.label }
+        Flow {
+            Layout.fillWidth: true
+            spacing: Styling.spacing(6)
+            Repeater {
+                model: picker.options
+                delegate: SettingsButton {
+                    required property var modelData
+                    objectName: picker.setting + "-" + modelData.value
+                    text: modelData.label
+                    Accessible.name: picker.label + ", " + text
+                    checked: Config.theme[picker.setting] === modelData.value
+                    onClicked: Config.theme[picker.setting] = modelData.value
+                }
+            }
+        }
+    }
+
+    FinishPicker {
+        label: "Button finish"
+        setting: "buttonFinish"
+        options: [{value: "default", label: "Theme default"}, {value: "inset", label: "Inset rim"}, {value: "underline", label: "Underline"}]
+    }
+
+    FinishPicker {
+        label: "Background finish"
+        setting: "backgroundFinish"
+        options: [{value: "default", label: "Theme default"}, {value: "wash", label: "Accent wash"}, {value: "two-tone", label: "Two-tone"}]
+    }
+
     GridLayout {
         objectName: "theme-preview-grid"
         uniformCellWidths: true

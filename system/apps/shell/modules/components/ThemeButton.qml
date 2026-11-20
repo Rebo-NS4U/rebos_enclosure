@@ -23,7 +23,7 @@ Button {
     font.pixelSize: Styling.fontSize(-1)
     opacity: enabled ? 1 : 0.45
     background: StyledRect {
-        controlSurface: root.hardware
+        buttonSurface: true
         controlPressed: root.down
         variant: root.danger && (root.engaged || root.hovered || root.down || root.activeFocus) ? "error"
             : root.engaged ? (root.hovered || root.down ? "primaryfocus" : "primary")

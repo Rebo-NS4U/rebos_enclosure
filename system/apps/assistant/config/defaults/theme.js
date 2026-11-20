@@ -3,6 +3,8 @@
 var data = {
     "oledMode": false,
     "shellStyle": "frosted",
+    "buttonFinish": "default",
+    "backgroundFinish": "default",
     "ditherPalette": "original",
     "ditherTintColor": "#4c9cbd",
     "ditherBorder": "band",

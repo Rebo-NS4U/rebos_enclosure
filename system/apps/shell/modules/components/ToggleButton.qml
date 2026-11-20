@@ -44,7 +44,7 @@ Button {
 
     background: StyledRect {
         id: bg
-        controlSurface: root.hardware
+        buttonSurface: true
         controlPressed: root.down
         variant: root.hardware ? (root.down ? "internalbg" : root.hovered ? "focus" : "common") : "bg"
         border.width: root.hardware && root.activeFocus ? 2 : (borderData?.[1] ?? 0)

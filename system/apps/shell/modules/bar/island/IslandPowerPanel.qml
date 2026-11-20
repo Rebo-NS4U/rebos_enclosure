@@ -141,7 +141,7 @@ Item {
                     background: StyledRect {
                         id: tileSurface
                         radius: Styling.radius(-4)
-                        controlSurface: Styling.shellStyle === "terminal-hardware"
+                        buttonSurface: true
                         controlPressed: actionButton.down
                         variant: actionButton.selected ? (actionButton.danger ? "error" : "primary") : "common"
                         border.width: actionButton.selected ? 2 : 1

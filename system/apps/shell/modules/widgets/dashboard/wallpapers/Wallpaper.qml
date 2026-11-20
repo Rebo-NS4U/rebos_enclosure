@@ -271,7 +271,7 @@ PanelWindow {
     }
 
     readonly property var appearancePresets: wallpaperAdapter.appearancePresets
-    readonly property var presetThemeKeys: ["lightMode", "oledMode", "shellStyle", "shellTransparency",
+    readonly property var presetThemeKeys: ["lightMode", "oledMode", "shellStyle", "shellTransparency", "buttonFinish", "backgroundFinish",
         "ditherPalette", "ditherTintColor", "ditherBorder", "ditherStrength", "wallpaperDitherStrength", "tintIcons"]
 
     function saveAppearancePreset(name, replace = false) {

@@ -16,7 +16,7 @@ StyledRect {
 
     property bool isHovered: mouseArea.containsMouse
 
-    controlSurface: Styling.shellStyle === "terminal-hardware"
+    buttonSurface: true
     controlPressed: mouseArea.pressed
     variant: {
         if (isActive && isHovered)

@@ -109,6 +109,8 @@ Singleton {
                 if (root.themeReady) font = ShellStyles.fontForStyle(shellStyle, font);
             }
             property string shellStyle: "frosted"
+            property string buttonFinish: "default"
+            property string backgroundFinish: "default"
             property int shellTransparency: -1
             property string ditherPalette: "original"
             property string ditherTintColor: "#4c9cbd"

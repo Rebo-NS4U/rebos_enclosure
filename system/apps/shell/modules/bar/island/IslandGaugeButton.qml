@@ -21,7 +21,7 @@ StyledRect {
     property int iconSize: 22
     property bool active: false
     property color iconColor: itemColor
-    controlSurface: Styling.shellStyle === "terminal-hardware"
+    buttonSurface: true
     controlPressed: mouseArea.pressed
     variant: active ? (mouseArea.containsMouse ? "primaryfocus" : "primary")
         : controlSurface && controlPressed ? "internalbg"
