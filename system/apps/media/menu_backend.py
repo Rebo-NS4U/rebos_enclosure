@@ -244,7 +244,14 @@ class Engine(app.Browser):  # pylint: disable=too-many-instance-attributes
                 self.next_requested = False
                 self.publish_next_episode()
                 self.play_status.set_text(message)
-        self.resolve((show['id'], ep, settings['mode'], settings['quality']), ready, failed)
+        self.resolve(self.source_key(show, ep, settings), ready, failed)
+
+    @staticmethod
+    def source_key(show, episode, settings):
+        show_id = show['id']
+        if show_id.startswith('anime-series:'):
+            show_id, episode = episode.split(':', 1)
+        return show_id, episode, settings['mode'], settings['quality']
 
     def launch_player(self, context, links, settings, *, paused=False):
         show, episodes, index, token = context
@@ -268,7 +275,8 @@ class Engine(app.Browser):  # pylint: disable=too-many-instance-attributes
         try:
             self.ensure_player(token)
             kind = media_sources.kind_of(show)
-            choice = self.subtitle_choices.get(show['id']) if kind in ('anime', 'tv') else None
+            provider_id = self.source_key(show, episodes[index], settings)[0] if show['id'].startswith('anime-series:') else show['id']
+            choice = self.subtitle_choices.get(show['id'], self.subtitle_choices.get(provider_id)) if kind in ('anime', 'tv') else None
             self.session.load(links, self.media_title(show, episodes[index]), paused=paused,
                               validate_provider=kind != 'youtube', subtitle_choice=choice)
             self.stop_button.set_sensitive(True)
@@ -305,7 +313,7 @@ class Engine(app.Browser):  # pylint: disable=too-many-instance-attributes
         # Resolve and validate ahead of the offer, without switching players.
         if planned is None or self.position < max(0, planned - 30):
             return
-        key = (show['id'], episodes[index + 1], self.settings['mode'], self.settings['quality'])
+        key = self.source_key(show, episodes[index + 1], self.settings)
         now = time.monotonic()
         cached = self.resolved.get(key)
         if (cached and now - cached[0] < 300) or key in self.resolving:
@@ -380,6 +388,11 @@ class Engine(app.Browser):  # pylint: disable=too-many-instance-attributes
         show, episodes, index, _ = context
         self.file_loaded = True
         previous = self.history.pop(show['id'], {}) or self.history.get(show.get('historyId', ''), {})
+        if not previous and show['id'].startswith('anime-series:'):
+            provider_id = episodes[index].partition(':')[0]
+            legacy = self.history.get(provider_id, {})
+            if legacy:
+                previous = dict(legacy, episode=f"{provider_id}:{legacy['episode']}")
         resume = previous.get('position', 0) if previous.get('episode') == episodes[index] and not previous.get('completed') else 0
         if previous.get('duration', 0) > 0 and previous['duration'] - resume <= 15:
             resume = 0
@@ -466,7 +479,7 @@ class Engine(app.Browser):  # pylint: disable=too-many-instance-attributes
         self.close_captions()
         context, session = self.context, self.session
         show, episodes, index, _ = context
-        key = (show['id'], episodes[index], self.settings['mode'], self.settings['quality'])
+        key = self.source_key(show, episodes[index], self.settings)
         self.resolved.pop(key, None)
         self.play_status.set_text('Stream interrupted. Reconnecting…')
         def retry():

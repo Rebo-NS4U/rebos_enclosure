@@ -326,12 +326,22 @@ PanelWindow {
                 youtubeBusy = false;
                 if (opened && shows.count === 0) load(false);
             } else if (data.event === "catalogue" && data.request === requestId) {
-                const existing = new Set();
-                for (let i = 0; i < shows.count; i++) existing.add(shows.get(i).id);
+                const existing = new Map();
+                for (let i = 0; i < shows.count; i++) existing.set(shows.get(i).id, i);
                 let added = 0;
                 const items = Array.isArray(data.data) ? data.data : (data.data.items ?? []);
                 for (const show of items) {
-                    if (!existing.has(show.id)) { shows.append(Object.assign({kind: "anime", url: "", route: "", availabilityLabel: "Availability not confirmed", sourceAvailability: "unknown"}, show)); existing.add(show.id); added++; }
+                    if (!existing.has(show.id)) {
+                        existing.set(show.id, shows.count);
+                        shows.append(Object.assign({kind: "anime", url: "", route: "", availabilityLabel: "Availability not confirmed", sourceAvailability: "unknown", seasonEntries: ""}, show));
+                        added++;
+                    } else if (show.seasonEntries) {
+                        const index = existing.get(show.id);
+                        const seasons = new Map();
+                        for (const season of JSON.parse(shows.get(index).seasonEntries || "[]").concat(JSON.parse(show.seasonEntries)))
+                            seasons.set(season.id, season);
+                        shows.setProperty(index, "seasonEntries", JSON.stringify(Array.from(seasons.values())));
+                    }
                 }
                 hasMore = !Array.isArray(data.data) ? data.data.hasMore : added > 0 && (category !== "history" || query.length > 0 || filterCount > 0);
                 loading = false;
@@ -412,7 +422,7 @@ PanelWindow {
                 if (data.show === selectedShow.id) {
                     if (!data.episode) selectedEpisode = data.index;
                     else if (episodes.indexOf(data.episode) >= 0) selectedEpisode = episodes.indexOf(data.episode);
-                    else if (root.mediaKind === "tv") {
+                    else if (root.mediaKind === "tv" || root.mediaKind === "anime") {
                         const season = data.episode.split(":")[0];
                         const index = details.seasons?.findIndex(value => value.id === season) ?? -1;
                         if (index >= 0) chooseSeason(index);
@@ -913,7 +923,7 @@ PanelWindow {
                 RowLayout {
                     Layout.fillWidth: true
                     MenuCombo {
-                        visible: root.mediaKind === "tv" && (root.details.seasons?.length ?? 0) > 0
+                        visible: (root.details.seasons?.length ?? 0) > (root.mediaKind === "anime" ? 1 : 0)
                         enabled: !root.detailLoading
                         model: (root.details.seasons ?? []).map(season => season.title)
                         currentIndex: Math.max(0, (root.details.seasons ?? []).findIndex(season => season.id === root.details.seasonId))

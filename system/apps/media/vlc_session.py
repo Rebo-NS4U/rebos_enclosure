@@ -321,7 +321,8 @@ class VlcSession:  # pylint: disable=too-many-instance-attributes
 
 
     def _command_load(self, command):
-        links, title, paused, self.validate_provider, self.subtitle_choice = command[1:]
+        links, title, paused, self.validate_provider = command[1:5]
+        self.subtitle_choice = command[5] if len(command) > 5 else None
         video, referer, subtitle, audio = links
         options = self.input_options(links)
         self.provided_cues = []

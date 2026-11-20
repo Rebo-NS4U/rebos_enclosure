@@ -85,6 +85,39 @@ def catalogue(category, query, page, filters=None):
     return parse_catalogue(content)
 
 
+ANIME_SEASON = re.compile(
+    r'(?:\s*[:–-]\s*|\s+)(?:season\s+(\d+)|(\d+)(?:st|nd|rd|th)\s+season|'
+    r'((?:the\s+)?final\s+season))(?:\s+part\s+(\d+))?$', re.I
+)
+
+
+def anime_series(show):
+    if show.get('seasonEntries'):
+        return show
+    title = show['title']
+    match = ANIME_SEASON.search(title)
+    base = title[:match.start()].rstrip(' :-–') if match else title
+    final = match and match[3]
+    number = int(match[1] or match[2]) if match and not final else 1
+    part = int(match[4]) if match and match[4] else 0
+    label = 'Final Season' if final else f'Season {number}'
+    season = dict(id=show['id'], title=label + (f' · Part {part}' if part else ''), final=bool(final),
+                  number=number, part=part)
+    key = re.sub(r'\s+', ' ', base.casefold()).strip()
+    return dict(show, id='anime-series:' + hashlib.sha256(key.encode()).hexdigest()[:24], title=base,
+                seasonEntries=json.dumps([season]))
+
+
+def anime_groups(shows):
+    groups = {}
+    for item in shows:
+        show = anime_series(item)
+        group = groups.setdefault(show['id'], dict(show, seasonEntries='[]'))
+        seasons = json.loads(group['seasonEntries']) + json.loads(show['seasonEntries'])
+        group['seasonEntries'] = json.dumps(list({season['id']: season for season in seasons}.values()))
+    return list(groups.values())
+
+
 def filter_fields():
     return json.loads(Path(__file__).with_name('filter_options.json').read_text())['fields']
 

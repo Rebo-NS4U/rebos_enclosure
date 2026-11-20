@@ -1,6 +1,7 @@
 """Request routing for the menu's JSON-lines API, independent of playback state."""
 import hashlib
 import io
+import json
 import math
 import re
 from urllib.parse import quote, urlparse, parse_qs
@@ -39,6 +40,46 @@ def resume_index(episodes, entry):
     return index
 
 
+def anime_season(show, season_id, history):
+    seasons = sorted(json.loads(show['seasonEntries']),
+                     key=lambda season: (season.get('final', False), season['number'], season['part']))
+    entry = history.get(show['id'], {})
+    if not entry:
+        legacy = next((key for key in reversed(history) if any(season['id'] == key for season in seasons)), '')
+        if legacy:
+            entry = dict(history[legacy], episode=f"{legacy}:{history[legacy]['episode']}")
+    saved_season = entry.get('episode', '').partition(':')[0]
+    selected = next((season for season in seasons if season['id'] == (season_id or saved_season)), None)
+    if selected is None:
+        if season_id:
+            raise ValueError('Choose an available season')
+        selected = seasons[0]
+    provider_id = selected['id']
+    data = dict(show=show, seasons=seasons, seasonId=provider_id, episodes=[], episodeLabels={}, warning='')
+    try:
+        numbers = app.ani_bridge('episodes', provider_id)
+        data['episodeLabels'] = {f'{provider_id}:{number}': f'Episode {number}' for number in numbers}
+        data['episodes'] = list(data['episodeLabels'])
+    except Exception as error:
+        data['warning'] = 'Episodes unavailable: ' + str(error)
+    data['resumeIndex'] = resume_index(data['episodes'], entry if saved_season == provider_id else {})
+    return data
+
+
+def anime_details(show, history):
+    try:
+        related = app.catalogue('most-popular', show['title'], 1)
+        show = next(group for group in app.anime_groups([show, *related]) if group['id'] == show['id'])
+    except (OSError, RuntimeError):
+        pass  # Already discovered seasons still work when catalogue search is unavailable.
+    data = anime_season(show, '', history)
+    try:
+        data.update(parse_details(app.fetch(app.BASE + '/' + quote(data['seasonId'], safe='')).decode()))
+    except Exception as error:
+        data['warning'] += ' Show information unavailable: ' + str(error)
+    return data
+
+
 def card_selection(show, history):
     entry = history.get(show['id'], {}) or history.get(show.get('historyId', ''), {})
     if media_sources.kind_of(show) == 'youtube':
@@ -49,7 +90,10 @@ def card_selection(show, history):
         if (parse_qs(parsed.query).get('v') or
                 (parsed.hostname == 'youtu.be' and parsed.path.strip('/'))) and 'list' not in parse_qs(parsed.query):
             return dict(show, episodeLabels={url: show['title']}), [url], 0
-    if media_sources.kind_of(show) == 'anime':
+    if show.get('seasonEntries'):
+        data = anime_season(show, '', history)
+        entry = {'episode': data['episodes'][data['resumeIndex']]} if data['episodes'] else {}
+    elif media_sources.kind_of(show) == 'anime':
         data = dict(episodes=app.ani_bridge('episodes', show['id']))
     else:
         data = media_sources.details(show, app.fetch, entry.get('episode'))
@@ -104,10 +148,15 @@ class MenuRequest:
             if kind in ('movies', 'tv'):
                 engine.background(lambda: media_sources.direct_source.filter_history(history), catalogue_ready, fail)
             else:
-                result(history)
+                result(app.anime_groups(history) if kind == 'anime' else history)
         else:
             page = max(1, int(request.get('page', 1)))
-            engine.background(lambda: app.catalogue(category, query, page, filters) if kind == 'anime' else media_sources.catalogue(kind, category, query, page, fetch=app.fetch, check_availability=False), catalogue_ready, fail)
+            def load_catalogue():
+                if kind != 'anime':
+                    return media_sources.catalogue(kind, category, query, page, fetch=app.fetch, check_availability=False)
+                items = app.catalogue(category, query, page, filters)
+                return dict(items=app.anime_groups(items), hasMore=bool(items))
+            engine.background(load_catalogue, catalogue_ready, fail)
 
 
     def handle_details(self):
@@ -117,6 +166,8 @@ class MenuRequest:
         fail = self.fail
         show_id = request['show']['id']
         def details():
+            if request['show'].get('seasonEntries'):
+                return anime_details(request['show'], engine.history)
             entry = engine.history.get(show_id, {}) or engine.history.get(request['show'].get('historyId', ''), {})
             if media_sources.kind_of(request['show']) != 'anime':
                 data = media_sources.details(request['show'], app.fetch, entry.get('episode'))
@@ -151,12 +202,13 @@ class MenuRequest:
         result = self.result
         fail = self.fail
         show = request['show']
-        if media_sources.kind_of(show) != 'tv':
-            raise ValueError('Season selection requires a TV show')
         def load_season():
             season_id = str(request['seasonId'])
-            data = media_sources.season_episodes(show, season_id)
-            return data
+            if show.get('seasonEntries'):
+                return anime_season(show, season_id, engine.history)
+            if media_sources.kind_of(show) != 'tv':
+                raise ValueError('Season selection requires a series')
+            return media_sources.season_episodes(show, season_id)
         engine.background(load_season, result, fail)
 
 
