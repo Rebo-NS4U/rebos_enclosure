@@ -4,7 +4,7 @@ ShellRoot {
     PanelWindow {
         implicitWidth: 640
         implicitHeight: 600
-        TypingMenu { id: practice; anchors.fill: parent }
+        TypingMenu { id: practice; anchors.fill: parent; viewportHeight: 720 }
     }
     function find(item, name) {
         if (item.objectName === name) return item;
@@ -18,6 +18,7 @@ ShellRoot {
         property int expectedPosition: 0
         property string expectedInput: ""
         property string expectedPassage: ""
+        property real expectedViewportY: 0
         onTriggered: {
             try {
                 if (++polls > 50) throw Error("Continuous typing timed out");
@@ -29,6 +30,7 @@ ShellRoot {
                 }
                 if (practice.busy) return;
                 const input = find(practice, "typing-input");
+                const viewport = find(practice, "typing-page-visuals");
                 if (phase === 1) {
                     if (!practice.bookId) return;
                     if (practice.pageSource.length > 8192 || practice.pageLayout.lines > 36)
@@ -43,11 +45,16 @@ ShellRoot {
                     input.text = practice.passage.slice(0, cursor);
                     input.cursorPosition = input.length;
                     practice.restoring = false;
+                    practice.refreshPageCaret();
+                    viewport.contentY -= practice.passageLineHeight;
+                    expectedViewportY = viewport.contentY - (practice.pageLayout.lines - 14) * practice.passageLineHeight;
                     practice.advance(); phase++; return;
                 }
                 if (phase === 2) {
                     if (practice.position !== expectedPosition || input.text !== expectedInput)
                         throw Error("Overlapping window lost position or input");
+                    if (Math.abs(viewport.contentY - expectedViewportY) > 1)
+                        throw Error("Compact rollover moved the visible rows: expected scroll " + expectedViewportY + ", got " + viewport.contentY);
                     if (!practice.passage.startsWith(expectedPassage)) throw Error("Visible context changed");
                     if (practice.pageTransitions !== 0) throw Error("Page reset inside chapter");
                     if (practice.chapterProgress <= practice.progress) throw Error("Chapter progress is not independent");
@@ -74,8 +81,27 @@ ShellRoot {
                 if (phase === 4) {
                     if (practice.position !== expectedPosition || input.text !== expectedInput)
                         throw Error("Full-height rolling window lost progress");
-                    practice.saveProgress();
-                    console.log("PASS: bounded continuous windows preserve context, input, chapter progress, page transitions and fullscreen font reflow");
+                    practice.fullscreen = false;
+                    practice.send({action: "add", title: "Previous paragraph test",
+                        text: "First 😀 paragraph.\n\nSecond paragraph.\n\nThird paragraph."});
+                    phase++; return;
+                }
+                if (phase === 5) {
+                    practice.seek(practice.characters("First 😀 paragraph. Second paragraph. ").length);
+                    phase++; return;
+                }
+                if (phase === 6) {
+                    if (practice.pageHistory.length || !practice.position || input.text.length)
+                        throw Error("Previous-page fallback was not set up");
+                    practice.previousPage();
+                    phase++; return;
+                }
+                if (phase === 7) {
+                    if (input.text !== "\tFirst 😀 paragraph.\n\n\tSecond paragraph.")
+                        throw Error("Previous-page fallback misaligned input: " + JSON.stringify(input.text));
+                    if (!practice.passage.startsWith(input.text) || practice.correctCount() !== practice.characters(input.text).length)
+                        throw Error("Restored input registered as mistyped");
+                    console.log("PASS: bounded continuous windows preserve the compact viewport, context, input, chapter progress, page transitions, fullscreen font reflow and correctly formatted backtracking");
                     Qt.quit();
                 }
             } catch (error) { console.error(error); Qt.exit(1); }

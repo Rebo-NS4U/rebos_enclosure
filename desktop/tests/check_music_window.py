@@ -145,6 +145,10 @@ esac
                     if (!downloadedTab) { console.error("DOWNLOADED_MIX_NAV_MISSING"); Qt.exit(1); }
                     downloadedTab.clicked();
                     if (music.page !== "Playlists" || music.playlists.length !== 2 || music.shownTracks.length !== 2 || music.cardTracks(music.page, "mix")[0].path !== music.tracks[0].path) { console.error("DOWNLOADED_MIX_SECTION_FAILED"); Qt.exit(1); }
+                    music.query = "Daily Mix";
+                    if (music.shownPlaylists.length !== 1 || music.shownTracks.length !== 1 || music.shownTracks[0].path !== music.tracks[0].path) { console.error("MUSIC_PLAYLIST_SEARCH_FAILED"); Qt.exit(1); return; }
+                    music.navigate("Artist", "Enclosure");
+                    if (!findItem(music.contentItem, "music-navigation-Artists").highlighted) { console.error("MUSIC_DETAIL_TAB_FAILED"); Qt.exit(1); return; }
                     music.playlists = previousPlaylists;
                     music.navigate("Albums");
                     music.volume = 0;
@@ -284,7 +288,18 @@ esac
                     const start = findItem(music.contentItem, "music-download-start");
                     if (!downloads || start.enabled) { console.error("MUSIC_DOWNLOAD_EMPTY_LINKS_FAILED"); Qt.exit(1); }
                     const links = findItem(music.contentItem, "music-download-links");
+                    const folder = findItem(downloads, "music-download-folder");
+                    const options = findItem(downloads, "music-download-options");
+                    const workers = findItem(downloads, "music-download-workers-2");
+                    if (workers.visible || downloads.parallelTracks !== 4) { console.error("MUSIC_DOWNLOAD_DEFAULTS_FAILED"); Qt.exit(1); return; }
+                    options.click();
+                    workers.click();
+                    if (!workers.visible || downloads.parallelTracks !== 2) { console.error("MUSIC_DOWNLOAD_OPTIONS_FAILED"); Qt.exit(1); return; }
+                    options.click();
+                    folder.text = "/tmp/manual-destination";
+                    downloads.prepareMix({links: "https://open.spotify.com/playlist/example", folder: "/tmp/prepared", syncPlaylist: true});
                     links.text = "https://open.spotify.com/track/example";
+                    if (folder.text !== "/tmp/manual-destination" || downloads.syncPlaylist || downloads.mixTracks) { console.error("MUSIC_DOWNLOAD_MANUAL_DESTINATION_FAILED"); Qt.exit(1); return; }
                     if (!downloads.canDownload) { console.error("MUSIC_DOWNLOAD_LINKS_FAILED"); Qt.exit(1); }
                     links.text = "";
                     if (downloads.canDownload) { console.error("MUSIC_DOWNLOAD_EMPTY_LINKS_FAILED"); Qt.exit(1); }
@@ -468,8 +483,8 @@ esac
                     music.spotifySuggestions = {playlist: "queue-test", pending: false, tracks: [suggestion]};
                     spotify.metadata = {"xesam:url": "https://open.spotify.com/track/" + uri.split(":").pop() + "?si=test"};
                     const add = findItem(music.contentItem, "music-fullscreen-add-current-to-playlist");
-                    if (!add.visible || !add.enabled || !tabTo(add)) { console.error("UNDOWNLOADED_SUGGESTION_ADD_DISABLED"); Qt.exit(1); return; }
-                    input.keyClick(Qt.Key_Return);
+                    if (!add.visible || !add.enabled || add.activeFocus) { console.error("UNDOWNLOADED_SUGGESTION_ADD_DISABLED"); Qt.exit(1); return; }
+                    input.keyClick(Qt.Key_A);
                     if (findItem(music.contentItem, "music-playlist-choices")?.visible ||
                         !music.busy || !music.callbacks[music.requestId] || add.enabled) {
                         console.error("SUGGESTION_DIRECT_ADD_FAILED"); Qt.exit(1); return;
@@ -606,6 +621,7 @@ esac
                     music.contentItem.grabToImage(result => result.saveToFile("/tmp/enclosure-music-fullscreen-queue.png"));
                     const target = MprisController.nextPlayer(spotify);
                     if (target?.dbusName !== "org.mpris.MediaPlayer2.enclosure_music" || !music.canNext) { console.error("SUGGESTION_MEDIA_NEXT_ROUTE_FAILED"); Qt.exit(1); return; }
+                    if (MprisController.previousPlayer(spotify) !== target) { console.error("SUGGESTION_MEDIA_PREVIOUS_ROUTE_FAILED"); Qt.exit(1); return; }
                     target.next();
                     repeatStart = attempts; phase = 952;
                 } else if (phase === 952 && attempts >= repeatStart + 3) {
@@ -614,7 +630,36 @@ esac
                     spotify.metadata = {"xesam:url": music.requestedPreview};
                     if (!music.immersive || !suggestions.visible || suggestions.currentIndex !== 1 ||
                         !suggestions.itemAtIndex(1)?.selected) { console.error("FULLSCREEN_SUGGESTION_SELECTION_FAILED"); Qt.exit(1); return; }
+                    const originalTracks = music.tracks;
+                    const originalPlaylists = music.playlists;
+                    const saved = music.suggestedTracks[1];
+                    const savedTrack = Object.assign({}, originalTracks[0], {path: "/fixture/saved.flac", spotifyUri: saved.uri});
+                    music.load({tracks: originalTracks.concat([savedTrack]), errors: [],
+                        state: {favorites: music.favorites, folders: music.folders, playlists: originalPlaylists.map(p =>
+                            p.id === "test" ? Object.assign({}, p, {paths: p.paths.concat([savedTrack.path])}) : p)}});
+                    if (music.suggestedTracks.some(t => t.uri === saved.uri) || suggestions.currentIndex !== 1) {
+                        console.error("SAVED_SUGGESTION_LOST_PLAYBACK_POSITION"); Qt.exit(1); return;
+                    }
+                    spotify.canGoPrevious = false;
+                    const previous = findItem(music.contentItem, "music-fullscreen-previous");
+                    const next = findItem(music.contentItem, "music-fullscreen-next");
+                    if (!previous.enabled || !next.enabled) {
+                        console.error("SAVED_SUGGESTION_SKIP_DISABLED"); Qt.exit(1); return;
+                    }
+                    input.keyClick(Qt.Key_H);
+                    if (music.requestedPreview !== suggestions.itemAtIndex(0).track.uri) {
+                        console.error("SAVED_SUGGESTION_PREVIOUS_FAILED"); Qt.exit(1); return;
+                    }
+                    input.keyClick(Qt.Key_L);
+                    if (music.requestedPreview !== music.suggestionQueue[2].uri) {
+                        console.error("SAVED_SUGGESTION_NEXT_FAILED"); Qt.exit(1); return;
+                    }
+                    spotify.canGoPrevious = true;
+                    music.tracks = originalTracks;
+                    music.playlists = originalPlaylists;
+                    console.log("MUSIC_SAVED_SUGGESTION_NAVIGATION_PASSED");
                     music.requestedPreview = "";
+                    music.advancedSuggestionUri = "";
                     GlobalStates.musicWindowVisible = false;
                     spotify.pause();
                     spotify.position = spotify.length - 0.1;

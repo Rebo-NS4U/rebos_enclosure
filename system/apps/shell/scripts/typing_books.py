@@ -20,6 +20,7 @@ from typing_import import HTMLText, extract_raw
 class SaveOptions(NamedTuple):
     revision: int | None = None
     completed: list | None = None
+    source_typed: bool = False
 
 
 LIMIT = 20000000
@@ -454,7 +455,7 @@ class Library:
         if not isinstance(position, int) or not 0 <= position < row[0]: raise ValueError('Invalid book position.')
         with self.db:
             cursor = self.db.execute('UPDATE book_progress SET position=?,typed=?,loops=?,updated=?,typed_format=?,revision=revision+1 WHERE id=? AND (? IS NULL OR revision=?)',
-                                     (position, typed[:8192], max(0, int(loops)), time.time(), int(self.typing_format), key, options.revision, options.revision))
+                                     (position, typed[:8192], max(0, int(loops)), time.time(), int(self.typing_format and not options.source_typed), key, options.revision, options.revision))
             if cursor.rowcount != 1:
                 raise ValueError('Progress changed in another view. Reopen this book before saving again.')
             if options.completed is not None:
@@ -656,7 +657,10 @@ class Library:
                     boundary = context.find(' ', 1)
                     if boundary >= 0:
                         request['position'] = min(position + boundary, current['length'] - 1)
-        self.save(request['id'], request['position'], request.get('typed', ''), request.get('loops', 0), SaveOptions(request.get('revision'), request.get('completed')))
+        # Previous-page fallback is measured from source text without virtual typing keys.
+        source_typed = action == 'previous' and request.get('source_typed') is True
+        self.save(request['id'], request['position'], request.get('typed', ''), request.get('loops', 0),
+                  SaveOptions(request.get('revision'), request.get('completed'), source_typed))
         return self.page(request['id'], action != 'next') if action != 'save' else {'saved': True, 'id': request['id'], 'completed': json.loads(self.db.execute('SELECT completed FROM book_progress WHERE id=?', (request['id'],)).fetchone()[0])}
 
 

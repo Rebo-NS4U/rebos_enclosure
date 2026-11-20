@@ -6,7 +6,7 @@ spotDL uses the media package group or ~/.local/share/venvs/spotdl/bin/spotdl. T
 
 The download service preloads spotDL when Music opens and reuses those imports
 across jobs. Each job runs in its own process group, retaining bounded cancellation.
-Downloads use two threads. Public track metadata is cached for six hours under
+Downloads process up to four tracks at once. Open **More download options** to limit parallel tracks to one or two for the current session. Repeated links in a batch are resolved once, including shared and localized versions of the same URL. Public track metadata is cached for six hours under
 $XDG_CACHE_HOME/enclosure/music/tracks (default ~/.cache); playlist contents are
 always resolved again. No Spotify sign-in or official API credentials are added.
 Custom executable wrappers remain supported without preloading. The warm runtime
@@ -65,9 +65,11 @@ grace period. The UI shows Cancelled after completion and permits another job;
 existing downloaded files remain available. Closing the service also cancels its job.
 
 
-Music navigation is a wrapping top bar rather than a sidebar. Tabs divide the
-full available width evenly, with balanced rows and a full-width final row on
-narrower windows. Daily Mixes uses
+Music navigation is a wrapping top bar rather than a sidebar. Tabs share the available width and wrap into balanced rows on narrower windows.
+Detail views keep their parent tab selected. In short windows, album, artist
+and playlist cards place the title beside the artwork. Search Playlists by name
+or source, or save the current queue there. Now playing displays artwork beside
+the queue or lyrics at either window size. Daily Mixes uses
 Current/Saved category tabs and a responsive card browser. Wide windows show the
 selected track preview alongside the browser; narrower windows give the preview
 full width with a Mixes back action. The header stays compact and only cards and
@@ -91,8 +93,7 @@ verification first. Export that session as a Netscape-format `cookies.txt` using
 [yt-dlp's cookie guidance](https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp).
 Select the file before starting a download. Music validates the path and format
 and passes it to spotDL with `--cookie-file`, including Daily Mix downloads.
-A blank field preserves unauthenticated downloading. The selection lasts while
-Music is open; no cookies are imported into Music's settings or shipped payload.
+A blank field preserves unauthenticated downloading. Music remembers the selected path. Cookie contents stay in the original file.
 Keep cookie files private (for example, `chmod 600 /path/to/cookies.txt`), outside
 the checkout. They grant access to your signed-in session. Refresh the export
 if the session expires. Cookies do not remove YouTube account/age restrictions

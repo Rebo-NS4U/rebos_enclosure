@@ -496,9 +496,23 @@ ShellRoot {
      }
      strip.lyricPosition = 3;
      if (!track.visible || track.width <= 0 || track.x < label.x
-         || track.x + track.width > label.x + label.width || track.height !== 6
-         || track.y < (panel.height + label.implicitHeight) / 2 || track.y + track.height > panel.height)
+         || track.x + track.width > label.x + label.width
+         || track.y < (label.height + label.implicitHeight) / 2 || track.y + track.height > panel.height - 2)
       throw Error('Progress must fit beneath the lyric during playback');
+     const rail = track.children[0];
+     const cursor = findItem(track, 'progress-cursor');
+     rail.energy = 1;
+     for (const height of [36, 40]) {
+      strip.stripHeight = height;
+      for (const phase of [Math.PI / 2, 3 * Math.PI / 2]) {
+       rail.phase = phase;
+       const segments = rail.children.filter(item => item.wave !== undefined);
+       if (!segments.some(segment => segment.wave !== 0)
+           || [...segments, cursor].some(item => item.y < 0 || item.y + item.height > track.height)
+           || track.y + track.height > panel.height - 2)
+        throw Error('Ripple and cursor must stay inside the padded progress area');
+      }
+     }
      const nextPanel = findItem(strip, 'bar-lyrics-next');
      if (findItem(nextPanel, 'bar-lyrics-line-progress').visible)
       throw Error('Upcoming line must not show elapsed progress');

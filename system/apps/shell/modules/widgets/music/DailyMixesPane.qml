@@ -75,11 +75,11 @@ Item {
     ColumnLayout {
         anchors.fill: parent
         spacing: Styling.spacing(10)
-        Flow {
+        RowLayout {
             Layout.fillWidth: true
             spacing: Styling.spacing(8)
-            ThemeButton { objectName: "music-preview-mode"; text: root.previewOnly ? "Browse" : "Previews"; checked: root.previewOnly; onClicked: root.previewOnly = !root.previewOnly }
-            StyledText { text: root.previewOnly ? "Previews" : "Spotify playlists"; font.bold: true; font.pixelSize: Styling.fontSize(8); height: Math.max(36, Styling.spacing(40)); verticalAlignment: Text.AlignVCenter }
+            StyledText { Layout.fillWidth: true; text: root.previewOnly ? "Previews" : "Spotify playlists"; font.bold: true; font.pixelSize: Styling.fontSize(14) }
+            ThemeButton { objectName: "music-preview-mode"; text: root.previewOnly ? "Browse playlists" : "Previews"; checked: root.previewOnly; onClicked: root.previewOnly = !root.previewOnly }
             ThemeButton {
                 objectName: "music-mixes-update"
                 visible: !root.previewOnly
@@ -114,7 +114,7 @@ Item {
                 if (root.mixes.refreshPending) return "Waiting for Spotify…";
                 return root.previewStatus || root.mixes.refreshStatus || (root.mixes.checked
                     ? "Updated " + new Date(root.mixes.checked).toLocaleString() + " · Preview streams in Spotify; downloads are optional."
-                    : "Paste any playlist link above, or open Made for You in Spotify to collect Daily Mixes. Previews stream without downloading.");
+                    : "Load a playlist by link, or open Made for You in Spotify and choose Update mixes.");
             }
             color: root.notice ? Colors.error : Colors.overSurfaceVariant
             font.pixelSize: Styling.fontSize(-1)
@@ -194,7 +194,7 @@ Item {
                         anchors.centerIn: parent; width: parent.width - Styling.spacing(32)
                         horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap
                         visible: mixGrid.count === 0
-                        text: root.section === "imported" ? "No imported playlists yet. Add music folders or save a playlist from the queue." : root.section === "saved" ? "No saved snapshots yet. Save a current mix to keep its track list." : "No mixes received yet. Open Made for You in Spotify, then update mixes."
+                        text: root.section === "imported" ? "No imported playlists yet. Add music folders or save a playlist from the queue." : root.section === "saved" ? "No saved snapshots yet. Save a current mix to keep its track list." : "No Spotify playlists loaded yet."
                         color: Colors.overSurfaceVariant
                     }
                 }

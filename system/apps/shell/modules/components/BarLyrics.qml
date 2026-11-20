@@ -335,6 +335,7 @@ Item {
         Label {
             upcoming: lineSurface.upcoming
             objectName: "bar-lyrics-previous-text"
+            anchors.bottomMargin: currentLabel.anchors.bottomMargin
             text: lineSurface.previousText
             opacity: (1 - lineSurface.progress) * (1 - lineSurface.visualizerMix)
             visible: opacity > 0
@@ -344,6 +345,7 @@ Item {
             id: currentLabel
             upcoming: lineSurface.upcoming
             objectName: "bar-lyrics-text"
+            anchors.bottomMargin: lineProgressTrack.visible ? lineProgressTrack.height : 0
             text: lineSurface.displayedText
             opacity: lineSurface.progress * (1 - lineSurface.visualizerMix)
             transform: Translate { y: 4 * (1 - lineSurface.progress) }
@@ -353,11 +355,13 @@ Item {
             objectName: "bar-lyrics-line-progress"
             // Follow the visible label width, including when long lyrics elide.
             width: Math.max(0, Math.min(currentLabel.contentWidth, currentLabel.width))
+            // Reserve space for both the ripple and the taller progress cursor.
+            height: implicitHeight + 4
             x: currentLabel.x + (currentLabel.width - width) / 2
             y: Math.min(lineSurface.height - height - 2,
-                (lineSurface.height + currentLabel.implicitHeight) / 2 + 2)
+                (currentLabel.height + currentLabel.implicitHeight) / 2 + 2)
             visible: !lineSurface.upcoming && root.currentText !== "" && root.displayLines.length > 0
-                && root.lyricPosition >= root.lineStart
+                && root.lyricPosition >= root.lineStart && lineSurface.height >= height + 4
             opacity: currentLabel.opacity
             value: root.lineProgress
             activeColor: BarAppearance.activeColor
