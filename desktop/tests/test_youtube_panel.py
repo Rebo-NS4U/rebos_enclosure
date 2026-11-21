@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'system/apps/media'
 import media_sources
 import youtube_account
 import menu_backend
+from menu_requests import MenuRequest
 
 
 class YouTubePanelTests(unittest.TestCase):
@@ -64,18 +65,33 @@ class YouTubePanelTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'Connect'):
                 media_sources.youtube_for_you(1)
 
-    def test_feed_pages_share_snapshot_and_refresh_replaces_it(self):
+    def test_feed_pages_share_snapshot_until_refresh_or_a_stale_first_page(self):
         cards = [{'id': str(i)} for i in range(45)]
         with patch.object(youtube_account, 'selection', return_value='firefox:profile'), \
              patch.object(youtube_account, 'assert_signed_in'), \
              patch.object(media_sources, 'fetch_youtube_feed', return_value=cards) as fetch, \
-             patch.object(youtube_account, 'FEEDS', {}):
+             patch.object(youtube_account, 'FEEDS', {}), \
+             patch.object(media_sources.time, 'monotonic', return_value=100) as clock:
             self.assertEqual(len(media_sources.youtube_for_you(1)['items']), 20)
             self.assertEqual(media_sources.youtube_for_you(2)['items'], cards[20:40])
             self.assertFalse(media_sources.youtube_for_you(3)['hasMore'])
             self.assertEqual(fetch.call_count, 1)
             media_sources.youtube_for_you(1)
+            self.assertEqual(fetch.call_count, 1)
+            replacement = [{'id': 'new'}]
+            fetch.return_value = replacement
+            engine = Mock()
+            engine.background.side_effect = lambda work, done, fail: done(work())
+            send = Mock()
+            MenuRequest(dict(action='catalogue', kind='youtube', category='for-you', refresh=True),
+                        engine, send).handle_catalogue()
+            self.assertEqual(send.call_args.args[0]['data']['items'], replacement)
             self.assertEqual(fetch.call_count, 2)
+            clock.return_value = 701
+            self.assertEqual(media_sources.youtube_for_you(2)['items'], [])
+            self.assertEqual(fetch.call_count, 2)
+            media_sources.youtube_for_you(1)
+            self.assertEqual(fetch.call_count, 3)
 
     def test_queue_starts_at_selected_video_and_preserves_playlist(self):
         urls = ['https://www.youtube.com/watch?v=' + str(i) for i in range(3)]
@@ -92,13 +108,22 @@ class YouTubePanelTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder, \
              patch.object(youtube_account, 'CONFIG', Path(folder) / 'account.json'), \
              patch.object(youtube_account, 'browsers', return_value=[{'id':'firefox:profile','label':'Firefox'}]), \
-             patch.object(youtube_account, 'assert_signed_in'):
+             patch.object(youtube_account, 'assert_signed_in') as sign_in, \
+             patch.object(youtube_account, 'FEEDS', {}):
             with self.assertRaises(ValueError):
                 youtube_account.connect('firefox:profile', Mock(side_effect=ValueError('unavailable')))
             self.assertFalse(youtube_account.CONFIG.exists())
-            self.assertTrue(youtube_account.connect('firefox:profile', Mock())['connected'])
+            cards = [{'id': 'connected'}]
+            fetch = Mock(return_value=cards)
+            self.assertTrue(youtube_account.connect('firefox:profile', fetch)['connected'])
+            sign_in.reset_mock()
+            with patch.object(media_sources, 'fetch_youtube_feed', fetch):
+                self.assertEqual(media_sources.youtube_for_you(1)['items'], cards)
+            fetch.assert_called_once_with('firefox:profile')
+            sign_in.assert_not_called()
             self.assertEqual(json.loads(youtube_account.CONFIG.read_text()), {'browser':'firefox:profile'})
             self.assertFalse(youtube_account.disconnect()['connected'])
+            self.assertEqual(youtube_account.FEEDS, {})
 
     def test_youtube_auto_next_is_independent_and_never_advances_on_error(self):
         for enabled, reason, expected in [(True, 'eof', True), (False, 'eof', False), (True, 'error', False), (True, 'stop', False)]:

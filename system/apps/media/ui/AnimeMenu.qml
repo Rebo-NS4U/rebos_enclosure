@@ -194,7 +194,7 @@ PanelWindow {
         episodes = [];
         send({action: "season", request: detailRequest, show: selectedShow, seasonId: season.id});
     }
-    function load(append: bool): void {
+    function load(append, refresh = false) {
         if (!ready || (append && (loading || !hasMore))) return;
         requestId++;
         if (!append) { cataloguePage = 1; shows.clear(); hasMore = true; emptyCataloguePages = 0; }
@@ -202,7 +202,7 @@ PanelWindow {
         loading = true;
         loadFailed = false;
         message = "Loading " + mediaName.toLowerCase() + "…";
-        send({action: "catalogue", request: requestId, kind: mediaKind, category: category, query: query, page: cataloguePage, filters: appliedFilters});
+        send({action: "catalogue", request: requestId, kind: mediaKind, category: category, query: query, page: cataloguePage, filters: appliedFilters, refresh: refresh});
     }
     function openFilters(): void {
         if (mediaKind !== "anime") return;
@@ -658,7 +658,7 @@ PanelWindow {
                             search.focusInput();
                         }
                     }
-                    MenuButton { text: "Refresh"; enabled: root.ready && !root.loading; onClicked: root.load(false) }
+                    MenuButton { text: "Refresh"; enabled: root.ready && !root.loading; onClicked: root.load(false, true) }
                     MenuButton { text: "Search"; onClicked: { root.query = search.text.trim(); root.load(false); } }
                     MenuButton { visible: root.mediaKind === "anime"; text: root.filterCount > 0 ? "Filters (" + root.filterCount + ")" : "Filters"; selected: root.filterCount > 0; enabled: root.ready; onClicked: root.openFilters() }
                     MenuCombo {

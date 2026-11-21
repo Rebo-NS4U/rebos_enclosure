@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import threading
+import time
 
 CONFIG = Path.home() / '.config/anime-streamer/youtube-account.json'
 LOCK = threading.RLock()
@@ -83,13 +84,14 @@ def connect(browser, fetch):
         raise ValueError('Choose an available browser profile.')
     assert_signed_in(browser)
     # Verify the actual personalized feed before claiming the connection works.
-    fetch(browser)
+    items = fetch(browser)
     with LOCK:
         CONFIG.parent.mkdir(parents=True, exist_ok=True)
         fd = os.open(CONFIG, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
         with os.fdopen(fd, 'w') as output:
             json.dump({'browser': browser}, output)
         FEEDS.clear()
+        FEEDS[browser] = (time.monotonic(), items)
     data = status()
     data['text'] = 'Connected. Your YouTube For You feed is ready in the player.'
     return data

@@ -107,7 +107,12 @@ class MenuRequest:
                 result(history)
         else:
             page = max(1, int(request.get('page', 1)))
-            engine.background(lambda: app.catalogue(category, query, page, filters) if kind == 'anime' else media_sources.catalogue(kind, category, query, page, fetch=app.fetch, check_availability=False), catalogue_ready, fail)
+            if kind == 'anime':
+                engine.background(lambda: app.catalogue(category, query, page, filters), catalogue_ready, fail)
+            else:
+                engine.background(lambda: media_sources.catalogue(
+                    kind, category, query, page, fetch=app.fetch, check_availability=False,
+                    refresh=request.get('refresh') is True), catalogue_ready, fail)
 
 
     def handle_details(self):
