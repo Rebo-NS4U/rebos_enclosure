@@ -556,6 +556,19 @@ PanelWindow {
         }
     }
     component MenuCombo: SettingsComboBox {}
+    component WhisperModePicker: RowLayout {
+        StyledText { text: "Whisper audio mode" }
+        MenuCombo {
+            Layout.fillWidth: true
+            readonly property var modes: ["auto", "en", "es"]
+            model: ["Auto · detect language and translate to English",
+                    "English · transcribe English audio (faster)",
+                    "Spanish · translate Spanish audio to English"]
+            currentIndex: Math.max(0, modes.indexOf(root.settings.caption_language ?? "auto"))
+            onActivated: index => root.updateSetting("caption_language", modes[index])
+            Accessible.name: "Whisper audio mode"
+        }
+    }
 
     MouseArea { id: inputArea; anchors.fill: parent; enabled: root.active; onClicked: root.opened = false }
     StyledRect {
@@ -1282,8 +1295,12 @@ PanelWindow {
                             checked: root.settings.live_subtitles ?? true
                             onToggled: root.updateSetting("live_subtitles", checked)
                         }
+                        WhisperModePicker {
+                            objectName: "whisper-mode-settings"
+                            Layout.fillWidth: true
+                        }
                         StyledText {
-                            text: "Generated subtitles run locally on your computer. With translation off, speech is treated as English. YouTube uses its own captions."
+                            text: "Whisper generates English subtitles on this computer. Choose English for English-only audio, especially on slower computers. Auto detects each spoken passage, so it can follow language changes. YouTube uses its own captions."
                             Layout.fillWidth: true
                             wrapMode: Text.Wrap
                             color: Colors.overSurfaceVariant
@@ -1306,13 +1323,6 @@ PanelWindow {
                             wrapMode: Text.Wrap
                             color: Colors.overSurfaceVariant
                         }
-                        MediaCheckBox {
-                            Layout.fillWidth: true
-                            text: "Translate other languages to English"
-                            palette.windowText: Colors.overSurface
-                            checked: (root.settings.caption_language ?? "auto") === "auto"
-                            onToggled: root.updateSetting("caption_language", checked ? "auto" : "en")
-                        }
                         RowLayout {
                             Layout.fillWidth: true
                             StyledText { text: "Subtitle timing"; Layout.preferredWidth: root.unit * 10 }
@@ -1334,6 +1344,13 @@ PanelWindow {
                         }
                     }
                 }
+            }
+            WhisperModePicker {
+                objectName: "whisper-mode-playback"
+                Layout.fillWidth: true
+                enabled: root.ready
+                visible: root.playback.length > 0 && root.subtitleTracks.selected === "whisper"
+                         && !(root.pageView === "settings" && root.settingsSection === "subtitles")
             }
             StyledText {
                 visible: root.captionStatus.length > 0

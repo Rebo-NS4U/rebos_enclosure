@@ -296,6 +296,30 @@ ShellRoot {
     let sheet=test.findChild(menu,"media-content-sheet");
     if(!sheet||sheet.styleOverride!==""||sheet.backgroundOpacity!==-1||sheet.variant!=="popup"
        ||sheet.rectOpacity!==sheet.variantConfig.opacity)throw Error("Content sheet must follow the selected popup theme");
+    menu.receive(JSON.stringify({event:"ready",settings:{}}));
+    test.tryVerify(()=>menu.ready);
+    menu.opened=true;menu.pageView="settings";menu.settingsSection="subtitles";
+    const settingsRow=test.findChild(menu,"whisper-mode-settings");
+    const playbackRow=test.findChild(menu,"whisper-mode-playback");
+    const picker=row=>row.children.find(item=>item.modes!==undefined);
+    if(!settingsRow.visible || picker(settingsRow).currentIndex!==0)
+     throw Error("Missing audio setting must display Auto");
+    picker(settingsRow).activated(1);
+    if(menu.inFlightSettings.caption_language!=="en")throw Error("English choice must save en");
+    menu.receive(JSON.stringify({event:"settings",request:menu.settingsInFlight,data:{caption_language:"en"}}));
+    test.tryVerify(()=>!menu.settingsInFlight);
+    menu.playback="Playing";menu.subtitleTracks={selected:"whisper",options:[]};menu.pageView="browse";
+    if(!playbackRow.visible || picker(playbackRow).currentIndex!==1)
+     throw Error("Playing Whisper must show the saved English mode");
+    picker(playbackRow).activated(2);
+    if(menu.inFlightSettings.caption_language!=="es")throw Error("Spanish choice must save es");
+    menu.receive(JSON.stringify({event:"settings",request:menu.settingsInFlight,data:{caption_language:"es"}}));
+    test.tryVerify(()=>!menu.settingsInFlight);
+    if(picker(settingsRow).currentIndex!==2)throw Error("Saved Spanish mode must remain selected");
+    picker(playbackRow).activated(0);
+    if(menu.inFlightSettings.caption_language!=="auto")throw Error("Auto choice must save auto");
+    menu.subtitleTracks={selected:"off",options:[]};
+    if(playbackRow.visible)throw Error("Whisper picker visible with subtitles off");
     menu.destroy();console.log("VISUAL POLISH PASSED");Qt.quit();
    }catch(e){console.error(e);Qt.exit(1);}
   }}
