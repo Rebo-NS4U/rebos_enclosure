@@ -700,7 +700,7 @@ PanelWindow {
                         spacing: root.unit
                         StyledText {
                             Layout.fillWidth: true
-                            text: "No results"
+                            text: root.loadFailed ? "Could not load results" : "No results"
                             font.pixelSize: Styling.fontSize(4)
                             font.bold: true
                             horizontalAlignment: Text.AlignHCenter

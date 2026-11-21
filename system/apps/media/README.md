@@ -10,6 +10,8 @@ Enclosure installs the app, desktop entry and playback service. Open **Rebos Str
 
 The UI runs separately from the panel; the service adopts updated Python code on its next start. Updating never restarts active playback.
 
+If a HiAnime request fails to resolve or connect, Streamer retries it using Google DNS over HTTPS.
+
 Primewire verification additionally uses Playwright and Chromium:
 
 ```sh

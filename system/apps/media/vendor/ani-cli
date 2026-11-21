@@ -155,6 +155,16 @@ hianime_curl() {
     _response="$($curl_exe -sL -A "$agent" --max-time 10 $cipher_flag \
         -w ' %{http_code}' "$@")" || _curl_status=$?
 
+    case "$_curl_status:$1" in
+        6:https://hianime.at/*|7:https://hianime.at/*)
+            if [ -n "${hianime_doh:-}" ]; then
+                _curl_status=0
+                _response="$($curl_exe -sL -A "$agent" --max-time 10 $cipher_flag \
+                    --doh-url "$hianime_doh" -w ' %{http_code}' "$@")" || _curl_status=$?
+            fi
+            ;;
+    esac
+
     _http_code=${_response##* }
     _response=${_response% *}
 

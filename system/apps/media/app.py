@@ -31,6 +31,7 @@ CACHE = ROOT / '.cache/anime-streamer'
 CONFIG = ROOT / '.config/anime-streamer/settings.json'
 POOL = concurrent.futures.ThreadPoolExecutor(max_workers=8)
 BASE = 'https://hianime.at'
+ANIME_DOH = 'https://dns.google/dns-query'
 SUBTITLE_FONTS = ('OpenDyslexic', 'Noto Sans', 'Noto Serif', 'DejaVu Sans')
 
 DEFAULTS = dict(auto_next=True, youtube_auto_next=True, quality='best', mode='sub', fullscreen=False, volume=80, audio_normalization=True, live_subtitles=True, caption_delay=0, caption_language='auto', subtitle_font='OpenDyslexic')
@@ -53,7 +54,10 @@ def save_json(path, data):
 def fetch(url):
     if not url.startswith('https://'):
         raise ValueError('Only HTTPS catalogue and image URLs are supported')
-    result = subprocess.run(['curl', '-fLsS', '--max-time', '25', '--max-filesize', '12000000', '-A', 'Mozilla/5.0', url], capture_output=True, timeout=30)
+    args = ['curl', '-fLsS', '--max-time', '25', '--max-filesize', '12000000', '-A', 'Mozilla/5.0']
+    result = subprocess.run([*args, url], capture_output=True, timeout=30)
+    if result.returncode in (6, 7) and url.startswith(BASE + '/'):
+        result = subprocess.run([*args, '--doh-url', ANIME_DOH, url], capture_output=True, timeout=30)
     if result.returncode:
         raise RuntimeError(result.stderr.decode(errors='replace')[-300:] or 'Provider unavailable')
     return result.stdout
@@ -118,6 +122,7 @@ servers_api="${base_api}/api/theme/episode/servers?episodeId=%s"
 agent="Mozilla/5.0"
 curl_exe=$(dep_ch_failover "curl_firefox135,curl_chrome136,curl_chrome116,curl_ff117,curl")
 cipher_flag=""
+hianime_doh="$6"
 episode_maps=$(hianime_episodes "$2") || exit 1
 [ -n "$episode_maps" ] || { echo "No episodes available from the provider" >&2; exit 1; }
 if [ "$1" = episodes ]; then
@@ -128,7 +133,7 @@ else
     printf '%s\\n%s\\n%s\\n%s\\n' "$video_link" "$refr" "$sub_link" "$audio_link"
 fi
 '''
-    result = subprocess.run(['sh', '-c', script, 'anime-streamer', action, show_id, str(episode), mode, quality], capture_output=True, text=True, timeout=110)
+    result = subprocess.run(['sh', '-c', script, 'anime-streamer', action, show_id, str(episode), mode, quality, ANIME_DOH], capture_output=True, text=True, timeout=110)
     if result.returncode:
         message = re.sub(r'\x1b\[[0-9;]*[A-Za-z]', '', result.stderr or result.stdout)
         raise RuntimeError(message.strip()[-450:] or 'The provider did not return a playable source')
