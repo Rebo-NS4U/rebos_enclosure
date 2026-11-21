@@ -61,11 +61,36 @@ class Download:
                 raise
 
 
+def downloads_folder():
+    directory = GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD)
+    return Path(directory or Path.home() / 'Downloads') / 'Rebos Streamer'
+
+
+def list_downloads():
+    folder = downloads_folder()
+    entries = []
+    for directory, subfolders, names in os.walk(folder):
+        subfolders[:] = [name for name in subfolders if not name.startswith('.')]
+        for name in names:
+            path = Path(directory) / name
+            if name.startswith('.') or path.suffix.lower() not in {'.mkv', '.mp4', '.m4v', '.mov', '.webm', '.avi'}:
+                continue
+            if path.is_symlink() or not path.is_file():
+                continue
+            try:
+                info = path.stat()
+            except FileNotFoundError:
+                continue
+            if info.st_size:
+                entries.append((info.st_mtime_ns, dict(name=str(path.relative_to(folder)), url=path.as_uri())))
+    entries.sort(key=lambda entry: (-entry[0], entry[1]['name'].casefold()))
+    return dict(folder=folder.as_uri() if folder.is_dir() else '', files=[entry for _, entry in entries])
+
+
 def save(title, transfer, download=None):
     download = download or Download()
     download.check()
-    directory = GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD)
-    folder = Path(directory or Path.home() / 'Downloads') / 'Rebos Streamer'
+    folder = downloads_folder()
     name = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '_', title).strip(' .')
     stem = name.encode()[:180].decode(errors='ignore') or 'Video'
     folder.mkdir(parents=True, exist_ok=True)

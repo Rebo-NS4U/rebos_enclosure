@@ -30,6 +30,8 @@ Open a title, select an episode or video, and click **Download**. Streamer saves
 For TV, select a season and click **Download Season**. Streamer saves its episodes one at a time and reports which episodes failed after the queue finishes.
 Click **Stop Download** beside the progress message to cancel the current transfer and any remaining episodes. Completed files stay in your Downloads folder.
 
+Open **Downloads** to see saved videos, including files in subfolders. Select a video to open it in your default player, or choose **Open Folder** to open the download directory.
+
 ## Development
 
 `ui/shell.qml` is the standalone UI entry point. `ui/modules` contains the current Enclosure/Dweebo controls, surfaces, shadows and theme defaults needed by this app; it does not import the installed shell. `vendor/ani-cli` preserves Enclosure's resolver version. `backend_server.py` and `menu_client.py` communicate over the existing per-user runtime socket.

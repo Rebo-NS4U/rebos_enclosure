@@ -42,6 +42,11 @@ PanelWindow {
     property string playback: ""
     property bool downloadActive: false
     property string downloadStatus: ""
+    property string beforeDownloads: "browse"
+    property var savedDownloads: ({folder: "", files: []})
+    property int downloadsRequest: 0
+    property bool downloadsBusy: false
+    property string downloadsError: ""
     property bool playbackPaused: false
     property bool nextEpisodeAvailable: false
     property string nextEpisodeLabel: "Next episode"
@@ -119,10 +124,12 @@ PanelWindow {
         opened = true;
         backendStarted = true;
         if (ready && shows.count === 0 && !loading) load(false);
+        if (pageView === "downloads") refreshDownloads();
         Qt.callLater(() => pageView === "browse" ? search.focusInput() : card.forceActiveFocus());
     }
     function back(): void {
         if (pageView === "settings") pageView = previousPage;
+        else if (pageView === "downloads") pageView = beforeDownloads;
         else if (pageView === "filters") pageView = "browse";
         else if (pageView === "details") pageView = "browse";
         else opened = false;
@@ -135,6 +142,23 @@ PanelWindow {
         downloadActive = true;
         downloadStatus = "Preparing download…";
         send(data);
+    }
+    function openDownloads(): void {
+        beforeDownloads = pageView;
+        pageView = "downloads";
+        downloadsList.forceActiveFocus();
+        refreshDownloads();
+    }
+    function refreshDownloads(): void {
+        if (!ready) return;
+        downloadsBusy = true;
+        downloadsError = "";
+        downloadsRequest++;
+        send({action: "downloads", request: downloadsRequest});
+    }
+    function openDownloadUrl(url: string): void {
+        if (Qt.openUrlExternally(url)) opened = false;
+        else downloadsError = "Could not open this item.";
     }
     function switchMedia(kind: string): void {
         if (mediaKind === kind) return;
@@ -306,6 +330,7 @@ PanelWindow {
                 inFlightSettings = ({});
                 settings = Object.assign({}, confirmedSettings);
                 ready = false;
+                downloadsBusy = false;
                 nextEpisodeAvailable = false;
                 nextEpisodeResumesPlayback = false;
                 if (loading && cataloguePage > 1) cataloguePage--;
@@ -334,6 +359,7 @@ PanelWindow {
                 youtubeAccount = data.youtubeAccount ?? youtubeAccount;
                 youtubeBusy = false;
                 if (opened && shows.count === 0) load(false);
+                if (opened && pageView === "downloads") refreshDownloads();
             } else if (data.event === "catalogue" && data.request === requestId) {
                 const existing = new Set();
                 for (let i = 0; i < shows.count; i++) existing.add(shows.get(i).id);
@@ -401,6 +427,10 @@ PanelWindow {
             } else if (data.event === "download") {
                 downloadActive = data.active;
                 downloadStatus = data.text;
+                if (opened && pageView === "downloads" && !data.active) refreshDownloads();
+            } else if (data.event === "downloads" && data.request === downloadsRequest) {
+                savedDownloads = data.data;
+                downloadsBusy = false;
             } else if (data.event === "playback") {
                 playback = data.text;
                 if (/^(Playing|Paused) · /.test(data.text)) playbackWindowTitle = data.text.replace(/^(Playing|Paused) · /, "");
@@ -436,7 +466,12 @@ PanelWindow {
                 }
                 if (selectedShow.id === data.data.id) selectedShow = Object.assign({}, selectedShow, {image: data.data.image});
             } else if (data.event === "error") {
-                if (data.action === "download" || data.action === "download_season") {
+                if (data.action === "downloads") {
+                    if (data.request === downloadsRequest) {
+                        downloadsBusy = false;
+                        downloadsError = data.text;
+                    }
+                } else if (data.action === "download" || data.action === "download_season") {
                     downloadActive = false;
                     downloadStatus = data.text;
                 } else if (data.action === "settings") {
@@ -603,12 +638,18 @@ PanelWindow {
                 MenuButton { visible: root.pageView !== "browse"; text: "‹ Back"; onClicked: root.back() }
                 StyledText {
                     Layout.fillWidth: true
-                    text: root.pageView === "details" ? (root.selectedShow.title ?? root.mediaName) : root.pageView === "settings" ? "Media settings" : root.pageView === "filters" ? "Search filters" : "Media Browser"
+                    text: root.pageView === "details" ? (root.selectedShow.title ?? root.mediaName)
+                        : ({settings: "Media settings", filters: "Search filters", downloads: "Downloads"})[root.pageView] ?? "Media Browser"
                     font.pixelSize: Styling.fontSize(6)
                     font.bold: true
                     elide: Text.ElideRight
                 }
                 BusyIndicator { running: root.loading || root.detailLoading; visible: running; implicitWidth: root.unit * 2; implicitHeight: implicitWidth }
+                MenuButton {
+                    text: "Downloads"
+                    visible: root.pageView === "browse" || root.pageView === "details"
+                    onClicked: root.openDownloads()
+                }
                 MenuButton {
                     text: "Settings"
                     visible: root.pageView !== "settings"
@@ -983,6 +1024,62 @@ PanelWindow {
                             selected: root.selectedEpisode === episode.index
                             onClicked: root.selectedEpisode = episode.index
                             onDoubleClicked: root.send({action: "play", queue: root.youtubeQueue(), show: root.selectedShow, episodes: root.episodes, index: episode.index})
+                        }
+                    }
+                }
+            }
+            ColumnLayout {
+                visible: root.pageView === "downloads"
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                RowLayout {
+                    Layout.fillWidth: true
+                    StyledText {
+                        Layout.fillWidth: true
+                        text: root.downloadsError || (!root.ready ? "Connecting to playback service…"
+                            : root.downloadsBusy ? "Loading downloads…"
+                            : root.savedDownloads.files.length === 0 ? "No downloads yet"
+                            : root.savedDownloads.files.length === 1 ? "1 file"
+                            : root.savedDownloads.files.length + " files")
+                        wrapMode: Text.Wrap
+                        textFormat: Text.PlainText
+                    }
+                    MenuButton {
+                        text: "Refresh"
+                        enabled: root.ready && !root.downloadsBusy
+                        onClicked: root.refreshDownloads()
+                    }
+                    MenuButton {
+                        text: "Open Folder"
+                        enabled: root.savedDownloads.folder.length > 0
+                        onClicked: root.openDownloadUrl(root.savedDownloads.folder)
+                    }
+                }
+                ListView {
+                    id: downloadsList
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    clip: true
+                    spacing: root.unit * 0.35
+                    model: root.savedDownloads.files
+                    keyNavigationEnabled: true
+                    Keys.onReturnPressed: {
+                        if (currentItem) root.openDownloadUrl(currentItem.modelData.url);
+                    }
+                    ScrollBar.vertical: ScrollBar {}
+                    delegate: MenuButton {
+                        id: downloadRow
+                        required property var modelData
+                        width: downloadsList.width - root.unit
+                        text: modelData.name
+                        selected: downloadsList.activeFocus && ListView.isCurrentItem
+                        onClicked: root.openDownloadUrl(modelData.url)
+                        contentItem: StyledText {
+                            text: downloadRow.text
+                            textFormat: Text.PlainText
+                            color: downloadRow.selected ? Colors.overPrimary : Colors.overSurface
+                            verticalAlignment: Text.AlignVCenter
+                            elide: Text.ElideMiddle
                         }
                     }
                 }

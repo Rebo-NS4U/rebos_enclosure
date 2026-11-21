@@ -3,6 +3,7 @@ from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 import json
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -22,6 +23,30 @@ class QuietHandler(SimpleHTTPRequestHandler):
 
 
 class DownloadTests(unittest.TestCase):
+    def test_downloads_request_lists_saved_videos_and_ignores_partial_files(self):
+        engine = Mock()
+        send = Mock()
+        with TemporaryDirectory() as directory:
+            folder = Path(directory) / 'Rebos Streamer'
+            (folder / 'English').mkdir(parents=True)
+            (folder / '.download-active').mkdir()
+            older = folder / 'Episode 1.mkv'
+            newer = folder / 'English' / 'Episode 2 # English.mkv'
+            for file in (older, newer, folder / '.download-active' / 'video.mkv', folder / 'notes.txt'):
+                file.write_bytes(b'data')
+            (folder / 'empty.mkv').touch()
+            (folder / 'link.mkv').symlink_to(older)
+            os.utime(older, (1, 1))
+            with patch.object(media_download.GLib, 'get_user_special_dir', return_value=directory):
+                menu_requests.dispatch(dict(action='downloads', request=7, _client='menu'), engine, send)
+                work, done, _ = engine.background.call_args.args
+                done(work())
+            send.assert_called_once_with(dict(event='downloads', request=7, client='menu',
+                data=dict(folder=folder.as_uri(), files=[
+                    dict(name='English/Episode 2 # English.mkv', url=newer.as_uri()),
+                    dict(name='Episode 1.mkv', url=older.as_uri()),
+                ])))
+
     def test_stop_download_cancels_transfer_and_ignores_late_season_callbacks(self):
         engine = Mock(download_active=False, settings={'mode': 'sub', 'quality': '720p'})
         send = Mock()
