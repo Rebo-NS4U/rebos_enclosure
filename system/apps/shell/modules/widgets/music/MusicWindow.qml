@@ -344,7 +344,24 @@ Window {
     function load(data) {
         busy = false;
         if (!data) return;
+        const list = suggestionsList;
+        const first = list.visible && list.count
+            ? list.indexAt(1, list.contentY + 0.5) : -1;
+        const anchor = suggestedTracks[first]?.uri;
+        const offset = anchor ? list.contentY - list.itemAtIndex(first).y : 0;
         tracks = data.tracks; favorites = data.state.favorites; playlists = data.state.playlists; folders = data.state.folders;
+        if (anchor && suggestedTracks.length) {
+            // Keep the same visible track, or its successor if it was added.
+            const index = suggestedTracks.findIndex(track => track.uri === anchor);
+            const target = index >= 0 ? index : Math.min(first, suggestedTracks.length - 1);
+            list.forceLayout();
+            list.positionViewAtIndex(target, ListView.Beginning);
+            const row = list.itemAtIndex(target);
+            if (row) {
+                list.contentY = row.y + offset;
+                list.returnToBounds();
+            }
+        }
         notice = data.errors.length ? data.errors.length + " files could not be read" : "";
     }
     function scan() { if (busy) return; busy = true; request("scan", {}, load); }

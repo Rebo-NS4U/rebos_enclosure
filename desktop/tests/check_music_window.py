@@ -745,6 +745,27 @@ esac
                 } else if (phase === 97 && attempts >= repeatStart + 3) {
                     const list = findItem(music.contentItem, "music-playlist-suggestions");
                     if (list.count !== 150 || list.contentY <= 0) { console.error("SUGGESTIONS_APPEND_SCROLL_FAILED"); Qt.exit(1); return; }
+                    list.positionViewAtIndex(100, ListView.Beginning);
+                    list.contentY += 9;
+                    const saved = music.suggestedTracks[8];
+                    const downloaded = Object.assign({}, music.tracks[0], {path: "/downloaded.flac",
+                        spotifyUri: saved.uri, title: saved.title, artist: saved.artist});
+                    const state = {favorites: music.favorites, playlists: music.playlists, folders: music.folders};
+                    const tracks = music.tracks.concat([downloaded]);
+                    music.pendingSuggestionDownload = {playlist: "test", uri: saved.uri, toQueue: false};
+                    findItem(music.contentItem, "music-downloads").completed();
+                    music.receive(JSON.stringify({id: music.requestId, ok: true, data: {tracks, state, errors: []}}));
+                    state.playlists = state.playlists.map(p => p.id === "test"
+                        ? Object.assign({}, p, {paths: p.paths.concat([downloaded.path])}) : p);
+                    music.receive(JSON.stringify({id: music.requestId, ok: true, data: {tracks, state, errors: []}}));
+                    repeatStart = attempts; phase = 970;
+                } else if (phase === 970 && attempts >= repeatStart + 3) {
+                    const list = findItem(music.contentItem, "music-playlist-suggestions");
+                    const row = list.itemAtIndex(99);
+                    if (list.count !== 149 || row?.track.title !== "Suggestion 100" || Math.abs(list.contentY - row.y - 9) > 1) {
+                        console.error("SUGGESTIONS_DOWNLOAD_SCROLL_FAILED", list.count, row?.track.title, list.contentY, row?.y);
+                        Qt.exit(1); return;
+                    }
                     music.spotifySuggestions = {playlist:"test",pending:false,tracks:[]};
                     if (list.count !== 0) { console.error("SUGGESTIONS_RESET_FAILED"); Qt.exit(1); return; }
                     console.log("MUSIC_SUGGESTIONS_CONTINUOUS_PASSED"); stop(); Qt.quit();

@@ -690,7 +690,7 @@
   "system/apps/shell/modules/widgets/launcher/qmldir": "f69644603f0591f08bebb0491909c6e2149c3c56cbe6d28062a48cae16721da3",
   "system/apps/shell/modules/widgets/music/DailyMixesPane.qml": "e675421853e72b72a5bc5f24815c07e596dc4b3866a7a118dbb88b691c56a959",
   "system/apps/shell/modules/widgets/music/DownloadsPane.qml": "3d91f7fb900420b770753c8ef4754d96a511f0c25a7660247fc168cf7391ebb1",
-  "system/apps/shell/modules/widgets/music/MusicWindow.qml": "fd55f4df84c5f0505e7dea2df2be77f6f30c3698751ce7be72b11c53f7065817",
+  "system/apps/shell/modules/widgets/music/MusicWindow.qml": "9550f4c378343a72525b7e1bcf9a6691211031b40d0aaa00934413f2060a77c2",
   "system/apps/shell/modules/widgets/notes/NotesAction.qml": "bd568fc09292634cad36428cab5b2eb2b59cfb08a8592cf9a588064ca7ce3760",
   "system/apps/shell/modules/widgets/notes/NotesPopup.qml": "b8682d94f25159f8851c91f1ddcb8027e9cb72d6c0c34f0ddfe22a0b0390f92d",
   "system/apps/shell/modules/widgets/powermenu/PowerMenu.qml": "0acbd44253171b3f085937ca71edf2a0b4ddb5f3cc44f5e5acc7227f814ad714",
