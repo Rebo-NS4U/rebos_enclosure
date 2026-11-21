@@ -96,7 +96,7 @@ PanelWindow {
     Timer {
         interval: 3000
         running: !root.opened && !root.playerWindowPresent
-        onTriggered: Quickshell.quit()
+        onTriggered: Qt.quit()
     }
     visible: presented && !GlobalStates.lockscreenVisible
     mask: Region {

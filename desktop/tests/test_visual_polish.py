@@ -254,6 +254,16 @@ ShellRoot {
  }
 }''', assistant=True)
 
+    def test_idle_streamer_exits_after_grace_period(self):
+        status, output = run_qml(ROOT / 'system/apps/media/ui', """import QtQuick
+import Quickshell
+ShellRoot {
+ AnimeMenu { Component.onCompleted: console.log("Idle streamer loaded") }
+ Timer { interval: 5000; running: true; onTriggered: Qt.exit(1) }
+}""")
+        self.assertEqual(status, 0, output[-3000:])
+        self.assertIn('Idle streamer loaded', output)
+
     def test_media_controls_keyboard_and_themed_sheet(self):
         self.check_qml('media/ui', '''import QtQuick
 import QtTest

@@ -244,7 +244,7 @@
   "system/apps/media/runtime_socket.py": "97c671b9702eb10f3c261e4a7a1952f73860c533ae0aa0507068e3be07244743",
   "system/apps/media/stream_relay.py": "55bc91be2173ada3fd3125a2db3701e1313cd6404c364c4e6ef76587352c950b",
   "system/apps/media/torbox_source.py": "c8e657f861440e2c9e4707912f25ea3266ed575b27b77df03e952234aee764de",
-  "system/apps/media/ui/AnimeMenu.qml": "4fd52487c094be4f410d9e8184016dd869f372b8441bd02d1fbd780385ea60ab",
+  "system/apps/media/ui/AnimeMenu.qml": "20d1a9e15b87d543318b99e0eacaddb2c72a522079440ecdfab72e71dc40ff82",
   "system/apps/media/ui/MediaGridPaging.js": "4970e4d202c87909737f777d330796336080ec951e3cf6368711016e882edbdd",
   "system/apps/media/ui/PlaybackNextOverlay.qml": "b644723d7b1cfaa3186c324e6ce9bc3a3b5ba8fe1a669d54827b0c4e2fe90ce9",
   "system/apps/media/ui/WhisperModePicker.qml": "3c858f189e7c4f55c9e644b36a6563788cbf545b66f37f23db6200bbcf667f42",
