@@ -1,11 +1,14 @@
 """Exercise download requests against local media without contacting providers."""
+from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 import json
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 import subprocess
+import sys
 from tempfile import TemporaryDirectory
 from threading import Thread
+from time import monotonic, sleep
 import unittest
 from unittest.mock import Mock, patch
 
@@ -19,6 +22,51 @@ class QuietHandler(SimpleHTTPRequestHandler):
 
 
 class DownloadTests(unittest.TestCase):
+    def test_stop_download_cancels_transfer_and_ignores_late_season_callbacks(self):
+        engine = Mock(download_active=False, settings={'mode': 'sub', 'quality': '720p'})
+        send = Mock()
+        show = dict(id='show', kind='tv', title='Example')
+        request = dict(action='download_season', show=show, seasonId='2')
+        menu_requests.dispatch(request, engine, send)
+        engine.background.call_args.args[1]({'episodes': ['2:1', '2:2']})
+        key, ready, _ = engine.resolve.call_args.args
+        self.assertEqual(key, ('show', '2:1', 'sub', '720p'))
+        ready(['video', '', '', ''])
+        work, done, failed = engine.background.call_args.args
+
+        with TemporaryDirectory() as directory, ThreadPoolExecutor(1) as pool:
+            root = Path(directory)
+            marker = root / 'started'
+            with patch.object(media_download.GLib, 'get_user_special_dir', return_value=directory), \
+                    patch.object(media_download, 'download_stream') as stream:
+                def transfer(_links, _kind, path, download):
+                    download.run([sys.executable, '-c',
+                                  'from pathlib import Path; import sys, time; '
+                                  'Path(sys.argv[1]).write_bytes(b"partial"); '
+                                  'Path(sys.argv[2]).touch(); time.sleep(30)',
+                                  str(path), str(marker)], timeout=5)
+                stream.side_effect = transfer
+                future = pool.submit(work)
+                deadline = monotonic() + 3
+                while not marker.exists() and monotonic() < deadline:
+                    sleep(0.01)
+                self.assertTrue(marker.exists())
+                menu_requests.dispatch(dict(action='stop_download'), engine, send)
+                with self.assertRaisesRegex(ValueError, 'Download stopped'):
+                    future.result(timeout=2)
+            self.assertEqual(list((root / 'Rebos Streamer').iterdir()), [])
+
+        menu_requests.dispatch(request, engine, send)
+        done('/old-download.mkv')
+        failed('Old failure')
+        ready(['old', '', '', ''])
+        self.assertTrue(engine.download_active)
+        engine.resolve.assert_called_once()
+        self.assertEqual(engine.background.call_count, 3)
+        engine.stop.assert_not_called()
+        self.assertEqual(send.call_args_list[-2].args[0], dict(
+            event='download', active=False, text='Download stopped.'))
+
     def test_download_season_queues_selected_season_and_continues_after_failure(self):
         engine = Mock(download_active=False, settings={'mode': 'sub', 'quality': '720p'})
         send = Mock()

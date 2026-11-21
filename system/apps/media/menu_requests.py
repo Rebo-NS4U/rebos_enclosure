@@ -216,33 +216,57 @@ class MenuRequest:
             raise ValueError('Choose an available episode')
         title = engine.media_title(show, episode)
         mode, quality = engine.settings['mode'], engine.settings['quality']
-        self.download_status(True, 'Downloading · ' + title)
+        self.start_download('Downloading · ' + title)
         self.download_episode(show, episode, title, mode, quality,
                               lambda path: self.download_status(False, 'Saved to ' + path),
                               self.download_failed)
 
+    def start_download(self, text):
+        self.download_job = self.engine.download_job = media_download.Download()
+        self.download_status(True, text)
+
+    def handle_stop_download(self):
+        download = self.engine.download_job
+        if download is not None:
+            download.cancel()
+            self.download_status(False, 'Download stopped.')
+
     def download_status(self, active, text):
         self.engine.download_active = active
+        if not active:
+            self.engine.download_job = None
         self.send(dict(event='download', active=active, text=text))
 
     def download_failed(self, message):
-        self.download_status(False, 'Download failed: ' + message)
+        if not self.download_job.cancelled.is_set():
+            self.download_status(False, 'Download failed: ' + message)
 
     def download_episode(self, show, episode, title, mode, quality, done, failed):
         engine = self.engine
+        download = self.download_job
+
+        def on_done(path):
+            if not download.cancelled.is_set():
+                done(path)
+
+        def on_failed(message):
+            if not download.cancelled.is_set():
+                failed(message)
+
         def transfer(write):
-            engine.background(lambda: media_download.save(title, write), done, failed)
+            if not download.cancelled.is_set():
+                engine.background(lambda: media_download.save(title, write, download), on_done, on_failed)
 
         try:
             kind = media_sources.kind_of(show)
             if kind == 'youtube':
-                transfer(lambda path: media_download.download_youtube(episode, quality, path))
+                transfer(lambda path: media_download.download_youtube(episode, quality, path, download))
             else:
                 engine.resolve((show['id'], episode, mode, quality),
-                               lambda links: transfer(lambda path: media_download.download_stream(links, kind, path)),
-                               failed)
+                               lambda links: transfer(lambda path: media_download.download_stream(links, kind, path, download)),
+                               on_failed)
         except Exception as error:
-            failed(str(error))
+            on_failed(str(error))
 
     def handle_download_season(self):
         engine = self.engine
@@ -257,6 +281,8 @@ class MenuRequest:
         title = show['title'] + ' · ' + season_title
 
         def download_season(data):
+            if self.download_job.cancelled.is_set():
+                return
             episodes = list(dict.fromkeys(data['episodes']))
             if not episodes:
                 self.download_failed('No episodes are available for ' + title)
@@ -265,6 +291,8 @@ class MenuRequest:
             failures = []
 
             def next_episode(index):
+                if self.download_job.cancelled.is_set():
+                    return
                 if index == len(episodes):
                     text = f'{title} · Saved {saved} of {len(episodes)} episodes'
                     if failures:
@@ -289,7 +317,7 @@ class MenuRequest:
 
             next_episode(0)
 
-        self.download_status(True, 'Preparing download · ' + title)
+        self.start_download('Preparing download · ' + title)
         engine.background(lambda: media_sources.season_episodes(show, season_id),
                           download_season, self.download_failed)
 
@@ -422,7 +450,7 @@ class MenuRequest:
         result(engine.settings)
 
 
-REQUEST_HANDLERS = {'catalogue': 'handle_catalogue', 'details': 'handle_details', 'season': 'handle_season', 'quick_play': 'handle_quick_play', 'play': 'handle_play', 'download': 'handle_download', 'download_season': 'handle_download_season', 'youtube_account': 'handle_youtube_account', 'youtube_connect': 'handle_youtube_connect', 'youtube_disconnect': 'handle_youtube_disconnect', 'stop': 'handle_stop', 'next_episode': 'handle_next_episode', 'resume': 'handle_resume', 'subtitle_source': 'handle_subtitle_source', 'show_captions': 'handle_show_captions', 'poster': 'handle_poster', 'torbox_connect': 'handle_torbox', 'torbox_check': 'handle_torbox', 'torbox_disconnect': 'handle_torbox', 'torbox_key': 'handle_torbox', 'settings': 'handle_settings'}
+REQUEST_HANDLERS = {'catalogue': 'handle_catalogue', 'details': 'handle_details', 'season': 'handle_season', 'quick_play': 'handle_quick_play', 'play': 'handle_play', 'download': 'handle_download', 'download_season': 'handle_download_season', 'stop_download': 'handle_stop_download', 'youtube_account': 'handle_youtube_account', 'youtube_connect': 'handle_youtube_connect', 'youtube_disconnect': 'handle_youtube_disconnect', 'stop': 'handle_stop', 'next_episode': 'handle_next_episode', 'resume': 'handle_resume', 'subtitle_source': 'handle_subtitle_source', 'show_captions': 'handle_show_captions', 'poster': 'handle_poster', 'torbox_connect': 'handle_torbox', 'torbox_check': 'handle_torbox', 'torbox_disconnect': 'handle_torbox', 'torbox_key': 'handle_torbox', 'settings': 'handle_settings'}
 
 
 def dispatch(request, engine, send):

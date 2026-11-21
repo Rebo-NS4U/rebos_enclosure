@@ -77,6 +77,7 @@ class Engine(app.Browser):  # pylint: disable=too-many-instance-attributes
         self.resolved = {}
         self.resolving = {}
         self.download_active = False
+        self.download_job = None
         self.duration = 0
         self.chapter = -1
         self.chapter_count = 0

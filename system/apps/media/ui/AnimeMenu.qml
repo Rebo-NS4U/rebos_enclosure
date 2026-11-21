@@ -1360,12 +1360,21 @@ PanelWindow {
                     }
                 }
             }
-            StyledText {
-                visible: root.downloadStatus.length > 0
-                text: root.downloadStatus
+            RowLayout {
+                visible: root.downloadActive || root.downloadStatus.length > 0
                 Layout.fillWidth: true
-                wrapMode: Text.Wrap
-                color: Colors.overSurfaceVariant
+                StyledText {
+                    text: root.downloadStatus
+                    Layout.fillWidth: true
+                    wrapMode: Text.Wrap
+                    color: Colors.overSurfaceVariant
+                }
+                MenuButton {
+                    text: "Stop Download"
+                    visible: root.downloadActive
+                    enabled: root.ready
+                    onClicked: root.send({action: "stop_download"})
+                }
             }
             StyledText {
                 visible: root.captionStatus.length > 0

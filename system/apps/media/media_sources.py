@@ -120,12 +120,12 @@ def youtube_url(value):
     return value
 
 
-def ytdlp(args, timeout=100, browser=None):
+def ytdlp(args, timeout=100, browser=None, *, run=None):
     executable = shutil.which('yt-dlp') or str(Path.home() / '.local/bin/yt-dlp')
     account = youtube_account.selection() if browser is None else browser
     auth = ['--cookies-from-browser', account] if account else []
     try:
-        result = subprocess.run([executable, *auth, '--ignore-config', '--no-warnings', '--socket-timeout', '15', '--retries', '1', '--extractor-retries', '1', '--js-runtimes', 'node', *args], capture_output=True, text=True, timeout=timeout)
+        result = (run or subprocess.run)([executable, *auth, '--ignore-config', '--no-warnings', '--socket-timeout', '15', '--retries', '1', '--extractor-retries', '1', '--js-runtimes', 'node', *args], capture_output=True, text=True, timeout=timeout)
     except subprocess.TimeoutExpired:
         raise RuntimeError('YouTube took too long to respond. Try again.') from None
     if result.returncode:

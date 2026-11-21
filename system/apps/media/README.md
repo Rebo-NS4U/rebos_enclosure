@@ -28,6 +28,7 @@ A single left click on the VLC video toggles pause/play when `vlc-pause-click-pl
 Open a title, select an episode or video, and click **Download**. Streamer saves one item at a time as an MKV in **Rebos Streamer** inside your system Downloads folder. It uses the playback quality and anime language settings. The menu shows the saved path when the download finishes. Playback can continue during the transfer.
 
 For TV, select a season and click **Download Season**. Streamer saves its episodes one at a time and reports which episodes failed after the queue finishes.
+Click **Stop Download** beside the progress message to cancel the current transfer and any remaining episodes. Completed files stay in your Downloads folder.
 
 ## Development
 
