@@ -152,7 +152,7 @@ def youtube_for_you(page, *, refresh=False):
         if not browser:
             raise ValueError('Connect your YouTube account above to load For You, or choose a public topic.')
         cached = youtube_account.FEEDS.get(browser)
-    if cached is None or (page == 1 and (refresh or time.monotonic() - cached[0] > 600)):
+    if cached is None or (page == 1 and (refresh or time.monotonic() - cached[0] >= 30 * 60)):
         youtube_account.assert_signed_in(browser)
         items = fetch_youtube_feed(browser)
         with youtube_account.LOCK:

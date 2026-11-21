@@ -87,7 +87,10 @@ class YouTubePanelTests(unittest.TestCase):
                         engine, send).handle_catalogue()
             self.assertEqual(send.call_args.args[0]['data']['items'], replacement)
             self.assertEqual(fetch.call_count, 2)
-            clock.return_value = 701
+            clock.return_value = 1899
+            media_sources.youtube_for_you(1)
+            self.assertEqual(fetch.call_count, 2)
+            clock.return_value = 1900
             self.assertEqual(media_sources.youtube_for_you(2)['items'], [])
             self.assertEqual(fetch.call_count, 2)
             media_sources.youtube_for_you(1)
