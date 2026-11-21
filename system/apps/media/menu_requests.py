@@ -112,8 +112,7 @@ class MenuRequest:
                 engine.background(lambda: app.catalogue(category, query, page, filters), catalogue_ready, fail)
             else:
                 engine.background(lambda: media_sources.catalogue(
-                    kind, category, query, page, fetch=app.fetch, check_availability=False,
-                    refresh=request.get('refresh') is True), catalogue_ready, fail)
+                    kind, category, query, page, fetch=app.fetch, check_availability=False), catalogue_ready, fail)
 
 
     def handle_details(self):

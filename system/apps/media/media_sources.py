@@ -1,7 +1,6 @@
 """Movie/TV catalogue adapter and YouTube extraction, independent of the UI."""
 from dataclasses import dataclass
 import youtube_account
-import time
 import discovery_catalogue
 import direct_source
 import json
@@ -39,14 +38,13 @@ def kind_of(show):
 class CatalogueOptions:
     fetch: object = None
     check_availability: bool = True
-    refresh: bool = False
 
 
 def catalogue(kind, category, query, page, **controls):
     options = CatalogueOptions(**controls)
     if kind == 'youtube':
         if category == 'for-you' and not query.strip():
-            return youtube_for_you(page, refresh=options.refresh)
+            return youtube_for_you(page)
         topic = next((row for row in YOUTUBE_RECOMMENDATIONS if row['id'] == category), YOUTUBE_RECOMMENDATIONS[0])
         items = youtube_catalogue(query.strip() or topic['query'], page)
         collection = '/@' in query or '/channel/' in query
@@ -146,25 +144,19 @@ def fetch_youtube_feed(browser):
     return entries
 
 
-def youtube_for_you(page, *, refresh=False):
+def youtube_for_you(page):
     with youtube_account.LOCK:
         browser = youtube_account.selection()
         if not browser:
             raise ValueError('Connect your YouTube account above to load For You, or choose a public topic.')
-        cached = youtube_account.FEEDS.get(browser)
-    if cached is None or (page == 1 and (refresh or time.monotonic() - cached[0] >= 30 * 60)):
+        items = youtube_account.FEEDS.get(browser)
+    if items is None:
         youtube_account.assert_signed_in(browser)
         items = fetch_youtube_feed(browser)
         with youtube_account.LOCK:
             if youtube_account.selection() != browser:
                 raise ValueError('The YouTube connection changed. Reload For You to continue.')
-            current = youtube_account.FEEDS.get(browser)
-            if current is cached:
-                youtube_account.FEEDS[browser] = (time.monotonic(), items)
-            elif current is not None:
-                items = current[1]
-    else:
-        items = cached[1]
+            items = youtube_account.FEEDS.setdefault(browser, items)
     start = (page - 1) * 20
     return dict(items=items[start:start + 20], hasMore=start + 20 < len(items))
 

@@ -65,36 +65,33 @@ class YouTubePanelTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'Connect'):
                 media_sources.youtube_for_you(1)
 
-    def test_feed_pages_share_snapshot_until_refresh_or_a_stale_first_page(self):
+    def test_feed_pages_share_snapshot_for_the_session(self):
         cards = [{'id': str(i)} for i in range(45)]
         with patch.object(youtube_account, 'selection', return_value='firefox:profile'), \
              patch.object(youtube_account, 'assert_signed_in'), \
              patch.object(media_sources, 'fetch_youtube_feed', return_value=cards) as fetch, \
              patch.object(youtube_account, 'FEEDS', {}), \
-             patch.object(media_sources.time, 'monotonic', return_value=100) as clock:
+             patch('time.monotonic', return_value=100) as clock:
             self.assertEqual(len(media_sources.youtube_for_you(1)['items']), 20)
             self.assertEqual(media_sources.youtube_for_you(2)['items'], cards[20:40])
             self.assertFalse(media_sources.youtube_for_you(3)['hasMore'])
-            self.assertEqual(fetch.call_count, 1)
-            media_sources.youtube_for_you(1)
-            self.assertEqual(fetch.call_count, 1)
+            fetch.assert_called_once_with('firefox:profile')
+
+            clock.return_value += 24 * 60 * 60
             replacement = [{'id': 'new'}]
             fetch.return_value = replacement
             engine = Mock()
             engine.background.side_effect = lambda work, done, fail: done(work())
             send = Mock()
-            MenuRequest(dict(action='catalogue', kind='youtube', category='for-you', refresh=True),
-                        engine, send).handle_catalogue()
-            self.assertEqual(send.call_args.args[0]['data']['items'], replacement)
+            request = MenuRequest(dict(action='catalogue', kind='youtube', category='for-you',
+                                       refresh=True), engine, send)
+            request.handle_catalogue()
+            self.assertEqual(send.call_args.args[0]['data']['items'], cards[:20])
+            fetch.assert_called_once_with('firefox:profile')
+
+            with patch.object(youtube_account, 'FEEDS', {}):
+                self.assertEqual(media_sources.youtube_for_you(1)['items'], replacement)
             self.assertEqual(fetch.call_count, 2)
-            clock.return_value = 1899
-            media_sources.youtube_for_you(1)
-            self.assertEqual(fetch.call_count, 2)
-            clock.return_value = 1900
-            self.assertEqual(media_sources.youtube_for_you(2)['items'], [])
-            self.assertEqual(fetch.call_count, 2)
-            media_sources.youtube_for_you(1)
-            self.assertEqual(fetch.call_count, 3)
 
     def test_queue_starts_at_selected_video_and_preserves_playlist(self):
         urls = ['https://www.youtube.com/watch?v=' + str(i) for i in range(3)]

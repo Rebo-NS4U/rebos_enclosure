@@ -4,7 +4,6 @@ import json
 import os
 from pathlib import Path
 import threading
-import time
 
 CONFIG = Path.home() / '.config/anime-streamer/youtube-account.json'
 LOCK = threading.RLock()
@@ -53,7 +52,7 @@ def status():
     choices = browsers()
     match = next((row for row in choices if row['id'] == selected), None)
     return dict(connected=bool(match), browsers=choices, browser=selected if match else '',
-                text=('Using ' + match['label'] + '. Refresh For You to check the current session.') if match else
+                text=('Using ' + match['label'] + '. For You is cached for this session.') if match else
                 'Connect a browser profile signed in to YouTube. Videos and recommendations stay in this player.')
 
 
@@ -91,7 +90,7 @@ def connect(browser, fetch):
         with os.fdopen(fd, 'w') as output:
             json.dump({'browser': browser}, output)
         FEEDS.clear()
-        FEEDS[browser] = (time.monotonic(), items)
+        FEEDS[browser] = items
     data = status()
     data['text'] = 'Connected. Your YouTube For You feed is ready in the player.'
     return data
