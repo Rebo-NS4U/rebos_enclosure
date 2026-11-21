@@ -246,7 +246,9 @@ Window {
         const position = reset ? 0 : suggestionsList.contentY;
         spotifySuggestions = data;
         Qt.callLater(() => {
-            if (detail === data.playlist) suggestionsList.contentY = Math.max(0, Math.min(position, suggestionsList.contentHeight - suggestionsList.height));
+            if (detail !== data.playlist) return;
+            if (suggestionsList.playingIndex >= 0) suggestionsList.followPlayingTrack();
+            else suggestionsList.contentY = Math.max(0, Math.min(position, suggestionsList.contentHeight - suggestionsList.height));
         });
     }
     function loadMoreSuggestions() {
@@ -909,6 +911,17 @@ Window {
                             Layout.preferredHeight: Math.min(count, 4) * root.suggestionRowHeight
                             Layout.maximumHeight: Layout.preferredHeight
                             clip: true; model: root.suggestedTracks
+                            readonly property int playingIndex: root.spotifyPreview
+                                ? root.suggestedTracks.findIndex(track => track.uri === root.currentSpotifyUri) : -1
+                            function followPlayingTrack() {
+                                if (!visible || height <= 0 || playingIndex < 0) return;
+                                forceLayout();
+                                positionViewAtIndex(playingIndex, ListView.Contain);
+                            }
+                            onPlayingIndexChanged: Qt.callLater(followPlayingTrack)
+                            onModelChanged: Qt.callLater(followPlayingTrack)
+                            onVisibleChanged: if (visible) Qt.callLater(followPlayingTrack)
+                            onHeightChanged: Qt.callLater(followPlayingTrack)
                             // ListView creates rows on demand as they enter the viewport.
                             reuseItems: true
                             onContentYChanged: {

@@ -766,6 +766,25 @@ esac
                         console.error("SUGGESTIONS_DOWNLOAD_SCROLL_FAILED", list.count, row?.track.title, list.contentY, row?.y);
                         Qt.exit(1); return;
                     }
+                    spotify.play();
+                    spotify.position = 0;
+                    spotify.metadata = {"xesam:url": music.suggestedTracks[130].uri};
+                    phase = 971;
+                } else if (phase === 971 || phase === 972) {
+                    const list = findItem(music.contentItem, "music-playlist-suggestions");
+                    const index = phase === 971 ? 130 : 2;
+                    const row = list.itemAtIndex(index);
+                    if (!row?.selected || row.y < list.contentY - 1 ||
+                        row.y + row.height > list.contentY + list.height + 1) {
+                        console.error("SUGGESTIONS_FOLLOW_PLAYBACK_FAILED", index, row?.y, list.contentY, list.height);
+                        Qt.exit(1); return;
+                    }
+                    if (phase === 971) {
+                        spotify.metadata = {"xesam:url": music.suggestedTracks[2].uri};
+                        phase = 972;
+                        return;
+                    }
+                    console.log("MUSIC_SUGGESTIONS_FOLLOW_PLAYBACK_PASSED");
                     music.spotifySuggestions = {playlist:"test",pending:false,tracks:[]};
                     if (list.count !== 0) { console.error("SUGGESTIONS_RESET_FAILED"); Qt.exit(1); return; }
                     console.log("MUSIC_SUGGESTIONS_CONTINUOUS_PASSED"); stop(); Qt.quit();
