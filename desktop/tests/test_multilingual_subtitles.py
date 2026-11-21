@@ -8,7 +8,18 @@ from unittest.mock import Mock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'system/apps/media'))
 import menu_backend
-from live_subtitles import LiveSubtitles, CaptionOptions, cues_from_whisper, recognize
+from live_subtitles import LiveSubtitles, CaptionOptions, cues_from_whisper, recognize, speech_spans
+
+class SpeechSpanTests(unittest.TestCase):
+    def test_group_nearby_english_speech_and_preserve_long_pauses(self):
+        output = (b'Speech segment 0: start = 20, end = 100\n'
+                  b'Speech segment 1: start = 180, end = 300\n'
+                  b'Speech segment 2: start = 450, end = 620')
+        self.assertEqual(speech_spans(output, 'en'), [(0.2, 3), (4.5, 6.2)])
+        for language in ('es', 'auto'):
+            self.assertEqual(speech_spans(output, language), [(0.2, 1), (1.8, 3), (4.5, 6.2)])
+        self.assertEqual(speech_spans(b'No speech', 'en'), [])
+
 
 class SpanishCaptionTests(unittest.TestCase):
     def test_auto_detection_changes_language_between_speech_spans(self):
@@ -78,7 +89,7 @@ class SpanishCaptionTests(unittest.TestCase):
         engine = menu_backend.Engine()
         old = Mock(language='en')
         engine.captions = old
-        engine.session = Mock()
+        engine.session = Mock(subtitle_source='whisper', caption_error='')
         engine.links = ['https://example.test/video', '', '', '']
         engine.file_loaded = True
         engine.settings.update(live_subtitles=True, caption_language='es', caption_delay=1.5)

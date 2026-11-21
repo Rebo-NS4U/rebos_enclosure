@@ -104,6 +104,22 @@ def write_srt(path, cues):
     temp.replace(path)
 
 
+def speech_spans(output, language):
+    spans = [(float(start) / 100, float(end) / 100)
+             for start, end in re.findall(r'Speech segment \d+: start = ([\d.]+), end = ([\d.]+)', output.decode())]
+    if language != 'en':
+        return spans
+    # Decode nearby English phrases together with the intervening audio
+    # intact. Translation and auto detection still need per-span anchors.
+    phrases = []
+    for start, end in spans:
+        if phrases and start - phrases[-1][1] <= 1:
+            phrases[-1] = (phrases[-1][0], end)
+        else:
+            phrases.append((start, end))
+    return phrases
+
+
 # Quality exception: Speech-span boundaries, language selection, timestamps and cleanup are explicit within one bounded recognition operation.
 # Numeric ceilings are enforced by desktop/scripts/quality.py.
 def recognize(wav, output, run=subprocess.run, language='en', on_progress=None):  # pylint: disable=too-many-branches,too-many-locals
@@ -116,8 +132,7 @@ def recognize(wav, output, run=subprocess.run, language='en', on_progress=None):
                   '-vsd', '400', '-vp', '120', '-vmsd', '8'], timeout=20, capture_output=True)
     if result.returncode:
         raise RuntimeError('Local speech detection failed')
-    spans = [(float(start) / 100, float(end) / 100)
-             for start, end in re.findall(r'Speech segment \d+: start = ([\d.]+), end = ([\d.]+)', result.stdout.decode())]
+    spans = speech_spans(result.stdout, language)
     transcription = []
     with wave.open(str(wav), 'rb') as source:
         params = source.getparams()
