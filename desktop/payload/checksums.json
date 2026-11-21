@@ -224,7 +224,7 @@
   "system/apps/media/browser_bridge.py": "5fc5a99d19f42348a42264105909cbf23441985a47cb2b8862be20f3ce3a5c5c",
   "system/apps/media/client_connection.py": "fa572ec6f741edeaa23d3018e15cdee0f0a547b3e2d4960a6ae7e90374b7799a",
   "system/apps/media/direct_source.py": "b6dab736397f046abea975ef89e5debd2deb615b71c93135c17e16940d716270",
-  "system/apps/media/discovery_catalogue.py": "a6613615b7737faa2bbcc196b6c965d5b9884f0845608eda9f4c8b0f30c3d0d5",
+  "system/apps/media/discovery_catalogue.py": "70a35a02aa74ff7aa10cea963cc8e4f3b6171db34a54b14f425e95093d2a624d",
   "system/apps/media/filter_options.json": "9f27dd95cceb2cf4fbf44dcd2a05a743cf7425a95aff4fe21b9b1fb48f54ed3b",
   "system/apps/media/install.py": "418a4176d2b506e031d8f1039ac56aac2b30be9b18b8cbdea9c1fe6d7d0d60b5",
   "system/apps/media/launch": "4cdf675317d14105b42df927882bbb8e344d1538fb354ffb760241a212205b6d",

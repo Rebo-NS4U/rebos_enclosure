@@ -23,7 +23,8 @@ PAGE_SIZE = 12
 TARGET_SIZE = 12
 MAX_SCAN_CHUNKS = 8
 CACHE = Path.home() / '.cache/anime-streamer/discovery.sqlite3'
-LOOKUPS = ThreadPoolExecutor(max_workers=4, thread_name_prefix='media-discovery')
+# Share a bounded pool across foreground pages and prefetches.
+LOOKUPS = ThreadPoolExecutor(max_workers=8, thread_name_prefix='media-discovery')
 PREFETCH = ThreadPoolExecutor(max_workers=1, thread_name_prefix='catalogue-prefetch')
 PREFETCH_SLOT = threading.Lock()
 GENRES = ('Action', 'Adventure', 'Animation', 'Biography', 'Comedy', 'Crime',
