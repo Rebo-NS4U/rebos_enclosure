@@ -162,16 +162,16 @@ def write_srt(path, cues):
     temp.replace(path)
 
 
-def speech_spans(output, language):
+def speech_spans(output, language, *, group_translation=False):
     spans = [(float(start) / 100, float(end) / 100)
              for start, end in re.findall(r'Speech segment \d+: start = ([\d.]+), end = ([\d.]+)', output.decode())]
-    if language != 'en':
+    if language != 'en' and not group_translation:
         return spans
-    # Decode nearby English phrases together with the intervening audio
-    # intact. Translation and auto detection still need per-span anchors.
+    # Keep short pauses inside the phrase so Whisper can translate clauses
+    # together. Longer pauses still anchor separate captions.
     phrases = []
     for start, end in spans:
-        if phrases and start - phrases[-1][1] <= 1:
+        if phrases and start - phrases[-1][1] <= SPEECH_BREAK:
             phrases[-1] = (phrases[-1][0], end)
         else:
             phrases.append((start, end))
@@ -195,6 +195,14 @@ def decoding_options(model, duration):
     return ['-bs', '1', '-bo', '1', '-sns', '-ml', '64', '-sow', '-ojf']
 
 
+def speech_audio(source, start, end, padding=0):
+    start = max(0, start - padding)
+    end += padding
+    rate = source.getframerate()
+    source.setpos(min(source.getnframes(), round(start * rate)))
+    return source.readframes(max(0, round((end - start) * rate)))
+
+
 # Quality exception: Speech-span boundaries, language selection, timestamps and cleanup are explicit within one bounded recognition operation.
 # Numeric ceilings are enforced by desktop/scripts/quality.py.
 def recognize(wav, output, run=subprocess.run, language='en', on_progress=None):  # pylint: disable=too-many-branches,too-many-locals
@@ -207,7 +215,7 @@ def recognize(wav, output, run=subprocess.run, language='en', on_progress=None):
                   '-vsd', '400', '-vp', '120', '-vmsd', '8'], timeout=20, capture_output=True)
     if result.returncode:
         raise RuntimeError('Local speech detection failed')
-    spans = speech_spans(result.stdout, language)
+    spans = speech_spans(result.stdout, language, group_translation=model == FRENCH_GERMAN_MODEL)
     transcription = []
     with wave.open(str(wav), 'rb') as source:
         params = source.getparams()
@@ -215,8 +223,12 @@ def recognize(wav, output, run=subprocess.run, language='en', on_progress=None):
             clip = output.parent / f'{output.name}-speech-{index}.wav'
             prefix = output.parent / f'{output.name}-speech-{index}'
             try:
-                source.setpos(min(source.getnframes(), round(start * params.framerate)))
-                pcm = source.readframes(max(0, round((end - start) * params.framerate)))
+                # Give French decoding a little more context at phrase edges.
+                # Caption timing still comes from the detected speech.
+                pcm = speech_audio(
+                    source, start, end,
+                    padding=0.25 if language == 'fr' and model == FRENCH_GERMAN_MODEL else 0,
+                )
                 if not pcm:
                     continue
                 with wave.open(str(clip), 'wb') as destination:

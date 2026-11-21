@@ -62,6 +62,7 @@ class TranslatedCaptionTests(unittest.TestCase):
         import wave
         from live_subtitles import MULTILINGUAL_MODEL, BINARY
         commands = []
+        clip_lengths = []
         with tempfile.TemporaryDirectory() as folder:
             wav = Path(folder) / 'speech.wav'
             with wave.open(str(wav), 'wb') as audio:
@@ -71,7 +72,11 @@ class TranslatedCaptionTests(unittest.TestCase):
                 commands.append(command)
                 if command[0] != str(BINARY):
                     return subprocess.CompletedProcess(command, 0,
-                        b'Speech segment 0: start = 200, end = 400\nSpeech segment 1: start = 700, end = 900', b'')
+                        b'Speech segment 0: start = 200, end = 290\n'
+                        b'Speech segment 1: start = 310, end = 400\n'
+                        b'Speech segment 2: start = 700, end = 900', b'')
+                with wave.open(command[command.index('-f') + 1], 'rb') as clip:
+                    clip_lengths.append(clip.getnframes())
                 prefix = Path(command[command.index('-of') + 1])
                 prefix.with_suffix('.json').write_text(json.dumps({'transcription': [{
                     'text': 'Hello world.', 'offsets': {'from': 0, 'to': 0},
@@ -85,9 +90,16 @@ class TranslatedCaptionTests(unittest.TestCase):
                 use_upgrade = installed and language in ('fr', 'de')
                 with self.subTest(language=language, installed=installed), patch('live_subtitles.FRENCH_GERMAN_MODEL', model_path):
                     commands.clear()
+                    clip_lengths.clear()
                     data = recognize(wav, Path(folder) / 'translated', run=run, language=language)
-                    self.assertEqual(cues_from_whisper(data, 32),
-                                     [(34, 36, 'Hello world.'), (39, 41, 'Hello world.')])
+                    first_cues = [(34, 36, 'Hello world.')] if use_upgrade else [
+                        (34, 34.9, 'Hello world.'), (35.1, 36, 'Hello world.')]
+                    self.assertEqual(cues_from_whisper(data, 32), first_cues + [(39, 41, 'Hello world.')])
+                    if use_upgrade:
+                        frames = 40000 if language == 'fr' else 32000
+                        self.assertEqual(clip_lengths, [frames, frames])
+                    else:
+                        self.assertEqual(clip_lengths, [14400, 14400, 32000])
                     for command in commands[1:]:
                         self.assertIn('--translate', command)
                         self.assertEqual(command[command.index('-l') + 1], language)
