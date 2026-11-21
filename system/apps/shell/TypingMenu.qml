@@ -1347,25 +1347,35 @@ Item {
         }
         background: StyledRect { variant: number.activeFocus ? "focus" : "pane"; radius: Styling.radius(-4); border.width: number.activeFocus ? 2 : 1; border.color: number.activeFocus ? Colors.primary : Qt.alpha(Colors.outline, 0.3) }
         up.indicator: StyledRect {
+            id: upButton
             x: number.width - width; width: 32; height: number.height
-            variant: number.up.pressed || number.up.hovered ? "focus" : "pane"; radius: Styling.radius(-4)
-            StyledText { anchors.centerIn: parent; text: "+"; color: Colors.primary }
+            buttonSurface: true
+            controlPressed: number.up.pressed
+            variant: number.up.pressed || number.up.hovered ? "focus" : "common"
+            radius: Styling.radius(-4)
+            StyledText { anchors.centerIn: parent; text: "+"; color: upButton.itemColor }
         }
         down.indicator: StyledRect {
+            id: downButton
             width: 32; height: number.height
-            variant: number.down.pressed || number.down.hovered ? "focus" : "pane"; radius: Styling.radius(-4)
-            StyledText { anchors.centerIn: parent; text: "−"; color: Colors.primary }
+            buttonSurface: true
+            controlPressed: number.down.pressed
+            variant: number.down.pressed || number.down.hovered ? "focus" : "common"
+            radius: Styling.radius(-4)
+            StyledText { anchors.centerIn: parent; text: "−"; color: downButton.itemColor }
         }
     }
     component ThemeSelect: ComboBox {
         id: select
         implicitHeight: 48
         textRole: "title"
+        hoverEnabled: true
+        opacity: enabled ? 1 : 0.45
         leftPadding: 12
         rightPadding: 32
         contentItem: StyledText {
             text: select.displayText
-            color: select.activeFocus ? Colors.primary : Colors.overSurface
+            color: select.background.itemColor
             verticalAlignment: Text.AlignVCenter
             elide: Text.ElideRight
         }
@@ -1374,14 +1384,15 @@ Item {
             anchors.rightMargin: 12
             anchors.verticalCenter: parent.verticalCenter
             text: "⌄"
-            color: Colors.primary
+            color: select.background.itemColor
         }
         background: StyledRect {
-            variant: "pane"
-            radius: Config.roundness
-            backgroundOpacity: 0.35
-            border.width: 1
-            border.color: select.activeFocus ? Colors.primary : Qt.alpha(Colors.outlineVariant, 0.55)
+            buttonSurface: true
+            controlPressed: select.down
+            variant: select.down && controlSurface ? "internalbg" : select.hovered || select.down ? "focus" : "common"
+            radius: Styling.radius(-4)
+            border.width: select.activeFocus ? 2 : 1
+            border.color: select.activeFocus ? Colors.primary : Qt.alpha(Colors.outline, 0.3)
         }
         delegate: ItemDelegate {
             required property int index
@@ -1801,16 +1812,14 @@ Item {
                                 spacing: 4
                                 Repeater {
                                     model: ["All"].concat(root.noteCategories)
-                                    delegate: Button {
-                                        id: sectionTab
+                                    delegate: TextButton {
                                         required property string modelData
                                         implicitHeight: 36
                                         leftPadding: 12
                                         rightPadding: 12
                                         text: modelData
                                         Accessible.name: modelData + " notes"
-                                        background: StyledRect { variant: root.notebookFilter === sectionTab.modelData ? "focus" : "pane"; radius: 10; border.width: 1; border.color: root.notebookFilter === sectionTab.modelData ? Qt.alpha(Colors.primary, 0.6) : "transparent" }
-                                        contentItem: StyledText { text: sectionTab.text; color: root.notebookFilter === sectionTab.modelData ? Colors.primary : Colors.overSurface; opacity: root.notebookFilter === sectionTab.modelData ? 1 : 0.65; verticalAlignment: Text.AlignVCenter; horizontalAlignment: Text.AlignHCenter }
+                                        highlighted: root.notebookFilter === modelData
                                         onClicked: root.notebookFilter = modelData
                                     }
                                 }
@@ -2229,21 +2238,24 @@ Item {
                         width: bookCards.width
                         implicitHeight: 86
                         padding: 12
+                        hoverEnabled: true
+                        opacity: enabled ? 1 : 0.45
                         enabled: !root.busy
                         Accessible.name: modelData.title + ", " + (modelData.completion * 100).toFixed(1) + "% complete"
                         onClicked: root.openBook(modelData.id)
                         background: StyledRect {
-                            variant: "pane"
-                            radius: Config.roundness
-                            backgroundOpacity: bookCard.hovered || bookCard.activeFocus ? 0.65 : 0.35
-                            border.width: 1
+                            buttonSurface: true
+                            controlPressed: bookCard.down
+                            variant: bookCard.down && controlSurface ? "internalbg" : bookCard.hovered || bookCard.down ? "focus" : "common"
+                            radius: Styling.radius(-4)
+                            border.width: bookCard.activeFocus ? 2 : 1
                             border.color: bookCard.modelData.id === root.bookId || bookCard.activeFocus ? Colors.primary : Qt.alpha(Colors.outlineVariant, 0.4)
                         }
                         contentItem: ColumnLayout {
                             spacing: 6
                             RowLayout {
                                 Layout.fillWidth: true
-                                StyledText { text: bookCard.modelData.title; textFormat: Text.PlainText; Layout.fillWidth: true; Layout.minimumWidth: 0; elide: Text.ElideRight; color: Colors.overSurface }
+                                StyledText { text: bookCard.modelData.title; textFormat: Text.PlainText; Layout.fillWidth: true; Layout.minimumWidth: 0; elide: Text.ElideRight; color: bookCard.background.itemColor }
                                 StyledText { objectName: "typing-card-progress"; text: (bookCard.modelData.completion * 100).toFixed(1) + "%"; color: Colors.primary }
                                 TextButton { objectName: "typing-delete-book"; text: "Remove"; enabled: !root.busy; Accessible.name: "Remove " + bookCard.modelData.title; onClicked: root.requestBookDeletion(bookCard.modelData.id, bookCard.modelData.title) }
                             }
@@ -2251,7 +2263,7 @@ Item {
                                 Layout.fillWidth: true
                                 value: bookCard.modelData.completion
                             }
-                            StyledText { text: bookCard.modelData.completion >= 1 ? "Completed · Continue again" : (bookCard.modelData.position > 0 || bookCard.modelData.partial > 0 ? "Continue where you left off" : "Start reading and typing"); opacity: 0.55; font.pixelSize: 11 }
+                            StyledText { text: bookCard.modelData.completion >= 1 ? "Completed · Continue again" : (bookCard.modelData.position > 0 || bookCard.modelData.partial > 0 ? "Continue where you left off" : "Start reading and typing"); color: bookCard.background.itemColor; opacity: 0.55; font.pixelSize: 11 }
                         }
                     }
                     ScrollBar.vertical: ScrollBar {
