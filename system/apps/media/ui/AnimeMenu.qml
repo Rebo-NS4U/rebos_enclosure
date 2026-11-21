@@ -556,7 +556,8 @@ PanelWindow {
         }
     }
     component MenuCombo: SettingsComboBox {}
-    component WhisperModePicker: RowLayout {
+    component WhisperModePicker: GridLayout {
+        columns: 2
         StyledText { text: "Whisper audio mode" }
         MenuCombo {
             Layout.fillWidth: true
@@ -1345,13 +1346,6 @@ PanelWindow {
                     }
                 }
             }
-            WhisperModePicker {
-                objectName: "whisper-mode-playback"
-                Layout.fillWidth: true
-                enabled: root.ready
-                visible: root.playback.length > 0 && root.subtitleTracks.selected === "whisper"
-                         && !(root.pageView === "settings" && root.settingsSection === "subtitles")
-            }
             StyledText {
                 visible: root.captionStatus.length > 0
                 text: root.captionStatus + (root.subtitlesOff ? " · Subtitles are off in the player" : "")
@@ -1374,16 +1368,73 @@ PanelWindow {
                     onClicked: root.send({action: "next_episode"})
                 }
                 MenuButton { text: "Play"; visible: root.playbackPaused && !root.nextEpisodeResumesPlayback; selected: true; onClicked: root.send({action: "resume"}) }
-                MenuCombo {
-                    id: subtitleSwitcher
-                    Layout.preferredWidth: root.unit * 31
+                MenuButton {
+                    id: subtitleButton
+                    objectName: "playback-subtitles-button"
+                    readonly property var tracks: root.subtitleTracks.options ?? []
+                    readonly property string sourceLabel: tracks.find(track => track.id === root.subtitleTracks.selected)?.label ?? "Off"
+                    readonly property bool whisper: root.subtitleTracks.selected === "whisper"
+                    readonly property string modeLabel: ({en: "English", es: "Spanish", auto: "Auto"})[root.settings.caption_language] ?? "Auto"
+                    text: "Subtitles · " + (whisper ? "Whisper · " + modeLabel : sourceLabel)
+                          + (root.subtitleTracks.failed ? " · unavailable" : root.subtitleTracks.generating ? " · preparing" : "")
                     Layout.maximumWidth: card.width * 0.45
-                    model: (root.subtitleTracks.options ?? []).map(row => row.label)
-                    currentIndex: Math.max(0, (root.subtitleTracks.options ?? []).findIndex(row => row.id === root.subtitleTracks.selected))
-                    displayText: "Subtitles: " + currentText + (root.subtitleTracks.failed ? " · unavailable" : root.subtitleTracks.generating ? " · preparing" : "")
                     enabled: root.ready && (root.subtitleTracks.available ?? false)
-                    Accessible.name: "Active subtitle source: " + currentText
-                    onActivated: root.send({action: "subtitle_source", source: root.subtitleTracks.options[currentIndex].id})
+                    selected: subtitlePanel.visible
+                    onClicked: subtitlePanel.visible ? subtitlePanel.close() : subtitlePanel.open()
+                    onEnabledChanged: if (!enabled) subtitlePanel.close()
+                    onVisibleChanged: if (!visible) subtitlePanel.close()
+
+                    Popup {
+                        id: subtitlePanel
+                        objectName: "playback-subtitles-panel"
+                        x: Math.max(-subtitleButton.mapToItem(card, 0, 0).x + root.unit, subtitleButton.width - width)
+                        y: -height - root.unit * 0.5
+                        width: Math.min(card.width - 2 * root.unit, root.unit * 38)
+                        padding: root.unit
+                        focus: true
+                        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutsideParent
+                        background: StyledRect { variant: "popup"; radius: Styling.radius(12) }
+                        onOpened: sourceList.forceActiveFocus()
+                        contentItem: ColumnLayout {
+                            spacing: root.unit * 0.5
+                            StyledText { text: "Subtitle source"; font.bold: true }
+                            ListView {
+                                id: sourceList
+                                objectName: "playback-subtitle-sources"
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: Math.min(contentHeight, card.height * 0.35)
+                                clip: true
+                                model: subtitleButton.tracks
+                                currentIndex: model.findIndex(track => track.id === root.subtitleTracks.selected)
+                                keyNavigationEnabled: true
+                                Keys.onReturnPressed: if (currentItem) currentItem.clicked()
+                                Keys.onEnterPressed: if (currentItem) currentItem.clicked()
+                                Keys.onSpacePressed: if (currentItem) currentItem.clicked()
+                                delegate: MenuButton {
+                                    id: sourceRow
+                                    required property var modelData
+                                    width: sourceList.width
+                                    text: modelData.label
+                                    selected: root.subtitleTracks.selected === modelData.id
+                                    activeFocusOnTab: false
+                                    Accessible.checkable: true
+                                    Accessible.checked: selected
+                                    background: StyledRect {
+                                        variant: sourceRow.selected ? "primary" : sourceRow.hovered || sourceRow.ListView.isCurrentItem && sourceList.activeFocus ? "focus" : "common"
+                                        radius: Styling.radius(8)
+                                    }
+                                    onClicked: root.send({action: "subtitle_source", source: modelData.id})
+                                }
+                                ScrollIndicator.vertical: ScrollIndicator {}
+                            }
+                            WhisperModePicker {
+                                objectName: "whisper-mode-playback"
+                                columns: 1
+                                Layout.fillWidth: true
+                                visible: subtitleButton.whisper
+                            }
+                        }
+                    }
                 }
                 MenuButton { text: "Stop"; onClicked: root.send({action: "stop"}) }
             }

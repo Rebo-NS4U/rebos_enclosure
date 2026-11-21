@@ -290,17 +290,17 @@ ShellRoot {
       throw Error("Media slider thumb must anchor the moving track during a drag");
      test.mouseRelease(slider, slider.width / 2, slider.height / 2);
     }
-    let c=Qt.createComponent("AnimeMenu.qml");
-    if(c.status!==Component.Ready)throw Error(c.errorString());
-    let menu=c.createObject(null);test.wait(50);
+    const menu=Qt.createQmlObject(`import QtQuick; import "."; AnimeMenu {
+      property var lastCommand: ({})
+      function send(data): void { lastCommand=data }
+    }`,check,"testMediaMenu");test.wait(50);
     let sheet=test.findChild(menu,"media-content-sheet");
     if(!sheet||sheet.styleOverride!==""||sheet.backgroundOpacity!==-1||sheet.variant!=="popup"
        ||sheet.rectOpacity!==sheet.variantConfig.opacity)throw Error("Content sheet must follow the selected popup theme");
     menu.receive(JSON.stringify({event:"ready",settings:{}}));
     test.tryVerify(()=>menu.ready);
-    menu.opened=true;menu.pageView="settings";menu.settingsSection="subtitles";
+    menu.implicitWidth=900;menu.implicitHeight=760;menu.opened=true;menu.pageView="settings";menu.settingsSection="subtitles";
     const settingsRow=test.findChild(menu,"whisper-mode-settings");
-    const playbackRow=test.findChild(menu,"whisper-mode-playback");
     const picker=row=>row.children.find(item=>item.modes!==undefined);
     if(!settingsRow.visible || picker(settingsRow).currentIndex!==0)
      throw Error("Missing audio setting must display Auto");
@@ -308,18 +308,40 @@ ShellRoot {
     if(menu.inFlightSettings.caption_language!=="en")throw Error("English choice must save en");
     menu.receive(JSON.stringify({event:"settings",request:menu.settingsInFlight,data:{caption_language:"en"}}));
     test.tryVerify(()=>!menu.settingsInFlight);
-    menu.playback="Playing";menu.subtitleTracks={selected:"whisper",options:[]};menu.pageView="browse";
+    menu.playback="Playing";menu.pageView="browse";
+    const tracks=[{id:"off",label:"Off"},{id:"whisper",label:"Whisper English · local AI"},
+                  {id:"native:3",label:"Video English · dialogue"}];
+    menu.subtitleTracks={available:true,selected:"native:3",options:tracks};
+    const button=test.findChild(menu,"playback-subtitles-button");
+    const panel=test.findChild(menu,"playback-subtitles-panel");
+    if(!button.enabled || !button.text.includes("dialogue"))throw Error("Footer must name the active track");
+    test.mouseClick(button);test.tryVerify(()=>panel.opened);
+    const playbackRow=test.findChild(panel.contentItem,"whisper-mode-playback");
+    const sources=test.findChild(panel.contentItem,"playback-subtitle-sources");
+    test.tryVerify(()=>sources.count===3 && sources.currentItem.selected);
+    if(playbackRow.visible)throw Error("Video tracks must hide the Whisper settings");
+    test.tryVerify(()=>sources.itemAtIndex(1)!==null);
+    test.mouseClick(sources.itemAtIndex(1));
+    if(menu.lastCommand.action!=="subtitle_source" || menu.lastCommand.source!=="whisper")
+     throw Error("Choosing Whisper must request that source");
+    menu.receive(JSON.stringify({event:"subtitle-tracks",selected:"whisper",options:tracks,available:true}));
+    test.tryVerify(()=>playbackRow.visible && button.text.includes("Whisper · English"));
     if(!playbackRow.visible || picker(playbackRow).currentIndex!==1)
      throw Error("Playing Whisper must show the saved English mode");
-    picker(playbackRow).activated(2);
+    const modes=picker(playbackRow);
+    test.mouseClick(modes);
+    test.tryVerify(()=>modes.popup.opened && modes.popup.contentItem.itemAtIndex(2)!==null);
+    test.mouseClick(modes.popup.contentItem.itemAtIndex(2));
     if(menu.inFlightSettings.caption_language!=="es")throw Error("Spanish choice must save es");
     menu.receive(JSON.stringify({event:"settings",request:menu.settingsInFlight,data:{caption_language:"es"}}));
     test.tryVerify(()=>!menu.settingsInFlight);
     if(picker(settingsRow).currentIndex!==2)throw Error("Saved Spanish mode must remain selected");
     picker(playbackRow).activated(0);
     if(menu.inFlightSettings.caption_language!=="auto")throw Error("Auto choice must save auto");
-    menu.subtitleTracks={selected:"off",options:[]};
+    menu.subtitleTracks={available:true,selected:"off",options:tracks};
     if(playbackRow.visible)throw Error("Whisper picker visible with subtitles off");
+    menu.subtitleTracks={available:false,selected:"off",options:[]};
+    test.tryVerify(()=>!panel.visible && !button.enabled);
     menu.destroy();console.log("VISUAL POLISH PASSED");Qt.quit();
    }catch(e){console.error(e);Qt.exit(1);}
   }}
