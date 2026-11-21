@@ -93,6 +93,39 @@ Item {
             else refreshTimer.restart();
         }
     }
+    Process {
+        id: lidSettings
+        property string action: "status"
+        property bool busy: true
+        property bool laptop: false
+        property bool suspendOnClose: false
+        property string error: ""
+        function reportFailure(message: string): void {
+            if (action !== "status")
+                suspendOnClose = action === "disable";
+            error = message;
+        }
+        Component.onCompleted: running = true
+        command: ["python3", Quickshell.shellPath("scripts/lid_settings.py"), lidSettings.action]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    const result = JSON.parse(text);
+                    lidSettings.laptop = result.laptop;
+                    lidSettings.suspendOnClose = result.enabled;
+                    lidSettings.error = result.error ?? "";
+                } catch (error) {
+                    lidSettings.reportFailure("Could not read lid settings.");
+                }
+            }
+        }
+        onExited: code => {
+            lidSettings.busy = false;
+            if (code !== 0)
+                lidSettings.reportFailure("Could not load lid settings.");
+        }
+    }
+
     Timer { id: refreshTimer; interval: 500; onTriggered: root.refresh() }
     Connections {
         target: NiriService
@@ -122,6 +155,29 @@ Item {
             statusText: reader.running ? "Loading…" : root.outputs.length + " connected"
             actions: [{icon: Icons.sync, tooltip: "Refresh displays", enabled: !reader.running && !writer.running,
                 onClicked: function () { root.refresh(); }}]
+        }
+        SettingsGroup {
+            objectName: "display-laptop-lid"
+            title: "Laptop lid"
+            visible: lidSettings.laptop
+            SettingsToggleRow {
+                label: "Force suspend on lid close"
+                description: "When off, use the existing system lid behavior."
+                enabled: !lidSettings.busy
+                checked: lidSettings.suspendOnClose
+                onToggled: requested => {
+                    lidSettings.busy = true;
+                    lidSettings.suspendOnClose = requested;
+                    lidSettings.action = requested ? "enable" : "disable";
+                    lidSettings.error = "";
+                    lidSettings.running = true;
+                }
+            }
+            Caption {
+                visible: lidSettings.error.length > 0
+                text: lidSettings.error
+                color: Colors.error
+            }
         }
         Caption {
             visible: root.outputs.length === 0 && !reader.running

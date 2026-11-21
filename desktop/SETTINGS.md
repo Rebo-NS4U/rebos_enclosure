@@ -15,6 +15,10 @@ Search opens individual settings and subsections directly. Clearing search keeps
 the current page selected in its category. Section IDs remain stable for saved
 selections and links from elsewhere in the shell.
 
+In **Desktop & system → Display**, laptops with a lid switch show **Force suspend
+on lid close**. Enabling it requests suspend when the lid closes, including
+while docked. Turning it off restores the existing system and Niri lid behavior.
+
 Personalization → Appearance → Transparency and blur contains two saved sliders:
 
 - Shell background transparency adjusts menu and panel backgrounds from opaque

@@ -53,6 +53,10 @@ ShellRoot {
     for (let child of item.children || []) { let found = fixture.find(child, name); if (found) return found; }
     return null;
    }
+   function waitForLid(condition, message) {
+    for (let attempt = 0; attempt < 60 && !condition(); attempt++) tester.wait(50);
+    fixture.check(condition(), message);
+   }
    function check(ok, message) { if (!ok) throw new Error(message); }
    Timer {
     interval: 1800; running: true
@@ -99,6 +103,26 @@ ShellRoot {
       fixture.check(ai.status === Component.Ready, ai.errorString());
       keys.visible = false;
       samples.visible = false;
+      let displayComponent = Qt.createComponent("modules/widgets/dashboard/controls/DisplayPanel.qml");
+      let desktop = displayComponent.createObject(fixture, {width: 700, height: 600});
+      tester.wait(250);
+      fixture.check(!fixture.find(desktop, "display-laptop-lid").visible, "Desktop hides lid controls");
+      desktop.destroy();
+      let laptop = displayComponent.createObject(fixture, {width: 700, height: 600});
+      let lid = fixture.find(laptop, "display-laptop-lid");
+      let lidToggle = fixture.find(lid, "settings-toggle-control");
+      fixture.waitForLid(() => lid.visible && lidToggle.enabled, "Laptop exposes lid control");
+      fixture.check(!lidToggle.checked, "Existing lid policy is the default");
+      tester.mouseClick(lidToggle);
+      fixture.waitForLid(() => lidToggle.enabled && lidToggle.checked, "Lid suspend can be enabled");
+      laptop.destroy();
+      laptop = displayComponent.createObject(fixture, {width: 700, height: 600});
+      lid = fixture.find(laptop, "display-laptop-lid");
+      lidToggle = fixture.find(lid, "settings-toggle-control");
+      fixture.waitForLid(() => lid.visible && lidToggle.checked, "Lid suspend survives panel reopen");
+      tester.mouseClick(lidToggle);
+      fixture.waitForLid(() => lidToggle.enabled && !lidToggle.checked, "Lid suspend can be disabled");
+      laptop.destroy();
       for (let name of ["ShellPanel", "ThemePanel"]) {
        let component = Qt.createComponent("modules/widgets/dashboard/controls/" + name + ".qml");
        if (name === "ThemePanel") {
@@ -485,7 +509,7 @@ ShellRoot {
 
 
 class SettingsClickTests(unittest.TestCase):
-    @unittest.skipUnless(shutil.which('qs'), 'Quickshell is required')
+    @unittest.skipUnless(shutil.which('qs') and shutil.which('niri'), 'Quickshell and Niri are required')
     def test_controls_and_search(self):
         with tempfile.TemporaryDirectory(prefix='settings-clicks-') as temporary:
             root = Path(temporary)
@@ -500,6 +524,27 @@ class SettingsClickTests(unittest.TestCase):
                 'Path("review-request.json").write_text(json.dumps(data))\n'
                 'print(json.dumps({"ok":True,"issues":True,"message":"Check found issues",'
                 '"output":"staged whitespace", "refresh":False}))\n')
+            for name in ('lid_settings.py', 'window_rules.py', 'list_keybindings.py'):
+                shutil.copyfile(APP / 'scripts' / name, root / name)
+            (root / 'scripts/lid_settings.py').write_text(
+                'import json, sys\nfrom pathlib import Path\n'
+                'root = Path(__file__).resolve().parents[1]\n'
+                'sys.path.insert(0, str(root))\n'
+                'from lid_settings import settings\n'
+                'probe = root / "probe"\n'
+                'inputs = root / ("input-devices" if probe.exists() else "desktop-inputs")\n'
+                'probe.touch()\n'
+                'print(json.dumps(settings(sys.argv[1], root / "XDG_CONFIG_HOME", inputs)))\n')
+            capability = root / 'input-devices/input0/capabilities'
+            capability.mkdir(parents=True)
+            (capability / 'sw').write_text('1\n')
+            niri_config = root / 'XDG_CONFIG_HOME/niri/config.kdl'
+            niri_config.parent.mkdir(parents=True)
+            original_niri = '// Existing lid behavior\nswitch-events { lid-open { spawn "true"; }; }\n'
+            niri_config.write_text(original_niri)
+            fragment = root / 'XDG_CONFIG_HOME/quickshell/scripts/lid-suspend.kdl'
+            fragment.parent.mkdir(parents=True)
+            shutil.copyfile(APP / 'scripts/lid-suspend.kdl', fragment)
             (root / 'shell.qml').write_text(HARNESS)
             (root / 'runtime').mkdir(mode=0o700)
             env = dict(os.environ, HOME=temporary, XDG_RUNTIME_DIR=str(root / 'runtime'),
@@ -513,6 +558,7 @@ class SettingsClickTests(unittest.TestCase):
             output = result.stdout + result.stderr
             self.assertEqual(result.returncode, 0, output)
             self.assertIn('SETTINGS CLICK TESTS PASSED', output)
+            self.assertEqual(niri_config.read_text(), original_niri)
             self.assertEqual(json.loads((root / 'review-request.json').read_text()),
                              {'action': 'review', 'path': '/example/selected-repository'})
 
