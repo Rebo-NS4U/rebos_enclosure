@@ -1,0 +1,6 @@
+switch-events {
+    lid-close { spawn "rebos_shell" "lock"; }
+}
+debug {
+    keep-laptop-panel-on-when-lid-is-closed false
+}

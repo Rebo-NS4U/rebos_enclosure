@@ -98,12 +98,12 @@ Item {
         property string action: "status"
         property bool busy: true
         property bool laptop: false
-        property bool suspendOnClose: false
+        property var options: []
+        property string savedAction: "default"
         property string error: ""
-        function reportFailure(message: string): void {
-            if (action !== "status")
-                suspendOnClose = action === "disable";
-            error = message;
+
+        function selectSavedAction(): void {
+            lidChoice.currentIndex = options.findIndex(option => option.value === savedAction);
         }
         Component.onCompleted: running = true
         command: ["python3", Quickshell.shellPath("scripts/lid_settings.py"), lidSettings.action]
@@ -112,17 +112,19 @@ Item {
                 try {
                     const result = JSON.parse(text);
                     lidSettings.laptop = result.laptop;
-                    lidSettings.suspendOnClose = result.enabled;
+                    lidSettings.options = result.options ?? [];
+                    lidSettings.savedAction = result.action ?? "default";
                     lidSettings.error = result.error ?? "";
                 } catch (error) {
-                    lidSettings.reportFailure("Could not read lid settings.");
+                    lidSettings.error = "Could not read lid settings.";
                 }
             }
         }
         onExited: code => {
-            lidSettings.busy = false;
             if (code !== 0)
-                lidSettings.reportFailure("Could not load lid settings.");
+                lidSettings.error = "Could not load lid settings.";
+            lidSettings.selectSavedAction();
+            lidSettings.busy = false;
         }
     }
 
@@ -160,15 +162,20 @@ Item {
             objectName: "display-laptop-lid"
             title: "Laptop lid"
             visible: lidSettings.laptop
-            SettingsToggleRow {
-                label: "Force suspend on lid close"
-                description: "When off, use the existing system lid behavior."
+            Caption { text: "When I close the lid" }
+            Choice {
+                id: lidChoice
+                objectName: "display-lid-action"
+                Accessible.name: "When I close the lid"
                 enabled: !lidSettings.busy
-                checked: lidSettings.suspendOnClose
-                onToggled: requested => {
+                model: lidSettings.options
+                textRole: "label"
+                valueRole: "value"
+                onActivated: {
+                    if (currentValue === lidSettings.savedAction)
+                        return;
                     lidSettings.busy = true;
-                    lidSettings.suspendOnClose = requested;
-                    lidSettings.action = requested ? "enable" : "disable";
+                    lidSettings.action = currentValue;
                     lidSettings.error = "";
                     lidSettings.running = true;
                 }

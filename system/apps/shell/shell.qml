@@ -5,6 +5,7 @@
 
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import Quickshell.Wayland
 import qs.modules.services
 import qs.modules.lockscreen
@@ -95,6 +96,31 @@ ShellRoot {
 
     // Keep the window object alive so IPC can toggle its visible property.
     SettingsWindow {}
+
+    // Niri runs the selected action. Hold logind's lid-switch inhibitor so
+    // the system lid policy cannot run a second action for the same event.
+    FileView {
+        id: lidConfig
+        property bool hasOverride: false
+        path: (Quickshell.env("XDG_CONFIG_HOME") || Quickshell.env("HOME") + "/.config") + "/niri/config.kdl"
+        preload: true
+        watchChanges: true
+        printErrors: false
+        onFileChanged: reload()
+        onLoaded: hasOverride = /^include optional=true .+ \/\/ Enclosure lid (action|suspend)$/m.test(text())
+        onLoadFailed: hasOverride = false
+    }
+
+    Process {
+        running: lidConfig.hasOverride
+        stdinEnabled: true
+        command: ["systemd-inhibit", "--what=handle-lid-switch", "--who=Enclosure",
+            "--why=The desktop is handling the lid switch", "--mode=block", "cat"]
+        onExited: code => {
+            if (code !== 0 && lidConfig.hasOverride)
+                console.warn("Could not take over the system lid switch.");
+        }
+    }
 
     // Initialize only the services needed by the bar, run menu, and lockscreen.
     QtObject {

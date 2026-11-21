@@ -15,9 +15,10 @@ Search opens individual settings and subsections directly. Clearing search keeps
 the current page selected in its category. Section IDs remain stable for saved
 selections and links from elsewhere in the shell.
 
-In **Desktop & system → Display**, laptops with a lid switch show **Force suspend
-on lid close**. Enabling it requests suspend when the lid closes, including
-while docked. Turning it off restores the existing system and Niri lid behavior.
+In **Desktop & system → Display**, laptops with a lid switch show **When I close
+the lid**. Choose System default, Do nothing, Lock screen, or an available sleep
+or shutdown action. System default uses the existing system and Niri rules.
+Explicit selections apply in the Enclosure session, including while docked.
 
 Personalization → Appearance → Transparency and blur contains two saved sliders:
 

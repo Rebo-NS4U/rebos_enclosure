@@ -110,18 +110,26 @@ ShellRoot {
       desktop.destroy();
       let laptop = displayComponent.createObject(fixture, {width: 700, height: 600});
       let lid = fixture.find(laptop, "display-laptop-lid");
-      let lidToggle = fixture.find(lid, "settings-toggle-control");
-      fixture.waitForLid(() => lid.visible && lidToggle.enabled, "Laptop exposes lid control");
-      fixture.check(!lidToggle.checked, "Existing lid policy is the default");
-      tester.mouseClick(lidToggle);
-      fixture.waitForLid(() => lidToggle.enabled && lidToggle.checked, "Lid suspend can be enabled");
+      let lidChoice = fixture.find(lid, "display-lid-action");
+      fixture.waitForLid(() => lid.visible && lidChoice.enabled, "Laptop exposes lid control");
+      fixture.check(lidChoice.currentValue === "suspend", "Legacy suspend selection is restored");
+      fixture.check(lidChoice.indexOfValue("hibernate") === -1, "Unsupported actions are hidden");
+      for (let action of ["nothing", "lock", "suspend", "poweroff"]) {
+       lidChoice.currentIndex = lidChoice.indexOfValue(action);
+       lidChoice.activated(lidChoice.currentIndex);
+       fixture.waitForLid(() => lidChoice.enabled && lidChoice.currentValue === action,
+                          "Lid action can be set to " + action);
+      }
       laptop.destroy();
       laptop = displayComponent.createObject(fixture, {width: 700, height: 600});
       lid = fixture.find(laptop, "display-laptop-lid");
-      lidToggle = fixture.find(lid, "settings-toggle-control");
-      fixture.waitForLid(() => lid.visible && lidToggle.checked, "Lid suspend survives panel reopen");
-      tester.mouseClick(lidToggle);
-      fixture.waitForLid(() => lidToggle.enabled && !lidToggle.checked, "Lid suspend can be disabled");
+      lidChoice = fixture.find(lid, "display-lid-action");
+      fixture.waitForLid(() => lid.visible && lidChoice.currentValue === "poweroff",
+                         "Lid action survives panel reopen");
+      lidChoice.currentIndex = lidChoice.indexOfValue("default");
+      lidChoice.activated(lidChoice.currentIndex);
+      fixture.waitForLid(() => lidChoice.enabled && lidChoice.currentValue === "default",
+                         "System default can be restored");
       laptop.destroy();
       for (let name of ["ShellPanel", "ThemePanel"]) {
        let component = Qt.createComponent("modules/widgets/dashboard/controls/" + name + ".qml");
@@ -530,6 +538,8 @@ class SettingsClickTests(unittest.TestCase):
                 'import json, sys\nfrom pathlib import Path\n'
                 'root = Path(__file__).resolve().parents[1]\n'
                 'sys.path.insert(0, str(root))\n'
+                'import lid_settings\n'
+                'lid_settings.is_available = lambda method: method in (None, "CanSuspend", "CanPowerOff")\n'
                 'from lid_settings import settings\n'
                 'probe = root / "probe"\n'
                 'inputs = root / ("input-devices" if probe.exists() else "desktop-inputs")\n'
@@ -541,10 +551,11 @@ class SettingsClickTests(unittest.TestCase):
             niri_config = root / 'XDG_CONFIG_HOME/niri/config.kdl'
             niri_config.parent.mkdir(parents=True)
             original_niri = '// Existing lid behavior\nswitch-events { lid-open { spawn "true"; }; }\n'
-            niri_config.write_text(original_niri)
             fragment = root / 'XDG_CONFIG_HOME/quickshell/scripts/lid-suspend.kdl'
             fragment.parent.mkdir(parents=True)
             shutil.copyfile(APP / 'scripts/lid-suspend.kdl', fragment)
+            shutil.copytree(APP / 'scripts/lid-actions', fragment.parent / 'lid-actions')
+            niri_config.write_text(original_niri + f'include optional=true "{fragment}" // Enclosure lid suspend\n')
             (root / 'shell.qml').write_text(HARNESS)
             (root / 'runtime').mkdir(mode=0o700)
             env = dict(os.environ, HOME=temporary, XDG_RUNTIME_DIR=str(root / 'runtime'),

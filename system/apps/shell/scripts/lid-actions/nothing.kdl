@@ -1,0 +1,6 @@
+switch-events {
+    lid-close { spawn "true"; }
+}
+debug {
+    keep-laptop-panel-on-when-lid-is-closed false
+}
