@@ -181,6 +181,11 @@ ShellRoot {
      let composer=test.findChild(sidebar,"assistantComposer");
      let messages=test.findChild(sidebar,"assistantConversation");
      let selectors=test.findChild(sidebar,"assistantSelectors");
+     const tabStrip=test.findChild(sidebar,"assistantSessionTabs");
+     const selectedTab=tabStrip.children.find(item => item.selected === true);
+     if (!selectedTab || selectedTab.background.border.width <= 0
+         || selectedTab.background.height - 2 * selectedTab.background.radius < 2)
+      throw Error("Selected chat tab must keep a straight edge between its rounded corners");
      if(!composer||!messages||Math.abs(composer.width-messages.width)>1)throw Error("Composer and conversation must share width");
      if(composer.width>1000||composer.width>width||composer.width<width-80&&width<1000)throw Error("Responsive composer size");
      const typing=test.findChild(composer,"assistantTypingArea");

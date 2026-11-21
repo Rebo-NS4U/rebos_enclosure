@@ -757,7 +757,8 @@ Item {
                             onClicked: Ai.selectSession(modelData)
                             background: StyledRect {
                                 variant: sessionTab.needsAnswer ? "primary" : sessionTab.selected || sessionTab.hovered ? "focus" : "internalbg"
-                                radius: Styling.radius(0)
+                                // Leave room for the outline where the corner arcs meet.
+                                radius: Math.min(Styling.radius(0), sessionTab.height / 2 - 1)
                                 fillColor: sessionTab.needsAnswer ? Colors.primary : "transparent"
                                 backgroundOpacity: sessionTab.needsAnswer ? 1 : -1
                             }
