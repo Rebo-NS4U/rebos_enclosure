@@ -93,6 +93,26 @@ class YouTubePanelTests(unittest.TestCase):
                 self.assertEqual(media_sources.youtube_for_you(1)['items'], replacement)
             self.assertEqual(fetch.call_count, 2)
 
+    def test_feed_requests_and_queues_up_to_500_recommendations(self):
+        entries = [{'id': f'{index:011d}'} for index in range(500)]
+        with patch.object(media_sources, 'ytdlp', return_value=json.dumps({'entries': entries})) as extract:
+            cards = media_sources.fetch_youtube_feed('firefox:profile')
+        args = extract.call_args.args[0]
+        self.assertEqual(args[args.index('--playlist-end') + 1], '500')
+
+        with patch.object(youtube_account, 'selection', return_value='firefox:profile'), \
+             patch.object(youtube_account, 'FEEDS', {'firefox:profile': cards}):
+            self.assertTrue(media_sources.catalogue('youtube', 'for-you', '', 24)['hasMore'])
+            final_page = media_sources.catalogue('youtube', 'for-you', '', 25)
+            self.assertEqual(final_page['items'], cards[480:500])
+            self.assertFalse(final_page['hasMore'])
+
+        last_card = cards[-1]
+        _, queue, index = media_sources.youtube_queue(last_card, [last_card['url']], 0, cards)
+        self.assertEqual(len(queue), 500)
+        self.assertEqual(index, 499)
+        self.assertEqual(queue[index], last_card['url'])
+
     def test_queue_starts_at_selected_video_and_preserves_playlist(self):
         urls = ['https://www.youtube.com/watch?v=' + str(i) for i in range(3)]
         show = {'kind': 'youtube', 'title': 'Video', 'id': 'youtube:1'}

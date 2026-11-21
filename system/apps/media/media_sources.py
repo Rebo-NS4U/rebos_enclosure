@@ -13,6 +13,7 @@ import subprocess
 from urllib.parse import urlparse, parse_qs
 
 KINDS = ('anime', 'movies', 'tv', 'youtube')
+YOUTUBE_FEED_LIMIT = 500
 YOUTUBE_RECOMMENDATIONS = (
     dict(id='for-you', title='For You', query=''),
     dict(id='most-popular', title='Popular', query='popular videos'),
@@ -136,7 +137,7 @@ def ytdlp(args, timeout=100, browser=None):
 
 def fetch_youtube_feed(browser):
     payload = json.loads(ytdlp(['--flat-playlist', '--dump-single-json', '--skip-download',
-                               '--playlist-end', '200', '--', ':ytrec'], browser=browser))
+                               '--playlist-end', str(YOUTUBE_FEED_LIMIT), '--', ':ytrec'], browser=browser))
     entries = [youtube_card(row) for row in payload.get('entries', []) if row and row.get('id')]
     entries = list({row['id']: row for row in entries}.values())
     if not entries:
@@ -166,7 +167,7 @@ def youtube_queue(show, episodes, index, cards):
     if kind_of(show) != 'youtube' or len(episodes) != 1 or not cards:
         return show, episodes, index
     queue, labels = [], {}
-    for row in cards[:200]:
+    for row in cards[:YOUTUBE_FEED_LIMIT]:
         url = youtube_url(row.get('url', ''))
         parsed = urlparse(url)
         if not (parse_qs(parsed.query).get('v') or parsed.hostname == 'youtu.be'):
