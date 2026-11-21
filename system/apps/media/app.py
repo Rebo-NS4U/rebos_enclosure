@@ -30,7 +30,7 @@ STATE = ROOT / '.local/state/anime-streamer'
 CACHE = ROOT / '.cache/anime-streamer'
 CONFIG = ROOT / '.config/anime-streamer/settings.json'
 POOL = concurrent.futures.ThreadPoolExecutor(max_workers=8)
-BASE = 'https://hianime.at'
+BASE = 'https://hianime.lu'
 ANIME_DOH = 'https://dns.google/dns-query'
 SUBTITLE_FONTS = ('OpenDyslexic', 'Noto Sans', 'Noto Serif', 'DejaVu Sans')
 
@@ -116,7 +116,7 @@ def ani_bridge(action, show_id, episode='', mode='sub', quality='best'):
     if not all(item in functions for item in required):
         raise RuntimeError('ani-cli changed its resolver API; the browser bridge needs updating.')
     script = functions + '''
-base_api="https://hianime.at"
+base_api="$7"
 episodes_api="${base_api}/api/theme/episode/list/%s"
 servers_api="${base_api}/api/theme/episode/servers?episodeId=%s"
 agent="Mozilla/5.0"
@@ -133,7 +133,7 @@ else
     printf '%s\\n%s\\n%s\\n%s\\n' "$video_link" "$refr" "$sub_link" "$audio_link"
 fi
 '''
-    result = subprocess.run(['sh', '-c', script, 'anime-streamer', action, show_id, str(episode), mode, quality, ANIME_DOH], capture_output=True, text=True, timeout=110)
+    result = subprocess.run(['sh', '-c', script, 'anime-streamer', action, show_id, str(episode), mode, quality, ANIME_DOH, BASE], capture_output=True, text=True, timeout=110)
     if result.returncode:
         message = re.sub(r'\x1b\[[0-9;]*[A-Za-z]', '', result.stderr or result.stdout)
         raise RuntimeError(message.strip()[-450:] or 'The provider did not return a playable source')

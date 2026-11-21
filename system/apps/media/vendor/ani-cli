@@ -156,7 +156,7 @@ hianime_curl() {
         -w ' %{http_code}' "$@")" || _curl_status=$?
 
     case "$_curl_status:$1" in
-        6:https://hianime.at/*|7:https://hianime.at/*)
+        6:"$base_api"/*|7:"$base_api"/*)
             if [ -n "${hianime_doh:-}" ]; then
                 _curl_status=0
                 _response="$($curl_exe -sL -A "$agent" --max-time 10 $cipher_flag \
@@ -268,7 +268,7 @@ select_quality() {
 # gets embed url, collects direct links and selects one with desired quality into $episode
 get_video_link() {
     hianime_m3u8 "$ep_no" "$mode" || die "No sources found for $mode!"
-    info "hianime.at links fetched"
+    info "hianime.lu links fetched"
     select_quality "$quality"
     # should never trigger but just in case
     if printf "%s" "$ep_list" | grep -q "^$ep_no$"; then
@@ -452,7 +452,7 @@ play() {
 # MAIN
 
 # setup
-base_api="https://hianime.at"
+base_api="https://hianime.lu"
 search_api="${base_api}/search?keyword=%s"
 episodes_api="${base_api}/api/theme/episode/list/%s"
 servers_api="${base_api}/api/theme/episode/servers?episodeId=%s"
