@@ -10,7 +10,7 @@ class BackendIdleTests(unittest.TestCase):
     def setUp(self):
         self.server = BackendServer()
         self.server.loop = Mock()
-        self.engine = Mock(player=None)
+        self.engine = Mock(player=None, download_active=False)
         self.patch = patch.object(backend_server.backend, 'engine', self.engine)
         self.patch.start()
         self.addCleanup(self.patch.stop)
@@ -46,4 +46,14 @@ class BackendIdleTests(unittest.TestCase):
         self.engine.player.poll.return_value = 0
         self.check_at(101)
         self.check_at(106)
+        self.server.loop.quit.assert_called_once()
+
+    def test_download_keeps_service_alive(self):
+        self.engine.download_active = True
+        self.check_at(10)
+        self.check_at(30)
+        self.server.loop.quit.assert_not_called()
+        self.engine.download_active = False
+        self.check_at(31)
+        self.check_at(36)
         self.server.loop.quit.assert_called_once()

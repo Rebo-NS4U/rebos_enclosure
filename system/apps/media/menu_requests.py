@@ -8,6 +8,7 @@ from urllib.parse import quote, urlparse, parse_qs
 import app
 import youtube_account
 import media_sources
+import media_download
 import torbox_source
 from PIL import Image
 from gi.repository import GLib
@@ -204,6 +205,42 @@ class MenuRequest:
         result(True)
 
 
+    def handle_download(self):
+        engine = self.engine
+        if engine.download_active:
+            return
+        request = self.request
+        show = request['show']
+        kind = media_sources.kind_of(show)
+        episode = request['episode']
+        if not isinstance(episode, str) or not episode:
+            raise ValueError('Choose an available episode')
+        title = engine.media_title(show, episode)
+        mode, quality = engine.settings['mode'], engine.settings['quality']
+
+        def status(active, text):
+            engine.download_active = active
+            self.send(dict(event='download', active=active, text=text))
+
+        def failed(message):
+            status(False, 'Download failed: ' + message)
+
+        def transfer(write):
+            engine.background(lambda: media_download.save(title, write),
+                              lambda path: status(False, 'Saved to ' + path), failed)
+
+        status(True, 'Downloading · ' + title)
+        try:
+            if kind == 'youtube':
+                transfer(lambda path: media_download.download_youtube(episode, quality, path))
+            else:
+                engine.resolve((show['id'], episode, mode, quality),
+                               lambda links: transfer(lambda path: media_download.download_stream(links, kind, path)),
+                               failed)
+        except Exception as error:
+            failed(str(error))
+
+
     def handle_youtube_account(self):
         result = self.result
         result(youtube_account.status())
@@ -332,7 +369,7 @@ class MenuRequest:
         result(engine.settings)
 
 
-REQUEST_HANDLERS = {'catalogue': 'handle_catalogue', 'details': 'handle_details', 'season': 'handle_season', 'quick_play': 'handle_quick_play', 'play': 'handle_play', 'youtube_account': 'handle_youtube_account', 'youtube_connect': 'handle_youtube_connect', 'youtube_disconnect': 'handle_youtube_disconnect', 'stop': 'handle_stop', 'next_episode': 'handle_next_episode', 'resume': 'handle_resume', 'subtitle_source': 'handle_subtitle_source', 'show_captions': 'handle_show_captions', 'poster': 'handle_poster', 'torbox_connect': 'handle_torbox', 'torbox_check': 'handle_torbox', 'torbox_disconnect': 'handle_torbox', 'torbox_key': 'handle_torbox', 'settings': 'handle_settings'}
+REQUEST_HANDLERS = {'catalogue': 'handle_catalogue', 'details': 'handle_details', 'season': 'handle_season', 'quick_play': 'handle_quick_play', 'play': 'handle_play', 'download': 'handle_download', 'youtube_account': 'handle_youtube_account', 'youtube_connect': 'handle_youtube_connect', 'youtube_disconnect': 'handle_youtube_disconnect', 'stop': 'handle_stop', 'next_episode': 'handle_next_episode', 'resume': 'handle_resume', 'subtitle_source': 'handle_subtitle_source', 'show_captions': 'handle_show_captions', 'poster': 'handle_poster', 'torbox_connect': 'handle_torbox', 'torbox_check': 'handle_torbox', 'torbox_disconnect': 'handle_torbox', 'torbox_key': 'handle_torbox', 'settings': 'handle_settings'}
 
 
 def dispatch(request, engine, send):

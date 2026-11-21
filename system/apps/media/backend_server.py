@@ -33,7 +33,7 @@ class BackendServer:
     def send(self, message):
         payload = (json.dumps(message) + '\n').encode()
         with self.lock:
-            if message.get('event') in ['playback', 'captions', 'paused', 'episode', 'subtitle-state', 'subtitle-tracks', 'next-episode']:
+            if message.get('event') in ['playback', 'captions', 'paused', 'episode', 'subtitle-state', 'subtitle-tracks', 'next-episode', 'download']:
                 self.latest[message['event']] = message
             target = message.get('client')
             clients = [(target, self.clients[target])] if target in self.clients else [] if target else list(self.clients.items())
@@ -90,7 +90,7 @@ class BackendServer:
         # Keep paused players and players still preparing a stream alive too.
         with self.lock:
             player = backend.engine.player
-            if self.clients or (player is not None and player.poll() is None):
+            if self.clients or backend.engine.download_active or (player is not None and player.poll() is None):
                 self.idle_since = None
             elif self.idle_since is None:
                 self.idle_since = time.monotonic()

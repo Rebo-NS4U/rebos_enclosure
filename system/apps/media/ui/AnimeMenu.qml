@@ -40,6 +40,8 @@ PanelWindow {
     property string category: "most-popular"
     property string message: "Choose a show to see its details"
     property string playback: ""
+    property bool downloadActive: false
+    property string downloadStatus: ""
     property bool playbackPaused: false
     property bool nextEpisodeAvailable: false
     property string nextEpisodeLabel: "Next episode"
@@ -309,6 +311,8 @@ PanelWindow {
                 message = "Reconnecting to playback service…";
             } else if (data.event === "ready") {
                 ready = true;
+                if (downloadActive) downloadStatus = "The download was interrupted.";
+                downloadActive = false;
                 if (message === "Reconnecting to playback service…" || message.startsWith("Playback menu disconnected"))
                     message = shows.count > 0 ? shows.count + " results" : "Choose a show to see its details";
                 confirmedSettings = Object.assign({}, data.settings);
@@ -389,6 +393,9 @@ PanelWindow {
             } else if (data.event === "verification") {
                 opened = false;
                 playback = data.text;
+            } else if (data.event === "download") {
+                downloadActive = data.active;
+                downloadStatus = data.text;
             } else if (data.event === "playback") {
                 playback = data.text;
                 if (/^(Playing|Paused) · /.test(data.text)) playbackWindowTitle = data.text.replace(/^(Playing|Paused) · /, "");
@@ -424,7 +431,10 @@ PanelWindow {
                 }
                 if (selectedShow.id === data.data.id) selectedShow = Object.assign({}, selectedShow, {image: data.data.image});
             } else if (data.event === "error") {
-                if (data.action === "settings") {
+                if (data.action === "download") {
+                    downloadActive = false;
+                    downloadStatus = data.text;
+                } else if (data.action === "settings") {
                     settleSettings(data, true);
                 } else if (data.action === "catalogue" && data.request === requestId) {
                     loading = false; loadFailed = true;
@@ -921,6 +931,15 @@ PanelWindow {
                     }
                     StyledText { text: root.episodes.length + (root.isYoutube ? (root.episodes.length === 1 ? " video" : " videos") : root.mediaKind === "movies" ? " movie" : (root.episodes.length === 1 ? " episode" : " episodes")); Layout.fillWidth: true; font.bold: true }
                     MenuButton {
+                        text: root.downloadActive ? "Downloading…" : "Download"
+                        enabled: root.ready && !root.downloadActive && !!root.episodes[root.selectedEpisode]
+                        onClicked: {
+                            root.downloadActive = true;
+                            root.downloadStatus = "Preparing download…";
+                            root.send({action: "download", show: root.selectedShow, episode: root.episodes[root.selectedEpisode]});
+                        }
+                    }
+                    MenuButton {
                         id: playSelection
                         text: root.episodes.length ? (root.mediaKind === "movies" || root.isYoutube ? "Play" : "Play · " + root.episodeLabel(root.episodes[root.selectedEpisode])) : root.detailLoading ? "Loading…" : "Unavailable"
                         enabled: root.episodes.length > 0
@@ -1333,6 +1352,13 @@ PanelWindow {
                         }
                     }
                 }
+            }
+            StyledText {
+                visible: root.downloadStatus.length > 0
+                text: root.downloadStatus
+                Layout.fillWidth: true
+                wrapMode: Text.Wrap
+                color: Colors.overSurfaceVariant
             }
             StyledText {
                 visible: root.captionStatus.length > 0

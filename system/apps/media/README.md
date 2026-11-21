@@ -23,6 +23,10 @@ Playback defaults to available English video or provider subtitles. When no suit
 
 A single left click on the VLC video toggles pause/play when `vlc-pause-click-plugin` is installed. Double-click still toggles fullscreen. Enclosure’s optional media group installs this plugin; standalone installations need to install it separately. Streamer enables the plugin automatically when VLC reports it available.
 
+### Downloads
+
+Open a title, select an episode or video, and click **Download**. Streamer saves one item at a time as an MKV in **Rebos Streamer** inside your system Downloads folder. It uses the playback quality and anime language settings. The menu shows the saved path when the download finishes. Playback can continue during the transfer.
+
 ## Development
 
 `ui/shell.qml` is the standalone UI entry point. `ui/modules` contains the current Enclosure/Dweebo controls, surfaces, shadows and theme defaults needed by this app; it does not import the installed shell. `vendor/ani-cli` preserves Enclosure's resolver version. `backend_server.py` and `menu_client.py` communicate over the existing per-user runtime socket.
