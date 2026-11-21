@@ -26,7 +26,8 @@ ShellRoot {
         const text = prompt[0].text;
         return text.includes("/skills/desktop-work/SKILL.md")
             && text.includes("/skills/repository-work/SKILL.md")
-            && text.includes("commit verified changes locally as one task-scoped commit")
+            && text.includes("automatically make one local commit per independently verifiable change after checking it")
+            && text.includes("Use a short, plain imperative subject")
             && text.includes("preserve unrelated staged and unstaged work")
             && text.includes("Push only when explicitly requested or initiated in GitHub Settings")
             && !text.includes("@HOME@") && !text.includes("WAYLAND_DISPLAY")
