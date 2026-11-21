@@ -47,6 +47,8 @@ PanelWindow {
     property int downloadsRequest: 0
     property bool downloadsBusy: false
     property string downloadsError: ""
+    property bool trashDownloadBusy: false
+    onOpenedChanged: if (!opened) trashDownloadPrompt.close()
     property bool playbackPaused: false
     property bool nextEpisodeAvailable: false
     property string nextEpisodeLabel: "Next episode"
@@ -331,6 +333,7 @@ PanelWindow {
                 settings = Object.assign({}, confirmedSettings);
                 ready = false;
                 downloadsBusy = false;
+                trashDownloadBusy = false;
                 nextEpisodeAvailable = false;
                 nextEpisodeResumesPlayback = false;
                 if (loading && cataloguePage > 1) cataloguePage--;
@@ -341,6 +344,7 @@ PanelWindow {
                 message = "Reconnecting to playback service…";
             } else if (data.event === "ready") {
                 ready = true;
+                trashDownloadBusy = false;
                 if (downloadActive) downloadStatus = "The download was interrupted.";
                 downloadActive = false;
                 if (message === "Reconnecting to playback service…" || message.startsWith("Playback menu disconnected"))
@@ -431,6 +435,9 @@ PanelWindow {
             } else if (data.event === "downloads" && data.request === downloadsRequest) {
                 savedDownloads = data.data;
                 downloadsBusy = false;
+            } else if (data.event === "trash_download") {
+                trashDownloadBusy = false;
+                refreshDownloads();
             } else if (data.event === "playback") {
                 playback = data.text;
                 if (/^(Playing|Paused) · /.test(data.text)) playbackWindowTitle = data.text.replace(/^(Playing|Paused) · /, "");
@@ -466,7 +473,10 @@ PanelWindow {
                 }
                 if (selectedShow.id === data.data.id) selectedShow = Object.assign({}, selectedShow, {image: data.data.image});
             } else if (data.event === "error") {
-                if (data.action === "downloads") {
+                if (data.action === "trash_download") {
+                    trashDownloadBusy = false;
+                    downloadsError = data.text;
+                } else if (data.action === "downloads") {
                     if (data.request === downloadsRequest) {
                         downloadsBusy = false;
                         downloadsError = data.text;
@@ -1067,19 +1077,77 @@ PanelWindow {
                         if (currentItem) root.openDownloadUrl(currentItem.modelData.url);
                     }
                     ScrollBar.vertical: ScrollBar {}
-                    delegate: MenuButton {
+                    delegate: RowLayout {
                         id: downloadRow
                         required property var modelData
                         width: downloadsList.width - root.unit
-                        text: modelData.name
-                        selected: downloadsList.activeFocus && ListView.isCurrentItem
-                        onClicked: root.openDownloadUrl(modelData.url)
-                        contentItem: StyledText {
-                            text: downloadRow.text
+                        MenuButton {
+                            id: downloadTitle
+                            Layout.fillWidth: true
+                            text: downloadRow.modelData.name
+                            selected: downloadsList.activeFocus && downloadRow.ListView.isCurrentItem
+                            onClicked: root.openDownloadUrl(downloadRow.modelData.url)
+                            contentItem: StyledText {
+                                text: downloadTitle.text
+                                textFormat: Text.PlainText
+                                color: downloadTitle.selected ? Colors.overPrimary : Colors.overSurface
+                                verticalAlignment: Text.AlignVCenter
+                                elide: Text.ElideMiddle
+                            }
+                        }
+                        MenuButton {
+                            text: "Play"
+                            Accessible.name: "Play " + downloadRow.modelData.name
+                            onClicked: root.openDownloadUrl(downloadRow.modelData.url)
+                        }
+                        MenuButton {
+                            text: "Delete"
+                            Accessible.name: "Delete " + downloadRow.modelData.name
+                            enabled: root.ready && !root.trashDownloadBusy
+                            onClicked: {
+                                trashDownloadPrompt.fileName = downloadRow.modelData.name;
+                                trashDownloadPrompt.open();
+                            }
+                        }
+                    }
+                }
+                Popup {
+                    id: trashDownloadPrompt
+                    property string fileName: ""
+                    parent: card
+                    anchors.centerIn: parent
+                    width: Math.min(card.width - 2 * root.unit, root.unit * 36)
+                    padding: root.unit
+                    modal: true
+                    focus: true
+                    closePolicy: Popup.CloseOnEscape
+                    onOpened: cancelTrashButton.forceActiveFocus()
+                    background: StyledRect { variant: "popup"; radius: Styling.radius(12) }
+                    contentItem: ColumnLayout {
+                        StyledText { text: "Move this download to Trash?"; font.bold: true }
+                        StyledText {
+                            Layout.fillWidth: true
+                            text: trashDownloadPrompt.fileName
                             textFormat: Text.PlainText
-                            color: downloadRow.selected ? Colors.overPrimary : Colors.overSurface
-                            verticalAlignment: Text.AlignVCenter
-                            elide: Text.ElideMiddle
+                            wrapMode: Text.Wrap
+                        }
+                        RowLayout {
+                            Layout.alignment: Qt.AlignRight
+                            MenuButton {
+                                id: cancelTrashButton
+                                text: "Cancel"
+                                onClicked: trashDownloadPrompt.close()
+                            }
+                            MenuButton {
+                                text: "Move to Trash"
+                                enabled: root.ready && !root.trashDownloadBusy
+                                onClicked: {
+                                    root.trashDownloadBusy = true;
+                                    root.downloadsError = "";
+                                    root.send({action: "trash_download", name: trashDownloadPrompt.fileName});
+                                    trashDownloadPrompt.close();
+                                }
+                            }
                         }
                     }
                 }

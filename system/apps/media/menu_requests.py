@@ -208,6 +208,10 @@ class MenuRequest:
     def handle_downloads(self):
         self.engine.background(media_download.list_downloads, self.result, self.fail)
 
+    def handle_trash_download(self):
+        name = self.request.get('name')
+        self.engine.background(lambda: media_download.trash_download(name), self.result, self.fail)
+
     def handle_download(self):
         engine = self.engine
         if engine.download_active:
@@ -453,7 +457,7 @@ class MenuRequest:
         result(engine.settings)
 
 
-REQUEST_HANDLERS = {'catalogue': 'handle_catalogue', 'details': 'handle_details', 'season': 'handle_season', 'quick_play': 'handle_quick_play', 'play': 'handle_play', 'downloads': 'handle_downloads', 'download': 'handle_download', 'download_season': 'handle_download_season', 'stop_download': 'handle_stop_download', 'youtube_account': 'handle_youtube_account', 'youtube_connect': 'handle_youtube_connect', 'youtube_disconnect': 'handle_youtube_disconnect', 'stop': 'handle_stop', 'next_episode': 'handle_next_episode', 'resume': 'handle_resume', 'subtitle_source': 'handle_subtitle_source', 'show_captions': 'handle_show_captions', 'poster': 'handle_poster', 'torbox_connect': 'handle_torbox', 'torbox_check': 'handle_torbox', 'torbox_disconnect': 'handle_torbox', 'torbox_key': 'handle_torbox', 'settings': 'handle_settings'}
+REQUEST_HANDLERS = {'catalogue': 'handle_catalogue', 'details': 'handle_details', 'season': 'handle_season', 'quick_play': 'handle_quick_play', 'play': 'handle_play', 'downloads': 'handle_downloads', 'trash_download': 'handle_trash_download', 'download': 'handle_download', 'download_season': 'handle_download_season', 'stop_download': 'handle_stop_download', 'youtube_account': 'handle_youtube_account', 'youtube_connect': 'handle_youtube_connect', 'youtube_disconnect': 'handle_youtube_disconnect', 'stop': 'handle_stop', 'next_episode': 'handle_next_episode', 'resume': 'handle_resume', 'subtitle_source': 'handle_subtitle_source', 'show_captions': 'handle_show_captions', 'poster': 'handle_poster', 'torbox_connect': 'handle_torbox', 'torbox_check': 'handle_torbox', 'torbox_disconnect': 'handle_torbox', 'torbox_key': 'handle_torbox', 'settings': 'handle_settings'}
 
 
 def dispatch(request, engine, send):

@@ -3,17 +3,19 @@ import os
 from pathlib import Path
 import re
 import signal
+import stat
 import subprocess
 from tempfile import TemporaryDirectory
 from threading import Event, Lock
 from time import monotonic
 
-from gi.repository import GLib
+from gi.repository import Gio, GLib
 
 import media_sources
 import stream_relay
 
 DOWNLOAD_TIMEOUT = 6 * 60 * 60
+VIDEO_EXTENSIONS = {'.mkv', '.mp4', '.m4v', '.mov', '.webm', '.avi'}
 HLS_OPTIONS = ['-allowed_extensions', 'ALL', '-allowed_segment_extensions', 'ALL',
                '-extension_picky', '0', '-seg_max_retry', '3']
 
@@ -73,7 +75,7 @@ def list_downloads():
         subfolders[:] = [name for name in subfolders if not name.startswith('.')]
         for name in names:
             path = Path(directory) / name
-            if name.startswith('.') or path.suffix.lower() not in {'.mkv', '.mp4', '.m4v', '.mov', '.webm', '.avi'}:
+            if name.startswith('.') or path.suffix.lower() not in VIDEO_EXTENSIONS:
                 continue
             if path.is_symlink() or not path.is_file():
                 continue
@@ -85,6 +87,22 @@ def list_downloads():
                 entries.append((info.st_mtime_ns, dict(name=str(path.relative_to(folder)), url=path.as_uri())))
     entries.sort(key=lambda entry: (-entry[0], entry[1]['name'].casefold()))
     return dict(folder=folder.as_uri() if folder.is_dir() else '', files=[entry for _, entry in entries])
+
+
+def trash_download(name):
+    if not isinstance(name, str) or not name:
+        raise ValueError('Choose a downloaded video.')
+    relative = Path(name)
+    if relative.is_absolute() or any(part.startswith('.') for part in relative.parts) or relative.suffix.lower() not in VIDEO_EXTENSIONS:
+        raise ValueError('Choose a downloaded video.')
+    path = downloads_folder().resolve() / relative
+    try:
+        if path.resolve(strict=True) != path or not stat.S_ISREG(path.lstat().st_mode):
+            raise ValueError('Choose a downloaded video.')
+    except FileNotFoundError:
+        raise ValueError('This download is no longer on disk.') from None
+    if not Gio.File.new_for_path(str(path)).trash(None):
+        raise ValueError('Could not move this download to Trash.')
 
 
 def save(title, transfer, download=None):

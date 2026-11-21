@@ -30,7 +30,7 @@ Open a title, select an episode or video, and click **Download**. Streamer saves
 For TV, select a season and click **Download Season**. Streamer saves its episodes one at a time and reports which episodes failed after the queue finishes.
 Click **Stop Download** beside the progress message to cancel the current transfer and any remaining episodes. Completed files stay in your Downloads folder.
 
-Open **Downloads** to see saved videos, including files in subfolders. Select a video to open it in your default player, or choose **Open Folder** to open the download directory.
+Open **Downloads** to see saved videos, including files in subfolders. Select **Play** to open a video in your default player, **Delete** to move it to Trash after confirmation, or **Open Folder** to open the download directory.
 
 ## Development
 

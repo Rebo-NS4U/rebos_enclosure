@@ -23,6 +23,32 @@ class QuietHandler(SimpleHTTPRequestHandler):
 
 
 class DownloadTests(unittest.TestCase):
+    def test_trash_download_request_is_limited_to_actual_downloads(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            folder = root / 'Rebos Streamer'
+            saved = folder / 'English' / 'Episode 1.mkv'
+            saved.parent.mkdir(parents=True)
+            saved.write_bytes(b'video')
+            outside = root / 'Outside.mkv'
+            outside.touch()
+            (folder / 'link.mkv').symlink_to(outside)
+            (folder / 'alias').symlink_to(root, target_is_directory=True)
+            engine, send = Mock(), Mock()
+            with patch.object(media_download.GLib, 'get_user_special_dir', return_value=directory), \
+                    patch.object(media_download.Gio.File, 'new_for_path') as gio_file:
+                for name in ('../Outside.mkv', 'link.mkv', 'alias/Outside.mkv', str(outside), '.temp/video.mkv'):
+                    with self.subTest(name=name), self.assertRaisesRegex(ValueError, 'Choose a downloaded video'):
+                        media_download.trash_download(name)
+                gio_file.assert_not_called()
+                menu_requests.dispatch(dict(action='trash_download', name='English/Episode 1.mkv', _client='menu'),
+                                       engine, send)
+                work, done, _ = engine.background.call_args.args
+                done(work())
+                gio_file.assert_called_once_with(str(saved))
+                gio_file.return_value.trash.assert_called_once_with(None)
+                send.assert_called_once_with(dict(event='trash_download', request=0, data=None, client='menu'))
+
     def test_downloads_request_lists_saved_videos_and_ignores_partial_files(self):
         engine = Mock()
         send = Mock()
