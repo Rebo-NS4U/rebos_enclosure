@@ -19,6 +19,7 @@ DATA = Path.home() / '.local/share/anime-streamer'
 BINARY = DATA / 'vendor/whisper.cpp-1.9.5/build/bin/whisper-cli'
 MODEL = DATA / 'models/ggml-base.en.bin'
 MULTILINGUAL_MODEL = DATA / 'models/ggml-base.bin'
+FRENCH_GERMAN_MODEL = DATA / 'models/ggml-medium-q5_0.bin'
 TRANSLATION_LANGUAGES = {'es': 'Spanish', 'fr': 'French', 'de': 'German'}
 CAPTION_LANGUAGES = ('en', 'auto', *TRANSLATION_LANGUAGES)
 VAD_BINARY = BINARY.with_name('whisper-vad-speech-segments')
@@ -177,12 +178,29 @@ def speech_spans(output, language):
     return phrases
 
 
+def caption_model(language):
+    if language == 'en':
+        return MODEL
+    if language in ('fr', 'de') and FRENCH_GERMAN_MODEL.is_file():
+        return FRENCH_GERMAN_MODEL
+    return MULTILINGUAL_MODEL
+
+
+def decoding_options(model, duration):
+    if model == FRENCH_GERMAN_MODEL:
+        # Whisper uses 50 audio context tokens per second. Leave room for
+        # padding beyond the speech, within the model's 30-second window.
+        context = min(1500, max(384, round(duration * 50) + 100))
+        return ['-bs', '5', '-bo', '5', '-ac', str(context), '-oj']
+    return ['-bs', '1', '-bo', '1', '-sns', '-ml', '64', '-sow', '-ojf']
+
+
 # Quality exception: Speech-span boundaries, language selection, timestamps and cleanup are explicit within one bounded recognition operation.
 # Numeric ceilings are enforced by desktop/scripts/quality.py.
 def recognize(wav, output, run=subprocess.run, language='en', on_progress=None):  # pylint: disable=too-many-branches,too-many-locals
     if language not in CAPTION_LANGUAGES:
         raise ValueError('Unsupported caption language')
-    model = MULTILINGUAL_MODEL if language != 'en' else MODEL
+    model = caption_model(language)
     # Keep speech spans on the original timeline. Whisper's built-in VAD
     # reports token times on compressed audio, which loses silent gaps.
     result = run([str(VAD_BINARY), '-np', '-vm', str(VAD_MODEL), '-f', str(wav),
@@ -205,8 +223,8 @@ def recognize(wav, output, run=subprocess.run, language='en', on_progress=None):
                     destination.setparams(params)
                     destination.writeframes(pcm)
                 command = [str(BINARY), '-m', str(model), '-f', str(clip), '-l', language,
-                           '-t', str(min(6, os.cpu_count() or 2)), '-bs', '1', '-bo', '1',
-                           '-ng', '-sns', '-np', '-ml', '64', '-sow', '-ojf', '-of', str(prefix)]
+                           '-t', str(min(6, os.cpu_count() or 2)), '-ng', '-np', '-of', str(prefix)]
+                command += decoding_options(model, len(pcm) / (params.sampwidth * params.nchannels * params.framerate))
                 if language != 'en':
                     command += ['--translate']
                 result = run(command, timeout=90, capture_output=True)
@@ -257,7 +275,7 @@ class LiveSubtitles:  # pylint: disable=too-many-instance-attributes
         if language not in CAPTION_LANGUAGES:
             raise ValueError('Unsupported caption language')
         self.language = language
-        model = MULTILINGUAL_MODEL if language != 'en' else MODEL
+        model = caption_model(language)
         if not all(path.is_file() for path in (BINARY, model, VAD_BINARY, VAD_MODEL)):
             raise RuntimeError(f'Local subtitle model is not installed: {model.name}')
         self.source = links[3] or links[0]

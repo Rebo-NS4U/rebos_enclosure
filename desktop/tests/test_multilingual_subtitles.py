@@ -77,8 +77,13 @@ class TranslatedCaptionTests(unittest.TestCase):
                     'text': 'Hello world.', 'offsets': {'from': 0, 'to': 0},
                     'tokens': [{'text': 'Wrong token timing', 'offsets': {'from': 0, 'to': 1}}]}]}))
                 return subprocess.CompletedProcess(command, 0, b'', b'')
-            for language in ('es', 'fr', 'de'):
-                with self.subTest(language=language):
+            upgraded_model = Path(folder) / 'upgraded.bin'
+            upgraded_model.touch()
+            modes = [('es', True), ('fr', False), ('de', False), ('fr', True), ('de', True)]
+            for language, installed in modes:
+                model_path = upgraded_model if installed else Path(folder) / 'missing.bin'
+                use_upgrade = installed and language in ('fr', 'de')
+                with self.subTest(language=language, installed=installed), patch('live_subtitles.FRENCH_GERMAN_MODEL', model_path):
                     commands.clear()
                     data = recognize(wav, Path(folder) / 'translated', run=run, language=language)
                     self.assertEqual(cues_from_whisper(data, 32),
@@ -86,7 +91,14 @@ class TranslatedCaptionTests(unittest.TestCase):
                     for command in commands[1:]:
                         self.assertIn('--translate', command)
                         self.assertEqual(command[command.index('-l') + 1], language)
-                        self.assertEqual(command[command.index('-m') + 1], str(MULTILINGUAL_MODEL))
+                        expected_model = upgraded_model if use_upgrade else MULTILINGUAL_MODEL
+                        self.assertEqual(command[command.index('-m') + 1], str(expected_model))
+                        self.assertEqual(command[command.index('-bs') + 1], '5' if use_upgrade else '1')
+                        if use_upgrade:
+                            self.assertEqual(command[command.index('-ac') + 1], '384')
+                            self.assertIn('-oj', command)
+                        else:
+                            self.assertIn('-ojf', command)
             self.assertFalse(list(Path(folder).glob('*-speech-*')))
 
     def test_language_switch_replaces_captions_without_restarting_player(self):

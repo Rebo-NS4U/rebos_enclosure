@@ -17,6 +17,7 @@ VAD_REVISION = '9ffd54a1e1ee413ddf265af9913beaf518d1639b'
 MODEL_SHA256 = {
     'base.en': 'a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002',
     'base': '60ed5bc3dd14eea856493d334349b405782ddcaf0028d4b5df4088345fba2efe',
+    'medium-q5_0': '19fea4b380c3a618ec4723c3eef2eb785ffba0d0538cf43f8f235e7b3b34220f',
 }
 VAD_SHA256 = '2aa269b785eeb53a82983a20501ddf7c1d9c48e33ab63a41391ac6c9f7fb6987'
 
@@ -63,9 +64,9 @@ def main():
     subprocess.run(['cmake', '--build', str(source / 'build'), '--parallel',
                     str(min(4, os.cpu_count() or 2)), '--target',
                     'whisper-cli', 'whisper-vad-speech-segments'], check=True)
-    for model in ('base.en', 'base'):
+    for model, digest in MODEL_SHA256.items():
         download(f'https://huggingface.co/ggerganov/whisper.cpp/resolve/{MODEL_REVISION}/ggml-{model}.bin',
-                 DATA / f'models/ggml-{model}.bin', MODEL_SHA256[model])
+                 DATA / f'models/ggml-{model}.bin', digest)
     download(f'https://huggingface.co/ggml-org/whisper-vad/resolve/{VAD_REVISION}/ggml-silero-v6.2.0.bin',
              DATA / 'models/ggml-silero-v6.2.0.bin', VAD_SHA256)
     print('Local subtitle engine installed. Toggle captions off/on to retry an existing playback.')

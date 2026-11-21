@@ -85,22 +85,19 @@ The bundled artist and shared-album collections retain only images at least **19
 - Themed Quickshell login configuration, shared material renderer, background and GoogleDot cursor, NetworkManager, Bluetooth, PipeWire/WirePlumber, power profiles, authentication agent, portals, screenshots, OCR and clipboard history.
 - Full-profile apps include Discord, Spotify Launcher, OBS, Obsidian, Zen, image viewer, developer tools, and the optional AUR apps listed above.
 
-Anime Streamer captions can automatically detect each speech span's language and
-produce English subtitles. English retains word timing; translations retain speech
-timing. Settings → **Auto-detect language and translate to English** selects the
-multilingual `ggml-base.bin` model; turning it off uses `ggml-base.en.bin` for English
-only. Whisper binaries, Silero VAD and models are not bundled. Run
-`python desktop/scripts/setup-subtitles.py` from the checkout to build Whisper
-1.9.5 and download both base models and Silero VAD into
-`~/.local/share/anime-streamer`. Setup requires CMake, a C++ compiler and ffmpeg;
-it runs as the current user and does not restart playback or desktop services.
-After setup, toggle captions off/on to retry an existing playback.
-Setup pins model revisions and verifies SHA-256 hashes for the Whisper source
-archive and all three models. Corrupt cached downloads are replaced only after
-a complete verified download; a failed download preserves the existing file.
-Short-clip checks found correct detection but mixed French/Italian
-translation and poor German/Japanese/Korean translation with the base model;
-do not treat detection success as evidence of translation accuracy.
+Anime Streamer can generate English captions with Whisper. Choose **Whisper
+audio mode** in the subtitle controls. Explicit French and German modes use
+the quantized multilingual Medium model (514 MiB) when installed and fall back
+to the multilingual Base model otherwise. Auto and Spanish use multilingual
+Base. English uses Base English and retains word timing. Translations follow
+the timing of the source speech.
+
+Run `python desktop/scripts/setup-subtitles.py` from the checkout to build
+Whisper 1.9.5 and download the models and Silero VAD into
+`~/.local/share/anime-streamer`. Setup requires CMake, a C++ compiler and ffmpeg.
+It pins revisions and verifies SHA-256 hashes before replacing any cached
+downloads. Setup runs as the current user. New backend sessions load the
+updated caption code automatically.
 
 Series playback queues continue across released seasons, keep specials separate,
 and enforce the selected resolution limit. Next-episode preparation buffers a

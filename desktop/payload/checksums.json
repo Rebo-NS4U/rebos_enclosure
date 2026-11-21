@@ -228,7 +228,7 @@
   "system/apps/media/filter_options.json": "afe9ee4b3bd72b604bed0c6fbf54411c46301952a913de9b0526b0cfefc7ccbe",
   "system/apps/media/install.py": "418a4176d2b506e031d8f1039ac56aac2b30be9b18b8cbdea9c1fe6d7d0d60b5",
   "system/apps/media/launch": "4cdf675317d14105b42df927882bbb8e344d1538fb354ffb760241a212205b6d",
-  "system/apps/media/live_subtitles.py": "a2c82f2c58d90df9ec35173559098e8e306aad66352b0ba2eea37c1c711fba5a",
+  "system/apps/media/live_subtitles.py": "eab38742da4c21020c41a290d193b3d4fce9b0baf3fefa143fcc5d7f27aa2322",
   "system/apps/media/media_sources.py": "c89dac25a40346ab09faf383abd588506c70487ca97d2fe22ed79070d1b4a231",
   "system/apps/media/media_validation.py": "87ecc9f313cbdf296ebf123de441a891f7deef1bc3819acd083ef2396a9c4d17",
   "system/apps/media/menu_backend.py": "c5f21310e19cc03a7ae3db78789ea78f50ddec6bf760d83ac7f458d336161fc6",
