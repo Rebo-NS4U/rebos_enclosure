@@ -150,6 +150,25 @@ class CaptionSchedulingTests(unittest.TestCase):
             self.assertEqual(worker.position, 1234)
             self.assertEqual(worker.duration, 2400)
 
+    def test_completion_keeps_published_cues_without_reloading_the_player(self):
+        with tempfile.TemporaryDirectory() as folder, patch('live_subtitles.threading.Thread'), patch.object(Path, 'is_file', return_value=True):
+            ready, status = Mock(), Mock()
+            worker = LiveSubtitles(['video', '', '', ''], folder, ready, status)
+            worker.post = lambda callback, value: callback(value)
+            def transcribe(block):
+                if block == 0:
+                    worker.partial[block] = [(1, 2, 'Hello')]
+                    worker.publish()
+                    return worker.partial[block]
+                worker.cancelled = True
+                return []
+            worker.transcribe = transcribe
+            worker.work()
+            ready.assert_called_once_with(str(worker.path))
+            self.assertIn('Hello', worker.path.read_text())
+            status.assert_called_with('Local English captions ready')
+            self.assertEqual(worker.blocks[1], [])
+
     def test_worker_does_not_skip_dialogue_as_playback_advances(self):
         import threading
         from live_subtitles import CHUNK
@@ -165,6 +184,7 @@ class CaptionSchedulingTests(unittest.TestCase):
         worker.post = Mock()
         worker.on_status = Mock()
         worker.publish = Mock()
+        worker.publish_status = Mock()
         generated = []
         def transcribe(block):
             generated.append(block * CHUNK)

@@ -354,8 +354,10 @@ class LiveSubtitles:  # pylint: disable=too-many-instance-attributes
                 cues = self.transcribe(block)
                 with self.condition:
                     self.blocks[block] = cues
-                    self.partial.pop(block, None)
-                    self.publish()
+                    if cues != self.partial.pop(block, []):
+                        self.publish()
+                    else:
+                        self.publish_status()
             except InterruptedError:
                 return
             except Exception as error:
