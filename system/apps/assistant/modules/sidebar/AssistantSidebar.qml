@@ -402,7 +402,7 @@ Item {
 
         StyledRect {
             id: sidebarBackground
-            barSurface: true
+            barSurface: Styling.shellStyle !== "guilloche"
             canopyVariation: root.canopyVariation
             anchors.fill: parent
             anchors.topMargin: root.tiled ? 0 : root.sidebarMargin
