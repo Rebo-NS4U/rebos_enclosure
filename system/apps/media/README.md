@@ -27,6 +27,8 @@ A single left click on the VLC video toggles pause/play when `vlc-pause-click-pl
 
 Open a title, select an episode or video, and click **Download**. Streamer saves one item at a time as an MKV in **Rebos Streamer** inside your system Downloads folder. It uses the playback quality and anime language settings. The menu shows the saved path when the download finishes. Playback can continue during the transfer.
 
+For TV, select a season and click **Download Season**. Streamer saves its episodes one at a time and reports which episodes failed after the queue finishes.
+
 ## Development
 
 `ui/shell.qml` is the standalone UI entry point. `ui/modules` contains the current Enclosure/Dweebo controls, surfaces, shadows and theme defaults needed by this app; it does not import the installed shell. `vendor/ani-cli` preserves Enclosure's resolver version. `backend_server.py` and `menu_client.py` communicate over the existing per-user runtime socket.

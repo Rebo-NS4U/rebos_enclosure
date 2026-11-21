@@ -19,6 +19,39 @@ class QuietHandler(SimpleHTTPRequestHandler):
 
 
 class DownloadTests(unittest.TestCase):
+    def test_download_season_queues_selected_season_and_continues_after_failure(self):
+        engine = Mock(download_active=False, settings={'mode': 'sub', 'quality': '720p'})
+        send = Mock()
+        show = dict(id='show', kind='tv', title='Example')
+        request = dict(action='download_season', show=show, seasonId='2')
+        with patch.object(menu_requests.media_sources, 'season_episodes',
+                          return_value={'episodes': ['2:1', '2:2', '2:3']}) as season:
+            menu_requests.dispatch(request, engine, send)
+            self.assertTrue(engine.download_active)
+            work, ready, _ = engine.background.call_args.args
+            ready(work())
+            season.assert_called_once_with(show, '2')
+        engine.resolve.assert_called_once()
+        self.assertEqual(engine.resolve.call_args.args[0], ('show', '2:1', 'sub', '720p'))
+        menu_requests.dispatch(request, engine, send)
+        engine.background.assert_called_once()
+
+        engine.resolve.call_args.args[1](['video', '', '', ''])
+        work, done, _ = engine.background.call_args.args
+        with patch.object(media_download, 'save', return_value='/download.mkv') as save:
+            done(work())
+            self.assertEqual(save.call_args.args[0], 'Example · Season 2 · Episode 1')
+        self.assertEqual(engine.resolve.call_args.args[0], ('show', '2:2', 'sub', '720p'))
+        with patch.object(menu_requests.GLib, 'idle_add', side_effect=lambda callback, *args: callback(*args)):
+            engine.resolve.call_args.args[2]('No source')
+        self.assertEqual(engine.resolve.call_args.args[0], ('show', '2:3', 'sub', '720p'))
+        engine.resolve.call_args.args[1](['video', '', '', ''])
+        engine.background.call_args.args[1]('/download.mkv')
+        self.assertFalse(engine.download_active)
+        engine.stop.assert_not_called()
+        self.assertEqual(send.call_args.args[0], dict(
+            event='download', active=False, text='Example · Season 2 · Saved 2 of 3 episodes · Failed: 2'))
+
     def test_download_request_saves_selected_episode_without_touching_playback(self):
         with TemporaryDirectory() as directory:
             root = Path(directory)

@@ -131,6 +131,11 @@ PanelWindow {
     function send(data): void {
         if (ready) backend.write(JSON.stringify(data) + "\n");
     }
+    function startDownload(data): void {
+        downloadActive = true;
+        downloadStatus = "Preparing download…";
+        send(data);
+    }
     function switchMedia(kind: string): void {
         if (mediaKind === kind) return;
         const items = [];
@@ -431,7 +436,7 @@ PanelWindow {
                 }
                 if (selectedShow.id === data.data.id) selectedShow = Object.assign({}, selectedShow, {image: data.data.image});
             } else if (data.event === "error") {
-                if (data.action === "download") {
+                if (data.action === "download" || data.action === "download_season") {
                     downloadActive = false;
                     downloadStatus = data.text;
                 } else if (data.action === "settings") {
@@ -933,11 +938,13 @@ PanelWindow {
                     MenuButton {
                         text: root.downloadActive ? "Downloading…" : "Download"
                         enabled: root.ready && !root.downloadActive && !!root.episodes[root.selectedEpisode]
-                        onClicked: {
-                            root.downloadActive = true;
-                            root.downloadStatus = "Preparing download…";
-                            root.send({action: "download", show: root.selectedShow, episode: root.episodes[root.selectedEpisode]});
-                        }
+                        onClicked: root.startDownload({action: "download", show: root.selectedShow, episode: root.episodes[root.selectedEpisode]})
+                    }
+                    MenuButton {
+                        visible: root.mediaKind === "tv" && !!root.details.seasonId
+                        enabled: root.ready && !root.detailLoading && !root.downloadActive && root.episodes.length > 0
+                        text: "Download Season"
+                        onClicked: root.startDownload({action: "download_season", show: root.selectedShow, seasonId: root.details.seasonId})
                     }
                     MenuButton {
                         id: playSelection
