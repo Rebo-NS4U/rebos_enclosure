@@ -18,7 +18,9 @@ from gi.repository import GLib
 DATA = Path.home() / '.local/share/anime-streamer'
 BINARY = DATA / 'vendor/whisper.cpp-1.9.5/build/bin/whisper-cli'
 MODEL = DATA / 'models/ggml-base.en.bin'
-SPANISH_MODEL = DATA / 'models/ggml-base.bin'
+MULTILINGUAL_MODEL = DATA / 'models/ggml-base.bin'
+TRANSLATION_LANGUAGES = {'es': 'Spanish', 'fr': 'French', 'de': 'German'}
+CAPTION_LANGUAGES = ('en', 'auto', *TRANSLATION_LANGUAGES)
 VAD_BINARY = BINARY.with_name('whisper-vad-speech-segments')
 VAD_MODEL = DATA / 'models/ggml-silero-v6.2.0.bin'
 CHUNK = 8
@@ -178,9 +180,9 @@ def speech_spans(output, language):
 # Quality exception: Speech-span boundaries, language selection, timestamps and cleanup are explicit within one bounded recognition operation.
 # Numeric ceilings are enforced by desktop/scripts/quality.py.
 def recognize(wav, output, run=subprocess.run, language='en', on_progress=None):  # pylint: disable=too-many-branches,too-many-locals
-    if language not in ('en', 'es', 'auto'):
+    if language not in CAPTION_LANGUAGES:
         raise ValueError('Unsupported caption language')
-    model = SPANISH_MODEL if language != 'en' else MODEL
+    model = MULTILINGUAL_MODEL if language != 'en' else MODEL
     # Keep speech spans on the original timeline. Whisper's built-in VAD
     # reports token times on compressed audio, which loses silent gaps.
     result = run([str(VAD_BINARY), '-np', '-vm', str(VAD_MODEL), '-f', str(wav),
@@ -211,7 +213,7 @@ def recognize(wav, output, run=subprocess.run, language='en', on_progress=None):
                 if result.returncode:
                     raise RuntimeError('Local speech recognition failed')
                 data = json.loads(prefix.with_suffix('.json').read_text())
-                if language == 'es' or (language == 'auto' and data.get('result', {}).get('language') != 'en'):
+                if language in TRANSLATION_LANGUAGES or (language == 'auto' and data.get('result', {}).get('language') != 'en'):
                     # Translation reorders words. Anchor each translated phrase to
                     # its original speech span instead of English token times.
                     text = ' '.join(segment.get('text', '').strip()
@@ -252,10 +254,10 @@ class LiveSubtitles:  # pylint: disable=too-many-instance-attributes
         options = options or CaptionOptions()
         delay, language = options.delay, options.language
         position, duration = options.position, options.duration
-        if language not in ('en', 'es', 'auto'):
+        if language not in CAPTION_LANGUAGES:
             raise ValueError('Unsupported caption language')
         self.language = language
-        model = SPANISH_MODEL if language != 'en' else MODEL
+        model = MULTILINGUAL_MODEL if language != 'en' else MODEL
         if not all(path.is_file() for path in (BINARY, model, VAD_BINARY, VAD_MODEL)):
             raise RuntimeError(f'Local subtitle model is not installed: {model.name}')
         self.source = links[3] or links[0]
@@ -312,8 +314,9 @@ class LiveSubtitles:  # pylint: disable=too-many-instance-attributes
     def publish_status(self):
         first = int(max(0, self.position - self.delay) // CHUNK)
         if first in self.blocks:
-            text = ('Auto language → English captions ready' if self.language == 'auto' else
-                    'Spanish → English captions ready' if self.language == 'es' else 'Local English captions ready')
+            mode = TRANSLATION_LANGUAGES.get(self.language, 'Auto language')
+            text = ('Local English captions ready' if self.language == 'en'
+                    else f'{mode} → English captions ready')
             if not self.blocks[first]:
                 text = 'No speech detected in the current scene'
         else:
@@ -390,7 +393,10 @@ class LiveSubtitles:  # pylint: disable=too-many-instance-attributes
             output.with_suffix('.json').unlink(missing_ok=True)
 
     def work(self):
-        self.post(self.on_status, 'Preparing automatic English captions…' if self.language == 'auto' else 'Preparing Spanish → English captions…' if self.language == 'es' else 'Preparing local English captions…')
+        mode = {'auto': 'automatic English', 'en': 'local English'}.get(self.language)
+        if mode is None:
+            mode = f'{TRANSLATION_LANGUAGES[self.language]} → English'
+        self.post(self.on_status, f'Preparing {mode} captions…')
         while not self.cancelled:
             with self.condition:
                 first = int(self.position // CHUNK)

@@ -8,6 +8,7 @@ from unittest.mock import Mock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'system/apps/media'))
 import menu_backend
+from menu_requests import MenuRequest
 from live_subtitles import LiveSubtitles, CaptionOptions, cues_from_whisper, recognize, speech_spans
 
 class SpeechSpanTests(unittest.TestCase):
@@ -21,11 +22,11 @@ class SpeechSpanTests(unittest.TestCase):
         self.assertEqual(speech_spans(b'No speech', 'en'), [])
 
 
-class SpanishCaptionTests(unittest.TestCase):
+class TranslatedCaptionTests(unittest.TestCase):
     def test_auto_detection_changes_language_between_speech_spans(self):
         import subprocess
         import wave
-        from live_subtitles import BINARY, SPANISH_MODEL
+        from live_subtitles import BINARY, MULTILINGUAL_MODEL
         calls = []
         progress = []
         with tempfile.TemporaryDirectory() as folder:
@@ -54,12 +55,12 @@ class SpanishCaptionTests(unittest.TestCase):
             for command in calls:
                 self.assertIn('--translate', command)
                 self.assertEqual(command[command.index('-l') + 1], 'auto')
-                self.assertEqual(command[command.index('-m') + 1], str(SPANISH_MODEL))
+                self.assertEqual(command[command.index('-m') + 1], str(MULTILINGUAL_MODEL))
 
     def test_translation_uses_speech_spans_instead_of_reordered_token_times(self):
         import subprocess
         import wave
-        from live_subtitles import SPANISH_MODEL, BINARY
+        from live_subtitles import MULTILINGUAL_MODEL, BINARY
         commands = []
         with tempfile.TemporaryDirectory() as folder:
             wav = Path(folder) / 'speech.wav'
@@ -76,34 +77,44 @@ class SpanishCaptionTests(unittest.TestCase):
                     'text': 'Hello world.', 'offsets': {'from': 0, 'to': 0},
                     'tokens': [{'text': 'Wrong token timing', 'offsets': {'from': 0, 'to': 1}}]}]}))
                 return subprocess.CompletedProcess(command, 0, b'', b'')
-            data = recognize(wav, Path(folder) / 'translated', run=run, language='es')
-            self.assertEqual(cues_from_whisper(data, 32),
-                             [(34, 36, 'Hello world.'), (39, 41, 'Hello world.')])
-            for command in commands[1:]:
-                self.assertIn('--translate', command)
-                self.assertEqual(command[command.index('-l') + 1], 'es')
-                self.assertEqual(command[command.index('-m') + 1], str(SPANISH_MODEL))
+            for language in ('es', 'fr', 'de'):
+                with self.subTest(language=language):
+                    commands.clear()
+                    data = recognize(wav, Path(folder) / 'translated', run=run, language=language)
+                    self.assertEqual(cues_from_whisper(data, 32),
+                                     [(34, 36, 'Hello world.'), (39, 41, 'Hello world.')])
+                    for command in commands[1:]:
+                        self.assertIn('--translate', command)
+                        self.assertEqual(command[command.index('-l') + 1], language)
+                        self.assertEqual(command[command.index('-m') + 1], str(MULTILINGUAL_MODEL))
             self.assertFalse(list(Path(folder).glob('*-speech-*')))
 
     def test_language_switch_replaces_captions_without_restarting_player(self):
         engine = menu_backend.Engine()
-        old = Mock(language='en')
-        engine.captions = old
         engine.session = Mock(subtitle_source='whisper', caption_error='')
         engine.links = ['https://example.test/video', '', '', '']
         engine.file_loaded = True
-        engine.settings.update(live_subtitles=True, caption_language='es', caption_delay=1.5)
-        with patch.object(menu_backend, 'LiveSubtitles') as factory, patch.object(menu_backend, 'send'), patch.object(engine, 'prefetch_next'):
-            engine.settings_changed()
-            old.close.assert_called_once()
-            engine.session.clear_captions.assert_called_once()
-            self.assertEqual(factory.call_args.kwargs['options'].language, 'es')
-            self.assertEqual(factory.call_args.kwargs['options'].delay, 1.5)
+        engine.settings.update(live_subtitles=True, caption_language='en', caption_delay=1.5)
+        send = Mock()
+        with patch.object(menu_backend, 'LiveSubtitles') as factory, patch.object(menu_backend, 'send'), patch.object(engine, 'prefetch_next'), patch('menu_requests.app.save_json') as save:
+            for language in ('es', 'fr', 'de'):
+                with self.subTest(language=language):
+                    old = Mock(language=engine.settings['caption_language'])
+                    engine.captions = old
+                    engine.session.clear_captions.reset_mock()
+                    request = {'action': 'settings', 'settings': {'caption_language': language}}
+                    MenuRequest(request, engine, send).handle_settings()
+                    self.assertEqual(save.call_args.args[1]['caption_language'], language)
+                    self.assertEqual(send.call_args.args[0]['data']['caption_language'], language)
+                    old.close.assert_called_once()
+                    engine.session.clear_captions.assert_called_once()
+                    self.assertEqual(factory.call_args.kwargs['options'].language, language)
+                    self.assertEqual(factory.call_args.kwargs['options'].delay, 1.5)
             engine.session.load.assert_not_called()
             engine.session.close.assert_not_called()
 
-    def test_missing_spanish_model_reports_the_required_file(self):
-        with patch('live_subtitles.SPANISH_MODEL', Path('/missing/ggml-base.bin')):
+    def test_missing_multilingual_model_reports_the_required_file(self):
+        with patch('live_subtitles.MULTILINGUAL_MODEL', Path('/missing/ggml-base.bin')):
             with self.assertRaisesRegex(RuntimeError, 'ggml-base.bin'):
                 LiveSubtitles(['video', '', '', ''], '/tmp', lambda _: None, lambda _: None, options=CaptionOptions(language='es'))
 

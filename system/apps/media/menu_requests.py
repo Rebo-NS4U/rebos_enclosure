@@ -11,6 +11,7 @@ import media_sources
 import torbox_source
 from PIL import Image
 from gi.repository import GLib
+from live_subtitles import CAPTION_LANGUAGES
 
 def clean(text):
     return re.sub(r'\s+', ' ', app.html.unescape(re.sub(r'<[^>]+>', ' ', text))).strip()
@@ -316,7 +317,7 @@ class MenuRequest:
         for key in ['auto_next', 'youtube_auto_next', 'fullscreen', 'live_subtitles', 'audio_normalization']:
             if key in new:
                 settings[key] = bool(new[key])
-        for key, values in [('quality', ['best', '1080p', '720p', '480p', 'worst']), ('mode', ['sub', 'dub']), ('caption_language', ['en', 'es', 'auto']), ('subtitle_font', app.SUBTITLE_FONTS)]:
+        for key, values in [('quality', ['best', '1080p', '720p', '480p', 'worst']), ('mode', ['sub', 'dub']), ('caption_language', CAPTION_LANGUAGES), ('subtitle_font', app.SUBTITLE_FONTS)]:
             if new.get(key) in values:
                 settings[key] = new[key]
         if 'volume' in new:

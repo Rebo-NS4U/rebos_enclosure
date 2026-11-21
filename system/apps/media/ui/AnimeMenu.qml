@@ -1362,7 +1362,7 @@ PanelWindow {
                     readonly property var tracks: root.subtitleTracks.options ?? []
                     readonly property string sourceLabel: tracks.find(track => track.id === root.subtitleTracks.selected)?.label ?? "Off"
                     readonly property bool whisper: root.subtitleTracks.selected === "whisper"
-                    readonly property string modeLabel: ({en: "English", es: "Spanish", auto: "Auto"})[root.settings.caption_language] ?? "Auto"
+                    readonly property string modeLabel: ({en: "English", es: "Spanish", fr: "French", de: "German", auto: "Auto"})[root.settings.caption_language] ?? "Auto"
                     text: "Subtitles · " + (whisper ? "Whisper · " + modeLabel : sourceLabel)
                           + (root.subtitleTracks.failed ? " · unavailable" : root.subtitleTracks.generating ? " · preparing" : "")
                     Layout.maximumWidth: card.width * 0.45
