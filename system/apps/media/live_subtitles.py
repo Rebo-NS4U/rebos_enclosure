@@ -209,7 +209,7 @@ def blend_center(mixed, center, spans, rate):
         first = max(0, round(start * rate))
         last = min(len(mixed), round(end * rate))
         for index in range(first, last):
-            weight = 0.5 * min(1, (index - first) / fade, (last - 1 - index) / fade)
+            weight = 0.8 * min(1, (index - first) / fade, (last - 1 - index) / fade)
             output[index] = round(mixed[index] + weight * (center[index] - mixed[index]))
     return output
 

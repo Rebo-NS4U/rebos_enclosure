@@ -38,7 +38,7 @@ class CaptionMixTests(unittest.TestCase):
             detector = Mock(return_value=Mock(returncode=0, stdout=b'Speech segment 0: start = 25, end = 75'))
             samples = struct.unpack(f'<{rate}h', caption_mix(stereo, params, probe, detector))
             self.assertEqual(samples[rate // 8], 100)
-            self.assertEqual(samples[rate // 2], 500)
+            self.assertEqual(samples[rate // 2], 740)
             self.assertEqual(samples[7 * rate // 8], 100)
 
             detector.side_effect = RuntimeError('Center probe failed')
