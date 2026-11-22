@@ -34,6 +34,7 @@ ShellRoot {
         function dismiss(): void { GlobalStates.hideAssistant(); }
         function reveal(): void {
             if (!GlobalStates.assistantVisible) GlobalStates.toggleAssistant();
+            else GlobalStates.assistantFocusRequested(true);
         }
         function readerMeaningStart(payload: string): string {
             try { return ReaderMeaning.start(JSON.parse(payload)); }

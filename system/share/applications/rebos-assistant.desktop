@@ -2,7 +2,7 @@
 Type=Application
 Name=Assistant
 Comment=Chat with your assistant
-Exec=@HOME@/.local/bin/rebos-assistant
+Exec=@HOME@/.local/bin/rebos-assistant show
 Icon=dialog-information
 Terminal=false
 Categories=Utility;
