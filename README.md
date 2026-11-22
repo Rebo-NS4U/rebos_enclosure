@@ -15,8 +15,8 @@ Source is grouped into **`config/`** (shipped defaults) and **`system/`** (manag
 
 [2.0 preparation and remaining acceptance gates](docs/RELEASE-2.0-CHECKLIST.md) · [2.0 release notes](docs/RELEASE-v2.0.0.md)
 
-[v2.0.0 release notes](docs/RELEASE-v2.0.0.md): material themes, Music, reader
-narration, persistent Dweebo sessions, media improvements and one-click updates.
+[v2.1.0 release notes](docs/RELEASE-v2.1.0.md) cover Streamer downloads, fullscreen Music,
+the PipeWire equalizer, desktop themes and Dweebo updates.
 
 ## Screenshots
 
