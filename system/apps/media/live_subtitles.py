@@ -31,6 +31,14 @@ LINE_WIDTH = 42
 MAX_CUE_SECONDS = 6
 SPEECH_BREAK = 1.0
 
+# Carry the standard downmix and isolated center in a two-channel PCM file.
+CAPTION_AUDIO_FILTER = (
+    'asplit[default][center];'
+    '[default]aresample=16000:out_chlayout=mono:out_sample_fmt=s16[mix];'
+    '[center]pan=mono|c0=FC,aresample=16000:out_sample_fmt=s16[dialogue];'
+    '[mix][dialogue]join=inputs=2:channel_layout=stereo:map=0.0-FL|1.0-FR'
+)
+
 
 def boost_quiet_pcm(pcm):
     """Boost quiet 16-bit mono PCM before speech detection. Empty output means silence."""
@@ -192,6 +200,40 @@ def speech_spans(output, language, *, group_translation=False):
         else:
             phrases.append((start, end))
     return phrases
+
+
+def blend_center(mixed, center, spans, rate):
+    output = list(mixed)
+    fade = rate // 50
+    for start, end in spans:
+        first = max(0, round(start * rate))
+        last = min(len(mixed), round(end * rate))
+        for index in range(first, last):
+            weight = 0.5 * min(1, (index - first) / fade, (last - 1 - index) / fade)
+            output[index] = round(mixed[index] + weight * (center[index] - mixed[index]))
+    return output
+
+
+def caption_mix(pcm, params, scratch, run):
+    if params.nchannels == 1:
+        return pcm
+    frame_count = len(pcm) // 4
+    samples = struct.unpack(f'<{frame_count * 2}h', pcm)
+    mixed, center = samples[::2], samples[1::2]
+    if mixed != center and any(center):
+        with wave.open(str(scratch), 'wb') as output:
+            output.setparams(params._replace(nchannels=1))
+            output.writeframes(boost_quiet_pcm(struct.pack(f'<{frame_count}h', *center)))
+        try:
+            result = run([str(VAD_BINARY), '-np', '-vm', str(VAD_MODEL), '-f', str(scratch),
+                          '-vt', '0.65', '-vspd', '180', '-vp', '160'],
+                         timeout=20, capture_output=True)
+        except (RuntimeError, subprocess.SubprocessError):
+            # The regular mix remains usable if the optional probe fails.
+            return struct.pack(f'<{frame_count}h', *mixed)
+        if not result.returncode:
+            mixed = blend_center(mixed, center, speech_spans(result.stdout, 'auto'), params.framerate)
+    return struct.pack(f'<{frame_count}h', *mixed)
 
 
 def caption_model(language):
@@ -427,24 +469,23 @@ class LiveSubtitles:  # pylint: disable=too-many-instance-attributes
                 args += ['-allowed_extensions', 'ALL', '-allowed_segment_extensions', 'ALL', '-extension_picky', '0']
             if self.referer:
                 args += ['-referer', self.referer]
-        # Favor center-channel dialogue in surround sources for recognition.
         args += ['-ss', str(start), '-i', self.source, '-t', str(CHUNK),
-                 '-map', self.audio_map, '-vn', '-af',
-                 'aresample=out_chlayout=mono:center_mix_level=2:surround_mix_level=0.35',
-                 '-ar', '16000', '-c:a', 'pcm_s16le', str(wav)]
+                 '-map', self.audio_map, '-vn', '-af', CAPTION_AUDIO_FILTER,
+                 '-c:a', 'pcm_s16le', str(wav)]
+        center_probe = wav.with_name(f'center-{block}.wav')
         try:
             self.run(args, 40)
             with wave.open(str(wav), 'rb') as audio:
                 params = audio.getparams()
                 pcm = audio.readframes(audio.getnframes())
-            if len(pcm) < 3200:
+            if len(pcm) < 3200 * params.nchannels:
                 return []
-            boosted = boost_quiet_pcm(pcm)
+            boosted = boost_quiet_pcm(caption_mix(pcm, params, center_probe, self.run))
             if not boosted:
                 return []
             if boosted is not pcm:
                 with wave.open(str(wav), 'wb') as audio:
-                    audio.setparams(params)
+                    audio.setparams(params._replace(nchannels=1))
                     audio.writeframes(boosted)
             def progress(data):
                 with self.condition:
@@ -454,6 +495,7 @@ class LiveSubtitles:  # pylint: disable=too-many-instance-attributes
             return cues_from_whisper(data, start)
         finally:
             wav.unlink(missing_ok=True)
+            center_probe.unlink(missing_ok=True)
             output.with_suffix('.json').unlink(missing_ok=True)
 
     def work(self):

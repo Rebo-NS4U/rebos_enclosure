@@ -22,6 +22,29 @@ class SpeechSpanTests(unittest.TestCase):
         self.assertEqual(speech_spans(b'No speech', 'en'), [])
 
 
+class CaptionMixTests(unittest.TestCase):
+    def test_center_audio_is_added_only_during_detected_speech(self):
+        import struct
+        import wave
+        from live_subtitles import caption_mix
+
+        rate = 16000
+        stereo = struct.pack('<hh', 100, 900) * rate
+        with tempfile.TemporaryDirectory() as folder:
+            probe = Path(folder) / 'center.wav'
+            with wave.open(str(probe), 'wb') as output:
+                output.setparams((2, 2, rate, 0, 'NONE', 'not compressed'))
+                params = output.getparams()
+            detector = Mock(return_value=Mock(returncode=0, stdout=b'Speech segment 0: start = 25, end = 75'))
+            samples = struct.unpack(f'<{rate}h', caption_mix(stereo, params, probe, detector))
+            self.assertEqual(samples[rate // 8], 100)
+            self.assertEqual(samples[rate // 2], 500)
+            self.assertEqual(samples[7 * rate // 8], 100)
+
+            detector.side_effect = RuntimeError('Center probe failed')
+            self.assertEqual(caption_mix(stereo, params, probe, detector), struct.pack('<h', 100) * rate)
+
+
 class TranslatedCaptionTests(unittest.TestCase):
     def test_auto_detection_changes_language_between_speech_spans(self):
         import subprocess
