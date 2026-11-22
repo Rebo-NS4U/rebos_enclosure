@@ -31,6 +31,21 @@ MAX_CUE_SECONDS = 6
 SPEECH_BREAK = 1.0
 
 
+def boost_quiet_pcm(pcm):
+    """Boost quiet 16-bit mono PCM before speech detection. Empty output means silence."""
+    sample_count = len(pcm) // 2
+    samples = struct.unpack(f'<{sample_count}h', pcm)
+    peak = max(map(abs, samples), default=0)
+    if peak == 0:
+        return b''
+    rms = math.sqrt(sum(value * value for value in samples) / sample_count)
+    # Aim for about -30 dBFS RMS, with at most 24 dB of gain and no clipping.
+    gain = min(1000 / rms, 16, 32767 / peak)
+    if gain <= 1:
+        return pcm
+    return struct.pack(f'<{sample_count}h', *(round(value * gain) for value in samples))
+
+
 def srt_time(seconds):
     millis = max(0, round(seconds * 1000))
     hours, millis = divmod(millis, 3600000)
@@ -405,13 +420,17 @@ class LiveSubtitles:  # pylint: disable=too-many-instance-attributes
         try:
             self.run(args, 40)
             with wave.open(str(wav), 'rb') as audio:
+                params = audio.getparams()
                 pcm = audio.readframes(audio.getnframes())
             if len(pcm) < 3200:
                 return []
-            samples = struct.unpack('<' + 'h' * (len(pcm) // 2), pcm)
-            rms = math.sqrt(sum(value * value for value in samples) / len(samples))
-            if rms < 45:
+            boosted = boost_quiet_pcm(pcm)
+            if not boosted:
                 return []
+            if boosted is not pcm:
+                with wave.open(str(wav), 'wb') as audio:
+                    audio.setparams(params)
+                    audio.writeframes(boosted)
             def progress(data):
                 with self.condition:
                     self.partial[block] = cues_from_whisper(data, start)
