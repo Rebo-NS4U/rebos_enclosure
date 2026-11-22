@@ -232,8 +232,14 @@ def recognize(wav, output, run=subprocess.run, language='en', on_progress=None):
     model = caption_model(language)
     # Keep speech spans on the original timeline. Whisper's built-in VAD
     # reports token times on compressed audio, which loses silent gaps.
-    result = run([str(VAD_BINARY), '-np', '-vm', str(VAD_MODEL), '-f', str(wav),
-                  '-vsd', '400', '-vp', '120', '-vmsd', '8'], timeout=20, capture_output=True)
+    vad_command = [str(VAD_BINARY), '-np', '-vm', str(VAD_MODEL), '-f', str(wav),
+                   '-vsd', '400', '-vmsd', '8']
+    if model == SMALL_ENGLISH_MODEL:
+        # Keep brief replies and give the decoder more context around speech edges.
+        vad_command += ['-vspd', '150', '-vp', '240']
+    else:
+        vad_command += ['-vp', '120']
+    result = run(vad_command, timeout=20, capture_output=True)
     if result.returncode:
         raise RuntimeError('Local speech detection failed')
     spans = speech_spans(result.stdout, language, group_translation=model == FRENCH_GERMAN_MODEL)
