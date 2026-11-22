@@ -2950,6 +2950,47 @@ Item {
                 }
             }
             MenuItem {
+                id: choice_omniroute
+                property string agentId: "omniroute"
+                readonly property bool selected: Ai.activeSession.currentAgentId === agentId
+                text: "OmniRoute"
+                implicitHeight: 66
+                padding: 12
+                Accessible.name: text + (selected ? ", selected" : "")
+                background: StyledRect {
+                    variant: choice_omniroute.selected ? "focus" : choice_omniroute.highlighted ? "common" : "transparent"
+                    radius: Math.max(0, Config.roundness)
+                    border.width: choice_omniroute.selected ? 1 : 0
+                    border.color: Qt.alpha(Colors.primary, 0.3)
+                }
+                contentItem: ColumnLayout {
+                    spacing: 4
+                    RowLayout {
+                        StyledText {
+                            Layout.fillWidth: true
+                            text: choice_omniroute.text
+                            color: Colors.overSurface
+                            font.pixelSize: Styling.fontSize(-1)
+                            font.weight: Font.DemiBold
+                        }
+                        StyledText {
+                            visible: choice_omniroute.selected
+                            text: "✓"
+                            color: Colors.primary
+                            font.pixelSize: Styling.fontSize(0)
+                        }
+                    }
+                    StyledText {
+                        Layout.fillWidth: true
+                        text: "Codex through your OmniRoute gateway"
+                        color: Colors.outline
+                        font.pixelSize: Styling.fontSize(-3)
+                        elide: Text.ElideRight
+                    }
+                }
+                onTriggered: Ai.newSession(agentId)
+            }
+            MenuItem {
                 id: choice_distill
                 property string agentId: "distill"
                 property string subtitle: "ChatGPT with efficient modes"

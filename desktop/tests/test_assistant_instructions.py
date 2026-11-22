@@ -36,7 +36,7 @@ ShellRoot {
     Timer {
         interval: 100; running: true
         onTriggered: {
-            check(JSON.stringify(session.builtInAgents.map(agent => agent.id).sort()) === JSON.stringify(["codex", "distill", "google"]), "only Codex, Distill and Gemini are offered");
+            check(JSON.stringify(session.builtInAgents.map(agent => agent.id).sort()) === JSON.stringify(["codex", "distill", "google", "omniroute"]), "registered backend list");
             let stock = session.builtInAgents.find(item => item.id === "codex");
             let oldCommand = ["sh", "-lc", "CODEX_PATH=\"$(command -v codex)\" exec npx -y @agentclientprotocol/codex-acp"];
             check(JSON.stringify(session.normalizeAgent({command: oldCommand}, stock).command) === JSON.stringify(stock.command), "older stock launch commands adopt the current network settings");
@@ -145,6 +145,10 @@ ShellRoot {
             let configuration = session.syntheticEnvelope.params;
             check(configuration.systemPrompt.mode === "append", "free backend receives standing instructions separately");
             check(compact([{text: configuration.systemPrompt.content.map(item => item.text).join("\n")}]), "free system prompt routes task-specific procedures");
+            session.currentAgentId = "omniroute";
+            let omni = session.findAgent("omniroute");
+            check(omni && omni.command[2].includes("omniroute_agent.py"), "OmniRoute backend is registered");
+            check(session.chooseAuthMethod({authMethods: [{id: "chat-gpt"}]}) === "", "OmniRoute uses gateway credentials");
             session.currentAgentId = "google";
             let google = session.findAgent("google");
             check(google && google.command[2].includes("google_agent.py"), "Google backend is registered");

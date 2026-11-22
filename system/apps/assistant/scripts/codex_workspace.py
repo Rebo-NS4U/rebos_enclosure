@@ -53,13 +53,16 @@ def main():
     config = json.loads(os.environ.get('CODEX_CONFIG', '{}'))
     # The adapter configures thread/start, but the native server also checks its
     # startup provider on turn/start. Supply the same provider to both layers.
-    if arguments and arguments[0] == 'app-server' and config.get('model_provider') == 'dweebo_openrouter':
-        overrides = {'model_provider': 'dweebo_openrouter'}
+    provider = config.get('model_provider') if isinstance(config, dict) else None
+    if arguments and arguments[0] == 'app-server' and provider in ('dweebo_openrouter', 'dweebo_omniroute'):
+        overrides = {'model_provider': provider}
+        if provider == 'dweebo_omniroute':
+            overrides['model'] = config['model']
         if config.get('model_catalog_json'):
             overrides['model_catalog_json'] = config['model_catalog_json']
-        for name, value in config.get('model_providers', {}).get('dweebo_openrouter', {}).items():
+        for name, value in config.get('model_providers', {}).get(provider, {}).items():
             if isinstance(value, (str, bool, int, float)):
-                overrides['model_providers.dweebo_openrouter.' + name] = value
+                overrides[f'model_providers.{provider}.{name}'] = value
         arguments = [*arguments, *[part for name, value in overrides.items()
                      for part in ('-c', name + '=' + json.dumps(value))]]
     if not enabled or not arguments or arguments[0] != 'app-server':

@@ -241,6 +241,14 @@ Scope {
             provider: "acp", api_format: "ACP", model: "google"
         },
         {
+            id: "omniroute", name: "OmniRoute",
+            description: "Codex through your OmniRoute gateway",
+            command: ["sh", "-lc", "exec python3 \"$HOME/code/rebos-assistant/scripts/omniroute_agent.py\""],
+            authMethod: "",
+            installHint: "Set your OmniRoute model, API URL and optional key in ~/.config/dweebo/omniroute.json.",
+            provider: "acp", api_format: "ACP", model: "omniroute"
+        },
+        {
             id: "distill", name: "Distill",
             description: "Distill with Auto, UltraSave, UltraFast and UltraCode",
             icon: Qt.resolvedUrl("../../assets/aiproviders/openai.svg"),
@@ -794,7 +802,10 @@ Scope {
             activePromptRequestId = -1;
             pendingSessionModelId = "";
             statusText = "Assistant stopped";
-            pushSystemMessage("Assistant process exited (" + event.code + "). Reconnect the assistant to start it again.");
+            let setupError = currentAgentId === "omniroute"
+                ? agentStderrTail.match(/Dweebo OmniRoute: [^\n]+/) : null;
+            pushSystemMessage(setupError ? setupError[0]
+                : "Assistant process exited (" + event.code + "). Reconnect the assistant to start it again.");
         } else if (event.bridge === "error") {
             lastError = event.error || "Assistant background service is unavailable";
             statusText = lastError;
@@ -963,7 +974,7 @@ Scope {
     }
 
     function chooseAuthMethod(result) {
-        if (isDistill || currentAgentId === "free-code" || currentAgentId === "free-nemotron") return ""; // Provider handles its own credentials.
+        if (isDistill || currentAgentId === "omniroute" || currentAgentId === "free-code" || currentAgentId === "free-nemotron") return ""; // Provider handles its own credentials.
         let methods = result && Array.isArray(result.authMethods) ? result.authMethods : [];
         if (methods.length === 0)
             return "";
