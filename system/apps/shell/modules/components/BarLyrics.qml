@@ -292,6 +292,7 @@ Item {
             anchors.fill: parent
             anchors.leftMargin: lineSurface.upcoming ? 16 : 44
             anchors.rightMargin: lineSurface.upcoming ? 44 : 16
+            readonly property color barColor: Qt.hsla(0, 0, BarAppearance.foregroundColor.hslLightness, 1)
             // Retain a quiet spectrum behind readable foreground lyrics.
             opacity: 0.24 + lineSurface.visualizerMix * 0.76
             visible: opacity > 0
@@ -316,9 +317,9 @@ Item {
                     y: (visualizer.height - height) / 2
                     radius: Math.min(width / 2, 3)
                     gradient: Gradient {
-                        GradientStop { position: 0; color: Qt.alpha(BarAppearance.foregroundColor, 0.82) }
-                        GradientStop { position: 0.35; color: BarAppearance.activeColor }
-                        GradientStop { position: 1; color: Qt.alpha(BarAppearance.activeColor, 0.42) }
+                        GradientStop { position: 0; color: Qt.alpha(visualizer.barColor, 0.82) }
+                        GradientStop { position: 0.35; color: visualizer.barColor }
+                        GradientStop { position: 1; color: Qt.alpha(visualizer.barColor, 0.42) }
                     }
                     readonly property real textDistance: Math.abs(x + width / 2 - visualizer.textCenter)
                     readonly property real quietMix: lineSurface.displayedText.trim() === "" ? 0

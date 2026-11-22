@@ -555,6 +555,7 @@ ShellRoot {
         self.run_harness('''import QtQuick
 import Quickshell
 import qs.modules.components
+import qs.modules.bar
 import qs.modules.services
 import qs.config
 ShellRoot {
@@ -585,6 +586,10 @@ ShellRoot {
       const panel = panels[index];
       const spectrum = panel.children.find(item => item.objectName === 'bar-lyrics-visualizer');
       const label = panel.children.find(item => item.objectName === 'bar-lyrics-text');
+      const bar = spectrum.children.find(item => item.gradient?.stops);
+      if (!bar || bar.gradient.stops.some(stop => stop.color.hslSaturation > 0.001
+          || Math.abs(stop.color.hslLightness - BarAppearance.foregroundColor.hslLightness) > 0.005))
+       throw Error('Spectrum bars must be grayscale and follow the bar foreground lightness');
       if (!panel.visible || !spectrum.visible || spectrum.opacity !== (text ? 0.24 : 1)
           || label.opacity !== (text ? 1 : 0) || (text && label.text !== text))
        throw Error('Incorrect lyric or spectrum at ' + position + ' on side ' + index);
