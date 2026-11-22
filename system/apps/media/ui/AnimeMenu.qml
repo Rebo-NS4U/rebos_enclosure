@@ -51,6 +51,7 @@ PanelWindow {
     onOpenedChanged: if (!opened) trashDownloadPrompt.close()
     property bool playbackPaused: false
     property bool seekAvailable: false
+    property bool introAvailable: false
     property string seekTargetText: ""
     property bool nextEpisodeAvailable: false
     property string nextEpisodeLabel: "Next episode"
@@ -68,6 +69,8 @@ PanelWindow {
     readonly property bool nextOverlayVisible: ready && nextEpisodeAvailable && playbackWindowFocused
         && !opened && !GlobalStates.lockscreenVisible && !NiriService.overviewOpen
     readonly property bool seekOverlayVisible: ready && seekAvailable && playbackWindowFocused
+        && !opened && !GlobalStates.lockscreenVisible && !NiriService.overviewOpen
+    readonly property bool introOverlayVisible: ready && introAvailable && playbackWindowFocused
         && !opened && !GlobalStates.lockscreenVisible && !NiriService.overviewOpen
     onPlayerWindowPresentChanged: { if (playerWindowPresent) backendStarted = true; }
     Component.onCompleted: { if (playerWindowPresent) backendStarted = true; }
@@ -469,6 +472,8 @@ PanelWindow {
                 nextEpisodeResumesPlayback = data.resumes ?? false;
             } else if (data.event === "paused") {
                 playbackPaused = data.value;
+            } else if (data.event === "skip-intro") {
+                introAvailable = data.available;
             } else if (data.event === "seek-preview") {
                 seekAvailable = data.available;
                 seekTargetText = data.target == null ? "" : "Seeking to " + seekTime(data.target);
@@ -578,6 +583,7 @@ PanelWindow {
             root.nextEpisodeAvailable = false;
             root.nextEpisodeResumesPlayback = false;
             root.seekAvailable = false;
+            root.introAvailable = false;
             root.seekTargetText = "";
             root.backendStarted = false;
             root.loading = false;
@@ -593,6 +599,7 @@ PanelWindow {
     PlaybackNextOverlay {
         id: nextOverlay
         offered: root.nextOverlayVisible
+        introAvailable: root.introOverlayVisible
         seekAvailable: root.seekOverlayVisible
         seekTargetText: root.seekTargetText
         buttonLabel: root.nextEpisodeLabel
@@ -602,6 +609,7 @@ PanelWindow {
         playerSize: root.playbackClient?.size ?? [0, 0]
         fullscreen: NiriService.fullscreenOutputs.includes(outputName)
         onActivated: root.send({action: "next_episode"})
+        onSkipIntro: root.send({action: "skip_intro"})
         onSkip: direction => root.send({action: "skip", direction: direction})
     }
     ListModel { id: shows }
@@ -1665,9 +1673,10 @@ PanelWindow {
                 MenuButton { text: "Stop"; onClicked: root.send({action: "stop"}) }
             }
             RowLayout {
-                visible: root.ready && root.seekAvailable
-                MenuButton { text: "−10 s"; Accessible.name: "Skip back 10 seconds"; onClicked: root.send({action: "skip", direction: "back"}) }
-                MenuButton { text: "+10 s"; Accessible.name: "Skip forward 10 seconds"; onClicked: root.send({action: "skip", direction: "forward"}) }
+                visible: root.ready && (root.seekAvailable || root.introAvailable)
+                MenuButton { text: "Skip Intro"; visible: root.introAvailable; onClicked: root.send({action: "skip_intro"}) }
+                MenuButton { text: "−10 s"; Accessible.name: "Skip back 10 seconds"; visible: root.seekAvailable; onClicked: root.send({action: "skip", direction: "back"}) }
+                MenuButton { text: "+10 s"; Accessible.name: "Skip forward 10 seconds"; visible: root.seekAvailable; onClicked: root.send({action: "skip", direction: "forward"}) }
                 StyledText { text: root.seekTargetText; font.bold: true }
             }
         }

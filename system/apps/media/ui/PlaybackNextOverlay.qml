@@ -20,6 +20,8 @@ PanelWindow {
     property bool fullscreen: true
     property bool seekAvailable: false
     property string seekTargetText: ""
+    property bool introAvailable: false
+    signal skipIntro()
     signal activated()
     signal skip(string direction)
 
@@ -34,7 +36,7 @@ PanelWindow {
     WlrLayershell.keyboardFocus: offered ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     mask: Region {
         item: overlay.offered ? nextCard : null
-        regions: [Region { item: overlay.seekAvailable ? seekButtons : null }]
+        regions: [Region { item: (overlay.seekAvailable || overlay.introAvailable) ? seekButtons : null }]
     }
 
     readonly property real cardX: nextCard.x
@@ -43,7 +45,7 @@ PanelWindow {
     readonly property real cardHeight: nextCard.height
 
     ColumnLayout {
-        visible: overlay.seekAvailable
+        visible: overlay.seekAvailable || overlay.introAvailable
         anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 90 }
         spacing: 6
 
@@ -67,12 +69,12 @@ PanelWindow {
             id: seekButtons
             Layout.alignment: Qt.AlignHCenter
             Repeater {
-                model: ["back", "forward"]
+                model: (overlay.introAvailable ? ["intro"] : []).concat(overlay.seekAvailable ? ["back", "forward"] : [])
                 delegate: Button {
                     id: skipButton
                     required property string modelData
-                    text: modelData === "back" ? "−10 s" : "+10 s"
-                    Accessible.name: modelData === "back" ? "Skip back 10 seconds" : "Skip forward 10 seconds"
+                    text: modelData === "intro" ? "Skip Intro" : modelData === "back" ? "−10 s" : "+10 s"
+                    Accessible.name: modelData === "intro" ? text : modelData === "back" ? "Skip back 10 seconds" : "Skip forward 10 seconds"
                     hoverEnabled: true
                     padding: 8
                     contentItem: StyledText {
@@ -84,7 +86,10 @@ PanelWindow {
                         variant: skipButton.hovered ? "focus" : "bg"
                         radius: Styling.radius(8)
                     }
-                    onClicked: overlay.skip(modelData)
+                    onClicked: {
+                        if (modelData === "intro") overlay.skipIntro();
+                        else overlay.skip(modelData);
+                    }
                 }
             }
         }

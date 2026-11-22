@@ -23,10 +23,16 @@ class ControlLifetimeTests(unittest.TestCase):
             helper.parent.mkdir(parents=True)
             source = Path(__file__).resolve().parents[3] / 'system/apps/media/vlc_control.lua'
             shutil.copyfile(source, helper)
-            video = home / 'clip.mp4'
+            chapters = home / 'chapters.ffmeta'
+            chapters.write_text(
+                ';FFMETADATA1\n'
+                '[CHAPTER]\nTIMEBASE=1/1\nSTART=0\nEND=30\ntitle=Opening\n'
+                '[CHAPTER]\nTIMEBASE=1/1\nSTART=30\nEND=60\ntitle=Episode\n'
+                '[CHAPTER]\nTIMEBASE=1/1\nSTART=60\nEND=120\ntitle=Credits\n')
+            video = home / 'clip.mkv'
             subprocess.run(['ffmpeg', '-v', 'error', '-f', 'lavfi', '-i',
-                            'testsrc2=s=64x64:d=120:r=10', '-c:v', 'libx264',
-                            '-movflags', '+faststart', str(video)],
+                            'testsrc2=s=64x64:d=120:r=10', '-i', str(chapters),
+                            '-map_chapters', '1', '-c:v', 'libx264', str(video)],
                            check=True, capture_output=True, timeout=20)
             with socket.socket() as listener:
                 listener.bind(('127.0.0.1', 0))
@@ -84,6 +90,21 @@ class ControlLifetimeTests(unittest.TestCase):
                     api(command='pause', value='true')
                     self.assertEqual(api()['state'], 'paused')
                     api(command='seek', value='3')
+                    opening = api()
+                    self.assertEqual(opening['chapter_name'].strip(), 'Opening')
+                    self.assertIsNotNone(opening['next_chapter'])
+                    api(command='skip-intro', value=opening['chapter'])
+                    deadline = time.monotonic() + 2
+                    while True:
+                        state = api()
+                        at_destination = state['chapter_name'].strip() == 'Episode' and abs(state['time'] - 30) < 1
+                        if at_destination or time.monotonic() >= deadline:
+                            break
+                        time.sleep(.05)
+                    self.assertEqual(state['chapter_name'].strip(), 'Episode')
+                    self.assertAlmostEqual(state['time'], 30, delta=1)
+                    api(command='skip-intro', value=opening['chapter'])
+                    self.assertEqual(api()['chapter_name'].strip(), 'Episode')
                     api(command='pause', value='false')
                     self.assertIsNone(player.poll())
                     self.assertIn('Received first picture', logpath.read_text(errors='replace'))

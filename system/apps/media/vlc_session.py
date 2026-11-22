@@ -289,7 +289,7 @@ class VlcSession:  # pylint: disable=too-many-instance-attributes,too-many-publi
         if handler is not None:
             getattr(self, handler)(command)
 
-    COMMAND_HANDLERS = {'load': '_command_load', 'subtitle-ready': '_command_subtitle_ready', 'subtitle-source': '_command_subtitle_source', 'seek': '_command_seek', 'captions-file': '_command_captions_file', 'captions-show': '_command_captions_show', 'captions-clear': '_command_captions_clear', 'observe_property': '_command_observe_property', 'quit': '_command_quit', 'stop': '_command_quit', 'set_property': '_command_property'}
+    COMMAND_HANDLERS = {'load': '_command_load', 'subtitle-ready': '_command_subtitle_ready', 'subtitle-source': '_command_subtitle_source', 'seek': '_command_seek', 'skip-intro': '_command_skip_intro', 'captions-file': '_command_captions_file', 'captions-show': '_command_captions_show', 'captions-clear': '_command_captions_clear', 'observe_property': '_command_observe_property', 'quit': '_command_quit', 'stop': '_command_quit', 'set_property': '_command_property'}
 
     def input_options(self, links):
         video, referer, _subtitle, audio = links
@@ -363,6 +363,12 @@ class VlcSession:  # pylint: disable=too-many-instance-attributes,too-many-publi
         except RuntimeError:
             self.emit({'event': 'command-error', 'error': 'VLC could not seek in this stream.'})
 
+
+    def _command_skip_intro(self, command):
+        try:
+            self.api('skip-intro', value=command[1])
+        except RuntimeError:
+            self.emit({'event': 'command-error', 'error': 'VLC could not skip this intro.'})
 
     def _command_captions_file(self, command):
         self.whisper_cues = read_cues(command[1])
@@ -497,7 +503,7 @@ class VlcSession:  # pylint: disable=too-many-instance-attributes,too-many-publi
                   'whisper-captions': whisper_active and self.subtitle_source == 'whisper',
                   'subtitle-tracks': self.subtitle_tracks(),
                   'chapter-info': {'index': state.get('chapter', -1), 'count': state.get('chapter_count', 0),
-                                   'name': state.get('chapter_name', '')}}
+                                   'name': state.get('chapter_name', ''), 'next': state.get('next_chapter')}}
         for name, value in values.items():
             if self.last.get(name) != value:
                 self.last[name] = value

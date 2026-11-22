@@ -23,6 +23,8 @@ Playback defaults to available English video or provider subtitles. When no suit
 
 A single left click on the VLC video toggles pause/play when `vlc-pause-click-plugin` is installed. Double-click still toggles fullscreen. Enclosure’s optional media group installs this plugin; standalone installations need to install it separately. Streamer enables the plugin automatically when VLC reports it available.
 
+**Skip Intro** appears in the playback overlay and Streamer controls during a chapter labeled Intro or Opening. It jumps to the next chapter. Streams without a labeled intro chapter and a following chapter do not show the button.
+
 ### Downloads
 
 Open a title, select an episode or video, and click **Download**. Streamer saves one item at a time as an MKV in **Rebos Streamer** inside your system Downloads folder. It uses the playback quality and anime language settings. The menu shows the saved path when the download finishes. Playback can continue during the transfer.

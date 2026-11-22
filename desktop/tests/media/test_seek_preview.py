@@ -40,3 +40,32 @@ class SeekPreviewTests(unittest.TestCase):
         menu_backend.Engine.reset_seek_preview(self.engine)
         self.assertFalse(self.timer.call_args.args[1]())
         self.send.assert_called_with(dict(event='seek-preview', available=False, target=None))
+
+    def test_skip_intro_is_offered_only_during_labeled_chapters_with_a_destination(self):
+        self.engine.chapter = 1
+        self.engine.chapter_name = 'Opening Credits'
+        self.engine.next_chapter = 2
+        self.engine.history = {}
+        self.engine.captions = None
+        self.engine.save_progress = Mock()
+        self.engine.settings_changed = Mock()
+        context = ({'id': 'show'}, ['1'], 0, 1)
+        opening = {'index': 1, 'name': 'Opening Credits', 'next': 2}
+        event = {'name': 'chapter-info', 'data': opening}
+        self.engine._event_properties(event, 1, context)
+        self.send.assert_called_once_with(dict(event='skip-intro', available=True))
+        dispatch({'action': 'skip_intro'}, self.engine, self.send)
+        self.engine.session.command.assert_called_once_with(['skip-intro', 1])
+
+        for chapter in ({'index': 2, 'name': 'Episode', 'next': 3},
+                        {'index': 3, 'name': 'Intro', 'next': None}):
+            self.engine._event_properties(dict(event, data=chapter), 1, context)
+            dispatch({'action': 'skip_intro'}, self.engine, self.send)
+        self.send.assert_called_with(dict(event='skip-intro', available=False))
+        self.engine.session.command.assert_called_once()
+
+        self.engine._event_properties(event, 1, context)
+        self.engine.reset_seek_preview()
+        dispatch({'action': 'skip_intro'}, self.engine, self.send)
+        self.assertFalse(self.engine.intro_offered)
+        self.engine.session.command.assert_called_once()

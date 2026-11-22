@@ -23,8 +23,15 @@ SUBTITLE_CHOICES = app.STATE / 'subtitle-choices.json'
 ENDING_CHAPTER = re.compile(r'(?:end|ending|closing)(?: credits| titles)?|credits|outro|ed(?: \d+)?')
 
 
+INTRO_CHAPTER = re.compile(r'(?:intro(?:duction)?|opening)(?: (?:credits|titles|theme|sequence))?|op(?: \d+)?')
+
+
+def chapter_label(name):
+    return re.sub(r'[^a-z0-9]+', ' ', str(name).lower()).strip()
+
+
 def ending_chapter(name):
-    return bool(ENDING_CHAPTER.fullmatch(re.sub(r'[^a-z0-9]+', ' ', str(name).lower()).strip()))
+    return bool(ENDING_CHAPTER.fullmatch(chapter_label(name)))
 
 
 def next_offer_start(duration, chapters=()):
@@ -83,6 +90,8 @@ class Engine(app.Browser):  # pylint: disable=too-many-instance-attributes,too-m
         self.chapter = -1
         self.chapter_count = 0
         self.chapter_name = ''
+        self.next_chapter = None
+        self.intro_offered = False
         self.position = 0
         self.prefetch = SimpleNamespace(key=None, retry_at=0)
         self.paused = False
@@ -413,13 +422,32 @@ class Engine(app.Browser):  # pylint: disable=too-many-instance-attributes,too-m
 
         GLib.timeout_add(250, check_arrival)
 
+    def publish_intro(self, available):
+        if available != getattr(self, 'intro_offered', False):
+            self.intro_offered = available
+            send(dict(event='skip-intro', available=available))
+
+    def update_intro(self):
+        available = (self.file_loaded and self.session is not None and
+                     getattr(self, 'next_chapter', None) is not None and
+                     INTRO_CHAPTER.fullmatch(chapter_label(self.chapter_name)) is not None)
+        Engine.publish_intro(self, available)
+
+    def skip_intro(self):
+        Engine.update_intro(self)
+        if getattr(self, 'intro_offered', False):
+            self.session.command(['skip-intro', self.chapter])
+
     def reset_seek_preview(self):
         self.seek_request = None
+        self.next_chapter = None
+        Engine.publish_intro(self, False)
         Engine.publish_seek_preview(self, False)
 
     def _event_loaded(self, event, token, context):
         show, episodes, index, _ = context
         self.file_loaded = True
+        Engine.update_intro(self)
         previous = self.history.pop(show['id'], {}) or self.history.get(show.get('historyId', ''), {})
         if not previous and show['id'].startswith('anime-series:'):
             provider_id = episodes[index].partition(':')[0]
@@ -471,6 +499,8 @@ class Engine(app.Browser):  # pylint: disable=too-many-instance-attributes,too-m
             self.chapter = info.get('index', -1)
             self.chapter_count = info.get('count', 0)
             self.chapter_name = info.get('name') or ''
+            self.next_chapter = info.get('next')
+            Engine.update_intro(self)
         elif event.get('name') == 'time-pos':
             self.position = event.get('data') or 0
         self.save_progress(force=event.get('name') == 'pause')

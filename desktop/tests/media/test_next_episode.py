@@ -180,19 +180,19 @@ class ChapterPollingTests(unittest.TestCase):
         session.caption_text = ''
         session.emit = Mock()
         state = dict(state='playing', input=True, input_state=3,
-                     time=800, duration=1200, chapter=4, chapter_count=6, chapter_name='Credits')
+                     time=800, duration=1200, chapter=4, chapter_count=6, chapter_name='Credits', next_chapter=5)
         session.provided_cues = []
         session.subtitle_source = 'off'
         session.whisper_cues = []
         session.poll(state)
         session.emit.assert_any_call({'event': 'property-change', 'name': 'chapter-info',
-                                      'data': {'index': 4, 'count': 6, 'name': 'Credits'}})
+                                      'data': {'index': 4, 'count': 6, 'name': 'Credits', 'next': 5}})
         session.emit.reset_mock()
         session.poll(state)
         session.emit.assert_not_called()
-        session.poll(dict(state, chapter=3))
+        session.poll(dict(state, chapter=3, next_chapter=4))
         session.emit.assert_any_call({'event': 'property-change', 'name': 'chapter-info',
-                                      'data': {'index': 3, 'count': 6, 'name': 'Credits'}})
+                                      'data': {'index': 3, 'count': 6, 'name': 'Credits', 'next': 4}})
 
 
 if __name__ == '__main__':

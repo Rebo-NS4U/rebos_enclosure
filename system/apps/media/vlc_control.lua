@@ -16,14 +16,25 @@ local function input_value(name, default)
     return default
 end
 
+local function chapter_details(input)
+    local current = input_value("chapter", -1)
+    local ok, chapters, names = pcall(vlc.var.get_list, input, "chapter")
+    if ok and type(chapters) == "table" then
+        for i, id in ipairs(chapters) do
+            if id == current then return current, #chapters, (names or {})[i] or "", chapters[i + 1] end
+        end
+        return current, #chapters, ""
+    end
+    return current, 0, ""
+end
+
 local function status()
     local current = vlc.playlist.current()
     local item = vlc.playlist.get(current)
     local name = item and item.name or ""
     local subtitles = {}
     local audio_tracks = {}
-    local chapter_count = 0
-    local chapter_name = ""
+    local chapter, chapter_count, chapter_name, next_chapter = -1, 0, "", nil
     local input = vlc.object.input()
     if input then
         if whisper_only then
@@ -34,20 +45,14 @@ local function status()
         for i, id in ipairs(values or {}) do
             table.insert(subtitles, {id=id, name=(labels or {})[i] or tostring(id)})
         end
-        local ok, chapters, chapter_names = pcall(vlc.var.get_list, input, "chapter")
-        if ok and type(chapters) == "table" then
-            chapter_count = #chapters
-            for i, id in ipairs(chapters) do
-                if id == input_value("chapter", -1) then chapter_name = (chapter_names or {})[i] or "" end
-            end
-        end
+        chapter, chapter_count, chapter_name, next_chapter = chapter_details(input)
         local ids, names = vlc.var.get_list(input, "audio-es")
         for i, id in ipairs(ids or {}) do table.insert(audio_tracks, {id=id, name=(names or {})[i] or tostring(id)}) end
     end
     return {state=vlc.playlist.status(), current=current, input=not not input,
         eof=marker ~= "" and name == marker, time=input_value("time", 0) / 1000000,
         duration=input_value("length", 0) / 1000000, sid=input_value("spu-es", -1),
-        chapter=input_value("chapter", -1), chapter_count=chapter_count, chapter_name=chapter_name,
+        chapter=chapter, chapter_count=chapter_count, chapter_name=chapter_name, next_chapter=next_chapter,
         input_state=input_value("state", 0), subtitles=subtitles,
         audio=input_value("audio-es", -1), audio_tracks=audio_tracks}
 end
@@ -78,6 +83,14 @@ local function handle(_, query)
         elseif command == "seek" then
             local input = vlc.object.input()
             if input then vlc.var.set(input, "time", math.floor(tonumber(args.value) * 1000000)) end
+        elseif command == "skip-intro" then
+            local input = vlc.object.input()
+            if input then
+                local current, _, _, next_chapter = chapter_details(input)
+                if current == tonumber(args.value) and next_chapter ~= nil then
+                    vlc.var.set(input, "chapter", next_chapter)
+                end
+            end
         elseif command == "stop" then
             marker = ""
             vlc.playlist.stop()
