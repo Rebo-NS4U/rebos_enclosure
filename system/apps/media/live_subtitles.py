@@ -18,6 +18,7 @@ from gi.repository import GLib
 DATA = Path.home() / '.local/share/anime-streamer'
 BINARY = DATA / 'vendor/whisper.cpp-1.9.5/build/bin/whisper-cli'
 MODEL = DATA / 'models/ggml-base.en.bin'
+SMALL_ENGLISH_MODEL = DATA / 'models/ggml-small.en-q5_1.bin'
 MULTILINGUAL_MODEL = DATA / 'models/ggml-base.bin'
 FRENCH_GERMAN_MODEL = DATA / 'models/ggml-medium-q5_0.bin'
 TRANSLATION_LANGUAGES = {'es': 'Spanish', 'fr': 'French', 'de': 'German'}
@@ -195,7 +196,7 @@ def speech_spans(output, language, *, group_translation=False):
 
 def caption_model(language):
     if language == 'en':
-        return MODEL
+        return SMALL_ENGLISH_MODEL if SMALL_ENGLISH_MODEL.is_file() else MODEL
     if language in ('fr', 'de') and FRENCH_GERMAN_MODEL.is_file():
         return FRENCH_GERMAN_MODEL
     return MULTILINGUAL_MODEL
@@ -207,7 +208,12 @@ def decoding_options(model, duration):
         # padding beyond the speech, within the model's 30-second window.
         context = min(1500, max(384, round(duration * 50) + 100))
         return ['-bs', '5', '-bo', '5', '-ac', str(context), '-oj']
-    return ['-bs', '1', '-bo', '1', '-sns', '-ml', '64', '-sow', '-ojf']
+    options = ['-bs', '1', '-bo', '1', '-sns', '-ml', '64', '-sow', '-ojf']
+    if model == SMALL_ENGLISH_MODEL:
+        # Use 50 context tokens per second plus padding for the speech clip.
+        context = min(1500, max(384, round(duration * 50) + 100))
+        options += ['-ac', str(context)]
+    return options
 
 
 def speech_audio(source, start, end, padding=0):
