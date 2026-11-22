@@ -68,8 +68,6 @@ PanelWindow {
             || (nextEpisodeAvailable && /Media Browser EOF/.test(playbackClient?.title ?? "")))
     readonly property bool nextOverlayVisible: ready && nextEpisodeAvailable && playbackWindowFocused
         && !opened && !GlobalStates.lockscreenVisible && !NiriService.overviewOpen
-    readonly property bool seekOverlayVisible: ready && seekAvailable && playbackWindowFocused
-        && !opened && !GlobalStates.lockscreenVisible && !NiriService.overviewOpen
     readonly property bool introOverlayVisible: ready && introAvailable && playbackWindowFocused
         && !opened && !GlobalStates.lockscreenVisible && !NiriService.overviewOpen
     onPlayerWindowPresentChanged: { if (playerWindowPresent) backendStarted = true; }
@@ -600,8 +598,6 @@ PanelWindow {
         id: nextOverlay
         offered: root.nextOverlayVisible
         introAvailable: root.introOverlayVisible
-        seekAvailable: root.seekOverlayVisible
-        seekTargetText: root.seekTargetText
         buttonLabel: root.nextEpisodeLabel
         destination: root.nextEpisodeTitle
         outputName: root.playbackClient?.monitor ?? ""
@@ -610,7 +606,6 @@ PanelWindow {
         fullscreen: NiriService.fullscreenOutputs.includes(outputName)
         onActivated: root.send({action: "next_episode"})
         onSkipIntro: root.send({action: "skip_intro"})
-        onSkip: direction => root.send({action: "skip", direction: direction})
     }
     ListModel { id: shows }
     onActiveChanged: fillGridTimer.restart()
