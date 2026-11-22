@@ -80,7 +80,7 @@ class SubtitleSwitcherTests(unittest.TestCase):
         session.emit.assert_any_call({'event':'property-change','name':'subtitle-tracks','data':tracks})
 
     def test_manual_whisper_selection_waits_for_player_and_rejects_invalid_tracks(self):
-        engine = Mock()
+        engine = Mock(context=None)
         engine.session = self.session()
         engine.session.command = Mock()
         engine.file_loaded = True
