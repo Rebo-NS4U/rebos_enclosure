@@ -20,7 +20,10 @@ import stream_relay
 from vlc_theme import vlc_environment
 
 
-INPUT_ERROR = re.compile(r'\bmain (?:input|stream) error:(?! INPUT_CONTROL_SET_POSITION 100\.0% failed)')
+# VLC logs rejected seeks and recoverable clock adjustments as input errors.
+INPUT_ERROR = re.compile(
+    r'\bmain (?:input|stream) error:(?!\s*(?:INPUT_CONTROL_SET_(?:POSITION|TIME)\b|ES_OUT_SET_\(GROUP_\)PCR\b))'
+)
 
 
 @lru_cache(maxsize=1)
@@ -186,8 +189,8 @@ class VlcSession:  # pylint: disable=too-many-instance-attributes
         if not self.closed.is_set():
             self.commands.put(command)
 
-    def load(self, links, title, paused=False, validate_provider=True):
-        self.command(['load', links, title, paused, validate_provider])
+    def load(self, links, title, paused=False, validate_provider=True, *, subtitle_choice=None):
+        self.command(['load', links, title, paused, validate_provider, subtitle_choice])
 
     def public_stream(self, url, referer=''):
         if not url or not url.startswith('https://'):
@@ -318,7 +321,8 @@ class VlcSession:  # pylint: disable=too-many-instance-attributes
 
 
     def _command_load(self, command):
-        links, title, paused, self.validate_provider = command[1:]
+        links, title, paused, self.validate_provider = command[1:5]
+        self.subtitle_choice = command[5] if len(command) > 5 else None
         video, referer, subtitle, audio = links
         options = self.input_options(links)
         self.provided_cues = []
@@ -349,11 +353,15 @@ class VlcSession:  # pylint: disable=too-many-instance-attributes
 
 
     def _command_subtitle_source(self, command):
+        self.subtitle_choice = None
         self.select_subtitle_source(command[1])
 
 
     def _command_seek(self, command):
-        self.api('seek', value=command[1])
+        try:
+            self.api('seek', value=command[1])
+        except RuntimeError:
+            self.emit({'event': 'command-error', 'error': 'VLC could not seek in this stream.'})
 
 
     def _command_captions_file(self, command):
@@ -393,7 +401,7 @@ class VlcSession:  # pylint: disable=too-many-instance-attributes
         if command[1] == "pause":
             self.api('pause', value='true' if command[2] else 'false')
         elif command[1] == "sid":
-            self.select_subtitle_source('native:' + str(command[2]) if command[2] >= 0 else 'off')
+            self._command_subtitle_source(['subtitle-source', 'native:' + str(command[2]) if command[2] >= 0 else 'off'])
 
 
     def _poll_ended(self, state):
@@ -430,9 +438,24 @@ class VlcSession:  # pylint: disable=too-many-instance-attributes
             self.loaded = True
             self.apply_pending_subtitle()
             self.emit({'event':'file-loaded'})
-        if state.get('input_state') == 5:
-            self.input_error = True
         return state
+
+    def restore_subtitle_choice(self, state):
+        choice = getattr(self, 'subtitle_choice', None)
+        if not choice:
+            return False
+        if choice == 'provided' and self.subtitle_loading:
+            if state.get('sid', -1) >= 0:
+                self.api('subtitle', value=-1)
+            return True
+        for option in self.subtitle_tracks()['options']:
+            if choice in (option['id'], option['label']):
+                self.subtitle_choice = None
+                self.select_subtitle_source(option['id'])
+                return True
+        # Embedded tracks may appear after playback starts. Keep looking and
+        # use the default selection in the meantime.
+        return False
 
     def _poll_subtitles(self, state):
         if self.provided_cues and not provided_cues_usable(self.provided_cues, state.get('duration', 0)):
@@ -440,6 +463,10 @@ class VlcSession:  # pylint: disable=too-many-instance-attributes
             if self.subtitle_source == 'provided':
                 self.subtitle_revision = 0
         if self.subtitle_revision:
+            if self.subtitle_source in ('off', 'provided', 'whisper') and state.get('sid', -1) >= 0:
+                self.api('subtitle', value=-1)
+            return
+        if self.restore_subtitle_choice(state):
             return
 
         sid = state.get('sid', -1)

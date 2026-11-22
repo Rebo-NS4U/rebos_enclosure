@@ -1,5 +1,5 @@
 """Bound relay metadata by whole source families, preserving active owners."""
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 from contextlib import contextmanager
 import secrets
 import time
@@ -13,6 +13,8 @@ class RelayRoutes:
         self.group_for = {}
         self.owners = defaultdict(set)
         self.leases = {}
+        self.vod_segments = set()
+        self.seek_segments = OrderedDict()
 
     def local_path(self, url):
         parts = urlsplit(url)
@@ -43,6 +45,8 @@ class RelayRoutes:
                 self.relay.sources.pop(path, None)
                 self.relay.failures.pop(path, None)
                 self.relay.preloaded.pop(path, None)
+                self.seek_segments.pop(path, None)
+                self.vod_segments.discard(path)
             self.leases.pop(group, None)
 
     def register(self, entries, root, capacity):

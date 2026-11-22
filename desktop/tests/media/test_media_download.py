@@ -15,6 +15,7 @@ from unittest.mock import Mock, patch
 
 import media_download
 import menu_requests
+from menu_backend import Engine
 
 
 class QuietHandler(SimpleHTTPRequestHandler):
@@ -75,6 +76,7 @@ class DownloadTests(unittest.TestCase):
 
     def test_stop_download_cancels_transfer_and_ignores_late_season_callbacks(self):
         engine = Mock(download_active=False, settings={'mode': 'sub', 'quality': '720p'})
+        engine.source_key.side_effect = Engine.source_key
         send = Mock()
         show = dict(id='show', kind='tv', title='Example')
         request = dict(action='download_season', show=show, seasonId='2')
@@ -120,6 +122,7 @@ class DownloadTests(unittest.TestCase):
 
     def test_download_season_queues_selected_season_and_continues_after_failure(self):
         engine = Mock(download_active=False, settings={'mode': 'sub', 'quality': '720p'})
+        engine.source_key.side_effect = Engine.source_key
         send = Mock()
         show = dict(id='show', kind='tv', title='Example')
         request = dict(action='download_season', show=show, seasonId='2')
@@ -171,10 +174,11 @@ class DownloadTests(unittest.TestCase):
     def check_download(self, root, source):
         links = [source, '', '', '']
         engine = Mock(download_active=False, settings={'mode': 'dub', 'quality': '720p'})
+        engine.source_key.side_effect = Engine.source_key
         engine.media_title.return_value = 'Show / Episode 7'
         engine.resolve.side_effect = lambda _key, ready, _failed: ready(links)
         send = Mock()
-        request = dict(action='download', show=dict(id='show', kind='anime'), episode='7')
+        request = dict(action='download', show=dict(id='anime-series:group', kind='anime'), episode='show:7')
         with patch.object(media_download.GLib, 'get_user_special_dir', return_value=str(root)):
             menu_requests.dispatch(request, engine, send)
             self.assertTrue(engine.download_active)

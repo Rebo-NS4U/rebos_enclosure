@@ -19,6 +19,7 @@ from vlc_session import VlcSession
 from live_subtitles import LiveSubtitles, CaptionOptions
 
 OUTPUT_LOCK = threading.Lock()
+SUBTITLE_CHOICES = app.STATE / 'subtitle-choices.json'
 ENDING_CHAPTER = re.compile(r'(?:end|ending|closing)(?: credits| titles)?|credits|outro|ed(?: \d+)?')
 
 
@@ -90,6 +91,7 @@ class Engine(app.Browser):  # pylint: disable=too-many-instance-attributes
         self.file_loaded = False
         self.subtitle_sid = False
         self.subtitles_visible = True
+        self.subtitle_choices = app.read_json(SUBTITLE_CHOICES, {})
         self.whisper_selected = False
         self.last_progress_save = 0
         self.next_requested = False
@@ -244,7 +246,14 @@ class Engine(app.Browser):  # pylint: disable=too-many-instance-attributes
                 self.next_requested = False
                 self.publish_next_episode()
                 self.play_status.set_text(message)
-        self.resolve((show['id'], ep, settings['mode'], settings['quality']), ready, failed)
+        self.resolve(self.source_key(show, ep, settings), ready, failed)
+
+    @staticmethod
+    def source_key(show, episode, settings):
+        show_id = show['id']
+        if show_id.startswith('anime-series:'):
+            show_id, episode = episode.split(':', 1)
+        return show_id, episode, settings['mode'], settings['quality']
 
     def launch_player(self, context, links, settings, *, paused=False):
         show, episodes, index, token = context
@@ -255,6 +264,7 @@ class Engine(app.Browser):  # pylint: disable=too-many-instance-attributes
         send(dict(event='subtitle-tracks', selected='off', options=[dict(id='off', label='Off')], available=False))
         self.links = links
         self.file_loaded = False
+        Engine.reset_seek_preview(self)
         self.duration = self.position = 0
         self.chapter, self.chapter_count = -1, 0
         self.chapter_name = ''
@@ -267,7 +277,11 @@ class Engine(app.Browser):  # pylint: disable=too-many-instance-attributes
         self.publish_next_episode()
         try:
             self.ensure_player(token)
-            self.session.load(links, self.media_title(show, episodes[index]), paused=paused, validate_provider=media_sources.kind_of(show) != 'youtube')
+            kind = media_sources.kind_of(show)
+            provider_id = self.source_key(show, episodes[index], settings)[0] if show['id'].startswith('anime-series:') else show['id']
+            choice = self.subtitle_choices.get(show['id'], self.subtitle_choices.get(provider_id)) if kind in ('anime', 'tv') else None
+            self.session.load(links, self.media_title(show, episodes[index]), paused=paused,
+                              validate_provider=kind != 'youtube', subtitle_choice=choice)
             self.stop_button.set_sensitive(True)
         except OSError as error:
             self.error(str(error))
@@ -302,7 +316,7 @@ class Engine(app.Browser):  # pylint: disable=too-many-instance-attributes
         # Resolve and validate ahead of the offer, without switching players.
         if planned is None or self.position < max(0, planned - 30):
             return
-        key = (show['id'], episodes[index + 1], self.settings['mode'], self.settings['quality'])
+        key = self.source_key(show, episodes[index + 1], self.settings)
         now = time.monotonic()
         cached = self.resolved.get(key)
         if (cached and now - cached[0] < 300) or key in self.resolving:
@@ -362,15 +376,56 @@ class Engine(app.Browser):  # pylint: disable=too-many-instance-attributes
         if self.session is None or not self.file_loaded:
             raise ValueError('Start a video before choosing subtitles.')
         tracks = self.session.subtitle_tracks()
-        if source not in {row['id'] for row in tracks['options']}:
+        option = next((row for row in tracks['options'] if row['id'] == source), None)
+        if option is None:
             raise ValueError('This subtitle source is not available for this video.')
         self.session.caption_error = ''
         self.session.command(['subtitle-source', source])
+        if self.context:
+            show = self.context.show
+            if media_sources.kind_of(show) in ('anime', 'tv'):
+                self.subtitle_choices[show['id']] = option['label'] if source.startswith('native:') else source
+                app.save_json(SUBTITLE_CHOICES, self.subtitle_choices)
+
+    def publish_seek_preview(self, available, target=None):
+        send(dict(event='seek-preview', available=available, target=target))
+
+    def skip(self, seconds):
+        if not self.file_loaded or self.session is None or self.duration <= 0:
+            raise ValueError('Start playback before skipping.')
+        pending = getattr(self, 'seek_request', None)
+        base = pending[0] if pending and abs(self.position - pending[0]) > 1 else self.position
+        target = min(max(0, self.duration - 1), max(0, round(base + seconds)))
+        started = time.monotonic()
+        request = self.seek_request = (target, started)
+        self.publish_seek_preview(True, target)
+        self.session.command(['seek', target])
+
+        def check_arrival():
+            if getattr(self, 'seek_request', None) is not request:
+                return False
+            age = time.monotonic() - started
+            if age < 1 or (age < 15 and abs(self.position - target) > 1):
+                return True
+            self.seek_request = None
+            self.publish_seek_preview(True)
+            return False
+
+        GLib.timeout_add(250, check_arrival)
+
+    def reset_seek_preview(self):
+        self.seek_request = None
+        Engine.publish_seek_preview(self, False)
 
     def _event_loaded(self, event, token, context):
         show, episodes, index, _ = context
         self.file_loaded = True
         previous = self.history.pop(show['id'], {}) or self.history.get(show.get('historyId', ''), {})
+        if not previous and show['id'].startswith('anime-series:'):
+            provider_id = episodes[index].partition(':')[0]
+            legacy = self.history.get(provider_id, {})
+            if legacy:
+                previous = dict(legacy, episode=f"{provider_id}:{legacy['episode']}")
         resume = previous.get('position', 0) if previous.get('episode') == episodes[index] and not previous.get('completed') else 0
         if previous.get('duration', 0) > 0 and previous['duration'] - resume <= 15:
             resume = 0
@@ -409,6 +464,8 @@ class Engine(app.Browser):  # pylint: disable=too-many-instance-attributes
                 self.play_status.set_text(('Paused' if self.paused else 'Playing') + ' · ' + self.media_title(show, episodes[index]))
         if event.get('name') == 'duration':
             self.duration = event.get('data') or 0
+            pending = getattr(self, 'seek_request', None)
+            Engine.publish_seek_preview(self, self.duration > 0, pending[0] if pending else None)
         elif event.get('name') == 'chapter-info':
             info = event.get('data') or {}
             self.chapter = info.get('index', -1)
@@ -457,7 +514,7 @@ class Engine(app.Browser):  # pylint: disable=too-many-instance-attributes
         self.close_captions()
         context, session = self.context, self.session
         show, episodes, index, _ = context
-        key = (show['id'], episodes[index], self.settings['mode'], self.settings['quality'])
+        key = self.source_key(show, episodes[index], self.settings)
         self.resolved.pop(key, None)
         self.play_status.set_text('Stream interrupted. Reconnecting…')
         def retry():
@@ -473,6 +530,8 @@ class Engine(app.Browser):  # pylint: disable=too-many-instance-attributes
         kind = event.get('event')
         if kind == 'end-file':
             send(dict(event='subtitle-tracks', selected='off', options=[dict(id='off', label='Off')], available=False))
+        if kind in ('end-file', 'process-exited'):
+            Engine.reset_seek_preview(self)
         if kind == 'process-exited':
             self.save_progress(force=True)
             self.close_captions()
@@ -523,6 +582,7 @@ class Engine(app.Browser):  # pylint: disable=too-many-instance-attributes
         self.play_token += 1
         self.close_captions()
         self.file_loaded = False
+        Engine.reset_seek_preview(self)
         if self.session is not None:
             self.session.close()
         self.session = None
