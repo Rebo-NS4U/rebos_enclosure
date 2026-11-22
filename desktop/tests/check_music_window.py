@@ -110,6 +110,7 @@ esac
             property int phase: 0
             property int repeatStart: 0
             property bool checkedShortPlaylist: false
+            property int songRestarts: 0
             interval: 200; running: true; repeat: true
             onTriggered: {
                 attempts++;
@@ -180,11 +181,11 @@ esac
                     music.play(music.queue, 0);
                     if (music.currentIndex !== 0) { console.error("MUSIC_EXPLICIT_START_FAILED"); Qt.exit(1); }
                     music.shuffle = true;
-                    music.next(false);
+                    music.next();
                     if (music.currentIndex !== 1 || !music.canPreviousLocal) { console.error("MUSIC_SHUFFLE_NEXT_FAILED"); Qt.exit(1); return; }
                     music.previous();
                     if (music.currentIndex !== 0 || music.canPreviousLocal) { console.error("MUSIC_SHUFFLE_PREVIOUS_FAILED"); Qt.exit(1); return; }
-                    music.next(false);
+                    music.next();
                     if (music.currentIndex !== 1 || music.shuffleHistory.length !== 2) { console.error("MUSIC_SHUFFLE_RETRACE_FAILED"); Qt.exit(1); return; }
                     music.shuffle = false;
                     music.play(music.queue, 0);
@@ -221,8 +222,15 @@ esac
                 } else if (phase === 10 && attempts >= repeatStart + 4) {
                     const rail = findItem(music.contentItem, "music-seek");
                     if (rail.value !== music.playbackPosition) { console.error("MUSIC_PROGRESS_STALE", rail.value, music.playbackPosition); Qt.exit(1); return; }
-                    if (!music.playing || music.currentIndex !== 0 || music.lyricIndex !== 0) { console.error("MUSIC_REPEAT_SONG_FAILED"); Qt.exit(1); }
-                    music.next(false);
+                    if (!music.playing || music.currentIndex !== 0 || music.playbackPosition >= 1000 || music.lyricIndex !== 0) {
+                        console.error("MUSIC_REPEAT_SONG_FAILED", songRestarts, music.playbackPosition); Qt.exit(1); return;
+                    }
+                    if (++songRestarts < 2) {
+                        music.seek(3800);
+                        repeatStart = attempts;
+                        return;
+                    }
+                    music.next();
                     phase = 2;
                 } else if (phase === 2 && music.currentIndex === 1 && music.playing) {
                     findItem(music.contentItem, "music-repeat").clicked();
@@ -599,14 +607,14 @@ esac
                     const firstSuggestion = list.itemAtIndex(0);
                     if (!firstSuggestion || firstSuggestion.selected || firstSuggestion.height >= findItem(music.contentItem, "music-track-row-0").height) { console.error("SUGGESTION_COMPACT_ROW_FAILED"); Qt.exit(1); return; }
                     music.play(music.tracks, 0);
-                    music.next(false);
+                    music.next();
                     if (music.currentIndex !== 1 || music.requestedPreview) { console.error("PLAYLIST_NEXT_SKIPPED_LOCAL_QUEUE"); Qt.exit(1); return; }
                     if (findItem(firstSuggestion, "music-track-play-0")?.visible) { console.error("SUGGESTION_ROW_PLAY_BUTTON_VISIBLE"); Qt.exit(1); return; }
                     input.mouseClick(firstSuggestion, firstSuggestion.width * 0.45, firstSuggestion.height / 2);
                     if (music.requestedPreview !== firstSuggestion.track.uri) { console.error("SUGGESTION_ROW_PLAY_FAILED"); Qt.exit(1); return; }
                     music.requestedPreview = "";
                     spotify.play();
-                    music.next(false);
+                    music.next();
                     if (music.requestedPreview || spotify.nextCalls !== 2) { console.error("NEXT_RESTARTED_SUGGESTIONS"); Qt.exit(1); return; }
                     spotify.metadata = {"xesam:url": "https://open.spotify.com/track/" + firstSuggestion.track.uri.split(":").pop() + "?si=test"};
                     if (!firstSuggestion.selected) { console.error("SUGGESTION_SELECTION_FAILED"); Qt.exit(1); return; }
@@ -703,7 +711,7 @@ esac
                     const suggestions = music.suggestedTracks;
                     spotify.metadata = {"xesam:url": suggestions[suggestions.length - 1].uri};
                     music.navigate("Albums");
-                    music.next(false);
+                    music.next();
                     if (!music.canNext || music.requestedPreview !== suggestions[0].uri || spotify.nextCalls !== 2) { console.error("SUGGESTION_QUEUE_WRAP_AFTER_NAVIGATION_FAILED"); Qt.exit(1); return; }
                     music.page = "Playlist"; music.detail = "test";
                     music.spotifySuggestions = {playlist:"test",pending:false,hasMore:true,tracks:suggestions};

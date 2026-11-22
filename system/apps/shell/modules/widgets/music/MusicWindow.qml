@@ -204,7 +204,7 @@ Window {
             advancedSuggestionUri = "";
             return;
         }
-        if (advancedSuggestionUri !== current.spotifyUri) next(true);
+        if (advancedSuggestionUri !== current.spotifyUri) next();
     }
     readonly property var nextQueueTrack: spotifyPreview ? nextSuggestion : queue[nextLocalIndex] || null
     readonly property bool canNext: spotifyPreview ? !!nextSuggestion || !!spotifyPlayer?.canGoNext : nextLocalIndex >= 0
@@ -423,7 +423,7 @@ Window {
             sync();
         });
     }
-    function next(automatic) {
+    function next() {
         if (nextSuggestion) {
             advancedSuggestionUri = currentSpotifyUrl;
             previewSuggestion(nextSuggestion.uri);
@@ -434,7 +434,6 @@ Window {
             return;
         }
         if (!queue.length) return;
-        if (automatic && repeatMode === "Track") { player.position = 0; player.play(); return; }
         const index = nextLocalIndex;
         if (index < 0) return;
         if (shuffle && queue.length > 1 && currentIndex >= 0) {
@@ -488,7 +487,7 @@ Window {
         case "Play": if (spotifyPreview) { if (spotifyPlayer?.canPlay) spotifyPlayer.play(); } else if (current) player.play(); break;
         case "Pause": if (spotifyPreview) { if (spotifyPlayer?.canPause) spotifyPlayer.pause(); } else player.pause(); break;
         case "Stop": if (spotifyPreview) spotifyPlayer?.stop(); else player.stop(); break;
-        case "Next": next(false); break;
+        case "Next": next(); break;
         case "Previous": previous(); break;
         case "Volume": if (spotifyPreview) { if (spotifyPlayer?.volumeSupported) spotifyPlayer.volume = Math.max(0,Math.min(1,message.value)); } else volume = Math.max(0,Math.min(1,message.value)); break;
         case "Shuffle": if (spotifyPreview) { if (spotifyPlayer?.shuffleSupported) spotifyPlayer.shuffle = message.value; } else shuffle = message.value; break;
@@ -519,11 +518,12 @@ Window {
     MediaDevices { id: mediaDevices }
     MediaPlayer {
         id: player
+        loops: root.repeatMode === "Track" ? MediaPlayer.Infinite : MediaPlayer.Once
         audioOutput: AudioOutput {
             volume: root.volume
             device: mediaDevices.defaultAudioOutput
         }
-        onMediaStatusChanged: if (!root.spotifyPreview && mediaStatus === MediaPlayer.EndOfMedia) root.next(true)
+        onMediaStatusChanged: if (!root.spotifyPreview && mediaStatus === MediaPlayer.EndOfMedia) root.next()
         onErrorOccurred: (error, errorString) => { root.notice = errorString; }
     }
     Timer { interval: 500; running: root.playing; repeat: true; onTriggered: root.sync() }
@@ -1117,7 +1117,7 @@ Window {
                         ThemeButton { text: "Shuffle"; checked: root.shuffle; onClicked: root.shuffle = !root.shuffle }
                         ThemeButton { text: "⏮"; Accessible.name: "Previous track"; enabled: !!root.current; onClicked: root.previous() }
                         ThemeButton { objectName: "music-play"; text: root.playing ? "Pause" : "Play"; highlighted: true; enabled: root.queue.length > 0 || root.shownTracks.length > 0; onClicked: root.toggle() }
-                        ThemeButton { text: "⏭"; Accessible.name: "Next track"; enabled: root.canNext; onClicked: root.next(false) }
+                        ThemeButton { text: "⏭"; Accessible.name: "Next track"; enabled: root.canNext; onClicked: root.next() }
                         ThemeButton {
                             objectName: "music-repeat"
                             text: root.repeatMode === "Track" ? "Repeat song" : root.repeatMode === "Playlist" ? "Repeat all" : "Repeat off"
@@ -1644,7 +1644,7 @@ Window {
                     KeyboardButton { objectName: "music-fullscreen-shuffle"; text: "Shuffle"; checked: root.spotifyPreview ? !!root.spotifyPlayer?.shuffle : root.shuffle; enabled: !root.spotifyPreview || !!root.spotifyPlayer?.shuffleSupported; onClicked: { if (root.spotifyPreview) root.spotifyPlayer.shuffle = !root.spotifyPlayer.shuffle; else root.shuffle = !root.shuffle; } }
                     KeyboardButton { id: fullscreenPrevious; objectName: "music-fullscreen-previous"; text: "⏮"; Accessible.name: "Previous track"; enabled: root.spotifyPreview ? !!root.previousSuggestion || !!root.spotifyPlayer?.canGoPrevious : root.canPreviousLocal; onClicked: root.previous(true) }
                     KeyboardButton { id: fullscreenPlay; objectName: "music-fullscreen-play"; text: root.playing ? "Pause" : "Play"; highlighted: true; Layout.preferredWidth: 120; implicitHeight: 52; enabled: root.spotifyPreview ? !!root.spotifyPlayer?.canTogglePlaying : root.queue.length > 0 || root.shownTracks.length > 0; onClicked: root.toggle() }
-                    KeyboardButton { id: fullscreenNext; objectName: "music-fullscreen-next"; text: "⏭"; Accessible.name: "Next track"; enabled: root.canNext; onClicked: root.next(false) }
+                    KeyboardButton { id: fullscreenNext; objectName: "music-fullscreen-next"; text: "⏭"; Accessible.name: "Next track"; enabled: root.canNext; onClicked: root.next() }
                     KeyboardButton { objectName: "music-fullscreen-repeat"; text: root.spotifyPreview ? (root.spotifyPlayer?.loopState === MprisLoopState.Track ? "Repeat song" : "Repeat all") : root.repeatMode === "Track" ? "Repeat song" : "Repeat all"; checked: root.spotifyPreview ? root.spotifyPlayer?.loopState !== MprisLoopState.None : root.repeatMode !== "None"; enabled: !root.spotifyPreview || !!root.spotifyPlayer?.loopSupported; onClicked: {
                         if (root.spotifyPreview) root.spotifyPlayer.loopState = root.spotifyPlayer.loopState === MprisLoopState.None ? MprisLoopState.Playlist : root.spotifyPlayer.loopState === MprisLoopState.Playlist ? MprisLoopState.Track : MprisLoopState.None;
                         else root.repeatMode = root.repeatMode === "None" ? "Playlist" : root.repeatMode === "Playlist" ? "Track" : "None";
