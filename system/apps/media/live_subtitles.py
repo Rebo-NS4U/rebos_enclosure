@@ -427,8 +427,11 @@ class LiveSubtitles:  # pylint: disable=too-many-instance-attributes
                 args += ['-allowed_extensions', 'ALL', '-allowed_segment_extensions', 'ALL', '-extension_picky', '0']
             if self.referer:
                 args += ['-referer', self.referer]
+        # Favor center-channel dialogue in surround sources for recognition.
         args += ['-ss', str(start), '-i', self.source, '-t', str(CHUNK),
-                 '-map', self.audio_map, '-vn', '-ac', '1', '-ar', '16000', '-c:a', 'pcm_s16le', str(wav)]
+                 '-map', self.audio_map, '-vn', '-af',
+                 'aresample=out_chlayout=mono:center_mix_level=2:surround_mix_level=0.35',
+                 '-ar', '16000', '-c:a', 'pcm_s16le', str(wav)]
         try:
             self.run(args, 40)
             with wave.open(str(wav), 'rb') as audio:
