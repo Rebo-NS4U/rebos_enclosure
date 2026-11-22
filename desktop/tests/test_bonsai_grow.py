@@ -1012,7 +1012,6 @@ class BonsaiGrowTests(unittest.TestCase):
                         self.assertEqual((row[10], row[-1]), ('│', '│'))
 
     def test_sky_follows_local_time_and_preserves_specimen(self):
-        import re
         for hour in (0, 12):
             image = bonsai.render(0, 42, False, 59, fixed_height=True, hour=hour)
             self.assertIn('·', image)
@@ -2067,7 +2066,6 @@ class BonsaiGrowTests(unittest.TestCase):
             self.assertEqual(bonsai.GLASS_SEED, original_glass)
 
     def test_prepared_live_frame_exactly_matches_cached_specimen(self):
-        import json
         size = os.terminal_size((100, 40))
         accents = ['#85b470', '#b8ce93', '#67bca3']
         with tempfile.TemporaryDirectory() as directory, \

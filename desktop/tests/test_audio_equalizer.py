@@ -1,6 +1,5 @@
 """Validate preset consistency, DSP headroom and private settings without hardware."""
 import ast
-import json
 import os
 from pathlib import Path
 import re

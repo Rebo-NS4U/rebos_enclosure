@@ -22,6 +22,7 @@ const context = {
     failActiveTurn() { throw Error('inactivity cancelled live work'); },
     queueAssistantText(update) { context.received.push(update.content); },
     flushAssistantText() {},
+    handleCodexResumeWarning() { return false; },
 };
 context.turnWatchdog = {restart() { context.restarts++; }};
 vm.createContext(context);
@@ -57,6 +58,7 @@ class AssistantLongTasksTest(unittest.TestCase):
     def test_silence_preserves_turn_and_late_updates(self):
         for app in ('assistant', 'shell'):
             with self.subTest(app=app):
-                subprocess.run(['node', '-e', SCENARIO, str(
+                result = subprocess.run(['node', '-e', SCENARIO, str(
                     ROOT / 'system/apps' / app / 'modules/services/AiSession.qml'
-                )], check=True, capture_output=True, text=True)
+                )], check=False, capture_output=True, text=True)
+                self.assertEqual(result.returncode, 0, result.stderr)

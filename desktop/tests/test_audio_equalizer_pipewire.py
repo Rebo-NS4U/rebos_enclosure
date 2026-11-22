@@ -1,6 +1,5 @@
 """Measure the production EQ in private PipeWire; hardware monitors are disabled."""
 import array
-import json
 import math
 import os
 from pathlib import Path

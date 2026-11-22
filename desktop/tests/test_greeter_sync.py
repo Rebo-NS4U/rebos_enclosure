@@ -77,7 +77,6 @@ class GreeterSyncTests(unittest.TestCase):
 
     def test_material_metrics_and_public_export(self):
         script = runpy.run_path(str(ROOT.parent / 'system/bin/greeter-sync'))
-        import subprocess
         with tempfile.TemporaryDirectory() as temporary:
             home = Path(temporary)
             cache, target = home / 'cache', home / 'theme'
