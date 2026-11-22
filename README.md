@@ -96,6 +96,10 @@ narration playing; media controls can reopen, pause or stop it. See the
 
 ### Video, YouTube and subtitles
 
+[Rebos Streamer](system/apps/media/README.md) is developed and released as part
+of Enclosure. Open it with **Mod+Shift+A** or `anime-streamer`. Rebos Streamer
+Server is a separate household streaming project.
+
 The media browser combines Anime, Movies, TV and YouTube, fills the visible
 catalogue automatically and keeps manual Refresh/Load more controls. Playback
 opens the VLC window while resolving the source. Queues continue across regular
