@@ -106,7 +106,7 @@ def card_selection(show, history):
     return show, episodes, resume_index(episodes, entry)
 
 
-class MenuRequest:
+class MenuRequest:  # pylint: disable=too-many-public-methods
     """Keep one request's routing, replies and asynchronous callbacks together."""
     def __init__(self, request, engine, send):
         self.request, self.engine, self.send = request, engine, send
@@ -296,7 +296,7 @@ class MenuRequest:
         if not self.download_job.cancelled.is_set():
             self.download_status(False, 'Download failed: ' + message)
 
-    def download_episode(self, show, episode, title, mode, quality, done, failed):
+    def download_episode(self, show, episode, title, mode, quality, done, failed):  # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
         engine = self.engine
         download = self.download_job
 

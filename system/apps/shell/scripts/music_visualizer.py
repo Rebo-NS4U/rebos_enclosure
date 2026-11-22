@@ -77,7 +77,8 @@ def playback_streams():
         # SoundEffect feedback does not use the QtmPulseStream media name.
         shell_music = props.get('media.name', '').startswith('QtmPulseStream-')
         shell = app == 'org.quickshell' or binary in {'quickshell', 'qs'}
-        if (stream.get('corked') or stream.get('mute')
+        inaudible = stream.get('corked') or stream.get('mute')
+        if (inaudible
                 or role in {'event', 'notification', 'alert', 'system'}
                 or (shell and not shell_music) or binary == 'canberra-gtk-play'):
             continue
@@ -98,7 +99,7 @@ def stop_capture(selector, state):
     child.stdout.close()
 
 
-def main():
+def main():  # pylint: disable=too-many-branches
     def stop(*_):
         raise SystemExit(0)
 

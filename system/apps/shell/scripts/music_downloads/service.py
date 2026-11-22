@@ -39,7 +39,7 @@ def cookie_settings(data):
         return ''
 
 
-class Download:
+class Download:  # pylint: disable=too-few-public-methods
     def cancel(self):
         if self.finished.is_set() or self.cancelled.is_set():
             return

@@ -85,7 +85,7 @@ class RelayRequestHandler(BaseHTTPRequestHandler):
         with self.server.relay.lifetime.hold(self.path, self):
             self.serve(body)
 
-    def serve_preloaded(self, body, source):
+    def serve_preloaded(self, body, source):  # pylint: disable=too-many-locals
         relay = self.server.relay
         conditional = any(name.lower().startswith('if-') for name in self.headers)
         entry = relay.cached_payload(self.path, conditional)
@@ -150,9 +150,7 @@ class RelayRequestHandler(BaseHTTPRequestHandler):
                     self.wfile.write(chunk)
                     offset += len(chunk)
 
-    # Quality exception: The request/response code names protocol ranges, totals, headers and upstream state explicitly.
-    # Numeric ceilings are enforced by desktop/scripts/quality.py.
-    def serve(self, body):  # pylint: disable=too-many-locals
+    def serve(self, body):
         response_started = False
         with self.server.relay.lock:
             source = self.server.relay.sources.get(self.path)
@@ -384,7 +382,7 @@ class StreamRelay:  # pylint: disable=too-many-instance-attributes
             root = self.lifetime.group_for[path]
         return self._rewrite(playlist, base, RewriteOptions(source[1], source[2], root))
 
-    def _rewrite(self, playlist, base, options):
+    def _rewrite(self, playlist, base, options):  # pylint: disable=too-many-locals
         entries = []
         marker = '__relay_' + secrets.token_hex(16) + '_'
         def local(uri):

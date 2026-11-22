@@ -27,7 +27,7 @@ def write(path, content, *, force=False):
     return True
 
 
-def update_ini(path, sections, *, force=False):
+def update_ini(path, sections, *, force=False):  # pylint: disable=too-many-locals
     """Patch owned keys, preserving comments, ordering and all other keys."""
     text = path.read_text() if path.exists() else ''
     for group, values in sections.items():

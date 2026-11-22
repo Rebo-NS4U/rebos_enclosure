@@ -1,8 +1,8 @@
 # Design-warning cleanup and quality gate
 
-Current audit (2026-11-14): the registry contains **70** bounded exceptions.
-Ordered RGB dithering has its own helper, removing an obsolete statement
-waiver without raising limits. The counts and completion results below record
+The v2.1.0 registry contains **93** bounded exceptions. The release reconciles
+the current playback, Music and theming code with the checked ceilings.
+The relay’s obsolete request-handler exception has been removed. The counts and completion results below record
 the earlier cleanup, not the current test inventory. See
 [the 2.0 audit](RELEASE-2.0-AUDIT.md) for current findings and acceptance gaps.
 

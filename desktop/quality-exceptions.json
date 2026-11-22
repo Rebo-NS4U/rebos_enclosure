@@ -104,8 +104,8 @@
       "path": "system/apps/assistant/scripts/ai_bridge.py",
       "object": "Bridge",
       "symbol": "too-many-instance-attributes",
-      "ceiling": 11,
-      "reason": "One owner controls this process/session lifetime; explicit state fields preserve existing transition invariants."
+      "ceiling": 12,
+      "reason": "The bridge stores compressed recovery state alongside its attached relay and process lifecycle."
     },
     {
       "path": "system/apps/media/app.py",
@@ -181,8 +181,8 @@
       "path": "system/apps/media/menu_backend.py",
       "object": "Engine",
       "symbol": "too-many-instance-attributes",
-      "ceiling": 30,
-      "reason": "One owner controls this process/session lifetime; explicit state fields preserve existing transition invariants."
+      "ceiling": 33,
+      "reason": "Playback state includes separate subtitle preferences, a seek preview and the active download."
     },
     {
       "path": "system/apps/media/moviebox_source.py",
@@ -221,13 +221,6 @@
     },
     {
       "path": "system/apps/media/stream_relay.py",
-      "object": "RelayRequestHandler.serve",
-      "symbol": "too-many-locals",
-      "ceiling": 16,
-      "reason": "The request/response code names protocol ranges, totals, headers and upstream state explicitly."
-    },
-    {
-      "path": "system/apps/media/stream_relay.py",
       "object": "StreamRelay",
       "symbol": "too-many-instance-attributes",
       "ceiling": 13,
@@ -251,8 +244,8 @@
       "path": "system/apps/media/vlc_session.py",
       "object": "VlcSession",
       "symbol": "too-many-instance-attributes",
-      "ceiling": 36,
-      "reason": "One owner controls this process/session lifetime; explicit state fields preserve existing transition invariants."
+      "ceiling": 37,
+      "reason": "The session tracks expected seek progress alongside its playback and subtitle state."
     },
     {
       "path": "system/apps/media/vlc_session.py",
@@ -440,8 +433,8 @@
       "path": "system/apps/shell/scripts/standard_theme.py",
       "object": "apply",
       "symbol": "too-many-locals",
-      "ceiling": 25,
-      "reason": "Named color/configuration intermediates keep per-application transformations reviewable; numeric packing would obscure them."
+      "ceiling": 26,
+      "reason": "The theme exporter tracks whether the shared stylesheet changed before refreshing toolkit settings."
     },
     {
       "path": "system/apps/shell/scripts/system_monitor.py",
@@ -484,6 +477,181 @@
       "symbol": "too-many-branches",
       "ceiling": 15,
       "reason": "Each user-editable field has a separate validation or serialization step and explanatory rejection path."
+    },
+    {
+      "path": "system/apps/media/menu_backend.py",
+      "object": "Engine.player_event",
+      "symbol": "too-many-branches",
+      "ceiling": 13,
+      "reason": "One callback routes token-checked events from the active player."
+    },
+    {
+      "path": "system/apps/media/menu_backend.py",
+      "object": "Engine",
+      "symbol": "too-many-public-methods",
+      "ceiling": 22,
+      "reason": "VLC callbacks and JSON request handlers share one playback lifecycle."
+    },
+    {
+      "path": "system/apps/media/menu_requests.py",
+      "object": "MenuRequest.download_episode",
+      "symbol": "too-many-arguments",
+      "ceiling": 7,
+      "reason": "A download uses a frozen source selection and separate completion and failure callbacks."
+    },
+    {
+      "path": "system/apps/media/menu_requests.py",
+      "object": "MenuRequest.download_episode",
+      "symbol": "too-many-positional-arguments",
+      "ceiling": 7,
+      "reason": "A download uses a frozen source selection and separate completion and failure callbacks."
+    },
+    {
+      "path": "system/apps/media/menu_requests.py",
+      "object": "MenuRequest.download_episode",
+      "symbol": "too-many-locals",
+      "ceiling": 16,
+      "reason": "A download uses a frozen source selection and separate completion and failure callbacks."
+    },
+    {
+      "path": "system/apps/media/menu_requests.py",
+      "object": "MenuRequest",
+      "symbol": "too-many-public-methods",
+      "ceiling": 28,
+      "reason": "The JSON protocol uses one explicit handler per request on a shared reply context."
+    },
+    {
+      "path": "system/apps/media/stream_relay.py",
+      "object": "RelayRequestHandler.serve_preloaded",
+      "symbol": "too-many-locals",
+      "ceiling": 16,
+      "reason": "Range validation, cache bounds and HTTP response lengths use named values."
+    },
+    {
+      "path": "system/apps/media/stream_relay.py",
+      "object": "StreamRelay._rewrite",
+      "symbol": "too-many-locals",
+      "ceiling": 16,
+      "reason": "Playlist rewrite tracks segment sequence, cache identity and byte ranges together."
+    },
+    {
+      "path": "system/apps/media/vlc_session.py",
+      "object": "VlcSession",
+      "symbol": "too-many-public-methods",
+      "ceiling": 21,
+      "reason": "The session owns the VLC process and exposes its transport and subtitle commands."
+    },
+    {
+      "path": "system/apps/shell/scripts/apply_desktop_palette.py",
+      "object": "update_ini",
+      "symbol": "too-many-locals",
+      "ceiling": 16,
+      "reason": "Preserving existing configuration requires tracking input sections and inserted values separately."
+    },
+    {
+      "path": "system/apps/shell/scripts/music_library.py",
+      "object": "Library.inspect",
+      "symbol": "too-many-locals",
+      "ceiling": 16,
+      "reason": "Media tag precedence and independent metadata fallbacks are explicit."
+    },
+    {
+      "path": "system/apps/shell/scripts/music_library.py",
+      "object": "Library.scan",
+      "symbol": "too-many-locals",
+      "ceiling": 30,
+      "reason": "The scan reconciles existing tracks, generated playlists and progress in one traversal."
+    },
+    {
+      "path": "system/apps/shell/scripts/music_library.py",
+      "object": "Library.scan",
+      "symbol": "too-many-branches",
+      "ceiling": 20,
+      "reason": "The scan reconciles existing tracks, generated playlists and progress in one traversal."
+    },
+    {
+      "path": "system/apps/shell/scripts/music_library.py",
+      "object": "Library.scan",
+      "symbol": "too-many-statements",
+      "ceiling": 55,
+      "reason": "The scan reconciles existing tracks, generated playlists and progress in one traversal."
+    },
+    {
+      "path": "system/apps/shell/scripts/music_library.py",
+      "object": "Library.dispatch",
+      "symbol": "too-many-locals",
+      "ceiling": 25,
+      "reason": "The existing music-library IPC dispatcher has one explicit path per command."
+    },
+    {
+      "path": "system/apps/shell/scripts/music_library.py",
+      "object": "Library.dispatch",
+      "symbol": "too-many-return-statements",
+      "ceiling": 17,
+      "reason": "The existing music-library IPC dispatcher has one explicit path per command."
+    },
+    {
+      "path": "system/apps/shell/scripts/music_library.py",
+      "object": "Library.dispatch",
+      "symbol": "too-many-branches",
+      "ceiling": 48,
+      "reason": "The existing music-library IPC dispatcher has one explicit path per command."
+    },
+    {
+      "path": "system/apps/shell/scripts/music_library.py",
+      "object": "Library.dispatch",
+      "symbol": "too-many-statements",
+      "ceiling": 112,
+      "reason": "The existing music-library IPC dispatcher has one explicit path per command."
+    },
+    {
+      "path": "system/apps/shell/scripts/music_mixes.py",
+      "object": "Mixes",
+      "symbol": "too-many-instance-attributes",
+      "ceiling": 13,
+      "reason": "Collection state tracks separate Spotify snapshots, refresh timing and cached results."
+    },
+    {
+      "path": "system/apps/shell/scripts/music_mixes.py",
+      "object": "Mixes.update",
+      "symbol": "too-many-locals",
+      "ceiling": 17,
+      "reason": "The refresh transaction keeps existing mixes and records per-source fallback results."
+    },
+    {
+      "path": "system/apps/shell/scripts/music_mixes.py",
+      "object": "Mixes.update",
+      "symbol": "too-many-branches",
+      "ceiling": 15,
+      "reason": "The refresh transaction keeps existing mixes and records per-source fallback results."
+    },
+    {
+      "path": "system/apps/shell/scripts/music_visualizer.py",
+      "object": "main",
+      "symbol": "too-many-branches",
+      "ceiling": 14,
+      "reason": "One visualizer process handles capture startup, inactivity and child cleanup."
+    },
+    {
+      "path": "system/apps/shell/scripts/music_downloads/commands.py",
+      "object": "build_spotdl_args",
+      "symbol": "too-many-arguments",
+      "ceiling": 7,
+      "reason": "Independent command inputs expose download format, source, cookies and concurrency."
+    },
+    {
+      "path": "system/apps/shell/scripts/music_downloads/commands.py",
+      "object": "build_spotdl_args",
+      "symbol": "too-many-positional-arguments",
+      "ceiling": 7,
+      "reason": "Independent command inputs expose download format, source, cookies and concurrency."
+    },
+    {
+      "path": "system/apps/shell/scripts/music_downloads/service.py",
+      "object": "Download",
+      "symbol": "too-few-public-methods",
+      "ceiling": 1,
+      "reason": "The base class provides cancellation for both warm and standalone download workers."
     }
   ]
 }

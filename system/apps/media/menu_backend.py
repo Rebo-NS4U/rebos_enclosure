@@ -66,7 +66,7 @@ class Status:
 
 # Quality exception: One owner controls this process/session lifetime; explicit state fields preserve existing transition invariants.
 # Numeric ceilings are enforced by desktop/scripts/quality.py.
-class Engine(app.Browser):  # pylint: disable=too-many-instance-attributes
+class Engine(app.Browser):  # pylint: disable=too-many-instance-attributes,too-many-public-methods
     def __init__(self):
         super().__init__()
         self.stop_button = Status()
@@ -524,7 +524,7 @@ class Engine(app.Browser):  # pylint: disable=too-many-instance-attributes
         GLib.timeout_add_seconds(2, retry)
         return True
 
-    def player_event(self, event, token):
+    def player_event(self, event, token):  # pylint: disable=too-many-branches
         if token != self.play_token:
             return False
         kind = event.get('event')

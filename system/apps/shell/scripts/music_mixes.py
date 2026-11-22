@@ -46,7 +46,7 @@ def normalize(data):
     return mixes
 
 
-class Mixes:
+class Mixes:  # pylint: disable=too-many-instance-attributes
     def __init__(self, path, read, write):
         self.path, self.write = path, write
         self.lock = threading.Lock()
@@ -158,7 +158,7 @@ class Mixes:
                     self.write(self.path, self.data)
             return dict(copy.deepcopy(self.data), refreshPending=bool(self.refresh_id), refreshStatus=self.refresh_status)
 
-    def update(self, payload):
+    def update(self, payload):  # pylint: disable=too-many-locals,too-many-branches
         if 'preview_id' in payload:
             with self.lock:
                 if self.preview:

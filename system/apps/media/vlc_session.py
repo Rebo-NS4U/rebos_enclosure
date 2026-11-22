@@ -95,7 +95,7 @@ def provided_cues_usable(cues, duration=0):  # pylint: disable=too-many-return-s
 
 # Quality exception: One owner controls this process/session lifetime; explicit state fields preserve existing transition invariants.
 # Numeric ceilings are enforced by desktop/scripts/quality.py.
-class VlcSession:  # pylint: disable=too-many-instance-attributes
+class VlcSession:  # pylint: disable=too-many-instance-attributes,too-many-public-methods
     # Quality exception: Distinct inputs and intermediate results are explicit within this bounded operation; retain readable names over count-driven packing.
     # Numeric ceilings are enforced by desktop/scripts/quality.py.
     def __init__(self, settings, on_event, logpath, extra_args=()):  # pylint: disable=too-many-statements

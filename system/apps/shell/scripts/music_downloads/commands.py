@@ -59,7 +59,7 @@ def music_links(text):
     return list(dict.fromkeys(links))
 
 
-def build_spotdl_args(mode, text, folder, fmt, mix_tracks=False, cookie_file="", threads=4):
+def build_spotdl_args(mode, text, folder, fmt, mix_tracks=False, cookie_file="", threads=4):  # pylint: disable=too-many-arguments,too-many-positional-arguments
     if mode != 0:
         raise ValueError("For spotDL, paste a Spotify playlist, album, artist or track link.")
     if not Path(folder).expanduser().is_absolute():

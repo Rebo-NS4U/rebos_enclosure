@@ -77,7 +77,7 @@ class Library:
         temp.write_text(json.dumps(value, ensure_ascii=False))
         temp.replace(path)
 
-    def inspect(self, path):
+    def inspect(self, path):  # pylint: disable=too-many-locals
         stat = path.stat()
         key = str(path)
         # Lyrics and folder artwork may change while the audio file stays untouched.
@@ -134,7 +134,7 @@ class Library:
                 art = cover.as_uri()
         return art
 
-    def scan(self):
+    def scan(self):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
         paths = set()
         for folder in self.state['folders']:
             root = Path(folder).expanduser()
@@ -251,7 +251,7 @@ class Library:
         except (OSError, ValueError, TypeError, KeyError):
             return dict(text='', status='Lyrics unavailable. Try this song again when online.')
 
-    def dispatch(self, cmd, args):
+    def dispatch(self, cmd, args):  # pylint: disable=too-many-locals,too-many-return-statements,too-many-branches,too-many-statements
         if cmd in ('mixes_refresh', 'mixes_load', 'suggestions_refresh',
                    'suggestions_more', 'playlist_to_spotify'):
             from music_spotify import ensure_started
