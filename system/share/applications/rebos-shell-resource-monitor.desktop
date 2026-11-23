@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Compact Resource Monitor
+Comment=Inspect system gauges, filter processes and open background apps
+Exec="@HOME@/.local/bin/rebos_shell" compact-resources
+Icon=utilities-system-monitor
+Terminal=false
+Categories=System;Monitor;
+Keywords=cpu;memory;swap;temperature;network;disk;

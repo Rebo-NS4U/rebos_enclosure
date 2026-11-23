@@ -434,3 +434,19 @@ Quickshell instances refresh every three seconds while the section is visible.
 Use **Close** on any row to request a normal close for all its windows or stop
 that specific Quickshell instance. Closing Enclosure Shell also closes the
 monitor. The list refreshes after a close request and shows any failure.
+
+### Floating desktop tools
+
+Open **Compact Resource Monitor** in the application launcher, or run
+`rebos_shell compact-resources`. Run it again or click × to close it. The
+gauges show CPU load, memory, swap and CPU temperature. The rails show the
+first configured disk and network throughput. Filter the list by process name
+or PID. Select **end**, then confirm the process name and PID to send SIGTERM.
+The background section lists the desktop's status tray applications.
+
+Open **Scratchpad** in the launcher, or run `rebos_shell scratchpad`. It opens
+Neovim in insert mode and focuses the existing window on subsequent launches.
+The note saves after an editing pause or focus change. Use Escape then
+`:wq` to save and close. The file lives at
+`$XDG_DATA_HOME/enclosure/scratchpad/scratch`, with `~/.local/share` as the
+default data directory.

@@ -41,6 +41,7 @@ Usage: rebos_shell [COMMAND]
 Commands:
     (none)                            Launch rebos_shell
     starwake                         Launch the cosmic cursor adventure
+    compact-resources                 Toggle the compact resource monitor
     scratchpad                        Open the floating Neovim scratchpad
     update                            Update rebos_shell
     refresh                           Refresh local/dev profile (for developers)
@@ -127,6 +128,13 @@ restart_rebos_shell() {
 }
 
 case "${1:-}" in
+compact-resources)
+    monitor_qml="$SCRIPT_DIR/CompactResources.qml"
+    if qs ipc -p "$monitor_qml" call monitor close >/dev/null 2>&1; then exit 0; fi
+    export ENCLOSURE_MONITOR_OUTPUT
+    ENCLOSURE_MONITOR_OUTPUT=$(niri msg -j focused-output | jq -r '.name // empty')
+    exec "$QS_BIN" -n -p "$monitor_qml"
+    ;;
 scratchpad)
     scratch_dir="${XDG_DATA_HOME:-$HOME/.local/share}/enclosure/scratchpad"
     umask 077

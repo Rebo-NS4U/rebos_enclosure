@@ -226,22 +226,17 @@ class SystemMonitor:  # pylint: disable=too-many-instance-attributes
 
     def get_mem(self):
         try:
-            mem_total = 0
-            mem_available = 0
-            with open("/proc/meminfo", "r") as f:
-                for line in f:
-                    if line.startswith("MemTotal:"):
-                        mem_total = int(line.split()[1])
-                    elif line.startswith("MemAvailable:"):
-                        mem_available = int(line.split()[1])
-                    if mem_total > 0 and mem_available > 0:
-                        break
-            if mem_total == 0:
-                return 0.0, 0, 0, 0
-            mem_used = mem_total - mem_available
-            return (mem_used * 100.0) / mem_total, mem_total, mem_used, mem_available
-        except:
-            return 0.0, 0, 0, 0
+            with open("/proc/meminfo") as stream:
+                values = {key.rstrip(":"): int(value) for key, value, *_ in
+                          (line.split() for line in stream)}
+            total = values["MemTotal"]
+            available = values["MemAvailable"]
+            swap = values.get("SwapTotal", 0)
+            return {"usage": 100 * (total - available) / total, "total": total,
+                    "used": total - available, "available": available,
+                    "swapTotal": swap, "swapUsed": swap - values.get("SwapFree", 0)}
+        except (OSError, ValueError, KeyError, ZeroDivisionError):
+            return dict.fromkeys(("usage", "total", "used", "available", "swapTotal", "swapUsed"), 0)
 
     def get_disk_usage(self, disks):
         usage_map = {}
@@ -477,7 +472,7 @@ if __name__ == "__main__":
             cpu_usage = monitor.get_cpu()
             cpu_temp = monitor.get_cpu_temp()
             cpu_frequency = monitor.get_cpu_frequency()
-            ram_usage, ram_total, ram_used, ram_avail = monitor.get_mem()
+            memory = monitor.get_mem()
             disk_usage, disk_used, disk_total = monitor.get_disk_usage(disks)
             network_download, network_upload = monitor.get_network_speed()
             (
@@ -497,12 +492,7 @@ if __name__ == "__main__":
                             "temp": cpu_temp,
                             "frequency": cpu_frequency,
                         },
-                        "ram": {
-                            "usage": ram_usage,
-                            "total": ram_total,
-                            "used": ram_used,
-                            "available": ram_avail,
-                        },
+                        "ram": memory,
                         "disk": {
                             "usage": disk_usage,
                             "used": disk_used,

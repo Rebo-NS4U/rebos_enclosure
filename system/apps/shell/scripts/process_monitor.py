@@ -45,7 +45,7 @@ class ProcessMonitor:
 
     # Quality exception: Independent hardware/process counters have different units and are kept explicitly named.
     # Numeric ceilings are enforced by desktop/scripts/quality.py.
-    def snapshot(self, pid):  # pylint: disable=too-many-locals
+    def snapshot(self, pid, summary=False):  # pylint: disable=too-many-locals
         base = self.proc / str(pid)
         stat = (base / 'stat').read_text()
         end = stat.rfind(')')
@@ -55,6 +55,8 @@ class ProcessMonitor:
                    ram=max(0, int(fields[21])) * self.page_size,
                    read=0, write=0, io_available=False, sockets=0, gpu={})
         row['name'] = process_name(base, row['name'])
+        if summary:
+            return row
         try:
             values = dict(line.split(':', 1) for line in (base / 'io').read_text().splitlines())
             row.update(read=int(values['read_bytes']), write=int(values['write_bytes']), io_available=True)
@@ -88,7 +90,7 @@ class ProcessMonitor:
             pass
         return row
 
-    def sample(self, memory_accounting=False):
+    def sample(self, memory_accounting=False, summary=False):
         now = time.monotonic()
         elapsed = now - self.timestamp if self.timestamp is not None else None
         current = {}
@@ -97,7 +99,7 @@ class ProcessMonitor:
             if not base.name.isdigit():
                 continue
             try:
-                row = self.snapshot(base.name)
+                row = self.snapshot(base.name, summary=summary)
             except (OSError, ValueError, IndexError):
                 continue
             if memory_accounting:
@@ -105,7 +107,7 @@ class ProcessMonitor:
             current[row['pid']] = row
             old = self.previous.get(row['pid'])
             valid = elapsed and old and old['start'] == row['start']
-            result = {key: row[key] for key in ('pid', 'ppid', 'name', 'ram', 'sockets', 'io_available')}
+            result = {key: row[key] for key in ('pid', 'ppid', 'start', 'name', 'ram', 'sockets', 'io_available')}
             if memory_accounting:
                 result['memory_available'] = row['memory_available']
             result['cpu'] = max(0, (row['ticks'] - old['ticks']) / self.ticks / elapsed * 100) if valid else 0
@@ -163,6 +165,18 @@ def pick_window():
         return {'error': 'Could not read window information.'}
 
 
+def send_process_signal(pid, start, sig):
+    if pid <= 1:
+        raise ValueError("Invalid process")
+    fd = os.pidfd_open(pid)
+    try:
+        if ProcessMonitor().snapshot(pid, summary=True)['start'] != start:
+            raise ProcessLookupError("Process identity changed")
+        signal.pidfd_send_signal(fd, sig)
+    finally:
+        os.close(fd)
+
+
 # Quality exception: Independent rejection guard clauses keep invalid captions and stale process actions fail-closed.
 # Numeric ceilings are enforced by desktop/scripts/quality.py.
 def window_action(action, window_id, pid, start):  # pylint: disable=too-many-return-statements
@@ -181,15 +195,7 @@ def window_action(action, window_id, pid, start):  # pylint: disable=too-many-re
             return {'message': 'Close requested.'}
         if pid <= 1 or not start:
             return {'error': 'Process information is unavailable. Pick the window again.'}
-        # Open a stable process handle before checking identity, so PID reuse
-        # cannot redirect a signal after verification.
-        fd = os.pidfd_open(pid)
-        try:
-            if ProcessMonitor().snapshot(pid)['start'] != int(start):
-                return {'error': 'The process has changed. Pick the window again.'}
-            signal.pidfd_send_signal(fd, signal.SIGTERM if action == 'terminate' else signal.SIGKILL)
-        finally:
-            os.close(fd)
+        send_process_signal(pid, int(start), signal.SIGTERM if action == 'terminate' else signal.SIGKILL)
         return {'message': 'Termination requested.' if action == 'terminate' else 'Force kill sent.',
                 'killed': action == 'kill'}
     except ProcessLookupError:
@@ -203,13 +209,19 @@ def window_action(action, window_id, pid, start):  # pylint: disable=too-many-re
 if __name__ == '__main__':
     if len(sys.argv) == 6 and sys.argv[1] == '--window-action':
         print(json.dumps(window_action(*sys.argv[2:])), flush=True)
+    elif len(sys.argv) == 4 and sys.argv[1] == '--terminate':
+        try:
+            send_process_signal(int(sys.argv[2]), int(sys.argv[3]), signal.SIGTERM)
+        except (ValueError, OSError) as error:
+            sys.exit(str(error))
     elif '--pick-window' in sys.argv:
         print(json.dumps(pick_window()), flush=True)
     else:
         monitor = ProcessMonitor()
         try:
             while True:
-                print(json.dumps(monitor.sample(memory_accounting='--memory-accounting' in sys.argv)), flush=True)
+                sample = monitor.sample(memory_accounting='--memory-accounting' in sys.argv, summary='--summary' in sys.argv)
+                print(json.dumps(sample), flush=True)
                 time.sleep(1)
         except (BrokenPipeError, KeyboardInterrupt):
             pass

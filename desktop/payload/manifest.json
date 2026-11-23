@@ -97,6 +97,7 @@
     ".local/share/applications/rebos-shell-settings.desktop",
     ".local/share/applications/rebos-shell-sound.desktop",
     ".local/share/applications/rebos-shell-scratchpad.desktop",
+    ".local/share/applications/rebos-shell-resource-monitor.desktop",
     ".local/share/applications/rebos-shell-system-monitor.desktop",
     ".local/share/applications/rebos-shell-wallpapers.desktop",
     ".local/share/applications/rebos-shell-weather.desktop",
@@ -560,6 +561,10 @@
     },
     ".local/share/applications/rebos-shell-scratchpad.desktop": {
       "source": "system/share/applications/rebos-shell-scratchpad.desktop",
+      "kind": "managed"
+    },
+    ".local/share/applications/rebos-shell-resource-monitor.desktop": {
+      "source": "system/share/applications/rebos-shell-resource-monitor.desktop",
       "kind": "managed"
     }
   }

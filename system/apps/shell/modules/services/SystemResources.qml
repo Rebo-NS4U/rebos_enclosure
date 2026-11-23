@@ -13,6 +13,7 @@ pragma ComponentBehavior: Bound
 Singleton {
     id: root
 
+    property bool compactMonitorActive: false
     property string detailMetric: ""
     property string detailTitle: ""
     property list<var> processes: []
@@ -87,10 +88,12 @@ Singleton {
     }
 
     Process {
-        command: root.detailMetric === "ram"
+        command: root.compactMonitorActive
+            ? ["python3", Quickshell.shellDir + "/scripts/process_monitor.py", "--summary"]
+            : root.detailMetric === "ram"
             ? ["python3", Quickshell.shellDir + "/scripts/process_monitor.py", "--memory-accounting"]
             : ["python3", Quickshell.shellDir + "/scripts/process_monitor.py"]
-        running: GlobalStates.systemMonitorOpen && root.detailMetric !== "" && root.detailMetric !== "window"
+        running: root.compactMonitorActive || (GlobalStates.systemMonitorOpen && root.detailMetric !== "" && root.detailMetric !== "window")
         stdout: SplitParser {
             onRead: data => {
                 try {
@@ -114,6 +117,8 @@ Singleton {
     property real ramUsage: 0.0
     property real ramTotal: 0
     property real ramUsed: 0
+    property real swapUsed: 0
+    property real swapTotal: 0
     property real ramAvailable: 0
 
     // GPU metrics
@@ -152,7 +157,7 @@ Singleton {
     // Optimized GPU polling avoids waking dGPUs.
     property Process monitorProcess: Process {
         id: monitorProcess
-        running: (GlobalStates.systemMonitorOpen || GlobalStates.islandStatsOpen) && root.validDisks.length > 0
+        running: (GlobalStates.systemMonitorOpen || root.compactMonitorActive) && root.validDisks.length > 0
         
         command: {
             let cmd = ["python3", Quickshell.shellDir + "/scripts/system_monitor.py", root.updateInterval.toString()];
@@ -185,6 +190,8 @@ Singleton {
                     }
                     
                     if (stats.ram) {
+                        root.swapUsed = stats.ram.swapUsed;
+                        root.swapTotal = stats.ram.swapTotal;
                         root.ramUsage = stats.ram.usage;
                         root.ramTotal = stats.ram.total;
                         root.ramUsed = stats.ram.used;
