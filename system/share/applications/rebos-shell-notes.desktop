@@ -6,4 +6,4 @@ Exec="@HOME@/.local/bin/rebos_shell" notepad
 Icon=accessories-text-editor
 Terminal=false
 Categories=Utility;TextEditor;
-Keywords=enclosure;quick notes;scratchpad;markdown;neovim;
+Keywords=enclosure;scratchpad;markdown;neovim;

@@ -436,8 +436,6 @@ floating Neovim editor. It starts in insert mode and follows the desktop
 palette and terminal font. Notes save after an editing pause, on focus
 change, or with **Ctrl+S**. Press Escape and enter `:wq` to save and close.
 
-Notepad reopens the scratch file at `$XDG_DATA_HOME/enclosure/scratchpad/scratch`
-(the default data directory is `~/.local/share`). If only the previous
-`~/Documents/Quick Notes.md` exists, it opens that file. When both exist,
-use `:bnext` to switch between them. The `rebos_shell notepad`,
-`rebos_shell scratchpad` and `rebos_shell run notes` commands open the same window.
+Notepad saves to `$XDG_DATA_HOME/enclosure/scratchpad/scratch` (the default
+data directory is `~/.local/share`). The `rebos_shell notepad` and
+`rebos_shell scratchpad` commands open the same window.

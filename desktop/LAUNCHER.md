@@ -16,7 +16,7 @@ The selection is personal and is not bundled with installer defaults.
 
 ## Built-in shell applications
 
-The launcher includes Quick Notes, File Shelf, Calendar, Weather, System Monitor,
+The launcher includes Notepad, File Shelf, Calendar, Weather, System Monitor,
 Project Picker, Dashboard, Notifications, Sound Controls, Microphone Controls,
 Network Controls, Bluetooth Controls, Battery and Power, Power Menu, and Shell
 Wallpapers, and Rebos Streamer, alongside the existing Settings and Assistant entries. Search by

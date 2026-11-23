@@ -177,7 +177,6 @@ Singleton {
                 break;
             case "notepad":
             case "scratchpad":
-            case "notes":
                 Visibilities.closeActiveBarPopup();
                 Visibilities.clearAll();
                 Quickshell.execDetached(["bash", Quickshell.shellPath("cli.sh"), "notepad"]);

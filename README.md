@@ -35,7 +35,7 @@ Screenshots show a customized desktop; new installs start with the bundled defau
 | Appearance | Twelve rendered material styles, matching app/terminal surfaces, wallpaper-driven palettes, OLED mode, custom font names and font previews, borders, transparency, blur and reduced-motion controls. |
 | Wallpapers | Separate artist/shared-album collections, larger choosers, search, artist and dominant-color sorting, per-screen choices and saved wallpaper/color presets. Optional video backgrounds use mpvpaper. |
 | Settings | Category sidebar, top tabs and overview cards, page shortcuts, search with phrase matching, grouped advanced controls and keyboard-accessible fields. |
-| Everyday tools | File shelf with drag and drop, quick notes, project picker, clipboard history, resident screenshot editor, annotation/redaction, confidence-aware OCR and emoji picker. |
+| Everyday tools | File shelf with drag and drop, Notepad, project picker, clipboard history, resident screenshot editor, annotation/redaction, confidence-aware OCR and emoji picker. |
 | Music | Local library and folder playlists, favorites, shuffle/repeat, playback queue, spotDL downloads, cached lyrics, current/next bar lyrics and an output-audio visualizer. |
 | Books and typing | Imported reading/typing library, continuous/fullscreen typing, reading progress, word lookup, searchable categorized notes and optional offline Kokoro narration with word highlighting. |
 | Video | Anime/movie/TV/YouTube browser, early-opening VLC player, continuing episodes/playlists, subtitle source selection and optional local Whisper captions. |

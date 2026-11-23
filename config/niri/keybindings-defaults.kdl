@@ -13,7 +13,6 @@ binds {
     Mod+Ctrl+T repeat=false hotkey-overlay-title="Toggle Lyrics" { spawn "qs" "ipc" "-p" "@HOME@/.config/quickshell" "call" "lyrics" "toggle"; }
     Mod+Alt+F hotkey-overlay-title="File Shelf" { spawn "qs" "ipc" "-p" "@HOME@/.config/quickshell" "call" "rebos_shell" "run" "file-shelf"; }
     Mod+Space hotkey-overlay-title="Open App Launcher" { spawn "qs" "ipc" "-p" "@HOME@/.config/quickshell" "call" "rebos_shell" "run" "launcher"; }
-    Mod+Alt+N repeat=false hotkey-overlay-title="Notepad" { spawn "@HOME@/.local/bin/rebos_shell" "notepad"; }
     Mod+N repeat=false hotkey-overlay-title="Notepad" { spawn "@HOME@/.local/bin/rebos_shell" "notepad"; }
     Mod+V hotkey-overlay-title="Open Clipboard History" { spawn "rebos-clipboard"; }
     Mod+Period hotkey-overlay-title="Open App Launcher" { spawn "qs" "ipc" "-p" "@HOME@/.config/quickshell" "call" "rebos_shell" "run" "launcher"; }

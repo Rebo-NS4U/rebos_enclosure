@@ -27,12 +27,6 @@ vim.api.nvim_create_autocmd({ "CursorHoldI", "CursorHold", "InsertLeave", "BufLe
 vim.keymap.set({ "n", "i" }, "<C-s>", "<Cmd>update<CR>", { desc = "Save note" })
 vim.api.nvim_create_autocmd("VimEnter", {
     callback = function()
-        -- Register the other existing note as a buffer without reading its contents.
-        local alternate = vim.env.ENCLOSURE_ALTERNATE_NOTE
-        if alternate and vim.fn.filereadable(alternate) == 1 then
-            local buffer = vim.fn.bufadd(alternate)
-            vim.bo[buffer].buflisted = true
-        end
         vim.cmd("normal! G$")
         vim.cmd.startinsert({ bang = true })
     end,
