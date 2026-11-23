@@ -16,6 +16,7 @@ Singleton {
     readonly property color error: Config.palette.error || "#ff8888"
     readonly property color overError: Config.palette.overError || "#111111"
     readonly property color overSurface: Config.palette.overSurface || "#eeeeee"
+    readonly property color overSurfaceVariant: Config.palette.overSurfaceVariant || "#bbbbbb"
     readonly property color outline: Config.palette.outline || "#888888"
     readonly property color shadow: Config.palette.shadow || "#000000"
     readonly property color surfaceBright: Config.palette.surfaceBright || "#555555"

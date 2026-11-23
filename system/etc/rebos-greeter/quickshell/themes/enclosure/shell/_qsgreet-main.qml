@@ -27,7 +27,8 @@ FocusScope {
     Rectangle { anchors.fill: parent; color: Colors.background }
     Image {
         anchors.fill: parent
-        source: "file:///var/lib/rebos-greeter/theme/background.png"
+        source: Styling.shellStyle === "glyph" ? Qt.resolvedUrl("modules/components/glyph-orbits.png")
+            : "file:///var/lib/rebos-greeter/theme/background.png"
         fillMode: Image.PreserveAspectCrop
         asynchronous: true
         mipmap: true
@@ -61,6 +62,7 @@ FocusScope {
                     Layout.alignment: Qt.AlignHCenter
                     text: Qt.formatDateTime(clock.now, Config.display.use12hFormat ? "h:mm AP" : "HH:mm")
                     color: panel.item
+                    font.family: Styling.displayFont
                     font.pixelSize: Styling.fontSize(34)
                 }
                 StyledText {

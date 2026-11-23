@@ -63,7 +63,7 @@ WlSessionLockSurface {
     // it: identical pixels to what the user was seeing, so niri's output
     // switch to the locked frame is invisible - no wallpaper flash.
     readonly property string lockshotPath: GlobalStates.lockshotPaths[root.screen ? root.screen.name : ""] || ""
-    readonly property bool shotReady: lockshotPath !== "" && shotImage.ready
+    readonly property bool shotReady: lockshotPath !== "" && shotImage.status === Image.Ready
 
     // PAM can complete on any output. All lock surfaces must run their
     // foreground exit at the same time before the shared lock is released.
@@ -83,7 +83,8 @@ WlSessionLockSurface {
     // frame as soon as this surface commits. The wallpaper window keeps the
     // same image warm in the pixmap cache (see lockscreenFramePreloader), so
     // this is a cache hit.
-    readonly property bool wallpaperReady: wallpaperBackground.source === "" || wallpaperBackground.ready
+    readonly property bool glyphStyle: Styling.shellStyle === "glyph"
+    readonly property bool wallpaperReady: glyphStyle ? stars.status === Image.Ready : wallpaperBackground.source === "" || wallpaperBackground.ready
 
     // Frame-1 base layer: the pre-lock desktop shot. Same source + sourceSize
     // as the wallpaper window's lockshot preloader, so this is a cache hit.
@@ -128,7 +129,7 @@ WlSessionLockSurface {
             return manager.getLockscreenFramePath(wallpaper);
         }
 
-        source: lockscreenFramePath ? "file://" + lockscreenFramePath : ""
+        source: !root.glyphStyle && lockscreenFramePath ? "file://" + lockscreenFramePath : ""
         visible: source !== ""
         // Pre-startAnim the lockshot (if present) is the base; the wallpaper
         // crossfades in with the entry animation so the steady-state backdrop
@@ -170,6 +171,20 @@ WlSessionLockSurface {
                 duration: root.unlockAnimMs
                 easing.type: Easing.OutQuint
             }
+        }
+    }
+
+    Rectangle {
+        anchors.fill: parent
+        z: 3
+        visible: root.glyphStyle
+        color: Colors.background
+        opacity: wallpaperBackground.opacity
+        Image {
+            id: stars
+            anchors.fill: parent
+            source: root.glyphStyle ? Qt.resolvedUrl("../components/glyph-orbits.png") : ""
+            fillMode: Image.PreserveAspectCrop
         }
     }
 

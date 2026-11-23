@@ -28,7 +28,8 @@ class MaterialAssemblyTests(unittest.TestCase):
             files = ['components/StyledRect.qml', 'theme/Styling.qml',
                      'theme/Motion.qml', 'theme/ShellStyles.js', 'theme/Icons.qml',
                      'components/StyledText.qml', 'components/SearchInput.qml',
-                     'components/ThemeButton.qml', 'components/TintedWallpaper.qml']
+                     'components/ThemeButton.qml', 'components/TintedWallpaper.qml',
+                     'components/glyph-orbits.png', 'theme/fonts/Doto.ttf', 'theme/fonts/Doto-LICENSE.txt']
             files += ['widgets/dashboard/wallpapers/' + name for name in
                       ('palette.vert', 'palette.frag', 'palette.vert.qsb', 'palette.frag.qsb')]
             for shader in ('linear_gradient', 'radial_gradient', 'halftone', 'dither_fill'):

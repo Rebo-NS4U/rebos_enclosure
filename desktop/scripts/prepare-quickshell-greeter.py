@@ -14,7 +14,7 @@ def assemble(destination, root=ROOT):
     theme = destination / 'themes/enclosure/shell/modules'
     components = theme / 'components'
     components.mkdir(parents=True, exist_ok=True)
-    for name in ('StyledRect.qml', 'StyledText.qml', 'ThemeButton.qml', 'SearchInput.qml', 'TintedWallpaper.qml'):
+    for name in ('StyledRect.qml', 'StyledText.qml', 'ThemeButton.qml', 'SearchInput.qml', 'TintedWallpaper.qml', 'glyph-orbits.png'):
         shutil.copy2(shell / 'modules/components' / name, components)
     for shader in ('linear_gradient', 'radial_gradient', 'halftone', 'dither_fill'):
         for stage in ('vert', 'frag'):
@@ -25,6 +25,8 @@ def assemble(destination, root=ROOT):
     material.mkdir(parents=True, exist_ok=True)
     for name in ('Styling.qml', 'Motion.qml', 'ShellStyles.js', 'Icons.qml'):
         shutil.copy2(shell / 'modules/theme' / name, material)
+
+    shutil.copytree(shell / 'modules/theme/fonts', material / 'fonts', dirs_exist_ok=True)
 
     wallpaper = theme / 'widgets/dashboard/wallpapers'
     wallpaper.mkdir(parents=True, exist_ok=True)
