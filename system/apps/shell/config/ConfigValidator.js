@@ -38,7 +38,7 @@ function validate(current, defaults, keyName) {
     if (keyName === "shellStyle" && current === "liquid-glass") return "radar-station";
     if (keyName === "shellStyle" && current === "condensation") return "radar-station";
     if (keyName === "shellStyle" && current === "dithered") return "quiet";
-    if (keyName === "shellStyle" && ["glass", "quiet", "colorful", "custom", "instrument", "frosted", "monolith", "blueprint", "terminal-hardware", "glass-vault", "radar-station", "guilloche", "canopy", "orbital", "metropolis", "clear-glass"].indexOf(current) === -1) {
+    if (keyName === "shellStyle" && ["glass", "quiet", "colorful", "custom", "instrument", "frosted", "monolith", "blueprint", "terminal-hardware", "glass-vault", "radar-station", "guilloche", "canopy", "orbital", "nebula", "metropolis", "clear-glass"].indexOf(current) === -1) {
         return defaults;
     }
     if (keyName === "desktopBlur" && ["medium", "light", "shell", "off"].indexOf(current) === -1) return defaults;

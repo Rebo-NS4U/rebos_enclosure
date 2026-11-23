@@ -486,6 +486,25 @@ ShellRoot {
       fixture.check(settings.appearanceTab === "style", "Appearance opens the Style tab by default");
       fixture.check(fixture.find(settings, "theme-preview-grid").columns === 6, "Fullscreen theme previews fit in one row");
       fixture.check(scroll.contentHeight <= scroll.height, "Style page does not include hidden settings groups");
+      const nebulaCard = fixture.find(settings, "shell-style-nebula");
+      fixture.check(nebulaCard && nebulaCard.visible, "Nebula is available in the style picker");
+      const previousStyle = Config.theme.shellStyle;
+      const previousTransparency = Config.theme.shellTransparency;
+      const previousBlur = Config.performance.desktopBlur;
+      tester.mouseClick(nebulaCard); tester.wait(40);
+      fixture.check(Styling.shellStyle === "nebula" && nebulaCard.selected, "Clicking Nebula applies the theme");
+      const nebulaCanvas = fixture.find(nebulaCard, "wallpaper-theme-canvas");
+      fixture.check(nebulaCanvas && nebulaCanvas.finish === "nebula", "Nebula preview loads its star field");
+      const originalAccent = Colors.primary;
+      const originalFill = nebulaCard.sample.gradient[0][0];
+      Colors.primary = "#0044ff";
+      tester.wait(40);
+      fixture.check(nebulaCanvas.accent.toString() === "#0044ff" && nebulaCard.sample.gradient[0][0] !== originalFill,
+       "Nebula glow and surface follow live palette changes");
+      Colors.primary = originalAccent;
+      Config.theme.shellStyle = previousStyle;
+      Config.theme.shellTransparency = previousTransparency;
+      Config.performance.desktopBlur = previousBlur;
       settings.openSection(6, "bar"); tester.wait(80);
       let fullscreenBar = fixture.find(settings, "shell-group-bar");
       fixture.check(!fullscreenBar.collapsible && fullscreenBar.visible && Math.abs(fullscreenBar.width - sharedGrid.width) < 1, "Panel controls use the available width");

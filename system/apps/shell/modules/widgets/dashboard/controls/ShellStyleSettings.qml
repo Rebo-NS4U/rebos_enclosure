@@ -74,7 +74,7 @@ SettingsGroup {
                 padding: 10
                 onClicked: {
                     Config.theme.shellStyle = modelData.id;
-                    if (["frosted", "colorful", "glass-vault", "radar-station", "guilloche", "canopy", "orbital", "metropolis", "clear-glass"].indexOf(modelData.id) !== -1) {
+                    if (["frosted", "colorful", "glass-vault", "radar-station", "guilloche", "canopy", "orbital", "nebula", "metropolis", "clear-glass"].indexOf(modelData.id) !== -1) {
                         Config.theme.shellTransparency = -1;
                         if (Config.performance.desktopBlur === "off") Config.performance.desktopBlur = "shell";
                     }

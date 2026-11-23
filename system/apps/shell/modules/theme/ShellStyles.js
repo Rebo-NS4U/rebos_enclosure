@@ -3,6 +3,7 @@
 var styles = [
     {id: "canopy", label: "Canopy", font: "DejaVu Sans Mono", description: "Overlapping tree boughs with two-tone leaf sprays across the window."},
     {id: "orbital", label: "Orbital", font: "JetBrains Mono", description: "A still star field with scattered pinpoints and brighter four-point stars."},
+    {id: "nebula", label: "Nebula", font: "JetBrains Mono", description: "A still star field with a soft glow drawn from the wallpaper palette."},
     {id: "metropolis", label: "Metropolis", font: "DejaVu Sans", description: "Stepped towers and lit windows frame a low city skyline."},
     {id: "glass-vault", label: "Glass Vault", font: "Noto Sans", description: "Thick glass blocks with stepped rims and rounded corner clasps."},
     {id: "radar-station", label: "Radar Station", font: "DejaVu Sans", description: "Etched bearing scales, radial divisions and a marked sector."},
@@ -189,6 +190,13 @@ function surface(style, variant, p, ditherStrength) {
         border = [focused ? p.primary : mix(fill, p.primary, 0.38), framed || focused ? 1 : 0];
     }
     var canopy=style === "canopy", orbital=style === "orbital", metro=style === "metropolis";
+    if (style === "nebula" && neutral) {
+        var nebulaTint = mix(p.primary, p.tertiary, 0.35);
+        fill = mix(p.background, nebulaTint, inset ? 0.035 : focused ? 0.17 : outer ? 0.10 : 0.075);
+        item = p.foreground;
+        opacity = focused ? 0.88 : inset ? 0.55 : outer ? 0.74 : 0.57;
+        border = [focused ? p.primary : mix(fill, nebulaTint, 0.25), outer || focused ? 1 : 0];
+    }
     if (orbital && neutral) {
         fill=mix(p.background,p.foreground,inset?0.005:focused?0.10:outer?0.075:0.045);
         item=p.foreground;

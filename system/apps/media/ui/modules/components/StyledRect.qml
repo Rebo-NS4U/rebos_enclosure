@@ -401,7 +401,7 @@ ClippingRectangle {
     Loader {
         anchors.fill: parent
         readonly property string material: root.styleOverride || Styling.shellStyle
-        active: !root.hasFillColor && root.rectOpacity > 0 && (["canopy", "metropolis"].includes(material)
+        active: !root.hasFillColor && root.rectOpacity > 0 && (["canopy", "metropolis", "nebula"].includes(material)
             ? !root.controlSurface && ["bg", "popup", "pane", "surface", "surfaceContainer", "bar"].includes(root.variant)
             : material === "orbital"
                 && ["bg", "popup", "pane", "surface", "surfaceContainer", "internalbg", "focus"].includes(root.variant))
@@ -433,6 +433,31 @@ ClippingRectangle {
             readonly property bool nested: !outer && !barSurface && root.variant !== "bar"
             onBroadChanged: requestPaint()
             onNestedChanged: requestPaint()
+
+            function paintNebula(ctx) {
+                const x = width * 0.76;
+                const y = height * 0.68;
+                const glow = ctx.createRadialGradient(x, y, 0, x, y, Math.min(width * 0.6, height * 1.15));
+                glow.addColorStop(0, Qt.alpha(accent, 0.23));
+                glow.addColorStop(0.5, Qt.alpha(secondaryAccent, 0.11));
+                glow.addColorStop(1, Qt.alpha(secondaryAccent, 0));
+                ctx.fillStyle = glow;
+                ctx.fillRect(0, 0, width, height);
+
+                // Stable positions keep the stars still when the palette changes.
+                for (let row = 0; row < Math.ceil(height / 40); row++) {
+                    for (let col = 0; col < Math.ceil(width / 48); col++) {
+                        const seed = Math.sin((col + 1) * 127.1 + (row + 1) * 311.7) * 43758.5453;
+                        const jitter = seed - Math.floor(seed);
+                        const bright = jitter > 0.85;
+                        ctx.fillStyle = Qt.alpha(bright ? accent : pigment, bright ? 0.82 : 0.35);
+                        ctx.beginPath();
+                        ctx.arc(col * 48 + 8 + jitter * 32, row * 40 + 8 + (jitter * 7 % 1) * 24,
+                            bright ? 1.5 : 0.75, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+            }
 
             function paintCanopy(ctx) {
                 const leafSize = broad ? Math.min(28, width * 0.047, height * 0.105) : Math.min(12, height * 0.23, width * 0.035)
@@ -626,7 +651,9 @@ ClippingRectangle {
                 if(root.traceThemeFrame(ctx,0))ctx.clip();
                 if (finish === "canopy") {
                     paintCanopy(ctx)
-                }else if(finish === "orbital"){
+                } else if (finish === "nebula") {
+                    paintNebula(ctx);
+                } else if (finish === "orbital") {
                     // Elliptical orbital tracks wrap a quiet, recessed space capsule.
                     ctx.strokeStyle=ink(0.20);ctx.lineWidth=1;
                     if(root.traceThemeFrame(ctx,outer?6:3))ctx.stroke();
