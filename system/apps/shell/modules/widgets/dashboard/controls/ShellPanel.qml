@@ -758,67 +758,6 @@ Item {
                         }
                     }
 
-                    // SYSTEM SECTION
-                    // ═══════════════════════════════════════════════════════════════
-                    SettingsGroup {
-                        property string settingsAnchor: "system"
-                        visible: !root.groupContainer?.tabbedNavigation || root.groupContainer.navigationTab === "panels"
-                        collapsible: !root.groupContainer?.tabbedNavigation
-                        objectName: "shell-group-system"
-                        parent: root.groupContainer || contentColumn
-                        Layout.columnSpan: root.groupContainer && expanded ? Math.min(2, root.groupContainer.columns) : 1
-                        Layout.alignment: Qt.AlignTop
-                        title: "About"
-                        Layout.fillWidth: true
-
-                        StyledText {
-                            renderType: Text.NativeRendering
-                            font.hintingPreference: Font.PreferFullHinting
-                            text: "rebos_enclosure"
-                            font.family: Config.theme.font
-                            font.pixelSize: Styling.fontSize(-1)
-                            font.weight: Font.Medium
-                            color: Colors.overSurfaceVariant
-                            Layout.bottomMargin: -4
-                        }
-
-                        StyledText {
-                            id: enclosureVersion
-                            property string revision: ""
-                            text: revision ? "Enclosure build " + revision
-                                : (versionLookup.running ? "Reading Enclosure build…" : "Enclosure build unavailable")
-                            color: Colors.overSurfaceVariant
-
-                            Process {
-                                id: versionLookup
-                                running: enclosureVersion.visible
-                                command: ["python3", "-B", Quickshell.shellPath("scripts/github_status.py"), "--installed-version"]
-                                stdout: StdioCollector {
-                                    onStreamFinished: enclosureVersion.revision = text.trim()
-                                }
-                            }
-                        }
-
-                        ActionButton {
-                            text: "Source on GitHub"
-                            icon: Icons.link
-                            onClicked: Quickshell.execDetached(["xdg-open", "https://github.com/Rebo-NS4U/rebos_enclosure"])
-                        }
-
-                        ActionButton {
-                            text: "Latest Enclosure release"
-                            icon: Icons.arrowSquareOut
-                            onClicked: Quickshell.execDetached(["xdg-open", "https://github.com/Rebo-NS4U/rebos_enclosure/releases/latest"])
-                        }
-
-                        ActionButton {
-                            text: "Sponsor jR4dh3y"
-                            icon: Icons.heart
-                            onClicked: Quickshell.execDetached(["xdg-open", "https://github.com/sponsors/jR4dh3y"])
-                        }
-
-                    }
-
                     // ═══════════════════════════════════════════════════════════════
                     // SIDEBAR SECTION
                     // ═══════════════════════════════════════════════════════════════
@@ -903,6 +842,65 @@ Item {
                                     Config.ai.sidebarPinnedOnStartup = value;
                                 }
                             }
+                        }
+                    }
+
+                    // ═══════════════════════════════════════════════════════════════
+                    // ABOUT SECTION
+                    // ═══════════════════════════════════════════════════════════════
+                    SettingsGroup {
+                        property string settingsAnchor: "system"
+                        visible: !root.groupContainer?.tabbedNavigation || root.groupContainer.navigationTab === "panels"
+                        collapsible: !root.groupContainer?.tabbedNavigation
+                        objectName: "shell-group-system"
+                        // Join the shared grid after the other Shell groups have moved.
+                        Binding on parent {
+                            value: root.groupContainer || contentColumn
+                            delayed: true
+                        }
+                        Layout.columnSpan: root.groupContainer?.columns ?? 1
+                        Layout.alignment: Qt.AlignTop
+                        title: "About"
+                        Layout.fillWidth: true
+
+                        StyledText {
+                            renderType: Text.NativeRendering
+                            font.hintingPreference: Font.PreferFullHinting
+                            text: "rebos_enclosure"
+                            font.family: Config.theme.font
+                            font.pixelSize: Styling.fontSize(-1)
+                            font.weight: Font.Medium
+                            color: Colors.overSurfaceVariant
+                            Layout.bottomMargin: -4
+                        }
+
+                        StyledText {
+                            id: enclosureVersion
+                            property string revision: ""
+                            text: revision ? "Enclosure build " + revision
+                                : (versionLookup.running ? "Reading Enclosure build…" : "Enclosure build unavailable")
+                            color: Colors.overSurfaceVariant
+
+                            Process {
+                                id: versionLookup
+                                running: enclosureVersion.visible
+                                command: ["python3", "-B", Quickshell.shellPath("scripts/github_status.py"), "--installed-version"]
+                                stdout: StdioCollector {
+                                    onStreamFinished: enclosureVersion.revision = text.trim()
+                                }
+                            }
+                        }
+
+                        ActionButton {
+                            text: "Source on GitHub"
+                            icon: Icons.link
+                            onClicked: Quickshell.execDetached(["xdg-open", "https://github.com/Rebo-NS4U/rebos_enclosure"])
+                        }
+
+                        ActionButton {
+                            text: "Latest Enclosure release"
+                            icon: Icons.arrowSquareOut
+                            onClicked: Quickshell.execDetached(["xdg-open", "https://github.com/Rebo-NS4U/rebos_enclosure/releases/latest"])
                         }
                     }
                 }

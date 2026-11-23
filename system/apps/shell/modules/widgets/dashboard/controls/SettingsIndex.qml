@@ -30,8 +30,8 @@ QtObject {
         { label: "Shell", keywords: "bar sidebar lockscreen settings", section: 6, subSection: "", subLabel: "Shell", icon: Icons.gear, isIcon: true },
         { label: "Bar", keywords: "panel taskbar clock player screen glass classic appearance transparency opacity accent reset", section: 6, subSection: "bar", subLabel: "Shell > Bar", icon: Icons.layout, isIcon: true },
         { label: "Lock screen", keywords: "lock screen password login position", section: 6, subSection: "lockscreen", subLabel: "Shell > Lock screen", icon: Icons.lock, isIcon: true },
-        { label: "About", keywords: "about sponsor version", section: 6, subSection: "system", subLabel: "Shell > About", icon: Icons.circuitry, isIcon: true },
         { label: "Assistant panel", keywords: "ai sidebar enable disable width position pinned", section: 6, subSection: "sidebar", subLabel: "Shell > Assistant panel", icon: Icons.robot, isIcon: true },
+        { label: "About", keywords: "about enclosure release version build", section: 6, subSection: "system", subLabel: "Shell > About", icon: Icons.circuitry, isIcon: true },
         { label: "Keyboard shortcuts", keywords: "keyboard shortcuts add keybind keybinding new command app hotkeys binds super windows niri kitty terminal launcher workspace screenshot volume brightness", section: 7, subSection: "", subLabel: "", icon: Icons.keyboard, isIcon: true },
         { label: "Window rules", keywords: "niri focused app match title floating fullscreen maximized opacity corners radius rounding universal workspace width", section: 8, subSection: "", subLabel: "", icon: Icons.layout, isIcon: true }
     ]
