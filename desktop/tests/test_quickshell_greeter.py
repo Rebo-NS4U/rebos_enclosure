@@ -16,6 +16,51 @@ CORE = ROOT / 'system/etc/rebos-greeter/quickshell/core'
 
 
 class MaterialAssemblyTests(unittest.TestCase):
+    @unittest.skipUnless(shutil.which('quickshell'), 'requires Quickshell')
+    def test_login_panel_skips_background_finish(self):
+        with tempfile.TemporaryDirectory() as directory:
+            tmp = Path(directory)
+            runtime = tmp / 'runtime'
+            runtime.mkdir(mode=0o700)
+            destination = tmp / 'greeter'
+            subprocess.run(['python3', ROOT / 'desktop/scripts/prepare-quickshell-greeter.py',
+                            destination], check=True)
+            appearance = tmp / 'appearance.json'
+            appearance.write_text(json.dumps({'material': {'shellStyle': 'glyph'}}))
+            entry = destination / 'themes/enclosure/shell/shell.qml'
+            entry.write_text('''import QtQuick
+import Quickshell
+import qs.config
+import qs.modules.components
+ShellRoot {
+    FloatingWindow {
+        implicitWidth: 480
+        implicitHeight: 520
+        StyledRect {
+            id: panel
+            anchors.fill: parent
+            variant: "bg"
+        }
+        Timer {
+            interval: 100
+            running: true
+            onTriggered: {
+                const hasFinish = panel.children.some(child => child.item?.objectName === "background-finish")
+                const solid = Config.theme.shellStyle === "glyph" && !hasFinish
+                console.log("LOGIN_PANEL_SOLID", solid)
+                Qt.quit()
+            }
+        }
+    }
+}''')
+            env = {**os.environ, 'QT_QPA_PLATFORM': 'offscreen', 'QT_QUICK_BACKEND': 'software',
+                   'XDG_RUNTIME_DIR': str(runtime), 'ENCLOSURE_GREETER_APPEARANCE': str(appearance)}
+            result = subprocess.run(['quickshell', '-p', entry], env=env,
+                                    capture_output=True, text=True, timeout=10)
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            self.assertIn('LOGIN_PANEL_SOLID true', output)
+
     def test_renderer_and_shaders_come_from_shell(self):
         spec = importlib.util.spec_from_file_location('greeter_assembly', ROOT / 'desktop/scripts/prepare-quickshell-greeter.py')
         module = importlib.util.module_from_spec(spec)

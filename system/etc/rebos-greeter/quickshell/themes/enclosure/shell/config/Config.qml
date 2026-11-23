@@ -14,6 +14,7 @@ Singleton {
         shellStyle: metrics.style || "quiet", roundness: metrics.radius === undefined ? 16 : metrics.radius,
         font: metrics.font || "JetBrains Mono", fontSize: metrics.fontSize || 14,
         monoFontSize: metrics.fontSize || 14, ditherStrength: 20, shellTransparency: -1,
+        backgroundFinish: "default",
         shadowXOffset: 0, shadowYOffset: 0, shadowOpacity: 0, shadowColor: "shadow", shadowBlur: 1
     }, appearance.material || {})
     readonly property var display: appearance.display || ({use12hFormat: true, tintEnabled: false})
