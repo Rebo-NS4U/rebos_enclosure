@@ -1,12 +1,9 @@
 import QtQuick
-import qs.modules.components
 import qs.modules.services
-import qs.config
 
 Item {
     id: root
 
-    implicitWidth: powerMenu.implicitWidth
     implicitHeight: powerMenu.implicitHeight
     property bool popupMode: false
     property bool expanded: true
@@ -17,22 +14,6 @@ Item {
     function focusMenu() {
         powerMenu.currentIndex = 0;
         powerMenu.forceActiveFocus();
-    }
-
-    Behavior on implicitWidth {
-        enabled: Config.animDuration > 0
-        NumberAnimation {
-            duration: Config.animDuration
-            easing.type: Easing.OutQuart
-        }
-    }
-
-    Behavior on implicitHeight {
-        enabled: Config.animDuration > 0
-        NumberAnimation {
-            duration: Config.animDuration
-            easing.type: Easing.OutQuart
-        }
     }
 
     PowerMenu {

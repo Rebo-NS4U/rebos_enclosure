@@ -1,9 +1,7 @@
 pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
-import Quickshell.Wayland._BackgroundEffect
 import Quickshell.Wayland
-import qs.modules.components
 import qs.modules.services
 import qs.config
 
@@ -93,7 +91,6 @@ Item {
         anchors.bottom: true
         anchors.left: true
         anchors.right: true
-        BackgroundEffect.blurRegion: BlurRegion { target: powerBackdrop }
         color: "transparent"
 
         FocusGrab {
@@ -102,14 +99,15 @@ Item {
             onCleared: root.closeMenu()
         }
 
-        StyledRect {
-            id: powerBackdrop
+        Item {
             anchors.fill: parent
-            variant: "popup"
-            radius: 0
-            enableBorder: false
             opacity: root.revealProgress
             enabled: root.menuOpen
+
+            Rectangle {
+                anchors.fill: parent
+                color: "#eb000000"
+            }
 
             MouseArea {
                 anchors.fill: parent
@@ -119,6 +117,7 @@ Item {
             PowerMenuView {
                 id: powerMenuView
                 anchors.centerIn: parent
+                width: Math.min(parent.width * 0.74, parent.height * 0.83)
                 popupMode: true
                 expanded: root.menuOpen
                 onCloseRequested: root.closeMenu()
