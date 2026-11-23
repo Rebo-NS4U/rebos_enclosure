@@ -127,6 +127,44 @@ ShellRoot {
 
 class MergedBarTests(unittest.TestCase):
     @unittest.skipUnless(shutil.which('qs'), 'Quickshell required')
+    def test_resource_dial_sorting(self):
+        self.run_harness('''import QtQuick
+import QtTest
+import Quickshell
+import qs.modules.bar.island
+ShellRoot {
+ FloatingWindow {
+  visible: true; implicitWidth: 520; implicitHeight: 600
+  CompactResources { id: panel; anchors.fill: parent }
+  TestCase { id: tester; when: false }
+  Timer { interval: 300; running: true; onTriggered: {
+   try {
+    panel.stats.processes = [
+     {pid: 10, name: "Alpha", cpu: 9, ram: 2, swap: null},
+     {pid: 20, name: "Beta", cpu: 1, ram: 8, swap: 0},
+     {pid: 30, name: "Gamma", cpu: 2, ram: 4, swap: 1}];
+    panel.stats.temperatures = [{id: "a", name: "Chip A", temp: 40}, {id: "b", name: "Chip B", temp: 55}];
+    function order(names) {
+     const actual = panel.matches.map(r => r.name).join(",");
+     if (actual !== names) throw Error(panel.sortMetric + ": expected " + names + ", got " + actual);
+    }
+    function click(metric) { tester.mouseClick(tester.findChild(panel, "sort-" + metric)); }
+    order("Alpha,Gamma,Beta"); click("cpu"); order("Beta,Gamma,Alpha");
+    click("ram"); order("Beta,Gamma,Alpha"); click("ram"); order("Alpha,Gamma,Beta");
+    click("swap"); order("Gamma,Beta,Alpha"); click("swap"); order("Beta,Gamma,Alpha");
+    const filter = tester.findChild(panel, "resource-filter");
+    filter.text = "30"; order("Gamma"); filter.text = "";
+    click("temp"); order("Chip B,Chip A"); click("temp"); order("Chip A,Chip B");
+    filter.text = "chip b"; order("Chip B"); filter.text = "";
+    panel.stats.temperatures = [{id: "b", name: "Chip B", temp: 5}, {id: "a", name: "Chip A", temp: 40}];
+    order("Chip B,Chip A"); click("cpu"); order("Alpha,Gamma,Beta");
+    console.log("MERGED BAR PASSED"); Qt.quit();
+   } catch (error) { console.error(error); Qt.exit(1); }
+  } }
+ }
+}''')
+
+    @unittest.skipUnless(shutil.which('qs'), 'Quickshell required')
     def test_merged_layout_and_panels(self):
         self.run_harness(HARNESS)
 

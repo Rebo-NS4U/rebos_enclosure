@@ -35,6 +35,17 @@ def process_name(base, fallback):
     return ''.join(char for char in label if char.isprintable())[:160] or fallback
 
 
+def process_swap(base):
+    try:
+        with (base / 'status').open() as stream:
+            for line in stream:
+                if line.startswith('VmSwap:'):
+                    return int(line.split()[1]) * 1024
+    except (OSError, ValueError, IndexError):
+        pass
+    return None
+
+
 class ProcessMonitor:
     def __init__(self, proc=Path('/proc')):
         self.proc = proc
@@ -108,6 +119,8 @@ class ProcessMonitor:
             old = self.previous.get(row['pid'])
             valid = elapsed and old and old['start'] == row['start']
             result = {key: row[key] for key in ('pid', 'ppid', 'start', 'name', 'ram', 'sockets', 'io_available')}
+            if summary:
+                result['swap'] = process_swap(base)
             if memory_accounting:
                 result['memory_available'] = row['memory_available']
             result['cpu'] = max(0, (row['ticks'] - old['ticks']) / self.ticks / elapsed * 100) if valid else 0

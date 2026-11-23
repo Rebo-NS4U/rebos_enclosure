@@ -5,6 +5,7 @@ import os
 import json
 import subprocess
 import re
+from pathlib import Path
 
 
 # Quality exception: These fields are widget references, caches, locks or previous samples with distinct names and lifetimes.
@@ -169,32 +170,36 @@ class SystemMonitor:  # pylint: disable=too-many-instance-attributes
         except:
             return 0.0
 
-    def get_cpu_temp(self):
-        base = "/sys/class/hwmon"
-        if not os.path.exists(base):
-            return -1
-        for hwmon in os.listdir(base):
-            path = os.path.join(base, hwmon)
+    @staticmethod
+    def get_temperatures(base=Path("/sys/class/hwmon")):
+        sensors = []
+        cpu_temp = -1
+        cpu_chips = {"coretemp", "k10temp", "zenpower", "cpu_thermal", "x86_pkg_temp", "amd_energy"}
+        for chip in sorted(base.glob("hwmon*")):
             try:
-                with open(os.path.join(path, "name"), "r") as f:
-                    name = f.read().strip()
-                if name in [
-                    "coretemp",
-                    "k10temp",
-                    "zenpower",
-                    "cpu_thermal",
-                    "x86_pkg_temp",
-                    "amd_energy",
-                ]:
-                    for item in os.listdir(path):
-                        if item.endswith("_input") and item.startswith("temp"):
-                            with open(os.path.join(path, item), "r") as f:
-                                val = int(f.read().strip())
-                                if 10000 < val < 120000:
-                                    return val // 1000
-            except:
+                name = (chip / "name").read_text().strip()
+                power = chip / "device/power/runtime_status"
+                if power.exists() and power.read_text().strip() in {"suspended", "suspending"}:
+                    continue
+            except OSError:
                 continue
-        return -1
+            for channel in sorted(chip.glob("temp[0-9]*_input")):
+                try:
+                    temperature = int(channel.read_text()) / 1000
+                except (OSError, ValueError):
+                    continue
+                if temperature <= -273.15:
+                    continue
+                key = channel.name.removesuffix("_input")
+                try:
+                    label = (chip / (key + "_label")).read_text().strip()
+                except OSError:
+                    label = key
+                sensors.append({"name": f"{name} · {label}", "temp": temperature,
+                                "id": f"{chip.name}/{key}"})
+                if cpu_temp == -1 and name in cpu_chips and 10 < temperature < 120:
+                    cpu_temp = int(temperature)
+        return cpu_temp, sensors
 
     def get_cpu_frequency(self):
         frequencies = []
@@ -470,7 +475,7 @@ if __name__ == "__main__":
     try:
         while True:
             cpu_usage = monitor.get_cpu()
-            cpu_temp = monitor.get_cpu_temp()
+            cpu_temp, temperatures = monitor.get_temperatures()
             cpu_frequency = monitor.get_cpu_frequency()
             memory = monitor.get_mem()
             disk_usage, disk_used, disk_total = monitor.get_disk_usage(disks)
@@ -492,6 +497,7 @@ if __name__ == "__main__":
                             "temp": cpu_temp,
                             "frequency": cpu_frequency,
                         },
+                        "temperatures": temperatures,
                         "ram": memory,
                         "disk": {
                             "usage": disk_usage,

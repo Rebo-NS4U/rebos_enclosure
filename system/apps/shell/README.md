@@ -426,7 +426,11 @@ Verify with `node desktop/tests/test_mousedash.cjs`. The optional `node desktop/
 Open **System Monitor** from the launcher or use the monitor
 button in the bar or island dashboard. Each expands the compact monitor from the top bar or collapses it again.
 You can also run `rebos_shell compact-resources` or click × to close it. The
-gauges show CPU load, memory, swap and CPU temperature. The rails show the
+gauges show CPU load, memory, swap and CPU temperature. Select **CPU**, **Memory**
+or **Swap** to rank processes by CPU load, resident memory or swapped memory.
+Select **Temp** to rank hardware sensors by their measured temperature. Each
+dial starts with the highest reading first. Select it again to reverse the order.
+An em dash marks an unavailable swap reading. The rails show the
 first configured disk and network throughput. Filter the list by process name
 or PID. Select **End**, then confirm the process name and PID to send SIGTERM.
 The background section lists the desktop's status tray applications.

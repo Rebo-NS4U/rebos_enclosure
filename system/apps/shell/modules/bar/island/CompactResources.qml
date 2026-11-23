@@ -16,9 +16,33 @@ Item {
     signal backRequested()
     readonly property var stats: SystemResources
     readonly property string mount: stats.validDisks[0] || "/"
-    readonly property var matches: stats.processes.filter(p =>
-        p.name.toLowerCase().includes(search.text.trim().toLowerCase()) || String(p.pid) === search.text.trim()
-    ).sort((a, b) => b.cpu - a.cpu || b.ram - a.ram || a.pid - b.pid)
+    property string sortMetric: "cpu"
+    property bool descending: true
+    readonly property bool showingSensors: sortMetric === "temp"
+    readonly property var matches: {
+        const metric = sortMetric;
+        const direction = descending ? -1 : 1;
+        const query = search.text.trim().toLowerCase();
+        const rows = showingSensors ? stats.temperatures : stats.processes;
+        return rows.filter(row => row.name.toLowerCase().includes(query)
+            || (!showingSensors && String(row.pid) === query)).sort((a, b) => {
+            const x = a[metric], y = b[metric];
+            if ((x == null) !== (y == null)) return x == null ? 1 : -1;
+            const difference = direction * (x - y);
+            if (difference) return difference;
+            if (showingSensors) return a.id.localeCompare(b.id);
+            if (metric === "cpu" && a.ram !== b.ram) return b.ram - a.ram;
+            return a.pid - b.pid;
+        });
+    }
+
+    function sortBy(metric: string) {
+        descending = sortMetric === metric ? !descending : true;
+        sortMetric = metric;
+        selected = null;
+        actionMessage = "";
+        results.positionViewAtBeginning();
+    }
     property var selected: null
     property string actionMessage: ""
     property real peakRate: 1024
@@ -51,50 +75,66 @@ Item {
         Rectangle { Layout.fillWidth: true; height: 1; color: Qt.alpha(Styling.srItem("bg"), 0.24) }
         Caption { text: rule.detail; visible: text.length > 0 }
     }
-    component Gauge: ColumnLayout {
+    component Gauge: ToolButton {
         id: gauge
+        required property string metric
         required property string title
         required property real fraction
         required property string reading
         Layout.fillWidth: true
         Layout.preferredWidth: 1
-        spacing: 1
-        Caption { text: gauge.title; Layout.alignment: Qt.AlignHCenter }
-        Canvas {
-            id: dial
-            Layout.alignment: Qt.AlignHCenter
-            implicitWidth: 62
-            implicitHeight: 48
-            property real fraction: gauge.fraction
-            property color ink: Colors.primary
-            property color track: Qt.alpha(Styling.srItem("bg"), 0.46)
-            onFractionChanged: requestPaint()
-            onInkChanged: requestPaint()
-            onTrackChanged: requestPaint()
-            onPaint: {
-                const c = getContext("2d");
-                c.clearRect(0, 0, width, height);
-                c.save();
-                c.translate(width / 2, 32);
-                const start = 0.82 * Math.PI, sweep = 1.36 * Math.PI;
-                const angle = start + sweep * Math.min(1, Math.max(0, fraction));
-                c.strokeStyle = track;
-                c.lineWidth = 1;
-                c.beginPath(); c.arc(0, 0, 23, start, start + sweep); c.stroke();
-                for (let i = 0; i <= 8; i++) {
-                    const a = start + sweep * i / 8;
-                    c.beginPath();
-                    c.moveTo(19 * Math.cos(a), 19 * Math.sin(a));
-                    c.lineTo(23 * Math.cos(a), 23 * Math.sin(a)); c.stroke();
-                }
-                c.strokeStyle = ink; c.fillStyle = ink; c.lineWidth = 2;
-                c.beginPath(); c.arc(0, 0, 23, start, angle); c.stroke();
-                c.beginPath(); c.moveTo(0, 0); c.lineTo(17 * Math.cos(angle), 17 * Math.sin(angle)); c.stroke();
-                c.beginPath(); c.arc(0, 0, 2.5, 0, Math.PI * 2); c.fill();
-                c.restore();
-            }
+        readonly property bool activeSort: panel.sortMetric === metric
+        objectName: "sort-" + metric
+        focusPolicy: Qt.StrongFocus
+        hoverEnabled: true
+        padding: Styling.spacing(3)
+        Accessible.name: "Sort by " + title + (activeSort ? (panel.descending ? ", descending" : ", ascending") : "")
+        onClicked: panel.sortBy(metric)
+        background: StyledRect {
+            variant: gauge.hovered || gauge.visualFocus ? "focus" : "transparent"
+            radius: Styling.radius(-4)
+            border.width: gauge.visualFocus ? 1 : 0
+            border.color: Colors.primary
         }
-        Caption { text: gauge.reading; Layout.alignment: Qt.AlignHCenter }
+        contentItem: ColumnLayout {
+            spacing: 1
+            Caption { text: gauge.title + (gauge.activeSort ? (panel.descending ? " ↓" : " ↑") : ""); Layout.alignment: Qt.AlignHCenter }
+            Canvas {
+                id: dial
+                Layout.alignment: Qt.AlignHCenter
+                implicitWidth: 62
+                implicitHeight: 48
+                property real fraction: gauge.fraction
+                property color ink: Colors.primary
+                property color track: Qt.alpha(Styling.srItem("bg"), 0.46)
+                onFractionChanged: requestPaint()
+                onInkChanged: requestPaint()
+                onTrackChanged: requestPaint()
+                onPaint: {
+                    const c = getContext("2d");
+                    c.clearRect(0, 0, width, height);
+                    c.save();
+                    c.translate(width / 2, 32);
+                    const start = 0.82 * Math.PI, sweep = 1.36 * Math.PI;
+                    const angle = start + sweep * Math.min(1, Math.max(0, fraction));
+                    c.strokeStyle = track;
+                    c.lineWidth = 1;
+                    c.beginPath(); c.arc(0, 0, 23, start, start + sweep); c.stroke();
+                    for (let i = 0; i <= 8; i++) {
+                        const a = start + sweep * i / 8;
+                        c.beginPath();
+                        c.moveTo(19 * Math.cos(a), 19 * Math.sin(a));
+                        c.lineTo(23 * Math.cos(a), 23 * Math.sin(a)); c.stroke();
+                    }
+                    c.strokeStyle = ink; c.fillStyle = ink; c.lineWidth = 2;
+                    c.beginPath(); c.arc(0, 0, 23, start, angle); c.stroke();
+                    c.beginPath(); c.moveTo(0, 0); c.lineTo(17 * Math.cos(angle), 17 * Math.sin(angle)); c.stroke();
+                    c.beginPath(); c.arc(0, 0, 2.5, 0, Math.PI * 2); c.fill();
+                    c.restore();
+                }
+            }
+            Caption { text: gauge.reading; Layout.alignment: Qt.AlignHCenter }
+        }
     }
     component Meter: RowLayout {
         id: meter
@@ -119,10 +159,10 @@ Item {
         RowLayout {
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignHCenter
-            Gauge { title: "CPU"; fraction: panel.stats.cpuUsage / 100; reading: Math.round(panel.stats.cpuUsage) + "%" }
-            Gauge { title: "Memory"; fraction: panel.stats.ramUsage / 100; reading: panel.size(panel.stats.ramUsed * 1024) }
-            Gauge { title: "Swap"; fraction: panel.stats.swapUsed / (panel.stats.swapTotal || 1); reading: panel.size(panel.stats.swapUsed * 1024) }
-            Gauge { title: "Temp"; fraction: panel.stats.cpuTemp / 100; reading: panel.stats.cpuTemp < 0 ? "—" : panel.stats.cpuTemp + "°" }
+            Gauge { metric: "cpu"; title: "CPU"; fraction: panel.stats.cpuUsage / 100; reading: Math.round(panel.stats.cpuUsage) + "%" }
+            Gauge { metric: "ram"; title: "Memory"; fraction: panel.stats.ramUsage / 100; reading: panel.size(panel.stats.ramUsed * 1024) }
+            Gauge { metric: "swap"; title: "Swap"; fraction: panel.stats.swapUsed / (panel.stats.swapTotal || 1); reading: panel.size(panel.stats.swapUsed * 1024) }
+            Gauge { metric: "temp"; title: "Temp"; fraction: panel.stats.cpuTemp / 100; reading: panel.stats.cpuTemp < 0 ? "—" : panel.stats.cpuTemp + "°" }
         }
         Meter {
             title: "Disk"; fraction: (panel.stats.diskUsage[panel.mount] || 0) / 100
@@ -130,12 +170,13 @@ Item {
         }
         Meter { title: "↓"; fraction: panel.stats.networkDownloadSpeed / panel.peakRate; reading: panel.size(panel.stats.networkDownloadSpeed) + "/s" }
         Meter { title: "↑"; fraction: panel.stats.networkUploadSpeed / panel.peakRate; reading: panel.size(panel.stats.networkUploadSpeed) + "/s" }
-        Rule { title: "Processes"; detail: String(panel.matches.length) }
+        Rule { title: panel.showingSensors ? "Temperature sensors" : "Processes"; detail: String(panel.matches.length) }
         SearchInput {
             id: search
+            objectName: "resource-filter"
             Layout.fillWidth: true
             implicitHeight: 36
-            placeholderText: "Filter by name or PID"
+            placeholderText: panel.showingSensors ? "Filter sensors by name" : "Filter by name or PID"
             onEscapePressed: panel.backRequested()
         }
         RowLayout {
@@ -154,22 +195,36 @@ Item {
         }
         Caption { visible: text !== ""; text: panel.actionMessage }
         ListView {
+            id: results
             Layout.fillWidth: true
             Layout.fillHeight: true
             clip: true
             model: panel.matches
             ScrollBar.vertical: ScrollBar {}
-            Caption { anchors.centerIn: parent; visible: parent.count === 0; text: search.text ? "No matching processes" : "Collecting processes…" }
+            Caption { anchors.centerIn: parent; visible: results.count === 0; text: panel.showingSensors ? (search.text ? "No matching sensors" : "No temperature sensors available")
+                : search.text ? "No matching processes" : "Collecting processes…" }
             delegate: RowLayout {
+                id: row
                 required property var modelData
+                readonly property bool isSensor: modelData.temp !== undefined
                 width: ListView.view.width - 10
                 height: 32
                 Caption { Layout.fillWidth: true; text: parent.modelData.name }
-                Caption { text: parent.modelData.cpu.toFixed(1) + "%" }
-                Caption { Layout.preferredWidth: 44; horizontalAlignment: Text.AlignRight; text: panel.size(parent.modelData.ram) }
+                Caption {
+                    text: row.isSensor ? row.modelData.temp.toFixed(1) + " °C"
+                        : row.modelData.cpu.toFixed(1) + "%"
+                }
+                Caption {
+                    visible: !row.isSensor
+                    Layout.preferredWidth: 44
+                    horizontalAlignment: Text.AlignRight
+                    text: row.isSensor ? "" : panel.sortMetric !== "swap" ? panel.size(row.modelData.ram)
+                        : row.modelData.swap == null ? "—" : panel.size(row.modelData.swap)
+                }
                 ThemeButton {
                     text: "End"; padding: 3; implicitHeight: 26
-                    enabled: parent.modelData.pid > 1 && !terminate.running
+                    visible: !row.isSensor
+                    enabled: !row.isSensor && parent.modelData.pid > 1 && !terminate.running
                     onClicked: { panel.selected = parent.modelData; panel.actionMessage = ""; }
                 }
             }

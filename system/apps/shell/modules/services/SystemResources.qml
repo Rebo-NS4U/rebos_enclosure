@@ -111,6 +111,7 @@ Singleton {
     // CPU metrics
     property real cpuUsage: 0.0
     property string cpuModel: ""
+    property list<var> temperatures: []
     property int cpuTemp: -1
     property real cpuFrequency: 0
 
@@ -185,6 +186,7 @@ Singleton {
                     }
 
                     // Update metrics
+                    root.temperatures = stats.temperatures || [];
                     if (stats.cpu) {
                         root.cpuUsage = stats.cpu.usage;
                         root.cpuTemp = stats.cpu.temp;
