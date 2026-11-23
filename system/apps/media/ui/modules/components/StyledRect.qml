@@ -407,7 +407,19 @@ ClippingRectangle {
                 && ["bg", "popup", "pane", "surface", "surfaceContainer", "internalbg", "focus"].includes(root.variant))
         sourceComponent: Canvas {
             anchors.fill: parent
+            id: materialCanvas
             objectName: "wallpaper-theme-canvas"
+            layer.enabled: finish === "nebula"
+            layer.smooth: false
+            layer.textureSize: Qt.size(Math.max(1, Math.ceil(width / 2)), Math.max(1, Math.ceil(height / 2)))
+            layer.effect: ShaderEffect {
+                property var source
+                property size size: materialCanvas.layer.textureSize
+                property color ink: materialCanvas.secondaryAccent
+                property color paper: "transparent"
+                property color signal: materialCanvas.accent
+                fragmentShader: Qt.resolvedUrl("orbit_dither.frag.qsb")
+            }
             readonly property bool barSurface: root.barSurface
             onBarSurfaceChanged: requestPaint()
             readonly property string finish: root.styleOverride || Styling.shellStyle
@@ -438,9 +450,9 @@ ClippingRectangle {
                 const x = width * 0.76;
                 const y = height * 0.68;
                 const glow = ctx.createRadialGradient(x, y, 0, x, y, Math.min(width * 0.6, height * 1.15));
-                glow.addColorStop(0, Qt.alpha(accent, 0.23));
-                glow.addColorStop(0.5, Qt.alpha(secondaryAccent, 0.11));
-                glow.addColorStop(1, Qt.alpha(secondaryAccent, 0));
+                glow.addColorStop(0, "#383838");
+                glow.addColorStop(0.5, "#171717");
+                glow.addColorStop(1, "transparent");
                 ctx.fillStyle = glow;
                 ctx.fillRect(0, 0, width, height);
 
@@ -450,11 +462,10 @@ ClippingRectangle {
                         const seed = Math.sin((col + 1) * 127.1 + (row + 1) * 311.7) * 43758.5453;
                         const jitter = seed - Math.floor(seed);
                         const bright = jitter > 0.85;
-                        ctx.fillStyle = Qt.alpha(bright ? accent : pigment, bright ? 0.82 : 0.35);
-                        ctx.beginPath();
-                        ctx.arc(col * 48 + 8 + jitter * 32, row * 40 + 8 + (jitter * 7 % 1) * 24,
-                            bright ? 1.5 : 0.75, 0, Math.PI * 2);
-                        ctx.fill();
+                        ctx.fillStyle = bright ? "#ff0000" : "#aaaaaa";
+                        const starX = 2 * Math.floor((col * 48 + 8 + jitter * 32) / 2);
+                        const starY = 2 * Math.floor((row * 40 + 8 + (jitter * 7 % 1) * 24) / 2);
+                        ctx.fillRect(starX, starY, bright ? 4 : 2, bright ? 4 : 2);
                     }
                 }
             }
