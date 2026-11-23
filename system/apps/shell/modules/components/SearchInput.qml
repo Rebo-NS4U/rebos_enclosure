@@ -11,6 +11,8 @@ StyledRect {
 
     property alias text: textField.text
     property alias placeholderText: textField.placeholderText
+    property string actionText: ""
+    property string completionText: ""
     property string iconText: ""
     property string prefixText: ""  // Prefix indicator (e.g., "clip ")
     property string prefixIcon: ""  // Prefix icon (e.g., Icons.clipboard)
@@ -72,6 +74,13 @@ StyledRect {
             visible: root.iconText.length > 0
         }
 
+        Text {
+            visible: root.actionText.length > 0
+            text: root.actionText
+            color: Colors.primary
+            font: textField.font
+        }
+
         // Prefix indicator
         StyledRect {
             variant: "primary"
@@ -106,6 +115,20 @@ StyledRect {
             background: null
             echoMode: root.passwordMode ? TextInput.Password : TextInput.Normal
             horizontalAlignment: root.centerText ? TextInput.AlignHCenter : TextInput.AlignLeft
+
+            Text {
+                visible: root.completionText.length > 0 && !textField.inputMethodComposing
+                         && textField.cursorPosition === textField.length
+                         && textField.selectionStart === textField.selectionEnd
+                x: textField.cursorRectangle.x + textField.cursorRectangle.width
+                anchors.baseline: textField.baseline
+                width: Math.max(0, textField.width - textField.rightPadding - x)
+                text: root.completionText
+                textFormat: Text.PlainText
+                font: textField.font
+                color: Colors.overSurfaceVariant
+                elide: Text.ElideRight
+            }
 
             onTextChanged: {
                 root.searchTextChanged(text);

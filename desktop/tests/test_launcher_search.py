@@ -32,7 +32,7 @@ class LauncherSearchTests(unittest.TestCase):
         result = launcher.search('g ' + term)
         self.assertEqual(len(result), 1)
         self.assertEqual(parse_qs(urlsplit(result[0]['target']).query)['q'], [term])
-        self.assertEqual(launcher.search('firefox')[-1]['name'], 'Google: firefox')
+        self.assertEqual((result[0]['verb'], result[0]['name']), ('Google', term))
         self.assertEqual(launcher.search(''), [])
 
     def test_urls(self):

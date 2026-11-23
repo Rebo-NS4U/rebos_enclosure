@@ -162,7 +162,8 @@ Item {
                     appId: app.id, appName: app.name, appIcon: app.icon,
                     appComment: app.comment, appExecString: app.execString,
                     appCategories: app.categories, appRunInTerminal: app.runInTerminal,
-                    resultKind: app.kind || "app"
+                    resultKind: app.kind || "app",
+                    actionVerb: app.verb ?? "Open"
                 };
                 if (i < appsModel.count && appsModel.get(i).appId === app.id) {
                     appsModel.set(i, row);
@@ -279,8 +280,16 @@ Item {
                 width: parent.width
                 anchors.top: parent.top
                 text: GlobalStates.launcherSearchText
-                placeholderText: "Apps, Google, = math, files name…"
-                iconText: Icons.magnifyingGlass
+                readonly property var answer: appLauncher.filteredApps[appLauncher.selectedIndex]
+                placeholderText: "an app, file, or answer…"
+                actionText: text && answer && answer.kind !== "hint" ? (answer.verb ?? "Open") : "Find"
+                completionText: {
+                    if (!text || !answer || answer.kind === "hint")
+                        return "";
+                    if (answer.name.toLowerCase().startsWith(text.toLowerCase()))
+                        return answer.name.slice(text.length);
+                    return " → " + answer.name;
+                }
                 handleTabNavigation: true
                 clearOnEscape: false
 
@@ -553,6 +562,7 @@ Item {
                 }
 
                 delegate: Item {
+                    required property string actionVerb
                     required property string resultKind
                     required property string appId
                     required property string appName
@@ -678,7 +688,7 @@ Item {
                                 font.hintingPreference: Font.PreferFullHinting
                                 width: parent.width
                                 textFormat: Text.PlainText
-                                text: appName
+                                text: actionVerb ? actionVerb + " " + appName : appName
                                 color: {
                                     if (isExpanded) {
                                         return Styling.srItem("pane");

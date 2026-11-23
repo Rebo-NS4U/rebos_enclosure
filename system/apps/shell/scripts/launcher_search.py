@@ -51,10 +51,10 @@ def calculate(expression):
     return format(visit(tree.body), '.12g')
 
 
-def row(kind, name, comment, target='', icon='system-search'):
+def row(kind, name, comment, target='', icon='system-search', verb='Open'):
     return dict(id='launcher:' + kind + ':' + target, name=name, comment=comment,
                 icon=icon, execString='', categories=[], runInTerminal=False,
-                kind=kind, target=target)
+                kind=kind, target=target, verb=verb if kind != 'hint' else '')
 
 
 def file_results(term, home):
@@ -107,7 +107,7 @@ def search(query, home=None):
     if calc or re.match(r'^(?:[\d.(+\-]|sqrt\(|sin\(|cos\(|tan\(|log\(|log10\(|abs\(|round\(|pi\b|tau\b)', expression):
         try:
             result = calculate(expression)
-            rows.append(row('copy', '= ' + result, 'Calculator · Enter to copy result', result, 'accessories-calculator'))
+            rows.append(row('copy', result, 'Calculator · Enter to copy result', result, 'accessories-calculator', verb='Copy'))
         except (ValueError, SyntaxError, TypeError, ZeroDivisionError, OverflowError):
             if calc:
                 rows.append(row('hint', 'Enter a valid calculation', 'Example: = sqrt(144) + 2^3'))
@@ -122,11 +122,11 @@ def search(query, home=None):
     is_host = bool(parsed.hostname and ('.' in parsed.hostname or parsed.hostname == 'localhost'))
     if url and not google and not re.search(r'\s', text) and is_host:
         if parsed.scheme in ('http', 'https'):
-            rows.append(row('open', 'Open ' + text, 'Default browser', url, 'web-browser'))
+            rows.append(row('open', text, 'Default browser', url, 'web-browser'))
     term = google[1].strip() if google else text
     if term:
-        rows.append(row('open', 'Google: ' + term, 'Search in default browser',
-                        'https://www.google.com/search?' + urlencode({'q': term}), 'web-browser'))
+        rows.append(row('open', term, 'Search in default browser',
+                        'https://www.google.com/search?' + urlencode({'q': term}), 'web-browser', verb='Google'))
     return rows
 
 
