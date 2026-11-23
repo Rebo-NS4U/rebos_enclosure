@@ -415,9 +415,9 @@ ClippingRectangle {
             layer.effect: ShaderEffect {
                 property var source
                 property size size: materialCanvas.layer.textureSize
-                property color ink: materialCanvas.secondaryAccent
+                property color ink: Qt.alpha(materialCanvas.secondaryAccent, 0.32)
                 property color paper: "transparent"
-                property color signal: materialCanvas.accent
+                property color signal: Qt.alpha(materialCanvas.accent, 0.62)
                 fragmentShader: Qt.resolvedUrl("orbit_dither.frag.qsb")
             }
             readonly property bool barSurface: root.barSurface
@@ -450,8 +450,8 @@ ClippingRectangle {
                 const x = width * 0.76;
                 const y = height * 0.68;
                 const glow = ctx.createRadialGradient(x, y, 0, x, y, Math.min(width * 0.6, height * 1.15));
-                glow.addColorStop(0, "#383838");
-                glow.addColorStop(0.5, "#171717");
+                glow.addColorStop(0, "#202020");
+                glow.addColorStop(0.5, "#0e0e0e");
                 glow.addColorStop(1, "transparent");
                 ctx.fillStyle = glow;
                 ctx.fillRect(0, 0, width, height);
@@ -1127,5 +1127,20 @@ ClippingRectangle {
 
     border.color: Config.resolveColor(borderData?.[0] ?? "transparent")
     border.width: root.enableBorder ? (borderData?.[1] ?? 0) : 0
+
+    Loader {
+        active: (root.styleOverride || Styling.shellStyle) === "nebula"
+            && ["common", "focus", "primary", "primaryfocus", "overprimary"].includes(root.variant)
+            && root.width >= 24 && root.height >= 16 && root.rectOpacity > 0
+        anchors.right: parent.right
+        anchors.top: parent.top
+        anchors.margins: 6
+        opacity: root.rectOpacity
+        sourceComponent: Row {
+            spacing: 2
+            Rectangle { width: 2; height: 2; color: Qt.alpha(root.itemColor, 0.22) }
+            Rectangle { width: 2; height: 2; color: Qt.alpha(root.itemColor, 0.48) }
+        }
+    }
 
 }

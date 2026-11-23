@@ -12,6 +12,8 @@ Text {
     color: Colors.overBackground
     font.family: Config.theme.font
     font.pixelSize: Styling.fontSize(0)
+    style: Styling.shellStyle === "nebula" ? Text.Raised : Text.Normal
+    styleColor: Qt.alpha(Colors.tertiary, 0.22)
     renderType: Text.NativeRendering
     font.hintingPreference: Font.PreferFullHinting
 }

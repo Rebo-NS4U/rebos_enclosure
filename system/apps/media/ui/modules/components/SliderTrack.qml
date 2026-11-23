@@ -5,6 +5,7 @@ import qs.modules.theme
 Item {
     id: root
 
+    readonly property bool nebula: Styling.shellStyle === "nebula"
     property real value: 0
     property color activeColor: Colors.primary
     property bool pressed: false
@@ -58,14 +59,22 @@ Item {
             y: (root.height - height) / 2 - root.rippleAmplitude * root.energy * wave
             width: Math.max(0, root.pitch - Math.min(3, root.pitch / 3))
             height: root.thickness
-            radius: Math.min(width, height) / 2
+            radius: root.nebula ? 0 : Math.min(width, height) / 2
             color: Qt.alpha(root.activeColor, root.hovered || root.pressed ? 0.35 : 0.22)
 
             Rectangle {
                 width: Math.max(0, Math.min(segment.width, root.filledLength - segment.x))
                 height: segment.height
-                radius: Math.min(width, height) / 2
+                radius: root.nebula ? 0 : Math.min(width, height) / 2
                 color: root.activeColor
+                Rectangle {
+                    visible: root.nebula && parent.width >= 4 && parent.height >= 4
+                    x: 1
+                    y: 1
+                    width: 2
+                    height: 2
+                    color: Qt.alpha(Colors.overPrimary, 0.38)
+                }
             }
         }
     }
