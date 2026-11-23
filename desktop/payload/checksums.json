@@ -864,7 +864,7 @@
   "system/etc/rebos-greeter/quickshell/core/entry.qml": "0b0365c2b594219b1718d522edfa6b0f1571664209f2d1bc86a5a49aace70864",
   "system/etc/rebos-greeter/quickshell/launcher": "c50d7d0097a5f45e1536f636ee1aabb7afe2a5b86904a56e8c32cd0c0f2dc399",
   "system/etc/rebos-greeter/quickshell/themes/enclosure/shell/_qsgreet-entry.qml": "cba41a89aec8ba049ba51e66c980532d2fbf5d3785042c68d870bb8220bfdd0a",
-  "system/etc/rebos-greeter/quickshell/themes/enclosure/shell/_qsgreet-main.qml": "2eb8dfd8c6742cd1c48cf10fd9de432920a557694b52923bde7838c6f2cb6ca7",
+  "system/etc/rebos-greeter/quickshell/themes/enclosure/shell/_qsgreet-main.qml": "675c00bd3245977b375dcb67848d32a57b5d75b5c17b26d24aa4ffd1e0f0c67c",
   "system/etc/rebos-greeter/quickshell/themes/enclosure/shell/config/Config.qml": "18b433f45bf266597ee49b379132bb97b7eb508d56cbb3f52cf2149d1b711928",
   "system/etc/rebos-greeter/quickshell/themes/enclosure/shell/modules/theme/Colors.qml": "9bdec24667d474ca6144985ff7a87a1387b5752f4e7ea30ee59ffe44642b5620",
   "system/etc/rebos-greeter/theme/background.png": "744fb3fe3ed6ad6f90eb6fe7a676a4ed393e697b73658d071ff11910359ee447",

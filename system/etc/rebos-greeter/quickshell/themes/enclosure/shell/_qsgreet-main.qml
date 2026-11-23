@@ -28,7 +28,7 @@ FocusScope {
     Image {
         anchors.fill: parent
         source: Styling.shellStyle === "glyph" ? Qt.resolvedUrl("modules/components/glyph-orbits.png")
-            : ""
+            : "file:///var/lib/rebos-greeter/theme/background.png"
         fillMode: Image.PreserveAspectCrop
         asynchronous: true
         mipmap: true
