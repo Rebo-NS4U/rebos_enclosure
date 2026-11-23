@@ -18,13 +18,6 @@ vim.opt.winbar = " Notepad %="
 vim.opt.showmode = true
 vim.opt.wrap = true
 vim.opt.linebreak = true
-vim.opt.updatetime = 300
-vim.api.nvim_create_autocmd({ "CursorHoldI", "CursorHold", "InsertLeave", "BufLeave", "FocusLost", "VimLeavePre" }, {
-    callback = function()
-        if vim.bo.modified and vim.bo.buftype == "" then vim.cmd.update() end
-    end,
-})
-vim.keymap.set({ "n", "i" }, "<C-s>", "<Cmd>update<CR>", { desc = "Save note" })
 vim.api.nvim_create_autocmd("VimEnter", {
     callback = function()
         vim.cmd("normal! G$")

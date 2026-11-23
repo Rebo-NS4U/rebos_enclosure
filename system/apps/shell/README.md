@@ -439,8 +439,8 @@ The background section lists the desktop's status tray applications.
 Press **Mod+N** to open the floating Neovim notepad. Press it again to save
 and close the editor. The launcher opens or focuses the notepad.
 The editor starts in insert mode and follows the desktop
-palette and terminal font. Notes save after an editing pause, on focus
-change, or with **Ctrl+S**. Press Escape and enter `:wq` to save and close.
+palette and terminal font. Notepad saves automatically when the editor closes.
+Press Escape and enter `:wq` to save and close from inside the editor.
 
 Notepad saves to `$XDG_DATA_HOME/enclosure/scratchpad/scratch` (the default
 data directory is `~/.local/share`). The `rebos_shell notepad` and

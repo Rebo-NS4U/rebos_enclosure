@@ -154,10 +154,27 @@ notepad|scratchpad)
     fi
     # Clear a socket left behind if the previous editor stopped abruptly.
     if [[ -S "$socket" ]]; then unlink "$socket"; fi
-    # Hold the lock in the launcher until Kitty closes its editor.
+    # Keep the editor outside Kitty so closing the terminal leaves time to save.
+    nvim --headless --listen "$socket" -u "$SCRIPT_DIR/scripts/scratch.lua" -- "$scratch_dir/scratch" \
+        </dev/null >/dev/null 9>&- &
+    editor_pid=$!
+    until [[ -S "$socket" ]]; do
+        if ! kill -0 "$editor_pid" 2>/dev/null; then
+            wait "$editor_pid"
+            exit 1
+        fi
+        sleep 0.02
+    done
+    kitty_status=0
     kitty --class enclosure-scratchpad --title Notepad -o remember_window_size=no \
         -o initial_window_width=54c -o initial_window_height=22c \
-        nvim --listen "$socket" -u "$SCRIPT_DIR/scripts/scratch.lua" -- "$scratch_dir/scratch" 9>&-
+        nvim --server "$socket" --remote-ui 9>&- || kitty_status=$?
+    # The toggle command may have already saved and exited the editor.
+    if [[ -S "$socket" ]]; then
+        nvim --server "$socket" --remote-send '<C-\><C-N><Cmd>wqall<CR>' || [[ ! -S "$socket" ]]
+    fi
+    wait "$editor_pid"
+    exit "$kitty_status"
     ;;
 starwake|mousedash)
 	pointer_library=$(bash "${SCRIPT_DIR}/scripts/build_starwake_pointer.sh") || exit 1
