@@ -127,6 +127,11 @@ restart_rebos_shell() {
 	nohup "$0" >/dev/null 2>&1 &
 }
 
+# Older desktop entries pass the standalone monitor through the shell's run command.
+if [[ ${1:-} == run && ${2:-} == compact-resources ]]; then
+    shift
+fi
+
 case "${1:-}" in
 compact-resources)
     monitor_qml="$SCRIPT_DIR/CompactResources.qml"
