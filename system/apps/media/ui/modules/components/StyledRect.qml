@@ -436,7 +436,7 @@ ClippingRectangle {
             onNestedChanged: requestPaint()
 
             function paintGlyph(ctx) {
-                ctx.fillStyle = "#393939";
+                ctx.fillStyle = Qt.alpha(pigment, 0.20);
                 ctx.beginPath();
                 for (let y = 7; y < height; y += 14) {
                     for (let x = 7; x < width; x += 14) {
@@ -1123,7 +1123,7 @@ ClippingRectangle {
                     width: 2
                     height: 2
                     radius: 1
-                    color: root.controlPressed && index === 4 ? "#f04b39" : root.itemColor
+                    color: root.controlPressed && index === 4 ? Colors.primary : root.itemColor
                     opacity: index === 4 || index === 2 || index === 6 ? 0.85 : 0.22
                 }
             }

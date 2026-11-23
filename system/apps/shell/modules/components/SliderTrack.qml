@@ -67,7 +67,7 @@ Item {
                 height: segment.height
                 radius: Math.min(width, height) / 2
                 color: root.glyph
-                    ? (root.pressed && root.filledLength - segment.x <= root.pitch ? "#f04b39" : Colors.overBackground)
+                    ? (root.pressed && root.filledLength - segment.x <= root.pitch ? Colors.primary : Colors.overBackground)
                     : root.activeColor
             }
         }

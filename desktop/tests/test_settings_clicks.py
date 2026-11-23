@@ -495,8 +495,8 @@ ShellRoot {
       fixture.check(Styling.shellStyle === "glyph" && glyphCard.selected, "Clicking Glyph applies the theme");
       const glyphCanvas = fixture.find(glyphCard, "wallpaper-theme-canvas");
       fixture.check(glyphCanvas && glyphCanvas.finish === "glyph", "Glyph preview loads its dot matrix");
-      fixture.check(Colors.primary.toString() === "#f04b39" && glyphCard.sample.gradient[0][0] === "#080808",
-       "Glyph applies its red accent and matte black panel");
+      fixture.check(glyphCard.previewPalette === null && glyphCard.sample.gradient[0][0] === Colors.background.toString(),
+       "Glyph uses the current wallpaper background");
       Config.theme.shellStyle = previousStyle;
       Config.theme.shellTransparency = previousTransparency;
       Config.performance.desktopBlur = previousBlur;

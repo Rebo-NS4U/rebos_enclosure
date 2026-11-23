@@ -109,7 +109,9 @@ for (const id of materials) {
 // Keep the base and text fixed so this isolates the wallpaper accents.
 const changedAccents = {...p, primary:'#a9b4ff', tertiary:'#ffbadb'};
 assert.equal(surface('glyph', 'bg', p).gradient[0][0], surface('glyph', 'bg', changedAccents).gradient[0][0]);
-assert.equal(surface('glyph', 'focus', changedAccents).border[0], '#f04b39');
+assert.equal(themePalette('glyph'), null);
+assert.equal(surface('glyph', 'bg', p).gradient[0][0], p.background);
+assert.equal(surface('glyph', 'focus', changedAccents).border[0], changedAccents.primary);
 assert.equal(surface('clear-glass', 'bg', p).opacity, 0.52);
 assert.equal(surface('clear-glass', 'bg', p).radius, undefined);
 assert.equal(surface('clear-glass', 'pane', p).border[1], 0);
@@ -122,7 +124,7 @@ for (let i=0; i<materials.length; i++) for (let j=i+1; j<materials.length; j++)
  assert.notDeepEqual(surface(materials[i], 'bg', p), surface(materials[j], 'bg', p));
 // A neutral selected palette must stay neutral through every material theme.
 // This catches fixed blue glass or amber accents leaking into palette-derived surfaces.
-for (const {id} of styles.filter(s => s.id !== 'glyph')) {
+for (const {id} of styles) {
  const gray = {background:'#181818',foreground:'#eeeeee',primary:'#bbbbbb',secondary:'#aaaaaa',tertiary:'#999999'};
  for (const role of ['bg','popup','pane','internalbg','focus']) {
   const material = surface(id, role, gray);
