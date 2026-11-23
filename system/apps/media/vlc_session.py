@@ -280,7 +280,8 @@ class VlcSession:  # pylint: disable=too-many-instance-attributes,too-many-publi
                 self.provided_cues = cues
         elif path:
             try:
-                self.api('addsubtitle', value=path, select='true' if revision == self.subtitle_revision else 'false')
+                select = revision == self.subtitle_revision and not self.live_enabled
+                self.api('addsubtitle', value=path, select='true' if select else 'false')
             except (OSError, ValueError, RuntimeError):
                 pass  # An optional subtitle failure must not stop the video.
 
@@ -342,7 +343,7 @@ class VlcSession:  # pylint: disable=too-many-instance-attributes,too-many-publi
         local = self.public_stream(video, referer)
         sources = [local] + [option.partition('=')[2] for option in options if option.startswith('input-slave=')]
         with stream_relay.playback(self, sources):
-            self.api('load', data=json.dumps(dict(url=local, title=title, options=options, generation=self.generation, whisper_only=False)))
+            self.api('load', data=json.dumps(dict(url=local, title=title, options=options, generation=self.generation, whisper_only=self.live_enabled)))
         if subtitle:
             self.prepare_subtitle(subtitle, referer)
 
@@ -477,7 +478,11 @@ class VlcSession:  # pylint: disable=too-many-instance-attributes,too-many-publi
 
         sid = state.get('sid', -1)
         native_ids = [track['id'] for track in self.english_tracks(state)]
-        if native_ids:
+        if self.live_enabled:
+            if sid >= 0:
+                self.api('subtitle', value=-1)
+            source = 'whisper'
+        elif native_ids:
             preferred = sid if sid in native_ids else native_ids[0]
             if sid != preferred:
                 self.api('subtitle', value=preferred)
@@ -488,8 +493,6 @@ class VlcSession:  # pylint: disable=too-many-instance-attributes,too-many-publi
             source = 'off'
             if self.provided_cues:
                 source = 'provided'
-            elif not self.subtitle_loading and self.live_enabled:
-                source = 'whisper'
         if source != self.subtitle_source:
             self.set_caption_source(source)
 

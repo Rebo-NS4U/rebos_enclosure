@@ -14,6 +14,7 @@ class NetworkPlaybackTests(unittest.TestCase):
             with self.subTest(format_name=format_name), tempfile.TemporaryDirectory() as folder:
                 session = vlc_session.VlcSession.__new__(vlc_session.VlcSession)
                 session.audio_normalization = False
+                session.live_enabled = True
                 session.generation = 0
                 session.logpath = Path(folder) / 'vlc.log'
                 session.logpath.touch()
@@ -31,6 +32,7 @@ class NetworkPlaybackTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             session = vlc_session.VlcSession.__new__(vlc_session.VlcSession)
             session.audio_normalization = False
+            session.live_enabled = True
             session.generation = 0
             session.logpath = Path(folder) / 'vlc.log'
             session.logpath.touch()

@@ -99,6 +99,7 @@ class RelayLifetimeTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory, patch.object(stream_relay, '_RELAY', self.relay):
             session = vlc_session.VlcSession.__new__(vlc_session.VlcSession)
             session.audio_normalization = False
+            session.live_enabled = True
             session.generation = 0
             session.closed = threading.Event()
             session.process = Mock()
