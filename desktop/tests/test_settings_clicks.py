@@ -486,22 +486,17 @@ ShellRoot {
       fixture.check(settings.appearanceTab === "style", "Appearance opens the Style tab by default");
       fixture.check(fixture.find(settings, "theme-preview-grid").columns === 6, "Fullscreen theme previews fit in one row");
       fixture.check(scroll.contentHeight <= scroll.height, "Style page does not include hidden settings groups");
-      const nebulaCard = fixture.find(settings, "shell-style-nebula");
-      fixture.check(nebulaCard && nebulaCard.visible, "Nebula is available in the style picker");
+      const glyphCard = fixture.find(settings, "shell-style-glyph");
+      fixture.check(glyphCard && glyphCard.visible, "Glyph is available in the style picker");
       const previousStyle = Config.theme.shellStyle;
       const previousTransparency = Config.theme.shellTransparency;
       const previousBlur = Config.performance.desktopBlur;
-      tester.mouseClick(nebulaCard); tester.wait(40);
-      fixture.check(Styling.shellStyle === "nebula" && nebulaCard.selected, "Clicking Nebula applies the theme");
-      const nebulaCanvas = fixture.find(nebulaCard, "wallpaper-theme-canvas");
-      fixture.check(nebulaCanvas && nebulaCanvas.finish === "nebula", "Nebula preview loads its star field");
-      const originalAccent = Colors.primary;
-      const originalFill = nebulaCard.sample.gradient[0][0];
-      Colors.primary = "#0044ff";
-      tester.wait(40);
-      fixture.check(nebulaCanvas.accent.toString() === "#0044ff" && nebulaCard.sample.gradient[0][0] !== originalFill,
-       "Nebula glow and surface follow live palette changes");
-      Colors.primary = originalAccent;
+      tester.mouseClick(glyphCard); tester.wait(40);
+      fixture.check(Styling.shellStyle === "glyph" && glyphCard.selected, "Clicking Glyph applies the theme");
+      const glyphCanvas = fixture.find(glyphCard, "wallpaper-theme-canvas");
+      fixture.check(glyphCanvas && glyphCanvas.finish === "glyph", "Glyph preview loads its dot matrix");
+      fixture.check(Colors.primary.toString() === "#f04b39" && glyphCard.sample.gradient[0][0] === "#080808",
+       "Glyph applies its red accent and matte black panel");
       Config.theme.shellStyle = previousStyle;
       Config.theme.shellTransparency = previousTransparency;
       Config.performance.desktopBlur = previousBlur;

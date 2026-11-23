@@ -12,8 +12,8 @@ Text {
     color: Colors.overBackground
     font.family: Config.theme.font
     font.pixelSize: Styling.fontSize(0)
-    font.letterSpacing: Styling.shellStyle === "nebula" && font.pixelSize >= 18 ? 0.6 : 0
-    layer.enabled: Styling.shellStyle === "nebula" && font.pixelSize >= 18 && textFormat !== Text.RichText
+    font.letterSpacing: Styling.shellStyle === "glyph" && font.pixelSize >= 18 ? 0.6 : 0
+    layer.enabled: Styling.shellStyle === "glyph" && font.pixelSize >= 18 && textFormat !== Text.RichText
     layer.effect: ShaderEffect {
         property var source
         property size labelSize: Qt.size(root.width, root.height)

@@ -3,7 +3,7 @@
 var styles = [
     {id: "canopy", label: "Canopy", font: "DejaVu Sans Mono", description: "Overlapping tree boughs with two-tone leaf sprays across the window."},
     {id: "orbital", label: "Orbital", font: "JetBrains Mono", description: "Orbital space: elliptical tracks, satellite points, fixed stars and recessed glass."},
-    {id: "nebula", label: "Nebula", font: "JetBrains Mono", description: "A still star field with a pixel-dithered glow in the wallpaper palette."},
+    {id: "glyph", label: "Glyph", font: "JetBrains Mono", description: "Matte black panels, a white dot matrix and a red interaction accent."},
     {id: "metropolis", label: "Metropolis", font: "DejaVu Sans", description: "Stepped towers and lit windows frame a low city skyline."},
     {id: "glass-vault", label: "Glass Vault", font: "Noto Sans", description: "Thick glass blocks, rounded clamps, refractive light bands and deep inset controls."},
     {id: "radar-station", label: "Radar Station", font: "DejaVu Sans", description: "Etched bearing scales, radial divisions and softly illuminated scope glass."},
@@ -176,12 +176,11 @@ function surface(style, variant, p, ditherStrength) {
         border = [focused ? p.primary : mix(fill, p.primary, 0.38), framed || focused ? 1 : 0];
     }
     var canopy=style === "canopy", orbital=style === "orbital", metro=style === "metropolis";
-    if (style === "nebula" && neutral) {
-        var nebulaTint = mix(p.primary, p.tertiary, 0.35);
-        fill = mix(p.background, nebulaTint, inset ? 0.035 : focused ? 0.17 : outer ? 0.10 : 0.075);
-        item = p.foreground;
-        opacity = focused ? 0.88 : inset ? 0.55 : outer ? 0.74 : 0.57;
-        border = [focused ? p.primary : mix(fill, nebulaTint, 0.25), outer || focused ? 1 : 0];
+    if (style === "glyph" && neutral) {
+        fill = focused ? "#292929" : inset ? "#101010" : outer ? "#080808" : "#191919";
+        item = "#f5f5f5";
+        opacity = 1;
+        border = [focused ? "#f04b39" : "#393939", outer || focused ? 1 : 0];
     }
     if (orbital && neutral) {
         fill=mix(p.background,p.foreground,inset?0.005:focused?0.10:outer?0.075:0.045);
@@ -251,8 +250,17 @@ function appPalette(style, palette, customOpacity) {
 }
 
 
-// Styles affect rendering only; colors come from the selected palette.
-// Retained for existing palette consumers and preview cards.
 function themePalette(style) {
+    if (style === "glyph") return {
+        background: "#080808", surface: "#191919", surfaceVariant: "#292929",
+        surfaceContainer: "#191919", surfaceContainerLow: "#101010", surfaceContainerLowest: "#080808",
+        surfaceContainerHigh: "#242424", surfaceContainerHighest: "#303030",
+        surfaceDim: "#101010", surfaceBright: "#303030", surfaceTint: "#dddddd",
+        overBackground: "#f5f5f5", overSurface: "#f5f5f5", overSurfaceVariant: "#bbbbbb",
+        primary: "#f04b39", overPrimary: "#080808", primaryContainer: "#383838", overPrimaryContainer: "#ffffff",
+        secondary: "#dddddd", overSecondary: "#101010", secondaryContainer: "#303030", overSecondaryContainer: "#eeeeee",
+        tertiary: "#aaaaaa", overTertiary: "#101010", tertiaryContainer: "#242424", overTertiaryContainer: "#eeeeee",
+        outline: "#777777", outlineVariant: "#393939", error: "#f04b39", overError: "#080808"
+    };
     return null;
 }

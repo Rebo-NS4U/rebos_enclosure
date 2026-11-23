@@ -428,7 +428,7 @@ ClippingRectangle {
     Loader {
         anchors.fill: parent
         readonly property string material: root.styleOverride || Styling.shellStyle
-        active: !root.hasFillColor && root.rectOpacity > 0 && (["canopy", "metropolis", "nebula"].includes(material)
+        active: !root.hasFillColor && root.rectOpacity > 0 && (["canopy", "metropolis", "glyph"].includes(material)
             ? !root.controlSurface && ["bg", "popup", "pane", "surface", "surfaceContainer", "bar"].includes(root.variant)
             : material === "orbital"
                 && ["bg", "popup", "pane", "surface", "surfaceContainer", "internalbg", "focus"].includes(root.variant))
@@ -436,17 +436,6 @@ ClippingRectangle {
             anchors.fill: parent
             id: materialCanvas
             objectName: "wallpaper-theme-canvas"
-            layer.enabled: finish === "nebula"
-            layer.smooth: false
-            layer.textureSize: Qt.size(Math.max(1, Math.ceil(width / 2)), Math.max(1, Math.ceil(height / 2)))
-            layer.effect: ShaderEffect {
-                property var source
-                property size size: materialCanvas.layer.textureSize
-                property color ink: Qt.alpha(materialCanvas.secondaryAccent, 0.32)
-                property color paper: "transparent"
-                property color signal: Qt.alpha(materialCanvas.accent, 0.62)
-                fragmentShader: Qt.resolvedUrl("orbit_dither.frag.qsb")
-            }
             readonly property bool barSurface: root.barSurface
             onBarSurfaceChanged: requestPaint()
             readonly property string finish: root.styleOverride || Styling.shellStyle
@@ -475,28 +464,16 @@ ClippingRectangle {
             onBroadChanged: requestPaint()
             onNestedChanged: requestPaint()
 
-            function paintNebula(ctx) {
-                const x = width * 0.76;
-                const y = height * 0.68;
-                const glow = ctx.createRadialGradient(x, y, 0, x, y, Math.min(width * 0.6, height * 1.15));
-                glow.addColorStop(0, "#202020");
-                glow.addColorStop(0.5, "#0e0e0e");
-                glow.addColorStop(1, "transparent");
-                ctx.fillStyle = glow;
-                ctx.fillRect(0, 0, width, height);
-
-                // Stable positions keep the stars still when the palette changes.
-                for (let row = 0; row < Math.ceil(height / 40); row++) {
-                    for (let col = 0; col < Math.ceil(width / 48); col++) {
-                        const seed = Math.sin((col + 1) * 127.1 + (row + 1) * 311.7) * 43758.5453;
-                        const jitter = seed - Math.floor(seed);
-                        const bright = jitter > 0.85;
-                        ctx.fillStyle = bright ? "#ff0000" : "#aaaaaa";
-                        const starX = 2 * Math.floor((col * 48 + 8 + jitter * 32) / 2);
-                        const starY = 2 * Math.floor((row * 40 + 8 + (jitter * 7 % 1) * 24) / 2);
-                        ctx.fillRect(starX, starY, bright ? 4 : 2, bright ? 4 : 2);
+            function paintGlyph(ctx) {
+                ctx.fillStyle = "#393939";
+                ctx.beginPath();
+                for (let y = 7; y < height; y += 14) {
+                    for (let x = 7; x < width; x += 14) {
+                        ctx.moveTo(x + 1, y);
+                        ctx.arc(x, y, 1, 0, Math.PI * 2);
                     }
                 }
+                ctx.fill();
             }
 
             function paintCanopy(ctx) {
@@ -690,8 +667,8 @@ ClippingRectangle {
                 if(root.traceThemeFrame(ctx,0))ctx.clip();
                 if (finish === "canopy") {
                     paintCanopy(ctx)
-                } else if (finish === "nebula") {
-                    paintNebula(ctx);
+                } else if (finish === "glyph") {
+                    paintGlyph(ctx);
                 } else if (finish === "orbital") {
                     const rim = outer || inset ? 6 : 3;
                     // Deterministic jitter spreads a stable star field over the entire surface.
@@ -1206,7 +1183,7 @@ ClippingRectangle {
     border.width: root.enableBorder ? (borderData?.[1] ?? 0) : 0
 
     Loader {
-        active: root.buttonSurface && (root.styleOverride || Styling.shellStyle) === "nebula"
+        active: root.buttonSurface && (root.styleOverride || Styling.shellStyle) === "glyph"
             && root.width >= 24 && root.height >= 16 && root.rectOpacity > 0
         anchors.right: parent.right
         anchors.top: parent.top

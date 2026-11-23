@@ -5,7 +5,7 @@ import qs.modules.theme
 Item {
     id: root
 
-    readonly property bool nebula: Styling.shellStyle === "nebula"
+    readonly property bool glyph: Styling.shellStyle === "glyph"
     property real value: 0
     property color activeColor: Colors.primary
     property bool pressed: false
@@ -58,15 +58,15 @@ Item {
             x: index * root.pitch
             y: (root.height - height) / 2 - root.rippleAmplitude * root.energy * wave
             width: Math.max(0, root.pitch - Math.min(3, root.pitch / 3))
-            height: root.nebula ? Math.min(width, root.thickness) : root.thickness
+            height: root.glyph ? Math.min(width, root.thickness) : root.thickness
             radius: Math.min(width, height) / 2
-            color: Qt.alpha(root.nebula ? Colors.overBackground : root.activeColor, root.hovered || root.pressed ? 0.35 : 0.22)
+            color: Qt.alpha(root.glyph ? Colors.overBackground : root.activeColor, root.hovered || root.pressed ? 0.35 : 0.22)
 
             Rectangle {
                 width: Math.max(0, Math.min(segment.width, root.filledLength - segment.x))
                 height: segment.height
                 radius: Math.min(width, height) / 2
-                color: root.nebula
+                color: root.glyph
                     ? (root.pressed && root.filledLength - segment.x <= root.pitch ? "#f04b39" : Colors.overBackground)
                     : root.activeColor
             }
