@@ -42,7 +42,7 @@ Commands:
     (none)                            Launch rebos_shell
     starwake                         Launch the cosmic cursor adventure
     compact-resources                 Toggle the compact resource monitor
-    scratchpad                        Open the floating Neovim scratchpad
+    notepad                           Open or focus the floating Neovim notepad
     update                            Update rebos_shell
     refresh                           Refresh local/dev profile (for developers)
     lock                              Activate lockscreen
@@ -127,10 +127,10 @@ restart_rebos_shell() {
 	nohup "$0" >/dev/null 2>&1 &
 }
 
-# Accept the monitor names used by older launchers and shell shortcuts.
+# Accept the standalone tools under their existing shell command names.
 if [[ ${1:-} == run ]]; then
     case "${2:-}" in
-        compact-resources|system-monitor|stats|resources) shift ;;
+        compact-resources|system-monitor|stats|resources|scratchpad|notes|notepad) shift ;;
     esac
 fi
 
@@ -142,7 +142,7 @@ compact-resources|system-monitor|stats|resources)
     ENCLOSURE_MONITOR_OUTPUT=${2:-$(niri msg -j focused-output | jq -r '.name // empty')}
     exec "$QS_BIN" -n -p "$monitor_qml"
     ;;
-scratchpad)
+notepad|scratchpad|notes)
     scratch_dir="${XDG_DATA_HOME:-$HOME/.local/share}/enclosure/scratchpad"
     umask 077
     mkdir -p "$scratch_dir"
@@ -152,10 +152,17 @@ scratchpad)
         if [[ -n "$window" ]]; then niri msg action focus-window --id "$window"; fi
         exit 0
     fi
+    note="$scratch_dir/scratch"
+    legacy_note="$HOME/Documents/Quick Notes.md"
+    export ENCLOSURE_ALTERNATE_NOTE="$legacy_note"
+    if [[ ! -e "$note" && -f "$legacy_note" ]]; then
+        ENCLOSURE_ALTERNATE_NOTE="$note"
+        note="$legacy_note"
+    fi
     # Hold the lock in the launcher until Kitty closes its editor.
-    kitty --class enclosure-scratchpad --title scratch -o remember_window_size=no \
+    kitty --class enclosure-scratchpad --title Notepad -o remember_window_size=no \
         -o initial_window_width=54c -o initial_window_height=22c \
-        nvim -u "$SCRIPT_DIR/scripts/scratch.lua" -- "$scratch_dir/scratch" 9>&-
+        nvim -u "$SCRIPT_DIR/scripts/scratch.lua" -- "$note" 9>&-
     ;;
 starwake|mousedash)
 	pointer_library=$(bash "${SCRIPT_DIR}/scripts/build_starwake_pointer.sh") || exit 1
