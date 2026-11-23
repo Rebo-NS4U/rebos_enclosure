@@ -11,7 +11,6 @@ StyledRect {
 
     property alias text: textField.text
     property alias placeholderText: textField.placeholderText
-    property string actionText: ""
     property string completionText: ""
     property string iconText: ""
     property string prefixText: ""  // Prefix indicator (e.g., "clip ")
@@ -72,13 +71,6 @@ StyledRect {
             font.pixelSize: Styling.fontSize(6)
             color: Styling.srItem("overprimary")
             visible: root.iconText.length > 0
-        }
-
-        Text {
-            visible: root.actionText.length > 0
-            text: root.actionText
-            color: Colors.primary
-            font: textField.font
         }
 
         // Prefix indicator

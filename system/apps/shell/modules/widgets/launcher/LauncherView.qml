@@ -281,14 +281,16 @@ Item {
                 anchors.top: parent.top
                 text: GlobalStates.launcherSearchText
                 readonly property var answer: appLauncher.filteredApps[appLauncher.selectedIndex]
-                placeholderText: "an app, file, or answer…"
-                actionText: text && answer && answer.kind !== "hint" ? (answer.verb ?? "Open") : "Find"
+                placeholderText: "Find an app, file, or answer…"
+                iconText: Icons.magnifyingGlass
                 completionText: {
                     if (!text || !answer || answer.kind === "hint")
                         return "";
+                    if (answer.kind === "copy")
+                        return " = " + answer.name;
                     if (answer.name.toLowerCase().startsWith(text.toLowerCase()))
                         return answer.name.slice(text.length);
-                    return " → " + answer.name;
+                    return "";
                 }
                 handleTabNavigation: true
                 clearOnEscape: false
@@ -489,7 +491,7 @@ Item {
                     font.pixelSize: Styling.fontSize(-2)
                 }
                 Text {
-                    text: "↵ Select   ·   Tab Projects   ·   Esc Back"
+                    text: "Tab Projects   ·   Esc Back"
                     color: Colors.outline
                     font.family: Config.theme.font
                     font.pixelSize: Styling.fontSize(-2)
@@ -688,7 +690,7 @@ Item {
                                 font.hintingPreference: Font.PreferFullHinting
                                 width: parent.width
                                 textFormat: Text.PlainText
-                                text: actionVerb ? actionVerb + " " + appName : appName
+                                text: appName
                                 color: {
                                     if (isExpanded) {
                                         return Styling.srItem("pane");
@@ -739,6 +741,24 @@ Item {
                                         easing.type: Easing.OutCubic
                                     }
                                 }
+                            }
+                        }
+
+                        Rectangle {
+                            visible: appLauncher.selectedIndex === index && !isExpanded && actionVerb.length > 0
+                            implicitWidth: keyLabel.implicitWidth + Styling.spacing(16)
+                            implicitHeight: keyLabel.implicitHeight + Styling.spacing(6)
+                            radius: Styling.radius(-4)
+                            color: "transparent"
+                            border.color: Qt.alpha(keyLabel.color, 0.5)
+                            Text {
+                                id: keyLabel
+                                anchors.centerIn: parent
+                                text: actionVerb + "  ↵"
+                                color: Styling.srItem("primary")
+                                font.family: Config.theme.font
+                                font.pixelSize: Styling.fontSize(-1)
+                                font.weight: Font.DemiBold
                             }
                         }
                     }
