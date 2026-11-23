@@ -4,6 +4,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
+import Quickshell.Io
 import qs.modules.theme
 import qs.modules.components
 import qs.config
@@ -782,9 +783,20 @@ Item {
                         }
 
                         StyledText {
-                            text: Config.version && Config.version !== "0.0.0"
-                                ? "Shell version " + Config.version : "Shell version unavailable"
+                            id: enclosureVersion
+                            property string revision: ""
+                            text: revision ? "Enclosure build " + revision
+                                : (versionLookup.running ? "Reading Enclosure build…" : "Enclosure build unavailable")
                             color: Colors.overSurfaceVariant
+
+                            Process {
+                                id: versionLookup
+                                running: enclosureVersion.visible
+                                command: ["python3", "-B", Quickshell.shellPath("scripts/github_status.py"), "--installed-version"]
+                                stdout: StdioCollector {
+                                    onStreamFinished: enclosureVersion.revision = text.trim()
+                                }
+                            }
                         }
 
                         ActionButton {

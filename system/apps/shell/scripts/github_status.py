@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import sys
 import urllib.error
 import urllib.request
 from urllib.parse import quote
@@ -49,6 +50,14 @@ def installed(home):
         if data.get('repository') == REPOSITORY:
             return data['commit'], bool(data.get('dirty', False))
     raise ValueError('Installed revision is unknown. Reinstall or update from the official repository to record it.')
+
+
+def installed_version(home):
+    revision, _ = installed(home)
+    checkout = linked_checkout(home)
+    if checkout is not None:
+        return git(checkout, 'describe', '--tags', '--always', revision)
+    return revision[:12]
 
 
 def commit_details(data):
@@ -187,4 +196,10 @@ def check(home, checkout=None, repository=REPOSITORY, api_request=None):
 
 
 if __name__ == '__main__':
-    print(json.dumps(check(Path.home())))
+    if sys.argv[1:] == ['--installed-version']:
+        try:
+            print(installed_version(Path.home()))
+        except (OSError, ValueError, KeyError, subprocess.SubprocessError):
+            sys.exit(1)
+    else:
+        print(json.dumps(check(Path.home())))
