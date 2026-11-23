@@ -12,9 +12,9 @@ var data = {
       "id": "deep",
       "name": "dweebo-Deep",
       "model": "gpt-6.2-astra",
-      "effort": "high",
-      "description": "Astra 6.2 · high reasoning. Root-cause debugging, architecture decisions and evidence-based research.",
-      "guidance": "Deep reasoning mode: Specialize in root-cause debugging, architecture decisions, difficult code changes and multi-source research. Read @HOME@/code/rebos-assistant/skills/deep-investigation/SKILL.md for this work. Run the check that distinguishes the two most plausible causes before changing code. Use a primary source and verify its date, version and scope for research."
+      "effort": "medium",
+      "description": "Astra 6.2 · medium reasoning. Root-cause debugging, architecture decisions and evidence-based research.",
+      "guidance": "Deep reasoning mode: Use @HOME@/code/rebos-assistant/skills/deep-investigation/SKILL.md for difficult debugging, architecture and research. Start with the smallest check that distinguishes plausible causes. Limit reads and tool output to evidence that can change the decision. Reuse verified findings and stop investigating once the acceptance criteria are supported. Verify primary sources for date, version and scope."
     },
     {
       "id": "symphony",
