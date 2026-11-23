@@ -109,6 +109,10 @@ for (const id of materials) {
 // Keep the base and text fixed so this isolates the wallpaper accents.
 const changedAccents = {...p, primary:'#a9b4ff', tertiary:'#ffbadb'};
 assert.equal(surface('glyph', 'bg', p).gradient[0][0], surface('glyph', 'bg', changedAccents).gradient[0][0]);
+const glyph = {...p, background:'#000000', foreground:'#f2f2f2', primary:'#d71921'};
+assert.equal(surface('glyph', 'surface', glyph).gradient[0][0], '#0e0e0e');
+assert.equal(surface('glyph', 'surfaceContainer', glyph).gradient[0][0], '#1a1a1a');
+assert.equal(surface('glyph', 'bg', glyph).border[0], '#2a2a2a');
 assert.equal(themePalette('glyph'), null);
 assert.equal(surface('glyph', 'bg', p).gradient[0][0], p.background);
 assert.equal(surface('glyph', 'focus', changedAccents).border[0], changedAccents.primary);

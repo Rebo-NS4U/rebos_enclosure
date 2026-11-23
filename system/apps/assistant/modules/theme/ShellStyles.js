@@ -178,9 +178,12 @@ function surface(style, variant, p, ditherStrength) {
     var canopy=style === "canopy", orbital=style === "orbital", metro=style === "metropolis";
     if (style === "glyph" && neutral) {
         fill = mix(p.background, p.foreground, focused ? 0.14 : inset ? 0.035 : outer ? 0 : 0.07);
+        var glyphInks = p.background === "#000000" && p.foreground === "#f2f2f2" && p.primary === "#d71921";
+        if (glyphInks)
+            fill = outer ? p.background : inset ? "#0b0b0b" : focused ? "#2a2a2a" : variant === "pane" || variant === "surface" ? "#0e0e0e" : "#1a1a1a";
         item = p.foreground;
         opacity = 1;
-        border = [focused ? p.primary : mix(fill, p.foreground, 0.20), outer || focused ? 1 : 0];
+        border = [focused ? p.primary : glyphInks ? "#2a2a2a" : mix(fill, p.foreground, 0.20), outer || focused ? 1 : 0];
     }
     if (orbital && neutral) {
         fill=mix(p.background,p.foreground,inset?0.005:focused?0.10:outer?0.075:0.045);
@@ -230,6 +233,11 @@ function appPalette(style, palette, customOpacity) {
     result.style = style;
     result.opacity = customOpacity;
     if (style === "custom") return result;
+    if (style === "glyph" && String(palette.background) === "#000000"
+            && String(palette.overBackground) === "#f2f2f2" && String(palette.primary) === "#d71921") {
+        result.opacity = 1;
+        return result;
+    }
     var roles = {background: palette.background.toString(), foreground: palette.overBackground.toString(),
         primary: palette.primary.toString(), onPrimary: palette.overPrimary.toString(),
         secondary: palette.secondary.toString(), onSecondary: palette.overSecondary.toString(),

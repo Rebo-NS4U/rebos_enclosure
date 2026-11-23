@@ -153,6 +153,21 @@ if sys.argv[2] == 'dark' and sys.argv[4] == 'scheme-neutral' and not any(sys.arg
         luminance = sum((c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4) * w
                         for c, w in zip(channels, (0.2126, 0.7152, 0.0722)))
         palette['overPrimary'] = '#000000' if luminance > 0.179 else '#ffffff'
+        # Glyph artwork uses these three source inks and a discrete neutral ramp.
+        if (palette['background'], palette['overBackground'], accent) == ('#000000', '#f2f2f2', '#d71921'):
+            palette.update(surface='#0e0e0e', surfaceContainer='#1a1a1a', surfaceContainerLow='#0e0e0e',
+                           surfaceContainerLowest='#0b0b0b', surfaceContainerHigh='#2a2a2a',
+                           surfaceContainerHighest='#4a4a4a', surfaceDim='#0b0b0b',
+                           surfaceVariant='#1a1a1a', surfaceBright='#2a2a2a',
+                           outline='#8c8c8c', outlineVariant='#2a2a2a', overSurfaceVariant='#b8b8b8',
+                           overPrimary='#ffffff', primaryContainer='#2a2a2a', overPrimaryContainer='#f1f1f1',
+                           secondary='#e9e9e9', overSecondary='#0b0b0b', secondaryContainer='#1a1a1a',
+                           overSecondaryContainer='#d9d9d9', tertiary='#b8b8b8', overTertiary='#000000',
+                           tertiaryContainer='#4a4a4a', overTertiaryContainer='#ffffff',
+                           inverseSurface='#f1f1f1', inverseOnSurface='#1a1a1a', inversePrimary=accent,
+                           primaryFixedDim='#b8b8b8', secondaryFixedDim='#8c8c8c', tertiaryFixedDim='#6e6e6e',
+                           primaryFixed='#f2f2f2', secondaryFixed='#e9e9e9', tertiaryFixed='#d9d9d9',
+                           error=accent, overError='#ffffff', errorContainer='#2a2a2a', overErrorContainer='#f2f2f2')
 Path(sys.argv[1]).write_text(json.dumps(palette, indent=2) + '\n')
 PYVALIDATE
   then
