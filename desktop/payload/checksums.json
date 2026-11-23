@@ -635,7 +635,7 @@
   "system/apps/shell/modules/widgets/dashboard/controls/SettingsTab.qml": "8a05aadb2008d435e5c6634354c68727e1602ac0eaac99c9cfac27dd71945f3d",
   "system/apps/shell/modules/widgets/dashboard/controls/SettingsTextField.qml": "3a023def748f443b60a16f286b1c799bc94715bbb6a73ea42ef75a0343da0de5",
   "system/apps/shell/modules/widgets/dashboard/controls/SettingsToggleRow.qml": "af48189aa5b4a839ba28fb90d1ad5a187f0a1bf9684d4268bc27ccd83ea66d6e",
-  "system/apps/shell/modules/widgets/dashboard/controls/ShellPanel.qml": "e5069edb3205f31facd03c917de771d24db7d3206657b9a6dedb6ec1ee63e81f",
+  "system/apps/shell/modules/widgets/dashboard/controls/ShellPanel.qml": "a9972c782dc2a716d43eae365ca12e7770b9b0a7e6e94ad2ab7a690af05f606d",
   "system/apps/shell/modules/widgets/dashboard/controls/ShellStyleSettings.qml": "0563e9b8d6069c77093e18c7b5ef9ae3159456c23e82a9ab4d77412c151eed97",
   "system/apps/shell/modules/widgets/dashboard/controls/StorageSettings.qml": "9741f3b5122094a266ba024262d95e3ef4c360529641d2e70d8198a10be52283",
   "system/apps/shell/modules/widgets/dashboard/controls/SystemPanel.qml": "79aeea9d7f1bdf74af1309eff124f2e49e4d5cb8ab89cdce6e7a96e2713cd888",

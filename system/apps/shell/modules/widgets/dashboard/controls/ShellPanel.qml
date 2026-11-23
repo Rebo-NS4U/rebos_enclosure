@@ -773,7 +773,7 @@ Item {
                         StyledText {
                             renderType: Text.NativeRendering
                             font.hintingPreference: Font.PreferFullHinting
-                            text: "System"
+                            text: "rebos_enclosure"
                             font.family: Config.theme.font
                             font.pixelSize: Styling.fontSize(-1)
                             font.weight: Font.Medium
@@ -781,14 +781,26 @@ Item {
                             Layout.bottomMargin: -4
                         }
 
+                        StyledText {
+                            text: Config.version && Config.version !== "0.0.0"
+                                ? "Shell version " + Config.version : "Shell version unavailable"
+                            color: Colors.overSurfaceVariant
+                        }
+
                         ActionButton {
-                            text: "About rebos_shell " + Config.version
-                            icon: Icons.info
+                            text: "Source on GitHub"
+                            icon: Icons.link
                             onClicked: Quickshell.execDetached(["xdg-open", "https://github.com/Rebo-NS4U/rebos_enclosure"])
                         }
 
                         ActionButton {
-                            text: "Support development"
+                            text: "Latest Enclosure release"
+                            icon: Icons.arrowSquareOut
+                            onClicked: Quickshell.execDetached(["xdg-open", "https://github.com/Rebo-NS4U/rebos_enclosure/releases/latest"])
+                        }
+
+                        ActionButton {
+                            text: "Sponsor jR4dh3y"
                             icon: Icons.heart
                             onClicked: Quickshell.execDetached(["xdg-open", "https://github.com/sponsors/jR4dh3y"])
                         }
