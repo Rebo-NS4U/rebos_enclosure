@@ -493,8 +493,8 @@ ShellRoot {
       const previousBlur = Config.performance.desktopBlur;
       tester.mouseClick(glyphCard); tester.wait(40);
       fixture.check(Styling.shellStyle === "glyph" && glyphCard.selected, "Clicking Glyph applies the theme");
-      const glyphCanvas = fixture.find(glyphCard, "wallpaper-theme-canvas");
-      fixture.check(glyphCanvas && glyphCanvas.finish === "glyph", "Glyph preview loads its dot matrix");
+      const orbitImage = fixture.find(glyphCard, "glyph-orbit-background");
+      fixture.check(orbitImage && orbitImage.status === Image.Ready, "Glyph preview loads its orbital backdrop");
       fixture.check(glyphCard.previewPalette === null && glyphCard.sample.gradient[0][0] === Colors.background.toString(),
        "Glyph uses the current wallpaper background");
       Config.theme.shellStyle = previousStyle;

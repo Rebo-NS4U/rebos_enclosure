@@ -234,6 +234,10 @@ def apply(p, home):  # pylint: disable=too-many-locals
     m = metrics(home)
     cfg = home / '.config'
     base, css = gtk_css(p, m)
+    if p.get('style') == 'glyph':
+        art = (cfg / 'quickshell/modules/components/glyph-orbits.png').as_uri()
+        css += (f'window.background {{ background-image: url("{art}"); '
+                'background-size: cover; background-position: right center; background-repeat: no-repeat; }\n')
     for version in (3, 4):
         directory = cfg / f'gtk-{version}.0'
         write(directory / 'enclosure-standard.css', css)

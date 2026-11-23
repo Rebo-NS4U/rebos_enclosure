@@ -387,11 +387,26 @@ ClippingRectangle {
         }
     }
 
+    Loader {
+        anchors.fill: parent
+        active: (root.styleOverride || Styling.shellStyle) === "glyph" && !root.hasFillColor
+            && !root.controlSurface && root.rectOpacity > 0
+            && (root.materialPreview || (width >= 160 && height >= 80))
+            && ["bg", "popup", "pane", "surface", "surfaceContainer"].includes(root.variant)
+        sourceComponent: Image {
+            objectName: "glyph-orbit-background"
+            source: Qt.resolvedUrl("glyph-orbits.png")
+            fillMode: Image.PreserveAspectCrop
+            horizontalAlignment: Image.AlignRight
+            opacity: root.rectOpacity
+        }
+    }
+
     // Wallpaper architecture, using the selected semantic colors throughout.
     Loader {
         anchors.fill: parent
         readonly property string material: root.styleOverride || Styling.shellStyle
-        active: !root.hasFillColor && root.rectOpacity > 0 && (["canopy", "metropolis", "glyph"].includes(material)
+        active: !root.hasFillColor && root.rectOpacity > 0 && (["canopy", "metropolis"].includes(material)
             ? !root.controlSurface && ["bg", "popup", "pane", "surface", "surfaceContainer", "bar"].includes(root.variant)
             : material === "orbital"
                 && ["bg", "popup", "pane", "surface", "surfaceContainer", "internalbg", "focus"].includes(root.variant))
@@ -426,18 +441,6 @@ ClippingRectangle {
             readonly property bool nested: !outer && !barSurface && root.variant !== "bar"
             onBroadChanged: requestPaint()
             onNestedChanged: requestPaint()
-
-            function paintGlyph(ctx) {
-                ctx.fillStyle = Qt.alpha(pigment, 0.20);
-                ctx.beginPath();
-                for (let y = 7; y < height; y += 14) {
-                    for (let x = 7; x < width; x += 14) {
-                        ctx.moveTo(x + 1, y);
-                        ctx.arc(x, y, 1, 0, Math.PI * 2);
-                    }
-                }
-                ctx.fill();
-            }
 
             function paintCanopy(ctx) {
                 const leafSize = broad ? Math.min(28, width * 0.047, height * 0.105) : Math.min(12, height * 0.23, width * 0.035)
@@ -638,8 +641,7 @@ ClippingRectangle {
                         ctx.translate(0, (canopyVariation % 3) * height * 0.012)
                     }
                     paintCanopy(ctx)
-                } else if (finish === "glyph") {
-                    paintGlyph(ctx);
+
                 } else if (finish === "orbital") {
                     // Elliptical orbital tracks wrap a quiet, recessed space capsule.
                     ctx.strokeStyle=ink(0.20);ctx.lineWidth=1;

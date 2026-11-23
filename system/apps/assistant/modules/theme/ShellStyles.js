@@ -3,7 +3,7 @@
 var styles = [
     {id: "canopy", label: "Canopy", font: "DejaVu Sans Mono", description: "Overlapping tree boughs with two-tone leaf sprays across the window."},
     {id: "orbital", label: "Orbital", font: "JetBrains Mono", description: "Orbital space: elliptical tracks, satellite points, fixed stars and recessed glass."},
-    {id: "glyph", label: "Glyph", font: "JetBrains Mono", description: "Matte panels and a dot matrix in the wallpaper palette."},
+    {id: "glyph", label: "Glyph", font: "JetBrains Mono", description: "Matte panels with sparse stars, elliptical tracks and dithered planets."},
     {id: "metropolis", label: "Metropolis", font: "DejaVu Sans", description: "Stepped towers and lit windows frame a low city skyline."},
     {id: "glass-vault", label: "Glass Vault", font: "Noto Sans", description: "Thick glass blocks, rounded clamps, refractive light bands and deep inset controls."},
     {id: "radar-station", label: "Radar Station", font: "DejaVu Sans", description: "Etched bearing scales, radial divisions and softly illuminated scope glass."},

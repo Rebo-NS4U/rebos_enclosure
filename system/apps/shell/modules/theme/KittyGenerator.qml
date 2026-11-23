@@ -94,7 +94,12 @@ QtObject {
 
         // Kitty uses points; QML theme typography uses pixels.
         let conf = `font_family ${Config.theme.monoFont}\nfont_size ${Config.theme.monoFontSize * 0.75}\n`;
-        conf += appearance(Colors.style || Config.theme.shellStyle);
+        const style = Colors.style || Config.theme.shellStyle;
+        conf += appearance(style);
+        if (style === "glyph") {
+            const art = "~/.config/quickshell/modules/components/glyph-orbits.png";
+            conf += `background_image ${art}\nbackground_image_layout cscaled\nbackground_tint 0\n`;
+        }
         conf += `cursor ${cursor}\n`;
         conf += `cursor_text_color ${cursorText}\n\n`;
 
