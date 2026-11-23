@@ -203,7 +203,7 @@
   "system/apps/assistant/scripts/codex_workspace.py": "3bdcacfa1c72b33530a286dcf75504708d09623a733c69046dd0e4d51f295b87",
   "system/apps/assistant/scripts/google_agent.py": "3626662de6a547a2aaab87ddf67ea71604153818a2bdd8b35f5e1633586543ed",
   "system/apps/assistant/scripts/google_settings.json": "a01126635b9ae8666839ddb52ab8ebb5481bbfa225ff49dd62b2f7763cc586dd",
-  "system/apps/assistant/scripts/omniroute_agent.py": "f2e29a33e28eed863ddca762d5215486a011d2b2fcf78edc9c1b60ec3a25e653",
+  "system/apps/assistant/scripts/omniroute_agent.py": "bf8413f73065b983829e766f095a5bfb457ed7aca102cd9441aee3a6c0a41227",
   "system/apps/assistant/scripts/openrouter_agent.py": "97e6bc53af0b5416c2867f3c3678fdd7d49fe695f6de99fad55bafe616764479",
   "system/apps/assistant/scripts/openrouter_models.json": "61e8e431eff5f75935950d63fb765dc9ea1f35cf85448aac01559a1313719689",
   "system/apps/assistant/scripts/preset_tools.py": "631f339195ed726a1c5cb3ecda79d0f02c37afbd817a381c9402cd6e8edbacb8",

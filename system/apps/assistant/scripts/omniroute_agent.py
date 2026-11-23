@@ -32,8 +32,9 @@ def launch_environment(environment):
     key = setting("api_key")
     base_url = setting("base_url", "http://127.0.0.1:20128/v1").rstrip("/")
     endpoint = urlsplit(base_url)
+    has_query_or_fragment = bool(endpoint.query or endpoint.fragment)
     if (endpoint.scheme not in ("http", "https") or not endpoint.hostname
-            or endpoint.username is not None or endpoint.query or endpoint.fragment
+            or endpoint.username is not None or has_query_or_fragment
             or not endpoint.path.endswith("/v1")):
         raise ValueError("Set OmniRoute base_url to an HTTP(S) API root ending in /v1.")
 
