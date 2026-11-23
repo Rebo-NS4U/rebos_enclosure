@@ -14,7 +14,6 @@ Singleton {
     property var islands: ({})
     property var dashboardControllers: ({})
     property var powerMenuButtons: ({})
-    property var systemMonitorButtons: ({})
     property string currentActiveModule: ""
     property string lastFocusedScreen: ""
     property var contextMenu: null
@@ -186,46 +185,18 @@ Singleton {
         button.togglePopup();
     }
 
-    function registerSystemMonitorButton(screenName, button) {
-        systemMonitorButtons = _updateMap(systemMonitorButtons, screenName, button);
-    }
-
-    function unregisterSystemMonitorButton(screenName, button) {
-        if (systemMonitorButtons[screenName] === button)
-            systemMonitorButtons = _updateMap(systemMonitorButtons, screenName, null);
-    }
-
-    function toggleSystemMonitorForActive() {
-        const focusedMonitor = NiriService.focusedMonitor;
-        if (!focusedMonitor)
-            return;
-
-        if ((Config.bar?.style ?? "default") === "island") {
-            const island = getIslandForActive();
-            if (island) {
-                if (island.isExpanded && island.currentMode === "stats") {
-                    island.collapse();
-                } else {
-                    clearAll();
-                    currentActiveModule = "system-monitor";
-                    island.expand("stats");
-                }
-                return;
-            }
-        }
-
-        const button = systemMonitorButtons[focusedMonitor.name] || null;
-        if (!button) {
-            console.warn("Visibilities: no system monitor button registered for", focusedMonitor.name);
-            return;
-        }
-
+    function toggleSystemMonitor(screenName = "") {
+        closeActiveBarPopup();
         clearAll();
         currentActiveModule = "";
-        button.togglePopup();
+        Quickshell.execDetached(["bash", Quickshell.shellPath("cli.sh"), "compact-resources", screenName]);
     }
 
     function setActiveModule(moduleName) {
+        if (moduleName === "stats" || moduleName === "system-monitor") {
+            toggleSystemMonitor();
+            return;
+        }
         if (moduleName === "powermenu") {
             togglePowerMenuForActive();
             return;
@@ -258,12 +229,6 @@ Singleton {
                     clearAll();
                     currentActiveModule = "alerts";
                     island.expand("alerts");
-                    return;
-                } else if (moduleName === "stats" || moduleName === "system-monitor") {
-                    closeActiveBarPopup();
-                    clearAll();
-                    currentActiveModule = "stats";
-                    island.expand("stats");
                     return;
                 } else if (moduleName === "power" || moduleName === "powermenu") {
                     closeActiveBarPopup();

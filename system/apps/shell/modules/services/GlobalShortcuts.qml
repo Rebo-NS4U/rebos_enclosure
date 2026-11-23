@@ -192,10 +192,11 @@ Singleton {
             case "dashboard-assistant":
                 toggleAssistant();
                 break;
+            case "compact-resources":
             case "system-monitor":
             case "stats":
             case "resources":
-                Visibilities.toggleSystemMonitorForActive();
+                Visibilities.toggleSystemMonitor();
                 break;
             case "wallpaper":
             case "wallpapers":

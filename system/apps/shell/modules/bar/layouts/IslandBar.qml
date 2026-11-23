@@ -38,7 +38,7 @@ Item {
     readonly property int triggerHeight: 8
     readonly property real cornerRadius: Styling.radius(4)
 
-    // Current morphing state: "collapsed" | "notification" | "osd" | "dashboard" | "power" | "sound" | "mic" | "wifi" | "stats" | "apps" | "projects"
+    // Current morphing state: "collapsed" | "notification" | "osd" | "dashboard" | "power" | "sound" | "mic" | "wifi" | "apps" | "projects"
     property string currentMode: "collapsed"
     property string previousMode: "collapsed"
     // Keep outgoing loaders alive independently of their animated opacity.
@@ -117,7 +117,6 @@ Item {
             root.retractingToHidden = true;
             GlobalStates.islandOpen = false;
             GlobalStates.islandLauncherOpen = false;
-            GlobalStates.islandStatsOpen = false;
             retractFinishTimer.restart();
             slideUpAnim.stop();
             slideUpAnim.from = root.containerY;
@@ -138,6 +137,10 @@ Item {
     readonly property bool typingDialogActive: typingView.filePickerActive
     readonly property bool typingFullscreen: currentMode === "typing" && typingView.fullscreen
     function expand(mode: string) {
+        if (mode === "stats") {
+            Visibilities.toggleSystemMonitor(root.screen.name);
+            return;
+        }
         if (mode === "typing" && typingView.pinned) {
             for (const client of NiriService.clients.values) {
                 if (client.title === readerWindow.title) { NiriService.focusWindow(client.id); break; }
@@ -416,8 +419,6 @@ Item {
             return Math.max(root.islandHeight, wifiView.implicitHeight);
         case "bluetooth":
             return Math.max(root.islandHeight, bluetoothView.implicitHeight);
-        case "stats":
-            return Math.max(root.islandHeight, statsView.implicitHeight);
         case "alerts":
             return Math.max(root.islandHeight, alertsView.implicitHeight);
         case "wallpapers":
@@ -446,7 +447,6 @@ Item {
         closePopupsForTransition(root.previousMode, root.currentMode);
         GlobalStates.islandOpen = (currentMode !== "collapsed" && currentMode !== "notification" && currentMode !== "osd" && !root.retractingToHidden);
         GlobalStates.islandLauncherOpen = ((currentMode === "apps" || currentMode === "projects") && !root.retractingToHidden);
-        GlobalStates.islandStatsOpen = (currentMode === "stats" && !root.retractingToHidden);
 
         if (root.previousMode === "collapsed" && root.currentMode !== "collapsed") {
             root.openedFromHidden = !root.barAlwaysVisible;
@@ -1229,7 +1229,7 @@ Item {
                 onOpenMic: root.currentMode = "mic"
                 onOpenWifi: root.currentMode = "wifi"
                 onOpenBluetooth: root.currentMode = "bluetooth"
-                onOpenStats: root.currentMode = "stats"
+                onOpenStats: root.expand("stats")
                 onOpenAlerts: root.currentMode = "alerts"
                 onOpenWallpapers: root.currentMode = "wallpapers"
                 onOpenBattery: root.currentMode = "battery"
@@ -1427,45 +1427,6 @@ Item {
                         NumberAnimation {
                             duration: root.currentMode === "bluetooth" ? root.contentFadeInDuration : root.contentFadeOutDuration
                             easing.type: root.currentMode === "bluetooth" ? Motion.enterCurve : Motion.feedbackCurve
-                        }
-                    }
-
-                    onBackRequested: root.expand("dashboard")
-                }
-            }
-
-            // ═══════════════════════════════════════════════════════════════
-            // EXPANDED STATE 5: SYSTEM RESOURCES STATS PANEL
-            // ═══════════════════════════════════════════════════════════════
-            Loader {
-                id: statsView
-                objectName: "island-lazy-stats"
-                anchors.top: parent.top
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: root.targetWidth
-                height: item?.implicitHeight ?? 0
-                // Keep the outgoing menu only until its fade completes.
-                active: root.currentMode === "stats" || root.fadingModes.indexOf("stats") !== -1
-                sourceComponent: IslandStatsPanel {
-                    id: statsContent
-                    property bool revealReady: false
-                    Component.onCompleted: revealReady = true
-                    transformOrigin: Item.Top
-
-
-                    anchors.top: parent.top
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    width: root.targetWidth
-                    height: implicitHeight
-                    visible: opacity > 0
-                    opacity: revealReady && root.currentMode === "stats" ? 1.0 : 0.0
-                    enabled: root.currentMode === "stats" && !root.retractingToHidden
-
-                    Behavior on opacity {
-                        enabled: Config.animDuration > 0
-                        NumberAnimation {
-                            duration: root.currentMode === "stats" ? root.contentFadeInDuration : root.contentFadeOutDuration
-                            easing.type: root.currentMode === "stats" ? Motion.enterCurve : Motion.feedbackCurve
                         }
                     }
 

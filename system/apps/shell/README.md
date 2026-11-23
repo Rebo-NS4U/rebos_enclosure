@@ -421,27 +421,14 @@ The **Flight log** shows career badges and medals. Collect five stars, earn eigh
 Verify with `node desktop/tests/test_mousedash.cjs`. The optional `node desktop/tests/audit_mousedash.cjs` runs 20 seeded meteor-field trials per difficulty with a 450px/s movement cap and 250ms perception/decision delay. It models obstacle dodging only, does not pursue stars; it does not establish human completion rates. The launcher builds a cached native confinement helper using Qt 6.9+, a C++ compiler, Qt Quick/Wayland development libraries and wayland-protocols (included in the desktop package list). Launch through `rebos_shell starwake` or the app launcher to load the helper; direct `qs -p MouseDash.qml` runs do not load it. No network services are required.
 
 
-### Applications in System Monitor
-
-Open **Applications** in System Monitor or the island’s **System Resources**
-view. Windows with the same app ID share a row. Use **Focus** to switch to a
-window. Each Quickshell instance has its own row with its PID and config path,
-including instances without a window. Windows whose PID matches a Quickshell
-instance are covered by that instance’s row. Hover over truncated details to
-read the full title or config path.
-
-Quickshell instances refresh every three seconds while the section is visible.
-Use **Close** on any row to request a normal close for all its windows or stop
-that specific Quickshell instance. Closing Enclosure Shell also closes the
-monitor. The list refreshes after a close request and shows any failure.
-
 ### Floating desktop tools
 
-Open **Compact Resource Monitor** in the application launcher, or run
-`rebos_shell compact-resources`. Run it again or click × to close it. The
+Open **System Monitor** from the launcher, press **Mod+N**, or use the monitor
+button in the bar or island dashboard. Each toggles the same compact monitor.
+You can also run `rebos_shell compact-resources` or click × to close it. The
 gauges show CPU load, memory, swap and CPU temperature. The rails show the
 first configured disk and network throughput. Filter the list by process name
-or PID. Select **end**, then confirm the process name and PID to send SIGTERM.
+or PID. Select **End**, then confirm the process name and PID to send SIGTERM.
 The background section lists the desktop's status tray applications.
 
 Open **Scratchpad** in the launcher, or run `rebos_shell scratchpad`. It opens

@@ -127,17 +127,19 @@ restart_rebos_shell() {
 	nohup "$0" >/dev/null 2>&1 &
 }
 
-# Older desktop entries pass the standalone monitor through the shell's run command.
-if [[ ${1:-} == run && ${2:-} == compact-resources ]]; then
-    shift
+# Accept the monitor names used by older launchers and shell shortcuts.
+if [[ ${1:-} == run ]]; then
+    case "${2:-}" in
+        compact-resources|system-monitor|stats|resources) shift ;;
+    esac
 fi
 
 case "${1:-}" in
-compact-resources)
+compact-resources|system-monitor|stats|resources)
     monitor_qml="$SCRIPT_DIR/CompactResources.qml"
     if qs ipc -p "$monitor_qml" call monitor close >/dev/null 2>&1; then exit 0; fi
     export ENCLOSURE_MONITOR_OUTPUT
-    ENCLOSURE_MONITOR_OUTPUT=$(niri msg -j focused-output | jq -r '.name // empty')
+    ENCLOSURE_MONITOR_OUTPUT=${2:-$(niri msg -j focused-output | jq -r '.name // empty')}
     exec "$QS_BIN" -n -p "$monitor_qml"
     ;;
 scratchpad)

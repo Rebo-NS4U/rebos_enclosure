@@ -14,7 +14,7 @@ binds {
     Mod+Alt+F hotkey-overlay-title="File Shelf" { spawn "qs" "ipc" "-p" "@HOME@/.config/quickshell" "call" "rebos_shell" "run" "file-shelf"; }
     Mod+Space hotkey-overlay-title="Open App Launcher" { spawn "qs" "ipc" "-p" "@HOME@/.config/quickshell" "call" "rebos_shell" "run" "launcher"; }
     Mod+Alt+N hotkey-overlay-title="Quick Notes" { spawn "qs" "ipc" "-p" "@HOME@/.config/quickshell" "call" "rebos_shell" "run" "notes"; }
-    Mod+N hotkey-overlay-title="Open Dashboard" { spawn "qs" "ipc" "-p" "@HOME@/.config/quickshell" "call" "rebos_shell" "run" "system-monitor"; }
+    Mod+N repeat=false hotkey-overlay-title="System Monitor" { spawn "@HOME@/.local/bin/rebos_shell" "compact-resources"; }
     Mod+V hotkey-overlay-title="Open Clipboard History" { spawn "rebos-clipboard"; }
     Mod+Period hotkey-overlay-title="Open App Launcher" { spawn "qs" "ipc" "-p" "@HOME@/.config/quickshell" "call" "rebos_shell" "run" "launcher"; }
     Mod+C hotkey-overlay-title="Open Project" { spawn "qs" "ipc" "-p" "@HOME@/.config/quickshell" "call" "rebos_shell" "run" "projects"; }

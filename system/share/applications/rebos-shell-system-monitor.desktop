@@ -1,9 +1,9 @@
 [Desktop Entry]
 Type=Application
 Name=System Monitor
-Comment=Open the Quickshell system monitor
-Exec="@HOME@/.local/bin/rebos_shell" run system-monitor
+Comment=View resource gauges and filter running processes
+Exec="@HOME@/.local/bin/rebos_shell" compact-resources
 Icon=utilities-system-monitor
 Terminal=false
 Categories=System;Monitor;
-Keywords=quickshell;enclosure;cpu;memory;resources;stats;
+Keywords=quickshell;enclosure;cpu;memory;resources;stats;compact resource monitor;

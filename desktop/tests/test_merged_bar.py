@@ -43,7 +43,7 @@ ShellRoot {
        const pos = control.mapToItem(bar, 0, 0);
        if (pos.x < body.x || pos.x + control.width > body.x + body.width) throw Error(id + " outside bar");
       }
-      for (const mode of ["dashboard", "power", "sound", "mic", "wifi", "bluetooth", "stats", "alerts", "wallpapers", "battery", "weather", "media", "calendar", "apps"]) {
+      for (const mode of ["dashboard", "power", "sound", "mic", "wifi", "bluetooth", "alerts", "wallpapers", "battery", "weather", "media", "calendar", "apps"]) {
        const lazy = tester.findChild(bar, "island-lazy-" + mode);
        if (lazy && lazy.item) throw Error(mode + " eagerly loaded while closed");
        bar.expand(mode); tester.wait(50);
@@ -56,6 +56,8 @@ ShellRoot {
        if (bar.islandActive || (bar.targetWidth <= 200 || bar.targetWidth >= size - 32)) throw Error("Failed to collapse: " + bar.currentMode + " width=" + bar.targetWidth);
       }
      }
+     bar.expand("stats"); tester.wait(50);
+     if (bar.currentMode !== "collapsed") throw Error("Stats reopened the old embedded monitor");
      bar.destroy(); tester.wait(50);
     }
     console.log("MERGED BAR PASSED"); Qt.quit();
@@ -169,6 +171,7 @@ class MergedBarTests(unittest.TestCase):
             for path in APP.iterdir():
                 if path.suffix in ('.qml', '.js') and path.name != 'shell.qml':
                     (root / path.name).symlink_to(path)
+            (root / 'cli.sh').write_text('echo "$1" >> "$HOME/monitor-launches"\n')
             (root / 'shell.qml').write_text(harness)
             (root / 'runtime').mkdir(mode=0o700)
             env = dict(os.environ, HOME=directory, XDG_RUNTIME_DIR=str(root/'runtime'),
@@ -186,3 +189,6 @@ class MergedBarTests(unittest.TestCase):
                                     text=True, capture_output=True, timeout=25)
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             self.assertIn('MERGED BAR PASSED', result.stdout + result.stderr)
+            if 'bar.expand("stats")' in harness:
+                self.assertEqual((root / 'monitor-launches').read_text().splitlines(),
+                                 ['compact-resources', 'compact-resources'])
