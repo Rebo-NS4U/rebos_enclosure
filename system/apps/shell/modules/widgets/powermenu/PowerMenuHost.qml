@@ -3,6 +3,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 import qs.modules.services
+import qs.modules.theme
 import qs.config
 
 // Fullscreen power menu for the invoking output.
@@ -22,6 +23,7 @@ Item {
         }
     }
 
+    readonly property bool glyphStyle: Styling.shellStyle === "glyph"
     readonly property bool popupOpen: menuOpen
     // Keep a tiny host for Visibilities registration; real UI is powerWindow.
     width: 1
@@ -106,7 +108,7 @@ Item {
 
             Rectangle {
                 anchors.fill: parent
-                color: "#eb000000"
+                color: root.glyphStyle ? "#eb000000" : Qt.alpha(Colors.background, 0.94)
             }
 
             MouseArea {
@@ -117,7 +119,8 @@ Item {
             PowerMenuView {
                 id: powerMenuView
                 anchors.centerIn: parent
-                width: Math.min(parent.width * 0.74, parent.height * 0.83)
+                width: root.glyphStyle ? Math.min(parent.width * 0.74, parent.height * 0.83)
+                    : Math.min(parent.width * 0.8, Styling.spacing(320))
                 popupMode: true
                 expanded: root.menuOpen
                 onCloseRequested: root.closeMenu()

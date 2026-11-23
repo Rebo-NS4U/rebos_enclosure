@@ -3,6 +3,7 @@ import QtQuick
 import Quickshell
 import qs.modules.components
 import qs.modules.services
+import qs.modules.theme
 import qs.config
 
 Item {
@@ -11,6 +12,7 @@ Item {
     signal itemSelected
 
     property int currentIndex: 0
+    readonly property bool glyphStyle: Styling.shellStyle === "glyph"
     readonly property var actions: [
         { label: "Lock", command: [] },
         { label: "Sleep", command: ["systemctl", "suspend"] },
@@ -56,12 +58,13 @@ Item {
 
     FontLoader {
         id: dotTypeface
-        source: "../../theme/fonts/Doto.ttf"
+        source: root.glyphStyle ? "../../theme/fonts/Doto.ttf" : ""
     }
 
     Column {
         id: menuColumn
         width: parent.width
+        spacing: root.glyphStyle ? 0 : Styling.spacing(8)
 
         Repeater {
             model: root.actions
@@ -73,40 +76,64 @@ Item {
                 readonly property bool selected: index === root.currentIndex
 
                 width: menuColumn.width
-                height: width * (selected ? 0.16 : 0.085)
-                Accessible.role: Accessible.Button
-                Accessible.name: modelData.label
-                Accessible.focused: selected && root.activeFocus
-                Accessible.onPressAction: root.activate(index)
+                height: root.glyphStyle ? width * (selected ? 0.16 : 0.085) : Styling.spacing(44)
 
-                Rectangle {
-                    visible: row.selected
-                    anchors.left: parent.left
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: row.width * 0.025
-                    height: width
-                    radius: width / 2
-                    color: "#e51e2a"
-                    antialiasing: true
-                }
-
-                StyledText {
-                    anchors.left: parent.left
-                    anchors.leftMargin: row.selected ? row.width * 0.055 : 0
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: row.modelData.label.toUpperCase()
-                    font.family: dotTypeface.status === FontLoader.Ready ? dotTypeface.name : Config.theme.monoFont
-                    font.pixelSize: Math.max(1, Math.round(row.width * (row.selected ? 0.16 : 0.065)))
-                    font.variableAxes: ({ "ROND": 100, "wght": row.selected ? 800 : 500 })
-                    color: row.selected ? "#ffffff" : pointer.containsMouse ? "#cccccc" : "#858585"
-                }
-
-                MouseArea {
-                    id: pointer
+                Loader {
                     anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.activate(row.index)
+                    sourceComponent: root.glyphStyle ? glyphAction : themedAction
+                }
+
+                Component {
+                    id: themedAction
+
+                    ThemeButton {
+                        text: row.modelData.label
+                        danger: row.modelData.command[1] === "poweroff"
+                        highlighted: row.selected
+                        focusPolicy: Qt.NoFocus
+                        onClicked: root.activate(row.index)
+                    }
+                }
+
+                Component {
+                    id: glyphAction
+
+                    Item {
+                        Accessible.role: Accessible.Button
+                        Accessible.name: row.modelData.label
+                        Accessible.focused: row.selected && root.activeFocus
+                        Accessible.onPressAction: root.activate(row.index)
+
+                        Rectangle {
+                            visible: row.selected
+                            anchors.left: parent.left
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: row.width * 0.025
+                            height: width
+                            radius: width / 2
+                            color: "#e51e2a"
+                            antialiasing: true
+                        }
+
+                        StyledText {
+                            anchors.left: parent.left
+                            anchors.leftMargin: row.selected ? row.width * 0.055 : 0
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: row.modelData.label.toUpperCase()
+                            font.family: dotTypeface.status === FontLoader.Ready ? dotTypeface.name : Config.theme.monoFont
+                            font.pixelSize: Math.max(1, Math.round(row.width * (row.selected ? 0.16 : 0.065)))
+                            font.variableAxes: ({ "ROND": 100, "wght": row.selected ? 800 : 500 })
+                            color: row.selected ? "#ffffff" : pointer.containsMouse ? "#cccccc" : "#858585"
+                        }
+
+                        MouseArea {
+                            id: pointer
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.activate(row.index)
+                        }
+                    }
                 }
             }
         }
