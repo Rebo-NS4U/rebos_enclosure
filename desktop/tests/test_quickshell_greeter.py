@@ -46,7 +46,7 @@ ShellRoot {
             running: true
             onTriggered: {
                 const hasFinish = panel.children.some(child => child.item?.objectName === "background-finish")
-                const solid = Config.theme.shellStyle === "glyph" && !hasFinish
+                const solid = Config.theme.shellStyle === "frosted" && !hasFinish
                 console.log("LOGIN_PANEL_SOLID", solid)
                 Qt.quit()
             }

@@ -33,7 +33,7 @@ import qs.modules.theme
 ShellRoot {
     Process {
         id: writer
-        command: ["python3", "-c", "import os,pathlib; (pathlib.Path(os.environ['XDG_CONFIG_HOME'])/'rebos_shell/config/theme.json').write_text('{\"oledMode\":true,\"lightMode\":true,\"shellStyle\":\"glass\"}')"]
+        command: ["python3", "-c", "import os,pathlib; (pathlib.Path(os.environ['XDG_CONFIG_HOME'])/'rebos_shell/config/theme.json').write_text('{\"oledMode\":true,\"lightMode\":true,\"shellStyle\":\"glyph\"}')"]
     }
     Timer {
         interval: 100; running: true; repeat: true
@@ -50,7 +50,7 @@ ShellRoot {
                 }
                 phase++; writer.running = true; return;
             }
-            if (!Config.lightMode || Config.oledMode || Styling.shellStyle !== "glass") return;
+            if (!Config.lightMode || Config.oledMode || Styling.shellStyle !== "frosted") return;
             if (Colors.background.toString() !== "#123456" || Colors.surface.toString() !== "#234567"
                 || Colors.surfaceContainerLowest.toString() !== "#345678"
                 || Colors.surfaceDim.toString() !== "#456789" || Config.theme.fontSize !== 14) {
@@ -69,4 +69,4 @@ ShellRoot {
             self.assertEqual(result.returncode, 0, output)
             self.assertIn('PASS: OLED', output)
             self.assertEqual(json.loads(settings.read_text()),
-                             dict(oledMode=True, lightMode=True, shellStyle='glass'))
+                             dict(oledMode=True, lightMode=True, shellStyle='glyph'))

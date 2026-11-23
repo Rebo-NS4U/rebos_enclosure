@@ -66,7 +66,6 @@ SettingsGroup {
                 objectName: "shell-style-" + modelData.id
                 StyledToolTip { show: card.hovered; tooltipText: card.modelData.description }
                 readonly property bool selected: Styling.shellStyle === modelData.id
-                readonly property bool glyphStyle: Styling.shellStyle === "glyph"
                 readonly property var previewPalette: ShellStyles.themePalette(modelData.id)
                 readonly property var sample: Styling.styleConfig(modelData.id, "bg")
                 Layout.fillWidth: true
@@ -75,17 +74,15 @@ SettingsGroup {
                 padding: 10
                 onClicked: {
                     Config.theme.shellStyle = modelData.id;
-                    if (["frosted", "colorful", "glass-vault", "radar-station", "guilloche", "canopy", "orbital", "glyph", "metropolis", "clear-glass"].indexOf(modelData.id) !== -1) {
+                    if (["frosted", "colorful", "glass-vault", "radar-station", "guilloche", "canopy", "orbital", "metropolis", "clear-glass"].indexOf(modelData.id) !== -1) {
                         Config.theme.shellTransparency = -1;
                         if (Config.performance.desktopBlur === "off") Config.performance.desktopBlur = "shell";
                     }
                 }
                 background: StyledRect {
-                    buttonSurface: card.glyphStyle
                     controlPressed: card.down
-                    variant: card.glyphStyle && card.selected ? "primary"
-                        : card.hovered || (card.glyphStyle && card.down) ? "focus" : "common"
-                    radius: card.glyphStyle ? Math.min(5, Styling.radius(-2)) : Styling.radius(-2)
+                    variant: card.hovered ? "focus" : "common"
+                    radius: Styling.radius(-2)
                     border.width: card.selected || card.activeFocus ? 2 : 1
                     border.color: card.selected || card.activeFocus ? Colors.primary : Qt.alpha(Colors.outline, 0.3)
                 }

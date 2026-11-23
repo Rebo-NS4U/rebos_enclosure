@@ -10,13 +10,15 @@ Singleton {
     property var appearance: ({})
     readonly property var palette: appearance.palette || ({})
     readonly property var metrics: appearance.metrics || ({})
+    readonly property var material: appearance.material || ({})
+    readonly property string savedStyle: material.shellStyle ?? metrics.style ?? "quiet"
     readonly property var theme: Object.assign({
-        shellStyle: metrics.style || "quiet", roundness: metrics.radius === undefined ? 16 : metrics.radius,
+        roundness: metrics.radius === undefined ? 16 : metrics.radius,
         font: metrics.font || "JetBrains Mono", fontSize: metrics.fontSize || 14,
         monoFontSize: metrics.fontSize || 14, ditherStrength: 20, shellTransparency: -1,
         backgroundFinish: "default",
         shadowXOffset: 0, shadowYOffset: 0, shadowOpacity: 0, shadowColor: "shadow", shadowBlur: 1
-    }, appearance.material || {})
+    }, material, {shellStyle: savedStyle === "glyph" || savedStyle === "nebula" ? "frosted" : savedStyle})
     readonly property var display: appearance.display || ({use12hFormat: true, tintEnabled: false})
     readonly property int roundness: theme.roundness
     readonly property string defaultFont: theme.font

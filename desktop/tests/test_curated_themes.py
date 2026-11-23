@@ -12,7 +12,9 @@ class CuratedThemeTests(unittest.TestCase):
                 source = (ROOT / f'system/apps/{app}/config/ConfigValidator.js').read_text().replace('.pragma library', '')
                 subprocess.run(['node', '-e', source + '''
 const assert = require('node:assert/strict');
-assert.equal(validate({shellStyle: 'nebula'}, {shellStyle: 'frosted'}).shellStyle, 'glyph');
+for (const style of ['glyph', 'nebula']) {
+ assert.equal(validate({shellStyle: style}, {shellStyle: 'frosted'}).shellStyle, 'frosted');
+}
 for (const style of ['frosted-ceramic', 'suspended-film', 'circuit-glass', 'prism-glass', 'optical-instrument', 'guilloche']) {
  assert.equal(validate({shellStyle: style}, {shellStyle: 'frosted'}).shellStyle, 'guilloche');
 }
@@ -25,8 +27,8 @@ for (const style of ['frosted-ceramic', 'suspended-film', 'circuit-glass', 'pris
                 script = source + '''
 const assert = require('node:assert/strict');
 const ids = ['monolith','blueprint','terminal-hardware'];
-assert.deepEqual(styles.slice(0,4).map(s=>s.id), ['canopy','orbital','glyph','metropolis']);
-assert.deepEqual(styles.map(s => s.id).sort(), [...ids, 'frosted', 'colorful', 'glass-vault', 'radar-station', 'guilloche', 'canopy', 'orbital', 'glyph', 'metropolis', 'clear-glass'].sort());
+assert.deepEqual(styles.slice(0,3).map(s=>s.id), ['canopy','orbital','metropolis']);
+assert.deepEqual(styles.map(s => s.id).sort(), [...ids, 'frosted', 'colorful', 'glass-vault', 'radar-station', 'guilloche', 'canopy', 'orbital', 'metropolis', 'clear-glass'].sort());
 assert.ok(!styles.some(s => ['botanical-archive','condensation','optical-instrument'].includes(s.id)));
 for (const id of ids) {
  assert.ok(styles.some(s => s.id === id));

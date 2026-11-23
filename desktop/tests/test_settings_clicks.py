@@ -486,22 +486,7 @@ ShellRoot {
       fixture.check(settings.appearanceTab === "style", "Appearance opens the Style tab by default");
       fixture.check(fixture.find(settings, "theme-preview-grid").columns === 6, "Fullscreen theme previews fit in one row");
       fixture.check(scroll.contentHeight <= scroll.height, "Style page does not include hidden settings groups");
-      const glyphCard = fixture.find(settings, "shell-style-glyph");
-      fixture.check(glyphCard && glyphCard.visible, "Glyph is available in the style picker");
-      const previousStyle = Config.theme.shellStyle;
-      const previousTransparency = Config.theme.shellTransparency;
-      const previousBlur = Config.performance.desktopBlur;
-      tester.mouseClick(glyphCard); tester.wait(40);
-      fixture.check(Styling.shellStyle === "glyph" && glyphCard.selected, "Clicking Glyph applies the theme");
-      fixture.check(Styling.dotTypeface.status === FontLoader.Ready && Styling.displayFont.indexOf("Doto") !== -1,
-       "Glyph loads its bundled dot-matrix display font");
-      const orbitImage = fixture.find(glyphCard, "glyph-orbit-background");
-      fixture.check(orbitImage && orbitImage.status === Image.Ready, "Glyph preview loads its orbital backdrop");
-      fixture.check(glyphCard.previewPalette === null && glyphCard.sample.gradient[0][0] === Colors.background.toString(),
-       "Glyph uses the current wallpaper background");
-      Config.theme.shellStyle = previousStyle;
-      Config.theme.shellTransparency = previousTransparency;
-      Config.performance.desktopBlur = previousBlur;
+      fixture.check(!fixture.find(settings, "shell-style-glyph"), "Glyph is absent from the style picker");
       settings.openSection(6, "bar"); tester.wait(80);
       let fullscreenBar = fixture.find(settings, "shell-group-bar");
       fixture.check(!fullscreenBar.collapsible && fullscreenBar.visible && Math.abs(fullscreenBar.width - sharedGrid.width) < 1, "Panel controls use the available width");

@@ -23,6 +23,8 @@ Singleton {
      throw new Error("Expected a theme object");
     if (["frosted-ceramic", "suspended-film", "circuit-glass", "prism-glass", "optical-instrument"].includes(values.shellStyle))
      values.shellStyle = "guilloche";
+    if (values.shellStyle === "glyph" || values.shellStyle === "nebula")
+     delete values.shellStyle;
     root.savedTheme = values;
    } catch (error) {
     console.warn("Keeping the last Streamer theme settings:", error);

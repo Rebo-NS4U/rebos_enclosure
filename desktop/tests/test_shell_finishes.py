@@ -1,4 +1,4 @@
-"""Exercise the style picker, surface finishes, and Glyph controls."""
+"""Exercise the style picker and surface finishes."""
 import json
 import os
 from pathlib import Path
@@ -50,16 +50,6 @@ ShellRoot {
         onTriggered: {
             if (!Config.themeReady || capturing) return;
             if (step === 9) {
-                if (Config.theme.shellStyle !== "glyph") {
-                    Config.theme.shellStyle = "glyph";
-                    return;
-                }
-                const card = findOption(picker, "shell-style-glyph");
-                console.log("GLYPH_CONTROLS", sampleButton.background.color.toString(),
-                            sampleField.color.toString(), card.background.color.toString(),
-                            sampleButton.background.radius <= 5,
-                            !!findOption(sampleButton.background, "glyph-button-corner"),
-                            !!findOption(card.background, "glyph-button-corner"));
                 stop();
                 Qt.quit();
                 return;
@@ -109,7 +99,6 @@ class ShellFinishTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 0, output)
                 for error in ("ReferenceError", "TypeError", "Unable to assign", "Cannot assign"):
                     self.assertNotIn(error, output)
-                self.assertIn("GLYPH_CONTROLS #080808 #050505 #101010 true true true", output)
             saved = json.loads((root / ".config/rebos_shell/config/theme.json").read_text())
             self.assertEqual(saved["buttonFinish"], "underline")
             self.assertEqual(saved["backgroundFinish"], "two-tone")

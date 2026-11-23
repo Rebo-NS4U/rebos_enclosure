@@ -32,14 +32,14 @@ function validate(current, defaults, keyName) {
         return defaults;
     }
 
-    if (keyName === "shellStyle" && current === "nebula") return "glyph";
+    if (keyName === "shellStyle" && (current === "glyph" || current === "nebula")) return defaults;
     if (keyName === "shellStyle" && ["frosted-ceramic", "suspended-film", "circuit-glass", "prism-glass", "optical-instrument"].includes(current)) return "guilloche";
     if (keyName === "shellStyle" && current === "smoked-acrylic") return "glass-vault";
     if (keyName === "shellStyle" && current === "glass-console") return "radar-station";
     if (keyName === "shellStyle" && current === "liquid-glass") return "radar-station";
     if (keyName === "shellStyle" && current === "condensation") return "radar-station";
     if (keyName === "shellStyle" && current === "dithered") return "quiet";
-    if (keyName === "shellStyle" && ["glass", "quiet", "colorful", "custom", "instrument", "frosted", "monolith", "blueprint", "terminal-hardware", "glass-vault", "radar-station", "guilloche", "canopy", "orbital", "glyph", "metropolis", "clear-glass"].indexOf(current) === -1) {
+    if (keyName === "shellStyle" && ["glass", "quiet", "colorful", "custom", "instrument", "frosted", "monolith", "blueprint", "terminal-hardware", "glass-vault", "radar-station", "guilloche", "canopy", "orbital", "metropolis", "clear-glass"].indexOf(current) === -1) {
         return defaults;
     }
     if (keyName === "desktopBlur" && ["medium", "light", "shell", "off"].indexOf(current) === -1) return defaults;
