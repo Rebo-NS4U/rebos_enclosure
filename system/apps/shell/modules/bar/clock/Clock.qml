@@ -227,7 +227,7 @@ Item {
                         : root.currentTime
                     color: BarAppearance.foregroundColor
                     font.pixelSize: Config.theme.fontSize
-                    font.family: Config.theme.font
+                    font.family: Styling.displayFont
                     font.bold: true
                 }
 

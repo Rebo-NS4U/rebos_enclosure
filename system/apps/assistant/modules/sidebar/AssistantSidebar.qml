@@ -1163,7 +1163,7 @@ Item {
                                     font.hintingPreference: Font.PreferFullHinting
                                     text: "Chat History"
                                     color: Colors.overSurface
-                                    font.family: Config.theme.font
+                                    font.family: Styling.displayFont
                                     font.pixelSize: Styling.fontSize(4)
                                     font.weight: Font.Bold
                                 }
@@ -1384,7 +1384,7 @@ Item {
                             renderType: Text.NativeRendering
                             font.hintingPreference: Font.PreferFullHinting
                             text: "Hello, <font color='" + Styling.srItem("overprimary") + "'>" + mainChatArea.username + "</font>."
-                            font.family: Config.theme.font
+                            font.family: Styling.displayFont
                             font.pixelSize: Styling.fontSize(18)
                             font.weight: Font.Bold
                             textFormat: Text.StyledText

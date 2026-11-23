@@ -390,7 +390,7 @@ StyledRect {
                 color: Colors.overBackground
                 font.pixelSize: Config.theme.fontSize + 2
                 font.weight: Font.Bold
-                font.family: Config.theme.font
+                font.family: Styling.displayFont
                 horizontalAlignment: Text.AlignHCenter
                 elide: Text.ElideRight
                 maximumLineCount: 1

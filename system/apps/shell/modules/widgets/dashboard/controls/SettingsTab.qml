@@ -317,7 +317,7 @@ Item {
         spacing: 16
         RowLayout {
             Layout.fillWidth: true
-            StyledText { text: "Settings"; font.pixelSize: Styling.fontSize(14); font.bold: true; Layout.fillWidth: true }
+            StyledText { text: "Settings"; font.family: Styling.displayFont; font.pixelSize: Styling.fontSize(14); font.bold: true; Layout.fillWidth: true }
             SearchInput {
                 id: searchInput
                 Layout.preferredWidth: Math.min(380, root.width * 0.5)
@@ -477,7 +477,7 @@ Item {
                 visible: true
                 width: parent.width
                 spacing: 6
-                StyledText { text: root.activeCategory.label; font.pixelSize: Styling.fontSize(10); font.bold: true }
+                StyledText { text: root.activeCategory.label; font.family: Styling.displayFont; font.pixelSize: Styling.fontSize(10); font.bold: true }
                 StyledText { text: root.activeCategory.subLabel; color: Colors.overSurfaceVariant; width: parent.width; wrapMode: Text.WordWrap }
                 Flow {
                     width: parent.width

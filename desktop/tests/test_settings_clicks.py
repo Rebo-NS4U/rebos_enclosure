@@ -493,6 +493,8 @@ ShellRoot {
       const previousBlur = Config.performance.desktopBlur;
       tester.mouseClick(glyphCard); tester.wait(40);
       fixture.check(Styling.shellStyle === "glyph" && glyphCard.selected, "Clicking Glyph applies the theme");
+      fixture.check(Styling.dotTypeface.status === FontLoader.Ready && Styling.displayFont.indexOf("Doto") !== -1,
+       "Glyph loads its bundled dot-matrix display font");
       const orbitImage = fixture.find(glyphCard, "glyph-orbit-background");
       fixture.check(orbitImage && orbitImage.status === Image.Ready, "Glyph preview loads its orbital backdrop");
       fixture.check(glyphCard.previewPalette === null && glyphCard.sample.gradient[0][0] === Colors.background.toString(),

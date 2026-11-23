@@ -167,7 +167,7 @@ Item {
                             renderType: Text.NativeRendering
                             font.hintingPreference: Font.PreferFullHinting
                             text: Qt.formatTime(root.currentDate, Config.bar?.use12hFormat ? "h:mm ap" : "HH:mm")
-                            font.family: Config.theme.monoFont
+                            font.family: Styling.shellStyle === "glyph" ? Styling.displayFont : Config.theme.monoFont
                             font.pixelSize: Styling.fontSize(14)
                             font.bold: true
                             color: clockDateMouse.containsMouse ? Colors.primary : Colors.overBackground

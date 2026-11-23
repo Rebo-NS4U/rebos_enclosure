@@ -682,6 +682,7 @@ PanelWindow {
                     Layout.fillWidth: true
                     text: root.pageView === "details" ? (root.selectedShow.title ?? root.mediaName)
                         : ({settings: "Media settings", filters: "Search filters", downloads: "Downloads"})[root.pageView] ?? "Media Browser"
+                    font.family: Styling.displayFont
                     font.pixelSize: Styling.fontSize(6)
                     font.bold: true
                     elide: Text.ElideRight
@@ -799,6 +800,7 @@ PanelWindow {
                         StyledText {
                             Layout.fillWidth: true
                             text: root.loadFailed ? "Could not load results" : "No results"
+                            font.family: Styling.displayFont
                             font.pixelSize: Styling.fontSize(4)
                             font.bold: true
                             horizontalAlignment: Text.AlignHCenter
@@ -941,6 +943,7 @@ PanelWindow {
                                 text: root.details.title || root.selectedShow.title || ""
                                 Layout.fillWidth: true
                                 wrapMode: Text.Wrap
+                                font.family: Styling.displayFont
                                 font.pixelSize: Styling.fontSize(5)
                                 font.bold: true
                             }

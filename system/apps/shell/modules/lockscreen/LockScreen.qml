@@ -193,7 +193,7 @@ WlSessionLockSurface {
                 font.hintingPreference: Font.PreferFullHinting
                 id: hoursText
                 text: Config.bar.use12hFormat ? (clockContainer.currentTime.getHours() % 12 || 12).toString() : Qt.formatTime(clockContainer.currentTime, "hh")
-                font.family: Config.theme.font
+                font.family: Styling.displayFont
                 font.pixelSize: Styling.fontSize(226)
                 color: Colors.primaryFixed
                 antialiasing: true
@@ -227,7 +227,7 @@ WlSessionLockSurface {
                 font.hintingPreference: Font.PreferFullHinting
                 id: minutesText
                 text: Qt.formatTime(clockContainer.currentTime, "mm")
-                font.family: Config.theme.font
+                font.family: Styling.displayFont
                 font.pixelSize: Styling.fontSize(226)
                 color: Colors.primaryFixedDim
                 antialiasing: true
@@ -264,7 +264,7 @@ WlSessionLockSurface {
                 font.hintingPreference: Font.PreferFullHinting
                 id: amPmText
                 text: Config.bar.use12hFormat ? Qt.formatTime(clockContainer.currentTime, "ap").toLowerCase() : ""
-                font.family: Config.theme.font
+                font.family: Styling.displayFont
                 font.pixelSize: Styling.fontSize(86)
                 color: hoursText.color
                 antialiasing: true

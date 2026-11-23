@@ -38,6 +38,7 @@ ColumnLayout {
             Layout.minimumWidth: 0
             leftPadding: root.horizontalMargin
             text: root.title
+            font.family: Styling.displayFont
             font.pixelSize: Styling.fontSize(8)
             font.weight: Font.DemiBold
             elide: Text.ElideRight

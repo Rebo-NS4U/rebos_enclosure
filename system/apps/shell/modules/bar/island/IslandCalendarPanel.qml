@@ -77,7 +77,7 @@ Item {
                     renderType: Text.NativeRendering
                     font.hintingPreference: Font.PreferFullHinting
                     text: Qt.formatTime(root.now, Config.bar?.use12hFormat ? "hh:mm:ss ap" : "hh:mm:ss")
-                    font.family: Config.theme.monoFont
+                    font.family: Styling.shellStyle === "glyph" ? Styling.displayFont : Config.theme.monoFont
                     font.pixelSize: Styling.fontSize(10)
                     font.bold: true
                     color: Colors.overBackground
