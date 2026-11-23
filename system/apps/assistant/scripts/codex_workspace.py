@@ -54,10 +54,8 @@ def main():
     # The adapter configures thread/start, but the native server also checks its
     # startup provider on turn/start. Supply the same provider to both layers.
     provider = config.get('model_provider') if isinstance(config, dict) else None
-    if arguments and arguments[0] == 'app-server' and provider in ('dweebo_openrouter', 'dweebo_omniroute'):
+    if arguments and arguments[0] == 'app-server' and provider == 'dweebo_openrouter':
         overrides = {'model_provider': provider}
-        if provider == 'dweebo_omniroute':
-            overrides['model'] = config['model']
         if config.get('model_catalog_json'):
             overrides['model_catalog_json'] = config['model_catalog_json']
         for name, value in config.get('model_providers', {}).get(provider, {}).items():

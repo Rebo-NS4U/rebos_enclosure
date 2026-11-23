@@ -363,29 +363,8 @@ The launcher preserves existing workspace/network and approval settings.
 
 ### Dweebo backends
 
-The backend selector offers Codex, Distill, Google Gemini, and OmniRoute. Each backend
+The backend selector offers Codex, Distill, and Google Gemini. Each backend
 manages its own authentication and usage limits.
-
-### OmniRoute backend
-
-Connect a provider in your OmniRoute gateway and choose a model ID or combo
-that supports tool calls through its [Responses API](https://github.com/cheaper-inference/OmniRoute/blob/main/docs/reference/OPENAI_COMPATIBILITY.md).
-Save the following example as `~/.config/dweebo/omniroute.json` with permissions
-`600`, then choose **Backend → OmniRoute** to open a chat.
-
-```json
-{
-  "base_url": "http://127.0.0.1:20128/v1",
-  "model": "your-model-or-combo",
-  "api_key": "your-omniroute-key"
-}
-```
-
-The example URL is the default. Omit `api_key` if the gateway accepts
-unauthenticated requests. The backend service environment can also supply
-`OMNIROUTE_BASE_URL`, `OMNIROUTE_MODEL`, and `OMNIROUTE_API_KEY`, which take
-precedence over the file. After editing the settings, choose **OmniRoute** again
-to open a chat with the updated connection.
 
 ### Google Gemini backend
 
