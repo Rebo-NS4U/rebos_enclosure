@@ -162,11 +162,11 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         spacing: Styling.spacing(3)
 
-                        StyledText {
+                        ClockText {
                             id: clockText
                             renderType: Text.NativeRendering
                             font.hintingPreference: Font.PreferFullHinting
-                            text: Qt.formatTime(root.currentDate, Config.bar?.use12hFormat ? "h:mm ap" : "HH:mm")
+                            clockValue: Qt.formatTime(root.currentDate, Config.bar?.use12hFormat ? "h:mm ap" : "HH:mm")
                             font.family: Styling.shellStyle === "glyph" ? Styling.displayFont : Config.theme.monoFont
                             font.pixelSize: Styling.fontSize(14)
                             font.bold: true

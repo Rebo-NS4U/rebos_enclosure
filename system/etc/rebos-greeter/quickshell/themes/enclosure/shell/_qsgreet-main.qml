@@ -58,9 +58,9 @@ FocusScope {
                 id: content
                 width: scroll.availableWidth
                 spacing: Styling.spacing(14)
-                StyledText {
+                ClockText {
                     Layout.alignment: Qt.AlignHCenter
-                    text: Qt.formatDateTime(clock.now, Config.display.use12hFormat ? "h:mm AP" : "HH:mm")
+                    clockValue: Qt.formatDateTime(clock.now, Config.display.use12hFormat ? "h:mm AP" : "HH:mm")
                     color: panel.item
                     font.family: Styling.displayFont
                     font.pixelSize: Styling.fontSize(34)

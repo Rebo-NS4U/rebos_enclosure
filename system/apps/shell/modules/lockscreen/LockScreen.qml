@@ -237,6 +237,16 @@ WlSessionLockSurface {
                 }
             }
 
+            ClockText {
+                visible: root.glyphStyle
+                clockValue: ":"
+                font.family: Styling.displayFont
+                font.pixelSize: Math.round(hoursText.font.pixelSize * 0.60)
+                anchors.verticalCenter: hoursText.verticalCenter
+                anchors.verticalCenterOffset: hoursText.height * 0.25
+                opacity: hoursText.opacity
+            }
+
             Text {
                 renderType: Text.NativeRendering
                 font.hintingPreference: Font.PreferFullHinting

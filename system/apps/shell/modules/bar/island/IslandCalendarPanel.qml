@@ -72,11 +72,11 @@ Item {
                 id: clockCol
                 anchors.centerIn: parent
 
-                Text {
+                ClockText {
                     id: clockText
                     renderType: Text.NativeRendering
                     font.hintingPreference: Font.PreferFullHinting
-                    text: Qt.formatTime(root.now, Config.bar?.use12hFormat ? "hh:mm:ss ap" : "hh:mm:ss")
+                    clockValue: Qt.formatTime(root.now, Config.bar?.use12hFormat ? "hh:mm:ss ap" : "hh:mm:ss")
                     font.family: Styling.shellStyle === "glyph" ? Styling.displayFont : Config.theme.monoFont
                     font.pixelSize: Styling.fontSize(10)
                     font.bold: true

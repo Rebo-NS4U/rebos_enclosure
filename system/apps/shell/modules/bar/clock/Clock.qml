@@ -217,12 +217,12 @@ Item {
                     }
                 }
 
-                Text {
+                ClockText {
                     renderType: Text.NativeRendering
                     font.hintingPreference: Font.PreferFullHinting
                     id: timeDisplay
                     anchors.centerIn: parent
-                    text: pomodoroWidget.isRunning || pomodoroWidget.alarmActive || pomodoroWidget.isResuming
+                    clockValue: pomodoroWidget.isRunning || pomodoroWidget.alarmActive || pomodoroWidget.isResuming
                         ? root.formatDuration(pomodoroWidget.timeLeft)
                         : root.currentTime
                     color: BarAppearance.foregroundColor

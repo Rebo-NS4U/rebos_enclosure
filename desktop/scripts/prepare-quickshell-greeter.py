@@ -14,7 +14,7 @@ def assemble(destination, root=ROOT):
     theme = destination / 'themes/enclosure/shell/modules'
     components = theme / 'components'
     components.mkdir(parents=True, exist_ok=True)
-    for name in ('StyledRect.qml', 'StyledText.qml', 'ThemeButton.qml', 'SearchInput.qml', 'TintedWallpaper.qml', 'glyph-orbits.png'):
+    for name in ('StyledRect.qml', 'StyledText.qml', 'ClockText.qml', 'ThemeButton.qml', 'SearchInput.qml', 'TintedWallpaper.qml', 'glyph-orbits.png'):
         shutil.copy2(shell / 'modules/components' / name, components)
     for shader in ('linear_gradient', 'radial_gradient', 'halftone', 'dither_fill'):
         for stage in ('vert', 'frag'):

@@ -27,7 +27,7 @@ class MaterialAssemblyTests(unittest.TestCase):
             canonical = ROOT / 'system/apps/shell/modules'
             files = ['components/StyledRect.qml', 'theme/Styling.qml',
                      'theme/Motion.qml', 'theme/ShellStyles.js', 'theme/Icons.qml',
-                     'components/StyledText.qml', 'components/SearchInput.qml',
+                     'components/StyledText.qml', 'components/ClockText.qml', 'components/SearchInput.qml',
                      'components/ThemeButton.qml', 'components/TintedWallpaper.qml',
                      'components/glyph-orbits.png', 'theme/fonts/Doto.ttf', 'theme/fonts/Doto-LICENSE.txt']
             files += ['widgets/dashboard/wallpapers/' + name for name in

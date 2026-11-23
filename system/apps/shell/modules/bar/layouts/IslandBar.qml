@@ -933,15 +933,15 @@ Item {
                             font: dateTimeRow.font
                         }
 
-                        StyledText {
+                        ClockText {
                             id: dateTimeRow
                             anchors.centerIn: parent
                             // Center the visible digits, including the chosen font's bearings.
-                            readonly property rect inkBounds: clockMetrics.tightBoundingRect(text)
+                            readonly property rect inkBounds: clockMetrics.tightBoundingRect(clockValue)
                             anchors.alignWhenCentered: false
                             anchors.verticalCenterOffset: height / 2 - baselineOffset
                                 - inkBounds.y - inkBounds.height / 2
-                            text: root.formattedTime
+                            clockValue: root.formattedTime
                             font.family: Config.theme.monoFont
                             font.pixelSize: Styling.fontSize(-1)
                             font.bold: true
