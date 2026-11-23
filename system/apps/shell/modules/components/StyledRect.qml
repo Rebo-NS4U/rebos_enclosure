@@ -17,6 +17,7 @@ ClippingRectangle {
     property bool materialPreview: false
     property bool barSurface: false
     property bool buttonSurface: false
+    property bool inputSurface: false
     readonly property bool controlSurface: buttonSurface && (styleOverride || Styling.shellStyle) === "terminal-hardware"
     property bool controlPressed: false
     // Color samples need their exact fill, without a surface shader over it.
@@ -29,7 +30,7 @@ ClippingRectangle {
     property bool animateRadius: true
     property real backgroundOpacity: -1  // -1 means use config value
 
-    readonly property var variantConfig: Styling.styleConfig(styleOverride || Styling.shellStyle, variant) || {}
+    readonly property var variantConfig: Styling.styleConfig(styleOverride || Styling.shellStyle, variant, buttonSurface, inputSurface) || {}
 
     readonly property var gradientStops: variantConfig.gradient
 

@@ -7,6 +7,7 @@ import qs.config
 StyledRect {
     id: root
     variant: "pane"
+    inputSurface: true
 
     property alias text: textField.text
     property alias placeholderText: textField.placeholderText

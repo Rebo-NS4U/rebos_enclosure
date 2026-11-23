@@ -62,7 +62,7 @@ function ditherCellSize(strength) {
     return 1;
 }
 
-function surface(style, variant, p, ditherStrength) {
+function surface(style, variant, p, ditherStrength, buttonSurface, inputSurface) {
     if (style === "dithered") style = "quiet"; // Compatibility with saved appearances.
     var strength = Number.isFinite(ditherStrength) ? Math.max(0, Math.min(100, ditherStrength)) : 20;
     var colorful = style === "colorful", dithered = style === "dithered", quiet = style === "quiet" || dithered;
@@ -190,14 +190,22 @@ function surface(style, variant, p, ditherStrength) {
         border = [focused ? p.primary : mix(fill, p.primary, 0.38), framed || focused ? 1 : 0];
     }
     var canopy=style === "canopy", orbital=style === "orbital", metro=style === "metropolis";
+    var glyphInks = style === "glyph" && p.background === "#000000" && p.foreground === "#f2f2f2" && p.primary === "#d71921";
     if (style === "glyph" && neutral) {
         fill = mix(p.background, p.foreground, focused ? 0.14 : inset ? 0.035 : outer ? 0 : 0.07);
-        var glyphInks = p.background === "#000000" && p.foreground === "#f2f2f2" && p.primary === "#d71921";
         if (glyphInks)
             fill = outer ? p.background : inset ? "#0b0b0b" : focused ? "#2a2a2a" : variant === "pane" || variant === "surface" ? "#0e0e0e" : "#1a1a1a";
         item = p.foreground;
         opacity = 1;
         border = [focused ? p.primary : glyphInks ? "#2a2a2a" : mix(fill, p.foreground, 0.20), outer || focused ? 1 : 0];
+    }
+    var activeButton = buttonSurface && (variant === "primary" || variant === "primaryfocus");
+    if (glyphInks && ((buttonSurface || inputSurface) && neutral || activeButton)) {
+        fill = variant === "primaryfocus" ? "#2a2a2a" : focused || activeButton ? "#1a1a1a"
+            : inputSurface || inset ? "#0b0b0b" : "#0e0e0e";
+        item = p.foreground;
+        opacity = 1;
+        border = [focused || activeButton ? p.primary : "#2a2a2a", 1];
     }
     if (orbital && neutral) {
         fill=mix(p.background,p.foreground,inset?0.005:focused?0.10:outer?0.075:0.045);
