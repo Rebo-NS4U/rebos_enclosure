@@ -160,15 +160,15 @@
       "path": "system/apps/media/live_subtitles.py",
       "object": "recognize",
       "symbol": "too-many-locals",
-      "ceiling": 23,
-      "reason": "Speech-span boundaries, language selection, timestamps and cleanup are explicit within one bounded recognition operation."
+      "ceiling": 24,
+      "reason": "Recognition keeps model-specific speech detection options, speech spans, language selection, timestamps and cleanup together."
     },
     {
       "path": "system/apps/media/live_subtitles.py",
       "object": "recognize",
       "symbol": "too-many-branches",
-      "ceiling": 14,
-      "reason": "Speech-span boundaries, language selection, timestamps and cleanup are explicit within one bounded recognition operation."
+      "ceiling": 16,
+      "reason": "Recognition selects speech detection options for the caption model and handles speech spans, timestamps and cleanup."
     },
     {
       "path": "system/apps/media/live_subtitles.py",
