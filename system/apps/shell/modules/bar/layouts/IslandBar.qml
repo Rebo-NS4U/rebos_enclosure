@@ -38,7 +38,7 @@ Item {
     readonly property int triggerHeight: 8
     readonly property real cornerRadius: Styling.radius(4)
 
-    // Current morphing state: "collapsed" | "notification" | "osd" | "dashboard" | "power" | "sound" | "mic" | "wifi" | "apps" | "projects"
+    // Current morphing state: "collapsed" | "notification" | "osd" | "dashboard" | "sound" | "mic" | "wifi" | "apps" | "projects"
     property string currentMode: "collapsed"
     property string previousMode: "collapsed"
     // Keep outgoing loaders alive independently of their animated opacity.
@@ -405,8 +405,6 @@ Item {
             return root.typingFullscreen ? root.height : Math.min(typingView.implicitHeight, root.height - 32);
         case "dashboard":
             return dashboardView.implicitHeight;
-        case "power":
-            return Math.max(root.islandHeight, powerView.implicitHeight);
         case "sound":
             return Math.max(root.islandHeight, soundView.implicitHeight);
         case "mic":
@@ -594,21 +592,7 @@ Item {
             event.accepted = true;
             return;
         }
-        if (root.currentMode === "power") {
-            if (event.key === Qt.Key_Left) {
-                powerView.item?.moveSelection(-1);
-                event.accepted = true;
-            } else if (event.key === Qt.Key_Right) {
-                powerView.item?.moveSelection(1);
-                event.accepted = true;
-            } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-                powerView.item?.activateSelected();
-                event.accepted = true;
-            } else if (event.key === Qt.Key_Escape) {
-                root.expand("dashboard");
-                event.accepted = true;
-            }
-        } else if (event.key === Qt.Key_Escape) {
+        if (event.key === Qt.Key_Escape) {
             if (Visibilities.activeBarPopup && Visibilities.activeBarPopup.isOpen) {
                 Visibilities.closeActiveBarPopup();
                 event.accepted = true;
@@ -1222,7 +1206,7 @@ Item {
                     }
                 }
 
-                onOpenPower: root.currentMode = "power"
+                onOpenPower: Visibilities.togglePowerMenuForActive(root.screen.name)
                 onOpenSound: root.currentMode = "sound"
                 onOpenMic: root.currentMode = "mic"
                 onOpenWifi: root.currentMode = "wifi"
@@ -1234,46 +1218,6 @@ Item {
                 onOpenWeather: root.currentMode = "weather"
                 onOpenMedia: root.currentMode = "media"
                 onOpenCalendar: root.currentMode = "calendar"
-            }
-
-            // ═══════════════════════════════════════════════════════════════
-            // EXPANDED STATE 2: POWER MENU (Image 0)
-            // ═══════════════════════════════════════════════════════════════
-            Loader {
-                id: powerView
-                objectName: "island-lazy-power"
-                anchors.top: parent.top
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: root.targetWidth
-                height: item?.implicitHeight ?? 0
-                // Keep the outgoing menu only until its fade completes.
-                active: root.currentMode === "power" || root.fadingModes.indexOf("power") !== -1
-                sourceComponent: IslandPowerPanel {
-                    id: powerContent
-                    property bool revealReady: false
-                    Component.onCompleted: revealReady = true
-                    transformOrigin: Item.Top
-
-
-                    anchors.top: parent.top
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    width: root.targetWidth
-                    height: implicitHeight
-                    visible: opacity > 0
-                    opacity: revealReady && root.currentMode === "power" ? 1.0 : 0.0
-                    enabled: root.currentMode === "power" && !root.retractingToHidden
-
-                    Behavior on opacity {
-                        enabled: Config.animDuration > 0
-                        NumberAnimation {
-                            duration: root.currentMode === "power" ? root.contentFadeInDuration : root.contentFadeOutDuration
-                            easing.type: root.currentMode === "power" ? Motion.enterCurve : Motion.feedbackCurve
-                        }
-                    }
-
-                    onBackRequested: root.expand("dashboard")
-                    onActionTriggered: root.collapse()
-                }
             }
 
             // ═══════════════════════════════════════════════════════════════

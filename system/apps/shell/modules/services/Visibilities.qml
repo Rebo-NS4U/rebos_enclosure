@@ -152,36 +152,13 @@ Singleton {
             powerMenuButtons = _updateMap(powerMenuButtons, screenName, null);
     }
 
-    function togglePowerMenuForActive() {
-        const focusedMonitor = NiriService.focusedMonitor;
-        if (!focusedMonitor)
-            return;
-
-        if ((Config.bar?.style ?? "default") === "island") {
-            const island = getIslandForActive();
-            if (island) {
-                if (island.isExpanded && island.currentMode === "power") {
-                    island.collapse();
-                } else {
-                    clearAll();
-                    // Layer focus can refresh focusedMonitor as the menu opens.
-                    // Record its screen before that update can migrate/clear it.
-                    lastFocusedScreen = focusedMonitor.name;
-                    currentActiveModule = "powermenu";
-                    island.expand("power");
-                }
-                return;
-            }
-        }
-
-        const button = powerMenuButtons[focusedMonitor.name] || null;
+    function togglePowerMenuForActive(screenName = NiriService.focusedMonitor?.name ?? Quickshell.screens[0]?.name) {
+        const button = powerMenuButtons[screenName];
         if (!button) {
-            console.warn("Visibilities: no power menu button registered for", focusedMonitor.name);
+            console.warn("Visibilities: no power menu button registered for", screenName);
             return;
         }
 
-        clearAll();
-        currentActiveModule = "";
         button.togglePopup();
     }
 
@@ -204,7 +181,7 @@ Singleton {
             toggleSystemMonitor();
             return;
         }
-        if (moduleName === "powermenu") {
+        if (moduleName === "power" || moduleName === "powermenu") {
             togglePowerMenuForActive();
             return;
         }
@@ -236,12 +213,6 @@ Singleton {
                     clearAll();
                     currentActiveModule = "alerts";
                     island.expand("alerts");
-                    return;
-                } else if (moduleName === "power" || moduleName === "powermenu") {
-                    closeActiveBarPopup();
-                    clearAll();
-                    currentActiveModule = "powermenu";
-                    island.expand("power");
                     return;
                 } else if (moduleName === "sound" || moduleName === "audio") {
                     closeActiveBarPopup();

@@ -4,22 +4,17 @@ import Quickshell
 import Quickshell.Wayland._BackgroundEffect
 import Quickshell.Wayland
 import qs.modules.components
-import qs.modules.theme
 import qs.modules.services
 import qs.config
-import qs.modules.globals
 
-// Keyboard-only power menu (Super+X). Same bottom-center band as volume OSD.
+// Fullscreen power menu for the invoking output.
 Item {
     id: root
 
     required property var panel
 
-    // Logical open state (true while open or mid-close animation).
     property bool menuOpen: false
-    property bool menuShown: false
     property real revealProgress: 0
-    readonly property int bottomOffset: 48
 
     Behavior on revealProgress {
         enabled: Config.animDuration > 0
@@ -44,12 +39,12 @@ Item {
     }
 
     function openMenu() {
-        Visibilities.setActiveModule("");
         Visibilities.closeActiveBarPopup();
+        Visibilities.clearAll();
+        Visibilities.currentActiveModule = "";
 
         closeTimer.stop();
         menuOpen = true;
-        menuShown = true;
         powerWindow.visible = true;
 
         Qt.callLater(() => {
@@ -79,12 +74,10 @@ Item {
         onTriggered: {
             if (root.menuOpen)
                 return;
-            root.menuShown = false;
             powerWindow.visible = false;
         }
     }
 
-    // Dedicated overlay so position matches OSD (bottom center, 48px up).
     PanelWindow {
         id: powerWindow
         screen: root.panel?.targetScreen ?? (Quickshell.screens.length > 0 ? Quickshell.screens[0] : null)
@@ -96,23 +89,12 @@ Item {
         exclusionMode: ExclusionMode.Ignore
         exclusiveZone: 0
 
+        anchors.top: true
         anchors.bottom: true
         anchors.left: true
         anchors.right: true
-        WlrLayershell.margins.bottom: 0
-
-
-        BackgroundEffect.blurRegion: BlurRegion { target: powerWrapper }
-
+        BackgroundEffect.blurRegion: BlurRegion { target: powerBackdrop }
         color: "transparent"
-        implicitHeight: powerWrapper.height + root.bottomOffset
-
-        // Click outside the pill dismisses.
-        MouseArea {
-            anchors.fill: parent
-            enabled: root.menuOpen
-            onClicked: root.closeMenu()
-        }
 
         FocusGrab {
             active: root.menuOpen
@@ -120,48 +102,28 @@ Item {
             onCleared: root.closeMenu()
         }
 
-        Item {
+        StyledRect {
+            id: powerBackdrop
             anchors.fill: parent
-            clip: true
+            variant: "popup"
+            radius: 0
+            enableBorder: false
+            opacity: root.revealProgress
+            enabled: root.menuOpen
 
-            Keys.onEscapePressed: event => {
-                root.closeMenu();
-                event.accepted = true;
+            MouseArea {
+                anchors.fill: parent
+                onClicked: root.closeMenu()
             }
 
-            StyledRect {
-                id: powerWrapper
-                variant: "popup"
-                radius: Config.roundness
-                enableShadow: false
-                anchors.horizontalCenter: parent.horizontalCenter
-                anchors.bottom: parent.bottom
-                anchors.bottomMargin: root.bottomOffset
-                width: powerMenuView.implicitWidth + 16
-                height: powerMenuView.implicitHeight + 16
-                visible: root.menuShown
-                transform: Translate {
-                    y: (1 - root.revealProgress)
-                        * (powerWrapper.height + root.bottomOffset)
-                }
-
-                // Block backdrop click-through on the pill itself.
-                MouseArea {
-                    anchors.fill: parent
-                    enabled: root.menuOpen
-                    onClicked: {}
-                }
-
-                PowerMenuView {
-                    id: powerMenuView
-                    anchors.centerIn: parent
-                    popupMode: true
-                    expanded: root.menuOpen
-                    onCloseRequested: root.closeMenu()
-                }
+            PowerMenuView {
+                id: powerMenuView
+                anchors.centerIn: parent
+                popupMode: true
+                expanded: root.menuOpen
+                onCloseRequested: root.closeMenu()
             }
         }
-
     }
 
     Component.onCompleted: {

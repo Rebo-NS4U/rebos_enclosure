@@ -1,4 +1,4 @@
-"""Exercise power-menu routing across the initial layer-focus update."""
+"""Exercise fullscreen power-menu routing by output."""
 from pathlib import Path
 import shutil
 import subprocess
@@ -16,30 +16,29 @@ def function_source(name):
 
 class PowerMenuTests(unittest.TestCase):
     @unittest.skipUnless(shutil.which('node'), 'Node required')
-    def test_first_open_survives_focus_refresh(self):
+    def test_toggle_uses_focused_or_invoking_output(self):
         script = '''
 const assert = require('node:assert/strict');
-const Config = {bar: {style: 'island'}};
 const NiriService = {focusedMonitor: {name: 'eDP-1'}};
-let currentActiveModule = '', lastFocusedScreen = '';
-const island = {
-    isExpanded: false, currentMode: 'collapsed',
-    expand(mode) { this.currentMode = mode; this.isExpanded = true; },
-    collapse() { this.currentMode = 'collapsed'; this.isExpanded = false; }
-};
-function getIslandForActive() { return island; }
-function clearAll() { island.collapse(); }
-function applyActiveModuleToScreen() {}
-''' + function_source('togglePowerMenuForActive') + function_source('moveActiveModuleToFocusedScreen') + '''
+const Quickshell = {screens: [{name: 'eDP-1'}, {name: 'DP-1'}]};
+function host() {
+    return {open: false, togglePopup() { this.open = !this.open; }};
+}
+const powerMenuButtons = {'eDP-1': host(), 'DP-1': host()};
+''' + function_source('togglePowerMenuForActive') + '''
+const internal = powerMenuButtons['eDP-1'];
+const external = powerMenuButtons['DP-1'];
 togglePowerMenuForActive();
-assert.equal(island.currentMode, 'power');
-// Niri publishes a fresh monitor object when the layer gains focus.
-NiriService.focusedMonitor = {name: 'eDP-1'};
-moveActiveModuleToFocusedScreen();
-assert.equal(island.currentMode, 'power');
-assert.equal(island.isExpanded, true);
+assert.equal(internal.open, true);
+assert.equal(external.open, false);
 togglePowerMenuForActive();
-assert.equal(island.isExpanded, false);
+assert.equal(internal.open, false);
+togglePowerMenuForActive('DP-1');
+assert.equal(external.open, true);
+assert.equal(internal.open, false);
+NiriService.focusedMonitor = null;
+togglePowerMenuForActive();
+assert.equal(internal.open, true);
 '''
         result = subprocess.run(['node', '-e', script], text=True, capture_output=True)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)

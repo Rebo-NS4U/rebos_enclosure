@@ -43,7 +43,7 @@ ShellRoot {
        const pos = control.mapToItem(bar, 0, 0);
        if (pos.x < body.x || pos.x + control.width > body.x + body.width) throw Error(id + " outside bar");
       }
-      for (const mode of ["dashboard", "power", "sound", "mic", "wifi", "bluetooth", "stats", "alerts", "wallpapers", "battery", "weather", "media", "calendar", "apps"]) {
+      for (const mode of ["dashboard", "sound", "mic", "wifi", "bluetooth", "stats", "alerts", "wallpapers", "battery", "weather", "media", "calendar", "apps"]) {
        const lazy = tester.findChild(bar, "island-lazy-" + mode);
        if (lazy && lazy.item) throw Error(mode + " eagerly loaded while closed");
        bar.expand(mode); tester.wait(50);
@@ -89,34 +89,34 @@ ShellRoot {
      const divider = tester.findChild(bar, name);
      if (divider) throw Error('Unexpected separator between meters: ' + name);
     }
-    const power = tester.findChild(bar, 'island-lazy-power');
+    const mic = tester.findChild(bar, 'island-lazy-mic');
     const sound = tester.findChild(bar, 'island-lazy-sound');
-    bar.expand('power'); tester.wait(70);
-    if (!power.item || power.item.opacity <= 0 || power.item.opacity >= 1)
+    bar.expand('mic'); tester.wait(70);
+    if (!mic.item || mic.item.opacity <= 0 || mic.item.opacity >= 1)
      throw Error('Incoming lazy panel must animate its first reveal');
     if (bar.revealProgress <= 0 || bar.revealProgress >= 1 || body.height < bar.islandHeight)
      throw Error('Opening silhouette must animate without collapsing to zero');
     tester.wait(500);
     bar.expand('sound'); tester.wait(60);
-    if (!power.item || power.item.enabled || power.item.opacity <= 0 || power.item.opacity >= 1)
+    if (!mic.item || mic.item.enabled || mic.item.opacity <= 0 || mic.item.opacity >= 1)
      throw Error('Outgoing panel must crossfade with input disabled');
     if (!sound.item || !sound.item.enabled || sound.item.opacity <= 0 || sound.item.opacity >= 1)
      throw Error('Incoming panel must overlap outgoing fade');
     bar.expand('wifi'); tester.wait(40);
     bar.expand('sound'); tester.wait(500);
-    if (power.active || !sound.item || sound.item.opacity !== 1)
+    if (mic.active || !sound.item || sound.item.opacity !== 1)
      throw Error('Rapid switching must release old loaders and settle current menu');
     bar.collapse(); tester.wait(60);
     if (bar.revealProgress <= 0 || bar.revealProgress >= 1)
      throw Error('Closing silhouette must animate');
     Config.animDuration = 0; tester.wait(100);
-    if (bar.revealProgress !== 0 || bar.fadingModes.length || power.active || sound.active)
+    if (bar.revealProgress !== 0 || bar.fadingModes.length || mic.active || sound.active)
      throw Error('Reduced motion must release outgoing menus immediately');
-    bar.expand('power'); tester.wait(40);
-    if (bar.revealProgress !== 1 || !power.item || power.item.opacity !== 1)
+    bar.expand('mic'); tester.wait(40);
+    if (bar.revealProgress !== 1 || !mic.item || mic.item.opacity !== 1)
      throw Error('Reduced motion must settle directly');
     bar.collapse(); tester.wait(40);
-    if (bar.revealProgress !== 0 || power.active)
+    if (bar.revealProgress !== 0 || mic.active)
      throw Error('Reduced motion close must settle directly');
     console.log('MERGED BAR PASSED'); Qt.quit();
    } catch(e) { console.error(e); Qt.exit(1); }
