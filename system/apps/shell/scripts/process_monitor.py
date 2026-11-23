@@ -66,13 +66,13 @@ class ProcessMonitor:
                    ram=max(0, int(fields[21])) * self.page_size,
                    read=0, write=0, io_available=False, sockets=0, gpu={})
         row['name'] = process_name(base, row['name'])
-        if summary:
-            return row
         try:
             values = dict(line.split(':', 1) for line in (base / 'io').read_text().splitlines())
             row.update(read=int(values['read_bytes']), write=int(values['write_bytes']), io_available=True)
         except (OSError, ValueError, KeyError):
             pass
+        if summary:
+            return row
         clients = set()
         try:
             for fd in (base / 'fd').iterdir():
@@ -124,7 +124,10 @@ class ProcessMonitor:
             if memory_accounting:
                 result['memory_available'] = row['memory_available']
             result['cpu'] = max(0, (row['ticks'] - old['ticks']) / self.ticks / elapsed * 100) if valid else 0
-            result['disk'] = max(0, row['read'] + row['write'] - old['read'] - old['write']) / elapsed if valid and old['io_available'] and row['io_available'] else 0
+            if valid and old['io_available'] and row['io_available']:
+                result['disk'] = max(0, row['read'] - old['read'] + row['write'] - old['write']) / elapsed
+            else:
+                result['disk'] = None if summary else 0
             result['gpu'] = {dev: max(0, ns - old['gpu'].get(dev, ns)) / (elapsed * 1e9) * 100 if valid else 0
                              for dev, ns in row['gpu'].items()}
             rows.append(result)

@@ -75,14 +75,11 @@ Item {
         Rectangle { Layout.fillWidth: true; height: 1; color: Qt.alpha(Styling.srItem("bg"), 0.24) }
         Caption { text: rule.detail; visible: text.length > 0 }
     }
-    component Gauge: ToolButton {
-        id: gauge
+    component SortButton: ToolButton {
+        id: button
         required property string metric
         required property string title
-        required property real fraction
-        required property string reading
         Layout.fillWidth: true
-        Layout.preferredWidth: 1
         readonly property bool activeSort: panel.sortMetric === metric
         objectName: "sort-" + metric
         focusPolicy: Qt.StrongFocus
@@ -91,14 +88,21 @@ Item {
         Accessible.name: "Sort by " + title + (activeSort ? (panel.descending ? ", descending" : ", ascending") : "")
         onClicked: panel.sortBy(metric)
         background: StyledRect {
-            variant: gauge.hovered || gauge.visualFocus ? "focus" : "transparent"
+            variant: button.hovered || button.visualFocus ? "focus" : "transparent"
             radius: Styling.radius(-4)
-            border.width: gauge.visualFocus ? 1 : 0
+            border.width: button.visualFocus ? 1 : 0
             border.color: Colors.primary
         }
+        readonly property string heading: title + (activeSort ? (panel.descending ? " ↓" : " ↑") : "")
+    }
+    component Gauge: SortButton {
+        id: gauge
+        required property real fraction
+        required property string reading
+        Layout.preferredWidth: 1
         contentItem: ColumnLayout {
             spacing: 1
-            Caption { text: gauge.title + (gauge.activeSort ? (panel.descending ? " ↓" : " ↑") : ""); Layout.alignment: Qt.AlignHCenter }
+            Caption { text: gauge.heading; Layout.alignment: Qt.AlignHCenter }
             Canvas {
                 id: dial
                 Layout.alignment: Qt.AlignHCenter
@@ -161,12 +165,22 @@ Item {
             Layout.alignment: Qt.AlignHCenter
             Gauge { metric: "cpu"; title: "CPU"; fraction: panel.stats.cpuUsage / 100; reading: Math.round(panel.stats.cpuUsage) + "%" }
             Gauge { metric: "ram"; title: "Memory"; fraction: panel.stats.ramUsage / 100; reading: panel.size(panel.stats.ramUsed * 1024) }
-            Gauge { metric: "swap"; title: "Swap"; fraction: panel.stats.swapUsed / (panel.stats.swapTotal || 1); reading: panel.size(panel.stats.swapUsed * 1024) }
+            Gauge {
+                metric: "disk"; title: "Disk"
+                fraction: (panel.stats.diskUsage[panel.mount] || 0) / 100
+                reading: panel.size(panel.stats.diskUsed[panel.mount] || 0) + "/" + panel.size(panel.stats.diskTotal[panel.mount] || 0)
+            }
             Gauge { metric: "temp"; title: "Temp"; fraction: panel.stats.cpuTemp / 100; reading: panel.stats.cpuTemp < 0 ? "—" : panel.stats.cpuTemp + "°" }
         }
-        Meter {
-            title: "Disk"; fraction: (panel.stats.diskUsage[panel.mount] || 0) / 100
-            reading: panel.size(panel.stats.diskUsed[panel.mount] || 0) + "/" + panel.size(panel.stats.diskTotal[panel.mount] || 0)
+        SortButton {
+            id: swapBar
+            metric: "swap"; title: "Swap"
+            padding: 0
+            contentItem: Meter {
+                title: swapBar.heading
+                fraction: panel.stats.swapTotal > 0 ? panel.stats.swapUsed / panel.stats.swapTotal : 0
+                reading: panel.size(panel.stats.swapUsed * 1024) + "/" + panel.size(panel.stats.swapTotal * 1024)
+            }
         }
         Meter { title: "↓"; fraction: panel.stats.networkDownloadSpeed / panel.peakRate; reading: panel.size(panel.stats.networkDownloadSpeed) + "/s" }
         Meter { title: "↑"; fraction: panel.stats.networkUploadSpeed / panel.peakRate; reading: panel.size(panel.stats.networkUploadSpeed) + "/s" }
@@ -216,10 +230,16 @@ Item {
                 }
                 Caption {
                     visible: !row.isSensor
-                    Layout.preferredWidth: 44
+                    Layout.preferredWidth: panel.sortMetric === "disk" ? 68 : 44
                     horizontalAlignment: Text.AlignRight
-                    text: row.isSensor ? "" : panel.sortMetric !== "swap" ? panel.size(row.modelData.ram)
-                        : row.modelData.swap == null ? "—" : panel.size(row.modelData.swap)
+                    text: {
+                        if (row.isSensor) return "";
+                        if (panel.sortMetric === "disk")
+                            return row.modelData.disk == null ? "—" : panel.size(row.modelData.disk) + "/s";
+                        if (panel.sortMetric === "swap")
+                            return row.modelData.swap == null ? "—" : panel.size(row.modelData.swap);
+                        return panel.size(row.modelData.ram);
+                    }
                 }
                 ThemeButton {
                     text: "End"; padding: 3; implicitHeight: 26

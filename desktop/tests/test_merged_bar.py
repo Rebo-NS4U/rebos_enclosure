@@ -140,9 +140,9 @@ ShellRoot {
   Timer { interval: 300; running: true; onTriggered: {
    try {
     panel.stats.processes = [
-     {pid: 10, name: "Alpha", cpu: 9, ram: 2, swap: null},
-     {pid: 20, name: "Beta", cpu: 1, ram: 8, swap: 0},
-     {pid: 30, name: "Gamma", cpu: 2, ram: 4, swap: 1}];
+     {pid: 10, name: "Alpha", cpu: 9, ram: 2, disk: 1024, swap: null},
+     {pid: 20, name: "Beta", cpu: 1, ram: 8, disk: null, swap: 0},
+     {pid: 30, name: "Gamma", cpu: 2, ram: 4, disk: 0, swap: 1}];
     panel.stats.temperatures = [{id: "a", name: "Chip A", temp: 40}, {id: "b", name: "Chip B", temp: 55}];
     function order(names) {
      const actual = panel.matches.map(r => r.name).join(",");
@@ -151,6 +151,15 @@ ShellRoot {
     function click(metric) { tester.mouseClick(tester.findChild(panel, "sort-" + metric)); }
     order("Alpha,Gamma,Beta"); click("cpu"); order("Beta,Gamma,Alpha");
     click("ram"); order("Beta,Gamma,Alpha"); click("ram"); order("Alpha,Gamma,Beta");
+    panel.stats.diskUsage = {"/": 75}; panel.stats.diskUsed = {"/": 3072}; panel.stats.diskTotal = {"/": 4096};
+    panel.stats.swapTotal = 4; panel.stats.swapUsed = 1;
+    const disk = tester.findChild(panel, "sort-disk");
+    const swap = tester.findChild(panel, "sort-swap").contentItem;
+    if (disk.fraction !== 0.75 || disk.reading !== "3.0K/4.0K" || swap.fraction !== 0.25 || swap.reading !== "1.0K/4.0K")
+     throw Error("Incorrect disk dial or swap bar capacity");
+    panel.stats.swapTotal = 0; panel.stats.swapUsed = 0;
+    if (swap.fraction !== 0 || swap.reading !== "0B/0B") throw Error("Unexpected disabled swap reading");
+    click("disk"); order("Alpha,Gamma,Beta"); click("disk"); order("Gamma,Alpha,Beta");
     click("swap"); order("Gamma,Beta,Alpha"); click("swap"); order("Beta,Gamma,Alpha");
     const filter = tester.findChild(panel, "resource-filter");
     filter.text = "30"; order("Gamma"); filter.text = "";
