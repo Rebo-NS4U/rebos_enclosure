@@ -1164,10 +1164,20 @@ ClippingRectangle {
         anchors.top: parent.top
         anchors.margins: 6
         opacity: root.rectOpacity
-        sourceComponent: Row {
-            spacing: 2
-            Rectangle { width: 2; height: 2; color: Qt.alpha(root.itemColor, 0.22) }
-            Rectangle { width: 2; height: 2; color: Qt.alpha(root.itemColor, 0.48) }
+        sourceComponent: Grid {
+            columns: 3
+            spacing: 1
+            Repeater {
+                model: 9
+                delegate: Rectangle {
+                    required property int index
+                    width: 2
+                    height: 2
+                    radius: 1
+                    color: root.controlPressed && index === 4 ? "#f04b39" : root.itemColor
+                    opacity: index === 4 || index === 2 || index === 6 ? 0.85 : 0.22
+                }
+            }
         }
     }
 
