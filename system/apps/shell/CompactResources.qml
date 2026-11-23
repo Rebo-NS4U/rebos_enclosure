@@ -52,9 +52,8 @@ PanelWindow {
     }
 
     component Caption: StyledText {
-        font.family: "monospace"
-        font.pixelSize: 13
-        color: Colors.overBackground
+        font.pixelSize: Styling.fontSize(-1)
+        color: housing.itemColor
         textFormat: Text.PlainText
         elide: Text.ElideRight
     }
@@ -63,8 +62,8 @@ PanelWindow {
         property string detail: ""
         id: rule
         Layout.fillWidth: true
-        Caption { id: label; font.bold: true }
-        Rectangle { Layout.fillWidth: true; height: 1; color: Colors.outline }
+        Caption { id: label; font.weight: Font.DemiBold; color: Colors.primary }
+        Rectangle { Layout.fillWidth: true; height: 1; color: Qt.alpha(housing.itemColor, 0.24) }
         Caption { text: rule.detail; visible: text.length > 0 }
     }
     component Gauge: ColumnLayout {
@@ -82,8 +81,8 @@ PanelWindow {
             implicitWidth: 62
             implicitHeight: 48
             property real fraction: gauge.fraction
-            property color ink: Colors.overBackground
-            property color track: Colors.outline
+            property color ink: Colors.primary
+            property color track: Qt.alpha(housing.itemColor, 0.46)
             onFractionChanged: requestPaint()
             onInkChanged: requestPaint()
             onTrackChanged: requestPaint()
@@ -118,40 +117,39 @@ PanelWindow {
         required property real fraction
         required property string reading
         Layout.fillWidth: true
-        Caption { text: meter.title; Layout.preferredWidth: 30 }
+        Caption { text: meter.title; Layout.preferredWidth: Math.max(34, implicitWidth) }
         StandardProgressBar { Layout.fillWidth: true; value: meter.fraction; showCursor: false }
         Caption { text: meter.reading; Layout.preferredWidth: 90; horizontalAlignment: Text.AlignRight }
     }
 
-    Rectangle {
+    StyledRect {
+        id: housing
         anchors.fill: parent
-        color: Colors.background
-        radius: Styling.radius(0)
-        border.color: Colors.outline
+        variant: "popup"
         Shortcut { sequence: "Escape"; onActivated: panel.dismiss() }
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 15
-            spacing: 7
+            anchors.margins: Styling.spacing(16)
+            spacing: Styling.spacing(7)
             RowLayout {
-                Rule { title: "system" }
+                Rule { title: "System Monitor" }
                 ThemeButton { text: "×"; Accessible.name: "Close monitor"; onClicked: panel.dismiss() }
             }
             RowLayout {
                 Layout.fillWidth: true
                 Layout.alignment: Qt.AlignHCenter
-                Gauge { title: "cpu"; fraction: panel.stats.cpuUsage / 100; reading: Math.round(panel.stats.cpuUsage) + "%" }
-                Gauge { title: "mem"; fraction: panel.stats.ramUsage / 100; reading: panel.size(panel.stats.ramUsed * 1024) }
-                Gauge { title: "swp"; fraction: panel.stats.swapUsed / (panel.stats.swapTotal || 1); reading: panel.size(panel.stats.swapUsed * 1024) }
-                Gauge { title: "tmp"; fraction: panel.stats.cpuTemp / 100; reading: panel.stats.cpuTemp < 0 ? "—" : panel.stats.cpuTemp + "°" }
+                Gauge { title: "CPU"; fraction: panel.stats.cpuUsage / 100; reading: Math.round(panel.stats.cpuUsage) + "%" }
+                Gauge { title: "Memory"; fraction: panel.stats.ramUsage / 100; reading: panel.size(panel.stats.ramUsed * 1024) }
+                Gauge { title: "Swap"; fraction: panel.stats.swapUsed / (panel.stats.swapTotal || 1); reading: panel.size(panel.stats.swapUsed * 1024) }
+                Gauge { title: "Temp"; fraction: panel.stats.cpuTemp / 100; reading: panel.stats.cpuTemp < 0 ? "—" : panel.stats.cpuTemp + "°" }
             }
             Meter {
-                title: "dsk"; fraction: (panel.stats.diskUsage[panel.mount] || 0) / 100
+                title: "Disk"; fraction: (panel.stats.diskUsage[panel.mount] || 0) / 100
                 reading: panel.size(panel.stats.diskUsed[panel.mount] || 0) + "/" + panel.size(panel.stats.diskTotal[panel.mount] || 0)
             }
             Meter { title: "↓"; fraction: panel.stats.networkDownloadSpeed / panel.peakRate; reading: panel.size(panel.stats.networkDownloadSpeed) + "/s" }
             Meter { title: "↑"; fraction: panel.stats.networkUploadSpeed / panel.peakRate; reading: panel.size(panel.stats.networkUploadSpeed) + "/s" }
-            Rule { title: "procs"; detail: String(panel.matches.length) }
+            Rule { title: "Processes"; detail: String(panel.matches.length) }
             SearchInput {
                 id: search
                 Layout.fillWidth: true
@@ -189,13 +187,13 @@ PanelWindow {
                     Caption { text: parent.modelData.cpu.toFixed(1) + "%" }
                     Caption { Layout.preferredWidth: 44; horizontalAlignment: Text.AlignRight; text: panel.size(parent.modelData.ram) }
                     ThemeButton {
-                        text: "end"; padding: 3; implicitHeight: 26
+                        text: "End"; padding: 3; implicitHeight: 26
                         enabled: parent.modelData.pid > 1 && !terminate.running
                         onClicked: { panel.selected = parent.modelData; panel.actionMessage = ""; }
                     }
                 }
             }
-            Rule { title: "background"; detail: String(tray.count) }
+            Rule { title: "Background"; detail: String(tray.count) }
             ListView {
                 id: tray
                 Layout.fillWidth: true
@@ -204,6 +202,7 @@ PanelWindow {
                 model: SystemTray.items
                 ScrollBar.vertical: ScrollBar {}
                 delegate: ItemDelegate {
+                    background: StyledRect { variant: app.hovered || app.visualFocus ? "focus" : "transparent" }
                     id: app
                     required property var modelData
                     width: ListView.view.width

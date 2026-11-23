@@ -304,7 +304,7 @@
   "system/apps/media/vlc_session.py": "f7a90cad6cbe43690b85bfc8b68789c340b3df1c21c55e0a86e78c9aea9f8e63",
   "system/apps/media/vlc_theme.py": "d1758fbf8ea76bb6cd80b6d0de5dcb9957934fd649d79c8d52c4b883a334a08d",
   "system/apps/media/youtube_account.py": "1e6f0807d40de6cebb3c37a867801d4ec0cbbc43a7bb7f925a8d13447ad614b4",
-  "system/apps/shell/CompactResources.qml": "bf00ca6b9d4dcba7c02a5ab2a1e452b21e30d1c1e7f10e85f57e21ae31d64e22",
+  "system/apps/shell/CompactResources.qml": "47ab95711401bc05ffab348851701dafa37d5022f1ec64300c43ca68ce65bfd6",
   "system/apps/shell/DesktopDialogSurface.qml": "c13e4ddbeab165df0ebcfce7c730cd6c6c5d4cb46f4a493c36b552c70f5bac90",
   "system/apps/shell/DesktopDialogs.qml": "1ca2aeefa11fb86ff218ba2fa24ff376ca63c1233e06e85771eb6261f0953d1d",
   "system/apps/shell/FanShell.qml": "fc2332e71c718a44f5176ab88c0ce01794d69dd7f80b1e5a3a25a44ba50b9dcd",
