@@ -13,7 +13,8 @@ pragma ComponentBehavior: Bound
 Singleton {
     id: root
 
-    property bool compactMonitorActive: false
+    readonly property bool compactMonitorActive: Object.values(Visibilities.islands).some(
+        island => island?.currentMode === "stats" && island.isExpanded)
     property string detailMetric: ""
     property string detailTitle: ""
     property list<var> processes: []
@@ -155,9 +156,10 @@ Singleton {
     // Unified monitor process.
     // Resource-efficient: only runs while the bar monitor popup is open.
     // Optimized GPU polling avoids waking dGPUs.
+    readonly property bool needsSamples: (GlobalStates.systemMonitorOpen || compactMonitorActive) && validDisks.length > 0
     property Process monitorProcess: Process {
         id: monitorProcess
-        running: (GlobalStates.systemMonitorOpen || root.compactMonitorActive) && root.validDisks.length > 0
+        running: root.needsSamples
         
         command: {
             let cmd = ["python3", Quickshell.shellDir + "/scripts/system_monitor.py", root.updateInterval.toString()];
@@ -239,7 +241,7 @@ Singleton {
 
     function restartMonitor() {
         monitorProcess.running = false;
-        Qt.callLater(() => { monitorProcess.running = true; });
+        Qt.callLater(() => { monitorProcess.running = Qt.binding(() => root.needsSamples); });
     }
 
     function validateDisks() {

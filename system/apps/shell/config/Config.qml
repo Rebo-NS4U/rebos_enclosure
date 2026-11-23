@@ -28,8 +28,7 @@ Singleton {
 
     property string configDir: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/rebos_shell/config"
     property string presetDir: Qt.resolvedUrl("../assets/presets/rebos_shell Default").toString().replace("file://", "")
-    readonly property bool readOnly: Quickshell.shellId === "enclosure-compact-resources"
-    property bool configDirReady: readOnly
+    property bool configDirReady: false
 
     // Module init status
     property bool themeReady: false
@@ -51,7 +50,7 @@ Singleton {
     // Ensure config directory exists and copy preset files if missing
     Process {
         id: ensureConfigDir
-        running: !root.readOnly
+        running: true
         command: [
             "bash", "-c",
             "mkdir -p '" + root.configDir + "' && " +
@@ -100,7 +99,7 @@ Singleton {
             if (!themeSaveTimer.running) reload();
         }
         onAdapterUpdated: {
-            if (!root.readOnly && root.themeReady) {
+            if (root.themeReady) {
                 themeSaveTimer.restart();
             }
         }
@@ -518,7 +517,7 @@ Singleton {
             if (!barSaveTimer.running) reload();
         }
         onAdapterUpdated: {
-            if (!root.readOnly && root.barReady) {
+            if (root.barReady) {
                 barSaveTimer.restart();
             }
         }
@@ -566,7 +565,7 @@ Singleton {
         }
         onFileChanged: { if (!performanceSaveTimer.running) reload(); }
         onAdapterUpdated: {
-            if (!root.readOnly && root.performanceReady) {
+            if (root.performanceReady) {
                 performanceSaveTimer.restart();
             }
         }
@@ -608,7 +607,7 @@ Singleton {
         }
         onFileChanged: reload()
         onAdapterUpdated: {
-            if (!root.readOnly && root.weatherReady) {
+            if (root.weatherReady) {
                 weatherLoader.writeAdapter();
             }
         }
@@ -644,7 +643,7 @@ Singleton {
         }
         onFileChanged: reload()
         onAdapterUpdated: {
-            if (!root.readOnly && root.lockscreenReady) {
+            if (root.lockscreenReady) {
                 lockscreenLoader.writeAdapter();
             }
         }
@@ -679,7 +678,7 @@ Singleton {
         }
         onFileChanged: reload()
         onAdapterUpdated: {
-            if (!root.readOnly && root.systemReady) {
+            if (root.systemReady) {
                 systemLoader.writeAdapter();
             }
         }
@@ -720,7 +719,7 @@ Singleton {
         }
         onFileChanged: reload()
         onAdapterUpdated: {
-            if (!root.readOnly && root.aiReady) {
+            if (root.aiReady) {
                 aiLoader.writeAdapter();
             }
         }
@@ -763,7 +762,6 @@ Singleton {
 
     // Validation helper
     function validateModule(name, loader, defaults, onComplete) {
-        if (root.readOnly) { onComplete(); return; }
         var raw = loader.text();
         if (!raw || raw.trim().length === 0) {
             // File is missing or empty — create with defaults
@@ -794,7 +792,6 @@ Singleton {
     // asynchronous preset copy raced FileView startup and left domains
     // permanently uninitialized when a preset file did not exist.
     function handleMissingConfig(name, loader, defaults, onComplete) {
-        if (root.readOnly) { onComplete(); return; }
         console.log(name + ".json not found, creating defaults");
         loader.setText(JSON.stringify(defaults, null, 2));
         onComplete();

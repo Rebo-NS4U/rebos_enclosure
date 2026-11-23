@@ -136,11 +136,7 @@ fi
 
 case "${1:-}" in
 compact-resources|system-monitor|stats|resources)
-    monitor_qml="$SCRIPT_DIR/CompactResources.qml"
-    if qs ipc -p "$monitor_qml" call monitor close >/dev/null 2>&1; then exit 0; fi
-    export ENCLOSURE_MONITOR_OUTPUT
-    ENCLOSURE_MONITOR_OUTPUT=${2:-$(niri msg -j focused-output | jq -r '.name // empty')}
-    exec "$QS_BIN" -n -p "$monitor_qml"
+    exec "$QS_BIN" ipc -p "$SCRIPT_DIR" call rebos_shell run system-monitor
     ;;
 notepad|scratchpad)
     scratch_dir="${XDG_DATA_HOME:-$HOME/.local/share}/enclosure/scratchpad"

@@ -100,7 +100,6 @@ FileView {
         interval: 100
         repeat: false
         onTriggered: {
-            if (Config.readOnly) return;
             const raw = {};
             for (const name of colors.availableColorNames) raw[name] = colors[name];
             const palette = ShellStyles.appPalette(colors.appStyle, raw, colors.appOpacity);

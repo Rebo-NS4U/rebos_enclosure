@@ -186,10 +186,17 @@ Singleton {
     }
 
     function toggleSystemMonitor(screenName = "") {
+        const island = screenName ? getIslandForScreen(screenName) : getIslandForActive();
+        if (!island) return;
+        if (island.currentMode === "stats" && island.isExpanded) {
+            island.collapse();
+            return;
+        }
         closeActiveBarPopup();
-        clearAll();
-        currentActiveModule = "";
-        Quickshell.execDetached(["bash", Quickshell.shellPath("cli.sh"), "compact-resources", screenName]);
+        clearAll(false);
+        lastFocusedScreen = island.screen.name;
+        currentActiveModule = "system-monitor";
+        island.expand("stats");
     }
 
     function setActiveModule(moduleName) {

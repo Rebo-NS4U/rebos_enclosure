@@ -137,10 +137,6 @@ Item {
     readonly property bool typingDialogActive: typingView.filePickerActive
     readonly property bool typingFullscreen: currentMode === "typing" && typingView.fullscreen
     function expand(mode: string) {
-        if (mode === "stats") {
-            Visibilities.toggleSystemMonitor(root.screen.name);
-            return;
-        }
         if (mode === "typing" && typingView.pinned) {
             for (const client of NiriService.clients.values) {
                 if (client.title === readerWindow.title) { NiriService.focusWindow(client.id); break; }
@@ -419,6 +415,8 @@ Item {
             return Math.max(root.islandHeight, wifiView.implicitHeight);
         case "bluetooth":
             return Math.max(root.islandHeight, bluetoothView.implicitHeight);
+        case "stats":
+            return statsView.height;
         case "alerts":
             return Math.max(root.islandHeight, alertsView.implicitHeight);
         case "wallpapers":
@@ -1431,6 +1429,30 @@ Item {
                     }
 
                     onBackRequested: root.expand("dashboard")
+                }
+            }
+
+            Loader {
+                id: statsView
+                objectName: "island-lazy-stats"
+                anchors.top: parent.top
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: root.targetWidth
+                height: Math.min(Styling.spacing(590), root.screen.height - 32)
+                active: root.currentMode === "stats" || root.fadingModes.includes("stats")
+                enabled: root.currentMode === "stats" && !root.retractingToHidden
+                visible: opacity > 0
+                opacity: root.currentMode === "stats" ? 1 : 0
+                Behavior on opacity {
+                    enabled: Motion.enabled
+                    NumberAnimation {
+                        duration: root.currentMode === "stats" ? root.contentFadeInDuration : root.contentFadeOutDuration
+                        easing.type: Motion.enterCurve
+                    }
+                }
+                sourceComponent: CompactResources {
+                    onBackRequested: root.expand("dashboard")
+                    onCloseRequested: root.collapse()
                 }
             }
 
