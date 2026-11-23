@@ -91,7 +91,6 @@ Item {
                 }
                 onWindowsChanged: windowSync.restart()
                 Component.onCompleted: windowSync.restart()
-                readonly property string displayName: workspace?.isNamed ? workspace.name : String(workspace?.idx ?? workspaceId)
                 Layout.preferredWidth: Math.max(root.workspaceHeight, windowDots.implicitWidth + root.workspaceGap * 6)
                 Layout.preferredHeight: root.workspaceHeight
                 Layout.alignment: Qt.AlignVCenter
@@ -179,8 +178,7 @@ Item {
 
                 StyledToolTip {
                     show: workspaceMouse.containsMouse
-                    tooltipText: workspaceButton.displayName + " · " + (workspaceButton.occupied
-                        ? workspaceButton.windows.length + (workspaceButton.windows.length === 1 ? " window" : " windows") : "Empty")
+                    tooltipText: workspaceButton.windows.map(window => window.title.trim()).filter(Boolean).join("\n")
                 }
             }
         }
