@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Scratchpad
+Comment=Jot a note in a floating Neovim window
+Exec="@HOME@/.local/bin/rebos_shell" scratchpad
+Icon=accessories-text-editor
+Terminal=false
+Categories=Office;Utility;
+Keywords=quickshell;enclosure;note;vim;

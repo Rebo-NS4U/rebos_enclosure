@@ -41,6 +41,7 @@ Usage: rebos_shell [COMMAND]
 Commands:
     (none)                            Launch rebos_shell
     starwake                         Launch the cosmic cursor adventure
+    scratchpad                        Open the floating Neovim scratchpad
     update                            Update rebos_shell
     refresh                           Refresh local/dev profile (for developers)
     lock                              Activate lockscreen
@@ -126,6 +127,21 @@ restart_rebos_shell() {
 }
 
 case "${1:-}" in
+scratchpad)
+    scratch_dir="${XDG_DATA_HOME:-$HOME/.local/share}/enclosure/scratchpad"
+    umask 077
+    mkdir -p "$scratch_dir"
+    exec 9>"$scratch_dir/window.lock"
+    if ! flock -n 9; then
+        window=$(niri msg -j windows | jq -r 'first(.[] | select(.app_id == "enclosure-scratchpad") | .id) // empty')
+        if [[ -n "$window" ]]; then niri msg action focus-window --id "$window"; fi
+        exit 0
+    fi
+    # Hold the lock in the launcher until Kitty closes its editor.
+    kitty --class enclosure-scratchpad --title scratch -o remember_window_size=no \
+        -o initial_window_width=54c -o initial_window_height=22c \
+        nvim -u "$SCRIPT_DIR/scripts/scratch.lua" -- "$scratch_dir/scratch" 9>&-
+    ;;
 starwake|mousedash)
 	pointer_library=$(bash "${SCRIPT_DIR}/scripts/build_starwake_pointer.sh") || exit 1
 	export LD_PRELOAD="$pointer_library${LD_PRELOAD:+:$LD_PRELOAD}"
