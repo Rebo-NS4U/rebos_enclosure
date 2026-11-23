@@ -1,4 +1,4 @@
-"""Exercise the style picker and compare the rendered button and panel finishes."""
+"""Exercise the style picker, surface finishes, and Glyph controls."""
 import json
 import os
 from pathlib import Path
@@ -26,9 +26,10 @@ ShellRoot {
         ShellStyleSettings { id: picker; width: 620 }
         Row {
             id: sample
-            ThemeButton { width: 110; height: 50; text: "Apply" }
+            ThemeButton { id: sampleButton; width: 110; height: 50; text: "Apply" }
             StyledRect { width: 160; height: 50; variant: "bg" }
         }
+        SearchInput { id: sampleField; y: 580; width: 230; height: 42 }
     }
     function findOption(item, name) {
         if (item.objectName === name) return item;
@@ -48,6 +49,21 @@ ShellRoot {
         readonly property var backgrounds: ["default", "wash", "two-tone"]
         onTriggered: {
             if (!Config.themeReady || capturing) return;
+            if (step === 9) {
+                if (Config.theme.shellStyle !== "glyph") {
+                    Config.theme.shellStyle = "glyph";
+                    return;
+                }
+                const card = findOption(picker, "shell-style-glyph");
+                console.log("GLYPH_CONTROLS", sampleButton.background.color.toString(),
+                            sampleField.color.toString(), card.background.color.toString(),
+                            sampleButton.background.radius <= 5,
+                            !!findOption(sampleButton.background, "glyph-button-corner"),
+                            !!findOption(card.background, "glyph-button-corner"));
+                stop();
+                Qt.quit();
+                return;
+            }
             const button = findOption(picker, "buttonFinish-" + buttons[step % 3]);
             const background = findOption(picker, "backgroundFinish-" + backgrounds[Math.floor(step / 3)]);
             if (!button.checked || !background.checked) {
@@ -59,7 +75,7 @@ ShellRoot {
             sample.grabToImage(result => {
                 result.saveToFile(Quickshell.env("HOME") + "/" + step + ".png");
                 capturing = false;
-                if (++step === 9) Qt.quit();
+                ++step;
             });
         }
     }
@@ -93,6 +109,7 @@ class ShellFinishTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 0, output)
                 for error in ("ReferenceError", "TypeError", "Unable to assign", "Cannot assign"):
                     self.assertNotIn(error, output)
+                self.assertIn("GLYPH_CONTROLS #080808 #050505 #101010 true true true", output)
             saved = json.loads((root / ".config/rebos_shell/config/theme.json").read_text())
             self.assertEqual(saved["buttonFinish"], "underline")
             self.assertEqual(saved["backgroundFinish"], "two-tone")

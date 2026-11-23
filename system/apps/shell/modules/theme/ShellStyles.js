@@ -200,9 +200,12 @@ function surface(style, variant, p, ditherStrength, buttonSurface, inputSurface)
         border = [focused ? p.primary : glyphInks ? "#2a2a2a" : mix(fill, p.foreground, 0.20), outer || focused ? 1 : 0];
     }
     var activeButton = buttonSurface && (variant === "primary" || variant === "primaryfocus");
-    if (glyphInks && ((buttonSurface || inputSurface) && neutral || activeButton)) {
-        fill = variant === "primaryfocus" ? "#2a2a2a" : focused || activeButton ? "#1a1a1a"
-            : inputSurface || inset ? "#0b0b0b" : "#0e0e0e";
+    if (style === "glyph" && ((buttonSurface || inputSurface) && neutral || activeButton)
+            && contrast(p.foreground, "#151515") >= 4.5
+            && contrast(p.background, "#000000") < contrast(p.foreground, "#000000")) {
+        fill = inputSurface ? (focused ? "#0b0b0b" : "#050505")
+            : variant === "primaryfocus" ? "#151515" : activeButton ? "#101010"
+            : focused ? "#0d0d0d" : "#080808";
         item = p.foreground;
         opacity = 1;
         border = [focused || activeButton ? p.primary : "#2a2a2a", 1];

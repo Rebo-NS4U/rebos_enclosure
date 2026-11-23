@@ -7,6 +7,7 @@ import qs.modules.theme
 Button {
     id: root
     readonly property bool hardware: Styling.shellStyle === "terminal-hardware"
+    readonly property bool glyphStyle: Styling.shellStyle === "glyph"
     property string glyph: ""
     property int glyphSize: Styling.fontSize(2)
     property bool glyphSpinning: false
@@ -29,9 +30,11 @@ Button {
             : root.engaged ? (root.hovered || root.down ? "primaryfocus" : "primary")
             : root.hardware && root.down ? "internalbg"
             : root.hovered || root.down ? "focus" : "common"
-        radius: Styling.radius(-4)
+        radius: root.glyphStyle ? Math.min(5, Styling.radius(-4)) : Styling.radius(-4)
         border.width: root.activeFocus ? 2 : 1
-        border.color: root.activeFocus ? (root.danger || root.engaged ? itemColor : Colors.primary) : root.hardware ? Config.resolveColor(borderData?.[0] ?? "transparent") : Qt.alpha(Colors.outline, 0.3)
+        border.color: root.activeFocus ? (root.danger || root.engaged ? itemColor : Colors.primary)
+            : root.hardware || root.glyphStyle ? Config.resolveColor(borderData?.[0] ?? "transparent")
+            : Qt.alpha(Colors.outline, 0.3)
     }
     contentItem: RowLayout {
         spacing: Styling.spacing(6)

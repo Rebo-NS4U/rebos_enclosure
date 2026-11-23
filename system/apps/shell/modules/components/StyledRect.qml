@@ -1187,23 +1187,25 @@ ClippingRectangle {
 
     Loader {
         active: root.buttonSurface && (root.styleOverride || Styling.shellStyle) === "glyph"
-            && root.width >= 24 && root.height >= 16 && root.rectOpacity > 0
+            && root.width >= 28 && root.height >= 20 && root.rectOpacity > 0
         anchors.right: parent.right
         anchors.top: parent.top
-        anchors.margins: 6
+        anchors.margins: 4
         opacity: root.rectOpacity
         sourceComponent: Grid {
+            objectName: "glyph-button-corner"
             columns: 3
-            spacing: 1
+            spacing: 2
             Repeater {
                 model: 9
                 delegate: Rectangle {
                     required property int index
+                    readonly property bool cornerPixel: index < 3 || index % 3 === 2
                     width: 2
                     height: 2
-                    radius: 1
-                    color: root.controlPressed && index === 4 ? Colors.primary : root.itemColor
-                    opacity: index === 4 || index === 2 || index === 6 ? 0.85 : 0.22
+                    color: root.controlPressed || root.variant === "primary" || root.variant === "primaryfocus"
+                        ? Colors.primary : root.itemColor
+                    opacity: cornerPixel ? (index === 2 ? 0.9 : 0.48) : 0
                 }
             }
         }
