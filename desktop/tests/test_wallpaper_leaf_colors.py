@@ -17,6 +17,25 @@ SHELL = ROOT / 'system/apps/shell'
 
 @unittest.skipUnless(shutil.which('matugen'), 'Matugen integration test')
 class WallpaperLeafColors(unittest.TestCase):
+    def test_neutral_dark_three_color_wallpaper(self):
+        from PIL import Image
+        with tempfile.TemporaryDirectory() as tmp:
+            folder = Path(tmp)
+            image = Image.new('RGB', (64, 64), '#080808')
+            image.paste('#f5f5f5', (4, 4, 16, 16))
+            image.paste('#f04b39', (24, 24, 32, 32))
+            image.save(folder / 'art.png')
+            output = folder / 'colors.json'
+            subprocess.run(['bash', str(SHELL / 'scripts/generate_wallpaper_colors.sh'),
+                            str(folder / 'art.png'), 'scheme-neutral', 'dark',
+                            str(SHELL / 'assets/matugen/config.toml'), str(output)], check=True)
+            colors = json.loads(output.read_text())
+            self.assertEqual([colors[k] for k in ('background', 'overBackground', 'primary')],
+                             ['#080808', '#f5f5f5', '#f04b39'])
+            for key in ('surface', 'secondary', 'tertiary', 'primaryContainer'):
+                rgb = bytes.fromhex(colors[key][1:])
+                self.assertEqual(len(set(rgb)), 1)
+
     def test_wallpaper_changes_match_visible_tree(self):
         tree = runpy.run_path(str(ROOT / 'system/bin/bonsai-grow'))
         with tempfile.TemporaryDirectory() as tmp:

@@ -124,6 +124,35 @@ if sys.argv[2] == 'dark' or sys.argv[6] or sys.argv[7]:
         luminance = sum(v * w for v, w in zip(linear, (0.2126, 0.7152, 0.0722)))
         palette['over' + role.capitalize()] = '#000000' if luminance > 0.179 else '#ffffff'
     palette['surfaceTint'] = palette['primary']
+# Preserve the inks in three-color artwork when automatic neutral mode is selected.
+if sys.argv[2] == 'dark' and sys.argv[4] == 'scheme-neutral' and not any(sys.argv[6:8]):
+    from PIL import Image
+    with Image.open(sys.argv[3]) as image:
+        swatches = image.convert('RGB').getcolors(3) or []
+    grays = sorted(rgb for _, rgb in swatches if max(rgb) == min(rgb))
+    accents = [rgb for _, rgb in swatches if max(rgb) - min(rgb) > 64]
+    if len(grays) == 2 and len(accents) == 1 and grays[0][0] < 48 and grays[1][0] > 208:
+        paper, ink = grays
+        def hex_color(rgb):
+            return '#%02x%02x%02x' % tuple(rgb)
+
+        # Keep tonal steps for hierarchy while removing the source hue from neutrals.
+        for role in palette:
+            if (role.startswith(('surface', 'overSurface', 'outline', 'secondary', 'tertiary',
+                                 'overSecondary', 'overTertiary', 'primaryContainer', 'overPrimaryContainer',
+                                 'primaryFixed', 'overPrimaryFixed', 'inverse'))
+                    and role != 'surfaceTint'):
+                rgb = bytes.fromhex(palette[role][1:])
+                tone = round(sum(c * w for c, w in zip(rgb, (0.2126, 0.7152, 0.0722))))
+                palette[role] = hex_color([tone] * 3)
+        accent = hex_color(accents[0])
+        palette.update(background=hex_color(paper), overBackground=hex_color(ink),
+                       overSurface=hex_color(ink), primary=accent, surfaceTint=accent,
+                       sourceColor=accent, secondary=hex_color(ink))
+        channels = [c / 255 for c in accents[0]]
+        luminance = sum((c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4) * w
+                        for c, w in zip(channels, (0.2126, 0.7152, 0.0722)))
+        palette['overPrimary'] = '#000000' if luminance > 0.179 else '#ffffff'
 Path(sys.argv[1]).write_text(json.dumps(palette, indent=2) + '\n')
 PYVALIDATE
   then
