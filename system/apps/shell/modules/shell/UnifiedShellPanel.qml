@@ -8,7 +8,6 @@ import qs.modules.globals
 import qs.modules.components
 import qs.modules.widgets.launcher
 import qs.modules.widgets.fileshelf
-import qs.modules.widgets.notes
 import qs.modules.widgets.powermenu
 import qs.modules.notifications
 import qs.config
@@ -34,8 +33,6 @@ PanelWindow {
         if (barContent.typingDialogActive)
             return WlrKeyboardFocus.None;
         if (barContent.lyricsCalibrationHitbox) return WlrKeyboardFocus.OnDemand;
-        if (notesPopup.open)
-            return WlrKeyboardFocus.Exclusive;
         if (launcherOpen)
             return WlrKeyboardFocus.Exclusive;
         if (SystemResources.keepMonitorOpen)
@@ -54,7 +51,9 @@ PanelWindow {
     exclusionMode: ExclusionMode.Ignore
 
     // Menus temporarily receive outside clicks so they can be dismissed.
-    readonly property bool needsFullScreenInput: !barContent.typingDialogActive && (notesPopup.open || ((!SystemResources.keepMonitorOpen) && (barContent.dashboardInputActive || (barContent.islandActive && !launcherOpen))) || FocusGrabManager.hasActiveGrab)
+    readonly property bool needsFullScreenInput: !barContent.typingDialogActive
+        && (FocusGrabManager.hasActiveGrab || (!SystemResources.keepMonitorOpen
+            && (barContent.dashboardInputActive || (barContent.islandActive && !launcherOpen))))
 
     readonly property bool barEnabled: {
         if (!Config.barReady) return false;
@@ -83,12 +82,11 @@ PanelWindow {
             launcherBlur,
             shelfBlur,
             toastStack.backgroundBlur
-        ].concat(notesPopup.open ? [notesBlur] : [])
+        ]
     }
 
 
     BlurRegion { id: launcherBlur; target: runMenu.blurTarget }
-    BlurRegion { id: notesBlur; target: notesPopup.blurTarget }
     BlurRegion { id: shelfBlur; target: fileShelf.blurTarget }
 
     // Full-screen mask item (used when modules/popups are open)
@@ -125,19 +123,6 @@ PanelWindow {
         ]
     }
 
-    // Close the run menu when its focus grab is cleared.
-    FocusGrab {
-        id: focusGrab
-        windows: [unifiedPanel]
-        active: notesPopup.open
-
-        onCleared: {
-            if (notesPopup.open)
-                QuickNotes.close();
-            Visibilities.setActiveModule("");
-        }
-    }
-
     Item {
         id: visualContent
         anchors.fill: parent
@@ -156,8 +141,6 @@ PanelWindow {
                 // dismiss it. Incidental outside clicks must not end a session.
                 if (barContent.typingActive)
                     return;
-                if (notesPopup.open)
-                    QuickNotes.close();
                 FocusGrabManager.clearTopGrab();
                 if (runMenu.open)
                     Visibilities.setActiveModule("");
@@ -206,13 +189,5 @@ PanelWindow {
             screen: unifiedPanel.targetScreen
             z: 250
         }
-
-        NotesPopup {
-            id: notesPopup
-            anchors.fill: parent
-            screen: unifiedPanel.targetScreen
-            z: 400
-        }
-
     }
 }

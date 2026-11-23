@@ -159,8 +159,6 @@ Singleton {
                 console.warn("Ignoring invalid bar accent strength:", command);
             return;
         }
-        if (command !== "notes" && QuickNotes.visible)
-            QuickNotes.close();
         switch (command) {
             case "lyrics":
                 LyricsService.stripEnabled = !LyricsService.stripEnabled;
@@ -177,10 +175,12 @@ Singleton {
             case "shelf":
                 FileShelf.toggle("");
                 break;
+            case "notepad":
+            case "scratchpad":
             case "notes":
-                if (!QuickNotes.visible)
-                    Visibilities.clearAll();
-                QuickNotes.toggle();
+                Visibilities.closeActiveBarPopup();
+                Visibilities.clearAll();
+                Quickshell.execDetached(["bash", Quickshell.shellPath("cli.sh"), "notepad"]);
                 break;
             case "launcher": toggleLauncher(); break;
             case "projects":

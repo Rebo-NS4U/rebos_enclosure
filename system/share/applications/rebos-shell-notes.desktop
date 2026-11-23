@@ -1,9 +1,9 @@
 [Desktop Entry]
 Type=Application
-Name=Quick Notes
-Comment=Open the Quickshell quick notes
-Exec="@HOME@/.local/bin/rebos_shell" run notes
+Name=Notepad
+Comment=Open or focus the floating Neovim notepad
+Exec="@HOME@/.local/bin/rebos_shell" notepad
 Icon=accessories-text-editor
 Terminal=false
-Categories=Office;Utility;
-Keywords=quickshell;enclosure;notes;notepad;markdown;
+Categories=Utility;TextEditor;
+Keywords=enclosure;quick notes;scratchpad;markdown;neovim;

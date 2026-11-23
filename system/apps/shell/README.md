@@ -423,7 +423,7 @@ Verify with `node desktop/tests/test_mousedash.cjs`. The optional `node desktop/
 
 ### Floating desktop tools
 
-Open **System Monitor** from the launcher, press **Mod+N**, or use the monitor
+Open **System Monitor** from the launcher or use the monitor
 button in the bar or island dashboard. Each toggles the same compact monitor.
 You can also run `rebos_shell compact-resources` or click × to close it. The
 gauges show CPU load, memory, swap and CPU temperature. The rails show the
@@ -431,9 +431,13 @@ first configured disk and network throughput. Filter the list by process name
 or PID. Select **End**, then confirm the process name and PID to send SIGTERM.
 The background section lists the desktop's status tray applications.
 
-Open **Scratchpad** in the launcher, or run `rebos_shell scratchpad`. It opens
-Neovim in insert mode and focuses the existing window on subsequent launches.
-The note saves after an editing pause or focus change. Use Escape then
-`:wq` to save and close. The file lives at
-`$XDG_DATA_HOME/enclosure/scratchpad/scratch`, with `~/.local/share` as the
-default data directory.
+Press **Mod+N** or open **Notepad** from the launcher to open or focus the
+floating Neovim editor. It starts in insert mode and follows the desktop
+palette and terminal font. Notes save after an editing pause, on focus
+change, or with **Ctrl+S**. Press Escape and enter `:wq` to save and close.
+
+Notepad reopens the scratch file at `$XDG_DATA_HOME/enclosure/scratchpad/scratch`
+(the default data directory is `~/.local/share`). If only the previous
+`~/Documents/Quick Notes.md` exists, it opens that file. When both exist,
+use `:bnext` to switch between them. The `rebos_shell notepad`,
+`rebos_shell scratchpad` and `rebos_shell run notes` commands open the same window.
