@@ -436,8 +436,9 @@ unavailable process reading. The remaining bars show network throughput. Filter 
 or PID. Select **End**, then confirm the process name and PID to send SIGTERM.
 The background section lists the desktop's status tray applications.
 
-Press **Mod+N** or open **Notepad** from the launcher to open or focus the
-floating Neovim editor. It starts in insert mode and follows the desktop
+Press **Mod+N** to open the floating Neovim notepad. Press it again to save
+and close the editor. The launcher opens or focuses the notepad.
+The editor starts in insert mode and follows the desktop
 palette and terminal font. Notes save after an editing pause, on focus
 change, or with **Ctrl+S**. Press Escape and enter `:wq` to save and close.
 

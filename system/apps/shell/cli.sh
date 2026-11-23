@@ -42,7 +42,7 @@ Commands:
     (none)                            Launch rebos_shell
     starwake                         Launch the cosmic cursor adventure
     compact-resources                 Toggle the compact resource monitor
-    notepad                           Open or focus the floating Neovim notepad
+    notepad                           Open or focus the notepad (toggle saves and closes it)
     update                            Update rebos_shell
     refresh                           Refresh local/dev profile (for developers)
     lock                              Activate lockscreen
@@ -143,15 +143,21 @@ notepad|scratchpad)
     umask 077
     mkdir -p "$scratch_dir"
     exec 9>"$scratch_dir/window.lock"
+    socket="$scratch_dir/editor.sock"
     if ! flock -n 9; then
+        if [[ ${2:-} == toggle && -S "$socket" ]]; then
+            exec nvim --server "$socket" --remote-send '<C-\><C-N><Cmd>wqall<CR>'
+        fi
         window=$(niri msg -j windows | jq -r 'first(.[] | select(.app_id == "enclosure-scratchpad") | .id) // empty')
         if [[ -n "$window" ]]; then niri msg action focus-window --id "$window"; fi
         exit 0
     fi
+    # Clear a socket left behind if the previous editor stopped abruptly.
+    if [[ -S "$socket" ]]; then unlink "$socket"; fi
     # Hold the lock in the launcher until Kitty closes its editor.
     kitty --class enclosure-scratchpad --title Notepad -o remember_window_size=no \
         -o initial_window_width=54c -o initial_window_height=22c \
-        nvim -u "$SCRIPT_DIR/scripts/scratch.lua" -- "$scratch_dir/scratch" 9>&-
+        nvim --listen "$socket" -u "$SCRIPT_DIR/scripts/scratch.lua" -- "$scratch_dir/scratch" 9>&-
     ;;
 starwake|mousedash)
 	pointer_library=$(bash "${SCRIPT_DIR}/scripts/build_starwake_pointer.sh") || exit 1
