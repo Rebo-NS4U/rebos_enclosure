@@ -14,16 +14,7 @@ FocusScope {
 
     Rectangle {
         anchors.fill: parent
-        gradient: Gradient {
-            GradientStop {
-                position: 0.0
-                color: "#0d1117"
-            }
-            GradientStop {
-                position: 1.0
-                color: "#161b22"
-            }
-        }
+        color: "#0d1117"
     }
 
     ColumnLayout {
