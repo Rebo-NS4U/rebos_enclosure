@@ -462,7 +462,7 @@
   "system/apps/shell/modules/components/BlurRegion.qml": "5de1ef92e484a22b53489709f2a48e3430f97b0e9df91b2ac1f4298f7d7cb202",
   "system/apps/shell/modules/components/CircularControl.qml": "5a62bb55d9d79de022b382c6b9453f22926608d45bd337af482b5a9870fe4fa0",
   "system/apps/shell/modules/components/CircularSeekBar.qml": "5a7f01e8e6542389d0f7993e26294897ab58ac1d64e5e809d556bab5a7d964bd",
-  "system/apps/shell/modules/components/ClockText.qml": "9955e9b1602b5221f0d202a19b595939fe8268701fd65fc0a6f8aebfe57905d1",
+  "system/apps/shell/modules/components/ClockText.qml": "b0395af022d13d0cec661ba0788f5ab81c14493892c5dfdf28fcc5f56b6e5b5e",
   "system/apps/shell/modules/components/ContentText.qml": "a9f3e80d131c1ce08de8aca150efcad615bd9dd86db10ecadb584da104166551",
   "system/apps/shell/modules/components/DiagonalStripePattern.qml": "110be0516c36938378bf421db88eb4ee552e3332dc0c7b3b8f88c68fbdf8af3a",
   "system/apps/shell/modules/components/DynamicBatteryIcon.qml": "8fb2eb6d96eaecfa55141009c23a6654798bcb3ccaa24dc48c0f6b60f91e6ee5",
