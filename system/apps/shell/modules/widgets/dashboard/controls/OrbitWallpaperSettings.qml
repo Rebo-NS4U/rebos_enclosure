@@ -18,6 +18,14 @@ SettingsGroup {
     property var pending: ({})
     property bool checkedConnection: false
     readonly property string accent: pending.accent ?? inFlight.accent ?? saved?.accent ?? "#d71921"
+    readonly property string wellAction: pending.wellAction ?? inFlight.wellAction ?? saved?.wellAction ?? ""
+    readonly property var wellActions: [
+        { label: "Animation only", value: "" },
+        { label: "App launcher", value: "launcher" },
+        ...Array.from(DesktopEntries.applications.values, app => ({
+            label: app.name, value: "app:" + app.id
+        })).sort((a, b) => a.label.localeCompare(b.label))
+    ]
 
     function apply(patch): void {
         pending = Object.assign({}, pending, patch);
@@ -57,6 +65,22 @@ SettingsGroup {
             root.inFlight = {};
             if (Object.keys(root.pending).length)
                 root.exchange();
+        }
+    }
+
+    RowLayout {
+        visible: typeof root.saved?.wellAction === "string"
+        Layout.fillWidth: true
+        StyledText { text: "Gravity well click"; Layout.fillWidth: true }
+        SettingsComboBox {
+            objectName: "orbit-well-action"
+            Layout.preferredWidth: 240
+            Accessible.name: "Gravity well click"
+            model: root.wellActions
+            textRole: "label"
+            valueRole: "value"
+            currentIndex: root.wellActions.findIndex(action => action.value === root.wellAction)
+            onActivated: index => root.apply({wellAction: root.wellActions[index].value})
         }
     }
 

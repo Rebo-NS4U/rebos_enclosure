@@ -439,6 +439,16 @@ ShellRoot {
       picker.close();
       tester.tryVerify(() => orbit.saved?.accent === "#ff69a5", 3000, "Selected accent is saved");
       fixture.check(orbit.saved.paper === "#000000" && orbit.saved.ink === "#f2f2f2", "Other colors are preserved");
+      const wellAction = fixture.find(orbit, "orbit-well-action");
+      fixture.check(wellAction.currentValue === "", "Gravity well starts with animation only");
+      categoryScroller.contentY = Math.max(0, wellAction.mapToItem(categoryScroller.contentItem, 0, 0).y - 100);
+      tester.wait(50);
+      tester.mouseClick(wellAction);
+      const launcherOption = () => wellAction.popup.contentItem.itemAtIndex(1);
+      tester.tryVerify(() => wellAction.popup.opened && launcherOption(), 2000, "Gravity well options open");
+      tester.mouseClick(launcherOption());
+      tester.tryVerify(() => orbit.saved?.wellAction === "launcher" &&
+       wellAction.currentValue === "launcher", 3000, "Gravity well click saves App launcher");
       categoryScroller.contentY = Math.max(0, orbitToggle.mapToItem(categoryScroller.contentItem, 0, 0).y - 100);
       tester.wait(50);
       tester.mouseClick(orbitToggle);
@@ -628,7 +638,7 @@ class SettingsClickTests(unittest.TestCase):
                 'state = Path("orbit-appearance.json")\n'
                 'values = json.loads(state.read_text()) if state.exists() else dict(\n'
                 '    paper="#000000", ink="#f2f2f2", accent="#d71921",\n'
-                '    orbitSpeed=1, starCount=560, showLabels=True)\n'
+                '    orbitSpeed=1, starCount=560, showLabels=True, wellAction="")\n'
                 'assert sys.argv[1:3] == ["ipc", "-p"]\n'
                 'assert sys.argv[4:7] == ["call", "settings", "appearance"]\n'
                 'values.update(json.loads(sys.argv[7]))\n'
