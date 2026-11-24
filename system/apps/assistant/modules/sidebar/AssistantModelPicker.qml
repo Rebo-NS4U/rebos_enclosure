@@ -36,7 +36,7 @@ ColumnLayout {
             variant: toggle.hovered || root.expanded ? "focus" : "internalbg"
             radius: Styling.radius(8)
             border.color: Qt.alpha(Colors.primary, 0.25)
-            border.width: 1
+            border.width: 3
         }
         contentItem: RowLayout {
             spacing: 8
@@ -108,7 +108,7 @@ ColumnLayout {
                 background: StyledRect {
                     variant: "common"
                     radius: Styling.radius(4)
-                    border.width: 1
+                    border.width: 3
                     border.color: Qt.alpha(Colors.primary, search.activeFocus ? 0.6 : 0.2)
                 }
                 Keys.onEscapePressed: root.expanded = false
@@ -134,7 +134,7 @@ ColumnLayout {
                     background: StyledRect {
                         variant: modelButton.selected ? "focus" : modelButton.hovered ? "common" : "transparent"
                         radius: Styling.radius(4)
-                        border.width: modelButton.selected ? 1 : 0
+                        border.width: modelButton.selected ? 3 : 0
                         border.color: Qt.alpha(Colors.primary, 0.4)
                     }
                     contentItem: RowLayout {

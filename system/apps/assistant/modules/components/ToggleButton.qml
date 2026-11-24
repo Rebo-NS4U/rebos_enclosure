@@ -48,7 +48,7 @@ Button {
         controlSurface: root.hardware
         controlPressed: root.down
         variant: root.outlined ? (root.down ? "internalbg" : root.hovered ? "focus" : "common") : "bg"
-        border.width: root.outlined && root.activeFocus ? 2 : (borderData?.[1] ?? 0)
+        border.width: (root.outlined && root.activeFocus) || borderData?.[1] > 0 ? 3 : 0
         border.color: root.outlined && root.activeFocus ? Colors.primary : Config.resolveColor(borderData?.[0] ?? "transparent")
         enableShadow: root.enableShadow && Config.showBackground
 

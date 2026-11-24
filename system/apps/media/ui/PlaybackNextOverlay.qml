@@ -78,7 +78,7 @@ PanelWindow {
         variant: pointer.containsMouse ? "primary" : "bg"
         backgroundOpacity: 0.96
         radius: Styling.radius(12)
-        border.width: 1
+        border.width: 3
         border.color: Colors.primary
         Accessible.role: Accessible.Button
         Accessible.name: overlay.buttonLabel + ": " + overlay.destination

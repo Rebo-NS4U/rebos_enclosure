@@ -1075,7 +1075,8 @@ ClippingRectangle {
     }
 
     border.color: Config.resolveColor(borderData?.[0] ?? "transparent")
-    border.width: root.enableBorder ? (borderData?.[1] ?? 0) : 0
+    border.width: !root.enableBorder || !(borderData?.[1] > 0) ? 0
+        : (root.variant === "popup" || root.variant === "bg") ? borderData[1] : 3
 
     Loader {
         active: (root.styleOverride || Styling.shellStyle) === "glyph"

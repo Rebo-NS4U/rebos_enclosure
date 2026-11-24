@@ -32,7 +32,7 @@ Slider {
         y: control.topPadding + (control.availableHeight - height) / 2
         width: 18; height: 18; radius: 9
         color: control.pressed ? Colors.overSurface : Colors.primary
-        border.width: control.activeFocus ? 2 : 0
+        border.width: control.activeFocus ? 3 : 0
         border.color: Colors.overSurface
     }
 }
