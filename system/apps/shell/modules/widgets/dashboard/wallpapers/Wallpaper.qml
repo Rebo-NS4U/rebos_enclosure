@@ -46,7 +46,8 @@ PanelWindow {
     property string paletteError: ""
 
     property bool paletteRefreshPending: false
-    property string orbitAccent: ""
+    property var orbitAppearance: null
+    readonly property string orbitAccent: orbitAppearance?.accent ?? ""
     readonly property bool orbitSelected: {
         return Quickshell.screens.some(output =>
             (perScreenWallpapers[output.name] || wallpaperAdapter.currentWall) === orbitPath);
@@ -83,7 +84,7 @@ PanelWindow {
 
     onOrbitSelectedChanged: {
         if (!orbitSelected)
-            orbitAccent = "";
+            orbitAppearance = null;
         Qt.callLater(refreshWallpaperPalette);
     }
     onOrbitAccentChanged: refreshWallpaperPalette()
@@ -93,11 +94,11 @@ PanelWindow {
         repeat: true
         triggeredOnStart: true
         running: GlobalStates.wallpaperManager === wallpaper && wallpaper.orbitSelected
-        onTriggered: orbitAppearance.running = true
+        onTriggered: orbitAppearanceProcess.running = true
     }
 
     Process {
-        id: orbitAppearance
+        id: orbitAppearanceProcess
         command: ["qs", "ipc", "-p", Quickshell.env("HOME") + "/.config/enclosure/orbit-wallpaper",
             "call", "settings", "appearance", "{}"]
         stdout: StdioCollector {
@@ -105,9 +106,12 @@ PanelWindow {
                 if (!wallpaper.orbitSelected || !text.trim())
                     return;
                 try {
-                    const color = JSON.parse(text).accent;
-                    if (typeof color === "string" && /^#[0-9a-f]{6}$/i.test(color))
-                        wallpaper.orbitAccent = color.toLowerCase();
+                    const appearance = JSON.parse(text);
+                    if (typeof appearance.accent === "string" && /^#[0-9a-f]{6}$/i.test(appearance.accent)) {
+                        appearance.accent = appearance.accent.toLowerCase();
+                        if (JSON.stringify(appearance) !== JSON.stringify(wallpaper.orbitAppearance))
+                            wallpaper.orbitAppearance = appearance;
+                    }
                 } catch (error) {
                     console.warn("Could not read Orbit wallpaper accent:", error);
                 }
@@ -115,7 +119,7 @@ PanelWindow {
         }
         onExited: code => {
             if (code !== 0)
-                wallpaper.orbitAccent = "";
+                wallpaper.orbitAppearance = null;
         }
     }
 

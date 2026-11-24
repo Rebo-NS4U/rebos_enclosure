@@ -24,7 +24,12 @@ SettingsGroup {
     property int pickedRole: 0
     property string currentPage: ""
     readonly property string pickerWallpaper: manager?.paletteWallpaper ?? ""
-    readonly property string pickerSource: manager && pickerWallpaper ? manager.getColorSource(pickerWallpaper) : ""
+    readonly property bool orbitSelected: manager?.orbitSelected ?? false
+    readonly property var orbitAppearance: manager?.orbitAppearance ?? null
+    readonly property string pickerSource: !orbitSelected && manager && pickerWallpaper ? manager.getColorSource(pickerWallpaper) : ""
+    readonly property var suggestedColors: orbitSelected
+        ? [...new Set(orbitAppearance ? [orbitAppearance.paper, orbitAppearance.ink, orbitAppearance.accent] : [])]
+        : wallpaperSampler.suggestedColors
     function resetPicks() { draftColors = (manager?.pickedAccentColors ?? ["", ""]).slice(); }
     function pickColor(color) {
         const colors = draftColors.slice();
@@ -180,7 +185,9 @@ SettingsGroup {
             property string settingsAnchor: "picker"
             Layout.columnSpan: !collapsible || expanded ? paletteGrid.columns : 1
             Caption {
-                text: "Select Main or Accent, then click the wallpaper. Matugen builds your theme from these colors, and the bonsai uses the same pair. Picks are saved for each wallpaper."
+                text: root.orbitSelected
+                    ? "Select Main or Accent, then choose a color from Orbit’s palette."
+                    : "Select Main or Accent, then click the wallpaper. Matugen builds your theme from these colors, and the bonsai uses the same pair. Picks are saved for each wallpaper."
             }
             RowLayout {
                 ColorAction {
@@ -205,20 +212,40 @@ SettingsGroup {
                     id: wallpaperSampler
                     anchors.fill: parent
                     anchors.margins: 6
+                    visible: !root.orbitSelected
                     source: root.pickerSource ? "file://" + root.pickerSource.split("/").map(encodeURIComponent).join("/") : ""
                     onPicked: color => root.pickColor(color)
+                }
+                Loader {
+                    id: orbitPreview
+                    anchors.centerIn: parent
+                    width: Math.min(parent.width - 12, (parent.height - 12) * 16 / 9)
+                    height: width * 9 / 16
+                    active: visible && root.orbitSelected && !!root.orbitAppearance
+
+                    Component.onCompleted: setSource(
+                        "file://" + Quickshell.env("HOME") + "/.config/enclosure/orbit-wallpaper/Orbit.qml",
+                        {
+                            planets: [],
+                            paper: Qt.binding(() => root.orbitAppearance?.paper ?? "#000000"),
+                            ink: Qt.binding(() => root.orbitAppearance?.ink ?? "#f2f2f2"),
+                            accent: Qt.binding(() => root.orbitAppearance?.accent ?? "#d71921"),
+                            orbitSpeed: Qt.binding(() => root.orbitAppearance?.orbitSpeed ?? 1),
+                            starCount: Qt.binding(() => root.orbitAppearance?.starCount ?? 0),
+                            showLabels: false
+                        })
                 }
                 Caption {
                     anchors.centerIn: parent
                     width: parent.width - 24
                     horizontalAlignment: Text.AlignHCenter
-                    visible: !wallpaperSampler.ready
-                    text: !root.pickerSource ? "Choose a wallpaper to pick its colors." :
+                    visible: root.orbitSelected ? orbitPreview.status !== Loader.Ready : !wallpaperSampler.ready
+                    text: root.orbitSelected ? "Live Orbit preview is unavailable." : !root.pickerSource ? "Choose a wallpaper to pick its colors." :
                         wallpaperSampler.failed ? "Wallpaper preview is unavailable. You can still choose a custom color." : "Loading wallpaper…"
                 }
             }
             Caption {
-                visible: wallpaperSampler.suggestedColors.length > 0
+                visible: root.suggestedColors.length > 0
                 text: "Wallpaper color options · choose for " + (root.pickedRole === 0 ? "Main" : "Accent")
             }
             GridLayout {
@@ -227,7 +254,7 @@ SettingsGroup {
                 columnSpacing: Styling.spacing(6)
                 rowSpacing: Styling.spacing(6)
                 Repeater {
-                    model: wallpaperSampler.suggestedColors
+                    model: root.suggestedColors
                     delegate: Button {
                         id: suggestedSwatch
                         required property string modelData
@@ -262,6 +289,7 @@ SettingsGroup {
                 }
             }
             RowLayout {
+                visible: !root.orbitSelected
                 Action {
                     text: "−"
                     enabled: wallpaperSampler.ready && wallpaperSampler.zoom > 1
@@ -275,7 +303,7 @@ SettingsGroup {
                 }
                 Action { text: "Fit"; onClicked: wallpaperSampler.resetView() }
             }
-            Caption { text: "Ctrl+scroll over the preview to zoom; drag to move around, then click to pick a color." }
+            Caption { visible: !root.orbitSelected; text: "Ctrl+scroll over the preview to zoom; drag to move around, then click to pick a color." }
             RowLayout {
                 Rectangle {
                     implicitWidth: 24
@@ -316,7 +344,7 @@ SettingsGroup {
                     }
                 }
             }
-            Caption { text: "Use arrow keys on the preview and Enter to pick; Shift moves faster. The bonsai updates in new terminals." }
+            Caption { visible: !root.orbitSelected; text: "Use arrow keys on the preview and Enter to pick; Shift moves faster. The bonsai updates in new terminals." }
             ColorDialog {
                 id: customColor
                 title: root.pickedRole === 0 ? "Choose main color" : "Choose accent color"
