@@ -22,6 +22,13 @@ ShellRoot {
   StyledText { id: themedLabel; text:"Theme preview" }
   TestCase { id: typeTester; when:false }
   SettingsComboBox { id: combo; width: 240; model: [{label:"First",value:1},{label:"Second",value:2}]; textRole:"label"; valueRole:"value" }
+  SettingsComboBox {
+   id: fonts; x:250; width:240; editable:true; previewFonts:true
+   property string family: "Noto Sans"
+   model: ["DejaVu Sans", "DejaVu Sans Mono", "Noto Sans"]
+   currentIndex: model.indexOf(family)
+   onActivated: index => family = textAt(index)
+  }
   WallpaperChoice { id: wallpaper; y:80; width:240; model:[{label:"Wallpaper"}]; textRole:"label" }
   OptionsMenu { id: menu; items:[{text:"Action",onTriggered:()=>{}},{isSeparator:true},{text:"Disabled",enabled:false}] }
   TestCase { id: tester; when:false }
@@ -64,7 +71,29 @@ ShellRoot {
     if (!combo.popup.visible || combo.currentValue !== 1) throw Error("Combo popup/value");
     combo.forceActiveFocus(); tester.keyClick(Qt.Key_Down); tester.keyClick(Qt.Key_Return); tester.wait(50);
     if (combo.currentValue !== 2) throw Error("Keyboard selection");
-    combo.popup.close(); wallpaper.popup.open(); tester.wait(50);
+    combo.popup.close();
+    tester.mouseClick(fonts, fonts.width - 8, fonts.height / 2);
+    tester.wait(80);
+    if (!fonts.popup.visible) throw Error("Font menu did not open");
+    const search = fonts.popup.contentItem.children[0];
+    const results = fonts.popup.contentItem.children[1];
+    if (!search.activeFocus) throw Error("Font search did not receive focus");
+    tester.keyClick(Qt.Key_X); tester.wait(30);
+    if (results.count !== 0) throw Error("Font search should have no matches");
+    tester.keyClick(Qt.Key_Return);
+    if (!fonts.popup.visible || fonts.family !== "Noto Sans") throw Error("Empty search changed font");
+    tester.keyClick(Qt.Key_Backspace);
+    tester.keyClick(Qt.Key_V); tester.keyClick(Qt.Key_U); tester.wait(30);
+    if (results.count !== 2) throw Error("Font search did not match substrings");
+    tester.keyClick(Qt.Key_Down); tester.keyClick(Qt.Key_Return); tester.wait(50);
+    if (fonts.popup.visible || fonts.family !== "DejaVu Sans Mono" || fonts.currentText !== fonts.family)
+     throw Error("Keyboard font selection: " + [fonts.popup.visible, fonts.family, fonts.currentText, results.currentIndex, search.text]);
+    fonts.popup.open(); tester.wait(80);
+    if (search.text !== "" || results.count !== 3) throw Error("Font search did not reset");
+    tester.keyClick(Qt.Key_N); tester.keyClick(Qt.Key_O); tester.keyClick(Qt.Key_T); tester.wait(30);
+    tester.mouseClick(results.itemAtIndex(0), 20, 20); tester.wait(50);
+    if (fonts.popup.visible || fonts.family !== "Noto Sans") throw Error("Mouse did not select filtered font");
+    wallpaper.popup.open(); tester.wait(50);
     if (!wallpaper.popup.visible || wallpaper.displayText !== "Wallpaper") throw Error("Wallpaper role");
     wallpaper.popup.close(); menu.open(); tester.wait(50);
     if (!menu.visible || menu.itemAt(2).enabled) throw Error("Menu disabled state");

@@ -317,7 +317,7 @@ Item {
                                 }
                                 currentIndex: model.indexOf(configValue)
                                 editable: true
-                                onActivated: Config.theme.font = currentText
+                                onActivated: index => Config.theme.font = textAt(index)
                                 onAccepted: {
                                     const family = editText.trim();
                                     if (family.length > 0)
@@ -404,7 +404,7 @@ Item {
                                 }
                                 currentIndex: model.indexOf(configValue)
                                 editable: true
-                                onActivated: Config.theme.monoFont = currentText
+                                onActivated: index => Config.theme.monoFont = textAt(index)
                                 onAccepted: {
                                     const family = editText.trim();
                                     if (family.length > 0)

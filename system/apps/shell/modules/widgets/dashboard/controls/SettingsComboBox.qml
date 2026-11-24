@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Layouts
 import qs.config
 import qs.modules.components
 import qs.modules.theme
@@ -8,6 +9,11 @@ import qs.modules.theme
 ComboBox {
     id: root
     property bool previewFonts: false
+    function selectFont(family) {
+        activated(find(family, Qt.MatchExactly));
+        popup.close();
+    }
+
     wheelEnabled: false
     opacity: enabled ? 1 : 0.4
     implicitHeight: 48
@@ -41,36 +47,51 @@ ComboBox {
         font.family: Icons.font
         color: Colors.overSurfaceVariant
     }
-    delegate: ItemDelegate {
-        id: option
-        required property int index
-        required property var modelData
-        width: root.width - 12
-        implicitHeight: root.previewFonts ? 70 : 42
-        padding: 12
-        highlighted: root.highlightedIndex === index
-        hoverEnabled: true
-        contentItem: StyledText {
-            readonly property string label: root.textRole ? String(option.modelData[root.textRole] ?? "") : String(option.modelData)
-            text: root.previewFonts ? label + "\nAa Bb Cc 0123456789" : label
-            font.family: root.previewFonts ? label : root.font.family
-            elide: Text.ElideRight
-            color: option.index === root.currentIndex ? Colors.primary : Colors.overSurface
-            rightPadding: 24
-            StyledText {
-                anchors.right: parent.right
-                anchors.verticalCenter: parent.verticalCenter
-                text: option.index === root.currentIndex ? "✓" : ""
-                color: Colors.primary
+    delegate: optionDelegate
+    Component {
+        id: optionDelegate
+        ItemDelegate {
+            id: option
+            required property int index
+            required property var modelData
+            onClicked: {
+                if (root.previewFonts)
+                    root.selectFont(String(modelData));
             }
+            width: root.width - 12
+            implicitHeight: root.previewFonts ? 70 : 42
+            padding: 12
+            highlighted: (root.previewFonts ? fontOptions.currentIndex : root.highlightedIndex) === index
+            hoverEnabled: true
+            readonly property bool selected: root.previewFonts ? String(modelData) === root.currentText : index === root.currentIndex
+            contentItem: StyledText {
+                readonly property string label: root.textRole ? String(option.modelData[root.textRole] ?? "") : String(option.modelData)
+                text: root.previewFonts ? label + "\nAa Bb Cc 0123456789" : label
+                font.family: root.previewFonts ? label : root.font.family
+                elide: Text.ElideRight
+                color: option.selected ? Colors.primary : Colors.overSurface
+                rightPadding: 24
+                StyledText {
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: option.selected ? "✓" : ""
+                    color: Colors.primary
+                }
+            }
+            background: StyledRect { variant: option.highlighted || option.hovered ? "focus" : "transparent"; radius: Math.max(0, Config.roundness) }
         }
-        background: StyledRect { variant: option.highlighted || option.hovered ? "focus" : "transparent"; radius: Math.max(0, Config.roundness) }
     }
-    popup: Popup {
+    popup: previewFonts ? fontPopup : optionsPopup
+
+    component SettingsPopup: Popup {
         y: root.height + 6
         width: root.width
         padding: 6
         implicitHeight: Math.min(contentItem.implicitHeight + padding * 2, 300)
+        background: StyledRect { variant: "popup"; radius: Styling.radius(-4) }
+    }
+
+    readonly property Popup optionsPopup: SettingsPopup {
         contentItem: ListView {
             clip: true
             implicitHeight: contentHeight
@@ -79,6 +100,48 @@ ComboBox {
             boundsBehavior: Flickable.StopAtBounds
             ScrollIndicator.vertical: ScrollIndicator {}
         }
-        background: StyledRect { variant: "popup"; radius: Styling.radius(-4) }
+    }
+
+    readonly property Popup fontPopup: SettingsPopup {
+        id: fontPicker
+        focus: true
+        onAboutToShow: fontSearch.clear()
+        onOpened: {
+            fontOptions.currentIndex = 0;
+            fontSearch.forceActiveFocus();
+        }
+        contentItem: ColumnLayout {
+            spacing: 6
+
+            SettingsTextField {
+                id: fontSearch
+                Layout.fillWidth: true
+                placeholderText: qsTr("Search fonts")
+                onTextChanged: fontOptions.currentIndex = 0
+                Keys.onDownPressed: fontOptions.incrementCurrentIndex()
+                Keys.onUpPressed: fontOptions.decrementCurrentIndex()
+                onAccepted: {
+                    if (fontOptions.count > 0 && fontOptions.currentIndex >= 0)
+                        root.selectFont(fontOptions.model[fontOptions.currentIndex]);
+                }
+            }
+
+            ListView {
+                id: fontOptions
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                clip: true
+                implicitHeight: contentHeight
+                model: {
+                    if (!fontPicker.visible)
+                        return [];
+                    const query = fontSearch.text.trim().toLowerCase();
+                    return root.model.filter(family => family.toLowerCase().includes(query));
+                }
+                delegate: optionDelegate
+                boundsBehavior: Flickable.StopAtBounds
+                ScrollIndicator.vertical: ScrollIndicator {}
+            }
+        }
     }
 }
