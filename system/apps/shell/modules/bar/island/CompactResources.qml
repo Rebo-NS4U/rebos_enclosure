@@ -105,6 +105,7 @@ Item {
         padding: Styling.spacing(8)
         Accessible.name: "Sort by " + title + (activeSort ? (panel.descending ? ", descending" : ", ascending") : "")
         onClicked: panel.sortBy(metric)
+        contentItem: Caption { text: button.heading }
         background: StyledRect {
             buttonSurface: true
             controlPressed: button.down
