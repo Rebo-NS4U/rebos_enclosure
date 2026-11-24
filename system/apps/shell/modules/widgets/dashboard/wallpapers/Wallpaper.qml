@@ -817,7 +817,7 @@ PanelWindow {
                 Config.theme.lightMode ? "light" : "dark",
                 decodeURIComponent(Qt.resolvedUrl("../../../../assets/matugen/config.toml").toString().replace("file://", "")),
                 Quickshell.env("HOME") + "/.cache/rebos_shell/colors.json",
-                pickedAccentColors[0] || liveAccent,
+                liveAccent || pickedAccentColors[0],
                 pickedAccentColors[1] || ""
             ];
             console.log("Matugen command:", commandWithConfig.join(" "));
