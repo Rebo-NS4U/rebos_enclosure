@@ -791,7 +791,7 @@
   "system/apps/shell/scripts/music_visualizer.py": "0d46debbc74de7e413bdb4857cdc48faddfb8fe79e499581e5689d56fc76d10f",
   "system/apps/shell/scripts/nightlight.md": "234ee7df26dce28534a49f384168dd68b897538e75992dca86b0c338d7df5cdc",
   "system/apps/shell/scripts/open_music.sh": "181aabac0e30b888f3a5784ad64ea9b95dbc7c47e9ce33700bd41ba91b8b9bab",
-  "system/apps/shell/scripts/process_monitor.py": "42b8fe6312a145abf674bf6f63fbe9e9a881ee16656b18e5969f3d1a7c0ce77c",
+  "system/apps/shell/scripts/process_monitor.py": "614496be994b2415b8ef5416d93b791f4d96debc8b590a6eebf25c941a3f7e66",
   "system/apps/shell/scripts/qs-screen-guard": "395b232bc72def77b4edb6e416f77bf9faad9e025da5f339143b9ef13558bad1",
   "system/apps/shell/scripts/qt_screen_guard.cpp": "5035fb3859f9ff6e2c0b686b91836d2a39904a7134d0e0bd59ceb93cb0225e0a",
   "system/apps/shell/scripts/reader_meaning.py": "9d3a10584fe7ef458bbbffd0c3671291ace582acd6783eb7a08f07af4c564d33",

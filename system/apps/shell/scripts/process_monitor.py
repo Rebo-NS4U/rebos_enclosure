@@ -93,8 +93,7 @@ class ProcessMonitor:
                                 if k.startswith('drm-engine-') and v.strip().endswith(' ns')]
                     if not counters:
                         continue
-                    engines = sum(counters)
-                    row['gpu'][device] = row['gpu'].get(device, 0) + engines
+                    row['gpu'][device] = row['gpu'].get(device, 0) + sum(counters)
                 except (OSError, ValueError):
                     continue
         except OSError:
@@ -133,15 +132,18 @@ class ProcessMonitor:
             rows.append(result)
         self.previous, self.timestamp = current, now
         if memory_accounting:
-            values = dict(line.split(':', 1) for line in (self.proc / 'meminfo').read_text().splitlines())
-            total = int(values['MemTotal'].split()[0]) * 1024
-            available = int(values['MemAvailable'].split()[0]) * 1024
-            attributed = sum(row['ram'] for row in rows)
-            return dict(processes=rows, memory=dict(total=total, available=available,
+            return self.memory_summary(rows)
+        return rows
+
+    def memory_summary(self, rows):
+        values = dict(line.split(':', 1) for line in (self.proc / 'meminfo').read_text().splitlines())
+        total = int(values['MemTotal'].split()[0]) * 1024
+        available = int(values['MemAvailable'].split()[0]) * 1024
+        attributed = sum(row['ram'] for row in rows)
+        return dict(processes=rows, memory=dict(total=total, available=available,
                         used=total - available, attributed=attributed,
                         other=total - available - attributed,
                         unreadable=sum(not row['memory_available'] for row in rows)))
-        return rows
 
     @staticmethod
     def proportional_memory(base):
