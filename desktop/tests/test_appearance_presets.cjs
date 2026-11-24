@@ -9,7 +9,7 @@ const state = {wallpaperAdapter: adapter, currentWallpaper: '/wall.png', palette
     perScreenWallpapers: {DP1: '/other.png'}, currentMatugenScheme: 'scheme-tonal-spot',
     activeColorPreset: '', wallpaperMode: 'crop', tintEnabled: true,
     presetThemeKeys: ['lightMode'], Config: {theme: {lightMode: true, srBg: {opacity: 0.7}}},
-    Qt: {callLater: f => f()}, setWallpaper(p) { this.applied = p; },
+    refreshWallpaperPalette() { state.paletteRefreshed = true; }, Qt: {callLater: f => f()}, setWallpaper(p) { this.applied = p; },
     setWallpaperMode(p) { this.mode = p; }, runMatugenForCurrentWallpaper() {}, applyColorPreset() {}};
 state.setWallpaper = p => { state.applied = p; };
 state.setWallpaperMode = p => { state.mode = p; };
@@ -25,6 +25,7 @@ assert.equal(adapter.appearancePresets[0].screens.DP1, '/other.png');
 adapter.appearancePresets = JSON.parse(JSON.stringify(adapter.appearancePresets));
 state.Config.theme.lightMode = false;
 state.applyAppearancePreset('Evening');
+assert.equal(state.paletteRefreshed, true);
 assert.equal(state.Config.theme.lightMode, true);
 assert.equal(state.Config.theme.srBg.opacity, 0.7);
 assert.equal(state.applied, '/wall.png');
