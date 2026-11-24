@@ -174,7 +174,7 @@
   "system/apps/assistant/modules/services/Ai.qml": "f91646b4288a5bce69d31c934410c26c68a05f8951c1ae83b3a99cda0d91ea0b",
   "system/apps/assistant/modules/services/AiQuestions.js": "a3cc7e2c78e43281cef6f2b54a0863b360714c5b50cd5273060c1f9e70984d8e",
   "system/apps/assistant/modules/services/AiSession.qml": "de0baa2237e6b8632a42b4c275eaded4435f08e24773af700f07c0cc7b8f4abf",
-  "system/apps/assistant/modules/services/DweeboDefaults.js": "f14867f81e86ca55e55e27db9b91dc4c70f545403028dfed0452c2d7e985b31b",
+  "system/apps/assistant/modules/services/DweeboDefaults.js": "dd5cad8b0f4df8c42b2917f491fc7cc285ad6ad14267d695787e8448c6499daa",
   "system/apps/assistant/modules/services/NiriService.qml": "e03e5648739de31b220b282017adabb884ecdaf70ef05268320c8def10a8555e",
   "system/apps/assistant/modules/services/Notifications.qml": "0599d6dc4642fc0f86f399ddeee011bb296e097c72aa83949d5b4ad085a11d93",
   "system/apps/assistant/modules/services/ReaderMeaning.qml": "2d17034e86a41cf7912a7f409c26a6810e481a043ca705378aca8b3a8a16dfed",
