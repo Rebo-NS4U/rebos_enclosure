@@ -49,7 +49,7 @@ StyledRect {
         anchors.top: parent.top
         anchors.margins: root.collapsible ? 12 : 16
         spacing: Styling.spacing(root.collapsible ? 10 : 12)
-        StyledText { visible: !root.collapsible && root.title.length > 0; text: root.title; font.bold: true; font.pixelSize: Styling.fontSize(1); Layout.fillWidth: true; wrapMode: Text.WordWrap }
+        StyledText { visible: !root.collapsible && root.title.length > 0; text: root.title; font.family: Config.theme.titleFont || Config.theme.font; font.bold: true; font.pixelSize: Styling.fontSize(1); Layout.fillWidth: true; wrapMode: Text.WordWrap }
         SettingsButton {
             id: expandButton
             background: StyledRect {
@@ -66,6 +66,7 @@ StyledRect {
             }
             objectName: root.objectName + "-expand"
             visible: root.collapsible
+            font.family: Config.theme.titleFont || Config.theme.font
             Layout.fillWidth: true
             text: (root.expanded ? "▾  " : "▸  ") + root.title
             Accessible.name: root.title

@@ -857,7 +857,7 @@ Item {
                                     font.hintingPreference: Font.PreferFullHinting
                                     text: "Chat History"
                                     color: Colors.overSurface
-                                    font.family: Styling.displayFont
+                                    font.family: Styling.titleFont
                                     font.pixelSize: Styling.fontSize(4)
                                     font.weight: Font.Bold
                                 }

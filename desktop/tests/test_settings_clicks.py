@@ -177,6 +177,16 @@ ShellRoot {
         fixture.check(fixture.find(page, "shell-group-weather").expanded, "Weather search opens its dropdown");
        }
        if (name === "ThemePanel") {
+        const titleFont = fixture.find(page, "theme-title-font");
+        const heading = fixture.find(page, "settings-page-title");
+        const originalTitleFont = heading.font.family;
+        const titleChoice = titleFont.model.findIndex((family, index) => index > 0 && family !== originalTitleFont);
+        fixture.check(titleFont.currentIndex === 0 && titleChoice > 0, "Title font starts with the theme default");
+        titleFont.activated(titleChoice);
+        fixture.check(Config.theme.titleFont === titleFont.textAt(titleChoice)
+                      && heading.font.family === Config.theme.titleFont, "Title font updates the page heading");
+        titleFont.activated(0);
+        fixture.check(Config.theme.titleFont === "" && heading.font.family === originalTitleFont, "Title font can follow the theme again");
         const advancedGrid = fixture.find(page, "theme-advanced-grid");
         fixture.check(advancedGrid.columns === 1, "Advanced theme options use a vertical accordion");
         let styleCards = [];

@@ -123,6 +123,7 @@ Singleton {
             property int roundness: 4
             property string font: "JetBrains Mono"
             property int fontSize: 14
+            property string titleFont: ""
             property string monoFont: "JetBrains Mono"
             property int monoFontSize: 14
             property bool tintIcons: false

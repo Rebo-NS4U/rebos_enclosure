@@ -47,7 +47,7 @@ Button {
             StyledText {
                 Layout.fillWidth: true
                 text: root.text
-                font.family: Styling.displayFont
+                font.family: Styling.titleFont
                 color: root.background.itemColor
                 font.bold: true
                 wrapMode: Text.WordWrap

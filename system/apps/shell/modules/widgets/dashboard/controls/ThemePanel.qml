@@ -376,6 +376,36 @@ Item {
                             }
                         }
 
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: Styling.spacing(8)
+
+                            StyledText {
+                                text: "Title Font"
+                                font.pixelSize: Styling.fontSize(0)
+                                color: Colors.overBackground
+                                Layout.preferredWidth: 80
+                            }
+
+                            SettingsComboBox {
+                                id: titleFontInput
+                                objectName: "theme-title-font"
+                                Accessible.name: "Title Font"
+                                previewFonts: true
+                                Layout.fillWidth: true
+                                readonly property string defaultChoice: qsTr("Theme default")
+                                readonly property string configValue: Config.theme.titleFont
+                                model: {
+                                    const families = Qt.fontFamilies();
+                                    if (configValue && !families.includes(configValue))
+                                        families.push(configValue);
+                                    return [defaultChoice].concat(families.sort());
+                                }
+                                currentIndex: configValue ? model.indexOf(configValue) : 0
+                                onActivated: index => Config.theme.titleFont = index === 0 ? "" : textAt(index)
+                            }
+                        }
+
                         // Mono Font row
                         RowLayout {
                             Layout.fillWidth: true

@@ -37,8 +37,9 @@ ColumnLayout {
             Layout.maximumWidth: implicitWidth
             Layout.minimumWidth: 0
             leftPadding: root.horizontalMargin
+            objectName: "settings-page-title"
             text: root.title
-            font.family: Styling.displayFont
+            font.family: Styling.titleFont
             font.pixelSize: Styling.fontSize(8)
             font.weight: Font.DemiBold
             elide: Text.ElideRight

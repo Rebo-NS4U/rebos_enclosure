@@ -12,6 +12,7 @@ Singleton {
     }
     readonly property string displayFont: shellStyle === "orbital" ? "Departure Mono"
         : dotTypeface.status === FontLoader.Ready ? dotTypeface.name : Config.theme.font
+    readonly property string titleFont: Config.theme.titleFont || displayFont
     readonly property string defaultFont: Config.defaultFont
 
     // Pipeline defaults for crisp UI text. QtRendering (distance-field) gives

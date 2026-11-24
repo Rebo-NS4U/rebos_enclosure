@@ -16,6 +16,7 @@ var data = {
     "roundness": 16,
     "font": "JetBrains Mono",
     "fontSize": 14,
+    "titleFont": "",
     "monoFont": "JetBrains Mono",
     "monoFontSize": 14,
     "tintIcons": false,
