@@ -40,7 +40,7 @@ Item {
         height: track.thickness + 4
         radius: width / 2
         color: "white"
-        border.width: 1
+        border.width: 3
         border.color: Colors.surface
     }
 }

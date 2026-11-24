@@ -90,7 +90,7 @@ Item {
         background: StyledRect {
             variant: button.hovered || button.visualFocus ? "focus" : "transparent"
             radius: Styling.radius(-4)
-            border.width: button.visualFocus ? 1 : 0
+            border.width: button.visualFocus ? 3 : 0
             border.color: Colors.primary
         }
         readonly property string heading: title + (activeSort ? (panel.descending ? " ↓" : " ↑") : "")

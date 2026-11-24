@@ -199,7 +199,7 @@ Item {
         radius: 5
         color: "transparent"
         border.color: "white"
-        border.width: 2
+        border.width: 3
         Rectangle { anchors.fill: parent; anchors.margins: 2; radius: 3; color: "transparent"; border.color: "black" }
     }
 }

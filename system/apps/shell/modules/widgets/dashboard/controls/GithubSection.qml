@@ -16,7 +16,7 @@ StyledRect {
     implicitHeight: column.implicitHeight + 24
     variant: "common"
     radius: Styling.radius(-2)
-    border.width: 1
+    border.width: 3
     border.color: Qt.alpha(Colors.outline, 0.3)
     ColumnLayout {
         id: column

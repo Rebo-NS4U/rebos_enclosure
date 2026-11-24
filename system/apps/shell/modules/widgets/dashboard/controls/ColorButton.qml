@@ -45,7 +45,7 @@ StyledRect {
             radius: root.circlePreview ? (root.compact ? 12 : 16) : Styling.radius(-4)
             color: Config.resolveColor(root.currentColor)
             border.color: Colors.outline
-            border.width: 1
+            border.width: 3
         }
 
         ColumnLayout {

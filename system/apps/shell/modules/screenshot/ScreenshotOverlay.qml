@@ -149,6 +149,7 @@ PanelWindow {
                     GradientStop { position: 0.45; color: "transparent" }
                     GradientStop { position: 1; color: Qt.alpha(Colors.secondary, 0.06) }
                 }
+                border.width: 3
                 border.color: Qt.alpha(root.selectionConfirmed ? Colors.primary : Colors.outline, 0.6)
             }
         }
@@ -199,7 +200,7 @@ PanelWindow {
                 width: root.crop.width; height: root.crop.height
                 visible: root.dragging && root.tool === "crop"
                 radius: 8; color: Qt.alpha(Colors.primary, 0.08)
-                border.width: 2; border.color: Colors.primary
+                border.width: 3; border.color: Colors.primary
             }
             MouseArea {
                 anchors.fill: parent
@@ -300,7 +301,7 @@ PanelWindow {
                         width: 24; height: 36
                         Accessible.name: "Ink " + modelData
                         contentItem: Item {}
-                        background: Rectangle { anchors.centerIn: parent; width: 20; height: 20; radius: 10; color: parent.modelData; border.color: root.ink === parent.modelData ? Colors.primary : Colors.outline; border.width: root.ink === parent.modelData ? 3 : 1 }
+                        background: Rectangle { anchors.centerIn: parent; width: 20; height: 20; radius: 10; color: parent.modelData; border.color: root.ink === parent.modelData ? Colors.primary : Colors.outline; border.width: 3 }
                         onClicked: root.ink = modelData
                     }
                 }

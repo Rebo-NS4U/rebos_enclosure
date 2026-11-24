@@ -40,7 +40,7 @@ Column {
             implicitHeight: form.implicitHeight + 24
             variant: "internalbg"
             radius: Styling.radius(8)
-            border.width: 1
+            border.width: 3
             border.color: Qt.alpha(Colors.primary, 0.4)
 
             ColumnLayout {
@@ -122,7 +122,7 @@ Column {
                                 background: StyledRect {
                                     variant: choice.selected ? "focus" : choice.hovered ? "common" : "pane"
                                     radius: Styling.radius(4)
-                                    border.width: choice.selected ? 1 : 0
+                                    border.width: choice.selected ? 3 : 0
                                     border.color: Qt.alpha(Colors.primary, 0.6)
                                 }
                                 contentItem: ColumnLayout {

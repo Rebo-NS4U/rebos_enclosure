@@ -81,7 +81,7 @@ ColumnLayout {
                     objectName: "swatch-fill"
                     fillColor: swatch.modelData
                     backgroundOpacity: 1
-                    border.width: swatch.activeFocus || Config.theme.ditherTintColor === swatch.modelData ? 3 : 1
+                    border.width: 3
                     border.color: Colors.overSurface
                 }
             }

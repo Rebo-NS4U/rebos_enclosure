@@ -127,7 +127,7 @@ Item {
                     radius: height / 2
                     color: NetworkService.wifiEnabled ? Styling.srItem("overprimary") : Colors.surfaceBright
                     border.color: NetworkService.wifiEnabled ? Styling.srItem("overprimary") : Colors.outline
-                    border.width: 1
+                    border.width: 3
 
                     Behavior on color {
                         enabled: Config.animDuration > 0

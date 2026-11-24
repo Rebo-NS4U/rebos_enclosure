@@ -18,7 +18,7 @@ ComboBox {
     background: StyledRect {
         variant: root.hovered ? "focus" : "internalbg"
         radius: Styling.radius(-4)
-        border.width: root.activeFocus || root.popup.visible ? 2 : 1
+        border.width: 3
         border.color: root.activeFocus || root.popup.visible ? Colors.primary : Qt.alpha(Colors.outline, 0.3)
     }
     contentItem: TextField {

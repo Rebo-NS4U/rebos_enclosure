@@ -39,7 +39,7 @@ ShellRoot {
         background: Rectangle {
             radius: Styling.radius(0)
             color: control.accent ? Colors.primary : Qt.alpha(Colors.primary, control.down ? 0.24 : control.hovered ? 0.16 : 0.06)
-            border.width: control.visualFocus ? 2 : 1
+            border.width: 3
             border.color: control.visualFocus ? Colors.overBackground : Qt.alpha(Colors.primary, control.checked ? 0.8 : control.hovered ? 0.5 : 0.2)
             Rectangle {
                 visible: control.checked && !control.accent

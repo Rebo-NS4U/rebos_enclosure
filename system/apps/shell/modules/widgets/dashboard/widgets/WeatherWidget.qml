@@ -851,7 +851,7 @@ ClippingRectangle {
                 radius: width / 2
                 color: "transparent"
                 border.color: WeatherService.effectiveIsDay ? Styling.withOpacity(Colors.overSurface, 0.6) : Styling.withOpacity(Colors.overSurface, 0.3)
-                border.width: 2
+                border.width: 3
                 z: -1
             }
         }

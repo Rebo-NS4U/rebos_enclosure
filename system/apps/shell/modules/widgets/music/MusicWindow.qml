@@ -639,7 +639,7 @@ Window {
             visible: row.keyboardSelected || (!row.inFullscreenQueue && row.activeFocus)
             color: "transparent"
             radius: row.radius
-            border.width: 2
+            border.width: 3
             border.color: Colors.primary
         }
         Rectangle {
@@ -1226,7 +1226,7 @@ Window {
                         Layout.preferredHeight: width
                         artwork: root.current?.art || ""
                         radius: Styling.radius(8)
-                        border.width: 1; border.color: Qt.alpha(Colors.outline, 0.25)
+                        border.width: 3; border.color: Qt.alpha(Colors.outline, 0.25)
                     }
                     ColumnLayout {
                         Layout.fillWidth: true; spacing: 8

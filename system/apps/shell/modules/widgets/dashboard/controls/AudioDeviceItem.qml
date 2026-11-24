@@ -27,7 +27,7 @@ Item {
         anchors.fill: parent
         variant: isSelected ? "primary" : (mouseArea.containsMouse ? "focus" : "common")
         radius: Styling.radius(-2)
-        border.width: root.isSelected ? 2 : 1
+        border.width: 3
         border.color: root.isSelected ? Colors.primary : Qt.alpha(Colors.outline, 0.3)
     }
 

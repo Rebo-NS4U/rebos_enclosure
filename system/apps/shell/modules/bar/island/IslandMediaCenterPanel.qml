@@ -246,7 +246,7 @@ Item {
                         radius: width / 2
                         color: Colors.surfaceContainerLowest
                         border.color: Colors.outlineVariant
-                        border.width: 1.5
+                        border.width: 3
 
                         // Concentric vinyl microgrooves
                         Rectangle {
@@ -256,7 +256,7 @@ Item {
                             radius: width / 2
                             color: "transparent"
                             border.color: Styling.withOpacity(Colors.outline, 0.07)
-                            border.width: 1
+                            border.width: 3
                         }
 
                         Rectangle {
@@ -266,7 +266,7 @@ Item {
                             radius: width / 2
                             color: "transparent"
                             border.color: Styling.withOpacity(Colors.outline, 0.06)
-                            border.width: 1
+                            border.width: 3
                         }
 
                         Rectangle {
@@ -276,7 +276,7 @@ Item {
                             radius: width / 2
                             color: "transparent"
                             border.color: Styling.withOpacity(Colors.outline, 0.05)
-                            border.width: 1
+                            border.width: 3
                         }
 
                         // Vinyl specular reflection cones (dual opposing highlights)
@@ -352,7 +352,7 @@ Item {
                                 radius: 5
                                 color: Colors.surfaceContainerLowest
                                 border.color: Colors.overSurface
-                                border.width: 1.5
+                                border.width: 3
                             }
                         }
                     }

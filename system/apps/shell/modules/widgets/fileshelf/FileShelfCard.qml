@@ -17,7 +17,7 @@ StyledRect {
     implicitHeight: Styling.fontSize(0) * 5
     variant: dragHandler.active ? "focus" : "common"
     radius: Styling.radius(-3)
-    border.width: activeFocus ? 1 : 0
+    border.width: activeFocus ? 3 : 0
     border.color: Colors.primary
     Accessible.name: fileName
     Accessible.description: "Drag this file into another app. Removing its card keeps the original file."

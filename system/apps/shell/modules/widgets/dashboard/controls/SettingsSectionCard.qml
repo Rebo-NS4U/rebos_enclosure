@@ -21,7 +21,7 @@ Button {
     background: StyledRect {
         variant: root.hovered || root.down ? "focus" : "common"
         radius: Styling.radius(-2)
-        border.width: root.activeFocus || root.selected ? 2 : 1
+        border.width: 3
         border.color: root.activeFocus || root.selected ? Colors.primary : Qt.alpha(Colors.outline, 0.3)
     }
     contentItem: RowLayout {

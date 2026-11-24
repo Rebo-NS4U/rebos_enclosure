@@ -279,7 +279,7 @@ FocusScope {
                             buttonSurface: true
                             controlPressed: actionButton.down
                             variant: actionButton.selected ? (modelData.variant || "primary") : "common"
-                            border.width: actionButton.selected ? 2 : 1
+                            border.width: 3
                             border.color: actionButton.selected ? itemColor : Qt.alpha(Colors.outline, 0.3)
                         }
 

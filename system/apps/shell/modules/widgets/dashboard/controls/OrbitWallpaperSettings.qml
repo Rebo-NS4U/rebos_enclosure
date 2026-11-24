@@ -82,6 +82,7 @@ SettingsGroup {
             implicitHeight: 24
             radius: Styling.radius(-4)
             color: root.accent
+            border.width: 3
             border.color: Colors.outline
         }
         SettingsButton {

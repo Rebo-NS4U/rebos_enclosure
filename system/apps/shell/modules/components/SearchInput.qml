@@ -54,7 +54,7 @@ StyledRect {
     }
 
     implicitHeight: Styling.spacing(48)
-    border.width: inputActiveFocus ? 2 : (enableBorder ? (borderData?.[1] ?? 0) : 0)
+    border.width: inputActiveFocus || (enableBorder && borderData?.[1] > 0) ? 3 : 0
     border.color: inputActiveFocus ? Colors.primary : Config.resolveColor(borderData?.[0] ?? "transparent")
     radius: Styling.shellStyle === "orbital" ? Math.min(6, Styling.radius(4)) : Styling.radius(4)
 

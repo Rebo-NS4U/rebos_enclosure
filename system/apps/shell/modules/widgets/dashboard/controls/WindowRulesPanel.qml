@@ -190,7 +190,7 @@ Item {
                 width: ruleList.width
                 implicitHeight: rowLayout.implicitHeight + Styling.fontSize(0) * 2
                 variant: "pane"
-                border.width: 1
+                border.width: 3
                 border.color: Qt.alpha(Colors.outline, 0.3)
                 ColumnLayout {
                     id: rowLayout

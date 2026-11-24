@@ -830,7 +830,7 @@ Item {
                                         Layout.preferredHeight: 16
                                         radius: 4
                                         color: Config.resolveColor(Config.theme.shadowColor)
-                                        border.width: 1
+                                        border.width: 3
                                         border.color: Colors.outline
                                     }
 

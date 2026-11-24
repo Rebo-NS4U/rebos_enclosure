@@ -19,7 +19,7 @@ Rectangle {
         height: root.vertical ? 5 : 18
         radius: 2
         color: root.focused ? Colors.overSurface : root.accent
-        border.width: 1
+        border.width: 3
         border.color: Colors.surface
     }
 }

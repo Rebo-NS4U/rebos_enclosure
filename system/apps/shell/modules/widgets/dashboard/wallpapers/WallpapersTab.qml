@@ -728,7 +728,7 @@ FocusScope {
                         height: parent.height - wallpapersTabRoot.wallpaperMargin * 2
                         color: "transparent"
                         border.color: Styling.srItem("overprimary")
-                        border.width: 2
+                        border.width: 3
                         visible: selectedIndex >= 0
                         radius: Styling.radius(4)
                         z: 10

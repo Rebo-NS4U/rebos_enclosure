@@ -20,7 +20,7 @@ ColumnLayout {
         Layout.fillWidth: true
         visible: inputRequired
         implicitHeight: Math.max(Styling.spacing(48), Styling.fontSize(0) + Styling.spacing(20))
-        border.width: inputActiveFocus ? 2 : 1
+        border.width: 3
         border.color: inputActiveFocus ? Colors.primary : Qt.alpha(Colors.outline, 0.3)
         Accessible.name: "Pairing PIN or passkey"
         passwordMode: true

@@ -70,7 +70,7 @@ StyledRect {
     implicitHeight: content.implicitHeight + 16
     variant: "internalbg"
     radius: Styling.radius(8)
-    border.width: 1
+    border.width: 3
     border.color: Qt.alpha(Colors.primary, 0.18)
 
     ColumnLayout {
@@ -181,7 +181,7 @@ StyledRect {
                                 variant: "internalbg"
                                 radius: Styling.radius(6)
                                 color: Qt.alpha(Colors.primary, activityButton.selected ? 0.13 : activityButton.hovered ? 0.07 : 0)
-                                border.width: activityButton.activeFocus ? 1 : 0
+                                border.width: activityButton.activeFocus ? 3 : 0
                                 border.color: Colors.primary
                             }
                             contentItem: RowLayout {

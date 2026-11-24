@@ -150,7 +150,7 @@ Item {
                         StyledRect {
                             anchors.fill: parent; anchors.rightMargin: Styling.spacing(8); anchors.bottomMargin: Styling.spacing(8)
                             variant: "pane"
-                            border.width: !!root.selected && root.selected.version === mix.modelData.version && root.selected.uri === mix.modelData.uri ? 2 : 1
+                            border.width: 3
                             border.color: !!root.selected && root.selected.version === mix.modelData.version && root.selected.uri === mix.modelData.uri ? Colors.primary : Qt.alpha(Colors.outline, 0.3)
                             ColumnLayout {
                                 anchors.fill: parent; anchors.margins: Styling.spacing(12)
