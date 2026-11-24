@@ -55,7 +55,7 @@ StyledRect {
     }
 
     implicitHeight: 48
-    radius: Styling.shellStyle === "orbital" ? Math.min(6, Styling.radius(4)) : Styling.radius(4)
+    radius: Styling.radius(0)
 
     RowLayout {
         anchors.fill: parent

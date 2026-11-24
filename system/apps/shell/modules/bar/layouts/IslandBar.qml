@@ -915,7 +915,7 @@ Item {
                             anchors.bottomMargin: anchors.topMargin
                             variant: "transparent"
                             enableBorder: false
-                            radius: BarAppearance.instrument ? Styling.radius(0) : height / 2
+                            radius: Styling.radius(0)
                             color: BarAppearance.clockTint(dateMouse.containsMouse)
                             Behavior on color {
                                 enabled: Config.animDuration > 0

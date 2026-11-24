@@ -64,6 +64,8 @@ ShellRoot {
  }
  Window { visible: true; width: 300; height: 240
   StyledRect { id: orbitalPane; width: 256; height: 129; variant: "pane"; styleOverride: "orbital"; radius: 16 }
+  SearchInput { id: search; width: 120; height: 42; animateRadius: false }
+  ThemeButton { id: button; width: 100; height: 42; Component.onCompleted: background.animateRadius = false }
   Grid { columns: 3; spacing: 2
    Repeater { id: cards
     model: ["glass-vault","radar-station","guilloche","monolith","blueprint","terminal-hardware","frosted","colorful","clear-glass","canopy","orbital","metropolis"]
@@ -83,7 +85,10 @@ ShellRoot {
    }
    const expected = values[step++];
    Config.theme.roundness = expected;
+   Config.theme.shellStyle = ["frosted", "orbital", "glyph", "monolith"][step-1];
    Qt.callLater(() => {
+    if (search.radius !== expected || button.background.radius !== expected)
+     console.error("THEME_RADIUS_FAILED control", Config.theme.shellStyle, expected, search.radius, button.background.radius);
     for (let i=0;i<cards.count;i++) {
      const panel=cards.itemAt(i), canvas=decoration(panel);
      if (panel.radius !== expected || (canvas && canvas.cornerRadius !== Math.min(expected,36))) {

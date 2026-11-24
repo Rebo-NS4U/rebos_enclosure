@@ -100,7 +100,7 @@ ClippingRectangle {
         gradientStops && gradientStops.length > 7 ? gradientStops[7][1] : 0
     )
 
-    radius: variantConfig.radius !== undefined ? variantConfig.radius : Styling.radius(0)
+    radius: Styling.radius(0)
 
     readonly property real effectiveCornerRadius: Math.max(0, Math.min(radius, width / 2, height / 2))
 

@@ -45,7 +45,7 @@ RowLayout {
 
         StyledRect {
             anchors.fill: parent
-            radius: BarAppearance.instrument ? Styling.radius(0) : height / 2
+            radius: Styling.radius(0)
             variant: "focus"
             opacity: brightMouse.containsMouse ? 1 : 0
             Behavior on opacity {
@@ -131,7 +131,7 @@ RowLayout {
 
         StyledRect {
             anchors.fill: parent
-            radius: BarAppearance.instrument ? Styling.radius(0) : height / 2
+            radius: Styling.radius(0)
             variant: "focus"
             opacity: volMouse.containsMouse ? 1 : 0
             Behavior on opacity {
@@ -204,7 +204,7 @@ RowLayout {
 
         StyledRect {
             anchors.fill: parent
-            radius: BarAppearance.instrument ? Styling.radius(0) : height / 2
+            radius: Styling.radius(0)
             variant: "focus"
             opacity: batMouse.containsMouse ? 1 : 0
             Behavior on opacity {

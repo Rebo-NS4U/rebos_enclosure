@@ -56,7 +56,7 @@ StyledRect {
     implicitHeight: Styling.spacing(48)
     border.width: inputActiveFocus || (enableBorder && borderData?.[1] > 0) ? Config.controlBorderWidth : 0
     border.color: inputActiveFocus ? Colors.primary : Config.resolveColor(borderData?.[0] ?? "transparent")
-    radius: Styling.shellStyle === "orbital" ? Math.min(6, Styling.radius(4)) : Styling.radius(4)
+    radius: Styling.radius(0)
 
     RowLayout {
         anchors.fill: parent

@@ -31,7 +31,7 @@ Button {
             : root.engaged ? (root.hovered || root.down ? "primaryfocus" : "primary")
             : (root.hardware || root.orbital) && root.down ? "internalbg"
             : root.hovered || root.down ? "focus" : "common"
-        radius: root.glyphStyle ? Math.min(5, Styling.radius(-4)) : Styling.radius(-4)
+        radius: Styling.radius(0)
         border.pixelAligned: !root.orbital
         border.width: Config.controlBorderWidth
         border.color: root.orbital && !root.visualFocus
