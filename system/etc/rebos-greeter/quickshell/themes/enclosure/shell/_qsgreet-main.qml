@@ -73,13 +73,16 @@ FocusScope {
         active: Config.display.orbitWallpaper === true
         Component.onCompleted: {
             const count = 3 + Math.floor(Math.random() * 3);
-            const seed = Math.floor(Math.random() * 0x7fffffff);
+            const seed = Math.floor(Math.random() * 0xffffffff);
             setSource("file:///usr/local/lib/rebos-greeter/orbit/Orbit.qml", {
                 accent: Qt.binding(() => Config.palette.primary || "#d71921"),
                 showLabels: false,
-                // Orbit uses window IDs as seeds for the procedural terrain.
                 planets: Array.from({length: count}, (_, slot) => ({
-                    desk: slot + 1, slot: slot, windowId: seed + slot
+                    desk: slot + 1,
+                    slot: slot,
+                    windowId: slot + 1,
+                    // Spread the seeds across the range and skip the zero state.
+                    planetSeed: 1 + (seed + slot * 2654435761) % 0xffffffff
                 }))
             });
         }
