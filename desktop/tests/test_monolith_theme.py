@@ -12,6 +12,7 @@ class WindowMaterialTests(unittest.TestCase):
                 status, output = run_qml(ROOT / 'system/apps' / app, '''import QtQuick
 import QtQuick.Controls
 import QtTest
+import qs.config
 import qs.modules.theme
 import Quickshell
 import qs.modules.components
@@ -74,11 +75,11 @@ ShellRoot {
  }
  Timer { interval:400; running:true; onTriggered: { try {
    for (const surface of [tinted, tintedBar]) {
-    if (test.findChild(surface, "classic-glass-canvas") || !surface.isSingleColorGradient || surface.border.width !== 1)
+    if (test.findChild(surface, "classic-glass-canvas") || !surface.isSingleColorGradient || surface.border.width !== (["popup", "bg"].includes(surface.variant) ? 1 : Config.controlBorderWidth))
      throw Error("Expected a flat Tinted surface with one rim on " + surface.variant);
    }
    for (const surface of [frost, frostPane, frostPreview, frostBar]) {
-    if (decoration(surface) || !surface.isSingleColorGradient || surface.border.width !== 1)
+    if (decoration(surface) || !surface.isSingleColorGradient || surface.border.width !== (["popup", "bg"].includes(surface.variant) ? 1 : Config.controlBorderWidth))
      throw Error("Expected a plain Frosted fill and fine rim on " + surface.variant);
    }
    for (const surface of [engraved, engravedPane, engravedPreview, engravedBar, engravedRail]) {
