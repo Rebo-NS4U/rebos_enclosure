@@ -490,9 +490,7 @@ class VlcSession:  # pylint: disable=too-many-instance-attributes,too-many-publi
         else:
             if sid >= 0:
                 self.api('subtitle', value=-1)
-            source = 'off'
-            if self.provided_cues:
-                source = 'provided'
+            source = 'provided' if self.provided_cues else 'off'
         if source != self.subtitle_source:
             self.set_caption_source(source)
 

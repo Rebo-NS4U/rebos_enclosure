@@ -28,7 +28,8 @@ class StartupTests(unittest.TestCase):
         session.commands = queue.Queue()
         session.generation = session.subtitle_revision = 0
         session.audio_normalization = False
-        session.live_enabled = True
+        session.live_enabled = False
+        session.whisper_cues = []
         session.logpath = Path(folder) / 'vlc.log'
         session.logpath.touch()
         session.api = Mock()
@@ -83,11 +84,18 @@ class StartupTests(unittest.TestCase):
             session._poll_subtitles(session.last_state)
             self.assertEqual(session.subtitle_source, 'provided')
             self.assertEqual(session.cues, cues)
-            session.whisper_cues = []
             session.select_subtitle_source('off')
             session.apply(['subtitle-ready', 0, 0, '/tmp/sub.srt', cues])
             session._poll_subtitles(session.last_state)
             self.assertEqual(session.subtitle_source, 'off')
+
+    def test_live_captions_keep_the_native_track_unselected(self):
+        with tempfile.TemporaryDirectory() as folder:
+            session = self.session(folder)
+            session.live_enabled = session.loaded = session.requested = True
+            session.finished = session.validate_provider = False
+            session.apply(['subtitle-ready', 0, 0, '/tmp/sub.srt', []])
+            session.api.assert_called_once_with('addsubtitle', value='/tmp/sub.srt', select='false')
 
     def test_captions_wait_for_input_before_attaching(self):
         with tempfile.TemporaryDirectory() as folder:
