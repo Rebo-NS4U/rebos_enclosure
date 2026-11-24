@@ -51,10 +51,10 @@ def calculate(expression):
     return format(visit(tree.body), '.12g')
 
 
-def row(kind, name, comment, target='', icon='system-search', verb='Open'):
+def row(kind, name, comment, target='', icon='system-search'):
     return dict(id='launcher:' + kind + ':' + target, name=name, comment=comment,
                 icon=icon, execString='', categories=[], runInTerminal=False,
-                kind=kind, target=target, verb=verb if kind != 'hint' else '')
+                kind=kind, target=target, verb={'copy': 'Copy', 'hint': ''}.get(kind, 'Open'))
 
 
 def file_results(term, home):
@@ -107,7 +107,7 @@ def search(query, home=None):
     if calc or re.match(r'^(?:[\d.(+\-]|sqrt\(|sin\(|cos\(|tan\(|log\(|log10\(|abs\(|round\(|pi\b|tau\b)', expression):
         try:
             result = calculate(expression)
-            rows.append(row('copy', result, 'Calculator · Enter to copy result', result, 'accessories-calculator', verb='Copy'))
+            rows.append(row('copy', result, 'Calculator · Enter to copy result', result, 'accessories-calculator'))
         except (ValueError, SyntaxError, TypeError, ZeroDivisionError, OverflowError):
             if calc:
                 rows.append(row('hint', 'Enter a valid calculation', 'Example: = sqrt(144) + 2^3'))
@@ -126,7 +126,7 @@ def search(query, home=None):
     term = google[1].strip() if google else text
     if term:
         rows.append(row('open', term, 'Search in default browser',
-                        'https://www.google.com/search?' + urlencode({'q': term}), 'web-browser', verb='Google'))
+                        'https://www.google.com/search?' + urlencode({'q': term}), 'web-browser') | {'verb': 'Google'})
     return rows
 
 
