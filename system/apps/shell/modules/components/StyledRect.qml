@@ -34,7 +34,8 @@ ClippingRectangle {
 
     readonly property var gradientStops: variantConfig.gradient
 
-    readonly property string gradientType: variantConfig.gradientType
+    readonly property bool hardwareButton: buttonSurface && Config.theme.buttonFinish === "rivets"
+    readonly property string gradientType: hardwareButton ? "solid" : variantConfig.gradientType
 
     readonly property real gradientAngle: variantConfig.gradientAngle
 
@@ -137,6 +138,10 @@ ClippingRectangle {
     // Apply rectOpacity via alpha channel to avoid affecting children
     color: {
         if (hasFillColor) return applyOpacity(fillColor, rectOpacity);
+        if (hardwareButton && gradientStops && gradientStops.length) {
+            const middle = gradientStops[Math.floor((gradientStops.length - 1) / 2)];
+            return applyOpacity(Config.resolveColor(middle[0]), rectOpacity);
+        }
         if (isSingleColorGradient && (gradientType === "linear" || gradientType === "radial")) {
             return applyOpacity(singleGradientColor, rectOpacity);
         }
@@ -1172,54 +1177,33 @@ ClippingRectangle {
             onWidthChanged: requestPaint()
             onHeightChanged: requestPaint()
 
-            function drawFastener(ctx, x, y) {
-                const metal = ctx.createLinearGradient(x - 2, y - 2, x + 2, y + 2);
-                metal.addColorStop(0, "#d3d4cf");
-                metal.addColorStop(0.55, "#989b98");
-                metal.addColorStop(1, "#535755");
-                ctx.beginPath();
-                ctx.arc(x, y, 2.5, 0, Math.PI * 2);
-                ctx.fillStyle = metal;
-                ctx.fill();
-                ctx.lineWidth = 1;
-                ctx.strokeStyle = "rgba(0,0,0,0.68)";
-                ctx.stroke();
-                ctx.beginPath();
-                ctx.moveTo(x - 1, y + 1);
-                ctx.lineTo(x + 1, y - 1);
-                ctx.stroke();
-            }
+            readonly property color ink: root.itemColor
+            onInkChanged: requestPaint()
 
             onPaint: {
                 const ctx = getContext("2d");
                 ctx.clearRect(0, 0, width, height);
+                ctx.lineWidth = 1;
                 if (!root.traceThemeFrame(ctx, 1.5)) return;
 
-                const face = ctx.createLinearGradient(0, 1, 0, height - 1);
-                const rim = ctx.createLinearGradient(0, 0, 0, height);
-                if (hardware) {
-                    face.addColorStop(0, depressed ? "rgba(0,0,0,0.16)" : "rgba(255,255,255,0.16)");
-                    face.addColorStop(0.48, "transparent");
-                    face.addColorStop(1, "rgba(0,0,0,0.18)");
-                    rim.addColorStop(0, "rgba(255,255,255,0.46)");
-                    rim.addColorStop(1, "rgba(0,0,0,0.60)");
-                } else {
-                    face.addColorStop(0, depressed ? "rgba(0,0,0,0.62)" : "rgba(0,0,0,0.42)");
-                    face.addColorStop(Math.min(0.5, (depressed ? 8 : 5) / height), "rgba(0,0,0,0.10)");
-                    face.addColorStop(1, "rgba(0,0,0,0.03)");
-                    rim.addColorStop(0, "rgba(0,0,0,0.66)");
-                    rim.addColorStop(0.55, "rgba(0,0,0,0.23)");
-                    rim.addColorStop(1, "rgba(255,255,255,0.40)");
+                if (!hardware) {
+                    ctx.strokeStyle = depressed ? "rgba(0,0,0,0.42)" : "rgba(0,0,0,0.28)";
+                    ctx.stroke();
+                    if (!root.traceThemeFrame(ctx, 2.5)) return;
+                    ctx.strokeStyle = "rgba(255,255,255,0.12)";
+                    ctx.stroke();
+                    return;
                 }
-                ctx.fillStyle = face;
-                ctx.fill();
-                ctx.lineWidth = 2;
-                ctx.strokeStyle = rim;
+
+                // A flat keycap sits above a narrow band of exposed housing.
+                ctx.strokeStyle = Qt.alpha(ink, 0.27);
                 ctx.stroke();
-                if (hardware && width >= 64 && height >= 18) {
-                    drawFastener(ctx, 7, height / 2);
-                    drawFastener(ctx, width - 7, height / 2);
-                }
+                ctx.save();
+                ctx.clip();
+                const travel = depressed ? 1 : 3;
+                ctx.fillStyle = "rgba(0,0,0,0.35)";
+                ctx.fillRect(0, height - 1.5 - travel, width, travel);
+                ctx.restore();
             }
         }
     }
