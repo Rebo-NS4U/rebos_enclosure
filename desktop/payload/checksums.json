@@ -886,7 +886,7 @@
   "system/services/user/rebos-assistant.service": "8281c85b3da7b68a88a76d2110b2371e4383d49b5cd044a0330f5b1e2065943f",
   "system/services/user/rebos-assistant@.service": "4158f280dde4a0120a970ea7000236c6d5a143cd322f2d537d9d430641321cbe",
   "system/services/user/rebos-equalizer.service": "97c6b90f705f0f9564b1586b3501b0a52f811052605a33610129c6e7b5c3837f",
-  "system/services/user/rebos-panel.service": "2f6b516f8c8e14194155449054d35cdbf75421c542beb6c7b58cb957cb636832",
+  "system/services/user/rebos-panel.service": "0dcb6359e52ec2aa540e7f9385fd7cce4bf5dedf11f36fe4d7d8beb6d19e0a35",
   "system/services/user/wl-gammarelay.service": "c0469b07bdc6997fe9cc27ffcf682a3462d32004491e92469120e47e4afe5694",
   "system/share/applications/config-browser.desktop": "52aa8804c7e99c1b8e3c64ab9a665e3ea90786caf56632a54060ac6cd1fce5af",
   "system/share/applications/enclosure-development.desktop": "b5cfc9d75cc50789f4af0a73dd63d1a23298b646febd0df3877ade64bac7601d",
