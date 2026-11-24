@@ -11,7 +11,6 @@ import qs.modules.theme
 Item {
     id: root
     required property Item bar
-    readonly property bool orbital: Styling.shellStyle === "orbital"
     property bool showBackground: true
     // Even indicator dimensions share a pixel center at every workspace width.
     readonly property int workspaceHeight: 2 * Math.round(Styling.fontSize(0) * 1.85 / 2)
@@ -60,19 +59,11 @@ Item {
     implicitHeight: root.workspaceHeight + root.workspaceGap * 3
 
     StyledRect {
-        visible: root.showBackground && !root.orbital
+        visible: root.showBackground
         anchors.fill: parent
         variant: "bg"
         radius: Styling.radius(7)
         enableShadow: false
-    }
-
-    Rectangle {
-        visible: root.orbital && workspaceModel.count > 1
-        anchors.centerIn: workspaceRow
-        width: Math.max(0, workspaceRow.width - root.workspaceHeight)
-        height: 1
-        color: Qt.alpha(BarAppearance.foregroundColor, 0.36)
     }
 
     RowLayout {
@@ -92,7 +83,6 @@ Item {
                 readonly property var windows: NiriService.windowsForWorkspace(workspaceId)
                 readonly property bool occupied: windows.length > 0
                 readonly property int dotSize: Math.max(4, 2 * Math.round(root.workspaceHeight / 10))
-                readonly property bool orbitLayout: root.orbital && windows.length <= 8
                 ListModel { id: windowModel }
                 Timer {
                     id: windowSync
@@ -102,17 +92,15 @@ Item {
                 onWindowsChanged: windowSync.restart()
                 Component.onCompleted: windowSync.restart()
                 readonly property string displayName: workspace?.isNamed ? workspace.name : String(workspace?.idx ?? workspaceId)
-                Layout.preferredWidth: orbitLayout ? root.workspaceHeight * 2 : Math.max(root.workspaceHeight, windowDots.implicitWidth + root.workspaceGap * 6)
+                Layout.preferredWidth: Math.max(root.workspaceHeight, windowDots.implicitWidth + root.workspaceGap * 6)
                 Layout.preferredHeight: root.workspaceHeight
                 Layout.alignment: Qt.AlignVCenter
 
                 Rectangle {
                     objectName: "workspace-highlight-" + workspaceButton.workspaceId
                     anchors.fill: parent
-                    radius: root.orbital ? height / 2 : Styling.radius(-4)
-                    border.width: root.orbital ? 1 : 0
-                    border.color: workspaceButton.active ? Colors.primary : Qt.alpha(Colors.overBackground, 0.36)
-                    color: root.orbital ? (workspaceMouse.containsMouse ? Styling.getStyledRectConfig("focus").gradient[0][0] : Colors.background) : BarAppearance.workspaceTint(workspaceButton.active, workspaceMouse.containsMouse)
+                    radius: Styling.radius(-4)
+                    color: BarAppearance.workspaceTint(workspaceButton.active, workspaceMouse.containsMouse)
                     Behavior on color {
                         enabled: Config.animDuration > 0
                         ColorAnimation { duration: Math.min(Config.animDuration, 150) }
@@ -123,7 +111,7 @@ Item {
                     objectName: "workspace-dot-" + workspaceButton.workspaceId
                     anchors.centerIn: parent
                     anchors.alignWhenCentered: false
-                    visible: !workspaceButton.occupied && !workspaceButton.orbitLayout
+                    visible: !workspaceButton.occupied
                     width: workspaceButton.dotSize
                     height: width
                     radius: width / 2
@@ -133,42 +121,22 @@ Item {
                     border.width: Math.max(1, Math.round(width / 6))
                 }
 
-                Text {
-                    anchors.centerIn: parent
-                    visible: workspaceButton.orbitLayout
-                    text: workspaceButton.workspace?.idx ?? workspaceButton.workspaceId
-                    color: workspaceButton.active ? Colors.primary : BarAppearance.foregroundColor
-                    font.family: "Departure Mono"
-                    font.pixelSize: Styling.fontSize(-3)
-                }
-
-                Item {
+                Row {
                     id: windowDots
                     anchors.centerIn: parent
                     anchors.alignWhenCentered: false
-                    readonly property int gap: root.workspaceGap * 2
-                    implicitWidth: windowModel.count * workspaceButton.dotSize + Math.max(0, windowModel.count - 1) * gap
-                    width: workspaceButton.orbitLayout ? workspaceButton.width : implicitWidth
-                    height: workspaceButton.height
+                    spacing: root.workspaceGap * 2
 
                     Repeater {
                         model: windowModel
                         Rectangle {
                             id: windowDot
-                            required property int index
                             required property int windowId
                             objectName: "window-dot-" + windowId
-                            readonly property real angle: 2 * Math.PI * index / Math.max(1, windowModel.count)
                             width: workspaceButton.dotSize
                             height: width
                             radius: width / 2
-                            x: workspaceButton.orbitLayout
-                                ? (windowDots.width - width) / 2 + Math.cos(angle) * (windowDots.width / 2 - width)
-                                : index * (width + windowDots.gap)
-                            y: (windowDots.height - height) / 2 * (workspaceButton.orbitLayout ? 1 + Math.sin(angle) : 1)
-                            color: root.orbital && NiriService.focusedClient?.id === windowId ? Colors.primary : BarAppearance.foregroundColor
-                            Behavior on x { enabled: root.orbital && Config.animDuration > 0; NumberAnimation { duration: Config.animDuration } }
-                            Behavior on y { enabled: root.orbital && Config.animDuration > 0; NumberAnimation { duration: Config.animDuration } }
+                            color: BarAppearance.foregroundColor
                             property bool entered: false
                             Timer {
                                 running: true
@@ -194,7 +162,7 @@ Item {
                     height: Math.max(2, Math.round(Styling.fontSize(0) / 7))
                     radius: height / 2
                     color: BarAppearance.activeWorkspaceOutline
-                    opacity: workspaceButton.active && !root.orbital ? 1 : 0
+                    opacity: workspaceButton.active ? 1 : 0
                     Behavior on opacity {
                         enabled: Config.animDuration > 0
                         NumberAnimation { duration: Math.min(Config.animDuration, 150) }
