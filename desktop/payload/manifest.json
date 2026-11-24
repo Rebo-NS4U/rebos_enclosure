@@ -109,6 +109,7 @@
     ".local/share/fonts/phosphor",
     ".local/share/fonts/rebos_shell",
     ".local/share/icons/GoogleDot-Black",
+    ".local/share/wallpapers/Night Rail.png",
     ".local/share/wallpapers/Ismail Inceoglu - Seventeenth",
     ".local/share/wallpapers/Cycle Circle - Zombie012",
     ".local/share/wallpapers/My Wolpapors - Shared Album",
@@ -529,6 +530,10 @@
     },
     ".local/share/icons/GoogleDot-Black": {
       "source": "system/share/icons/GoogleDot-Black",
+      "kind": "managed"
+    },
+    ".local/share/wallpapers/Night Rail.png": {
+      "source": "system/share/wallpapers/Night Rail.png",
       "kind": "managed"
     },
     ".local/share/wallpapers/Ismail Inceoglu - Seventeenth": {

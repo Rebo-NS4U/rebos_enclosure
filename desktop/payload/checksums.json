@@ -65,7 +65,7 @@
   "config/themes/global-colors.css": "6e87fe9be6e20bae69a022b8bbf3052099f94718c8a7290f33915e1215887d98",
   "config/vesktop/themes/rebos_shell.css": "ed41136dd60436399c96c27143abaad324d798d57ef09fc6fa3bfd73d66a4029",
   "config/xdg-desktop-portal/niri-portals.conf": "e71f778bb1895bd51419c016fd7015cfc7dc7a0c2a64a835a1a7e20e66286288",
-  "manifest.json": "9630e442644111781b7fc91ae3ee61cfda04f192d298040cefc3746cf38e6892",
+  "manifest.json": "246502c9479a7d698440001ed83ba305deb8af3c52c82b1342f221121332441f",
   "system/apps/assistant/assets/aiproviders/anthropic.svg": "e833fdfa7e7187a86a05b870925067556a506dcd4239089aed73e1e58c9366a3",
   "system/apps/assistant/assets/aiproviders/deepseek.svg": "8f9443e351b6dacce71871790201b799d92e8bf96a45ef79aeb5e9bf4db423e2",
   "system/apps/assistant/assets/aiproviders/gemini.svg": "87d5b3c4be75a66f54c1936482a263df68185545b741129badd1b7c2449c18d3",
@@ -676,8 +676,10 @@
   "system/apps/shell/modules/widgets/dashboard/metrics/RunningApplications.qml": "098778a5e8357f7e23eca77cf42007495e98e7b0118151a56b72cc5c7c25feb6",
   "system/apps/shell/modules/widgets/dashboard/metrics/WindowDetails.qml": "cc3c679d8fd7c528c5a2fb7f197b3df12d345d78411e56a51298f46e9953f17f",
   "system/apps/shell/modules/widgets/dashboard/wallpapers/MpvShaderGenerator.js": "f86142c8ee69d9b1690048d0e53d1e86da733eaf39446ff864d79e96276cfa1a",
+  "system/apps/shell/modules/widgets/dashboard/wallpapers/NightRail.qml": "b7afc23b0124a92e6271f11c7464f74b76181f5c2a77d0e6850c0e6dc30a4e0e",
+  "system/apps/shell/modules/widgets/dashboard/wallpapers/RailGeometry.js": "c50fe4fad58e32f331b897636c3f223110c15fa81cb349870b97befa068b21f8",
   "system/apps/shell/modules/widgets/dashboard/wallpapers/SchemeSelector.qml": "048106b6dc506cad559dba5ad9d3752b665e1dfb33cabad18424d061dcb293d2",
-  "system/apps/shell/modules/widgets/dashboard/wallpapers/Wallpaper.qml": "a3fe1d7cb6be574b0021d3a7fd964b5b3bd0d7299fc0e577822c747b232105dc",
+  "system/apps/shell/modules/widgets/dashboard/wallpapers/Wallpaper.qml": "87af4386652e387d0959b3bb2f9bd19c400b5b1f31ce0e5cd36e34fa9ecb98c1",
   "system/apps/shell/modules/widgets/dashboard/wallpapers/WallpaperChoice.qml": "c04994beea898f39e7bee2f26da3954aa5184826496e416eea4c4d2b5b2e4bf5",
   "system/apps/shell/modules/widgets/dashboard/wallpapers/WallpaperColorControls.qml": "3bd4248af95cfe1287eb149266343d6467d2ba8dcc76d475e1a2135f998a5111",
   "system/apps/shell/modules/widgets/dashboard/wallpapers/WallpaperColors.js": "49466ded861f322fc33be1e799071d6fb8faa1e993abbd48866df22cf94f5d33",
@@ -743,6 +745,7 @@
   "system/apps/shell/scripts/dither_wallpaper.py": "773c084dbf08ac74fecb691d0c0a7482694d6f93b56992cf75a458df0f28ed62",
   "system/apps/shell/scripts/edit_keybinding.py": "2b1aaadef07fdddee996fcaf8fce78d35194c772cde843bf724b3d2fc64f9ea2",
   "system/apps/shell/scripts/file_shelf.py": "a82977043396d104fe86b0412e994c3215ad36ac43ae883b5bada7efe00c9a45",
+  "system/apps/shell/scripts/focus_workspace_id.py": "569a1d2d35e40ff8655bb1647a2efc545f1bdbc24ac5709f0064c9c3b88eed97",
   "system/apps/shell/scripts/frame_helpers.py": "1bfbdcb66256b96cd2361965ba5f5e794323d06de3150fdd497aabf7db5e90d2",
   "system/apps/shell/scripts/generate_wallpaper_colors.sh": "f8f13f0a2304080f8d5525682e184358e98c5fb7663112b757522a4268604703",
   "system/apps/shell/scripts/github_connect.py": "36b198254016a344c01f507a88581dd6fa26dd0176e8510c0740850b6113da67",
@@ -1243,5 +1246,6 @@
   "system/share/wallpapers/My Wolpapors - Shared Album/wallpaper-060.png": "132064b9ced541ed12766ea3011dbc2e7003b8c155dca36244035992dbdcf665",
   "system/share/wallpapers/My Wolpapors - Shared Album/wallpaper-061.png": "28c4cff4be0a981648f2f33d452818442b08bd0a24e6d3f6c27e87178d5f6f60",
   "system/share/wallpapers/My Wolpapors - Shared Album/wallpaper-062.png": "ee98c734b8c44b29e77933744a47d184c8662eead79106eb5a8cc3114da9664d",
-  "system/share/wallpapers/My Wolpapors - Shared Album/wallpaper-063.png": "ddea1fac505df205ce8443242fa4f3d01d676b550c5988094c2e41a1515a9b69"
+  "system/share/wallpapers/My Wolpapors - Shared Album/wallpaper-063.png": "ddea1fac505df205ce8443242fa4f3d01d676b550c5988094c2e41a1515a9b69",
+  "system/share/wallpapers/Night Rail.png": "d4187e113bc5ba0c64a504358ed63302466dc0ceabfda33e67a9892616ab785f"
 }

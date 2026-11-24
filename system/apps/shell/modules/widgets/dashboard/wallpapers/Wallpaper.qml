@@ -36,6 +36,7 @@ PanelWindow {
     property int currentIndex: 0
     property string currentWallpaper: initialLoadCompleted && wallpaperPaths.length > 0 ? wallpaperPaths[currentIndex] : ""
     readonly property string orbitPath: fallbackDir + "/Orbit.png"
+    readonly property string nightRailPath: fallbackDir + "/Night Rail.png"
     readonly property string paletteWallpaper: orbitSelected ? orbitPath : currentWallpaper
     readonly property var pickedAccentColors: wallpaperAdapter.wallpaperAccentColors[paletteWallpaper] || ["", ""]
     property bool initialLoadCompleted: false
@@ -147,7 +148,7 @@ PanelWindow {
     }
     property var perScreenWallpapers: wallpaperConfig.adapter.perScreenWallpapers || {}
     property string effectiveWallpaper: perScreenWallpapers[currentScreenName]
-        || (wallpaperAdapter.currentWall === orbitPath ? orbitPath : currentWallpaper)
+        || ([orbitPath, nightRailPath].includes(wallpaperAdapter.currentWall) ? wallpaperAdapter.currentWall : currentWallpaper)
     readonly property string renderedWallpaper: DitheredWallpapers.source(effectiveWallpaper)
 
     function requestDitheredWallpapers(): void {
@@ -1589,7 +1590,34 @@ PanelWindow {
             }
         }
 
+        Loader {
+            id: railway
+            anchors.fill: parent
+            active: wallpaper.effectiveWallpaper === wallpaper.nightRailPath
+            sourceComponent: NightRail {
+                id: diagram
+                IpcHandler {
+                    target: "night-rail-" + wallpaper.currentScreenName
+                    function status(): string {
+                        return JSON.stringify(diagram.routes.map(r => ({
+                            workspace: r.id, active: r.active, phase: r.phase,
+                            platform: [r.path.stop, r.path.y - 10],
+                            carriages: r.members.map(w => w.id)
+                        })));
+                    }
+                }
+                workspaces: NiriService.rawWorkspaces
+                windows: NiriService.rawWindows
+                output: wallpaper.currentScreenName
+                accent: Colors.primary
+                paused: !NiriService.overviewOpen && NiriService.fullscreenOutputs.includes(output)
+                onWorkspaceClicked: desk => Quickshell.execDetached(["python3",
+                    Quickshell.shellPath("scripts/focus_workspace_id.py"), String(desk)])
+            }
+        }
+
         WallpaperImage {
+            visible: !railway.active
             id: wallImage
             anchors.fill: parent
             source: wallpaper.renderedWallpaper
