@@ -16,19 +16,11 @@ SettingsGroup {
     property var inFlight: ({})
     property var pending: ({})
     property bool checkedConnection: false
-    readonly property var defaults: ({
-        paper: "#000000", ink: "#f2f2f2", accent: "#d71921",
-        orbitSpeed: 1, starCount: 560, showLabels: true
-    })
-    readonly property var appearance: Object.assign({}, defaults, saved, inFlight, pending)
+    readonly property string accent: pending.accent ?? inFlight.accent ?? saved?.accent ?? "#d71921"
 
     function apply(patch): void {
         pending = Object.assign({}, pending, patch);
         exchange();
-    }
-
-    function applyPalette(paper: string, ink: string, accent: string): void {
-        apply(paletteScope.currentIndex === 0 ? {accent: accent} : {paper: paper, ink: ink, accent: accent});
     }
 
     function exchange(): void {
@@ -69,8 +61,9 @@ SettingsGroup {
 
     ColorDialog {
         id: picker
-        property string setting
-        onAccepted: root.apply({[setting]: String(selectedColor)})
+        objectName: "orbit-picker"
+        title: "Gravity well accent"
+        onAccepted: root.apply({accent: String(selectedColor)})
     }
 
     StyledText {
@@ -80,114 +73,25 @@ SettingsGroup {
         text: "The Orbit live wallpaper service is unavailable."
     }
 
-    ColumnLayout {
+    RowLayout {
         visible: !!root.saved
         Layout.fillWidth: true
-        spacing: Styling.spacing(12)
-
-        StyledText { text: "Apply presets to" }
-        SettingsComboBox {
-            id: paletteScope
-            objectName: "orbit-palette-scope"
-            Layout.fillWidth: true
-            Accessible.name: "Apply presets to"
-            model: ["Gravity well and alerts", "Entire wallpaper"]
+        StyledText { text: "Gravity well accent"; Layout.fillWidth: true }
+        Rectangle {
+            implicitWidth: 24
+            implicitHeight: 24
+            radius: Styling.radius(-4)
+            color: root.accent
+            border.color: Colors.outline
         }
-
-        RowLayout {
-            Layout.fillWidth: true
-            StyledText { text: "Palette"; Layout.fillWidth: true }
-            SettingsButton {
-                text: "Classic"
-                onClicked: root.applyPalette(root.defaults.paper, root.defaults.ink, root.defaults.accent)
-            }
-            SettingsButton {
-                objectName: "orbit-nebula"
-                text: "Nebula"
-                onClicked: root.applyPalette("#140d25", "#e8ceff", "#ff69a5")
-            }
-            SettingsButton {
-                text: "Aurora"
-                onClicked: root.applyPalette("#081d22", "#baf9de", "#57c4ff")
-            }
-        }
-
-        Repeater {
-            model: [
-                {label: "Background", key: "paper"},
-                {label: "Stars, planets and rings", key: "ink"},
-                {label: "Gravity well and alerts", key: "accent"}
-            ]
-            RowLayout {
-                id: row
-                required property var modelData
-                readonly property string hex: root.appearance[modelData.key]
-                Layout.fillWidth: true
-                StyledText { text: row.modelData.label; Layout.fillWidth: true; wrapMode: Text.WordWrap }
-                Rectangle {
-                    implicitWidth: 24
-                    implicitHeight: 24
-                    radius: Styling.radius(-4)
-                    color: row.hex
-                    border.color: Colors.outline
-                }
-                SettingsButton {
-                    text: row.hex.toUpperCase()
-                    Accessible.name: "Choose " + row.modelData.label + " color"
-                    onClicked: {
-                        picker.setting = row.modelData.key;
-                        picker.title = row.modelData.label;
-                        picker.selectedColor = row.hex;
-                        picker.open();
-                    }
-                }
-            }
-        }
-
-        Repeater {
-            model: [
-                {label: "Orbit speed", key: "orbitSpeed", max: 3, step: 0.25},
-                {label: "Star density", key: "starCount", max: 1000, step: 20}
-            ]
-            RowLayout {
-                id: sliderRow
-                required property var modelData
-                readonly property real amount: root.appearance[modelData.key]
-                Layout.fillWidth: true
-                StyledText { text: sliderRow.modelData.label; Layout.minimumWidth: 110 }
-                StyledSlider {
-                    Accessible.name: sliderRow.modelData.label
-                    value: sliderRow.amount / sliderRow.modelData.max
-                    stepSize: sliderRow.modelData.step / sliderRow.modelData.max
-                    snapMode: "always"
-                    scroll: false
-                    tooltip: false
-                    updateOnRelease: true
-                    onValueChanged: {
-                        const next = Math.round(value / stepSize) * sliderRow.modelData.step;
-                        if (root.saved && next !== sliderRow.amount)
-                            root.apply({[sliderRow.modelData.key]: next});
-                    }
-                }
-                StyledText {
-                    Layout.minimumWidth: 70
-                    horizontalAlignment: Text.AlignRight
-                    text: sliderRow.modelData.key === "starCount" ? sliderRow.amount.toFixed(0)
-                        : sliderRow.amount === 0 ? "Paused" : sliderRow.amount.toFixed(2) + "×"
-                }
-            }
-        }
-
-        SettingsToggleRow {
-            label: "Show window titles on hover"
-            checked: root.appearance.showLabels
-            onToggled: checked => root.apply({showLabels: checked})
-        }
-
         SettingsButton {
-            objectName: "orbit-restore-defaults"
-            text: "Restore defaults"
-            onClicked: root.apply(root.defaults)
+            objectName: "orbit-accent"
+            text: root.accent.toUpperCase()
+            Accessible.name: "Choose gravity well accent color"
+            onClicked: {
+                picker.selectedColor = root.accent;
+                picker.open();
+            }
         }
     }
 }

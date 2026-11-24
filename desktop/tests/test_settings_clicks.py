@@ -401,19 +401,17 @@ ShellRoot {
       const orbit = fixture.find(loader.item, "orbit-wallpaper-settings");
       tester.tryVerify(() => loader.item.currentSection === "orbit-wallpaper" &&
        orbit.visible && orbit.saved?.paper === "#000000", 3000, "Orbit search opens the live wallpaper controls");
-      const nebula = fixture.find(orbit, "orbit-nebula");
-      const orbitPoint = nebula.mapToItem(categoryScroller.contentItem, 0, 0);
-      categoryScroller.contentY = Math.max(0, orbitPoint.y - 100);
+      const accent = fixture.find(orbit, "orbit-accent");
+      categoryScroller.contentY = Math.max(0, accent.mapToItem(categoryScroller.contentItem, 0, 0).y - 100);
       tester.wait(50);
-      tester.mouseClick(nebula);
-      tester.tryVerify(() => orbit.saved?.accent === "#ff69a5",
-       3000, "Nebula changes the gravity well and alerts");
-      fixture.check(orbit.saved.paper === "#000000" && orbit.saved.ink === "#f2f2f2",
-       "Accent-only presets preserve the background and foreground colors");
-      fixture.find(orbit, "orbit-palette-scope").currentIndex = 1;
-      tester.mouseClick(nebula);
-      tester.tryVerify(() => orbit.saved?.paper === "#140d25" && orbit.saved?.ink === "#e8ceff",
-       3000, "The entire wallpaper scope applies background and foreground colors");
+      tester.mouseClick(accent);
+      const picker = tester.findChild(orbit, "orbit-picker");
+      tester.tryVerify(() => picker.visible, 2000, "Gravity well accent opens the color picker");
+      picker.selectedColor = "#ff69a5";
+      picker.accepted();
+      picker.close();
+      tester.tryVerify(() => orbit.saved?.accent === "#ff69a5", 3000, "Selected accent is saved");
+      fixture.check(orbit.saved.paper === "#000000" && orbit.saved.ink === "#f2f2f2", "Other colors are preserved");
       settings.searchQuery = "";
       settings.width = 850;
       settings.openSection(4, "colors"); tester.wait(150);
