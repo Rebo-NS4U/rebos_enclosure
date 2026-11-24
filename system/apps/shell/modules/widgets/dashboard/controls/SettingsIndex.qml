@@ -19,12 +19,12 @@ QtObject {
         { label: "Transparency and blur", keywords: "transparency opacity strength slider gpu graphics performance video glass lighter shell panels off full blur", section: 4, subSection: "blur", subLabel: "Appearance > Transparency and blur", icon: Icons.drop, isIcon: true },
         { label: "Shadows", keywords: "opacity blur offset color", section: 4, subSection: "shadow", subLabel: "Appearance > Shadow", icon: Icons.drop, isIcon: true },
         { label: "Wallpaper", keywords: "desktop background library folder directory path picture auto fit fitting crop stretch center monitor", section: 4, subSection: "wallpaper", subLabel: "Appearance > Wallpaper", icon: Icons.paintBrush, isIcon: true },
-        { label: "Orbit Wallpaper", keywords: "live wallpaper orbit gravity well accent color", section: 6, subSection: "weather", subLabel: "Panels & widgets > Weather", icon: Icons.palette, isIcon: true },
+        { label: "Orbit Wallpaper", keywords: "live wallpaper orbit gravity well accent color", section: 4, subSection: "wallpaper", subLabel: "Appearance > Wallpaper", icon: Icons.palette, isIcon: true },
         { label: "Colors", keywords: "folder directory path icons tint matugen wallpaper eyedropper picker bonsai main accent custom automatic scheme palette oled light dark kitty fish spotify zen vscode opacity refresh", section: 4, subSection: "colors", subLabel: "Appearance > Colors", icon: Icons.palette, isIcon: true },
 
         { label: "Custom surfaces", keywords: "variant gradient border halftone shell colors", section: 4, subSection: "variants", subLabel: "Appearance > Custom surfaces", icon: Icons.palette, isIcon: true },
 
-        { label: "Weather", keywords: "location temperature celsius fahrenheit wallpaper", section: 6, subSection: "weather", subLabel: "Panels & widgets > Weather", icon: Icons.mapPin, isIcon: true },
+        { label: "Weather", keywords: "location temperature celsius fahrenheit", section: 6, subSection: "weather", subLabel: "Panels & widgets > Weather", icon: Icons.mapPin, isIcon: true },
         { label: "Effects", keywords: "performance animations preview effects dashboard", section: 4, subSection: "performance", subLabel: "Appearance > Visual effects", icon: Icons.lightning, isIcon: true },
         { label: "Storage", keywords: "cpu ram memory disk usage monitor", section: 6, subSection: "storage", subLabel: "Panels & widgets > Storage", icon: Icons.circuitry, isIcon: true },
 

@@ -200,15 +200,33 @@ Item {
                         property bool exclusiveSettingsGroups: !root.tabbedNavigation
                         columnSpacing: Styling.spacing(12)
                         rowSpacing: Styling.spacing(12)
-                    WallpaperSettings {
-                        visible: (!root.tabbedNavigation || root.navigationTab === "wallpaper")
-                            && !(GlobalStates.wallpaperManager?.orbitSelected ?? false)
+                    SettingsGroup {
+                        id: wallpaperGroup
+                        objectName: "wallpaper-settings"
+                        title: "Wallpaper"
+                        property string settingsAnchor: "wallpaper"
+                        readonly property var manager: GlobalStates.wallpaperManager
+                        readonly property bool orbitEnabled: manager?.orbitSelected ?? false
+                        visible: !root.tabbedNavigation || root.navigationTab === "wallpaper"
                         collapsible: !root.tabbedNavigation
-                    }
-                    OrbitWallpaperSettings {
-                        visible: (!root.tabbedNavigation || root.navigationTab === "wallpaper")
-                            && (GlobalStates.wallpaperManager?.orbitSelected ?? false)
-                        collapsible: !root.tabbedNavigation
+
+                        SettingsToggleRow {
+                            objectName: "wallpaper-live-toggle"
+                            label: "Orbit live wallpaper"
+                            checked: wallpaperGroup.orbitEnabled
+                            enabled: !!wallpaperGroup.manager
+                            onToggled: checked => wallpaperGroup.manager?.setOrbitEnabled(checked)
+                        }
+
+                        OrbitWallpaperSettings {
+                            visible: wallpaperGroup.orbitEnabled
+                        }
+
+                        WallpaperSettings {
+                            objectName: "regular-wallpaper-settings"
+                            title: ""
+                            visible: !wallpaperGroup.orbitEnabled
+                        }
                     }
                     PaletteSettings {
                         collapsible: !root.tabbedNavigation

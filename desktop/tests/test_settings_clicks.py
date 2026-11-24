@@ -406,11 +406,12 @@ ShellRoot {
       fixture.check(settings.currentSection === 4 && settings.selectedIndex === 0 && settings.filteredSections.length === 4, "Clearing search preserves page and category");
       GlobalStates.wallpaperManager = wallpaperManager;
       settings.searchQuery = "orbit wallpaper";
-      const weatherGroup = fixture.find(settings, "shell-group-weather");
-      tester.tryVerify(() => settings.currentSection === 6 && weatherGroup?.visible, 3000, "Orbit search opens Weather");
-      const orbit = fixture.find(weatherGroup, "orbit-wallpaper-settings");
-      const regular = fixture.find(weatherGroup, "weather-regular-wallpaper");
-      const orbitToggle = fixture.find(fixture.find(weatherGroup, "weather-live-wallpaper"), "settings-toggle-control");
+      const wallpaperGroup = fixture.find(loader.item, "wallpaper-settings");
+      tester.tryVerify(() => settings.currentSection === 4 && settings.appearanceTab === "wallpaper" &&
+       wallpaperGroup?.visible, 3000, "Orbit search opens Wallpaper");
+      const orbit = fixture.find(wallpaperGroup, "orbit-wallpaper-settings");
+      const regular = fixture.find(wallpaperGroup, "regular-wallpaper-settings");
+      const orbitToggle = fixture.find(fixture.find(wallpaperGroup, "wallpaper-live-toggle"), "settings-toggle-control");
       categoryScroller.contentY = Math.max(0, orbitToggle.mapToItem(categoryScroller.contentItem, 0, 0).y - 100);
       tester.wait(50);
       fixture.check(regular.visible && !orbit.visible, "Regular mode shows regular controls");
@@ -465,6 +466,10 @@ ShellRoot {
        let group = fixture.find(settings, "shell-group-" + section);
        fixture.check(group.parent === sharedGrid && group.visible, "Shell dropdown joins Theme dropdowns: " + section);
       }
+      const weatherGroup = fixture.find(settings, "shell-group-weather");
+      fixture.check(!fixture.find(weatherGroup, "wallpaper-live-toggle") &&
+       !fixture.find(weatherGroup, "orbit-wallpaper-settings") &&
+       !fixture.find(weatherGroup, "wallpaper-folder"), "Weather contains no wallpaper controls");
       let barGroup = fixture.find(settings, "shell-group-bar");
       fixture.check(settings.appearanceTab === "panels" && !barGroup.collapsible, "Shell links show direct panel controls");
       const expectedTabs = [

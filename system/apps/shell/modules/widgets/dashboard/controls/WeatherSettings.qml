@@ -6,15 +6,14 @@ import QtQuick.Layouts
 import qs.modules.theme
 import qs.modules.components
 import qs.config
-import qs.modules.globals
 
 SettingsGroup {
-    id: root
-    title: "Weather"
+    title: "Weather widget"
     property string settingsSection: "weather"
-    readonly property var wallpaperManager: GlobalStates.wallpaperManager
-    readonly property bool orbitEnabled: wallpaperManager?.orbitSelected ?? false
+    description: "Choose a location and temperature units."
     Layout.fillWidth: true
+
+
 
     // Location
     RowLayout {
@@ -108,21 +107,5 @@ SettingsGroup {
                 }
             }
         }
-    }
-    SettingsToggleRow {
-        objectName: "weather-live-wallpaper"
-        label: "Orbit live wallpaper"
-        checked: root.orbitEnabled
-        enabled: !!root.wallpaperManager
-        onToggled: checked => root.wallpaperManager?.setOrbitEnabled(checked)
-    }
-
-    OrbitWallpaperSettings {
-        visible: root.orbitEnabled
-    }
-
-    WallpaperSettings {
-        objectName: "weather-regular-wallpaper"
-        visible: !root.orbitEnabled
     }
 }
