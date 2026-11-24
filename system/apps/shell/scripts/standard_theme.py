@@ -228,16 +228,21 @@ menupopup > menuitem[_moz-menuactive="true"], menupopup > menu[_moz-menuactive="
 '''
 
 
+def glyph_background_css(p, cfg):
+    if p.get('style') == 'glyph':
+        art = (cfg / 'quickshell/modules/components/glyph-orbits.png').as_uri()
+        return (f'window.background {{ background-image: url("{art}"); '
+                'background-size: cover; background-position: right center; background-repeat: no-repeat; }\n')
+    return ''
+
+
 # Quality exception: Named color/configuration intermediates keep per-application transformations reviewable; numeric packing would obscure them.
 # Numeric ceilings are enforced by desktop/scripts/quality.py.
 def apply(p, home):  # pylint: disable=too-many-locals
     m = metrics(home)
     cfg = home / '.config'
     base, css = gtk_css(p, m)
-    if p.get('style') == 'glyph':
-        art = (cfg / 'quickshell/modules/components/glyph-orbits.png').as_uri()
-        css += (f'window.background {{ background-image: url("{art}"); '
-                'background-size: cover; background-position: right center; background-repeat: no-repeat; }\n')
+    css += glyph_background_css(p, cfg)
     for version in (3, 4):
         directory = cfg / f'gtk-{version}.0'
         write(directory / 'enclosure-standard.css', css)

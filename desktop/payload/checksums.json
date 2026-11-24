@@ -804,7 +804,7 @@
   "system/apps/shell/scripts/screen_text.py": "9887cb64083f75cae902dac9e0b0aa9497cc6a1d10f7d83ce511f145aeeac999",
   "system/apps/shell/scripts/screenshot_editor.py": "f9c1de8e1e0b15179141a3f61a0ecefc039d51de11aaac432730c2b415d10648",
   "system/apps/shell/scripts/setup_lyrics_plus.py": "7b8c1af1f0ea4b701968d4806577503b65acb5ce6d6fa515b97e6ad5987f5baa",
-  "system/apps/shell/scripts/standard_theme.py": "dde67972dcf7112fbbb67a7709a4f42327d319feff0c895ca66f4f364c9fa040",
+  "system/apps/shell/scripts/standard_theme.py": "2a6c20fda1596c3d96f48998f8b49b9f6e791a99367c62456f978cd189395033",
   "system/apps/shell/scripts/starwake_pointer.cpp": "cda0211241189ab0e67809047f2b8bf0a7149782d0534e56c5c60a1182f5de53",
   "system/apps/shell/scripts/system_monitor.py": "e432b27b97c76f532da23250e88c847b23855ec6fd3eb7541cb36e85e47b4482",
   "system/apps/shell/scripts/test_bluetooth_pair.py": "a0061fec5bac3a8b94512d78e591d45d870c562b82bfc341bff6bfb75fe5c0ec",
