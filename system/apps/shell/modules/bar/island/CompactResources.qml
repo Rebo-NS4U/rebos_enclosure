@@ -8,6 +8,7 @@ import Quickshell.Io
 import Quickshell.Services.SystemTray
 import qs.modules.components
 import qs.modules.services
+import qs.modules.widgets.dashboard.metrics
 import qs.modules.theme
 
 Item {
@@ -189,8 +190,10 @@ Item {
         RowLayout {
             visible: panel.selected !== null
             Caption { Layout.fillWidth: true; text: panel.selected ? panel.selected.name + " · " + panel.selected.pid : "" }
-            ThemeButton {
-                text: "End"; danger: true
+            MetricAction {
+                text: "End process"
+                danger: true
+                emphasized: true
                 onClicked: {
                     terminate.command = ["python3", Quickshell.shellDir + "/scripts/process_monitor.py", "--terminate",
                         String(panel.selected.pid), String(panel.selected.start)];
@@ -198,7 +201,7 @@ Item {
                     panel.selected = null;
                 }
             }
-            ThemeButton { text: "Cancel"; onClicked: panel.selected = null }
+            MetricAction { text: "Cancel"; onClicked: panel.selected = null }
         }
         Caption { visible: text !== ""; text: panel.actionMessage }
         ListView {
@@ -215,7 +218,7 @@ Item {
                 required property var modelData
                 readonly property bool isSensor: modelData.temp !== undefined
                 width: ListView.view.width - 10
-                height: 32
+                height: Math.max(Styling.spacing(32), implicitHeight + Styling.spacing(4))
                 Caption { Layout.fillWidth: true; text: parent.modelData.name }
                 Caption {
                     text: row.isSensor ? row.modelData.temp.toFixed(1) + " °C"
@@ -234,8 +237,10 @@ Item {
                         return panel.size(row.modelData.ram);
                     }
                 }
-                ThemeButton {
-                    text: "End"; padding: 3; implicitHeight: 26
+                MetricAction {
+                    text: "End"
+                    danger: true
+                    Accessible.name: "End " + row.modelData.name
                     visible: !row.isSensor
                     enabled: !row.isSensor && parent.modelData.pid > 1 && !terminate.running
                     onClicked: { panel.selected = parent.modelData; panel.actionMessage = ""; }

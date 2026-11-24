@@ -428,7 +428,7 @@
   "system/apps/shell/modules/bar/clock/Clock.qml": "5aa5f62e8156d8e4bc58714807d7675c003747024caf1e71fad76b4ede7ea8e8",
   "system/apps/shell/modules/bar/clock/Pomodoro.qml": "23492cbad6e2d9fa87655d7b985412921ab47d7d0f77cbe35e6d6116c7f4d22e",
   "system/apps/shell/modules/bar/clock/PomodoroSound.qml": "77ec5b00b2ebf2bd409126b3a632e9299fdbb2d76a1fd63abbf99987abe7f3a3",
-  "system/apps/shell/modules/bar/island/CompactResources.qml": "d2cd0d7af8766e86f24e84258deed424b3772470a334c02a2b8a8c4c6d9e0ca4",
+  "system/apps/shell/modules/bar/island/CompactResources.qml": "2b9cfe92a48f23cca4970a0bd2a5b99fbe88df2ebf8d393f25f90270ebc7cac7",
   "system/apps/shell/modules/bar/island/IslandAlertsPanel.qml": "06d4f630e231df78fd92b7d07a2219040b4199b2bea138351e60baba7637a3e2",
   "system/apps/shell/modules/bar/island/IslandBackButton.qml": "1fadb5d18c951bd9f7f66d0748e8f5963d76d91fc885abf5a01ca74a6f81d3fa",
   "system/apps/shell/modules/bar/island/IslandBatteryPanel.qml": "c2f6b9beb23c6839c30559e27d8e5acc9fe604d11f5e122e3f90bb541957cbbd",
