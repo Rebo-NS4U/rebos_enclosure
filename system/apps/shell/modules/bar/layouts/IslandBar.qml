@@ -736,8 +736,19 @@ Item {
             backgroundOpacity: BarAppearance.panelOpacity(root.isExpanded)
             topLeftRadius: 0
             topRightRadius: 0
-            border.width: root.currentMode === "typing" ? 1 : (BarAppearance.framed ? 1 : 0)
-            border.color: root.currentMode === "typing" ? Qt.alpha(Colors.primary, 0.28) : BarAppearance.panelBorder(root.isExpanded)
+            border.width: 0
+
+            Rectangle {
+                anchors.fill: parent
+                // Clip just the upper stroke at the bezel.
+                anchors.topMargin: -border.width
+                z: 1
+                color: "transparent"
+                bottomLeftRadius: islandBody.bottomLeftRadius
+                bottomRightRadius: islandBody.bottomRightRadius
+                border.width: root.currentMode === "typing" || BarAppearance.framed ? 1 : 0
+                border.color: root.currentMode === "typing" ? Qt.alpha(Colors.primary, 0.28) : BarAppearance.panelBorder(root.isExpanded)
+            }
 
             Behavior on backgroundOpacity {
                 enabled: Config.animDuration > 0
@@ -905,6 +916,8 @@ Item {
                             variant: "transparent"
                             enableBorder: false
                             radius: BarAppearance.instrument ? Styling.radius(0) : height / 2
+                            border.width: BarAppearance.framed ? 1 : 0
+                            border.color: BarAppearance.controlOutline(dateMouse.containsMouse)
                             color: BarAppearance.clockTint(dateMouse.containsMouse)
                             Behavior on color {
                                 enabled: Config.animDuration > 0

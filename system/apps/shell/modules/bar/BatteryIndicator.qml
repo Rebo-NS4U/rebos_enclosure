@@ -52,6 +52,8 @@ Item {
         anchors.fill: parent
         enableShadow: !root.flat && root.layerEnabled
         enableBorder: !root.flat
+        border.width: root.flat ? (BarAppearance.framed ? 1 : 0) : (borderData?.[1] ?? 0)
+        border.color: root.flat ? BarAppearance.controlOutline(root.isHovered || root.popupOpen) : Config.resolveColor(borderData?.[0] ?? "transparent")
 
         topLeftRadius: root.flat ? (root.meterSize / 2) : root.startRadius
         topRightRadius: root.flat ? (root.meterSize / 2) : root.endRadius
