@@ -32,7 +32,8 @@ Button {
             : (root.hardware || root.orbital) && root.down ? "internalbg"
             : root.hovered || root.down ? "focus" : "common"
         radius: root.glyphStyle ? Math.min(5, Styling.radius(-4)) : Styling.radius(-4)
-        border.width: (root.orbital ? root.visualFocus : root.activeFocus) ? 2 : 1
+        border.pixelAligned: !root.orbital
+        border.width: root.orbital ? (root.visualFocus ? 2 : 1.5) : (root.activeFocus ? 2 : 1)
         border.color: root.orbital && !root.visualFocus
             ? (root.engaged || root.danger && (root.hovered || root.down) ? Qt.alpha(itemColor, root.down ? 0.7 : root.hovered ? 0.48 : 0.24)
                 : root.down || root.hovered ? Qt.alpha(Colors.primary, root.down ? 0.82 : 0.62)

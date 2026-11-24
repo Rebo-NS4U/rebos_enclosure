@@ -485,7 +485,7 @@
   "system/apps/shell/modules/components/StyledSwitch.qml": "f86ad6bea1f329843bac84ed54e80c3677158accd1e7e24bec58a2932eed0fb6",
   "system/apps/shell/modules/components/StyledText.qml": "e6e57f60a0404bfabf319bc0d04f28fb1ade36cab356d6d7d16da1f5dc365c99",
   "system/apps/shell/modules/components/StyledToolTip.qml": "1a5a2b843702f5ead3719dfbba4080b8a1ef1653bf9da68108bc55a533a9b5ee",
-  "system/apps/shell/modules/components/ThemeButton.qml": "62dc8a395ee9d9cd6c5e673f5582a321290e8a89194a1eba300ac8bc6cb1a823",
+  "system/apps/shell/modules/components/ThemeButton.qml": "f84f43a9d6dfffd62eaf929159a6eaade9f9bca827c2e04f6dd62c5fd9e1da0c",
   "system/apps/shell/modules/components/ThemeSlider.qml": "7c4bb0e3afa422d26396fcb926f28bae57489c6ffa0a777a15b1e3d6250858e1",
   "system/apps/shell/modules/components/ThemeTextField.qml": "d86ea2586042990be3666e44a33b484dedfd1eb51db77a5cdb7bff2cd0f097ad",
   "system/apps/shell/modules/components/Tinted.qml": "d343dadc615a718673ec84382604246e24efb0c2798eb96d9323fb58b27182f0",
