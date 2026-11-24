@@ -402,6 +402,24 @@ ClippingRectangle {
         }
     }
 
+    Loader {
+        anchors.fill: parent
+        anchors.margins: 4
+        active: (root.styleOverride || Styling.shellStyle) === "orbital"
+            && root.variant === "popup" && root.enableBorder && root.border.width > 0
+            && root.rectOpacity > 0 && !root.hasFillColor && width > 8 && height > 8
+        sourceComponent: Rectangle {
+            color: "transparent"
+            border.width: 1
+            border.color: Qt.alpha(root.itemColor, 0.18 * root.rectOpacity)
+            radius: root.themeInsetRadius(4)
+            topLeftRadius: root.topLeftRadius < 0 ? radius : Math.max(0, root.topLeftRadius - 4)
+            topRightRadius: root.topRightRadius < 0 ? radius : Math.max(0, root.topRightRadius - 4)
+            bottomLeftRadius: root.bottomLeftRadius < 0 ? radius : Math.max(0, root.bottomLeftRadius - 4)
+            bottomRightRadius: root.bottomRightRadius < 0 ? radius : Math.max(0, root.bottomRightRadius - 4)
+        }
+    }
+
     // Wallpaper architecture, using the selected semantic colors throughout.
     Loader {
         anchors.fill: parent

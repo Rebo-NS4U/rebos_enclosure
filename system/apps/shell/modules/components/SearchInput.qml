@@ -6,7 +6,7 @@ import qs.config
 
 StyledRect {
     id: root
-    variant: "pane"
+    variant: Styling.shellStyle === "orbital" ? "internalbg" : "pane"
     inputSurface: true
 
     property alias text: textField.text
@@ -56,7 +56,7 @@ StyledRect {
     implicitHeight: Styling.spacing(48)
     border.width: inputActiveFocus ? 2 : (enableBorder ? (borderData?.[1] ?? 0) : 0)
     border.color: inputActiveFocus ? Colors.primary : Config.resolveColor(borderData?.[0] ?? "transparent")
-    radius: Styling.radius(4)
+    radius: Styling.shellStyle === "orbital" ? Math.min(6, Styling.radius(4)) : Styling.radius(4)
 
     RowLayout {
         anchors.fill: parent

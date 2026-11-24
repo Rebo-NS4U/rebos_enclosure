@@ -29,10 +29,10 @@ Button {
         controlPressed: root.down
         variant: root.danger && (root.engaged || root.hovered || root.down || root.activeFocus) ? "error"
             : root.engaged ? (root.hovered || root.down ? "primaryfocus" : "primary")
-            : root.hardware && root.down ? "internalbg"
+            : (root.hardware || root.orbital) && root.down ? "internalbg"
             : root.hovered || root.down ? "focus" : "common"
         radius: root.glyphStyle ? Math.min(5, Styling.radius(-4)) : Styling.radius(-4)
-        border.width: root.activeFocus ? 2 : root.orbital && !root.engaged && !root.hovered ? 0 : 1
+        border.width: root.activeFocus ? 2 : 1
         border.color: root.activeFocus ? (root.danger || root.engaged ? itemColor : Colors.primary)
             : root.hardware || root.glyphStyle || root.orbital ? Config.resolveColor(borderData?.[0] ?? "transparent")
             : Qt.alpha(Colors.outline, 0.3)

@@ -189,8 +189,11 @@ function surface(style, variant, p, ditherStrength) {
         fill = mix(p.background, p.foreground, focused ? 0.14 : paper ? 0 : 0.045);
         item = p.foreground;
         opacity = variant === "bar" ? 0.76 : outer ? 0.97 : 0.94;
-        border = [focused ? p.primary : mix(fill, item, 0.23), focused || outer || inset ? 1 : 0];
+        const outlined = outer || inset || variant === "common";
+        border = [focused ? p.primary : mix(fill, item, outer ? 0.48 : 0.36), focused || outlined ? 1 : 0];
     }
+    if (orbital && ["primary", "primaryfocus", "secondary", "secondaryfocus", "tertiary", "tertiaryfocus", "error", "errorfocus"].includes(variant))
+        border = [mix(fill, item, 0.40), 1];
     if (metro && neutral) {
         // Material depth uses only the selected palette; no imposed city colors.
         fill=mix(p.background,p.foreground,inset?0.005:focused?0.045:0.012);
