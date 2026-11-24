@@ -1,13 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-image_path=${1:?wallpaper image is required}
+image_path=${1:-}
 scheme=${2:-scheme-tonal-spot}
 mode=${3:-dark}
 matugen_config=${4:?matugen config is required}
 output_path=${5:?output path is required}
 primary_color=${6:-}
 secondary_color=${7:-}
+if [[ -z "$image_path$primary_color" ]]; then
+  echo '{"error":"A wallpaper image or primary color is required"}' >&2
+  exit 2
+fi
 for picked_color in "$primary_color" "$secondary_color"; do
   if [[ -n "$picked_color" && ! "$picked_color" =~ ^#[[:xdigit:]]{6}$ ]]; then
     echo '{"error":"Picked colors must be #RRGGBB"}' >&2
@@ -72,10 +76,12 @@ def hsv(color):
 secondary = None
 primary_hue, primary_saturation, _ = hsv(palette['primary'])
 try:
-    result = None if sys.argv[7] else subprocess.run(
+    result = None if sys.argv[7] or not sys.argv[3] else subprocess.run(
         ['matugen', 'image', sys.argv[3], '--show-source-colors', '--dry-run'],
         capture_output=True, text=True, check=True, timeout=30)
-    candidates = [sys.argv[7]] if sys.argv[7] else re.findall(r'^#[0-9a-fA-F]{6}$', result.stdout, re.M)
+    candidates = [sys.argv[7]] if sys.argv[7] else []
+    if result is not None:
+        candidates = re.findall(r'^#[0-9a-fA-F]{6}$', result.stdout, re.M)
     for candidate in candidates:
         hue, saturation, value = hsv(candidate)
         distance = min(abs(hue - primary_hue), 1 - abs(hue - primary_hue)) * 360

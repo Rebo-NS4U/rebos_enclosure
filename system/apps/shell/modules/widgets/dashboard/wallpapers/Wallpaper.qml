@@ -39,6 +39,62 @@ PanelWindow {
     readonly property bool paletteBusy: matugenProcessWithConfig.running || applyPresetProcess.running
     property string paletteError: ""
 
+    property bool paletteRefreshPending: false
+    property string orbitAccent: ""
+    readonly property bool orbitSelected: {
+        const orbitPath = fallbackDir + "/Orbit.png";
+        return Quickshell.screens.some(output =>
+            (perScreenWallpapers[output.name] || wallpaperAdapter.currentWall) === orbitPath);
+    }
+
+    onOrbitSelectedChanged: {
+        if (!orbitSelected)
+            orbitAccent = "";
+    }
+    onOrbitAccentChanged: refreshWallpaperPalette()
+
+    Timer {
+        interval: 2500
+        repeat: true
+        triggeredOnStart: true
+        running: GlobalStates.wallpaperManager === wallpaper && wallpaper.orbitSelected
+        onTriggered: orbitAppearance.running = true
+    }
+
+    Process {
+        id: orbitAppearance
+        command: ["qs", "ipc", "-p", Quickshell.env("HOME") + "/.config/enclosure/orbit-wallpaper",
+            "call", "settings", "appearance", "{}"]
+        stdout: StdioCollector { id: orbitResponse }
+        onExited: code => {
+            let accent = "";
+            if (code === 0 && wallpaper.orbitSelected) {
+                try {
+                    const color = JSON.parse(orbitResponse.text).accent;
+                    if (typeof color === "string" && /^#[0-9a-f]{6}$/i.test(color))
+                        accent = color.toLowerCase();
+                } catch (error) {
+                    console.warn("Could not read Orbit wallpaper accent:", error);
+                }
+            }
+            wallpaper.orbitAccent = accent;
+        }
+    }
+
+    function refreshWallpaperPalette(): void {
+        if (activeColorPreset && !orbitAccent)
+            applyColorPreset();
+        else
+            runMatugenForCurrentWallpaper();
+    }
+
+    function refreshPendingPalette(): void {
+        if (paletteRefreshPending) {
+            paletteRefreshPending = false;
+            Qt.callLater(refreshWallpaperPalette);
+        }
+    }
+
     function setWallpaperDirectory(path: string): void {
         let directory = path.trim() || fallbackDir;
         if (directory === "~")
@@ -269,21 +325,8 @@ PanelWindow {
 
     // React to light/dark mode changes
     property bool isLightMode: Config.theme.lightMode
-    onIsLightModeChanged: {
-        if (activeColorPreset) {
-            applyColorPreset();
-        } else {
-            runMatugenForCurrentWallpaper();
-        }
-    }
-
-    onActiveColorPresetChanged: {
-        if (activeColorPreset) {
-            applyColorPreset();
-        } else {
-            runMatugenForCurrentWallpaper();
-        }
-    }
+    onIsLightModeChanged: refreshWallpaperPalette()
+    onActiveColorPresetChanged: refreshWallpaperPalette()
 
     readonly property var appearancePresets: wallpaperAdapter.appearancePresets
     readonly property var presetThemeKeys: ["lightMode", "oledMode", "shellStyle", "shellTransparency", "buttonFinish", "backgroundFinish",
@@ -327,10 +370,7 @@ PanelWindow {
         setWallpaperMode(entry.mode);
         wallpaperAdapter.perScreenWallpapers = Object.assign({}, entry.screens);
         setWallpaper(entry.wallpaper);
-        Qt.callLater(() => {
-            if (entry.colorPreset) applyColorPreset();
-            else runMatugenForCurrentWallpaper();
-        });
+        Qt.callLater(refreshWallpaperPalette);
     }
 
     function scanColorPresets() {
@@ -338,8 +378,16 @@ PanelWindow {
     }
 
     function applyColorPreset() {
-        if (!activeColorPreset)
+        if (GlobalStates.wallpaperManager !== wallpaper || !activeColorPreset)
             return;
+        if (orbitAccent) {
+            runMatugenForCurrentWallpaper();
+            return;
+        }
+        if (paletteBusy) {
+            paletteRefreshPending = true;
+            return;
+        }
         paletteError = "";
 
         var mode = Config.theme.lightMode ? "light.json" : "dark.json";
@@ -688,35 +736,29 @@ PanelWindow {
     }
 
     function runMatugenForCurrentWallpaper() {
-        // Wait for the current tint, including when a prior conversion finishes late.
-        if (DitheredWallpapers.waiting(currentWallpaper)) {
+        if (GlobalStates.wallpaperManager !== wallpaper)
+            return;
+        const liveAccent = orbitAccent;
+        // Only image sources need to wait for dither conversion.
+        if (!liveAccent && DitheredWallpapers.waiting(currentWallpaper)) {
             DitheredWallpapers.request(currentWallpaper);
             return;
         }
         // Prefer the adapter value — the bound property can lag one tick after
         // clearing a preset when switching back to a matugen scheme.
         var preset = wallpaperConfig.adapter.activeColorPreset || "";
-        if (preset && preset.length > 0) {
+        if (preset && !liveAccent) {
             console.log("Skipping Matugen because color preset is active:", preset);
             return;
         }
 
-        if (currentWallpaper && initialLoadCompleted) {
+        if (liveAccent || (currentWallpaper && initialLoadCompleted)) {
+            if (paletteBusy) {
+                paletteRefreshPending = true;
+                return;
+            }
             paletteError = "";
-            console.log("Running Matugen for current wallpaper:", currentWallpaper);
-
-            var fileType = getFileType(currentWallpaper);
-            var matugenSource = getColorSource(currentWallpaper);
-
-            console.log("Using source for matugen:", matugenSource, "(type:", fileType + ")");
-
-            // Stop existing processes if running to prioritize new request
-            if (matugenProcessWithConfig.running) {
-                matugenProcessWithConfig.running = false;
-            }
-            if (matugenProcessNormal.running) {
-                matugenProcessNormal.running = false;
-            }
+            const matugenSource = liveAccent ? "" : getColorSource(currentWallpaper);
 
             // Prefer Matugen, with Wallust as a local fallback.  This keeps
             // wallpaper-derived colors working on systems where Matugen was
@@ -729,8 +771,8 @@ PanelWindow {
                 Config.theme.lightMode ? "light" : "dark",
                 decodeURIComponent(Qt.resolvedUrl("../../../../assets/matugen/config.toml").toString().replace("file://", "")),
                 Quickshell.env("HOME") + "/.cache/rebos_shell/colors.json",
-                pickedAccentColors[0] || "",
-                pickedAccentColors[1] || ""
+                liveAccent || pickedAccentColors[0] || "",
+                liveAccent ? "" : pickedAccentColors[1] || ""
             ];
             console.log("Matugen command:", commandWithConfig.join(" "));
             matugenProcessWithConfig.command = commandWithConfig;
@@ -1127,33 +1169,8 @@ PanelWindow {
             wallpaper.paletteError = exitCode === 0 ? "" : "Could not generate wallpaper colors. Check Matugen and the selected image.";
             if (exitCode === 0)
                 Colors.refreshApps();
+            wallpaper.refreshPendingPalette();
             console.log("Matugen with config finished");
-        }
-    }
-
-    Process {
-        id: matugenProcessNormal
-        running: false
-        command: []
-
-        stdout: StdioCollector {
-            onStreamFinished: {
-                if (text.length > 0) {
-                    console.log("Matugen (normal) output:", text);
-                }
-            }
-        }
-
-        stderr: StdioCollector {
-            onStreamFinished: {
-                if (text.length > 0) {
-                    console.warn("Matugen (normal) error:", text);
-                }
-            }
-        }
-
-        onExited: {
-            console.log("Matugen normal finished");
         }
     }
 
@@ -1514,6 +1531,7 @@ PanelWindow {
                 console.log("Color preset applied successfully");
             else
                 console.warn("Failed to apply color preset, code:", code);
+            wallpaper.refreshPendingPalette();
         }
     }
 
