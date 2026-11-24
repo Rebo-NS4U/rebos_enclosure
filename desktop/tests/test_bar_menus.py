@@ -22,7 +22,7 @@ ShellRoot {
   Timer { interval: 600; running: true; onTriggered: {
    try {
     Config.theme.shellStyle = "frosted";
-    for (const name of ["Alerts", "Battery", "Bluetooth", "Calendar", "MediaCenter", "Mic", "Power", "Sound", "Stats", "Wallpaper", "Weather", "Wifi"]) {
+    for (const name of ["Alerts", "Battery", "Bluetooth", "Calendar", "MediaCenter", "Mic", "Sound", "Stats", "Wallpaper", "Weather", "Wifi"]) {
      const component = Qt.createComponent("modules/bar/island/Island" + name + "Panel.qml");
      if (component.status !== Component.Ready) throw Error(name + ": " + component.errorString());
      const menu = component.createObject(host);
