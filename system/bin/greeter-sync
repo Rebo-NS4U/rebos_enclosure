@@ -14,6 +14,8 @@ from PIL import Image, ImageOps
 HOME = Path.home()
 CACHE = HOME / '.cache/rebos_shell'
 TARGET = Path('/var/lib/rebos-greeter/theme')
+ORBIT_SCENE = Path('/usr/local/lib/rebos-greeter/orbit/Orbit.qml')
+VIDEO_EXTENSIONS = {'.mp4', '.webm', '.mkv', '.mov', '.avi', '.m4v'}
 
 
 def atomic_write(path, data):
@@ -23,6 +25,23 @@ def atomic_write(path, data):
             stream.write(data)
             os.fchmod(stream.fileno(), 0o644)
         os.replace(temporary, path)
+    finally:
+        Path(temporary).unlink(missing_ok=True)
+
+
+def publish_video(wallpaper, target):
+    fd, temporary = tempfile.mkstemp(prefix='.background-', dir=target.parent)
+    os.close(fd)
+    try:
+        subprocess.run(['ffmpeg', '-nostdin', '-v', 'error', '-y',
+                        '-protocol_whitelist', 'file', '-i', str(wallpaper),
+                        '-map', '0:V:0', '-map_metadata', '-1', '-map_chapters', '-1',
+                        '-c:v', 'copy', '-f', 'matroska', temporary],
+                       check=True, timeout=20)
+        os.chmod(temporary, 0o644)
+        os.replace(temporary, target)
+    except (OSError, subprocess.SubprocessError) as error:
+        print(f'Could not export greeter video, using still frame: {error}', flush=True)
     finally:
         Path(temporary).unlink(missing_ok=True)
 
@@ -119,14 +138,15 @@ def main():
                     surface[field] = value
         material[key] = surface
     exported['material'] = material
-    appearance = json.dumps(exported).encode()
-    signature = {'image': image_signature,
-                 'quickshell': hashlib.sha256(appearance).hexdigest()}
+    if wallpaper == HOME / '.local/share/wallpapers/Orbit.png' and ORBIT_SCENE.is_file():
+        exported['display']['orbitWallpaper'] = True
     stamp = CACHE / 'greeter-sync.json'
     previous = json.loads(stamp.read_text()) if stamp.exists() else {}
+    is_video = wallpaper.suffix.lower() in VIDEO_EXTENSIONS
     if previous.get('image') != image_signature or not (TARGET / 'background.png').exists():
-        if wallpaper.suffix.lower() in {'.mp4', '.webm', '.mkv', '.mov', '.avi', '.m4v'}:
-            frame = subprocess.run(['ffmpeg', '-v', 'error', '-i', str(wallpaper),
+        if is_video:
+            frame = subprocess.run(['ffmpeg', '-nostdin', '-v', 'error',
+                                    '-protocol_whitelist', 'file', '-i', str(wallpaper),
                                     '-frames:v', '1', '-f', 'image2pipe', '-vcodec', 'png', '-'],
                                    check=True, capture_output=True, timeout=60).stdout
             source = io.BytesIO(frame)
@@ -138,8 +158,23 @@ def main():
             output = io.BytesIO()
             image.save(output, format='PNG')
         atomic_write(TARGET / 'background.png', output.getvalue())
+    video_name = None
+    if is_video:
+        digest = hashlib.sha256(json.dumps(image_signature).encode()).hexdigest()
+        video = TARGET / f'background-{digest}.mkv'
+        if not video.exists():
+            publish_video(wallpaper, video)
+        if video.exists():
+            video_name = video.name
+            exported['display']['wallpaperVideo'] = video_name
+    appearance = json.dumps(exported).encode()
+    signature = {'image': image_signature,
+                 'quickshell': hashlib.sha256(appearance).hexdigest()}
     if previous.get('quickshell') != signature['quickshell'] or not (TARGET / 'quickshell.json').exists():
         atomic_write(TARGET / 'quickshell.json', appearance)
+    for video in TARGET.glob('background-*.mkv'):
+        if video.name != video_name and re.fullmatch(r'background-[a-f0-9]{64}\.mkv', video.name):
+            video.unlink(missing_ok=True)
     if previous != signature:
         atomic_write(stamp, json.dumps(signature).encode())
         print('Quickshell greeter wallpaper and colors synchronized', flush=True)

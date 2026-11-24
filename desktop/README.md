@@ -322,7 +322,11 @@ refresh its theme immediately; the next login displays the result. The first
 update may request administrator approval to grant the desktop user ownership of
 `/var/lib/rebos-greeter/theme` only. It does not restart greetd or the desktop.
 The appearance exporter and sync units are managed code refreshed by updates; wallpaper
-and color preferences remain preserved. Animated wallpapers use a still frame.
+and color preferences remain preserved. Video wallpapers loop silently at login,
+with a still frame available if video playback fails.
+When the optional Orbit scene is installed under `/usr/local/lib/rebos-greeter/orbit`,
+selecting Orbit uses that scene with sample planets on the login screen. Keep the
+scene and its assets administrator-owned and readable by the greeter.
 Setup disables the legacy `rebos-greeter-sync.path` watcher and stops its service
 before enabling the replacement, so both exporters cannot compete.
 

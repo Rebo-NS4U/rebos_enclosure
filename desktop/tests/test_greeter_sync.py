@@ -2,6 +2,8 @@
 import json
 from pathlib import Path
 import runpy
+import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -15,6 +17,43 @@ import greeter_sync
 
 
 class GreeterSyncTests(unittest.TestCase):
+    @unittest.skipUnless(shutil.which('ffmpeg') and shutil.which('ffprobe'), 'requires FFmpeg')
+    def test_live_wallpaper_exports_silent_video_and_cleans_up_on_static(self):
+        script = runpy.run_path(str(ROOT.parent / 'system/bin/greeter-sync'))
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary)
+            cache, target = home / 'cache', home / 'theme'
+            cache.mkdir()
+            target.mkdir()
+            wall = home / 'wall.mp4'
+            subprocess.run(['ffmpeg', '-v', 'error', '-f', 'lavfi', '-i', 'testsrc2=s=32x32:r=10:d=1',
+                            '-f', 'lavfi', '-i', 'sine=d=1', '-c:v', 'libx264', '-c:a', 'aac', wall],
+                           check=True)
+            state = cache / 'wallpapers.json'
+            state.write_text(json.dumps({'currentWall': str(wall)}))
+            (cache / 'effective-palette.json').write_text('{}')
+            sync = script['main']
+            sync.__globals__.update(HOME=home, CACHE=cache, TARGET=target)
+            sync()
+            config = target / 'quickshell.json'
+            video = target / json.loads(config.read_text())['display']['wallpaperVideo']
+            streams = subprocess.check_output(['ffprobe', '-v', 'error', '-count_frames',
+                                               '-show_entries', 'stream=codec_type,nb_read_frames',
+                                               '-of', 'json', video], text=True)
+            self.assertEqual(json.loads(streams)['streams'], [{'codec_type': 'video', 'nb_read_frames': '10'}])
+            self.assertEqual(video.stat().st_mode & 0o777, 0o644)
+            with Image.open(target / 'background.png') as poster:
+                self.assertEqual(poster.size, (32, 32))
+            mtime = video.stat().st_mtime_ns
+            sync()
+            self.assertEqual(video.stat().st_mtime_ns, mtime)
+            still = home / 'wall.png'
+            Image.new('RGB', (16, 16), 'blue').save(still)
+            state.write_text(json.dumps({'currentWall': str(still)}))
+            sync()
+            self.assertNotIn('wallpaperVideo', json.loads(config.read_text())['display'])
+            self.assertFalse(video.exists())
+
     def test_legacy_watchers_stop_before_replacement_starts(self):
         with tempfile.TemporaryDirectory() as temporary:
             home = Path(temporary)
@@ -74,6 +113,17 @@ class GreeterSyncTests(unittest.TestCase):
             sync()
             with Image.open(target / 'background.png') as image:
                 self.assertEqual(image.getpixel((0, 0)), (0, 0, 255))
+            orbit = home / '.local/share/wallpapers/Orbit.png'
+            orbit.parent.mkdir(parents=True)
+            shutil.copyfile(wall, orbit)
+            scene = home / 'Orbit.qml'
+            sync.__globals__['ORBIT_SCENE'] = scene
+            (cache / 'wallpapers.json').write_text(json.dumps({'currentWall': str(orbit)}))
+            sync()
+            self.assertNotIn('orbitWallpaper', json.loads((target / 'quickshell.json').read_text())['display'])
+            scene.touch()
+            sync()
+            self.assertTrue(json.loads((target / 'quickshell.json').read_text())['display']['orbitWallpaper'])
 
     def test_material_metrics_and_public_export(self):
         script = runpy.run_path(str(ROOT.parent / 'system/bin/greeter-sync'))

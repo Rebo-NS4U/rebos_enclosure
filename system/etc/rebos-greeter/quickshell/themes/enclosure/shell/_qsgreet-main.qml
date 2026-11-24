@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtMultimedia
 import qs.config
 import qs.modules.theme
 import qs.modules.components
@@ -11,6 +12,8 @@ FocusScope {
     focus: true
     property string themeError: ""
     property bool entered: false
+    readonly property string wallpaperVideo: Config.display.wallpaperVideo ?? ""
+    readonly property string wallpaperDirectory: "file:///var/lib/rebos-greeter/theme/"
     function submit() {
         var secret = password.text;
         password.clear();
@@ -27,11 +30,44 @@ FocusScope {
     Rectangle { anchors.fill: parent; color: Colors.background }
     Image {
         anchors.fill: parent
-        source: Styling.shellStyle === "glyph" ? Qt.resolvedUrl("modules/components/glyph-orbits.png")
-            : "file:///var/lib/rebos-greeter/theme/background.png"
+        source: root.wallpaperVideo === "" && Styling.shellStyle === "glyph"
+            ? Qt.resolvedUrl("modules/components/glyph-orbits.png")
+            : root.wallpaperDirectory + "background.png"
         fillMode: Image.PreserveAspectCrop
         asynchronous: true
         mipmap: true
+    }
+    Loader {
+        anchors.fill: parent
+        active: /^background-[a-f0-9]{64}\.mkv$/.test(root.wallpaperVideo)
+        sourceComponent: VideoOutput {
+            id: output
+            fillMode: VideoOutput.PreserveAspectCrop
+            visible: player.error === MediaPlayer.NoError
+            MediaPlayer {
+                id: player
+                source: root.wallpaperDirectory + root.wallpaperVideo
+                videoOutput: output
+                loops: MediaPlayer.Infinite
+                autoPlay: true
+            }
+        }
+    }
+    Loader {
+        anchors.centerIn: parent
+        width: Math.max(parent.width, parent.height * 16 / 9)
+        height: width * 9 / 16
+        enabled: false
+        active: Config.display.orbitWallpaper === true
+        Component.onCompleted: setSource("file:///usr/local/lib/rebos-greeter/orbit/Orbit.qml", {
+            accent: Qt.binding(() => Config.palette.primary || "#d71921"),
+            showLabels: false,
+            planets: [
+                {desk: 1, slot: 0, windowId: 1},
+                {desk: 2, slot: 1, windowId: 2},
+                {desk: 3, slot: 2, windowId: 3}
+            ]
+        })
     }
     StyledRect {
         id: panel
