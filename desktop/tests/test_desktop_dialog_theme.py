@@ -64,7 +64,7 @@ ShellRoot {
         tester.verify(label !== undefined, "Choice label exists");
         tester.compare(label.color,button.background.itemColor);
         tester.compare(button.background.radius,radius);
-        button.forceActiveFocus(); tester.wait(5);
+        button.forceActiveFocus(Qt.TabFocusReason); tester.wait(5);
         tester.verify(button.activeFocus);
         tester.compare(button.background.border.color,button.background.itemColor);
         tester.compare(button.background.border.width,2);
