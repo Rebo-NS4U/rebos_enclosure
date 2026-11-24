@@ -1594,14 +1594,14 @@ PanelWindow {
             id: railway
             anchors.fill: parent
             active: wallpaper.effectiveWallpaper === wallpaper.nightRailPath
-            sourceComponent: NightRail {
+            sourceComponent: NightRailCity {
                 id: diagram
                 IpcHandler {
                     target: "night-rail-" + wallpaper.currentScreenName
                     function status(): string {
                         return JSON.stringify(diagram.routes.map(r => ({
                             workspace: r.id, active: r.active, phase: r.phase,
-                            platform: [r.path.stop, r.path.y - 10],
+                            platform: [r.platform.x, r.platform.y - 10],
                             carriages: r.members.map(w => w.id)
                         })));
                     }
@@ -1609,7 +1609,6 @@ PanelWindow {
                 workspaces: NiriService.rawWorkspaces
                 windows: NiriService.rawWindows
                 output: wallpaper.currentScreenName
-                accent: Colors.primary
                 paused: !NiriService.overviewOpen && NiriService.fullscreenOutputs.includes(output)
                 onWorkspaceClicked: desk => Quickshell.execDetached(["python3",
                     Quickshell.shellPath("scripts/focus_workspace_id.py"), String(desk)])

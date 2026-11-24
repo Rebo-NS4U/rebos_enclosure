@@ -675,12 +675,15 @@
   "system/apps/shell/modules/widgets/dashboard/metrics/ResourceItem.qml": "7144c1fdf4919d84a2994e11557d46091dee54db86168323029f08e9129b04c9",
   "system/apps/shell/modules/widgets/dashboard/metrics/RunningApplications.qml": "098778a5e8357f7e23eca77cf42007495e98e7b0118151a56b72cc5c7c25feb6",
   "system/apps/shell/modules/widgets/dashboard/metrics/WindowDetails.qml": "cc3c679d8fd7c528c5a2fb7f197b3df12d345d78411e56a51298f46e9953f17f",
+  "system/apps/shell/modules/widgets/dashboard/wallpapers/Estuary.js": "bdc595dc35037a5bb87cd4c94b0762794715bbfa3f094a363793a36617f0838b",
   "system/apps/shell/modules/widgets/dashboard/wallpapers/MpvShaderGenerator.js": "f86142c8ee69d9b1690048d0e53d1e86da733eaf39446ff864d79e96276cfa1a",
   "system/apps/shell/modules/widgets/dashboard/wallpapers/NightRail.qml": "5669d6acc657d84ff1c2397b7a40e035ff64166edd74b79e7c20eedec75dd50c",
+  "system/apps/shell/modules/widgets/dashboard/wallpapers/NightRailCity.qml": "af52c3dd41302eaae8867f461728e1077444621c9d76238b7fe2d1c5cc2ba14c",
   "system/apps/shell/modules/widgets/dashboard/wallpapers/RailGeometry.js": "5c5b41ef3a14742ee901f619627d659744d642681ca7a3f1807a102ae2f97923",
   "system/apps/shell/modules/widgets/dashboard/wallpapers/RailTerrain.js": "e115bbd960f1765c8bdd3dd461894dffddad0f95c0670e207ef753be2fa3b08f",
+  "system/apps/shell/modules/widgets/dashboard/wallpapers/ReachLines.js": "93b271493e6ae32a301488a452186748d6ce56c9dc253a1a2d05758b90b3e1d3",
   "system/apps/shell/modules/widgets/dashboard/wallpapers/SchemeSelector.qml": "048106b6dc506cad559dba5ad9d3752b665e1dfb33cabad18424d061dcb293d2",
-  "system/apps/shell/modules/widgets/dashboard/wallpapers/Wallpaper.qml": "87af4386652e387d0959b3bb2f9bd19c400b5b1f31ce0e5cd36e34fa9ecb98c1",
+  "system/apps/shell/modules/widgets/dashboard/wallpapers/Wallpaper.qml": "10c7336f75cd487a808c62529be1270edd7ff1a26aa1c51ecab44d3888c891a1",
   "system/apps/shell/modules/widgets/dashboard/wallpapers/WallpaperChoice.qml": "c04994beea898f39e7bee2f26da3954aa5184826496e416eea4c4d2b5b2e4bf5",
   "system/apps/shell/modules/widgets/dashboard/wallpapers/WallpaperColorControls.qml": "3bd4248af95cfe1287eb149266343d6467d2ba8dcc76d475e1a2135f998a5111",
   "system/apps/shell/modules/widgets/dashboard/wallpapers/WallpaperColors.js": "49466ded861f322fc33be1e799071d6fb8faa1e993abbd48866df22cf94f5d33",
@@ -1248,5 +1251,5 @@
   "system/share/wallpapers/My Wolpapors - Shared Album/wallpaper-061.png": "28c4cff4be0a981648f2f33d452818442b08bd0a24e6d3f6c27e87178d5f6f60",
   "system/share/wallpapers/My Wolpapors - Shared Album/wallpaper-062.png": "ee98c734b8c44b29e77933744a47d184c8662eead79106eb5a8cc3114da9664d",
   "system/share/wallpapers/My Wolpapors - Shared Album/wallpaper-063.png": "ddea1fac505df205ce8443242fa4f3d01d676b550c5988094c2e41a1515a9b69",
-  "system/share/wallpapers/Night Rail.png": "8e33892469da200c27b856ba64e36b2622299504b0fefb5cc410349e360a3310"
+  "system/share/wallpapers/Night Rail.png": "310dce305366d136d81833ab182843143dfac46b29db871acc9af14842b936f9"
 }
