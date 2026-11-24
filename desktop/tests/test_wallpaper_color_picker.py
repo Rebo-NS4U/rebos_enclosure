@@ -116,6 +116,10 @@ class WallpaperSamplerTests(unittest.TestCase):
     def test_pixel_sampling_fit_margins_and_resize(self):
         with tempfile.TemporaryDirectory() as tmp:
             folder = Path(tmp)
+            config = folder / 'qs/config'
+            config.mkdir(parents=True)
+            (config / 'qmldir').write_text('module qs.config\nsingleton Config 1.0 Config.qml\n')
+            (config / 'Config.qml').write_text('pragma Singleton\nimport QtQml\nQtObject { property int controlBorderWidth: 2 }')
             image(folder / 'wall paper #1.png')
             shutil.copyfile(SHELL / 'modules/widgets/dashboard/controls/WallpaperSampler.qml', folder / 'WallpaperSampler.qml')
             (folder / 'tst_sampler.qml').write_text('''import QtQuick
@@ -207,7 +211,7 @@ Item {
             runtime.mkdir(mode=0o700)
             env = dict(os.environ, QT_QPA_PLATFORM='offscreen', QT_QUICK_BACKEND='software',
                        QT_QPA_PLATFORMTHEME='basic', XDG_RUNTIME_DIR=str(runtime))
-            result = subprocess.run(['/usr/lib/qt6/bin/qmltestrunner', '-input', str(folder)],
+            result = subprocess.run(['/usr/lib/qt6/bin/qmltestrunner', '-import', str(folder), '-input', str(folder)],
                                     env=env, capture_output=True, text=True, timeout=30)
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
@@ -281,7 +285,7 @@ assert.deepStrictEqual(wallpaperAdapter.perScreenWallpapers, {external: wallpape
         result = subprocess.run(['node', '-e', code, str(source)], capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
-    def test_orbit_palette_honors_each_pick_and_restores_live_defaults(self):
+    def test_orbit_live_accent_overrides_primary_pick_and_preserves_secondary(self):
         source = SHELL / 'modules/widgets/dashboard/wallpapers/Wallpaper.qml'
         code = r"""
 const fs = require('fs'), assert = require('assert');
@@ -311,11 +315,11 @@ function check(picks, expected) {
     assert.deepStrictEqual([command[2], ...command.slice(-2)], expected);
 }
 check(['', ''], ['', '#3700c2', '']);
-check(['#31bd75', ''], ['', '#31bd75', '']);
+check(['#31bd75', ''], ['', '#3700c2', '']);
 check(['', '#bd31af'], ['', '#3700c2', '#bd31af']);
-check(['#31bd75', '#bd31af'], ['', '#31bd75', '#bd31af']);
+check(['#31bd75', '#bd31af'], ['', orbitAccent, '#bd31af']);
 orbitAccent = '#aa1122';
-check(['#31bd75', '#bd31af'], ['', '#31bd75', '#bd31af']);
+check(['#31bd75', '#bd31af'], ['', orbitAccent, '#bd31af']);
 check(['', ''], ['', '#aa1122', '']);
 orbitAccent = '';
 check(['', '#bd31af'], [orbitPath, '', '#bd31af']);
