@@ -9,6 +9,7 @@ import qs.config
 Item {
     id: root
 
+    readonly property bool orbital: Styling.shellStyle === "orbital"
     signal itemSelected
 
     property int currentIndex: 0
@@ -66,6 +67,7 @@ Item {
 
         StyledText {
             text: qsTr("Power menu")
+            font.family: root.orbital ? "Departure Mono" : Config.theme.font
             font.pixelSize: Styling.fontSize(12)
             font.bold: true
         }
@@ -73,7 +75,7 @@ Item {
         Grid {
             id: actionGrid
             width: parent.width
-            columns: width >= Styling.spacing(500) ? 3 : 2
+            columns: root.orbital ? 2 : width >= Styling.spacing(500) ? 3 : 2
             spacing: Styling.spacing(8)
 
             Repeater {
@@ -84,7 +86,7 @@ Item {
                     required property int index
                     required property var modelData
                     width: (actionGrid.width - (actionGrid.columns - 1) * actionGrid.spacing) / actionGrid.columns
-                    height: Styling.spacing(82)
+                    height: Styling.spacing(root.orbital ? 56 : 82)
                     text: modelData.label
                     highlighted: index === root.currentIndex
                     danger: modelData.command[1] === "poweroff"

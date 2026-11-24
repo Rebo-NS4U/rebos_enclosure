@@ -18,6 +18,7 @@ import qs.modules.widgets.dashboard.controls
 PanelWindow {
     id: root
 
+    readonly property bool orbital: Styling.shellStyle === "orbital"
     property bool opened: false
     property bool backendStarted: false
     property bool ready: false
@@ -621,6 +622,7 @@ PanelWindow {
         id: control
         property bool selected: false
         property bool glowing: false
+        property bool navigationTab: false
         padding: root.unit * 0.75
         hoverEnabled: true
         opacity: enabled ? 1 : 0.45
@@ -628,14 +630,23 @@ PanelWindow {
         Keys.onEnterPressed: event => { if (enabled) clicked(); event.accepted = true; }
         contentItem: StyledText {
             text: control.text
-            color: control.selected ? Colors.overPrimary : Colors.overSurface
+            color: root.orbital && control.navigationTab ? Colors.overBackground : control.selected ? Colors.overPrimary : Colors.overSurface
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
             elide: Text.ElideRight
         }
         background: StyledRect {
-            variant: control.selected ? "primary" : control.hovered || control.activeFocus ? "focus" : "common"
+            variant: control.selected && !(root.orbital && control.navigationTab) ? "primary" : control.hovered || control.activeFocus ? "focus" : "common"
             radius: Styling.radius(8)
+            backgroundOpacity: root.orbital && control.navigationTab && !control.hovered && !control.activeFocus ? 0 : -1
+            Rectangle {
+                visible: root.orbital && control.navigationTab && control.selected
+                anchors.bottom: parent.bottom
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: parent.width * 0.5
+                height: 2
+                color: Colors.primary
+            }
             layer.enabled: control.glowing
             layer.effect: MultiEffect {
                 shadowEnabled: true
@@ -710,6 +721,7 @@ PanelWindow {
                         Layout.fillWidth: true
                         Layout.preferredWidth: 0
                         text: modelData.title
+                        navigationTab: true
                         selected: root.mediaKind === modelData.kind
                         onClicked: root.switchMedia(modelData.kind)
                     }

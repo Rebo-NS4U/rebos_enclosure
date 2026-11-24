@@ -12,6 +12,7 @@ Item {
 
     required property var panel
 
+    readonly property bool orbital: Styling.shellStyle === "orbital"
     property bool menuOpen: false
     property real revealProgress: 0
 
@@ -107,6 +108,7 @@ Item {
 
             Rectangle {
                 anchors.fill: parent
+                opacity: root.orbital ? 0.45 : 1
                 gradient: Gradient {
                     GradientStop { position: 0; color: Qt.tint(Colors.background, Qt.alpha(Colors.primary, 0.17)) }
                     GradientStop { position: 0.62; color: Qt.alpha(Colors.background, 0.95) }
@@ -123,14 +125,15 @@ Item {
                 anchors.fill: powerMenuView
                 anchors.margins: -Styling.spacing(22)
                 radius: Styling.radius(8)
-                color: Qt.alpha(Colors.background, 0.86)
+                color: Qt.alpha(Colors.background, root.orbital ? 0.97 : 0.86)
                 border.color: Qt.alpha(Colors.outline, 0.4)
             }
 
             PowerMenuView {
                 id: powerMenuView
                 anchors.centerIn: parent
-                width: Math.min(parent.width - Styling.spacing(60), Styling.spacing(600))
+                anchors.horizontalCenterOffset: root.orbital && parent.width >= Styling.spacing(900) ? -parent.width * 0.21 : 0
+                width: Math.min(parent.width - Styling.spacing(60), Styling.spacing(root.orbital ? 380 : 600))
                 popupMode: true
                 expanded: root.menuOpen
                 onCloseRequested: root.closeMenu()

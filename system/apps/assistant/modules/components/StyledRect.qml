@@ -406,10 +406,9 @@ ClippingRectangle {
     Loader {
         anchors.fill: parent
         readonly property string material: root.styleOverride || Styling.shellStyle
-        active: !root.hasFillColor && root.rectOpacity > 0 && (["canopy", "metropolis"].includes(material)
-            ? !root.controlSurface && ["bg", "popup", "pane", "surface", "surfaceContainer", "bar"].includes(root.variant)
-            : material === "orbital"
-                && ["bg", "popup", "pane", "surface", "surfaceContainer", "internalbg", "focus", "bar"].includes(root.variant))
+        active: !root.hasFillColor && root.rectOpacity > 0 && !root.controlSurface
+            && ["canopy", "metropolis"].includes(material)
+            && ["bg", "popup", "pane", "surface", "surfaceContainer", "bar"].includes(root.variant)
         sourceComponent: Canvas {
             anchors.fill: parent
             id: materialCanvas
@@ -441,45 +440,6 @@ ClippingRectangle {
             readonly property bool nested: !outer && !barSurface && root.variant !== "bar"
             onBroadChanged: requestPaint()
             onNestedChanged: requestPaint()
-
-            HoverHandler {
-                id: orbitHover
-                enabled: materialCanvas.finish === "orbital" && Config.animDuration > 0
-                blocking: false
-            }
-            property real orbitPhase: 0
-            Timer {
-                interval: 50
-                repeat: true
-                running: materialCanvas.visible && orbitHover.enabled && orbitHover.hovered
-                onTriggered: {
-                    materialCanvas.orbitPhase = (materialCanvas.orbitPhase + 0.025) % (2 * Math.PI)
-                    materialCanvas.requestPaint()
-                }
-            }
-
-            function paintGravityWell(ctx) {
-                const radius = Math.min(width * 0.20, height * 0.45, 55)
-                if (radius < 7) return
-                ctx.save()
-                ctx.translate(width - radius - 8, height * 0.46)
-                ctx.strokeStyle = Qt.alpha(pigment, 0.30)
-                ctx.lineWidth = 0.8
-                for (const scale of [1, 0.72, 0.49, 0.30, 0.15]) {
-                    const r = radius * scale
-                    const dip = radius * 0.40 * Math.pow(1 - scale, 2)
-                    const wave = Math.sin(orbitPhase * 2 - scale * 6) * radius * 0.035
-                    ctx.beginPath()
-                    ctx.ellipse(-r, dip + wave - r * 0.32, r * 2, r * 0.64)
-                    ctx.stroke()
-                }
-                ctx.fillStyle = Qt.alpha(accent, 0.78)
-                ctx.beginPath()
-                ctx.arc(Math.cos(orbitPhase) * radius, Math.sin(orbitPhase) * radius * 0.32,
-                    Math.max(1.4, radius * 0.05), 0, 2 * Math.PI)
-                ctx.fill()
-                ctx.restore()
-            }
 
             function paintCanopy(ctx) {
                 const leafSize = broad ? Math.min(28, width * 0.047, height * 0.105) : Math.min(12, height * 0.23, width * 0.035)
@@ -665,9 +625,7 @@ ClippingRectangle {
             onPaint: {
                 const ctx=getContext("2d");ctx.clearRect(0,0,width,height);
                 if(width<24||height<24)return;
-                const ink=a=>Qt.rgba(pigment.r,pigment.g,pigment.b,a);
                 ctx.lineWidth=1;
-                const safe=Math.max(18,cornerRadius+6);
                 // Clip every material layer to the shared rounded surface.
                 ctx.save();
                 if(root.traceThemeFrame(ctx,0))ctx.clip();
@@ -681,52 +639,6 @@ ClippingRectangle {
                     }
                     paintCanopy(ctx)
 
-                } else if (finish === "orbital") {
-                    paintGravityWell(ctx)
-                    // Elliptical orbital tracks wrap a quiet, recessed space capsule.
-                    ctx.strokeStyle=ink(0.20);ctx.lineWidth=1;
-                    if(root.traceThemeFrame(ctx,outer?6:3))ctx.stroke();
-                    if(inset){
-                        ctx.strokeStyle=ink(0.08);
-                        if(root.traceThemeFrame(ctx,6))ctx.stroke();
-                    }
-                    // Deterministic jitter spreads a stable star field over the entire surface.
-                    // Low opacity keeps stars behind content, with occasional brighter points.
-                    for(let row=0;row<Math.ceil(height/46);row++){
-                        for(let col=0;col<Math.ceil(width/54);col++){
-                            const seed=Math.abs(Math.sin((col+1)*127.1+(row+1)*311.7)*43758.5453);
-                            const fraction=seed-Math.floor(seed);
-                            const x=col*54+7+fraction*38;
-                            const y=row*46+6+((fraction*7.31)%1)*32;
-                            const bright=fraction>0.88;
-                            ctx.fillStyle=ink(bright?0.40:0.14+fraction*0.12);
-                            ctx.beginPath();ctx.arc(x,y,bright?1.15:0.55,0,Math.PI*2);ctx.fill();
-                            if(bright){
-                                ctx.strokeStyle=ink(0.16);ctx.lineWidth=0.7;
-                                ctx.beginPath();ctx.moveTo(x-3,y);ctx.lineTo(x+3,y);
-                                ctx.moveTo(x,y-3);ctx.lineTo(x,y+3);ctx.stroke();
-                            }
-                        }
-                    }
-                    if(outer){
-                        for(const bottom of [false,true]){
-                            ctx.save();
-                            ctx.translate(bottom?width-safe:safe,bottom?height-8:8);
-                            ctx.rotate(bottom?-0.24:0.24);
-                            ctx.scale(1,0.32);
-                            for(let ring=0;ring<3;ring++){
-                                ctx.strokeStyle=Qt.rgba(accent.r,accent.g,accent.b,0.34-ring*0.07);
-                                ctx.beginPath();ctx.arc(0,0,24+ring*15,0,Math.PI*2);ctx.stroke();
-                            }
-                            ctx.restore();
-                        }
-                        // Satellites remain attached to the perimeter orbit tracks.
-                        ctx.fillStyle=Qt.rgba(accent.r,accent.g,accent.b,0.8);
-                        for(const point of [[safe+35,14],[width-safe-35,height-14]]){
-                            ctx.beginPath();ctx.arc(point[0],point[1],2.5,0,Math.PI*2);ctx.fill();
-                        }
-
-                    }
                 } else {
                     paintMetropolis(ctx)
                 }

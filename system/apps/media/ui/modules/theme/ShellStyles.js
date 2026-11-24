@@ -2,7 +2,7 @@
 
 var styles = [
     {id: "canopy", label: "Canopy", font: "DejaVu Sans Mono", description: "Overlapping tree boughs with two-tone leaf sprays across the window."},
-    {id: "orbital", label: "Orbital", font: "JetBrains Mono", description: "A star field with rippling gravity wells and satellites that orbit on hover."},
+    {id: "orbital", label: "Orbital", font: "JetBrains Mono", description: "Quiet ink surfaces, fine outlines and a workspace track that follows your windows."},
     {id: "metropolis", label: "Metropolis", font: "DejaVu Sans", description: "Stepped towers and lit windows frame a low city skyline."},
     {id: "glass-vault", label: "Glass Vault", font: "Noto Sans", description: "Thick glass blocks, rounded clamps, refractive light bands and deep inset controls."},
     {id: "radar-station", label: "Radar Station", font: "DejaVu Sans", description: "Etched bearing scales, radial divisions and softly illuminated scope glass."},
@@ -192,10 +192,11 @@ function surface(style, variant, p, ditherStrength) {
         border = [focused ? p.primary : glyphInks ? "#2a2a2a" : mix(fill, p.foreground, 0.20), outer || focused ? 1 : 0];
     }
     if (orbital && neutral) {
-        fill=mix(p.background,p.foreground,inset?0.005:focused?0.10:outer?0.075:0.045);
-        item=p.foreground;
-        opacity=focused?0.84:inset?0.48:outer?0.68:0.48;
-        border=[focused?p.primary:mix(fill,p.foreground,inset?0.28:0.40),focused||outer?2:1];
+        const paper = outer || inset || variant === "bar";
+        fill = mix(p.background, p.foreground, focused ? 0.14 : paper ? 0 : 0.045);
+        item = p.foreground;
+        opacity = variant === "bar" ? 0.76 : outer ? 0.97 : 0.94;
+        border = [focused ? p.primary : mix(fill, item, 0.23), focused || outer || inset ? 1 : 0];
     }
     if (metro && neutral) {
         // Material depth uses only the selected palette; no imposed city colors.

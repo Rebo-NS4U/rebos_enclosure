@@ -8,6 +8,7 @@ Button {
     id: root
     readonly property bool hardware: Styling.shellStyle === "terminal-hardware"
     readonly property bool glyphStyle: Styling.shellStyle === "glyph"
+    readonly property bool orbital: Styling.shellStyle === "orbital"
     property string glyph: ""
     property int glyphSize: Styling.fontSize(2)
     property bool glyphSpinning: false
@@ -31,9 +32,9 @@ Button {
             : root.hardware && root.down ? "internalbg"
             : root.hovered || root.down ? "focus" : "common"
         radius: root.glyphStyle ? Math.min(5, Styling.radius(-4)) : Styling.radius(-4)
-        border.width: root.activeFocus ? 2 : 1
+        border.width: root.activeFocus ? 2 : root.orbital && !root.engaged && !root.hovered ? 0 : 1
         border.color: root.activeFocus ? (root.danger || root.engaged ? itemColor : Colors.primary)
-            : root.hardware || root.glyphStyle ? Config.resolveColor(borderData?.[0] ?? "transparent")
+            : root.hardware || root.glyphStyle || root.orbital ? Config.resolveColor(borderData?.[0] ?? "transparent")
             : Qt.alpha(Colors.outline, 0.3)
     }
     contentItem: RowLayout {

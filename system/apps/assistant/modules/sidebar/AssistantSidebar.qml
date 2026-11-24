@@ -558,7 +558,7 @@ Item {
                             Layout.fillWidth: true
                             Layout.leftMargin: 4
                             text: "Dweebo"
-                            font.family: Config.theme.font
+                            font.family: Styling.shellStyle === "orbital" ? Styling.displayFont : Config.theme.font
                             font.pixelSize: Styling.fontSize(0)
                             font.weight: Font.DemiBold
                             color: Colors.overSurface
@@ -573,6 +573,16 @@ Item {
                             variant: "common"
                             radius: Config.roundness
 
+                            backgroundOpacity: Styling.shellStyle === "orbital" ? 0 : -1
+                            Rectangle {
+                                visible: Styling.shellStyle === "orbital"
+                                anchors.left: parent.left
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: 6
+                                height: width
+                                radius: width / 2
+                                color: statusLabel.color
+                            }
                             StyledText {
                                 id: statusLabel
                                 objectName: "assistantStatusLabel"

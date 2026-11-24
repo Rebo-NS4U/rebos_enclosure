@@ -78,11 +78,8 @@ ShellRoot {
    const values = [0,16,40,100];
    if (step === values.length) { Qt.quit(); return; }
    if (step === 1) {
-    const ctx = decoration(orbitalPane).getContext("2d");
-    const interiorStar = ctx.getImageData(41, 23, 1, 1).data[3];
-    const clippedCross = ctx.getImageData(204, 124, 1, 1).data[3];
-    if (!(interiorStar > 0) || clippedCross !== 0)
-     console.error("THEME_RADIUS_FAILED orbital pane star clipping", interiorStar, clippedCross);
+    if (decoration(orbitalPane))
+     console.error("THEME_RADIUS_FAILED orbital pane must keep its reading surface clear");
    }
    const expected = values[step++];
    Config.theme.roundness = expected;

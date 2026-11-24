@@ -14,6 +14,7 @@ import qs.config
 Item {
     id: root
 
+    readonly property bool orbital: Styling.shellStyle === "orbital"
     property point lastPointerPosition: Qt.point(-1, -1)
 
     function rememberPointer(area: Item, x: real, y: real) {
@@ -487,13 +488,13 @@ Item {
                         ? appsModel.count + (appsModel.count === 1 ? " match" : " matches")
                         : "Applications"
                     color: Colors.outline
-                    font.family: Config.theme.font
+                    font.family: root.orbital ? "Departure Mono" : Config.theme.font
                     font.pixelSize: Styling.fontSize(-2)
                 }
                 Text {
                     text: "Tab Projects   ·   Esc Back"
                     color: Colors.outline
-                    font.family: Config.theme.font
+                    font.family: root.orbital ? "Departure Mono" : Config.theme.font
                     font.pixelSize: Styling.fontSize(-2)
                 }
             }
@@ -657,6 +658,7 @@ Item {
 
                         // App icon
                         Item {
+                            visible: !root.orbital
                             Layout.preferredWidth: 32
                             Layout.preferredHeight: 32
 
@@ -681,6 +683,16 @@ Item {
                             }
                         }
 
+                        Rectangle {
+                            visible: root.orbital
+                            Layout.preferredWidth: Styling.spacing(7)
+                            Layout.preferredHeight: width
+                            radius: width / 2
+                            color: appLauncher.selectedIndex === index ? Colors.primary : "transparent"
+                            border.width: 1
+                            border.color: appLauncher.selectedIndex === index ? Colors.primary : Colors.outline
+                        }
+
                         Column {
                             Layout.fillWidth: true
                             spacing: Styling.spacing(0)
@@ -695,7 +707,7 @@ Item {
                                     if (isExpanded) {
                                         return Styling.srItem("pane");
                                     } else if (appLauncher.selectedIndex === index) {
-                                        return Styling.srItem("primary");
+                                        return Styling.srItem(root.orbital ? "focus" : "primary");
                                     } else {
                                         return Colors.overBackground;
                                     }
@@ -724,7 +736,7 @@ Item {
                                     if (isExpanded) {
                                         return Styling.srItem("pane");
                                     } else if (appLauncher.selectedIndex === index) {
-                                        return Styling.srItem("primary");
+                                        return Styling.srItem(root.orbital ? "focus" : "primary");
                                     } else {
                                         return Colors.outline;
                                     }
@@ -750,12 +762,13 @@ Item {
                             implicitHeight: keyLabel.implicitHeight + Styling.spacing(6)
                             radius: Styling.radius(-4)
                             color: "transparent"
+                            border.width: root.orbital ? 0 : 1
                             border.color: Qt.alpha(keyLabel.color, 0.5)
                             Text {
                                 id: keyLabel
                                 anchors.centerIn: parent
                                 text: actionVerb + "  ↵"
-                                color: Styling.srItem("primary")
+                                color: Styling.srItem(root.orbital ? "focus" : "primary")
                                 font.family: Config.theme.font
                                 font.pixelSize: Styling.fontSize(-1)
                                 font.weight: Font.DemiBold
@@ -971,7 +984,7 @@ Item {
                             if (appLauncher.expandedItemIndex >= 0 && appLauncher.selectedIndex === appLauncher.expandedItemIndex) {
                                 return "pane";
                             } else {
-                                return "primary";
+                                return root.orbital ? "focus" : "primary";
                             }
                         }
                         radius: Styling.radius(4)
