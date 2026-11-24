@@ -85,11 +85,13 @@ Item {
         objectName: "sort-" + metric
         focusPolicy: Qt.StrongFocus
         hoverEnabled: true
-        padding: Styling.spacing(3)
+        padding: Styling.spacing(8)
         Accessible.name: "Sort by " + title + (activeSort ? (panel.descending ? ", descending" : ", ascending") : "")
         onClicked: panel.sortBy(metric)
         background: StyledRect {
-            variant: button.hovered || button.visualFocus ? "focus" : "transparent"
+            buttonSurface: true
+            controlPressed: button.down
+            variant: button.hovered || button.visualFocus ? "focus" : "internalbg"
             radius: Styling.radius(-4)
             border.width: button.visualFocus ? Config.controlBorderWidth : 0
             border.color: Colors.primary
@@ -102,43 +104,26 @@ Item {
         required property string reading
         Layout.preferredWidth: 1
         contentItem: ColumnLayout {
-            spacing: 1
-            Caption { text: gauge.heading; Layout.alignment: Qt.AlignHCenter }
-            Canvas {
-                id: dial
-                Layout.alignment: Qt.AlignHCenter
-                implicitWidth: 62
-                implicitHeight: 48
-                property real fraction: gauge.fraction
-                property color ink: Colors.primary
-                property color track: Qt.alpha(Styling.srItem("bg"), 0.46)
-                onFractionChanged: requestPaint()
-                onInkChanged: requestPaint()
-                onTrackChanged: requestPaint()
-                onPaint: {
-                    const c = getContext("2d");
-                    c.clearRect(0, 0, width, height);
-                    c.save();
-                    c.translate(width / 2, 32);
-                    const start = 0.82 * Math.PI, sweep = 1.36 * Math.PI;
-                    const angle = start + sweep * Math.min(1, Math.max(0, fraction));
-                    c.strokeStyle = track;
-                    c.lineWidth = 1;
-                    c.beginPath(); c.arc(0, 0, 23, start, start + sweep); c.stroke();
-                    for (let i = 0; i <= 8; i++) {
-                        const a = start + sweep * i / 8;
-                        c.beginPath();
-                        c.moveTo(19 * Math.cos(a), 19 * Math.sin(a));
-                        c.lineTo(23 * Math.cos(a), 23 * Math.sin(a)); c.stroke();
-                    }
-                    c.strokeStyle = ink; c.fillStyle = ink; c.lineWidth = 2;
-                    c.beginPath(); c.arc(0, 0, 23, start, angle); c.stroke();
-                    c.beginPath(); c.moveTo(0, 0); c.lineTo(17 * Math.cos(angle), 17 * Math.sin(angle)); c.stroke();
-                    c.beginPath(); c.arc(0, 0, 2.5, 0, Math.PI * 2); c.fill();
-                    c.restore();
-                }
+            spacing: Styling.spacing(5)
+            Caption {
+                Layout.fillWidth: true
+                text: gauge.heading
+                color: gauge.activeSort ? Colors.primary : Styling.srItem("internalbg")
             }
-            Caption { text: gauge.reading; Layout.alignment: Qt.AlignHCenter }
+            Caption {
+                Layout.fillWidth: true
+                text: gauge.reading
+                color: Styling.srItem("internalbg")
+                font.weight: Font.DemiBold
+                font.pixelSize: Styling.fontSize(0)
+            }
+            StandardProgressBar {
+                Layout.fillWidth: true
+                Layout.minimumWidth: 0
+                Layout.preferredWidth: 1
+                value: gauge.fraction
+                showCursor: false
+            }
         }
     }
     component Meter: RowLayout {
@@ -147,7 +132,7 @@ Item {
         required property real fraction
         required property string reading
         Layout.fillWidth: true
-        Caption { text: meter.title; Layout.preferredWidth: Math.max(34, implicitWidth) }
+        Caption { text: meter.title; Layout.preferredWidth: Math.max(Styling.spacing(72), implicitWidth) }
         StandardProgressBar { Layout.fillWidth: true; value: meter.fraction; showCursor: false }
         Caption { text: meter.reading; Layout.preferredWidth: 90; horizontalAlignment: Text.AlignRight }
     }
@@ -158,12 +143,19 @@ Item {
         spacing: Styling.spacing(7)
         RowLayout {
             IslandBackButton { onClicked: panel.backRequested() }
-            Rule { title: "System Monitor" }
+            StyledText {
+                Layout.fillWidth: true
+                text: "System Monitor"
+                font.pixelSize: Styling.fontSize(3)
+                font.bold: true
+                color: Colors.overBackground
+            }
             ThemeButton { text: "×"; Accessible.name: "Close monitor"; onClicked: panel.closeRequested() }
         }
+        Separator { Layout.fillWidth: true; implicitHeight: 1 }
         RowLayout {
             Layout.fillWidth: true
-            Layout.alignment: Qt.AlignHCenter
+            spacing: Styling.spacing(6)
             Gauge { metric: "cpu"; title: "CPU"; fraction: panel.stats.cpuUsage / 100; reading: Math.round(panel.stats.cpuUsage) + "%" }
             Gauge { metric: "ram"; title: "Memory"; fraction: panel.stats.ramUsage / 100; reading: panel.size(panel.stats.ramUsed * 1024) }
             Gauge {
@@ -176,15 +168,15 @@ Item {
         SortButton {
             id: swapBar
             metric: "swap"; title: "Swap"
-            padding: 0
+            padding: Styling.spacing(5)
             contentItem: Meter {
                 title: swapBar.heading
                 fraction: panel.stats.swapTotal > 0 ? panel.stats.swapUsed / panel.stats.swapTotal : 0
                 reading: panel.size(panel.stats.swapUsed * 1024) + "/" + panel.size(panel.stats.swapTotal * 1024)
             }
         }
-        Meter { title: "↓"; fraction: panel.stats.networkDownloadSpeed / panel.peakRate; reading: panel.size(panel.stats.networkDownloadSpeed) + "/s" }
-        Meter { title: "↑"; fraction: panel.stats.networkUploadSpeed / panel.peakRate; reading: panel.size(panel.stats.networkUploadSpeed) + "/s" }
+        Meter { title: "Download"; fraction: panel.stats.networkDownloadSpeed / panel.peakRate; reading: panel.size(panel.stats.networkDownloadSpeed) + "/s" }
+        Meter { title: "Upload"; fraction: panel.stats.networkUploadSpeed / panel.peakRate; reading: panel.size(panel.stats.networkUploadSpeed) + "/s" }
         Rule { title: panel.showingSensors ? "Temperature sensors" : "Processes"; detail: String(panel.matches.length) }
         SearchInput {
             id: search
