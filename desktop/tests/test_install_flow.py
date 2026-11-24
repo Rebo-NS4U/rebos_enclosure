@@ -93,7 +93,7 @@ class InstallFlowTests(unittest.TestCase):
             self.assertIn('BusName=rs.wl-gammarelay', gamma)
             self.assertIn('PartOf=graphical-session.target', gamma)
             panel = (home / '.config/systemd/user/rebos-panel.service').read_text()
-            self.assertIn('Environment=QS_DISABLE_FILE_WATCHER=1', panel)
+            self.assertNotIn('Environment=QS_DISABLE_FILE_WATCHER=1', panel)
             self.assertIn('Restart=on-failure', panel)
             self.assertTrue((home / '.config/quickshell/scripts/qt_screen_guard.cpp').is_file())
             niri_config = (home / '.config/niri/config.kdl').read_text()
