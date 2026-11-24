@@ -13,6 +13,23 @@ Item {
     SignalSpy { id: spy; target: scene; signalName: "workspaceClicked" }
     TestCase {
         name: "NightRail"; when: windowShown
+        function test_district() {
+            tryVerify(()=>scene.districtLights.length>0)
+            const lamp=scene.districtLights.find(p=>p.x>30 && p.x<scene.width-30 &&
+                p.y>30 && p.y<scene.height-30 && !scene.hit(p.x,p.y))
+            verify(!!lamp)
+            mouseMove(scene,5,5)
+            wait(100)
+            const before=grabImage(scene)
+            mouseMove(scene,lamp.x,lamp.y)
+            wait(100)
+            verify(grabImage(scene).red(Math.floor(lamp.x),Math.floor(lamp.y))>
+                before.red(Math.floor(lamp.x),Math.floor(lamp.y)))
+            mouseClick(scene,lamp.x,lamp.y)
+            verify(!!scene.echo)
+            compare(spy.count,0)
+            tryVerify(()=>!scene.echo,1600)
+        }
         function test_transitions() {
             tryCompare(scene.routes,"length",2)
             wait(550)

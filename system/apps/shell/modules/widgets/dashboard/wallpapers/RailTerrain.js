@@ -35,3 +35,64 @@ function draw(c,w,h) {
         c.stroke();
     }
 }
+
+// A river with two built-up banks, drawn in local survey coordinates.
+function riverY(x, h) {
+    return h*(.14*Math.sin(x/h*4.3)+.05*Math.sin(x/h*8.1));
+}
+
+function drawDistrict(c,w,h) {
+    const lights=[];
+    if (w<=0 || h<=0) return lights;
+    const angle=-.34, cos=Math.cos(angle), sin=Math.sin(angle);
+    const extent=Math.hypot(w,h)*.55;
+    const scale=Math.min(w,h)/760, quay=10*scale;
+    c.save();
+    c.translate(w*.50,h*.49);
+    c.rotate(angle);
+    c.beginPath();
+    for (let x=-extent;x<=extent;x+=4) {
+        const y=riverY(x,h);
+        if (x===-extent) c.moveTo(x,y); else c.lineTo(x,y);
+    }
+    for (const [width,color] of [[quay*2+3,"#565656"],[quay*2,"#070707"]]) {
+        c.lineWidth=width; c.strokeStyle=color; c.stroke();
+    }
+    const pitch=18*scale;
+    for (let col=-Math.ceil(extent/pitch);col<=extent/pitch;col++) {
+        const x=col*pitch, bank=riverY(x,h);
+        for (let row=-7;row<=7;row++) {
+            const y=row*pitch;
+            const seed=Math.abs(Math.sin(col*127.1+row*311.7)*43758.5453)%1;
+            const along=Math.sin(x/h*7+1.3*Math.sign(y-bank));
+            const distance=Math.abs(y-bank);
+            if (distance<quay+pitch*1.35 || distance>pitch*(3.8+3*along) || seed<.14) continue;
+            const bw=pitch*(.38+seed*.43), bh=pitch*(.30+(1-seed)*.43);
+            c.fillStyle=seed>.70 ? "#252525" : "#171717";
+            c.fillRect(x,y,bw,bh);
+            c.fillStyle="#363636"; c.fillRect(x,y,bw,scale);
+            c.fillStyle="#555555";
+            for (let k=2*scale;k<bw-scale;k+=4*scale)
+                c.fillRect(x+k,y+bh-2*scale,scale,scale);
+            const lx=x+bw/2, ly=y+bh/2;
+            lights.push({x:w*.50+lx*cos-ly*sin,y:h*.49+lx*sin+ly*cos});
+        }
+    }
+    c.restore();
+    return lights;
+}
+
+function illuminate(c,lights,x,y,radius,strength,ring) {
+    c.save();
+    c.fillStyle="#e0e0e0";
+    for (const light of lights) {
+        const distance=Math.hypot(light.x-x,light.y-y);
+        const weight=ring ? 1-Math.abs(distance-radius)/30 : 1-distance/radius;
+        if (weight<=0) continue;
+        c.globalAlpha=strength*weight;
+        c.fillRect(light.x-2,light.y-1,4,2);
+        c.globalAlpha*=.18;
+        c.fillRect(light.x-5,light.y-3,10,6);
+    }
+    c.restore();
+}

@@ -16,6 +16,8 @@ Rectangle {
     property var hits: []
     property var hover: null
     property var sparks: ({})
+    property var districtLights: []
+    property var echo: null
     property double previous: 0
 
     function reconcile() {
@@ -64,6 +66,7 @@ Rectangle {
             const c = getContext("2d");
             c.reset();
             Terrain.draw(c,width,height);
+            rail.districtLights = Terrain.drawDistrict(c,width,height);
         }
     }
     Canvas {
@@ -146,6 +149,27 @@ Rectangle {
             c.reset();
             const now = Date.now(), dt = Math.min(.1,(now-rail.previous)/1000);
             rail.previous = now;
+            if (pointer.containsMouse && !rail.hit(pointer.mouseX,pointer.mouseY)) {
+                const x=pointer.mouseX, y=pointer.mouseY;
+                const glow=c.createRadialGradient(x,y,0,x,y,85);
+                glow.addColorStop(0,"rgba(182,192,202,0.09)");
+                glow.addColorStop(1,"transparent");
+                c.fillStyle=glow;
+                c.fillRect(x-85,y-85,170,170);
+                Terrain.illuminate(c,rail.districtLights,x,y,115,.9,false);
+            }
+            if (rail.echo) {
+                const t=Math.min(1,(now-rail.echo.start)/950);
+                const radius=8+Math.min(width,height)*.34*t;
+                c.save();
+                c.globalAlpha=.46*(1-t);
+                c.strokeStyle="#ddd"; c.lineWidth=1;
+                c.setLineDash([3,5]); c.beginPath();
+                c.arc(rail.echo.x,rail.echo.y,radius,0,Math.PI*2);
+                c.stroke(); c.restore();
+                Terrain.illuminate(c,rail.districtLights,rail.echo.x,rail.echo.y,radius,1-t,true);
+                if (t===1) rail.echo=null;
+            }
             const targets = [];
             for (const r of rail.routes) {
                 const p = r.path;
@@ -214,6 +238,7 @@ Rectangle {
         onClicked: mouse => {
             const h=rail.hit(mouse.x,mouse.y);
             if (h) rail.workspaceClicked(h.r.id);
+            else rail.echo={x:mouse.x,y:mouse.y,start:Date.now()};
         }
     }
     Text {
