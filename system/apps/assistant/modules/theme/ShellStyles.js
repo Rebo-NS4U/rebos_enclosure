@@ -188,7 +188,7 @@ function surface(style, variant, p, ditherStrength) {
         const paper = outer || inset || variant === "bar";
         fill = mix(p.background, p.foreground, focused ? 0.14 : paper ? 0 : 0.045);
         item = p.foreground;
-        opacity = variant === "bar" ? 0.76 : outer ? 0.97 : 0.94;
+        opacity = variant === "bar" ? 0.76 : outer ? 0.86 : 0.94;
         const outlined = outer || inset || variant === "common";
         border = [focused ? p.primary : mix(fill, item, outer ? 0.48 : 0.36), focused || outlined ? 1 : 0];
     }
