@@ -47,8 +47,12 @@ function validate(current, defaults, keyName) {
     if (keyName === "ditherTintColor") return /^#[0-9a-f]{6}$/i.test(current) ? current.toLowerCase() : defaults;
     if (keyName === "ditherBorder" && ["band", "dotted", "double"].indexOf(current) === -1) return defaults;
     if (keyName === "wallpaperDitherStrength" && ["normal", "strong", "intense"].indexOf(current) === -1) return defaults;
-    if (keyName === "buttonFinish" && !["default", "inset", "underline"].includes(current)) return defaults;
-    if (keyName === "backgroundFinish" && !["default", "wash", "two-tone"].includes(current)) return defaults;
+    if (keyName === "buttonFinish" && current === "inset") return "grip";
+    if (keyName === "buttonFinish" && current === "underline") return "rivets";
+    if (keyName === "buttonFinish" && !["default", "grip", "rivets"].includes(current)) return defaults;
+    if (keyName === "backgroundFinish" && current === "wash") return "dots";
+    if (keyName === "backgroundFinish" && current === "two-tone") return "ruled";
+    if (keyName === "backgroundFinish" && !["default", "dots", "ruled"].includes(current)) return defaults;
     if (keyName === "shellTransparency") return Number.isFinite(current) ? Math.round(Math.max(-1, Math.min(100, current))) : defaults;
     if (keyName === "blurStrength" || keyName === "ditherStrength") {
         return Number.isFinite(current) ? Math.round(Math.max(0, Math.min(100, current))) : defaults;

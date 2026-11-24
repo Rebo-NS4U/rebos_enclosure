@@ -42,13 +42,13 @@ SettingsGroup {
     FinishPicker {
         label: "Button finish"
         setting: "buttonFinish"
-        options: [{value: "default", label: "Theme default"}, {value: "inset", label: "Inset rim"}, {value: "underline", label: "Underline"}]
+        options: [{value: "default", label: "Theme default"}, {value: "grip", label: "Grip ridges"}, {value: "rivets", label: "Corner rivets"}]
     }
 
     FinishPicker {
         label: "Background finish"
         setting: "backgroundFinish"
-        options: [{value: "default", label: "Theme default"}, {value: "wash", label: "Accent wash"}, {value: "two-tone", label: "Two-tone"}]
+        options: [{value: "default", label: "Theme default"}, {value: "dots", label: "Dot grid"}, {value: "ruled", label: "Ruled lines"}]
     }
 
     GridLayout {

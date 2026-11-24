@@ -45,8 +45,8 @@ ShellRoot {
         repeat: true
         property int step: 0
         property bool capturing: false
-        readonly property var buttons: ["default", "inset", "underline"]
-        readonly property var backgrounds: ["default", "wash", "two-tone"]
+        readonly property var buttons: ["default", "grip", "rivets"]
+        readonly property var backgrounds: ["default", "dots", "ruled"]
         onTriggered: {
             if (!Config.themeReady || capturing) return;
             if (step === 9) {
@@ -100,8 +100,8 @@ class ShellFinishTests(unittest.TestCase):
                 for error in ("ReferenceError", "TypeError", "Unable to assign", "Cannot assign"):
                     self.assertNotIn(error, output)
             saved = json.loads((root / ".config/rebos_shell/config/theme.json").read_text())
-            self.assertEqual(saved["buttonFinish"], "underline")
-            self.assertEqual(saved["backgroundFinish"], "two-tone")
+            self.assertEqual(saved["buttonFinish"], "rivets")
+            self.assertEqual(saved["backgroundFinish"], "ruled")
             buttons, panels = [], []
             for step in range(9):
                 with Image.open(root / f"{step}.png") as image:

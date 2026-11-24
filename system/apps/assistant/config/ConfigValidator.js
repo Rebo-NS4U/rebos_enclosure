@@ -42,8 +42,12 @@ function validate(current, defaults, keyName) {
     if (keyName === "shellStyle" && ["glass", "quiet", "colorful", "custom", "frosted", "monolith", "blueprint", "terminal-hardware", "glass-vault", "radar-station", "guilloche", "canopy", "orbital", "metropolis", "clear-glass"].indexOf(current) === -1) {
         return defaults;
     }
-    if (keyName === "buttonFinish" && !["default", "inset", "underline"].includes(current)) return defaults;
-    if (keyName === "backgroundFinish" && !["default", "wash", "two-tone"].includes(current)) return defaults;
+    if (keyName === "buttonFinish" && current === "inset") return "grip";
+    if (keyName === "buttonFinish" && current === "underline") return "rivets";
+    if (keyName === "buttonFinish" && !["default", "grip", "rivets"].includes(current)) return defaults;
+    if (keyName === "backgroundFinish" && current === "wash") return "dots";
+    if (keyName === "backgroundFinish" && current === "two-tone") return "ruled";
+    if (keyName === "backgroundFinish" && !["default", "dots", "ruled"].includes(current)) return defaults;
     if (keyName === "desktopBlur" && ["medium", "light", "shell", "off"].indexOf(current) === -1) return defaults;
     if (keyName === "ditherPalette" && ["original", "teal-orange", "tint"].indexOf(current) === -1) return defaults;
     if (keyName === "ditherTintColor") return /^#[0-9a-f]{6}$/i.test(current) ? current.toLowerCase() : defaults;

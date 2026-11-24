@@ -281,14 +281,27 @@ ClippingRectangle {
         active: Config.theme.backgroundFinish !== "default" && !root.buttonSurface
             && !root.hasFillColor && root.rectOpacity > 0
             && (root.barSurface || ["bg", "popup", "bar"].includes(root.variant))
-        sourceComponent: Rectangle {
+        sourceComponent: Canvas {
             objectName: "background-finish"
             opacity: root.rectOpacity
-            gradient: Gradient {
-                orientation: Config.theme.backgroundFinish === "two-tone" ? Gradient.Horizontal : Gradient.Vertical
-                GradientStop { position: 0; color: Qt.alpha(Colors.primary, 0.26) }
-                GradientStop { position: 0.55; color: Qt.alpha(Colors.primary, 0) }
-                GradientStop { position: 1; color: Qt.alpha(Colors.tertiary, Config.theme.backgroundFinish === "two-tone" ? 0.26 : 0) }
+            readonly property bool ruled: Config.theme.backgroundFinish === "ruled"
+            readonly property color ink: Qt.alpha(root.itemColor, ruled ? 0.09 : 0.18)
+            onInkChanged: requestPaint()
+            onRuledChanged: requestPaint()
+            onWidthChanged: requestPaint()
+            onHeightChanged: requestPaint()
+            onPaint: {
+                const ctx = getContext("2d");
+                ctx.clearRect(0, 0, width, height);
+                ctx.fillStyle = ink;
+                for (let y = 8; y < height; y += 16) {
+                    if (ruled) {
+                        ctx.fillRect(0, y, width, 1);
+                    } else {
+                        for (let x = 8; x < width; x += 16)
+                            ctx.fillRect(x, y, 2, 2);
+                    }
+                }
             }
         }
     }
@@ -1137,30 +1150,24 @@ ClippingRectangle {
             && !root.hasFillColor && root.rectOpacity > 0
         sourceComponent: Item {
             objectName: "button-finish"
-            readonly property bool inset: Config.theme.buttonFinish === "inset"
-            readonly property real margin: root.controlPressed ? 2 : 3
+            id: hardware
+            readonly property bool rivets: Config.theme.buttonFinish === "rivets"
             opacity: root.rectOpacity
-            Rectangle {
-                visible: parent.inset
-                anchors.fill: parent
-                anchors.margins: parent.margin
-                color: "transparent"
-                border.width: 1
-                border.color: Qt.alpha(root.itemColor, 0.48)
-                topLeftRadius: root.themeCornerRadius(root.topLeftRadius, parent.margin)
-                topRightRadius: root.themeCornerRadius(root.topRightRadius, parent.margin)
-                bottomLeftRadius: root.themeCornerRadius(root.bottomLeftRadius, parent.margin)
-                bottomRightRadius: root.themeCornerRadius(root.bottomRightRadius, parent.margin)
-            }
-            Rectangle {
-                visible: !parent.inset
-                anchors.horizontalCenter: parent.horizontalCenter
-                anchors.bottom: parent.bottom
-                anchors.bottomMargin: parent.margin
-                width: Math.min(parent.width * 0.48, 48)
-                height: 2
-                radius: 1
-                color: Qt.alpha(root.itemColor, 0.72)
+            Repeater {
+                model: 4
+                delegate: Rectangle {
+                    required property int index
+                    readonly property real inset: Math.min(hardware.width / 5, 6)
+                    readonly property real offset: hardware.rivets ? inset : 0
+                    width: hardware.rivets ? 3 : 1
+                    height: hardware.rivets ? 3 : Math.min(12, hardware.height / 3)
+                    radius: hardware.rivets ? width / 2 : 0
+                    x: (index < 2 ? inset : hardware.width - inset - width)
+                        + (hardware.rivets ? 0 : (index % 2) * (index < 2 ? 3 : -3))
+                    y: hardware.rivets ? (index % 2 ? hardware.height - offset - height : offset)
+                        : (hardware.height - height) / 2
+                    color: Qt.alpha(root.itemColor, root.controlPressed ? 0.85 : 0.48)
+                }
             }
         }
     }

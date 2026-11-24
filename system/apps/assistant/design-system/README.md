@@ -48,7 +48,7 @@ Use `StandardProgressBar` for linear progress in QML. Its normalized `value` is 
 
 ## Rendered desktop themes
 
-In the shell, **Theme & appearance → Style** offers independent button and background finishes for every theme. Inset rim and Underline decorate shared buttons using their label color. Accent wash fades the primary color down from the top of panels and bars. Two-tone fades primary and tertiary inward from opposite sides. Select Theme default in either row to restore the material’s original finish. Appearance presets save both selections.
+In the shell, **Theme & appearance → Style** offers independent button and background finishes for every theme. Grip ridges add paired vertical marks at each end of a button. Corner rivets place four small dots around its face. Both brighten on press. Panels and bars offer a sparse dot grid or fine horizontal rules. Select Theme default in either row to restore the material’s original finish. Appearance presets save both selections.
 
 All styles use the selected wallpaper or color preset, including application exports.
 Monolith uses an opaque slate face. A diagonal fault crosses windows, panes, and buttons, with tapered accent seams and offset mineral beds above and below. Nested surfaces use lower contrast. Theme previews show the whole slab.
