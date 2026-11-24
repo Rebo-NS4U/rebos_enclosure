@@ -30,8 +30,31 @@ Item {
             compare(spy.count,0)
             tryVerify(()=>!scene.echo,1600)
         }
+        function test_new_workspace() {
+            const spaces=scene.workspaces, windows=scene.windows
+            const startY=scene.routes[0].path.y
+            scene.workspaces=spaces.concat([{id:11,idx:3,output:"A"}])
+            scene.windows=windows.map(w=>w.id===54 ? {id:54,workspace_id:11} : w)
+            tryVerify(()=>scene.routes.length===3 && scene.routes[2].opening>0)
+            const branch=scene.routes[2]
+            verify(branch.opening<1)
+            verify(scene.cars[54].from)
+            verify(Math.abs(scene.routes[0].path.y-startY)<Math.abs(scene.routes[0].destination.y-startY))
+            scene.windows=windows
+            tryVerify(()=>scene.routes.length===2)
+            scene.windows=windows.concat([{id:88,workspace_id:11}])
+            tryVerify(()=>scene.routes.length===3)
+            tryVerify(()=>!scene.arranging)
+            compare(scene.routes[2].opening,1)
+            compare(scene.routes[0].path.y,scene.routes[0].destination.y)
+            scene.windows=windows
+            scene.workspaces=spaces
+            tryVerify(()=>scene.routes.length===2)
+            tryVerify(()=>!scene.arranging)
+            compare(scene.routes[0].path.y,startY)
+        }
         function test_transitions() {
-            tryCompare(scene.routes,"length",2)
+            tryVerify(()=>scene.routes.length===2)
             wait(550)
             const r=scene.routes[1], start=r.phase
             wait(160)
