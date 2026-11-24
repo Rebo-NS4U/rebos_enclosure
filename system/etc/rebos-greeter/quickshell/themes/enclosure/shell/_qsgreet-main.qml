@@ -15,11 +15,23 @@ FocusScope {
     readonly property string wallpaperVideo: Config.display.wallpaperVideo ?? ""
     readonly property string wallpaperDirectory: "file:///var/lib/rebos-greeter/theme/"
     function submit() {
+        if (!Auth.promptActive && !username.text.trim()) {
+            username.focusInput();
+            return;
+        }
         var secret = password.text;
         password.clear();
         if (Auth.promptActive) Auth.submitSecret(secret);
         else Auth.login(username.text, secret);
     }
+    readonly property real edgeMargin: Styling.spacing(20)
+
+    function cancel() {
+        Auth.cancel();
+        password.clear();
+        password.focusInput();
+    }
+
     function reveal(control) {
         var flick = scroll.contentItem;
         var top = control.mapToItem(content, 0, 0).y;
@@ -83,13 +95,32 @@ FocusScope {
             item.place();
         }
     }
+    ColumnLayout {
+        anchors.top: parent.top
+        anchors.topMargin: Math.max(root.edgeMargin, parent.height / 8)
+        anchors.horizontalCenter: parent.horizontalCenter
+        spacing: Styling.spacing(4)
+
+        ClockText {
+            Layout.alignment: Qt.AlignHCenter
+            clockValue: Qt.formatDateTime(clock.now, Config.display.use12hFormat ? "h:mm AP" : "HH:mm")
+            color: Colors.overBackground
+            font.family: Styling.displayFont
+            font.pixelSize: Styling.fontSize(52)
+        }
+        StyledText {
+            Layout.alignment: Qt.AlignHCenter
+            text: Qt.formatDateTime(clock.now, "dddd, d MMMM")
+            color: Colors.overBackground
+        }
+    }
     StyledRect {
         id: panel
         variant: "bg"
         enableShadow: true
         anchors.centerIn: parent
-        width: Math.min(Styling.spacing(460), parent.width - Styling.spacing(40))
-        height: Math.min(content.implicitHeight + Styling.spacing(64), parent.height - Styling.spacing(32))
+        width: Math.min(Styling.spacing(320), parent.width - 2 * root.edgeMargin)
+        height: Math.min(content.implicitHeight + Styling.spacing(24), parent.height / 3)
         radius: Styling.radius(0)
         opacity: root.entered ? 1 : 0
         transform: Translate { y: root.entered ? 0 : Motion.offset
@@ -99,7 +130,7 @@ FocusScope {
         ScrollView {
             id: scroll
             anchors.fill: parent
-            anchors.margins: Styling.spacing(32)
+            anchors.margins: Styling.spacing(12)
             clip: true
             contentWidth: availableWidth
             contentHeight: content.implicitHeight
@@ -108,47 +139,24 @@ FocusScope {
                 id: content
                 width: scroll.availableWidth
                 spacing: Styling.spacing(14)
-                ClockText {
-                    Layout.alignment: Qt.AlignHCenter
-                    clockValue: Qt.formatDateTime(clock.now, Config.display.use12hFormat ? "h:mm AP" : "HH:mm")
-                    color: panel.item
-                    font.family: Styling.displayFont
-                    font.pixelSize: Styling.fontSize(34)
-                }
                 StyledText {
-                    Layout.alignment: Qt.AlignHCenter
-                    text: Qt.formatDateTime(clock.now, "dddd, d MMMM")
-                    color: panel.item
-                    font.pixelSize: Styling.fontSize(0)
-                }
-                StyledText { text: "Username"; color: panel.item }
-                SearchInput {
-                    id: username
                     Layout.fillWidth: true
-                    text: Users.selectedName
-                    enabled: !Auth.busy && !Auth.promptActive
-                    variant: inputActiveFocus ? "focus" : "pane"
-                    handleTabNavigation: true
-                    onTabPressed: password.focusInput()
-                    onShiftTabPressed: (powerRow.visible ? shutdown : signIn).forceActiveFocus()
-                    onInputActiveFocusChanged: if (inputActiveFocus) root.reveal(this)
-                    Accessible.name: "Username"
-                    onAccepted: password.focusInput()
+                    visible: Auth.promptActive || Auth.busy
+                    text: Auth.promptActive ? Auth.promptMessage : "Signing in…"
+                    color: panel.item
+                    wrapMode: Text.Wrap
+                    textFormat: Text.PlainText
                 }
-                StyledText { textFormat: Text.PlainText; text: Auth.promptActive ? Auth.promptMessage : "Password"; color: panel.item; wrapMode: Text.Wrap; Layout.fillWidth: true }
                 SearchInput {
                     id: password
                     Layout.fillWidth: true
                     enabled: !Auth.busy
-                    focus: true
+                    placeholderText: Auth.promptActive ? "" : "Password"
                     passwordMode: !(Auth.promptActive && Auth.promptEcho)
                     variant: Auth.errorText ? "error" : (inputActiveFocus ? "focus" : "pane")
-                    handleTabNavigation: true
-                    onTabPressed: (sessionButton.visible && sessionButton.enabled ? sessionButton : cancelButton).forceActiveFocus()
-                    onShiftTabPressed: username.focusInput()
                     onInputActiveFocusChanged: if (inputActiveFocus) root.reveal(this)
                     Accessible.name: Auth.promptActive ? Auth.promptMessage : "Password"
-                    onEscapePressed: Auth.cancel()
+                    onEscapePressed: root.cancel()
                     onAccepted: root.submit()
                 }
                 StyledText {
@@ -159,44 +167,72 @@ FocusScope {
                     wrapMode: Text.Wrap
                     textFormat: Text.PlainText
                 }
-                ThemeButton {
-                    onActiveFocusChanged: if (activeFocus) root.reveal(this)
-                    id: sessionButton
-                    Layout.fillWidth: true
-                    text: Sessions.selectedName || "Session"
-                    enabled: Sessions.count > 1 && !Auth.busy
-                    visible: Sessions.count > 0
-                    onClicked: Sessions.cycle()
-                }
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: Styling.spacing(8)
-                    ThemeButton {
-                        id: cancelButton
-                        onActiveFocusChanged: if (activeFocus) root.reveal(this)
-                        Layout.fillWidth: true
-                        text: "Cancel"
-                        onClicked: { Auth.cancel(); password.clear(); password.focusInput(); }
-                    }
-                    ThemeButton {
-                        id: signIn
-                        onActiveFocusChanged: if (activeFocus) root.reveal(this)
-                        Layout.fillWidth: true
-                        highlighted: true
-                        text: Auth.busy ? "Signing in…" : "Sign in"
-                        enabled: !Auth.busy
-                        onClicked: root.submit()
-                    }
-                }
-                RowLayout {
-                    id: powerRow
-                    Layout.fillWidth: true
-                    visible: Power.enabled
-                    spacing: Styling.spacing(8)
-                    ThemeButton { onActiveFocusChanged: if (activeFocus) root.reveal(this); Layout.fillWidth: true; text: "Restart"; enabled: !Auth.busy; onClicked: Power.reboot() }
-                    ThemeButton { id: shutdown; onActiveFocusChanged: if (activeFocus) root.reveal(this); Layout.fillWidth: true; text: "Shut down"; enabled: !Auth.busy; onClicked: Power.poweroff() }
-                }
             }
+        }
+    }
+    RowLayout {
+        anchors.left: parent.left
+        anchors.bottom: parent.bottom
+        anchors.margins: root.edgeMargin
+        width: Math.min(implicitWidth, parent.width / 2 - root.edgeMargin * 1.5)
+        spacing: Styling.spacing(8)
+
+        SearchInput {
+            id: username
+            Layout.preferredWidth: Styling.spacing(132)
+            Layout.fillWidth: true
+            text: Users.selectedName
+            placeholderText: "Username"
+            enabled: !Auth.busy && !Auth.promptActive && !GreeterConfig.lockUser
+            variant: inputActiveFocus ? "focus" : "pane"
+            Accessible.name: "Username"
+            onAccepted: password.focusInput()
+        }
+        ThemeButton {
+            Layout.fillWidth: true
+            Layout.minimumWidth: 0
+            text: Sessions.selectedName || "Session"
+            enabled: Sessions.count > 1 && !Auth.busy
+            visible: Sessions.count > 0
+            onClicked: Sessions.cycle()
+        }
+        ThemeButton {
+            Layout.fillWidth: true
+            Layout.minimumWidth: 0
+            text: "Sign in"
+            highlighted: true
+            enabled: !Auth.busy
+            onClicked: root.submit()
+        }
+    }
+    RowLayout {
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        anchors.margins: root.edgeMargin
+        width: Math.min(implicitWidth, parent.width / 2 - root.edgeMargin * 1.5)
+        spacing: Styling.spacing(8)
+
+        ThemeButton {
+            Layout.fillWidth: true
+            Layout.minimumWidth: 0
+            text: "Cancel"
+            onClicked: root.cancel()
+        }
+        ThemeButton {
+            Layout.fillWidth: true
+            Layout.minimumWidth: 0
+            text: "Restart"
+            visible: Power.enabled
+            enabled: !Auth.busy
+            onClicked: Power.reboot()
+        }
+        ThemeButton {
+            Layout.fillWidth: true
+            Layout.minimumWidth: 0
+            text: "Shut down"
+            visible: Power.enabled
+            enabled: !Auth.busy
+            onClicked: Power.poweroff()
         }
     }
     Component.onCompleted: Qt.callLater(function() { root.entered = true; password.focusInput(); })
